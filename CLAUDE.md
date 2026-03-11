@@ -11,9 +11,12 @@ Focused C++ geometry library and CLI built on OpenCASCADE Technology (OCCT).
 
 ## Build system
 
-- CMake is the build system. OCCT is pulled via FetchContent.
-- Target: static linkage for a single distributable binary.
-- CMakePresets.json defines the default configure preset including FETCHCONTENT_BASE_DIR.
+- CMake is the build system. Static linkage for a single distributable binary.
+- OCCT cannot be a CMake subdirectory (it uses CMAKE_SOURCE_DIR internally). It is built as a standalone project via `scripts/build_occt.py` and found via `find_package(OpenCASCADE)`.
+- CMake auto-invokes `build_occt.py` on first configure if OCCT is not found. This takes ~10-15 min once.
+- `scripts/build_occt.py --clean` wipes and rebuilds OCCT. Run this after changing OCCT version.
+- CMakePresets.json points `OpenCASCADE_DIR` at `.deps/occt-install/cmake`.
+- RapidJSON (header-only) is required by OCCT for glTF export and is cloned by `build_occt.py`.
 
 ## Project structure
 

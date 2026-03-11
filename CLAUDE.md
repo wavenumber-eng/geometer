@@ -20,14 +20,16 @@ Focused C++ geometry library and CLI built on OpenCASCADE Technology (OCCT).
 
 ## Project structure
 
+- `dist/` — distributable binaries (exe, lib, wasm). Checked into git. Tests run against these.
 - `src/cpp/lib/` — libgeometer, the reusable C++ core.
 - `src/cpp/cli/` — geometer CLI executable (thin wrapper over libgeometer).
 - `src/js/` — JavaScript/WASM code (viewers, browser tooling).
-- `tests/` — rack-based test system with stratified test layers.
+- `tests/` — rack-based test system with stratified test layers. Tests must use `dist/` binaries, not build tree.
 - `docs/adr/` — architecture decision records, numbered.
 - `docs/requirements/` — requirements, numbered.
 - `docs/plans/` — work plans, numbered.
 - `scripts/` — Python tooling managed by uv.
+- `setup.ps1` — adds `dist/` to PATH for the current PowerShell session.
 
 ## C++ guidelines
 

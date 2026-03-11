@@ -35,3 +35,12 @@ target_link_libraries(geometer_lib PUBLIC
     TKMath
     TKernel
 )
+
+# Copy static library to dist/ after build.
+add_custom_command(TARGET geometer_lib POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_SOURCE_DIR}/dist"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "$<TARGET_FILE:geometer_lib>"
+        "${CMAKE_SOURCE_DIR}/dist/"
+    COMMENT "Copying geometer_lib to dist/"
+)

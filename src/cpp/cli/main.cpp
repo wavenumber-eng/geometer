@@ -4,6 +4,15 @@
 #include <cstdlib>
 #include <cstring>
 
+// OCCT static globals can segfault during atexit teardown.
+// Use _Exit to skip destructors after successful completion.
+[[noreturn]] static void clean_exit(int code)
+{
+    std::fflush(stdout);
+    std::fflush(stderr);
+    std::_Exit(code);
+}
+
 static void print_usage()
 {
     std::fprintf(stderr,
@@ -62,7 +71,7 @@ int main(int argc, char* argv[])
         {
             std::fprintf(stderr, "Failed (error %d).\n", result);
         }
-        return result;
+        clean_exit(result);
     }
 
     std::fprintf(stderr, "Unknown command: %s\n", argv[1]);

@@ -6,7 +6,7 @@
             "binaryDir": "${sourceDir}/build",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release",
-                "FETCHCONTENT_BASE_DIR": "${sourceDir}/.deps"
+                "OpenCASCADE_DIR": "${sourceDir}/.deps/occt-install/cmake"
             }
         }
     ]

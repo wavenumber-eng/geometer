@@ -5,6 +5,10 @@ Focused C++ geometry library and CLI built on OCCT. Provides a small, controllab
 ## Build
 
 ```bash
+# 1. Build OCCT (one-time, ~10-15 min)
+python scripts/build_occt.py
+
+# 2. Build geometer
 cmake --preset default
 cmake --build build --config Release
 ```
@@ -17,4 +21,4 @@ geometer step-to-glb input.step output.glb
 
 ## Dependencies
 
-- [OpenCASCADE Technology](https://dev.opencascade.org/) — pulled automatically via CMake FetchContent.
+- [OpenCASCADE Technology](https://dev.opencascade.org/) — built from source via `scripts/build_occt.py`.

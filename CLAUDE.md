@@ -17,6 +17,8 @@ Focused C++ geometry library and CLI built on OpenCASCADE Technology (OCCT).
 - `scripts/build_occt.py --clean` wipes and rebuilds OCCT. Run this after changing OCCT version.
 - CMakePresets.json points `OpenCASCADE_DIR` at `.deps/occt-install/cmake`.
 - RapidJSON (header-only) is required by OCCT for glTF export and is cloned by `build_occt.py`.
+- WASM build: `python scripts/build_wasm.py`. Manages emsdk in `.deps/emsdk/`, cross-compiles OCCT and geometer. Outputs `geometer.js` + `geometer.wasm` to `dist/`.
+- Native and WASM builds are independent — different build trees, shared OCCT source.
 
 ## Project structure
 

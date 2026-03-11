@@ -18,11 +18,27 @@ python scripts/build_occt.py --clean
 python scripts/build_occt.py
 ```
 
+## WASM Build
+
+```bash
+python scripts/build_wasm.py
+```
+
+This installs emsdk, cross-compiles OCCT, and builds geometer for WASM. First run takes ~20-30 min. Outputs land in `dist/`.
+
 ## Usage
+
+Native:
 
 ```bash
 geometer step-to-glb input.step output.glb
 geometer step-to-glb input.step output.glb --deflection 0.05 --angular 0.3
+```
+
+WASM (via Node.js):
+
+```bash
+node dist/geometer.js step-to-glb input.step output.glb
 ```
 
 ## Dependencies

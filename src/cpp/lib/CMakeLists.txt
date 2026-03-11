@@ -1,6 +1,7 @@
 add_library(geometer_lib STATIC
     geometer.cpp
 )
+set_target_properties(geometer_lib PROPERTIES OUTPUT_NAME geometer)
 
 target_include_directories(geometer_lib PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}

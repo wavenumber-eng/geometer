@@ -1,0 +1,8 @@
+[rack]
+name = "Geometer"
+version = "0.1"
+description = "Geometer test suite"
+
+[strata]
+order = ["L0_cpp_foundation", "L1_cpp_pipeline", "L2_cli_integration"]
+default_enabled = ["L0_cpp_foundation"]

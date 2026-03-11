@@ -1,0 +1,27 @@
+build/
+build-*/
+.deps/
+out/
+
+# IDE
+.vs/
+.vscode/
+.idea/
+*.swp
+*~
+CMakeUserPresets.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Rack results
+tests/rack_results/
+
+# Node
+node_modules/

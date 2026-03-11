@@ -1,0 +1,6 @@
+name = "C++ Foundation"
+order = 0
+description = "Verify OCCT links and basic geometry operations work."
+enabled = true
+runner = "ctest"
+concerns = ["build", "occt"]

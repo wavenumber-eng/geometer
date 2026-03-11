@@ -1,0 +1,6 @@
+name = "C++ Pipeline"
+order = 1
+description = "STEP to GLB conversion correctness against reference models."
+enabled = false
+runner = "ctest"
+concerns = ["pipeline", "step", "glb"]

@@ -1,0 +1,13 @@
+{
+    "version": 6,
+    "configurePresets": [
+        {
+            "name": "default",
+            "binaryDir": "${sourceDir}/build",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "FETCHCONTENT_BASE_DIR": "${sourceDir}/.deps"
+            }
+        }
+    ]
+}

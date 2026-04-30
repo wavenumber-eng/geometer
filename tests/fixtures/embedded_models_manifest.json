@@ -1,0 +1,254 @@
+﻿[
+    {
+        "name":  "_ _ _N101BFCN-RC.STEP",
+        "step":  "tests/fixtures/step/embedded_models/_ _ _N101BFCN-RC.STEP",
+        "glb":  "tests/fixtures/glb/embedded_models/_ _ _N101BFCN-RC.glb",
+        "stepBytes":  2722244,
+        "glbBytes":  758992
+    },
+    {
+        "name":  "1437164.stp",
+        "step":  "tests/fixtures/step/embedded_models/1437164.stp",
+        "glb":  "tests/fixtures/glb/embedded_models/1437164.glb",
+        "stepBytes":  323911,
+        "glbBytes":  348100
+    },
+    {
+        "name":  "1439942.stp",
+        "step":  "tests/fixtures/step/embedded_models/1439942.stp",
+        "glb":  "tests/fixtures/glb/embedded_models/1439942.glb",
+        "stepBytes":  518196,
+        "glbBytes":  401168
+    },
+    {
+        "name":  "1552269.stp",
+        "step":  "tests/fixtures/step/embedded_models/1552269.stp",
+        "glb":  "tests/fixtures/glb/embedded_models/1552269.glb",
+        "stepBytes":  526271,
+        "glbBytes":  403576
+    },
+    {
+        "name":  "ABM3B.STEP",
+        "step":  "tests/fixtures/step/embedded_models/ABM3B.STEP",
+        "glb":  "tests/fixtures/glb/embedded_models/ABM3B.glb",
+        "stepBytes":  635581,
+        "glbBytes":  131336
+    },
+    {
+        "name":  "BGA 256 17x17mm 1mm pitch.step",
+        "step":  "tests/fixtures/step/embedded_models/BGA 256 17x17mm 1mm pitch.step",
+        "glb":  "tests/fixtures/glb/embedded_models/BGA 256 17x17mm 1mm pitch.glb",
+        "stepBytes":  2418724,
+        "glbBytes":  1590752
+    },
+    {
+        "name":  "BGA90-8X13mm.step",
+        "step":  "tests/fixtures/step/embedded_models/BGA90-8X13mm.step",
+        "glb":  "tests/fixtures/glb/embedded_models/BGA90-8X13mm.glb",
+        "stepBytes":  1038103,
+        "glbBytes":  717560
+    },
+    {
+        "name":  "Cap_SMT_Aluminum_F.STEP",
+        "step":  "tests/fixtures/step/embedded_models/Cap_SMT_Aluminum_F.STEP",
+        "glb":  "tests/fixtures/glb/embedded_models/Cap_SMT_Aluminum_F.glb",
+        "stepBytes":  160363,
+        "glbBytes":  47344
+    },
+    {
+        "name":  "ct-sot-23-5.stp",
+        "step":  "tests/fixtures/step/embedded_models/ct-sot-23-5.stp",
+        "glb":  "tests/fixtures/glb/embedded_models/ct-sot-23-5.glb",
+        "stepBytes":  104688,
+        "glbBytes":  61464
+    },
+    {
+        "name":  "DO-214AA SMB.STEP",
+        "step":  "tests/fixtures/step/embedded_models/DO-214AA SMB.STEP",
+        "glb":  "tests/fixtures/glb/embedded_models/DO-214AA SMB.glb",
+        "stepBytes":  130436,
+        "glbBytes":  31240
+    },
+    {
+        "name":  "DO-214AB SMC.STEP",
+        "step":  "tests/fixtures/step/embedded_models/DO-214AB SMC.STEP",
+        "glb":  "tests/fixtures/glb/embedded_models/DO-214AB SMC.glb",
+        "stepBytes":  130412,
+        "glbBytes":  30564
+    },
+    {
+        "name":  "DO-214AC SMA.STEP",
+        "step":  "tests/fixtures/step/embedded_models/DO-214AC SMA.STEP",
+        "glb":  "tests/fixtures/glb/embedded_models/DO-214AC SMA.glb",
+        "stepBytes":  127922,
+        "glbBytes":  30756
+    },
+    {
+        "name":  "ecx-306x.stp",
+        "step":  "tests/fixtures/step/embedded_models/ecx-306x.stp",
+        "glb":  "tests/fixtures/glb/embedded_models/ecx-306x.glb",
+        "stepBytes":  121033,
+        "glbBytes":  74884
+    },
+    {
+        "name":  "FSM4JSMA.step",
+        "step":  "tests/fixtures/step/embedded_models/FSM4JSMA.step",
+        "glb":  "tests/fixtures/glb/embedded_models/FSM4JSMA.glb",
+        "stepBytes":  689546,
+        "glbBytes":  136728
+    },
+    {
+        "name":  "FTSH-105-01-X-DV-K-A.step",
+        "step":  "tests/fixtures/step/embedded_models/FTSH-105-01-X-DV-K-A.step",
+        "glb":  "tests/fixtures/glb/embedded_models/FTSH-105-01-X-DV-K-A.glb",
+        "stepBytes":  573759,
+        "glbBytes":  133052
+    },
+    {
+        "name":  "IHLP2020CZ.STEP",
+        "step":  "tests/fixtures/step/embedded_models/IHLP2020CZ.STEP",
+        "glb":  "tests/fixtures/glb/embedded_models/IHLP2020CZ.glb",
+        "stepBytes":  327743,
+        "glbBytes":  62952
+    },
+    {
+        "name":  "JDEC_153BallWFBGA_eMMC.step",
+        "step":  "tests/fixtures/step/embedded_models/JDEC_153BallWFBGA_eMMC.step",
+        "glb":  "tests/fixtures/glb/embedded_models/JDEC_153BallWFBGA_eMMC.glb",
+        "stepBytes":  2501732,
+        "glbBytes":  1561932
+    },
+    {
+        "name":  "miniature_test_point.stp",
+        "step":  "tests/fixtures/step/embedded_models/miniature_test_point.stp",
+        "glb":  "tests/fixtures/glb/embedded_models/miniature_test_point.glb",
+        "stepBytes":  65896,
+        "glbBytes":  72512
+    },
+    {
+        "name":  "M-MUSBR-A511-R0-REVT1.STEP",
+        "step":  "tests/fixtures/step/embedded_models/M-MUSBR-A511-R0-REVT1.STEP",
+        "glb":  "tests/fixtures/glb/embedded_models/M-MUSBR-A511-R0-REVT1.glb",
+        "stepBytes":  2151871,
+        "glbBytes":  694184
+    },
+    {
+        "name":  "MSOP8.STEP",
+        "step":  "tests/fixtures/step/embedded_models/MSOP8.STEP",
+        "glb":  "tests/fixtures/glb/embedded_models/MSOP8.glb",
+        "stepBytes":  384139,
+        "glbBytes":  89032
+    },
+    {
+        "name":  "pec11r-4x15k-sxxxx.stp",
+        "step":  "tests/fixtures/step/embedded_models/pec11r-4x15k-sxxxx.stp",
+        "glb":  "tests/fixtures/glb/embedded_models/pec11r-4x15k-sxxxx.glb",
+        "stepBytes":  964006,
+        "glbBytes":  498800
+    },
+    {
+        "name":  "RESC1608X06L.step",
+        "step":  "tests/fixtures/step/embedded_models/RESC1608X06L.step",
+        "glb":  "tests/fixtures/glb/embedded_models/RESC1608X06L.glb",
+        "stepBytes":  71406,
+        "glbBytes":  13448
+    },
+    {
+        "name":  "RESC1608X06N.step",
+        "step":  "tests/fixtures/step/embedded_models/RESC1608X06N.step",
+        "glb":  "tests/fixtures/glb/embedded_models/RESC1608X06N.glb",
+        "stepBytes":  71411,
+        "glbBytes":  13452
+    },
+    {
+        "name":  "RESC3216X07L.step",
+        "step":  "tests/fixtures/step/embedded_models/RESC3216X07L.step",
+        "glb":  "tests/fixtures/glb/embedded_models/RESC3216X07L.glb",
+        "stepBytes":  71261,
+        "glbBytes":  13412
+    },
+    {
+        "name":  "SOD-123.step",
+        "step":  "tests/fixtures/step/embedded_models/SOD-123.step",
+        "glb":  "tests/fixtures/glb/embedded_models/SOD-123.glb",
+        "stepBytes":  494451,
+        "glbBytes":  123988
+    },
+    {
+        "name":  "SOD323-1.step",
+        "step":  "tests/fixtures/step/embedded_models/SOD323-1.step",
+        "glb":  "tests/fixtures/glb/embedded_models/SOD323-1.glb",
+        "stepBytes":  100285,
+        "glbBytes":  28836
+    },
+    {
+        "name":  "SOIC-20-300.STEP",
+        "step":  "tests/fixtures/step/embedded_models/SOIC-20-300.STEP",
+        "glb":  "tests/fixtures/glb/embedded_models/SOIC-20-300.glb",
+        "stepBytes":  193879,
+        "glbBytes":  66184
+    },
+    {
+        "name":  "SOIC-8-W.step",
+        "step":  "tests/fixtures/step/embedded_models/SOIC-8-W.step",
+        "glb":  "tests/fixtures/glb/embedded_models/SOIC-8-W.glb",
+        "stepBytes":  384418,
+        "glbBytes":  93504
+    },
+    {
+        "name":  "sot223.stp",
+        "step":  "tests/fixtures/step/embedded_models/sot223.stp",
+        "glb":  "tests/fixtures/glb/embedded_models/sot223.glb",
+        "stepBytes":  87917,
+        "glbBytes":  38948
+    },
+    {
+        "name":  "SOT-23.STEP",
+        "step":  "tests/fixtures/step/embedded_models/SOT-23.STEP",
+        "glb":  "tests/fixtures/glb/embedded_models/SOT-23.glb",
+        "stepBytes":  144222,
+        "glbBytes":  41048
+    },
+    {
+        "name":  "SW3DPS-SOT-23-DEFAULT.STEP",
+        "step":  "tests/fixtures/step/embedded_models/SW3DPS-SOT-23-DEFAULT.STEP",
+        "glb":  "tests/fixtures/glb/embedded_models/SW3DPS-SOT-23-DEFAULT.glb",
+        "stepBytes":  123367,
+        "glbBytes":  36960
+    },
+    {
+        "name":  "TI_DGN_MD.step",
+        "step":  "tests/fixtures/step/embedded_models/TI_DGN_MD.step",
+        "glb":  "tests/fixtures/glb/embedded_models/TI_DGN_MD.glb",
+        "stepBytes":  391781,
+        "glbBytes":  92556
+    },
+    {
+        "name":  "TSOT-23-5.STEP",
+        "step":  "tests/fixtures/step/embedded_models/TSOT-23-5.STEP",
+        "glb":  "tests/fixtures/glb/embedded_models/TSOT-23-5.glb",
+        "stepBytes":  562416,
+        "glbBytes":  231676
+    },
+    {
+        "name":  "User Library-SOIC-8.STEP",
+        "step":  "tests/fixtures/step/embedded_models/User Library-SOIC-8.STEP",
+        "glb":  "tests/fixtures/glb/embedded_models/User Library-SOIC-8.glb",
+        "stepBytes":  437789,
+        "glbBytes":  101288
+    },
+    {
+        "name":  "User Library-SOT23-6.step",
+        "step":  "tests/fixtures/step/embedded_models/User Library-SOT23-6.step",
+        "glb":  "tests/fixtures/glb/embedded_models/User Library-SOT23-6.glb",
+        "stepBytes":  361044,
+        "glbBytes":  112148
+    },
+    {
+        "name":  "XF2M_6015_1AH.step",
+        "step":  "tests/fixtures/step/embedded_models/XF2M_6015_1AH.step",
+        "glb":  "tests/fixtures/glb/embedded_models/XF2M_6015_1AH.glb",
+        "stepBytes":  6377912,
+        "glbBytes":  1582760
+    }
+]

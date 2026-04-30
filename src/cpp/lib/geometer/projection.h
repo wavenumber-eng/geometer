@@ -68,7 +68,7 @@ struct ProjectedViewGeometry
 
 struct HlrProjectionResult
 {
-    std::string schema = "wn.geometry.projection.a0";
+    std::string schema = "geometry.projection.a0";
     std::string units = "mm";
     std::string source_hash;
     std::vector<ProjectedViewGeometry> views;

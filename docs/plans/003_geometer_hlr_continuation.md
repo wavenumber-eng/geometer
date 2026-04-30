@@ -5,6 +5,44 @@ Date: 2026-04-30
 This file captures the continuation state after the planning pass for moving STEP
 HLR projection and STEP mesh conversion into `geometer`.
 
+## Completion Update
+
+Status: implemented for v0.1.0.
+
+Completed work:
+
+- Native C++ HLR projection from STEP bytes now emits `geometry.projection.a0`.
+- Projection output includes `detail` and `simple` modes.
+- C++ planar contour extraction replaced the Python/Shapely simple-mode
+  dependency for this path.
+- CLI development commands now emit JSON and SVG projection outputs:
+  - `step-project-hlr`
+  - `step-project-svg`
+- A stable C ABI exists for byte-buffer HLR projection and version checks.
+- Browser WASM builds now produce:
+  - `dist/geometer.js`
+  - `dist/geometer.wasm`
+  - `dist/geometer-browser.js`
+  - `dist/geometer-browser.wasm`
+- Browser worker integration exists under `tests/wasm/`.
+- Embedded model fixture prep and browser viewer/benchmark pages exist:
+  - `scripts/prepare_embedded_model_fixtures.ps1`
+  - `tests/wasm/embedded_model_viewer.html`
+  - `tests/wasm/hlr_benchmark.html`
+- Browser projection settings were aligned with the viz Python path:
+  `curve_mode=polyline`, `samples_per_curve=24`, `round_digits=3`,
+  `include_visible=true`, `include_outline=true`, and
+  `union_simple_polygons=true`.
+- Versioning has been added for v0.1.0:
+  - project version `0.1.0`
+  - C ABI version `1`
+  - `geometer --version`
+  - WASM exports `geometer_version_string` and `geometer_abi_version`
+- Root docs were added/updated:
+  - `AGENTS.md`
+  - `DEVELOPMENT.md`
+  - `INTERFACES.md`
+
 ## User Intent
 
 - Treat this as plan-first work before further implementation.
@@ -67,28 +105,23 @@ HLR projection and STEP mesh conversion into `geometer`.
   C++/WASM-friendly. GEOS should only be considered if parity testing shows it is
   necessary.
 
-## Code State Already Touched
+## Implementation State
 
-The following scaffolding/refactor changes were made before the user clarified
-that the immediate work should be plan-only:
+The scaffolding described in the original continuation plan has been kept and
+completed. The current module split is:
 
-- Replaced monolithic `src/cpp/lib/geometer.cpp` with
-  `src/cpp/lib/step_to_glb.cpp`.
-- Added an umbrella-style `src/cpp/lib/geometer.h`.
-- Added headers under `src/cpp/lib/geometer/`:
-  - `status.h`
-  - `step_to_glb.h`
-  - `projection.h`
-  - `c_api.h`
-- Added stub/source files:
-  - `src/cpp/lib/projection.cpp`
-  - `src/cpp/lib/c_api.cpp`
-- Updated `src/cpp/lib/CMakeLists.txt` to include the new source files.
+- `step_to_glb.cpp` - STEP to GLB conversion.
+- `hlr_projection.cpp` - OCCT HLR projection and simple/detail extraction.
+- `planar_contours.cpp` - deterministic planar contour construction.
+- `projection.cpp` - JSON/SVG projection serialization.
+- `projection_options_json.cpp` - JSON option parsing for C ABI/WASM callers.
+- `c_api.cpp` - stable C ABI entry points.
+- `version.cpp` - project and C ABI version entry points.
 
-No real STEP HLR implementation has been added yet. The projection API currently
-contains value types and stubs only.
+Current public C++/C/WASM/CLI interfaces are documented in
+`INTERFACES.md`.
 
-## Validation Already Run
+## Validation Run
 
 Formatting:
 
@@ -102,33 +135,36 @@ Syntax-only check:
 clang++ -std=c++17 -Isrc\cpp\lib -fsyntax-only src\cpp\lib\projection.cpp src\cpp\lib\c_api.cpp src\cpp\cli\main.cpp
 ```
 
-Full OCCT/CMake build was not run because `.deps/` and `build/` were not present
-in this checkout, and rebuilding OCCT would be a longer operation.
+Native build and tests:
 
-## Suggested Resume Steps
+```powershell
+cmake --preset default
+cmake --build build --config Release
+ctest --test-dir build -C Release --output-on-failure
+```
 
-1. Review `docs/plans/002_browser_hlr_and_mesh_interfaces.md` and this
-   continuation file before writing more code.
-2. Decide whether to keep the scaffolding changes that were already made or
-   restore to docs-only planning state.
-3. Confirm the public projection schema name. The planning doc currently proposes
-   `wn.geometry.projection.a0`.
-4. Confirm whether Clipper2 is acceptable as the C++/WASM polygon union engine.
-5. Add focused unit tests for the Shapely replacement before implementing HLR:
-   - closed square
-   - hole ring
-   - duplicate reversed segments
-   - overlapping collinear segments
-   - crossed/noded linework
-   - nested faces and deterministic ordering
-6. Implement `planar_contours` as its own module.
-7. Implement OCCT HLR extraction in a separate `hlr_projection` module.
-8. Add CLI commands for development snapshots:
-   - JSON projection output
-   - simple SVG output
-   - detailed SVG output
-9. Add browser-specific WASM build/export path after native tests are stable.
-10. Add Python wrapper after the C ABI has stabilized.
+Version checks:
+
+```powershell
+.\dist\geometer.exe --version
+node dist\geometer.js --version
+```
+
+Browser smoke:
+
+```text
+PASS version=0.1.0 abi=1 schema=geometry.projection.a0 detail=10 simple=8
+```
+
+## Remaining Follow-Up Candidates
+
+1. Add persistent shape/projection caching for repeated browser view changes.
+2. Add a Python wrapper around the C ABI after downstream integration needs are
+   clearer.
+3. Compare geometer output against altium-cruncher projection payloads on a
+   representative board fixture.
+4. Add mesh/typed-array browser APIs when direct STEP mesh rendering is needed.
+5. Add release automation for `dist/` artifact verification.
 
 ## Useful Resume Commands
 
@@ -140,12 +176,10 @@ Get-Content docs\plans\003_geometer_hlr_continuation.md
 clang++ -std=c++17 -Isrc\cpp\lib -fsyntax-only src\cpp\lib\projection.cpp src\cpp\lib\c_api.cpp src\cpp\cli\main.cpp
 ```
 
-## Open Questions
+## Closed Questions
 
-- Should the current scaffolding remain, or should this branch be restored to a
-  docs-only planning state before continuing?
-- Is Clipper2 acceptable for the polygon union stage?
-- Should the dev CLI write two separate SVG files, or one SVG with simple/detail
-  layers?
-- Should projection output include only curves first, or also prebuilt rings and
-  filled polygons in the initial schema?
+- The scaffolding remains and is now implemented.
+- The initial public projection schema is `geometry.projection.a0`.
+- The dev CLI writes one requested SVG view/mode per invocation.
+- The initial projection output exposes line/arc geometry, not filled polygon
+  payloads.

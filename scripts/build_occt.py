@@ -17,7 +17,6 @@ from __future__ import annotations
 import argparse
 import shutil
 import subprocess
-import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -32,6 +31,20 @@ OCCT_TAG = "V7_8_1"
 RAPIDJSON_SRC = DEPS_DIR / "rapidjson-src"
 RAPIDJSON_REPO = "https://github.com/Tencent/rapidjson.git"
 RAPIDJSON_TAG = "v1.1.0"
+
+RAPIDJSON_ASSIGNMENT_OPERATOR = (
+    "    GenericStringRef& operator=(const GenericStringRef& rhs) "
+    "{ s = rhs.s; length = rhs.length; }"
+)
+RAPIDJSON_DELETED_ASSIGNMENT_OPERATOR = (
+    "    GenericStringRef& operator=(const GenericStringRef& rhs) = delete;"
+)
+
+
+def cmake_generator_args() -> list[str]:
+    if shutil.which("ninja"):
+        return ["-G", "Ninja"]
+    return []
 
 
 def run(cmd: list[str], **kwargs) -> None:
@@ -54,6 +67,21 @@ def clone_rapidjson() -> None:
     ])
 
 
+def patch_rapidjson() -> None:
+    document_h = RAPIDJSON_SRC / "include" / "rapidjson" / "document.h"
+    text = document_h.read_text(encoding="utf-8")
+    if RAPIDJSON_DELETED_ASSIGNMENT_OPERATOR in text:
+        print("RapidJSON clang compatibility patch already applied.")
+        return
+    if RAPIDJSON_ASSIGNMENT_OPERATOR not in text:
+        raise RuntimeError("RapidJSON document.h did not match expected patch context.")
+    document_h.write_text(
+        text.replace(RAPIDJSON_ASSIGNMENT_OPERATOR, RAPIDJSON_DELETED_ASSIGNMENT_OPERATOR),
+        encoding="utf-8",
+    )
+    print("Applied RapidJSON clang compatibility patch.")
+
+
 def clone_occt() -> None:
     if (OCCT_SRC / "CMakeLists.txt").exists():
         print(f"OCCT source already present at {OCCT_SRC}")
@@ -74,6 +102,7 @@ def configure_occt(config: str) -> None:
     OCCT_BUILD.mkdir(parents=True, exist_ok=True)
     cmd = [
         "cmake",
+        *cmake_generator_args(),
         "-S", str(OCCT_SRC),
         "-B", str(OCCT_BUILD),
         f"-DCMAKE_INSTALL_PREFIX={OCCT_INSTALL}",
@@ -92,10 +121,6 @@ def configure_occt(config: str) -> None:
         # OCCT declares cmake_minimum_required(VERSION 2.6) which CMake 4+ rejects.
         "-DCMAKE_POLICY_VERSION_MINIMUM=3.5",
     ]
-
-    # On Windows with MSVC, use the multi-config generator default
-    if sys.platform == "win32":
-        cmd = [c for c in cmd if not c.startswith("-DCMAKE_BUILD_TYPE=")]
 
     run(cmd)
 
@@ -135,6 +160,7 @@ def main() -> None:
         return
 
     clone_rapidjson()
+    patch_rapidjson()
     clone_occt()
     configure_occt(args.config)
     build_occt(args.config)

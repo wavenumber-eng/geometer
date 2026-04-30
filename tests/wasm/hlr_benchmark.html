@@ -1,0 +1,657 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Geometer HLR Benchmark</title>
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #eef1f4;
+      color: #18202a;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: #eef1f4;
+    }
+
+    button,
+    select,
+    input {
+      font: inherit;
+    }
+
+    .app {
+      min-height: 100vh;
+      display: grid;
+      grid-template-rows: auto 1fr;
+    }
+
+    .toolbar {
+      display: grid;
+      grid-template-columns: auto auto auto auto minmax(220px, 1fr);
+      gap: 12px;
+      align-items: center;
+      padding: 12px 16px;
+      border-bottom: 1px solid #c7d0d9;
+      background: #f9fafb;
+    }
+
+    .control {
+      display: grid;
+      grid-template-columns: auto auto;
+      gap: 8px;
+      align-items: center;
+      color: #4a5565;
+      font-size: 13px;
+    }
+
+    select,
+    input {
+      height: 34px;
+      min-width: 92px;
+      border: 1px solid #aab7c4;
+      border-radius: 6px;
+      background: #ffffff;
+      color: #17202a;
+      padding: 0 10px;
+    }
+
+    input {
+      width: 84px;
+    }
+
+    .button-row {
+      display: inline-grid;
+      grid-auto-flow: column;
+      gap: 8px;
+    }
+
+    button {
+      height: 34px;
+      min-width: 84px;
+      border: 1px solid #aab7c4;
+      border-radius: 6px;
+      background: #ffffff;
+      color: #253244;
+      cursor: pointer;
+    }
+
+    button.primary {
+      border-color: #1f6feb;
+      background: #1f6feb;
+      color: #ffffff;
+    }
+
+    button:disabled {
+      cursor: default;
+      opacity: 0.55;
+    }
+
+    .status {
+      color: #4a5565;
+      font-size: 13px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      text-align: right;
+    }
+
+    .content {
+      min-height: 0;
+      overflow: auto;
+      padding: 14px 16px 24px;
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(120px, 1fr));
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .metric {
+      min-height: 54px;
+      border: 1px solid #c7d0d9;
+      border-radius: 7px;
+      background: #ffffff;
+      padding: 9px 10px;
+    }
+
+    .metric-label {
+      color: #647184;
+      font-size: 12px;
+      line-height: 1.1;
+    }
+
+    .metric-value {
+      margin-top: 5px;
+      color: #18202a;
+      font-size: 20px;
+      line-height: 1.1;
+      font-weight: 650;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1px solid #c7d0d9;
+      background: #ffffff;
+      table-layout: fixed;
+    }
+
+    th,
+    td {
+      height: 34px;
+      border-bottom: 1px solid #d7dee6;
+      padding: 7px 8px;
+      text-align: left;
+      vertical-align: middle;
+      font-size: 13px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      background: #f3f5f7;
+      color: #4a5565;
+      font-size: 12px;
+      font-weight: 650;
+    }
+
+    .number {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .state-pending {
+      color: #647184;
+    }
+
+    .state-running {
+      color: #1f6feb;
+      font-weight: 650;
+    }
+
+    .state-done {
+      color: #0f6f5f;
+      font-weight: 650;
+    }
+
+    .state-failed {
+      color: #b42318;
+      font-weight: 650;
+    }
+
+    #smokeResult {
+      position: fixed;
+      left: -10000px;
+      top: auto;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+    }
+
+    @media (max-width: 980px) {
+      .toolbar {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .status {
+        grid-column: 1 / -1;
+        text-align: left;
+      }
+
+      .summary {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="toolbar">
+      <div class="button-row">
+        <button type="button" class="primary" id="runButton">Run</button>
+        <button type="button" id="stopButton" disabled>Stop</button>
+      </div>
+      <label class="control">
+        <span>View</span>
+        <select id="viewSelect">
+          <option value="top">Top</option>
+          <option value="bottom">Bottom</option>
+          <option value="front">Front</option>
+          <option value="back">Back</option>
+          <option value="left">Left</option>
+          <option value="right">Right</option>
+          <option value="iso">Iso</option>
+        </select>
+      </label>
+      <label class="control">
+        <span>Limit</span>
+        <input id="limitInput" type="number" min="0" step="1" value="0">
+      </label>
+      <label class="control">
+        <span>Sort</span>
+        <select id="sortSelect">
+          <option value="manifest">Manifest</option>
+          <option value="hlr-desc">HLR slowest</option>
+          <option value="bytes-desc">STEP largest</option>
+          <option value="name">Name</option>
+        </select>
+      </label>
+      <div class="status" id="status">Loading manifest</div>
+    </div>
+    <main class="content">
+      <section class="summary">
+        <div class="metric">
+          <div class="metric-label">Completed</div>
+          <div class="metric-value" id="completedMetric">0 / 0</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Total HLR</div>
+          <div class="metric-value" id="totalHlrMetric">0 ms</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Total STEP to bytes</div>
+          <div class="metric-value" id="totalStepBytesMetric">0 ms</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Average HLR</div>
+          <div class="metric-value" id="avgHlrMetric">0 ms</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Average STEP to bytes</div>
+          <div class="metric-value" id="avgStepBytesMetric">0 ms</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Slowest HLR</div>
+          <div class="metric-value" id="slowestMetric">0 ms</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Total STEP Bytes</div>
+          <div class="metric-value" id="bytesMetric">0 KB</div>
+        </div>
+      </section>
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 26%">Model</th>
+            <th style="width: 8%">State</th>
+            <th class="number" style="width: 8%">STEP size</th>
+            <th class="number" style="width: 11%">STEP to bytes</th>
+            <th class="number" style="width: 9%">WASM</th>
+            <th class="number" style="width: 9%">HLR</th>
+            <th class="number" style="width: 9%">JSON</th>
+            <th class="number" style="width: 9%">Detail</th>
+            <th class="number" style="width: 9%">Simple</th>
+            <th style="width: 11%">Error</th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </main>
+  </div>
+  <pre id="smokeResult">RUNNING</pre>
+
+  <script type="module">
+    const manifestUrl = "/tests/fixtures/embedded_models_manifest.json";
+    const projectionViews = {
+      top: { id: "top", direction: [0, 0, 1], up: [0, 1, 0] },
+      bottom: { id: "bottom", direction: [0, 0, -1], up: [0, 1, 0] },
+      front: { id: "front", direction: [0, -1, 0], up: [0, 0, 1] },
+      back: { id: "back", direction: [0, 1, 0], up: [0, 0, 1] },
+      left: { id: "left", direction: [-1, 0, 0], up: [0, 0, 1] },
+      right: { id: "right", direction: [1, 0, 0], up: [0, 0, 1] },
+      iso: { id: "iso", direction: [1, -1, 0.8], up: [0, 0, 1] },
+    };
+
+    const state = {
+      models: [],
+      rows: [],
+      worker: null,
+      requests: new Map(),
+      nextRequestId: 1,
+      running: false,
+      stopRequested: false,
+      smoke: new URLSearchParams(window.location.search).get("smoke") === "1",
+    };
+
+    const els = {
+      runButton: document.getElementById("runButton"),
+      stopButton: document.getElementById("stopButton"),
+      viewSelect: document.getElementById("viewSelect"),
+      limitInput: document.getElementById("limitInput"),
+      sortSelect: document.getElementById("sortSelect"),
+      status: document.getElementById("status"),
+      rows: document.getElementById("rows"),
+      completedMetric: document.getElementById("completedMetric"),
+      totalHlrMetric: document.getElementById("totalHlrMetric"),
+      totalStepBytesMetric: document.getElementById("totalStepBytesMetric"),
+      avgHlrMetric: document.getElementById("avgHlrMetric"),
+      avgStepBytesMetric: document.getElementById("avgStepBytesMetric"),
+      slowestMetric: document.getElementById("slowestMetric"),
+      bytesMetric: document.getElementById("bytesMetric"),
+      smokeResult: document.getElementById("smokeResult"),
+    };
+
+    function assetUrl(path) {
+      return `/${path.split("/").map(encodeURIComponent).join("/")}`;
+    }
+
+    function formatBytes(bytes) {
+      if (!Number.isFinite(bytes)) {
+        return "";
+      }
+      if (bytes >= 1024 * 1024) {
+        return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+      }
+      return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+    }
+
+    function formatMs(ms) {
+      if (!Number.isFinite(ms)) {
+        return "";
+      }
+      if (ms >= 1000) {
+        return `${(ms / 1000).toFixed(2)} s`;
+      }
+      return `${Math.max(1, Math.round(ms))} ms`;
+    }
+
+    function setSmoke(text, pass) {
+      els.smokeResult.textContent = text;
+      if (state.smoke) {
+        document.title = text.startsWith("RUNNING") ? "RUNNING" : (pass ? "PASS" : "FAIL");
+      }
+    }
+
+    function worker() {
+      if (!state.worker) {
+        state.worker = new Worker("/tests/wasm/hlr_projection_worker.js");
+        state.worker.onmessage = (event) => {
+          const { id, ok, projection, timings, error } = event.data;
+          const request = state.requests.get(id);
+          if (!request) {
+            return;
+          }
+          state.requests.delete(id);
+          if (ok) {
+            request.resolve({ projection, timings });
+          } else {
+            const failure = new Error(error || "HLR worker failed.");
+            failure.timings = timings || {};
+            request.reject(failure);
+          }
+        };
+      }
+      return state.worker;
+    }
+
+    function projectInWorker(stepBuffer, viewId) {
+      const id = state.nextRequestId++;
+      return new Promise((resolve, reject) => {
+        state.requests.set(id, { resolve, reject });
+        worker().postMessage({ id, stepBuffer, views: [projectionViews[viewId]] }, [stepBuffer]);
+      });
+    }
+
+    function countProjection(projection, viewId) {
+      const view = (projection.views || []).find((item) => item.id === viewId);
+      const detail = view && view.modes && view.modes.detail ? view.modes.detail : { segments: [], arcs: [] };
+      const simple = view && view.modes && view.modes.simple ? view.modes.simple : { segments: [], arcs: [] };
+      return {
+        detail: (detail.segments || []).length + (detail.arcs || []).length,
+        simple: (simple.segments || []).length + (simple.arcs || []).length,
+      };
+    }
+
+    function rowTemplate(row) {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td title="${row.model.name}">${row.model.name}</td>
+        <td class="state-pending">Pending</td>
+        <td class="number">${formatBytes(row.model.stepBytes)}</td>
+        <td class="number"></td>
+        <td class="number"></td>
+        <td class="number"></td>
+        <td class="number"></td>
+        <td class="number"></td>
+        <td class="number"></td>
+        <td></td>
+      `;
+      row.element = tr;
+      row.cells = {
+        state: tr.children[1],
+        bytes: tr.children[3],
+        wasm: tr.children[4],
+        hlr: tr.children[5],
+        json: tr.children[6],
+        detail: tr.children[7],
+        simple: tr.children[8],
+        error: tr.children[9],
+      };
+      return tr;
+    }
+
+    function updateRow(row) {
+      const stateClass = `state-${row.state}`;
+      row.cells.state.className = stateClass;
+      row.cells.state.textContent = row.state[0].toUpperCase() + row.state.slice(1);
+      row.cells.bytes.textContent = formatMs(row.stepBytesMs);
+      row.cells.wasm.textContent = row.moduleMs > 1 ? formatMs(row.moduleMs) : "";
+      row.cells.hlr.textContent = formatMs(row.hlrMs);
+      row.cells.json.textContent = formatMs(row.jsonParseMs);
+      row.cells.detail.textContent = Number.isFinite(row.detailCount) ? row.detailCount : "";
+      row.cells.simple.textContent = Number.isFinite(row.simpleCount) ? row.simpleCount : "";
+      row.cells.error.textContent = row.error || "";
+      row.cells.error.title = row.error || "";
+    }
+
+    function renderRows() {
+      const fragment = document.createDocumentFragment();
+      for (const row of sortedRows()) {
+        fragment.append(row.element || rowTemplate(row));
+      }
+      els.rows.replaceChildren(fragment);
+    }
+
+    function sortedRows() {
+      const rows = [...state.rows];
+      switch (els.sortSelect.value) {
+      case "hlr-desc":
+        rows.sort((a, b) => (b.hlrMs || -1) - (a.hlrMs || -1));
+        break;
+      case "bytes-desc":
+        rows.sort((a, b) => b.model.stepBytes - a.model.stepBytes);
+        break;
+      case "name":
+        rows.sort((a, b) => a.model.name.localeCompare(b.model.name));
+        break;
+      default:
+        rows.sort((a, b) => a.index - b.index);
+        break;
+      }
+      return rows;
+    }
+
+    function updateSummary() {
+      const done = state.rows.filter((row) => row.state === "done");
+      const failed = state.rows.filter((row) => row.state === "failed");
+      const totalHlr = done.reduce((sum, row) => sum + (row.hlrMs || 0), 0);
+      const totalStepBytesMs = done.reduce((sum, row) => sum + (row.stepBytesMs || 0), 0);
+      const avgHlr = done.length ? totalHlr / done.length : 0;
+      const avgStepBytesMs = done.length ? totalStepBytesMs / done.length : 0;
+      const slowest = done.reduce((max, row) => Math.max(max, row.hlrMs || 0), 0);
+      const totalBytes = done.reduce((sum, row) => sum + row.model.stepBytes, 0);
+
+      els.completedMetric.textContent = `${done.length} / ${state.rows.length}`;
+      els.totalHlrMetric.textContent = formatMs(totalHlr) || "0 ms";
+      els.totalStepBytesMetric.textContent = formatMs(totalStepBytesMs) || "0 ms";
+      els.avgHlrMetric.textContent = formatMs(avgHlr) || "0 ms";
+      els.avgStepBytesMetric.textContent = formatMs(avgStepBytesMs) || "0 ms";
+      els.slowestMetric.textContent = formatMs(slowest) || "0 ms";
+      els.bytesMetric.textContent = formatBytes(totalBytes);
+
+      if (state.running) {
+        els.status.textContent = `Running ${done.length + failed.length} / ${state.rows.length}`;
+      } else if (failed.length) {
+        els.status.textContent = `Finished with ${failed.length} failures`;
+      } else {
+        els.status.textContent = state.rows.length ? "Finished" : "Ready";
+      }
+    }
+
+    function selectedModels() {
+      const limit = Math.max(0, Number.parseInt(els.limitInput.value || "0", 10));
+      return limit > 0 ? state.models.slice(0, limit) : state.models;
+    }
+
+    async function runOne(row, viewId) {
+      row.state = "running";
+      updateRow(row);
+      updateSummary();
+
+      try {
+        const fetchStart = performance.now();
+        const response = await fetch(assetUrl(row.model.step));
+        if (!response.ok) {
+          throw new Error(`STEP fetch failed: ${response.status}`);
+        }
+        const stepBuffer = await response.arrayBuffer();
+        row.stepBytesMs = performance.now() - fetchStart;
+
+        const result = await projectInWorker(stepBuffer, viewId);
+        row.moduleMs = result.timings.moduleMs || 0;
+        row.hlrMs = result.timings.hlrMs || 0;
+        row.jsonParseMs = result.timings.jsonParseMs || 0;
+        const counts = countProjection(result.projection, viewId);
+        row.detailCount = counts.detail;
+        row.simpleCount = counts.simple;
+        row.state = "done";
+      } catch (error) {
+        row.state = "failed";
+        row.error = error && error.message ? error.message : String(error);
+      }
+
+      updateRow(row);
+      updateSummary();
+      if (els.sortSelect.value !== "manifest") {
+        renderRows();
+      }
+    }
+
+    async function runBenchmark() {
+      state.running = true;
+      state.stopRequested = false;
+      els.runButton.disabled = true;
+      els.stopButton.disabled = false;
+      const viewId = els.viewSelect.value;
+      state.rows = selectedModels().map((model, index) => ({
+        index,
+        model,
+        state: "pending",
+      }));
+      renderRows();
+      updateSummary();
+      setSmoke("RUNNING", false);
+
+      for (const row of state.rows) {
+        if (state.stopRequested) {
+          break;
+        }
+        await runOne(row, viewId);
+      }
+
+      state.running = false;
+      els.runButton.disabled = false;
+      els.stopButton.disabled = true;
+      updateSummary();
+
+      const done = state.rows.filter((row) => row.state === "done");
+      const failed = state.rows.filter((row) => row.state === "failed");
+      if (state.smoke) {
+        const pass = done.length > 0 && failed.length === 0;
+        const totalHlr = done.reduce((sum, row) => sum + (row.hlrMs || 0), 0);
+        const totalStepBytesMs = done.reduce((sum, row) => sum + (row.stepBytesMs || 0), 0);
+        setSmoke(pass ? `PASS rows=${done.length} stepToBytes=${formatMs(totalStepBytesMs)} totalHlr=${formatMs(totalHlr)}` : `FAIL done=${done.length} failed=${failed.length}`, pass);
+      }
+    }
+
+    async function init() {
+      const params = new URLSearchParams(window.location.search);
+      const response = await fetch(manifestUrl);
+      if (!response.ok) {
+        throw new Error(`Manifest fetch failed: ${response.status}`);
+      }
+      state.models = await response.json();
+
+      const view = params.get("view");
+      if (view && projectionViews[view]) {
+        els.viewSelect.value = view;
+      }
+      const limit = params.get("limit");
+      if (limit != null) {
+        els.limitInput.value = limit;
+      }
+
+      state.rows = selectedModels().map((model, index) => ({
+        index,
+        model,
+        state: "pending",
+      }));
+      renderRows();
+      updateSummary();
+      els.status.textContent = `${state.models.length} models ready`;
+
+      els.runButton.addEventListener("click", () => {
+        runBenchmark().catch((error) => {
+          els.status.textContent = `Error: ${error && error.message ? error.message : error}`;
+          setSmoke(`FAIL ${error && error.stack ? error.stack : error}`, false);
+          state.running = false;
+          els.runButton.disabled = false;
+          els.stopButton.disabled = true;
+        });
+      });
+      els.stopButton.addEventListener("click", () => {
+        state.stopRequested = true;
+        els.status.textContent = "Stopping after current model";
+      });
+      els.sortSelect.addEventListener("change", renderRows);
+      els.limitInput.addEventListener("change", () => {
+        if (!state.running) {
+          state.rows = selectedModels().map((model, index) => ({
+            index,
+            model,
+            state: "pending",
+          }));
+          renderRows();
+          updateSummary();
+        }
+      });
+
+      if (state.smoke || params.get("autorun") === "1") {
+        await runBenchmark();
+      }
+    }
+
+    init().catch((error) => {
+      const message = error && error.stack ? error.stack : String(error);
+      els.status.textContent = `Error: ${error && error.message ? error.message : error}`;
+      setSmoke(`FAIL ${message}`, false);
+      console.error(error);
+    });
+  </script>
+</body>
+</html>

@@ -44,6 +44,14 @@ OCCT_TAG = "V7_8_1"
 RAPIDJSON_REPO = "https://github.com/Tencent/rapidjson.git"
 RAPIDJSON_TAG = "v1.1.0"
 
+RAPIDJSON_ASSIGNMENT_OPERATOR = (
+    "    GenericStringRef& operator=(const GenericStringRef& rhs) "
+    "{ s = rhs.s; length = rhs.length; }"
+)
+RAPIDJSON_DELETED_ASSIGNMENT_OPERATOR = (
+    "    GenericStringRef& operator=(const GenericStringRef& rhs) = delete;"
+)
+
 
 def run(cmd: list[str], **kwargs) -> None:
     print(f"  > {' '.join(cmd)}")
@@ -111,6 +119,21 @@ def clone_source(name: str, dest: Path, repo: str, tag: str, check_path: str) ->
     print(f"Cloning {name} {tag} ...")
     DEPS_DIR.mkdir(parents=True, exist_ok=True)
     run(["git", "clone", "--depth", "1", "--branch", tag, repo, str(dest)])
+
+
+def patch_rapidjson() -> None:
+    document_h = RAPIDJSON_SRC / "include" / "rapidjson" / "document.h"
+    text = document_h.read_text(encoding="utf-8")
+    if RAPIDJSON_DELETED_ASSIGNMENT_OPERATOR in text:
+        print("RapidJSON clang compatibility patch already applied.")
+        return
+    if RAPIDJSON_ASSIGNMENT_OPERATOR not in text:
+        raise RuntimeError("RapidJSON document.h did not match expected patch context.")
+    document_h.write_text(
+        text.replace(RAPIDJSON_ASSIGNMENT_OPERATOR, RAPIDJSON_DELETED_ASSIGNMENT_OPERATOR),
+        encoding="utf-8",
+    )
+    print("Applied RapidJSON clang compatibility patch.")
 
 
 # ---- OCCT WASM build ----
@@ -193,10 +216,15 @@ def build_geometer_wasm() -> None:
 
     # Copy outputs to dist/
     DIST_DIR.mkdir(parents=True, exist_ok=True)
-    for ext in (".js", ".wasm"):
-        src = GEOMETER_WASM_BUILD / "src" / "cpp" / "cli" / f"geometer{ext}"
+    outputs = [
+        GEOMETER_WASM_BUILD / "src" / "cpp" / "cli" / "geometer.js",
+        GEOMETER_WASM_BUILD / "src" / "cpp" / "cli" / "geometer.wasm",
+        GEOMETER_WASM_BUILD / "src" / "cpp" / "lib" / "geometer-browser.js",
+        GEOMETER_WASM_BUILD / "src" / "cpp" / "lib" / "geometer-browser.wasm",
+    ]
+    for src in outputs:
         if src.exists():
-            dst = DIST_DIR / f"geometer{ext}"
+            dst = DIST_DIR / src.name
             shutil.copy2(str(src), str(dst))
             print(f"Copied {src.name} to dist/ ({dst.stat().st_size:,} bytes)")
 
@@ -225,6 +253,7 @@ def main() -> None:
 
     install_emsdk()
     clone_source("RapidJSON", RAPIDJSON_SRC, RAPIDJSON_REPO, RAPIDJSON_TAG, "include/rapidjson")
+    patch_rapidjson()
     clone_source("OCCT", OCCT_SRC, OCCT_REPO, OCCT_TAG, "CMakeLists.txt")
     build_occt_wasm()
     build_geometer_wasm()

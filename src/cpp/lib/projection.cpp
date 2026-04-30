@@ -170,18 +170,6 @@ std::string svg_number(double value)
 
 } // namespace
 
-int step_hlr_projection_from_bytes(const unsigned char* step_data, std::size_t step_size,
-                                   const HlrProjectionOptions& options, HlrProjectionResult* result,
-                                   Status* status)
-{
-    (void)step_data;
-    (void)step_size;
-    (void)options;
-    (void)result;
-    set_status(status, 90, "STEP HLR projection is not implemented yet.");
-    return 90;
-}
-
 int write_hlr_projection_json(const HlrProjectionResult& result, std::string* json, Status* status)
 {
     if (json == nullptr)

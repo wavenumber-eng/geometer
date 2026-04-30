@@ -1,0 +1,965 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Geometer Embedded Models</title>
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #eef1f4;
+      color: #18202a;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: #eef1f4;
+    }
+
+    button,
+    select {
+      font: inherit;
+    }
+
+    .app {
+      min-height: 100vh;
+      display: grid;
+      grid-template-rows: auto 1fr;
+    }
+
+    .toolbar {
+      display: grid;
+      grid-template-columns: minmax(220px, 1fr) auto auto auto;
+      gap: 12px;
+      align-items: center;
+      padding: 12px 16px;
+      border-bottom: 1px solid #c7d0d9;
+      background: #f9fafb;
+    }
+
+    .select-wrap {
+      display: grid;
+      grid-template-columns: 84px minmax(0, 1fr);
+      gap: 8px;
+      align-items: center;
+      min-width: 0;
+    }
+
+    .label {
+      color: #4a5565;
+      font-size: 13px;
+      line-height: 1;
+    }
+
+    select {
+      width: 100%;
+      min-width: 0;
+      height: 34px;
+      border: 1px solid #aab7c4;
+      border-radius: 6px;
+      background: #ffffff;
+      color: #17202a;
+      padding: 0 30px 0 10px;
+    }
+
+    .segmented {
+      display: inline-grid;
+      grid-auto-flow: column;
+      border: 1px solid #aab7c4;
+      border-radius: 7px;
+      overflow: hidden;
+      background: #ffffff;
+    }
+
+    .segmented button {
+      height: 34px;
+      min-width: 68px;
+      padding: 0 12px;
+      border: 0;
+      border-right: 1px solid #c7d0d9;
+      background: #ffffff;
+      color: #344154;
+      cursor: pointer;
+    }
+
+    .segmented button:last-child {
+      border-right: 0;
+    }
+
+    .segmented button.active {
+      background: #1f6feb;
+      color: #ffffff;
+    }
+
+    .status {
+      min-width: 260px;
+      color: #4a5565;
+      font-size: 13px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      text-align: right;
+    }
+
+    .main {
+      display: grid;
+      grid-template-columns: minmax(320px, 1fr) minmax(320px, 1fr);
+      min-height: 0;
+    }
+
+    .pane {
+      position: relative;
+      min-width: 0;
+      min-height: 0;
+      background: #f6f7f9;
+    }
+
+    .pane + .pane {
+      border-left: 1px solid #c7d0d9;
+    }
+
+    #modelPane {
+      background: #dfe5ea;
+    }
+
+    #projectionPane {
+      background: #fbfbfc;
+    }
+
+    #modelCanvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    #projectionSvg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .overlay {
+      position: absolute;
+      left: 12px;
+      right: 12px;
+      bottom: 12px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      justify-content: space-between;
+      pointer-events: none;
+    }
+
+    .metric-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .metric {
+      min-height: 28px;
+      padding: 6px 8px;
+      border: 1px solid rgba(126, 141, 158, 0.5);
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.9);
+      color: #253244;
+      font-size: 12px;
+      line-height: 1.2;
+    }
+
+    body.busy #projectionSvg {
+      opacity: 0.72;
+    }
+
+    .work-overlay {
+      position: fixed;
+      top: 68px;
+      right: 16px;
+      z-index: 20;
+      width: min(420px, calc(100vw - 32px));
+      padding: 0;
+      background: transparent;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(-4px);
+      transition: opacity 120ms ease, transform 120ms ease;
+    }
+
+    .work-overlay.visible {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: none;
+    }
+
+    .work-panel {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: 12px;
+      align-items: center;
+      min-height: 68px;
+      border: 1px solid #aab7c4;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.94);
+      box-shadow: 0 16px 38px rgba(24, 32, 42, 0.18);
+      padding: 14px 16px;
+    }
+
+    .spinner {
+      width: 32px;
+      height: 32px;
+      border: 4px solid #c7d0d9;
+      border-top-color: #1f6feb;
+      border-radius: 50%;
+      animation: spin 900ms linear infinite;
+    }
+
+    .work-title {
+      color: #18202a;
+      font-size: 14px;
+      font-weight: 650;
+      line-height: 1.2;
+      overflow-wrap: anywhere;
+    }
+
+    .work-subtitle {
+      margin-top: 4px;
+      color: #647184;
+      font-size: 12px;
+      line-height: 1.25;
+      overflow-wrap: anywhere;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    #smokeResult {
+      position: fixed;
+      left: -10000px;
+      top: auto;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+    }
+
+    @media (max-width: 900px) {
+      .toolbar {
+        grid-template-columns: minmax(0, 1fr);
+        align-items: stretch;
+      }
+
+      .select-wrap {
+        grid-template-columns: 1fr;
+      }
+
+      .segmented {
+        width: 100%;
+        grid-auto-columns: 1fr;
+      }
+
+      .status {
+        min-width: 0;
+        text-align: left;
+      }
+
+      .main {
+        grid-template-columns: 1fr;
+        grid-template-rows: minmax(320px, 1fr) minmax(320px, 1fr);
+      }
+
+      .pane + .pane {
+        border-left: 0;
+        border-top: 1px solid #c7d0d9;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="toolbar">
+      <label class="select-wrap">
+        <span class="label">Model</span>
+        <select id="modelSelect"></select>
+      </label>
+      <div class="segmented" id="viewButtons" aria-label="Projection view">
+        <button type="button" data-view="top" class="active">Top</button>
+        <button type="button" data-view="bottom">Bottom</button>
+        <button type="button" data-view="front">Front</button>
+        <button type="button" data-view="back">Back</button>
+        <button type="button" data-view="left">Left</button>
+        <button type="button" data-view="right">Right</button>
+        <button type="button" data-view="iso">Iso</button>
+      </div>
+      <div class="segmented" id="modeButtons" aria-label="Projection mode">
+        <button type="button" data-mode="detail" class="active">Detail</button>
+        <button type="button" data-mode="simple">Simple</button>
+        <button type="button" data-mode="both">Both</button>
+      </div>
+      <div class="status" id="status">Idle</div>
+    </div>
+    <main class="main">
+      <section class="pane" id="modelPane">
+        <canvas id="modelCanvas"></canvas>
+        <div class="overlay">
+          <div class="metric-row">
+            <div class="metric" id="modelMetric">3D</div>
+            <div class="metric" id="meshMetric">GLB</div>
+          </div>
+        </div>
+      </section>
+      <section class="pane" id="projectionPane">
+        <svg id="projectionSvg" xmlns="http://www.w3.org/2000/svg" role="img"></svg>
+        <div class="overlay">
+          <div class="metric-row">
+            <div class="metric" id="projectionMetric">HLR</div>
+            <div class="metric" id="sourceMetric">STEP</div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <div class="work-overlay" id="workOverlay" aria-live="polite" aria-busy="true">
+    <div class="work-panel">
+      <div class="spinner"></div>
+      <div>
+        <div class="work-title" id="workTitle">Working</div>
+        <div class="work-subtitle" id="workSubtitle">Preparing model</div>
+      </div>
+    </div>
+  </div>
+  <pre id="smokeResult">RUNNING</pre>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/"
+      }
+    }
+  </script>
+  <script type="module">
+    import * as THREE from "three";
+    import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+    import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+
+    const manifestUrl = "/tests/fixtures/embedded_models_manifest.json";
+    const projectionViews = [
+      { id: "top", direction: [0, 0, 1], up: [0, 1, 0] },
+      { id: "bottom", direction: [0, 0, -1], up: [0, 1, 0] },
+      { id: "front", direction: [0, -1, 0], up: [0, 0, 1] },
+      { id: "back", direction: [0, 1, 0], up: [0, 0, 1] },
+      { id: "left", direction: [-1, 0, 0], up: [0, 0, 1] },
+      { id: "right", direction: [1, 0, 0], up: [0, 0, 1] },
+      { id: "iso", direction: [1, -1, 0.8], up: [0, 0, 1] },
+    ];
+
+    const state = {
+      models: [],
+      selectedModel: null,
+      viewId: "top",
+      mode: "detail",
+      projectionWorker: null,
+      projectionRequests: new Map(),
+      nextProjectionRequestId: 1,
+      projectionCache: new Map(),
+      stepCache: new Map(),
+      activeLoad: 0,
+      activeProjection: 0,
+      smoke: new URLSearchParams(window.location.search).get("smoke") === "1",
+    };
+
+    const els = {
+      modelSelect: document.getElementById("modelSelect"),
+      viewButtons: document.getElementById("viewButtons"),
+      modeButtons: document.getElementById("modeButtons"),
+      status: document.getElementById("status"),
+      canvas: document.getElementById("modelCanvas"),
+      projectionSvg: document.getElementById("projectionSvg"),
+      modelMetric: document.getElementById("modelMetric"),
+      meshMetric: document.getElementById("meshMetric"),
+      projectionMetric: document.getElementById("projectionMetric"),
+      sourceMetric: document.getElementById("sourceMetric"),
+      workOverlay: document.getElementById("workOverlay"),
+      workTitle: document.getElementById("workTitle"),
+      workSubtitle: document.getElementById("workSubtitle"),
+      smokeResult: document.getElementById("smokeResult"),
+    };
+
+    const renderer = new THREE.WebGLRenderer({
+      canvas: els.canvas,
+      antialias: true,
+      preserveDrawingBuffer: true,
+    });
+    renderer.setClearColor(0xdfe5ea, 1);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xdfe5ea);
+    const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100000);
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.08;
+    controls.screenSpacePanning = true;
+
+    const ambient = new THREE.HemisphereLight(0xffffff, 0x8b97a6, 2.1);
+    scene.add(ambient);
+    const key = new THREE.DirectionalLight(0xffffff, 2.4);
+    key.position.set(2.5, 3.0, 4.5);
+    scene.add(key);
+    const fill = new THREE.DirectionalLight(0xd7f0ff, 0.9);
+    fill.position.set(-4, 1, -2);
+    scene.add(fill);
+
+    const modelGroup = new THREE.Group();
+    scene.add(modelGroup);
+    const grid = new THREE.GridHelper(10, 10, 0xa7b0ba, 0xc6cdd4);
+    grid.visible = false;
+    scene.add(grid);
+
+    const loader = new GLTFLoader();
+    const resizeObserver = new ResizeObserver(resizeRenderer);
+    resizeObserver.observe(document.getElementById("modelPane"));
+
+    function assetUrl(path) {
+      return `/${path.split("/").map(encodeURIComponent).join("/")}`;
+    }
+
+    function formatBytes(bytes) {
+      if (bytes >= 1024 * 1024) {
+        return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+      }
+      return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+    }
+
+    function formatMs(ms) {
+      if (!Number.isFinite(ms)) {
+        return "0 ms";
+      }
+      if (ms >= 1000) {
+        return `${(ms / 1000).toFixed(2)} s`;
+      }
+      return `${Math.max(1, Math.round(ms))} ms`;
+    }
+
+    function projectionTimingText(timings) {
+      if (timings.cached) {
+        return "HLR cache";
+      }
+      const stepText = timings.cachedStep ? "STEP cache" : `STEP ${formatMs(timings.stepFetchMs)}`;
+      return `${stepText} - HLR ${formatMs(timings.hlrMs)} worker`;
+    }
+
+    function moduleTimingText(timings) {
+      return Number.isFinite(timings.moduleMs) && timings.moduleMs > 1
+        ? ` - WASM ${formatMs(timings.moduleMs)}`
+        : "";
+    }
+
+    function setStatus(text, busy = false, detail = "") {
+      els.status.textContent = text;
+      document.body.classList.toggle("busy", busy);
+      els.workOverlay.classList.toggle("visible", busy);
+      els.workTitle.textContent = busy ? text : "Idle";
+      els.workSubtitle.textContent = busy ? detail : "";
+    }
+
+    function setSmoke(text, pass) {
+      els.smokeResult.textContent = text;
+      if (state.smoke) {
+        document.title = text.startsWith("RUNNING") ? "RUNNING" : (pass ? "PASS" : "FAIL");
+      }
+    }
+
+    function resizeRenderer() {
+      const rect = els.canvas.parentElement.getBoundingClientRect();
+      const width = Math.max(1, Math.floor(rect.width));
+      const height = Math.max(1, Math.floor(rect.height));
+      renderer.setSize(width, height, false);
+      camera.aspect = width / height;
+      camera.updateProjectionMatrix();
+      renderOnce();
+    }
+
+    function renderOnce() {
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+      renderOnce();
+    }
+
+    function clearModel() {
+      while (modelGroup.children.length) {
+        const child = modelGroup.children.pop();
+        child.traverse((node) => {
+          if (node.geometry) {
+            node.geometry.dispose();
+          }
+          const materials = Array.isArray(node.material) ? node.material : [node.material];
+          for (const material of materials) {
+            if (material) {
+              material.dispose();
+            }
+          }
+        });
+      }
+    }
+
+    function fitCamera(root) {
+      const bounds = new THREE.Box3().setFromObject(root);
+      const size = new THREE.Vector3();
+      const center = new THREE.Vector3();
+      bounds.getSize(size);
+      bounds.getCenter(center);
+      root.position.sub(center);
+
+      const sphere = new THREE.Sphere();
+      new THREE.Box3().setFromObject(root).getBoundingSphere(sphere);
+      const radius = Math.max(sphere.radius, Math.max(size.x, size.y, size.z) * 0.5, 1);
+      const halfFov = (camera.fov * Math.PI / 180) / 2;
+      const distance = (radius / Math.sin(halfFov)) * 0.58;
+      const viewDirection = new THREE.Vector3(0.72, 0.54, 1.0).normalize();
+      camera.near = Math.max(radius / 20000, 0.0001);
+      camera.far = Math.max(distance * 36, radius * 24, 100);
+      camera.position.copy(viewDirection.multiplyScalar(distance));
+      camera.updateProjectionMatrix();
+      controls.target.set(0, 0, 0);
+      controls.update();
+      controls.minDistance = Math.max(radius * 0.004, 0.0001);
+      controls.maxDistance = Math.max(distance * 24, radius * 12);
+
+      grid.scale.setScalar(Math.max(radius / 10, 1));
+      grid.visible = true;
+    }
+
+    function loadGlb(model, loadId) {
+      const started = performance.now();
+      return new Promise((resolve, reject) => {
+        loader.load(assetUrl(model.glb), (gltf) => {
+          const glbMs = performance.now() - started;
+          if (loadId !== state.activeLoad) {
+            resolve({ loaded: false, glbMs });
+            return;
+          }
+          clearModel();
+          modelGroup.add(gltf.scene);
+          fitCamera(gltf.scene);
+          els.modelMetric.textContent = model.name;
+          els.meshMetric.textContent = `GLB ${formatBytes(model.glbBytes)} - ${formatMs(glbMs)}`;
+          renderOnce();
+          resolve({ loaded: true, glbMs });
+        }, undefined, reject);
+      });
+    }
+
+    function projectionWorker() {
+      if (!state.projectionWorker) {
+        state.projectionWorker = new Worker("/tests/wasm/hlr_projection_worker.js");
+        state.projectionWorker.onmessage = (event) => {
+          const { id, ok, projection, timings, error } = event.data;
+          const request = state.projectionRequests.get(id);
+          if (!request) {
+            return;
+          }
+          state.projectionRequests.delete(id);
+          if (ok) {
+            request.resolve({ projection, timings });
+          } else {
+            const failure = new Error(error || "HLR worker failed.");
+            failure.timings = timings || {};
+            request.reject(failure);
+          }
+        };
+      }
+      return state.projectionWorker;
+    }
+
+    function projectionView(viewId) {
+      return projectionViews.find((view) => view.id === viewId) || projectionViews[0];
+    }
+
+    function projectionCacheKey(model, viewId) {
+      return `${model.name}|${viewId}`;
+    }
+
+    async function loadStepBuffer(model) {
+      const cached = state.stepCache.get(model.name);
+      if (cached) {
+        return { stepBuffer: cached, stepFetchMs: 0, cachedStep: true };
+      }
+
+      const fetchStart = performance.now();
+      const response = await fetch(assetUrl(model.step));
+      if (!response.ok) {
+        throw new Error(`STEP fetch failed: ${response.status}`);
+      }
+      const stepBuffer = await response.arrayBuffer();
+      const stepFetchMs = performance.now() - fetchStart;
+      state.stepCache.set(model.name, stepBuffer);
+      return { stepBuffer, stepFetchMs, cachedStep: false };
+    }
+
+    function runProjectionInWorker(stepBuffer, views) {
+      const id = state.nextProjectionRequestId++;
+      const worker = projectionWorker();
+      return new Promise((resolve, reject) => {
+        state.projectionRequests.set(id, { resolve, reject });
+        worker.postMessage({ id, stepBuffer, views }, [stepBuffer]);
+      });
+    }
+
+    async function loadProjection(model, viewId = state.viewId) {
+      const cacheKey = projectionCacheKey(model, viewId);
+      const cached = state.projectionCache.get(cacheKey);
+      if (cached) {
+        return {
+          projection: cached,
+          timings: { cached: true, stepFetchMs: 0, moduleMs: 0, hlrMs: 0, jsonParseMs: 0 },
+        };
+      }
+
+      const step = await loadStepBuffer(model);
+      const transferBuffer = step.stepBuffer.slice(0);
+      const workerResult = await runProjectionInWorker(transferBuffer, [projectionView(viewId)]);
+      const projection = workerResult.projection;
+      state.projectionCache.set(cacheKey, projection);
+      return {
+        projection,
+        timings: {
+          ...workerResult.timings,
+          stepFetchMs: step.stepFetchMs,
+          cachedStep: step.cachedStep,
+          cached: false,
+        },
+      };
+    }
+
+    async function renderProjectionForCurrentView() {
+      const model = state.selectedModel;
+      if (!model) {
+        return null;
+      }
+
+      const loadId = state.activeLoad;
+      const projectionId = ++state.activeProjection;
+      const viewId = state.viewId;
+      const started = performance.now();
+      setStatus(`Projecting ${model.name}: ${viewId}`, true, "The 3D view stays interactive while HLR runs in a browser Worker.");
+      const projectionResult = await loadProjection(model, viewId);
+      if (loadId !== state.activeLoad || projectionId !== state.activeProjection || viewId !== state.viewId) {
+        return null;
+      }
+
+      const counts = drawProjection(projectionResult.projection, viewId);
+      const timings = projectionResult.timings || {};
+      const hlrText = projectionTimingText(timings);
+      const totalMs = performance.now() - started;
+      els.sourceMetric.textContent = `STEP ${formatBytes(model.stepBytes)} - ${hlrText}${moduleTimingText(timings)}`;
+      setStatus(`${model.name} ${viewId} ready - ${hlrText} - ${formatMs(totalMs)}`, false);
+      return { counts, projectionResult };
+    }
+
+    function collectPrimitives(viewGeometry, mode) {
+      const result = [];
+      const addMode = (name, className) => {
+        const geometry = viewGeometry.modes && viewGeometry.modes[name];
+        if (!geometry) {
+          return;
+        }
+        for (const segment of geometry.segments || []) {
+          result.push({ type: "segment", className, value: segment });
+        }
+        for (const arc of geometry.arcs || []) {
+          result.push({ type: "arc", className, value: arc });
+        }
+      };
+
+      if (mode === "both") {
+        addMode("detail", "detail muted");
+        addMode("simple", "simple");
+      } else {
+        addMode(mode, mode);
+      }
+      return result;
+    }
+
+    function transformedPoints(primitive) {
+      if (primitive.type === "segment") {
+        const [x1, y1, x2, y2] = primitive.value;
+        return [[x1, -y1], [x2, -y2]];
+      }
+      const arc = primitive.value;
+      const center = [arc.center[0], -arc.center[1]];
+      if (arc.full_circle) {
+        return [
+          [center[0] - arc.radius, center[1] - arc.radius],
+          [center[0] + arc.radius, center[1] + arc.radius],
+        ];
+      }
+      return [
+        [arc.start[0], -arc.start[1]],
+        [arc.end[0], -arc.end[1]],
+        [center[0] - arc.radius, center[1] - arc.radius],
+        [center[0] + arc.radius, center[1] + arc.radius],
+      ];
+    }
+
+    function projectionBounds(primitives) {
+      const bounds = { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity };
+      for (const primitive of primitives) {
+        for (const [x, y] of transformedPoints(primitive)) {
+          bounds.minX = Math.min(bounds.minX, x);
+          bounds.minY = Math.min(bounds.minY, y);
+          bounds.maxX = Math.max(bounds.maxX, x);
+          bounds.maxY = Math.max(bounds.maxY, y);
+        }
+      }
+      if (!Number.isFinite(bounds.minX)) {
+        return { minX: -1, minY: -1, maxX: 1, maxY: 1 };
+      }
+      return bounds;
+    }
+
+    function drawProjection(projection, viewId = state.viewId, mode = state.mode) {
+      const viewGeometry = (projection.views || []).find((view) => view.id === viewId);
+      if (!viewGeometry) {
+        throw new Error(`Projection view not found: ${viewId}`);
+      }
+
+      const primitives = collectPrimitives(viewGeometry, mode);
+      const bounds = projectionBounds(primitives);
+      const width = Math.max(bounds.maxX - bounds.minX, 1);
+      const height = Math.max(bounds.maxY - bounds.minY, 1);
+      const pad = Math.max(width, height) * 0.08;
+
+      const svg = els.projectionSvg;
+      svg.replaceChildren();
+      svg.setAttribute("viewBox", `${bounds.minX - pad} ${bounds.minY - pad} ${width + pad * 2} ${height + pad * 2}`);
+
+      const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+      const style = document.createElementNS("http://www.w3.org/2000/svg", "style");
+      style.textContent = `
+        .detail { stroke: #2f3b4c; stroke-width: 2.4px; }
+        .simple { stroke: #0f6f5f; stroke-width: 3.6px; }
+        .muted { stroke: #9aa5b1; stroke-width: 1.8px; }
+        line, path, circle { fill: none; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+      `;
+      defs.append(style);
+      svg.append(defs);
+
+      for (const primitive of primitives) {
+        if (primitive.type === "segment") {
+          const [x1, y1, x2, y2] = primitive.value;
+          const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+          line.setAttribute("class", primitive.className);
+          line.setAttribute("x1", x1);
+          line.setAttribute("y1", -y1);
+          line.setAttribute("x2", x2);
+          line.setAttribute("y2", -y2);
+          svg.append(line);
+        } else {
+          const arc = primitive.value;
+          if (arc.full_circle) {
+            const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            circle.setAttribute("class", primitive.className);
+            circle.setAttribute("cx", arc.center[0]);
+            circle.setAttribute("cy", -arc.center[1]);
+            circle.setAttribute("r", arc.radius);
+            svg.append(circle);
+          } else {
+            const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            const largeArc = Math.abs(arc.extent_rad) > Math.PI ? 1 : 0;
+            const sweep = arc.ccw ? 0 : 1;
+            path.setAttribute("class", primitive.className);
+            path.setAttribute("d", `M ${arc.start[0]} ${-arc.start[1]} A ${arc.radius} ${arc.radius} 0 ${largeArc} ${sweep} ${arc.end[0]} ${-arc.end[1]}`);
+            svg.append(path);
+          }
+        }
+      }
+
+      const detail = viewGeometry.modes.detail || { segments: [], arcs: [] };
+      const simple = viewGeometry.modes.simple || { segments: [], arcs: [] };
+      const detailCount = (detail.segments || []).length + (detail.arcs || []).length;
+      const simpleCount = (simple.segments || []).length + (simple.arcs || []).length;
+      els.projectionMetric.textContent = `${viewId} detail ${detailCount} simple ${simpleCount}`;
+      return { detailCount, simpleCount, primitiveCount: primitives.length };
+    }
+
+    function activateSegmented(container, attribute, value) {
+      for (const button of container.querySelectorAll("button")) {
+        button.classList.toggle("active", button.dataset[attribute] === value);
+      }
+    }
+
+    async function loadSelectedModel() {
+      const model = state.selectedModel;
+      if (!model) {
+        return;
+      }
+
+      const loadId = ++state.activeLoad;
+      const viewId = state.viewId;
+      const totalStart = performance.now();
+      setStatus(`Loading ${model.name}`, true, "Loading the 3D mesh. HLR continues in a browser Worker.");
+      els.sourceMetric.textContent = `STEP ${formatBytes(model.stepBytes)}`;
+      els.meshMetric.textContent = `GLB ${formatBytes(model.glbBytes)}`;
+      els.projectionMetric.textContent = `${viewId} pending`;
+      setSmoke("RUNNING", false);
+
+      try {
+        const projectionPromise = loadProjection(model, viewId)
+          .then((projectionResult) => ({ projectionResult }))
+          .catch((projectionError) => ({ projectionError }));
+
+        const glbResult = await loadGlb(model, loadId);
+        if (loadId !== state.activeLoad) {
+          return;
+        }
+        setStatus(`${model.name} 3D ready - projecting ${viewId}`, true, "Use the 3D controls while HLR finishes.");
+
+        const projectionOutcome = await projectionPromise;
+        if (loadId !== state.activeLoad) {
+          return;
+        }
+        if (viewId !== state.viewId) {
+          return;
+        }
+        if (projectionOutcome.projectionError) {
+          throw projectionOutcome.projectionError;
+        }
+
+        const projectionResult = projectionOutcome.projectionResult;
+        const projection = projectionResult.projection;
+        const counts = drawProjection(projection, viewId);
+        const totalMs = performance.now() - totalStart;
+        const timings = projectionResult.timings || {};
+        const hlrText = projectionTimingText(timings);
+        const moduleText = moduleTimingText(timings);
+        const glbText = `GLB ${formatMs(glbResult.glbMs)}`;
+        els.sourceMetric.textContent = `STEP ${formatBytes(model.stepBytes)} - ${hlrText}${moduleText}`;
+        els.meshMetric.textContent = `GLB ${formatBytes(model.glbBytes)} - ${formatMs(glbResult.glbMs)}`;
+        setStatus(`${model.name} ready - ${glbText} - ${hlrText} - total ${formatMs(totalMs)}`, false);
+
+        if (state.smoke) {
+          await new Promise((resolve) => requestAnimationFrame(resolve));
+          await new Promise((resolve) => requestAnimationFrame(resolve));
+          const nonBlank = canvasHasPixels();
+          const pass = nonBlank && counts.detailCount > 0 && counts.simpleCount > 0;
+          setSmoke(pass ? `PASS model=${model.name} detail=${counts.detailCount} simple=${counts.simpleCount} hlr=${formatMs(timings.hlrMs)} glb=${formatMs(glbResult.glbMs)}` : "FAIL render check", pass);
+        }
+      } catch (error) {
+        const message = error && error.stack ? error.stack : String(error);
+        setStatus(`Error: ${error && error.message ? error.message : error}`, false);
+        setSmoke(`FAIL ${message}`, false);
+        throw error;
+      }
+    }
+
+    function canvasHasPixels() {
+      const canvas = renderer.domElement;
+      const sample = document.createElement("canvas");
+      sample.width = 16;
+      sample.height = 16;
+      const context = sample.getContext("2d", { willReadFrequently: true });
+      context.drawImage(canvas, 0, 0, sample.width, sample.height);
+      const pixels = context.getImageData(0, 0, sample.width, sample.height).data;
+      for (let i = 0; i < pixels.length; i += 4) {
+        if (pixels[i] !== 223 || pixels[i + 1] !== 229 || pixels[i + 2] !== 234) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    function selectModelByName(name) {
+      const model = state.models.find((item) => item.name === name) || state.models[0];
+      state.selectedModel = model;
+      els.modelSelect.value = model.name;
+      return loadSelectedModel();
+    }
+
+    async function init() {
+      setStatus("Loading manifest", true, "Reading embedded model fixture list.");
+      const response = await fetch(manifestUrl);
+      if (!response.ok) {
+        throw new Error(`Manifest fetch failed: ${response.status}`);
+      }
+      state.models = await response.json();
+
+      for (const model of state.models) {
+        const option = document.createElement("option");
+        option.value = model.name;
+        option.textContent = model.name;
+        els.modelSelect.append(option);
+      }
+
+      els.modelSelect.addEventListener("change", () => {
+        selectModelByName(els.modelSelect.value).catch(console.error);
+      });
+
+      els.viewButtons.addEventListener("click", (event) => {
+        const button = event.target.closest("button[data-view]");
+        if (!button) {
+          return;
+        }
+        state.viewId = button.dataset.view;
+        activateSegmented(els.viewButtons, "view", state.viewId);
+        renderProjectionForCurrentView().catch(console.error);
+      });
+
+      els.modeButtons.addEventListener("click", (event) => {
+        const button = event.target.closest("button[data-mode]");
+        if (!button) {
+          return;
+        }
+        state.mode = button.dataset.mode;
+        activateSegmented(els.modeButtons, "mode", state.mode);
+        const projection = state.projectionCache.get(projectionCacheKey(state.selectedModel, state.viewId));
+        if (projection) {
+          drawProjection(projection);
+        }
+      });
+
+      const params = new URLSearchParams(window.location.search);
+      const requestedView = params.get("view");
+      if (projectionViews.some((view) => view.id === requestedView)) {
+        state.viewId = requestedView;
+        activateSegmented(els.viewButtons, "view", state.viewId);
+      }
+      const requestedMode = params.get("mode");
+      if (["detail", "simple", "both"].includes(requestedMode)) {
+        state.mode = requestedMode;
+        activateSegmented(els.modeButtons, "mode", state.mode);
+      }
+      const requested = params.get("model");
+      const index = Number.parseInt(params.get("index") || "0", 10);
+      const initial = requested || (state.models[Math.max(0, Math.min(index, state.models.length - 1))] || state.models[0]).name;
+
+      resizeRenderer();
+      animate();
+      await selectModelByName(initial);
+    }
+
+    init().catch((error) => {
+      const message = error && error.stack ? error.stack : String(error);
+      setStatus(`Error: ${error && error.message ? error.message : error}`, false);
+      setSmoke(`FAIL ${message}`, false);
+      console.error(error);
+    });
+  </script>
+</body>
+</html>

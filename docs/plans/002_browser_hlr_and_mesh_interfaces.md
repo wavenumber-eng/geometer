@@ -6,6 +6,26 @@ Turn geometer into the geometry kernel used by browser and Python tooling for
 STEP projection and tessellated model assets, while keeping the package generic
 enough for non-Altium projects.
 
+## Status
+
+Implemented for the v0.1.0 HLR/browser milestone.
+
+Completed:
+
+- Native C++ value API for STEP-byte HLR projection.
+- C ABI for byte-buffer HLR projection.
+- Browser/Web Worker WASM target with direct byte-buffer input.
+- CLI JSON/SVG projection outputs.
+- C++ planar contour module for simple projection output.
+- Browser viewer and benchmark pages for embedded STEP/GLB fixtures.
+- Version API and WASM version exports for consumers.
+
+Still future work:
+
+- Direct typed-array STEP tessellation/mesh API.
+- Python package/wrapper around the C ABI.
+- Downstream replacement of altium-cruncher/viz projection internals.
+
 ## API Shape
 
 The core library should expose three layers:
@@ -28,7 +48,7 @@ Use a backend-neutral projection contract:
 
 ```json
 {
-  "schema": "wn.geometry.projection.a0",
+  "schema": "geometry.projection.a0",
   "units": "mm",
   "source": {
     "kind": "step",
@@ -128,6 +148,16 @@ Add a browser build target separate from the Node CLI target:
 The existing Node CLI WASM target can stay for command-line parity, but it is
 not the browser integration target.
 
+Implemented browser artifacts:
+
+- `dist/geometer-browser.js`
+- `dist/geometer-browser.wasm`
+
+Implemented Node CLI WASM artifacts:
+
+- `dist/geometer.js`
+- `dist/geometer.wasm`
+
 ## Python Target
 
 Use the same C ABI for Python:
@@ -170,4 +200,3 @@ surface or add another build dependency.
 5. Add browser worker integration for direct projection from embedded STEP
    bytes in `pcb-viz` and `sch-viz`.
 6. Add browser-side 3D mesh asset conversion for STEP component models.
-

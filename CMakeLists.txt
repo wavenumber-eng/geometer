@@ -45,4 +45,9 @@ endif()
 
 message(STATUS "OpenCASCADE ${OpenCASCADE_VERSION} found at ${OpenCASCADE_INSTALL_PREFIX}")
 
+include(CTest)
 add_subdirectory(src/cpp)
+
+if(BUILD_TESTING)
+    add_subdirectory(tests/cpp)
+endif()

@@ -1,5 +1,7 @@
 add_library(geometer_lib STATIC
-    geometer.cpp
+    c_api.cpp
+    projection.cpp
+    step_to_glb.cpp
 )
 set_target_properties(geometer_lib PROPERTIES OUTPUT_NAME geometer)
 

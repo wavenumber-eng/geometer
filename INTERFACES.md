@@ -4,6 +4,29 @@ This file documents the current callable surface for Geometer. The C++ API is
 the source-level API used inside this repository. The C ABI is the boundary used
 for WASM and future non-C++ bindings.
 
+## Interface Policy
+
+Geometer interfaces must describe generic geometry operations. Keep downstream
+application concepts such as PCB placement policy, Altium/KiCad names,
+visualizer preferences, or Three.js scene behavior outside this repository.
+
+New browser-capable APIs should normally have:
+
+- a native C++ value API;
+- a flat C ABI entry point for WASM and future non-C++ callers;
+- byte-buffer inputs when the browser cannot rely on local files;
+- documented ownership rules for returned strings, byte buffers, or mesh
+  packets;
+- options encoded in a stable JSON object when the option surface is expected
+  to grow;
+- version and ABI notes when the callable surface changes;
+- at least one native test and one WASM/browser smoke path.
+
+For STEP model rendering, prefer a backend-neutral mesh/tessellation packet if
+it can stay compact and practical. Returning GLB bytes is acceptable when it
+keeps the first integration simple, but it should not be the only long-term
+geometry transport considered for browser tools.
+
 ## Header Entry Point
 
 Use the umbrella header for native C++ callers:

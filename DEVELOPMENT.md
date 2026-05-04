@@ -57,6 +57,34 @@ Pinned dependency versions live in scripts:
 - RapidJSON: `scripts/build_occt.py`
 - emsdk: `scripts/build_wasm.py`
 
+## Workspace Copy Setup
+
+For agent workspaces or downstream monorepo workspaces, prefer copying an
+already-prepared Geometer checkout when one is available locally. A prepared
+checkout includes:
+
+- `.deps/` with native OCCT/RapidJSON state and WASM emsdk/OCCT state.
+- `build/` for the native CMake build.
+- `build-wasm/` for the Emscripten build.
+- `dist/` with the committed/runtime artifacts.
+
+On this development machine, the prepared checkout may live at
+`C:\ELI\geometer`. Copying that directory into a sibling workspace preserves the
+expensive dependency builds and allows fast API iteration. A fresh clone is still
+valid, but the first native/WASM dependency build can take tens of minutes.
+
+After copying into a workspace:
+
+```powershell
+git status --short --branch
+.\dist\geometer.exe --version
+node .\dist\geometer.js --version
+```
+
+Do not run `python scripts\build_occt.py --clean`,
+`python scripts\build_wasm.py --clean`, or delete `.deps/` unless intentionally
+refreshing dependencies. Those operations remove the cached dependency builds.
+
 ## Prerequisites
 
 Native builds require:

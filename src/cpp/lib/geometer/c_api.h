@@ -20,12 +20,26 @@ extern "C"
         char* error;
     } GeometerStringResult;
 
+    typedef struct GeometerByteResult
+    {
+        int code;
+        unsigned char* value;
+        size_t size;
+        char* error;
+    } GeometerByteResult;
+
     GeometerStringResult geometer_step_hlr_projection_json(GeometerBuffer step_data,
                                                            const char* options_json);
 
     int geometer_step_hlr_projection_json_bytes(const unsigned char* step_data, size_t step_size,
                                                 const char* options_json, char** value,
                                                 char** error);
+
+    GeometerByteResult geometer_step_to_glb(GeometerBuffer step_data, const char* options_json);
+
+    int geometer_step_to_glb_bytes(const unsigned char* step_data, size_t step_size,
+                                   const char* options_json, unsigned char** value,
+                                   size_t* value_size, char** error);
 
     const char* geometer_version_string(void);
     int geometer_version_major(void);
@@ -34,6 +48,7 @@ extern "C"
     int geometer_abi_version(void);
 
     void geometer_free_string(char* value);
+    void geometer_free_bytes(unsigned char* value);
 
 #ifdef __cplusplus
 }

@@ -34,7 +34,7 @@ This installs emsdk, cross-compiles OCCT, and builds geometer for WASM. First ru
 The WASM build produces two targets:
 
 - `dist/geometer.js` + `dist/geometer.wasm` - Node CLI parity target.
-- `dist/geometer-browser.js` + `dist/geometer-browser.wasm` - modular browser/Web Worker target exporting the flat C ABI.
+- `dist/geometer-browser.js` + `dist/geometer-browser.wasm` - modular browser/Web Worker target exporting the flat C ABI, including STEP bytes to GLB bytes.
 
 `dist/` is the committed distribution directory. `.deps/`, `build/`, and
 `build-wasm/` are local generated state and are not committed.

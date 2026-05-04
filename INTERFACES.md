@@ -48,7 +48,7 @@ That includes the current public headers:
 
 Defined in `src/cpp/lib/geometer/version.h`.
 
-Geometer v0.1.0 uses C ABI version `1`. The project version follows semver.
+Geometer v0.2.0 uses C ABI version `1`. The project version follows semver.
 While Geometer is under `0.x`, public interface changes may still happen, but
 consumers should check both the project version and ABI version at runtime.
 
@@ -118,9 +118,39 @@ int step_to_glb(
     const std::string& glb_path,
     const StepToGlbOptions& options = {}
 );
+
+int step_to_glb_from_bytes(
+    const unsigned char* step_data,
+    std::size_t step_size,
+    const StepToGlbOptions& options,
+    std::vector<unsigned char>* glb_bytes,
+    Status* status = nullptr
+);
 ```
 
-This is a file-based converter. It reads a STEP file and writes a GLB file.
+`step_to_glb` is the file-based converter. `step_to_glb_from_bytes` accepts STEP
+bytes and fills owned GLB bytes for browser/downstream consumers that cannot
+depend on local files.
+
+## STEP To GLB Options JSON
+
+Defined in `src/cpp/lib/geometer/step_to_glb_options_json.h`.
+
+```cpp
+int parse_step_to_glb_options_json(
+    const char* json,
+    StepToGlbOptions* options,
+    Status* status = nullptr
+);
+```
+
+Accepted option keys:
+
+- `linear_deflection`, `linearDeflection`, or `deflection`.
+- `angular_deflection`, `angularDeflection`, or `angular`.
+
+Both values must be positive finite numbers. Empty or `null` JSON keeps the
+default options.
 
 ## HLR Projection
 
@@ -316,6 +346,13 @@ typedef struct GeometerStringResult {
     char* error;
 } GeometerStringResult;
 
+typedef struct GeometerByteResult {
+    int code;
+    unsigned char* value;
+    size_t size;
+    char* error;
+} GeometerByteResult;
+
 GeometerStringResult geometer_step_hlr_projection_json(
     GeometerBuffer step_data,
     const char* options_json
@@ -329,6 +366,20 @@ int geometer_step_hlr_projection_json_bytes(
     char** error
 );
 
+GeometerByteResult geometer_step_to_glb(
+    GeometerBuffer step_data,
+    const char* options_json
+);
+
+int geometer_step_to_glb_bytes(
+    const unsigned char* step_data,
+    size_t step_size,
+    const char* options_json,
+    unsigned char** value,
+    size_t* value_size,
+    char** error
+);
+
 const char* geometer_version_string(void);
 int geometer_version_major(void);
 int geometer_version_minor(void);
@@ -336,11 +387,14 @@ int geometer_version_patch(void);
 int geometer_abi_version(void);
 
 void geometer_free_string(char* value);
+void geometer_free_bytes(unsigned char* value);
 ```
 
-The returned `value` and `error` pointers are heap-allocated strings owned by
-the caller. Release any non-null returned string with `geometer_free_string`.
-The version string is static storage and does not use `geometer_free_string`.
+Returned `error` strings and projection JSON `value` strings are heap-allocated
+and owned by the caller. Release them with `geometer_free_string`. Returned GLB
+byte buffers are heap-allocated and owned by the caller. Release them with
+`geometer_free_bytes`. The version string is static storage and does not use
+either free function.
 
 ## WASM Interfaces
 
@@ -368,7 +422,10 @@ The browser target is modularized with the factory name
 - `_geometer_abi_version`
 - `_geometer_step_hlr_projection_json`
 - `_geometer_step_hlr_projection_json_bytes`
+- `_geometer_step_to_glb`
+- `_geometer_step_to_glb_bytes`
 - `_geometer_free_string`
+- `_geometer_free_bytes`
 
 It also exports these Emscripten runtime helpers:
 
@@ -394,6 +451,13 @@ module.ccall(
   "number",
   ["number", "number", "number", "number", "number"],
   [stepPtr, stepSize, optionsPtr, valueOutPtr, errorOutPtr],
+);
+
+module.ccall(
+  "geometer_step_to_glb_bytes",
+  "number",
+  ["number", "number", "number", "number", "number", "number"],
+  [stepPtr, stepSize, optionsPtr, valueOutPtr, valueSizeOutPtr, errorOutPtr],
 );
 ```
 

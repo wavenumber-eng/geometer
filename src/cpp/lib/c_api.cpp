@@ -2,11 +2,15 @@
 
 #include "geometer/projection.h"
 #include "geometer/projection_options_json.h"
+#include "geometer/step_to_glb.h"
+#include "geometer/step_to_glb_options_json.h"
 #include "geometer/version.h"
 
+#include <cstddef>
 #include <cstdlib>
 #include <cstring>
 #include <string>
+#include <vector>
 
 namespace
 {
@@ -91,6 +95,59 @@ int geometer_step_hlr_projection_json_bytes(const unsigned char* step_data, std:
     return 0;
 }
 
+GeometerByteResult geometer_step_to_glb(GeometerBuffer step_data, const char* options_json)
+{
+    GeometerByteResult result;
+    result.value = nullptr;
+    result.size = 0;
+    result.error = nullptr;
+    result.code = geometer_step_to_glb_bytes(step_data.data, step_data.size, options_json,
+                                             &result.value, &result.size, &result.error);
+    return result;
+}
+
+int geometer_step_to_glb_bytes(const unsigned char* step_data, std::size_t step_size,
+                               const char* options_json, unsigned char** value,
+                               std::size_t* value_size, char** error)
+{
+    if (value == nullptr || value_size == nullptr || error == nullptr)
+    {
+        return 93;
+    }
+    *value = nullptr;
+    *value_size = 0;
+    *error = nullptr;
+
+    geometer::StepToGlbOptions options;
+    geometer::Status status;
+    int code = geometer::parse_step_to_glb_options_json(options_json, &options, &status);
+    if (code != 0)
+    {
+        return assign_error(code, status.message, error);
+    }
+
+    std::vector<unsigned char> glb_bytes;
+    code = geometer::step_to_glb_from_bytes(step_data, step_size, options, &glb_bytes, &status);
+    if (code != 0)
+    {
+        return assign_error(code, status.message, error);
+    }
+    if (glb_bytes.empty())
+    {
+        return assign_error(3, "STEP-to-GLB conversion returned empty GLB bytes.", error);
+    }
+
+    unsigned char* bytes = static_cast<unsigned char*>(std::malloc(glb_bytes.size()));
+    if (bytes == nullptr)
+    {
+        return assign_error(94, "Failed allocating GLB byte result.", error);
+    }
+    std::memcpy(bytes, glb_bytes.data(), glb_bytes.size());
+    *value = bytes;
+    *value_size = glb_bytes.size();
+    return 0;
+}
+
 const char* geometer_version_string(void)
 {
     return geometer::version_string();
@@ -117,6 +174,11 @@ int geometer_abi_version(void)
 }
 
 void geometer_free_string(char* value)
+{
+    std::free(value);
+}
+
+void geometer_free_bytes(unsigned char* value)
 {
     std::free(value);
 }

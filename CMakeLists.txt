@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.24)
-project(geometer VERSION 0.1.0 LANGUAGES CXX)
+project(geometer VERSION 0.2.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -18,7 +18,13 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 #   python scripts/build_occt.py          # build
 #   python scripts/build_occt.py --clean  # wipe and rebuild
 # ---------------------------------------------------------------------------
-find_package(OpenCASCADE QUIET NO_DEFAULT_PATH PATHS "${OpenCASCADE_DIR}")
+set(_geometer_default_occt_dir "${CMAKE_SOURCE_DIR}/.deps/occt-install/cmake")
+set(_geometer_occt_dir "${OpenCASCADE_DIR}")
+if(NOT _geometer_occt_dir OR _geometer_occt_dir MATCHES "-NOTFOUND$")
+    set(_geometer_occt_dir "${_geometer_default_occt_dir}")
+endif()
+
+find_package(OpenCASCADE QUIET NO_DEFAULT_PATH PATHS "${_geometer_occt_dir}")
 
 if(NOT OpenCASCADE_FOUND)
     message(STATUS "OpenCASCADE not found. Building from source via scripts/build_occt.py ...")
@@ -40,6 +46,8 @@ if(NOT OpenCASCADE_FOUND)
         )
     endif()
 
+    set(OpenCASCADE_DIR "${_geometer_default_occt_dir}" CACHE PATH
+        "The directory containing a CMake configuration file for OpenCASCADE." FORCE)
     find_package(OpenCASCADE REQUIRED NO_DEFAULT_PATH PATHS "${OpenCASCADE_DIR}")
 endif()
 

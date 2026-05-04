@@ -181,9 +181,9 @@ python scripts\build_wasm.py --clean
 ```
 
 The Node CLI target uses filesystem access for command-line parity. The browser
-target is modularized and exports the flat C ABI entry point
-`geometer_step_hlr_projection_json_bytes` for direct byte-buffer calls from
-JavaScript or a Web Worker.
+target is modularized and exports the flat C ABI entry points
+`geometer_step_hlr_projection_json_bytes` and `geometer_step_to_glb_bytes` for
+direct byte-buffer calls from JavaScript or a Web Worker.
 
 The browser target also exports `geometer_version_string` and
 `geometer_abi_version`. Downstream browser consumers should check those before
@@ -191,7 +191,7 @@ depending on a specific ABI.
 
 ## Versioning
 
-The current project version is `0.1.0`, declared in the root `CMakeLists.txt`.
+The current project version is `0.2.0`, declared in the root `CMakeLists.txt`.
 The current C ABI version is `1`, declared as `GEOMETER_ABI_VERSION` in
 `src/cpp/lib/CMakeLists.txt`.
 
@@ -235,6 +235,12 @@ After a native CMake build:
 
 ```powershell
 ctest --test-dir build -C Release --output-on-failure
+```
+
+After a WASM build, validate the browser STEP-byte-to-GLB-byte export:
+
+```powershell
+node tests\wasm\step_to_glb_bytes_smoke.js
 ```
 
 The Rack metadata under `tests/` describes test strata, but the C++ tests are

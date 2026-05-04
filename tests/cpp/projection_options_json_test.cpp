@@ -1,6 +1,8 @@
 #include "geometer/c_api.h"
 #include "geometer/projection_options_json.h"
+#include "geometer/step_to_glb_options_json.h"
 
+#include <cstddef>
 #include <exception>
 #include <stdexcept>
 #include <string>
@@ -99,6 +101,26 @@ void reject_invalid_options()
     require(code == 91, "invalid curve mode should return parse error");
 }
 
+void parse_step_to_glb_options()
+{
+    geometer::StepToGlbOptions options;
+    geometer::Status status;
+    int code = geometer::parse_step_to_glb_options_json(nullptr, &options, &status);
+    require(code == 0, "null STEP-to-GLB options should parse as defaults");
+    require(options.linear_deflection == 0.1, "default linear deflection should remain 0.1");
+    require(options.angular_deflection == 0.5, "default angular deflection should remain 0.5");
+
+    code = geometer::parse_step_to_glb_options_json(
+        "{\"linearDeflection\":0.05,\"angular_deflection\":0.3,\"ignored\":{\"x\":1}}",
+        &options, &status);
+    require(code == 0, "STEP-to-GLB options aliases should parse");
+    require(options.linear_deflection == 0.05, "linearDeflection alias should parse");
+    require(options.angular_deflection == 0.3, "angular_deflection should parse");
+
+    code = geometer::parse_step_to_glb_options_json("{\"deflection\":0}", &options, &status);
+    require(code == 91, "zero deflection should be rejected");
+}
+
 void c_api_uses_options_parser()
 {
     GeometerBuffer empty = {nullptr, 0};
@@ -143,6 +165,42 @@ void c_api_flat_bytes_export_uses_options_parser()
     require(code == 93, "flat C ABI should reject null value output pointer");
 }
 
+void c_api_step_to_glb_uses_options_parser()
+{
+    unsigned char* value = nullptr;
+    std::size_t value_size = 0;
+    char* error = nullptr;
+    int code = geometer_step_to_glb_bytes(nullptr, 0, "{\"linearDeflection\":\"bad\"}", &value,
+                                          &value_size, &error);
+    require(code == 91, "STEP-to-GLB C ABI should reject invalid options JSON");
+    require(value == nullptr, "STEP-to-GLB invalid options should not return bytes");
+    require(value_size == 0, "STEP-to-GLB invalid options should not return byte size");
+    require(error != nullptr, "STEP-to-GLB invalid options should return an error");
+    geometer_free_string(error);
+
+    value = nullptr;
+    value_size = 0;
+    error = nullptr;
+    code = geometer_step_to_glb_bytes(nullptr, 0, "{\"linearDeflection\":0.05}", &value,
+                                      &value_size, &error);
+    require(code == 1, "STEP-to-GLB valid options should reach STEP input validation");
+    require(value == nullptr, "STEP-to-GLB empty STEP should not return bytes");
+    require(value_size == 0, "STEP-to-GLB empty STEP should not return byte size");
+    require(error != nullptr, "STEP-to-GLB empty STEP should return an error");
+    geometer_free_string(error);
+
+    GeometerBuffer empty = {nullptr, 0};
+    GeometerByteResult result = geometer_step_to_glb(empty, "{\"angular\":0.25}");
+    require(result.code == 1, "STEP-to-GLB result wrapper should reach STEP validation");
+    require(result.value == nullptr, "STEP-to-GLB result wrapper should not return bytes on error");
+    require(result.size == 0, "STEP-to-GLB result wrapper should not return byte size on error");
+    require(result.error != nullptr, "STEP-to-GLB result wrapper should return an error");
+    geometer_free_string(result.error);
+
+    code = geometer_step_to_glb_bytes(nullptr, 0, nullptr, nullptr, &value_size, &error);
+    require(code == 93, "STEP-to-GLB flat C ABI should reject null value output pointer");
+}
+
 } // namespace
 
 int main()
@@ -153,8 +211,10 @@ int main()
         parse_explicit_options();
         parse_aliases();
         reject_invalid_options();
+        parse_step_to_glb_options();
         c_api_uses_options_parser();
         c_api_flat_bytes_export_uses_options_parser();
+        c_api_step_to_glb_uses_options_parser();
     }
     catch (const std::exception&)
     {

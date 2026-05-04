@@ -5,6 +5,7 @@ add_library(geometer_lib STATIC
     projection.cpp
     projection_options_json.cpp
     step_to_glb.cpp
+    step_to_glb_options_json.cpp
     version.cpp
 )
 set_target_properties(geometer_lib PROPERTIES OUTPUT_NAME geometer)
@@ -68,7 +69,7 @@ if(EMSCRIPTEN)
         -sMODULARIZE=1
         -sEXPORT_NAME=createGeometerModule
         -sNO_EXIT_RUNTIME=1
-        "-sEXPORTED_FUNCTIONS=['_malloc','_free','_geometer_version_string','_geometer_version_major','_geometer_version_minor','_geometer_version_patch','_geometer_abi_version','_geometer_step_hlr_projection_json','_geometer_step_hlr_projection_json_bytes','_geometer_free_string']"
+        "-sEXPORTED_FUNCTIONS=['_malloc','_free','_geometer_version_string','_geometer_version_major','_geometer_version_minor','_geometer_version_patch','_geometer_abi_version','_geometer_step_hlr_projection_json','_geometer_step_hlr_projection_json_bytes','_geometer_step_to_glb','_geometer_step_to_glb_bytes','_geometer_free_string','_geometer_free_bytes']"
         "-sEXPORTED_RUNTIME_METHODS=['ccall','cwrap','UTF8ToString','stringToUTF8','lengthBytesUTF8','getValue']"
     )
     set_target_properties(geometer_browser PROPERTIES

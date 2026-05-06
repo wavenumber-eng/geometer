@@ -32,25 +32,18 @@ OCCT_SRC = DEPS_DIR / "occt-src"
 OCCT_WASM_BUILD = DEPS_DIR / "occt-wasm-build"
 OCCT_WASM_INSTALL = DEPS_DIR / "occt-wasm-install"
 
-# RapidJSON (shared source with build_occt.py)
-RAPIDJSON_SRC = DEPS_DIR / "rapidjson-src"
+# RapidJSON is header-only and vendored for OCCT's GLB export support.
+RAPIDJSON_SRC = ROOT / "third_party" / "rapidjson"
+RAPIDJSON_INCLUDE = RAPIDJSON_SRC / "include" / "rapidjson"
+RAPIDJSON_PATCH_SENTINEL = (
+    "    GenericStringRef& operator=(const GenericStringRef& rhs) = delete;"
+)
 
 # Geometer WASM build
 GEOMETER_WASM_BUILD = ROOT / "build-wasm"
 
 OCCT_REPO = "https://github.com/Open-Cascade-SAS/OCCT.git"
 OCCT_TAG = "V7_8_1"
-
-RAPIDJSON_REPO = "https://github.com/Tencent/rapidjson.git"
-RAPIDJSON_TAG = "v1.1.0"
-
-RAPIDJSON_ASSIGNMENT_OPERATOR = (
-    "    GenericStringRef& operator=(const GenericStringRef& rhs) "
-    "{ s = rhs.s; length = rhs.length; }"
-)
-RAPIDJSON_DELETED_ASSIGNMENT_OPERATOR = (
-    "    GenericStringRef& operator=(const GenericStringRef& rhs) = delete;"
-)
 
 
 def run(cmd: list[str], **kwargs) -> None:
@@ -121,19 +114,20 @@ def clone_source(name: str, dest: Path, repo: str, tag: str, check_path: str) ->
     run(["git", "clone", "--depth", "1", "--branch", tag, repo, str(dest)])
 
 
-def patch_rapidjson() -> None:
-    document_h = RAPIDJSON_SRC / "include" / "rapidjson" / "document.h"
+def verify_vendored_rapidjson() -> None:
+    document_h = RAPIDJSON_INCLUDE / "document.h"
+    if not document_h.exists():
+        raise RuntimeError(
+            "Vendored RapidJSON headers are missing. Expected "
+            f"{RAPIDJSON_INCLUDE}"
+        )
     text = document_h.read_text(encoding="utf-8")
-    if RAPIDJSON_DELETED_ASSIGNMENT_OPERATOR in text:
-        print("RapidJSON clang compatibility patch already applied.")
-        return
-    if RAPIDJSON_ASSIGNMENT_OPERATOR not in text:
-        raise RuntimeError("RapidJSON document.h did not match expected patch context.")
-    document_h.write_text(
-        text.replace(RAPIDJSON_ASSIGNMENT_OPERATOR, RAPIDJSON_DELETED_ASSIGNMENT_OPERATOR),
-        encoding="utf-8",
-    )
-    print("Applied RapidJSON clang compatibility patch.")
+    if RAPIDJSON_PATCH_SENTINEL not in text:
+        raise RuntimeError(
+            "Vendored RapidJSON is missing Geometer's modern Clang "
+            "compatibility patch."
+        )
+    print(f"Using vendored RapidJSON at {RAPIDJSON_SRC}")
 
 
 # ---- OCCT WASM build ----
@@ -252,8 +246,7 @@ def main() -> None:
         return
 
     install_emsdk()
-    clone_source("RapidJSON", RAPIDJSON_SRC, RAPIDJSON_REPO, RAPIDJSON_TAG, "include/rapidjson")
-    patch_rapidjson()
+    verify_vendored_rapidjson()
     clone_source("OCCT", OCCT_SRC, OCCT_REPO, OCCT_TAG, "CMakeLists.txt")
     build_occt_wasm()
     build_geometer_wasm()

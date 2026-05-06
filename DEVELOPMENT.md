@@ -38,8 +38,12 @@ For the current callable C++, C ABI, WASM, and CLI surfaces, see
 ## Dependency Policy
 
 `.deps/` is local generated state and must not be committed. It contains cloned
-and built dependencies such as OCCT, RapidJSON, emsdk, and OCCT WASM artifacts.
-It is intentionally ignored by Git.
+and built dependencies such as OCCT, emsdk, and OCCT WASM artifacts. It is
+intentionally ignored by Git.
+
+`third_party/rapidjson/` is different. RapidJSON is header-only, small enough to
+vendor, and required by OCCT's GLB export path. The vendored copy is checked in
+so a fresh clone does not need a separate RapidJSON git checkout.
 
 `dist/` is different. This repository currently treats `dist/` as the location
 for distributable binaries. CMake and WASM builds copy final outputs there.
@@ -54,7 +58,7 @@ standalone project and finds it with `find_package(OpenCASCADE)`.
 Pinned dependency versions live in scripts:
 
 - OCCT: `scripts/build_occt.py`
-- RapidJSON: `scripts/build_occt.py`
+- RapidJSON: `third_party/rapidjson/`
 - emsdk: `scripts/build_wasm.py`
 
 ## Workspace Copy Setup
@@ -63,7 +67,7 @@ For agent workspaces or downstream monorepo workspaces, prefer copying an
 already-prepared Geometer checkout when one is available locally. A prepared
 checkout includes:
 
-- `.deps/` with native OCCT/RapidJSON state and WASM emsdk/OCCT state.
+- `.deps/` with native OCCT state and WASM emsdk/OCCT state.
 - `build/` for the native CMake build.
 - `build-wasm/` for the Emscripten build.
 - `dist/` with the committed/runtime artifacts.
@@ -123,12 +127,12 @@ If OCCT is missing, top-level CMake automatically invokes:
 python scripts\build_occt.py
 ```
 
-That script clones RapidJSON and OCCT, builds OCCT as static libraries, and
-installs it into `.deps/occt-install/`. The first run is slow. Later configures
-reuse `.deps/` and should be fast.
+That script uses vendored RapidJSON, clones OCCT, builds OCCT as static
+libraries, and installs it into `.deps/occt-install/`. The first run is slow.
+Later configures reuse `.deps/` and should be fast.
 
-The bootstrap script applies a small RapidJSON v1.1.0 compatibility patch after
-clone so OCCT's GLTF toolkit compiles with modern Clang.
+The vendored RapidJSON v1.1.0 copy includes Geometer's small modern Clang
+compatibility patch so OCCT's GLTF toolkit compiles in native and WASM builds.
 
 Build outputs are copied into `dist/` after a successful build.
 
@@ -153,8 +157,8 @@ cmake --preset default
 cmake --build build --config Release
 ```
 
-`--clean` removes OCCT/RapidJSON state under `.deps/`; it does not remove the
-Geometer `build/` directory.
+`--clean` removes OCCT state under `.deps/`; it does not remove vendored
+RapidJSON or the Geometer `build/` directory.
 
 ## WASM Build
 
@@ -167,7 +171,7 @@ python scripts\build_wasm.py
 This script:
 
 1. Clones and activates pinned emsdk under `.deps/emsdk/`.
-2. Reuses or clones OCCT and RapidJSON sources under `.deps/`.
+2. Uses vendored RapidJSON and reuses or clones OCCT source under `.deps/`.
 3. Cross-compiles OCCT to `.deps/occt-wasm-install/`.
 4. Builds Geometer in `build-wasm/`.
 5. Copies the Node CLI outputs `geometer.js` / `geometer.wasm` into `dist/`.

@@ -74,7 +74,7 @@ HLR benchmark page:
 ## Dependencies
 
 - [OpenCASCADE Technology](https://dev.opencascade.org/) (V7_8_1) - built from source automatically.
-- [RapidJSON](https://github.com/Tencent/rapidjson) (v1.1.0, header-only) - required by OCCT for glTF export.
+- [RapidJSON](https://github.com/Tencent/rapidjson) (v1.1.0, header-only) - vendored in `third_party/rapidjson` for OCCT glTF export.
 - Python 3 - needed by `scripts/build_occt.py` (invoked by CMake on first configure).
 
 ## Project structure
@@ -82,6 +82,7 @@ HLR benchmark page:
 - `src/cpp/lib/` - libgeometer, the reusable C++ core.
 - `src/cpp/cli/` - geometer CLI executable.
 - `src/js/` - JavaScript/WASM code.
+- `third_party/` - small vendored source dependencies used by the build.
 - `tests/` - rack-based stratified test system.
 - `docs/adr/` - architecture decision records.
 - `docs/requirements/` - requirements.

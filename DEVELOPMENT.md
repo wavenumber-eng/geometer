@@ -258,6 +258,18 @@ After a WASM build, validate the browser STEP-byte-to-GLB-byte export:
 node tests\wasm\step_to_glb_bytes_smoke.js
 ```
 
+To benchmark the browser C ABI planar batch solver against a packed request:
+
+```powershell
+node tests\wasm\planar_batch_solve_bytes_benchmark.js request.bin response.bin --warmup 1 --repeat 5 --metrics metrics.json
+```
+
+To run the same benchmark in headless Chrome, including the Web Worker path:
+
+```powershell
+python tests\wasm\planar_batch_solve_bytes_chrome_benchmark.py request.bin --worker --warmup 1 --repeat 5 --metrics metrics.json
+```
+
 The Rack metadata under `tests/` describes test strata, but the C++ tests are
 registered through CTest.
 

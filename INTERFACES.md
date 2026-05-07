@@ -49,7 +49,7 @@ That includes the current public headers:
 
 Defined in `src/cpp/lib/geometer/version.h`.
 
-Geometer v0.3.0 uses C ABI version `2`. The project version follows semver.
+Geometer v0.3.1 uses C ABI version `3`. The project version follows semver.
 While Geometer is under `0.x`, public interface changes may still happen, but
 consumers should check both the project version and ABI version at runtime.
 
@@ -392,6 +392,12 @@ struct PlanarBatchSolveOptions {
 struct PlanarSolveJobResult {
     std::vector<PlanarSolveRegion> regions;
     double area_mm2 = 0.0;
+    std::uint32_t source_subject_ring_count = 0;
+    std::uint32_t raw_subject_ring_count = 0;
+    std::uint32_t stroke_path_count = 0;
+    std::uint32_t stroke_region_count = 0;
+    std::uint32_t local_subtract_ring_count = 0;
+    std::uint32_t common_subtract_ring_count = 0;
 };
 
 struct PlanarBatchSolveInput {
@@ -426,11 +432,11 @@ contain duplicate closing points are tolerated and cleaned.
 ### Planar Batch Byte Format
 
 `solve_planar_batch_from_bytes` and the matching C ABI use a little-endian
-binary packet. Version 1 request packets start with:
+binary packet. Version 2 request packets start with:
 
 ```text
 bytes[8] magic = "GMPBRQ01"
-u32 version = 1
+u32 version = 2
 u32 flags = 0
 u32 decimal_precision
 u32 job_count
@@ -491,7 +497,7 @@ Response packets start with:
 
 ```text
 bytes[8] magic = "GMPBRS01"
-u32 version = 1
+u32 version = 2
 u32 job_count
 u32 total_region_count
 u32 total_ring_count
@@ -505,8 +511,14 @@ Each job then encodes:
 u32 region_count
 u32 ring_count
 u32 point_count
-u32 reserved
+u32 source_subject_ring_count
 f64 area_mm2
+u32 raw_subject_ring_count
+u32 stroke_path_count
+u32 stroke_region_count
+u32 local_subtract_ring_count
+u32 common_subtract_ring_count
+u32 reserved
 regions...
 ```
 

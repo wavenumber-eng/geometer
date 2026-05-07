@@ -29,7 +29,7 @@
       if (version !== "0.1.0") {
         throw new Error(`Unexpected geometer version: ${version}`);
       }
-      if (abi !== 1) {
+      if (abi < 1) {
         throw new Error(`Unexpected geometer ABI version: ${abi}`);
       }
 

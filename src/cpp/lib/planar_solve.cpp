@@ -19,7 +19,7 @@ namespace
 
 constexpr unsigned char REQUEST_MAGIC[8] = {'G', 'M', 'P', 'B', 'R', 'Q', '0', '1'};
 constexpr unsigned char RESPONSE_MAGIC[8] = {'G', 'M', 'P', 'B', 'R', 'S', '0', '1'};
-constexpr std::uint32_t FORMAT_VERSION = 1;
+constexpr std::uint32_t FORMAT_VERSION = 2;
 constexpr std::uint32_t JOB_SUBTRACT_COMMON_RINGS = 1u << 0u;
 constexpr std::uint32_t JOB_FILTER_COMMON_SUBTRACT_BY_BOUNDS = 1u << 1u;
 constexpr std::uint32_t JOB_CLIP_TO_FINAL_RINGS = 1u << 2u;
@@ -391,6 +391,13 @@ Bounds2d bounds_for_rings(const std::vector<PlanarSolveRing>& rings)
     return bounds;
 }
 
+std::uint32_t diagnostic_count(std::size_t value)
+{
+    return value > static_cast<std::size_t>(std::numeric_limits<std::uint32_t>::max())
+               ? std::numeric_limits<std::uint32_t>::max()
+               : static_cast<std::uint32_t>(value);
+}
+
 Bounds2d expand_bounds(Bounds2d bounds, double margin)
 {
     if (!bounds.valid)
@@ -522,13 +529,28 @@ std::vector<PlanarSolveRing> common_subtract_rings_for_job(const PlanarSolveJob&
 
 PlanarSolveJobResult solve_job(const PlanarSolveJob& job, const PlanarBatchSolveInput& input)
 {
-    PathsD subject_paths = to_clipper_paths(job.subject_rings);
+    PlanarSolveJobResult result;
+    result.raw_subject_ring_count = diagnostic_count(job.subject_rings.size());
+    result.local_subtract_ring_count = diagnostic_count(job.subtract_rings.size());
+
+    std::vector<PlanarSolveRing> subject_rings = job.subject_rings;
     for (const PlanarSolveStrokeGroup& stroke_group : job.stroke_groups)
     {
-        append_paths(&subject_paths, offset_stroke_group(stroke_group, input.options));
+        result.stroke_path_count += diagnostic_count(stroke_group.paths.size());
+        const PathsD stroke_paths = offset_stroke_group(stroke_group, input.options);
+        const std::vector<PlanarSolveRegion> stroke_regions =
+            execute_boolean(ClipType::Union, stroke_paths, {}, input.options);
+        result.stroke_region_count += diagnostic_count(stroke_regions.size());
+        const std::vector<PlanarSolveRing> stroke_rings = rings_from_regions(stroke_regions);
+        subject_rings.reserve(subject_rings.size() + stroke_rings.size());
+        for (const PlanarSolveRing& ring : stroke_rings)
+        {
+            subject_rings.push_back(ring);
+        }
     }
+    result.source_subject_ring_count = diagnostic_count(subject_rings.size());
 
-    PlanarSolveJobResult result;
+    PathsD subject_paths = to_clipper_paths(subject_rings);
     if (subject_paths.empty())
     {
         return result;
@@ -543,6 +565,7 @@ PlanarSolveJobResult solve_job(const PlanarSolveJob& job, const PlanarBatchSolve
     std::vector<PlanarSolveRing> common_rings =
         common_subtract_rings_for_job(job, input.common_subtract_rings, prepared_subject,
                                       input.options);
+    result.common_subtract_ring_count = diagnostic_count(common_rings.size());
     subtract_rings.reserve(subtract_rings.size() + common_rings.size());
     for (const PlanarSolveRing& ring : common_rings)
     {
@@ -851,8 +874,14 @@ std::vector<unsigned char> encode_response(const PlanarBatchSolveResult& result)
         writer.u32(checked_count(job.regions.size(), "job region count"));
         writer.u32(checked_count(job_ring_count, "job ring count"));
         writer.u32(checked_count(job_point_count, "job point count"));
-        writer.u32(0);
+        writer.u32(job.source_subject_ring_count);
         writer.f64(job.area_mm2);
+        writer.u32(job.raw_subject_ring_count);
+        writer.u32(job.stroke_path_count);
+        writer.u32(job.stroke_region_count);
+        writer.u32(job.local_subtract_ring_count);
+        writer.u32(job.common_subtract_ring_count);
+        writer.u32(0);
 
         for (const PlanarSolveRegion& region : job.regions)
         {

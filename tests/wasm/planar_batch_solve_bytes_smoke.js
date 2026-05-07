@@ -6,6 +6,7 @@ const createGeometerModule = require(path.join(root, "dist", "geometer-browser.j
 
 const requestMagic = Buffer.from("GMPBRQ01", "ascii");
 const responseMagic = Buffer.from("GMPBRS01", "ascii");
+const formatVersion = 2;
 const jobSubtractCommonRings = 1 << 0;
 const jobFilterCommonSubtractByBounds = 1 << 1;
 
@@ -84,7 +85,7 @@ function rect(minX, minY, maxX, maxY) {
 function makeRequest() {
   const writer = new Writer();
   writer.raw(requestMagic);
-  writer.u32(1);
+  writer.u32(formatVersion);
   writer.u32(0);
   writer.u32(6);
   writer.u32(1);
@@ -152,8 +153,8 @@ async function main() {
 
   const version = module.ccall("geometer_version_string", "string", [], []);
   const abi = module.ccall("geometer_abi_version", "number", [], []);
-  if (version !== "0.3.0" || abi !== 2) {
-    throw new Error(`Expected geometer 0.3.0 ABI 2, got ${version} ABI ${abi}`);
+  if (version !== "0.3.1" || abi !== 3) {
+    throw new Error(`Expected geometer 0.3.1 ABI 3, got ${version} ABI ${abi}`);
   }
   if (typeof module._geometer_planar_batch_solve_bytes !== "function") {
     throw new Error("geometer_planar_batch_solve_bytes is not exported.");
@@ -166,7 +167,7 @@ async function main() {
 
   const reader = new Reader(result.value);
   reader.magic(responseMagic);
-  if (reader.u32() !== 1) {
+  if (reader.u32() !== formatVersion) {
     throw new Error("Unexpected response version.");
   }
   if (reader.u32() !== 1) {
@@ -183,11 +184,20 @@ async function main() {
   }
   reader.u32();
   reader.u32();
-  reader.u32();
+  if (reader.u32() !== 1) {
+    throw new Error("Unexpected prepared subject ring count.");
+  }
   const area = reader.f64();
   if (Math.abs(area - 8.0) > 1e-6) {
     throw new Error(`Unexpected area ${area}`);
   }
+  if (reader.u32() !== 1) {
+    throw new Error("Unexpected raw subject ring count.");
+  }
+  if (reader.u32() !== 0 || reader.u32() !== 0 || reader.u32() !== 0 || reader.u32() !== 1) {
+    throw new Error("Unexpected job diagnostic counts.");
+  }
+  reader.u32();
 
   console.log(JSON.stringify({ version, abi, area, bytes: result.value.length }));
 }

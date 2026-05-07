@@ -15,7 +15,7 @@ namespace
 
 constexpr unsigned char REQUEST_MAGIC[8] = {'G', 'M', 'P', 'B', 'R', 'Q', '0', '1'};
 constexpr unsigned char RESPONSE_MAGIC[8] = {'G', 'M', 'P', 'B', 'R', 'S', '0', '1'};
-constexpr std::uint32_t FORMAT_VERSION = 1;
+constexpr std::uint32_t FORMAT_VERSION = 2;
 constexpr std::uint32_t JOB_SUBTRACT_COMMON_RINGS = 1u << 0u;
 constexpr std::uint32_t JOB_FILTER_COMMON_SUBTRACT_BY_BOUNDS = 1u << 1u;
 
@@ -70,6 +70,11 @@ void overlapping_strokes_fuse_to_one_region()
     require(result.jobs.size() == 1, "one job should be returned");
     require(result.jobs[0].regions.size() == 1, "overlapping strokes should fuse into one region");
     require(result.jobs[0].regions[0].holes.empty(), "fused stroke should not have holes");
+    require(result.jobs[0].stroke_path_count == 2, "stroke path diagnostics should be preserved");
+    require(result.jobs[0].stroke_region_count == 1,
+            "stroke region diagnostics should count fused stroke regions");
+    require(result.jobs[0].source_subject_ring_count == 1,
+            "prepared subject diagnostics should count stroke regions");
     require(result.jobs[0].area_mm2 > 35.0 && result.jobs[0].area_mm2 < 42.0,
             "fused stroke area should be capsule-like");
 }
@@ -232,8 +237,14 @@ void c_api_binary_batch_solve()
     require(reader.u32() == 1, "job region count mismatch");
     (void)reader.u32();
     (void)reader.u32();
-    (void)reader.u32();
+    require(reader.u32() == 1, "job prepared subject ring count mismatch");
     require_near(reader.f64(), 8.0, 1.0e-6, "C API binary area should be stable");
+    require(reader.u32() == 1, "job raw subject ring count mismatch");
+    require(reader.u32() == 0, "job stroke path count mismatch");
+    require(reader.u32() == 0, "job stroke region count mismatch");
+    require(reader.u32() == 0, "job local subtract ring count mismatch");
+    require(reader.u32() == 1, "job common subtract ring count mismatch");
+    (void)reader.u32();
     geometer_free_bytes(value);
 }
 

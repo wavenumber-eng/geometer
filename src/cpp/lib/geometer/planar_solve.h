@@ -73,6 +73,12 @@ struct PlanarSolveJobResult
 {
     std::vector<PlanarSolveRegion> regions;
     double area_mm2 = 0.0;
+    std::uint32_t source_subject_ring_count = 0;
+    std::uint32_t raw_subject_ring_count = 0;
+    std::uint32_t stroke_path_count = 0;
+    std::uint32_t stroke_region_count = 0;
+    std::uint32_t local_subtract_ring_count = 0;
+    std::uint32_t common_subtract_ring_count = 0;
 };
 
 struct PlanarBatchSolveInput

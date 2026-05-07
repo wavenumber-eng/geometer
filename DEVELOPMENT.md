@@ -198,13 +198,14 @@ direct byte-buffer calls from JavaScript or a Web Worker.
 
 The browser target also exports `geometer_version_string` and
 `geometer_abi_version`. Downstream browser consumers should check those before
-depending on a specific ABI. Geometer ABI 2 adds the planar batch solve byte
-entry point used for packed browser geometry offload.
+depending on a specific ABI. Geometer ABI 2 added the planar batch solve byte
+entry point used for packed browser geometry offload. ABI 3 adds per-job
+planar batch diagnostics to that byte response.
 
 ## Versioning
 
-The current project version is `0.3.0`, declared in the root `CMakeLists.txt`.
-The current C ABI version is `2`, declared as `GEOMETER_ABI_VERSION` in
+The current project version is `0.3.1`, declared in the root `CMakeLists.txt`.
+The current C ABI version is `3`, declared as `GEOMETER_ABI_VERSION` in
 `src/cpp/lib/CMakeLists.txt`.
 
 Use semver for project releases and tag releases as `v0.1.0`, `v0.2.0`,

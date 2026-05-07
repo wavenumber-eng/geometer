@@ -686,6 +686,7 @@ Native CLI:
 .\dist\geometer.exe step-to-glb input.step output.glb
 .\dist\geometer.exe step-project-hlr input.step output.json
 .\dist\geometer.exe step-project-svg input.step output.svg --mode simple --view top
+.\dist\geometer.exe planar-batch-solve request.bin response.bin --warmup 1 --repeat 5 --metrics metrics.json
 ```
 
 Node WASM CLI:
@@ -706,6 +707,17 @@ STEP-to-GLB CLI options:
 
 - `--deflection <value>`
 - `--angular <value>`
+
+Planar batch solve CLI options:
+
+- `--warmup <count>`: run unmeasured solves before benchmark repeats.
+- `--repeat <count>`: measured solve repeats.
+- `--metrics <path>`: write JSON metrics with request/response byte sizes and
+  min/mean/max/last solve time.
+
+`planar-batch-solve` uses the same packed request/response byte format as
+`solve_planar_batch_from_bytes` and the browser C ABI. It is intended for
+native-vs-WASM diagnostics and benchmark comparisons.
 
 ## Distribution Artifacts
 

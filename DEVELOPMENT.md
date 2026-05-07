@@ -150,6 +150,7 @@ Common native CLI commands:
 .\dist\geometer.exe step-to-glb input.step output.glb
 .\dist\geometer.exe step-project-hlr input.step output.json
 .\dist\geometer.exe step-project-svg input.step output.svg --mode simple --view top
+.\dist\geometer.exe planar-batch-solve request.bin response.bin --warmup 1 --repeat 5 --metrics metrics.json
 ```
 
 ## Manual OCCT Rebuild

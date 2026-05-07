@@ -14,6 +14,7 @@ Current and planned library surfaces include:
 - STEP to GLB conversion.
 - STEP hidden-line projection geometry.
 - Planar contour extraction for simplified projected outlines.
+- Planar batch boolean/offset solving for filled 2D geometry.
 - Future STEP mesh/tessellation APIs for browser rendering.
 
 The core library must stay generic. Do not put board placement rules, Altium
@@ -45,6 +46,11 @@ intentionally ignored by Git.
 vendor, and required by OCCT's GLB export path. The vendored copy is checked in
 so a fresh clone does not need a separate RapidJSON git checkout.
 
+`third_party/clipper2/` is also different. Clipper2 is a compact BSL-1.0 C++
+library used by Geometer's generic planar batch solve API. The checked-in copy
+contains only the C++ library sources, headers, upstream license, and a local
+vendoring note.
+
 `dist/` is different. This repository currently treats `dist/` as the location
 for distributable binaries. CMake and WASM builds copy final outputs there.
 Those outputs are committed when publishing changes so another project can clone
@@ -59,6 +65,7 @@ Pinned dependency versions live in scripts:
 
 - OCCT: `scripts/build_occt.py`
 - RapidJSON: `third_party/rapidjson/`
+- Clipper2: `third_party/clipper2/`
 - emsdk: `scripts/build_wasm.py`
 
 ## Workspace Copy Setup
@@ -191,15 +198,17 @@ direct byte-buffer calls from JavaScript or a Web Worker.
 
 The browser target also exports `geometer_version_string` and
 `geometer_abi_version`. Downstream browser consumers should check those before
-depending on a specific ABI.
+depending on a specific ABI. Geometer ABI 2 adds the planar batch solve byte
+entry point used for packed browser geometry offload.
 
 ## Versioning
 
-The current project version is `0.2.0`, declared in the root `CMakeLists.txt`.
-The current C ABI version is `1`, declared as `GEOMETER_ABI_VERSION` in
+The current project version is `0.3.0`, declared in the root `CMakeLists.txt`.
+The current C ABI version is `2`, declared as `GEOMETER_ABI_VERSION` in
 `src/cpp/lib/CMakeLists.txt`.
 
-Use semver for project releases and tag releases as `v0.1.0`, `v0.2.0`, etc.
+Use semver for project releases and tag releases as `v0.1.0`, `v0.2.0`,
+`v0.3.0`, etc.
 While the project is under `0.x`, interface changes may still happen, but any
 breaking C ABI/WASM change must increment `GEOMETER_ABI_VERSION` and rebuild the
 persisted `dist/` artifacts.

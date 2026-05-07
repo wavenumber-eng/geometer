@@ -43,12 +43,13 @@ That includes the current public headers:
 - `geometer/projection.h`
 - `geometer/projection_options_json.h`
 - `geometer/planar_contours.h`
+- `geometer/planar_solve.h`
 
 ## Version
 
 Defined in `src/cpp/lib/geometer/version.h`.
 
-Geometer v0.2.0 uses C ABI version `1`. The project version follows semver.
+Geometer v0.3.0 uses C ABI version `2`. The project version follows semver.
 While Geometer is under `0.x`, public interface changes may still happen, but
 consumers should check both the project version and ABI version at runtime.
 
@@ -330,6 +331,194 @@ This helper turns planar line segments into closed rings and output contour
 segments. The HLR implementation uses it to generate simplified projection
 geometry.
 
+## Planar Batch Solve
+
+Defined in `src/cpp/lib/geometer/planar_solve.h`.
+
+The planar batch solve API performs generic 2D filled-geometry work:
+
+1. starts with closed subject rings;
+2. offsets open stroke paths into filled regions;
+3. unions the subject and stroked fills;
+4. subtracts local and optional common rings;
+5. optionally clips each job to final clip rings;
+6. returns outline/hole regions suitable for meshing or rendering.
+
+It intentionally has no PCB, EDA, visualizer, or file-format policy.
+
+```cpp
+struct PlanarSolvePoint {
+    double x = 0.0;
+    double y = 0.0;
+};
+
+using PlanarSolvePath = std::vector<PlanarSolvePoint>;
+using PlanarSolveRing = PlanarSolvePath;
+
+struct PlanarSolveRegion {
+    PlanarSolveRing outline;
+    std::vector<PlanarSolveRing> holes;
+};
+
+enum class PlanarSolveJoinType { Miter, Round, Bevel, Square };
+enum class PlanarSolveEndType { Round, Square, Butt, Joined };
+
+struct PlanarSolveStrokeGroup {
+    double radius_mm = 0.0;
+    double miter_limit = 2.0;
+    double arc_tolerance_mm = 0.0;
+    PlanarSolveJoinType join_type = PlanarSolveJoinType::Miter;
+    PlanarSolveEndType end_type = PlanarSolveEndType::Round;
+    std::vector<PlanarSolvePath> paths;
+};
+
+struct PlanarSolveJob {
+    std::vector<PlanarSolveRing> subject_rings;
+    std::vector<PlanarSolveRing> subtract_rings;
+    std::vector<PlanarSolveStrokeGroup> stroke_groups;
+    bool subtract_common_rings = true;
+    bool filter_common_subtract_by_bounds = true;
+    bool clip_to_final_rings = true;
+    double common_subtract_filter_margin_mm = 0.0;
+};
+
+struct PlanarBatchSolveOptions {
+    int decimal_precision = 6;
+    double cleanup_radius_mm = 0.0;
+    double cleanup_miter_limit = 2.0;
+    double cleanup_arc_tolerance_mm = 0.0;
+};
+
+struct PlanarSolveJobResult {
+    std::vector<PlanarSolveRegion> regions;
+    double area_mm2 = 0.0;
+};
+
+struct PlanarBatchSolveInput {
+    PlanarBatchSolveOptions options;
+    std::vector<PlanarSolveRing> common_subtract_rings;
+    std::vector<PlanarSolveRing> final_clip_rings;
+    std::vector<PlanarSolveJob> jobs;
+};
+
+struct PlanarBatchSolveResult {
+    std::vector<PlanarSolveJobResult> jobs;
+};
+
+int solve_planar_batch(
+    const PlanarBatchSolveInput& input,
+    PlanarBatchSolveResult* result,
+    Status* status = nullptr
+);
+
+int solve_planar_batch_from_bytes(
+    const unsigned char* request_data,
+    std::size_t request_size,
+    std::vector<unsigned char>* response_bytes,
+    Status* status = nullptr
+);
+```
+
+Closed rings should be supplied without a duplicate closing point. Output
+outlines are oriented positive and holes are oriented negative. Inputs that
+contain duplicate closing points are tolerated and cleaned.
+
+### Planar Batch Byte Format
+
+`solve_planar_batch_from_bytes` and the matching C ABI use a little-endian
+binary packet. Version 1 request packets start with:
+
+```text
+bytes[8] magic = "GMPBRQ01"
+u32 version = 1
+u32 flags = 0
+u32 decimal_precision
+u32 job_count
+f64 cleanup_radius_mm
+f64 cleanup_miter_limit
+f64 cleanup_arc_tolerance_mm
+u32 common_subtract_ring_count
+u32 final_clip_ring_count
+u32 reserved0
+u32 reserved1
+```
+
+Then all common subtract rings, then all final clip rings, then each job.
+
+Ring and path encoding:
+
+```text
+u32 point_count
+repeat point_count:
+  f64 x
+  f64 y
+```
+
+Job encoding:
+
+```text
+u32 flags
+f64 common_subtract_filter_margin_mm
+u32 subject_ring_count
+u32 local_subtract_ring_count
+u32 stroke_group_count
+u32 reserved
+subject rings...
+local subtract rings...
+stroke groups...
+```
+
+Job flags:
+
+- `1`: subtract common rings.
+- `2`: filter common subtract rings by expanded subject bounds.
+- `4`: clip result to final clip rings.
+
+Stroke group encoding:
+
+```text
+f64 radius_mm
+f64 miter_limit
+f64 arc_tolerance_mm
+u32 join_type      // 0=miter, 1=round, 2=bevel, 3=square
+u32 end_type       // 0=round, 1=square, 2=butt, 3=joined
+u32 path_count
+u32 reserved
+open paths...
+```
+
+Response packets start with:
+
+```text
+bytes[8] magic = "GMPBRS01"
+u32 version = 1
+u32 job_count
+u32 total_region_count
+u32 total_ring_count
+u32 total_point_count
+u32 reserved
+```
+
+Each job then encodes:
+
+```text
+u32 region_count
+u32 ring_count
+u32 point_count
+u32 reserved
+f64 area_mm2
+regions...
+```
+
+Each region then encodes:
+
+```text
+u32 hole_count
+u32 reserved
+outline ring
+hole rings...
+```
+
 ## C ABI
 
 Defined in `src/cpp/lib/geometer/c_api.h`.
@@ -380,6 +569,16 @@ int geometer_step_to_glb_bytes(
     char** error
 );
 
+GeometerByteResult geometer_planar_batch_solve(GeometerBuffer request_data);
+
+int geometer_planar_batch_solve_bytes(
+    const unsigned char* request_data,
+    size_t request_size,
+    unsigned char** value,
+    size_t* value_size,
+    char** error
+);
+
 const char* geometer_version_string(void);
 int geometer_version_major(void);
 int geometer_version_minor(void);
@@ -392,9 +591,9 @@ void geometer_free_bytes(unsigned char* value);
 
 Returned `error` strings and projection JSON `value` strings are heap-allocated
 and owned by the caller. Release them with `geometer_free_string`. Returned GLB
-byte buffers are heap-allocated and owned by the caller. Release them with
-`geometer_free_bytes`. The version string is static storage and does not use
-either free function.
+and planar batch byte buffers are heap-allocated and owned by the caller.
+Release them with `geometer_free_bytes`. The version string is static storage
+and does not use either free function.
 
 ## WASM Interfaces
 
@@ -424,6 +623,8 @@ The browser target is modularized with the factory name
 - `_geometer_step_hlr_projection_json_bytes`
 - `_geometer_step_to_glb`
 - `_geometer_step_to_glb_bytes`
+- `_geometer_planar_batch_solve`
+- `_geometer_planar_batch_solve_bytes`
 - `_geometer_free_string`
 - `_geometer_free_bytes`
 

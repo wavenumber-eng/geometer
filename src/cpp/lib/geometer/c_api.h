@@ -41,6 +41,12 @@ extern "C"
                                    const char* options_json, unsigned char** value,
                                    size_t* value_size, char** error);
 
+    GeometerByteResult geometer_planar_batch_solve(GeometerBuffer request_data);
+
+    int geometer_planar_batch_solve_bytes(const unsigned char* request_data, size_t request_size,
+                                          unsigned char** value, size_t* value_size,
+                                          char** error);
+
     const char* geometer_version_string(void);
     int geometer_version_major(void);
     int geometer_version_minor(void);

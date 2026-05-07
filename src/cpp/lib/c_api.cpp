@@ -1,5 +1,6 @@
 #include "geometer/c_api.h"
 
+#include "geometer/planar_solve.h"
 #include "geometer/projection.h"
 #include "geometer/projection_options_json.h"
 #include "geometer/step_to_glb.h"
@@ -38,6 +39,23 @@ int assign_error(int code, const std::string& message, char** error)
     }
     *error = text;
     return code;
+}
+
+int copy_byte_vector(const std::vector<unsigned char>& source, unsigned char** value,
+                     std::size_t* value_size, const char* label, char** error)
+{
+    unsigned char* bytes = static_cast<unsigned char*>(std::malloc(source.size()));
+    if (bytes == nullptr)
+    {
+        return assign_error(94, std::string("Failed allocating ") + label + " byte result.", error);
+    }
+    if (!source.empty())
+    {
+        std::memcpy(bytes, source.data(), source.size());
+    }
+    *value = bytes;
+    *value_size = source.size();
+    return 0;
 }
 
 } // namespace
@@ -137,15 +155,45 @@ int geometer_step_to_glb_bytes(const unsigned char* step_data, std::size_t step_
         return assign_error(3, "STEP-to-GLB conversion returned empty GLB bytes.", error);
     }
 
-    unsigned char* bytes = static_cast<unsigned char*>(std::malloc(glb_bytes.size()));
-    if (bytes == nullptr)
+    return copy_byte_vector(glb_bytes, value, value_size, "GLB", error);
+}
+
+GeometerByteResult geometer_planar_batch_solve(GeometerBuffer request_data)
+{
+    GeometerByteResult result;
+    result.value = nullptr;
+    result.size = 0;
+    result.error = nullptr;
+    result.code = geometer_planar_batch_solve_bytes(
+        request_data.data, request_data.size, &result.value, &result.size, &result.error);
+    return result;
+}
+
+int geometer_planar_batch_solve_bytes(const unsigned char* request_data, std::size_t request_size,
+                                      unsigned char** value, std::size_t* value_size, char** error)
+{
+    if (value == nullptr || value_size == nullptr || error == nullptr)
     {
-        return assign_error(94, "Failed allocating GLB byte result.", error);
+        return 93;
     }
-    std::memcpy(bytes, glb_bytes.data(), glb_bytes.size());
-    *value = bytes;
-    *value_size = glb_bytes.size();
-    return 0;
+    *value = nullptr;
+    *value_size = 0;
+    *error = nullptr;
+
+    geometer::Status status;
+    std::vector<unsigned char> response;
+    const int code =
+        geometer::solve_planar_batch_from_bytes(request_data, request_size, &response, &status);
+    if (code != 0)
+    {
+        return assign_error(code, status.message, error);
+    }
+    if (response.empty())
+    {
+        return assign_error(3, "Planar batch solve returned empty bytes.", error);
+    }
+
+    return copy_byte_vector(response, value, value_size, "planar batch solve", error);
 }
 
 const char* geometer_version_string(void)

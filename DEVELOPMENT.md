@@ -185,6 +185,8 @@ This script:
 5. Copies the Node CLI outputs `geometer.js` / `geometer.wasm` into `dist/`.
 6. Copies the browser C ABI outputs `geometer-browser.js` /
    `geometer-browser.wasm` into `dist/`.
+7. Copies the planar-only browser C ABI outputs `geometer-planar-browser.js` /
+   `geometer-planar-browser.wasm` into `dist/`.
 
 To remove WASM-specific generated state:
 

@@ -621,6 +621,11 @@ Browser/Web Worker target:
 - `dist/geometer-browser.js`
 - `dist/geometer-browser.wasm`
 
+Planar-only Browser/Web Worker target:
+
+- `dist/geometer-planar-browser.js`
+- `dist/geometer-planar-browser.wasm`
+
 The browser target is modularized with the factory name
 `createGeometerModule`. It exports:
 
@@ -648,6 +653,17 @@ It also exports these Emscripten runtime helpers:
 - `stringToUTF8`
 - `lengthBytesUTF8`
 - `getValue`
+
+The planar-only browser target is modularized with the factory name
+`createGeometerPlanarModule`. It exports only the version/free functions plus:
+
+- `_malloc`
+- `_free`
+- `_geometer_planar_batch_solve`
+- `_geometer_planar_batch_solve_bytes`
+
+Use this target for browser workers that only need packed planar geometry
+operations and should not pay the OCCT/STEP WASM startup cost.
 
 Minimal browser-worker shape:
 
@@ -731,6 +747,8 @@ Persist these when publishing interface changes:
 - Node WASM CLI: `dist/geometer.js` and `dist/geometer.wasm`.
 - Browser WASM C ABI: `dist/geometer-browser.js` and
   `dist/geometer-browser.wasm`.
+- Planar browser WASM C ABI: `dist/geometer-planar-browser.js` and
+  `dist/geometer-planar-browser.wasm`.
 
 Do not commit local generated build state:
 

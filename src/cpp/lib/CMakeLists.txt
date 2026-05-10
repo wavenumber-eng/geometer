@@ -1,8 +1,10 @@
 add_library(geometer_lib STATIC
     c_api.cpp
+    clipper2_bytes.cpp
     hlr_projection.cpp
     planar_contours.cpp
     planar_solve.cpp
+    planar_triangulate.cpp
     projection.cpp
     projection_options_json.cpp
     step_to_glb.cpp
@@ -15,7 +17,7 @@ add_library(geometer_lib STATIC
 )
 set_target_properties(geometer_lib PROPERTIES OUTPUT_NAME geometer)
 
-set(GEOMETER_ABI_VERSION 3 CACHE STRING "Geometer C ABI version" FORCE)
+set(GEOMETER_ABI_VERSION 5 CACHE STRING "Geometer C ABI version" FORCE)
 configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/geometer/version_config.h.in"
     "${CMAKE_CURRENT_BINARY_DIR}/generated/geometer/version_config.h"
@@ -75,7 +77,7 @@ if(EMSCRIPTEN)
         -sMODULARIZE=1
         -sEXPORT_NAME=createGeometerModule
         -sNO_EXIT_RUNTIME=1
-        "-sEXPORTED_FUNCTIONS=['_malloc','_free','_geometer_version_string','_geometer_version_major','_geometer_version_minor','_geometer_version_patch','_geometer_abi_version','_geometer_step_hlr_projection_json','_geometer_step_hlr_projection_json_bytes','_geometer_step_to_glb','_geometer_step_to_glb_bytes','_geometer_planar_batch_solve','_geometer_planar_batch_solve_bytes','_geometer_free_string','_geometer_free_bytes']"
+        "-sEXPORTED_FUNCTIONS=['_malloc','_free','_geometer_version_string','_geometer_version_major','_geometer_version_minor','_geometer_version_patch','_geometer_abi_version','_geometer_step_hlr_projection_json','_geometer_step_hlr_projection_json_bytes','_geometer_step_to_glb','_geometer_step_to_glb_bytes','_geometer_planar_batch_solve','_geometer_planar_batch_solve_bytes','_geometer_planar_triangulate','_geometer_planar_triangulate_bytes','_geometer_clipper2_boolean','_geometer_clipper2_boolean_bytes','_geometer_clipper2_inflate_open','_geometer_clipper2_inflate_open_bytes','_geometer_free_string','_geometer_free_bytes']"
         "-sEXPORTED_RUNTIME_METHODS=['ccall','cwrap','UTF8ToString','stringToUTF8','lengthBytesUTF8','getValue']"
     )
     set_target_properties(geometer_browser PROPERTIES
@@ -97,7 +99,9 @@ if(EMSCRIPTEN)
     add_executable(geometer_planar_browser
         browser_exports.cpp
         c_api_planar.cpp
+        clipper2_bytes.cpp
         planar_solve.cpp
+        planar_triangulate.cpp
         version.cpp
         ${CMAKE_SOURCE_DIR}/third_party/clipper2/src/clipper.engine.cpp
         ${CMAKE_SOURCE_DIR}/third_party/clipper2/src/clipper.offset.cpp
@@ -118,7 +122,7 @@ if(EMSCRIPTEN)
         -sMODULARIZE=1
         -sEXPORT_NAME=createGeometerPlanarModule
         -sNO_EXIT_RUNTIME=1
-        "-sEXPORTED_FUNCTIONS=['_malloc','_free','_geometer_version_string','_geometer_version_major','_geometer_version_minor','_geometer_version_patch','_geometer_abi_version','_geometer_planar_batch_solve','_geometer_planar_batch_solve_bytes','_geometer_free_string','_geometer_free_bytes']"
+        "-sEXPORTED_FUNCTIONS=['_malloc','_free','_geometer_version_string','_geometer_version_major','_geometer_version_minor','_geometer_version_patch','_geometer_abi_version','_geometer_planar_batch_solve','_geometer_planar_batch_solve_bytes','_geometer_planar_triangulate','_geometer_planar_triangulate_bytes','_geometer_clipper2_boolean','_geometer_clipper2_boolean_bytes','_geometer_clipper2_inflate_open','_geometer_clipper2_inflate_open_bytes','_geometer_free_string','_geometer_free_bytes']"
         "-sEXPORTED_RUNTIME_METHODS=['ccall','cwrap','UTF8ToString','stringToUTF8','lengthBytesUTF8','getValue']"
     )
     set_target_properties(geometer_planar_browser PROPERTIES

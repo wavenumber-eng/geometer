@@ -47,6 +47,24 @@ extern "C"
                                           unsigned char** value, size_t* value_size,
                                           char** error);
 
+    GeometerByteResult geometer_planar_triangulate(GeometerBuffer request_data);
+
+    int geometer_planar_triangulate_bytes(const unsigned char* request_data, size_t request_size,
+                                          unsigned char** value, size_t* value_size,
+                                          char** error);
+
+    GeometerByteResult geometer_clipper2_boolean(GeometerBuffer request_data);
+
+    int geometer_clipper2_boolean_bytes(const unsigned char* request_data, size_t request_size,
+                                        unsigned char** value, size_t* value_size,
+                                        char** error);
+
+    GeometerByteResult geometer_clipper2_inflate_open(GeometerBuffer request_data);
+
+    int geometer_clipper2_inflate_open_bytes(const unsigned char* request_data,
+                                             size_t request_size, unsigned char** value,
+                                             size_t* value_size, char** error);
+
     const char* geometer_version_string(void);
     int geometer_version_major(void);
     int geometer_version_minor(void);

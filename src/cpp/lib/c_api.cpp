@@ -1,6 +1,8 @@
 #include "geometer/c_api.h"
 
+#include "geometer/clipper2_bytes.h"
 #include "geometer/planar_solve.h"
+#include "geometer/planar_triangulate.h"
 #include "geometer/projection.h"
 #include "geometer/projection_options_json.h"
 #include "geometer/step_to_glb.h"
@@ -194,6 +196,121 @@ int geometer_planar_batch_solve_bytes(const unsigned char* request_data, std::si
     }
 
     return copy_byte_vector(response, value, value_size, "planar batch solve", error);
+}
+
+GeometerByteResult geometer_planar_triangulate(GeometerBuffer request_data)
+{
+    GeometerByteResult result;
+    result.value = nullptr;
+    result.size = 0;
+    result.error = nullptr;
+    result.code = geometer_planar_triangulate_bytes(
+        request_data.data, request_data.size, &result.value, &result.size, &result.error);
+    return result;
+}
+
+int geometer_planar_triangulate_bytes(const unsigned char* request_data, std::size_t request_size,
+                                      unsigned char** value, std::size_t* value_size, char** error)
+{
+    if (value == nullptr || value_size == nullptr || error == nullptr)
+    {
+        return 93;
+    }
+    *value = nullptr;
+    *value_size = 0;
+    *error = nullptr;
+
+    geometer::Status status;
+    std::vector<unsigned char> response;
+    const int code =
+        geometer::triangulate_planar_from_bytes(request_data, request_size, &response, &status);
+    if (code != 0)
+    {
+        return assign_error(code, status.message, error);
+    }
+    if (response.empty())
+    {
+        return assign_error(3, "Planar triangulate returned empty bytes.", error);
+    }
+
+    return copy_byte_vector(response, value, value_size, "planar triangulate", error);
+}
+
+GeometerByteResult geometer_clipper2_boolean(GeometerBuffer request_data)
+{
+    GeometerByteResult result;
+    result.value = nullptr;
+    result.size = 0;
+    result.error = nullptr;
+    result.code = geometer_clipper2_boolean_bytes(
+        request_data.data, request_data.size, &result.value, &result.size, &result.error);
+    return result;
+}
+
+int geometer_clipper2_boolean_bytes(const unsigned char* request_data, std::size_t request_size,
+                                    unsigned char** value, std::size_t* value_size, char** error)
+{
+    if (value == nullptr || value_size == nullptr || error == nullptr)
+    {
+        return 93;
+    }
+    *value = nullptr;
+    *value_size = 0;
+    *error = nullptr;
+
+    geometer::Status status;
+    std::vector<unsigned char> response;
+    const int code =
+        geometer::clipper2_boolean_from_bytes(request_data, request_size, &response, &status);
+    if (code != 0)
+    {
+        return assign_error(code, status.message, error);
+    }
+    if (response.empty())
+    {
+        return assign_error(3, "Clipper2 boolean returned empty bytes.", error);
+    }
+
+    return copy_byte_vector(response, value, value_size, "clipper2 boolean", error);
+}
+
+GeometerByteResult geometer_clipper2_inflate_open(GeometerBuffer request_data)
+{
+    GeometerByteResult result;
+    result.value = nullptr;
+    result.size = 0;
+    result.error = nullptr;
+    result.code = geometer_clipper2_inflate_open_bytes(
+        request_data.data, request_data.size, &result.value, &result.size, &result.error);
+    return result;
+}
+
+int geometer_clipper2_inflate_open_bytes(const unsigned char* request_data,
+                                         std::size_t request_size, unsigned char** value,
+                                         std::size_t* value_size, char** error)
+{
+    if (value == nullptr || value_size == nullptr || error == nullptr)
+    {
+        return 93;
+    }
+    *value = nullptr;
+    *value_size = 0;
+    *error = nullptr;
+
+    geometer::Status status;
+    std::vector<unsigned char> response;
+    const int code = geometer::clipper2_inflate_open_from_bytes(request_data, request_size,
+                                                                &response, &status);
+    if (code != 0)
+    {
+        return assign_error(code, status.message, error);
+    }
+    if (response.empty())
+    {
+        return assign_error(3, "Clipper2 inflate-open returned empty bytes.", error);
+    }
+
+    return copy_byte_vector(response, value, value_size, "clipper2 inflate-open", error);
 }
 
 const char* geometer_version_string(void)

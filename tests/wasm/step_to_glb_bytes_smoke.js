@@ -64,8 +64,8 @@ async function main() {
   });
 
   const version = module.ccall("geometer_version_string", "string", [], []);
-  if (version !== "0.3.1") {
-    throw new Error(`Expected geometer 0.3.1, got ${version}`);
+  if (version !== "0.5.0") {
+    throw new Error(`Expected geometer 0.5.0, got ${version}`);
   }
   if (typeof module._geometer_step_to_glb_bytes !== "function") {
     throw new Error("geometer_step_to_glb_bytes is not exported.");

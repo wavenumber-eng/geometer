@@ -203,19 +203,18 @@ The browser target also exports `geometer_version_string` and
 `geometer_abi_version`. Downstream browser consumers should check those before
 depending on a specific ABI. Geometer ABI 2 added the planar batch solve byte
 entry point used for packed browser geometry offload. ABI 3 adds per-job
-planar batch diagnostics to that byte response.
+planar batch diagnostics to that byte response. ABI 5 adds browser planar
+triangulation and Clipper2 byte APIs.
 
 ## Versioning
 
-The current project version is `0.3.1`, declared in the root `CMakeLists.txt`.
-The current C ABI version is `3`, declared as `GEOMETER_ABI_VERSION` in
+The current project version is `1.0.0`, declared in the root `CMakeLists.txt`.
+The current C ABI version is `5`, declared as `GEOMETER_ABI_VERSION` in
 `src/cpp/lib/CMakeLists.txt`.
 
-Use semver for project releases and tag releases as `v0.1.0`, `v0.2.0`,
-`v0.3.0`, etc.
-While the project is under `0.x`, interface changes may still happen, but any
-breaking C ABI/WASM change must increment `GEOMETER_ABI_VERSION` and rebuild the
-persisted `dist/` artifacts.
+Use semver for project releases and tag releases as `v1.0.0`, `v1.1.0`, etc.
+Any breaking C ABI/WASM change must increment `GEOMETER_ABI_VERSION` and
+rebuild the persisted `dist/` artifacts.
 
 ## Embedded Model Viewer
 

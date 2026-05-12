@@ -49,9 +49,8 @@ That includes the current public headers:
 
 Defined in `src/cpp/lib/geometer/version.h`.
 
-Geometer v0.3.1 uses C ABI version `3`. The project version follows semver.
-While Geometer is under `0.x`, public interface changes may still happen, but
-consumers should check both the project version and ABI version at runtime.
+Geometer v1.0.0 uses C ABI version `5`. The project version follows semver.
+Consumers should check both the project version and ABI version at runtime.
 
 ```cpp
 struct Version {

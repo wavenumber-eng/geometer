@@ -54,8 +54,10 @@ void parse_explicit_options()
             "curve mode should parse");
     require(options.samples_per_curve == 12, "samples should parse");
     require(options.round_digits == 4, "round digits should parse");
-    require(!options.include_visible, "include_visible should parse");
-    require(options.include_outline, "include_outline should parse");
+    // Legacy include_visible:false zeroes both visible-sharp and visible-outline.
+    // Then include_outline:true re-enables visible-outline only.
+    require(!options.edge_v_sharp, "include_visible should clear edge_v_sharp");
+    require(options.edge_v_outline, "include_outline should set edge_v_outline");
     require(!options.union_simple_polygons, "union_simple_polygons should parse");
 }
 
@@ -71,7 +73,7 @@ void parse_aliases()
                        "}";
 
     geometer::HlrProjectionOptions options;
-    options.include_outline = true;
+    options.edge_v_outline = true;
 
     geometer::Status status;
     const int code = geometer::parse_hlr_projection_options_json(json, &options, &status);
@@ -80,8 +82,8 @@ void parse_aliases()
             "curveMode alias should parse");
     require(options.samples_per_curve == 6, "samples alias should parse");
     require(options.round_digits == 2, "roundDigits alias should parse");
-    require(options.include_visible, "includeVisible alias should parse");
-    require(!options.include_outline, "includeOutline alias should parse");
+    require(options.edge_v_sharp, "includeVisible alias should set edge_v_sharp");
+    require(!options.edge_v_outline, "includeOutline alias should clear edge_v_outline");
     require(options.union_simple_polygons, "unionPolygons alias should parse");
 }
 

@@ -7,186 +7,182 @@
   <style>
     :root {
       color-scheme: light;
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #eef1f4;
+      font-family: ui-monospace, "JetBrains Mono", "Fira Code", Consolas, "SF Mono", Menlo, monospace;
+      font-size: 11px;
+      background: #f5f5f5;
       color: #18202a;
     }
 
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; background: #f5f5f5; }
+    button, select, input { font: inherit; }
 
-    body {
-      margin: 0;
-      min-height: 100vh;
-      background: #eef1f4;
-    }
-
-    button,
-    select {
-      font: inherit;
-    }
-
-    .app {
-      min-height: 100vh;
-      display: grid;
-      grid-template-rows: auto 1fr;
-    }
+    .app { min-height: 100vh; display: grid; grid-template-rows: auto auto auto 1fr; }
 
     .toolbar {
-      display: grid;
-      grid-template-columns: minmax(220px, 1fr) auto auto auto;
-      gap: 12px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 10px;
       align-items: center;
-      padding: 12px 16px;
-      border-bottom: 1px solid #c7d0d9;
-      background: #f9fafb;
+      padding: 6px 10px;
+      background: #f5f5f5;
+      border: 0;
     }
 
-    .select-wrap {
-      display: grid;
-      grid-template-columns: 84px minmax(0, 1fr);
-      gap: 8px;
+    .tunables {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 10px;
       align-items: center;
-      min-width: 0;
-    }
-
-    .label {
+      padding: 4px 10px 6px;
+      background: #f5f5f5;
+      border: 0;
+      font-size: 11px;
       color: #4a5565;
-      font-size: 13px;
-      line-height: 1;
     }
+
+    .tunables .control {
+      display: inline-flex;
+      gap: 4px;
+      align-items: center;
+    }
+
+    .tunables input, .tunables select {
+      height: 22px;
+      padding: 0 4px;
+      border: 0;
+      border-radius: 0;
+      background: #fff;
+      color: #17202a;
+      font-size: 11px;
+    }
+
+    .tunables input[type=number] { width: 64px; }
+
+    .edge-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px 8px;
+      align-items: center;
+      padding: 0 10px 6px;
+      background: #f5f5f5;
+      font-size: 11px;
+      color: #4a5565;
+    }
+    .edge-row .group-label { font-weight: 600; color: #344154; margin-right: 2px; }
+    .edge-row .legend { color: #647184; margin-left: 6px; font-size: 10px; }
+    .edge-row label.flag {
+      display: inline-flex;
+      gap: 3px;
+      align-items: center;
+      padding: 2px 4px;
+      background: #fff;
+      cursor: pointer;
+      user-select: none;
+    }
+    .edge-row label.flag.disabled { opacity: 0.45; cursor: not-allowed; }
+    .edge-row input[type=checkbox] { margin: 0; }
+    .edge-row select { height: 22px; font-size: 11px; }
+
+    .select-wrap { display: inline-flex; gap: 4px; align-items: center; min-width: 0; }
+    .label { color: #4a5565; font-size: 11px; line-height: 1; }
 
     select {
-      width: 100%;
       min-width: 0;
-      height: 34px;
-      border: 1px solid #aab7c4;
-      border-radius: 6px;
-      background: #ffffff;
+      height: 24px;
+      border: 0;
+      border-radius: 0;
+      background: #fff;
       color: #17202a;
-      padding: 0 30px 0 10px;
+      padding: 0 18px 0 6px;
+      font-size: 11px;
     }
+    #modelSelect { min-width: 200px; max-width: 320px; }
 
     .segmented {
-      display: inline-grid;
-      grid-auto-flow: column;
-      border: 1px solid #aab7c4;
-      border-radius: 7px;
-      overflow: hidden;
-      background: #ffffff;
-    }
-
-    .segmented button {
-      height: 34px;
-      min-width: 68px;
-      padding: 0 12px;
+      display: inline-flex;
       border: 0;
-      border-right: 1px solid #c7d0d9;
-      background: #ffffff;
+      border-radius: 0;
+      overflow: hidden;
+      background: #fff;
+    }
+    .segmented button {
+      height: 24px;
+      min-width: 0;
+      padding: 0 8px;
+      border: 0;
+      border-right: 1px solid #e0e0e0;
+      background: #fff;
       color: #344154;
       cursor: pointer;
+      font-size: 11px;
+      white-space: nowrap;
     }
-
-    .segmented button:last-child {
-      border-right: 0;
-    }
-
-    .segmented button.active {
-      background: #1f6feb;
-      color: #ffffff;
-    }
+    .segmented button:last-child { border-right: 0; }
+    .segmented button.active { background: #1f6feb; color: #fff; }
 
     .status {
-      min-width: 260px;
+      flex: 1 1 200px;
+      min-width: 0;
       color: #4a5565;
-      font-size: 13px;
+      font-size: 11px;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
       text-align: right;
     }
 
-    .main {
-      display: grid;
-      grid-template-columns: minmax(320px, 1fr) minmax(320px, 1fr);
-      min-height: 0;
+    button.reproject {
+      height: 24px;
+      padding: 0 10px;
+      border: 0;
+      background: #1f6feb;
+      color: #fff;
+      border-radius: 0;
+      cursor: pointer;
+      font-size: 11px;
     }
 
-    .pane {
-      position: relative;
-      min-width: 0;
-      min-height: 0;
-      background: #f6f7f9;
-    }
-
-    .pane + .pane {
-      border-left: 1px solid #c7d0d9;
-    }
-
-    #modelPane {
-      background: #dfe5ea;
-    }
-
-    #projectionPane {
-      background: #fbfbfc;
-    }
-
-    #modelCanvas {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      display: block;
-    }
-
-    #projectionSvg {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      display: block;
-    }
+    .main { display: grid; grid-template-columns: minmax(280px, 1fr) minmax(280px, 1fr); min-height: 0; }
+    .pane { position: relative; min-width: 0; min-height: 0; background: #fff; }
+    .pane + .pane { border: 0; }
+    #modelPane { background: #fff; }
+    #projectionPane { background: #fff; }
+    #modelCanvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+    #projectionSvg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 
     .overlay {
       position: absolute;
-      left: 12px;
-      right: 12px;
-      bottom: 12px;
+      left: 8px;
+      right: 8px;
+      bottom: 8px;
       display: flex;
-      gap: 8px;
+      gap: 6px;
       align-items: center;
       justify-content: space-between;
       pointer-events: none;
     }
 
-    .metric-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-
+    .metric-row { display: flex; flex-wrap: wrap; gap: 6px; }
     .metric {
-      min-height: 28px;
-      padding: 6px 8px;
-      border: 1px solid rgba(126, 141, 158, 0.5);
-      border-radius: 6px;
+      min-height: 22px;
+      padding: 3px 6px;
+      border: 0;
+      border-radius: 0;
       background: rgba(255, 255, 255, 0.9);
       color: #253244;
-      font-size: 12px;
+      font-size: 11px;
       line-height: 1.2;
     }
 
-    body.busy #projectionSvg {
-      opacity: 0.72;
-    }
+    body.busy #projectionSvg { opacity: 0.72; }
 
     .work-overlay {
       position: fixed;
-      top: 68px;
-      right: 16px;
+      top: 8px;
+      right: 8px;
       z-index: 20;
-      width: min(420px, calc(100vw - 32px));
+      width: min(360px, calc(100vw - 16px));
       padding: 0;
       background: transparent;
       opacity: 0;
@@ -194,95 +190,35 @@
       transform: translateY(-4px);
       transition: opacity 120ms ease, transform 120ms ease;
     }
-
-    .work-overlay.visible {
-      opacity: 1;
-      transform: translateY(0);
-      pointer-events: none;
-    }
-
+    .work-overlay.visible { opacity: 1; transform: translateY(0); pointer-events: none; }
     .work-panel {
       display: grid;
       grid-template-columns: auto minmax(0, 1fr);
-      gap: 12px;
+      gap: 10px;
       align-items: center;
-      min-height: 68px;
-      border: 1px solid #aab7c4;
-      border-radius: 8px;
-      background: rgba(255, 255, 255, 0.94);
-      box-shadow: 0 16px 38px rgba(24, 32, 42, 0.18);
-      padding: 14px 16px;
+      min-height: 48px;
+      border: 0;
+      border-radius: 0;
+      background: rgba(255, 255, 255, 0.96);
+      box-shadow: 0 4px 12px rgba(24, 32, 42, 0.14);
+      padding: 8px 10px;
     }
-
     .spinner {
-      width: 32px;
-      height: 32px;
-      border: 4px solid #c7d0d9;
+      width: 22px;
+      height: 22px;
+      border: 3px solid #d6d6d6;
       border-top-color: #1f6feb;
       border-radius: 50%;
       animation: spin 900ms linear infinite;
     }
+    .work-title { color: #18202a; font-size: 11px; font-weight: 600; line-height: 1.2; overflow-wrap: anywhere; }
+    .work-subtitle { margin-top: 2px; color: #647184; font-size: 11px; line-height: 1.25; overflow-wrap: anywhere; }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
-    .work-title {
-      color: #18202a;
-      font-size: 14px;
-      font-weight: 650;
-      line-height: 1.2;
-      overflow-wrap: anywhere;
-    }
+    #smokeResult { position: fixed; left: -10000px; top: auto; width: 1px; height: 1px; overflow: hidden; }
 
-    .work-subtitle {
-      margin-top: 4px;
-      color: #647184;
-      font-size: 12px;
-      line-height: 1.25;
-      overflow-wrap: anywhere;
-    }
-
-    @keyframes spin {
-      to {
-        transform: rotate(360deg);
-      }
-    }
-
-    #smokeResult {
-      position: fixed;
-      left: -10000px;
-      top: auto;
-      width: 1px;
-      height: 1px;
-      overflow: hidden;
-    }
-
-    @media (max-width: 900px) {
-      .toolbar {
-        grid-template-columns: minmax(0, 1fr);
-        align-items: stretch;
-      }
-
-      .select-wrap {
-        grid-template-columns: 1fr;
-      }
-
-      .segmented {
-        width: 100%;
-        grid-auto-columns: 1fr;
-      }
-
-      .status {
-        min-width: 0;
-        text-align: left;
-      }
-
-      .main {
-        grid-template-columns: 1fr;
-        grid-template-rows: minmax(320px, 1fr) minmax(320px, 1fr);
-      }
-
-      .pane + .pane {
-        border-left: 0;
-        border-top: 1px solid #c7d0d9;
-      }
+    @media (max-width: 720px) {
+      .main { grid-template-columns: 1fr; grid-template-rows: minmax(280px, 1fr) minmax(280px, 1fr); }
     }
   </style>
 </head>
@@ -295,12 +231,16 @@
       </label>
       <div class="segmented" id="viewButtons" aria-label="Projection view">
         <button type="button" data-view="top" class="active">Top</button>
-        <button type="button" data-view="bottom">Bottom</button>
+        <button type="button" data-view="bottom">Bot</button>
         <button type="button" data-view="front">Front</button>
         <button type="button" data-view="back">Back</button>
         <button type="button" data-view="left">Left</button>
         <button type="button" data-view="right">Right</button>
-        <button type="button" data-view="iso">Iso</button>
+        <button type="button" data-view="isoTop">ISO T</button>
+        <button type="button" data-view="isoBottom">ISO B</button>
+        <button type="button" data-view="isoFront">ISO F</button>
+        <button type="button" data-view="isoBack">ISO K</button>
+        <button type="button" data-view="camera" title="Project from current 3D camera direction. Click Re-project after rotating to refresh.">Cam</button>
       </div>
       <div class="segmented" id="modeButtons" aria-label="Projection mode">
         <button type="button" data-mode="detail" class="active">Detail</button>
@@ -308,6 +248,84 @@
         <button type="button" data-mode="both">Both</button>
       </div>
       <div class="status" id="status">Idle</div>
+    </div>
+    <div class="tunables">
+      <label class="control" title="Geometer build to load.">
+        <span>Backend</span>
+        <select id="backendSelect">
+          <option value="current">1.1</option>
+          <option value="baseline">baseline</option>
+        </select>
+      </label>
+      <label class="control" title="HLR algorithm.">
+        <span>Algorithm</span>
+        <select id="algoSelect">
+          <option value="poly">Poly</option>
+          <option value="exact">Exact</option>
+        </select>
+      </label>
+      <label class="control" title="Linear mesh deflection (mm). Draftsman uses ~0.01.">
+        <span>Lin defl</span>
+        <input id="linDeflInput" type="number" min="0.0001" step="0.001" value="0.01">
+      </label>
+      <label class="control" title="Angular mesh deflection (radians).">
+        <span>Ang defl</span>
+        <input id="angDeflInput" type="number" min="0.001" step="0.05" value="0.5">
+      </label>
+      <label class="control" title="HLR edge classification angle tolerance (radians).">
+        <span>HLR tol</span>
+        <input id="hlrTolInput" type="number" min="0.0001" step="0.001" value="0.0174533">
+      </label>
+      <label class="control" title="Relative mesh deflection scales linear deflection by bbox.">
+        <span>Mesh rel</span>
+        <select id="meshRelativeSelect"><option value="false">No</option><option value="true">Yes</option></select>
+      </label>
+      <button type="button" class="reproject" id="reprojectButton">Re-project</button>
+    </div>
+    <div class="edge-row" id="edgeRow">
+      <label class="control" title="Quick preset for the OCCT edge categories below. Custom = manual toggles.">
+        <span>Profile</span>
+        <select id="profileSelect">
+          <option value="detail">Detail (default)</option>
+          <option value="simple">Simple (outline only)</option>
+          <option value="all-visible">All visible</option>
+          <option value="visible+hidden">Visible + hidden</option>
+          <option value="custom">Custom</option>
+        </select>
+      </label>
+      <span class="group-label">Visible</span>
+      <label class="flag" title="HLRBRep_HLRToShape::VCompound() - visible sharp edges" data-algo-poly="ok">
+        <input type="checkbox" data-edge="edge_v_sharp" checked><span>Sharp</span>
+      </label>
+      <label class="flag" title="HLRBRep_HLRToShape::OutLineVCompound() - visible silhouette / outline" data-algo-poly="ok">
+        <input type="checkbox" data-edge="edge_v_outline" checked><span>Outline</span>
+      </label>
+      <label class="flag" title="HLRBRep_HLRToShape::Rg1LineVCompound() - visible smooth (tangential) edges. Exact only." data-algo-poly="no">
+        <input type="checkbox" data-edge="edge_v_smooth"><span>Smooth</span>
+      </label>
+      <label class="flag" title="HLRBRep_HLRToShape::RgNLineVCompound() - visible sewn (manifold) edges. Exact only." data-algo-poly="no">
+        <input type="checkbox" data-edge="edge_v_sewn"><span>Sewn</span>
+      </label>
+      <label class="flag" title="HLRBRep_HLRToShape::IsoLineVCompound() - visible parametric isolines. Exact only." data-algo-poly="no">
+        <input type="checkbox" data-edge="edge_v_iso"><span>Iso</span>
+      </label>
+      <span class="group-label">Hidden</span>
+      <label class="flag" title="HLRBRep_HLRToShape::HCompound() - hidden sharp edges" data-algo-poly="ok">
+        <input type="checkbox" data-edge="edge_h_sharp"><span>Sharp</span>
+      </label>
+      <label class="flag" title="HLRBRep_HLRToShape::OutLineHCompound() - hidden silhouette" data-algo-poly="ok">
+        <input type="checkbox" data-edge="edge_h_outline"><span>Outline</span>
+      </label>
+      <label class="flag" title="HLRBRep_HLRToShape::Rg1LineHCompound() - hidden smooth. Exact only." data-algo-poly="no">
+        <input type="checkbox" data-edge="edge_h_smooth"><span>Smooth</span>
+      </label>
+      <label class="flag" title="HLRBRep_HLRToShape::RgNLineHCompound() - hidden sewn. Exact only." data-algo-poly="no">
+        <input type="checkbox" data-edge="edge_h_sewn"><span>Sewn</span>
+      </label>
+      <label class="flag" title="HLRBRep_HLRToShape::IsoLineHCompound() - hidden isolines. Exact only." data-algo-poly="no">
+        <input type="checkbox" data-edge="edge_h_iso"><span>Iso</span>
+      </label>
+      <span class="legend" id="edgeLegend">Detail = active flags. Simple = planar contour post-process of those same edges.</span>
     </div>
     <main class="main">
       <section class="pane" id="modelPane">
@@ -355,14 +373,21 @@
     import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 
     const manifestUrl = "/tests/fixtures/embedded_models_manifest.json";
+    // Altium PCB / Draftsman view conventions (Z-up, right-handed).
+    // Source: PcbDrawing/Altium.Designer.PcbDrawing.Implementation.Board.DataRetreival/ProjectionByOCC.cs::CalculateProjectionParams.
+    // Altium also post-mirrors Back and Left horizontally (ScaleTransform(-1, 1)) so all 6 ortho views read with consistent left-right orientation.
+    const ISO = 1 / Math.sqrt(3);
     const projectionViews = [
-      { id: "top", direction: [0, 0, 1], up: [0, 1, 0] },
-      { id: "bottom", direction: [0, 0, -1], up: [0, 1, 0] },
-      { id: "front", direction: [0, -1, 0], up: [0, 0, 1] },
-      { id: "back", direction: [0, 1, 0], up: [0, 0, 1] },
-      { id: "left", direction: [-1, 0, 0], up: [0, 0, 1] },
-      { id: "right", direction: [1, 0, 0], up: [0, 0, 1] },
-      { id: "iso", direction: [1, -1, 0.8], up: [0, 0, 1] },
+      { id: "top",      label: "Top",      direction: [0, 0, 1],            up: [0, 1, 0] },
+      { id: "bottom",   label: "Bottom",   direction: [0, 0, -1],           up: [0, 1, 0] },
+      { id: "front",    label: "Front",    direction: [0, -1, 0],           up: [0, 0, 1] },
+      { id: "back",     label: "Back",     direction: [0, 1, 0],            up: [0, 0, 1],  mirrorX: true },
+      { id: "left",     label: "Left",     direction: [-1, 0, 0],           up: [0, 0, 1],  mirrorX: true },
+      { id: "right",    label: "Right",    direction: [1, 0, 0],            up: [0, 0, 1] },
+      { id: "isoTop",    label: "ISO Top",    direction: [ ISO,  ISO,  ISO], up: [0,  1, 0] },
+      { id: "isoBottom", label: "ISO Bot",    direction: [ ISO, -ISO, -ISO], up: [0, -1, 0] },
+      { id: "isoFront",  label: "ISO Front",  direction: [ ISO, -ISO,  ISO], up: [0,  0, 1] },
+      { id: "isoBack",   label: "ISO Back",   direction: [ ISO,  ISO, -ISO], up: [0,  0, -1] },
     ];
 
     const state = {
@@ -370,7 +395,9 @@
       selectedModel: null,
       viewId: "top",
       mode: "detail",
+      backend: "current",
       projectionWorker: null,
+      workerBackend: null,
       projectionRequests: new Map(),
       nextProjectionRequestId: 1,
       projectionCache: new Map(),
@@ -395,18 +422,68 @@
       workTitle: document.getElementById("workTitle"),
       workSubtitle: document.getElementById("workSubtitle"),
       smokeResult: document.getElementById("smokeResult"),
+      backendSelect: document.getElementById("backendSelect"),
+      algoSelect: document.getElementById("algoSelect"),
+      linDeflInput: document.getElementById("linDeflInput"),
+      angDeflInput: document.getElementById("angDeflInput"),
+      hlrTolInput: document.getElementById("hlrTolInput"),
+      meshRelativeSelect: document.getElementById("meshRelativeSelect"),
+      reprojectButton: document.getElementById("reprojectButton"),
+      profileSelect: document.getElementById("profileSelect"),
+      edgeRow: document.getElementById("edgeRow"),
     };
+
+    // OCCT HLR edge categories. Order matches the C++ HlrProjectionOptions struct.
+    const EDGE_FLAGS = [
+      "edge_v_sharp", "edge_v_outline", "edge_v_smooth", "edge_v_sewn", "edge_v_iso",
+      "edge_h_sharp", "edge_h_outline", "edge_h_smooth", "edge_h_sewn", "edge_h_iso",
+    ];
+
+    // Profile presets — each lists which flags are enabled.
+    const EDGE_PROFILES = {
+      "detail":          ["edge_v_sharp", "edge_v_outline"],
+      "simple":          ["edge_v_outline"],
+      "all-visible":     ["edge_v_sharp", "edge_v_outline", "edge_v_smooth", "edge_v_sewn"],
+      "visible+hidden":  ["edge_v_sharp", "edge_v_outline", "edge_h_sharp", "edge_h_outline"],
+    };
+
+    function edgeCheckbox(name) {
+      return els.edgeRow.querySelector(`input[data-edge="${name}"]`);
+    }
+
+    function readEdgeFlags() {
+      const flags = {};
+      for (const name of EDGE_FLAGS) flags[name] = edgeCheckbox(name).checked;
+      return flags;
+    }
+
+    function applyProfile(profileId) {
+      const enabled = EDGE_PROFILES[profileId];
+      if (!enabled) return;
+      for (const name of EDGE_FLAGS) edgeCheckbox(name).checked = enabled.includes(name);
+    }
+
+    function syncEdgeRowToAlgo() {
+      // Poly HLR only supports V/H Compound + OutLine. Gray out the 6 unsupported flags.
+      const poly = els.algoSelect.value === "poly";
+      for (const label of els.edgeRow.querySelectorAll("label.flag")) {
+        const supported = !poly || label.dataset.algoPoly === "ok";
+        label.classList.toggle("disabled", !supported);
+        const cb = label.querySelector("input[type=checkbox]");
+        cb.disabled = !supported;
+      }
+    }
 
     const renderer = new THREE.WebGLRenderer({
       canvas: els.canvas,
       antialias: true,
       preserveDrawingBuffer: true,
     });
-    renderer.setClearColor(0xdfe5ea, 1);
+    renderer.setClearColor(0xffffff, 1);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0xdfe5ea);
+    scene.background = new THREE.Color(0xffffff);
     const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100000);
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
@@ -437,34 +514,29 @@
     }
 
     function formatBytes(bytes) {
-      if (bytes >= 1024 * 1024) {
-        return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
-      }
+      if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
       return `${Math.max(1, Math.round(bytes / 1024))} KB`;
     }
 
     function formatMs(ms) {
-      if (!Number.isFinite(ms)) {
-        return "0 ms";
-      }
-      if (ms >= 1000) {
-        return `${(ms / 1000).toFixed(2)} s`;
-      }
+      if (!Number.isFinite(ms)) return "0 ms";
+      if (ms >= 1000) return `${(ms / 1000).toFixed(2)} s`;
       return `${Math.max(1, Math.round(ms))} ms`;
     }
 
     function projectionTimingText(timings) {
-      if (timings.cached) {
-        return "HLR cache";
-      }
+      if (timings.cached) return "HLR cache";
       const stepText = timings.cachedStep ? "STEP cache" : `STEP ${formatMs(timings.stepFetchMs)}`;
-      return `${stepText} - HLR ${formatMs(timings.hlrMs)} worker`;
+      const phases = [];
+      if (Number.isFinite(timings.meshMs)) phases.push(`mesh ${formatMs(timings.meshMs)}`);
+      if (Number.isFinite(timings.nativeHlrMs)) phases.push(`hlr ${formatMs(timings.nativeHlrMs)}`);
+      if (Number.isFinite(timings.extractMs)) phases.push(`ext ${formatMs(timings.extractMs)}`);
+      const phaseText = phases.length ? ` (${phases.join(" / ")})` : "";
+      return `${stepText} - HLR ${formatMs(timings.hlrMs)} worker${phaseText}`;
     }
 
     function moduleTimingText(timings) {
-      return Number.isFinite(timings.moduleMs) && timings.moduleMs > 1
-        ? ` - WASM ${formatMs(timings.moduleMs)}`
-        : "";
+      return Number.isFinite(timings.moduleMs) && timings.moduleMs > 1 ? ` - WASM ${formatMs(timings.moduleMs)}` : "";
     }
 
     function setStatus(text, busy = false, detail = "") {
@@ -477,9 +549,7 @@
 
     function setSmoke(text, pass) {
       els.smokeResult.textContent = text;
-      if (state.smoke) {
-        document.title = text.startsWith("RUNNING") ? "RUNNING" : (pass ? "PASS" : "FAIL");
-      }
+      if (state.smoke) document.title = text.startsWith("RUNNING") ? "RUNNING" : (pass ? "PASS" : "FAIL");
     }
 
     function resizeRenderer() {
@@ -506,21 +576,35 @@
       while (modelGroup.children.length) {
         const child = modelGroup.children.pop();
         child.traverse((node) => {
-          if (node.geometry) {
-            node.geometry.dispose();
-          }
+          if (node.geometry) node.geometry.dispose();
           const materials = Array.isArray(node.material) ? node.material : [node.material];
-          for (const material of materials) {
-            if (material) {
-              material.dispose();
-            }
-          }
+          for (const material of materials) if (material) material.dispose();
         });
       }
     }
 
+    function meshBounds(root) {
+      // Compute bounds only from Mesh nodes inside the GLB. Lights, cameras, empty
+      // groups, or helper objects can have huge implicit positions that inflate
+      // the bounding box and push the camera unnecessarily far back.
+      const box = new THREE.Box3();
+      let empty = true;
+      root.updateMatrixWorld(true);
+      root.traverse((node) => {
+        if (!node.isMesh || !node.geometry) return;
+        if (!node.geometry.boundingBox) node.geometry.computeBoundingBox();
+        const local = node.geometry.boundingBox;
+        if (!local || !Number.isFinite(local.min.x) || !Number.isFinite(local.max.x)) return;
+        const world = local.clone().applyMatrix4(node.matrixWorld);
+        box.union(world);
+        empty = false;
+      });
+      if (empty) return new THREE.Box3().setFromObject(root);
+      return box;
+    }
+
     function fitCamera(root) {
-      const bounds = new THREE.Box3().setFromObject(root);
+      const bounds = meshBounds(root);
       const size = new THREE.Vector3();
       const center = new THREE.Vector3();
       bounds.getSize(size);
@@ -528,141 +612,169 @@
       root.position.sub(center);
 
       const sphere = new THREE.Sphere();
-      new THREE.Box3().setFromObject(root).getBoundingSphere(sphere);
-      const radius = Math.max(sphere.radius, Math.max(size.x, size.y, size.z) * 0.5, 1);
-      const halfFov = (camera.fov * Math.PI / 180) / 2;
-      const distance = (radius / Math.sin(halfFov)) * 0.58;
+      meshBounds(root).getBoundingSphere(sphere);
+      const radius = Math.max(sphere.radius, Math.max(size.x, size.y, size.z) * 0.5, 0.001);
+      // Aspect-aware bounding-sphere fit. Use whichever (vertical or horizontal)
+      // FOV is the limiting dimension so the sphere fits regardless of pane shape.
+      const halfFovV = (camera.fov * Math.PI / 180) / 2;
+      const halfFovH = Math.atan(Math.tan(halfFovV) * Math.max(camera.aspect, 0.01));
+      const halfFov = Math.min(halfFovV, halfFovH);
+      const distance = (radius / Math.sin(halfFov)) * 1.05;
       const viewDirection = new THREE.Vector3(0.72, 0.54, 1.0).normalize();
-      camera.near = Math.max(radius / 20000, 0.0001);
-      camera.far = Math.max(distance * 36, radius * 24, 100);
+      camera.near = Math.max(radius / 1000, 0.0001);
+      camera.far = Math.max(distance * 8, radius * 8, 10);
       camera.position.copy(viewDirection.multiplyScalar(distance));
       camera.updateProjectionMatrix();
       controls.target.set(0, 0, 0);
       controls.update();
-      controls.minDistance = Math.max(radius * 0.004, 0.0001);
-      controls.maxDistance = Math.max(distance * 24, radius * 12);
+      controls.minDistance = Math.max(radius * 0.01, 0.0001);
+      controls.maxDistance = Math.max(distance * 8, radius * 8);
 
       grid.scale.setScalar(Math.max(radius / 10, 1));
-      grid.visible = true;
+      grid.visible = false;
     }
 
-    function loadGlb(model, loadId) {
-      const started = performance.now();
-      return new Promise((resolve, reject) => {
-        loader.load(assetUrl(model.glb), (gltf) => {
-          const glbMs = performance.now() - started;
-          if (loadId !== state.activeLoad) {
-            resolve({ loaded: false, glbMs });
-            return;
-          }
-          clearModel();
-          modelGroup.add(gltf.scene);
-          fitCamera(gltf.scene);
-          els.modelMetric.textContent = model.name;
-          els.meshMetric.textContent = `GLB ${formatBytes(model.glbBytes)} - ${formatMs(glbMs)}`;
-          renderOnce();
-          resolve({ loaded: true, glbMs });
-        }, undefined, reject);
-      });
+    function currentOptions() {
+      return {
+        projection_algorithm: els.algoSelect.value,
+        mesh_linear_deflection: Number.parseFloat(els.linDeflInput.value) || 0.01,
+        mesh_angular_deflection: Number.parseFloat(els.angDeflInput.value) || 0.5,
+        hlr_angle_tolerance: Number.parseFloat(els.hlrTolInput.value) || 0.0174533,
+        mesh_relative: els.meshRelativeSelect.value === "true",
+        ...readEdgeFlags(),
+      };
     }
 
-    function projectionWorker() {
-      if (!state.projectionWorker) {
-        state.projectionWorker = new Worker("/tests/wasm/hlr_projection_worker.js");
-        state.projectionWorker.onmessage = (event) => {
-          const { id, ok, projection, timings, error } = event.data;
-          const request = state.projectionRequests.get(id);
-          if (!request) {
-            return;
-          }
-          state.projectionRequests.delete(id);
-          if (ok) {
-            request.resolve({ projection, timings });
-          } else {
-            const failure = new Error(error || "HLR worker failed.");
-            failure.timings = timings || {};
-            request.reject(failure);
-          }
-        };
+    function ensureProjectionWorker(backend) {
+      if (state.projectionWorker && state.workerBackend === backend) return state.projectionWorker;
+      if (state.projectionWorker) {
+        state.projectionWorker.terminate();
+        state.projectionRequests.clear();
       }
+      state.projectionWorker = new Worker("/tests/wasm/hlr_projection_worker.js");
+      state.workerBackend = backend;
+      state.projectionWorker.onmessage = (event) => {
+        const { id, ok, projection, timings, error } = event.data;
+        const request = state.projectionRequests.get(id);
+        if (!request) return;
+        state.projectionRequests.delete(id);
+        if (ok) request.resolve({ projection, timings });
+        else {
+          const failure = new Error(error || "HLR worker failed.");
+          failure.timings = timings || {};
+          request.reject(failure);
+        }
+      };
       return state.projectionWorker;
     }
 
+    function cameraViewSpec() {
+      // Build a ProjectionViewSpec from the live three.js camera. OCCT's HLR
+      // wants the outward plane normal (pointing from origin toward the viewer),
+      // which is (camera.position - target). For the "up" we use camera.up — the
+      // orthogonalization happens inside gp_Ax2::SetYDirection.
+      const dir = new THREE.Vector3().subVectors(camera.position, controls.target).normalize();
+      const up = camera.up.clone().normalize();
+      if (!Number.isFinite(dir.x) || dir.length() < 1e-6) {
+        return { id: "camera", direction: [0, 0, 1], up: [0, 1, 0], mirrorX: false };
+      }
+      return {
+        id: "camera",
+        direction: [dir.x, dir.y, dir.z],
+        up: [up.x, up.y, up.z],
+        mirrorX: false,
+      };
+    }
+
     function projectionView(viewId) {
+      if (viewId === "camera") return cameraViewSpec();
       return projectionViews.find((view) => view.id === viewId) || projectionViews[0];
     }
 
-    function projectionCacheKey(model, viewId) {
-      return `${model.name}|${viewId}`;
+    function moveCameraToView(viewSpec) {
+      // Place the camera along viewSpec.direction at the same distance from the
+      // orbit target as it currently is, so toggling Top/Front/etc snaps the 3D
+      // view to match the 2D projection direction. Camera button is excluded —
+      // it reads the live camera position instead of moving it.
+      if (!viewSpec || viewSpec.id === "camera") return;
+      const target = controls.target.clone();
+      const currentDistance = camera.position.distanceTo(target);
+      const dir = new THREE.Vector3(viewSpec.direction[0], viewSpec.direction[1], viewSpec.direction[2]).normalize();
+      if (dir.length() < 1e-6) return;
+      camera.up.set(viewSpec.up[0], viewSpec.up[1], viewSpec.up[2]).normalize();
+      camera.position.copy(target).addScaledVector(dir, currentDistance);
+      camera.lookAt(target);
+      controls.update();
+      renderOnce();
+    }
+
+    function optionsCacheTag(opts) {
+      const base = [opts.projection_algorithm, opts.mesh_linear_deflection, opts.mesh_angular_deflection, opts.hlr_angle_tolerance, opts.mesh_relative];
+      const edges = EDGE_FLAGS.map((name) => opts[name] ? 1 : 0).join("");
+      return [...base, edges].join(":");
+    }
+
+    function projectionCacheKey(model, viewId, opts, backend) {
+      return `${backend}|${optionsCacheTag(opts)}|${model.name}|${viewId}`;
     }
 
     async function loadStepBuffer(model) {
       const cached = state.stepCache.get(model.name);
-      if (cached) {
-        return { stepBuffer: cached, stepFetchMs: 0, cachedStep: true };
-      }
+      if (cached) return { stepBuffer: cached, stepFetchMs: 0, cachedStep: true };
 
       const fetchStart = performance.now();
       const response = await fetch(assetUrl(model.step));
-      if (!response.ok) {
-        throw new Error(`STEP fetch failed: ${response.status}`);
-      }
+      if (!response.ok) throw new Error(`STEP fetch failed: ${response.status}`);
       const stepBuffer = await response.arrayBuffer();
       const stepFetchMs = performance.now() - fetchStart;
       state.stepCache.set(model.name, stepBuffer);
       return { stepBuffer, stepFetchMs, cachedStep: false };
     }
 
-    function runProjectionInWorker(stepBuffer, views) {
+    function runProjectionInWorker(stepBuffer, views, backend, options) {
       const id = state.nextProjectionRequestId++;
-      const worker = projectionWorker();
+      const worker = ensureProjectionWorker(backend);
       return new Promise((resolve, reject) => {
         state.projectionRequests.set(id, { resolve, reject });
-        worker.postMessage({ id, stepBuffer, views }, [stepBuffer]);
+        worker.postMessage({ id, stepBuffer, views, backend, options }, [stepBuffer]);
       });
     }
 
-    async function loadProjection(model, viewId = state.viewId) {
-      const cacheKey = projectionCacheKey(model, viewId);
-      const cached = state.projectionCache.get(cacheKey);
-      if (cached) {
-        return {
-          projection: cached,
-          timings: { cached: true, stepFetchMs: 0, moduleMs: 0, hlrMs: 0, jsonParseMs: 0 },
-        };
+    async function loadProjection(model, viewId, opts, backend) {
+      // Camera view depends on live orbit state; never cache it.
+      const cacheable = viewId !== "camera";
+      const cacheKey = projectionCacheKey(model, viewId, opts, backend);
+      if (cacheable) {
+        const cached = state.projectionCache.get(cacheKey);
+        if (cached) {
+          return { projection: cached, timings: { cached: true, stepFetchMs: 0, moduleMs: 0, hlrMs: 0, jsonParseMs: 0 } };
+        }
       }
 
       const step = await loadStepBuffer(model);
       const transferBuffer = step.stepBuffer.slice(0);
-      const workerResult = await runProjectionInWorker(transferBuffer, [projectionView(viewId)]);
+      const workerResult = await runProjectionInWorker(transferBuffer, [projectionView(viewId)], backend, opts);
       const projection = workerResult.projection;
-      state.projectionCache.set(cacheKey, projection);
+      if (cacheable) state.projectionCache.set(cacheKey, projection);
       return {
         projection,
-        timings: {
-          ...workerResult.timings,
-          stepFetchMs: step.stepFetchMs,
-          cachedStep: step.cachedStep,
-          cached: false,
-        },
+        timings: { ...workerResult.timings, stepFetchMs: step.stepFetchMs, cachedStep: step.cachedStep, cached: false },
       };
     }
 
     async function renderProjectionForCurrentView() {
       const model = state.selectedModel;
-      if (!model) {
-        return null;
-      }
+      if (!model) return null;
 
       const loadId = state.activeLoad;
       const projectionId = ++state.activeProjection;
       const viewId = state.viewId;
+      const backend = state.backend;
+      const opts = currentOptions();
       const started = performance.now();
-      setStatus(`Projecting ${model.name}: ${viewId}`, true, "The 3D view stays interactive while HLR runs in a browser Worker.");
-      const projectionResult = await loadProjection(model, viewId);
-      if (loadId !== state.activeLoad || projectionId !== state.activeProjection || viewId !== state.viewId) {
-        return null;
-      }
+      setStatus(`Projecting ${model.name}: ${viewId}`, true, "HLR runs in a browser Worker; 3D view stays interactive.");
+      const projectionResult = await loadProjection(model, viewId, opts, backend);
+      if (loadId !== state.activeLoad || projectionId !== state.activeProjection || viewId !== state.viewId) return null;
 
       const counts = drawProjection(projectionResult.projection, viewId);
       const timings = projectionResult.timings || {};
@@ -677,71 +789,59 @@
       const result = [];
       const addMode = (name, className) => {
         const geometry = viewGeometry.modes && viewGeometry.modes[name];
-        if (!geometry) {
-          return;
-        }
-        for (const segment of geometry.segments || []) {
-          result.push({ type: "segment", className, value: segment });
-        }
-        for (const arc of geometry.arcs || []) {
-          result.push({ type: "arc", className, value: arc });
-        }
+        if (!geometry) return;
+        for (const segment of geometry.segments || []) result.push({ type: "segment", className, value: segment });
+        for (const arc of geometry.arcs || []) result.push({ type: "arc", className, value: arc });
       };
-
-      if (mode === "both") {
-        addMode("detail", "detail muted");
-        addMode("simple", "simple");
-      } else {
-        addMode(mode, mode);
-      }
+      if (mode === "both") { addMode("detail", "detail muted"); addMode("simple", "simple"); }
+      else addMode(mode, mode);
       return result;
     }
 
-    function transformedPoints(primitive) {
+    function transformedPoints(primitive, mirrorX = false) {
+      const sx = mirrorX ? -1 : 1;
       if (primitive.type === "segment") {
         const [x1, y1, x2, y2] = primitive.value;
-        return [[x1, -y1], [x2, -y2]];
+        return [[sx * x1, -y1], [sx * x2, -y2]];
       }
       const arc = primitive.value;
-      const center = [arc.center[0], -arc.center[1]];
+      const center = [sx * arc.center[0], -arc.center[1]];
       if (arc.full_circle) {
-        return [
-          [center[0] - arc.radius, center[1] - arc.radius],
-          [center[0] + arc.radius, center[1] + arc.radius],
-        ];
+        return [[center[0] - arc.radius, center[1] - arc.radius], [center[0] + arc.radius, center[1] + arc.radius]];
       }
       return [
-        [arc.start[0], -arc.start[1]],
-        [arc.end[0], -arc.end[1]],
+        [sx * arc.start[0], -arc.start[1]],
+        [sx * arc.end[0], -arc.end[1]],
         [center[0] - arc.radius, center[1] - arc.radius],
         [center[0] + arc.radius, center[1] + arc.radius],
       ];
     }
 
-    function projectionBounds(primitives) {
+    function projectionBounds(primitives, mirrorX = false) {
       const bounds = { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity };
       for (const primitive of primitives) {
-        for (const [x, y] of transformedPoints(primitive)) {
+        for (const [x, y] of transformedPoints(primitive, mirrorX)) {
           bounds.minX = Math.min(bounds.minX, x);
           bounds.minY = Math.min(bounds.minY, y);
           bounds.maxX = Math.max(bounds.maxX, x);
           bounds.maxY = Math.max(bounds.maxY, y);
         }
       }
-      if (!Number.isFinite(bounds.minX)) {
-        return { minX: -1, minY: -1, maxX: 1, maxY: 1 };
-      }
+      if (!Number.isFinite(bounds.minX)) return { minX: -1, minY: -1, maxX: 1, maxY: 1 };
       return bounds;
     }
 
     function drawProjection(projection, viewId = state.viewId, mode = state.mode) {
       const viewGeometry = (projection.views || []).find((view) => view.id === viewId);
-      if (!viewGeometry) {
-        throw new Error(`Projection view not found: ${viewId}`);
-      }
+      if (!viewGeometry) throw new Error(`Projection view not found: ${viewId}`);
+
+      // Altium convention: horizontally mirror Back and Left ortho views so all 6 sides read left-to-right consistently.
+      const viewSpec = projectionView(viewId);
+      const mirrorX = !!(viewSpec && viewSpec.mirrorX);
+      const sx = mirrorX ? -1 : 1;
 
       const primitives = collectPrimitives(viewGeometry, mode);
-      const bounds = projectionBounds(primitives);
+      const bounds = projectionBounds(primitives, mirrorX);
       const width = Math.max(bounds.maxX - bounds.minX, 1);
       const height = Math.max(bounds.maxY - bounds.minY, 1);
       const pad = Math.max(width, height) * 0.08;
@@ -766,9 +866,9 @@
           const [x1, y1, x2, y2] = primitive.value;
           const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
           line.setAttribute("class", primitive.className);
-          line.setAttribute("x1", x1);
+          line.setAttribute("x1", sx * x1);
           line.setAttribute("y1", -y1);
-          line.setAttribute("x2", x2);
+          line.setAttribute("x2", sx * x2);
           line.setAttribute("y2", -y2);
           svg.append(line);
         } else {
@@ -776,16 +876,17 @@
           if (arc.full_circle) {
             const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
             circle.setAttribute("class", primitive.className);
-            circle.setAttribute("cx", arc.center[0]);
+            circle.setAttribute("cx", sx * arc.center[0]);
             circle.setAttribute("cy", -arc.center[1]);
             circle.setAttribute("r", arc.radius);
             svg.append(circle);
           } else {
             const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
             const largeArc = Math.abs(arc.extent_rad) > Math.PI ? 1 : 0;
-            const sweep = arc.ccw ? 0 : 1;
+            // Mirroring flips arc orientation, so flip the SVG sweep flag too.
+            const sweep = arc.ccw ? (mirrorX ? 1 : 0) : (mirrorX ? 0 : 1);
             path.setAttribute("class", primitive.className);
-            path.setAttribute("d", `M ${arc.start[0]} ${-arc.start[1]} A ${arc.radius} ${arc.radius} 0 ${largeArc} ${sweep} ${arc.end[0]} ${-arc.end[1]}`);
+            path.setAttribute("d", `M ${sx * arc.start[0]} ${-arc.start[1]} A ${arc.radius} ${arc.radius} 0 ${largeArc} ${sweep} ${sx * arc.end[0]} ${-arc.end[1]}`);
             svg.append(path);
           }
         }
@@ -807,12 +908,12 @@
 
     async function loadSelectedModel() {
       const model = state.selectedModel;
-      if (!model) {
-        return;
-      }
+      if (!model) return;
 
       const loadId = ++state.activeLoad;
       const viewId = state.viewId;
+      const backend = state.backend;
+      const opts = currentOptions();
       const totalStart = performance.now();
       setStatus(`Loading ${model.name}`, true, "Loading the 3D mesh. HLR continues in a browser Worker.");
       els.sourceMetric.textContent = `STEP ${formatBytes(model.stepBytes)}`;
@@ -821,26 +922,18 @@
       setSmoke("RUNNING", false);
 
       try {
-        const projectionPromise = loadProjection(model, viewId)
+        const projectionPromise = loadProjection(model, viewId, opts, backend)
           .then((projectionResult) => ({ projectionResult }))
           .catch((projectionError) => ({ projectionError }));
 
         const glbResult = await loadGlb(model, loadId);
-        if (loadId !== state.activeLoad) {
-          return;
-        }
+        if (loadId !== state.activeLoad) return;
         setStatus(`${model.name} 3D ready - projecting ${viewId}`, true, "Use the 3D controls while HLR finishes.");
 
         const projectionOutcome = await projectionPromise;
-        if (loadId !== state.activeLoad) {
-          return;
-        }
-        if (viewId !== state.viewId) {
-          return;
-        }
-        if (projectionOutcome.projectionError) {
-          throw projectionOutcome.projectionError;
-        }
+        if (loadId !== state.activeLoad) return;
+        if (viewId !== state.viewId) return;
+        if (projectionOutcome.projectionError) throw projectionOutcome.projectionError;
 
         const projectionResult = projectionOutcome.projectionResult;
         const projection = projectionResult.projection;
@@ -869,6 +962,23 @@
       }
     }
 
+    function loadGlb(model, loadId) {
+      const started = performance.now();
+      return new Promise((resolve, reject) => {
+        loader.load(assetUrl(model.glb), (gltf) => {
+          const glbMs = performance.now() - started;
+          if (loadId !== state.activeLoad) { resolve({ loaded: false, glbMs }); return; }
+          clearModel();
+          modelGroup.add(gltf.scene);
+          fitCamera(gltf.scene);
+          els.modelMetric.textContent = model.name;
+          els.meshMetric.textContent = `GLB ${formatBytes(model.glbBytes)} - ${formatMs(glbMs)}`;
+          renderOnce();
+          resolve({ loaded: true, glbMs });
+        }, undefined, reject);
+      });
+    }
+
     function canvasHasPixels() {
       const canvas = renderer.domElement;
       const sample = document.createElement("canvas");
@@ -878,9 +988,7 @@
       context.drawImage(canvas, 0, 0, sample.width, sample.height);
       const pixels = context.getImageData(0, 0, sample.width, sample.height).data;
       for (let i = 0; i < pixels.length; i += 4) {
-        if (pixels[i] !== 223 || pixels[i + 1] !== 229 || pixels[i + 2] !== 234) {
-          return true;
-        }
+        if (pixels[i] !== 223 || pixels[i + 1] !== 229 || pixels[i + 2] !== 234) return true;
       }
       return false;
     }
@@ -895,9 +1003,7 @@
     async function init() {
       setStatus("Loading manifest", true, "Reading embedded model fixture list.");
       const response = await fetch(manifestUrl);
-      if (!response.ok) {
-        throw new Error(`Manifest fetch failed: ${response.status}`);
-      }
+      if (!response.ok) throw new Error(`Manifest fetch failed: ${response.status}`);
       state.models = await response.json();
 
       for (const model of state.models) {
@@ -913,25 +1019,56 @@
 
       els.viewButtons.addEventListener("click", (event) => {
         const button = event.target.closest("button[data-view]");
-        if (!button) {
-          return;
-        }
+        if (!button) return;
         state.viewId = button.dataset.view;
         activateSegmented(els.viewButtons, "view", state.viewId);
+        // Snap the 3D camera to the equivalent direction so the 3D pane mirrors
+        // the chosen ortho/ISO view. The "camera" button skips this.
+        moveCameraToView(projectionView(state.viewId));
         renderProjectionForCurrentView().catch(console.error);
       });
 
       els.modeButtons.addEventListener("click", (event) => {
         const button = event.target.closest("button[data-mode]");
-        if (!button) {
-          return;
-        }
+        if (!button) return;
         state.mode = button.dataset.mode;
         activateSegmented(els.modeButtons, "mode", state.mode);
-        const projection = state.projectionCache.get(projectionCacheKey(state.selectedModel, state.viewId));
-        if (projection) {
-          drawProjection(projection);
+        const opts = currentOptions();
+        const cached = state.projectionCache.get(projectionCacheKey(state.selectedModel, state.viewId, opts, state.backend));
+        if (cached) drawProjection(cached);
+        else renderProjectionForCurrentView().catch(console.error);
+      });
+
+      els.backendSelect.addEventListener("change", () => {
+        state.backend = els.backendSelect.value;
+        renderProjectionForCurrentView().catch(console.error);
+      });
+
+      els.algoSelect.addEventListener("change", () => {
+        syncEdgeRowToAlgo();
+      });
+
+      els.profileSelect.addEventListener("change", () => {
+        if (els.profileSelect.value === "custom") return;
+        applyProfile(els.profileSelect.value);
+        renderProjectionForCurrentView().catch(console.error);
+      });
+
+      // Manually toggling any edge checkbox flips Profile -> Custom and re-projects.
+      els.edgeRow.addEventListener("change", (event) => {
+        const cb = event.target.closest("input[data-edge]");
+        if (!cb) return;
+        els.profileSelect.value = "custom";
+        renderProjectionForCurrentView().catch(console.error);
+      });
+
+      els.reprojectButton.addEventListener("click", () => {
+        // Force a fresh HLR run: bust the cache entry for the current model/view/options/backend.
+        if (state.selectedModel) {
+          const opts = currentOptions();
+          state.projectionCache.delete(projectionCacheKey(state.selectedModel, state.viewId, opts, state.backend));
         }
+        renderProjectionForCurrentView().catch(console.error);
       });
 
       const params = new URLSearchParams(window.location.search);
@@ -945,6 +1082,26 @@
         state.mode = requestedMode;
         activateSegmented(els.modeButtons, "mode", state.mode);
       }
+      const requestedBackend = params.get("backend");
+      if (["current", "baseline"].includes(requestedBackend)) {
+        els.backendSelect.value = requestedBackend;
+        state.backend = requestedBackend;
+      }
+      const requestedAlgo = params.get("algo");
+      if (["poly", "exact"].includes(requestedAlgo)) els.algoSelect.value = requestedAlgo;
+      const requestedProfile = params.get("profile");
+      if (requestedProfile && EDGE_PROFILES[requestedProfile]) {
+        els.profileSelect.value = requestedProfile;
+        applyProfile(requestedProfile);
+      } else {
+        applyProfile("detail");
+      }
+      syncEdgeRowToAlgo();
+      const lin = params.get("lin");
+      if (lin) els.linDeflInput.value = lin;
+      const ang = params.get("ang");
+      if (ang) els.angDeflInput.value = ang;
+
       const requested = params.get("model");
       const index = Number.parseInt(params.get("index") || "0", 10);
       const initial = requested || (state.models[Math.max(0, Math.min(index, state.models.length - 1))] || state.models[0]).name;

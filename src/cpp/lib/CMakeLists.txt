@@ -17,7 +17,7 @@ add_library(geometer_lib STATIC
 )
 set_target_properties(geometer_lib PROPERTIES OUTPUT_NAME geometer)
 
-set(GEOMETER_ABI_VERSION 5 CACHE STRING "Geometer C ABI version" FORCE)
+set(GEOMETER_ABI_VERSION 6 CACHE STRING "Geometer C ABI version" FORCE)
 configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/geometer/version_config.h.in"
     "${CMAKE_CURRENT_BINARY_DIR}/generated/geometer/version_config.h"

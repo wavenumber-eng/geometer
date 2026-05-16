@@ -401,6 +401,40 @@ bool parse_curve_mode(const JsonValue& value, ProjectionCurveMode* output, std::
     return false;
 }
 
+bool parse_projection_algorithm(const JsonValue& value, ProjectionAlgorithm* output,
+                                std::string* error)
+{
+    if (value.type != JsonValue::Type::String)
+    {
+        *error = "projection_algorithm must be a string.";
+        return false;
+    }
+    if (value.string_value == "poly")
+    {
+        *output = ProjectionAlgorithm::Poly;
+        return true;
+    }
+    if (value.string_value == "exact")
+    {
+        *output = ProjectionAlgorithm::Exact;
+        return true;
+    }
+    *error = "projection_algorithm must be poly or exact.";
+    return false;
+}
+
+bool double_field(const JsonValue& value, double* output, std::string* error,
+                  const std::string& field_name)
+{
+    if (value.type != JsonValue::Type::Number)
+    {
+        *error = field_name + " must be a number.";
+        return false;
+    }
+    *output = value.number_value;
+    return true;
+}
+
 bool parse_views(const JsonValue& value, std::vector<ProjectionViewSpec>* views, std::string* error)
 {
     if (value.type != JsonValue::Type::Array)
@@ -510,22 +544,60 @@ int parse_hlr_projection_options_json(const char* json, HlrProjectionOptions* op
             return 91;
         }
     }
+    // Back-compat: include_visible toggles all visible edge categories on/off,
+    // include_outline toggles only the visible-outline category. These map onto
+    // the new granular fields; granular fields below override if both provided.
     if (const JsonValue* include_visible =
             find_any_member(root, {"include_visible", "includeVisible"}))
     {
-        if (!bool_field(*include_visible, &parsed.include_visible, &error, "include_visible"))
+        bool v = true;
+        if (!bool_field(*include_visible, &v, &error, "include_visible"))
         {
             set_status(status, 91, error);
             return 91;
         }
+        parsed.edge_v_sharp = v;
+        parsed.edge_v_outline = v;
     }
     if (const JsonValue* include_outline =
             find_any_member(root, {"include_outline", "includeOutline"}))
     {
-        if (!bool_field(*include_outline, &parsed.include_outline, &error, "include_outline"))
+        bool v = true;
+        if (!bool_field(*include_outline, &v, &error, "include_outline"))
         {
             set_status(status, 91, error);
             return 91;
+        }
+        parsed.edge_v_outline = v;
+    }
+    // Granular OCCT HLR edge category flags.
+    struct EdgeFlag
+    {
+        const char* snake;
+        const char* camel;
+        bool HlrProjectionOptions::* member;
+    };
+    const EdgeFlag edge_flags[] = {
+        {"edge_v_sharp",   "edgeVSharp",   &HlrProjectionOptions::edge_v_sharp},
+        {"edge_v_outline", "edgeVOutline", &HlrProjectionOptions::edge_v_outline},
+        {"edge_v_smooth",  "edgeVSmooth",  &HlrProjectionOptions::edge_v_smooth},
+        {"edge_v_sewn",    "edgeVSewn",    &HlrProjectionOptions::edge_v_sewn},
+        {"edge_v_iso",     "edgeVIso",     &HlrProjectionOptions::edge_v_iso},
+        {"edge_h_sharp",   "edgeHSharp",   &HlrProjectionOptions::edge_h_sharp},
+        {"edge_h_outline", "edgeHOutline", &HlrProjectionOptions::edge_h_outline},
+        {"edge_h_smooth",  "edgeHSmooth",  &HlrProjectionOptions::edge_h_smooth},
+        {"edge_h_sewn",    "edgeHSewn",    &HlrProjectionOptions::edge_h_sewn},
+        {"edge_h_iso",     "edgeHIso",     &HlrProjectionOptions::edge_h_iso},
+    };
+    for (const EdgeFlag& flag : edge_flags)
+    {
+        if (const JsonValue* node = find_any_member(root, {flag.snake, flag.camel}))
+        {
+            if (!bool_field(*node, &(parsed.*(flag.member)), &error, flag.snake))
+            {
+                set_status(status, 91, error);
+                return 91;
+            }
         }
     }
     if (const JsonValue* union_polygons =
@@ -533,6 +605,52 @@ int parse_hlr_projection_options_json(const char* json, HlrProjectionOptions* op
     {
         if (!bool_field(*union_polygons, &parsed.union_simple_polygons, &error,
                         "union_simple_polygons"))
+        {
+            set_status(status, 91, error);
+            return 91;
+        }
+    }
+    if (const JsonValue* algorithm =
+            find_any_member(root, {"projection_algorithm", "projectionAlgorithm"}))
+    {
+        if (!parse_projection_algorithm(*algorithm, &parsed.projection_algorithm, &error))
+        {
+            set_status(status, 91, error);
+            return 91;
+        }
+    }
+    if (const JsonValue* linear =
+            find_any_member(root, {"mesh_linear_deflection", "meshLinearDeflection"}))
+    {
+        if (!double_field(*linear, &parsed.mesh_linear_deflection, &error,
+                          "mesh_linear_deflection"))
+        {
+            set_status(status, 91, error);
+            return 91;
+        }
+    }
+    if (const JsonValue* angular =
+            find_any_member(root, {"mesh_angular_deflection", "meshAngularDeflection"}))
+    {
+        if (!double_field(*angular, &parsed.mesh_angular_deflection, &error,
+                          "mesh_angular_deflection"))
+        {
+            set_status(status, 91, error);
+            return 91;
+        }
+    }
+    if (const JsonValue* relative = find_any_member(root, {"mesh_relative", "meshRelative"}))
+    {
+        if (!bool_field(*relative, &parsed.mesh_relative, &error, "mesh_relative"))
+        {
+            set_status(status, 91, error);
+            return 91;
+        }
+    }
+    if (const JsonValue* angle =
+            find_any_member(root, {"hlr_angle_tolerance", "hlrAngleTolerance"}))
+    {
+        if (!double_field(*angle, &parsed.hlr_angle_tolerance, &error, "hlr_angle_tolerance"))
         {
             set_status(status, 91, error);
             return 91;

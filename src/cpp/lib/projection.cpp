@@ -206,7 +206,12 @@ int write_hlr_projection_json(const HlrProjectionResult& result, std::string* js
         append_mode(out, view.detail);
         out << "}}";
     }
-    out << "]}";
+    out << "],\"timings\":{";
+    out << "\"step_read_ms\":" << result.timings.step_read_ms;
+    out << ",\"mesh_ms\":" << result.timings.mesh_ms;
+    out << ",\"hlr_ms\":" << result.timings.hlr_ms;
+    out << ",\"extract_ms\":" << result.timings.extract_ms;
+    out << "}}";
 
     *json = out.str();
     set_status(status, 0, "");

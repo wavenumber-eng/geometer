@@ -9,7 +9,10 @@
 #include <TCollection_ExtendedString.hxx>
 #include <TDF_LabelSequence.hxx>
 #include <TDocStd_Document.hxx>
+#include <TopLoc_Location.hxx>
+#include <TopoDS_Shape.hxx>
 #include <XCAFDoc_DocumentTool.hxx>
+#include <XCAFDoc_Location.hxx>
 #include <XCAFDoc_ShapeTool.hxx>
 
 #include <atomic>
@@ -93,9 +96,47 @@ int step_to_glb(const std::string& step_path, const std::string& glb_path,
     TDF_LabelSequence free_shapes;
     shape_tool->GetFreeShapes(free_shapes);
 
+    // Transform-chain note: OCCT's STEPCAFControl_Reader preserves a STEP file's
+    // source coordinate system (the top-level AXIS2_PLACEMENT_3D attached to the
+    // SHAPE_REPRESENTATION) as the location on the free-shape label. The location
+    // is stored in two places that must both be cleared for it to disappear from
+    // the emitted GLB:
+    //   - on the TopoDS_Shape returned by ShapeTool::GetShape (cleared by
+    //     SetShape with shape.Located(identity))
+    //   - as an XCAFDoc_Location attribute on the label itself (cleared by
+    //     XCAFDoc_Location::Set(label, identity))
+    // RWGltf_CafWriter reads the XCAFDoc_Location attribute, so stripping only
+    // the shape's location is not enough. Without both, the placement becomes
+    // the GLB root node's transform.
+    //
+    // Downstream consumers (Altium body placement records, our matrixForPcbModel)
+    // expect a "naked" model whose local frame matches the modelling origin, so
+    // any non-identity root transform ends up combined with the body record's
+    // own RotX/Y/Z and body_projection (top/bottom) and produces an upside-down
+    // or otherwise mis-oriented part. (Concrete failure: Alps RK09K1130AP5
+    // potentiometer's STEP file carries a 180 deg rotation about Y in its
+    // AXIS2_PLACEMENT_3D; combined with body_projection=TOP and rotx=roty=rotz=0,
+    // it rendered upside-down on the PCB.)
+    //
+    // Important: only strip the FREE-SHAPE-LABEL location. Do NOT touch the
+    // locations of assembly components: those carry the relative placement of
+    // sub-parts (e.g. pad positions around an IC body) and are part of the
+    // model's geometry, not the file's coordinate system. Stripping them
+    // collapses all sub-parts to the origin.
     for (Standard_Integer i = 1; i <= free_shapes.Length(); ++i)
     {
-        TopoDS_Shape shape = shape_tool->GetShape(free_shapes.Value(i));
+        TDF_Label label = free_shapes.Value(i);
+        TopoDS_Shape shape = shape_tool->GetShape(label);
+        if (shape.IsNull())
+        {
+            continue;
+        }
+        if (!shape.Location().IsIdentity())
+        {
+            XCAFDoc_Location::Set(label, TopLoc_Location());
+            shape_tool->SetShape(label, shape.Located(TopLoc_Location()));
+            shape = shape_tool->GetShape(label);
+        }
         BRepMesh_IncrementalMesh mesher(shape, options.linear_deflection, Standard_False,
                                         options.angular_deflection, Standard_False);
     }

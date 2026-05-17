@@ -1,16 +1,23 @@
 add_library(geometer_lib STATIC
     c_api.cpp
+    clipper2_bytes.cpp
     hlr_projection.cpp
     planar_contours.cpp
+    planar_solve.cpp
+    planar_triangulate.cpp
     projection.cpp
     projection_options_json.cpp
     step_to_glb.cpp
     step_to_glb_options_json.cpp
     version.cpp
+    ${CMAKE_SOURCE_DIR}/third_party/clipper2/src/clipper.engine.cpp
+    ${CMAKE_SOURCE_DIR}/third_party/clipper2/src/clipper.offset.cpp
+    ${CMAKE_SOURCE_DIR}/third_party/clipper2/src/clipper.rectclip.cpp
+    ${CMAKE_SOURCE_DIR}/third_party/clipper2/src/clipper.triangulation.cpp
 )
 set_target_properties(geometer_lib PROPERTIES OUTPUT_NAME geometer)
 
-set(GEOMETER_ABI_VERSION 1 CACHE STRING "Geometer C ABI version")
+set(GEOMETER_ABI_VERSION 6 CACHE STRING "Geometer C ABI version" FORCE)
 configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/geometer/version_config.h.in"
     "${CMAKE_CURRENT_BINARY_DIR}/generated/geometer/version_config.h"
@@ -21,6 +28,7 @@ target_include_directories(geometer_lib PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_BINARY_DIR}/generated
     ${OpenCASCADE_INCLUDE_DIR}
+    ${CMAKE_SOURCE_DIR}/third_party/clipper2/include
 )
 
 # OCCT 7.8 target names.
@@ -69,7 +77,7 @@ if(EMSCRIPTEN)
         -sMODULARIZE=1
         -sEXPORT_NAME=createGeometerModule
         -sNO_EXIT_RUNTIME=1
-        "-sEXPORTED_FUNCTIONS=['_malloc','_free','_geometer_version_string','_geometer_version_major','_geometer_version_minor','_geometer_version_patch','_geometer_abi_version','_geometer_step_hlr_projection_json','_geometer_step_hlr_projection_json_bytes','_geometer_step_to_glb','_geometer_step_to_glb_bytes','_geometer_free_string','_geometer_free_bytes']"
+        "-sEXPORTED_FUNCTIONS=['_malloc','_free','_geometer_version_string','_geometer_version_major','_geometer_version_minor','_geometer_version_patch','_geometer_abi_version','_geometer_step_hlr_projection_json','_geometer_step_hlr_projection_json_bytes','_geometer_step_to_glb','_geometer_step_to_glb_bytes','_geometer_planar_batch_solve','_geometer_planar_batch_solve_bytes','_geometer_planar_triangulate','_geometer_planar_triangulate_bytes','_geometer_clipper2_boolean','_geometer_clipper2_boolean_bytes','_geometer_clipper2_inflate_open','_geometer_clipper2_inflate_open_bytes','_geometer_free_string','_geometer_free_bytes']"
         "-sEXPORTED_RUNTIME_METHODS=['ccall','cwrap','UTF8ToString','stringToUTF8','lengthBytesUTF8','getValue']"
     )
     set_target_properties(geometer_browser PROPERTIES
@@ -86,6 +94,51 @@ if(EMSCRIPTEN)
             "$<TARGET_FILE_DIR:geometer_browser>/geometer-browser.wasm"
             "${CMAKE_SOURCE_DIR}/dist/"
         COMMENT "Copying browser WASM outputs to dist/"
+    )
+
+    add_executable(geometer_planar_browser
+        browser_exports.cpp
+        c_api_planar.cpp
+        clipper2_bytes.cpp
+        planar_solve.cpp
+        planar_triangulate.cpp
+        version.cpp
+        ${CMAKE_SOURCE_DIR}/third_party/clipper2/src/clipper.engine.cpp
+        ${CMAKE_SOURCE_DIR}/third_party/clipper2/src/clipper.offset.cpp
+        ${CMAKE_SOURCE_DIR}/third_party/clipper2/src/clipper.rectclip.cpp
+        ${CMAKE_SOURCE_DIR}/third_party/clipper2/src/clipper.triangulation.cpp
+    )
+    target_include_directories(geometer_planar_browser PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        ${CMAKE_CURRENT_BINARY_DIR}/generated
+        ${CMAKE_SOURCE_DIR}/third_party/clipper2/include
+    )
+    target_link_options(geometer_planar_browser PRIVATE
+        --no-entry
+        -sALLOW_MEMORY_GROWTH=1
+        -sINITIAL_MEMORY=16777216
+        -sSTACK_SIZE=4194304
+        -sENVIRONMENT=web,worker
+        -sMODULARIZE=1
+        -sEXPORT_NAME=createGeometerPlanarModule
+        -sNO_EXIT_RUNTIME=1
+        "-sEXPORTED_FUNCTIONS=['_malloc','_free','_geometer_version_string','_geometer_version_major','_geometer_version_minor','_geometer_version_patch','_geometer_abi_version','_geometer_planar_batch_solve','_geometer_planar_batch_solve_bytes','_geometer_planar_triangulate','_geometer_planar_triangulate_bytes','_geometer_clipper2_boolean','_geometer_clipper2_boolean_bytes','_geometer_clipper2_inflate_open','_geometer_clipper2_inflate_open_bytes','_geometer_free_string','_geometer_free_bytes']"
+        "-sEXPORTED_RUNTIME_METHODS=['ccall','cwrap','UTF8ToString','stringToUTF8','lengthBytesUTF8','getValue']"
+    )
+    set_target_properties(geometer_planar_browser PROPERTIES
+        OUTPUT_NAME "geometer-planar-browser"
+        SUFFIX ".js"
+    )
+
+    add_custom_command(TARGET geometer_planar_browser POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_SOURCE_DIR}/dist"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "$<TARGET_FILE:geometer_planar_browser>"
+            "${CMAKE_SOURCE_DIR}/dist/"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "$<TARGET_FILE_DIR:geometer_planar_browser>/geometer-planar-browser.wasm"
+            "${CMAKE_SOURCE_DIR}/dist/"
+        COMMENT "Copying planar browser WASM outputs to dist/"
     )
 endif()
 

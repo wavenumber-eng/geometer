@@ -1,10 +1,13 @@
 #include "geometer.h"
 
+#include <algorithm>
+#include <chrono>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
 #include <iterator>
+#include <numeric>
 #include <string>
 #include <vector>
 
@@ -26,6 +29,8 @@ static void print_usage()
                          "  step-to-glb <input.step> <output.glb>       Convert STEP to GLB\n"
                          "  step-project-hlr <input.step> <output.json> Emit HLR projection JSON\n"
                          "  step-project-svg <input.step> <output.svg>  Emit HLR projection SVG\n"
+                         "  planar-batch-solve <request.bin> <response.bin>\n"
+                         "                                               Solve packed planar batch bytes\n"
                          "\n"
                          "Options:\n"
                          "  --deflection <value>   Linear deflection (default: 0.1)\n"
@@ -34,7 +39,10 @@ static void print_usage()
                          "  --mode <simple|detail> SVG mode (default: simple)\n"
                          "  --curve-mode <native-arcs|polyline>\n"
                          "  --samples <count>      Curve polyline samples (default: 24)\n"
-                         "  --round-digits <count> Projection rounding digits (default: 3)\n");
+                         "  --round-digits <count> Projection rounding digits (default: 3)\n"
+                         "  --repeat <count>       Planar benchmark repeat count (default: 1)\n"
+                         "  --warmup <count>       Planar benchmark warmup count (default: 0)\n"
+                         "  --metrics <path>       Write planar benchmark JSON metrics\n");
 }
 
 static bool read_file_bytes(const char* path, std::vector<unsigned char>* bytes)
@@ -56,6 +64,20 @@ static bool write_text_file(const char* path, const std::string& text)
         return false;
     }
     output.write(text.data(), static_cast<std::streamsize>(text.size()));
+    return output.good();
+}
+
+static bool write_file_bytes(const char* path, const std::vector<unsigned char>& bytes)
+{
+    std::ofstream output(path, std::ios::binary);
+    if (!output)
+    {
+        return false;
+    }
+    if (!bytes.empty())
+    {
+        output.write(reinterpret_cast<const char*>(bytes.data()), static_cast<std::streamsize>(bytes.size()));
+    }
     return output.good();
 }
 
@@ -198,6 +220,114 @@ int main(int argc, char* argv[])
         if (!write_text_file(output, text))
         {
             std::fprintf(stderr, "Failed writing %s\n", output);
+            return 1;
+        }
+
+        clean_exit(0);
+    }
+
+    if (std::strcmp(argv[1], "planar-batch-solve") == 0)
+    {
+        if (argc < 4)
+        {
+            std::fprintf(stderr, "planar-batch-solve requires request and response paths.\n");
+            return 1;
+        }
+
+        const char* input = argv[2];
+        const char* output = argv[3];
+        int repeat = 1;
+        int warmup = 0;
+        const char* metrics_path = nullptr;
+        for (int i = 4; i < argc; i += 1)
+        {
+            if (std::strcmp(argv[i], "--repeat") == 0 && i + 1 < argc)
+            {
+                repeat = std::max(1, std::atoi(argv[++i]));
+            }
+            else if (std::strcmp(argv[i], "--warmup") == 0 && i + 1 < argc)
+            {
+                warmup = std::max(0, std::atoi(argv[++i]));
+            }
+            else if (std::strcmp(argv[i], "--metrics") == 0 && i + 1 < argc)
+            {
+                metrics_path = argv[++i];
+            }
+        }
+
+        std::vector<unsigned char> request_bytes;
+        if (!read_file_bytes(input, &request_bytes))
+        {
+            std::fprintf(stderr, "Failed reading %s\n", input);
+            return 1;
+        }
+
+        std::vector<unsigned char> response_bytes;
+        geometer::Status status;
+        for (int i = 0; i < warmup; i += 1)
+        {
+            std::vector<unsigned char> warmup_response;
+            status = {};
+            const int code = geometer::solve_planar_batch_from_bytes(
+                request_bytes.data(), request_bytes.size(), &warmup_response, &status);
+            if (code != 0)
+            {
+                std::fprintf(stderr, "Planar warmup failed (%d): %s\n", code, status.message.c_str());
+                return code;
+            }
+        }
+
+        std::vector<double> timings_ms;
+        timings_ms.reserve(static_cast<std::size_t>(repeat));
+        for (int i = 0; i < repeat; i += 1)
+        {
+            status = {};
+            std::vector<unsigned char> run_response;
+            const auto started = std::chrono::steady_clock::now();
+            const int code = geometer::solve_planar_batch_from_bytes(
+                request_bytes.data(), request_bytes.size(), &run_response, &status);
+            const auto finished = std::chrono::steady_clock::now();
+            if (code != 0)
+            {
+                std::fprintf(stderr, "Planar solve failed (%d): %s\n", code, status.message.c_str());
+                return code;
+            }
+            response_bytes = std::move(run_response);
+            const auto elapsed = std::chrono::duration<double, std::milli>(finished - started).count();
+            timings_ms.push_back(elapsed);
+        }
+
+        if (!write_file_bytes(output, response_bytes))
+        {
+            std::fprintf(stderr, "Failed writing %s\n", output);
+            return 1;
+        }
+
+        const double min_ms = *std::min_element(timings_ms.begin(), timings_ms.end());
+        const double max_ms = *std::max_element(timings_ms.begin(), timings_ms.end());
+        const double mean_ms = std::accumulate(timings_ms.begin(), timings_ms.end(), 0.0) /
+            static_cast<double>(timings_ms.size());
+        const double last_ms = timings_ms.empty() ? 0.0 : timings_ms.back();
+        char metrics[1024];
+        std::snprintf(metrics, sizeof(metrics),
+                      "{\n"
+                      "  \"version\": \"%s\",\n"
+                      "  \"abi\": %d,\n"
+                      "  \"requestBytes\": %zu,\n"
+                      "  \"responseBytes\": %zu,\n"
+                      "  \"warmup\": %d,\n"
+                      "  \"repeat\": %d,\n"
+                      "  \"minMs\": %.6f,\n"
+                      "  \"meanMs\": %.6f,\n"
+                      "  \"maxMs\": %.6f,\n"
+                      "  \"lastMs\": %.6f\n"
+                      "}\n",
+                      geometer::version_string(), geometer::abi_version(), request_bytes.size(),
+                      response_bytes.size(), warmup, repeat, min_ms, mean_ms, max_ms, last_ms);
+        std::printf("%s", metrics);
+        if (metrics_path != nullptr && !write_text_file(metrics_path, metrics))
+        {
+            std::fprintf(stderr, "Failed writing %s\n", metrics_path);
             return 1;
         }
 

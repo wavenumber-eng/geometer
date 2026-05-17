@@ -16,6 +16,12 @@ enum class ProjectionCurveMode
     Polyline
 };
 
+enum class ProjectionAlgorithm
+{
+    Poly,
+    Exact
+};
+
 struct ProjectionViewSpec
 {
     std::string id = "top";
@@ -29,9 +35,30 @@ struct HlrProjectionOptions
     ProjectionCurveMode curve_mode = ProjectionCurveMode::NativeArcs;
     int samples_per_curve = 24;
     int round_digits = 3;
-    bool include_visible = true;
-    bool include_outline = true;
+    // OCCT HLR edge categories merged into the "detail" extraction.
+    // Each maps to a corresponding `HLRBRep_HLRToShape::<X>Compound()` shape.
+    // Defaults reproduce the historical behavior (visible sharp + visible
+    // outline). The poly extractor (HLRBRep_PolyHLRToShape) only supports
+    // V/H Compound + OutLine; the smooth/sewn/iso flags are no-ops in poly.
+    bool edge_v_sharp = true;    // VCompound          (visible, sharp edges)
+    bool edge_v_outline = true;  // OutLineVCompound   (visible, silhouette)
+    bool edge_v_smooth = false;  // Rg1LineVCompound   (visible, smooth/tangential)
+    bool edge_v_sewn = false;    // RgNLineVCompound   (visible, sewn/manifold)
+    bool edge_v_iso = false;     // IsoLineVCompound   (visible, parametric isolines)
+    bool edge_h_sharp = false;   // HCompound          (hidden, sharp edges)
+    bool edge_h_outline = false; // OutLineHCompound   (hidden, silhouette)
+    bool edge_h_smooth = false;  // Rg1LineHCompound   (hidden, smooth/tangential)
+    bool edge_h_sewn = false;    // RgNLineHCompound   (hidden, sewn/manifold)
+    bool edge_h_iso = false;     // IsoLineHCompound   (hidden, parametric isolines)
+
     bool union_simple_polygons = true;
+
+    // 1.1: poly-algo path defaults. Exact path is selected explicitly.
+    ProjectionAlgorithm projection_algorithm = ProjectionAlgorithm::Poly;
+    double mesh_linear_deflection = 0.01;   // mm
+    double mesh_angular_deflection = 0.5;   // rad (~28.6 deg)
+    bool mesh_relative = false;
+    double hlr_angle_tolerance = 0.0174533; // ~1 deg
 };
 
 struct ProjectedSegment
@@ -66,12 +93,21 @@ struct ProjectedViewGeometry
     ProjectedModeGeometry detail;
 };
 
+struct HlrProjectionTimings
+{
+    double step_read_ms = 0.0;
+    double mesh_ms = 0.0;
+    double hlr_ms = 0.0;
+    double extract_ms = 0.0;
+};
+
 struct HlrProjectionResult
 {
     std::string schema = "geometry.projection.a0";
     std::string units = "mm";
     std::string source_hash;
     std::vector<ProjectedViewGeometry> views;
+    HlrProjectionTimings timings;
 };
 
 int step_hlr_projection_from_bytes(const unsigned char* step_data, std::size_t step_size,

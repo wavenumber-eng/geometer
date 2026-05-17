@@ -12,71 +12,50 @@
       color: #18202a;
     }
 
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
-    body {
-      margin: 0;
-      min-height: 100vh;
-      background: #eef1f4;
-    }
+    body { margin: 0; min-height: 100vh; background: #eef1f4; }
 
-    button,
-    select,
-    input {
-      font: inherit;
-    }
+    button, select, input { font: inherit; }
 
-    .app {
-      min-height: 100vh;
-      display: grid;
-      grid-template-rows: auto 1fr;
-    }
+    .app { min-height: 100vh; display: grid; grid-template-rows: auto auto 1fr; }
 
     .toolbar {
       display: grid;
-      grid-template-columns: auto auto auto auto minmax(220px, 1fr);
-      gap: 12px;
+      grid-template-columns: repeat(auto-fit, minmax(160px, max-content));
+      gap: 10px 14px;
       align-items: center;
-      padding: 12px 16px;
+      padding: 10px 16px;
       border-bottom: 1px solid #c7d0d9;
       background: #f9fafb;
     }
 
     .control {
       display: grid;
-      grid-template-columns: auto auto;
-      gap: 8px;
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: 6px;
       align-items: center;
       color: #4a5565;
-      font-size: 13px;
+      font-size: 12px;
     }
 
-    select,
-    input {
-      height: 34px;
+    select, input {
+      height: 30px;
       min-width: 92px;
       border: 1px solid #aab7c4;
       border-radius: 6px;
       background: #ffffff;
       color: #17202a;
-      padding: 0 10px;
+      padding: 0 8px;
     }
 
-    input {
-      width: 84px;
-    }
+    input[type=number] { width: 88px; }
 
-    .button-row {
-      display: inline-grid;
-      grid-auto-flow: column;
-      gap: 8px;
-    }
+    .button-row { display: inline-grid; grid-auto-flow: column; gap: 8px; }
 
     button {
-      height: 34px;
-      min-width: 84px;
+      height: 30px;
+      min-width: 78px;
       border: 1px solid #aab7c4;
       border-radius: 6px;
       background: #ffffff;
@@ -84,35 +63,24 @@
       cursor: pointer;
     }
 
-    button.primary {
-      border-color: #1f6feb;
-      background: #1f6feb;
-      color: #ffffff;
-    }
-
-    button:disabled {
-      cursor: default;
-      opacity: 0.55;
-    }
+    button.primary { border-color: #1f6feb; background: #1f6feb; color: #ffffff; }
+    button:disabled { cursor: default; opacity: 0.55; }
 
     .status {
       color: #4a5565;
-      font-size: 13px;
+      font-size: 12px;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
       text-align: right;
+      grid-column: 1 / -1;
     }
 
-    .content {
-      min-height: 0;
-      overflow: auto;
-      padding: 14px 16px 24px;
-    }
+    .content { min-height: 0; overflow: auto; padding: 12px 16px 24px; }
 
     .summary {
       display: grid;
-      grid-template-columns: repeat(6, minmax(120px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
       gap: 10px;
       margin-bottom: 12px;
     }
@@ -122,22 +90,11 @@
       border: 1px solid #c7d0d9;
       border-radius: 7px;
       background: #ffffff;
-      padding: 9px 10px;
+      padding: 8px 10px;
     }
 
-    .metric-label {
-      color: #647184;
-      font-size: 12px;
-      line-height: 1.1;
-    }
-
-    .metric-value {
-      margin-top: 5px;
-      color: #18202a;
-      font-size: 20px;
-      line-height: 1.1;
-      font-weight: 650;
-    }
+    .metric-label { color: #647184; font-size: 12px; line-height: 1.1; }
+    .metric-value { margin-top: 4px; color: #18202a; font-size: 18px; line-height: 1.1; font-weight: 650; }
 
     table {
       width: 100%;
@@ -147,14 +104,13 @@
       table-layout: fixed;
     }
 
-    th,
-    td {
-      height: 34px;
+    th, td {
+      height: 32px;
       border-bottom: 1px solid #d7dee6;
-      padding: 7px 8px;
+      padding: 6px 8px;
       text-align: left;
       vertical-align: middle;
-      font-size: 13px;
+      font-size: 12px;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -166,57 +122,18 @@
       z-index: 1;
       background: #f3f5f7;
       color: #4a5565;
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 650;
     }
 
-    .number {
-      text-align: right;
-      font-variant-numeric: tabular-nums;
-    }
+    .number { text-align: right; font-variant-numeric: tabular-nums; }
 
-    .state-pending {
-      color: #647184;
-    }
+    .state-pending { color: #647184; }
+    .state-running { color: #1f6feb; font-weight: 650; }
+    .state-done { color: #0f6f5f; font-weight: 650; }
+    .state-failed { color: #b42318; font-weight: 650; }
 
-    .state-running {
-      color: #1f6feb;
-      font-weight: 650;
-    }
-
-    .state-done {
-      color: #0f6f5f;
-      font-weight: 650;
-    }
-
-    .state-failed {
-      color: #b42318;
-      font-weight: 650;
-    }
-
-    #smokeResult {
-      position: fixed;
-      left: -10000px;
-      top: auto;
-      width: 1px;
-      height: 1px;
-      overflow: hidden;
-    }
-
-    @media (max-width: 980px) {
-      .toolbar {
-        grid-template-columns: 1fr 1fr;
-      }
-
-      .status {
-        grid-column: 1 / -1;
-        text-align: left;
-      }
-
-      .summary {
-        grid-template-columns: 1fr 1fr;
-      }
-    }
+    #smokeResult { position: fixed; left: -10000px; top: auto; width: 1px; height: 1px; overflow: hidden; }
   </style>
 </head>
 <body>
@@ -225,7 +142,22 @@
       <div class="button-row">
         <button type="button" class="primary" id="runButton">Run</button>
         <button type="button" id="stopButton" disabled>Stop</button>
+        <button type="button" id="exportButton" title="Download CSV of current results">CSV</button>
       </div>
+      <label class="control">
+        <span>Backend</span>
+        <select id="backendSelect">
+          <option value="current">1.1 (dist)</option>
+          <option value="baseline">v0.1.0 baseline</option>
+        </select>
+      </label>
+      <label class="control">
+        <span>Algorithm</span>
+        <select id="algoSelect">
+          <option value="poly">Poly</option>
+          <option value="exact">Exact</option>
+        </select>
+      </label>
       <label class="control">
         <span>View</span>
         <select id="viewSelect">
@@ -251,52 +183,50 @@
           <option value="name">Name</option>
         </select>
       </label>
+      <label class="control" title="Linear mesh deflection (mm). Draftsman uses ~0.01.">
+        <span>Lin defl</span>
+        <input id="linDeflInput" type="number" min="0.0001" step="0.001" value="0.01">
+      </label>
+      <label class="control" title="Angular mesh deflection (radians).">
+        <span>Ang defl</span>
+        <input id="angDeflInput" type="number" min="0.001" step="0.05" value="0.5">
+      </label>
+      <label class="control" title="HLR edge classification angle tolerance (radians).">
+        <span>HLR tol</span>
+        <input id="hlrTolInput" type="number" min="0.0001" step="0.001" value="0.0174533">
+      </label>
+      <label class="control" title="Relative mesh deflection scales linear deflection by bbox.">
+        <span>Mesh rel</span>
+        <select id="meshRelativeSelect"><option value="false">No</option><option value="true">Yes</option></select>
+      </label>
       <div class="status" id="status">Loading manifest</div>
     </div>
     <main class="content">
       <section class="summary">
-        <div class="metric">
-          <div class="metric-label">Completed</div>
-          <div class="metric-value" id="completedMetric">0 / 0</div>
-        </div>
-        <div class="metric">
-          <div class="metric-label">Total HLR</div>
-          <div class="metric-value" id="totalHlrMetric">0 ms</div>
-        </div>
-        <div class="metric">
-          <div class="metric-label">Total STEP to bytes</div>
-          <div class="metric-value" id="totalStepBytesMetric">0 ms</div>
-        </div>
-        <div class="metric">
-          <div class="metric-label">Average HLR</div>
-          <div class="metric-value" id="avgHlrMetric">0 ms</div>
-        </div>
-        <div class="metric">
-          <div class="metric-label">Average STEP to bytes</div>
-          <div class="metric-value" id="avgStepBytesMetric">0 ms</div>
-        </div>
-        <div class="metric">
-          <div class="metric-label">Slowest HLR</div>
-          <div class="metric-value" id="slowestMetric">0 ms</div>
-        </div>
-        <div class="metric">
-          <div class="metric-label">Total STEP Bytes</div>
-          <div class="metric-value" id="bytesMetric">0 KB</div>
-        </div>
+        <div class="metric"><div class="metric-label">Completed</div><div class="metric-value" id="completedMetric">0 / 0</div></div>
+        <div class="metric"><div class="metric-label">Total HLR</div><div class="metric-value" id="totalHlrMetric">0 ms</div></div>
+        <div class="metric"><div class="metric-label">Avg HLR</div><div class="metric-value" id="avgHlrMetric">0 ms</div></div>
+        <div class="metric"><div class="metric-label">Slowest HLR</div><div class="metric-value" id="slowestMetric">0 ms</div></div>
+        <div class="metric"><div class="metric-label">Avg Mesh</div><div class="metric-value" id="avgMeshMetric">0 ms</div></div>
+        <div class="metric"><div class="metric-label">Avg Extract</div><div class="metric-value" id="avgExtractMetric">0 ms</div></div>
+        <div class="metric"><div class="metric-label">Total STEP</div><div class="metric-value" id="bytesMetric">0 KB</div></div>
       </section>
       <table>
         <thead>
           <tr>
-            <th style="width: 26%">Model</th>
-            <th style="width: 8%">State</th>
-            <th class="number" style="width: 8%">STEP size</th>
-            <th class="number" style="width: 11%">STEP to bytes</th>
-            <th class="number" style="width: 9%">WASM</th>
-            <th class="number" style="width: 9%">HLR</th>
-            <th class="number" style="width: 9%">JSON</th>
-            <th class="number" style="width: 9%">Detail</th>
-            <th class="number" style="width: 9%">Simple</th>
-            <th style="width: 11%">Error</th>
+            <th style="width: 22%">Model</th>
+            <th style="width: 7%">State</th>
+            <th class="number" style="width: 7%">STEP</th>
+            <th class="number" style="width: 7%">Fetch</th>
+            <th class="number" style="width: 7%">WASM</th>
+            <th class="number" style="width: 7%">Read</th>
+            <th class="number" style="width: 7%">Mesh</th>
+            <th class="number" style="width: 7%">HLR</th>
+            <th class="number" style="width: 7%">Extract</th>
+            <th class="number" style="width: 6%">JSON</th>
+            <th class="number" style="width: 6%">Detail</th>
+            <th class="number" style="width: 6%">Simple</th>
+            <th style="width: 9%">Error</th>
           </tr>
         </thead>
         <tbody id="rows"></tbody>
@@ -321,6 +251,7 @@
       models: [],
       rows: [],
       worker: null,
+      workerBackend: null,
       requests: new Map(),
       nextRequestId: 1,
       running: false,
@@ -331,17 +262,24 @@
     const els = {
       runButton: document.getElementById("runButton"),
       stopButton: document.getElementById("stopButton"),
+      exportButton: document.getElementById("exportButton"),
+      backendSelect: document.getElementById("backendSelect"),
+      algoSelect: document.getElementById("algoSelect"),
       viewSelect: document.getElementById("viewSelect"),
       limitInput: document.getElementById("limitInput"),
       sortSelect: document.getElementById("sortSelect"),
+      linDeflInput: document.getElementById("linDeflInput"),
+      angDeflInput: document.getElementById("angDeflInput"),
+      hlrTolInput: document.getElementById("hlrTolInput"),
+      meshRelativeSelect: document.getElementById("meshRelativeSelect"),
       status: document.getElementById("status"),
       rows: document.getElementById("rows"),
       completedMetric: document.getElementById("completedMetric"),
       totalHlrMetric: document.getElementById("totalHlrMetric"),
-      totalStepBytesMetric: document.getElementById("totalStepBytesMetric"),
       avgHlrMetric: document.getElementById("avgHlrMetric"),
-      avgStepBytesMetric: document.getElementById("avgStepBytesMetric"),
       slowestMetric: document.getElementById("slowestMetric"),
+      avgMeshMetric: document.getElementById("avgMeshMetric"),
+      avgExtractMetric: document.getElementById("avgExtractMetric"),
       bytesMetric: document.getElementById("bytesMetric"),
       smokeResult: document.getElementById("smokeResult"),
     };
@@ -351,23 +289,16 @@
     }
 
     function formatBytes(bytes) {
-      if (!Number.isFinite(bytes)) {
-        return "";
-      }
-      if (bytes >= 1024 * 1024) {
-        return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
-      }
+      if (!Number.isFinite(bytes)) return "";
+      if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
       return `${Math.max(1, Math.round(bytes / 1024))} KB`;
     }
 
     function formatMs(ms) {
-      if (!Number.isFinite(ms)) {
-        return "";
-      }
-      if (ms >= 1000) {
-        return `${(ms / 1000).toFixed(2)} s`;
-      }
-      return `${Math.max(1, Math.round(ms))} ms`;
+      if (!Number.isFinite(ms)) return "";
+      if (ms >= 1000) return `${(ms / 1000).toFixed(2)} s`;
+      if (ms < 1) return ms === 0 ? "0 ms" : `${ms.toFixed(2)} ms`;
+      return `${Math.round(ms)} ms`;
     }
 
     function setSmoke(text, pass) {
@@ -377,33 +308,45 @@
       }
     }
 
-    function worker() {
-      if (!state.worker) {
-        state.worker = new Worker("/tests/wasm/hlr_projection_worker.js");
-        state.worker.onmessage = (event) => {
-          const { id, ok, projection, timings, error } = event.data;
-          const request = state.requests.get(id);
-          if (!request) {
-            return;
-          }
-          state.requests.delete(id);
-          if (ok) {
-            request.resolve({ projection, timings });
-          } else {
-            const failure = new Error(error || "HLR worker failed.");
-            failure.timings = timings || {};
-            request.reject(failure);
-          }
-        };
+    function currentOptions() {
+      return {
+        projection_algorithm: els.algoSelect.value,
+        mesh_linear_deflection: Number.parseFloat(els.linDeflInput.value) || 0.01,
+        mesh_angular_deflection: Number.parseFloat(els.angDeflInput.value) || 0.5,
+        hlr_angle_tolerance: Number.parseFloat(els.hlrTolInput.value) || 0.0174533,
+        mesh_relative: els.meshRelativeSelect.value === "true",
+      };
+    }
+
+    function ensureWorker(backend) {
+      if (state.worker && state.workerBackend === backend) return state.worker;
+      if (state.worker) {
+        state.worker.terminate();
+        state.requests.clear();
       }
+      state.worker = new Worker("/tests/wasm/hlr_projection_worker.js");
+      state.workerBackend = backend;
+      state.worker.onmessage = (event) => {
+        const { id, ok, projection, timings, error } = event.data;
+        const request = state.requests.get(id);
+        if (!request) return;
+        state.requests.delete(id);
+        if (ok) request.resolve({ projection, timings });
+        else {
+          const failure = new Error(error || "HLR worker failed.");
+          failure.timings = timings || {};
+          request.reject(failure);
+        }
+      };
       return state.worker;
     }
 
-    function projectInWorker(stepBuffer, viewId) {
+    function projectInWorker(stepBuffer, viewId, backend, options) {
       const id = state.nextRequestId++;
+      const worker = ensureWorker(backend);
       return new Promise((resolve, reject) => {
         state.requests.set(id, { resolve, reject });
-        worker().postMessage({ id, stepBuffer, views: [projectionViews[viewId]] }, [stepBuffer]);
+        worker.postMessage({ id, stepBuffer, views: [projectionViews[viewId]], options, backend }, [stepBuffer]);
       });
     }
 
@@ -429,29 +372,37 @@
         <td class="number"></td>
         <td class="number"></td>
         <td class="number"></td>
+        <td class="number"></td>
+        <td class="number"></td>
+        <td class="number"></td>
         <td></td>
       `;
       row.element = tr;
       row.cells = {
         state: tr.children[1],
-        bytes: tr.children[3],
+        fetch: tr.children[3],
         wasm: tr.children[4],
-        hlr: tr.children[5],
-        json: tr.children[6],
-        detail: tr.children[7],
-        simple: tr.children[8],
-        error: tr.children[9],
+        read: tr.children[5],
+        mesh: tr.children[6],
+        hlr: tr.children[7],
+        extract: tr.children[8],
+        json: tr.children[9],
+        detail: tr.children[10],
+        simple: tr.children[11],
+        error: tr.children[12],
       };
       return tr;
     }
 
     function updateRow(row) {
-      const stateClass = `state-${row.state}`;
-      row.cells.state.className = stateClass;
+      row.cells.state.className = `state-${row.state}`;
       row.cells.state.textContent = row.state[0].toUpperCase() + row.state.slice(1);
-      row.cells.bytes.textContent = formatMs(row.stepBytesMs);
+      row.cells.fetch.textContent = formatMs(row.stepBytesMs);
       row.cells.wasm.textContent = row.moduleMs > 1 ? formatMs(row.moduleMs) : "";
-      row.cells.hlr.textContent = formatMs(row.hlrMs);
+      row.cells.read.textContent = formatMs(row.stepReadMs);
+      row.cells.mesh.textContent = formatMs(row.meshMs);
+      row.cells.hlr.textContent = formatMs(row.nativeHlrMs ?? row.hlrMs);
+      row.cells.extract.textContent = formatMs(row.extractMs);
       row.cells.json.textContent = formatMs(row.jsonParseMs);
       row.cells.detail.textContent = Number.isFinite(row.detailCount) ? row.detailCount : "";
       row.cells.simple.textContent = Number.isFinite(row.simpleCount) ? row.simpleCount : "";
@@ -461,27 +412,17 @@
 
     function renderRows() {
       const fragment = document.createDocumentFragment();
-      for (const row of sortedRows()) {
-        fragment.append(row.element || rowTemplate(row));
-      }
+      for (const row of sortedRows()) fragment.append(row.element || rowTemplate(row));
       els.rows.replaceChildren(fragment);
     }
 
     function sortedRows() {
       const rows = [...state.rows];
       switch (els.sortSelect.value) {
-      case "hlr-desc":
-        rows.sort((a, b) => (b.hlrMs || -1) - (a.hlrMs || -1));
-        break;
-      case "bytes-desc":
-        rows.sort((a, b) => b.model.stepBytes - a.model.stepBytes);
-        break;
-      case "name":
-        rows.sort((a, b) => a.model.name.localeCompare(b.model.name));
-        break;
-      default:
-        rows.sort((a, b) => a.index - b.index);
-        break;
+      case "hlr-desc": rows.sort((a, b) => (b.hlrMs || -1) - (a.hlrMs || -1)); break;
+      case "bytes-desc": rows.sort((a, b) => b.model.stepBytes - a.model.stepBytes); break;
+      case "name": rows.sort((a, b) => a.model.name.localeCompare(b.model.name)); break;
+      default: rows.sort((a, b) => a.index - b.index); break;
       }
       return rows;
     }
@@ -489,28 +430,24 @@
     function updateSummary() {
       const done = state.rows.filter((row) => row.state === "done");
       const failed = state.rows.filter((row) => row.state === "failed");
-      const totalHlr = done.reduce((sum, row) => sum + (row.hlrMs || 0), 0);
-      const totalStepBytesMs = done.reduce((sum, row) => sum + (row.stepBytesMs || 0), 0);
+      const totalHlr = done.reduce((s, r) => s + (r.hlrMs || 0), 0);
       const avgHlr = done.length ? totalHlr / done.length : 0;
-      const avgStepBytesMs = done.length ? totalStepBytesMs / done.length : 0;
-      const slowest = done.reduce((max, row) => Math.max(max, row.hlrMs || 0), 0);
-      const totalBytes = done.reduce((sum, row) => sum + row.model.stepBytes, 0);
+      const slowest = done.reduce((m, r) => Math.max(m, r.hlrMs || 0), 0);
+      const avgMesh = done.length ? done.reduce((s, r) => s + (r.meshMs || 0), 0) / done.length : 0;
+      const avgExtract = done.length ? done.reduce((s, r) => s + (r.extractMs || 0), 0) / done.length : 0;
+      const totalBytes = done.reduce((s, r) => s + r.model.stepBytes, 0);
 
       els.completedMetric.textContent = `${done.length} / ${state.rows.length}`;
       els.totalHlrMetric.textContent = formatMs(totalHlr) || "0 ms";
-      els.totalStepBytesMetric.textContent = formatMs(totalStepBytesMs) || "0 ms";
       els.avgHlrMetric.textContent = formatMs(avgHlr) || "0 ms";
-      els.avgStepBytesMetric.textContent = formatMs(avgStepBytesMs) || "0 ms";
       els.slowestMetric.textContent = formatMs(slowest) || "0 ms";
+      els.avgMeshMetric.textContent = formatMs(avgMesh) || "0 ms";
+      els.avgExtractMetric.textContent = formatMs(avgExtract) || "0 ms";
       els.bytesMetric.textContent = formatBytes(totalBytes);
 
-      if (state.running) {
-        els.status.textContent = `Running ${done.length + failed.length} / ${state.rows.length}`;
-      } else if (failed.length) {
-        els.status.textContent = `Finished with ${failed.length} failures`;
-      } else {
-        els.status.textContent = state.rows.length ? "Finished" : "Ready";
-      }
+      if (state.running) els.status.textContent = `Running ${done.length + failed.length} / ${state.rows.length}`;
+      else if (failed.length) els.status.textContent = `Finished with ${failed.length} failures`;
+      else els.status.textContent = state.rows.length ? "Finished" : "Ready";
     }
 
     function selectedModels() {
@@ -518,7 +455,7 @@
       return limit > 0 ? state.models.slice(0, limit) : state.models;
     }
 
-    async function runOne(row, viewId) {
+    async function runOne(row, viewId, backend, options) {
       row.state = "running";
       updateRow(row);
       updateSummary();
@@ -526,15 +463,17 @@
       try {
         const fetchStart = performance.now();
         const response = await fetch(assetUrl(row.model.step));
-        if (!response.ok) {
-          throw new Error(`STEP fetch failed: ${response.status}`);
-        }
+        if (!response.ok) throw new Error(`STEP fetch failed: ${response.status}`);
         const stepBuffer = await response.arrayBuffer();
         row.stepBytesMs = performance.now() - fetchStart;
 
-        const result = await projectInWorker(stepBuffer, viewId);
+        const result = await projectInWorker(stepBuffer, viewId, backend, options);
         row.moduleMs = result.timings.moduleMs || 0;
         row.hlrMs = result.timings.hlrMs || 0;
+        row.stepReadMs = result.timings.stepReadMs;
+        row.meshMs = result.timings.meshMs;
+        row.nativeHlrMs = result.timings.nativeHlrMs;
+        row.extractMs = result.timings.extractMs;
         row.jsonParseMs = result.timings.jsonParseMs || 0;
         const counts = countProjection(result.projection, viewId);
         row.detailCount = counts.detail;
@@ -547,9 +486,7 @@
 
       updateRow(row);
       updateSummary();
-      if (els.sortSelect.value !== "manifest") {
-        renderRows();
-      }
+      if (els.sortSelect.value !== "manifest") renderRows();
     }
 
     async function runBenchmark() {
@@ -558,20 +495,16 @@
       els.runButton.disabled = true;
       els.stopButton.disabled = false;
       const viewId = els.viewSelect.value;
-      state.rows = selectedModels().map((model, index) => ({
-        index,
-        model,
-        state: "pending",
-      }));
+      const backend = els.backendSelect.value;
+      const options = currentOptions();
+      state.rows = selectedModels().map((model, index) => ({ index, model, state: "pending" }));
       renderRows();
       updateSummary();
       setSmoke("RUNNING", false);
 
       for (const row of state.rows) {
-        if (state.stopRequested) {
-          break;
-        }
-        await runOne(row, viewId);
+        if (state.stopRequested) break;
+        await runOne(row, viewId, backend, options);
       }
 
       state.running = false;
@@ -583,34 +516,57 @@
       const failed = state.rows.filter((row) => row.state === "failed");
       if (state.smoke) {
         const pass = done.length > 0 && failed.length === 0;
-        const totalHlr = done.reduce((sum, row) => sum + (row.hlrMs || 0), 0);
-        const totalStepBytesMs = done.reduce((sum, row) => sum + (row.stepBytesMs || 0), 0);
-        setSmoke(pass ? `PASS rows=${done.length} stepToBytes=${formatMs(totalStepBytesMs)} totalHlr=${formatMs(totalHlr)}` : `FAIL done=${done.length} failed=${failed.length}`, pass);
+        const totalHlr = done.reduce((s, r) => s + (r.hlrMs || 0), 0);
+        setSmoke(pass ? `PASS rows=${done.length} totalHlr=${formatMs(totalHlr)}` : `FAIL done=${done.length} failed=${failed.length}`, pass);
       }
+    }
+
+    function exportCsv() {
+      const headers = [
+        "model", "state", "backend", "algorithm",
+        "step_bytes", "fetch_ms", "wasm_ms", "step_read_ms",
+        "mesh_ms", "hlr_ms", "extract_ms", "json_ms",
+        "detail", "simple", "error",
+      ];
+      const backend = els.backendSelect.value;
+      const algo = els.algoSelect.value;
+      const rows = state.rows.map((r) => [
+        r.model.name, r.state, backend, algo,
+        r.model.stepBytes,
+        r.stepBytesMs ?? "", r.moduleMs ?? "", r.stepReadMs ?? "",
+        r.meshMs ?? "", r.nativeHlrMs ?? r.hlrMs ?? "", r.extractMs ?? "", r.jsonParseMs ?? "",
+        r.detailCount ?? "", r.simpleCount ?? "", (r.error || "").replaceAll('"', "''"),
+      ]);
+      const csv = [headers, ...rows].map((row) => row.map((c) => `"${c}"`).join(",")).join("\n");
+      const blob = new Blob([csv], { type: "text/csv" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `hlr_bench_${backend}_${algo}_${els.viewSelect.value}.csv`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
     }
 
     async function init() {
       const params = new URLSearchParams(window.location.search);
       const response = await fetch(manifestUrl);
-      if (!response.ok) {
-        throw new Error(`Manifest fetch failed: ${response.status}`);
-      }
+      if (!response.ok) throw new Error(`Manifest fetch failed: ${response.status}`);
       state.models = await response.json();
 
-      const view = params.get("view");
-      if (view && projectionViews[view]) {
-        els.viewSelect.value = view;
-      }
-      const limit = params.get("limit");
-      if (limit != null) {
-        els.limitInput.value = limit;
+      const paramSetters = {
+        view: (v) => projectionViews[v] && (els.viewSelect.value = v),
+        backend: (v) => (els.backendSelect.value = v),
+        algo: (v) => (els.algoSelect.value = v),
+        limit: (v) => (els.limitInput.value = v),
+        lin: (v) => (els.linDeflInput.value = v),
+        ang: (v) => (els.angDeflInput.value = v),
+        hlrtol: (v) => (els.hlrTolInput.value = v),
+      };
+      for (const [k, set] of Object.entries(paramSetters)) {
+        const v = params.get(k);
+        if (v != null) set(v);
       }
 
-      state.rows = selectedModels().map((model, index) => ({
-        index,
-        model,
-        state: "pending",
-      }));
+      state.rows = selectedModels().map((model, index) => ({ index, model, state: "pending" }));
       renderRows();
       updateSummary();
       els.status.textContent = `${state.models.length} models ready`;
@@ -628,22 +584,26 @@
         state.stopRequested = true;
         els.status.textContent = "Stopping after current model";
       });
+      els.exportButton.addEventListener("click", exportCsv);
       els.sortSelect.addEventListener("change", renderRows);
       els.limitInput.addEventListener("change", () => {
         if (!state.running) {
-          state.rows = selectedModels().map((model, index) => ({
-            index,
-            model,
-            state: "pending",
-          }));
+          state.rows = selectedModels().map((model, index) => ({ index, model, state: "pending" }));
           renderRows();
           updateSummary();
         }
       });
+      // Reset worker when backend changes so the right WASM module is loaded.
+      els.backendSelect.addEventListener("change", () => {
+        if (state.worker) {
+          state.worker.terminate();
+          state.worker = null;
+          state.workerBackend = null;
+          state.requests.clear();
+        }
+      });
 
-      if (state.smoke || params.get("autorun") === "1") {
-        await runBenchmark();
-      }
+      if (state.smoke || params.get("autorun") === "1") await runBenchmark();
     }
 
     init().catch((error) => {

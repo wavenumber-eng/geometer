@@ -9,6 +9,14 @@ target_include_directories(geometer_planar_contours_test PRIVATE
 
 add_test(NAME geometer_planar_contours_test COMMAND geometer_planar_contours_test)
 
+add_executable(geometer_planar_solve_test
+    planar_solve_test.cpp
+)
+
+target_link_libraries(geometer_planar_solve_test PRIVATE geometer_lib)
+
+add_test(NAME geometer_planar_solve_test COMMAND geometer_planar_solve_test)
+
 add_executable(geometer_projection_options_json_test
     projection_options_json_test.cpp
 )

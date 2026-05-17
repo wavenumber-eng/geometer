@@ -14,6 +14,7 @@ Current and planned library surfaces include:
 - STEP to GLB conversion.
 - STEP hidden-line projection geometry.
 - Planar contour extraction for simplified projected outlines.
+- Planar batch boolean/offset solving for filled 2D geometry.
 - Future STEP mesh/tessellation APIs for browser rendering.
 
 The core library must stay generic. Do not put board placement rules, Altium
@@ -45,6 +46,11 @@ intentionally ignored by Git.
 vendor, and required by OCCT's GLB export path. The vendored copy is checked in
 so a fresh clone does not need a separate RapidJSON git checkout.
 
+`third_party/clipper2/` is also different. Clipper2 is a compact BSL-1.0 C++
+library used by Geometer's generic planar batch solve API. The checked-in copy
+contains only the C++ library sources, headers, upstream license, and a local
+vendoring note.
+
 `dist/` is different. This repository currently treats `dist/` as the location
 for distributable binaries. CMake and WASM builds copy final outputs there.
 Those outputs are committed when publishing changes so another project can clone
@@ -59,6 +65,7 @@ Pinned dependency versions live in scripts:
 
 - OCCT: `scripts/build_occt.py`
 - RapidJSON: `third_party/rapidjson/`
+- Clipper2: `third_party/clipper2/`
 - emsdk: `scripts/build_wasm.py`
 
 ## Workspace Copy Setup
@@ -143,6 +150,7 @@ Common native CLI commands:
 .\dist\geometer.exe step-to-glb input.step output.glb
 .\dist\geometer.exe step-project-hlr input.step output.json
 .\dist\geometer.exe step-project-svg input.step output.svg --mode simple --view top
+.\dist\geometer.exe planar-batch-solve request.bin response.bin --warmup 1 --repeat 5 --metrics metrics.json
 ```
 
 ## Manual OCCT Rebuild
@@ -177,6 +185,8 @@ This script:
 5. Copies the Node CLI outputs `geometer.js` / `geometer.wasm` into `dist/`.
 6. Copies the browser C ABI outputs `geometer-browser.js` /
    `geometer-browser.wasm` into `dist/`.
+7. Copies the planar-only browser C ABI outputs `geometer-planar-browser.js` /
+   `geometer-planar-browser.wasm` into `dist/`.
 
 To remove WASM-specific generated state:
 
@@ -191,18 +201,20 @@ direct byte-buffer calls from JavaScript or a Web Worker.
 
 The browser target also exports `geometer_version_string` and
 `geometer_abi_version`. Downstream browser consumers should check those before
-depending on a specific ABI.
+depending on a specific ABI. Geometer ABI 2 added the planar batch solve byte
+entry point used for packed browser geometry offload. ABI 3 adds per-job
+planar batch diagnostics to that byte response. ABI 5 adds browser planar
+triangulation and Clipper2 byte APIs.
 
 ## Versioning
 
-The current project version is `0.2.0`, declared in the root `CMakeLists.txt`.
-The current C ABI version is `1`, declared as `GEOMETER_ABI_VERSION` in
+The current project version is `1.0.0`, declared in the root `CMakeLists.txt`.
+The current C ABI version is `5`, declared as `GEOMETER_ABI_VERSION` in
 `src/cpp/lib/CMakeLists.txt`.
 
-Use semver for project releases and tag releases as `v0.1.0`, `v0.2.0`, etc.
-While the project is under `0.x`, interface changes may still happen, but any
-breaking C ABI/WASM change must increment `GEOMETER_ABI_VERSION` and rebuild the
-persisted `dist/` artifacts.
+Use semver for project releases and tag releases as `v1.0.0`, `v1.1.0`, etc.
+Any breaking C ABI/WASM change must increment `GEOMETER_ABI_VERSION` and
+rebuild the persisted `dist/` artifacts.
 
 ## Embedded Model Viewer
 
@@ -245,6 +257,18 @@ After a WASM build, validate the browser STEP-byte-to-GLB-byte export:
 
 ```powershell
 node tests\wasm\step_to_glb_bytes_smoke.js
+```
+
+To benchmark the browser C ABI planar batch solver against a packed request:
+
+```powershell
+node tests\wasm\planar_batch_solve_bytes_benchmark.js request.bin response.bin --warmup 1 --repeat 5 --metrics metrics.json
+```
+
+To run the same benchmark in headless Chrome, including the Web Worker path:
+
+```powershell
+python tests\wasm\planar_batch_solve_bytes_chrome_benchmark.py request.bin --worker --warmup 1 --repeat 5 --metrics metrics.json
 ```
 
 The Rack metadata under `tests/` describes test strata, but the C++ tests are

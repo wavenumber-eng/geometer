@@ -3,10 +3,13 @@
 #include "geometer/planar_contours.h"
 
 #include <BRepAdaptor_Curve.hxx>
+#include <BRepMesh_IncrementalMesh.hxx>
 #include <GeomAbs_CurveType.hxx>
 #include <HLRAlgo_Projector.hxx>
 #include <HLRBRep_Algo.hxx>
 #include <HLRBRep_HLRToShape.hxx>
+#include <HLRBRep_PolyAlgo.hxx>
+#include <HLRBRep_PolyHLRToShape.hxx>
 #include <IFSelect_ReturnStatus.hxx>
 #include <STEPControl_Reader.hxx>
 #include <Standard_Failure.hxx>
@@ -21,6 +24,7 @@
 #include <gp_Pnt.hxx>
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstdint>
 #include <exception>
@@ -509,10 +513,19 @@ simple_geometry_from_segments(const std::vector<ProjectedSegment>& contour_sourc
     return geometry_from_keys(simple_keys, std::set<ArcKey>(), scale, pow10_int(6));
 }
 
-ProjectedViewGeometry project_view(const TopoDS_Shape& shape, const ProjectionViewSpec& view,
-                                   const HlrProjectionOptions& options, long long scale,
-                                   long long extent_scale)
+double elapsed_ms(const std::chrono::high_resolution_clock::time_point& start)
 {
+    const auto now = std::chrono::high_resolution_clock::now();
+    return std::chrono::duration<double, std::milli>(now - start).count();
+}
+
+ProjectedViewGeometry project_view_exact(const TopoDS_Shape& shape, const ProjectionViewSpec& view,
+                                         const HlrProjectionOptions& options, long long scale,
+                                         long long extent_scale,
+                                         HlrProjectionTimings* timings)
+{
+    const auto hlr_start = std::chrono::high_resolution_clock::now();
+
     Handle(HLRBRep_Algo) algorithm = new HLRBRep_Algo();
     algorithm->Add(shape);
     algorithm->Projector(HLRAlgo_Projector(make_view_axes(view)));
@@ -520,29 +533,108 @@ ProjectedViewGeometry project_view(const TopoDS_Shape& shape, const ProjectionVi
     algorithm->Hide();
 
     HLRBRep_HLRToShape hlr_to_shape(algorithm);
-    const TopoDS_Shape visible = hlr_to_shape.VCompound();
-    const TopoDS_Shape outline = hlr_to_shape.OutLineVCompound();
+
+    if (timings != nullptr)
+    {
+        timings->hlr_ms += elapsed_ms(hlr_start);
+    }
+
+    const auto extract_start = std::chrono::high_resolution_clock::now();
 
     std::set<SegmentKey> detail_segment_keys;
     std::set<ArcKey> detail_arc_keys;
     std::vector<ProjectedSegment> contour_source_segments;
 
-    if (options.include_visible)
+    // Pull each enabled edge category from HLRBRep_HLRToShape and merge.
+    auto extract = [&](bool enabled, TopoDS_Shape shape)
     {
-        add_edge_geometry(visible, options, &detail_segment_keys, &detail_arc_keys,
+        if (!enabled || shape.IsNull()) return;
+        add_edge_geometry(shape, options, &detail_segment_keys, &detail_arc_keys,
                           &contour_source_segments, scale, extent_scale);
-    }
-    if (options.include_outline)
-    {
-        add_edge_geometry(outline, options, &detail_segment_keys, &detail_arc_keys,
-                          &contour_source_segments, scale, extent_scale);
-    }
+    };
+    extract(options.edge_v_sharp,   hlr_to_shape.VCompound());
+    extract(options.edge_v_outline, hlr_to_shape.OutLineVCompound());
+    extract(options.edge_v_smooth,  hlr_to_shape.Rg1LineVCompound());
+    extract(options.edge_v_sewn,    hlr_to_shape.RgNLineVCompound());
+    extract(options.edge_v_iso,     hlr_to_shape.IsoLineVCompound());
+    extract(options.edge_h_sharp,   hlr_to_shape.HCompound());
+    extract(options.edge_h_outline, hlr_to_shape.OutLineHCompound());
+    extract(options.edge_h_smooth,  hlr_to_shape.Rg1LineHCompound());
+    extract(options.edge_h_sewn,    hlr_to_shape.RgNLineHCompound());
+    extract(options.edge_h_iso,     hlr_to_shape.IsoLineHCompound());
 
     ProjectedViewGeometry projected;
     projected.view = view;
     projected.detail =
         geometry_from_keys(detail_segment_keys, detail_arc_keys, scale, extent_scale);
     projected.simple = simple_geometry_from_segments(contour_source_segments, options, scale);
+
+    if (timings != nullptr)
+    {
+        timings->extract_ms += elapsed_ms(extract_start);
+    }
+    return projected;
+}
+
+ProjectedViewGeometry project_view_poly(const TopoDS_Shape& shape, const ProjectionViewSpec& view,
+                                        const HlrProjectionOptions& options, long long scale,
+                                        long long extent_scale, HlrProjectionTimings* timings)
+{
+    const auto hlr_start = std::chrono::high_resolution_clock::now();
+
+    Handle(HLRBRep_PolyAlgo) algorithm = new HLRBRep_PolyAlgo();
+    algorithm->Load(shape);
+    algorithm->Projector(HLRAlgo_Projector(make_view_axes(view)));
+    if (options.hlr_angle_tolerance > 0.0)
+    {
+        // PolyAlgo uses TolAngular() for the silhouette/sharp-edge classification
+        // tolerance (radians). HLRBRep_Algo uses Angle() with the same intent.
+        algorithm->TolAngular(options.hlr_angle_tolerance);
+    }
+    algorithm->Update();
+
+    HLRBRep_PolyHLRToShape poly_to_shape;
+    poly_to_shape.Update(algorithm);
+
+    if (timings != nullptr)
+    {
+        timings->hlr_ms += elapsed_ms(hlr_start);
+    }
+
+    const auto extract_start = std::chrono::high_resolution_clock::now();
+
+    // PolyAlgo emits tessellated line segments; force polyline treatment so we
+    // do not try to interpret any residual edge type as an analytic arc.
+    HlrProjectionOptions poly_options = options;
+    poly_options.curve_mode = ProjectionCurveMode::Polyline;
+
+    std::set<SegmentKey> detail_segment_keys;
+    std::set<ArcKey> detail_arc_keys;
+    std::vector<ProjectedSegment> contour_source_segments;
+
+    // HLRBRep_PolyHLRToShape only exposes V/H Compound + OutLine variants.
+    // The smooth/sewn/iso flags are accepted but silently ignored in poly mode.
+    auto extract = [&](bool enabled, TopoDS_Shape shape)
+    {
+        if (!enabled || shape.IsNull()) return;
+        add_edge_geometry(shape, poly_options, &detail_segment_keys, &detail_arc_keys,
+                          &contour_source_segments, scale, extent_scale);
+    };
+    extract(poly_options.edge_v_sharp,   poly_to_shape.VCompound());
+    extract(poly_options.edge_v_outline, poly_to_shape.OutLineVCompound());
+    extract(poly_options.edge_h_sharp,   poly_to_shape.HCompound());
+    extract(poly_options.edge_h_outline, poly_to_shape.OutLineHCompound());
+
+    ProjectedViewGeometry projected;
+    projected.view = view;
+    projected.detail =
+        geometry_from_keys(detail_segment_keys, detail_arc_keys, scale, extent_scale);
+    projected.simple = simple_geometry_from_segments(contour_source_segments, poly_options, scale);
+
+    if (timings != nullptr)
+    {
+        timings->extract_ms += elapsed_ms(extract_start);
+    }
     return projected;
 }
 
@@ -570,11 +662,15 @@ int step_hlr_projection_from_bytes(const unsigned char* step_data, std::size_t s
 
     try
     {
+        HlrProjectionTimings timings;
+
+        const auto read_start = std::chrono::high_resolution_clock::now();
         TopoDS_Shape shape = read_step_shape_from_bytes(step_data, step_size, status);
         if (shape.IsNull())
         {
             return status == nullptr ? 6 : status->code;
         }
+        timings.step_read_ms = elapsed_ms(read_start);
 
         HlrProjectionResult output;
         output.schema = "geometry.projection.a0";
@@ -585,10 +681,34 @@ int step_hlr_projection_from_bytes(const unsigned char* step_data, std::size_t s
         const long long extent_scale = pow10_int(std::max(options.round_digits, 6));
         const std::vector<ProjectionViewSpec> views = effective_views(options);
         output.views.reserve(views.size());
+
+        const bool use_poly = options.projection_algorithm == ProjectionAlgorithm::Poly;
+        if (use_poly)
+        {
+            const auto mesh_start = std::chrono::high_resolution_clock::now();
+            BRepMesh_IncrementalMesh mesher(shape, options.mesh_linear_deflection,
+                                            options.mesh_relative,
+                                            options.mesh_angular_deflection,
+                                            /*isInParallel=*/true);
+            mesher.Perform();
+            timings.mesh_ms = elapsed_ms(mesh_start);
+        }
+
         for (const ProjectionViewSpec& view : views)
         {
-            output.views.push_back(project_view(shape, view, options, scale, extent_scale));
+            if (use_poly)
+            {
+                output.views.push_back(
+                    project_view_poly(shape, view, options, scale, extent_scale, &timings));
+            }
+            else
+            {
+                output.views.push_back(
+                    project_view_exact(shape, view, options, scale, extent_scale, &timings));
+            }
         }
+
+        output.timings = timings;
 
         *result = std::move(output);
         set_status(status, 0, "");

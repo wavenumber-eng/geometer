@@ -215,6 +215,8 @@ def build_geometer_wasm() -> None:
         GEOMETER_WASM_BUILD / "src" / "cpp" / "cli" / "geometer.wasm",
         GEOMETER_WASM_BUILD / "src" / "cpp" / "lib" / "geometer-browser.js",
         GEOMETER_WASM_BUILD / "src" / "cpp" / "lib" / "geometer-browser.wasm",
+        GEOMETER_WASM_BUILD / "src" / "cpp" / "lib" / "geometer-planar-browser.js",
+        GEOMETER_WASM_BUILD / "src" / "cpp" / "lib" / "geometer-planar-browser.wasm",
     ]
     for src in outputs:
         if src.exists():

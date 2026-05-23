@@ -12,9 +12,11 @@ SOT23_STEP = ROOT / "tests" / "fixtures" / "step" / "embedded_models" / "SOT-23.
 def test_version_reports_native_abi() -> None:
     version = geometer.version()
 
-    assert version.string
-    assert version.major >= 1
-    assert version.abi >= 1
+    assert version.string == "2026.5.23"
+    assert version.major == 2026
+    assert version.minor == 5
+    assert version.patch == 23
+    assert version.abi == 20260523
 
 
 def test_project_step_hlr_returns_projection_result() -> None:

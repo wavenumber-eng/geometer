@@ -211,10 +211,10 @@ def build_geometer_wasm() -> None:
     # Copy outputs to dist/
     DIST_DIR.mkdir(parents=True, exist_ok=True)
     outputs = [
-        GEOMETER_WASM_BUILD / "src" / "cpp" / "cli" / "geometer.js",
-        GEOMETER_WASM_BUILD / "src" / "cpp" / "cli" / "geometer.wasm",
-        GEOMETER_WASM_BUILD / "src" / "cpp" / "lib" / "geometer-browser.js",
-        GEOMETER_WASM_BUILD / "src" / "cpp" / "lib" / "geometer-browser.wasm",
+        GEOMETER_WASM_BUILD / "src" / "cpp" / "cli" / "geometer-node-test.js",
+        GEOMETER_WASM_BUILD / "src" / "cpp" / "cli" / "geometer-node-test.wasm",
+        GEOMETER_WASM_BUILD / "src" / "cpp" / "lib" / "geometer.js",
+        GEOMETER_WASM_BUILD / "src" / "cpp" / "lib" / "geometer.wasm",
         GEOMETER_WASM_BUILD / "src" / "cpp" / "lib" / "geometer-planar-browser.js",
         GEOMETER_WASM_BUILD / "src" / "cpp" / "lib" / "geometer-planar-browser.wasm",
     ]
@@ -224,6 +224,7 @@ def build_geometer_wasm() -> None:
             shutil.copy2(str(src), str(dst))
             print(f"Copied {src.name} to dist/ ({dst.stat().st_size:,} bytes)")
 
+    run([sys.executable, str(ROOT / "scripts" / "write_dist_manifest.py")])
     print("geometer WASM build complete.")
 
 

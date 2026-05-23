@@ -33,9 +33,17 @@ This installs emsdk, cross-compiles OCCT, and builds geometer for WASM. First ru
 
 The WASM build produces three targets:
 
-- `dist/geometer.js` + `dist/geometer.wasm` - Node CLI parity target.
-- `dist/geometer-browser.js` + `dist/geometer-browser.wasm` - modular browser/Web Worker target exporting the flat C ABI, including STEP bytes to GLB bytes and packed planar batch solve bytes.
-- `dist/geometer-planar-browser.js` + `dist/geometer-planar-browser.wasm` - small browser/Web Worker target exporting only version/free plus packed planar batch solve bytes.
+- `dist/geometer.js` + `dist/geometer.wasm` - official browser/Web Worker
+  integration target. This is the full OCCT-backed build exporting
+  `createGeometerModule` and the flat C ABI, including STEP bytes to GLB bytes,
+  HLR projection, and planar byte APIs.
+- `dist/geometer-node-test.js` + `dist/geometer-node-test.wasm` - Node CLI
+  parity/test target with filesystem access. Use this for tests and diagnostics,
+  not browser integration.
+- `dist/geometer-planar-browser.js` + `dist/geometer-planar-browser.wasm` -
+  smaller optional browser/Web Worker target exporting `createGeometerPlanarModule`
+  and the planar byte APIs only. It exists so planar-only consumers can avoid
+  paying the full OCCT/STEP WASM size, startup, and worker-memory cost.
 
 `dist/` is the committed distribution directory. `.deps/`, `build/`, and
 `build-wasm/` are local generated state and are not committed.
@@ -56,7 +64,7 @@ geometer step-project-svg input.step output.svg --mode detail --curve-mode nativ
 WASM (via Node.js):
 
 ```bash
-node dist/geometer.js step-to-glb input.step output.glb
+node dist/geometer-node-test.js step-to-glb input.step output.glb
 ```
 
 Python from a source checkout:

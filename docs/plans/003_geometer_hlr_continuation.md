@@ -22,8 +22,9 @@ Completed work:
 - Browser WASM builds now produce:
   - `dist/geometer.js`
   - `dist/geometer.wasm`
-  - `dist/geometer-browser.js`
-  - `dist/geometer-browser.wasm`
+- Node CLI parity/test WASM builds now produce:
+  - `dist/geometer-node-test.js`
+  - `dist/geometer-node-test.wasm`
 - Browser worker integration exists under `tests/wasm/`.
 - Embedded model fixture prep and browser viewer/benchmark pages exist:
   - `scripts/prepare_embedded_model_fixtures.ps1`
@@ -147,7 +148,7 @@ Version checks:
 
 ```powershell
 .\dist\geometer.exe --version
-node dist\geometer.js --version
+node dist\geometer-node-test.js --version
 ```
 
 Browser smoke:

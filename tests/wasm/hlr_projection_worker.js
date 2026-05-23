@@ -1,19 +1,16 @@
-// HLR projection worker. The caller can choose which geometer build to load
-// (default: /dist/, baseline: /dist/baseline/) via the `backend` field on the
-// first message, and can pass tunable HLR options through the `options` field.
+// HLR projection worker. By default it loads the current Geometer browser build
+// from /dist/. Tests can pass a custom backend directory, but the old checked-in
+// baseline build is no longer shipped.
 
 let activeBackend = null;
 let modulePromise = null;
 
 function normalizeBackend(backend) {
   if (!backend || backend === "current") {
-    return { dir: "/dist", factory: "createGeometerModule", script: "geometer-browser.js", wasm: "geometer-browser.wasm" };
-  }
-  if (backend === "baseline") {
-    return { dir: "/dist/baseline", factory: "createGeometerModule", script: "geometer-browser.js", wasm: "geometer-browser.wasm" };
+    return { dir: "/dist", factory: "createGeometerModule", script: "geometer.js", wasm: "geometer.wasm" };
   }
   // Allow callers to point at any directory under /dist/...
-  return { dir: backend, factory: "createGeometerModule", script: "geometer-browser.js", wasm: "geometer-browser.wasm" };
+  return { dir: backend, factory: "createGeometerModule", script: "geometer.js", wasm: "geometer.wasm" };
 }
 
 function geometerModule(backend) {

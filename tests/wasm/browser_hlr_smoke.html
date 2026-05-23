@@ -6,7 +6,7 @@
 </head>
 <body>
   <pre id="result">RUNNING</pre>
-  <script src="/dist/geometer-browser.js"></script>
+  <script src="/dist/geometer.js"></script>
   <script>
     const result = document.getElementById("result");
 
@@ -26,10 +26,10 @@
       });
       const version = module.ccall("geometer_version_string", "string", [], []);
       const abi = module.ccall("geometer_abi_version", "number", [], []);
-      if (version !== "0.1.0") {
+      if (version !== "2026.5.23") {
         throw new Error(`Unexpected geometer version: ${version}`);
       }
-      if (abi < 1) {
+      if (abi !== 20260523) {
         throw new Error(`Unexpected geometer ABI version: ${abi}`);
       }
 

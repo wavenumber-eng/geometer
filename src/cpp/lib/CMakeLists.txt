@@ -19,7 +19,9 @@ set(GEOMETER_LIB_SOURCES
 add_library(geometer_lib STATIC ${GEOMETER_LIB_SOURCES})
 set_target_properties(geometer_lib PROPERTIES OUTPUT_NAME geometer)
 
-set(GEOMETER_ABI_VERSION 6 CACHE STRING "Geometer C ABI version" FORCE)
+if(NOT DEFINED GEOMETER_ABI_VERSION)
+    set(GEOMETER_ABI_VERSION "20260523" CACHE STRING "Geometer C ABI generation date")
+endif()
 configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/geometer/version_config.h.in"
     "${CMAKE_CURRENT_BINARY_DIR}/generated/geometer/version_config.h"
@@ -103,7 +105,7 @@ if(EMSCRIPTEN)
         "-sEXPORTED_RUNTIME_METHODS=['ccall','cwrap','UTF8ToString','stringToUTF8','lengthBytesUTF8','getValue']"
     )
     set_target_properties(geometer_browser PROPERTIES
-        OUTPUT_NAME "geometer-browser"
+        OUTPUT_NAME "geometer"
         SUFFIX ".js"
     )
 
@@ -113,7 +115,7 @@ if(EMSCRIPTEN)
             "$<TARGET_FILE:geometer_browser>"
             "${CMAKE_SOURCE_DIR}/dist/"
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            "$<TARGET_FILE_DIR:geometer_browser>/geometer-browser.wasm"
+            "$<TARGET_FILE_DIR:geometer_browser>/geometer.wasm"
             "${CMAKE_SOURCE_DIR}/dist/"
         COMMENT "Copying browser WASM outputs to dist/"
     )
@@ -171,6 +173,9 @@ if(NOT EMSCRIPTEN)
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
             "$<TARGET_FILE:geometer_lib>"
             "${CMAKE_SOURCE_DIR}/dist/"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "$<TARGET_FILE:geometer_lib>"
+            "${CMAKE_SOURCE_DIR}/dist/libgeometer.a"
         COMMENT "Copying geometer_lib to dist/"
     )
 

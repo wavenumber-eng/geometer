@@ -3,7 +3,7 @@ const path = require("path");
 const { performance } = require("perf_hooks");
 
 const root = path.resolve(__dirname, "..", "..");
-const createGeometerModule = require(path.join(root, "dist", "geometer-browser.js"));
+const createGeometerModule = require(path.join(root, "dist", "geometer.js"));
 
 function parseArgs(argv) {
   const args = {
@@ -92,7 +92,7 @@ async function main() {
   const requestBytes = fs.readFileSync(args.requestPath);
   const moduleStart = performance.now();
   const module = await createGeometerModule({
-    wasmBinary: fs.readFileSync(path.join(root, "dist", "geometer-browser.wasm")),
+    wasmBinary: fs.readFileSync(path.join(root, "dist", "geometer.wasm")),
   });
   const moduleMs = performance.now() - moduleStart;
   const version = module.ccall("geometer_version_string", "string", [], []);

@@ -147,8 +147,8 @@ def benchmark_script(
     success: str,
     failure: str,
 ) -> str:
-    geometer_js = (DIST / "geometer-browser.js").read_text(encoding="utf-8")
-    wasm_base64 = b64(DIST / "geometer-browser.wasm")
+    geometer_js = (DIST / "geometer.js").read_text(encoding="utf-8")
+    wasm_base64 = b64(DIST / "geometer.wasm")
     request_base64 = b64(request_path)
     return f"""{geometer_js}
 (async () => {{

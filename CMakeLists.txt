@@ -1,5 +1,10 @@
 cmake_minimum_required(VERSION 3.24)
-project(geometer VERSION 1.1.0 LANGUAGES CXX)
+
+set(GEOMETER_RELEASE_DATE "2026-05-23" CACHE STRING "Geometer UTC release date" FORCE)
+set(GEOMETER_RELEASE_VERSION "2026.5.23" CACHE STRING "Geometer package/build version" FORCE)
+set(GEOMETER_ABI_VERSION "20260523" CACHE STRING "Geometer C ABI generation date" FORCE)
+
+project(geometer VERSION ${GEOMETER_RELEASE_VERSION} LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -58,4 +63,9 @@ add_subdirectory(src/cpp)
 
 if(BUILD_TESTING)
     add_subdirectory(tests/cpp)
+endif()
+
+option(GEOMETER_BUILD_EXAMPLES "Build optional native Geometer examples" OFF)
+if(GEOMETER_BUILD_EXAMPLES AND NOT EMSCRIPTEN)
+    add_subdirectory(examples/cpp)
 endif()

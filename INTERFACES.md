@@ -49,8 +49,10 @@ That includes the current public headers:
 
 Defined in `src/cpp/lib/geometer/version.h`.
 
-Geometer v1.1.0 uses C ABI version `6`. The project version follows semver.
-Consumers should check both the project version and ABI version at runtime.
+Geometer uses date-based release versions per ADR 006. The current package and
+runtime version is `2026.5.23`, corresponding to release tag `v2026-05-23`.
+The current C ABI generation is `20260523`. Consumers should check both the
+project version and ABI generation at runtime.
 
 ```cpp
 struct Version {
@@ -652,25 +654,31 @@ OCCT-heavy calls use a small worker subprocess by default on Windows. Set
 
 ## WASM Interfaces
 
-`scripts/build_wasm.py` builds two WASM targets into `dist/`.
+`scripts/build_wasm.py` builds three WASM targets into `dist/`.
 
-Node CLI target:
+Full Browser/Web Worker target:
 
 - `dist/geometer.js`
 - `dist/geometer.wasm`
 
-Browser/Web Worker target:
+This is the official application integration target. It is modularized with
+the factory name `createGeometerModule` and includes the OCCT-backed STEP/HLR/GLB
+APIs plus the planar byte APIs.
 
-- `dist/geometer-browser.js`
-- `dist/geometer-browser.wasm`
+Node CLI parity/test target:
+
+- `dist/geometer-node-test.js`
+- `dist/geometer-node-test.wasm`
+
+This target uses Node filesystem access for command-line parity and diagnostics.
+Do not use it for browser integration.
 
 Planar-only Browser/Web Worker target:
 
 - `dist/geometer-planar-browser.js`
 - `dist/geometer-planar-browser.wasm`
 
-The browser target is modularized with the factory name
-`createGeometerModule`. It exports:
+The full browser target exports:
 
 - `_malloc`
 - `_free`
@@ -706,12 +714,14 @@ The planar-only browser target is modularized with the factory name
 - `_geometer_planar_batch_solve_bytes`
 
 Use this target for browser workers that only need packed planar geometry
-operations and should not pay the OCCT/STEP WASM startup cost.
+operations and should not pay the full OCCT/STEP WASM size, startup, and
+worker-memory cost. The full browser target also exports these planar APIs, so
+the planar-only target is an optimization, not a separate semantic API.
 
 Minimal browser-worker shape:
 
 ```js
-importScripts("/dist/geometer-browser.js");
+importScripts("/dist/geometer.js");
 
 const module = await createGeometerModule({
   locateFile: (path) => path.endsWith(".wasm") ? `/dist/${path}` : path,
@@ -748,10 +758,10 @@ Native CLI:
 .\dist\geometer.exe planar-batch-solve request.bin response.bin --warmup 1 --repeat 5 --metrics metrics.json
 ```
 
-Node WASM CLI:
+Node WASM CLI parity/test target:
 
 ```powershell
-node dist\geometer.js step-to-glb input.step output.glb
+node dist\geometer-node-test.js step-to-glb input.step output.glb
 ```
 
 Projection CLI options:
@@ -787,11 +797,11 @@ Persist these when publishing interface changes:
 
 - Native CLI: `dist/geometer.exe` or `dist/geometer`.
 - Native static library: `dist/geometer.lib` or `dist/libgeometer.a`.
-- Node WASM CLI: `dist/geometer.js` and `dist/geometer.wasm`.
-- Browser WASM C ABI: `dist/geometer-browser.js` and
-  `dist/geometer-browser.wasm`.
-- Planar browser WASM C ABI: `dist/geometer-planar-browser.js` and
-  `dist/geometer-planar-browser.wasm`.
+- Full browser WASM C ABI: `dist/geometer.js` and `dist/geometer.wasm`.
+- Node WASM CLI parity/test target: `dist/geometer-node-test.js` and
+  `dist/geometer-node-test.wasm`.
+- Planar-only browser WASM C ABI optimization:
+  `dist/geometer-planar-browser.js` and `dist/geometer-planar-browser.wasm`.
 
 Do not commit local generated build state:
 

@@ -30,7 +30,7 @@ Current flow:
 1. The page fetches STEP bytes as an `ArrayBuffer`.
 2. The page builds a JavaScript options object from UI controls.
 3. The page sends `{ stepBuffer, views, options, backend }` to the worker.
-4. The worker loads `dist/geometer-browser.js` with `importScripts`.
+4. The worker loads `dist/geometer.js` with `importScripts`.
 5. The worker initializes `createGeometerModule(...)`.
 6. The worker converts views/options into the C ABI JSON options payload.
 7. The worker allocates WASM memory for STEP bytes, options JSON, and output

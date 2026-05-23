@@ -89,7 +89,7 @@ After copying into a workspace:
 ```powershell
 git status --short --branch
 .\dist\geometer.exe --version
-node .\dist\geometer.js --version
+node .\dist\geometer-node-test.js --version
 ```
 
 Do not run `python scripts\build_occt.py --clean`,
@@ -182,11 +182,14 @@ This script:
 2. Uses vendored RapidJSON and reuses or clones OCCT source under `.deps/`.
 3. Cross-compiles OCCT to `.deps/occt-wasm-install/`.
 4. Builds Geometer in `build-wasm/`.
-5. Copies the Node CLI outputs `geometer.js` / `geometer.wasm` into `dist/`.
-6. Copies the browser C ABI outputs `geometer-browser.js` /
-   `geometer-browser.wasm` into `dist/`.
+5. Copies the full browser/Web Worker C ABI outputs `geometer.js` /
+   `geometer.wasm` into `dist/`. This is the official application integration
+   WASM and includes OCCT-backed STEP/HLR/GLB plus planar byte APIs.
+6. Copies the Node CLI parity/test outputs `geometer-node-test.js` /
+   `geometer-node-test.wasm` into `dist/`.
 7. Copies the planar-only browser C ABI outputs `geometer-planar-browser.js` /
-   `geometer-planar-browser.wasm` into `dist/`.
+   `geometer-planar-browser.wasm` into `dist/`. This smaller build intentionally
+   excludes OCCT/STEP and is retained for planar-only browser workers.
 
 To remove WASM-specific generated state:
 
@@ -194,12 +197,12 @@ To remove WASM-specific generated state:
 python scripts\build_wasm.py --clean
 ```
 
-The Node CLI target uses filesystem access for command-line parity. The browser
-target is modularized and exports the flat C ABI entry points
+The Node CLI target uses filesystem access for command-line parity. The full
+browser target is modularized and exports the flat C ABI entry points
 `geometer_step_hlr_projection_json_bytes` and `geometer_step_to_glb_bytes` for
 direct byte-buffer calls from JavaScript or a Web Worker.
 
-The browser target also exports `geometer_version_string` and
+The full browser target also exports `geometer_version_string` and
 `geometer_abi_version`. Downstream browser consumers should check those before
 depending on a specific ABI. Geometer ABI 2 added the planar batch solve byte
 entry point used for packed browser geometry offload. ABI 3 adds per-job
@@ -208,16 +211,15 @@ triangulation and Clipper2 byte APIs.
 
 ## Versioning
 
-The current project version is `1.1.0`, declared in the root `CMakeLists.txt`.
-The current C ABI version is `6`, declared as `GEOMETER_ABI_VERSION` in
-`src/cpp/lib/CMakeLists.txt`.
+Geometer follows [ADR 006](docs/adr/006_date_based_versioning_policy.md).
+The current release identity is `v2026-05-23`; the CMake/PyPI package version
+is `2026.5.23`; the C ABI generation is `20260523`.
 
-ADR 006 moves Geometer to date-based release versions before PyPI publishing:
-human-facing tags use `vYYYY-MM-DD`, CMake/PyPI package versions use the
-PEP 440-compatible dotted form `YYYY.M.D`, C ABI generations use `YYYYMMDD`,
-and generated build metadata uses UTC. Until the version generator lands, keep
-the root CMake version and C ABI version in sync manually and rebuild the
-persisted `dist/` artifacts for interface changes.
+The root `CMakeLists.txt` declares `GEOMETER_RELEASE_DATE`,
+`GEOMETER_RELEASE_VERSION`, and `GEOMETER_ABI_VERSION`. The root
+`pyproject.toml` package version must match `GEOMETER_RELEASE_VERSION`.
+Generated build metadata must use UTC. Rebuild the persisted `dist/` artifacts
+when version or interface values change.
 
 ## Embedded Model Viewer
 

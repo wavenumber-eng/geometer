@@ -12,7 +12,10 @@ if(EMSCRIPTEN)
         -sMODULARIZE=0
         -sEXIT_RUNTIME=1
     )
-    set_target_properties(geometer PROPERTIES SUFFIX ".js")
+    set_target_properties(geometer PROPERTIES
+        OUTPUT_NAME "geometer-node-test"
+        SUFFIX ".js"
+    )
 endif()
 
 # Copy outputs to dist/ after build.
@@ -28,8 +31,8 @@ if(EMSCRIPTEN)
     # Also copy the .wasm file.
     add_custom_command(TARGET geometer POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            "$<TARGET_FILE_DIR:geometer>/geometer.wasm"
+            "$<TARGET_FILE_DIR:geometer>/geometer-node-test.wasm"
             "${CMAKE_SOURCE_DIR}/dist/"
-        COMMENT "Copying geometer.wasm to dist/"
+        COMMENT "Copying geometer-node-test.wasm to dist/"
     )
 endif()

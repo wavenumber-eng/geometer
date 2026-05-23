@@ -44,7 +44,7 @@ vendored under `third_party/rapidjson` and passed to OCCT during configure.
 
 ```bash
 python scripts/build_wasm.py
-node dist/geometer.js step-to-glb input.step output.glb
+node dist/geometer-node-test.js step-to-glb input.step output.glb
 python scripts/build_wasm.py --clean
 ```
 

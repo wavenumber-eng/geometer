@@ -15,6 +15,7 @@ CMakeUserPresets.json
 # OS
 .DS_Store
 Thumbs.db
+imgui.ini
 
 # Python
 __pycache__/

@@ -15,10 +15,12 @@ A `dist/` directory at the repo root holds distributable binaries. These are che
 Post-build, CMake copies outputs to `dist/`:
 - `dist/geometer.exe` (or `dist/geometer` on Unix)
 - `dist/geometer.lib` or `dist/libgeometer.a`
-- `dist/geometer.js`
-- `dist/geometer.wasm`
-- `dist/geometer-browser.js`
-- `dist/geometer-browser.wasm`
+- `dist/geometer.js` and `dist/geometer.wasm` for full browser/Web Worker
+  integration
+- `dist/geometer-node-test.js` and `dist/geometer-node-test.wasm` for Node CLI
+  parity tests
+- `dist/geometer-planar-browser.js` and `dist/geometer-planar-browser.wasm` for
+  smaller planar-only browser/Web Worker consumers
 
 Generated dependency and build state remains outside version control:
 

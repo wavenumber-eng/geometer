@@ -81,6 +81,32 @@ In short, release tags use `vYYYY-MM-DD`, PyPI/CMake versions use `YYYY.M.D`,
 C ABI generations use `YYYYMMDD`, and all generated build metadata must use
 UTC.
 
+## Current Status - 2026-05-23
+
+The first Python package and viewer milestone is usable from the source
+checkout. The package exposes version, STEP HLR projection, parsed projection
+results, and STEP-to-GLB bytes through the friendly Python API. The preferred
+Python example is now `examples/python/pyvista_hlr_viewer.py`, a PyVista/Qt
+preview app with:
+
+- a 3D STEP-to-GLB preview pane;
+- an adjacent HLR projection pane;
+- camera preset buttons and camera-driven HLR regeneration;
+- simple/detail/both projection modes;
+- feature-edge overlay for the 3D preview;
+- lighting/material controls;
+- Geometer version and C ABI visibility.
+
+The older Dear PyGui viewer remains as a lightweight fallback and smoke path.
+
+The native C++ example is also usable with Dear ImGui, SDL3, and OpenGL3. Both
+interactive examples show the Geometer version and C ABI generation.
+
+Version reporting has been moved to the ADR 006 date values for the current
+work: `2026.5.23` for package/runtime version and `20260523` for the C ABI
+generation. A later cleanup should replace the remaining manual synchronization
+with a generated single source of truth.
+
 ## Package Shape
 
 Proposed Python package name:
@@ -174,9 +200,19 @@ in the environments Geometer is meant to support:
 - `examples/wasm/` - browser/WASM demo using the high-level JavaScript/worker
   API once that wrapper is added.
 
+Every interactive example should show the Geometer version string and C ABI
+generation conspicuously in the UI. These examples double as developer smoke
+tools, so version visibility is part of the contract.
+
+The WASM/browser example can be promoted later from the existing
+`tests/wasm/embedded_model_viewer.html` reference page. Treat that promotion as
+exit criteria for the full example suite, not as a blocker for the first Python
+viewer milestone.
+
 The first runnable artifact is the Python viewer. It should load a STEP file,
-project HLR, draw simple/detail geometry, expose view and transform controls,
-and report timings/errors.
+show an interactive 3D preview from Geometer's STEP-to-GLB path, project HLR,
+draw simple/detail geometry in an adjacent projection pane, expose view and
+transform controls, and report timings/errors.
 
 The C++ example should be a small Dear ImGui application that exercises the same
 user flow from native C++: load STEP, project HLR, display simple/detail line
@@ -379,7 +415,9 @@ Python should call native Geometer.
 
 Keep the two release paths parallel:
 
-- `dist/geometer-browser.js` and `.wasm` for web tooling
+- `dist/geometer.js` and `.wasm` for full browser/Web Worker integration
+- `dist/geometer-planar-browser.js` and `.wasm` as the smaller optional
+  planar-only browser/Web Worker optimization
 - Python wheels with native shared library for Python tooling
 
 Both paths should expose the same semantic operations and should report the same
@@ -419,6 +457,9 @@ project version and C ABI version.
 - [x] Add Python package skeleton and `ctypes` loader.
 - [ ] Add Windows wheel build command.
 - [x] Add smoke fixture and Python tests.
+- [x] Add interactive Python HLR/3D preview example with visible version/ABI.
+- [x] Add native C++ Dear ImGui/SDL3/OpenGL HLR preview example with visible
+      version/ABI.
 - [ ] Validate from a clean Windows venv.
 - [ ] Validate Linux wheel under WSL.
 - [ ] Draft GitHub Actions `cibuildwheel` workflow.

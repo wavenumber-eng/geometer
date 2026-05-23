@@ -145,13 +145,6 @@
         <button type="button" id="exportButton" title="Download CSV of current results">CSV</button>
       </div>
       <label class="control">
-        <span>Backend</span>
-        <select id="backendSelect">
-          <option value="current">1.1 (dist)</option>
-          <option value="baseline">v0.1.0 baseline</option>
-        </select>
-      </label>
-      <label class="control">
         <span>Algorithm</span>
         <select id="algoSelect">
           <option value="poly">Poly</option>
@@ -237,6 +230,7 @@
 
   <script type="module">
     const manifestUrl = "/tests/fixtures/embedded_models_manifest.json";
+    const currentBackend = "current";
     const projectionViews = {
       top: { id: "top", direction: [0, 0, 1], up: [0, 1, 0] },
       bottom: { id: "bottom", direction: [0, 0, -1], up: [0, 1, 0] },
@@ -263,7 +257,6 @@
       runButton: document.getElementById("runButton"),
       stopButton: document.getElementById("stopButton"),
       exportButton: document.getElementById("exportButton"),
-      backendSelect: document.getElementById("backendSelect"),
       algoSelect: document.getElementById("algoSelect"),
       viewSelect: document.getElementById("viewSelect"),
       limitInput: document.getElementById("limitInput"),
@@ -495,7 +488,6 @@
       els.runButton.disabled = true;
       els.stopButton.disabled = false;
       const viewId = els.viewSelect.value;
-      const backend = els.backendSelect.value;
       const options = currentOptions();
       state.rows = selectedModels().map((model, index) => ({ index, model, state: "pending" }));
       renderRows();
@@ -504,7 +496,7 @@
 
       for (const row of state.rows) {
         if (state.stopRequested) break;
-        await runOne(row, viewId, backend, options);
+        await runOne(row, viewId, currentBackend, options);
       }
 
       state.running = false;
@@ -523,15 +515,14 @@
 
     function exportCsv() {
       const headers = [
-        "model", "state", "backend", "algorithm",
+        "model", "state", "algorithm",
         "step_bytes", "fetch_ms", "wasm_ms", "step_read_ms",
         "mesh_ms", "hlr_ms", "extract_ms", "json_ms",
         "detail", "simple", "error",
       ];
-      const backend = els.backendSelect.value;
       const algo = els.algoSelect.value;
       const rows = state.rows.map((r) => [
-        r.model.name, r.state, backend, algo,
+        r.model.name, r.state, algo,
         r.model.stepBytes,
         r.stepBytesMs ?? "", r.moduleMs ?? "", r.stepReadMs ?? "",
         r.meshMs ?? "", r.nativeHlrMs ?? r.hlrMs ?? "", r.extractMs ?? "", r.jsonParseMs ?? "",
@@ -541,7 +532,7 @@
       const blob = new Blob([csv], { type: "text/csv" });
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
-      a.download = `hlr_bench_${backend}_${algo}_${els.viewSelect.value}.csv`;
+      a.download = `hlr_bench_${algo}_${els.viewSelect.value}.csv`;
       a.click();
       setTimeout(() => URL.revokeObjectURL(a.href), 1000);
     }
@@ -554,7 +545,6 @@
 
       const paramSetters = {
         view: (v) => projectionViews[v] && (els.viewSelect.value = v),
-        backend: (v) => (els.backendSelect.value = v),
         algo: (v) => (els.algoSelect.value = v),
         limit: (v) => (els.limitInput.value = v),
         lin: (v) => (els.linDeflInput.value = v),
@@ -593,16 +583,6 @@
           updateSummary();
         }
       });
-      // Reset worker when backend changes so the right WASM module is loaded.
-      els.backendSelect.addEventListener("change", () => {
-        if (state.worker) {
-          state.worker.terminate();
-          state.worker = null;
-          state.workerBackend = null;
-          state.requests.clear();
-        }
-      });
-
       if (state.smoke || params.get("autorun") === "1") await runBenchmark();
     }
 

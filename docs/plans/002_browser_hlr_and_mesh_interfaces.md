@@ -148,15 +148,15 @@ Add a browser build target separate from the Node CLI target:
 The existing Node CLI WASM target can stay for command-line parity, but it is
 not the browser integration target.
 
-Implemented browser artifacts:
-
-- `dist/geometer-browser.js`
-- `dist/geometer-browser.wasm`
-
-Implemented Node CLI WASM artifacts:
+Implemented full browser/Web Worker artifacts:
 
 - `dist/geometer.js`
 - `dist/geometer.wasm`
+
+Implemented Node CLI parity/test WASM artifacts:
+
+- `dist/geometer-node-test.js`
+- `dist/geometer-node-test.wasm`
 
 ## Python Target
 

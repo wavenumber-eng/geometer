@@ -31,17 +31,21 @@ clients consume the same `geometry.projection.a0` JSON schema either way.
 
 ## Methodology
 
-- Run via `scripts/bench_hlr.js` against both
-  `dist/baseline/geometer.js` (v0.1.0) and `dist/geometer.js` (1.1).
+- These historical results were generated against both a temporary v0.1.0 WASM
+  baseline snapshot and the then-current poly HLR build. The checked-in
+  `dist/baseline/` artifacts were removed after the performance work completed.
+- The current `scripts/bench_hlr.js` is now a current-build timing tool, not a
+  checked-in baseline comparison tool.
 - Each invocation spawns a fresh Node process running the WASM CLI on one
   STEP, projects the `top` view, writes JSON to a temp file, parses it, and
-  records wall time + the new per-phase timings from the 1.1 JSON.
+  records wall time + the new per-phase timings from the current JSON.
 - Wall time includes Node startup + module init + STEP read + HLR + JSON
   write. The phase columns (`mesh`, `hlr`, `extract`) are the native
   timings recorded inside `step_hlr_projection_from_bytes`.
 
 Per-model wall-clock time (Node startup + module init + HLR + JSON write).
-Each backend's CLI uses its own library defaults: baseline = HLRBRep_Algo (exact); 1.1 = HLRBRep_PolyAlgo with mesh@0.01 mm.
+Each backend's CLI uses its own library defaults: baseline = HLRBRep_Algo
+(exact); current = HLRBRep_PolyAlgo with mesh@0.01 mm.
 
 | Model | STEP | Baseline wall | 1.1 wall | Speedup | 1.1 mesh | 1.1 hlr | 1.1 extract | det B / 1.1 | sim B / 1.1 |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|

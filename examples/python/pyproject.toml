@@ -4,6 +4,11 @@ version = "0.0.0"
 requires-python = ">=3.10"
 dependencies = [
     "dearpygui",
+    "numpy",
+    "pyside6",
+    "pyvista",
+    "pyvistaqt",
+    "trimesh",
 ]
 
 [tool.uv]

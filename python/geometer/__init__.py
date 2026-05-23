@@ -1,6 +1,7 @@
 """Friendly Python API for Geometer native geometry operations."""
 
 from ._api import (
+    executable_path,
     hlr_projection_json,
     native_library_path,
     project_step_hlr,
@@ -16,6 +17,7 @@ __all__ = [
     "HlrProjectionResult",
     "ProjectionView",
     "Version",
+    "executable_path",
     "hlr_projection_json",
     "native_library_path",
     "project_step_hlr",

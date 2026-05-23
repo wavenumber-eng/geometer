@@ -3,6 +3,7 @@ from __future__ import annotations
 import ctypes
 import ctypes.util
 import os
+import shutil
 import sys
 from pathlib import Path
 
@@ -16,6 +17,16 @@ def native_library_path() -> Path:
         raise FileNotFoundError(
             "Could not find the Geometer native library. Build geometer_shared "
             "or set GEOMETER_NATIVE_LIBRARY to the shared library path."
+        )
+    return path
+
+
+def executable_path() -> Path:
+    path = _find_executable_path()
+    if path is None:
+        raise FileNotFoundError(
+            "Could not find the Geometer executable. Build the geometer CLI "
+            "or set GEOMETER_EXE to the executable path."
         )
     return path
 
@@ -60,6 +71,27 @@ def _find_native_library_path() -> Path | None:
     return None
 
 
+def _find_executable_path() -> Path | None:
+    override = os.environ.get("GEOMETER_EXE")
+    if override:
+        path = Path(override)
+        if path.exists():
+            return path
+        raise FileNotFoundError(f"GEOMETER_EXE does not exist: {path}")
+
+    for directory in _candidate_directories():
+        for name in _executable_names():
+            path = directory / name
+            if path.exists():
+                return path
+
+    for name in _executable_names():
+        found = shutil.which(name)
+        if found:
+            return Path(found)
+    return None
+
+
 def _candidate_directories() -> list[Path]:
     package_dir = Path(__file__).resolve().parent
     repo_root = package_dir.parents[1]
@@ -73,6 +105,12 @@ def _candidate_directories() -> list[Path]:
     if extra:
         directories.insert(0, Path(extra))
     return directories
+
+
+def _executable_names() -> list[str]:
+    if sys.platform == "win32":
+        return ["geometer.exe"]
+    return ["geometer"]
 
 
 def _library_names() -> list[str]:

@@ -172,6 +172,11 @@ Common native CLI commands:
 .\dist\geometer.exe planar-batch-solve request.bin response.bin --warmup 1 --repeat 5 --metrics metrics.json
 ```
 
+The Python package uses the native CLI by default. From a source checkout,
+`GEOMETER_EXE` is optional if `dist/geometer.exe` or `dist/geometer` exists.
+Set `GEOMETER_BACKEND=ctypes` only when intentionally testing the optional
+in-process C ABI path.
+
 ## Manual OCCT Rebuild
 
 Use this when changing the pinned OCCT version or when the local OCCT build is

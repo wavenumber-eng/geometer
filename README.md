@@ -91,7 +91,7 @@ node dist/geometer-node-test.js step-to-glb input.step output.glb
 Python from a source checkout:
 
 ```bash
-cmake --build build-shared-occt --target geometer_shared --config Release
+cmake --build build --target geometer --config Release
 python -m pytest tests/python
 ```
 
@@ -105,6 +105,10 @@ projection = geometer.project_step_hlr(
 )
 glb_bytes = geometer.step_to_glb(Path("part.step"))
 ```
+
+Python uses `dist/geometer.exe` / `dist/geometer` by default through the CLI
+JSON batch mode. Set `GEOMETER_EXE` to override the executable path, or set
+`GEOMETER_BACKEND=ctypes` for the optional in-process C ABI backend.
 
 Embedded model browser viewer:
 

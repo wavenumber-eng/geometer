@@ -120,13 +120,19 @@ A Windows shared-OCCT spike is now available on the
 OCCT as `Shared` into `.deps/occt-shared-install/`, and the
 `shared-occt` CMake preset builds Geometer against that SDK. The build copies
 `geometer.dll` plus OCCT `TK*.dll` runtime dependencies into `dist/`. With that
-layout, Python uses direct `ctypes` HLR/GLB calls by default on Windows; the
-worker subprocess remains the fallback for the static local build.
+layout, Python can use direct `ctypes` HLR/GLB calls on Windows when explicitly
+requested with `GEOMETER_BACKEND=ctypes`.
 
 Decision update: the shared-OCCT result is useful evidence, but the preferred
 release direction is a statically linked `geometer.exe`/`geometer` driven from
 Python through subprocess calls. The shared DLL layout should be treated as an
 optional development/performance backend, not the packaging default.
+
+Implementation update: the Python API now defaults to the executable backend.
+It locates `GEOMETER_EXE` or the source-checkout `dist/geometer.exe`, writes a
+temporary JSON batch request, calls `geometer run`, and reads generated
+HLR/GLB outputs back into the friendly Python API. `GEOMETER_BACKEND=ctypes`
+and `GEOMETER_BACKEND=worker` remain available for developer/debug use.
 
 ## Package Shape
 
@@ -163,6 +169,7 @@ Backend selection policy:
 
 - `GEOMETER_BACKEND=exe` - default; run the bundled/static CLI.
 - `GEOMETER_BACKEND=ctypes` - optional development/performance backend.
+- `GEOMETER_BACKEND=worker` - legacy subprocess bridge around the C ABI.
 - `GEOMETER_EXE` - override the executable path.
 - `GEOMETER_NATIVE_LIBRARY` - override the optional native library path.
 
@@ -572,7 +579,7 @@ project version and C ABI version.
 - [x] Add Windows shared-OCCT developer build preset and direct-exit smoke
       harness.
 - [x] Add Python package skeleton and `ctypes` loader.
-- [ ] Add Python executable backend and make it default.
+- [x] Add Python executable backend and make it default.
 - [ ] Add Windows wheel build command.
 - [x] Add smoke fixture and Python tests.
 - [x] Add interactive Python HLR/3D preview example with visible version/ABI.

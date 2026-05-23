@@ -625,7 +625,7 @@ and does not use either free function.
 ## Python Interface
 
 The source checkout includes a thin Python package under `python/geometer`. It
-wraps the native C ABI and keeps the public API byte/path oriented:
+drives the native CLI by default and keeps the public API byte/path oriented:
 
 ```python
 import geometer
@@ -640,24 +640,41 @@ json_text = geometer.hlr_projection_json("part.step")
 glb_bytes = geometer.step_to_glb("part.step")
 ```
 
-The Python wrapper looks for a loadable native library in this order:
+The default Python backend is executable-backed. It looks for the Geometer CLI
+in this order:
+
+- `GEOMETER_EXE`;
+- the package directory or `python/geometer/native`;
+- source checkout `dist/`;
+- `PATH`.
+
+The executable backend writes temporary STEP/request/output files, calls:
+
+```powershell
+geometer run request.json response.json
+```
+
+and returns the requested JSON text or GLB bytes to the Python caller.
+
+Backend selection:
+
+- `GEOMETER_BACKEND=exe`: default; use the bundled/static CLI.
+- `GEOMETER_BACKEND=ctypes`: use the optional in-process native C ABI backend.
+- `GEOMETER_BACKEND=worker`: use the older Python worker subprocess around the
+  C ABI.
+
+The optional `ctypes` backend looks for a loadable native library in this order:
 
 - `GEOMETER_NATIVE_LIBRARY`;
 - `GEOMETER_NATIVE_LIBRARY_DIR`;
 - the package directory or `python/geometer/native`;
 - source checkout `dist/`.
 
-On Windows, Python uses direct `ctypes` calls when the native library is bundled
-with shared OCCT runtime DLLs in the same directory. If only the older static
-OCCT local build is available, OCCT-heavy HLR/GLB calls fall back to a small
-worker subprocess to avoid static teardown crashes. Set
-`GEOMETER_PYTHON_DIRECT=1` to force direct mode, or `GEOMETER_PYTHON_WORKER=1`
-to force the worker bridge.
-
-Packaging direction: keep this friendly Python API but make the default backend
-drive a bundled, statically linked `geometer` executable through a subprocess.
-The optional `ctypes` backend can remain for development or future in-process
-users.
+On Windows, direct `ctypes` calls are intended for the shared-OCCT developer
+layout where `geometer.dll` is bundled with OCCT runtime DLLs in the same
+directory. `GEOMETER_PYTHON_DIRECT=1` is retained as an alias for
+`GEOMETER_BACKEND=ctypes`; `GEOMETER_PYTHON_WORKER=1` is retained as an alias
+for `GEOMETER_BACKEND=worker`.
 
 The native CLI now has an initial JSON batch interface:
 

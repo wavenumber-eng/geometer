@@ -9,7 +9,11 @@ ROOT = Path(__file__).resolve().parents[2]
 SOT23_STEP = ROOT / "tests" / "fixtures" / "step" / "embedded_models" / "SOT-23.STEP"
 
 
-def test_version_reports_native_abi() -> None:
+def test_executable_path_finds_dist_cli() -> None:
+    assert geometer.executable_path().name in {"geometer", "geometer.exe"}
+
+
+def test_version_reports_geometer_abi() -> None:
     version = geometer.version()
 
     assert version.string == "2026.5.23"

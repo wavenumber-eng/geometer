@@ -12,7 +12,7 @@ Geometer should keep one C++ implementation and expose it through two release
 paths:
 
 - browser/Web Worker builds through Emscripten WASM
-- native shared-library builds through a Python package
+- native executable-backed builds through a Python package
 
 The first implementation target is Windows on this development PC. The build
 system should be structured so Linux and macOS wheels can be added without a
@@ -385,6 +385,15 @@ The first Windows milestone can be simpler:
 3. Drive it from Python through a subprocess backend.
 4. Run a smoke test from an installed wheel on Windows.
 
+Current local wheel build command:
+
+```powershell
+python -m pip wheel . -w out\wheelhouse --no-deps
+```
+
+The setuptools build command copies `dist/geometer.exe` / `dist/geometer` into
+`geometer/native/` inside the wheel and marks the wheel platform-specific.
+
 Do not force the first milestone to solve every platform. Instead, keep the
 CMake and package layout platform-neutral.
 
@@ -404,9 +413,10 @@ Deliverables:
 Candidate commands:
 
 ```powershell
-python -m build
-python -m pip install --force-reinstall dist\geometer-*.whl
-python -m pytest tests\python
+python -m pip wheel . -w out\wheelhouse --no-deps
+python -m venv out\venv-wheel-smoke
+out\venv-wheel-smoke\Scripts\python.exe -m pip install out\wheelhouse\geometer-*.whl
+out\venv-wheel-smoke\Scripts\python.exe -c "import geometer; print(geometer.version()); print(geometer.executable_path())"
 ```
 
 Acceptance:
@@ -421,6 +431,11 @@ Acceptance:
 - A small Python viewer can load a STEP fixture and plot HLR output.
 - The wheel can be installed on a clean Windows machine without OCCT DLLs on
   `PATH`.
+
+Validation update: on 2026-05-23, a local platform wheel installed into a fresh
+Windows venv from `out\wheelhouse-*`, resolved
+`site-packages\geometer\native\geometer.exe`, produced
+`geometry.projection.a0` for the SOT-23 STEP fixture, and returned GLB bytes.
 
 ### Phase 2 - WSL Linux Validation
 
@@ -580,12 +595,12 @@ project version and C ABI version.
       harness.
 - [x] Add Python package skeleton and `ctypes` loader.
 - [x] Add Python executable backend and make it default.
-- [ ] Add Windows wheel build command.
+- [x] Add Windows wheel build command.
 - [x] Add smoke fixture and Python tests.
 - [x] Add interactive Python HLR/3D preview example with visible version/ABI.
 - [x] Add native C++ Dear ImGui/SDL3/OpenGL HLR preview example with visible
       version/ABI.
-- [ ] Validate from a clean Windows venv.
+- [x] Validate from a clean Windows venv.
 - [ ] Validate Linux wheel under WSL.
 - [ ] Draft GitHub Actions `cibuildwheel` workflow.
 - [ ] Draft TestPyPI trusted-publishing workflow.

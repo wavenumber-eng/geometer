@@ -1,9 +1,9 @@
 # Python Examples
 
-Build the native shared library first:
+Build the native CLI first:
 
 ```powershell
-cmake --build ..\..\build --target geometer_shared --config Release
+cmake --build ..\..\build --target geometer --config Release
 ```
 
 Run the PyVista example with `uv` to create an isolated example environment from

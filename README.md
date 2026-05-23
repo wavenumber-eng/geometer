@@ -110,6 +110,12 @@ Python uses `dist/geometer.exe` / `dist/geometer` by default through the CLI
 JSON batch mode. Set `GEOMETER_EXE` to override the executable path, or set
 `GEOMETER_BACKEND=ctypes` for the optional in-process C ABI backend.
 
+Build a local Python wheel after building the native CLI:
+
+```bash
+python -m pip wheel . -w out/wheelhouse --no-deps
+```
+
 Embedded model browser viewer:
 
 ```bash
@@ -141,7 +147,7 @@ Examples:
 
 - `src/cpp/lib/` - libgeometer, the reusable C++ core.
 - `src/cpp/cli/` - geometer CLI executable.
-- `python/geometer/` - Python package wrapping the native C ABI.
+- `python/geometer/` - Python package using the native CLI by default.
 - `examples/` - user-facing Python and browser/WASM examples.
 - `src/js/` - JavaScript/WASM code.
 - `third_party/` - small vendored source dependencies used by the build.

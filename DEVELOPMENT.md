@@ -177,6 +177,16 @@ The Python package uses the native CLI by default. From a source checkout,
 Set `GEOMETER_BACKEND=ctypes` only when intentionally testing the optional
 in-process C ABI path.
 
+To build a local Python wheel, first build the native CLI so `dist/geometer.exe`
+or `dist/geometer` exists, then run:
+
+```powershell
+python -m pip wheel . -w out\wheelhouse --no-deps
+```
+
+The wheel build copies the platform executable into `geometer/native/` inside
+the wheel and marks the wheel platform-specific.
+
 ## Manual OCCT Rebuild
 
 Use this when changing the pinned OCCT version or when the local OCCT build is

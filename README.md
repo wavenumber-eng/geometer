@@ -28,20 +28,6 @@ The Python package direction is executable-backed: bundle a platform
 useful on its own and avoids native library loading issues in Python. The CLI
 now has a JSON batch command so repeated STEP operations can run in one process.
 
-For the optional in-process `ctypes` experiment on Windows, build against
-shared OCCT:
-
-```bash
-python scripts/build_occt.py --library-type Shared
-cmake --preset shared-occt
-cmake --build build-shared-occt --config Release
-python scripts/smoke_python_direct_exit.py --runs 5
-```
-
-That path copies `geometer.dll` and the OCCT `TK*.dll` runtime dependencies into
-`dist/`, allowing direct Python `ctypes` calls without the worker subprocess.
-This is not the preferred first PyPI release path.
-
 ## WASM Build
 
 ```bash

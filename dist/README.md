@@ -11,8 +11,6 @@ byte APIs, so consumers can choose simplicity or lower startup/memory cost.
 | Artifact | Role | Notes |
 |---|---|---|
 | `geometer.exe` | Native Windows CLI | Command-line STEP/HLR/planar tool for Windows source checkouts. |
-| `geometer.dll` | Optional Windows C ABI | Developer shared-library artifact for ctypes experiments; not the preferred first Python package path. |
-| `TK*.dll` | Optional Windows shared OCCT runtime | Runtime DLLs copied from the pinned shared OCCT SDK for direct ctypes experiments. |
 | `geometer.lib`, `libgeometer.a` | Native static library | Persisted native library artifacts for downstream source checkouts. |
 | `geometer.js`, `geometer.wasm` | Full browser/Web Worker integration WASM | Official application integration build. Exports `createGeometerModule` and the full C ABI, including OCCT-backed STEP-to-GLB, HLR, and planar byte APIs. |
 | `geometer-node-test.js`, `geometer-node-test.wasm` | Node CLI parity/test WASM | Node-only command-line build with real filesystem access. Use for tests and diagnostics, not browser integration. |

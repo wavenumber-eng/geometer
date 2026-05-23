@@ -56,8 +56,8 @@ The primary native release artifacts should be:
 - one static native library for C++ consumers;
 - no OCCT runtime DLL/SO/dylib bundle in the normal Python wheel path.
 
-The current shared-OCCT/`ctypes` path remains a useful spike and optional
-advanced backend, but it should not be the first PyPI release default.
+The shared-OCCT/`ctypes` path was useful as a spike, but it is not a PyPI
+release path.
 
 The release plan should relieve developer pressure by keeping prebuilt OCCT
 artifacts available for supported platforms. The first target is Windows.
@@ -115,18 +115,11 @@ work: `2026.5.23` for package/runtime version and `20260523` for the C ABI
 generation. A later cleanup should replace the remaining manual synchronization
 with a generated single source of truth.
 
-A Windows shared-OCCT spike is now available on the
-`geometer-shared-occt-wheel-spike` branch. `scripts/build_occt.py` can build
-OCCT as `Shared` into `.deps/occt-shared-install/`, and the
-`shared-occt` CMake preset builds Geometer against that SDK. The build copies
-`geometer.dll` plus OCCT `TK*.dll` runtime dependencies into `dist/`. With that
-layout, Python can use direct `ctypes` HLR/GLB calls on Windows when explicitly
-requested with `GEOMETER_BACKEND=ctypes`.
-
-Decision update: the shared-OCCT result is useful evidence, but the preferred
-release direction is a statically linked `geometer.exe`/`geometer` driven from
-Python through subprocess calls. The shared DLL layout should be treated as an
-optional development/performance backend, not the packaging default.
+A Windows shared-OCCT spike proved that direct `ctypes` calls can work when the
+runtime layout is carefully controlled, but that packaging direction is now
+retired. The release direction is a statically linked `geometer.exe`/`geometer`
+driven from Python through subprocess calls. `dist/` no longer persists
+`geometer.dll` or OCCT `TK*.dll` runtime files.
 
 Implementation update: the Python API now defaults to the executable backend.
 It locates `GEOMETER_EXE` or the source-checkout `dist/geometer.exe`, writes a
@@ -538,9 +531,9 @@ On Windows, the target should be "no OCCT DLLs required." If we also want "no
 Visual C++ redistributable required," the release build needs a deliberate MSVC
 runtime policy, likely `/MT`, applied consistently to OCCT and Geometer.
 
-The shared-OCCT `ctypes` work remains useful for investigation and future
-in-process users, but the executable-backed Python release should not depend on
-that layout.
+The shared-OCCT `ctypes` work remains historical evidence for possible future
+in-process users, but the executable-backed Python release does not depend on
+that layout and does not persist its runtime DLLs.
 
 ## Relationship To WASM
 
@@ -591,8 +584,8 @@ project version and C ABI version.
 - [x] Make Windows release CLI statically linked and easy to copy.
 - [ ] Add date-version source of truth and CMake/Python version generation.
 - [x] Add shared-library CMake target exporting the C ABI.
-- [x] Add Windows shared-OCCT developer build preset and direct-exit smoke
-      harness.
+- [x] Spike Windows shared-OCCT developer build preset and direct-exit smoke
+      harness, then retire it from the release path.
 - [x] Add Python package skeleton and `ctypes` loader.
 - [x] Add Python executable backend and make it default.
 - [x] Add Windows wheel build command.

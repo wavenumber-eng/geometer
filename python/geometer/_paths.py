@@ -15,8 +15,8 @@ def native_library_path() -> Path:
     path = _find_native_library_path()
     if path is None:
         raise FileNotFoundError(
-            "Could not find the Geometer native library. Build geometer_shared "
-            "or set GEOMETER_NATIVE_LIBRARY to the shared library path."
+            "Could not find the Geometer native library. Set GEOMETER_NATIVE_LIBRARY "
+            "to an explicit shared library path."
         )
     return path
 
@@ -42,8 +42,8 @@ def load_native_library() -> tuple[ctypes.CDLL, Path | None]:
         return ctypes.CDLL(found), None
 
     raise FileNotFoundError(
-        "Could not find the Geometer native library. Build geometer_shared "
-        "or set GEOMETER_NATIVE_LIBRARY to the shared library path."
+        "Could not find the Geometer native library. Set GEOMETER_NATIVE_LIBRARY "
+        "to an explicit shared library path."
     )
 
 
@@ -63,7 +63,7 @@ def _find_native_library_path() -> Path | None:
             return path
         raise FileNotFoundError(f"GEOMETER_NATIVE_LIBRARY does not exist: {path}")
 
-    for directory in _candidate_directories():
+    for directory in _native_library_candidate_directories():
         for name in _library_names():
             path = directory / name
             if path.exists():
@@ -90,6 +90,19 @@ def _find_executable_path() -> Path | None:
         if found:
             return Path(found)
     return None
+
+
+def _native_library_candidate_directories() -> list[Path]:
+    package_dir = Path(__file__).resolve().parent
+    directories = [
+        package_dir,
+        package_dir / "native",
+    ]
+
+    extra = os.environ.get("GEOMETER_NATIVE_LIBRARY_DIR")
+    if extra:
+        directories.insert(0, Path(extra))
+    return directories
 
 
 def _candidate_directories() -> list[Path]:

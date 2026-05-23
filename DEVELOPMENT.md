@@ -141,23 +141,6 @@ Later configures reuse `.deps/` and should be fast.
 The vendored RapidJSON v1.1.0 copy includes Geometer's small modern Clang
 compatibility patch so OCCT's GLTF toolkit compiles in native and WASM builds.
 
-For Python wheel work, a shared-OCCT Windows build is available as a separate
-developer path:
-
-```powershell
-python scripts\build_occt.py --library-type Shared
-cmake --preset shared-occt
-cmake --build build-shared-occt --config Release
-ctest --test-dir build-shared-occt -C Release --output-on-failure
-python scripts\smoke_python_direct_exit.py --runs 5
-```
-
-This installs OCCT DLLs into `.deps/occt-shared-install/`, builds Geometer in
-`build-shared-occt/`, and copies `geometer.dll` plus the OCCT `TK*.dll` runtime
-set into `dist/`. The default `cmake --preset default` path remains the static
-OCCT local build and is the preferred path for the executable-backed Python
-package direction.
-
 Build outputs are copied into `dist/` after a successful build.
 
 Common native CLI commands:
@@ -174,8 +157,8 @@ Common native CLI commands:
 
 The Python package uses the native CLI by default. From a source checkout,
 `GEOMETER_EXE` is optional if `dist/geometer.exe` or `dist/geometer` exists.
-Set `GEOMETER_BACKEND=ctypes` only when intentionally testing the optional
-in-process C ABI path.
+The old Python wheel direction based on `geometer.dll` plus OCCT `TK*.dll`
+runtime files is retired; `dist/` should not persist those files.
 
 To build a local Python wheel, first build the native CLI so `dist/geometer.exe`
 or `dist/geometer` exists, then run:
@@ -202,13 +185,9 @@ cmake --build build --config Release
 `--clean` removes OCCT state under `.deps/`; it does not remove vendored
 RapidJSON or the Geometer `build/` directory.
 
-To rebuild the shared OCCT SDK used by Python wheel/package experiments:
-
-```powershell
-python scripts\build_occt.py --library-type Shared
-cmake --preset shared-occt
-cmake --build build-shared-occt --config Release
-```
+The optional in-process C ABI backend is for development experiments only. If
+you intentionally use `GEOMETER_BACKEND=ctypes`, point `GEOMETER_NATIVE_LIBRARY`
+at a library you built outside the normal executable-backed wheel path.
 
 ## WASM Build
 

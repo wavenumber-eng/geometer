@@ -80,8 +80,6 @@ endfunction()
 configure_geometer_native_target(geometer_lib)
 
 if(NOT EMSCRIPTEN)
-    option(GEOMETER_COPY_OCCT_RUNTIME "Copy OCCT runtime DLLs next to geometer_shared" ON)
-
     add_library(geometer_shared SHARED ${GEOMETER_LIB_SOURCES})
     configure_geometer_native_target(geometer_shared)
     target_compile_definitions(geometer_shared PRIVATE GEOMETER_BUILD_SHARED)
@@ -169,10 +167,6 @@ if(EMSCRIPTEN)
 endif()
 
 if(NOT EMSCRIPTEN)
-    if(WIN32 AND GEOMETER_COPY_OCCT_RUNTIME AND OpenCASCADE_BINARY_DIR)
-        file(GLOB GEOMETER_OCCT_RUNTIME_DLLS "${OpenCASCADE_BINARY_DIR}/*.dll")
-    endif()
-
     # Copy native static library to dist/ after build.
     add_custom_command(TARGET geometer_lib POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_SOURCE_DIR}/dist"
@@ -184,22 +178,4 @@ if(NOT EMSCRIPTEN)
             "${CMAKE_SOURCE_DIR}/dist/libgeometer.a"
         COMMENT "Copying geometer_lib to dist/"
     )
-
-    # Copy native shared library to dist/ for Python ctypes loading.
-    add_custom_command(TARGET geometer_shared POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_SOURCE_DIR}/dist"
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            "$<TARGET_FILE:geometer_shared>"
-            "${CMAKE_SOURCE_DIR}/dist/"
-        COMMENT "Copying geometer_shared to dist/"
-    )
-
-    if(GEOMETER_OCCT_RUNTIME_DLLS)
-        add_custom_command(TARGET geometer_shared POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                ${GEOMETER_OCCT_RUNTIME_DLLS}
-                "${CMAKE_SOURCE_DIR}/dist/"
-            COMMENT "Copying OCCT runtime DLLs to dist/"
-        )
-    endif()
 endif()

@@ -17,16 +17,6 @@ ROWS = [
         "Command-line STEP/HLR/planar tool for Windows source checkouts.",
     ),
     (
-        "`geometer.dll`",
-        "Optional Windows C ABI",
-        "Developer shared-library artifact for ctypes experiments; not the preferred first Python package path.",
-    ),
-    (
-        "`TK*.dll`",
-        "Optional Windows shared OCCT runtime",
-        "Runtime DLLs copied from the pinned shared OCCT SDK for direct ctypes experiments.",
-    ),
-    (
         "`geometer.lib`, `libgeometer.a`",
         "Native static library",
         "Persisted native library artifacts for downstream source checkouts.",

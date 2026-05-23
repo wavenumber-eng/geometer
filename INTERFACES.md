@@ -667,14 +667,13 @@ The optional `ctypes` backend looks for a loadable native library in this order:
 
 - `GEOMETER_NATIVE_LIBRARY`;
 - `GEOMETER_NATIVE_LIBRARY_DIR`;
-- the package directory or `python/geometer/native`;
-- source checkout `dist/`.
+- the package directory or `python/geometer/native`.
 
-On Windows, direct `ctypes` calls are intended for the shared-OCCT developer
-layout where `geometer.dll` is bundled with OCCT runtime DLLs in the same
-directory. `GEOMETER_PYTHON_DIRECT=1` is retained as an alias for
-`GEOMETER_BACKEND=ctypes`; `GEOMETER_PYTHON_WORKER=1` is retained as an alias
-for `GEOMETER_BACKEND=worker`.
+The `ctypes` backend is development-only. It is not the Python package
+distribution path, and `dist/` should not persist `geometer.dll` or OCCT runtime
+DLLs. `GEOMETER_PYTHON_DIRECT=1` is retained as an alias for
+`GEOMETER_BACKEND=ctypes`; `GEOMETER_PYTHON_WORKER=1` is retained as an alias for
+`GEOMETER_BACKEND=worker`.
 
 The native CLI now has an initial JSON batch interface:
 
@@ -854,10 +853,6 @@ Persist these when publishing interface changes:
   `dist/geometer-node-test.wasm`.
 - Planar-only browser WASM C ABI optimization:
   `dist/geometer-planar-browser.js` and `dist/geometer-planar-browser.wasm`.
-
-The Windows shared OCCT `geometer.dll` plus `TK*.dll` layout is an optional
-developer path for `ctypes` experiments. It is not the preferred first Python
-package distribution path.
 
 Do not commit local generated build state:
 

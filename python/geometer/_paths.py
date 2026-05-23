@@ -36,6 +36,14 @@ def load_native_library() -> tuple[ctypes.CDLL, Path | None]:
     )
 
 
+def bundled_occt_runtime_available() -> bool:
+    path = _find_native_library_path()
+    if path is None:
+        return False
+    directory = path.parent
+    return all((directory / name).exists() for name in _required_occt_runtime_names())
+
+
 def _find_native_library_path() -> Path | None:
     override = os.environ.get("GEOMETER_NATIVE_LIBRARY")
     if override:
@@ -73,6 +81,12 @@ def _library_names() -> list[str]:
     if sys.platform == "darwin":
         return ["libgeometer.dylib", "geometer.dylib"]
     return ["libgeometer.so", "geometer.so"]
+
+
+def _required_occt_runtime_names() -> list[str]:
+    if sys.platform != "win32":
+        return []
+    return ["TKernel.dll", "TKMath.dll", "TKDESTEP.dll", "TKDEGLTF.dll"]
 
 
 def _add_dll_directory(directory: Path) -> None:

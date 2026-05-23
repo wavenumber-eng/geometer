@@ -11,6 +11,7 @@ GLB export support.
 Usage:
     python scripts/build_occt.py
     python scripts/build_occt.py --config Debug
+    python scripts/build_occt.py --library-type Shared
     python scripts/build_occt.py --clean
 """
 
@@ -25,8 +26,10 @@ ROOT = Path(__file__).resolve().parent.parent
 DEPS_DIR = ROOT / ".deps"
 THIRD_PARTY_DIR = ROOT / "third_party"
 OCCT_SRC = DEPS_DIR / "occt-src"
-OCCT_BUILD = DEPS_DIR / "occt-build"
-OCCT_INSTALL = DEPS_DIR / "occt-install"
+OCCT_STATIC_BUILD = DEPS_DIR / "occt-build"
+OCCT_STATIC_INSTALL = DEPS_DIR / "occt-install"
+OCCT_SHARED_BUILD = DEPS_DIR / "occt-shared-build"
+OCCT_SHARED_INSTALL = DEPS_DIR / "occt-shared-install"
 RAPIDJSON_SRC = THIRD_PARTY_DIR / "rapidjson"
 RAPIDJSON_INCLUDE = RAPIDJSON_SRC / "include" / "rapidjson"
 RAPIDJSON_PATCH_SENTINEL = (
@@ -79,17 +82,24 @@ def clone_occt() -> None:
     ])
 
 
-def configure_occt(config: str) -> None:
-    print(f"Configuring OCCT ({config}) ...")
-    OCCT_BUILD.mkdir(parents=True, exist_ok=True)
+def occt_paths(library_type: str) -> tuple[Path, Path]:
+    if library_type == "Shared":
+        return OCCT_SHARED_BUILD, OCCT_SHARED_INSTALL
+    return OCCT_STATIC_BUILD, OCCT_STATIC_INSTALL
+
+
+def configure_occt(config: str, library_type: str) -> None:
+    build_dir, install_dir = occt_paths(library_type)
+    print(f"Configuring OCCT ({config}, {library_type}) ...")
+    build_dir.mkdir(parents=True, exist_ok=True)
     cmd = [
         "cmake",
         *cmake_generator_args(),
         "-S", str(OCCT_SRC),
-        "-B", str(OCCT_BUILD),
-        f"-DCMAKE_INSTALL_PREFIX={OCCT_INSTALL}",
+        "-B", str(build_dir),
+        f"-DCMAKE_INSTALL_PREFIX={install_dir}",
         f"-DCMAKE_BUILD_TYPE={config}",
-        "-DBUILD_LIBRARY_TYPE=Static",
+        f"-DBUILD_LIBRARY_TYPE={library_type}",
         "-DBUILD_MODULE_Draw=OFF",
         "-DBUILD_MODULE_Visualization=OFF",
         "-DBUILD_MODULE_ApplicationFramework=OFF",
@@ -107,25 +117,33 @@ def configure_occt(config: str) -> None:
     run(cmd)
 
 
-def build_occt(config: str) -> None:
-    print(f"Building OCCT ({config}) ...")
+def build_occt(config: str, library_type: str) -> None:
+    build_dir, _ = occt_paths(library_type)
+    print(f"Building OCCT ({config}, {library_type}) ...")
     run([
-        "cmake", "--build", str(OCCT_BUILD),
+        "cmake", "--build", str(build_dir),
         "--config", config,
         "--parallel",
     ])
 
 
-def install_occt(config: str) -> None:
-    print(f"Installing OCCT to {OCCT_INSTALL} ...")
+def install_occt(config: str, library_type: str) -> None:
+    build_dir, install_dir = occt_paths(library_type)
+    print(f"Installing OCCT to {install_dir} ...")
     run([
-        "cmake", "--install", str(OCCT_BUILD),
+        "cmake", "--install", str(build_dir),
         "--config", config,
     ])
 
 
 def clean() -> None:
-    for d in [OCCT_SRC, OCCT_BUILD, OCCT_INSTALL]:
+    for d in [
+        OCCT_SRC,
+        OCCT_STATIC_BUILD,
+        OCCT_STATIC_INSTALL,
+        OCCT_SHARED_BUILD,
+        OCCT_SHARED_INSTALL,
+    ]:
         if d.exists():
             print(f"Removing {d}")
             shutil.rmtree(d)
@@ -134,6 +152,12 @@ def clean() -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description="Build OCCT from source.")
     parser.add_argument("--config", default="Release", help="Build config (default: Release)")
+    parser.add_argument(
+        "--library-type",
+        choices=["Static", "Shared"],
+        default="Static",
+        help="OCCT library type to build (default: Static)",
+    )
     parser.add_argument("--clean", action="store_true", help="Remove all OCCT build artifacts")
     args = parser.parse_args()
 
@@ -143,11 +167,15 @@ def main() -> None:
 
     verify_vendored_rapidjson()
     clone_occt()
-    configure_occt(args.config)
-    build_occt(args.config)
-    install_occt(args.config)
-    print(f"\nOCCT installed to {OCCT_INSTALL}")
-    print(f"Now run:  cmake --preset default")
+    configure_occt(args.config, args.library_type)
+    build_occt(args.config, args.library_type)
+    install_occt(args.config, args.library_type)
+    _, install_dir = occt_paths(args.library_type)
+    print(f"\nOCCT installed to {install_dir}")
+    if args.library_type == "Shared":
+        print("Now run:  cmake --preset shared-occt")
+    else:
+        print("Now run:  cmake --preset default")
 
 
 if __name__ == "__main__":

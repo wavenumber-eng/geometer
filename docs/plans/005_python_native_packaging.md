@@ -107,6 +107,14 @@ work: `2026.5.23` for package/runtime version and `20260523` for the C ABI
 generation. A later cleanup should replace the remaining manual synchronization
 with a generated single source of truth.
 
+A Windows shared-OCCT spike is now available on the
+`geometer-shared-occt-wheel-spike` branch. `scripts/build_occt.py` can build
+OCCT as `Shared` into `.deps/occt-shared-install/`, and the
+`shared-occt` CMake preset builds Geometer against that SDK. The build copies
+`geometer.dll` plus OCCT `TK*.dll` runtime dependencies into `dist/`. With that
+layout, Python uses direct `ctypes` HLR/GLB calls by default on Windows; the
+worker subprocess remains the fallback for the static local build.
+
 ## Package Shape
 
 Proposed Python package name:
@@ -141,7 +149,10 @@ into Geometer. Direct `ctypes` calls work, but STEP HLR/GLB calls can leave the
 process vulnerable to OCCT teardown crashes at exit. The first Python package
 therefore uses direct `ctypes` for version/library loading and routes
 OCCT-heavy operations through a small worker subprocess by default on Windows.
-Set `GEOMETER_PYTHON_DIRECT=1` only for debugging the raw native call path.
+When `geometer.dll` is bundled next to shared OCCT runtime DLLs, Windows uses
+direct `ctypes` calls by default. Set `GEOMETER_PYTHON_WORKER=1` to force the
+worker bridge. If the shared OCCT runtime DLLs are not present, the worker
+bridge remains the default fallback for HLR/GLB calls.
 
 ## STEP Geometry Surface
 
@@ -454,6 +465,8 @@ project version and C ABI version.
 - [ ] Decide Windows shared OCCT artifact storage strategy.
 - [ ] Add date-version source of truth and CMake/Python version generation.
 - [x] Add shared-library CMake target exporting the C ABI.
+- [x] Add Windows shared-OCCT developer build preset and direct-exit smoke
+      harness.
 - [x] Add Python package skeleton and `ctypes` loader.
 - [ ] Add Windows wheel build command.
 - [x] Add smoke fixture and Python tests.

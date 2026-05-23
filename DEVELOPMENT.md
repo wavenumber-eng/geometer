@@ -141,6 +141,22 @@ Later configures reuse `.deps/` and should be fast.
 The vendored RapidJSON v1.1.0 copy includes Geometer's small modern Clang
 compatibility patch so OCCT's GLTF toolkit compiles in native and WASM builds.
 
+For Python wheel work, a shared-OCCT Windows build is available as a separate
+developer path:
+
+```powershell
+python scripts\build_occt.py --library-type Shared
+cmake --preset shared-occt
+cmake --build build-shared-occt --config Release
+ctest --test-dir build-shared-occt -C Release --output-on-failure
+python scripts\smoke_python_direct_exit.py --runs 5
+```
+
+This installs OCCT DLLs into `.deps/occt-shared-install/`, builds Geometer in
+`build-shared-occt/`, and copies `geometer.dll` plus the OCCT `TK*.dll` runtime
+set into `dist/`. The default `cmake --preset default` path remains the static
+OCCT local build.
+
 Build outputs are copied into `dist/` after a successful build.
 
 Common native CLI commands:
@@ -167,6 +183,14 @@ cmake --build build --config Release
 
 `--clean` removes OCCT state under `.deps/`; it does not remove vendored
 RapidJSON or the Geometer `build/` directory.
+
+To rebuild the shared OCCT SDK used by Python wheel/package experiments:
+
+```powershell
+python scripts\build_occt.py --library-type Shared
+cmake --preset shared-occt
+cmake --build build-shared-occt --config Release
+```
 
 ## WASM Build
 

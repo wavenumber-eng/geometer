@@ -647,10 +647,12 @@ The Python wrapper looks for a loadable native library in this order:
 - the package directory or `python/geometer/native`;
 - source checkout `dist/`.
 
-On Windows, the current static OCCT build can crash during DLL/process teardown
-after STEP HLR or GLB work. To keep normal Python processes stable, those
-OCCT-heavy calls use a small worker subprocess by default on Windows. Set
-`GEOMETER_PYTHON_DIRECT=1` only for debugging direct `ctypes` calls.
+On Windows, Python uses direct `ctypes` calls when the native library is bundled
+with shared OCCT runtime DLLs in the same directory. If only the older static
+OCCT local build is available, OCCT-heavy HLR/GLB calls fall back to a small
+worker subprocess to avoid static teardown crashes. Set
+`GEOMETER_PYTHON_DIRECT=1` to force direct mode, or `GEOMETER_PYTHON_WORKER=1`
+to force the worker bridge.
 
 ## WASM Interfaces
 
@@ -796,6 +798,7 @@ project can clone Geometer and use the CLI/WASM artifacts without rebuilding.
 Persist these when publishing interface changes:
 
 - Native CLI: `dist/geometer.exe` or `dist/geometer`.
+- Windows shared OCCT runtime DLLs: `dist/TK*.dll`.
 - Native static library: `dist/geometer.lib` or `dist/libgeometer.a`.
 - Full browser WASM C ABI: `dist/geometer.js` and `dist/geometer.wasm`.
 - Node WASM CLI parity/test target: `dist/geometer-node-test.js` and

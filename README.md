@@ -23,6 +23,18 @@ python scripts/build_occt.py --clean
 python scripts/build_occt.py
 ```
 
+For Python wheel/package experiments on Windows, build against shared OCCT:
+
+```bash
+python scripts/build_occt.py --library-type Shared
+cmake --preset shared-occt
+cmake --build build-shared-occt --config Release
+python scripts/smoke_python_direct_exit.py --runs 5
+```
+
+That path copies `geometer.dll` and the OCCT `TK*.dll` runtime dependencies into
+`dist/`, allowing direct Python `ctypes` calls without the worker subprocess.
+
 ## WASM Build
 
 ```bash
@@ -70,7 +82,7 @@ node dist/geometer-node-test.js step-to-glb input.step output.glb
 Python from a source checkout:
 
 ```bash
-cmake --build build --target geometer_shared --config Release
+cmake --build build-shared-occt --target geometer_shared --config Release
 python -m pytest tests/python
 ```
 
@@ -100,7 +112,8 @@ HLR benchmark page:
 
 Examples:
 
-- `examples/python/hlr_viewer.py` - Dear PyGui STEP HLR viewer.
+- `examples/python/pyvista_hlr_viewer.py` - PyVista/Qt STEP 3D + HLR preview.
+- `examples/python/hlr_viewer.py` - Dear PyGui STEP HLR fallback viewer.
 - `examples/wasm/` - browser/WASM example home, with current test-backed pages
   still under `tests/wasm/`.
 

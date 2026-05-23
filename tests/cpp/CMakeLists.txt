@@ -36,3 +36,13 @@ target_compile_definitions(geometer_projection_model_transform_test PRIVATE
 )
 
 add_test(NAME geometer_projection_model_transform_test COMMAND geometer_projection_model_transform_test)
+
+if(WIN32 AND OpenCASCADE_BINARY_DIR)
+    set_tests_properties(
+        geometer_planar_solve_test
+        geometer_projection_options_json_test
+        geometer_projection_model_transform_test
+        PROPERTIES
+            ENVIRONMENT_MODIFICATION "PATH=path_list_prepend:${OpenCASCADE_BINARY_DIR}"
+    )
+endif()

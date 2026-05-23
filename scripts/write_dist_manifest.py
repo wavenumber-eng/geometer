@@ -22,6 +22,11 @@ ROWS = [
         "Shared library loaded by the Python ctypes package on Windows.",
     ),
     (
+        "`TK*.dll`",
+        "Windows shared OCCT runtime",
+        "Runtime DLLs copied from the pinned shared OCCT SDK for source-checkout Python direct ctypes calls and future wheel staging.",
+    ),
+    (
         "`geometer.lib`, `libgeometer.a`",
         "Native static library",
         "Persisted native library artifacts for downstream source checkouts.",

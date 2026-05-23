@@ -23,7 +23,15 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 #   python scripts/build_occt.py          # build
 #   python scripts/build_occt.py --clean  # wipe and rebuild
 # ---------------------------------------------------------------------------
-set(_geometer_default_occt_dir "${CMAKE_SOURCE_DIR}/.deps/occt-install/cmake")
+set(GEOMETER_OCCT_LIBRARY_TYPE "Static" CACHE STRING "OCCT library type to auto-build when missing")
+set_property(CACHE GEOMETER_OCCT_LIBRARY_TYPE PROPERTY STRINGS Static Shared)
+
+if(GEOMETER_OCCT_LIBRARY_TYPE STREQUAL "Shared")
+    set(_geometer_default_occt_dir "${CMAKE_SOURCE_DIR}/.deps/occt-shared-install/cmake")
+else()
+    set(_geometer_default_occt_dir "${CMAKE_SOURCE_DIR}/.deps/occt-install/cmake")
+endif()
+
 set(_geometer_occt_dir "${OpenCASCADE_DIR}")
 if(NOT _geometer_occt_dir OR _geometer_occt_dir MATCHES "-NOTFOUND$")
     set(_geometer_occt_dir "${_geometer_default_occt_dir}")
@@ -39,6 +47,7 @@ if(NOT OpenCASCADE_FOUND)
 
     execute_process(
         COMMAND ${Python3_EXECUTABLE} "${CMAKE_SOURCE_DIR}/scripts/build_occt.py"
+            --library-type ${GEOMETER_OCCT_LIBRARY_TYPE}
         RESULT_VARIABLE _occt_build_result
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     )
@@ -46,7 +55,7 @@ if(NOT OpenCASCADE_FOUND)
     if(NOT _occt_build_result EQUAL 0)
         message(FATAL_ERROR
             "Failed to build OCCT. You can try manually:\n"
-            "  python scripts/build_occt.py\n"
+            "  python scripts/build_occt.py --library-type ${GEOMETER_OCCT_LIBRARY_TYPE}\n"
             "Check the output above for errors."
         )
     endif()

@@ -8,6 +8,7 @@ import sys
 from pathlib import Path
 
 from ._errors import GeometerError
+from ._paths import bundled_occt_runtime_available
 from ._types import Version
 
 
@@ -17,7 +18,7 @@ def use_worker_process() -> bool:
         return False
     if os.environ.get("GEOMETER_PYTHON_WORKER", "").lower() in {"1", "true", "yes", "on"}:
         return True
-    return sys.platform == "win32"
+    return sys.platform == "win32" and not bundled_occt_runtime_available()
 
 
 def projection_json(step_bytes: bytes, options_json: bytes | None, version: Version) -> str:

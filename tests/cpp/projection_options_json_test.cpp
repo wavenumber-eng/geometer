@@ -34,6 +34,12 @@ void parse_explicit_options()
 {
     const char* json = "{"
                        "\"views\":[{\"id\":\"front\",\"direction\":[1,0,0],\"up\":[0,0,1]}],"
+                       "\"model_transform\":["
+                       "[1,0,0,10],"
+                       "[0,2,0,20],"
+                       "[0,0,3,30],"
+                       "[0,0,0,1]"
+                       "],"
                        "\"curve_mode\":\"polyline\","
                        "\"samples_per_curve\":12,"
                        "\"round_digits\":4,"
@@ -50,6 +56,9 @@ void parse_explicit_options()
     require(options.views[0].id == "front", "view id should parse");
     require(options.views[0].direction[0] == 1.0, "view direction should parse");
     require(options.views[0].up[2] == 1.0, "view up should parse");
+    require(options.model_transform[3] == 10.0, "model_transform x translation should parse");
+    require(options.model_transform[5] == 2.0, "model_transform y scale should parse");
+    require(options.model_transform[11] == 30.0, "model_transform z translation should parse");
     require(options.curve_mode == geometer::ProjectionCurveMode::Polyline,
             "curve mode should parse");
     require(options.samples_per_curve == 12, "samples should parse");
@@ -69,7 +78,8 @@ void parse_aliases()
                        "\"roundDigits\":2,"
                        "\"includeVisible\":true,"
                        "\"includeOutline\":false,"
-                       "\"unionPolygons\":true"
+                       "\"unionPolygons\":true,"
+                       "\"modelTransform\":[1,0,0,4,0,1,0,5,0,0,1,6,0,0,0,1]"
                        "}";
 
     geometer::HlrProjectionOptions options;
@@ -85,6 +95,9 @@ void parse_aliases()
     require(options.edge_v_sharp, "includeVisible alias should set edge_v_sharp");
     require(!options.edge_v_outline, "includeOutline alias should clear edge_v_outline");
     require(options.union_simple_polygons, "unionPolygons alias should parse");
+    require(options.model_transform[3] == 4.0, "flat modelTransform alias should parse");
+    require(options.model_transform[7] == 5.0, "flat modelTransform y translation should parse");
+    require(options.model_transform[11] == 6.0, "flat modelTransform z translation should parse");
 }
 
 void reject_invalid_options()
@@ -101,6 +114,14 @@ void reject_invalid_options()
     code = geometer::parse_hlr_projection_options_json("{\"curve_mode\":\"splines\"}", &options,
                                                        &status);
     require(code == 91, "invalid curve mode should return parse error");
+
+    code = geometer::parse_hlr_projection_options_json("{\"model_transform\":[[1,0,0,0]]}",
+                                                       &options, &status);
+    require(code == 91, "invalid model_transform shape should return parse error");
+
+    code = geometer::parse_hlr_projection_options_json(
+        "{\"model_transform\":[1,0,0,0,0,1,0,0,0,0,1,0,0,0,1,1]}", &options, &status);
+    require(code == 91, "invalid model_transform final row should return parse error");
 }
 
 void parse_step_to_glb_options()
@@ -113,8 +134,8 @@ void parse_step_to_glb_options()
     require(options.angular_deflection == 0.5, "default angular deflection should remain 0.5");
 
     code = geometer::parse_step_to_glb_options_json(
-        "{\"linearDeflection\":0.05,\"angular_deflection\":0.3,\"ignored\":{\"x\":1}}",
-        &options, &status);
+        "{\"linearDeflection\":0.05,\"angular_deflection\":0.3,\"ignored\":{\"x\":1}}", &options,
+        &status);
     require(code == 0, "STEP-to-GLB options aliases should parse");
     require(options.linear_deflection == 0.05, "linearDeflection alias should parse");
     require(options.angular_deflection == 0.3, "angular_deflection should parse");

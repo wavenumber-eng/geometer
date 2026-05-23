@@ -49,7 +49,7 @@ That includes the current public headers:
 
 Defined in `src/cpp/lib/geometer/version.h`.
 
-Geometer v1.0.0 uses C ABI version `5`. The project version follows semver.
+Geometer v1.1.0 uses C ABI version `6`. The project version follows semver.
 Consumers should check both the project version and ABI version at runtime.
 
 ```cpp
@@ -170,6 +170,12 @@ struct ProjectionViewSpec {
 
 struct HlrProjectionOptions {
     std::vector<ProjectionViewSpec> views;
+    std::array<double, 16> model_transform = {
+        1.0, 0.0, 0.0, 0.0,
+        0.0, 1.0, 0.0, 0.0,
+        0.0, 0.0, 1.0, 0.0,
+        0.0, 0.0, 0.0, 1.0,
+    };
     ProjectionCurveMode curve_mode = ProjectionCurveMode::NativeArcs;
     int samples_per_curve = 24;
     int round_digits = 3;
@@ -250,6 +256,12 @@ from projected edge contours. `write_hlr_projection_json` emits
 `geometry.projection.a0` JSON. `write_hlr_projection_svg` emits a quick
 inspection SVG for one view and mode.
 
+`model_transform` is an optional row-major 4x4 affine transform applied to the
+loaded source shape before projection. Translation lives in the final column and
+the final row must be `[0, 0, 0, 1]`. The transform is generic source-model
+normalization; it does not imply PCB side, screen mirroring, or SVG/canvas
+Y-down policy.
+
 ## HLR Options JSON
 
 Defined in `src/cpp/lib/geometer/projection_options_json.h`.
@@ -265,6 +277,8 @@ int parse_hlr_projection_options_json(
 Accepted option keys:
 
 - `views`: array of `{ id, direction, up }`.
+- `model_transform` or `modelTransform`: row-major 4x4 number matrix. A flat
+  array of 16 numbers is also accepted.
 - `curve_mode` or `curveMode`: `native_arcs`, `native-arcs`, or `polyline`.
 - `samples_per_curve` or `samples`.
 - `round_digits` or `roundDigits`.
@@ -605,6 +619,36 @@ and owned by the caller. Release them with `geometer_free_string`. Returned GLB
 and planar batch byte buffers are heap-allocated and owned by the caller.
 Release them with `geometer_free_bytes`. The version string is static storage
 and does not use either free function.
+
+## Python Interface
+
+The source checkout includes a thin Python package under `python/geometer`. It
+wraps the native C ABI and keeps the public API byte/path oriented:
+
+```python
+import geometer
+
+version = geometer.version()
+projection = geometer.project_step_hlr(
+    "part.step",
+    views=[geometer.ProjectionView.top()],
+    options=geometer.HlrOptions.assembly_outline(),
+)
+json_text = geometer.hlr_projection_json("part.step")
+glb_bytes = geometer.step_to_glb("part.step")
+```
+
+The Python wrapper looks for a loadable native library in this order:
+
+- `GEOMETER_NATIVE_LIBRARY`;
+- `GEOMETER_NATIVE_LIBRARY_DIR`;
+- the package directory or `python/geometer/native`;
+- source checkout `dist/`.
+
+On Windows, the current static OCCT build can crash during DLL/process teardown
+after STEP HLR or GLB work. To keep normal Python processes stable, those
+OCCT-heavy calls use a small worker subprocess by default on Windows. Set
+`GEOMETER_PYTHON_DIRECT=1` only for debugging direct `ctypes` calls.
 
 ## WASM Interfaces
 

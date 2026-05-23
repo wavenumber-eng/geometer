@@ -208,13 +208,16 @@ triangulation and Clipper2 byte APIs.
 
 ## Versioning
 
-The current project version is `1.0.0`, declared in the root `CMakeLists.txt`.
-The current C ABI version is `5`, declared as `GEOMETER_ABI_VERSION` in
+The current project version is `1.1.0`, declared in the root `CMakeLists.txt`.
+The current C ABI version is `6`, declared as `GEOMETER_ABI_VERSION` in
 `src/cpp/lib/CMakeLists.txt`.
 
-Use semver for project releases and tag releases as `v1.0.0`, `v1.1.0`, etc.
-Any breaking C ABI/WASM change must increment `GEOMETER_ABI_VERSION` and
-rebuild the persisted `dist/` artifacts.
+ADR 006 moves Geometer to date-based release versions before PyPI publishing:
+human-facing tags use `vYYYY-MM-DD`, CMake/PyPI package versions use the
+PEP 440-compatible dotted form `YYYY.M.D`, C ABI generations use `YYYYMMDD`,
+and generated build metadata uses UTC. Until the version generator lands, keep
+the root CMake version and C ABI version in sync manually and rebuild the
+persisted `dist/` artifacts for interface changes.
 
 ## Embedded Model Viewer
 

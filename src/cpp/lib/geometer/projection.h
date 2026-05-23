@@ -32,6 +32,12 @@ struct ProjectionViewSpec
 struct HlrProjectionOptions
 {
     std::vector<ProjectionViewSpec> views;
+    // Row-major 4x4 affine transform applied to the source shape before
+    // projection. Translation lives in the final column. The final row must be
+    // [0, 0, 0, 1].
+    std::array<double, 16> model_transform = {
+        1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0,
+    };
     ProjectionCurveMode curve_mode = ProjectionCurveMode::NativeArcs;
     int samples_per_curve = 24;
     int round_digits = 3;
@@ -55,8 +61,8 @@ struct HlrProjectionOptions
 
     // 1.1: poly-algo path defaults. Exact path is selected explicitly.
     ProjectionAlgorithm projection_algorithm = ProjectionAlgorithm::Poly;
-    double mesh_linear_deflection = 0.01;   // mm
-    double mesh_angular_deflection = 0.5;   // rad (~28.6 deg)
+    double mesh_linear_deflection = 0.01; // mm
+    double mesh_angular_deflection = 0.5; // rad (~28.6 deg)
     bool mesh_relative = false;
     double hlr_angle_tolerance = 0.0174533; // ~1 deg
 };

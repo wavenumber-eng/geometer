@@ -4,7 +4,7 @@ Focused C++ geometry library and CLI built on OCCT. Provides a small, controllab
 
 ## Interfaces
 
-Current C++, C ABI, WASM, and CLI interfaces are documented in
+Current C++, C ABI, Python, WASM, and CLI interfaces are documented in
 [INTERFACES.md](INTERFACES.md).
 
 ## Build
@@ -59,6 +59,24 @@ WASM (via Node.js):
 node dist/geometer.js step-to-glb input.step output.glb
 ```
 
+Python from a source checkout:
+
+```bash
+cmake --build build --target geometer_shared --config Release
+python -m pytest tests/python
+```
+
+```python
+from pathlib import Path
+import geometer
+
+projection = geometer.project_step_hlr(
+    Path("part.step"),
+    views=[geometer.ProjectionView.top()],
+)
+glb_bytes = geometer.step_to_glb(Path("part.step"))
+```
+
 Embedded model browser viewer:
 
 ```bash
@@ -72,6 +90,12 @@ HLR benchmark page:
 
 `http://127.0.0.1:8123/tests/wasm/hlr_benchmark.html`
 
+Examples:
+
+- `examples/python/hlr_viewer.py` - Dear PyGui STEP HLR viewer.
+- `examples/wasm/` - browser/WASM example home, with current test-backed pages
+  still under `tests/wasm/`.
+
 ## Dependencies
 
 - [OpenCASCADE Technology](https://dev.opencascade.org/) (V7_8_1) - built from source automatically.
@@ -83,6 +107,8 @@ HLR benchmark page:
 
 - `src/cpp/lib/` - libgeometer, the reusable C++ core.
 - `src/cpp/cli/` - geometer CLI executable.
+- `python/geometer/` - Python package wrapping the native C ABI.
+- `examples/` - user-facing Python and browser/WASM examples.
 - `src/js/` - JavaScript/WASM code.
 - `third_party/` - small vendored source dependencies used by the build.
 - `tests/` - rack-based stratified test system.

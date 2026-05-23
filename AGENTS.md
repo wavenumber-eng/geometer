@@ -22,8 +22,10 @@ For the current C++, C ABI, WASM, and CLI surface, read
   Python/WASM boundaries.
 - `.deps/` is generated local dependency state and must not be committed.
 - `dist/` contains distributable outputs by current project policy.
-- Versioned releases use the root CMake project version. Breaking C ABI/WASM
-  changes must bump `GEOMETER_ABI_VERSION` in `src/cpp/lib/CMakeLists.txt`.
+- Versioned releases currently use the root CMake project version and
+  `GEOMETER_ABI_VERSION` in `src/cpp/lib/CMakeLists.txt`. ADR 006 moves this
+  to date-based release tags and generated CMake/Python versions before PyPI
+  publishing.
 - Use CMake for proper native builds and CTest for registered tests.
 - The default native preset uses Ninja.
 - Format touched C++ files with `clang-format`.

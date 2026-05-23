@@ -1,0 +1,10 @@
+[project]
+name = "geometer-python-examples"
+version = "0.0.0"
+requires-python = ">=3.10"
+dependencies = [
+    "dearpygui",
+]
+
+[tool.uv]
+package = false

@@ -43,6 +43,9 @@ function buildOptionsJson(views, options) {
     round_digits: opts.round_digits ?? 3,
     union_simple_polygons: opts.union_simple_polygons ?? true,
   };
+  if (Array.isArray(opts.model_transform)) {
+    payload.model_transform = opts.model_transform;
+  }
   // Legacy aliases (still accepted by the parser for back-compat).
   if (typeof opts.include_visible === "boolean") payload.include_visible = opts.include_visible;
   if (typeof opts.include_outline === "boolean") payload.include_outline = opts.include_outline;

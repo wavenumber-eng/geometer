@@ -24,3 +24,15 @@ add_executable(geometer_projection_options_json_test
 target_link_libraries(geometer_projection_options_json_test PRIVATE geometer_lib)
 
 add_test(NAME geometer_projection_options_json_test COMMAND geometer_projection_options_json_test)
+
+add_executable(geometer_projection_model_transform_test
+    projection_model_transform_test.cpp
+)
+
+target_link_libraries(geometer_projection_model_transform_test PRIVATE geometer_lib)
+
+target_compile_definitions(geometer_projection_model_transform_test PRIVATE
+    GEOMETER_TEST_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
+)
+
+add_test(NAME geometer_projection_model_transform_test COMMAND geometer_projection_model_transform_test)

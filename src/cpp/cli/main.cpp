@@ -1,5 +1,11 @@
 #include "geometer.h"
 
+#include <rapidjson/document.h>
+#include <rapidjson/error/en.h>
+#include <rapidjson/prettywriter.h>
+#include <rapidjson/stringbuffer.h>
+#include <rapidjson/writer.h>
+
 #include <algorithm>
 #include <chrono>
 #include <cstdio>
@@ -22,27 +28,32 @@
 
 static void print_usage()
 {
-    std::fprintf(stderr, "Usage: geometer <command> [options]\n"
-                         "\n"
-                         "Commands:\n"
-                         "  --version                               Print version information\n"
-                         "  step-to-glb <input.step> <output.glb>       Convert STEP to GLB\n"
-                         "  step-project-hlr <input.step> <output.json> Emit HLR projection JSON\n"
-                         "  step-project-svg <input.step> <output.svg>  Emit HLR projection SVG\n"
-                         "  planar-batch-solve <request.bin> <response.bin>\n"
-                         "                                               Solve packed planar batch bytes\n"
-                         "\n"
-                         "Options:\n"
-                         "  --deflection <value>   Linear deflection (default: 0.1)\n"
-                         "  --angular <value>      Angular deflection (default: 0.5)\n"
-                         "  --view <id>            SVG view id (default: top)\n"
-                         "  --mode <simple|detail> SVG mode (default: simple)\n"
-                         "  --curve-mode <native-arcs|polyline>\n"
-                         "  --samples <count>      Curve polyline samples (default: 24)\n"
-                         "  --round-digits <count> Projection rounding digits (default: 3)\n"
-                         "  --repeat <count>       Planar benchmark repeat count (default: 1)\n"
-                         "  --warmup <count>       Planar benchmark warmup count (default: 0)\n"
-                         "  --metrics <path>       Write planar benchmark JSON metrics\n");
+    std::fprintf(stderr,
+                 "Usage: geometer <command> [options]\n"
+                 "\n"
+                 "Commands:\n"
+                 "  --version                               Print version information\n"
+                 "  step-to-glb <input.step> <output.glb>       Convert STEP to GLB\n"
+                 "  step-project-hlr <input.step> <output.json> Emit HLR projection JSON\n"
+                 "  step-project-svg <input.step> <output.svg>  Emit HLR projection SVG\n"
+                 "  run <request.json> <response.json>          Run JSON batch jobs\n"
+                 "  init-request <request.json> --step <path>   Write a starter JSON request\n"
+                 "  planar-batch-solve <request.bin> <response.bin>\n"
+                 "                                               Solve packed planar batch bytes\n"
+                 "\n"
+                 "Options:\n"
+                 "  --deflection <value>   Linear deflection (default: 0.1)\n"
+                 "  --angular <value>      Angular deflection (default: 0.5)\n"
+                 "  --view <id>            SVG view id (default: top)\n"
+                 "  --mode <simple|detail> SVG mode (default: simple)\n"
+                 "  --curve-mode <native-arcs|polyline>\n"
+                 "  --samples <count>      Curve polyline samples (default: 24)\n"
+                 "  --round-digits <count> Projection rounding digits (default: 3)\n"
+                 "  --operation <name>     init-request operation\n"
+                 "  --output <path>        init-request output path\n"
+                 "  --repeat <count>       Planar benchmark repeat count (default: 1)\n"
+                 "  --warmup <count>       Planar benchmark warmup count (default: 0)\n"
+                 "  --metrics <path>       Write planar benchmark JSON metrics\n");
 }
 
 static bool read_file_bytes(const char* path, std::vector<unsigned char>* bytes)
@@ -53,6 +64,22 @@ static bool read_file_bytes(const char* path, std::vector<unsigned char>* bytes)
         return false;
     }
     bytes->assign(std::istreambuf_iterator<char>(input), std::istreambuf_iterator<char>());
+    return input.good() || input.eof();
+}
+
+static bool read_text_file(const char* path, std::string* text)
+{
+    std::ifstream input(path, std::ios::binary);
+    if (!input)
+    {
+        return false;
+    }
+    text->assign(std::istreambuf_iterator<char>(input), std::istreambuf_iterator<char>());
+    const char utf8_bom[] = "\xEF\xBB\xBF";
+    if (text->size() >= 3 && text->compare(0, 3, utf8_bom) == 0)
+    {
+        text->erase(0, 3);
+    }
     return input.good() || input.eof();
 }
 
@@ -76,9 +103,115 @@ static bool write_file_bytes(const char* path, const std::vector<unsigned char>&
     }
     if (!bytes.empty())
     {
-        output.write(reinterpret_cast<const char*>(bytes.data()), static_cast<std::streamsize>(bytes.size()));
+        output.write(reinterpret_cast<const char*>(bytes.data()),
+                     static_cast<std::streamsize>(bytes.size()));
     }
     return output.good();
+}
+
+static void add_string(rapidjson::Value& object, const char* key, const std::string& value,
+                       rapidjson::Document::AllocatorType& allocator)
+{
+    rapidjson::Value json_key;
+    json_key.SetString(key, allocator);
+    rapidjson::Value json_value;
+    json_value.SetString(value.c_str(), static_cast<rapidjson::SizeType>(value.size()), allocator);
+    object.AddMember(json_key, json_value, allocator);
+}
+
+static std::string compact_json(const rapidjson::Value& value)
+{
+    rapidjson::StringBuffer buffer;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+    value.Accept(writer);
+    return buffer.GetString();
+}
+
+static bool member_string(const rapidjson::Value& object, const char* key, std::string* value)
+{
+    if (!object.IsObject())
+    {
+        return false;
+    }
+    auto it = object.FindMember(key);
+    if (it == object.MemberEnd() || !it->value.IsString())
+    {
+        return false;
+    }
+    *value = it->value.GetString();
+    return true;
+}
+
+static std::string job_id_for_index(const rapidjson::Value& job, std::size_t index)
+{
+    std::string id;
+    if (member_string(job, "id", &id) && !id.empty())
+    {
+        return id;
+    }
+    return "job_" + std::to_string(index + 1);
+}
+
+static std::string default_output_for_step(const std::string& step_path,
+                                           const std::string& operation)
+{
+    std::string name = step_path;
+    const std::size_t slash = name.find_last_of("/\\");
+    if (slash != std::string::npos)
+    {
+        name = name.substr(slash + 1);
+    }
+    const std::size_t dot = name.find_last_of('.');
+    if (dot != std::string::npos)
+    {
+        name = name.substr(0, dot);
+    }
+    if (name.empty())
+    {
+        name = "model";
+    }
+    if (operation == "step_to_glb")
+    {
+        return name + ".glb";
+    }
+    if (operation == "step_hlr_projection_svg")
+    {
+        return name + ".projection.svg";
+    }
+    return name + ".projection.json";
+}
+
+static std::string normalize_operation(const std::string& operation)
+{
+    if (operation == "step-project-hlr" || operation == "step_project_hlr")
+    {
+        return "step_hlr_projection_json";
+    }
+    if (operation == "step-project-svg" || operation == "step_project_svg")
+    {
+        return "step_hlr_projection_svg";
+    }
+    if (operation == "step-to-glb" || operation == "step_to_glb")
+    {
+        return "step_to_glb";
+    }
+    return operation;
+}
+
+static bool is_supported_batch_operation(const std::string& operation)
+{
+    return operation == "step_hlr_projection_json" || operation == "step_hlr_projection_svg" ||
+           operation == "step_to_glb";
+}
+
+static std::string options_json_for_job(const rapidjson::Value& job)
+{
+    auto it = job.FindMember("options");
+    if (it == job.MemberEnd() || it->value.IsNull())
+    {
+        return "{}";
+    }
+    return compact_json(it->value);
 }
 
 static void parse_projection_options(int argc, char* argv[], int start,
@@ -117,6 +250,354 @@ static void parse_projection_options(int argc, char* argv[], int start,
     }
 }
 
+static int execute_hlr_job(const rapidjson::Value& job, const std::string& operation,
+                           std::string* output_path, std::string* error_message)
+{
+    std::string step_path;
+    if (!member_string(job, "step_path", &step_path) || step_path.empty())
+    {
+        *error_message = "job requires string step_path";
+        return 2;
+    }
+    if (!member_string(job, "output_path", output_path) || output_path->empty())
+    {
+        *error_message = "job requires string output_path";
+        return 2;
+    }
+
+    std::vector<unsigned char> step_bytes;
+    if (!read_file_bytes(step_path.c_str(), &step_bytes))
+    {
+        *error_message = "failed reading " + step_path;
+        return 1;
+    }
+
+    geometer::HlrProjectionOptions options;
+    geometer::Status status;
+    const std::string options_json = options_json_for_job(job);
+    int code = geometer::parse_hlr_projection_options_json(options_json.c_str(), &options, &status);
+    if (code != 0)
+    {
+        *error_message = status.message;
+        return code;
+    }
+
+    geometer::HlrProjectionResult projection;
+    status = {};
+    code = geometer::step_hlr_projection_from_bytes(step_bytes.data(), step_bytes.size(), options,
+                                                    &projection, &status);
+    if (code != 0)
+    {
+        *error_message = status.message;
+        return code;
+    }
+
+    std::string text;
+    status = {};
+    if (operation == "step_hlr_projection_svg")
+    {
+        std::string view_id = "top";
+        std::string mode = "simple";
+        member_string(job, "view", &view_id);
+        member_string(job, "view_id", &view_id);
+        member_string(job, "mode", &mode);
+        code = geometer::write_hlr_projection_svg(projection, view_id, mode, &text, &status);
+    }
+    else
+    {
+        code = geometer::write_hlr_projection_json(projection, &text, &status);
+    }
+    if (code != 0)
+    {
+        *error_message = status.message;
+        return code;
+    }
+    if (!write_text_file(output_path->c_str(), text))
+    {
+        *error_message = "failed writing " + *output_path;
+        return 1;
+    }
+    return 0;
+}
+
+static int execute_glb_job(const rapidjson::Value& job, std::string* output_path,
+                           std::string* error_message)
+{
+    std::string step_path;
+    if (!member_string(job, "step_path", &step_path) || step_path.empty())
+    {
+        *error_message = "job requires string step_path";
+        return 2;
+    }
+    if (!member_string(job, "output_path", output_path) || output_path->empty())
+    {
+        *error_message = "job requires string output_path";
+        return 2;
+    }
+
+    geometer::StepToGlbOptions options;
+    geometer::Status status;
+    const std::string options_json = options_json_for_job(job);
+    int code = geometer::parse_step_to_glb_options_json(options_json.c_str(), &options, &status);
+    if (code != 0)
+    {
+        *error_message = status.message;
+        return code;
+    }
+
+    code = geometer::step_to_glb(step_path, *output_path, options);
+    if (code != 0)
+    {
+        *error_message = "STEP to GLB failed with code " + std::to_string(code);
+        return code;
+    }
+    return 0;
+}
+
+static int execute_batch_job(const rapidjson::Value& job, std::string* operation,
+                             std::string* output_path, std::string* error_message)
+{
+    if (!member_string(job, "operation", operation) || operation->empty())
+    {
+        *error_message = "job requires string operation";
+        return 2;
+    }
+    *operation = normalize_operation(*operation);
+    if (*operation == "step_hlr_projection_json" || *operation == "step_hlr_projection_svg")
+    {
+        return execute_hlr_job(job, *operation, output_path, error_message);
+    }
+    if (*operation == "step_to_glb")
+    {
+        return execute_glb_job(job, output_path, error_message);
+    }
+    *error_message = "unsupported operation: " + *operation;
+    return 2;
+}
+
+static void add_error_job(rapidjson::Value& jobs, rapidjson::Document::AllocatorType& allocator,
+                          const std::string& id, const std::string& operation, int code,
+                          const std::string& message)
+{
+    rapidjson::Value job(rapidjson::kObjectType);
+    add_string(job, "id", id, allocator);
+    add_string(job, "operation", operation, allocator);
+    job.AddMember("ok", false, allocator);
+    job.AddMember("code", code, allocator);
+    add_string(job, "message", message, allocator);
+    jobs.PushBack(job, allocator);
+}
+
+static int run_batch_request(const char* request_path, const char* response_path)
+{
+    std::string request_text;
+    rapidjson::Document response;
+    response.SetObject();
+    rapidjson::Document::AllocatorType& allocator = response.GetAllocator();
+    add_string(response, "schema", "geometer.batch.response.a0", allocator);
+    add_string(response, "version", geometer::version_string(), allocator);
+    response.AddMember("abi", geometer::abi_version(), allocator);
+    rapidjson::Value response_jobs(rapidjson::kArrayType);
+
+    int return_code = 0;
+    if (!read_text_file(request_path, &request_text))
+    {
+        response.AddMember("ok", false, allocator);
+        add_error_job(response_jobs, allocator, "request", "run", 1,
+                      std::string("failed reading ") + request_path);
+        response.AddMember("jobs", response_jobs, allocator);
+        rapidjson::StringBuffer buffer;
+        rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(buffer);
+        response.Accept(writer);
+        write_text_file(response_path, buffer.GetString());
+        return 1;
+    }
+
+    rapidjson::Document request;
+    request.Parse(request_text.c_str());
+    if (request.HasParseError() || !request.IsObject())
+    {
+        response.AddMember("ok", false, allocator);
+        std::string message = "invalid request JSON";
+        if (request.HasParseError())
+        {
+            message += ": ";
+            message += rapidjson::GetParseError_En(request.GetParseError());
+        }
+        add_error_job(response_jobs, allocator, "request", "run", 2, message);
+        response.AddMember("jobs", response_jobs, allocator);
+        rapidjson::StringBuffer buffer;
+        rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(buffer);
+        response.Accept(writer);
+        write_text_file(response_path, buffer.GetString());
+        return 2;
+    }
+
+    auto jobs_it = request.FindMember("jobs");
+    if (jobs_it == request.MemberEnd() || !jobs_it->value.IsArray())
+    {
+        response.AddMember("ok", false, allocator);
+        add_error_job(response_jobs, allocator, "request", "run", 2, "request requires jobs array");
+        response.AddMember("jobs", response_jobs, allocator);
+        rapidjson::StringBuffer buffer;
+        rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(buffer);
+        response.Accept(writer);
+        write_text_file(response_path, buffer.GetString());
+        return 2;
+    }
+
+    std::size_t index = 0;
+    for (const rapidjson::Value& request_job : jobs_it->value.GetArray())
+    {
+        rapidjson::Value response_job(rapidjson::kObjectType);
+        const std::string id = job_id_for_index(request_job, index);
+        add_string(response_job, "id", id, allocator);
+
+        const auto started = std::chrono::steady_clock::now();
+        std::string operation;
+        std::string output_path;
+        std::string error_message;
+        int code = 2;
+        if (!request_job.IsObject())
+        {
+            error_message = "job must be an object";
+        }
+        else
+        {
+            code = execute_batch_job(request_job, &operation, &output_path, &error_message);
+        }
+        const auto finished = std::chrono::steady_clock::now();
+        const double elapsed_ms =
+            std::chrono::duration<double, std::milli>(finished - started).count();
+
+        add_string(response_job, "operation", operation.empty() ? "unknown" : operation, allocator);
+        response_job.AddMember("ok", code == 0, allocator);
+        response_job.AddMember("code", code, allocator);
+        response_job.AddMember("elapsed_ms", elapsed_ms, allocator);
+        if (!output_path.empty())
+        {
+            add_string(response_job, "output_path", output_path, allocator);
+        }
+        if (code != 0)
+        {
+            add_string(response_job, "message", error_message, allocator);
+            return_code = 1;
+        }
+        response_jobs.PushBack(response_job, allocator);
+        index += 1;
+    }
+
+    response.AddMember("ok", return_code == 0, allocator);
+    response.AddMember("jobs", response_jobs, allocator);
+    rapidjson::StringBuffer buffer;
+    rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(buffer);
+    response.Accept(writer);
+    if (!write_text_file(response_path, buffer.GetString()))
+    {
+        std::fprintf(stderr, "Failed writing %s\n", response_path);
+        return 1;
+    }
+    return return_code;
+}
+
+static int init_request(int argc, char* argv[])
+{
+    if (argc < 4)
+    {
+        std::fprintf(stderr, "init-request requires output request path and --step <path>.\n");
+        return 1;
+    }
+    const std::string request_path = argv[2];
+    std::string step_path;
+    std::string operation = "step_hlr_projection_json";
+    std::string output_path;
+
+    for (int i = 3; i < argc; i += 1)
+    {
+        if (std::strcmp(argv[i], "--step") == 0 && i + 1 < argc)
+        {
+            step_path = argv[++i];
+        }
+        else if (std::strcmp(argv[i], "--operation") == 0 && i + 1 < argc)
+        {
+            operation = normalize_operation(argv[++i]);
+        }
+        else if (std::strcmp(argv[i], "--output") == 0 && i + 1 < argc)
+        {
+            output_path = argv[++i];
+        }
+    }
+
+    if (step_path.empty())
+    {
+        std::fprintf(stderr, "init-request requires --step <path>.\n");
+        return 1;
+    }
+    if (output_path.empty())
+    {
+        output_path = default_output_for_step(step_path, operation);
+    }
+    if (!is_supported_batch_operation(operation))
+    {
+        std::fprintf(stderr, "Unsupported operation for init-request: %s\n", operation.c_str());
+        return 1;
+    }
+
+    rapidjson::Document document;
+    document.SetObject();
+    rapidjson::Document::AllocatorType& allocator = document.GetAllocator();
+    add_string(document, "schema", "geometer.batch.request.a0", allocator);
+    add_string(document, "version", geometer::version_string(), allocator);
+    document.AddMember("abi", geometer::abi_version(), allocator);
+
+    rapidjson::Value jobs(rapidjson::kArrayType);
+    rapidjson::Value job(rapidjson::kObjectType);
+    add_string(job, "id", "job_1", allocator);
+    add_string(job, "operation", operation, allocator);
+    add_string(job, "step_path", step_path, allocator);
+    add_string(job, "output_path", output_path, allocator);
+
+    rapidjson::Value options(rapidjson::kObjectType);
+    if (operation == "step_to_glb")
+    {
+        options.AddMember("linear_deflection", 0.1, allocator);
+        options.AddMember("angular_deflection", 0.5, allocator);
+    }
+    else
+    {
+        rapidjson::Value views(rapidjson::kArrayType);
+        rapidjson::Value view(rapidjson::kObjectType);
+        add_string(view, "id", "top", allocator);
+        rapidjson::Value direction(rapidjson::kArrayType);
+        direction.PushBack(0.0, allocator).PushBack(0.0, allocator).PushBack(1.0, allocator);
+        rapidjson::Value up(rapidjson::kArrayType);
+        up.PushBack(0.0, allocator).PushBack(1.0, allocator).PushBack(0.0, allocator);
+        view.AddMember("direction", direction, allocator);
+        view.AddMember("up", up, allocator);
+        views.PushBack(view, allocator);
+        options.AddMember("views", views, allocator);
+        add_string(options, "curve_mode", "polyline", allocator);
+        options.AddMember("samples_per_curve", 24, allocator);
+        options.AddMember("round_digits", 3, allocator);
+        options.AddMember("include_visible", true, allocator);
+        options.AddMember("include_outline", true, allocator);
+        options.AddMember("union_simple_polygons", true, allocator);
+    }
+    job.AddMember("options", options, allocator);
+    jobs.PushBack(job, allocator);
+    document.AddMember("jobs", jobs, allocator);
+
+    rapidjson::StringBuffer buffer;
+    rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(buffer);
+    document.Accept(writer);
+    if (!write_text_file(request_path.c_str(), buffer.GetString()))
+    {
+        std::fprintf(stderr, "Failed writing %s\n", request_path.c_str());
+        return 1;
+    }
+    return 0;
+}
+
 int main(int argc, char* argv[])
 {
     if (argc < 2)
@@ -129,6 +610,23 @@ int main(int argc, char* argv[])
     {
         std::printf("geometer %s (abi %d)\n", geometer::version_string(), geometer::abi_version());
         clean_exit(0);
+    }
+
+    if (std::strcmp(argv[1], "run") == 0)
+    {
+        if (argc < 4)
+        {
+            std::fprintf(stderr, "run requires request and response JSON paths.\n");
+            return 1;
+        }
+        const int result = run_batch_request(argv[2], argv[3]);
+        clean_exit(result);
+    }
+
+    if (std::strcmp(argv[1], "init-request") == 0)
+    {
+        const int result = init_request(argc, argv);
+        clean_exit(result);
     }
 
     if (std::strcmp(argv[1], "step-to-glb") == 0)
@@ -272,7 +770,8 @@ int main(int argc, char* argv[])
                 request_bytes.data(), request_bytes.size(), &warmup_response, &status);
             if (code != 0)
             {
-                std::fprintf(stderr, "Planar warmup failed (%d): %s\n", code, status.message.c_str());
+                std::fprintf(stderr, "Planar warmup failed (%d): %s\n", code,
+                             status.message.c_str());
                 return code;
             }
         }
@@ -289,11 +788,13 @@ int main(int argc, char* argv[])
             const auto finished = std::chrono::steady_clock::now();
             if (code != 0)
             {
-                std::fprintf(stderr, "Planar solve failed (%d): %s\n", code, status.message.c_str());
+                std::fprintf(stderr, "Planar solve failed (%d): %s\n", code,
+                             status.message.c_str());
                 return code;
             }
             response_bytes = std::move(run_response);
-            const auto elapsed = std::chrono::duration<double, std::milli>(finished - started).count();
+            const auto elapsed =
+                std::chrono::duration<double, std::milli>(finished - started).count();
             timings_ms.push_back(elapsed);
         }
 
@@ -306,7 +807,7 @@ int main(int argc, char* argv[])
         const double min_ms = *std::min_element(timings_ms.begin(), timings_ms.end());
         const double max_ms = *std::max_element(timings_ms.begin(), timings_ms.end());
         const double mean_ms = std::accumulate(timings_ms.begin(), timings_ms.end(), 0.0) /
-            static_cast<double>(timings_ms.size());
+                               static_cast<double>(timings_ms.size());
         const double last_ms = timings_ms.empty() ? 0.0 : timings_ms.back();
         char metrics[1024];
         std::snprintf(metrics, sizeof(metrics),

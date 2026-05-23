@@ -43,12 +43,21 @@ OCCT remains hard-pinned. HLR behavior and performance are sensitive to OCCT
 version, build options, compiler, and dependency layout. Python packages must
 therefore know exactly which OCCT build they bundle or load.
 
-Adopt the same broad packaging lesson as the existing Python OCCT ecosystem:
-build and package a normal shared-library OCCT SDK per target platform, then
-build Geometer against that SDK and repair the wheel. The current
-static-OCCT-in-`geometer.dll` path is acceptable for early local experiments,
-but it should not be the final PyPI packaging model because it can leave Python
-processes vulnerable to Windows teardown crashes after HLR/GLB work.
+The preferred Python packaging model is now executable-backed, not
+library-backed. Python should call a platform-native `geometer` CLI subprocess
+by default and keep the public Python API friendly. This preserves process
+isolation around OCCT, makes the command-line tool directly useful to non-Python
+consumers, and avoids making every Python environment solve native library load
+and teardown behavior.
+
+The primary native release artifacts should be:
+
+- one statically linked CLI executable per target platform;
+- one static native library for C++ consumers;
+- no OCCT runtime DLL/SO/dylib bundle in the normal Python wheel path.
+
+The current shared-OCCT/`ctypes` path remains a useful spike and optional
+advanced backend, but it should not be the first PyPI release default.
 
 The release plan should relieve developer pressure by keeping prebuilt OCCT
 artifacts available for supported platforms. The first target is Windows.
@@ -60,9 +69,8 @@ Candidate artifact locations:
 - CI cache for repeat builds, with release assets used for reproducibility
 
 Do not plan on checking full prebuilt OCCT SDKs directly into the source tree.
-Release assets or a dependency-artifact repo keep source history cleaner and
-match the way Python OCCT wrapper projects separate source code from platform
-native payloads.
+Release assets or a dependency-artifact repo keep source history cleaner.
+Python wheels should bundle the final platform executable, not full OCCT SDKs.
 
 Regardless of storage location, every prebuilt OCCT artifact should record:
 
@@ -115,6 +123,11 @@ OCCT as `Shared` into `.deps/occt-shared-install/`, and the
 layout, Python uses direct `ctypes` HLR/GLB calls by default on Windows; the
 worker subprocess remains the fallback for the static local build.
 
+Decision update: the shared-OCCT result is useful evidence, but the preferred
+release direction is a statically linked `geometer.exe`/`geometer` driven from
+Python through subprocess calls. The shared DLL layout should be treated as an
+optional development/performance backend, not the packaging default.
+
 ## Package Shape
 
 Proposed Python package name:
@@ -135,24 +148,111 @@ glb_bytes = step_to_glb(step_bytes, options={...})
 Implementation layers:
 
 - `geometer/__init__.py` - public Python API
-- `geometer/_native.py` - `ctypes` loader and C ABI signatures
-- `geometer/_paths.py` - locate bundled native library and dependency DLLs
+- `geometer/_cli.py` - subprocess runner for the bundled or configured CLI
+- `geometer/_paths.py` - locate bundled executable and optional native library
+- `geometer/_native.py` - optional `ctypes` loader and C ABI signatures
 - `geometer/_errors.py` - exception types for C ABI errors
 - `geometer/_version.py` - project and C ABI version checks
 
-Use `ctypes` first. The C ABI calls are coarse and byte-buffer oriented, so
-Python call overhead is not important. Avoid `pybind11` until we have a reason
-to expose fine-grained C++ value objects.
+Use the CLI subprocess backend first. HLR and STEP-to-GLB are coarse, heavy
+operations, so process startup overhead is acceptable for the first Python
+release and buys much simpler deployment. Avoid `pybind11` until there is a
+reason to expose fine-grained C++ value objects.
 
-Windows implementation note: the current OCCT dependency is statically linked
-into Geometer. Direct `ctypes` calls work, but STEP HLR/GLB calls can leave the
-process vulnerable to OCCT teardown crashes at exit. The first Python package
-therefore uses direct `ctypes` for version/library loading and routes
-OCCT-heavy operations through a small worker subprocess by default on Windows.
-When `geometer.dll` is bundled next to shared OCCT runtime DLLs, Windows uses
-direct `ctypes` calls by default. Set `GEOMETER_PYTHON_WORKER=1` to force the
-worker bridge. If the shared OCCT runtime DLLs are not present, the worker
-bridge remains the default fallback for HLR/GLB calls.
+Backend selection policy:
+
+- `GEOMETER_BACKEND=exe` - default; run the bundled/static CLI.
+- `GEOMETER_BACKEND=ctypes` - optional development/performance backend.
+- `GEOMETER_EXE` - override the executable path.
+- `GEOMETER_NATIVE_LIBRARY` - override the optional native library path.
+
+The executable backend should preserve the same friendly Python API. It may use
+temporary files internally for STEP input and GLB/JSON/SVG output, but those
+details should not leak to normal callers.
+
+## CLI JSON Batch Interface
+
+The CLI now has an initial JSON request mode for downstream migration:
+
+```powershell
+geometer run request.json response.json
+```
+
+It can also generate a starter request from a STEP file:
+
+```powershell
+geometer init-request request.json --step U1.step --operation step_hlr_projection_json --output U1.projection.json
+geometer init-request request.json --step U1.step --operation step_to_glb --output U1.glb
+```
+
+For interactive convenience, if a user gives `geometer run` a STEP file instead
+of a request JSON, the CLI may emit a clear message pointing at
+`geometer init-request` or offer a `--write-template` mode. Scripted workflows
+should use the explicit template command so behavior is deterministic.
+
+Initial request shape:
+
+```json
+{
+  "schema": "geometer.batch.request.a0",
+  "version": "2026.5.23",
+  "jobs": [
+    {
+      "id": "u1-top",
+      "operation": "step_hlr_projection_json",
+      "step_path": "U1.step",
+      "output_path": "U1.top.projection.json",
+      "options": {
+        "views": [{"id": "top", "direction": [0, 0, 1], "up": [0, 1, 0]}],
+        "curve_mode": "polyline",
+        "model_transform": [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]
+      }
+    },
+    {
+      "id": "u1-glb",
+      "operation": "step_to_glb",
+      "step_path": "U1.step",
+      "output_path": "U1.glb",
+      "options": {"linear_deflection": 0.1, "angular_deflection": 0.5}
+    }
+  ]
+}
+```
+
+Initial response shape:
+
+```json
+{
+  "schema": "geometer.batch.response.a0",
+  "version": "2026.5.23",
+  "abi": 20260523,
+  "ok": true,
+  "jobs": [
+    {
+      "id": "u1-top",
+      "ok": true,
+      "operation": "step_hlr_projection_json",
+      "code": 0,
+      "output_path": "U1.top.projection.json",
+      "elapsed_ms": 12.3
+    }
+  ]
+}
+```
+
+The batch interface should support multiple STEP inputs in one process. That
+lets Altium Cruncher, KiCad Monkey, and other Python callers amortize process
+startup across repeated HLR/GLB operations. Prefer `step_path` and
+`output_path` for large CAD data. Inline byte transport can be added later if a
+consumer truly needs it.
+
+The generated template should include:
+
+- current Geometer version and ABI;
+- one job with the requested operation;
+- default HLR or GLB options;
+- a comment-free JSON shape that can be consumed directly after editing paths;
+- stable job ids derived from input file names where possible.
 
 ## STEP Geometry Surface
 
@@ -245,20 +345,23 @@ Vulkan-specific behavior, but on macOS it would imply a Vulkan-over-Metal layer
 and has more setup surface than this viewer needs. SDL3 + SDL_GPU is also worth
 watching, but it is newer and should not block the first portable C++ example.
 
-## Native Library Targets
+## Native Distribution Targets
 
-Add a shared-library build target in addition to the existing CLI/static outputs:
+Primary release artifacts:
 
-- Windows: `geometer.dll`
-- Linux: `libgeometer.so`
-- macOS: `libgeometer.dylib`
+- Windows: statically linked `geometer.exe`.
+- Linux: statically linked or mostly-static `geometer`.
+- macOS: self-contained `geometer` app-binary layout as far as platform rules
+  reasonably allow.
+- Native link artifact: `geometer.lib` on Windows and `libgeometer.a` on
+  Unix-like platforms.
 
-The shared library should export the same C ABI documented in `INTERFACES.md`.
-The CLI can continue to exist as a separate executable. The Python wheel should
-bundle the shared library and all required runtime libraries.
+The executable should be easy to copy and use directly from a terminal. The
+Python package should bundle that executable and drive it through a subprocess
+by default.
 
-On Windows, the wrapper should use `os.add_dll_directory(...)` before loading
-`geometer.dll` so bundled OCCT/runtime DLLs resolve from the package directory.
+The shared library target can remain for experiments and future high-throughput
+in-process users, but it is not the first Python release artifact.
 
 ## Build System Direction
 
@@ -271,8 +374,8 @@ Use a Python packaging frontend that works with CMake:
 The first Windows milestone can be simpler:
 
 1. Add `pyproject.toml`.
-2. Build or copy `geometer.dll` plus dependencies into the wheel.
-3. Load the library with `ctypes`.
+2. Build or copy the statically linked `geometer.exe` into the wheel.
+3. Drive it from Python through a subprocess backend.
 4. Run a smoke test from an installed wheel on Windows.
 
 Do not force the first milestone to solve every platform. Instead, keep the
@@ -284,9 +387,10 @@ CMake and package layout platform-neutral.
 
 Deliverables:
 
-- Windows shared-library target.
+- Windows statically linked CLI target.
+- Python executable backend.
 - Python package skeleton.
-- `ctypes` wrapper for version, HLR projection JSON, and GLB bytes.
+- friendly wrappers for version, HLR projection JSON, and GLB bytes.
 - Wheel build command that works on this PC.
 - Smoke tests using a small STEP fixture.
 
@@ -308,6 +412,8 @@ Acceptance:
   parsed result wrapper.
 - `geometer.step_to_glb(step_bytes, options)` returns non-empty GLB bytes.
 - A small Python viewer can load a STEP fixture and plot HLR output.
+- The wheel can be installed on a clean Windows machine without OCCT DLLs on
+  `PATH`.
 
 ### Phase 2 - WSL Linux Validation
 
@@ -399,24 +505,20 @@ too fragile. Wheels should bundle the runtime pieces they need.
 
 Preferred Geometer policy:
 
-- pin OCCT version in build scripts
-- build OCCT as a shared-library SDK with known flags for Python wheels
-- build Geometer's shared library against that SDK
-- bundle OCCT runtime libraries next to Geometer in wheels
-- validate with wheel repair tools:
-  - `delvewheel` on Windows
-  - `auditwheel` on Linux
-  - `delocate` on macOS
+- pin OCCT version in build scripts;
+- build OCCT static libraries for the release CLI and native static library;
+- statically link the CLI so `geometer.exe`/`geometer` is easy to copy and run;
+- make the Python wheel a client for that executable;
+- validate the executable in a clean environment without OCCT DLL/SO/dylib
+  search-path setup.
 
-The source build path should remain available for maintainers, and static OCCT
-can remain useful for CLI/WASM/local experiments. PyPI wheels should prefer the
-shared-library SDK layout so Python imports resemble the packaging architecture
-used by existing Python OCCT wrappers instead of relying on a monolithic
-static-OCCT DLL.
+On Windows, the target should be "no OCCT DLLs required." If we also want "no
+Visual C++ redistributable required," the release build needs a deliberate MSVC
+runtime policy, likely `/MT`, applied consistently to OCCT and Geometer.
 
-The current Windows worker subprocess is a compatibility bridge for the static
-local build. It should be removed from the default path once shared-OCCT wheels
-prove direct `ctypes` HLR/GLB calls can exit cleanly.
+The shared-OCCT `ctypes` work remains useful for investigation and future
+in-process users, but the executable-backed Python release should not depend on
+that layout.
 
 ## Relationship To WASM
 
@@ -429,7 +531,7 @@ Keep the two release paths parallel:
 - `dist/geometer.js` and `.wasm` for full browser/Web Worker integration
 - `dist/geometer-planar-browser.js` and `.wasm` as the smaller optional
   planar-only browser/Web Worker optimization
-- Python wheels with native shared library for Python tooling
+- Python wheels with a bundled static CLI for Python tooling
 
 Both paths should expose the same semantic operations and should report the same
 project version and C ABI version.
@@ -449,8 +551,8 @@ project version and C ABI version.
 
 1. Store prebuilt OCCT artifacts in GitHub release assets or a dedicated
    dependency-artifact repo?
-2. Keep static OCCT for CLI/local builds only, or move every native build path
-   to shared OCCT once Python wheels are stable?
+2. Should the optional shared-library backend stay in release builds, or remain
+   development-only until there is a concrete in-process consumer?
 3. Should the first PyPI package publish as public `geometer`, private/internal
    package, or a scoped/company-specific name?
 4. Which Python versions are required for `kicad_monkey` and other downstream
@@ -462,12 +564,15 @@ project version and C ABI version.
 
 ## First Implementation Checklist
 
-- [ ] Decide Windows shared OCCT artifact storage strategy.
+- [x] Decide first Python packaging backend: executable subprocess by default.
+- [x] Add CLI JSON batch request/response command.
+- [x] Make Windows release CLI statically linked and easy to copy.
 - [ ] Add date-version source of truth and CMake/Python version generation.
 - [x] Add shared-library CMake target exporting the C ABI.
 - [x] Add Windows shared-OCCT developer build preset and direct-exit smoke
       harness.
 - [x] Add Python package skeleton and `ctypes` loader.
+- [ ] Add Python executable backend and make it default.
 - [ ] Add Windows wheel build command.
 - [x] Add smoke fixture and Python tests.
 - [x] Add interactive Python HLR/3D preview example with visible version/ABI.

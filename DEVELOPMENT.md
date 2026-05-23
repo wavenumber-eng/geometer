@@ -155,7 +155,8 @@ python scripts\smoke_python_direct_exit.py --runs 5
 This installs OCCT DLLs into `.deps/occt-shared-install/`, builds Geometer in
 `build-shared-occt/`, and copies `geometer.dll` plus the OCCT `TK*.dll` runtime
 set into `dist/`. The default `cmake --preset default` path remains the static
-OCCT local build.
+OCCT local build and is the preferred path for the executable-backed Python
+package direction.
 
 Build outputs are copied into `dist/` after a successful build.
 
@@ -166,6 +167,8 @@ Common native CLI commands:
 .\dist\geometer.exe step-to-glb input.step output.glb
 .\dist\geometer.exe step-project-hlr input.step output.json
 .\dist\geometer.exe step-project-svg input.step output.svg --mode simple --view top
+.\dist\geometer.exe init-request request.json --step input.step --operation step_hlr_projection_json --output output.json
+.\dist\geometer.exe run request.json response.json
 .\dist\geometer.exe planar-batch-solve request.bin response.bin --warmup 1 --repeat 5 --metrics metrics.json
 ```
 

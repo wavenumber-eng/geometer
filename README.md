@@ -23,7 +23,13 @@ python scripts/build_occt.py --clean
 python scripts/build_occt.py
 ```
 
-For Python wheel/package experiments on Windows, build against shared OCCT:
+The Python package direction is executable-backed: bundle a platform
+`geometer` CLI and have Python call it through a subprocess. That keeps the CLI
+useful on its own and avoids native library loading issues in Python. The CLI
+now has a JSON batch command so repeated STEP operations can run in one process.
+
+For the optional in-process `ctypes` experiment on Windows, build against
+shared OCCT:
 
 ```bash
 python scripts/build_occt.py --library-type Shared
@@ -34,6 +40,7 @@ python scripts/smoke_python_direct_exit.py --runs 5
 
 That path copies `geometer.dll` and the OCCT `TK*.dll` runtime dependencies into
 `dist/`, allowing direct Python `ctypes` calls without the worker subprocess.
+This is not the preferred first PyPI release path.
 
 ## WASM Build
 
@@ -71,6 +78,8 @@ geometer step-to-glb input.step output.glb --deflection 0.05 --angular 0.3
 geometer step-project-hlr input.step output.json
 geometer step-project-svg input.step output.svg --mode simple --view top
 geometer step-project-svg input.step output.svg --mode detail --curve-mode native-arcs
+geometer init-request request.json --step input.step --operation step_hlr_projection_json --output output.json
+geometer run request.json response.json
 ```
 
 WASM (via Node.js):

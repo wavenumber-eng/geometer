@@ -1,5 +1,8 @@
 add_executable(geometer main.cpp)
 target_link_libraries(geometer PRIVATE geometer_lib)
+target_include_directories(geometer PRIVATE
+    ${CMAKE_SOURCE_DIR}/third_party/rapidjson/include
+)
 
 if(EMSCRIPTEN)
     # Build as a Node.js CLI that reads/writes the real filesystem.

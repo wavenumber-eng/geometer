@@ -654,6 +654,21 @@ worker subprocess to avoid static teardown crashes. Set
 `GEOMETER_PYTHON_DIRECT=1` to force direct mode, or `GEOMETER_PYTHON_WORKER=1`
 to force the worker bridge.
 
+Packaging direction: keep this friendly Python API but make the default backend
+drive a bundled, statically linked `geometer` executable through a subprocess.
+The optional `ctypes` backend can remain for development or future in-process
+users.
+
+The native CLI now has an initial JSON batch interface:
+
+```powershell
+geometer run request.json response.json
+geometer init-request request.json --step U1.step --operation step_hlr_projection_json --output U1.projection.json
+```
+
+`request.json` contains a `geometer.batch.request.a0` jobs array so one process
+can project or convert multiple STEP files before exiting.
+
 ## WASM Interfaces
 
 `scripts/build_wasm.py` builds three WASM targets into `dist/`.
@@ -757,6 +772,8 @@ Native CLI:
 .\dist\geometer.exe step-to-glb input.step output.glb
 .\dist\geometer.exe step-project-hlr input.step output.json
 .\dist\geometer.exe step-project-svg input.step output.svg --mode simple --view top
+.\dist\geometer.exe init-request request.json --step input.step --operation step_hlr_projection_json --output output.json
+.\dist\geometer.exe run request.json response.json
 .\dist\geometer.exe planar-batch-solve request.bin response.bin --warmup 1 --repeat 5 --metrics metrics.json
 ```
 
@@ -779,6 +796,22 @@ STEP-to-GLB CLI options:
 - `--deflection <value>`
 - `--angular <value>`
 
+JSON batch CLI commands:
+
+- `run <request.json> <response.json>`: run a
+  `geometer.batch.request.a0` jobs array and write a
+  `geometer.batch.response.a0` response.
+- `init-request <request.json> --step <path>`: write a starter JSON request.
+- `--operation <step_hlr_projection_json|step_hlr_projection_svg|step_to_glb>`:
+  choose the starter request operation.
+- `--output <path>`: choose the starter request output path.
+
+Batch jobs currently accept `operation`, `step_path`, `output_path`, and an
+`options` object. HLR JSON/SVG jobs use HLR projection options; GLB jobs use
+STEP-to-GLB options. The response includes Geometer version, ABI, top-level
+`ok`, and per-job `id`, `operation`, `ok`, `code`, `elapsed_ms`, and optional
+`output_path` or `message`.
+
 Planar batch solve CLI options:
 
 - `--warmup <count>`: run unmeasured solves before benchmark repeats.
@@ -798,13 +831,16 @@ project can clone Geometer and use the CLI/WASM artifacts without rebuilding.
 Persist these when publishing interface changes:
 
 - Native CLI: `dist/geometer.exe` or `dist/geometer`.
-- Windows shared OCCT runtime DLLs: `dist/TK*.dll`.
 - Native static library: `dist/geometer.lib` or `dist/libgeometer.a`.
 - Full browser WASM C ABI: `dist/geometer.js` and `dist/geometer.wasm`.
 - Node WASM CLI parity/test target: `dist/geometer-node-test.js` and
   `dist/geometer-node-test.wasm`.
 - Planar-only browser WASM C ABI optimization:
   `dist/geometer-planar-browser.js` and `dist/geometer-planar-browser.wasm`.
+
+The Windows shared OCCT `geometer.dll` plus `TK*.dll` layout is an optional
+developer path for `ctypes` experiments. It is not the preferred first Python
+package distribution path.
 
 Do not commit local generated build state:
 

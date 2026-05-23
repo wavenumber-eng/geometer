@@ -18,13 +18,13 @@ ROWS = [
     ),
     (
         "`geometer.dll`",
-        "Native Windows C ABI",
-        "Shared library loaded by the Python ctypes package on Windows.",
+        "Optional Windows C ABI",
+        "Developer shared-library artifact for ctypes experiments; not the preferred first Python package path.",
     ),
     (
         "`TK*.dll`",
-        "Windows shared OCCT runtime",
-        "Runtime DLLs copied from the pinned shared OCCT SDK for source-checkout Python direct ctypes calls and future wheel staging.",
+        "Optional Windows shared OCCT runtime",
+        "Runtime DLLs copied from the pinned shared OCCT SDK for direct ctypes experiments.",
     ),
     (
         "`geometer.lib`, `libgeometer.a`",

@@ -204,14 +204,63 @@ static bool is_supported_batch_operation(const std::string& operation)
            operation == "step_to_glb";
 }
 
-static std::string options_json_for_job(const rapidjson::Value& job)
+static const rapidjson::Value* options_value_for_object(const rapidjson::Value& object)
 {
-    auto it = job.FindMember("options");
-    if (it == job.MemberEnd() || it->value.IsNull())
+    auto it = object.FindMember("options");
+    if (it == object.MemberEnd() || it->value.IsNull())
+    {
+        return nullptr;
+    }
+    return &it->value;
+}
+
+static std::string options_json_for_value(const rapidjson::Value* value)
+{
+    if (value == nullptr || value->IsNull())
     {
         return "{}";
     }
-    return compact_json(it->value);
+    return compact_json(*value);
+}
+
+static int parse_hlr_options_layer(const rapidjson::Value* options_value,
+                                   geometer::HlrProjectionOptions* options,
+                                   std::string* error_message)
+{
+    if (options_value == nullptr || options_value->IsNull())
+    {
+        return 0;
+    }
+
+    geometer::Status status;
+    const std::string options_json = options_json_for_value(options_value);
+    const int code = geometer::parse_hlr_projection_options_json(options_json.c_str(), options,
+                                                                 &status);
+    if (code != 0)
+    {
+        *error_message = status.message;
+    }
+    return code;
+}
+
+static int parse_glb_options_layer(const rapidjson::Value* options_value,
+                                   geometer::StepToGlbOptions* options,
+                                   std::string* error_message)
+{
+    if (options_value == nullptr || options_value->IsNull())
+    {
+        return 0;
+    }
+
+    geometer::Status status;
+    const std::string options_json = options_json_for_value(options_value);
+    const int code = geometer::parse_step_to_glb_options_json(options_json.c_str(), options,
+                                                             &status);
+    if (code != 0)
+    {
+        *error_message = status.message;
+    }
+    return code;
 }
 
 static void parse_projection_options(int argc, char* argv[], int start,
@@ -250,8 +299,9 @@ static void parse_projection_options(int argc, char* argv[], int start,
     }
 }
 
-static int execute_hlr_job(const rapidjson::Value& job, const std::string& operation,
-                           std::string* output_path, std::string* error_message)
+static int execute_hlr_job(const rapidjson::Value& job, const rapidjson::Value* batch_options,
+                           const std::string& operation, std::string* output_path,
+                           std::string* error_message)
 {
     std::string step_path;
     if (!member_string(job, "step_path", &step_path) || step_path.empty())
@@ -273,17 +323,19 @@ static int execute_hlr_job(const rapidjson::Value& job, const std::string& opera
     }
 
     geometer::HlrProjectionOptions options;
-    geometer::Status status;
-    const std::string options_json = options_json_for_job(job);
-    int code = geometer::parse_hlr_projection_options_json(options_json.c_str(), &options, &status);
+    int code = parse_hlr_options_layer(batch_options, &options, error_message);
     if (code != 0)
     {
-        *error_message = status.message;
+        return code;
+    }
+    code = parse_hlr_options_layer(options_value_for_object(job), &options, error_message);
+    if (code != 0)
+    {
         return code;
     }
 
     geometer::HlrProjectionResult projection;
-    status = {};
+    geometer::Status status;
     code = geometer::step_hlr_projection_from_bytes(step_bytes.data(), step_bytes.size(), options,
                                                     &projection, &status);
     if (code != 0)
@@ -320,8 +372,8 @@ static int execute_hlr_job(const rapidjson::Value& job, const std::string& opera
     return 0;
 }
 
-static int execute_glb_job(const rapidjson::Value& job, std::string* output_path,
-                           std::string* error_message)
+static int execute_glb_job(const rapidjson::Value& job, const rapidjson::Value* batch_options,
+                           std::string* output_path, std::string* error_message)
 {
     std::string step_path;
     if (!member_string(job, "step_path", &step_path) || step_path.empty())
@@ -336,12 +388,14 @@ static int execute_glb_job(const rapidjson::Value& job, std::string* output_path
     }
 
     geometer::StepToGlbOptions options;
-    geometer::Status status;
-    const std::string options_json = options_json_for_job(job);
-    int code = geometer::parse_step_to_glb_options_json(options_json.c_str(), &options, &status);
+    int code = parse_glb_options_layer(batch_options, &options, error_message);
     if (code != 0)
     {
-        *error_message = status.message;
+        return code;
+    }
+    code = parse_glb_options_layer(options_value_for_object(job), &options, error_message);
+    if (code != 0)
+    {
         return code;
     }
 
@@ -354,8 +408,9 @@ static int execute_glb_job(const rapidjson::Value& job, std::string* output_path
     return 0;
 }
 
-static int execute_batch_job(const rapidjson::Value& job, std::string* operation,
-                             std::string* output_path, std::string* error_message)
+static int execute_batch_job(const rapidjson::Value& job, const rapidjson::Value* batch_options,
+                             std::string* operation, std::string* output_path,
+                             std::string* error_message)
 {
     if (!member_string(job, "operation", operation) || operation->empty())
     {
@@ -365,11 +420,11 @@ static int execute_batch_job(const rapidjson::Value& job, std::string* operation
     *operation = normalize_operation(*operation);
     if (*operation == "step_hlr_projection_json" || *operation == "step_hlr_projection_svg")
     {
-        return execute_hlr_job(job, *operation, output_path, error_message);
+        return execute_hlr_job(job, batch_options, *operation, output_path, error_message);
     }
     if (*operation == "step_to_glb")
     {
-        return execute_glb_job(job, output_path, error_message);
+        return execute_glb_job(job, batch_options, output_path, error_message);
     }
     *error_message = "unsupported operation: " + *operation;
     return 2;
@@ -446,6 +501,25 @@ static int run_batch_request(const char* request_path, const char* response_path
         return 2;
     }
 
+    const rapidjson::Value* batch_options = nullptr;
+    auto options_it = request.FindMember("options");
+    if (options_it != request.MemberEnd())
+    {
+        if (!options_it->value.IsNull() && !options_it->value.IsObject())
+        {
+            response.AddMember("ok", false, allocator);
+            add_error_job(response_jobs, allocator, "request", "run", 2,
+                          "request options must be an object or null");
+            response.AddMember("jobs", response_jobs, allocator);
+            rapidjson::StringBuffer buffer;
+            rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(buffer);
+            response.Accept(writer);
+            write_text_file(response_path, buffer.GetString());
+            return 2;
+        }
+        batch_options = &options_it->value;
+    }
+
     std::size_t index = 0;
     for (const rapidjson::Value& request_job : jobs_it->value.GetArray())
     {
@@ -464,7 +538,8 @@ static int run_batch_request(const char* request_path, const char* response_path
         }
         else
         {
-            code = execute_batch_job(request_job, &operation, &output_path, &error_message);
+            code = execute_batch_job(request_job, batch_options, &operation, &output_path,
+                                     &error_message);
         }
         const auto finished = std::chrono::steady_clock::now();
         const double elapsed_ms =

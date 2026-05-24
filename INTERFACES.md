@@ -638,10 +638,24 @@ projection = geometer.project_step_hlr(
 )
 json_text = geometer.hlr_projection_json("part.step")
 glb_bytes = geometer.step_to_glb("part.step")
+
+runner = geometer.GeometerBatchRunner(max_workers=8, chunk_size=5)
+runner_version = runner.version()
+batch = runner.run(
+    [
+        {
+            "id": "part-top",
+            "operation": "step_hlr_projection_json",
+            "step_path": "part.step",
+            "output_path": "part.top.projection.json",
+        }
+    ],
+    options={"curve_mode": "polyline"},
+)
 ```
 
-The default Python backend is executable-backed. It looks for the Geometer CLI
-in this order:
+The Python package intentionally uses the executable backend only for now. It
+looks for the Geometer CLI in this order:
 
 - `GEOMETER_EXE`;
 - the package directory or `python/geometer/native`;
@@ -656,24 +670,8 @@ geometer run request.json response.json
 
 and returns the requested JSON text or GLB bytes to the Python caller.
 
-Backend selection:
-
-- `GEOMETER_BACKEND=exe`: default; use the bundled/static CLI.
-- `GEOMETER_BACKEND=ctypes`: use the optional in-process native C ABI backend.
-- `GEOMETER_BACKEND=worker`: use the older Python worker subprocess around the
-  C ABI.
-
-The optional `ctypes` backend looks for a loadable native library in this order:
-
-- `GEOMETER_NATIVE_LIBRARY`;
-- `GEOMETER_NATIVE_LIBRARY_DIR`;
-- the package directory or `python/geometer/native`.
-
-The `ctypes` backend is development-only. It is not the Python package
-distribution path, and `dist/` should not persist `geometer.dll` or OCCT runtime
-DLLs. `GEOMETER_PYTHON_DIRECT=1` is retained as an alias for
-`GEOMETER_BACKEND=ctypes`; `GEOMETER_PYTHON_WORKER=1` is retained as an alias for
-`GEOMETER_BACKEND=worker`.
+`GEOMETER_BACKEND=exe` and `GEOMETER_BACKEND=cli` are accepted explicit names.
+Other backend names are rejected by the public Python API.
 
 The native CLI now has an initial JSON batch interface:
 
@@ -683,7 +681,9 @@ geometer init-request request.json --step U1.step --operation step_hlr_projectio
 ```
 
 `request.json` contains a `geometer.batch.request.a0` jobs array so one process
-can project or convert multiple STEP files before exiting.
+can project or convert multiple STEP files before exiting. An optional top-level
+`options` object supplies defaults for every job; each job's own `options`
+object is parsed afterwards and overrides those defaults.
 
 ## WASM Interfaces
 
@@ -822,8 +822,13 @@ JSON batch CLI commands:
   choose the starter request operation.
 - `--output <path>`: choose the starter request output path.
 
-Batch jobs currently accept `operation`, `step_path`, `output_path`, and an
-`options` object. HLR JSON/SVG jobs use HLR projection options; GLB jobs use
+Batch requests accept an optional top-level `options` object. Batch jobs accept
+`operation`, `step_path`, `output_path`, and an optional job-level `options`
+object. Geometer parses top-level options first, then parses job-level options
+on top, so callers can put shared settings such as `curve_mode`,
+`samples_per_curve`, `round_digits`, `mesh_linear_deflection`, or
+`mesh_angular_deflection` at the request level and only override the fields
+that differ per job. HLR JSON/SVG jobs use HLR projection options; GLB jobs use
 STEP-to-GLB options. The response includes Geometer version, ABI, top-level
 `ok`, and per-job `id`, `operation`, `ok`, `code`, `elapsed_ms`, and optional
 `output_path` or `message`.

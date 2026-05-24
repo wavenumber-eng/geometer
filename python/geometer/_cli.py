@@ -4,12 +4,13 @@ import json
 import re
 import subprocess
 import tempfile
+from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
 from ._errors import GeometerError
 from ._paths import executable_path
-from ._types import StepInput, Version, read_step_input
+from ._types import HlrOptions, StepInput, Version, read_step_input
 
 
 _VERSION_RE = re.compile(r"^geometer\s+(\d+)\.(\d+)\.(\d+)\s+\(abi\s+(\d+)\)\s*$")
@@ -76,6 +77,20 @@ def step_to_glb(step: StepInput, options_json: bytes | None) -> bytes:
         return output_path.read_bytes()
 
 
+def run_batch(
+    jobs: Sequence[Mapping[str, Any]],
+    *,
+    options: HlrOptions | Mapping[str, Any] | None = None,
+    work_dir: str | Path | None = None,
+) -> dict[str, Any]:
+    if work_dir is None:
+        with tempfile.TemporaryDirectory(prefix="geometer-batch-") as directory_text:
+            return _run_batch_in_directory(Path(directory_text), jobs, options=options)
+    directory = Path(work_dir)
+    directory.mkdir(parents=True, exist_ok=True)
+    return _run_batch_in_directory(directory, jobs, options=options)
+
+
 def _run_single_job(directory: Path, job: dict[str, Any]) -> dict[str, Any]:
     request_path = directory / "request.json"
     response_path = directory / "response.json"
@@ -99,6 +114,45 @@ def _run_single_job(directory: Path, job: dict[str, Any]) -> dict[str, Any]:
     if not response_job.get("ok"):
         raise _error_from_response(response, response_job, completed)
     return response_job
+
+
+def _run_batch_in_directory(
+    directory: Path,
+    jobs: Sequence[Mapping[str, Any]],
+    *,
+    options: HlrOptions | Mapping[str, Any] | None,
+) -> dict[str, Any]:
+    request_path = directory / "request.json"
+    response_path = directory / "response.json"
+    request: dict[str, Any] = {
+        "schema": "geometer.batch.request.a0",
+        "jobs": [dict(job) for job in jobs],
+    }
+    options_value = _options_object(options)
+    if options_value is not None:
+        request["options"] = options_value
+    request_path.write_text(json.dumps(request, separators=(",", ":")), encoding="utf-8")
+
+    completed = subprocess.run(
+        [str(executable_path()), "run", str(request_path), str(response_path)],
+        capture_output=True,
+        check=False,
+        encoding="utf-8",
+    )
+    response = _read_response(response_path, completed)
+    jobs_value = response.get("jobs")
+    if completed.returncode != 0 or not response.get("ok") or not isinstance(jobs_value, list):
+        response_job = jobs_value[0] if isinstance(jobs_value, list) and jobs_value else None
+        response_job = response_job if isinstance(response_job, dict) else None
+        raise _error_from_response(response, response_job, completed)
+    for response_job in jobs_value:
+        if not isinstance(response_job, dict) or not response_job.get("ok"):
+            raise _error_from_response(
+                response,
+                response_job if isinstance(response_job, dict) else None,
+                completed,
+            )
+    return response
 
 
 def _read_response(response_path: Path, completed: subprocess.CompletedProcess[str]) -> dict[str, Any]:
@@ -155,3 +209,13 @@ def _decode_options(options_json: bytes | None) -> dict[str, Any]:
     if not isinstance(value, dict):
         raise TypeError("Geometer CLI options must encode a JSON object")
     return value
+
+
+def _options_object(options: HlrOptions | Mapping[str, Any] | None) -> dict[str, Any] | None:
+    if options is None:
+        return None
+    if isinstance(options, HlrOptions):
+        return options.to_json_value()
+    if isinstance(options, Mapping):
+        return dict(options)
+    raise TypeError("batch options must be HlrOptions, a mapping, or None")

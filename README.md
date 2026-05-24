@@ -68,6 +68,9 @@ geometer init-request request.json --step input.step --operation step_hlr_projec
 geometer run request.json response.json
 ```
 
+Batch request JSON accepts a top-level `options` object for settings shared by
+all jobs. A job-level `options` object overrides those defaults for that job.
+
 WASM (via Node.js):
 
 ```bash
@@ -85,16 +88,43 @@ python -m pytest tests/python
 from pathlib import Path
 import geometer
 
+version = geometer.version()
 projection = geometer.project_step_hlr(
     Path("part.step"),
     views=[geometer.ProjectionView.top()],
 )
 glb_bytes = geometer.step_to_glb(Path("part.step"))
+
+response = geometer.run_batch(
+    [
+        {
+            "id": "part-top",
+            "operation": "step_hlr_projection_json",
+            "step_path": "part.step",
+            "output_path": "part.top.projection.json",
+        }
+    ],
+    options={"curve_mode": "polyline"},
+)
+
+runner = geometer.GeometerBatchRunner(max_workers=8, chunk_size=5)
+runner_version = runner.version()
+response = runner.run(
+    [
+        {
+            "id": "part-top",
+            "operation": "step_hlr_projection_json",
+            "step_path": "part.step",
+            "output_path": "part.top.projection.json",
+        }
+    ],
+    options={"curve_mode": "polyline"},
+)
 ```
 
 Python uses `dist/geometer.exe` / `dist/geometer` by default through the CLI
-JSON batch mode. Set `GEOMETER_EXE` to override the executable path, or set
-`GEOMETER_BACKEND=ctypes` for the optional in-process C ABI backend.
+JSON batch mode. Set `GEOMETER_EXE` to override the executable path. The Python
+package intentionally uses the executable backend only for now.
 
 Build a local Python wheel after building the native CLI:
 

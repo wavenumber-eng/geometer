@@ -185,9 +185,9 @@ cmake --build build --config Release
 `--clean` removes OCCT state under `.deps/`; it does not remove vendored
 RapidJSON or the Geometer `build/` directory.
 
-The optional in-process C ABI backend is for development experiments only. If
-you intentionally use `GEOMETER_BACKEND=ctypes`, point `GEOMETER_NATIVE_LIBRARY`
-at a library you built outside the normal executable-backed wheel path.
+The public Python package uses the executable backend only. Keep ctypes/native
+loading experiments out of the normal wheel and application path unless a future
+ADR explicitly reopens that backend.
 
 ## WASM Build
 

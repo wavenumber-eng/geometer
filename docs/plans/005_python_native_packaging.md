@@ -466,6 +466,9 @@ Deliverables:
 - TestPyPI publishing workflow.
 - PyPI publishing workflow gated by tags.
 - PyPI Trusted Publishing through GitHub Actions OIDC.
+- Public PyPI package named `geometer` published for the dated release so
+  downstream tools can depend on `geometer==YYYY.M.D` without a local path
+  override.
 - Release checklist that builds native wheels, runs smoke tests, builds WASM,
   and verifies version/ABI consistency.
 
@@ -484,6 +487,9 @@ After the first dated Geometer release lands, patch internal consumers to use
 the released package/artifacts instead of local experiments:
 
 - `toolz/viz` and Altium Cruncher projection paths;
+- `wn-altium-cruncher`/`wn-viz-core` `pyproject.toml` dependencies should use
+  the PyPI package, for example `geometer==2026.5.23`, instead of the temporary
+  workspace-local `../../geometer` source override;
 - KiCad Monkey plugin/tooling experiments that need HLR;
 - board visualization scripts that currently depend on Python OCCT/OCP for
   projection.
@@ -568,8 +574,8 @@ project version and C ABI version.
    dependency-artifact repo?
 2. Should the optional shared-library backend stay in release builds, or remain
    development-only until there is a concrete in-process consumer?
-3. Should the first PyPI package publish as public `geometer`, private/internal
-   package, or a scoped/company-specific name?
+3. Resolved for this plan: publish the first package as public `geometer` on
+   PyPI after TestPyPI validation.
 4. Which Python versions are required for `kicad_monkey` and other downstream
    tools?
 5. Should `dist/` continue to contain native binaries once Python wheels become
@@ -597,5 +603,7 @@ project version and C ABI version.
 - [ ] Validate Linux wheel under WSL.
 - [ ] Draft GitHub Actions `cibuildwheel` workflow.
 - [ ] Draft TestPyPI trusted-publishing workflow.
+- [ ] Publish the dated release as public `geometer` on PyPI after TestPyPI
+      validation.
 - [ ] Draft internal downstream migration checklist for `toolz/viz`,
       Altium Cruncher, and KiCad Monkey.

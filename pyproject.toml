@@ -9,6 +9,11 @@ description = "Python bindings for Geometer CAD geometry operations"
 requires-python = ">=3.10"
 readme = "README.md"
 
+[project.urls]
+Homepage = "https://github.com/wavenumber-eng/geometer"
+Repository = "https://github.com/wavenumber-eng/geometer"
+Issues = "https://github.com/wavenumber-eng/geometer/issues"
+
 [tool.setuptools]
 package-dir = {"" = "python"}
 

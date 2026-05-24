@@ -1,118 +1,55 @@
 # Geometer
 
-Focused C++ geometry library and CLI built on OCCT. Provides a small, controllable interface for operations like STEP-to-GLB conversion, HLR projection, planar boolean/offset solving, and polygon extrusion/meshing.
+Focused C++ geometry library, CLI, Python package, and WASM interface built on
+OCCT. Geometer provides generic CAD/kernel operations for STEP-to-GLB
+conversion, STEP HLR projection, planar contouring, and packed planar boolean
+work.
 
-## Interfaces
+## Documentation
 
-Current C++, C ABI, Python, WASM, and CLI interfaces are documented in
-[INTERFACES.md](INTERFACES.md).
+- [Developer guide](docs/developer/README.md)
+- [Design and interface docs](docs/design/README.md)
+- [Requirements](docs/requirements/README.md)
+- [ADRs](docs/adr/README.md)
+- [Examples](examples/README.md)
 
-## Build
+## Build And Validate
 
 ```bash
 cmake --preset default
 cmake --build build --config Release
+python scripts/validate_native.py
+python scripts/validate_python_package.py
 ```
 
-On first configure, CMake automatically builds OCCT from source (~10-15 min one-time cost). Subsequent configures are instant.
+Native artifacts are copied to `dist/native/<platform>/`. Root-level
+`dist/geometer*` artifacts are intentionally not produced.
 
-On Linux, WSL2, or macOS, this helper runs the native build, CLI smoke, Python
-wrapper smoke, and CTest:
-
-```bash
-bash scripts/native_posix_smoke.sh
-```
-
-To manually rebuild OCCT (e.g., after version bump or to clean):
-
-```bash
-python scripts/build_occt.py --clean
-python scripts/build_occt.py
-```
-
-The Python package is executable-backed: bundle a platform
-`geometer` CLI and have Python call it through a subprocess. That keeps the CLI
-useful on its own and avoids native library loading issues in Python. The CLI
-now has a JSON batch command so repeated STEP operations can run in one process.
-
-## WASM Build
+Build WASM artifacts:
 
 ```bash
 python scripts/build_wasm.py
 ```
 
-This installs emsdk, cross-compiles OCCT, and builds geometer for WASM. First
-run takes ~20-30 min. Outputs land in `dist/wasm/` with flat compatibility
-copies at the root of `dist/`.
+WASM artifacts are copied to:
 
-The WASM build produces three targets:
+- `dist/wasm/browser/`
+- `dist/wasm/node-test/`
+- `dist/wasm/planar-browser/`
 
-- `dist/wasm/browser/geometer.js` + `dist/wasm/browser/geometer.wasm` -
-  official browser/Web Worker
-  integration target. This is the full OCCT-backed build exporting
-  `createGeometerModule` and the flat C ABI, including STEP bytes to GLB bytes,
-  HLR projection, and planar byte APIs.
-- `dist/wasm/node-test/geometer-node-test.js` +
-  `dist/wasm/node-test/geometer-node-test.wasm` - Node CLI parity/test target
-  with filesystem access. Use this for tests and diagnostics, not browser
-  integration.
-- `dist/wasm/planar-browser/geometer-planar-browser.js` +
-  `dist/wasm/planar-browser/geometer-planar-browser.wasm` -
-  smaller optional browser/Web Worker target exporting `createGeometerPlanarModule`
-  and the planar byte APIs only. It exists so planar-only consumers can avoid
-  paying the full OCCT/STEP WASM size, startup, and worker-memory cost.
+## Python Package
 
-Native builds copy platform-specific artifacts under
-`dist/native/<platform>/`, using names such as `windows-x64`, `linux-x64`,
-`macos-x64`, and `macos-arm64`. Flat files at the root of `dist/` are retained
-as compatibility aliases during the transition to the grouped layout.
+PyPI distribution: `wn-geometer`
 
-`dist/` is the committed distribution directory. `.deps/`, `build/`,
-`build-native/`, and `build-wasm/` are local generated state and are not
-committed.
+Import package: `geometer`
 
-## Usage
-
-Python distribution name: `wn-geometer`.
-
-Python import package name: `geometer`.
-
-Install the released Windows x64 wheel from PyPI:
+Install the current release:
 
 ```bash
-python -m pip install wn-geometer==2026.5.23
+python -m pip install wn-geometer==2026.5.24
 ```
 
-Linux and macOS wheels are planned after the Windows release path is stable.
-
-Native:
-
-```bash
-geometer --version
-geometer step-to-glb input.step output.glb
-geometer step-to-glb input.step output.glb --deflection 0.05 --angular 0.3
-geometer step-project-hlr input.step output.json
-geometer step-project-svg input.step output.svg --mode simple --view top
-geometer step-project-svg input.step output.svg --mode detail --curve-mode native-arcs
-geometer init-request request.json --step input.step --operation step_hlr_projection_json --output output.json
-geometer run request.json response.json
-```
-
-Batch request JSON accepts a top-level `options` object for settings shared by
-all jobs. A job-level `options` object overrides those defaults for that job.
-
-WASM (via Node.js):
-
-```bash
-node dist/wasm/node-test/geometer-node-test.js step-to-glb input.step output.glb
-```
-
-Python from a source checkout:
-
-```bash
-cmake --build build --target geometer --config Release
-python -m pytest tests/python
-```
+Basic Python use:
 
 ```python
 from pathlib import Path
@@ -124,86 +61,51 @@ projection = geometer.project_step_hlr(
     views=[geometer.ProjectionView.top()],
 )
 glb_bytes = geometer.step_to_glb(Path("part.step"))
-
-response = geometer.run_batch(
-    [
-        {
-            "id": "part-top",
-            "operation": "step_hlr_projection_json",
-            "step_path": "part.step",
-            "output_path": "part.top.projection.json",
-        }
-    ],
-    options={"curve_mode": "polyline"},
-)
-
-runner = geometer.GeometerBatchRunner(max_workers=8, chunk_size=5)
-runner_version = runner.version()
-response = runner.run(
-    [
-        {
-            "id": "part-top",
-            "operation": "step_hlr_projection_json",
-            "step_path": "part.step",
-            "output_path": "part.top.projection.json",
-        }
-    ],
-    options={"curve_mode": "polyline"},
-)
 ```
 
-Python uses the bundled wheel executable or source-checkout
-`dist/native/<platform>/geometer(.exe)` by default through the CLI JSON batch
-mode. The legacy flat `dist/geometer.exe` / `dist/geometer` path is still
-accepted. Set `GEOMETER_EXE` to override the executable path. The Python package
-intentionally uses the executable backend only for now.
+The package is executable-backed. Wheels bundle the platform executable under
+`geometer/native/<platform>/` and call it through the JSON batch CLI.
 
-Build a local Python wheel after building the native CLI. Keep Python package
-artifacts under `out/wheelhouse`; repo `dist/` is reserved for Geometer runtime
-artifacts:
+## CLI
 
 ```bash
-python -m build --wheel --outdir out/wheelhouse
-python -m twine check out/wheelhouse/*.whl
+geometer --version
+geometer step-to-glb input.step output.glb
+geometer step-project-hlr input.step output.json
+geometer step-project-svg input.step output.svg --mode simple --view top
+geometer init-request request.json --step input.step --operation step_hlr_projection_json --output output.json
+geometer run request.json response.json
 ```
 
-Embedded model browser viewer:
+## Examples
+
+- `examples/python/step_hlr_svg.py` - no-GUI package example that writes HLR
+  projection JSON, SVG, and GLB outputs.
+- `examples/python/pyvista_hlr_viewer.py` - PyVista/Qt STEP 3D + HLR preview.
+- `examples/wasm/embedded_model_viewer.html` - browser viewer using prepared GLB
+  fixtures and the WASM HLR worker.
+- `examples/cpp/` - native Dear ImGui + SDL3 + OpenGL HLR preview.
+
+Serve browser examples from the repo root:
 
 ```bash
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts/prepare_embedded_model_fixtures.ps1
 python -m http.server 8123 --bind 127.0.0.1
 ```
 
-Open `http://127.0.0.1:8123/tests/wasm/embedded_model_viewer.html`.
+Open `http://127.0.0.1:8123/examples/wasm/embedded_model_viewer.html`.
 
-HLR benchmark page:
+## Release
 
-`http://127.0.0.1:8123/tests/wasm/hlr_benchmark.html`
+Geometer uses date-based releases per ADR 006:
 
-Examples:
+- Git tag: `vYYYY-MM-DD`
+- PyPI/CMake version: `YYYY.M.D`
+- C ABI generation: `YYYYMMDD`
 
-- `examples/python/pyvista_hlr_viewer.py` - PyVista/Qt STEP 3D + HLR preview.
-- `examples/python/hlr_viewer.py` - Dear PyGui STEP HLR fallback viewer.
-- `examples/cpp/` - native Dear ImGui + SDL3 + OpenGL HLR preview.
-- `examples/wasm/` - browser/WASM example home, with current test-backed pages
-  still under `tests/wasm/`.
+Before tagging, run the L99 release gate plus native and package validation:
 
-## Dependencies
-
-- [OpenCASCADE Technology](https://dev.opencascade.org/) (V7_8_1) - built from source automatically.
-- [RapidJSON](https://github.com/Tencent/rapidjson) (v1.1.0, header-only) - vendored in `third_party/rapidjson` for OCCT glTF export.
-- [Clipper2](https://github.com/AngusJohnson/Clipper2) (2.0.1) - vendored in `third_party/clipper2` for planar polygon boolean and offset operations.
-- Python 3 - needed by `scripts/build_occt.py` (invoked by CMake on first configure).
-
-## Project structure
-
-- `src/cpp/lib/` - libgeometer, the reusable C++ core.
-- `src/cpp/cli/` - geometer CLI executable.
-- `python/geometer/` - Python package using the native CLI by default.
-- `examples/` - user-facing Python and browser/WASM examples.
-- `third_party/` - small vendored source dependencies used by the build.
-- `tests/` - rack-based stratified test system.
-- `docs/adr/` - architecture decision records.
-- `docs/requirements/` - requirements.
-- `docs/plans/` - work plans.
-- `scripts/` - build and tooling scripts (uv-managed Python).
+```bash
+python -m pytest tests/L99_release -q
+python scripts/validate_native.py
+python scripts/validate_python_package.py
+```

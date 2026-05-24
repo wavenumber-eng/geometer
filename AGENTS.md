@@ -6,11 +6,11 @@ hidden-line projection, planar contouring, browser WASM workflows, and future
 Python tooling.
 
 For build setup, dependency policy, tests, and troubleshooting, read
-[DEVELOPMENT.md](DEVELOPMENT.md). Treat that file as the canonical developer
-build guide.
+[docs/developer/README.md](docs/developer/README.md). Treat that file as the
+canonical developer build guide.
 
-For the current C++, C ABI, WASM, and CLI surface, read
-[INTERFACES.md](INTERFACES.md).
+For the current C++, C ABI, Python, WASM, CLI, JSON, and binary format surface,
+start at [docs/design/README.md](docs/design/README.md).
 
 ## Working Rules
 
@@ -23,14 +23,19 @@ For the current C++, C ABI, WASM, and CLI surface, read
   uses the executable-backed CLI path.
 - `.deps/` is generated local dependency state and must not be committed.
 - `dist/` contains distributable outputs by current project policy. Prefer
-  grouped paths (`dist/native/<platform>/`, `dist/wasm/<target>/`) for new
-  consumers; flat root-level files are compatibility aliases.
+  grouped paths (`dist/native/<platform>/`, `dist/wasm/<target>/`) for all
+  consumers. Do not recreate root-level `dist/geometer*` artifacts.
+- Plans are temporary working notes only. Do not persist completed plans in the
+  repo; once work ships, the docs of record are updated code, ADRs,
+  requirements, and design docs.
 - Versioned releases use ADR 006 date versions: release tags use
   `vYYYY-MM-DD`, CMake/PyPI use `YYYY.M.D`, and the C ABI generation uses
   `YYYYMMDD`.
 - Use CMake for proper native builds and CTest for registered tests.
 - The default native preset uses Ninja.
 - Format touched C++ files with `clang-format`.
+- Run Ruff, clang-format checks, native validation, package validation, and the
+  L99 release gate before tagging a release.
 
 ## Build Shortcuts
 
@@ -57,3 +62,7 @@ Manual OCCT rebuild:
 python scripts\build_occt.py --clean
 python scripts\build_occt.py
 ```
+
+`build_occt.py` cleans/builds the current native platform under
+`.deps/native/<platform>/` by default. Use `--clean-source` only when refreshing
+the shared OCCT source checkout too.

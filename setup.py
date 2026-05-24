@@ -6,8 +6,13 @@ import sys
 from pathlib import Path
 
 from setuptools import setup
-from setuptools.command.bdist_wheel import bdist_wheel as _bdist_wheel
 from setuptools.command.build_py import build_py as _build_py
+from setuptools.dist import Distribution
+
+try:
+    from setuptools.command.bdist_wheel import bdist_wheel as _bdist_wheel
+except ImportError:
+    from wheel.bdist_wheel import bdist_wheel as _bdist_wheel
 
 
 ROOT = Path(__file__).resolve().parent
@@ -40,14 +45,19 @@ class bdist_wheel(_bdist_wheel):
         return "py3", "none", platform_tag
 
 
+class BinaryDistribution(Distribution):
+    def has_ext_modules(self) -> bool:
+        return True
+
+
 def _source_executable() -> Path:
     name = "geometer.exe" if sys.platform == "win32" else "geometer"
-    for path in (ROOT / "dist" / "native" / _platform_tag() / name, ROOT / "dist" / name):
-        if path.exists():
-            return path
+    path = ROOT / "dist" / "native" / _platform_tag() / name
+    if path.exists():
+        return path
     raise FileNotFoundError(
         "Missing geometer executable. Build the native CLI before building the "
-        f"Python wheel. Looked under dist/native/{_platform_tag()}/ and dist/."
+        f"Python wheel. Looked under dist/native/{_platform_tag()}/."
     )
 
 
@@ -73,4 +83,4 @@ def _platform_tag() -> str:
     return f"{os_name}-{arch}"
 
 
-setup(cmdclass={"build_py": build_py, "bdist_wheel": bdist_wheel})
+setup(cmdclass={"build_py": build_py, "bdist_wheel": bdist_wheel}, distclass=BinaryDistribution)

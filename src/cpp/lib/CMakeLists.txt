@@ -20,7 +20,7 @@ add_library(geometer_lib STATIC ${GEOMETER_LIB_SOURCES})
 set_target_properties(geometer_lib PROPERTIES OUTPUT_NAME geometer)
 
 if(NOT DEFINED GEOMETER_ABI_VERSION)
-    set(GEOMETER_ABI_VERSION "20260523" CACHE STRING "Geometer C ABI generation date")
+    set(GEOMETER_ABI_VERSION "20260524" CACHE STRING "Geometer C ABI generation date")
 endif()
 configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/geometer/version_config.h.in"
@@ -58,6 +58,11 @@ set(GEOMETER_OCCT_LIBS
     TKernel
 )
 
+set(GEOMETER_OCCT_LINK_LIBS ${GEOMETER_OCCT_LIBS})
+if(UNIX AND NOT EMSCRIPTEN AND GEOMETER_OCCT_LIBRARY_TYPE STREQUAL "Static" AND OpenCASCADE_LIBRARIES)
+    set(GEOMETER_OCCT_LINK_LIBS ${OpenCASCADE_LIBRARIES})
+endif()
+
 if(UNIX AND NOT EMSCRIPTEN)
     find_package(Threads REQUIRED)
 endif()
@@ -70,7 +75,12 @@ function(configure_geometer_native_target target_name)
         ${CMAKE_SOURCE_DIR}/third_party/clipper2/include
     )
 
-    target_link_libraries(${target_name} PUBLIC ${GEOMETER_OCCT_LIBS})
+    if(UNIX AND NOT APPLE AND NOT EMSCRIPTEN AND GEOMETER_OCCT_LIBRARY_TYPE STREQUAL "Static")
+        string(REPLACE ";" "," _geometer_occt_link_group "${GEOMETER_OCCT_LINK_LIBS}")
+        target_link_libraries(${target_name} PUBLIC "$<LINK_GROUP:RESCAN,${_geometer_occt_link_group}>")
+    else()
+        target_link_libraries(${target_name} PUBLIC ${GEOMETER_OCCT_LINK_LIBS})
+    endif()
 
     if(UNIX AND NOT EMSCRIPTEN)
         target_link_libraries(${target_name} PUBLIC Threads::Threads ${CMAKE_DL_LIBS})
@@ -119,20 +129,13 @@ if(EMSCRIPTEN)
 
     add_custom_command(TARGET geometer_browser POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E make_directory "${GEOMETER_WASM_BROWSER_DIST_DIR}"
-        COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_SOURCE_DIR}/dist"
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
             "$<TARGET_FILE:geometer_browser>"
             "${GEOMETER_WASM_BROWSER_DIST_DIR}/"
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
             "$<TARGET_FILE_DIR:geometer_browser>/geometer.wasm"
             "${GEOMETER_WASM_BROWSER_DIST_DIR}/"
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            "$<TARGET_FILE:geometer_browser>"
-            "${CMAKE_SOURCE_DIR}/dist/"
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            "$<TARGET_FILE_DIR:geometer_browser>/geometer.wasm"
-            "${CMAKE_SOURCE_DIR}/dist/"
-        COMMENT "Copying browser WASM outputs to dist/"
+        COMMENT "Copying browser WASM outputs to dist/wasm/browser/"
     )
 
     add_executable(geometer_planar_browser
@@ -171,41 +174,26 @@ if(EMSCRIPTEN)
 
     add_custom_command(TARGET geometer_planar_browser POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E make_directory "${GEOMETER_WASM_PLANAR_BROWSER_DIST_DIR}"
-        COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_SOURCE_DIR}/dist"
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
             "$<TARGET_FILE:geometer_planar_browser>"
             "${GEOMETER_WASM_PLANAR_BROWSER_DIST_DIR}/"
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
             "$<TARGET_FILE_DIR:geometer_planar_browser>/geometer-planar-browser.wasm"
             "${GEOMETER_WASM_PLANAR_BROWSER_DIST_DIR}/"
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            "$<TARGET_FILE:geometer_planar_browser>"
-            "${CMAKE_SOURCE_DIR}/dist/"
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            "$<TARGET_FILE_DIR:geometer_planar_browser>/geometer-planar-browser.wasm"
-            "${CMAKE_SOURCE_DIR}/dist/"
-        COMMENT "Copying planar browser WASM outputs to dist/"
+        COMMENT "Copying planar browser WASM outputs to dist/wasm/planar-browser/"
     )
 endif()
 
 if(NOT EMSCRIPTEN)
-    # Copy native static library to the platform-aware native dist folder. Flat
-    # dist/ copies are retained as compatibility aliases during the transition.
+    # Copy native static library to the platform-aware native dist folder.
     add_custom_command(TARGET geometer_lib POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E make_directory "${GEOMETER_NATIVE_DIST_DIR}"
-        COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_SOURCE_DIR}/dist"
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
             "$<TARGET_FILE:geometer_lib>"
             "${GEOMETER_NATIVE_DIST_DIR}/"
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
             "$<TARGET_FILE:geometer_lib>"
             "${GEOMETER_NATIVE_DIST_DIR}/libgeometer.a"
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            "$<TARGET_FILE:geometer_lib>"
-            "${CMAKE_SOURCE_DIR}/dist/"
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            "$<TARGET_FILE:geometer_lib>"
-            "${CMAKE_SOURCE_DIR}/dist/libgeometer.a"
-        COMMENT "Copying geometer_lib to dist/"
+        COMMENT "Copying geometer_lib to dist/native/${GEOMETER_NATIVE_DIST_PLATFORM}/"
     )
 endif()

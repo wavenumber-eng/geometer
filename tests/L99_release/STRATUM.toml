@@ -1,0 +1,20 @@
+name = "Release Signoff"
+order = 99
+description = "Final release gate: Ruff, clang-format, code hygiene, and stale artifact checks. Required before tagging."
+enabled = true
+runner = "pytest"
+concerns = ["release", "lint", "format", "hygiene"]
+
+objectives = [
+    "Require Python lint to pass through Ruff.",
+    "Require touched C++ style to remain clang-format compatible.",
+    "Prevent stale root dist artifacts and completed working plans from returning.",
+    "Keep file length and Python complexity within the release hygiene floor.",
+]
+
+[[subtests]]
+id = "L99_001"
+file = "test_release_signoff.py"
+name = "Release Signoff"
+description = "Runs Ruff, clang-format dry-run, and scripts/check_code_hygiene.py."
+test_case_type = "release-gate"

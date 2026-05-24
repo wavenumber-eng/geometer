@@ -14,8 +14,8 @@ Canonical artifacts are grouped by runtime target:
 `wasm/planar-browser/geometer-planar-browser.js` / `geometer-planar-browser.wasm` is retained as
 a smaller planar-only optimization. The full target also exports the planar
 byte APIs, so consumers can choose simplicity or lower startup/memory cost.
-Flat files at the root of `dist/` are compatibility aliases for existing
-tools and may be removed after downstream consumers migrate.
+Root-level build artifacts are intentionally not produced. Use the grouped
+`native/<platform>/` and `wasm/<target>/` paths.
 
 | Artifact | Role | Notes |
 |---|---|---|
@@ -24,6 +24,5 @@ tools and may be removed after downstream consumers migrate.
 | `wasm/browser/geometer.js`, `wasm/browser/geometer.wasm` | Full browser/Web Worker integration WASM | Official application integration build. Exports `createGeometerModule` and the full C ABI, including OCCT-backed STEP-to-GLB, HLR, and planar byte APIs. |
 | `wasm/node-test/geometer-node-test.js`, `wasm/node-test/geometer-node-test.wasm` | Node CLI parity/test WASM | Node-only command-line build with real filesystem access. Use for tests and diagnostics, not browser integration. |
 | `wasm/planar-browser/geometer-planar-browser.js`, `wasm/planar-browser/geometer-planar-browser.wasm` | Planar-only browser/Web Worker optimization | Smaller optional build exporting `createGeometerPlanarModule` and planar byte APIs only. Use when STEP/OCCT operations are not needed and startup, download size, or worker memory matter. |
-| `geometer.exe`, `geometer.js`, etc. at dist root | Compatibility aliases | Flat copies are retained for existing source checkouts while consumers migrate to the grouped layout. |
 
 Generated build state is not persisted here. Keep `.deps/`, `build/`, and `build-wasm/` out of Git.

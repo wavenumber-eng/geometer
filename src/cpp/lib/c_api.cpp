@@ -166,8 +166,8 @@ GeometerByteResult geometer_planar_batch_solve(GeometerBuffer request_data)
     result.value = nullptr;
     result.size = 0;
     result.error = nullptr;
-    result.code = geometer_planar_batch_solve_bytes(
-        request_data.data, request_data.size, &result.value, &result.size, &result.error);
+    result.code = geometer_planar_batch_solve_bytes(request_data.data, request_data.size,
+                                                    &result.value, &result.size, &result.error);
     return result;
 }
 
@@ -204,8 +204,8 @@ GeometerByteResult geometer_planar_triangulate(GeometerBuffer request_data)
     result.value = nullptr;
     result.size = 0;
     result.error = nullptr;
-    result.code = geometer_planar_triangulate_bytes(
-        request_data.data, request_data.size, &result.value, &result.size, &result.error);
+    result.code = geometer_planar_triangulate_bytes(request_data.data, request_data.size,
+                                                    &result.value, &result.size, &result.error);
     return result;
 }
 
@@ -242,8 +242,8 @@ GeometerByteResult geometer_clipper2_boolean(GeometerBuffer request_data)
     result.value = nullptr;
     result.size = 0;
     result.error = nullptr;
-    result.code = geometer_clipper2_boolean_bytes(
-        request_data.data, request_data.size, &result.value, &result.size, &result.error);
+    result.code = geometer_clipper2_boolean_bytes(request_data.data, request_data.size,
+                                                  &result.value, &result.size, &result.error);
     return result;
 }
 
@@ -280,8 +280,8 @@ GeometerByteResult geometer_clipper2_inflate_open(GeometerBuffer request_data)
     result.value = nullptr;
     result.size = 0;
     result.error = nullptr;
-    result.code = geometer_clipper2_inflate_open_bytes(
-        request_data.data, request_data.size, &result.value, &result.size, &result.error);
+    result.code = geometer_clipper2_inflate_open_bytes(request_data.data, request_data.size,
+                                                       &result.value, &result.size, &result.error);
     return result;
 }
 
@@ -299,8 +299,8 @@ int geometer_clipper2_inflate_open_bytes(const unsigned char* request_data,
 
     geometer::Status status;
     std::vector<unsigned char> response;
-    const int code = geometer::clipper2_inflate_open_from_bytes(request_data, request_size,
-                                                                &response, &status);
+    const int code =
+        geometer::clipper2_inflate_open_from_bytes(request_data, request_size, &response, &status);
     if (code != 0)
     {
         return assign_error(code, status.message, error);

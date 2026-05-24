@@ -234,8 +234,8 @@ static int parse_hlr_options_layer(const rapidjson::Value* options_value,
 
     geometer::Status status;
     const std::string options_json = options_json_for_value(options_value);
-    const int code = geometer::parse_hlr_projection_options_json(options_json.c_str(), options,
-                                                                 &status);
+    const int code =
+        geometer::parse_hlr_projection_options_json(options_json.c_str(), options, &status);
     if (code != 0)
     {
         *error_message = status.message;
@@ -244,8 +244,7 @@ static int parse_hlr_options_layer(const rapidjson::Value* options_value,
 }
 
 static int parse_glb_options_layer(const rapidjson::Value* options_value,
-                                   geometer::StepToGlbOptions* options,
-                                   std::string* error_message)
+                                   geometer::StepToGlbOptions* options, std::string* error_message)
 {
     if (options_value == nullptr || options_value->IsNull())
     {
@@ -254,8 +253,8 @@ static int parse_glb_options_layer(const rapidjson::Value* options_value,
 
     geometer::Status status;
     const std::string options_json = options_json_for_value(options_value);
-    const int code = geometer::parse_step_to_glb_options_json(options_json.c_str(), options,
-                                                             &status);
+    const int code =
+        geometer::parse_step_to_glb_options_json(options_json.c_str(), options, &status);
     if (code != 0)
     {
         *error_message = status.message;

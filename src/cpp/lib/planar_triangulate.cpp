@@ -40,7 +40,7 @@ void set_status(Status* status, int code, const std::string& message)
 
 class BinaryReader
 {
-public:
+  public:
     BinaryReader(const unsigned char* data, std::size_t size) : data_(data), size_(size) {}
 
     void require(std::size_t count)
@@ -96,7 +96,7 @@ public:
         }
     }
 
-private:
+  private:
     const unsigned char* data_ = nullptr;
     std::size_t size_ = 0;
     std::size_t offset_ = 0;
@@ -104,7 +104,7 @@ private:
 
 class BinaryWriter
 {
-public:
+  public:
     void bytes(const unsigned char* data, std::size_t size)
     {
         data_.insert(data_.end(), data, data + size);
@@ -123,7 +123,7 @@ public:
         return std::move(data_);
     }
 
-private:
+  private:
     std::vector<unsigned char> data_;
 };
 
@@ -253,7 +253,8 @@ PlanarTriangulateRegionResult triangulate_region(const PlanarTriangulateRegion& 
     std::uint32_t merged_index = 0;
     for (const PlanarTriangulatePoint& point : region.outline)
     {
-        const PointKey key{quantize(point.x, decimal_precision), quantize(point.y, decimal_precision)};
+        const PointKey key{quantize(point.x, decimal_precision),
+                           quantize(point.y, decimal_precision)};
         // Keep the first index seen if duplicates exist.
         index_for_point.emplace(key, merged_index);
         ++merged_index;
@@ -282,7 +283,8 @@ PlanarTriangulateRegionResult triangulate_region(const PlanarTriangulateRegion& 
     }
 
     PathsD triangles;
-    const TriangulateResult tri_status = Triangulate(input_paths, decimal_precision, triangles, true);
+    const TriangulateResult tri_status =
+        Triangulate(input_paths, decimal_precision, triangles, true);
     switch (tri_status)
     {
     case TriangulateResult::success:
@@ -344,8 +346,8 @@ std::vector<unsigned char> encode_response(const PlanarTriangulateResult& result
 
     for (const PlanarTriangulateRegionResult& region : result.regions)
     {
-        const std::uint32_t triangle_count = checked_count(region.indices.size() / 3,
-                                                           "triangle count");
+        const std::uint32_t triangle_count =
+            checked_count(region.indices.size() / 3, "triangle count");
         writer.u32(static_cast<std::uint32_t>(region.status));
         writer.u32(triangle_count);
         for (std::size_t i = 0; i < triangle_count * 3u; ++i)

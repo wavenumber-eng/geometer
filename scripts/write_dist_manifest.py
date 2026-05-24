@@ -36,11 +36,6 @@ ROWS = [
         "Planar-only browser/Web Worker optimization",
         "Smaller optional build exporting `createGeometerPlanarModule` and planar byte APIs only. Use when STEP/OCCT operations are not needed and startup, download size, or worker memory matter.",
     ),
-    (
-        "`geometer.exe`, `geometer.js`, etc. at dist root",
-        "Compatibility aliases",
-        "Flat copies are retained for existing source checkouts while consumers migrate to the grouped layout.",
-    ),
 ]
 
 
@@ -63,8 +58,8 @@ def main() -> None:
         "`wasm/planar-browser/geometer-planar-browser.js` / `geometer-planar-browser.wasm` is retained as",
         "a smaller planar-only optimization. The full target also exports the planar",
         "byte APIs, so consumers can choose simplicity or lower startup/memory cost.",
-        "Flat files at the root of `dist/` are compatibility aliases for existing",
-        "tools and may be removed after downstream consumers migrate.",
+        "Root-level build artifacts are intentionally not produced. Use the grouped",
+        "`native/<platform>/` and `wasm/<target>/` paths.",
         "",
         "| Artifact | Role | Notes |",
         "|---|---|---|",

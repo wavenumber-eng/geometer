@@ -25,9 +25,9 @@ Options considered:
 ## Decision
 
 OCCT is built as a standalone CMake project via `scripts/build_occt.py`, which
-clones the source, configures, builds, and installs to `.deps/occt-install/`.
-Geometer's CMakeLists.txt uses `find_package(OpenCASCADE)` to locate the
-installed artifacts.
+clones the source, configures, builds, and installs to
+`.deps/native/<platform>/occt-install/`. Geometer's CMakeLists.txt uses
+`find_package(OpenCASCADE)` to locate the installed artifacts.
 
 If OCCT is not found at configure time, CMake automatically invokes
 `build_occt.py`. This makes the first `cmake --preset default`
@@ -64,6 +64,8 @@ The script disables modules and features not needed by Geometer:
 - RapidJSON is local and checked in, avoiding a second generated dependency
   checkout.
 - `.deps/` is gitignored and survives build directory wipes.
+- Native OCCT build/install state is platform-specific, so Windows, Linux/WSL,
+  and macOS builds can coexist in one checkout without overwriting each other.
 - The same approach extends to Emscripten.
 - No extra package manager tools are required.
 

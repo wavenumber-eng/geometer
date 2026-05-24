@@ -1,5 +1,5 @@
 """
-Build OCCT from source into .deps/occt-install/.
+Build OCCT from source into .deps/native/<platform>/occt-install/.
 
 This exists because OCCT's CMakeLists.txt uses CMAKE_SOURCE_DIR internally,
 which prevents it from working as a FetchContent subdirectory. Instead we
@@ -13,23 +13,23 @@ Usage:
     python scripts/build_occt.py --config Debug
     python scripts/build_occt.py --library-type Shared
     python scripts/build_occt.py --clean
+    python scripts/build_occt.py --clean --clean-source
 """
 
 from __future__ import annotations
 
 import argparse
+import platform
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 DEPS_DIR = ROOT / ".deps"
+NATIVE_DEPS_DIR = DEPS_DIR / "native"
 THIRD_PARTY_DIR = ROOT / "third_party"
 OCCT_SRC = DEPS_DIR / "occt-src"
-OCCT_STATIC_BUILD = DEPS_DIR / "occt-build"
-OCCT_STATIC_INSTALL = DEPS_DIR / "occt-install"
-OCCT_SHARED_BUILD = DEPS_DIR / "occt-shared-build"
-OCCT_SHARED_INSTALL = DEPS_DIR / "occt-shared-install"
 RAPIDJSON_SRC = THIRD_PARTY_DIR / "rapidjson"
 RAPIDJSON_INCLUDE = RAPIDJSON_SRC / "include" / "rapidjson"
 RAPIDJSON_PATCH_SENTINEL = (
@@ -44,6 +44,28 @@ def cmake_generator_args() -> list[str]:
     if shutil.which("ninja"):
         return ["-G", "Ninja"]
     return []
+
+
+def platform_tag() -> str:
+    if sys.platform == "win32":
+        os_name = "windows"
+    elif sys.platform == "darwin":
+        os_name = "macos"
+    elif sys.platform.startswith("linux"):
+        os_name = "linux"
+    else:
+        os_name = sys.platform.replace("_", "-").replace(".", "-")
+
+    machine = platform.machine().strip().lower()
+    if machine in {"amd64", "x86_64"}:
+        arch = "x64"
+    elif machine in {"aarch64", "arm64"}:
+        arch = "arm64"
+    elif machine in {"i386", "i686", "x86"}:
+        arch = "x86"
+    else:
+        arch = machine or "unknown"
+    return f"{os_name}-{arch}"
 
 
 def run(cmd: list[str], **kwargs) -> None:
@@ -82,14 +104,15 @@ def clone_occt() -> None:
     ])
 
 
-def occt_paths(library_type: str) -> tuple[Path, Path]:
+def occt_paths(platform_name: str, library_type: str) -> tuple[Path, Path]:
+    platform_dir = NATIVE_DEPS_DIR / platform_name
     if library_type == "Shared":
-        return OCCT_SHARED_BUILD, OCCT_SHARED_INSTALL
-    return OCCT_STATIC_BUILD, OCCT_STATIC_INSTALL
+        return platform_dir / "occt-shared-build", platform_dir / "occt-shared-install"
+    return platform_dir / "occt-build", platform_dir / "occt-install"
 
 
-def configure_occt(config: str, library_type: str) -> None:
-    build_dir, install_dir = occt_paths(library_type)
+def configure_occt(platform_name: str, config: str, library_type: str) -> None:
+    build_dir, install_dir = occt_paths(platform_name, library_type)
     print(f"Configuring OCCT ({config}, {library_type}) ...")
     build_dir.mkdir(parents=True, exist_ok=True)
     cmd = [
@@ -117,8 +140,8 @@ def configure_occt(config: str, library_type: str) -> None:
     run(cmd)
 
 
-def build_occt(config: str, library_type: str) -> None:
-    build_dir, _ = occt_paths(library_type)
+def build_occt(platform_name: str, config: str, library_type: str) -> None:
+    build_dir, _ = occt_paths(platform_name, library_type)
     print(f"Building OCCT ({config}, {library_type}) ...")
     run([
         "cmake", "--build", str(build_dir),
@@ -127,8 +150,8 @@ def build_occt(config: str, library_type: str) -> None:
     ])
 
 
-def install_occt(config: str, library_type: str) -> None:
-    build_dir, install_dir = occt_paths(library_type)
+def install_occt(platform_name: str, config: str, library_type: str) -> None:
+    build_dir, install_dir = occt_paths(platform_name, library_type)
     print(f"Installing OCCT to {install_dir} ...")
     run([
         "cmake", "--install", str(build_dir),
@@ -136,14 +159,11 @@ def install_occt(config: str, library_type: str) -> None:
     ])
 
 
-def clean() -> None:
-    for d in [
-        OCCT_SRC,
-        OCCT_STATIC_BUILD,
-        OCCT_STATIC_INSTALL,
-        OCCT_SHARED_BUILD,
-        OCCT_SHARED_INSTALL,
-    ]:
+def clean(platform_name: str, *, include_source: bool) -> None:
+    targets = [NATIVE_DEPS_DIR / platform_name]
+    if include_source:
+        targets.append(OCCT_SRC)
+    for d in targets:
         if d.exists():
             print(f"Removing {d}")
             shutil.rmtree(d)
@@ -158,19 +178,30 @@ def main() -> None:
         default="Static",
         help="OCCT library type to build (default: Static)",
     )
+    parser.add_argument(
+        "--platform-tag",
+        default=platform_tag(),
+        help="Native dependency platform tag (default: current platform)",
+    )
     parser.add_argument("--clean", action="store_true", help="Remove all OCCT build artifacts")
+    parser.add_argument(
+        "--clean-source",
+        action="store_true",
+        help="Also remove the shared OCCT source checkout when cleaning.",
+    )
     args = parser.parse_args()
 
     if args.clean:
-        clean()
+        clean(args.platform_tag, include_source=args.clean_source)
         return
 
+    print(f"Using native dependency platform {args.platform_tag}")
     verify_vendored_rapidjson()
     clone_occt()
-    configure_occt(args.config, args.library_type)
-    build_occt(args.config, args.library_type)
-    install_occt(args.config, args.library_type)
-    _, install_dir = occt_paths(args.library_type)
+    configure_occt(args.platform_tag, args.config, args.library_type)
+    build_occt(args.platform_tag, args.config, args.library_type)
+    install_occt(args.platform_tag, args.config, args.library_type)
+    _, install_dir = occt_paths(args.platform_tag, args.library_type)
     print(f"\nOCCT installed to {install_dir}")
     if args.library_type == "Shared":
         print("Now run:  cmake --preset shared-occt")

@@ -21,7 +21,7 @@ int step_to_glb(const std::string& step_path, const std::string& glb_path,
 
 /// Convert STEP bytes to GLB bytes. Returns 0 on success.
 int step_to_glb_from_bytes(const unsigned char* step_data, std::size_t step_size,
-                           const StepToGlbOptions& options,
-                           std::vector<unsigned char>* glb_bytes, Status* status = nullptr);
+                           const StepToGlbOptions& options, std::vector<unsigned char>* glb_bytes,
+                           Status* status = nullptr);
 
 } // namespace geometer

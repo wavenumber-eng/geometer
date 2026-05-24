@@ -1,28 +1,22 @@
 # WASM Examples
 
-Standalone browser/WASM examples will live here.
+## Embedded Model Viewer
 
-## Future Embedded Model Viewer
-
-The current browser reference for the high-level Geometer workflow still lives
-under `tests/wasm/embedded_model_viewer.html`. It should be promoted or
-refactored into this folder later, after the Python example has the same basic
-3D-preview-plus-HLR workflow.
-
-That future example should:
+`embedded_model_viewer.html` is the browser reference for the high-level
+Geometer workflow. It:
 
 - load a prepared GLB model into an interactive Three.js 3D pane;
 - run STEP HLR through the browser WASM worker;
 - draw simple/detail projection geometry in the adjacent SVG pane;
 - expose view, algorithm, mesh, and edge-category controls.
 
-For now, run the existing test-backed page from the repository root:
+Run it from the repository root:
 
 ```powershell
 python -m http.server 8123 --bind 127.0.0.1
 ```
 
-`http://127.0.0.1:8123/tests/wasm/embedded_model_viewer.html`
+`http://127.0.0.1:8123/examples/wasm/embedded_model_viewer.html`
 
 Build or refresh the WASM outputs first when needed:
 
@@ -38,4 +32,4 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\prepare_embedded_mod
 ```
 
 Test-only browser pages remain under `tests/wasm/`, including
-`hlr_benchmark.html` and `browser_hlr_smoke.html`.
+`hlr_benchmark.html` and `browser_hlr_validation.html`.

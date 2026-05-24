@@ -437,10 +437,10 @@ PathsD offset_stroke_group(const PlanarSolveStrokeGroup& group,
         return {};
     }
 
-    return Clipper2Lib::InflatePaths(
-        open_paths, radius, to_clipper_join_type(group.join_type),
-        to_clipper_end_type(group.end_type), numeric_or(group.miter_limit, 2.0),
-        options.decimal_precision, std::max(0.0, numeric_or(group.arc_tolerance_mm, 0.0)));
+    return Clipper2Lib::InflatePaths(open_paths, radius, to_clipper_join_type(group.join_type),
+                                     to_clipper_end_type(group.end_type),
+                                     numeric_or(group.miter_limit, 2.0), options.decimal_precision,
+                                     std::max(0.0, numeric_or(group.arc_tolerance_mm, 0.0)));
 }
 
 std::vector<PlanarSolveRegion> execute_boolean(ClipType clip_type, const PathsD& subject_paths,
@@ -493,10 +493,10 @@ std::vector<PlanarSolveRegion> cleanup_regions(const std::vector<PlanarSolveRegi
     return execute_boolean(ClipType::Union, cleanup_subject, {}, options);
 }
 
-std::vector<PlanarSolveRing> common_subtract_rings_for_job(const PlanarSolveJob& job,
-                                                           const std::vector<PlanarSolveRing>& common,
-                                                           const std::vector<PlanarSolveRing>& subject,
-                                                           const PlanarBatchSolveOptions& options)
+std::vector<PlanarSolveRing>
+common_subtract_rings_for_job(const PlanarSolveJob& job, const std::vector<PlanarSolveRing>& common,
+                              const std::vector<PlanarSolveRing>& subject,
+                              const PlanarBatchSolveOptions& options)
 {
     if (!job.subtract_common_rings || common.empty())
     {
@@ -508,8 +508,9 @@ std::vector<PlanarSolveRing> common_subtract_rings_for_job(const PlanarSolveJob&
         return common;
     }
 
-    const double margin = std::max(0.001, std::max(numeric_or(job.common_subtract_filter_margin_mm, 0.0),
-                                                   numeric_or(options.cleanup_radius_mm, 0.0)));
+    const double margin =
+        std::max(0.001, std::max(numeric_or(job.common_subtract_filter_margin_mm, 0.0),
+                                 numeric_or(options.cleanup_radius_mm, 0.0)));
     const Bounds2d subject_bounds = expand_bounds(bounds_for_rings(subject), margin);
     if (!subject_bounds.valid)
     {
@@ -562,9 +563,8 @@ PlanarSolveJobResult solve_job(const PlanarSolveJob& job, const PlanarBatchSolve
 
     std::vector<PlanarSolveRing> subtract_rings = job.subtract_rings;
     const std::vector<PlanarSolveRing> prepared_subject = rings_from_regions(regions);
-    std::vector<PlanarSolveRing> common_rings =
-        common_subtract_rings_for_job(job, input.common_subtract_rings, prepared_subject,
-                                      input.options);
+    std::vector<PlanarSolveRing> common_rings = common_subtract_rings_for_job(
+        job, input.common_subtract_rings, prepared_subject, input.options);
     result.common_subtract_ring_count = diagnostic_count(common_rings.size());
     subtract_rings.reserve(subtract_rings.size() + common_rings.size());
     for (const PlanarSolveRing& ring : common_rings)
@@ -575,9 +575,8 @@ PlanarSolveJobResult solve_job(const PlanarSolveJob& job, const PlanarBatchSolve
     if (!subtract_rings.empty())
     {
         const PathsD difference_subject = to_clipper_paths(rings_from_regions(regions));
-        regions =
-            execute_boolean(ClipType::Difference, difference_subject, to_clipper_paths(subtract_rings),
-                            input.options);
+        regions = execute_boolean(ClipType::Difference, difference_subject,
+                                  to_clipper_paths(subtract_rings), input.options);
         regions = cleanup_regions(regions, input.options);
     }
 
@@ -597,7 +596,7 @@ PlanarSolveJobResult solve_job(const PlanarSolveJob& job, const PlanarBatchSolve
 
 class BinaryReader
 {
-public:
+  public:
     BinaryReader(const unsigned char* data, std::size_t size) : data_(data), size_(size) {}
 
     void require(std::size_t count)
@@ -653,7 +652,7 @@ public:
         }
     }
 
-private:
+  private:
     const unsigned char* data_ = nullptr;
     std::size_t size_ = 0;
     std::size_t offset_ = 0;
@@ -661,7 +660,7 @@ private:
 
 class BinaryWriter
 {
-public:
+  public:
     void bytes(const unsigned char* data, std::size_t size)
     {
         data_.insert(data_.end(), data, data + size);
@@ -691,7 +690,7 @@ public:
         return std::move(data_);
     }
 
-private:
+  private:
     std::vector<unsigned char> data_;
 };
 
@@ -789,8 +788,7 @@ PlanarBatchSolveInput decode_request(const unsigned char* request_data, std::siz
         PlanarSolveJob job;
         const std::uint32_t flags = reader.u32();
         job.subtract_common_rings = (flags & JOB_SUBTRACT_COMMON_RINGS) != 0u;
-        job.filter_common_subtract_by_bounds =
-            (flags & JOB_FILTER_COMMON_SUBTRACT_BY_BOUNDS) != 0u;
+        job.filter_common_subtract_by_bounds = (flags & JOB_FILTER_COMMON_SUBTRACT_BY_BOUNDS) != 0u;
         job.clip_to_final_rings = (flags & JOB_CLIP_TO_FINAL_RINGS) != 0u;
         job.common_subtract_filter_margin_mm = reader.f64();
         const std::uint32_t subject_count = reader.u32();

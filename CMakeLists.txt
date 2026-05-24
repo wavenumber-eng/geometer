@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.24)
 
-set(GEOMETER_RELEASE_DATE "2026-05-23" CACHE STRING "Geometer UTC release date" FORCE)
-set(GEOMETER_RELEASE_VERSION "2026.5.23" CACHE STRING "Geometer package/build version" FORCE)
-set(GEOMETER_ABI_VERSION "20260523" CACHE STRING "Geometer C ABI generation date" FORCE)
+set(GEOMETER_RELEASE_DATE "2026-05-24" CACHE STRING "Geometer UTC release date" FORCE)
+set(GEOMETER_RELEASE_VERSION "2026.5.24" CACHE STRING "Geometer package/build version" FORCE)
+set(GEOMETER_ABI_VERSION "20260524" CACHE STRING "Geometer C ABI generation date" FORCE)
 
 project(geometer VERSION ${GEOMETER_RELEASE_VERSION} LANGUAGES CXX)
 
@@ -55,23 +55,28 @@ set(GEOMETER_WASM_PLANAR_BROWSER_DIST_DIR
 # subsequent configures are instant. The script can also be run manually:
 #
 #   python scripts/build_occt.py          # build
-#   python scripts/build_occt.py --clean  # wipe and rebuild
+#   python scripts/build_occt.py --clean  # wipe and rebuild current platform
 # ---------------------------------------------------------------------------
 set(GEOMETER_OCCT_LIBRARY_TYPE "Static" CACHE STRING "OCCT library type to auto-build when missing")
 set_property(CACHE GEOMETER_OCCT_LIBRARY_TYPE PROPERTY STRINGS Static Shared)
 
+set(_geometer_native_deps_dir "${CMAKE_SOURCE_DIR}/.deps/native/${GEOMETER_NATIVE_DIST_PLATFORM}")
 if(GEOMETER_OCCT_LIBRARY_TYPE STREQUAL "Shared")
-    set(_geometer_default_occt_dir "${CMAKE_SOURCE_DIR}/.deps/occt-shared-install/cmake")
+    set(_geometer_default_occt_install "${_geometer_native_deps_dir}/occt-shared-install")
 else()
-    set(_geometer_default_occt_dir "${CMAKE_SOURCE_DIR}/.deps/occt-install/cmake")
+    set(_geometer_default_occt_install "${_geometer_native_deps_dir}/occt-install")
 endif()
 
-set(_geometer_occt_dir "${OpenCASCADE_DIR}")
-if(NOT _geometer_occt_dir OR _geometer_occt_dir MATCHES "-NOTFOUND$")
-    set(_geometer_occt_dir "${_geometer_default_occt_dir}")
-endif()
+set(_geometer_default_occt_dir "${_geometer_default_occt_install}/lib/cmake/opencascade")
+set(_geometer_legacy_occt_dir "${_geometer_default_occt_install}/cmake")
 
-find_package(OpenCASCADE QUIET NO_DEFAULT_PATH PATHS "${_geometer_occt_dir}")
+set(_geometer_occt_dirs)
+if(OpenCASCADE_DIR AND NOT OpenCASCADE_DIR MATCHES "-NOTFOUND$")
+    list(APPEND _geometer_occt_dirs "${OpenCASCADE_DIR}")
+endif()
+list(APPEND _geometer_occt_dirs "${_geometer_default_occt_dir}" "${_geometer_legacy_occt_dir}")
+
+find_package(OpenCASCADE QUIET NO_DEFAULT_PATH PATHS ${_geometer_occt_dirs})
 
 if(NOT OpenCASCADE_FOUND)
     message(STATUS "OpenCASCADE not found. Building from source via scripts/build_occt.py ...")
@@ -82,6 +87,7 @@ if(NOT OpenCASCADE_FOUND)
     execute_process(
         COMMAND ${Python3_EXECUTABLE} "${CMAKE_SOURCE_DIR}/scripts/build_occt.py"
             --library-type ${GEOMETER_OCCT_LIBRARY_TYPE}
+            --platform-tag ${GEOMETER_NATIVE_DIST_PLATFORM}
         RESULT_VARIABLE _occt_build_result
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     )
@@ -96,7 +102,7 @@ if(NOT OpenCASCADE_FOUND)
 
     set(OpenCASCADE_DIR "${_geometer_default_occt_dir}" CACHE PATH
         "The directory containing a CMake configuration file for OpenCASCADE." FORCE)
-    find_package(OpenCASCADE REQUIRED NO_DEFAULT_PATH PATHS "${OpenCASCADE_DIR}")
+    find_package(OpenCASCADE REQUIRED NO_DEFAULT_PATH PATHS "${OpenCASCADE_DIR}" "${_geometer_legacy_occt_dir}")
 endif()
 
 message(STATUS "OpenCASCADE ${OpenCASCADE_VERSION} found at ${OpenCASCADE_INSTALL_PREFIX}")

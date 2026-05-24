@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>geometer browser HLR validation</title>
+</head>
+<body>
+  <pre id="result">RUNNING</pre>
+  <script src="/dist/wasm/browser/geometer.js"></script>
+  <script>
+    const result = document.getElementById("result");
+
+    function queryParam(name, fallback) {
+      const value = new URLSearchParams(window.location.search).get(name);
+      return value == null || value === "" ? fallback : value;
+    }
+
+    function write(text) {
+      result.textContent = text;
+      document.title = text.startsWith("PASS") ? "PASS" : "FAIL";
+    }
+
+    async function run() {
+      const module = await createGeometerModule({
+        locateFile: (path) => path.endsWith(".wasm") ? `/dist/wasm/browser/${path}` : path,
+      });
+      const version = module.ccall("geometer_version_string", "string", [], []);
+      const abi = module.ccall("geometer_abi_version", "number", [], []);
+      if (version !== "2026.5.24") {
+        throw new Error(`Unexpected geometer version: ${version}`);
+      }
+      if (abi !== 20260524) {
+        throw new Error(`Unexpected geometer ABI version: ${abi}`);
+      }
+
+      const stepUrl = queryParam("step", "/build/hlr_validation_input.step");
+      const response = await fetch(stepUrl);
+      if (!response.ok) {
+        throw new Error(`Failed fetching STEP fixture ${stepUrl}: ${response.status}`);
+      }
+
+      const stepBytes = new Uint8Array(await response.arrayBuffer());
+      const options = JSON.stringify({
+        views: [{ id: "top", direction: [0, 0, 1], up: [0, 1, 0] }],
+        curve_mode: "polyline",
+        samples_per_curve: 24,
+        round_digits: 3,
+        include_visible: true,
+        include_outline: true,
+        union_simple_polygons: true,
+      });
+
+      const stepPtr = module._malloc(stepBytes.length);
+      const optionsBytes = module.lengthBytesUTF8(options) + 1;
+      const optionsPtr = module._malloc(optionsBytes);
+      const valueOut = module._malloc(4);
+      const errorOut = module._malloc(4);
+
+      module.HEAPU8.set(stepBytes, stepPtr);
+      module.stringToUTF8(options, optionsPtr, optionsBytes);
+      module.HEAPU32[valueOut >> 2] = 0;
+      module.HEAPU32[errorOut >> 2] = 0;
+
+      const code = module.ccall(
+        "geometer_step_hlr_projection_json_bytes",
+        "number",
+        ["number", "number", "number", "number", "number"],
+        [stepPtr, stepBytes.length, optionsPtr, valueOut, errorOut],
+      );
+
+      const valuePtr = module.getValue(valueOut, "i32");
+      const errorPtr = module.getValue(errorOut, "i32");
+      module._free(stepPtr);
+      module._free(optionsPtr);
+      module._free(valueOut);
+      module._free(errorOut);
+
+      if (code !== 0) {
+        const message = errorPtr ? module.UTF8ToString(errorPtr) : `error code ${code}`;
+        if (errorPtr) {
+          module._geometer_free_string(errorPtr);
+        }
+        throw new Error(message);
+      }
+
+      const text = module.UTF8ToString(valuePtr);
+      module._geometer_free_string(valuePtr);
+
+      const projection = JSON.parse(text);
+      const view = projection.views && projection.views[0];
+      if (projection.schema !== "geometry.projection.a0" || !view) {
+        throw new Error("Projection JSON had unexpected schema or no views.");
+      }
+      const simple = view.modes && view.modes.simple;
+      const detail = view.modes && view.modes.detail;
+      const simpleCount = (simple && simple.segments ? simple.segments.length : 0) +
+        (simple && simple.arcs ? simple.arcs.length : 0);
+      const detailCount = (detail && detail.segments ? detail.segments.length : 0) +
+        (detail && detail.arcs ? detail.arcs.length : 0);
+      if (detailCount === 0) {
+        throw new Error("Projection JSON had no detail geometry.");
+      }
+      if (simpleCount === 0) {
+        throw new Error("Projection JSON had no simple geometry.");
+      }
+
+      write(`PASS version=${version} abi=${abi} schema=${projection.schema} detail=${detailCount} simple=${simpleCount}`);
+    }
+
+    run().catch((error) => {
+      write(`FAIL ${error && error.stack ? error.stack : error}`);
+    });
+  </script>
+</body>
+</html>

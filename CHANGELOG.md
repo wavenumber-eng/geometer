@@ -2,6 +2,35 @@
 
 All notable changes to geometer are documented here.
 
+## [2026.5.24] - 2026-05-24
+
+### Changed
+
+- Published the second public PyPI release as `wn-geometer==2026.5.24`.
+  The release includes `py3-none-win_amd64` and
+  `py3-none-manylinux_2_39_x86_64` wheels with bundled native executables.
+- Promoted Linux/WSL2 native and installed-wheel validation to first-class
+  release flow.
+- Validated public PyPI installs on Windows and WSL2, including STEP HLR JSON,
+  SVG, and GLB generation through the installed Python package.
+- Validated Toolz / Altium Cruncher on WSL2 against the published PyPI package.
+- Removed legacy root-level `dist` artifacts. Native and WASM artifacts now use
+  grouped `dist/native/<platform>/` and `dist/wasm/<target>/` paths only.
+- Moved maintained interface documentation into `docs/design/` and split it by
+  interface/function area.
+- Moved the developer guide to `docs/developer/README.md`.
+- Replaced stale requirements with current release requirements.
+- Removed persisted completed implementation plans; ADRs, requirements, design
+  docs, and code are the docs of record after work ships.
+- Promoted the embedded model browser viewer to `examples/wasm/`.
+- Added the L99 release signoff stratum for Ruff, clang-format, code hygiene,
+  and stale artifact checks.
+
+### Removed
+
+- Removed `CLAUDE.md`.
+- Removed the retired Dear PyGui Python HLR viewer.
+
 ## [2026.5.23] - 2026-05-23
 
 ### Changed
@@ -10,14 +39,12 @@ All notable changes to geometer are documented here.
   version, runtime version string, and C ABI generation to the ADR 006
   date-based scheme: `v2026-05-23`, `2026.5.23`, and ABI `20260523`.
 - Removed the old `dist/baseline/` WASM snapshot and the browser UI/script
-  paths that selected it. The completed HLR performance work remains documented
-  in `docs/plans/004_poly_hlr_perf_results.md`.
+  paths that selected it.
 - Made the public Python package executable-backed only for the first PyPI
   release path. `GEOMETER_BACKEND=exe`/`cli` are accepted explicit names;
   ctypes/native/worker names are rejected by the public API.
 - Started the transition from flat `dist/` artifacts to grouped
-  `dist/native/<platform>/` and `dist/wasm/<target>/` paths. Flat root-level
-  `dist/` copies remain compatibility aliases for existing tools.
+  `dist/native/<platform>/` and `dist/wasm/<target>/` paths.
 - Python wheel builds now bundle the executable under
   `geometer/native/<platform>/`, matching the source-checkout lookup policy.
 - Renamed the Python distribution package to `wn-geometer`; the import package
@@ -49,7 +76,8 @@ exact `HLRBRep_Algo` to the tessellation-based `HLRBRep_PolyAlgo`, yielding a
 **~4x overall corpus speedup** with the largest wins on dense BGA-style models
 (up to 20x). Same JSON schema, same `geometry.projection.a0` contract.
 
-See `docs/plans/004_poly_hlr_perf_results.md` for the full per-model bench.
+The full per-model bench was kept as a temporary implementation artifact and is
+not part of the maintained docs of record.
 
 ### Changed
 
@@ -75,10 +103,10 @@ See `docs/plans/004_poly_hlr_perf_results.md` for the full per-model bench.
 - `HlrProjectionTimings timings` on `HlrProjectionResult` exposing per-phase
   native timings (`step_read_ms`, `mesh_ms`, `hlr_ms`, `extract_ms`).
   Serialized as a `"timings"` JSON object on the projection result.
-- WASM viewer (`tests/wasm/embedded_model_viewer.html`) UI for the new
+- WASM viewer UI for the new
   options: backend / algorithm selector, mesh tunables, edge category profile
   presets, and live "Cam" projection from the 3D camera direction.
-- `scripts/bench_hlr.js` plus `docs/plans/004_poly_hlr_perf*.md` for
+- `scripts/bench_hlr.js` for
   reproducible perf comparisons between 1.0 and 1.1.
 - Temporary 1.0 WASM snapshot for side-by-side comparison during the completed
   browser HLR performance work.

@@ -1,6 +1,6 @@
 param(
     [string]$SourceDir = "C:\Users\EliHughes\Desktop\loz-old-man\output\megamaid\embedded_models",
-    [string]$GeometerExe = ".\dist\geometer.exe"
+    [string]$GeometerExe = ".\dist\native\windows-x64\geometer.exe"
 )
 
 $ErrorActionPreference = "Stop"

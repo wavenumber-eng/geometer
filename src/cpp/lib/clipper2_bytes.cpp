@@ -23,8 +23,8 @@ constexpr unsigned char INFLATE_REQUEST_MAGIC[8] = {'G', 'M', 'C', '2', 'I', 'Q'
 constexpr unsigned char INFLATE_RESPONSE_MAGIC[8] = {'G', 'M', 'C', '2', 'I', 'S', '0', '1'};
 constexpr std::uint32_t FORMAT_VERSION = 1;
 
-using Clipper2Lib::ClipType;
 using Clipper2Lib::ClipperD;
+using Clipper2Lib::ClipType;
 using Clipper2Lib::EndType;
 using Clipper2Lib::FillRule;
 using Clipper2Lib::JoinType;
@@ -46,7 +46,7 @@ void set_status(Status* status, int code, const std::string& message)
 
 class BinaryReader
 {
-public:
+  public:
     BinaryReader(const unsigned char* data, std::size_t size) : data_(data), size_(size) {}
 
     void require(std::size_t count)
@@ -102,7 +102,7 @@ public:
         }
     }
 
-private:
+  private:
     const unsigned char* data_ = nullptr;
     std::size_t size_ = 0;
     std::size_t offset_ = 0;
@@ -110,7 +110,7 @@ private:
 
 class BinaryWriter
 {
-public:
+  public:
     void bytes(const unsigned char* data, std::size_t size)
     {
         data_.insert(data_.end(), data, data + size);
@@ -139,7 +139,7 @@ public:
         return std::move(data_);
     }
 
-private:
+  private:
     std::vector<unsigned char> data_;
 };
 
@@ -401,12 +401,12 @@ void apply_cleanup(PathsD* paths, double radius, double miter_limit, double arc_
 
     const double safe_arc = std::max(0.0, arc_tolerance);
 
-    const PathsD inflated = Clipper2Lib::InflatePaths(*paths, radius, JoinType::Miter,
-                                                      EndType::Polygon, miter_limit,
-                                                      decimal_precision, safe_arc);
-    const PathsD closed = Clipper2Lib::InflatePaths(inflated, -radius, JoinType::Miter,
-                                                    EndType::Polygon, miter_limit,
-                                                    decimal_precision, safe_arc);
+    const PathsD inflated =
+        Clipper2Lib::InflatePaths(*paths, radius, JoinType::Miter, EndType::Polygon, miter_limit,
+                                  decimal_precision, safe_arc);
+    const PathsD closed =
+        Clipper2Lib::InflatePaths(inflated, -radius, JoinType::Miter, EndType::Polygon, miter_limit,
+                                  decimal_precision, safe_arc);
 
     PathsD subject = *paths;
     append_paths(&subject, closed);
@@ -519,7 +519,7 @@ int clipper2_boolean_from_bytes(const unsigned char* request_data, std::size_t r
             apply_cleanup(&paths, cleanup_radius, cleanup_miter_limit, cleanup_arc_tolerance,
                           fill_rule, decimal_precision);
             *response_bytes = encode_response_from_paths(BOOLEAN_RESPONSE_MAGIC, paths, fill_rule,
-                                                        decimal_precision);
+                                                         decimal_precision);
         }
         else
         {
@@ -592,10 +592,9 @@ int clipper2_inflate_open_from_bytes(const unsigned char* request_data, std::siz
     {
         const double safe_arc = std::max(0.0, arc_tolerance);
         const PathsD inflated = Clipper2Lib::InflatePaths(paths, delta, join_type, end_type,
-                                                          miter_limit, decimal_precision,
-                                                          safe_arc);
+                                                          miter_limit, decimal_precision, safe_arc);
         *response_bytes = encode_response_from_paths(INFLATE_RESPONSE_MAGIC, inflated, fill_rule,
-                                                    decimal_precision);
+                                                     decimal_precision);
     }
     catch (const std::exception& error)
     {

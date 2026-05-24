@@ -96,13 +96,12 @@ void subtract_then_clip()
     require(code == 0, "solve_planar_batch failed: " + status.message);
     require(result.jobs.size() == 1, "one job should be returned");
     require(result.jobs[0].regions.size() == 1, "clipped rectangle should stay one region");
-    require_near(result.jobs[0].area_mm2, 48.0, 1.0e-6,
-                 "subtract then clip area should be stable");
+    require_near(result.jobs[0].area_mm2, 48.0, 1.0e-6, "subtract then clip area should be stable");
 }
 
 class Writer
 {
-public:
+  public:
     void bytes(const unsigned char* data, std::size_t size)
     {
         data_.insert(data_.end(), data, data + size);
@@ -131,13 +130,13 @@ public:
         return data_;
     }
 
-private:
+  private:
     std::vector<unsigned char> data_;
 };
 
 class Reader
 {
-public:
+  public:
     Reader(const unsigned char* data, std::size_t size) : data_(data), size_(size) {}
 
     void magic(const unsigned char expected[8])
@@ -173,7 +172,7 @@ public:
         return value;
     }
 
-private:
+  private:
     const unsigned char* data_ = nullptr;
     std::size_t size_ = 0;
     std::size_t offset_ = 0;
@@ -217,8 +216,8 @@ void c_api_binary_batch_solve()
     unsigned char* value = nullptr;
     std::size_t value_size = 0;
     char* error = nullptr;
-    const int code = geometer_planar_batch_solve_bytes(
-        writer.data().data(), writer.data().size(), &value, &value_size, &error);
+    const int code = geometer_planar_batch_solve_bytes(writer.data().data(), writer.data().size(),
+                                                       &value, &value_size, &error);
     if (code != 0)
     {
         const std::string message = error == nullptr ? "" : error;

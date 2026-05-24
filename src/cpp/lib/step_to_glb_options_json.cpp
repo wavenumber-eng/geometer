@@ -131,8 +131,7 @@ class Parser
             }
             if (matches(key, {"linear_deflection", "linearDeflection", "deflection"}))
             {
-                if (!parse_positive_number(&options->linear_deflection, error,
-                                           "linear_deflection"))
+                if (!parse_positive_number(&options->linear_deflection, error, "linear_deflection"))
                 {
                     return false;
                 }

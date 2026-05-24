@@ -4,22 +4,15 @@ import argparse
 import io
 import math
 import sys
-import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterable, Mapping, Sequence
-
-
-ROOT = Path(__file__).resolve().parents[2]
-PYTHON_DIR = ROOT / "python"
-if PYTHON_DIR.exists():
-    sys.path.insert(0, str(PYTHON_DIR))
 
 import numpy as np
 import pyvista as pv
 import trimesh
 from PySide6.QtCore import QPointF, Qt, QTimer
-from PySide6.QtGui import QAction, QColor, QPainter, QPainterPath, QPen, QPolygonF
+from PySide6.QtGui import QAction, QColor, QPainter, QPen, QPolygonF
 from PySide6.QtWidgets import (
     QApplication,
     QCheckBox,
@@ -41,6 +34,7 @@ from pyvistaqt import QtInteractor
 import geometer
 
 
+ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_STEP = ROOT / "tests" / "fixtures" / "step" / "embedded_models" / "SOT-23.STEP"
 EDGE_FEATURE_ANGLE_DEG = 38.0
 CAMERA_PADDING = 1.12
@@ -779,11 +773,11 @@ def camera_parallel_scale(
 def main() -> int:
     parser = argparse.ArgumentParser(description="Geometer HLR Preview")
     parser.add_argument("step", nargs="?", default=str(DEFAULT_STEP), help="STEP/STP file to load")
-    parser.add_argument("--off-screen-smoke", action="store_true", help="load the STEP and write an off-screen screenshot")
+    parser.add_argument("--off-screen-validate", action="store_true", help="load the STEP and write an off-screen screenshot")
     parser.add_argument("--screenshot", type=Path, default=ROOT / "out" / "pyvista-preview.png")
     args = parser.parse_args()
 
-    if args.off_screen_smoke:
+    if args.off_screen_validate:
         glb_bytes = geometer.step_to_glb(Path(args.step))
         meshes = load_preview_meshes(glb_bytes)
         plotter = pv.Plotter(off_screen=True, window_size=(900, 650))

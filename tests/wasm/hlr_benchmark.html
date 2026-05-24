@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -133,7 +133,7 @@
     .state-done { color: #0f6f5f; font-weight: 650; }
     .state-failed { color: #b42318; font-weight: 650; }
 
-    #smokeResult { position: fixed; left: -10000px; top: auto; width: 1px; height: 1px; overflow: hidden; }
+    #validationResult { position: fixed; left: -10000px; top: auto; width: 1px; height: 1px; overflow: hidden; }
   </style>
 </head>
 <body>
@@ -226,7 +226,7 @@
       </table>
     </main>
   </div>
-  <pre id="smokeResult">RUNNING</pre>
+  <pre id="validationResult">RUNNING</pre>
 
   <script type="module">
     const manifestUrl = "/tests/fixtures/embedded_models_manifest.json";
@@ -250,7 +250,7 @@
       nextRequestId: 1,
       running: false,
       stopRequested: false,
-      smoke: new URLSearchParams(window.location.search).get("smoke") === "1",
+      validation: new URLSearchParams(window.location.search).get("validation") === "1",
     };
 
     const els = {
@@ -274,7 +274,7 @@
       avgMeshMetric: document.getElementById("avgMeshMetric"),
       avgExtractMetric: document.getElementById("avgExtractMetric"),
       bytesMetric: document.getElementById("bytesMetric"),
-      smokeResult: document.getElementById("smokeResult"),
+      validationResult: document.getElementById("validationResult"),
     };
 
     function assetUrl(path) {
@@ -294,9 +294,9 @@
       return `${Math.round(ms)} ms`;
     }
 
-    function setSmoke(text, pass) {
-      els.smokeResult.textContent = text;
-      if (state.smoke) {
+    function setValidation(text, pass) {
+      els.validationResult.textContent = text;
+      if (state.validation) {
         document.title = text.startsWith("RUNNING") ? "RUNNING" : (pass ? "PASS" : "FAIL");
       }
     }
@@ -317,7 +317,7 @@
         state.worker.terminate();
         state.requests.clear();
       }
-      state.worker = new Worker("/tests/wasm/hlr_projection_worker.js");
+      state.worker = new Worker("/examples/wasm/hlr_projection_worker.js");
       state.workerBackend = backend;
       state.worker.onmessage = (event) => {
         const { id, ok, projection, timings, error } = event.data;
@@ -492,7 +492,7 @@
       state.rows = selectedModels().map((model, index) => ({ index, model, state: "pending" }));
       renderRows();
       updateSummary();
-      setSmoke("RUNNING", false);
+      setValidation("RUNNING", false);
 
       for (const row of state.rows) {
         if (state.stopRequested) break;
@@ -506,10 +506,10 @@
 
       const done = state.rows.filter((row) => row.state === "done");
       const failed = state.rows.filter((row) => row.state === "failed");
-      if (state.smoke) {
+      if (state.validation) {
         const pass = done.length > 0 && failed.length === 0;
         const totalHlr = done.reduce((s, r) => s + (r.hlrMs || 0), 0);
-        setSmoke(pass ? `PASS rows=${done.length} totalHlr=${formatMs(totalHlr)}` : `FAIL done=${done.length} failed=${failed.length}`, pass);
+        setValidation(pass ? `PASS rows=${done.length} totalHlr=${formatMs(totalHlr)}` : `FAIL done=${done.length} failed=${failed.length}`, pass);
       }
     }
 
@@ -564,7 +564,7 @@
       els.runButton.addEventListener("click", () => {
         runBenchmark().catch((error) => {
           els.status.textContent = `Error: ${error && error.message ? error.message : error}`;
-          setSmoke(`FAIL ${error && error.stack ? error.stack : error}`, false);
+          setValidation(`FAIL ${error && error.stack ? error.stack : error}`, false);
           state.running = false;
           els.runButton.disabled = false;
           els.stopButton.disabled = true;
@@ -583,13 +583,13 @@
           updateSummary();
         }
       });
-      if (state.smoke || params.get("autorun") === "1") await runBenchmark();
+      if (state.validation || params.get("autorun") === "1") await runBenchmark();
     }
 
     init().catch((error) => {
       const message = error && error.stack ? error.stack : String(error);
       els.status.textContent = `Error: ${error && error.message ? error.message : error}`;
-      setSmoke(`FAIL ${message}`, false);
+      setValidation(`FAIL ${message}`, false);
       console.error(error);
     });
   </script>

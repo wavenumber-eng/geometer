@@ -46,7 +46,6 @@ def _candidate_directories() -> list[Path]:
         package_dir / "native" / _platform_tag(),
         package_dir / "native",
         repo_root / "dist" / "native" / _platform_tag(),
-        repo_root / "dist",
     ]
 
     extra = os.environ.get("GEOMETER_EXE_DIR")

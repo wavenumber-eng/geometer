@@ -88,7 +88,7 @@ def install_emsdk() -> None:
     if (EMSDK_DIR / "emsdk.bat").exists() or (EMSDK_DIR / "emsdk").exists():
         print(f"emsdk already present at {EMSDK_DIR}")
     else:
-        print(f"Cloning emsdk ...")
+        print("Cloning emsdk ...")
         DEPS_DIR.mkdir(parents=True, exist_ok=True)
         run(["git", "clone", "--depth", "1", EMSDK_REPO, str(EMSDK_DIR)])
 
@@ -208,8 +208,7 @@ def build_geometer_wasm() -> None:
         "--config", "Release",
     ], env=env)
 
-    # Copy outputs to both grouped dist/wasm target folders and flat dist/
-    # compatibility aliases.
+    # Copy outputs to grouped dist/wasm target folders.
     DIST_DIR.mkdir(parents=True, exist_ok=True)
     outputs = [
         (
@@ -240,12 +239,9 @@ def build_geometer_wasm() -> None:
     for src, target_dir in outputs:
         if src.exists():
             target_dir.mkdir(parents=True, exist_ok=True)
-            for dst in (target_dir / src.name, DIST_DIR / src.name):
-                shutil.copy2(str(src), str(dst))
-            print(
-                f"Copied {src.name} to {target_dir.relative_to(DIST_DIR)}/ "
-                f"and dist/ ({src.stat().st_size:,} bytes)"
-            )
+            dst = target_dir / src.name
+            shutil.copy2(str(src), str(dst))
+            print(f"Copied {src.name} to {target_dir.relative_to(DIST_DIR)}/ ({src.stat().st_size:,} bytes)")
 
     run([sys.executable, str(ROOT / "scripts" / "write_dist_manifest.py")])
     print("geometer WASM build complete.")

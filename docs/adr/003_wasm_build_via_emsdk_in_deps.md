@@ -25,7 +25,7 @@ Options considered:
    (`.deps/occt-wasm-install/`).
 3. Cross-compiles Geometer against the WASM OCCT build.
 4. Copies the Node CLI and browser C ABI WASM outputs to grouped
-   `dist/wasm/<target>/` folders and flat compatibility aliases in `dist/`.
+   `dist/wasm/<target>/` folders.
 
 OCCT source is shared with the native `build_occt.py` flow. RapidJSON is
 vendored under `third_party/rapidjson` and passed to OCCT during configure.

@@ -1,0 +1,165 @@
+# STEP Geometry Interfaces
+
+## STEP To GLB
+
+Defined in `src/cpp/lib/geometer/step_to_glb.h`.
+
+```cpp
+struct StepToGlbOptions {
+    double linear_deflection = 0.1;
+    double angular_deflection = 0.5;
+};
+
+int step_to_glb(
+    const std::string& step_path,
+    const std::string& glb_path,
+    const StepToGlbOptions& options = {}
+);
+
+int step_to_glb_from_bytes(
+    const unsigned char* step_data,
+    std::size_t step_size,
+    const StepToGlbOptions& options,
+    std::vector<unsigned char>* glb_bytes,
+    Status* status = nullptr
+);
+```
+
+`step_to_glb` is the file-based converter. `step_to_glb_from_bytes` accepts STEP
+bytes and fills owned GLB bytes for browser/downstream consumers that cannot
+depend on local files.
+## HLR Projection
+
+Defined in `src/cpp/lib/geometer/projection.h`.
+
+```cpp
+enum class ProjectionCurveMode {
+    NativeArcs,
+    Polyline
+};
+
+enum class ProjectionAlgorithm {
+    Poly,
+    Exact
+};
+
+struct ProjectionViewSpec {
+    std::string id = "top";
+    std::array<double, 3> direction = {0.0, 0.0, 1.0};
+    std::array<double, 3> up = {0.0, 1.0, 0.0};
+};
+
+struct HlrProjectionOptions {
+    std::vector<ProjectionViewSpec> views;
+    std::array<double, 16> model_transform = {
+        1.0, 0.0, 0.0, 0.0,
+        0.0, 1.0, 0.0, 0.0,
+        0.0, 0.0, 1.0, 0.0,
+        0.0, 0.0, 0.0, 1.0,
+    };
+    ProjectionCurveMode curve_mode = ProjectionCurveMode::NativeArcs;
+    int samples_per_curve = 24;
+    int round_digits = 3;
+    bool edge_v_sharp = true;
+    bool edge_v_outline = true;
+    bool edge_v_smooth = false;
+    bool edge_v_sewn = false;
+    bool edge_v_iso = false;
+    bool edge_h_sharp = false;
+    bool edge_h_outline = false;
+    bool edge_h_smooth = false;
+    bool edge_h_sewn = false;
+    bool edge_h_iso = false;
+    bool union_simple_polygons = true;
+    ProjectionAlgorithm projection_algorithm = ProjectionAlgorithm::Poly;
+    double mesh_linear_deflection = 0.01;
+    double mesh_angular_deflection = 0.5;
+    bool mesh_relative = false;
+    double hlr_angle_tolerance = 0.0174533;
+};
+```
+
+Projection output:
+
+```cpp
+struct ProjectedSegment {
+    double x1 = 0.0;
+    double y1 = 0.0;
+    double x2 = 0.0;
+    double y2 = 0.0;
+};
+
+struct ProjectedArc {
+    std::array<double, 2> start = {0.0, 0.0};
+    std::array<double, 2> end = {0.0, 0.0};
+    std::array<double, 2> center = {0.0, 0.0};
+    double radius = 0.0;
+    double extent_rad = 0.0;
+    bool ccw = true;
+    bool full_circle = false;
+};
+
+struct ProjectedModeGeometry {
+    std::vector<ProjectedSegment> segments;
+    std::vector<ProjectedArc> arcs;
+};
+
+struct ProjectedViewGeometry {
+    ProjectionViewSpec view;
+    ProjectedModeGeometry simple;
+    ProjectedModeGeometry detail;
+};
+
+struct HlrProjectionTimings {
+    double step_read_ms = 0.0;
+    double mesh_ms = 0.0;
+    double hlr_ms = 0.0;
+    double extract_ms = 0.0;
+};
+
+struct HlrProjectionResult {
+    std::string schema = "geometry.projection.a0";
+    std::string units = "mm";
+    std::string source_hash;
+    std::vector<ProjectedViewGeometry> views;
+    HlrProjectionTimings timings;
+};
+```
+
+Functions:
+
+```cpp
+int step_hlr_projection_from_bytes(
+    const unsigned char* step_data,
+    std::size_t step_size,
+    const HlrProjectionOptions& options,
+    HlrProjectionResult* result,
+    Status* status = nullptr
+);
+
+int write_hlr_projection_json(
+    const HlrProjectionResult& result,
+    std::string* json,
+    Status* status = nullptr
+);
+
+int write_hlr_projection_svg(
+    const HlrProjectionResult& result,
+    const std::string& view_id,
+    const std::string& mode,
+    std::string* svg,
+    Status* status = nullptr
+);
+```
+
+`step_hlr_projection_from_bytes` parses STEP bytes, runs OCCT HLR for each
+requested view, and fills both `detail` and `simple` geometry. `simple` is built
+from projected edge contours. `write_hlr_projection_json` emits
+`geometry.projection.a0` JSON. `write_hlr_projection_svg` emits a quick
+inspection SVG for one view and mode.
+
+`model_transform` is an optional row-major 4x4 affine transform applied to the
+loaded source shape before projection. Translation lives in the final column and
+the final row must be `[0, 0, 0, 1]`. The transform is generic source-model
+normalization; it does not imply PCB side, screen mirroring, or SVG/canvas
+Y-down policy.

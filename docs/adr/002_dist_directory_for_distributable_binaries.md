@@ -24,9 +24,9 @@ Post-build, CMake copies outputs to grouped runtime directories under `dist/`:
   `dist/wasm/planar-browser/geometer-planar-browser.wasm` for smaller
   planar-only browser/Web Worker consumers
 
-Flat root-level copies such as `dist/geometer.exe` and `dist/geometer.js` are
-retained as compatibility aliases while downstream source-checkout consumers
-migrate to grouped paths.
+Root-level build artifacts such as `dist/geometer.exe`, `dist/geometer.js`, or
+`dist/libgeometer.a` are intentionally not produced. Source-checkout consumers
+must use grouped paths.
 
 Generated dependency and build state remains outside version control:
 
@@ -36,14 +36,13 @@ Generated dependency and build state remains outside version control:
 
 Tests run against the binaries in `dist/`, not the build tree. This ensures what ships is what gets tested.
 
-A `setup.ps1` script at the repo root adds `dist/` to the user's PATH for the current session.
-
 ## Rationale
 
 - Single location for all distributable artifacts regardless of build config.
+- Grouped paths prevent Windows, Linux, macOS, and WASM artifacts from
+  overwriting each other.
 - Committed binaries allow consumers to clone and use native and WASM interfaces without building.
 - Testing against `dist/` catches packaging and copy issues (missing files, wrong binary).
-- `setup.ps1` gives immediate CLI access after clone.
 
 ## Consequences
 

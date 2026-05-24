@@ -39,9 +39,10 @@ Completed work:
   - `tests/wasm/hlr_benchmark.html`
 - Browser projection settings were aligned with the viz Python path:
   `curve_mode=polyline`, `samples_per_curve=24`, `round_digits=3`,
-  `include_visible=true`, `include_outline=true`, and
-  `union_simple_polygons=true`.
-- Versioning was originally added for v0.1.0:
+  `edge_v_sharp=true`, `edge_v_outline=true`, and
+  `union_simple_polygons=true`. The older `include_visible` and
+  `include_outline` aliases remain accepted for compatibility.
+- Historical note: versioning was originally added for v0.1.0:
   - project version `0.1.0`
   - C ABI version `1`
   - `geometer --version`
@@ -160,17 +161,18 @@ Version checks:
 node dist\wasm\node-test\geometer-node-test.js --version
 ```
 
-Historical browser smoke:
+Historical browser smoke from the original milestone:
 
 ```text
 PASS version=0.1.0 abi=1 schema=geometry.projection.a0 detail=10 simple=8
 ```
 
+Current release checks should report `2026.5.23` and ABI `20260523`.
+
 ## Remaining Follow-Up Candidates
 
 1. Add persistent shape/projection caching for repeated browser view changes.
-2. Continue hardening the executable-backed Python wrapper and PyPI release
-   flow.
+2. Add Linux/macOS wheels and CI-backed PyPI publishing.
 3. Compare geometer output against altium-cruncher projection payloads on a
    representative board fixture.
 4. Add mesh/typed-array browser APIs when direct STEP mesh rendering is needed.

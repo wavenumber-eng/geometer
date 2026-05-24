@@ -4,6 +4,11 @@ build-wasm/
 .deps/
 out/
 
+# Local release/upload secrets
+.env
+.env.*
+!.env.example
+
 # IDE
 .vs/
 .vscode/

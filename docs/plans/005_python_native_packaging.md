@@ -118,6 +118,9 @@ work: `2026.5.23` for package/runtime version and `20260523` for the C ABI
 generation. A later cleanup should replace the remaining manual synchronization
 with a generated single source of truth.
 
+PyPI publication update: the first public Windows x64 wheel is published as
+`wn-geometer==2026.5.23`. The import package remains `geometer`.
+
 A Windows shared-OCCT spike proved that direct `ctypes` calls can work when the
 runtime layout is carefully controlled, but that packaging direction is now
 retired. The release direction is a statically linked `geometer.exe`/`geometer`
@@ -141,10 +144,11 @@ about 5.33 s for one process per job.
 
 ## Package Shape
 
-Proposed Python package name:
+Python package names:
 
 ```text
-geometer
+PyPI distribution: wn-geometer
+Import package: geometer
 ```
 
 Initial Python API shape:
@@ -462,7 +466,7 @@ Windows venv from `out\wheelhouse-*`, resolved
 
 Deliverables:
 
-- Linux shared-library build under WSL.
+- Linux executable/static-library build under WSL.
 - Linux wheel build under WSL.
 - Smoke tests pass from an installed Linux wheel.
 
@@ -500,10 +504,13 @@ Deliverables:
 - Release checklist that builds native wheels, runs smoke tests, builds WASM,
   and verifies version/ABI consistency.
 
+Current manual release state: `wn-geometer==2026.5.23` is published on PyPI for
+Windows x64. CI/Trusted Publishing remains future work.
+
 Tag-driven release shape:
 
 ```powershell
-git tag v2026-05-23
+git tag -a v2026-05-23 -m "Geometer 2026-05-23"
 git push origin v2026-05-23
 ```
 
@@ -615,21 +622,23 @@ project version and C ABI version.
    dependency-artifact repo?
 2. Should the optional shared-library backend stay in release builds, or remain
    development-only until there is a concrete in-process consumer?
-3. Resolved for this plan: publish the first package as public `geometer` on
-   PyPI after TestPyPI validation.
-4. Which Python versions are required for `kicad_monkey` and other downstream
+3. Which Python versions are required for `kicad_monkey` and other downstream
    tools?
-5. Should `dist/` continue to contain native binaries once Python wheels become
+4. Should `dist/` continue to contain native binaries once Python wheels become
    the main native distribution artifact?
-6. Should date-version generation live in CMake, a small Python script, or both
+5. Should date-version generation live in CMake, a small Python script, or both
    with one manifest file as source of truth?
+
+Resolved for this plan: the first public package is `wn-geometer` on PyPI, with
+import package `geometer`.
 
 ## First Implementation Checklist
 
 - [x] Decide first Python packaging backend: executable subprocess by default.
 - [x] Add CLI JSON batch request/response command.
 - [x] Make Windows release CLI statically linked and easy to copy.
-- [x] Add date-version source of truth and CMake/Python version generation.
+- [x] Adopt ADR 006 date-version constants in CMake, Python packaging, runtime
+      version output, and the C ABI generation.
 - [x] Add shared-library CMake target exporting the C ABI.
 - [x] Spike Windows shared-OCCT developer build preset and direct-exit smoke
       harness, then retire it from the release path.
@@ -646,7 +655,6 @@ project version and C ABI version.
 - [ ] Validate Linux wheel under WSL.
 - [ ] Draft GitHub Actions `cibuildwheel` workflow.
 - [ ] Draft TestPyPI trusted-publishing workflow.
-- [ ] Publish the dated release as public `wn-geometer` on PyPI after TestPyPI
-      validation.
+- [x] Publish the dated release as public `wn-geometer` on PyPI.
 - [ ] Draft internal downstream migration checklist for `toolz/viz`,
       Altium Cruncher, and KiCad Monkey.

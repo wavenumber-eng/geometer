@@ -1,8 +1,8 @@
 # Plan 006 - Friendly HLR Projection API
 
 Date: 2026-05-22
-Status: implemented in Python; C++ and browser convenience layers remain future
-work
+Status: Python friendly API implemented; native C++ and PyVista example viewers
+exist; reusable C++ and browser convenience layers remain future work
 
 ## Goal
 
@@ -428,28 +428,20 @@ Errors should raise `GeometerError` with:
 
 ## Python Viewer Work Product
 
-Build a small Python viewer early, before migrating Altium/Viz. The viewer
-should be a practical consumer of the Python wrapper, not a separate geometry
-stack.
+The first practical Python consumer is implemented under `examples/python/`.
+`pyvista_hlr_viewer.py` is the preferred viewer: it loads STEP/STP input,
+generates a GLB preview through Geometer, shows an interactive PyVista/Qt 3D
+pane, and regenerates HLR from the current camera after camera motion settles.
+It exposes simple/detail/both modes, camera presets, feature-edge overlay,
+lighting/material controls, and Geometer version/C ABI visibility.
 
-A Dear PyGui viewer is the first candidate:
+`hlr_viewer.py` remains as the lighter Dear PyGui fallback and headless smoke
+path. Both examples intentionally exercise the Python wrapper rather than
+duplicating geometry work.
 
-- file picker for STEP/STP input;
-- HLR projection canvas for `simple` and `detail` output;
-- top, bottom, and custom `ProjectionView` controls;
-- editable or preset `model_transform` controls for source-model normalization;
-- projection option presets and timing/edge-count diagnostics;
-- native error display with Geometer version and ABI;
-- optional STEP geometry preview/export plumbing through `step_to_glb`.
-
-This viewer gives the API an immediate acceptance test: if loading a part,
+The viewer gives the API an immediate acceptance test: if loading a part,
 choosing a view, applying a transform, and inspecting the HLR result is awkward
 in the viewer, the wrapper API is not friendly enough yet.
-
-The first viewer does not need to solve all 3D rendering. If Dear PyGui cannot
-comfortably display GLB/mesh geometry, start with a strong 2D HLR plot and keep
-`step_to_glb` available for export or handoff. Add a direct `step_to_mesh`
-Python API later if the viewer needs indexed triangles rather than GLB bytes.
 
 ## Browser JavaScript Friendly API
 
@@ -539,12 +531,16 @@ Do not introduce PCB or viewer-specific names into the Geometer result.
 
 ### Phase 1 - Documented Contract
 
+Status: complete.
+
 - Add this plan.
 - Update `INTERFACES.md` with a short "friendly APIs are planned" note after
   implementation begins.
 - Add the early Python viewer target to Plan 005.
 
 ### Phase 2 - Transform-Capable Projection Request
+
+Status: complete.
 
 - Add `model_transform` to native `HlrProjectionOptions`.
 - Parse `model_transform` from C ABI JSON options.
@@ -554,6 +550,8 @@ Do not introduce PCB or viewer-specific names into the Geometer result.
 
 ### Phase 3 - Python Wrapper
 
+Status: complete for the executable-backed package.
+
 - Implement the Python dataclasses and executable-backed CLI runner from Plan
   005.
 - Add `project_step_hlr`, `hlr_projection_json`, and `step_to_glb`.
@@ -561,12 +559,16 @@ Do not introduce PCB or viewer-specific names into the Geometer result.
 
 ### Phase 4 - Python Viewer
 
-- Add a small Dear PyGui viewer example/tool.
+Status: complete for the first PyVista viewer and Dear PyGui fallback.
+
 - Load a STEP file, call the Python wrapper, and plot simple/detail HLR.
 - Show projection timings, edge counts, version/ABI, and native errors.
-- Exercise `model_transform` controls against known Altium/KiCad-style poses.
+- Exercise camera-driven projection and preset views.
+- Keep deeper `model_transform` controls as future viewer polish.
 
 ### Phase 5 - Altium Cruncher Pilot
+
+Status: in progress outside this repository.
 
 - Replace the old `viz.altium_pcb_svg_assembly_projection` OCP path for a
   limited fixture set.
@@ -577,11 +579,15 @@ Do not introduce PCB or viewer-specific names into the Geometer result.
 
 ### Phase 6 - Browser Wrapper
 
+Status: future work.
+
 - Add a small browser wrapper module around `hlr_projection_worker.js`.
 - Refactor the HTML test pages to use the wrapper.
 - Keep direct worker messages available for tests.
 
 ### Phase 7 - C++ Convenience Layer
+
+Status: future reusable API work; the native C++ viewer example already exists.
 
 - Add `projection_api.h/.cpp` convenience wrappers.
 - Keep existing `projection.h` value API stable.

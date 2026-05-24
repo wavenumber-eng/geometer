@@ -22,11 +22,13 @@ Completed:
 - C++ planar contour module for simple projection output.
 - Browser viewer and benchmark pages for embedded STEP/GLB fixtures.
 - Version API and WASM version exports for consumers.
+- Public Windows x64 Python package on PyPI as `wn-geometer`, using the
+  executable-backed wheel path.
 
 Still future work:
 
 - Direct typed-array STEP tessellation/mesh API.
-- Public Python package release on PyPI using the executable-backed wheel path.
+- Linux and macOS Python wheels.
 - Downstream replacement of altium-cruncher/viz projection internals.
 
 ## API Shape
@@ -125,7 +127,7 @@ src/cpp/lib/geometer.h                 public umbrella header
 src/cpp/lib/geometer/status.h          small status/error type
 src/cpp/lib/geometer/step_to_glb.h     existing GLB conversion API
 src/cpp/lib/geometer/projection.h      HLR projection value API
-src/cpp/lib/geometer/c_api.h           stable C ABI for Python/WASM
+src/cpp/lib/geometer/c_api.h           stable C ABI for WASM/future bindings
 src/cpp/lib/step_to_glb.cpp            STEP-to-GLB implementation
 src/cpp/lib/step_reader.cpp            future STEP bytes/path reader helpers
 src/cpp/lib/hlr_projection.cpp         future OCCT HLR implementation

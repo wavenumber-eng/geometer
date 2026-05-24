@@ -19,7 +19,8 @@ For the current C++, C ABI, WASM, and CLI surface, read
 - Keep implementation modules small and responsibility-focused. Do not grow a
   catch-all `geometer.cpp`.
 - Prefer direct C++ value APIs in `src/cpp/lib/`, with stable C ABI wrappers for
-  Python/WASM boundaries.
+  WASM and possible future non-C++ bindings. The public Python package currently
+  uses the executable-backed CLI path.
 - `.deps/` is generated local dependency state and must not be committed.
 - `dist/` contains distributable outputs by current project policy. Prefer
   grouped paths (`dist/native/<platform>/`, `dist/wasm/<target>/`) for new

@@ -7,7 +7,7 @@ Geometer from a fresh checkout.
 
 Geometer is a focused C++17 geometry library and CLI built on OpenCASCADE
 Technology (OCCT). Its job is to provide generic CAD/kernel geometry operations
-for browser, native CLI, and future Python tooling.
+for browser, native CLI, and Python tooling.
 
 Current and planned library surfaces include:
 
@@ -28,6 +28,8 @@ For the current callable C++, C ABI, WASM, and CLI surfaces, see
 
 - `src/cpp/lib/` - reusable C++ library code.
 - `src/cpp/cli/` - thin CLI wrapper around the library.
+- `python/geometer/` - executable-backed Python package.
+- `examples/` - Python, C++, and WASM-facing examples.
 - `tests/` - stratified tests and C++ test sources.
 - `docs/adr/` - architecture decisions.
 - `docs/requirements/` - numbered requirements.
@@ -184,15 +186,28 @@ The wheel build copies the platform executable into
 platform-specific. The Windows executable wheel should use a `py3-none-win_amd64`
 tag because it contains no CPython extension module.
 
-TestPyPI upload command:
+PyPI upload commands:
 
 ```powershell
+# Preflight metadata.
+python -m twine check out\wheelhouse\*.whl
+
+# Optional dry-run project on TestPyPI.
 python -m twine upload --repository testpypi out\wheelhouse\wn_geometer-*.whl
+
+# Public PyPI release.
+python -m twine upload --repository-url https://upload.pypi.org/legacy/ out\wheelhouse\wn_geometer-*.whl
 ```
 
-For token-based upload, set `TWINE_USERNAME=__token__` and put the TestPyPI API
-token in `TWINE_PASSWORD`, or use an equivalent `.pypirc`/keyring setup. Do not
-write upload tokens into the repository.
+For token-based upload, set `TWINE_USERNAME=__token__` and put the PyPI or
+TestPyPI API token in `TWINE_PASSWORD`, or use an equivalent `.pypirc`/keyring
+setup. Do not write upload tokens into the repository.
+
+The `2026.5.23` Windows wheel was published to PyPI as `wn-geometer`; callers
+install `wn-geometer==2026.5.23` and import `geometer`.
+
+For local token setup, copy `.env.example` to `.env`, fill the token values,
+and keep `.env` out of version control.
 
 ## Manual OCCT Rebuild
 
@@ -251,10 +266,9 @@ direct byte-buffer calls from JavaScript or a Web Worker.
 
 The full browser target also exports `geometer_version_string` and
 `geometer_abi_version`. Downstream browser consumers should check those before
-depending on a specific ABI. Geometer ABI 2 added the planar batch solve byte
-entry point used for packed browser geometry offload. ABI 3 adds per-job
-planar batch diagnostics to that byte response. ABI 5 adds browser planar
-triangulation and Clipper2 byte APIs.
+depending on a specific ABI. Earlier pre-date ABI integers tracked planar batch,
+diagnostic, and triangulation additions; current releases use the ADR 006
+date-based ABI generation, for example `20260523`.
 
 ## Versioning
 

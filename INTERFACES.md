@@ -164,6 +164,11 @@ enum class ProjectionCurveMode {
     Polyline
 };
 
+enum class ProjectionAlgorithm {
+    Poly,
+    Exact
+};
+
 struct ProjectionViewSpec {
     std::string id = "top";
     std::array<double, 3> direction = {0.0, 0.0, 1.0};
@@ -181,9 +186,22 @@ struct HlrProjectionOptions {
     ProjectionCurveMode curve_mode = ProjectionCurveMode::NativeArcs;
     int samples_per_curve = 24;
     int round_digits = 3;
-    bool include_visible = true;
-    bool include_outline = true;
+    bool edge_v_sharp = true;
+    bool edge_v_outline = true;
+    bool edge_v_smooth = false;
+    bool edge_v_sewn = false;
+    bool edge_v_iso = false;
+    bool edge_h_sharp = false;
+    bool edge_h_outline = false;
+    bool edge_h_smooth = false;
+    bool edge_h_sewn = false;
+    bool edge_h_iso = false;
     bool union_simple_polygons = true;
+    ProjectionAlgorithm projection_algorithm = ProjectionAlgorithm::Poly;
+    double mesh_linear_deflection = 0.01;
+    double mesh_angular_deflection = 0.5;
+    bool mesh_relative = false;
+    double hlr_angle_tolerance = 0.0174533;
 };
 ```
 
@@ -218,11 +236,19 @@ struct ProjectedViewGeometry {
     ProjectedModeGeometry detail;
 };
 
+struct HlrProjectionTimings {
+    double step_read_ms = 0.0;
+    double mesh_ms = 0.0;
+    double hlr_ms = 0.0;
+    double extract_ms = 0.0;
+};
+
 struct HlrProjectionResult {
     std::string schema = "geometry.projection.a0";
     std::string units = "mm";
     std::string source_hash;
     std::vector<ProjectedViewGeometry> views;
+    HlrProjectionTimings timings;
 };
 ```
 
@@ -284,8 +310,18 @@ Accepted option keys:
 - `curve_mode` or `curveMode`: `native_arcs`, `native-arcs`, or `polyline`.
 - `samples_per_curve` or `samples`.
 - `round_digits` or `roundDigits`.
-- `include_visible` or `includeVisible`.
-- `include_outline` or `includeOutline`.
+- `projection_algorithm` or `projectionAlgorithm`: `poly` or `exact`.
+- `mesh_linear_deflection` or `meshLinearDeflection`.
+- `mesh_angular_deflection` or `meshAngularDeflection`.
+- `mesh_relative` or `meshRelative`.
+- `hlr_angle_tolerance` or `hlrAngleTolerance`.
+- `edge_v_sharp`, `edge_v_outline`, `edge_v_smooth`, `edge_v_sewn`,
+  `edge_v_iso`, `edge_h_sharp`, `edge_h_outline`, `edge_h_smooth`,
+  `edge_h_sewn`, and `edge_h_iso` plus camelCase aliases.
+- legacy `include_visible` or `includeVisible`, which toggles visible sharp
+  and visible outline edges together.
+- legacy `include_outline` or `includeOutline`, which toggles visible outline
+  edges.
 - `union_simple_polygons` or `unionPolygons`.
 
 The browser test pages currently use the viz-compatible setting set:
@@ -295,8 +331,9 @@ The browser test pages currently use the viz-compatible setting set:
   "curve_mode": "polyline",
   "samples_per_curve": 24,
   "round_digits": 3,
-  "include_visible": true,
-  "include_outline": true,
+  "projection_algorithm": "poly",
+  "edge_v_sharp": true,
+  "edge_v_outline": true,
   "union_simple_polygons": true
 }
 ```
@@ -624,8 +661,9 @@ and does not use either free function.
 
 ## Python Interface
 
-The source checkout includes a thin Python package under `python/geometer`. It
-drives the native CLI by default and keeps the public API byte/path oriented:
+The source checkout and PyPI wheel include a thin Python package named
+`geometer`; the PyPI distribution name is `wn-geometer`. The package drives the
+native CLI and keeps the public API byte/path oriented:
 
 ```python
 import geometer
@@ -658,8 +696,9 @@ The Python package intentionally uses the executable backend only for now. It
 looks for the Geometer CLI in this order:
 
 - `GEOMETER_EXE`;
-- the package directory or `python/geometer/native/<platform>`;
-- the package directory or `python/geometer/native`;
+- the package directory;
+- `geometer/native/<platform>` inside the installed package or source checkout;
+- `geometer/native` inside the installed package or source checkout;
 - source checkout `dist/native/<platform>`;
 - source checkout legacy flat `dist/`;
 - `PATH`.
@@ -686,6 +725,8 @@ geometer init-request request.json --step U1.step --operation step_hlr_projectio
 can project or convert multiple STEP files before exiting. An optional top-level
 `options` object supplies defaults for every job; each job's own `options`
 object is parsed afterwards and overrides those defaults.
+`version` and `abi` fields in a request are metadata written by `init-request`;
+`run` only requires the `jobs` array.
 
 ## WASM Interfaces
 

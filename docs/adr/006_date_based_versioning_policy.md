@@ -6,9 +6,9 @@ Accepted
 
 ## Context
 
-Geometer is moving toward PyPI releases and downstream consumption by internal
-Monkey tools. Those tools use date-oriented release names, and the release date
-is more meaningful for this workflow than semantic major/minor/patch numbers.
+Geometer uses PyPI releases and downstream consumption by internal Monkey
+tools. Those tools use date-oriented release names, and the release date is more
+meaningful for this workflow than semantic major/minor/patch numbers.
 
 Different consumers need different version formats:
 

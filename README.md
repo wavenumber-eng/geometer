@@ -23,7 +23,7 @@ python scripts/build_occt.py --clean
 python scripts/build_occt.py
 ```
 
-The Python package direction is executable-backed: bundle a platform
+The Python package is executable-backed: bundle a platform
 `geometer` CLI and have Python call it through a subprocess. That keeps the CLI
 useful on its own and avoids native library loading issues in Python. The CLI
 now has a JSON batch command so repeated STEP operations can run in one process.
@@ -69,6 +69,14 @@ committed.
 Python distribution name: `wn-geometer`.
 
 Python import package name: `geometer`.
+
+Install the released Windows x64 wheel from PyPI:
+
+```bash
+python -m pip install wn-geometer==2026.5.23
+```
+
+Linux and macOS wheels are planned after the Windows release path is stable.
 
 Native:
 
@@ -169,6 +177,7 @@ Examples:
 
 - `examples/python/pyvista_hlr_viewer.py` - PyVista/Qt STEP 3D + HLR preview.
 - `examples/python/hlr_viewer.py` - Dear PyGui STEP HLR fallback viewer.
+- `examples/cpp/` - native Dear ImGui + SDL3 + OpenGL HLR preview.
 - `examples/wasm/` - browser/WASM example home, with current test-backed pages
   still under `tests/wasm/`.
 

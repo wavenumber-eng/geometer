@@ -22,6 +22,8 @@ All notable changes to geometer are documented here.
   `geometer/native/<platform>/`, matching the source-checkout lookup policy.
 - Renamed the Python distribution package to `wn-geometer`; the import package
   remains `geometer`.
+- Published the first public Windows x64 wheel to PyPI as
+  `wn-geometer==2026.5.23`.
 
 ### Added
 
@@ -29,6 +31,8 @@ All notable changes to geometer are documented here.
   request-level default `options` with per-job overrides.
 - Python `geometer.run_batch(...)` and `geometer.GeometerBatchRunner` for
   chunked multi-process execution of repeated HLR/GLB jobs.
+- Python PyVista and native Dear ImGui example viewers that show the Geometer
+  version and C ABI generation.
 
 ### Removed
 

@@ -55,4 +55,5 @@ uv run --project examples\python python examples\python\pyvista_hlr_viewer.py --
 
 The examples import the checkout package from `../../python` when run from this
 repository, so they do not need the package installed into the active
-environment.
+environment. Outside a source checkout, install `wn-geometer==2026.5.23` and
+run the same scripts against the installed `geometer` package.

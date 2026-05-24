@@ -58,6 +58,10 @@ set(GEOMETER_OCCT_LIBS
     TKernel
 )
 
+if(UNIX AND NOT EMSCRIPTEN)
+    find_package(Threads REQUIRED)
+endif()
+
 function(configure_geometer_native_target target_name)
     target_include_directories(${target_name} PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}
@@ -67,6 +71,10 @@ function(configure_geometer_native_target target_name)
     )
 
     target_link_libraries(${target_name} PUBLIC ${GEOMETER_OCCT_LIBS})
+
+    if(UNIX AND NOT EMSCRIPTEN)
+        target_link_libraries(${target_name} PUBLIC Threads::Threads ${CMAKE_DL_LIBS})
+    endif()
 
     if(WIN32)
         target_link_libraries(${target_name} PUBLIC ws2_32)

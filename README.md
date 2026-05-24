@@ -16,6 +16,13 @@ cmake --build build --config Release
 
 On first configure, CMake automatically builds OCCT from source (~10-15 min one-time cost). Subsequent configures are instant.
 
+On Linux, WSL2, or macOS, this helper runs the native build, CLI smoke, Python
+wrapper smoke, and CTest:
+
+```bash
+bash scripts/native_posix_smoke.sh
+```
+
 To manually rebuild OCCT (e.g., after version bump or to clean):
 
 ```bash

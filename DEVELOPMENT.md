@@ -115,6 +115,20 @@ On Windows, use a Visual Studio developer environment or another shell where the
 selected C++ compiler is available to CMake. The default CMake preset uses
 Ninja; in the current Windows setup, LLVM-MinGW `clang`/`clang++` are used.
 
+On WSL2/Linux, install the usual build toolchain first. For Debian/Ubuntu
+distros, the minimum package set is:
+
+```bash
+sudo apt update
+sudo apt install -y build-essential git cmake ninja-build python3 python3-venv
+```
+
+On macOS, install equivalent tools with Homebrew:
+
+```bash
+brew install cmake ninja python
+```
+
 WASM builds additionally require enough disk space for emsdk and a WASM OCCT
 build. The script manages emsdk locally under `.deps/`.
 
@@ -126,6 +140,24 @@ From the repository root:
 cmake --preset default
 cmake --build build --config Release
 ```
+
+From WSL2/Linux/macOS, the same preset is intended to work:
+
+```bash
+cmake --preset default
+cmake --build build --config Release
+```
+
+The POSIX smoke helper runs the native build, verifies the platform-specific
+`dist/native/<platform>/geometer` executable, projects the SOT-23 STEP fixture,
+exercises the Python wrapper through `GEOMETER_EXE`, and runs CTest:
+
+```bash
+bash scripts/native_posix_smoke.sh
+```
+
+Set `GEOMETER_SKIP_CTEST=1` to run only the build, CLI, and Python-wrapper
+smoke checks.
 
 On first configure, CMake looks for OCCT at:
 

@@ -473,6 +473,11 @@ Deliverables:
 This phase proves that the package layout is not Windows-only before investing
 in CI/CD.
 
+Current helper: `scripts/native_posix_smoke.sh` is intended to run under WSL2,
+Linux, and macOS. It builds with the default CMake preset, checks
+`dist/native/<platform>/geometer --version`, projects the SOT-23 fixture,
+exercises the Python wrapper through `GEOMETER_EXE`, and runs CTest.
+
 ### Phase 3 - GitHub Actions Wheel CI
 
 Deliverables:

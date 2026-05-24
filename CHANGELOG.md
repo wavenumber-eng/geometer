@@ -20,6 +20,8 @@ All notable changes to geometer are documented here.
   `dist/` copies remain compatibility aliases for existing tools.
 - Python wheel builds now bundle the executable under
   `geometer/native/<platform>/`, matching the source-checkout lookup policy.
+- Renamed the Python distribution package to `wn-geometer`; the import package
+  remains `geometer`.
 
 ### Added
 

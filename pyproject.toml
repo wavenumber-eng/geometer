@@ -1,9 +1,9 @@
 [build-system]
-requires = ["setuptools>=69", "wheel"]
+requires = ["setuptools>=70.1"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "geometer"
+name = "wn-geometer"
 version = "2026.5.23"
 description = "Python bindings for Geometer CAD geometry operations"
 requires-python = ">=3.10"

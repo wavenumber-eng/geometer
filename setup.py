@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import platform
+import shutil
 import sys
 from pathlib import Path
 
 from setuptools import setup
+from setuptools.command.bdist_wheel import bdist_wheel as _bdist_wheel
 from setuptools.command.build_py import build_py as _build_py
-from wheel.bdist_wheel import bdist_wheel as _bdist_wheel
 
 
 ROOT = Path(__file__).resolve().parent
@@ -14,6 +15,9 @@ ROOT = Path(__file__).resolve().parent
 
 class build_py(_build_py):
     def run(self) -> None:
+        package_build_dir = Path(self.build_lib) / "geometer"
+        if package_build_dir.exists():
+            shutil.rmtree(package_build_dir)
         super().run()
         executable = _source_executable()
         native_root = Path(self.build_lib) / "geometer" / "native"
@@ -30,6 +34,10 @@ class bdist_wheel(_bdist_wheel):
     def finalize_options(self) -> None:
         super().finalize_options()
         self.root_is_pure = False
+
+    def get_tag(self) -> tuple[str, str, str]:
+        _, _, platform_tag = super().get_tag()
+        return "py3", "none", platform_tag
 
 
 def _source_executable() -> Path:

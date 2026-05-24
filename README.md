@@ -66,6 +66,10 @@ committed.
 
 ## Usage
 
+Python distribution name: `wn-geometer`.
+
+Python import package name: `geometer`.
+
 Native:
 
 ```bash
@@ -139,10 +143,13 @@ mode. The legacy flat `dist/geometer.exe` / `dist/geometer` path is still
 accepted. Set `GEOMETER_EXE` to override the executable path. The Python package
 intentionally uses the executable backend only for now.
 
-Build a local Python wheel after building the native CLI:
+Build a local Python wheel after building the native CLI. Keep Python package
+artifacts under `out/wheelhouse`; repo `dist/` is reserved for Geometer runtime
+artifacts:
 
 ```bash
-python -m pip wheel . -w out/wheelhouse --no-deps
+python -m build --wheel --outdir out/wheelhouse
+python -m twine check out/wheelhouse/*.whl
 ```
 
 Embedded model browser viewer:

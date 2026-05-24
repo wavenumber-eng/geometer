@@ -167,17 +167,32 @@ the legacy flat `dist/geometer(.exe)` exists.
 The old Python wheel direction based on `geometer.dll` plus OCCT `TK*.dll`
 runtime files is retired; `dist/` should not persist those files.
 
+The PyPI distribution name is `wn-geometer`; the import package remains
+`geometer`.
+
 To build a local Python wheel, first build the native CLI so
 `dist/native/<platform>/geometer(.exe)` exists. The flat `dist/geometer(.exe)`
 alias is accepted during the transition. Then run:
 
 ```powershell
-python -m pip wheel . -w out\wheelhouse --no-deps
+python -m build --wheel --outdir out\wheelhouse
+python -m twine check out\wheelhouse\*.whl
 ```
 
 The wheel build copies the platform executable into
 `geometer/native/<platform>/` inside the wheel and marks the wheel
-platform-specific.
+platform-specific. The Windows executable wheel should use a `py3-none-win_amd64`
+tag because it contains no CPython extension module.
+
+TestPyPI upload command:
+
+```powershell
+python -m twine upload --repository testpypi out\wheelhouse\wn_geometer-*.whl
+```
+
+For token-based upload, set `TWINE_USERNAME=__token__` and put the TestPyPI API
+token in `TWINE_PASSWORD`, or use an equivalent `.pypirc`/keyring setup. Do not
+write upload tokens into the repository.
 
 ## Manual OCCT Rebuild
 

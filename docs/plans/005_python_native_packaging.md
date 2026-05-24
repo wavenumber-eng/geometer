@@ -397,16 +397,22 @@ The first Windows milestone can be simpler:
 3. Drive it from Python through a subprocess backend.
 4. Run a smoke test from an installed wheel on Windows.
 
+The PyPI distribution name is `wn-geometer`; the import package remains
+`geometer`.
+
 Current local wheel build command:
 
 ```powershell
-python -m pip wheel . -w out\wheelhouse --no-deps
+python -m build --wheel --outdir out\wheelhouse
+python -m twine check out\wheelhouse\*.whl
 ```
 
 The setuptools build command prefers `dist/native/<platform>/geometer(.exe)`,
 falls back to legacy flat `dist/geometer(.exe)`, copies the selected executable
 into `geometer/native/<platform>/` inside the wheel, and marks the wheel
-platform-specific.
+platform-specific. Windows wheels should use the `py3-none-win_amd64` tag because
+the wheel contains Python code plus a platform executable, not a CPython
+extension module.
 
 Do not force the first milestone to solve every platform. Instead, keep the
 CMake and package layout platform-neutral.
@@ -427,9 +433,10 @@ Deliverables:
 Candidate commands:
 
 ```powershell
-python -m pip wheel . -w out\wheelhouse --no-deps
+python -m build --wheel --outdir out\wheelhouse
+python -m twine check out\wheelhouse\*.whl
 python -m venv out\venv-wheel-smoke
-out\venv-wheel-smoke\Scripts\python.exe -m pip install out\wheelhouse\geometer-*.whl
+out\venv-wheel-smoke\Scripts\python.exe -m pip install out\wheelhouse\wn_geometer-*.whl
 out\venv-wheel-smoke\Scripts\python.exe -c "import geometer; print(geometer.version()); print(geometer.executable_path())"
 ```
 
@@ -448,7 +455,7 @@ Acceptance:
 
 Validation update: on 2026-05-23, a local platform wheel installed into a fresh
 Windows venv from `out\wheelhouse-*`, resolved
-`site-packages\geometer\native\geometer.exe`, produced
+`site-packages\geometer\native\windows-x64\geometer.exe`, produced
 `geometry.projection.a0` for the SOT-23 STEP fixture, and returned GLB bytes.
 
 ### Phase 2 - WSL Linux Validation
@@ -487,8 +494,8 @@ Deliverables:
 - TestPyPI publishing workflow.
 - PyPI publishing workflow gated by tags.
 - PyPI Trusted Publishing through GitHub Actions OIDC.
-- Public PyPI package named `geometer` published for the dated release so
-  downstream tools can depend on `geometer==YYYY.M.D` without a local path
+- Public PyPI package named `wn-geometer` published for the dated release so
+  downstream tools can depend on `wn-geometer==YYYY.M.D` without a local path
   override.
 - Release checklist that builds native wheels, runs smoke tests, builds WASM,
   and verifies version/ABI consistency.
@@ -509,8 +516,8 @@ the released package/artifacts instead of local experiments:
 
 - `toolz/viz` and Altium Cruncher projection paths;
 - `wn-altium-cruncher`/`wn-viz-core` `pyproject.toml` dependencies should use
-  the PyPI package, for example `geometer==2026.5.23`, instead of the temporary
-  workspace-local `../../geometer` source override;
+  the PyPI package, for example `wn-geometer==2026.5.23`, instead of the
+  temporary workspace-local `../../geometer` source override;
 - KiCad Monkey plugin/tooling experiments that need HLR;
 - board visualization scripts that currently depend on Python OCCT/OCP for
   projection.
@@ -639,7 +646,7 @@ project version and C ABI version.
 - [ ] Validate Linux wheel under WSL.
 - [ ] Draft GitHub Actions `cibuildwheel` workflow.
 - [ ] Draft TestPyPI trusted-publishing workflow.
-- [ ] Publish the dated release as public `geometer` on PyPI after TestPyPI
+- [ ] Publish the dated release as public `wn-geometer` on PyPI after TestPyPI
       validation.
 - [ ] Draft internal downstream migration checklist for `toolz/viz`,
       Altium Cruncher, and KiCad Monkey.

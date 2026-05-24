@@ -11,6 +11,7 @@ from ._batch import (
     GeometerBatchRunner as GeometerBatchRunner,
 )
 from ._cli import projection_json as cli_projection_json
+from ._cli import planar_step as cli_planar_step
 from ._cli import run_batch as cli_run_batch
 from ._cli import step_to_glb as cli_step_to_glb
 from ._cli import version as cli_version
@@ -83,6 +84,22 @@ def step_to_glb(step: StepInput, *, options: Mapping[str, Any] | None = None) ->
     options_json = encode_json_options(options)
     _ensure_exe_backend()
     return cli_step_to_glb(step, options_json)
+
+
+def planar_step(request: Mapping[str, Any] | str | bytes | bytearray) -> bytes:
+    _ensure_exe_backend()
+    return cli_planar_step(request)
+
+
+def write_planar_step(
+    request: Mapping[str, Any] | str | bytes | bytearray,
+    output_path: str | Path,
+) -> Path:
+    step_bytes = planar_step(request)
+    path = Path(output_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(step_bytes)
+    return path
 
 
 def _ensure_exe_backend() -> None:

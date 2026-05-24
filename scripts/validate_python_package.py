@@ -47,6 +47,23 @@ glb = geometer.step_to_glb(step)
 if glb[:4] != b"glTF":
     raise RuntimeError("step_to_glb did not produce GLB bytes")
 
+planar_step = geometer.planar_step({
+    "schema": "geometry.planar_step.request.a0",
+    "units": "mm",
+    "bodies": [{
+        "id": "copper",
+        "thickness_mm": 0.035,
+        "regions": [{
+            "outer": {
+                "points": [[0, 0], [3, 0], [3, 2], [0, 2]],
+                "segments": [{"kind": "line"}] * 4,
+            },
+        }],
+    }],
+})
+if not planar_step.startswith(b"ISO-10303-21;"):
+    raise RuntimeError("planar_step did not produce STEP bytes")
+
 svg_path = out_dir / "SOT-23.package.top.simple.svg"
 response = geometer.run_batch(
     [
@@ -78,6 +95,7 @@ print(json.dumps({
     "detail_edges": detail_count,
     "simple_edges": simple_count,
     "glb_bytes": len(glb),
+    "planar_step_bytes": len(planar_step),
     "svg": str(svg_path),
 }, indent=2))
 """

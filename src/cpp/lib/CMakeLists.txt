@@ -4,6 +4,7 @@ set(GEOMETER_LIB_SOURCES
     hlr_projection.cpp
     planar_contours.cpp
     planar_solve.cpp
+    planar_step.cpp
     planar_triangulate.cpp
     projection.cpp
     projection_options_json.cpp
@@ -50,6 +51,7 @@ set(GEOMETER_OCCT_LIBS
     TKTopAlgo
     TKHLR
     TKBO
+    TKPrim
     TKBRep
     TKGeomBase
     TKG3d
@@ -72,6 +74,7 @@ function(configure_geometer_native_target target_name)
         ${CMAKE_CURRENT_SOURCE_DIR}
         ${CMAKE_CURRENT_BINARY_DIR}/generated
         ${OpenCASCADE_INCLUDE_DIR}
+        ${CMAKE_SOURCE_DIR}/third_party/rapidjson/include
         ${CMAKE_SOURCE_DIR}/third_party/clipper2/include
     )
 

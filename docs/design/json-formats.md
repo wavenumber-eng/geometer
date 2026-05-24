@@ -94,6 +94,63 @@ Optional timing fields are emitted when available:
 - `hlr_ms`
 - `extract_ms`
 
+## Planar STEP Request JSON
+
+Planar STEP uses schema `geometry.planar_step.request.a0`. It converts closed
+2D topology into exact OCCT wires, faces, and extruded STEP solids. The schema is
+aligned with the shared `Geom*` direction: a planar region has an `outer` ring
+and optional `holes`; rings use `points[]` with one segment per point. Segment
+endpoints are implied by adjacent points, and the final segment wraps to point
+zero.
+
+```json
+{
+  "schema": "geometry.planar_step.request.a0",
+  "units": "mm",
+  "name": "fixture_alignment",
+  "bodies": [
+    {
+      "id": "copper",
+      "name": "copper",
+      "color": "#B87333",
+      "z_mm": 0,
+      "thickness_mm": 0.035,
+      "regions": [
+        {
+          "outer": {
+            "points": [[0, 0], [10, 0], [10, 5], [0, 5]],
+            "segments": [
+              { "kind": "line" },
+              { "kind": "line" },
+              { "kind": "line" },
+              { "kind": "line" }
+            ]
+          }
+        }
+      ],
+      "cutouts": []
+    }
+  ]
+}
+```
+
+Accepted root `units` are `mm`, `nm`, `mils`, and `in`. Length fields also
+accept suffixes such as `thickness_mm`, `thickness_nm`, `radius_mm`, and
+`radius_nm`.
+
+Ring segments:
+
+- `{"kind": "line"}` for straight edges.
+- `{"kind": "arc", "radius_nm": 1000000, "sweep": "ccw"}` for the target
+  topology-first arc form.
+- `{"kind": "arc", "center": [5, 2.5], "sweep": "cw"}` for transitional
+  center-based `GeomContour`/Altium adapters.
+
+The parser also accepts transitional `GeomContour` JSON with `start`,
+`segments[].end`, optional `segments[].center`, and optional
+`segments[].clockwise`. New producers should prefer the `points[]` topology
+form.
+
 ## Batch Request JSON
 
 The native CLI batch command accepts `geometer.batch.request.a0`:
@@ -129,6 +186,12 @@ Supported operations:
 - `step_hlr_projection_json`
 - `step_hlr_projection_svg`
 - `step_to_glb`
+- `planar_step`
+
+`planar_step` jobs accept either:
+
+- `request_path`: path to a `geometry.planar_step.request.a0` file.
+- `planar_step_request`: inline request object.
 
 ## Batch Response JSON
 

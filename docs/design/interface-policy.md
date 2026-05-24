@@ -39,6 +39,7 @@ That includes the current public headers:
 - `geometer/projection_options_json.h`
 - `geometer/planar_contours.h`
 - `geometer/planar_solve.h`
+- `geometer/planar_step.h`
 ## Version
 
 Defined in `src/cpp/lib/geometer/version.h`.

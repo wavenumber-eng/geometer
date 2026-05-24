@@ -60,6 +60,8 @@ def validate_cli_outputs(exe: Path, step_path: Path, tag: str) -> None:
     projection_path = out_dir / "SOT-23.projection.json"
     svg_path = out_dir / "SOT-23.top.simple.svg"
     glb_path = out_dir / "SOT-23.glb"
+    planar_request_path = out_dir / "planar-step-request.json"
+    planar_step_path = out_dir / "planar.step"
 
     run([str(exe), "step-project-hlr", str(step_path), str(projection_path)])
     run([
@@ -75,6 +77,31 @@ def validate_cli_outputs(exe: Path, step_path: Path, tag: str) -> None:
         "polyline",
     ])
     run([str(exe), "step-to-glb", str(step_path), str(glb_path)])
+    planar_request_path.write_text(
+        json.dumps(
+            {
+                "schema": "geometry.planar_step.request.a0",
+                "units": "mm",
+                "name": "native_validation",
+                "bodies": [
+                    {
+                        "id": "copper",
+                        "thickness_mm": 0.035,
+                        "regions": [
+                            {
+                                "outer": {
+                                    "points": [[0, 0], [10, 0], [10, 5], [0, 5]],
+                                    "segments": [{"kind": "line"}] * 4,
+                                }
+                            }
+                        ],
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    run([str(exe), "planar-step", str(planar_request_path), str(planar_step_path)])
 
     projection = json.loads(projection_path.read_text(encoding="utf-8"))
     if projection.get("schema") != "geometry.projection.a0":
@@ -83,6 +110,8 @@ def validate_cli_outputs(exe: Path, step_path: Path, tag: str) -> None:
         raise RuntimeError(f"SVG output does not start with <svg: {svg_path}")
     if glb_path.read_bytes()[:4] != b"glTF":
         raise RuntimeError(f"GLB output does not start with glTF magic: {glb_path}")
+    if not planar_step_path.read_bytes().startswith(b"ISO-10303-21;"):
+        raise RuntimeError(f"Planar STEP output does not start with ISO-10303-21: {planar_step_path}")
 
 
 def validate_linux_dependencies(exe: Path) -> None:
@@ -109,7 +138,28 @@ def validate_python_source_wrapper(exe: Path, step_path: Path) -> None:
     env["GEOMETER_BACKEND"] = "exe"
     env["GEOMETER_EXE"] = str(exe)
     env["PYTHONPATH"] = prepend_path(ROOT / "python", env.get("PYTHONPATH"))
+    planar_request_json = json.dumps(
+        {
+            "schema": "geometry.planar_step.request.a0",
+            "units": "mm",
+            "bodies": [
+                {
+                    "id": "copper",
+                    "thickness_mm": 0.035,
+                    "regions": [
+                        {
+                            "outer": {
+                                "points": [[0, 0], [3, 0], [3, 2], [0, 2]],
+                                "segments": [{"kind": "line"}] * 4,
+                            },
+                        }
+                    ],
+                }
+            ],
+        }
+    )
     code = f"""
+import json
 from pathlib import Path
 import geometer
 
@@ -117,8 +167,9 @@ step = Path({str(step_path)!r})
 version = geometer.version()
 projection = geometer.project_step_hlr(step, views=[geometer.ProjectionView.top()])
 glb = geometer.step_to_glb(step)
+planar_step = geometer.planar_step(json.loads({planar_request_json!r}))
 print(f"python source wrapper {{version.string}} abi {{version.abi}}")
-print(f"projection {{projection.schema}} views={{len(projection.views)}} glb_bytes={{len(glb)}}")
+print(f"projection {{projection.schema}} views={{len(projection.views)}} glb_bytes={{len(glb)}} planar_step_bytes={{len(planar_step)}}")
 """
     run([sys.executable, "-c", code], env=env)
 

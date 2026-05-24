@@ -2,6 +2,16 @@
 
 All notable changes to geometer are documented here.
 
+## [Unreleased]
+
+### Added
+
+- Added `geometry.planar_step.request.a0` and the native `planar-step`
+  operation for exact planar-region-to-STEP synthesis.
+- Added Python `geometer.planar_step(...)` and `geometer.write_planar_step(...)`.
+- Added native, CLI, batch, and package validation coverage for planar STEP
+  generation.
+
 ## [2026.5.24] - 2026-05-24
 
 ### Changed

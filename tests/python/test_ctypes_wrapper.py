@@ -60,3 +60,36 @@ def test_step_to_glb_returns_glb_bytes() -> None:
     glb = geometer.step_to_glb(SOT23_STEP)
 
     assert glb[:4] == b"glTF"
+
+
+def test_planar_step_returns_step_bytes() -> None:
+    step = geometer.planar_step(
+        {
+            "schema": "geometry.planar_step.request.a0",
+            "units": "mm",
+            "name": "python_planar_step",
+            "bodies": [
+                {
+                    "id": "copper",
+                    "name": "copper",
+                    "color": "#B87333",
+                    "thickness_mm": 0.05,
+                    "regions": [
+                        {
+                            "outer": {
+                                "points": [[0, 0], [3, 0], [3, 2], [0, 2]],
+                                "segments": [
+                                    {"kind": "line"},
+                                    {"kind": "line"},
+                                    {"kind": "line"},
+                                    {"kind": "line"},
+                                ],
+                            }
+                        }
+                    ],
+                }
+            ],
+        }
+    )
+
+    assert step.startswith(b"ISO-10303-21;")

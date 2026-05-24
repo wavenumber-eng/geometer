@@ -36,6 +36,7 @@ static void print_usage()
                  "  step-to-glb <input.step> <output.glb>       Convert STEP to GLB\n"
                  "  step-project-hlr <input.step> <output.json> Emit HLR projection JSON\n"
                  "  step-project-svg <input.step> <output.svg>  Emit HLR projection SVG\n"
+                 "  planar-step <request.json> <output.step>    Emit exact planar STEP\n"
                  "  run <request.json> <response.json>          Run JSON batch jobs\n"
                  "  init-request <request.json> --step <path>   Write a starter JSON request\n"
                  "  planar-batch-solve <request.bin> <response.bin>\n"
@@ -194,6 +195,10 @@ static std::string normalize_operation(const std::string& operation)
     if (operation == "step-to-glb" || operation == "step_to_glb")
     {
         return "step_to_glb";
+    }
+    if (operation == "planar-step" || operation == "planar_step")
+    {
+        return "planar_step";
     }
     return operation;
 }
@@ -407,6 +412,53 @@ static int execute_glb_job(const rapidjson::Value& job, const rapidjson::Value* 
     return 0;
 }
 
+static int execute_planar_step_job(const rapidjson::Value& job, std::string* output_path,
+                                   std::string* error_message)
+{
+    if (!member_string(job, "output_path", output_path) || output_path->empty())
+    {
+        *error_message = "job requires string output_path";
+        return 2;
+    }
+
+    std::string request_json;
+    std::string request_path;
+    if (member_string(job, "request_path", &request_path) && !request_path.empty())
+    {
+        if (!read_text_file(request_path.c_str(), &request_json))
+        {
+            *error_message = "failed reading " + request_path;
+            return 1;
+        }
+    }
+    else
+    {
+        const rapidjson::Value* inline_request = options_value_for_object(job);
+        auto explicit_request = job.FindMember("planar_step_request");
+        if (explicit_request != job.MemberEnd())
+        {
+            inline_request = &explicit_request->value;
+        }
+        if (inline_request == nullptr || !inline_request->IsObject())
+        {
+            *error_message = "job requires request_path or planar_step_request object";
+            return 2;
+        }
+        request_json = compact_json(*inline_request);
+    }
+
+    geometer::PlanarStepResult summary;
+    geometer::Status status;
+    const int code =
+        geometer::planar_step_from_json(request_json.c_str(), *output_path, &summary, &status);
+    if (code != 0)
+    {
+        *error_message = status.message;
+        return code;
+    }
+    return 0;
+}
+
 static int execute_batch_job(const rapidjson::Value& job, const rapidjson::Value* batch_options,
                              std::string* operation, std::string* output_path,
                              std::string* error_message)
@@ -424,6 +476,10 @@ static int execute_batch_job(const rapidjson::Value& job, const rapidjson::Value
     if (*operation == "step_to_glb")
     {
         return execute_glb_job(job, batch_options, output_path, error_message);
+    }
+    if (*operation == "planar_step")
+    {
+        return execute_planar_step_job(job, output_path, error_message);
     }
     *error_message = "unsupported operation: " + *operation;
     return 2;
@@ -740,6 +796,35 @@ int main(int argc, char* argv[])
             std::fprintf(stderr, "Failed (error %d).\n", result);
         }
         clean_exit(result);
+    }
+
+    if (std::strcmp(argv[1], "planar-step") == 0)
+    {
+        if (argc < 4)
+        {
+            std::fprintf(stderr, "planar-step requires request JSON and output STEP paths.\n");
+            return 1;
+        }
+
+        std::string request_json;
+        if (!read_text_file(argv[2], &request_json))
+        {
+            std::fprintf(stderr, "Failed reading %s\n", argv[2]);
+            return 1;
+        }
+
+        geometer::PlanarStepResult summary;
+        geometer::Status status;
+        const int result =
+            geometer::planar_step_from_json(request_json.c_str(), argv[3], &summary, &status);
+        if (result != 0)
+        {
+            std::fprintf(stderr, "Planar STEP failed (%d): %s\n", result, status.message.c_str());
+            return result;
+        }
+        std::fprintf(stderr, "Planar STEP: %d bodies, %d regions, %d cutouts -> %s\n",
+                     summary.body_count, summary.region_count, summary.cutout_count, argv[3]);
+        clean_exit(0);
     }
 
     if (std::strcmp(argv[1], "step-project-hlr") == 0 ||

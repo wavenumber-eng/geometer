@@ -6,10 +6,12 @@ from ._api import (
     GeometerBatchRunner,
     executable_path,
     hlr_projection_json,
+    planar_step,
     project_step_hlr,
     run_batch,
     step_to_glb,
     version,
+    write_planar_step,
 )
 from ._errors import GeometerError
 from ._types import HlrOptions, HlrProjectionResult, ProjectionView, Version
@@ -25,8 +27,10 @@ __all__ = [
     "Version",
     "executable_path",
     "hlr_projection_json",
+    "planar_step",
     "project_step_hlr",
     "run_batch",
     "step_to_glb",
     "version",
+    "write_planar_step",
 ]

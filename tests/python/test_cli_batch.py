@@ -199,6 +199,79 @@ def test_python_run_batch_wrapper(tmp_path: Path) -> None:
     assert payload["views"][0]["id"] == "python-top"
 
 
+def test_cli_planar_step_direct_and_batch(tmp_path: Path) -> None:
+    planar_request = {
+        "schema": "geometry.planar_step.request.a0",
+        "units": "nm",
+        "name": "batch_planar_step",
+        "bodies": [
+            {
+                "id": "copper",
+                "name": "copper",
+                "color": "#B87333",
+                "thickness_nm": 50_000,
+                "regions": [
+                    {
+                        "outer": {
+                            "points": [
+                                {"x": 0, "y": 0},
+                                {"x": 3_000_000, "y": 0},
+                                {"x": 3_000_000, "y": 2_000_000},
+                                {"x": 0, "y": 2_000_000},
+                            ],
+                            "segments": [
+                                {"kind": "line"},
+                                {"kind": "line"},
+                                {"kind": "line"},
+                                {"kind": "line"},
+                            ],
+                        }
+                    }
+                ],
+            }
+        ],
+    }
+    planar_request_path = tmp_path / "planar-request.json"
+    direct_step = tmp_path / "direct.step"
+    batch_step = tmp_path / "batch.step"
+    response = tmp_path / "response.json"
+    batch_request = tmp_path / "batch-request.json"
+    planar_request_path.write_text(json.dumps(planar_request), encoding="utf-8")
+
+    subprocess.run(
+        [str(_geometer_exe()), "planar-step", str(planar_request_path), str(direct_step)],
+        check=True,
+        cwd=ROOT,
+    )
+    assert direct_step.read_bytes().startswith(b"ISO-10303-21;")
+
+    batch_request.write_text(
+        json.dumps(
+            {
+                "schema": "geometer.batch.request.a0",
+                "jobs": [
+                    {
+                        "id": "planar-step",
+                        "operation": "planar_step",
+                        "request_path": str(planar_request_path),
+                        "output_path": str(batch_step),
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    subprocess.run(
+        [str(_geometer_exe()), "run", str(batch_request), str(response)],
+        check=True,
+        cwd=ROOT,
+    )
+    result = json.loads(response.read_text(encoding="utf-8"))
+    assert result["ok"] is True
+    assert result["jobs"][0]["operation"] == "planar_step"
+    assert batch_step.read_bytes().startswith(b"ISO-10303-21;")
+
+
 def test_python_batch_runner_chunks_jobs(tmp_path: Path) -> None:
     outputs = [tmp_path / f"projection_{index}.json" for index in range(7)]
     jobs = [

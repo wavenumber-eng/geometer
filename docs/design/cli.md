@@ -7,6 +7,7 @@ Native CLI:
 .\dist\native\windows-x64\geometer.exe step-to-glb input.step output.glb
 .\dist\native\windows-x64\geometer.exe step-project-hlr input.step output.json
 .\dist\native\windows-x64\geometer.exe step-project-svg input.step output.svg --mode simple --view top
+.\dist\native\windows-x64\geometer.exe planar-step planar-step-request.json output.step
 .\dist\native\windows-x64\geometer.exe init-request request.json --step input.step --operation step_hlr_projection_json --output output.json
 .\dist\native\windows-x64\geometer.exe run request.json response.json
 .\dist\native\windows-x64\geometer.exe planar-batch-solve request.bin response.bin --warmup 1 --repeat 5 --metrics metrics.json
@@ -34,6 +35,11 @@ STEP-to-GLB CLI options:
 - `--deflection <value>`
 - `--angular <value>`
 
+Planar STEP CLI:
+
+- `planar-step <request.json> <output.step>` reads a
+  `geometry.planar_step.request.a0` request and writes a colored STEP file.
+
 JSON batch CLI commands:
 
 - `run <request.json> <response.json>`: run a
@@ -46,8 +52,9 @@ JSON batch CLI commands:
 
 Batch requests accept an optional top-level `options` object. Batch jobs accept
 `operation`, `step_path`, `output_path`, and an optional job-level `options`
-object. Geometer parses top-level options first, then parses job-level options
-on top, so callers can put shared settings such as `curve_mode`,
+object. `planar_step` jobs instead accept `request_path` or an inline
+`planar_step_request` object. Geometer parses top-level options first, then
+parses job-level options on top, so callers can put shared settings such as `curve_mode`,
 `samples_per_curve`, `round_digits`, `mesh_linear_deflection`, or
 `mesh_angular_deflection` at the request level and only override the fields
 that differ per job. HLR JSON/SVG jobs use HLR projection options; GLB jobs use

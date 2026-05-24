@@ -17,6 +17,26 @@ projection = geometer.project_step_hlr(
 )
 json_text = geometer.hlr_projection_json("part.step")
 glb_bytes = geometer.step_to_glb("part.step")
+planar_step_request = {
+    "schema": "geometry.planar_step.request.a0",
+    "units": "mm",
+    "bodies": [
+        {
+            "id": "copper",
+            "thickness_mm": 0.035,
+            "regions": [
+                {
+                    "outer": {
+                        "points": [[0, 0], [10, 0], [10, 5], [0, 5]],
+                        "segments": [{"kind": "line"}] * 4,
+                    }
+                }
+            ],
+        }
+    ],
+}
+planar_step_bytes = geometer.planar_step(planar_step_request)
+geometer.write_planar_step(planar_step_request, "layer.step")
 
 runner = geometer.GeometerBatchRunner(max_workers=8, chunk_size=5)
 runner_version = runner.version()

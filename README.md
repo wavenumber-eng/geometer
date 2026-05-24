@@ -2,8 +2,8 @@
 
 Focused C++ geometry library, CLI, Python package, and WASM interface built on
 OCCT. Geometer provides generic CAD/kernel operations for STEP-to-GLB
-conversion, STEP HLR projection, planar contouring, and packed planar boolean
-work.
+conversion, STEP HLR projection, exact planar STEP synthesis, planar
+contouring, and packed planar boolean work.
 
 ## Documentation
 
@@ -61,6 +61,26 @@ projection = geometer.project_step_hlr(
     views=[geometer.ProjectionView.top()],
 )
 glb_bytes = geometer.step_to_glb(Path("part.step"))
+step_bytes = geometer.planar_step(
+    {
+        "schema": "geometry.planar_step.request.a0",
+        "units": "mm",
+        "bodies": [
+            {
+                "id": "copper",
+                "thickness_mm": 0.035,
+                "regions": [
+                    {
+                        "outer": {
+                            "points": [[0, 0], [10, 0], [10, 5], [0, 5]],
+                            "segments": [{"kind": "line"}] * 4,
+                        }
+                    }
+                ],
+            }
+        ],
+    }
+)
 ```
 
 The package is executable-backed. Wheels bundle the platform executable under
@@ -73,6 +93,7 @@ geometer --version
 geometer step-to-glb input.step output.glb
 geometer step-project-hlr input.step output.json
 geometer step-project-svg input.step output.svg --mode simple --view top
+geometer planar-step planar-step-request.json output.step
 geometer init-request request.json --step input.step --operation step_hlr_projection_json --output output.json
 geometer run request.json response.json
 ```

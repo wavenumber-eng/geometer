@@ -77,6 +77,36 @@ def step_to_glb(step: StepInput, options_json: bytes | None) -> bytes:
         return output_path.read_bytes()
 
 
+def planar_step(request: Mapping[str, Any] | str | bytes | bytearray) -> bytes:
+    with tempfile.TemporaryDirectory(prefix="geometer-python-") as directory_text:
+        directory = Path(directory_text)
+        request_path = directory / "planar_step_request.json"
+        output_path = directory / "planar.step"
+        if isinstance(request, Mapping):
+            request_path.write_text(
+                json.dumps(dict(request), separators=(",", ":")),
+                encoding="utf-8",
+            )
+        elif isinstance(request, (bytes, bytearray)):
+            request_path.write_bytes(bytes(request))
+        else:
+            request_path.write_text(str(request), encoding="utf-8")
+
+        completed = subprocess.run(
+            [str(executable_path()), "planar-step", str(request_path), str(output_path)],
+            capture_output=True,
+            check=False,
+            encoding="utf-8",
+        )
+        if completed.returncode != 0:
+            message = completed.stderr.strip() or completed.stdout.strip()
+            raise RuntimeError(
+                "geometer planar-step failed with exit code "
+                f"{completed.returncode}: {message}"
+            )
+        return output_path.read_bytes()
+
+
 def run_batch(
     jobs: Sequence[Mapping[str, Any]],
     *,

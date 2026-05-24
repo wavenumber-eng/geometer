@@ -1,5 +1,7 @@
 #include "geometer/planar_step.h"
 
+#include "geometer/planar_solve.h"
+
 #include <rapidjson/document.h>
 #include <rapidjson/error/en.h>
 
@@ -93,6 +95,7 @@ struct BodySpec
     Color color;
     double z_mm = 0.0;
     double thickness_mm = 0.035;
+    bool fuse_regions = false;
     std::vector<Region> regions;
     std::vector<Region> cutouts;
 };
@@ -174,6 +177,17 @@ std::string string_member(const rapidjson::Value& object, const char* name,
         return default_value;
     }
     return value->GetString();
+}
+
+bool bool_member(const rapidjson::Value& object, const std::vector<const char*>& names,
+                 bool default_value)
+{
+    const rapidjson::Value* value = first_member(object, names);
+    if (value == nullptr || !value->IsBool())
+    {
+        return default_value;
+    }
+    return value->GetBool();
 }
 
 double unit_scale_to_mm(const std::string& units)
@@ -690,6 +704,8 @@ bool parse_request(const char* request_json, Request* request, std::string* erro
         BodySpec body;
         body.id = string_member(raw_body, "id", "body_" + std::to_string(i + 1));
         body.name = string_member(raw_body, "name", body.id);
+        body.fuse_regions =
+            bool_member(raw_body, {"fuse_regions", "fuseRegions", "fuse"}, false);
         if (!parse_suffixed_length_member(raw_body, "thickness", request->unit_scale_to_mm, 0.035,
                                           &body.thickness_mm, error))
         {
@@ -869,6 +885,192 @@ double ring_signed_area(const Ring& ring)
     return 0.5 * twice_area;
 }
 
+void append_solve_point(PlanarSolveRing* ring, const Point2& point)
+{
+    if (ring->empty() ||
+        !points_close(Point2{ring->back().x, ring->back().y}, point))
+    {
+        ring->push_back({point.x, point.y});
+    }
+}
+
+double solve_ring_signed_area(const PlanarSolveRing& ring)
+{
+    if (ring.size() < 3)
+    {
+        return 0.0;
+    }
+    double twice_area = 0.0;
+    for (std::size_t i = 0; i < ring.size(); ++i)
+    {
+        const PlanarSolvePoint& a = ring[i];
+        const PlanarSolvePoint& b = ring[(i + 1) % ring.size()];
+        twice_area += a.x * b.y - b.x * a.y;
+    }
+    return 0.5 * twice_area;
+}
+
+void orient_solve_ring(PlanarSolveRing* ring, bool want_positive)
+{
+    if (ring == nullptr || ring->size() < 3)
+    {
+        return;
+    }
+    const bool positive = solve_ring_signed_area(*ring) > 0.0;
+    if (positive != want_positive)
+    {
+        std::reverse(ring->begin(), ring->end());
+    }
+}
+
+bool sample_ring_for_solve(const Ring& ring, PlanarSolveRing* path, std::string* error)
+{
+    path->clear();
+    for (std::size_t i = 0; i < ring.points.size(); ++i)
+    {
+        const Point2& start = ring.points[i];
+        const Point2& end = ring.points[(i + 1) % ring.points.size()];
+        const Segment2& segment = ring.segments[i];
+        append_solve_point(path, start);
+        if (segment.kind != "arc")
+        {
+            continue;
+        }
+
+        Point2 center = segment.center;
+        if (!segment.has_center)
+        {
+            if (!segment.has_radius ||
+                !infer_arc_center(start, end, segment.radius, segment.ccw, &center))
+            {
+                *error = "arc segment requires a valid center or radius for fusion";
+                return false;
+            }
+        }
+        const double radius = std::hypot(start.x - center.x, start.y - center.y);
+        if (radius <= kEpsilon)
+        {
+            *error = "arc segment radius is zero";
+            return false;
+        }
+        const double start_angle = std::atan2(start.y - center.y, start.x - center.x);
+        const double end_angle = std::atan2(end.y - center.y, end.x - center.x);
+        const double sweep = segment.ccw ? normalized_ccw_delta(start_angle, end_angle)
+                                         : -normalized_ccw_delta(end_angle, start_angle);
+        if (std::abs(sweep) <= kEpsilon || std::abs(sweep) >= kTwoPi - 1e-6)
+        {
+            *error = "arc segment cannot be zero-length or a full circle";
+            return false;
+        }
+        const int steps =
+            std::max(2, static_cast<int>(std::ceil(std::abs(sweep) / (kPi / 16.0))));
+        for (int step = 1; step < steps; ++step)
+        {
+            const double angle =
+                start_angle + sweep * static_cast<double>(step) / static_cast<double>(steps);
+            append_solve_point(path, Point2{center.x + radius * std::cos(angle),
+                                            center.y + radius * std::sin(angle)});
+        }
+    }
+    if (path->size() > 1)
+    {
+        const Point2 first{path->front().x, path->front().y};
+        const Point2 last{path->back().x, path->back().y};
+        if (points_close(first, last))
+        {
+            path->pop_back();
+        }
+    }
+    if (path->size() < 3)
+    {
+        *error = "fused planar ring must contain at least three points";
+        return false;
+    }
+    return true;
+}
+
+Ring ring_from_solve_ring(const PlanarSolveRing& source)
+{
+    Ring ring;
+    ring.points.reserve(source.size());
+    for (const PlanarSolvePoint& point : source)
+    {
+        ring.points.push_back(Point2{point.x, point.y});
+    }
+    ring.segments.assign(ring.points.size(), Segment2{});
+    return ring;
+}
+
+bool fuse_region_set(const std::vector<Region>& regions, std::vector<Region>* fused,
+                     std::string* error)
+{
+    PlanarBatchSolveInput input;
+    input.options.decimal_precision = 6;
+
+    PlanarSolveJob job;
+    for (const Region& region : regions)
+    {
+        PlanarSolveRing outer;
+        if (!sample_ring_for_solve(region.outer, &outer, error))
+        {
+            return false;
+        }
+        orient_solve_ring(&outer, true);
+        job.subject_rings.push_back(std::move(outer));
+
+        for (const Ring& hole : region.holes)
+        {
+            PlanarSolveRing hole_ring;
+            if (!sample_ring_for_solve(hole, &hole_ring, error))
+            {
+                return false;
+            }
+            orient_solve_ring(&hole_ring, false);
+            job.subject_rings.push_back(std::move(hole_ring));
+        }
+    }
+
+    input.jobs.push_back(std::move(job));
+    PlanarBatchSolveResult result;
+    Status status;
+    const int code = solve_planar_batch(input, &result, &status);
+    if (code != 0)
+    {
+        *error = "failed fusing planar regions: " + status.message;
+        return false;
+    }
+    if (result.jobs.empty())
+    {
+        *error = "fusing planar regions returned no result";
+        return false;
+    }
+
+    fused->clear();
+    for (const PlanarSolveRegion& source_region : result.jobs[0].regions)
+    {
+        if (source_region.outline.size() < 3)
+        {
+            continue;
+        }
+        Region region;
+        region.outer = ring_from_solve_ring(source_region.outline);
+        for (const PlanarSolveRing& source_hole : source_region.holes)
+        {
+            if (source_hole.size() >= 3)
+            {
+                region.holes.push_back(ring_from_solve_ring(source_hole));
+            }
+        }
+        fused->push_back(std::move(region));
+    }
+    if (fused->empty())
+    {
+        *error = "fusing planar regions produced no regions";
+        return false;
+    }
+    return true;
+}
+
 bool build_wire(const Ring& ring, double z_mm, bool hole, TopoDS_Wire* wire, std::string* error)
 {
     BRepBuilderAPI_MakeWire wire_maker;
@@ -995,6 +1197,17 @@ bool build_cutouts_compound(const std::vector<Region>& cutouts, double z_mm, dou
 bool build_body_shape(const BodySpec& body, TopoDS_Shape* shape, std::string* error,
                       int* region_count)
 {
+    std::vector<Region> fused_regions;
+    const std::vector<Region>* body_regions = &body.regions;
+    if (body.fuse_regions)
+    {
+        if (!fuse_region_set(body.regions, &fused_regions, error))
+        {
+            return false;
+        }
+        body_regions = &fused_regions;
+    }
+
     TopoDS_Shape cuts;
     const bool has_cuts =
         !body.cutouts.empty() &&
@@ -1008,7 +1221,7 @@ bool build_body_shape(const BodySpec& body, TopoDS_Shape* shape, std::string* er
     BRep_Builder builder;
     builder.MakeCompound(compound);
     int added = 0;
-    for (const Region& region : body.regions)
+    for (const Region& region : *body_regions)
     {
         TopoDS_Shape region_shape;
         if (!build_region_prism(region, body.z_mm, body.thickness_mm, &region_shape, error))

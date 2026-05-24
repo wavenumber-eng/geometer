@@ -115,6 +115,7 @@ zero.
       "color": "#B87333",
       "z_mm": 0,
       "thickness_mm": 0.035,
+      "fuse_regions": true,
       "regions": [
         {
           "outer": {
@@ -150,6 +151,12 @@ The parser also accepts transitional `GeomContour` JSON with `start`,
 `segments[].end`, optional `segments[].center`, and optional
 `segments[].clockwise`. New producers should prefer the `points[]` topology
 form.
+
+Body-level `fuse_regions`, `fuseRegions`, or `fuse` can be set to `true` to
+union that body's closed regions with Geometer's Clipper2-backed planar solver
+before extrusion. This removes internal edges where same-body regions overlap,
+but fused output uses line-segment topology rather than preserving source arc
+segments exactly.
 
 ## Batch Request JSON
 

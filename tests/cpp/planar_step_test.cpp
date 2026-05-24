@@ -74,6 +74,57 @@ int run_planar_step_test()
     require(text.rfind("ISO-10303-21;", 0) == 0, "STEP output should start with ISO-10303-21");
     require(summary.body_count == 1, "summary should report one body");
     require(summary.region_count == 1, "summary should report one region");
+
+    const char* fused_request = R"json(
+{
+  "schema": "geometry.planar_step.request.a0",
+  "units": "mm",
+  "name": "planar_step_fused_test",
+  "bodies": [
+    {
+      "id": "copper",
+      "name": "copper",
+      "color": "#B87333",
+      "thickness_mm": 0.1,
+      "fuse_regions": true,
+      "regions": [
+        {
+          "outer": {
+            "points": [[0, 0], [4, 0], [4, 2], [0, 2]],
+            "segments": [
+              {"kind": "line"},
+              {"kind": "line"},
+              {"kind": "line"},
+              {"kind": "line"}
+            ]
+          }
+        },
+        {
+          "outer": {
+            "points": [[2, 0], [6, 0], [6, 2], [2, 2]],
+            "segments": [
+              {"kind": "line"},
+              {"kind": "line"},
+              {"kind": "line"},
+              {"kind": "line"}
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
+)json";
+
+    bytes.clear();
+    summary = {};
+    status = {};
+    const int fused_code =
+        geometer::planar_step_from_json_bytes(fused_request, &bytes, &summary, &status);
+    require(fused_code == 0, "fused planar_step_from_json_bytes failed: " + status.message);
+    require(bytes.size() > 1000, "fused STEP output should not be empty");
+    require(summary.body_count == 1, "fused summary should report one body");
+    require(summary.region_count == 1, "overlapping fused regions should become one region");
     return 0;
 }
 

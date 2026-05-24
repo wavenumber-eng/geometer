@@ -4,6 +4,8 @@ All notable changes to geometer are documented here.
 
 ## [Unreleased]
 
+## [2026.5.24.2] - 2026-05-24
+
 ### Added
 
 - Added `geometry.planar_step.request.a0` and the native `planar-step`
@@ -11,6 +13,16 @@ All notable changes to geometer are documented here.
 - Added Python `geometer.planar_step(...)` and `geometer.write_planar_step(...)`.
 - Added native, CLI, batch, and package validation coverage for planar STEP
   generation.
+- Documented the planar STEP contract across direct CLI, batch CLI, Python, and
+  C++ entry points. Python callers should use the `geometer` package wrapper;
+  the package remains executable-backed internally.
+- Added same-day release serial support for release `v2026-05-24-2`
+  (`wn-geometer==2026.5.24.2`) while retaining C ABI generation `20260524`.
+
+### Changed
+
+- `geometer --help`, `geometer -h`, and `geometer help` now print usage and
+  exit successfully.
 
 ## [2026.5.24] - 2026-05-24
 

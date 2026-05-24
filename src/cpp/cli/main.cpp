@@ -730,10 +730,11 @@ static int init_request(int argc, char* argv[])
 
 int main(int argc, char* argv[])
 {
-    if (argc < 2)
+    if (argc < 2 || std::strcmp(argv[1], "--help") == 0 || std::strcmp(argv[1], "help") == 0 ||
+        std::strcmp(argv[1], "-h") == 0)
     {
         print_usage();
-        return 1;
+        return argc < 2 ? 1 : 0;
     }
 
     if (std::strcmp(argv[1], "--version") == 0 || std::strcmp(argv[1], "version") == 0)

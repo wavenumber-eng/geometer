@@ -46,7 +46,7 @@ Import package: `geometer`
 Install the current release:
 
 ```bash
-python -m pip install wn-geometer==2026.5.24
+python -m pip install wn-geometer==2026.5.24.2
 ```
 
 Basic Python use:
@@ -80,6 +80,28 @@ step_bytes = geometer.planar_step(
             }
         ],
     }
+)
+geometer.write_planar_step(
+    {
+        "schema": "geometry.planar_step.request.a0",
+        "units": "mm",
+        "bodies": [
+            {
+                "id": "copper",
+                "thickness_mm": 0.035,
+                "fuse_regions": True,
+                "regions": [
+                    {
+                        "outer": {
+                            "points": [[0, 0], [10, 0], [10, 5], [0, 5]],
+                            "segments": [{"kind": "line"}] * 4,
+                        }
+                    }
+                ],
+            }
+        ],
+    },
+    "layer.step",
 )
 ```
 
@@ -122,6 +144,10 @@ Geometer uses date-based releases per ADR 006:
 - Git tag: `vYYYY-MM-DD`
 - PyPI/CMake version: `YYYY.M.D`
 - C ABI generation: `YYYYMMDD`
+
+Same-day follow-up releases append a serial to the tag and package version, for
+example `v2026-05-24-2` and `2026.5.24.2`. The C ABI generation stays at
+`YYYYMMDD` unless the C ABI generation itself changes.
 
 Before tagging, run the L99 release gate plus native and package validation:
 

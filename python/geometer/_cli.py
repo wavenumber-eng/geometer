@@ -13,7 +13,7 @@ from ._paths import executable_path
 from ._types import HlrOptions, StepInput, Version, read_step_input
 
 
-_VERSION_RE = re.compile(r"^geometer\s+(\d+)\.(\d+)\.(\d+)\s+\(abi\s+(\d+)\)\s*$")
+_VERSION_RE = re.compile(r"^geometer\s+(\d+)\.(\d+)\.(\d+)(?:\.(\d+))?\s+\(abi\s+(\d+)\)\s*$")
 
 
 def version() -> Version:
@@ -37,8 +37,11 @@ def version() -> Version:
     major = int(match.group(1))
     minor = int(match.group(2))
     patch = int(match.group(3))
-    abi = int(match.group(4))
-    return Version(major=major, minor=minor, patch=patch, abi=abi, string=f"{major}.{minor}.{patch}")
+    abi = int(match.group(5))
+    version_string = f"{major}.{minor}.{patch}"
+    if match.group(4) is not None:
+        version_string += f".{int(match.group(4))}"
+    return Version(major=major, minor=minor, patch=patch, abi=abi, string=version_string)
 
 
 def projection_json(step: StepInput, options_json: bytes | None) -> str:

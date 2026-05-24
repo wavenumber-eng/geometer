@@ -234,7 +234,7 @@ upload:
 
 ```bash
 uvx --from auditwheel --with patchelf auditwheel show out/wheelhouse/linux-x64/wn_geometer-*.whl
-uvx --from auditwheel --with patchelf auditwheel repair --plat manylinux_2_39_x86_64 --wheel-dir out/wheelhouse/linux-x64/repaired out/wheelhouse/linux-x64/wn_geometer-2026.5.24-py3-none-linux_x86_64.whl
+uvx --from auditwheel --with patchelf auditwheel repair --plat manylinux_2_39_x86_64 --wheel-dir out/wheelhouse/linux-x64/repaired out/wheelhouse/linux-x64/wn_geometer-2026.5.24.2-py3-none-linux_x86_64.whl
 ```
 
 The exact manylinux tag is determined by `auditwheel show`; rebuild in an older
@@ -244,21 +244,21 @@ PyPI upload commands:
 
 ```powershell
 # Preflight metadata.
-python -m twine check out\wheelhouse\windows-x64\wn_geometer-2026.5.24-py3-none-win_amd64.whl out\wheelhouse\linux-x64\repaired\wn_geometer-2026.5.24-py3-none-manylinux_2_39_x86_64.whl
+python -m twine check out\wheelhouse\windows-x64\wn_geometer-2026.5.24.2-py3-none-win_amd64.whl out\wheelhouse\linux-x64\repaired\wn_geometer-2026.5.24.2-py3-none-manylinux_2_39_x86_64.whl
 
 # Optional dry-run project on TestPyPI.
-python -m twine upload --repository testpypi out\wheelhouse\windows-x64\wn_geometer-2026.5.24-py3-none-win_amd64.whl out\wheelhouse\linux-x64\repaired\wn_geometer-2026.5.24-py3-none-manylinux_2_39_x86_64.whl
+python -m twine upload --repository testpypi out\wheelhouse\windows-x64\wn_geometer-2026.5.24.2-py3-none-win_amd64.whl out\wheelhouse\linux-x64\repaired\wn_geometer-2026.5.24.2-py3-none-manylinux_2_39_x86_64.whl
 
 # Public PyPI release.
-python -m twine upload --repository pypi out\wheelhouse\windows-x64\wn_geometer-2026.5.24-py3-none-win_amd64.whl out\wheelhouse\linux-x64\repaired\wn_geometer-2026.5.24-py3-none-manylinux_2_39_x86_64.whl
+python -m twine upload --repository pypi out\wheelhouse\windows-x64\wn_geometer-2026.5.24.2-py3-none-win_amd64.whl out\wheelhouse\linux-x64\repaired\wn_geometer-2026.5.24.2-py3-none-manylinux_2_39_x86_64.whl
 ```
 
 For token-based upload, set `TWINE_USERNAME=__token__` and put the PyPI or
 TestPyPI API token in `TWINE_PASSWORD`, or use an equivalent `.pypirc`/keyring
 setup. Do not write upload tokens into the repository.
 
-The current release target is `wn-geometer==2026.5.24`; callers install
-`wn-geometer==2026.5.24` and import `geometer`.
+The current release target is `wn-geometer==2026.5.24.2`; callers install
+`wn-geometer==2026.5.24.2` and import `geometer`.
 
 For local token setup, copy `.env.example` to `.env`, fill the token values,
 and keep `.env` out of version control.
@@ -329,8 +329,8 @@ date-based ABI generation, for example `20260524`.
 ## Versioning
 
 Geometer follows [ADR 006](docs/adr/006_date_based_versioning_policy.md).
-The current release identity is `v2026-05-24`; the CMake/PyPI package version
-is `2026.5.24`; the C ABI generation is `20260524`.
+The current release identity is `v2026-05-24-2`; the CMake/PyPI package version
+is `2026.5.24.2`; the C ABI generation is `20260524`.
 
 The root `CMakeLists.txt` declares `GEOMETER_RELEASE_DATE`,
 `GEOMETER_RELEASE_VERSION`, and `GEOMETER_ABI_VERSION`. The root

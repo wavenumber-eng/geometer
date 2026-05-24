@@ -26,7 +26,7 @@
       });
       const version = module.ccall("geometer_version_string", "string", [], []);
       const abi = module.ccall("geometer_abi_version", "number", [], []);
-      if (version !== "2026.5.24") {
+      if (version !== "2026.5.24.2") {
         throw new Error(`Unexpected geometer version: ${version}`);
       }
       if (abi !== 20260524) {

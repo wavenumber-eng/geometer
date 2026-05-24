@@ -34,14 +34,29 @@ zero-padded form:
 vYYYY-MM-DD
 ```
 
+Same-day follow-up releases append a monotonically increasing serial:
+
+```text
+vYYYY-MM-DD-N
+```
+
 Packaging and build-tool versions use the dotted PEP 440/CMake-compatible form:
 
 ```text
 YYYY.M.D
 ```
 
+Same-day follow-up releases use:
+
+```text
+YYYY.M.D.N
+```
+
 For example, the release tag `v2026-05-23` maps to package/build version
 `2026.5.23`.
+
+For example, the follow-up release tag `v2026-05-24-2` maps to package/build
+version `2026.5.24.2`.
 
 C ABI generation uses an integer date:
 
@@ -50,8 +65,9 @@ YYYYMMDD
 ```
 
 The ABI date changes when Geometer publishes a new C ABI generation. It is not a
-per-build timestamp. Python and downstream tools should check both the package
-version and C ABI generation when they depend on a specific interface.
+per-build timestamp and it does not include same-day release serials. Python
+and downstream tools should check both the package version and C ABI generation
+when they depend on a specific interface.
 
 All generated date/build metadata must use UTC. Local time zones must not affect
 release artifacts.

@@ -16,7 +16,7 @@ def test_executable_path_finds_dist_cli() -> None:
 def test_version_reports_geometer_abi() -> None:
     version = geometer.version()
 
-    assert version.string == "2026.5.24"
+    assert version.string == "2026.5.24.2"
     assert version.major == 2026
     assert version.minor == 5
     assert version.patch == 24

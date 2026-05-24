@@ -152,11 +152,12 @@ The parser also accepts transitional `GeomContour` JSON with `start`,
 `segments[].clockwise`. New producers should prefer the `points[]` topology
 form.
 
-Body-level `fuse_regions`, `fuseRegions`, or `fuse` can be set to `true` to
-union that body's closed regions with Geometer's Clipper2-backed planar solver
-before extrusion. This removes internal edges where same-body regions overlap,
-but fused output uses line-segment topology rather than preserving source arc
-segments exactly.
+Body-level `fuse_regions` can be set to `true` to union that body's closed
+regions with Geometer's Clipper2-backed planar solver before extrusion. This
+removes internal edges where same-body regions overlap, but fused output uses
+line-segment topology rather than preserving source arc segments exactly.
+`fuseRegions` and `fuse` are accepted compatibility aliases; new producers
+should write `fuse_regions`.
 
 ## Batch Request JSON
 
@@ -165,7 +166,7 @@ The native CLI batch command accepts `geometer.batch.request.a0`:
 ```json
 {
   "schema": "geometer.batch.request.a0",
-  "version": "2026.5.24",
+  "version": "2026.5.24.2",
   "abi": 20260524,
   "options": {
     "curve_mode": "polyline"
@@ -207,7 +208,7 @@ The native CLI writes `geometer.batch.response.a0`:
 ```json
 {
   "schema": "geometer.batch.response.a0",
-  "version": "2026.5.24",
+  "version": "2026.5.24.2",
   "abi": 20260524,
   "ok": true,
   "jobs": [

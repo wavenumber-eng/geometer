@@ -272,6 +272,19 @@ def test_cli_planar_step_direct_and_batch(tmp_path: Path) -> None:
     assert batch_step.read_bytes().startswith(b"ISO-10303-21;")
 
 
+def test_cli_help_exits_successfully() -> None:
+    completed = subprocess.run(
+        [str(_geometer_exe()), "--help"],
+        cwd=ROOT,
+        capture_output=True,
+        check=False,
+        text=True,
+    )
+
+    assert completed.returncode == 0
+    assert "planar-step" in completed.stderr
+
+
 def test_python_batch_runner_chunks_jobs(tmp_path: Path) -> None:
     outputs = [tmp_path / f"projection_{index}.json" for index in range(7)]
     jobs = [
@@ -289,7 +302,7 @@ def test_python_batch_runner_chunks_jobs(tmp_path: Path) -> None:
         chunk_size=3,
         work_dir=tmp_path / "batches",
     )
-    assert runner.version().string == "2026.5.24"
+    assert runner.version().string == "2026.5.24.2"
     result = runner.run(
         jobs,
         options={
@@ -302,7 +315,7 @@ def test_python_batch_runner_chunks_jobs(tmp_path: Path) -> None:
     assert [job["id"] for job in result.jobs] == [f"projection-{index}" for index in range(7)]
     assert [batch["job_count"] for batch in result.batches] == [3, 3, 1]
     assert result.work_dir == tmp_path / "batches"
-    assert result.version == "2026.5.24"
+    assert result.version == "2026.5.24.2"
     assert result.abi == 20260524
     for output_path in outputs:
         payload = json.loads(output_path.read_text(encoding="utf-8"))

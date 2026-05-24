@@ -68,6 +68,11 @@ Linux wheels must be repaired/tagged with `auditwheel` before PyPI upload; the
 wheel contents install under `platlib`, not `purelib`, so auditwheel can inspect
 the bundled ELF executable.
 
+The planar STEP Python API is the supported package interface for Python
+callers. It is executable-backed internally, like the HLR and GLB helpers, but
+downstream packages should depend on `geometer.planar_step(...)` or
+`geometer.write_planar_step(...)` rather than invoking `geometer.exe` directly.
+
 The executable backend writes temporary STEP/request/output files, calls:
 
 ```powershell

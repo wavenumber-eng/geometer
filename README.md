@@ -34,24 +34,35 @@ now has a JSON batch command so repeated STEP operations can run in one process.
 python scripts/build_wasm.py
 ```
 
-This installs emsdk, cross-compiles OCCT, and builds geometer for WASM. First run takes ~20-30 min. Outputs land in `dist/`.
+This installs emsdk, cross-compiles OCCT, and builds geometer for WASM. First
+run takes ~20-30 min. Outputs land in `dist/wasm/` with flat compatibility
+copies at the root of `dist/`.
 
 The WASM build produces three targets:
 
-- `dist/geometer.js` + `dist/geometer.wasm` - official browser/Web Worker
+- `dist/wasm/browser/geometer.js` + `dist/wasm/browser/geometer.wasm` -
+  official browser/Web Worker
   integration target. This is the full OCCT-backed build exporting
   `createGeometerModule` and the flat C ABI, including STEP bytes to GLB bytes,
   HLR projection, and planar byte APIs.
-- `dist/geometer-node-test.js` + `dist/geometer-node-test.wasm` - Node CLI
-  parity/test target with filesystem access. Use this for tests and diagnostics,
-  not browser integration.
-- `dist/geometer-planar-browser.js` + `dist/geometer-planar-browser.wasm` -
+- `dist/wasm/node-test/geometer-node-test.js` +
+  `dist/wasm/node-test/geometer-node-test.wasm` - Node CLI parity/test target
+  with filesystem access. Use this for tests and diagnostics, not browser
+  integration.
+- `dist/wasm/planar-browser/geometer-planar-browser.js` +
+  `dist/wasm/planar-browser/geometer-planar-browser.wasm` -
   smaller optional browser/Web Worker target exporting `createGeometerPlanarModule`
   and the planar byte APIs only. It exists so planar-only consumers can avoid
   paying the full OCCT/STEP WASM size, startup, and worker-memory cost.
 
-`dist/` is the committed distribution directory. `.deps/`, `build/`, and
-`build-wasm/` are local generated state and are not committed.
+Native builds copy platform-specific artifacts under
+`dist/native/<platform>/`, using names such as `windows-x64`, `linux-x64`,
+`macos-x64`, and `macos-arm64`. Flat files at the root of `dist/` are retained
+as compatibility aliases during the transition to the grouped layout.
+
+`dist/` is the committed distribution directory. `.deps/`, `build/`,
+`build-native/`, and `build-wasm/` are local generated state and are not
+committed.
 
 ## Usage
 
@@ -74,7 +85,7 @@ all jobs. A job-level `options` object overrides those defaults for that job.
 WASM (via Node.js):
 
 ```bash
-node dist/geometer-node-test.js step-to-glb input.step output.glb
+node dist/wasm/node-test/geometer-node-test.js step-to-glb input.step output.glb
 ```
 
 Python from a source checkout:
@@ -122,9 +133,11 @@ response = runner.run(
 )
 ```
 
-Python uses `dist/geometer.exe` / `dist/geometer` by default through the CLI
-JSON batch mode. Set `GEOMETER_EXE` to override the executable path. The Python
-package intentionally uses the executable backend only for now.
+Python uses the bundled wheel executable or source-checkout
+`dist/native/<platform>/geometer(.exe)` by default through the CLI JSON batch
+mode. The legacy flat `dist/geometer.exe` / `dist/geometer` path is still
+accepted. Set `GEOMETER_EXE` to override the executable path. The Python package
+intentionally uses the executable backend only for now.
 
 Build a local Python wheel after building the native CLI:
 
@@ -165,7 +178,6 @@ Examples:
 - `src/cpp/cli/` - geometer CLI executable.
 - `python/geometer/` - Python package using the native CLI by default.
 - `examples/` - user-facing Python and browser/WASM examples.
-- `src/js/` - JavaScript/WASM code.
 - `third_party/` - small vendored source dependencies used by the build.
 - `tests/` - rack-based stratified test system.
 - `docs/adr/` - architecture decision records.

@@ -1,7 +1,8 @@
 # Plan 006 - Friendly HLR Projection API
 
 Date: 2026-05-22
-Status: planning
+Status: implemented in Python; C++ and browser convenience layers remain future
+work
 
 ## Goal
 
@@ -30,7 +31,9 @@ Current flow:
 1. The page fetches STEP bytes as an `ArrayBuffer`.
 2. The page builds a JavaScript options object from UI controls.
 3. The page sends `{ stepBuffer, views, options, backend }` to the worker.
-4. The worker loads `dist/geometer.js` with `importScripts`.
+4. The worker loads `dist/wasm/browser/geometer.js` with `importScripts`
+   while the flat `dist/geometer.js` alias remains available for older
+   checkouts.
 5. The worker initializes `createGeometerModule(...)`.
 6. The worker converts views/options into the C ABI JSON options payload.
 7. The worker allocates WASM memory for STEP bytes, options JSON, and output
@@ -304,8 +307,10 @@ The throwing helpers are for friendly native app code and tests.
 
 ## Python Friendly API
 
-Python should call the native C ABI through `ctypes`, but the public API should
-look like normal Python.
+Python now calls the bundled or configured `geometer` executable through the
+CLI JSON batch interface. The public API still looks like normal Python, while
+the implementation avoids in-process OCCT library loading for the first PyPI
+release.
 
 Proposed Python usage:
 
@@ -389,22 +394,35 @@ def project_step_hlr(
     options: HlrOptions | Mapping[str, Any] | None = None,
 ) -> HlrProjectionResult: ...
 
-def project_step_hlr_json(
+def hlr_projection_json(
     step: bytes | bytearray | memoryview | Path | str,
     *,
     views: Sequence[ProjectionView] | None = None,
     model_transform: Sequence[Sequence[float]] | None = None,
     options: HlrOptions | Mapping[str, Any] | None = None,
 ) -> str: ...
+
+class GeometerBatchRunner:
+    def __init__(self, *, max_workers: int = 8, chunk_size: int = 5, ...): ...
+    def version(self) -> Version: ...
+    def run(
+        self,
+        jobs: Sequence[Mapping[str, Any]],
+        *,
+        options: HlrOptions | Mapping[str, Any] | None = None,
+    ) -> GeometerBatchResult: ...
 ```
 
-The wrapper should accept bytes first. Accepting paths is a convenience that
-reads the file in Python before calling the byte-based native ABI.
+The wrapper accepts bytes and paths. In executable mode, bytes are materialized
+to temporary STEP files before calling `geometer run`; paths are passed through.
+`GeometerBatchRunner` is the preferred Python helper for many repeated HLR/GLB
+jobs because it chunks jobs into request JSON files and runs several
+`geometer.exe run` subprocesses in parallel.
 
 Errors should raise `GeometerError` with:
 
-- native error code
-- native error message
+- native or CLI error code
+- native or CLI error message
 - function name
 - version and ABI when available
 
@@ -536,8 +554,9 @@ Do not introduce PCB or viewer-specific names into the Geometer result.
 
 ### Phase 3 - Python Wrapper
 
-- Implement the Python dataclasses and `ctypes` loader from Plan 005.
-- Add `project_step_hlr`, `project_step_hlr_json`, and `step_to_glb`.
+- Implement the Python dataclasses and executable-backed CLI runner from Plan
+  005.
+- Add `project_step_hlr`, `hlr_projection_json`, and `step_to_glb`.
 - Add smoke tests against a small STEP fixture.
 
 ### Phase 4 - Python Viewer

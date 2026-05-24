@@ -208,21 +208,44 @@ def build_geometer_wasm() -> None:
         "--config", "Release",
     ], env=env)
 
-    # Copy outputs to dist/
+    # Copy outputs to both grouped dist/wasm target folders and flat dist/
+    # compatibility aliases.
     DIST_DIR.mkdir(parents=True, exist_ok=True)
     outputs = [
-        GEOMETER_WASM_BUILD / "src" / "cpp" / "cli" / "geometer-node-test.js",
-        GEOMETER_WASM_BUILD / "src" / "cpp" / "cli" / "geometer-node-test.wasm",
-        GEOMETER_WASM_BUILD / "src" / "cpp" / "lib" / "geometer.js",
-        GEOMETER_WASM_BUILD / "src" / "cpp" / "lib" / "geometer.wasm",
-        GEOMETER_WASM_BUILD / "src" / "cpp" / "lib" / "geometer-planar-browser.js",
-        GEOMETER_WASM_BUILD / "src" / "cpp" / "lib" / "geometer-planar-browser.wasm",
+        (
+            GEOMETER_WASM_BUILD / "src" / "cpp" / "cli" / "geometer-node-test.js",
+            DIST_DIR / "wasm" / "node-test",
+        ),
+        (
+            GEOMETER_WASM_BUILD / "src" / "cpp" / "cli" / "geometer-node-test.wasm",
+            DIST_DIR / "wasm" / "node-test",
+        ),
+        (
+            GEOMETER_WASM_BUILD / "src" / "cpp" / "lib" / "geometer.js",
+            DIST_DIR / "wasm" / "browser",
+        ),
+        (
+            GEOMETER_WASM_BUILD / "src" / "cpp" / "lib" / "geometer.wasm",
+            DIST_DIR / "wasm" / "browser",
+        ),
+        (
+            GEOMETER_WASM_BUILD / "src" / "cpp" / "lib" / "geometer-planar-browser.js",
+            DIST_DIR / "wasm" / "planar-browser",
+        ),
+        (
+            GEOMETER_WASM_BUILD / "src" / "cpp" / "lib" / "geometer-planar-browser.wasm",
+            DIST_DIR / "wasm" / "planar-browser",
+        ),
     ]
-    for src in outputs:
+    for src, target_dir in outputs:
         if src.exists():
-            dst = DIST_DIR / src.name
-            shutil.copy2(str(src), str(dst))
-            print(f"Copied {src.name} to dist/ ({dst.stat().st_size:,} bytes)")
+            target_dir.mkdir(parents=True, exist_ok=True)
+            for dst in (target_dir / src.name, DIST_DIR / src.name):
+                shutil.copy2(str(src), str(dst))
+            print(
+                f"Copied {src.name} to {target_dir.relative_to(DIST_DIR)}/ "
+                f"and dist/ ({src.stat().st_size:,} bytes)"
+            )
 
     run([sys.executable, str(ROOT / "scripts" / "write_dist_manifest.py")])
     print("geometer WASM build complete.")

@@ -8,7 +8,10 @@ enough for non-Altium projects.
 
 ## Status
 
-Implemented for the v0.1.0 HLR/browser milestone.
+Historical plan implemented for the original v0.1.0 HLR/browser milestone and
+superseded by the dated `2026.5.23` release train. Current versioning follows
+ADR 006. Current Python packaging is executable-backed through `geometer run`
+rather than direct `ctypes`/`cffi` loading.
 
 Completed:
 
@@ -23,7 +26,7 @@ Completed:
 Still future work:
 
 - Direct typed-array STEP tessellation/mesh API.
-- Python package/wrapper around the C ABI.
+- Public Python package release on PyPI using the executable-backed wheel path.
 - Downstream replacement of altium-cruncher/viz projection internals.
 
 ## API Shape
@@ -35,8 +38,8 @@ The core library should expose three layers:
    - `step_hlr_projection_from_bytes(...)`
    - future `step_tessellate_mesh_from_bytes(...)`
 2. Stable C ABI
-   - string/byte-buffer functions for Python `ctypes`/`cffi`
-   - the same ABI can be exported by Emscripten
+   - string/byte-buffer functions exported by Emscripten
+   - historical support for Python `ctypes`/`cffi` experiments
 3. CLI/dev tools
    - `geometer step-to-glb input.step output.glb`
    - `geometer step-project-hlr input.step output.json`
@@ -150,25 +153,30 @@ not the browser integration target.
 
 Implemented full browser/Web Worker artifacts:
 
-- `dist/geometer.js`
-- `dist/geometer.wasm`
+- `dist/wasm/browser/geometer.js`
+- `dist/wasm/browser/geometer.wasm`
 
 Implemented Node CLI parity/test WASM artifacts:
 
-- `dist/geometer-node-test.js`
-- `dist/geometer-node-test.wasm`
+- `dist/wasm/node-test/geometer-node-test.js`
+- `dist/wasm/node-test/geometer-node-test.wasm`
+
+Flat copies at the root of `dist/` are compatibility aliases for older source
+checkouts.
 
 ## Python Target
 
-Use the same C ABI for Python:
+Use the same C++ implementation for Python, but package it through a
+platform-native executable for the first PyPI release:
 
-- package a platform-specific shared library later
-- load with `ctypes` or `cffi`
+- package a platform-specific `geometer` executable
+- invoke `geometer run request.json response.json`
 - return UTF-8 JSON for projection APIs
-- return binary buffers for future tessellation APIs
+- return binary buffers for GLB and future tessellation APIs
 
 Avoid `pybind11` initially so Python wrapping does not become the primary API
-surface or add another build dependency.
+surface or add another build dependency. Direct shared-library loading remains
+out of the public Python package unless a future ADR reopens it.
 
 ## Test Strategy
 

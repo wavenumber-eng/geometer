@@ -54,7 +54,10 @@ vendoring note.
 `dist/` is different. This repository currently treats `dist/` as the location
 for distributable binaries. CMake and WASM builds copy final outputs there.
 Those outputs are committed when publishing changes so another project can clone
-and use Geometer without a local native/WASM rebuild.
+and use Geometer without a local native/WASM rebuild. Canonical native artifacts
+live under `dist/native/<platform>/` and canonical WASM artifacts live under
+`dist/wasm/<target>/`. Flat files at the root of `dist/` are compatibility
+aliases for existing source-checkout consumers.
 
 OCCT is not vendored into the repository and is not added with CMake
 `FetchContent`, because OCCT uses `CMAKE_SOURCE_DIR` internally and does not work
@@ -88,8 +91,8 @@ After copying into a workspace:
 
 ```powershell
 git status --short --branch
-.\dist\geometer.exe --version
-node .\dist\geometer-node-test.js --version
+.\dist\native\windows-x64\geometer.exe --version
+node .\dist\wasm\node-test\geometer-node-test.js --version
 ```
 
 Do not run `python scripts\build_occt.py --clean`,
@@ -141,34 +144,40 @@ Later configures reuse `.deps/` and should be fast.
 The vendored RapidJSON v1.1.0 copy includes Geometer's small modern Clang
 compatibility patch so OCCT's GLTF toolkit compiles in native and WASM builds.
 
-Build outputs are copied into `dist/` after a successful build.
+Build outputs are copied into `dist/native/<platform>/` after a successful
+native build, with flat compatibility copies retained at the root of `dist/`.
+Current platform directory names use `windows-x64`, `linux-x64`, `macos-x64`,
+and `macos-arm64`.
 
 Common native CLI commands:
 
 ```powershell
-.\dist\geometer.exe --version
-.\dist\geometer.exe step-to-glb input.step output.glb
-.\dist\geometer.exe step-project-hlr input.step output.json
-.\dist\geometer.exe step-project-svg input.step output.svg --mode simple --view top
-.\dist\geometer.exe init-request request.json --step input.step --operation step_hlr_projection_json --output output.json
-.\dist\geometer.exe run request.json response.json
-.\dist\geometer.exe planar-batch-solve request.bin response.bin --warmup 1 --repeat 5 --metrics metrics.json
+.\dist\native\windows-x64\geometer.exe --version
+.\dist\native\windows-x64\geometer.exe step-to-glb input.step output.glb
+.\dist\native\windows-x64\geometer.exe step-project-hlr input.step output.json
+.\dist\native\windows-x64\geometer.exe step-project-svg input.step output.svg --mode simple --view top
+.\dist\native\windows-x64\geometer.exe init-request request.json --step input.step --operation step_hlr_projection_json --output output.json
+.\dist\native\windows-x64\geometer.exe run request.json response.json
+.\dist\native\windows-x64\geometer.exe planar-batch-solve request.bin response.bin --warmup 1 --repeat 5 --metrics metrics.json
 ```
 
 The Python package uses the native CLI by default. From a source checkout,
-`GEOMETER_EXE` is optional if `dist/geometer.exe` or `dist/geometer` exists.
+`GEOMETER_EXE` is optional if either `dist/native/<platform>/geometer(.exe)` or
+the legacy flat `dist/geometer(.exe)` exists.
 The old Python wheel direction based on `geometer.dll` plus OCCT `TK*.dll`
 runtime files is retired; `dist/` should not persist those files.
 
-To build a local Python wheel, first build the native CLI so `dist/geometer.exe`
-or `dist/geometer` exists, then run:
+To build a local Python wheel, first build the native CLI so
+`dist/native/<platform>/geometer(.exe)` exists. The flat `dist/geometer(.exe)`
+alias is accepted during the transition. Then run:
 
 ```powershell
 python -m pip wheel . -w out\wheelhouse --no-deps
 ```
 
-The wheel build copies the platform executable into `geometer/native/` inside
-the wheel and marks the wheel platform-specific.
+The wheel build copies the platform executable into
+`geometer/native/<platform>/` inside the wheel and marks the wheel
+platform-specific.
 
 ## Manual OCCT Rebuild
 
@@ -204,13 +213,15 @@ This script:
 3. Cross-compiles OCCT to `.deps/occt-wasm-install/`.
 4. Builds Geometer in `build-wasm/`.
 5. Copies the full browser/Web Worker C ABI outputs `geometer.js` /
-   `geometer.wasm` into `dist/`. This is the official application integration
-   WASM and includes OCCT-backed STEP/HLR/GLB plus planar byte APIs.
+   `geometer.wasm` into `dist/wasm/browser/`. This is the official application
+   integration WASM and includes OCCT-backed STEP/HLR/GLB plus planar byte APIs.
 6. Copies the Node CLI parity/test outputs `geometer-node-test.js` /
-   `geometer-node-test.wasm` into `dist/`.
+   `geometer-node-test.wasm` into `dist/wasm/node-test/`.
 7. Copies the planar-only browser C ABI outputs `geometer-planar-browser.js` /
-   `geometer-planar-browser.wasm` into `dist/`. This smaller build intentionally
-   excludes OCCT/STEP and is retained for planar-only browser workers.
+   `geometer-planar-browser.wasm` into `dist/wasm/planar-browser/`. This
+   smaller build intentionally excludes OCCT/STEP and is retained for
+   planar-only browser workers.
+8. Writes flat compatibility copies at the root of `dist/` for existing tools.
 
 To remove WASM-specific generated state:
 

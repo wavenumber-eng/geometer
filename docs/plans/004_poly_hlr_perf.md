@@ -3,6 +3,11 @@
 Date: 2026-05-16
 Branch: `1.1`
 
+Status: historical performance plan, completed before the ADR 006 date-version
+transition. References to `1.1` describe the original working branch and
+benchmark label, not the current package version. The current release identity
+uses `2026.5.23` and ABI `20260523`.
+
 ## Motivation
 
 The current HLR projection path in `src/cpp/lib/hlr_projection.cpp` calls

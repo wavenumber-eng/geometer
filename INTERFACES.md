@@ -658,8 +658,10 @@ The Python package intentionally uses the executable backend only for now. It
 looks for the Geometer CLI in this order:
 
 - `GEOMETER_EXE`;
+- the package directory or `python/geometer/native/<platform>`;
 - the package directory or `python/geometer/native`;
-- source checkout `dist/`;
+- source checkout `dist/native/<platform>`;
+- source checkout legacy flat `dist/`;
 - `PATH`.
 
 The executable backend writes temporary STEP/request/output files, calls:
@@ -691,8 +693,8 @@ object is parsed afterwards and overrides those defaults.
 
 Full Browser/Web Worker target:
 
-- `dist/geometer.js`
-- `dist/geometer.wasm`
+- `dist/wasm/browser/geometer.js`
+- `dist/wasm/browser/geometer.wasm`
 
 This is the official application integration target. It is modularized with
 the factory name `createGeometerModule` and includes the OCCT-backed STEP/HLR/GLB
@@ -700,16 +702,16 @@ APIs plus the planar byte APIs.
 
 Node CLI parity/test target:
 
-- `dist/geometer-node-test.js`
-- `dist/geometer-node-test.wasm`
+- `dist/wasm/node-test/geometer-node-test.js`
+- `dist/wasm/node-test/geometer-node-test.wasm`
 
 This target uses Node filesystem access for command-line parity and diagnostics.
 Do not use it for browser integration.
 
 Planar-only Browser/Web Worker target:
 
-- `dist/geometer-planar-browser.js`
-- `dist/geometer-planar-browser.wasm`
+- `dist/wasm/planar-browser/geometer-planar-browser.js`
+- `dist/wasm/planar-browser/geometer-planar-browser.wasm`
 
 The full browser target exports:
 
@@ -754,10 +756,10 @@ the planar-only target is an optimization, not a separate semantic API.
 Minimal browser-worker shape:
 
 ```js
-importScripts("/dist/geometer.js");
+importScripts("/dist/wasm/browser/geometer.js");
 
 const module = await createGeometerModule({
-  locateFile: (path) => path.endsWith(".wasm") ? `/dist/${path}` : path,
+  locateFile: (path) => path.endsWith(".wasm") ? `/dist/wasm/browser/${path}` : path,
 });
 
 // Allocate STEP bytes and options JSON, then call:
@@ -784,19 +786,22 @@ The complete browser-worker example lives at
 Native CLI:
 
 ```powershell
-.\dist\geometer.exe --version
-.\dist\geometer.exe step-to-glb input.step output.glb
-.\dist\geometer.exe step-project-hlr input.step output.json
-.\dist\geometer.exe step-project-svg input.step output.svg --mode simple --view top
-.\dist\geometer.exe init-request request.json --step input.step --operation step_hlr_projection_json --output output.json
-.\dist\geometer.exe run request.json response.json
-.\dist\geometer.exe planar-batch-solve request.bin response.bin --warmup 1 --repeat 5 --metrics metrics.json
+.\dist\native\windows-x64\geometer.exe --version
+.\dist\native\windows-x64\geometer.exe step-to-glb input.step output.glb
+.\dist\native\windows-x64\geometer.exe step-project-hlr input.step output.json
+.\dist\native\windows-x64\geometer.exe step-project-svg input.step output.svg --mode simple --view top
+.\dist\native\windows-x64\geometer.exe init-request request.json --step input.step --operation step_hlr_projection_json --output output.json
+.\dist\native\windows-x64\geometer.exe run request.json response.json
+.\dist\native\windows-x64\geometer.exe planar-batch-solve request.bin response.bin --warmup 1 --repeat 5 --metrics metrics.json
 ```
+
+Flat `dist/geometer(.exe)` remains a source-checkout compatibility alias while
+downstream consumers migrate to the grouped native path.
 
 Node WASM CLI parity/test target:
 
 ```powershell
-node dist\geometer-node-test.js step-to-glb input.step output.glb
+node dist\wasm\node-test\geometer-node-test.js step-to-glb input.step output.glb
 ```
 
 Projection CLI options:
@@ -851,13 +856,28 @@ project can clone Geometer and use the CLI/WASM artifacts without rebuilding.
 
 Persist these when publishing interface changes:
 
-- Native CLI: `dist/geometer.exe` or `dist/geometer`.
-- Native static library: `dist/geometer.lib` or `dist/libgeometer.a`.
-- Full browser WASM C ABI: `dist/geometer.js` and `dist/geometer.wasm`.
-- Node WASM CLI parity/test target: `dist/geometer-node-test.js` and
-  `dist/geometer-node-test.wasm`.
+- Native CLI: `dist/native/<platform>/geometer.exe` or
+  `dist/native/<platform>/geometer`.
+- Native static library: `dist/native/<platform>/geometer.lib` or
+  `dist/native/<platform>/libgeometer.a`.
+- Full browser WASM C ABI: `dist/wasm/browser/geometer.js` and
+  `dist/wasm/browser/geometer.wasm`.
+- Node WASM CLI parity/test target: `dist/wasm/node-test/geometer-node-test.js`
+  and `dist/wasm/node-test/geometer-node-test.wasm`.
 - Planar-only browser WASM C ABI optimization:
-  `dist/geometer-planar-browser.js` and `dist/geometer-planar-browser.wasm`.
+  `dist/wasm/planar-browser/geometer-planar-browser.js` and
+  `dist/wasm/planar-browser/geometer-planar-browser.wasm`.
+
+Native platform directory names use:
+
+- `windows-x64`
+- `linux-x64`
+- `macos-x64`
+- `macos-arm64`
+
+Flat files at the root of `dist/` are compatibility aliases during the
+transition to grouped artifacts. New source-checkout consumers should prefer the
+grouped paths.
 
 Do not commit local generated build state:
 

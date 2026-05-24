@@ -26,7 +26,8 @@ CAD workflows need reliable hidden-line projection and geometry operations. They
 should call the same Geometer implementation used by the browser, not maintain
 parallel Python OCCT projection code.
 
-The existing C ABI is already the right boundary for this:
+The existing C ABI remains the right low-level boundary for WASM and possible
+future non-Python bindings:
 
 - `geometer_step_hlr_projection_json_bytes`
 - `geometer_step_to_glb_bytes`
@@ -35,7 +36,9 @@ The existing C ABI is already the right boundary for this:
 - `geometer_free_bytes`
 - version and ABI checks
 
-The Python layer should initially be a thin wrapper over that C ABI.
+The Python release path is now executable-backed. Python calls the same native
+implementation through `geometer run` JSON batches instead of loading the C ABI
+in-process.
 
 ## Dependency Policy
 
@@ -121,11 +124,20 @@ retired. The release direction is a statically linked `geometer.exe`/`geometer`
 driven from Python through subprocess calls. `dist/` no longer persists
 `geometer.dll` or OCCT `TK*.dll` runtime files.
 
-Implementation update: the Python API now defaults to the executable backend.
-It locates `GEOMETER_EXE` or the source-checkout `dist/geometer.exe`, writes a
-temporary JSON batch request, calls `geometer run`, and reads generated
-HLR/GLB outputs back into the friendly Python API. `GEOMETER_BACKEND=ctypes`
-and `GEOMETER_BACKEND=worker` remain available for developer/debug use.
+Implementation update: the Python API now uses the executable backend only.
+It locates `GEOMETER_EXE`, the bundled wheel executable, or the source-checkout
+`dist/native/<platform>/geometer(.exe)`, writes a temporary JSON batch request,
+calls `geometer run`, and reads generated HLR/GLB outputs back into the
+friendly Python API. The resolver still checks the legacy flat `dist/` path as a
+compatibility fallback. `GEOMETER_BACKEND=exe` and `GEOMETER_BACKEND=cli` are
+accepted explicit names; ctypes/native/worker backend names are rejected by the
+public Python API.
+
+Batch update: `geometer.GeometerBatchRunner(max_workers=8, chunk_size=5)` is
+available for Python callers that need to split many HLR/GLB jobs across a
+small number of `geometer.exe run` subprocesses. On the Loz Old Man fixture,
+98 HLR jobs ran in about 4.36 s with 8 workers and chunk size 5, compared with
+about 5.33 s for one process per job.
 
 ## Package Shape
 
@@ -138,20 +150,29 @@ geometer
 Initial Python API shape:
 
 ```python
-from geometer import hlr_projection_json, project_step_hlr, step_to_glb, version
+from geometer import (
+    GeometerBatchRunner,
+    hlr_projection_json,
+    project_step_hlr,
+    step_to_glb,
+    version,
+)
 
 projection = project_step_hlr(step_bytes, views=[...], options={...})
 glb_bytes = step_to_glb(step_bytes, options={...})
+runner = GeometerBatchRunner(max_workers=8, chunk_size=5)
+batch = runner.run(jobs, options={...})
 ```
 
 Implementation layers:
 
 - `geometer/__init__.py` - public Python API
+- `geometer/_batch.py` - chunked multi-process `geometer run` orchestration
 - `geometer/_cli.py` - subprocess runner for the bundled or configured CLI
-- `geometer/_paths.py` - locate bundled executable and optional native library
-- `geometer/_native.py` - optional `ctypes` loader and C ABI signatures
-- `geometer/_errors.py` - exception types for C ABI errors
-- `geometer/_version.py` - project and C ABI version checks
+- `geometer/_paths.py` - locate bundled executable and source-checkout dist
+  artifacts
+- `geometer/_types.py` - Python request/result wrapper types
+- `geometer/_errors.py` - exception types for native command errors
 
 Use the CLI subprocess backend first. HLR and STEP-to-GLB are coarse, heavy
 operations, so process startup overhead is acceptable for the first Python
@@ -160,11 +181,8 @@ reason to expose fine-grained C++ value objects.
 
 Backend selection policy:
 
-- `GEOMETER_BACKEND=exe` - default; run the bundled/static CLI.
-- `GEOMETER_BACKEND=ctypes` - optional development/performance backend.
-- `GEOMETER_BACKEND=worker` - legacy subprocess bridge around the C ABI.
+- `GEOMETER_BACKEND=exe` or `GEOMETER_BACKEND=cli` - run the bundled/static CLI.
 - `GEOMETER_EXE` - override the executable path.
-- `GEOMETER_NATIVE_LIBRARY` - override the optional native library path.
 
 The executable backend should preserve the same friendly Python API. It may use
 temporary files internally for STEP input and GLB/JSON/SVG output, but those
@@ -240,11 +258,12 @@ Initial response shape:
 }
 ```
 
-The batch interface should support multiple STEP inputs in one process. That
-lets Altium Cruncher, KiCad Monkey, and other Python callers amortize process
-startup across repeated HLR/GLB operations. Prefer `step_path` and
-`output_path` for large CAD data. Inline byte transport can be added later if a
-consumer truly needs it.
+The batch interface supports multiple STEP inputs in one process. That lets
+Altium Cruncher, KiCad Monkey, and other Python callers amortize process startup
+across repeated HLR/GLB operations. A top-level `options` object supplies
+defaults for all jobs, and each job's own `options` object overrides only the
+fields that differ. Prefer `step_path` and `output_path` for large CAD data.
+Inline byte transport can be added later if a consumer truly needs it.
 
 The generated template should include:
 
@@ -384,8 +403,10 @@ Current local wheel build command:
 python -m pip wheel . -w out\wheelhouse --no-deps
 ```
 
-The setuptools build command copies `dist/geometer.exe` / `dist/geometer` into
-`geometer/native/` inside the wheel and marks the wheel platform-specific.
+The setuptools build command prefers `dist/native/<platform>/geometer(.exe)`,
+falls back to legacy flat `dist/geometer(.exe)`, copies the selected executable
+into `geometer/native/<platform>/` inside the wheel, and marks the wheel
+platform-specific.
 
 Do not force the first milestone to solve every platform. Instead, keep the
 CMake and package layout platform-neutral.
@@ -533,6 +554,18 @@ Preferred Geometer policy:
 - validate the executable in a clean environment without OCCT DLL/SO/dylib
   search-path setup.
 
+Native `dist/` structure:
+
+- canonical native source-checkout artifacts live under
+  `dist/native/<platform>/`;
+- platform names use `windows-x64`, `linux-x64`, `macos-x64`, and
+  `macos-arm64`;
+- flat `dist/geometer(.exe)` copies are compatibility aliases for existing
+  tools;
+- wheels copy the platform executable into `geometer/native/<platform>/` inside
+  the wheel. Each wheel is already platform-specific, but keeping the platform
+  folder makes the source-checkout and wheel resolver rules match.
+
 On Windows, the target should be "no OCCT DLLs required." If we also want "no
 Visual C++ redistributable required," the release build needs a deliberate MSVC
 runtime policy, likely `/MT`, applied consistently to OCCT and Geometer.
@@ -549,9 +582,10 @@ Python should call native Geometer.
 
 Keep the two release paths parallel:
 
-- `dist/geometer.js` and `.wasm` for full browser/Web Worker integration
-- `dist/geometer-planar-browser.js` and `.wasm` as the smaller optional
-  planar-only browser/Web Worker optimization
+- `dist/wasm/browser/geometer.js` and `.wasm` for full browser/Web Worker
+  integration
+- `dist/wasm/planar-browser/geometer-planar-browser.js` and `.wasm` as the
+  smaller optional planar-only browser/Web Worker optimization
 - Python wheels with a bundled static CLI for Python tooling
 
 Both paths should expose the same semantic operations and should report the same
@@ -588,12 +622,14 @@ project version and C ABI version.
 - [x] Decide first Python packaging backend: executable subprocess by default.
 - [x] Add CLI JSON batch request/response command.
 - [x] Make Windows release CLI statically linked and easy to copy.
-- [ ] Add date-version source of truth and CMake/Python version generation.
+- [x] Add date-version source of truth and CMake/Python version generation.
 - [x] Add shared-library CMake target exporting the C ABI.
 - [x] Spike Windows shared-OCCT developer build preset and direct-exit smoke
       harness, then retire it from the release path.
-- [x] Add Python package skeleton and `ctypes` loader.
+- [x] Add Python package skeleton.
 - [x] Add Python executable backend and make it default.
+- [x] Make the public Python API executable-only for the first release.
+- [x] Add chunked `GeometerBatchRunner` for repeated HLR/GLB jobs.
 - [x] Add Windows wheel build command.
 - [x] Add smoke fixture and Python tests.
 - [x] Add interactive Python HLR/3D preview example with visible version/ABI.

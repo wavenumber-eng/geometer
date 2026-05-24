@@ -15,6 +15,9 @@ package-dir = {"" = "python"}
 [tool.setuptools.packages.find]
 where = ["python"]
 
+[tool.setuptools.package-data]
+geometer = ["native/*", "native/*/*"]
+
 [tool.pytest.ini_options]
 pythonpath = ["python"]
 testpaths = ["tests/python"]

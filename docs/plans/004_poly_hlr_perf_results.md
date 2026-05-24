@@ -3,6 +3,9 @@
 - View: `top`
 - Models: 36
 - Generated: 2026-05-16T15:05:55.296Z
+- Status: historical benchmark. Labels such as `1.1` refer to the original
+  performance branch/build label before ADR 006 date-versioning. Current
+  releases use versions such as `2026.5.23` and ABI `20260523`.
 
 ## TL;DR
 

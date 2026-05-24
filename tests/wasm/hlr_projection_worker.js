@@ -1,13 +1,18 @@
 // HLR projection worker. By default it loads the current Geometer browser build
-// from /dist/. Tests can pass a custom backend directory, but the old checked-in
-// baseline build is no longer shipped.
+// from /dist/wasm/browser/. Tests can pass a custom backend directory, but the
+// old checked-in baseline build is no longer shipped.
 
 let activeBackend = null;
 let modulePromise = null;
 
 function normalizeBackend(backend) {
   if (!backend || backend === "current") {
-    return { dir: "/dist", factory: "createGeometerModule", script: "geometer.js", wasm: "geometer.wasm" };
+    return {
+      dir: "/dist/wasm/browser",
+      factory: "createGeometerModule",
+      script: "geometer.js",
+      wasm: "geometer.wasm",
+    };
   }
   // Allow callers to point at any directory under /dist/...
   return { dir: backend, factory: "createGeometerModule", script: "geometer.js", wasm: "geometer.wasm" };

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 import subprocess
-import sys
 from pathlib import Path
 
 import geometer
@@ -13,8 +12,7 @@ SOT23_STEP = ROOT / "tests" / "fixtures" / "step" / "embedded_models" / "SOT-23.
 
 
 def _geometer_exe() -> Path:
-    name = "geometer.exe" if sys.platform == "win32" else "geometer"
-    return ROOT / "dist" / name
+    return geometer.executable_path()
 
 
 def test_cli_init_request_and_run_hlr_json(tmp_path: Path) -> None:

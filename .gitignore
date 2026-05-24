@@ -25,6 +25,7 @@ __pycache__/
 
 # Rack results
 tests/rack_results/
+.bench-tmp/
 
 # Node
 node_modules/

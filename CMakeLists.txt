@@ -9,6 +9,40 @@ project(geometer VERSION ${GEOMETER_RELEASE_VERSION} LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+if(WIN32)
+    set(_geometer_dist_os "windows")
+elseif(APPLE)
+    set(_geometer_dist_os "macos")
+elseif(UNIX)
+    set(_geometer_dist_os "linux")
+else()
+    string(TOLOWER "${CMAKE_SYSTEM_NAME}" _geometer_dist_os)
+endif()
+
+string(TOLOWER "${CMAKE_SYSTEM_PROCESSOR}" _geometer_dist_arch)
+if(_geometer_dist_arch MATCHES "^(amd64|x86_64)$")
+    set(_geometer_dist_arch "x64")
+elseif(_geometer_dist_arch MATCHES "^(aarch64|arm64)$")
+    set(_geometer_dist_arch "arm64")
+elseif(_geometer_dist_arch MATCHES "^(i386|i686|x86)$")
+    set(_geometer_dist_arch "x86")
+endif()
+
+set(GEOMETER_NATIVE_DIST_PLATFORM "${_geometer_dist_os}-${_geometer_dist_arch}"
+    CACHE STRING "Geometer native dist platform directory")
+set(GEOMETER_NATIVE_DIST_DIR
+    "${CMAKE_SOURCE_DIR}/dist/native/${GEOMETER_NATIVE_DIST_PLATFORM}"
+    CACHE PATH "Geometer platform-specific native dist directory")
+set(GEOMETER_WASM_BROWSER_DIST_DIR
+    "${CMAKE_SOURCE_DIR}/dist/wasm/browser"
+    CACHE PATH "Geometer full browser WASM dist directory")
+set(GEOMETER_WASM_NODE_TEST_DIST_DIR
+    "${CMAKE_SOURCE_DIR}/dist/wasm/node-test"
+    CACHE PATH "Geometer Node CLI test WASM dist directory")
+set(GEOMETER_WASM_PLANAR_BROWSER_DIST_DIR
+    "${CMAKE_SOURCE_DIR}/dist/wasm/planar-browser"
+    CACHE PATH "Geometer planar browser WASM dist directory")
+
 # ---------------------------------------------------------------------------
 # OCCT dependency
 #

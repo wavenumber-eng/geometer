@@ -1,8 +1,7 @@
-"""Run direct Python ctypes HLR/GLB calls in fresh subprocesses.
+"""Run executable-backed Python HLR/GLB calls in fresh subprocesses.
 
-This catches the Windows teardown failure that motivated the temporary worker
-bridge. A shared-OCCT Python build should pass this without
-GEOMETER_PYTHON_WORKER.
+This is a packaging smoke test for the public Python API. The API should use
+the platform native `geometer` executable, not direct ctypes loading.
 """
 
 from __future__ import annotations
@@ -41,10 +40,10 @@ def main() -> int:
     parser.add_argument("--runs", type=int, default=3, help="Subprocess runs to execute")
     parser.add_argument("--step", type=Path, default=DEFAULT_STEP, help="STEP file to smoke")
     parser.add_argument(
-        "--library",
+        "--exe",
         type=Path,
         default=None,
-        help="Optional geometer.dll/libgeometer path for GEOMETER_NATIVE_LIBRARY",
+        help="Optional geometer executable path for GEOMETER_EXE",
     )
     args = parser.parse_args()
 
@@ -56,10 +55,9 @@ def main() -> int:
 
     env = os.environ.copy()
     env["PYTHONPATH"] = _prepend_pythonpath(ROOT / "python", env.get("PYTHONPATH"))
-    env["GEOMETER_PYTHON_DIRECT"] = "1"
-    env.pop("GEOMETER_PYTHON_WORKER", None)
-    if args.library is not None:
-        env["GEOMETER_NATIVE_LIBRARY"] = str(args.library.resolve())
+    env["GEOMETER_BACKEND"] = "exe"
+    if args.exe is not None:
+        env["GEOMETER_EXE"] = str(args.exe.resolve())
 
     child_code = CHILD_CODE.replace("__GEOMETER_STEP_PATH__", str(step))
     for index in range(1, args.runs + 1):

@@ -24,7 +24,8 @@ Options considered:
 2. Cross-compiles OCCT to WASM static libraries
    (`.deps/occt-wasm-install/`).
 3. Cross-compiles Geometer against the WASM OCCT build.
-4. Copies the Node CLI and browser C ABI WASM outputs to `dist/`.
+4. Copies the Node CLI and browser C ABI WASM outputs to grouped
+   `dist/wasm/<target>/` folders and flat compatibility aliases in `dist/`.
 
 OCCT source is shared with the native `build_occt.py` flow. RapidJSON is
 vendored under `third_party/rapidjson` and passed to OCCT during configure.
@@ -44,7 +45,7 @@ vendored under `third_party/rapidjson` and passed to OCCT during configure.
 
 ```bash
 python scripts/build_wasm.py
-node dist/geometer-node-test.js step-to-glb input.step output.glb
+node dist/wasm/node-test/geometer-node-test.js step-to-glb input.step output.glb
 python scripts/build_wasm.py --clean
 ```
 

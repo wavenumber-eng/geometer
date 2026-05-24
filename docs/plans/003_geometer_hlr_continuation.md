@@ -7,7 +7,14 @@ HLR projection and STEP mesh conversion into `geometer`.
 
 ## Completion Update
 
-Status: implemented for v0.1.0.
+Status: historical plan, implemented and superseded by the dated
+`2026.5.23` release train.
+
+Current release note: Geometer now uses ADR 006 date versions
+(`2026.5.23`, ABI `20260523`), the public Python package is executable-backed
+through `geometer run`, and source-checkout dist artifacts are moving toward
+`dist/native/<platform>/` and `dist/wasm/<target>/` grouped paths with flat
+compatibility aliases.
 
 Completed work:
 
@@ -20,11 +27,11 @@ Completed work:
   - `step-project-svg`
 - A stable C ABI exists for byte-buffer HLR projection and version checks.
 - Browser WASM builds now produce:
-  - `dist/geometer.js`
-  - `dist/geometer.wasm`
+  - `dist/wasm/browser/geometer.js`
+  - `dist/wasm/browser/geometer.wasm`
 - Node CLI parity/test WASM builds now produce:
-  - `dist/geometer-node-test.js`
-  - `dist/geometer-node-test.wasm`
+  - `dist/wasm/node-test/geometer-node-test.js`
+  - `dist/wasm/node-test/geometer-node-test.wasm`
 - Browser worker integration exists under `tests/wasm/`.
 - Embedded model fixture prep and browser viewer/benchmark pages exist:
   - `scripts/prepare_embedded_model_fixtures.ps1`
@@ -34,11 +41,12 @@ Completed work:
   `curve_mode=polyline`, `samples_per_curve=24`, `round_digits=3`,
   `include_visible=true`, `include_outline=true`, and
   `union_simple_polygons=true`.
-- Versioning has been added for v0.1.0:
+- Versioning was originally added for v0.1.0:
   - project version `0.1.0`
   - C ABI version `1`
   - `geometer --version`
   - WASM exports `geometer_version_string` and `geometer_abi_version`
+  The active versioning policy is now ADR 006 date-based versioning.
 - Root docs were added/updated:
   - `AGENTS.md`
   - `DEVELOPMENT.md`
@@ -91,8 +99,9 @@ Completed work:
   policy into `geometer`.
 - Browser WASM should not depend on Node filesystem behavior. Prefer direct byte
   buffers and a modular browser build.
-- Python should call the same C++ core through a stable C ABI, likely via
-  `ctypes`/`cffi` initially.
+- Python should call the same C++ core. The current release path does this by
+  invoking the native `geometer` executable through JSON batches; direct
+  `ctypes` loading is not part of the public Python package.
 - Simple-mode replacement should be implemented in C++:
   1. Snap projected coordinates to a deterministic precision grid.
   2. Dedupe undirected segments.
@@ -147,11 +156,11 @@ ctest --test-dir build -C Release --output-on-failure
 Version checks:
 
 ```powershell
-.\dist\geometer.exe --version
-node dist\geometer-node-test.js --version
+.\dist\native\windows-x64\geometer.exe --version
+node dist\wasm\node-test\geometer-node-test.js --version
 ```
 
-Browser smoke:
+Historical browser smoke:
 
 ```text
 PASS version=0.1.0 abi=1 schema=geometry.projection.a0 detail=10 simple=8
@@ -160,8 +169,8 @@ PASS version=0.1.0 abi=1 schema=geometry.projection.a0 detail=10 simple=8
 ## Remaining Follow-Up Candidates
 
 1. Add persistent shape/projection caching for repeated browser view changes.
-2. Add a Python wrapper around the C ABI after downstream integration needs are
-   clearer.
+2. Continue hardening the executable-backed Python wrapper and PyPI release
+   flow.
 3. Compare geometer output against altium-cruncher projection payloads on a
    representative board fixture.
 4. Add mesh/typed-array browser APIs when direct STEP mesh rendering is needed.

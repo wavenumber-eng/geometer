@@ -15,7 +15,19 @@ const path = require("node:path");
 const { spawnSync } = require("node:child_process");
 
 const ROOT = path.resolve(__dirname, "..");
-const CURRENT_CLI = path.join(ROOT, "dist", "geometer-node-test.js");
+const CURRENT_CLI = resolveCurrentCli();
+
+function resolveCurrentCli() {
+  const candidates = [
+    path.join(ROOT, "dist", "wasm", "node-test", "geometer-node-test.js"),
+    path.join(ROOT, "dist", "geometer-node-test.js"),
+  ];
+  const found = candidates.find((candidate) => fs.existsSync(candidate));
+  if (!found) {
+    throw new Error(`Missing geometer-node-test.js. Looked in: ${candidates.join(", ")}`);
+  }
+  return found;
+}
 
 function parseArgs(argv) {
   const opts = {

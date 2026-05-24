@@ -12,6 +12,27 @@ All notable changes to geometer are documented here.
 - Removed the old `dist/baseline/` WASM snapshot and the browser UI/script
   paths that selected it. The completed HLR performance work remains documented
   in `docs/plans/004_poly_hlr_perf_results.md`.
+- Made the public Python package executable-backed only for the first PyPI
+  release path. `GEOMETER_BACKEND=exe`/`cli` are accepted explicit names;
+  ctypes/native/worker names are rejected by the public API.
+- Started the transition from flat `dist/` artifacts to grouped
+  `dist/native/<platform>/` and `dist/wasm/<target>/` paths. Flat root-level
+  `dist/` copies remain compatibility aliases for existing tools.
+- Python wheel builds now bundle the executable under
+  `geometer/native/<platform>/`, matching the source-checkout lookup policy.
+
+### Added
+
+- `geometer run request.json response.json` batch requests now support
+  request-level default `options` with per-job overrides.
+- Python `geometer.run_batch(...)` and `geometer.GeometerBatchRunner` for
+  chunked multi-process execution of repeated HLR/GLB jobs.
+
+### Removed
+
+- Removed the unused Python ctypes/worker backend modules from the package.
+  The C ABI remains available for native C++/WASM boundaries, but PyPI-facing
+  Python uses the executable backend.
 
 ## [2026.5.16] - 2026-05-16
 

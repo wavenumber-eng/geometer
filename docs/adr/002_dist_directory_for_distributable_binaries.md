@@ -12,13 +12,21 @@ Geometer produces binaries (CLI executable, static library, Node WASM CLI, and b
 
 A `dist/` directory at the repo root holds distributable binaries. These are checked into git.
 
-Post-build, CMake copies outputs to `dist/`:
-- `dist/geometer.exe` (or `dist/geometer` on Unix)
-- `dist/geometer.lib` or `dist/libgeometer.a`
-- `dist/geometer.js`
-- `dist/geometer.wasm`
-- `dist/geometer-browser.js`
-- `dist/geometer-browser.wasm`
+Post-build, CMake copies outputs to grouped runtime directories under `dist/`:
+
+- `dist/native/<platform>/geometer.exe` (or `geometer` on Unix)
+- `dist/native/<platform>/geometer.lib` or `libgeometer.a`
+- `dist/wasm/browser/geometer.js` and `dist/wasm/browser/geometer.wasm` for
+  full browser/Web Worker integration
+- `dist/wasm/node-test/geometer-node-test.js` and
+  `dist/wasm/node-test/geometer-node-test.wasm` for Node CLI parity tests
+- `dist/wasm/planar-browser/geometer-planar-browser.js` and
+  `dist/wasm/planar-browser/geometer-planar-browser.wasm` for smaller
+  planar-only browser/Web Worker consumers
+
+Flat root-level copies such as `dist/geometer.exe` and `dist/geometer.js` are
+retained as compatibility aliases while downstream source-checkout consumers
+migrate to grouped paths.
 
 Generated dependency and build state remains outside version control:
 

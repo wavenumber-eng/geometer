@@ -3,6 +3,11 @@
 Date: 2026-05-16
 Branch: `1.1`
 
+Status: historical performance plan, completed before the ADR 006 date-version
+transition. References to `1.1` describe the original working branch and
+benchmark label, not the current package version. The current release identity
+uses `2026.5.23` and ABI `20260523`.
+
 ## Motivation
 
 The current HLR projection path in `src/cpp/lib/hlr_projection.cpp` calls
@@ -35,8 +40,8 @@ the exact path for callers that need analytic arcs.
    - `hlr_angle_tolerance` (rad) — passed to `HLRBRep_PolyAlgo::Angle`
 4. Surface every option in `hlr_benchmark.html` and the embedded model viewer
    so we can sweep them interactively.
-5. Provide a before/after benchmark comparing the v0.1.0 baseline (`dist/baseline/*`)
-   and the v1.1 build (`dist/*`) over the embedded_models fixtures.
+5. Provide a before/after benchmark comparing a temporary v0.1.0 baseline
+   snapshot and the v1.1 build over the embedded_models fixtures.
 
 ## Output Contract
 
@@ -140,7 +145,9 @@ shows mesh vs HLR vs extract as separate columns.
 
 Add toolbar controls:
 
-- Backend select: `dist/` (1.1) | `dist/baseline/` (v0.1.0)
+- Backend select during the perf work: current build | temporary v0.1.0
+  baseline snapshot. The checked-in `dist/baseline/` artifacts were removed
+  after the comparison was completed.
 - `projection_algorithm` select
 - numeric inputs for `mesh_linear_deflection`, `mesh_angular_deflection`, `hlr_angle_tolerance`
 - `mesh_relative` checkbox
@@ -163,13 +170,13 @@ Accept full `options` object from the page, forward to WASM. Surface
 
 1. Fixtures: `tests/fixtures/step/embedded_models/*` (36 STEP files, per
    manifest). All views default to `top` per existing harness behavior.
-2. For each backend (`baseline` and `1.1`):
+2. For each backend (`baseline` and `1.1` during the original perf work):
    - Cold cache (fresh worker per backend).
    - Run all fixtures sequentially.
    - Record per-file: STEP-to-bytes ms, module ms (cold), hlrMs total,
      mesh/extract sub-timings (1.1 only), detail count, simple count.
 3. Save two CSVs into `tests/wasm/results/`:
-   - `bench_baseline.csv`
+   - `bench_baseline.csv` from the temporary baseline snapshot
    - `bench_poly.csv`
 4. Compute per-fixture speedup and overall geometric mean.
 5. Summarize in `docs/plans/004_poly_hlr_perf_results.md`.

@@ -24,3 +24,25 @@ add_executable(geometer_projection_options_json_test
 target_link_libraries(geometer_projection_options_json_test PRIVATE geometer_lib)
 
 add_test(NAME geometer_projection_options_json_test COMMAND geometer_projection_options_json_test)
+
+add_executable(geometer_projection_model_transform_test
+    projection_model_transform_test.cpp
+)
+
+target_link_libraries(geometer_projection_model_transform_test PRIVATE geometer_lib)
+
+target_compile_definitions(geometer_projection_model_transform_test PRIVATE
+    GEOMETER_TEST_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
+)
+
+add_test(NAME geometer_projection_model_transform_test COMMAND geometer_projection_model_transform_test)
+
+if(WIN32 AND OpenCASCADE_BINARY_DIR)
+    set_tests_properties(
+        geometer_planar_solve_test
+        geometer_projection_options_json_test
+        geometer_projection_model_transform_test
+        PROPERTIES
+            ENVIRONMENT_MODIFICATION "PATH=path_list_prepend:${OpenCASCADE_BINARY_DIR}"
+    )
+endif()

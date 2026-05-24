@@ -15,14 +15,17 @@ CMakeUserPresets.json
 # OS
 .DS_Store
 Thumbs.db
+imgui.ini
 
 # Python
 __pycache__/
 *.pyc
 .venv/
+*.egg-info/
 
 # Rack results
 tests/rack_results/
+.bench-tmp/
 
 # Node
 node_modules/

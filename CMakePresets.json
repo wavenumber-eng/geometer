@@ -7,7 +7,19 @@
             "binaryDir": "${sourceDir}/build",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release",
-                "OpenCASCADE_DIR": "${sourceDir}/.deps/occt-install/cmake"
+                "OpenCASCADE_DIR": "${sourceDir}/.deps/occt-install/cmake",
+                "GEOMETER_OCCT_LIBRARY_TYPE": "Static"
+            }
+        },
+        {
+            "name": "shared-occt",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build-shared-occt",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "OpenCASCADE_DIR": "${sourceDir}/.deps/occt-shared-install/cmake",
+                "GEOMETER_OCCT_LIBRARY_TYPE": "Shared",
+                "GEOMETER_COPY_OCCT_RUNTIME": "ON"
             }
         }
     ]

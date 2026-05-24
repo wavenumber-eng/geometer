@@ -3,6 +3,8 @@
 #include "geometer/planar_contours.h"
 
 #include <BRepAdaptor_Curve.hxx>
+#include <BRepBuilderAPI_GTransform.hxx>
+#include <BRepBuilderAPI_Transform.hxx>
 #include <BRepMesh_IncrementalMesh.hxx>
 #include <GeomAbs_CurveType.hxx>
 #include <HLRAlgo_Projector.hxx>
@@ -21,7 +23,11 @@
 #include <gp_Ax2.hxx>
 #include <gp_Circ.hxx>
 #include <gp_Dir.hxx>
+#include <gp_GTrsf.hxx>
+#include <gp_Mat.hxx>
 #include <gp_Pnt.hxx>
+#include <gp_Trsf.hxx>
+#include <gp_XYZ.hxx>
 
 #include <algorithm>
 #include <chrono>
@@ -215,6 +221,106 @@ TopoDS_Shape read_step_shape_from_bytes(const unsigned char* step_data, std::siz
     }
 
     return shape;
+}
+
+bool validate_model_transform(const std::array<double, 16>& transform, std::string* error)
+{
+    for (double value : transform)
+    {
+        if (!std::isfinite(value))
+        {
+            *error = "Projection model_transform must contain only finite numbers.";
+            return false;
+        }
+    }
+
+    constexpr double tol = 1.0e-12;
+    if (std::fabs(transform[12]) > tol || std::fabs(transform[13]) > tol ||
+        std::fabs(transform[14]) > tol || std::fabs(transform[15] - 1.0) > tol)
+    {
+        *error = "Projection model_transform final row must be [0, 0, 0, 1].";
+        return false;
+    }
+
+    gp_GTrsf gtrsf(gp_Mat(transform[0], transform[1], transform[2], transform[4], transform[5],
+                          transform[6], transform[8], transform[9], transform[10]),
+                   gp_XYZ(transform[3], transform[7], transform[11]));
+    if (gtrsf.IsSingular())
+    {
+        *error = "Projection model_transform must not be singular.";
+        return false;
+    }
+
+    return true;
+}
+
+bool is_identity_transform(const std::array<double, 16>& transform)
+{
+    static const std::array<double, 16> identity = {
+        1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0,
+    };
+    constexpr double tol = 1.0e-12;
+    for (std::size_t i = 0; i < transform.size(); ++i)
+    {
+        if (std::fabs(transform[i] - identity[i]) > tol)
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+double dot3(double ax, double ay, double az, double bx, double by, double bz)
+{
+    return (ax * bx) + (ay * by) + (az * bz);
+}
+
+bool is_trsf_compatible_transform(const std::array<double, 16>& transform)
+{
+    const double c0_len2 =
+        dot3(transform[0], transform[4], transform[8], transform[0], transform[4], transform[8]);
+    const double c1_len2 =
+        dot3(transform[1], transform[5], transform[9], transform[1], transform[5], transform[9]);
+    const double c2_len2 =
+        dot3(transform[2], transform[6], transform[10], transform[2], transform[6], transform[10]);
+    constexpr double tol = 1.0e-10;
+    if (c0_len2 <= tol || c1_len2 <= tol || c2_len2 <= tol)
+    {
+        return false;
+    }
+    if (std::fabs(c0_len2 - c1_len2) > tol || std::fabs(c0_len2 - c2_len2) > tol)
+    {
+        return false;
+    }
+    return std::fabs(dot3(transform[0], transform[4], transform[8], transform[1], transform[5],
+                          transform[9])) <= tol &&
+           std::fabs(dot3(transform[0], transform[4], transform[8], transform[2], transform[6],
+                          transform[10])) <= tol &&
+           std::fabs(dot3(transform[1], transform[5], transform[9], transform[2], transform[6],
+                          transform[10])) <= tol;
+}
+
+TopoDS_Shape apply_model_transform(const TopoDS_Shape& shape,
+                                   const std::array<double, 16>& transform)
+{
+    if (is_identity_transform(transform))
+    {
+        return shape;
+    }
+
+    if (is_trsf_compatible_transform(transform))
+    {
+        gp_Trsf trsf;
+        trsf.SetValues(transform[0], transform[1], transform[2], transform[3], transform[4],
+                       transform[5], transform[6], transform[7], transform[8], transform[9],
+                       transform[10], transform[11]);
+        return BRepBuilderAPI_Transform(shape, trsf, true).Shape();
+    }
+
+    gp_GTrsf gtrsf(gp_Mat(transform[0], transform[1], transform[2], transform[4], transform[5],
+                          transform[6], transform[8], transform[9], transform[10]),
+                   gp_XYZ(transform[3], transform[7], transform[11]));
+    return BRepBuilderAPI_GTransform(shape, gtrsf, true).Shape();
 }
 
 gp_Ax2 make_view_axes(const ProjectionViewSpec& view)
@@ -521,8 +627,7 @@ double elapsed_ms(const std::chrono::high_resolution_clock::time_point& start)
 
 ProjectedViewGeometry project_view_exact(const TopoDS_Shape& shape, const ProjectionViewSpec& view,
                                          const HlrProjectionOptions& options, long long scale,
-                                         long long extent_scale,
-                                         HlrProjectionTimings* timings)
+                                         long long extent_scale, HlrProjectionTimings* timings)
 {
     const auto hlr_start = std::chrono::high_resolution_clock::now();
 
@@ -548,20 +653,21 @@ ProjectedViewGeometry project_view_exact(const TopoDS_Shape& shape, const Projec
     // Pull each enabled edge category from HLRBRep_HLRToShape and merge.
     auto extract = [&](bool enabled, TopoDS_Shape shape)
     {
-        if (!enabled || shape.IsNull()) return;
+        if (!enabled || shape.IsNull())
+            return;
         add_edge_geometry(shape, options, &detail_segment_keys, &detail_arc_keys,
                           &contour_source_segments, scale, extent_scale);
     };
-    extract(options.edge_v_sharp,   hlr_to_shape.VCompound());
+    extract(options.edge_v_sharp, hlr_to_shape.VCompound());
     extract(options.edge_v_outline, hlr_to_shape.OutLineVCompound());
-    extract(options.edge_v_smooth,  hlr_to_shape.Rg1LineVCompound());
-    extract(options.edge_v_sewn,    hlr_to_shape.RgNLineVCompound());
-    extract(options.edge_v_iso,     hlr_to_shape.IsoLineVCompound());
-    extract(options.edge_h_sharp,   hlr_to_shape.HCompound());
+    extract(options.edge_v_smooth, hlr_to_shape.Rg1LineVCompound());
+    extract(options.edge_v_sewn, hlr_to_shape.RgNLineVCompound());
+    extract(options.edge_v_iso, hlr_to_shape.IsoLineVCompound());
+    extract(options.edge_h_sharp, hlr_to_shape.HCompound());
     extract(options.edge_h_outline, hlr_to_shape.OutLineHCompound());
-    extract(options.edge_h_smooth,  hlr_to_shape.Rg1LineHCompound());
-    extract(options.edge_h_sewn,    hlr_to_shape.RgNLineHCompound());
-    extract(options.edge_h_iso,     hlr_to_shape.IsoLineHCompound());
+    extract(options.edge_h_smooth, hlr_to_shape.Rg1LineHCompound());
+    extract(options.edge_h_sewn, hlr_to_shape.RgNLineHCompound());
+    extract(options.edge_h_iso, hlr_to_shape.IsoLineHCompound());
 
     ProjectedViewGeometry projected;
     projected.view = view;
@@ -616,13 +722,14 @@ ProjectedViewGeometry project_view_poly(const TopoDS_Shape& shape, const Project
     // The smooth/sewn/iso flags are accepted but silently ignored in poly mode.
     auto extract = [&](bool enabled, TopoDS_Shape shape)
     {
-        if (!enabled || shape.IsNull()) return;
+        if (!enabled || shape.IsNull())
+            return;
         add_edge_geometry(shape, poly_options, &detail_segment_keys, &detail_arc_keys,
                           &contour_source_segments, scale, extent_scale);
     };
-    extract(poly_options.edge_v_sharp,   poly_to_shape.VCompound());
+    extract(poly_options.edge_v_sharp, poly_to_shape.VCompound());
     extract(poly_options.edge_v_outline, poly_to_shape.OutLineVCompound());
-    extract(poly_options.edge_h_sharp,   poly_to_shape.HCompound());
+    extract(poly_options.edge_h_sharp, poly_to_shape.HCompound());
     extract(poly_options.edge_h_outline, poly_to_shape.OutLineHCompound());
 
     ProjectedViewGeometry projected;
@@ -659,6 +766,12 @@ int step_hlr_projection_from_bytes(const unsigned char* step_data, std::size_t s
         set_status(status, 3, "Projection round_digits must be between 0 and 9.");
         return 3;
     }
+    std::string transform_error;
+    if (!validate_model_transform(options.model_transform, &transform_error))
+    {
+        set_status(status, 3, transform_error);
+        return 3;
+    }
 
     try
     {
@@ -671,6 +784,12 @@ int step_hlr_projection_from_bytes(const unsigned char* step_data, std::size_t s
             return status == nullptr ? 6 : status->code;
         }
         timings.step_read_ms = elapsed_ms(read_start);
+        shape = apply_model_transform(shape, options.model_transform);
+        if (shape.IsNull())
+        {
+            set_status(status, 8, "Projection model_transform produced a null shape.");
+            return 8;
+        }
 
         HlrProjectionResult output;
         output.schema = "geometry.projection.a0";
@@ -687,8 +806,7 @@ int step_hlr_projection_from_bytes(const unsigned char* step_data, std::size_t s
         {
             const auto mesh_start = std::chrono::high_resolution_clock::now();
             BRepMesh_IncrementalMesh mesher(shape, options.mesh_linear_deflection,
-                                            options.mesh_relative,
-                                            options.mesh_angular_deflection,
+                                            options.mesh_relative, options.mesh_angular_deflection,
                                             /*isInParallel=*/true);
             mesher.Perform();
             timings.mesh_ms = elapsed_ms(mesh_start);

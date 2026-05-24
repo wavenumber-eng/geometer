@@ -350,6 +350,69 @@ bool number_array3(const JsonValue& value, std::array<double, 3>* output, std::s
     return true;
 }
 
+bool parse_model_transform(const JsonValue& value, std::array<double, 16>* output,
+                           std::string* error)
+{
+    if (value.type != JsonValue::Type::Array)
+    {
+        *error = "model_transform must be a row-major 4x4 number matrix.";
+        return false;
+    }
+
+    std::array<double, 16> parsed{};
+    if (value.array_value.size() == 16)
+    {
+        for (std::size_t i = 0; i < 16; ++i)
+        {
+            if (value.array_value[i].type != JsonValue::Type::Number ||
+                !std::isfinite(value.array_value[i].number_value))
+            {
+                *error = "model_transform must contain only finite numbers.";
+                return false;
+            }
+            parsed[i] = value.array_value[i].number_value;
+        }
+    }
+    else if (value.array_value.size() == 4)
+    {
+        for (std::size_t row = 0; row < 4; ++row)
+        {
+            const JsonValue& row_value = value.array_value[row];
+            if (row_value.type != JsonValue::Type::Array || row_value.array_value.size() != 4)
+            {
+                *error = "model_transform must be a row-major 4x4 number matrix.";
+                return false;
+            }
+            for (std::size_t col = 0; col < 4; ++col)
+            {
+                const JsonValue& item = row_value.array_value[col];
+                if (item.type != JsonValue::Type::Number || !std::isfinite(item.number_value))
+                {
+                    *error = "model_transform must contain only finite numbers.";
+                    return false;
+                }
+                parsed[(row * 4) + col] = item.number_value;
+            }
+        }
+    }
+    else
+    {
+        *error = "model_transform must be a row-major 4x4 number matrix.";
+        return false;
+    }
+
+    constexpr double tol = 1.0e-12;
+    if (std::fabs(parsed[12]) > tol || std::fabs(parsed[13]) > tol || std::fabs(parsed[14]) > tol ||
+        std::fabs(parsed[15] - 1.0) > tol)
+    {
+        *error = "model_transform final row must be [0, 0, 0, 1].";
+        return false;
+    }
+
+    *output = parsed;
+    return true;
+}
+
 bool bool_field(const JsonValue& value, bool* output, std::string* error,
                 const std::string& field_name)
 {
@@ -520,6 +583,14 @@ int parse_hlr_projection_options_json(const char* json, HlrProjectionOptions* op
             return 91;
         }
     }
+    if (const JsonValue* transform = find_any_member(root, {"model_transform", "modelTransform"}))
+    {
+        if (!parse_model_transform(*transform, &parsed.model_transform, &error))
+        {
+            set_status(status, 91, error);
+            return 91;
+        }
+    }
     if (const JsonValue* curve_mode = find_any_member(root, {"curve_mode", "curveMode"}))
     {
         if (!parse_curve_mode(*curve_mode, &parsed.curve_mode, &error))
@@ -578,16 +649,16 @@ int parse_hlr_projection_options_json(const char* json, HlrProjectionOptions* op
         bool HlrProjectionOptions::* member;
     };
     const EdgeFlag edge_flags[] = {
-        {"edge_v_sharp",   "edgeVSharp",   &HlrProjectionOptions::edge_v_sharp},
+        {"edge_v_sharp", "edgeVSharp", &HlrProjectionOptions::edge_v_sharp},
         {"edge_v_outline", "edgeVOutline", &HlrProjectionOptions::edge_v_outline},
-        {"edge_v_smooth",  "edgeVSmooth",  &HlrProjectionOptions::edge_v_smooth},
-        {"edge_v_sewn",    "edgeVSewn",    &HlrProjectionOptions::edge_v_sewn},
-        {"edge_v_iso",     "edgeVIso",     &HlrProjectionOptions::edge_v_iso},
-        {"edge_h_sharp",   "edgeHSharp",   &HlrProjectionOptions::edge_h_sharp},
+        {"edge_v_smooth", "edgeVSmooth", &HlrProjectionOptions::edge_v_smooth},
+        {"edge_v_sewn", "edgeVSewn", &HlrProjectionOptions::edge_v_sewn},
+        {"edge_v_iso", "edgeVIso", &HlrProjectionOptions::edge_v_iso},
+        {"edge_h_sharp", "edgeHSharp", &HlrProjectionOptions::edge_h_sharp},
         {"edge_h_outline", "edgeHOutline", &HlrProjectionOptions::edge_h_outline},
-        {"edge_h_smooth",  "edgeHSmooth",  &HlrProjectionOptions::edge_h_smooth},
-        {"edge_h_sewn",    "edgeHSewn",    &HlrProjectionOptions::edge_h_sewn},
-        {"edge_h_iso",     "edgeHIso",     &HlrProjectionOptions::edge_h_iso},
+        {"edge_h_smooth", "edgeHSmooth", &HlrProjectionOptions::edge_h_smooth},
+        {"edge_h_sewn", "edgeHSewn", &HlrProjectionOptions::edge_h_sewn},
+        {"edge_h_iso", "edgeHIso", &HlrProjectionOptions::edge_h_iso},
     };
     for (const EdgeFlag& flag : edge_flags)
     {

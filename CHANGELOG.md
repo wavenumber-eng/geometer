@@ -2,7 +2,41 @@
 
 All notable changes to geometer are documented here.
 
-## [1.1.0] - 2026-05-16
+## [2026.5.23] - 2026-05-23
+
+### Changed
+
+- Switched Geometer's current release identity, CMake version, Python package
+  version, runtime version string, and C ABI generation to the ADR 006
+  date-based scheme: `v2026-05-23`, `2026.5.23`, and ABI `20260523`.
+- Removed the old `dist/baseline/` WASM snapshot and the browser UI/script
+  paths that selected it. The completed HLR performance work remains documented
+  in `docs/plans/004_poly_hlr_perf_results.md`.
+- Made the public Python package executable-backed only for the first PyPI
+  release path. `GEOMETER_BACKEND=exe`/`cli` are accepted explicit names;
+  ctypes/native/worker names are rejected by the public API.
+- Started the transition from flat `dist/` artifacts to grouped
+  `dist/native/<platform>/` and `dist/wasm/<target>/` paths. Flat root-level
+  `dist/` copies remain compatibility aliases for existing tools.
+- Python wheel builds now bundle the executable under
+  `geometer/native/<platform>/`, matching the source-checkout lookup policy.
+- Renamed the Python distribution package to `wn-geometer`; the import package
+  remains `geometer`.
+
+### Added
+
+- `geometer run request.json response.json` batch requests now support
+  request-level default `options` with per-job overrides.
+- Python `geometer.run_batch(...)` and `geometer.GeometerBatchRunner` for
+  chunked multi-process execution of repeated HLR/GLB jobs.
+
+### Removed
+
+- Removed the unused Python ctypes/worker backend modules from the package.
+  The C ABI remains available for native C++/WASM boundaries, but PyPI-facing
+  Python uses the executable backend.
+
+## [2026.5.16] - 2026-05-16
 
 ### Highlights
 
@@ -42,8 +76,8 @@ See `docs/plans/004_poly_hlr_perf_results.md` for the full per-model bench.
   presets, and live "Cam" projection from the 3D camera direction.
 - `scripts/bench_hlr.js` plus `docs/plans/004_poly_hlr_perf*.md` for
   reproducible perf comparisons between 1.0 and 1.1.
-- `dist/baseline/` snapshot of the 1.0 WASM artifacts for side-by-side
-  comparison in the browser viewer.
+- Temporary 1.0 WASM snapshot for side-by-side comparison during the completed
+  browser HLR performance work.
 
 ### Removed
 
@@ -62,7 +96,7 @@ See `docs/plans/004_poly_hlr_perf_results.md` for the full per-model bench.
   `opts.include_outline` with the corresponding `opts.edge_v_*` flags.
 - Existing wall-clock comparisons may shift; see the bench doc for numbers.
 
-## [1.0.0] - prior release
+## Prior Release
 
 Initial public release. HLR projection via exact `HLRBRep_Algo`, planar
 geometry helpers, STEP / GLB conversion, browser and native build targets.

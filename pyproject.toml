@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=70.1"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "wn-geometer"
+version = "2026.5.23"
+description = "Python bindings for Geometer CAD geometry operations"
+requires-python = ">=3.10"
+readme = "README.md"
+
+[tool.setuptools]
+package-dir = {"" = "python"}
+
+[tool.setuptools.packages.find]
+where = ["python"]
+
+[tool.setuptools.package-data]
+geometer = ["native/*", "native/*/*"]
+
+[tool.pytest.ini_options]
+pythonpath = ["python"]
+testpaths = ["tests/python"]

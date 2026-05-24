@@ -250,13 +250,6 @@
       <div class="status" id="status">Idle</div>
     </div>
     <div class="tunables">
-      <label class="control" title="Geometer build to load.">
-        <span>Backend</span>
-        <select id="backendSelect">
-          <option value="current">1.1</option>
-          <option value="baseline">baseline</option>
-        </select>
-      </label>
       <label class="control" title="HLR algorithm.">
         <span>Algorithm</span>
         <select id="algoSelect">
@@ -422,7 +415,6 @@
       workTitle: document.getElementById("workTitle"),
       workSubtitle: document.getElementById("workSubtitle"),
       smokeResult: document.getElementById("smokeResult"),
-      backendSelect: document.getElementById("backendSelect"),
       algoSelect: document.getElementById("algoSelect"),
       linDeflInput: document.getElementById("linDeflInput"),
       angDeflInput: document.getElementById("angDeflInput"),
@@ -1039,11 +1031,6 @@
         else renderProjectionForCurrentView().catch(console.error);
       });
 
-      els.backendSelect.addEventListener("change", () => {
-        state.backend = els.backendSelect.value;
-        renderProjectionForCurrentView().catch(console.error);
-      });
-
       els.algoSelect.addEventListener("change", () => {
         syncEdgeRowToAlgo();
       });
@@ -1063,7 +1050,7 @@
       });
 
       els.reprojectButton.addEventListener("click", () => {
-        // Force a fresh HLR run: bust the cache entry for the current model/view/options/backend.
+        // Force a fresh HLR run: bust the cache entry for the current model/view/options.
         if (state.selectedModel) {
           const opts = currentOptions();
           state.projectionCache.delete(projectionCacheKey(state.selectedModel, state.viewId, opts, state.backend));
@@ -1081,11 +1068,6 @@
       if (["detail", "simple", "both"].includes(requestedMode)) {
         state.mode = requestedMode;
         activateSegmented(els.modeButtons, "mode", state.mode);
-      }
-      const requestedBackend = params.get("backend");
-      if (["current", "baseline"].includes(requestedBackend)) {
-        els.backendSelect.value = requestedBackend;
-        state.backend = requestedBackend;
       }
       const requestedAlgo = params.get("algo");
       if (["poly", "exact"].includes(requestedAlgo)) els.algoSelect.value = requestedAlgo;

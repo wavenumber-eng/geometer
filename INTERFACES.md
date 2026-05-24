@@ -49,8 +49,10 @@ That includes the current public headers:
 
 Defined in `src/cpp/lib/geometer/version.h`.
 
-Geometer v1.0.0 uses C ABI version `5`. The project version follows semver.
-Consumers should check both the project version and ABI version at runtime.
+Geometer uses date-based release versions per ADR 006. The current package and
+runtime version is `2026.5.23`, corresponding to release tag `v2026-05-23`.
+The current C ABI generation is `20260523`. Consumers should check both the
+project version and ABI generation at runtime.
 
 ```cpp
 struct Version {
@@ -170,6 +172,12 @@ struct ProjectionViewSpec {
 
 struct HlrProjectionOptions {
     std::vector<ProjectionViewSpec> views;
+    std::array<double, 16> model_transform = {
+        1.0, 0.0, 0.0, 0.0,
+        0.0, 1.0, 0.0, 0.0,
+        0.0, 0.0, 1.0, 0.0,
+        0.0, 0.0, 0.0, 1.0,
+    };
     ProjectionCurveMode curve_mode = ProjectionCurveMode::NativeArcs;
     int samples_per_curve = 24;
     int round_digits = 3;
@@ -250,6 +258,12 @@ from projected edge contours. `write_hlr_projection_json` emits
 `geometry.projection.a0` JSON. `write_hlr_projection_svg` emits a quick
 inspection SVG for one view and mode.
 
+`model_transform` is an optional row-major 4x4 affine transform applied to the
+loaded source shape before projection. Translation lives in the final column and
+the final row must be `[0, 0, 0, 1]`. The transform is generic source-model
+normalization; it does not imply PCB side, screen mirroring, or SVG/canvas
+Y-down policy.
+
 ## HLR Options JSON
 
 Defined in `src/cpp/lib/geometer/projection_options_json.h`.
@@ -265,6 +279,8 @@ int parse_hlr_projection_options_json(
 Accepted option keys:
 
 - `views`: array of `{ id, direction, up }`.
+- `model_transform` or `modelTransform`: row-major 4x4 number matrix. A flat
+  array of 16 numbers is also accepted.
 - `curve_mode` or `curveMode`: `native_arcs`, `native-arcs`, or `polyline`.
 - `samples_per_curve` or `samples`.
 - `round_digits` or `roundDigits`.
@@ -606,27 +622,98 @@ and planar batch byte buffers are heap-allocated and owned by the caller.
 Release them with `geometer_free_bytes`. The version string is static storage
 and does not use either free function.
 
+## Python Interface
+
+The source checkout includes a thin Python package under `python/geometer`. It
+drives the native CLI by default and keeps the public API byte/path oriented:
+
+```python
+import geometer
+
+version = geometer.version()
+projection = geometer.project_step_hlr(
+    "part.step",
+    views=[geometer.ProjectionView.top()],
+    options=geometer.HlrOptions.assembly_outline(),
+)
+json_text = geometer.hlr_projection_json("part.step")
+glb_bytes = geometer.step_to_glb("part.step")
+
+runner = geometer.GeometerBatchRunner(max_workers=8, chunk_size=5)
+runner_version = runner.version()
+batch = runner.run(
+    [
+        {
+            "id": "part-top",
+            "operation": "step_hlr_projection_json",
+            "step_path": "part.step",
+            "output_path": "part.top.projection.json",
+        }
+    ],
+    options={"curve_mode": "polyline"},
+)
+```
+
+The Python package intentionally uses the executable backend only for now. It
+looks for the Geometer CLI in this order:
+
+- `GEOMETER_EXE`;
+- the package directory or `python/geometer/native/<platform>`;
+- the package directory or `python/geometer/native`;
+- source checkout `dist/native/<platform>`;
+- source checkout legacy flat `dist/`;
+- `PATH`.
+
+The executable backend writes temporary STEP/request/output files, calls:
+
+```powershell
+geometer run request.json response.json
+```
+
+and returns the requested JSON text or GLB bytes to the Python caller.
+
+`GEOMETER_BACKEND=exe` and `GEOMETER_BACKEND=cli` are accepted explicit names.
+Other backend names are rejected by the public Python API.
+
+The native CLI now has an initial JSON batch interface:
+
+```powershell
+geometer run request.json response.json
+geometer init-request request.json --step U1.step --operation step_hlr_projection_json --output U1.projection.json
+```
+
+`request.json` contains a `geometer.batch.request.a0` jobs array so one process
+can project or convert multiple STEP files before exiting. An optional top-level
+`options` object supplies defaults for every job; each job's own `options`
+object is parsed afterwards and overrides those defaults.
+
 ## WASM Interfaces
 
-`scripts/build_wasm.py` builds two WASM targets into `dist/`.
+`scripts/build_wasm.py` builds three WASM targets into `dist/`.
 
-Node CLI target:
+Full Browser/Web Worker target:
 
-- `dist/geometer.js`
-- `dist/geometer.wasm`
+- `dist/wasm/browser/geometer.js`
+- `dist/wasm/browser/geometer.wasm`
 
-Browser/Web Worker target:
+This is the official application integration target. It is modularized with
+the factory name `createGeometerModule` and includes the OCCT-backed STEP/HLR/GLB
+APIs plus the planar byte APIs.
 
-- `dist/geometer-browser.js`
-- `dist/geometer-browser.wasm`
+Node CLI parity/test target:
+
+- `dist/wasm/node-test/geometer-node-test.js`
+- `dist/wasm/node-test/geometer-node-test.wasm`
+
+This target uses Node filesystem access for command-line parity and diagnostics.
+Do not use it for browser integration.
 
 Planar-only Browser/Web Worker target:
 
-- `dist/geometer-planar-browser.js`
-- `dist/geometer-planar-browser.wasm`
+- `dist/wasm/planar-browser/geometer-planar-browser.js`
+- `dist/wasm/planar-browser/geometer-planar-browser.wasm`
 
-The browser target is modularized with the factory name
-`createGeometerModule`. It exports:
+The full browser target exports:
 
 - `_malloc`
 - `_free`
@@ -662,15 +749,17 @@ The planar-only browser target is modularized with the factory name
 - `_geometer_planar_batch_solve_bytes`
 
 Use this target for browser workers that only need packed planar geometry
-operations and should not pay the OCCT/STEP WASM startup cost.
+operations and should not pay the full OCCT/STEP WASM size, startup, and
+worker-memory cost. The full browser target also exports these planar APIs, so
+the planar-only target is an optimization, not a separate semantic API.
 
 Minimal browser-worker shape:
 
 ```js
-importScripts("/dist/geometer-browser.js");
+importScripts("/dist/wasm/browser/geometer.js");
 
 const module = await createGeometerModule({
-  locateFile: (path) => path.endsWith(".wasm") ? `/dist/${path}` : path,
+  locateFile: (path) => path.endsWith(".wasm") ? `/dist/wasm/browser/${path}` : path,
 });
 
 // Allocate STEP bytes and options JSON, then call:
@@ -697,17 +786,22 @@ The complete browser-worker example lives at
 Native CLI:
 
 ```powershell
-.\dist\geometer.exe --version
-.\dist\geometer.exe step-to-glb input.step output.glb
-.\dist\geometer.exe step-project-hlr input.step output.json
-.\dist\geometer.exe step-project-svg input.step output.svg --mode simple --view top
-.\dist\geometer.exe planar-batch-solve request.bin response.bin --warmup 1 --repeat 5 --metrics metrics.json
+.\dist\native\windows-x64\geometer.exe --version
+.\dist\native\windows-x64\geometer.exe step-to-glb input.step output.glb
+.\dist\native\windows-x64\geometer.exe step-project-hlr input.step output.json
+.\dist\native\windows-x64\geometer.exe step-project-svg input.step output.svg --mode simple --view top
+.\dist\native\windows-x64\geometer.exe init-request request.json --step input.step --operation step_hlr_projection_json --output output.json
+.\dist\native\windows-x64\geometer.exe run request.json response.json
+.\dist\native\windows-x64\geometer.exe planar-batch-solve request.bin response.bin --warmup 1 --repeat 5 --metrics metrics.json
 ```
 
-Node WASM CLI:
+Flat `dist/geometer(.exe)` remains a source-checkout compatibility alias while
+downstream consumers migrate to the grouped native path.
+
+Node WASM CLI parity/test target:
 
 ```powershell
-node dist\geometer.js step-to-glb input.step output.glb
+node dist\wasm\node-test\geometer-node-test.js step-to-glb input.step output.glb
 ```
 
 Projection CLI options:
@@ -722,6 +816,27 @@ STEP-to-GLB CLI options:
 
 - `--deflection <value>`
 - `--angular <value>`
+
+JSON batch CLI commands:
+
+- `run <request.json> <response.json>`: run a
+  `geometer.batch.request.a0` jobs array and write a
+  `geometer.batch.response.a0` response.
+- `init-request <request.json> --step <path>`: write a starter JSON request.
+- `--operation <step_hlr_projection_json|step_hlr_projection_svg|step_to_glb>`:
+  choose the starter request operation.
+- `--output <path>`: choose the starter request output path.
+
+Batch requests accept an optional top-level `options` object. Batch jobs accept
+`operation`, `step_path`, `output_path`, and an optional job-level `options`
+object. Geometer parses top-level options first, then parses job-level options
+on top, so callers can put shared settings such as `curve_mode`,
+`samples_per_curve`, `round_digits`, `mesh_linear_deflection`, or
+`mesh_angular_deflection` at the request level and only override the fields
+that differ per job. HLR JSON/SVG jobs use HLR projection options; GLB jobs use
+STEP-to-GLB options. The response includes Geometer version, ABI, top-level
+`ok`, and per-job `id`, `operation`, `ok`, `code`, `elapsed_ms`, and optional
+`output_path` or `message`.
 
 Planar batch solve CLI options:
 
@@ -741,13 +856,28 @@ project can clone Geometer and use the CLI/WASM artifacts without rebuilding.
 
 Persist these when publishing interface changes:
 
-- Native CLI: `dist/geometer.exe` or `dist/geometer`.
-- Native static library: `dist/geometer.lib` or `dist/libgeometer.a`.
-- Node WASM CLI: `dist/geometer.js` and `dist/geometer.wasm`.
-- Browser WASM C ABI: `dist/geometer-browser.js` and
-  `dist/geometer-browser.wasm`.
-- Planar browser WASM C ABI: `dist/geometer-planar-browser.js` and
-  `dist/geometer-planar-browser.wasm`.
+- Native CLI: `dist/native/<platform>/geometer.exe` or
+  `dist/native/<platform>/geometer`.
+- Native static library: `dist/native/<platform>/geometer.lib` or
+  `dist/native/<platform>/libgeometer.a`.
+- Full browser WASM C ABI: `dist/wasm/browser/geometer.js` and
+  `dist/wasm/browser/geometer.wasm`.
+- Node WASM CLI parity/test target: `dist/wasm/node-test/geometer-node-test.js`
+  and `dist/wasm/node-test/geometer-node-test.wasm`.
+- Planar-only browser WASM C ABI optimization:
+  `dist/wasm/planar-browser/geometer-planar-browser.js` and
+  `dist/wasm/planar-browser/geometer-planar-browser.wasm`.
+
+Native platform directory names use:
+
+- `windows-x64`
+- `linux-x64`
+- `macos-x64`
+- `macos-arm64`
+
+Flat files at the root of `dist/` are compatibility aliases during the
+transition to grouped artifacts. New source-checkout consumers should prefer the
+grouped paths.
 
 Do not commit local generated build state:
 

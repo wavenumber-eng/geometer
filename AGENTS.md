@@ -21,9 +21,12 @@ For the current C++, C ABI, WASM, and CLI surface, read
 - Prefer direct C++ value APIs in `src/cpp/lib/`, with stable C ABI wrappers for
   Python/WASM boundaries.
 - `.deps/` is generated local dependency state and must not be committed.
-- `dist/` contains distributable outputs by current project policy.
-- Versioned releases use the root CMake project version. Breaking C ABI/WASM
-  changes must bump `GEOMETER_ABI_VERSION` in `src/cpp/lib/CMakeLists.txt`.
+- `dist/` contains distributable outputs by current project policy. Prefer
+  grouped paths (`dist/native/<platform>/`, `dist/wasm/<target>/`) for new
+  consumers; flat root-level files are compatibility aliases.
+- Versioned releases use ADR 006 date versions: release tags use
+  `vYYYY-MM-DD`, CMake/PyPI use `YYYY.M.D`, and the C ABI generation uses
+  `YYYYMMDD`.
 - Use CMake for proper native builds and CTest for registered tests.
 - The default native preset uses Ninja.
 - Format touched C++ files with `clang-format`.

@@ -1,8 +1,47 @@
 cmake_minimum_required(VERSION 3.24)
-project(geometer VERSION 1.1.0 LANGUAGES CXX)
+
+set(GEOMETER_RELEASE_DATE "2026-05-23" CACHE STRING "Geometer UTC release date" FORCE)
+set(GEOMETER_RELEASE_VERSION "2026.5.23" CACHE STRING "Geometer package/build version" FORCE)
+set(GEOMETER_ABI_VERSION "20260523" CACHE STRING "Geometer C ABI generation date" FORCE)
+
+project(geometer VERSION ${GEOMETER_RELEASE_VERSION} LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+if(WIN32)
+    set(_geometer_dist_os "windows")
+elseif(APPLE)
+    set(_geometer_dist_os "macos")
+elseif(UNIX)
+    set(_geometer_dist_os "linux")
+else()
+    string(TOLOWER "${CMAKE_SYSTEM_NAME}" _geometer_dist_os)
+endif()
+
+string(TOLOWER "${CMAKE_SYSTEM_PROCESSOR}" _geometer_dist_arch)
+if(_geometer_dist_arch MATCHES "^(amd64|x86_64)$")
+    set(_geometer_dist_arch "x64")
+elseif(_geometer_dist_arch MATCHES "^(aarch64|arm64)$")
+    set(_geometer_dist_arch "arm64")
+elseif(_geometer_dist_arch MATCHES "^(i386|i686|x86)$")
+    set(_geometer_dist_arch "x86")
+endif()
+
+set(GEOMETER_NATIVE_DIST_PLATFORM "${_geometer_dist_os}-${_geometer_dist_arch}"
+    CACHE STRING "Geometer native dist platform directory")
+set(GEOMETER_NATIVE_DIST_DIR
+    "${CMAKE_SOURCE_DIR}/dist/native/${GEOMETER_NATIVE_DIST_PLATFORM}"
+    CACHE PATH "Geometer platform-specific native dist directory")
+set(GEOMETER_WASM_BROWSER_DIST_DIR
+    "${CMAKE_SOURCE_DIR}/dist/wasm/browser"
+    CACHE PATH "Geometer full browser WASM dist directory")
+set(GEOMETER_WASM_NODE_TEST_DIST_DIR
+    "${CMAKE_SOURCE_DIR}/dist/wasm/node-test"
+    CACHE PATH "Geometer Node CLI test WASM dist directory")
+set(GEOMETER_WASM_PLANAR_BROWSER_DIST_DIR
+    "${CMAKE_SOURCE_DIR}/dist/wasm/planar-browser"
+    CACHE PATH "Geometer planar browser WASM dist directory")
 
 # ---------------------------------------------------------------------------
 # OCCT dependency
@@ -18,7 +57,15 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 #   python scripts/build_occt.py          # build
 #   python scripts/build_occt.py --clean  # wipe and rebuild
 # ---------------------------------------------------------------------------
-set(_geometer_default_occt_dir "${CMAKE_SOURCE_DIR}/.deps/occt-install/cmake")
+set(GEOMETER_OCCT_LIBRARY_TYPE "Static" CACHE STRING "OCCT library type to auto-build when missing")
+set_property(CACHE GEOMETER_OCCT_LIBRARY_TYPE PROPERTY STRINGS Static Shared)
+
+if(GEOMETER_OCCT_LIBRARY_TYPE STREQUAL "Shared")
+    set(_geometer_default_occt_dir "${CMAKE_SOURCE_DIR}/.deps/occt-shared-install/cmake")
+else()
+    set(_geometer_default_occt_dir "${CMAKE_SOURCE_DIR}/.deps/occt-install/cmake")
+endif()
+
 set(_geometer_occt_dir "${OpenCASCADE_DIR}")
 if(NOT _geometer_occt_dir OR _geometer_occt_dir MATCHES "-NOTFOUND$")
     set(_geometer_occt_dir "${_geometer_default_occt_dir}")
@@ -34,6 +81,7 @@ if(NOT OpenCASCADE_FOUND)
 
     execute_process(
         COMMAND ${Python3_EXECUTABLE} "${CMAKE_SOURCE_DIR}/scripts/build_occt.py"
+            --library-type ${GEOMETER_OCCT_LIBRARY_TYPE}
         RESULT_VARIABLE _occt_build_result
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     )
@@ -41,7 +89,7 @@ if(NOT OpenCASCADE_FOUND)
     if(NOT _occt_build_result EQUAL 0)
         message(FATAL_ERROR
             "Failed to build OCCT. You can try manually:\n"
-            "  python scripts/build_occt.py\n"
+            "  python scripts/build_occt.py --library-type ${GEOMETER_OCCT_LIBRARY_TYPE}\n"
             "Check the output above for errors."
         )
     endif()
@@ -58,4 +106,9 @@ add_subdirectory(src/cpp)
 
 if(BUILD_TESTING)
     add_subdirectory(tests/cpp)
+endif()
+
+option(GEOMETER_BUILD_EXAMPLES "Build optional native Geometer examples" OFF)
+if(GEOMETER_BUILD_EXAMPLES AND NOT EMSCRIPTEN)
+    add_subdirectory(examples/cpp)
 endif()

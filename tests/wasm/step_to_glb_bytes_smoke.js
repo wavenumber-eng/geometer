@@ -2,7 +2,7 @@ const fs = require("fs");
 const path = require("path");
 
 const root = path.resolve(__dirname, "..", "..");
-const createGeometerModule = require(path.join(root, "dist", "geometer-browser.js"));
+const createGeometerModule = require(path.join(root, "dist", "geometer.js"));
 
 function writeString(module, text) {
   const size = module.lengthBytesUTF8(text) + 1;
@@ -60,12 +60,12 @@ function callStepToGlbBytes(module, stepBytes, optionsJson) {
 
 async function main() {
   const module = await createGeometerModule({
-    wasmBinary: fs.readFileSync(path.join(root, "dist", "geometer-browser.wasm")),
+    wasmBinary: fs.readFileSync(path.join(root, "dist", "geometer.wasm")),
   });
 
   const version = module.ccall("geometer_version_string", "string", [], []);
-  if (version !== "1.0.0") {
-    throw new Error(`Expected geometer 1.0.0, got ${version}`);
+  if (version !== "2026.5.23") {
+    throw new Error(`Expected geometer 2026.5.23, got ${version}`);
   }
   if (typeof module._geometer_step_to_glb_bytes !== "function") {
     throw new Error("geometer_step_to_glb_bytes is not exported.");

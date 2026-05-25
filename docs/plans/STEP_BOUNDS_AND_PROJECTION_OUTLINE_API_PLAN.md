@@ -79,6 +79,27 @@ Deprecation policy:
 - No removal date is set in this plan. Removal needs a separate compatibility
   decision.
 
+## Impact On Planar STEP
+
+The recent planar STEP API is not part of the model-input rename. It takes
+incoming 2D region topology and creates a STEP model; it does not import or
+project a source model file.
+
+Keep these names stable:
+
+- Python: `planar_step(...)` and `write_planar_step(...)`.
+- CLI: `planar-step <request.json> <output.step>`.
+- Batch operation: `planar_step`.
+- C++: `planar_step_from_json(...)` and
+  `planar_step_from_json_bytes(...)`.
+- JSON schema: `geometry.planar_step.request.a0`.
+
+Renaming this API to `model_*` would be misleading because the input is not a
+model. It would also create unnecessary churn for the current planar batch and
+2D-to-STEP tests. If this surface needs a more generic name later, prefer a
+separate additive alias such as `planar_regions_to_step(...)`; do not deprecate
+the current names as part of the STEP source-model cleanup.
+
 ## Proposed Python Surface
 
 ```python

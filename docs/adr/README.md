@@ -9,3 +9,4 @@ and should not be treated as docs of record after a change ships.
 - [ADR 004: Vendored RapidJSON For OCCT glTF](004_vendored_rapidjson_for_occt_gltf.md)
 - [ADR 005: Vendored Clipper2 For Planar Batch Solve](005_vendored_clipper2_for_planar_batch_solve.md)
 - [ADR 006: Date-Based Versioning Policy](006_date_based_versioning_policy.md)
+- [ADR 007: Generic Model Input API Names](007_generic_model_input_api_names.md)

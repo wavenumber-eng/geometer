@@ -24,7 +24,7 @@ Current Geometer model-input APIs are STEP-specific because STEP is the only
 supported source model format today. New API names should use the generic
 `model_*` convention while documenting that the only accepted `format` value is
 currently `"step"`. Existing STEP-specific API names remain compatibility
-wrappers and are deprecated rather than removed.
+wrappers and are deprecated only after one additional release cycle.
 
 ## Design Principles
 
@@ -65,8 +65,10 @@ Compatibility wrappers:
 
 Deprecation policy:
 
-- Mark compatibility wrappers as deprecated in docs and release notes
-  immediately.
+- Add generic names first, then keep compatibility wrappers supported for one
+  full release cycle before marking them deprecated.
+- Mark compatibility wrappers as deprecated in docs and release notes in the
+  release after the generic names ship.
 - Python wrappers may emit `DeprecationWarning` with `stacklevel=2`; this is
   normally hidden by default but visible to users who enable warnings.
 - C++ headers should start with deprecation comments and release-note warnings.
@@ -78,6 +80,7 @@ Deprecation policy:
   response shape as the preferred operation names.
 - No removal date is set in this plan. Removal needs a separate compatibility
   decision.
+- ADR 007 records this naming and deprecation policy as the durable decision.
 
 ## Impact On Planar STEP
 

@@ -126,6 +126,8 @@ def configure_occt(platform_name: str, config: str, library_type: str) -> None:
         "-DBUILD_MODULE_Draw=OFF",
         "-DBUILD_MODULE_Visualization=OFF",
         "-DBUILD_MODULE_ApplicationFramework=OFF",
+        "-DBUILD_MODULE_DETools=OFF",
+        "-DBUILD_YACCLEX=OFF",
         "-DBUILD_DOC_Overview=OFF",
         "-DUSE_FREETYPE=OFF",
         "-DUSE_TBB=OFF",

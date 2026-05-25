@@ -333,8 +333,10 @@ not remove or alter existing symbols.
 4. Done: add Python `model_bounds(...)` and `ModelBoundsResult`.
 5. Done for Python/CLI/batch: add generic names for existing GLB and HLR
    operations while keeping STEP-specific compatibility wrappers.
-6. Next: compare bounds against downstream CadQuery oracles across more STEP
-   fixtures.
+6. In progress: compare bounds against downstream CadQuery oracles across more
+   STEP fixtures. Altium Monkey PcbLib embedded-model authoring tests pass
+   against the local `model_bounds` implementation, including rotated real-world
+   model bodies.
 7. Next: decide whether C++ and C ABI generic wrappers for existing GLB/HLR
    operations should land before the next package release or with a later ABI
    generation.

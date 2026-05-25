@@ -75,6 +75,11 @@ Linux wheels must be repaired/tagged with `auditwheel` before PyPI upload; the
 wheel contents install under `platlib`, not `purelib`, so auditwheel can inspect
 the bundled ELF executable.
 
+Published wheels also install a `geometer` console script. The script is a thin
+Python launcher that resolves the packaged native executable and forwards
+arguments to it, so `python -m pip install wn-geometer` makes the native CLI
+available inside the active environment without editing a user's global `PATH`.
+
 The planar STEP Python API is the supported package interface for Python
 callers. It is executable-backed internally, like the HLR and GLB helpers, but
 downstream packages should depend on `geometer.planar_step(...)` or

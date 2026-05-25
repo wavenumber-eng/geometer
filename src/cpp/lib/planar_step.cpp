@@ -704,8 +704,7 @@ bool parse_request(const char* request_json, Request* request, std::string* erro
         BodySpec body;
         body.id = string_member(raw_body, "id", "body_" + std::to_string(i + 1));
         body.name = string_member(raw_body, "name", body.id);
-        body.fuse_regions =
-            bool_member(raw_body, {"fuse_regions", "fuseRegions", "fuse"}, false);
+        body.fuse_regions = bool_member(raw_body, {"fuse_regions", "fuseRegions", "fuse"}, false);
         if (!parse_suffixed_length_member(raw_body, "thickness", request->unit_scale_to_mm, 0.035,
                                           &body.thickness_mm, error))
         {
@@ -887,8 +886,7 @@ double ring_signed_area(const Ring& ring)
 
 void append_solve_point(PlanarSolveRing* ring, const Point2& point)
 {
-    if (ring->empty() ||
-        !points_close(Point2{ring->back().x, ring->back().y}, point))
+    if (ring->empty() || !points_close(Point2{ring->back().x, ring->back().y}, point))
     {
         ring->push_back({point.x, point.y});
     }
@@ -962,8 +960,7 @@ bool sample_ring_for_solve(const Ring& ring, PlanarSolveRing* path, std::string*
             *error = "arc segment cannot be zero-length or a full circle";
             return false;
         }
-        const int steps =
-            std::max(2, static_cast<int>(std::ceil(std::abs(sweep) / (kPi / 16.0))));
+        const int steps = std::max(2, static_cast<int>(std::ceil(std::abs(sweep) / (kPi / 16.0))));
         for (int step = 1; step < steps; ++step)
         {
             const double angle =

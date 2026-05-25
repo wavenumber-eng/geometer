@@ -174,6 +174,7 @@ def validate_wheel_install(wheel: Path, step_path: Path, *, keep_temp: bool) -> 
         env["GEOMETER_VALIDATION_STEP"] = str(step_path)
         env["GEOMETER_VALIDATION_OUT"] = str(output_dir)
         run([str(test_python), "-c", PACKAGE_VALIDATION_CODE], env=env, cwd=run_dir)
+        run([str(venv_script(venv_dir, "geometer")), "--version"], env=env, cwd=run_dir)
 
         run([
             str(test_python),
@@ -224,6 +225,12 @@ def venv_python(venv_dir: Path) -> Path:
     if sys.platform == "win32":
         return venv_dir / "Scripts" / "python.exe"
     return venv_dir / "bin" / "python"
+
+
+def venv_script(venv_dir: Path, name: str) -> Path:
+    if sys.platform == "win32":
+        return venv_dir / "Scripts" / f"{name}.exe"
+    return venv_dir / "bin" / name
 
 
 def run(

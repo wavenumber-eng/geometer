@@ -11,7 +11,7 @@ from typing import Any, Iterable, Mapping, Sequence
 import numpy as np
 import pyvista as pv
 import trimesh
-from PySide6.QtCore import QPointF, Qt, QTimer
+from PySide6.QtCore import QPointF, QRectF, Qt, QTimer
 from PySide6.QtGui import QAction, QColor, QPainter, QPen, QPolygonF
 from PySide6.QtWidgets import (
     QApplication,
@@ -109,14 +109,24 @@ class ProjectionCanvas(QWidget):
     def __init__(self) -> None:
         super().__init__()
         self._result: geometer.HlrProjectionResult | None = None
+        self._model_bounds: geometer.ModelBoundsResult | None = None
         self._view_id = "top"
         self._mode = "detail"
+        self._show_model_bounds = True
         self.setMinimumSize(320, 260)
 
     def set_projection(self, result: geometer.HlrProjectionResult, view_id: str, mode: str) -> None:
         self._result = result
         self._view_id = view_id
         self._mode = mode
+        self.update()
+
+    def set_model_bounds(self, bounds: geometer.ModelBoundsResult | None) -> None:
+        self._model_bounds = bounds
+        self.update()
+
+    def set_bounds_visible(self, visible: bool) -> None:
+        self._show_model_bounds = visible
         self.update()
 
     def clear_projection(self) -> None:
@@ -141,6 +151,10 @@ class ProjectionCanvas(QWidget):
             return
 
         bounds = combined_bounds(geometry for _name, geometry, _color in geometries)
+        projected_model_bounds = self._projected_model_bounds()
+        if projected_model_bounds.valid:
+            bounds.add(projected_model_bounds.min_x, projected_model_bounds.min_y)
+            bounds.add(projected_model_bounds.max_x, projected_model_bounds.max_y)
         if not bounds.valid:
             painter.setPen(QColor("#657080"))
             painter.drawText(24, 32, "No projected geometry")
@@ -149,6 +163,8 @@ class ProjectionCanvas(QWidget):
         project = screen_projector(bounds, self.width(), self.height())
         for _name, geometry, color in geometries:
             self._draw_geometry(painter, geometry, color, project)
+        if projected_model_bounds.valid:
+            self._draw_model_bounds(painter, projected_model_bounds, project)
 
         detail = self._result.geometry(self._view_id, "detail")
         simple = self._result.geometry(self._view_id, "simple")
@@ -169,6 +185,14 @@ class ProjectionCanvas(QWidget):
             result.append(("detail", self._result.geometry(self._view_id, "detail"), QColor(42, 54, 72, 255)))
         return result
 
+    def _projected_model_bounds(self) -> Bounds:
+        if not self._show_model_bounds or self._result is None or self._model_bounds is None:
+            return Bounds()
+        view = self._result.view(self._view_id)
+        direction = view.get("direction")
+        up = view.get("up")
+        return project_model_bounds_to_camera(self._model_bounds, direction, up)
+
     def _draw_geometry(self, painter: QPainter, geometry: Mapping[str, Any], color: QColor, project: Any) -> None:
         painter.setPen(QPen(color, 1.5, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin))
         for segment in geometry.get("segments", []):
@@ -182,12 +206,22 @@ class ProjectionCanvas(QWidget):
             if len(points) >= 2:
                 painter.drawPolyline(QPolygonF(points))
 
+    def _draw_model_bounds(self, painter: QPainter, bounds: Bounds, project: Any) -> None:
+        top_left = QPointF(*project(bounds.min_x, bounds.max_y))
+        bottom_right = QPointF(*project(bounds.max_x, bounds.min_y))
+        rect = QRectF(top_left, bottom_right).normalized()
+        painter.setPen(QPen(QColor(24, 28, 32, 150), 4.0, Qt.PenStyle.SolidLine))
+        painter.drawRect(rect)
+        painter.setPen(QPen(QColor(238, 132, 52, 245), 2.0, Qt.PenStyle.SolidLine))
+        painter.drawRect(rect)
+
 
 class PyVistaHlrViewer(QMainWindow):
     def __init__(self, step_path: Path) -> None:
         super().__init__()
         self.step_path = step_path
         self.preview_meshes: list[PreviewMesh] = []
+        self.model_bounds: geometer.ModelBoundsResult | None = None
         self.current_projection: geometer.HlrProjectionResult | None = None
         self._loading_camera = False
 
@@ -210,6 +244,8 @@ class PyVistaHlrViewer(QMainWindow):
         self.version_label.setStyleSheet("font-weight: 600; color: #243044;")
         self.mode_combo = QComboBox()
         self.mode_combo.addItems(["detail", "simple", "both"])
+        self.bounds_check = QCheckBox("Bounds")
+        self.bounds_check.setChecked(True)
         self.feature_edges_check = QCheckBox("Feature edges")
         self.feature_edges_check.setChecked(True)
         self.key_azimuth = lighting_spin(-180.0, 180.0, LightingSettings.key_azimuth_deg, 5.0)
@@ -289,9 +325,22 @@ class PyVistaHlrViewer(QMainWindow):
         lighting_layout.addLayout(lighting_top)
         lighting_layout.addLayout(lighting_bottom)
 
+        projection_panel = QWidget()
+        projection_layout = QVBoxLayout(projection_panel)
+        projection_layout.setContentsMargins(0, 0, 0, 0)
+        projection_layout.setSpacing(0)
+        projection_header = QWidget()
+        projection_header_layout = QHBoxLayout(projection_header)
+        projection_header_layout.setContentsMargins(6, 4, 6, 4)
+        projection_header_layout.addWidget(QLabel("HLR projection"))
+        projection_header_layout.addStretch(1)
+        projection_header_layout.addWidget(self.bounds_check)
+        projection_layout.addWidget(projection_header)
+        projection_layout.addWidget(self.projection, 1)
+
         splitter = QSplitter(Qt.Orientation.Horizontal)
         splitter.addWidget(self.plotter.interactor)
-        splitter.addWidget(self.projection)
+        splitter.addWidget(projection_panel)
         splitter.setStretchFactor(0, 1)
         splitter.setStretchFactor(1, 1)
 
@@ -314,6 +363,9 @@ class PyVistaHlrViewer(QMainWindow):
         self.camera_timer.timeout.connect(self._project_camera_after_idle)
 
         self.mode_combo.currentTextChanged.connect(self.on_mode_changed)
+        self.bounds_check.stateChanged.connect(
+            lambda _state: self.projection.set_bounds_visible(self.bounds_check.isChecked())
+        )
         self.feature_edges_check.stateChanged.connect(lambda _state: self.redraw_model())
         self.plotter.camera.AddObserver("ModifiedEvent", self.on_camera_modified)
 
@@ -336,13 +388,17 @@ class PyVistaHlrViewer(QMainWindow):
         self.status.showMessage(f"Loading {path.name}")
         QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
         try:
+            self.model_bounds = geometer.model_bounds(path)
+            self.projection.set_model_bounds(self.model_bounds)
             glb_bytes = geometer.step_to_glb(path)
             self.preview_meshes = load_preview_meshes(glb_bytes)
             self.redraw_model(reset_camera=True)
             self.project_current_view()
         except Exception as exc:
             self.preview_meshes = []
+            self.model_bounds = None
             self.current_projection = None
+            self.projection.set_model_bounds(None)
             self.projection.clear_projection()
             self.status.showMessage(f"Load failed: {exc}")
         finally:
@@ -447,9 +503,12 @@ class PyVistaHlrViewer(QMainWindow):
             detail = result.geometry(view.id, "detail")
             simple = result.geometry(view.id, "simple")
             timings = result.timings
+            bounds_text = model_bounds_size_text(self.model_bounds)
+            bounds_status = f" | bounds {bounds_text}" if bounds_text else ""
             self.status.showMessage(
                 f"{self.step_path.name} | {view.id} | detail {edge_count(detail)} | "
                 f"simple {edge_count(simple)} | HLR {float(timings.get('hlr_ms', 0.0)):.2f} ms"
+                f"{bounds_status}"
             )
         except Exception as exc:
             self.status.showMessage(f"Projection failed: {exc}")
@@ -585,6 +644,77 @@ def include_geometry(bounds: Bounds, geometry: Mapping[str, Any]) -> None:
     for arc in geometry.get("arcs", []):
         for x, y in arc_points(arc):
             bounds.add(x, y)
+
+
+def model_bounds_vec3(result: geometer.ModelBoundsResult, key: str) -> tuple[float, float, float] | None:
+    value = result.bounds.get(key)
+    if not isinstance(value, Sequence) or isinstance(value, (str, bytes)) or len(value) < 3:
+        return None
+    vector = (float(value[0]), float(value[1]), float(value[2]))
+    if not all(math.isfinite(item) for item in vector):
+        return None
+    return vector
+
+
+def model_bounds_size_text(result: geometer.ModelBoundsResult | None) -> str:
+    if result is None:
+        return ""
+    size = model_bounds_vec3(result, "size")
+    if size is None:
+        return ""
+    units = result.units or ""
+    suffix = f" {units}" if units else ""
+    return f"{size[0]:.3f} x {size[1]:.3f} x {size[2]:.3f}{suffix}"
+
+
+def model_bounds_corners(result: geometer.ModelBoundsResult) -> np.ndarray | None:
+    min_value = model_bounds_vec3(result, "min")
+    max_value = model_bounds_vec3(result, "max")
+    if min_value is None or max_value is None:
+        return None
+    if any(max_value[index] < min_value[index] for index in range(3)):
+        return None
+    return np.array(
+        [
+            [x, y, z]
+            for x in (min_value[0], max_value[0])
+            for y in (min_value[1], max_value[1])
+            for z in (min_value[2], max_value[2])
+        ],
+        dtype=np.float64,
+    )
+
+
+def project_model_bounds_to_camera(
+    result: geometer.ModelBoundsResult,
+    direction_value: Any,
+    up_value: Any,
+) -> Bounds:
+    corners = model_bounds_corners(result)
+    if corners is None:
+        return Bounds()
+    try:
+        direction = np.array(direction_value, dtype=np.float64)
+        up = np.array(up_value, dtype=np.float64)
+    except Exception:
+        return Bounds()
+    if direction.shape != (3,) or up.shape != (3,):
+        return Bounds()
+    direction_length = float(np.linalg.norm(direction))
+    if not math.isfinite(direction_length) or direction_length <= 1.0e-9:
+        return Bounds()
+    direction = direction / direction_length
+    up = orthogonalized_up(up, direction)
+    right = np.cross(up, direction)
+    right_length = float(np.linalg.norm(right))
+    if not math.isfinite(right_length) or right_length <= 1.0e-9:
+        return Bounds()
+    right = right / right_length
+
+    projected = Bounds()
+    for point in corners:
+        projected.add(float(point @ right), float(point @ up))
+    return projected
 
 
 def screen_projector(bounds: Bounds, width: int, height: int) -> Any:
@@ -778,6 +908,7 @@ def main() -> int:
     args = parser.parse_args()
 
     if args.off_screen_validate:
+        model_bounds = geometer.model_bounds(Path(args.step))
         glb_bytes = geometer.step_to_glb(Path(args.step))
         meshes = load_preview_meshes(glb_bytes)
         plotter = pv.Plotter(off_screen=True, window_size=(900, 650))
@@ -808,7 +939,10 @@ def main() -> int:
         )
         args.screenshot.parent.mkdir(parents=True, exist_ok=True)
         plotter.screenshot(str(args.screenshot))
-        print(f"meshes={len(meshes)} screenshot={args.screenshot}")
+        print(
+            f"meshes={len(meshes)} bounds={model_bounds_size_text(model_bounds)} "
+            f"screenshot={args.screenshot}"
+        )
         return 0
 
     app = QApplication.instance() or QApplication(sys.argv[:1])

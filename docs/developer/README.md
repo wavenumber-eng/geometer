@@ -218,23 +218,25 @@ python -m twine check out\wheelhouse\*.whl
 
 The package validation script builds the local wheel, installs it into a clean
 temporary environment, verifies that Python resolves the bundled executable from
-inside the installed package, and runs the headless package example:
+inside the installed package, verifies the generated `geometer` console script,
+and runs the headless package example:
 
 ```powershell
 python scripts\validate_python_package.py
 ```
 
 The wheel build copies the platform executable into
-`geometer/native/<platform>/` inside the wheel and marks the wheel
-platform-specific. The Windows executable wheel should use a `py3-none-win_amd64`
-tag because it contains no CPython extension module.
+`geometer/native/<platform>/` inside the wheel, exposes the `geometer` console
+script, and marks the wheel platform-specific. The Windows executable wheel
+should use a `py3-none-win_amd64` tag because it contains no CPython extension
+module.
 
 For WSL/Linux release wheels, repair the built `linux_x86_64` wheel before PyPI
 upload:
 
 ```bash
 uvx --from auditwheel --with patchelf auditwheel show out/wheelhouse/linux-x64/wn_geometer-*.whl
-uvx --from auditwheel --with patchelf auditwheel repair --plat manylinux_2_39_x86_64 --wheel-dir out/wheelhouse/linux-x64/repaired out/wheelhouse/linux-x64/wn_geometer-2026.5.24.2-py3-none-linux_x86_64.whl
+uvx --from auditwheel --with patchelf auditwheel repair --plat manylinux_2_39_x86_64 --wheel-dir out/wheelhouse/linux-x64/repaired out/wheelhouse/linux-x64/wn_geometer-2026.5.25-py3-none-linux_x86_64.whl
 ```
 
 The exact manylinux tag is determined by `auditwheel show`; rebuild in an older
@@ -244,21 +246,21 @@ PyPI upload commands:
 
 ```powershell
 # Preflight metadata.
-python -m twine check out\wheelhouse\windows-x64\wn_geometer-2026.5.24.2-py3-none-win_amd64.whl out\wheelhouse\linux-x64\repaired\wn_geometer-2026.5.24.2-py3-none-manylinux_2_39_x86_64.whl
+python -m twine check out\wheelhouse\windows-x64\wn_geometer-2026.5.25-py3-none-win_amd64.whl out\wheelhouse\linux-x64\repaired\wn_geometer-2026.5.25-py3-none-manylinux_2_39_x86_64.whl out\wheelhouse\macos-arm64\wn_geometer-2026.5.25-py3-none-macosx_26_0_arm64.whl
 
 # Optional dry-run project on TestPyPI.
-python -m twine upload --repository testpypi out\wheelhouse\windows-x64\wn_geometer-2026.5.24.2-py3-none-win_amd64.whl out\wheelhouse\linux-x64\repaired\wn_geometer-2026.5.24.2-py3-none-manylinux_2_39_x86_64.whl
+python -m twine upload --repository testpypi out\wheelhouse\windows-x64\wn_geometer-2026.5.25-py3-none-win_amd64.whl out\wheelhouse\linux-x64\repaired\wn_geometer-2026.5.25-py3-none-manylinux_2_39_x86_64.whl out\wheelhouse\macos-arm64\wn_geometer-2026.5.25-py3-none-macosx_26_0_arm64.whl
 
 # Public PyPI release.
-python -m twine upload --repository pypi out\wheelhouse\windows-x64\wn_geometer-2026.5.24.2-py3-none-win_amd64.whl out\wheelhouse\linux-x64\repaired\wn_geometer-2026.5.24.2-py3-none-manylinux_2_39_x86_64.whl
+python -m twine upload --repository pypi out\wheelhouse\windows-x64\wn_geometer-2026.5.25-py3-none-win_amd64.whl out\wheelhouse\linux-x64\repaired\wn_geometer-2026.5.25-py3-none-manylinux_2_39_x86_64.whl out\wheelhouse\macos-arm64\wn_geometer-2026.5.25-py3-none-macosx_26_0_arm64.whl
 ```
 
 For token-based upload, set `TWINE_USERNAME=__token__` and put the PyPI or
 TestPyPI API token in `TWINE_PASSWORD`, or use an equivalent `.pypirc`/keyring
 setup. Do not write upload tokens into the repository.
 
-The current release target is `wn-geometer==2026.5.24.2`; callers install
-`wn-geometer==2026.5.24.2` and import `geometer`.
+The current release target is `wn-geometer==2026.5.25`; callers install
+`wn-geometer==2026.5.25` and import `geometer`.
 
 For local token setup, copy `.env.example` to `.env`, fill the token values,
 and keep `.env` out of version control.
@@ -324,13 +326,13 @@ The full browser target also exports `geometer_version_string` and
 `geometer_abi_version`. Downstream browser consumers should check those before
 depending on a specific ABI. Earlier pre-date ABI integers tracked planar batch,
 diagnostic, and triangulation additions; current releases use the ADR 006
-date-based ABI generation, for example `20260524`.
+date-based ABI generation, for example `20260525`.
 
 ## Versioning
 
 Geometer follows [ADR 006](docs/adr/006_date_based_versioning_policy.md).
-The current release identity is `v2026-05-24-2`; the CMake/PyPI package version
-is `2026.5.24.2`; the C ABI generation is `20260524`.
+The current release identity is `v2026-05-25`; the CMake/PyPI package version
+is `2026.5.25`; the C ABI generation is `20260525`.
 
 The root `CMakeLists.txt` declares `GEOMETER_RELEASE_DATE`,
 `GEOMETER_RELEASE_VERSION`, and `GEOMETER_ABI_VERSION`. The root

@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.24)
 
-set(GEOMETER_RELEASE_DATE "2026-05-24-2" CACHE STRING "Geometer UTC release date" FORCE)
-set(GEOMETER_RELEASE_VERSION "2026.5.24.2" CACHE STRING "Geometer package/build version" FORCE)
-set(GEOMETER_ABI_VERSION "20260524" CACHE STRING "Geometer C ABI generation date" FORCE)
+set(GEOMETER_RELEASE_DATE "2026-05-25" CACHE STRING "Geometer UTC release date" FORCE)
+set(GEOMETER_RELEASE_VERSION "2026.5.25" CACHE STRING "Geometer package/build version" FORCE)
+set(GEOMETER_ABI_VERSION "20260525" CACHE STRING "Geometer C ABI generation date" FORCE)
 
 project(geometer VERSION ${GEOMETER_RELEASE_VERSION} LANGUAGES CXX)
 

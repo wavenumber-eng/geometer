@@ -4,6 +4,22 @@ All notable changes to geometer are documented here.
 
 ## [Unreleased]
 
+## [2026.5.25] - 2026-05-25
+
+### Added
+
+- Added macOS arm64 native build and Python wheel validation for
+  `wn-geometer`.
+- Added a `geometer` console script entry point to the Python wheel; it forwards
+  arguments to the bundled native executable in the active install environment.
+- Added model-bounds projection overlays to the native Dear ImGui and PyVista
+  HLR preview examples.
+
+### Changed
+
+- Updated the release identity to `v2026-05-25`,
+  `wn-geometer==2026.5.25`, and C ABI generation `20260525`.
+
 ## [2026.5.24.2] - 2026-05-24
 
 ### Added

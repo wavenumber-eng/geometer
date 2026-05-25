@@ -110,8 +110,8 @@ bool parse_model_transform(const rapidjson::Value& value, std::array<double, 16>
     }
 
     constexpr double tol = 1.0e-12;
-    if (std::fabs(parsed[12]) > tol || std::fabs(parsed[13]) > tol ||
-        std::fabs(parsed[14]) > tol || std::fabs(parsed[15] - 1.0) > tol)
+    if (std::fabs(parsed[12]) > tol || std::fabs(parsed[13]) > tol || std::fabs(parsed[14]) > tol ||
+        std::fabs(parsed[15] - 1.0) > tol)
     {
         *error = "model_transform final row must be [0, 0, 0, 1].";
         return false;

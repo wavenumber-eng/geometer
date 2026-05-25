@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "wn-geometer"
-version = "2026.5.24.2"
+version = "2026.5.25"
 description = "Python bindings for Geometer CAD geometry operations"
 requires-python = ">=3.10"
 readme = "README.md"
@@ -13,6 +13,9 @@ readme = "README.md"
 Homepage = "https://github.com/wavenumber-eng/geometer"
 Repository = "https://github.com/wavenumber-eng/geometer"
 Issues = "https://github.com/wavenumber-eng/geometer/issues"
+
+[project.scripts]
+geometer = "geometer._console:main"
 
 [tool.setuptools]
 package-dir = {"" = "python"}

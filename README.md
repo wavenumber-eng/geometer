@@ -46,7 +46,7 @@ Import package: `geometer`
 Install the current release:
 
 ```bash
-python -m pip install wn-geometer==2026.5.24.2
+python -m pip install wn-geometer==2026.5.25
 ```
 
 Basic Python use:
@@ -106,7 +106,8 @@ geometer.write_planar_step(
 ```
 
 The package is executable-backed. Wheels bundle the platform executable under
-`geometer/native/<platform>/` and call it through the JSON batch CLI.
+`geometer/native/<platform>/`, expose a `geometer` console command in the
+install environment, and call the executable through the JSON batch CLI.
 
 ## CLI
 

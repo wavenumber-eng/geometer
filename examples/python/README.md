@@ -32,10 +32,11 @@ uv run --project examples\python python examples\python\pyvista_hlr_viewer.py te
 
 The PyVista viewer preserves GLB material colors, hides triangle mesh edges by
 default, can overlay extracted feature edges, and always projects HLR from the
-current 3D camera. The ISO/Top/Bottom/Front/Back/Left/Right buttons are camera
-presets. Lighting controls adjust key direction, key/fill/head intensity,
-ambient level, and material contrast. The projection regenerates after camera
-movement settles.
+current 3D camera. It also computes Geometer model bounds and can overlay the
+projected bounds rectangle in the right HLR pane. The ISO/Top/Bottom/Front/Back/
+Left/Right buttons are camera presets. Lighting controls adjust key direction,
+key/fill/head intensity, ambient level, and material contrast. The projection
+regenerates after camera movement settles.
 
 Or install the demo dependencies into your current environment:
 
@@ -51,5 +52,5 @@ GLB-preview checks:
 uv run --project examples\python python examples\python\pyvista_hlr_viewer.py --off-screen-validate tests\fixtures\step\embedded_models\SOT-23.STEP --screenshot out\pyvista-preview.png
 ```
 
-Outside a source checkout, install `wn-geometer==2026.5.24` and run the same
+Outside a source checkout, install `wn-geometer==2026.5.25` and run the same
 scripts against the installed `geometer` package.

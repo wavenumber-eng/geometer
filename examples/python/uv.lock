@@ -397,7 +397,7 @@ requires-dist = [
     { name = "pyvista" },
     { name = "pyvistaqt" },
     { name = "trimesh" },
-    { name = "wn-geometer", specifier = "==2026.5.24" },
+    { name = "wn-geometer", specifier = "==2026.5.25" },
 ]
 
 [[package]]
@@ -1225,9 +1225,8 @@ wheels = [
 
 [[package]]
 name = "wn-geometer"
-version = "2026.5.24"
+version = "2026.5.25"
 source = { registry = "https://pypi.org/simple" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/07/58/9a2efb8f5def6b9f6d46fd1056c1caec8511aad737f15bcd4d2898da16aa/wn_geometer-2026.5.24-py3-none-manylinux_2_39_x86_64.whl", hash = "sha256:02ec5e7f244792192fedef12af4f649239b1e077744c05f48f1fb0d23ae4c92b", size = 11508085, upload-time = "2026-05-24T14:13:55.732Z" },
-    { url = "https://files.pythonhosted.org/packages/c9/cd/06e55e42d18332959df691d91dde289fcc405c22c956781c166f99ff6cd4/wn_geometer-2026.5.24-py3-none-win_amd64.whl", hash = "sha256:42e91a8c43568e52f52e0414ed94f72ea0279a02d03ccb1776275ce5cd0365d8", size = 6045486, upload-time = "2026-05-24T14:08:56.854Z" },
+    { url = "https://files.pythonhosted.org/packages/0c/83/ced4b909a763579ecb123ca0c079d439fc2c986232fb9b6600ee359fad60/wn_geometer-2026.5.25-py3-none-macosx_26_0_arm64.whl", hash = "sha256:3e710c5b069ddc73b4e8b5caefbe9b7d7a0eaa2284b9028821a2147b8c41d181", size = 10611574, upload-time = "2026-05-25T17:18:17.228Z" },
 ]

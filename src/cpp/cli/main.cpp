@@ -207,8 +207,8 @@ static std::string normalize_operation(const std::string& operation)
     {
         return "model_to_glb";
     }
-    if (operation == "model-bounds" || operation == "model_bounds" ||
-        operation == "step-bounds" || operation == "step_bounds")
+    if (operation == "model-bounds" || operation == "model_bounds" || operation == "step-bounds" ||
+        operation == "step_bounds")
     {
         return "model_bounds_json";
     }
@@ -349,8 +349,9 @@ static int validate_model_format_layer(const rapidjson::Value* options_value,
     {
         it = options_value->FindMember("model_format");
     }
-    return it == options_value->MemberEnd() ? 0
-                                            : validate_model_format_value(&it->value, error_message);
+    return it == options_value->MemberEnd()
+               ? 0
+               : validate_model_format_value(&it->value, error_message);
 }
 
 static int validate_model_format_for_job(const rapidjson::Value& job,
@@ -563,8 +564,8 @@ static int execute_glb_job(const rapidjson::Value& job, const rapidjson::Value* 
 }
 
 static int execute_model_bounds_job(const rapidjson::Value& job,
-                                    const rapidjson::Value* batch_options,
-                                    std::string* output_path, std::string* error_message)
+                                    const rapidjson::Value* batch_options, std::string* output_path,
+                                    std::string* error_message)
 {
     std::string model_path;
     if (!model_path_for_job(job, &model_path))

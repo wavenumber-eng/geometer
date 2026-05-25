@@ -167,9 +167,12 @@ struct AppState
     std::array<char, 1024> step_path = {};
     std::vector<unsigned char> step_bytes;
     MeshPreview preview;
+    geometer::ModelBoundsResult model_bounds;
     geometer::HlrProjectionResult projection;
+    bool has_model_bounds = false;
     bool has_projection = false;
     ProjectionMode mode = ProjectionMode::Detail;
+    bool show_model_bounds = true;
     Camera camera;
     Lighting lighting;
     std::string status = "Ready";
@@ -783,6 +786,68 @@ ImU32 shaded_color(const Triangle& triangle, const Camera& camera, const Lightin
                     static_cast<int>(std::max(0.0f, std::min(1.0f, triangle.color.a)) * 255.0f));
 }
 
+bool model_bounds_valid(const geometer::ModelBoundsResult& bounds)
+{
+    for (std::size_t i = 0; i < 3; ++i)
+    {
+        if (!std::isfinite(bounds.min[i]) || !std::isfinite(bounds.max[i]) ||
+            bounds.max[i] < bounds.min[i])
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+std::array<Vec3, 8> model_bounds_corners(const geometer::ModelBoundsResult& bounds)
+{
+    const double xmin = bounds.min[0];
+    const double ymin = bounds.min[1];
+    const double zmin = bounds.min[2];
+    const double xmax = bounds.max[0];
+    const double ymax = bounds.max[1];
+    const double zmax = bounds.max[2];
+    return {{{xmin, ymin, zmin},
+             {xmax, ymin, zmin},
+             {xmin, ymax, zmin},
+             {xmax, ymax, zmin},
+             {xmin, ymin, zmax},
+             {xmax, ymin, zmax},
+             {xmin, ymax, zmax},
+             {xmax, ymax, zmax}}};
+}
+
+Bounds2 project_model_bounds_to_camera(const geometer::ModelBoundsResult& bounds, Vec3 direction,
+                                       Vec3 up)
+{
+    Bounds2 result;
+    if (!model_bounds_valid(bounds))
+    {
+        return result;
+    }
+
+    direction = normalize(direction);
+    up = orthogonalized_up(up, direction);
+    const Vec3 right = normalize(cross(up, direction), {1.0, 0.0, 0.0});
+    for (const Vec3& point : model_bounds_corners(bounds))
+    {
+        result.add(dot(point, right), dot(point, up));
+    }
+    return result;
+}
+
+void draw_screen_bounds_rect(ImDrawList* draw_list, const Bounds2& bounds)
+{
+    if (!bounds.valid())
+    {
+        return;
+    }
+    const ImVec2 min_point{static_cast<float>(bounds.min_x), static_cast<float>(bounds.min_y)};
+    const ImVec2 max_point{static_cast<float>(bounds.max_x), static_cast<float>(bounds.max_y)};
+    draw_list->AddRect(min_point, max_point, IM_COL32(24, 28, 32, 150), 0.0f, 0, 4.0f);
+    draw_list->AddRect(min_point, max_point, IM_COL32(238, 132, 52, 245), 0.0f, 0, 2.0f);
+}
+
 void draw_3d_preview(AppState* app)
 {
     ImGui::TextUnformatted("3D preview");
@@ -923,9 +988,8 @@ int edge_count(const geometer::ProjectedModeGeometry& geometry)
     return static_cast<int>(geometry.segments.size() + geometry.arcs.size());
 }
 
-void draw_mode_geometry(ImDrawList* draw_list, const geometer::ProjectedModeGeometry& geometry,
-                        const Bounds2& bounds, const ImVec2& origin, const ImVec2& size,
-                        ImU32 color)
+ImVec2 project_hlr_canvas_point(double x, double y, const Bounds2& bounds, const ImVec2& origin,
+                                const ImVec2& size)
 {
     const double scale = std::min((size.x - (2.0 * kCanvasMargin)) / bounds.width(),
                                   (size.y - (2.0 * kCanvasMargin)) / bounds.height());
@@ -933,13 +997,18 @@ void draw_mode_geometry(ImDrawList* draw_list, const geometer::ProjectedModeGeom
     const double content_height = bounds.height() * scale;
     const double offset_x = (size.x - content_width) * 0.5;
     const double offset_y = (size.y - content_height) * 0.5;
+    const float sx = static_cast<float>(origin.x + offset_x + ((x - bounds.min_x) * scale));
+    const float sy =
+        static_cast<float>(origin.y + size.y - (offset_y + ((y - bounds.min_y) * scale)));
+    return {sx, sy};
+}
+
+void draw_mode_geometry(ImDrawList* draw_list, const geometer::ProjectedModeGeometry& geometry,
+                        const Bounds2& bounds, const ImVec2& origin, const ImVec2& size,
+                        ImU32 color)
+{
     const auto project = [&](double x, double y)
-    {
-        const float sx = static_cast<float>(origin.x + offset_x + ((x - bounds.min_x) * scale));
-        const float sy =
-            static_cast<float>(origin.y + size.y - (offset_y + ((y - bounds.min_y) * scale)));
-        return ImVec2{sx, sy};
-    };
+    { return project_hlr_canvas_point(x, y, bounds, origin, size); };
 
     for (const geometer::ProjectedSegment& segment : geometry.segments)
     {
@@ -964,9 +1033,30 @@ void draw_mode_geometry(ImDrawList* draw_list, const geometer::ProjectedModeGeom
     }
 }
 
+void draw_model_bounds_projection(ImDrawList* draw_list, const Bounds2& model_bounds,
+                                  const Bounds2& canvas_bounds, const ImVec2& origin,
+                                  const ImVec2& size)
+{
+    if (!model_bounds.valid())
+    {
+        return;
+    }
+
+    Bounds2 screen_bounds;
+    const ImVec2 top_left = project_hlr_canvas_point(model_bounds.min_x, model_bounds.max_y,
+                                                     canvas_bounds, origin, size);
+    const ImVec2 bottom_right = project_hlr_canvas_point(model_bounds.max_x, model_bounds.min_y,
+                                                         canvas_bounds, origin, size);
+    screen_bounds.add(top_left.x, top_left.y);
+    screen_bounds.add(bottom_right.x, bottom_right.y);
+    draw_screen_bounds_rect(draw_list, screen_bounds);
+}
+
 void draw_hlr_preview(AppState* app)
 {
     ImGui::TextUnformatted("HLR projection");
+    ImGui::SameLine();
+    ImGui::Checkbox("Bounds", &app->show_model_bounds);
     const ImVec2 size = ImGui::GetContentRegionAvail();
     const ImVec2 canvas_size = {std::max(size.x, 120.0f), std::max(size.y, 120.0f)};
     ImGui::InvisibleButton("hlr_canvas", canvas_size);
@@ -994,6 +1084,19 @@ void draw_hlr_preview(AppState* app)
     {
         include_geometry(&bounds, view.simple);
     }
+    Bounds2 projected_model_bounds;
+    if (app->show_model_bounds && app->has_model_bounds)
+    {
+        projected_model_bounds = project_model_bounds_to_camera(
+            app->model_bounds,
+            {view.view.direction[0], view.view.direction[1], view.view.direction[2]},
+            {view.view.up[0], view.view.up[1], view.view.up[2]});
+        if (projected_model_bounds.valid())
+        {
+            bounds.add(projected_model_bounds.min_x, projected_model_bounds.min_y);
+            bounds.add(projected_model_bounds.max_x, projected_model_bounds.max_y);
+        }
+    }
     if (!bounds.valid())
     {
         draw_list->AddText({origin.x + 18.0f, origin.y + 18.0f}, IM_COL32(90, 98, 108, 255),
@@ -1011,6 +1114,11 @@ void draw_hlr_preview(AppState* app)
     {
         draw_mode_geometry(draw_list, view.detail, bounds, origin, canvas_size,
                            IM_COL32(42, 54, 72, 255));
+    }
+    if (projected_model_bounds.valid())
+    {
+        draw_model_bounds_projection(draw_list, projected_model_bounds, bounds, origin,
+                                     canvas_size);
     }
     draw_list->PopClipRect();
 
@@ -1114,12 +1222,25 @@ void load_step(AppState* app)
 {
     const std::filesystem::path path(app->step_path.data());
     app->status = "Loading " + path.filename().string();
+    app->has_model_bounds = false;
     app->has_projection = false;
     app->preview = {};
     app->step_bytes = read_file_bytes(path);
 
-    std::vector<unsigned char> glb_bytes;
     geometer::Status status;
+    geometer::ModelBoundsResult bounds;
+    const int bounds_code =
+        geometer::model_bounds_from_bytes(app->step_bytes.data(), app->step_bytes.size(),
+                                          geometer::ModelBoundsOptions{}, &bounds, &status);
+    if (bounds_code != 0)
+    {
+        throw std::runtime_error("model_bounds failed: " + status.message);
+    }
+    app->model_bounds = std::move(bounds);
+    app->has_model_bounds = true;
+
+    std::vector<unsigned char> glb_bytes;
+    status = {};
     const int glb_code =
         geometer::step_to_glb_from_bytes(app->step_bytes.data(), app->step_bytes.size(),
                                          geometer::StepToGlbOptions{}, &glb_bytes, &status);
@@ -1178,6 +1299,11 @@ void draw_controls(AppState* app)
         app->mode = mode_index == 0
                         ? ProjectionMode::Detail
                         : (mode_index == 1 ? ProjectionMode::Simple : ProjectionMode::Both);
+    }
+    if (app->has_model_bounds)
+    {
+        ImGui::Text("Bounds: %.3f x %.3f x %.3f mm", app->model_bounds.size[0],
+                    app->model_bounds.size[1], app->model_bounds.size[2]);
     }
 
     ImGui::TextUnformatted("Lighting");
@@ -1252,6 +1378,18 @@ float dpi_scale_for_window(SDL_Window* window)
     return std::max(1.0f, scale);
 }
 
+#if defined(__APPLE__)
+constexpr int kGlContextFlags = SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG;
+constexpr int kGlMajorVersion = 3;
+constexpr int kGlMinorVersion = 2;
+constexpr const char* kGlslVersion = "#version 150";
+#else
+constexpr int kGlContextFlags = 0;
+constexpr int kGlMajorVersion = 3;
+constexpr int kGlMinorVersion = 0;
+constexpr const char* kGlslVersion = "#version 130";
+#endif
+
 } // namespace
 
 int main(int argc, char** argv)
@@ -1267,10 +1405,10 @@ int main(int argc, char** argv)
         return 1;
     }
 
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, 0);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, kGlContextFlags);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, kGlMajorVersion);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, kGlMinorVersion);
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
     SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
@@ -1307,7 +1445,7 @@ int main(int argc, char** argv)
     style.ScaleAllSizes(dpi_scale);
 
     ImGui_ImplSDL3_InitForOpenGL(window, gl_context);
-    ImGui_ImplOpenGL3_Init("#version 130");
+    ImGui_ImplOpenGL3_Init(kGlslVersion);
 
     try
     {

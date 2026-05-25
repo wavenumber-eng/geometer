@@ -336,7 +336,8 @@ not remove or alter existing symbols.
 6. In progress: compare bounds against downstream CadQuery oracles across more
    STEP fixtures. Altium Monkey PcbLib embedded-model authoring tests pass
    against the local `model_bounds` implementation, including rotated real-world
-   model bodies.
+   model bodies. A direct Windows check compared Geometer against CadQuery for
+   37 STEP models x 5 rotations with max axis delta under `5e-11 mm`.
 7. Next: decide whether C++ and C ABI generic wrappers for existing GLB/HLR
    operations should land before the next package release or with a later ABI
    generation.
@@ -345,6 +346,39 @@ not remove or alter existing symbols.
 9. Future: design the outline ring schema after reviewing more failure cases.
 10. Future: implement projection outline as an experimental API only after ring
    joining tests are in place.
+
+## Mac Build Handoff
+
+The Mac packaging agent should pull branch `altium_monkey_cpp` from the
+Geometer repo. The immediate target is a new `wn-geometer` wheel release that
+exposes `geometer.model_bounds(...)` on Windows, Linux, and macOS before
+Altium Monkey removes its CadQuery fallback.
+
+Mac validation goals:
+
+- Build the native CLI and verify `geometer model-bounds` works on a STEP file.
+- Run `ctest --test-dir build -C Release --output-on-failure`.
+- Run the Python tests that cover `model_bounds`, batch `model_bounds_json`,
+  GLB, HLR, and `planar_step`.
+- Run `python scripts/validate_python_package.py` and confirm the installed
+  wheel imports `geometer`, reports the intended version, resolves the bundled
+  native executable under `geometer/native/<macos-platform>/`, and exposes
+  `hasattr(geometer, "model_bounds") == True`.
+- Smoke `geometer.model_bounds(path, format="step")` from an installed wheel
+  without `GEOMETER_EXE` or source-checkout `PYTHONPATH`.
+- Do not publish to PyPI until Eli explicitly approves the release cut.
+
+Useful starting commands:
+
+```bash
+python scripts/validate_native.py
+python -m pytest tests/python -q
+python scripts/validate_python_package.py
+```
+
+If OCCT is missing or stale, follow `docs/developer/README.md` and rebuild it
+with `python scripts/build_occt.py`. Avoid cleaning `.deps/` unless the Mac
+agent intentionally wants a full dependency rebuild.
 
 ## Test Plan
 

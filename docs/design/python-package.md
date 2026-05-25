@@ -10,13 +10,20 @@ native CLI and keeps the public API byte/path oriented:
 import geometer
 
 version = geometer.version()
+model_bounds = geometer.model_bounds("part.step", format="step")
 projection = geometer.project_step_hlr(
     "part.step",
     views=[geometer.ProjectionView.top()],
     options=geometer.HlrOptions.assembly_outline(),
 )
+generic_projection = geometer.project_model_hlr(
+    "part.step",
+    format="step",
+    views=[geometer.ProjectionView.top()],
+)
 json_text = geometer.hlr_projection_json("part.step")
-glb_bytes = geometer.step_to_glb("part.step")
+generic_json_text = geometer.model_hlr_projection_json("part.step", format="step")
+glb_bytes = geometer.model_to_glb("part.step", format="step")
 planar_step_request = {
     "schema": "geometry.planar_step.request.a0",
     "units": "mm",
@@ -72,6 +79,21 @@ The planar STEP Python API is the supported package interface for Python
 callers. It is executable-backed internally, like the HLR and GLB helpers, but
 downstream packages should depend on `geometer.planar_step(...)` or
 `geometer.write_planar_step(...)` rather than invoking `geometer.exe` directly.
+
+For source-model operations, prefer the generic model names:
+
+- `model_bounds(...)`
+- `model_bounds_json(...)`
+- `model_to_glb(...)`
+- `project_model_hlr(...)`
+- `model_hlr_projection_json(...)`
+
+The only supported source model format is currently `format="step"`.
+Compatibility wrappers remain available:
+
+- `step_to_glb(...)`
+- `project_step_hlr(...)`
+- `hlr_projection_json(...)`
 
 The executable backend writes temporary STEP/request/output files, calls:
 

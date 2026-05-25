@@ -6,7 +6,12 @@ from ._api import (
     GeometerBatchRunner,
     executable_path,
     hlr_projection_json,
+    model_bounds,
+    model_bounds_json,
+    model_hlr_projection_json,
+    model_to_glb,
     planar_step,
+    project_model_hlr,
     project_step_hlr,
     run_batch,
     step_to_glb,
@@ -14,7 +19,7 @@ from ._api import (
     write_planar_step,
 )
 from ._errors import GeometerError
-from ._types import HlrOptions, HlrProjectionResult, ProjectionView, Version
+from ._types import HlrOptions, HlrProjectionResult, ModelBoundsResult, ProjectionView, Version
 
 __all__ = [
     "GeometerError",
@@ -23,11 +28,17 @@ __all__ = [
     "GeometerBatchRunner",
     "HlrOptions",
     "HlrProjectionResult",
+    "ModelBoundsResult",
     "ProjectionView",
     "Version",
     "executable_path",
     "hlr_projection_json",
+    "model_bounds",
+    "model_bounds_json",
+    "model_hlr_projection_json",
+    "model_to_glb",
     "planar_step",
+    "project_model_hlr",
     "project_step_hlr",
     "run_batch",
     "step_to_glb",

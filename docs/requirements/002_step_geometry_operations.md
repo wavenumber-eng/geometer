@@ -24,3 +24,6 @@ models into backend-neutral hidden-line geometry.
    projection.
 10. Provide CLI output to JSON, SVG, and GLB for visual inspection and release
     validation.
+11. Provide transformed source-model bounds as `geometry.model_bounds.a0` JSON.
+12. Prefer generic `model_*` source-model operation names while STEP remains the
+    only supported source format.

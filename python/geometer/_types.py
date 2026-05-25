@@ -8,6 +8,7 @@ from typing import Any, Mapping, Sequence
 
 Matrix4 = Sequence[Sequence[float]] | Sequence[float]
 StepInput = bytes | bytearray | memoryview | str | Path
+ModelInput = StepInput
 
 
 @dataclass(frozen=True)
@@ -163,6 +164,48 @@ class HlrProjectionResult:
         return json.dumps(self.data, separators=(",", ":"))
 
 
+@dataclass(frozen=True)
+class ModelBoundsResult:
+    data: dict[str, Any]
+
+    @property
+    def schema(self) -> str | None:
+        return self.data.get("schema")
+
+    @property
+    def units(self) -> str | None:
+        return self.data.get("units")
+
+    @property
+    def source_format(self) -> str | None:
+        source = self.data.get("source")
+        if isinstance(source, Mapping):
+            value = source.get("format")
+            return value if isinstance(value, str) else None
+        return None
+
+    @property
+    def source_hash(self) -> str | None:
+        source = self.data.get("source")
+        if isinstance(source, Mapping):
+            value = source.get("hash")
+            return value if isinstance(value, str) else None
+        return None
+
+    @property
+    def bounds(self) -> Mapping[str, Any]:
+        bounds = self.data.get("bounds")
+        return bounds if isinstance(bounds, Mapping) else {}
+
+    @property
+    def timings(self) -> Mapping[str, Any]:
+        timings = self.data.get("timings")
+        return timings if isinstance(timings, Mapping) else {}
+
+    def to_json(self) -> str:
+        return json.dumps(self.data, separators=(",", ":"))
+
+
 def read_step_input(step: StepInput) -> bytes:
     if isinstance(step, bytes):
         return step
@@ -173,6 +216,13 @@ def read_step_input(step: StepInput) -> bytes:
     if isinstance(step, (str, Path)):
         return Path(step).read_bytes()
     raise TypeError("step must be bytes, bytearray, memoryview, str, or pathlib.Path")
+
+
+def normalize_model_format(format: str) -> str:
+    normalized = str(format).strip().lower()
+    if normalized != "step":
+        raise ValueError('model operations currently support only format="step"')
+    return normalized
 
 
 def build_hlr_options_payload(
@@ -192,6 +242,25 @@ def build_hlr_options_payload(
 
     if views is not None:
         payload["views"] = [_view_json_value(view) for view in views]
+    if model_transform is not None:
+        payload["model_transform"] = _matrix4_json_value(model_transform)
+    return payload
+
+
+def build_model_options_payload(
+    *,
+    format: str = "step",
+    model_transform: Matrix4 | None = None,
+    options: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    if options is None:
+        payload: dict[str, Any] = {}
+    elif isinstance(options, Mapping):
+        payload = dict(options)
+    else:
+        raise TypeError("options must be a mapping or None")
+
+    payload["format"] = normalize_model_format(str(payload.get("format", format)))
     if model_transform is not None:
         payload["model_transform"] = _matrix4_json_value(model_transform)
     return payload

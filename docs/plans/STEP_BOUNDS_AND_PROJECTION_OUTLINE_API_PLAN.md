@@ -1,6 +1,6 @@
 # STEP Bounds And Projection Outline API Plan
 
-Status: design plan, not started
+Status: bounds slice implemented; projection outline not started
 Last updated: 2026-05-25
 
 This is a focused working plan for adding generic STEP bounds and optional
@@ -326,18 +326,21 @@ not remove or alter existing symbols.
 
 ## Implementation Sequence
 
-1. Finalize the generic model-input naming, bounds JSON schema, and Python
-   dataclass shape.
-2. Add C++ bounds value types and JSON writer/parser coverage.
-3. Add generic direct CLI and batch operations for bounds.
-4. Add Python `model_bounds(...)` and `ModelBoundsResult`.
-5. Add generic wrappers for existing GLB and HLR operations, then re-route old
-   STEP-specific names through compatibility wrappers.
-6. Validate against existing STEP fixtures and current downstream CadQuery
-   bounds oracles.
-7. Design the outline ring schema after reviewing more failure cases.
-8. Implement projection outline as an experimental API only after ring joining
-   tests are in place.
+1. Done: finalize the generic model-input naming, bounds JSON schema, and
+   Python dataclass shape.
+2. Done: add C++ bounds value types and JSON writer/parser coverage.
+3. Done: add generic direct CLI and batch operations for bounds.
+4. Done: add Python `model_bounds(...)` and `ModelBoundsResult`.
+5. Done for Python/CLI/batch: add generic names for existing GLB and HLR
+   operations while keeping STEP-specific compatibility wrappers.
+6. Next: compare bounds against downstream CadQuery oracles across more STEP
+   fixtures.
+7. Next: decide whether C++ and C ABI generic wrappers for existing GLB/HLR
+   operations should land before the next package release or with a later ABI
+   generation.
+8. Future: design the outline ring schema after reviewing more failure cases.
+9. Future: implement projection outline as an experimental API only after ring
+   joining tests are in place.
 
 ## Test Plan
 

@@ -1,5 +1,8 @@
 #pragma once
 
+#include "geometer/model.h"
+#include "geometer/model_bounds.h"
+#include "geometer/model_bounds_options_json.h"
 #include "geometer/planar_contours.h"
 #include "geometer/planar_solve.h"
 #include "geometer/planar_step.h"

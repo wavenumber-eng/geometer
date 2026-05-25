@@ -10,7 +10,7 @@ from typing import Any
 
 from ._errors import GeometerError
 from ._paths import executable_path
-from ._types import HlrOptions, StepInput, Version, read_step_input
+from ._types import HlrOptions, ModelInput, StepInput, Version, read_step_input
 
 
 _VERSION_RE = re.compile(r"^geometer\s+(\d+)\.(\d+)\.(\d+)(?:\.(\d+))?\s+\(abi\s+(\d+)\)\s*$")
@@ -44,17 +44,17 @@ def version() -> Version:
     return Version(major=major, minor=minor, patch=patch, abi=abi, string=version_string)
 
 
-def projection_json(step: StepInput, options_json: bytes | None) -> str:
+def model_projection_json(model: ModelInput, options_json: bytes | None) -> str:
     with tempfile.TemporaryDirectory(prefix="geometer-python-") as directory_text:
         directory = Path(directory_text)
-        step_path = _materialize_step(step, directory)
+        model_path = _materialize_model(model, directory)
         output_path = directory / "projection.json"
         _run_single_job(
             directory,
             {
                 "id": "projection",
-                "operation": "step_hlr_projection_json",
-                "step_path": str(step_path),
+                "operation": "model_hlr_projection_json",
+                "model_path": str(model_path),
                 "output_path": str(output_path),
                 "options": _decode_options(options_json),
             },
@@ -62,22 +62,48 @@ def projection_json(step: StepInput, options_json: bytes | None) -> str:
         return output_path.read_text(encoding="utf-8")
 
 
-def step_to_glb(step: StepInput, options_json: bytes | None) -> bytes:
+def projection_json(step: StepInput, options_json: bytes | None) -> str:
+    return model_projection_json(step, options_json)
+
+
+def model_bounds_json(model: ModelInput, options_json: bytes | None) -> str:
     with tempfile.TemporaryDirectory(prefix="geometer-python-") as directory_text:
         directory = Path(directory_text)
-        step_path = _materialize_step(step, directory)
+        model_path = _materialize_model(model, directory)
+        output_path = directory / "bounds.json"
+        _run_single_job(
+            directory,
+            {
+                "id": "bounds",
+                "operation": "model_bounds_json",
+                "model_path": str(model_path),
+                "output_path": str(output_path),
+                "options": _decode_options(options_json),
+            },
+        )
+        return output_path.read_text(encoding="utf-8")
+
+
+def model_to_glb(model: ModelInput, options_json: bytes | None) -> bytes:
+    with tempfile.TemporaryDirectory(prefix="geometer-python-") as directory_text:
+        directory = Path(directory_text)
+        model_path = _materialize_model(model, directory)
         output_path = directory / "model.glb"
         _run_single_job(
             directory,
             {
                 "id": "glb",
-                "operation": "step_to_glb",
-                "step_path": str(step_path),
+                "operation": "model_to_glb",
+                "model_path": str(model_path),
                 "output_path": str(output_path),
                 "options": _decode_options(options_json),
             },
         )
         return output_path.read_bytes()
+
+
+def step_to_glb(step: StepInput, options_json: bytes | None) -> bytes:
+    return model_to_glb(step, options_json)
 
 
 def planar_step(request: Mapping[str, Any] | str | bytes | bytearray) -> bytes:
@@ -231,6 +257,10 @@ def _materialize_step(step: StepInput, directory: Path) -> Path:
     step_path = directory / "input.step"
     step_path.write_bytes(read_step_input(step))
     return step_path
+
+
+def _materialize_model(model: ModelInput, directory: Path) -> Path:
+    return _materialize_step(model, directory)
 
 
 def _decode_options(options_json: bytes | None) -> dict[str, Any]:

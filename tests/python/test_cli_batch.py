@@ -118,6 +118,124 @@ def test_cli_run_batch_hlr_svg_and_glb(tmp_path: Path) -> None:
     assert glb.read_bytes()[:4] == b"glTF"
 
 
+def test_cli_model_bounds_direct_and_batch(tmp_path: Path) -> None:
+    direct_bounds = tmp_path / "direct.bounds.json"
+    batch_bounds = tmp_path / "batch.bounds.json"
+    request = tmp_path / "request.json"
+    response = tmp_path / "response.json"
+
+    subprocess.run(
+        [
+            str(_geometer_exe()),
+            "model-bounds",
+            str(SOT23_STEP),
+            str(direct_bounds),
+            "--format",
+            "step",
+        ],
+        check=True,
+        cwd=ROOT,
+    )
+    direct_payload = json.loads(direct_bounds.read_text(encoding="utf-8"))
+    assert direct_payload["schema"] == "geometry.model_bounds.a0"
+    assert direct_payload["source"]["format"] == "step"
+    assert direct_payload["bounds"]["max"][0] > direct_payload["bounds"]["min"][0]
+
+    request.write_text(
+        json.dumps(
+            {
+                "schema": "geometer.batch.request.a0",
+                "jobs": [
+                    {
+                        "id": "bounds",
+                        "operation": "model_bounds_json",
+                        "model_path": str(SOT23_STEP),
+                        "output_path": str(batch_bounds),
+                        "options": {
+                            "format": "step",
+                            "model_transform": [
+                                [1, 0, 0, 1],
+                                [0, 1, 0, 2],
+                                [0, 0, 1, 3],
+                                [0, 0, 0, 1],
+                            ],
+                        },
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    subprocess.run(
+        [str(_geometer_exe()), "run", str(request), str(response)],
+        check=True,
+        cwd=ROOT,
+    )
+    result = json.loads(response.read_text(encoding="utf-8"))
+    assert result["ok"] is True
+    assert result["jobs"][0]["operation"] == "model_bounds_json"
+    batch_payload = json.loads(batch_bounds.read_text(encoding="utf-8"))
+    assert batch_payload["bounds"]["min"][0] > direct_payload["bounds"]["min"][0]
+    assert batch_payload["bounds"]["min"][1] > direct_payload["bounds"]["min"][1]
+    assert batch_payload["bounds"]["min"][2] > direct_payload["bounds"]["min"][2]
+
+
+def test_cli_run_batch_generic_model_aliases(tmp_path: Path) -> None:
+    response = tmp_path / "response.json"
+    projection = tmp_path / "projection.json"
+    svg = tmp_path / "projection.svg"
+    glb = tmp_path / "model.glb"
+    request = tmp_path / "request.json"
+    request.write_text(
+        json.dumps(
+            {
+                "schema": "geometer.batch.request.a0",
+                "options": {"format": "step"},
+                "jobs": [
+                    {
+                        "id": "projection",
+                        "operation": "model_hlr_projection_json",
+                        "model_path": str(SOT23_STEP),
+                        "output_path": str(projection),
+                    },
+                    {
+                        "id": "svg",
+                        "operation": "model_hlr_projection_svg",
+                        "model_path": str(SOT23_STEP),
+                        "output_path": str(svg),
+                        "view": "top",
+                        "mode": "simple",
+                    },
+                    {
+                        "id": "glb",
+                        "operation": "model_to_glb",
+                        "model_path": str(SOT23_STEP),
+                        "output_path": str(glb),
+                    },
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    subprocess.run(
+        [str(_geometer_exe()), "run", str(request), str(response)],
+        check=True,
+        cwd=ROOT,
+    )
+
+    result = json.loads(response.read_text(encoding="utf-8"))
+    assert result["ok"] is True
+    assert [job["operation"] for job in result["jobs"]] == [
+        "model_hlr_projection_json",
+        "model_hlr_projection_svg",
+        "model_to_glb",
+    ]
+    assert json.loads(projection.read_text(encoding="utf-8"))["schema"] == "geometry.projection.a0"
+    assert svg.read_text(encoding="utf-8").lstrip().startswith("<svg")
+    assert glb.read_bytes()[:4] == b"glTF"
+
+
 def test_cli_run_batch_uses_request_options_with_job_overrides(tmp_path: Path) -> None:
     request = tmp_path / "request.json"
     response = tmp_path / "response.json"

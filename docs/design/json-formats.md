@@ -1,5 +1,33 @@
 # JSON Formats
 
+## Model Bounds Options JSON
+
+Defined in `src/cpp/lib/geometer/model_bounds_options_json.h`.
+
+Accepted option keys:
+
+- `format` or `model_format`: currently only `step`.
+- `model_transform` or `modelTransform`: row-major 4x4 number matrix. A flat
+  array of 16 numbers is also accepted.
+
+Empty or `null` JSON keeps the default options.
+
+## Model Bounds Result JSON
+
+Model bounds JSON uses schema `geometry.model_bounds.a0`.
+
+Required top-level fields:
+
+- `schema`: currently `geometry.model_bounds.a0`.
+- `units`: currently `mm`.
+- `source`: object containing `format` and `hash`.
+- `bounds`: object containing `min`, `max`, `size`, and `center` XYZ arrays.
+
+Optional timing fields are emitted when available:
+
+- `model_read_ms`
+- `bounds_ms`
+
 ## STEP To GLB Options JSON
 
 Defined in `src/cpp/lib/geometer/step_to_glb_options_json.h`.
@@ -191,10 +219,18 @@ override them.
 
 Supported operations:
 
+- `model_bounds_json`
+- `model_hlr_projection_json`
+- `model_hlr_projection_svg`
+- `model_to_glb`
 - `step_hlr_projection_json`
 - `step_hlr_projection_svg`
 - `step_to_glb`
 - `planar_step`
+
+The `model_*` operations are preferred for source-model work. They currently
+accept only `format: "step"` and accept either `model_path` or the compatibility
+`step_path`. The `step_*` operations remain compatibility aliases.
 
 `planar_step` jobs accept either:
 

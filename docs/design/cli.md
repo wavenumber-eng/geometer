@@ -4,6 +4,10 @@ Native CLI:
 
 ```powershell
 .\dist\native\windows-x64\geometer.exe --version
+.\dist\native\windows-x64\geometer.exe model-bounds input.step output.bounds.json --format step
+.\dist\native\windows-x64\geometer.exe model-to-glb input.step output.glb --format step
+.\dist\native\windows-x64\geometer.exe model-project-hlr input.step output.json --format step
+.\dist\native\windows-x64\geometer.exe model-project-svg input.step output.svg --format step --mode simple --view top
 .\dist\native\windows-x64\geometer.exe step-to-glb input.step output.glb
 .\dist\native\windows-x64\geometer.exe step-project-hlr input.step output.json
 .\dist\native\windows-x64\geometer.exe step-project-svg input.step output.svg --mode simple --view top
@@ -24,6 +28,7 @@ node dist\wasm\node-test\geometer-node-test.js step-to-glb input.step output.glb
 
 Projection CLI options:
 
+- `--format <step>`
 - `--view <id>`
 - `--mode <simple|detail>`
 - `--curve-mode <native-arcs|polyline>`
@@ -61,6 +66,17 @@ that differ per job. HLR JSON/SVG jobs use HLR projection options; GLB jobs use
 STEP-to-GLB options. The response includes Geometer version, ABI, top-level
 `ok`, and per-job `id`, `operation`, `ok`, `code`, `elapsed_ms`, and optional
 `output_path` or `message`.
+
+For source-model jobs, prefer:
+
+- `model_bounds_json`
+- `model_hlr_projection_json`
+- `model_hlr_projection_svg`
+- `model_to_glb`
+
+These operations currently accept only `format: "step"` and accept either
+`model_path` or compatibility `step_path`. Existing `step_hlr_projection_json`,
+`step_hlr_projection_svg`, and `step_to_glb` jobs remain supported.
 
 Planar batch solve CLI options:
 

@@ -1,5 +1,53 @@
 # STEP Geometry Interfaces
 
+STEP is currently the only supported source model format for Geometer's generic
+model-input APIs. Preferred new entry points use `model_*` names and
+`format="step"`. Existing STEP-specific names remain compatibility wrappers.
+
+## Model Bounds
+
+Defined in `src/cpp/lib/geometer/model_bounds.h`.
+
+```cpp
+enum class ModelFormat {
+    Step
+};
+
+struct ModelBoundsOptions {
+    ModelFormat format = ModelFormat::Step;
+    std::array<double, 16> model_transform = identity;
+};
+
+struct ModelBoundsResult {
+    std::string schema = "geometry.model_bounds.a0";
+    std::string units = "mm";
+    std::string source_format = "step";
+    std::string source_hash;
+    std::array<double, 3> min;
+    std::array<double, 3> max;
+    std::array<double, 3> size;
+    std::array<double, 3> center;
+};
+
+int model_bounds_from_bytes(
+    const unsigned char* model_data,
+    std::size_t model_size,
+    const ModelBoundsOptions& options,
+    ModelBoundsResult* result,
+    Status* status = nullptr
+);
+
+int write_model_bounds_json(
+    const ModelBoundsResult& result,
+    std::string* json,
+    Status* status = nullptr
+);
+```
+
+`model_bounds_from_bytes` imports the source model, applies
+`model_transform`, and returns transformed axis-aligned 3D bounds in
+millimeters. The first implementation accepts only `ModelFormat::Step`.
+
 ## STEP To GLB
 
 Defined in `src/cpp/lib/geometer/step_to_glb.h`.
@@ -28,6 +76,10 @@ int step_to_glb_from_bytes(
 `step_to_glb` is the file-based converter. `step_to_glb_from_bytes` accepts STEP
 bytes and fills owned GLB bytes for browser/downstream consumers that cannot
 depend on local files.
+
+Preferred Python, CLI, and batch callers should use the generic model names
+`model_to_glb`, `model-to-glb`, and `model_to_glb` with `format="step"` where
+available. The C++ STEP names remain the current compiled API for this release.
 ## HLR Projection
 
 Defined in `src/cpp/lib/geometer/projection.h`.
@@ -157,6 +209,11 @@ requested view, and fills both `detail` and `simple` geometry. `simple` is built
 from projected edge contours. `write_hlr_projection_json` emits
 `geometry.projection.a0` JSON. `write_hlr_projection_svg` emits a quick
 inspection SVG for one view and mode.
+
+Preferred Python, CLI, and batch callers should use the generic model names
+`project_model_hlr`, `model-project-hlr`, `model_hlr_projection_json`, and
+`model_hlr_projection_svg` with `format="step"` where available. The raw C++
+projection function remains STEP-specific in this release.
 
 `model_transform` is an optional row-major 4x4 affine transform applied to the
 loaded source shape before projection. Translation lives in the final column and

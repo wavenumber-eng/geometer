@@ -33,6 +33,12 @@ static void print_usage()
                  "\n"
                  "Commands:\n"
                  "  --version                               Print version information\n"
+                 "  model-bounds <input.step> <output.json> Emit source model bounds JSON\n"
+                 "  model-to-glb <input.step> <output.glb>   Convert source model to GLB\n"
+                 "  model-project-hlr <input.step> <output.json>\n"
+                 "                                               Emit source model HLR JSON\n"
+                 "  model-project-svg <input.step> <output.svg>\n"
+                 "                                               Emit source model HLR SVG\n"
                  "  step-to-glb <input.step> <output.glb>       Convert STEP to GLB\n"
                  "  step-project-hlr <input.step> <output.json> Emit HLR projection JSON\n"
                  "  step-project-svg <input.step> <output.svg>  Emit HLR projection SVG\n"
@@ -45,6 +51,7 @@ static void print_usage()
                  "Options:\n"
                  "  --deflection <value>   Linear deflection (default: 0.1)\n"
                  "  --angular <value>      Angular deflection (default: 0.5)\n"
+                 "  --format <step>        Source model format (only step is supported)\n"
                  "  --view <id>            SVG view id (default: top)\n"
                  "  --mode <simple|detail> SVG mode (default: simple)\n"
                  "  --curve-mode <native-arcs|polyline>\n"
@@ -171,19 +178,40 @@ static std::string default_output_for_step(const std::string& step_path,
     {
         name = "model";
     }
-    if (operation == "step_to_glb")
+    if (operation == "step_to_glb" || operation == "model_to_glb")
     {
         return name + ".glb";
     }
-    if (operation == "step_hlr_projection_svg")
+    if (operation == "step_hlr_projection_svg" || operation == "model_hlr_projection_svg")
     {
         return name + ".projection.svg";
+    }
+    if (operation == "model_bounds_json")
+    {
+        return name + ".bounds.json";
     }
     return name + ".projection.json";
 }
 
 static std::string normalize_operation(const std::string& operation)
 {
+    if (operation == "model-project-hlr" || operation == "model_project_hlr")
+    {
+        return "model_hlr_projection_json";
+    }
+    if (operation == "model-project-svg" || operation == "model_project_svg")
+    {
+        return "model_hlr_projection_svg";
+    }
+    if (operation == "model-to-glb" || operation == "model_to_glb")
+    {
+        return "model_to_glb";
+    }
+    if (operation == "model-bounds" || operation == "model_bounds" ||
+        operation == "step-bounds" || operation == "step_bounds")
+    {
+        return "model_bounds_json";
+    }
     if (operation == "step-project-hlr" || operation == "step_project_hlr")
     {
         return "step_hlr_projection_json";
@@ -206,7 +234,9 @@ static std::string normalize_operation(const std::string& operation)
 static bool is_supported_batch_operation(const std::string& operation)
 {
     return operation == "step_hlr_projection_json" || operation == "step_hlr_projection_svg" ||
-           operation == "step_to_glb";
+           operation == "step_to_glb" || operation == "model_hlr_projection_json" ||
+           operation == "model_hlr_projection_svg" || operation == "model_to_glb" ||
+           operation == "model_bounds_json";
 }
 
 static const rapidjson::Value* options_value_for_object(const rapidjson::Value& object)
@@ -267,6 +297,93 @@ static int parse_glb_options_layer(const rapidjson::Value* options_value,
     return code;
 }
 
+static int parse_model_bounds_options_layer(const rapidjson::Value* options_value,
+                                            geometer::ModelBoundsOptions* options,
+                                            std::string* error_message)
+{
+    if (options_value == nullptr || options_value->IsNull())
+    {
+        return 0;
+    }
+
+    geometer::Status status;
+    const std::string options_json = options_json_for_value(options_value);
+    const int code =
+        geometer::parse_model_bounds_options_json(options_json.c_str(), options, &status);
+    if (code != 0)
+    {
+        *error_message = status.message;
+    }
+    return code;
+}
+
+static int validate_model_format_value(const rapidjson::Value* value, std::string* error_message)
+{
+    if (value == nullptr || value->IsNull())
+    {
+        return 0;
+    }
+    if (!value->IsString())
+    {
+        *error_message = "format must be a string";
+        return 2;
+    }
+    const std::string format = value->GetString();
+    if (format == "step" || format == "STEP")
+    {
+        return 0;
+    }
+    *error_message = "model operations currently support only format=\"step\"";
+    return 2;
+}
+
+static int validate_model_format_layer(const rapidjson::Value* options_value,
+                                       std::string* error_message)
+{
+    if (options_value == nullptr || options_value->IsNull())
+    {
+        return 0;
+    }
+    auto it = options_value->FindMember("format");
+    if (it == options_value->MemberEnd())
+    {
+        it = options_value->FindMember("model_format");
+    }
+    return it == options_value->MemberEnd() ? 0
+                                            : validate_model_format_value(&it->value, error_message);
+}
+
+static int validate_model_format_for_job(const rapidjson::Value& job,
+                                         const rapidjson::Value* batch_options,
+                                         std::string* error_message)
+{
+    int code = validate_model_format_layer(batch_options, error_message);
+    if (code != 0)
+    {
+        return code;
+    }
+    code = validate_model_format_layer(options_value_for_object(job), error_message);
+    if (code != 0)
+    {
+        return code;
+    }
+    auto it = job.FindMember("format");
+    if (it == job.MemberEnd())
+    {
+        it = job.FindMember("model_format");
+    }
+    return it == job.MemberEnd() ? 0 : validate_model_format_value(&it->value, error_message);
+}
+
+static bool model_path_for_job(const rapidjson::Value& job, std::string* path)
+{
+    if (member_string(job, "model_path", path) && !path->empty())
+    {
+        return true;
+    }
+    return member_string(job, "step_path", path) && !path->empty();
+}
+
 static void parse_projection_options(int argc, char* argv[], int start,
                                      geometer::HlrProjectionOptions* options, std::string* view_id,
                                      std::string* mode)
@@ -303,14 +420,37 @@ static void parse_projection_options(int argc, char* argv[], int start,
     }
 }
 
+static int validate_model_format_args(int argc, char* argv[], int start)
+{
+    for (int i = start; i < argc; i += 1)
+    {
+        if (std::strcmp(argv[i], "--format") != 0)
+        {
+            continue;
+        }
+        if (i + 1 >= argc)
+        {
+            std::fprintf(stderr, "--format requires a value.\n");
+            return 2;
+        }
+        const char* format = argv[++i];
+        if (std::strcmp(format, "step") != 0 && std::strcmp(format, "STEP") != 0)
+        {
+            std::fprintf(stderr, "Only --format step is currently supported.\n");
+            return 2;
+        }
+    }
+    return 0;
+}
+
 static int execute_hlr_job(const rapidjson::Value& job, const rapidjson::Value* batch_options,
                            const std::string& operation, std::string* output_path,
                            std::string* error_message)
 {
     std::string step_path;
-    if (!member_string(job, "step_path", &step_path) || step_path.empty())
+    if (!model_path_for_job(job, &step_path))
     {
-        *error_message = "job requires string step_path";
+        *error_message = "job requires string model_path or step_path";
         return 2;
     }
     if (!member_string(job, "output_path", output_path) || output_path->empty())
@@ -327,7 +467,12 @@ static int execute_hlr_job(const rapidjson::Value& job, const rapidjson::Value* 
     }
 
     geometer::HlrProjectionOptions options;
-    int code = parse_hlr_options_layer(batch_options, &options, error_message);
+    int code = validate_model_format_for_job(job, batch_options, error_message);
+    if (code != 0)
+    {
+        return code;
+    }
+    code = parse_hlr_options_layer(batch_options, &options, error_message);
     if (code != 0)
     {
         return code;
@@ -350,7 +495,7 @@ static int execute_hlr_job(const rapidjson::Value& job, const rapidjson::Value* 
 
     std::string text;
     status = {};
-    if (operation == "step_hlr_projection_svg")
+    if (operation == "step_hlr_projection_svg" || operation == "model_hlr_projection_svg")
     {
         std::string view_id = "top";
         std::string mode = "simple";
@@ -380,9 +525,9 @@ static int execute_glb_job(const rapidjson::Value& job, const rapidjson::Value* 
                            std::string* output_path, std::string* error_message)
 {
     std::string step_path;
-    if (!member_string(job, "step_path", &step_path) || step_path.empty())
+    if (!model_path_for_job(job, &step_path))
     {
-        *error_message = "job requires string step_path";
+        *error_message = "job requires string model_path or step_path";
         return 2;
     }
     if (!member_string(job, "output_path", output_path) || output_path->empty())
@@ -392,7 +537,12 @@ static int execute_glb_job(const rapidjson::Value& job, const rapidjson::Value* 
     }
 
     geometer::StepToGlbOptions options;
-    int code = parse_glb_options_layer(batch_options, &options, error_message);
+    int code = validate_model_format_for_job(job, batch_options, error_message);
+    if (code != 0)
+    {
+        return code;
+    }
+    code = parse_glb_options_layer(batch_options, &options, error_message);
     if (code != 0)
     {
         return code;
@@ -408,6 +558,87 @@ static int execute_glb_job(const rapidjson::Value& job, const rapidjson::Value* 
     {
         *error_message = "STEP to GLB failed with code " + std::to_string(code);
         return code;
+    }
+    return 0;
+}
+
+static int execute_model_bounds_job(const rapidjson::Value& job,
+                                    const rapidjson::Value* batch_options,
+                                    std::string* output_path, std::string* error_message)
+{
+    std::string model_path;
+    if (!model_path_for_job(job, &model_path))
+    {
+        *error_message = "job requires string model_path or step_path";
+        return 2;
+    }
+    if (!member_string(job, "output_path", output_path) || output_path->empty())
+    {
+        *error_message = "job requires string output_path";
+        return 2;
+    }
+
+    std::vector<unsigned char> model_bytes;
+    if (!read_file_bytes(model_path.c_str(), &model_bytes))
+    {
+        *error_message = "failed reading " + model_path;
+        return 1;
+    }
+
+    geometer::ModelBoundsOptions options;
+    int code = parse_model_bounds_options_layer(batch_options, &options, error_message);
+    if (code != 0)
+    {
+        return code;
+    }
+    code = parse_model_bounds_options_layer(options_value_for_object(job), &options, error_message);
+    if (code != 0)
+    {
+        return code;
+    }
+    auto format_it = job.FindMember("format");
+    if (format_it == job.MemberEnd())
+    {
+        format_it = job.FindMember("model_format");
+    }
+    if (format_it != job.MemberEnd())
+    {
+        rapidjson::Document format_options;
+        format_options.SetObject();
+        rapidjson::Document::AllocatorType& allocator = format_options.GetAllocator();
+        rapidjson::Value key;
+        key.SetString("format", allocator);
+        rapidjson::Value value(format_it->value, allocator);
+        format_options.AddMember(key, value, allocator);
+        code = parse_model_bounds_options_layer(&format_options, &options, error_message);
+        if (code != 0)
+        {
+            return code;
+        }
+    }
+
+    geometer::ModelBoundsResult bounds;
+    geometer::Status status;
+    code = geometer::model_bounds_from_bytes(model_bytes.data(), model_bytes.size(), options,
+                                             &bounds, &status);
+    if (code != 0)
+    {
+        *error_message = status.message;
+        return code;
+    }
+
+    std::string text;
+    status = {};
+    code = geometer::write_model_bounds_json(bounds, &text, &status);
+    if (code != 0)
+    {
+        *error_message = status.message;
+        return code;
+    }
+    if (!write_text_file(output_path->c_str(), text))
+    {
+        *error_message = "failed writing " + *output_path;
+        return 1;
     }
     return 0;
 }
@@ -469,13 +700,18 @@ static int execute_batch_job(const rapidjson::Value& job, const rapidjson::Value
         return 2;
     }
     *operation = normalize_operation(*operation);
-    if (*operation == "step_hlr_projection_json" || *operation == "step_hlr_projection_svg")
+    if (*operation == "step_hlr_projection_json" || *operation == "step_hlr_projection_svg" ||
+        *operation == "model_hlr_projection_json" || *operation == "model_hlr_projection_svg")
     {
         return execute_hlr_job(job, batch_options, *operation, output_path, error_message);
     }
-    if (*operation == "step_to_glb")
+    if (*operation == "step_to_glb" || *operation == "model_to_glb")
     {
         return execute_glb_job(job, batch_options, output_path, error_message);
+    }
+    if (*operation == "model_bounds_json")
+    {
+        return execute_model_bounds_job(job, batch_options, output_path, error_message);
     }
     if (*operation == "planar_step")
     {
@@ -688,10 +924,14 @@ static int init_request(int argc, char* argv[])
     add_string(job, "output_path", output_path, allocator);
 
     rapidjson::Value options(rapidjson::kObjectType);
-    if (operation == "step_to_glb")
+    if (operation == "step_to_glb" || operation == "model_to_glb")
     {
         options.AddMember("linear_deflection", 0.1, allocator);
         options.AddMember("angular_deflection", 0.5, allocator);
+    }
+    else if (operation == "model_bounds_json")
+    {
+        add_string(options, "format", "step", allocator);
     }
     else
     {
@@ -760,11 +1000,11 @@ int main(int argc, char* argv[])
         clean_exit(result);
     }
 
-    if (std::strcmp(argv[1], "step-to-glb") == 0)
+    if (std::strcmp(argv[1], "step-to-glb") == 0 || std::strcmp(argv[1], "model-to-glb") == 0)
     {
         if (argc < 4)
         {
-            std::fprintf(stderr, "step-to-glb requires input and output paths.\n");
+            std::fprintf(stderr, "%s requires input and output paths.\n", argv[1]);
             return 1;
         }
 
@@ -772,6 +1012,11 @@ int main(int argc, char* argv[])
         const char* output = argv[3];
 
         geometer::StepToGlbOptions options;
+        const int format_result = validate_model_format_args(argc, argv, 4);
+        if (format_result != 0)
+        {
+            return format_result;
+        }
 
         for (int i = 4; i < argc - 1; i += 2)
         {
@@ -797,6 +1042,54 @@ int main(int argc, char* argv[])
             std::fprintf(stderr, "Failed (error %d).\n", result);
         }
         clean_exit(result);
+    }
+
+    if (std::strcmp(argv[1], "model-bounds") == 0)
+    {
+        if (argc < 4)
+        {
+            std::fprintf(stderr, "model-bounds requires input and output paths.\n");
+            return 1;
+        }
+
+        const int format_result = validate_model_format_args(argc, argv, 4);
+        if (format_result != 0)
+        {
+            return format_result;
+        }
+
+        std::vector<unsigned char> model_bytes;
+        if (!read_file_bytes(argv[2], &model_bytes))
+        {
+            std::fprintf(stderr, "Failed reading %s\n", argv[2]);
+            return 1;
+        }
+
+        geometer::ModelBoundsOptions options;
+        geometer::ModelBoundsResult bounds;
+        geometer::Status status;
+        int result = geometer::model_bounds_from_bytes(model_bytes.data(), model_bytes.size(),
+                                                       options, &bounds, &status);
+        if (result != 0)
+        {
+            std::fprintf(stderr, "Model bounds failed (%d): %s\n", result, status.message.c_str());
+            return result;
+        }
+
+        std::string text;
+        result = geometer::write_model_bounds_json(bounds, &text, &status);
+        if (result != 0)
+        {
+            std::fprintf(stderr, "Model bounds output failed (%d): %s\n", result,
+                         status.message.c_str());
+            return result;
+        }
+        if (!write_text_file(argv[3], text))
+        {
+            std::fprintf(stderr, "Failed writing %s\n", argv[3]);
+            return 1;
+        }
+        clean_exit(0);
     }
 
     if (std::strcmp(argv[1], "planar-step") == 0)
@@ -829,7 +1122,9 @@ int main(int argc, char* argv[])
     }
 
     if (std::strcmp(argv[1], "step-project-hlr") == 0 ||
-        std::strcmp(argv[1], "step-project-svg") == 0)
+        std::strcmp(argv[1], "step-project-svg") == 0 ||
+        std::strcmp(argv[1], "model-project-hlr") == 0 ||
+        std::strcmp(argv[1], "model-project-svg") == 0)
     {
         if (argc < 4)
         {
@@ -842,6 +1137,11 @@ int main(int argc, char* argv[])
         geometer::HlrProjectionOptions options;
         std::string view_id = "top";
         std::string mode = "simple";
+        const int format_result = validate_model_format_args(argc, argv, 4);
+        if (format_result != 0)
+        {
+            return format_result;
+        }
         parse_projection_options(argc, argv, 4, &options, &view_id, &mode);
 
         std::vector<unsigned char> step_bytes;
@@ -862,7 +1162,8 @@ int main(int argc, char* argv[])
         }
 
         std::string text;
-        if (std::strcmp(argv[1], "step-project-svg") == 0)
+        if (std::strcmp(argv[1], "step-project-svg") == 0 ||
+            std::strcmp(argv[1], "model-project-svg") == 0)
         {
             result = geometer::write_hlr_projection_svg(projection, view_id, mode, &text, &status);
         }

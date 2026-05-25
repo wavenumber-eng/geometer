@@ -2,6 +2,8 @@ set(GEOMETER_LIB_SOURCES
     c_api.cpp
     clipper2_bytes.cpp
     hlr_projection.cpp
+    model_bounds.cpp
+    model_bounds_options_json.cpp
     planar_contours.cpp
     planar_solve.cpp
     planar_step.cpp

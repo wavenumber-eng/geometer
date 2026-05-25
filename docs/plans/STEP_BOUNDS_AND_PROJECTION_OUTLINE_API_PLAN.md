@@ -19,6 +19,13 @@ The bounds API must not depend on HLR. HLR can fail to produce closed planar
 regions on some models, while bounding boxes are still required as the stable
 fallback.
 
+This is also the right time to normalize the public model-input API names.
+Current Geometer model-input APIs are STEP-specific because STEP is the only
+supported source model format today. New API names should use the generic
+`model_*` convention while documenting that the only accepted `format` value is
+currently `"step"`. Existing STEP-specific API names remain compatibility
+wrappers and are deprecated rather than removed.
+
 ## Design Principles
 
 - Keep the API generic; no board, footprint, layer, or Altium-specific policy.
@@ -29,19 +36,63 @@ fallback.
   HLR APIs.
 - Make bounds the first stable surface; keep projection outlines explicitly
   experimental until ring closure quality is proven.
+- Prefer generic public names for model-input operations, with explicit
+  `format="step"` validation until more source formats are supported.
+- Preserve old STEP-specific names as wrappers with identical behavior.
+- Do not rename `planar_step` as part of this cleanup. It creates STEP from
+  planar regions; it is not a source-model import operation.
+
+## API Rename Direction
+
+Preferred names:
+
+| Current name | Preferred name | Notes |
+| --- | --- | --- |
+| `step_to_glb(...)` | `model_to_glb(..., format="step")` | Converts a source model to GLB bytes. |
+| `project_step_hlr(...)` | `project_model_hlr(..., format="step")` | Returns the typed HLR projection wrapper. |
+| `hlr_projection_json(...)` | `model_hlr_projection_json(..., format="step")` | Returns projection JSON text. |
+| new bounds API | `model_bounds(..., format="step")` | First stable bounds surface. |
+| new outline API | `model_projection_outline(..., format="step")` | Experimental until ring closure is validated. |
+
+Compatibility wrappers:
+
+- `step_to_glb(...)` calls `model_to_glb(..., format="step")`.
+- `project_step_hlr(...)` calls `project_model_hlr(..., format="step")`.
+- `hlr_projection_json(...)` calls
+  `model_hlr_projection_json(..., format="step")`.
+- If a STEP-specific bounds or outline helper is ever added during migration,
+  it should also be only a wrapper around the generic form.
+
+Deprecation policy:
+
+- Mark compatibility wrappers as deprecated in docs and release notes
+  immediately.
+- Python wrappers may emit `DeprecationWarning` with `stacklevel=2`; this is
+  normally hidden by default but visible to users who enable warnings.
+- C++ headers should start with deprecation comments and release-note warnings.
+  Add `[[deprecated]]` attributes only after downstream warning-as-error impact
+  is reviewed.
+- CLI aliases should stay quiet by default so scripts that parse stderr do not
+  break. Mark them as deprecated in `--help` and docs.
+- Batch operation aliases should remain accepted and should produce the same
+  response shape as the preferred operation names.
+- No removal date is set in this plan. Removal needs a separate compatibility
+  decision.
 
 ## Proposed Python Surface
 
 ```python
 import geometer
 
-bounds = geometer.step_bounds(
-    step_bytes_or_path,
+bounds = geometer.model_bounds(
+    model_bytes_or_path,
+    format="step",
     model_transform=transform,
 )
 
-outline = geometer.step_projection_outline(
-    step_bytes_or_path,
+outline = geometer.model_projection_outline(
+    model_bytes_or_path,
+    format="step",
     view=geometer.ProjectionView.top(),
     model_transform=transform,
     options=geometer.ProjectionOutlineOptions.simple(),
@@ -52,7 +103,7 @@ Candidate dataclasses:
 
 ```python
 @dataclass(frozen=True)
-class StepBoundsResult:
+class ModelBoundsResult:
     data: dict[str, Any]
 
     @property
@@ -73,15 +124,20 @@ The Python wrapper should remain a thin result wrapper over JSON so schema
 changes stay visible and do not require immediate rich object modeling for
 every field.
 
+`format` validation should be deliberately strict in the first implementation:
+accept `"step"` and reject every other value with a clear error. Automatic file
+extension detection can be added later, but first-slice behavior should be
+predictable.
+
 ## Proposed JSON Schemas
 
 Bounds result schema:
 
 ```json
 {
-  "schema": "geometry.step_bounds.a0",
+  "schema": "geometry.model_bounds.a0",
   "units": "mm",
-  "source": { "hash": "..." },
+  "source": { "format": "step", "hash": "..." },
   "bounds": {
     "min": [0.0, 0.0, 0.0],
     "max": [1.0, 2.0, 3.0],
@@ -99,9 +155,9 @@ Projection outline result schema:
 
 ```json
 {
-  "schema": "geometry.step_projection_outline.a0",
+  "schema": "geometry.model_projection_outline.a0",
   "units": "mm",
-  "source": { "hash": "..." },
+  "source": { "format": "step", "hash": "..." },
   "view": {
     "id": "top",
     "direction": [0.0, 0.0, 1.0],
@@ -145,17 +201,36 @@ Questions to settle before implementation:
 Direct CLI commands:
 
 ```powershell
-geometer step-bounds input.step output.json
-geometer step-outline input.step output.json --view top --mode simple
+geometer model-bounds input.step output.json --format step
+geometer model-to-glb input.step output.glb --format step
+geometer model-project-hlr input.step output.json --format step
+geometer model-project-svg input.step output.svg --format step --view top --mode simple
+geometer model-project-outline input.step output.json --format step --view top --mode simple
 ```
+
+Compatibility CLI aliases:
+
+- `step-to-glb`
+- `step-project-hlr`
+- `step-project-svg`
 
 Batch operations:
 
-- `step_bounds_json`
-- `step_projection_outline_json`
+- `model_bounds_json`
+- `model_to_glb`
+- `model_hlr_projection_json`
+- `model_hlr_projection_svg`
+- `model_projection_outline_json`
 
-Both operations should accept `model_transform` in job or top-level options.
-`step_projection_outline_json` can reuse the current HLR options where useful,
+Batch compatibility aliases:
+
+- `step_to_glb`
+- `step_hlr_projection_json`
+- `step_hlr_projection_svg`
+
+Model-input operations should accept `format` and `model_transform` in job or
+top-level options. First-slice `format` support is `"step"` only.
+`model_projection_outline_json` can reuse the current HLR options where useful,
 but should keep ring-joining options separate from raw HLR projection options.
 
 ## Proposed C++ Surface
@@ -163,13 +238,19 @@ but should keep ring-joining options separate from raw HLR projection options.
 Headers should mirror the current STEP/HLR style:
 
 ```cpp
-struct StepBoundsOptions {
+enum class ModelFormat {
+    Step
+};
+
+struct ModelBoundsOptions {
+    ModelFormat format = ModelFormat::Step;
     std::array<double, 16> model_transform = identity;
 };
 
-struct StepBoundsResult {
-    std::string schema = "geometry.step_bounds.a0";
+struct ModelBoundsResult {
+    std::string schema = "geometry.model_bounds.a0";
     std::string units = "mm";
+    std::string source_format = "step";
     std::string source_hash;
     std::array<double, 3> min;
     std::array<double, 3> max;
@@ -177,11 +258,11 @@ struct StepBoundsResult {
     std::array<double, 3> center;
 };
 
-int step_bounds_from_bytes(
-    const unsigned char* step_data,
-    std::size_t step_size,
-    const StepBoundsOptions& options,
-    StepBoundsResult* result,
+int model_bounds_from_bytes(
+    const unsigned char* model_data,
+    std::size_t model_size,
+    const ModelBoundsOptions& options,
+    ModelBoundsResult* result,
     Status* status = nullptr
 );
 ```
@@ -190,16 +271,48 @@ Projection outline can build on current HLR extraction, but should be separated
 from raw `HlrProjectionResult` so consumers do not need to join unordered
 segments themselves.
 
+Current C++ model-input functions should remain available as wrappers:
+
+- `step_to_glb(...)`
+- `step_to_glb_from_bytes(...)`
+- `step_hlr_projection_from_bytes(...)`
+
+New generic counterparts should be added beside them. The old functions should
+not be removed during this plan.
+
+## Proposed C ABI And WASM Surface
+
+The C ABI and WASM exports currently expose STEP-specific names. Add generic
+entry points beside them and keep the old exports:
+
+- `geometer_model_to_glb_bytes(...)`
+- `geometer_model_hlr_projection_json_bytes(...)`
+- `geometer_model_bounds_json_bytes(...)`
+
+Optional convenience result-returning C ABI wrappers can mirror the existing
+string/byte result helpers. The legacy exports remain:
+
+- `geometer_step_to_glb(...)`
+- `geometer_step_to_glb_bytes(...)`
+- `geometer_step_hlr_projection_json(...)`
+- `geometer_step_hlr_projection_json_bytes(...)`
+
+Adding exports changes the ABI generation metadata for a release, but it should
+not remove or alter existing symbols.
+
 ## Implementation Sequence
 
-1. Finalize the bounds JSON schema and Python dataclass shape.
+1. Finalize the generic model-input naming, bounds JSON schema, and Python
+   dataclass shape.
 2. Add C++ bounds value types and JSON writer/parser coverage.
-3. Add direct CLI and batch operations for bounds.
-4. Add Python `step_bounds(...)` and `StepBoundsResult`.
-5. Validate against existing STEP fixtures and current downstream CadQuery
+3. Add generic direct CLI and batch operations for bounds.
+4. Add Python `model_bounds(...)` and `ModelBoundsResult`.
+5. Add generic wrappers for existing GLB and HLR operations, then re-route old
+   STEP-specific names through compatibility wrappers.
+6. Validate against existing STEP fixtures and current downstream CadQuery
    bounds oracles.
-6. Design the outline ring schema after reviewing more failure cases.
-7. Implement projection outline as an experimental API only after ring joining
+7. Design the outline ring schema after reviewing more failure cases.
+8. Implement projection outline as an experimental API only after ring joining
    tests are in place.
 
 ## Test Plan
@@ -208,13 +321,41 @@ segments themselves.
 - Native C++ tests for known STEP fixtures.
 - CLI tests for path input.
 - Python tests for path and byte input.
-- Batch-runner tests for `step_bounds_json`.
+- Batch-runner tests for `model_bounds_json`.
+- Compatibility tests proving old Python, CLI, C++, C ABI, and batch names still
+  call the same implementation and return the same results.
 - Downstream comparison cases against existing CadQuery-derived bounds.
 - Additional user-provided STEP fixtures before outline API promotion.
 
+## Breaking-Change Assessment
+
+The intended implementation is additive and should not break existing behavior
+when compatibility wrappers are used correctly.
+
+Changes that would be breaking and should be avoided:
+
+- changing the existing `geometry.projection.a0` JSON shape;
+- changing HLR default views, edge options, transform semantics, or arc/segment
+  output;
+- removing or changing positional arguments for existing CLI commands;
+- removing or renaming existing batch operations;
+- changing `step_to_glb`, `project_step_hlr`, or `hlr_projection_json` return
+  types;
+- emitting default CLI deprecation text on stderr;
+- adding C++ `[[deprecated]]` attributes before checking downstream
+  warning-as-error usage.
+
+Expected low-risk compatibility impact:
+
+- docs and release notes will prefer `model_*` names;
+- Python users who enable deprecation warnings may see warnings from old names;
+- C++ users may see doc-level deprecation notes before any compiler-level
+  deprecation attribute is introduced.
+
 ## Release Notes For Future Implementation
 
-When implemented, release notes should say that STEP bounds are a stable generic
-API and projection outlines are experimental unless the ring-joining validation
-has been completed. Downstream Altium projection policy belongs in the caller,
-not in Geometer.
+When implemented, release notes should say that generic model-input APIs are now
+preferred, the only supported source format is currently STEP, and old
+STEP-specific names remain compatibility wrappers. Bounds are stable; projection
+outlines are experimental unless the ring-joining validation has been completed.
+Downstream Altium projection policy belongs in the caller, not in Geometer.

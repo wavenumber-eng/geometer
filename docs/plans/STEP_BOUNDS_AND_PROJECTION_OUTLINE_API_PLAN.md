@@ -338,8 +338,10 @@ not remove or alter existing symbols.
 7. Next: decide whether C++ and C ABI generic wrappers for existing GLB/HLR
    operations should land before the next package release or with a later ABI
    generation.
-8. Future: design the outline ring schema after reviewing more failure cases.
-9. Future: implement projection outline as an experimental API only after ring
+8. Next: add Altium-extracted embedded STEP fixtures from real projects,
+   including Hydroscope models generated through `altium_cruncher megamaid`.
+9. Future: design the outline ring schema after reviewing more failure cases.
+10. Future: implement projection outline as an experimental API only after ring
    joining tests are in place.
 
 ## Test Plan

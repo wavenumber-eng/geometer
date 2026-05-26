@@ -4,6 +4,7 @@ import argparse
 import json
 import os
 import platform
+import re
 import shutil
 import subprocess
 import sys
@@ -12,6 +13,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_STEP = ROOT / "tests" / "fixtures" / "step" / "embedded_models" / "SOT-23.STEP"
+DEFAULT_MACOS_DEPLOYMENT_TARGET = "11.0"
 
 
 def main() -> int:
@@ -30,14 +32,17 @@ def main() -> int:
         raise FileNotFoundError(step_path)
 
     build_dir = args.build_dir.resolve()
-    run(["cmake", "--preset", "default", "-B", str(build_dir)])
-    run(["cmake", "--build", str(build_dir), "--config", args.config])
+    env = native_build_env()
+    run(cmake_configure_command(build_dir), env=env)
+    run(["cmake", "--build", str(build_dir), "--config", args.config], env=env)
 
     exe = ROOT / "dist" / "native" / tag / executable_name()
     if not exe.exists():
         raise FileNotFoundError(f"Expected native executable was not produced: {exe}")
 
     run([str(exe), "--version"])
+    if sys.platform == "darwin":
+        validate_macos_executable_target(exe, macos_deployment_target())
     validate_cli_outputs(exe, step_path, tag)
 
     if sys.platform.startswith("linux") and not args.skip_ldd:
@@ -204,6 +209,64 @@ def prepend_path(path: Path, current: str | None) -> str:
     if not current:
         return str(path)
     return str(path) + os.pathsep + current
+
+
+def macos_deployment_target() -> str:
+    return (
+        os.environ.get("GEOMETER_MACOS_DEPLOYMENT_TARGET")
+        or os.environ.get("MACOSX_DEPLOYMENT_TARGET")
+        or DEFAULT_MACOS_DEPLOYMENT_TARGET
+    ).replace("_", ".")
+
+
+def native_build_env() -> dict[str, str]:
+    env = os.environ.copy()
+    if sys.platform == "darwin":
+        target = macos_deployment_target()
+        env["MACOSX_DEPLOYMENT_TARGET"] = target
+        env["GEOMETER_MACOS_DEPLOYMENT_TARGET"] = target
+    return env
+
+
+def cmake_configure_command(build_dir: Path) -> list[str]:
+    command = ["cmake", "--preset", "default", "-B", str(build_dir)]
+    if sys.platform == "darwin":
+        command.append(f"-DCMAKE_OSX_DEPLOYMENT_TARGET={macos_deployment_target()}")
+    return command
+
+
+def validate_macos_executable_target(exe: Path, target: str) -> None:
+    min_version = macos_binary_min_version(exe)
+    if min_version is None:
+        raise RuntimeError(f"Could not determine macOS minimum OS version for {exe}")
+    if version_pair(min_version) > version_pair(target):
+        raise RuntimeError(
+            f"{exe} requires macOS {min_version}, which is newer than "
+            f"the configured deployment target {target}."
+        )
+    print(f"macOS deployment target ok: binary minos {min_version}, configured target {target}")
+
+
+def macos_binary_min_version(exe: Path) -> str | None:
+    completed = subprocess.run(
+        ["otool", "-l", str(exe)],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    for key in ("minos", "version"):
+        match = re.search(rf"^\s*{key}\s+(\d+(?:\.\d+)*)\b", completed.stdout, re.MULTILINE)
+        if match is not None:
+            return match.group(1)
+    return None
+
+
+def version_pair(value: str) -> tuple[int, int]:
+    parts = value.replace("_", ".").split(".")
+    if len(parts) == 1:
+        parts.append("0")
+    return int(parts[0]), int(parts[1])
 
 
 def run(cmd: list[str], *, env: dict[str, str] | None = None) -> None:

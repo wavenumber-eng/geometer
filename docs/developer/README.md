@@ -231,6 +231,46 @@ script, and marks the wheel platform-specific. The Windows executable wheel
 should use a `py3-none-win_amd64` tag because it contains no CPython extension
 module.
 
+### macOS arm64 wheels
+
+Geometer currently publishes Apple Silicon macOS wheels and does not publish an
+Intel macOS wheel. The standard macOS release target is:
+
+```text
+py3-none-macosx_11_0_arm64
+```
+
+The release scripts default Darwin native and wheel builds to
+`MACOSX_DEPLOYMENT_TARGET=11.0`. When changing the target, rebuild OCCT and the
+native CLI from clean generated state because static OCCT objects carry their
+own Mach-O minimum OS metadata:
+
+```bash
+python scripts/build_occt.py --clean
+rm -rf build-native-macos-arm64
+python scripts/validate_native.py
+python scripts/validate_python_package.py --skip-native-validation
+```
+
+Before uploading, verify both the filename and the bundled executable:
+
+```bash
+otool -l dist/native/macos-arm64/geometer | rg -A5 'LC_BUILD_VERSION|LC_VERSION_MIN_MACOSX'
+python -m twine check out/wheelhouse/macos-arm64/wn_geometer-2026.5.25-py3-none-macosx_11_0_arm64.whl
+```
+
+The Mach-O `minos` value must not be newer than the wheel platform tag. Do not
+retag an existing macOS wheel to a lower version without rebuilding native
+artifacts.
+
+Treat GitHub Actions `macos-latest` as a moving CI label, not as a release
+target. GitHub announces `macos-latest` migrations and rolls them out gradually,
+so normal maintenance is to keep the Geometer wheel target pinned to the
+supported floor (`macosx_11_0_arm64`) and test that wheel on the current
+`macos-latest` runner. A `macos-latest` migration only requires repackaging if
+the wheel install or native smoke test fails on the new hosted runner, or if a
+new SDK/toolchain raises the Mach-O `minos` above the published wheel tag.
+
 For WSL/Linux release wheels, repair the built `linux_x86_64` wheel before PyPI
 upload:
 
@@ -246,13 +286,13 @@ PyPI upload commands:
 
 ```powershell
 # Preflight metadata.
-python -m twine check out\wheelhouse\windows-x64\wn_geometer-2026.5.25-py3-none-win_amd64.whl out\wheelhouse\linux-x64\repaired\wn_geometer-2026.5.25-py3-none-manylinux_2_39_x86_64.whl out\wheelhouse\macos-arm64\wn_geometer-2026.5.25-py3-none-macosx_26_0_arm64.whl
+python -m twine check out\wheelhouse\windows-x64\wn_geometer-2026.5.25-py3-none-win_amd64.whl out\wheelhouse\linux-x64\repaired\wn_geometer-2026.5.25-py3-none-manylinux_2_39_x86_64.whl out\wheelhouse\macos-arm64\wn_geometer-2026.5.25-py3-none-macosx_11_0_arm64.whl
 
 # Optional dry-run project on TestPyPI.
-python -m twine upload --repository testpypi out\wheelhouse\windows-x64\wn_geometer-2026.5.25-py3-none-win_amd64.whl out\wheelhouse\linux-x64\repaired\wn_geometer-2026.5.25-py3-none-manylinux_2_39_x86_64.whl out\wheelhouse\macos-arm64\wn_geometer-2026.5.25-py3-none-macosx_26_0_arm64.whl
+python -m twine upload --repository testpypi out\wheelhouse\windows-x64\wn_geometer-2026.5.25-py3-none-win_amd64.whl out\wheelhouse\linux-x64\repaired\wn_geometer-2026.5.25-py3-none-manylinux_2_39_x86_64.whl out\wheelhouse\macos-arm64\wn_geometer-2026.5.25-py3-none-macosx_11_0_arm64.whl
 
 # Public PyPI release.
-python -m twine upload --repository pypi out\wheelhouse\windows-x64\wn_geometer-2026.5.25-py3-none-win_amd64.whl out\wheelhouse\linux-x64\repaired\wn_geometer-2026.5.25-py3-none-manylinux_2_39_x86_64.whl out\wheelhouse\macos-arm64\wn_geometer-2026.5.25-py3-none-macosx_26_0_arm64.whl
+python -m twine upload --repository pypi out\wheelhouse\windows-x64\wn_geometer-2026.5.25-py3-none-win_amd64.whl out\wheelhouse\linux-x64\repaired\wn_geometer-2026.5.25-py3-none-manylinux_2_39_x86_64.whl out\wheelhouse\macos-arm64\wn_geometer-2026.5.25-py3-none-macosx_11_0_arm64.whl
 ```
 
 For token-based upload, set `TWINE_USERNAME=__token__` and put the PyPI or

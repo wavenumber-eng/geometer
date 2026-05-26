@@ -4,6 +4,11 @@ All notable changes to geometer are documented here.
 
 ## [Unreleased]
 
+### Fixed
+
+- Default macOS native and wheel builds to deployment target 11.0 for Apple
+  Silicon compatibility, and validate the Mach-O minimum OS before packaging.
+
 ## [2026.5.25] - 2026-05-25
 
 ### Added

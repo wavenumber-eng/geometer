@@ -14,10 +14,12 @@ uses a bundled platform executable backend.
    checkout `dist/native/<platform>/`, or `PATH`.
 4. Expose a `geometer` console script that forwards to the bundled platform
    executable.
-5. Do not require users to load OCCT shared libraries directly from Python.
-6. Provide public Python APIs for version, STEP HLR projection, projection JSON,
+5. Publish macOS arm64 wheels with a deployment target that supports current
+   hosted Apple Silicon CI runners. The default release target is macOS 11.0.
+6. Do not require users to load OCCT shared libraries directly from Python.
+7. Provide public Python APIs for version, STEP HLR projection, projection JSON,
    STEP-to-GLB bytes, and batch execution.
-7. Validate each wheel by installing it into a clean temporary environment and
+8. Validate each wheel by installing it into a clean temporary environment and
    running a no-GUI package example.
-8. Downstream users must be able to install from PyPI without local path
+9. Downstream users must be able to install from PyPI without local path
    overrides.

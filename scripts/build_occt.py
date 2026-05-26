@@ -19,6 +19,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import os
 import platform
 import shutil
 import subprocess
@@ -38,6 +39,7 @@ RAPIDJSON_PATCH_SENTINEL = (
 
 OCCT_REPO = "https://github.com/Open-Cascade-SAS/OCCT.git"
 OCCT_TAG = "V7_8_1"
+DEFAULT_MACOS_DEPLOYMENT_TARGET = "11.0"
 
 
 def cmake_generator_args() -> list[str]:
@@ -111,7 +113,12 @@ def occt_paths(platform_name: str, library_type: str) -> tuple[Path, Path]:
     return platform_dir / "occt-build", platform_dir / "occt-install"
 
 
-def configure_occt(platform_name: str, config: str, library_type: str) -> None:
+def configure_occt(
+    platform_name: str,
+    config: str,
+    library_type: str,
+    macos_deployment_target: str | None,
+) -> None:
     build_dir, install_dir = occt_paths(platform_name, library_type)
     print(f"Configuring OCCT ({config}, {library_type}) ...")
     build_dir.mkdir(parents=True, exist_ok=True)
@@ -137,6 +144,7 @@ def configure_occt(platform_name: str, config: str, library_type: str) -> None:
         f"-D3RDPARTY_RAPIDJSON_DIR={RAPIDJSON_SRC}",
         # OCCT declares cmake_minimum_required(VERSION 2.6) which CMake 4+ rejects.
         "-DCMAKE_POLICY_VERSION_MINIMUM=3.5",
+        *macos_cmake_args(platform_name, macos_deployment_target),
     ]
 
     run(cmd)
@@ -171,6 +179,29 @@ def clean(platform_name: str, *, include_source: bool) -> None:
             shutil.rmtree(d)
 
 
+def macos_deployment_target(configured: str | None) -> str:
+    return (
+        configured
+        or os.environ.get("GEOMETER_MACOS_DEPLOYMENT_TARGET")
+        or os.environ.get("MACOSX_DEPLOYMENT_TARGET")
+        or DEFAULT_MACOS_DEPLOYMENT_TARGET
+    ).replace("_", ".")
+
+
+def macos_cmake_args(platform_name: str, configured: str | None) -> list[str]:
+    if not platform_name.startswith("macos-"):
+        return []
+    target = macos_deployment_target(configured)
+    args = [
+        f"-DCMAKE_OSX_DEPLOYMENT_TARGET={target}",
+    ]
+    if platform_name == "macos-arm64":
+        args.append("-DCMAKE_OSX_ARCHITECTURES=arm64")
+    elif platform_name == "macos-x64":
+        args.append("-DCMAKE_OSX_ARCHITECTURES=x86_64")
+    return args
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Build OCCT from source.")
     parser.add_argument("--config", default="Release", help="Build config (default: Release)")
@@ -185,6 +216,11 @@ def main() -> None:
         default=platform_tag(),
         help="Native dependency platform tag (default: current platform)",
     )
+    parser.add_argument(
+        "--macos-deployment-target",
+        default=None,
+        help=f"Minimum macOS deployment target for native dependencies (default: {DEFAULT_MACOS_DEPLOYMENT_TARGET})",
+    )
     parser.add_argument("--clean", action="store_true", help="Remove all OCCT build artifacts")
     parser.add_argument(
         "--clean-source",
@@ -198,9 +234,11 @@ def main() -> None:
         return
 
     print(f"Using native dependency platform {args.platform_tag}")
+    if args.platform_tag.startswith("macos-"):
+        print(f"Using macOS deployment target {macos_deployment_target(args.macos_deployment_target)}")
     verify_vendored_rapidjson()
     clone_occt()
-    configure_occt(args.platform_tag, args.config, args.library_type)
+    configure_occt(args.platform_tag, args.config, args.library_type, args.macos_deployment_target)
     build_occt(args.platform_tag, args.config, args.library_type)
     install_occt(args.platform_tag, args.config, args.library_type)
     _, install_dir = occt_paths(args.platform_tag, args.library_type)

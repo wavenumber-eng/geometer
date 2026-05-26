@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import os
 import platform
+import re
 import subprocess
 import sys
 import tempfile
@@ -12,6 +13,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_STEP = ROOT / "tests" / "fixtures" / "step" / "embedded_models" / "SOT-23.STEP"
+DEFAULT_MACOS_DEPLOYMENT_TARGET = "11.0"
 
 
 PACKAGE_VALIDATION_CODE = r"""
@@ -123,9 +125,12 @@ def main() -> int:
             "--build-dir",
             str(args.build_dir),
             "--skip-ctest",
-        ])
+        ], env=package_build_env())
+    elif sys.platform == "darwin":
+        validate_macos_dist_executable(macos_deployment_target())
 
     wheel = args.wheel.resolve() if args.wheel is not None else build_wheel(args.wheelhouse.resolve())
+    validate_wheel_platform_tag(wheel)
     validate_wheel_install(wheel, step_path, keep_temp=args.keep_temp)
     print(f"Python package validation complete for {platform_tag()}: {wheel}")
     return 0
@@ -133,13 +138,14 @@ def main() -> int:
 
 def build_wheel(wheelhouse: Path) -> Path:
     wheelhouse.mkdir(parents=True, exist_ok=True)
+    env = package_build_env()
     started_at = time.time()
     with tempfile.TemporaryDirectory(prefix="geometer-wheel-build-") as temp_text:
         build_venv = Path(temp_text) / "venv"
-        run([sys.executable, "-m", "venv", str(build_venv)])
+        run([sys.executable, "-m", "venv", str(build_venv)], env=env)
         build_python = venv_python(build_venv)
-        run([str(build_python), "-m", "pip", "install", "--upgrade", "pip", "build"])
-        run([str(build_python), "-m", "build", "--wheel", "--outdir", str(wheelhouse)])
+        run([str(build_python), "-m", "pip", "install", "--upgrade", "pip", "build"], env=env)
+        run([str(build_python), "-m", "build", "--wheel", "--outdir", str(wheelhouse)], env=env)
 
     candidates = [
         path
@@ -197,6 +203,89 @@ def clean_package_env() -> dict[str, str]:
         env.pop(key, None)
     env["GEOMETER_BACKEND"] = "exe"
     return env
+
+
+def package_build_env() -> dict[str, str]:
+    env = os.environ.copy()
+    if sys.platform == "darwin":
+        target = macos_deployment_target()
+        env["MACOSX_DEPLOYMENT_TARGET"] = target
+        env["GEOMETER_MACOS_DEPLOYMENT_TARGET"] = target
+    return env
+
+
+def validate_wheel_platform_tag(wheel: Path) -> None:
+    if sys.platform != "darwin":
+        return
+    expected = expected_macos_wheel_platform_tag()
+    if expected not in wheel.name:
+        raise RuntimeError(f"Expected macOS wheel tag {expected} in {wheel.name}")
+
+
+def validate_macos_dist_executable(target: str) -> None:
+    exe = ROOT / "dist" / "native" / platform_tag() / executable_name()
+    if not exe.exists():
+        raise FileNotFoundError(f"Expected native executable was not produced: {exe}")
+    min_version = macos_binary_min_version(exe)
+    if min_version is None:
+        raise RuntimeError(f"Could not determine macOS minimum OS version for {exe}")
+    if version_pair(min_version) > version_pair(target):
+        raise RuntimeError(
+            f"{exe} requires macOS {min_version}, which is newer than "
+            f"the configured deployment target {target}."
+        )
+    print(f"macOS deployment target ok: binary minos {min_version}, configured target {target}")
+
+
+def macos_deployment_target() -> str:
+    return (
+        os.environ.get("GEOMETER_MACOS_DEPLOYMENT_TARGET")
+        or os.environ.get("MACOSX_DEPLOYMENT_TARGET")
+        or DEFAULT_MACOS_DEPLOYMENT_TARGET
+    ).replace("_", ".")
+
+
+def expected_macos_wheel_platform_tag() -> str:
+    major, minor = version_pair(macos_deployment_target())
+    arch = macos_wheel_arch()
+    if arch == "arm64" and (major, minor) < (11, 0):
+        raise RuntimeError("macOS arm64 wheels require deployment target 11.0 or newer.")
+    return f"macosx_{major}_{0 if major >= 11 else minor}_{arch}"
+
+
+def macos_wheel_arch() -> str:
+    machine = platform.machine().strip().lower()
+    if machine in {"aarch64", "arm64"}:
+        return "arm64"
+    if machine in {"amd64", "x86_64"}:
+        return "x86_64"
+    return machine or "unknown"
+
+
+def executable_name() -> str:
+    return "geometer.exe" if sys.platform == "win32" else "geometer"
+
+
+def macos_binary_min_version(exe: Path) -> str | None:
+    completed = subprocess.run(
+        ["otool", "-l", str(exe)],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    for key in ("minos", "version"):
+        match = re.search(rf"^\s*{key}\s+(\d+(?:\.\d+)*)\b", completed.stdout, re.MULTILINE)
+        if match is not None:
+            return match.group(1)
+    return None
+
+
+def version_pair(value: str) -> tuple[int, int]:
+    parts = value.replace("_", ".").split(".")
+    if len(parts) == 1:
+        parts.append("0")
+    return int(parts[0]), int(parts[1])
 
 
 def platform_tag() -> str:

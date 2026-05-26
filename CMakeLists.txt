@@ -1,5 +1,9 @@
 cmake_minimum_required(VERSION 3.24)
 
+if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Darwin" AND NOT CMAKE_OSX_DEPLOYMENT_TARGET)
+    set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0" CACHE STRING "Minimum macOS deployment target")
+endif()
+
 set(GEOMETER_RELEASE_DATE "2026-05-25" CACHE STRING "Geometer UTC release date" FORCE)
 set(GEOMETER_RELEASE_VERSION "2026.5.25" CACHE STRING "Geometer package/build version" FORCE)
 set(GEOMETER_ABI_VERSION "20260525" CACHE STRING "Geometer C ABI generation date" FORCE)
@@ -60,6 +64,11 @@ set(GEOMETER_WASM_PLANAR_BROWSER_DIST_DIR
 set(GEOMETER_OCCT_LIBRARY_TYPE "Static" CACHE STRING "OCCT library type to auto-build when missing")
 set_property(CACHE GEOMETER_OCCT_LIBRARY_TYPE PROPERTY STRINGS Static Shared)
 
+if(APPLE)
+    set(GEOMETER_MACOS_DEPLOYMENT_TARGET "${CMAKE_OSX_DEPLOYMENT_TARGET}"
+        CACHE STRING "Minimum macOS deployment target for Geometer and bundled native dependencies")
+endif()
+
 set(_geometer_native_deps_dir "${CMAKE_SOURCE_DIR}/.deps/native/${GEOMETER_NATIVE_DIST_PLATFORM}")
 if(GEOMETER_OCCT_LIBRARY_TYPE STREQUAL "Shared")
     set(_geometer_default_occt_install "${_geometer_native_deps_dir}/occt-shared-install")
@@ -83,11 +92,18 @@ if(NOT OpenCASCADE_FOUND)
     message(STATUS "This is a one-time operation and will take ~10-15 minutes.")
 
     find_package(Python3 REQUIRED COMPONENTS Interpreter)
+    set(_geometer_occt_build_args
+        --library-type ${GEOMETER_OCCT_LIBRARY_TYPE}
+        --platform-tag ${GEOMETER_NATIVE_DIST_PLATFORM}
+    )
+    if(APPLE)
+        list(APPEND _geometer_occt_build_args
+            --macos-deployment-target ${GEOMETER_MACOS_DEPLOYMENT_TARGET}
+        )
+    endif()
 
     execute_process(
-        COMMAND ${Python3_EXECUTABLE} "${CMAKE_SOURCE_DIR}/scripts/build_occt.py"
-            --library-type ${GEOMETER_OCCT_LIBRARY_TYPE}
-            --platform-tag ${GEOMETER_NATIVE_DIST_PLATFORM}
+        COMMAND ${Python3_EXECUTABLE} "${CMAKE_SOURCE_DIR}/scripts/build_occt.py" ${_geometer_occt_build_args}
         RESULT_VARIABLE _occt_build_result
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     )

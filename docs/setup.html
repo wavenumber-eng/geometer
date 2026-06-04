@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Geometer Setup</title>
+</head>
+<body data-doc="setup" data-profile="python-native-wasm">
+  <h1>Setup</h1>
+  <p>
+    Geometer is a mixed-mode Python, C++, and WASM project. The detailed
+    developer setup guide is maintained at
+    <a href="developer/README.md">docs/developer/README.md</a>.
+  </p>
+
+  <h2>Required Tools</h2>
+  <ul>
+    <li>Python 3.10 or newer for the package runtime.</li>
+    <li>Python 3.11 or newer for Rack-based development tooling.</li>
+    <li>uv for locking and development tool execution.</li>
+    <li>CMake 3.24 or newer.</li>
+    <li>Ninja as the default native generator.</li>
+    <li>A C++17 compiler for native builds.</li>
+  </ul>
+
+  <h2>Development Commands</h2>
+  <pre><code>uv sync --group dev
+cmake --preset default
+cmake --build build --config Release
+uv run pytest tests/L99_release -q
+python scripts/validate_native.py
+python scripts/validate_python_package.py</code></pre>
+
+  <h2>Artifact Policy</h2>
+  <p>
+    Runtime artifacts are committed under grouped paths in
+    <code>dist/native/&lt;platform&gt;/</code> and
+    <code>dist/wasm/&lt;target&gt;/</code>. Local dependency and build state such
+    as <code>.deps/</code>, <code>build/</code>, <code>build-wasm/</code>,
+    <code>out/</code>, and <code>.venv/</code> must not be committed.
+  </p>
+</body>
+</html>

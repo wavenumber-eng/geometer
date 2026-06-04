@@ -105,7 +105,7 @@ class GeometerBatchRunner:
         options: HlrOptions | Mapping[str, Any] | None,
         start: float,
         *,
-        returned_work_dir: Path | None | object = _USE_ROOT_SENTINEL,
+        returned_work_dir: Path | None | _UseRootSentinel = _USE_ROOT_SENTINEL,
     ) -> GeometerBatchResult:
         chunks = _chunks(jobs, self.config.chunk_size)
         indexed_chunks = list(enumerate(chunks))
@@ -135,7 +135,10 @@ class GeometerBatchRunner:
             ),
             {},
         )
-        work_dir = root if returned_work_dir is _USE_ROOT_SENTINEL else returned_work_dir
+        if isinstance(returned_work_dir, _UseRootSentinel):
+            work_dir: Path | None = root
+        else:
+            work_dir = returned_work_dir
         return GeometerBatchResult(
             ok=all(bool(batch["ok"]) for batch in batches),
             jobs=response_jobs,

@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=70.1", "wheel>=0.43"]
+requires = ["setuptools>=77.0", "wheel>=0.43"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -8,6 +8,28 @@ version = "2026.5.25"
 description = "Python bindings for Geometer CAD geometry operations"
 requires-python = ">=3.10"
 readme = "README.md"
+license = "MIT"
+authors = [
+    { name = "Wavenumber LLC" },
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: C++",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Software Development :: Libraries",
+]
+
+[dependency-groups]
+dev = [
+    "build>=1.2.0",
+    "pyright>=1.1.390",
+    "pytest>=8.0.0",
+    "ruff>=0.8.0",
+    "twine>=5.0.0",
+    "wn-rack>=1.1.0; python_version >= '3.11'",
+]
 
 [project.urls]
 Homepage = "https://github.com/wavenumber-eng/geometer"
@@ -26,6 +48,39 @@ where = ["python"]
 [tool.setuptools.package-data]
 geometer = ["native/*", "native/*/*"]
 
+[tool.wn_dev_std]
+profile = "python-native-wasm"
+distribution = "pypi"
+languages = ["python", "cpp", "wasm"]
+strict = true
+artifact_policy = "committed-grouped-dist"
+
+[tool.uv]
+package = true
+
 [tool.pytest.ini_options]
 pythonpath = ["python"]
 testpaths = ["tests/python"]
+
+[tool.pyright]
+include = [
+    "python/geometer",
+    "scripts",
+    "tests/python",
+]
+extraPaths = ["python"]
+pythonVersion = "3.10"
+typeCheckingMode = "basic"
+reportMissingTypeStubs = false
+reportMissingModuleSource = false
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F"]
+ignore = ["E501"]
+
+[tool.ruff.format]
+quote-style = "double"

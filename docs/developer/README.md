@@ -108,6 +108,7 @@ Native builds require:
 
 - Git.
 - Python 3.
+- uv.
 - CMake 3.24 or newer.
 - Ninja.
 - A C++17 compiler toolchain.
@@ -139,6 +140,7 @@ build. The script manages emsdk locally under `.deps/`.
 From the repository root:
 
 ```powershell
+uv sync --group dev
 cmake --preset default
 cmake --build build --config Release
 ```
@@ -146,6 +148,7 @@ cmake --build build --config Release
 From WSL2/Linux/macOS, the same preset is intended to work:
 
 ```bash
+uv sync --group dev
 cmake --preset default
 cmake --build build --config Release
 ```
@@ -157,7 +160,7 @@ through `GEOMETER_EXE`, checks Linux dynamic dependencies where applicable, and
 runs CTest:
 
 ```bash
-python scripts/validate_native.py
+uv run python scripts/validate_native.py
 ```
 
 Pass `--skip-ctest` to run only the build, CLI, source-checkout Python-wrapper,
@@ -222,7 +225,7 @@ inside the installed package, verifies the generated `geometer` console script,
 and runs the headless package example:
 
 ```powershell
-python scripts\validate_python_package.py
+uv run python scripts\validate_python_package.py
 ```
 
 The wheel build copies the platform executable into
@@ -248,8 +251,8 @@ own Mach-O minimum OS metadata:
 ```bash
 python scripts/build_occt.py --clean
 rm -rf build-native-macos-arm64
-python scripts/validate_native.py
-python scripts/validate_python_package.py --skip-native-validation
+uv run python scripts/validate_native.py
+uv run python scripts/validate_python_package.py --skip-native-validation
 ```
 
 Before uploading, verify both the filename and the bundled executable:
@@ -473,9 +476,10 @@ Run the full native build and CTest path before treating C++ changes as ready.
 Release signoff also requires:
 
 ```powershell
-python -m pytest tests\L99_release -q
-python scripts\validate_native.py
-python scripts\validate_python_package.py
+uv sync --group dev
+uv run pytest tests\L99_release -q
+uv run python scripts\validate_native.py
+uv run python scripts\validate_python_package.py
 ```
 
 ## Common Troubleshooting

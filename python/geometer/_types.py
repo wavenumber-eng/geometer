@@ -282,12 +282,20 @@ def _view_json_value(view: ProjectionView | Mapping[str, Any]) -> dict[str, Any]
 
 def _matrix4_json_value(matrix: Matrix4) -> list[Any]:
     values = list(matrix)
-    if len(values) == 16 and not any(isinstance(item, Sequence) and not isinstance(item, str) for item in values):
-        return [float(item) for item in values]
+    if len(values) == 16:
+        flat_values: list[float] = []
+        for item in values:
+            if isinstance(item, Sequence) and not isinstance(item, str):
+                break
+            flat_values.append(float(item))
+        else:
+            return flat_values
     if len(values) == 4:
-        rows = []
+        rows: list[list[float]] = []
         for row in values:
-            row_values = list(row)  # type: ignore[arg-type]
+            if not isinstance(row, Sequence) or isinstance(row, str):
+                raise ValueError("model_transform rows must be sequences")
+            row_values = list(row)
             if len(row_values) != 4:
                 raise ValueError("model_transform rows must contain 4 values")
             rows.append([float(item) for item in row_values])

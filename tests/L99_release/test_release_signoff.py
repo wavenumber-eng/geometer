@@ -48,6 +48,14 @@ def test_ruff_passes() -> None:
     run_checked(["ruff", "check", "python", "scripts", "tests", "examples/python", "setup.py"])
 
 
+def test_pyright_passes() -> None:
+    run_checked(["pyright"])
+
+
+def test_uv_lock_is_current() -> None:
+    run_checked(["uv", "lock", "--check"])
+
+
 def test_clang_format_passes() -> None:
     files = cxx_files()
     assert files, "No C++ files found for clang-format validation."

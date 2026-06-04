@@ -7,7 +7,8 @@
             "binaryDir": "${sourceDir}/build",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release",
-                "GEOMETER_OCCT_LIBRARY_TYPE": "Static"
+                "GEOMETER_OCCT_LIBRARY_TYPE": "Static",
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
             }
         },
         {
@@ -17,7 +18,8 @@
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release",
                 "GEOMETER_OCCT_LIBRARY_TYPE": "Shared",
-                "GEOMETER_COPY_OCCT_RUNTIME": "ON"
+                "GEOMETER_COPY_OCCT_RUNTIME": "ON",
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
             }
         }
     ]

@@ -8,18 +8,24 @@ contouring, and packed planar boolean work.
 ## Documentation
 
 - [Developer guide](docs/developer/README.md)
+- [Setup](docs/setup.html)
+- [Architecture](docs/architecture.html)
 - [Design and interface docs](docs/design/README.md)
 - [Requirements](docs/requirements/README.md)
+- [Contracts](docs/contracts/README.md)
 - [ADRs](docs/adr/README.md)
+- [Release notes](docs/releases/README.md)
 - [Examples](examples/README.md)
 
 ## Build And Validate
 
 ```bash
+uv sync --group dev
 cmake --preset default
 cmake --build build --config Release
-python scripts/validate_native.py
-python scripts/validate_python_package.py
+uv run pytest tests/L99_release -q
+uv run python scripts/validate_native.py
+uv run python scripts/validate_python_package.py
 ```
 
 Native artifacts are copied to `dist/native/<platform>/`. Root-level
@@ -153,7 +159,17 @@ example `v2026-05-24-2` and `2026.5.24.2`. The C ABI generation stays at
 Before tagging, run the L99 release gate plus native and package validation:
 
 ```bash
-python -m pytest tests/L99_release -q
-python scripts/validate_native.py
-python scripts/validate_python_package.py
+uv sync --group dev
+uv run pytest tests/L99_release -q
+uv run python scripts/validate_native.py
+uv run python scripts/validate_python_package.py
 ```
+
+The repository declares the `python-native-wasm` Wavenumber development
+standards profile. Lightweight CI runs the L99 gate on Ubuntu, Windows, and
+macOS. Full native/WASM rebuilds remain explicit validation steps because fresh
+OCCT and Emscripten dependency builds are expensive.
+
+## License
+
+MIT. See [LICENSE](LICENSE).

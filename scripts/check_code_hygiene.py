@@ -106,9 +106,11 @@ def check_python_shapes(files: list[Path]) -> list[Violation]:
         for node in ast.walk(tree):
             if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
                 continue
-            if not hasattr(node, "end_lineno"):
+            end_lineno = getattr(node, "end_lineno", None)
+            lineno = getattr(node, "lineno", None)
+            if not isinstance(end_lineno, int) or not isinstance(lineno, int):
                 continue
-            length = int(node.end_lineno) - int(node.lineno) + 1
+            length = end_lineno - lineno + 1
             complexity = decision_count(node)
             if isinstance(node, ast.ClassDef):
                 if length > MAX_PY_CLASS_LINES:

@@ -33,18 +33,23 @@ start at [docs/design/README.md](docs/design/README.md).
   `YYYYMMDD`.
 - Use CMake for proper native builds and CTest for registered tests.
 - The default native preset uses Ninja.
+- CMake presets must set `CMAKE_EXPORT_COMPILE_COMMANDS=ON`.
 - Format touched C++ files with `clang-format`.
-- Run Ruff, clang-format checks, native validation, package validation, and the
-  L99 release gate before tagging a release.
+- Keep `.clang-format`, `.clang-tidy`, `.gitattributes`, and
+  `tool.wn_dev_std` aligned with the Wavenumber `python-native-wasm` profile.
+- Run Ruff, Pyright, uv lock checks, clang-format checks, native validation,
+  package validation, and the L99 release gate before tagging a release.
 
 ## Build Shortcuts
 
 Native:
 
 ```powershell
+uv sync --group dev
 cmake --preset default
 cmake --build build --config Release
 ctest --test-dir build -C Release --output-on-failure
+uv run pytest tests\L99_release -q
 ```
 
 WASM:

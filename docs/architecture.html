@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Geometer Architecture</title>
+</head>
+<body data-doc="architecture" data-profile="python-native-wasm">
+  <h1>Architecture</h1>
+  <p>
+    Geometer provides generic CAD/kernel geometry operations through a C++17
+    library, native CLI, executable-backed Python package, and WASM C ABI
+    targets. Maintained interface docs live under
+    <a href="design/README.md">docs/design/</a>.
+  </p>
+
+  <h2>Boundaries</h2>
+  <ul>
+    <li><code>src/cpp/lib/</code> owns reusable C++ geometry operations.</li>
+    <li><code>src/cpp/cli/</code> owns the thin native command-line wrapper.</li>
+    <li><code>python/geometer/</code> owns the public Python package.</li>
+    <li><code>scripts/</code> owns dependency, validation, and packaging helpers.</li>
+    <li><code>dist/</code> owns committed runtime artifacts only.</li>
+  </ul>
+
+  <h2>Standards Profile</h2>
+  <p>
+    Geometer uses <code>tool.wn_dev_std.profile = "python-native-wasm"</code>.
+    It inherits the C++ formatter, Ninja, CMake preset, clang-tidy, CTest, and
+    ABI expectations from the C++ profile.
+  </p>
+</body>
+</html>

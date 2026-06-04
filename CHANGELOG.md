@@ -9,6 +9,14 @@ All notable changes to geometer are documented here.
 - Default macOS native and wheel builds to deployment target 11.0 for Apple
   Silicon compatibility, and validate the Mach-O minimum OS before packaging.
 
+### Added
+
+- Added Wavenumber `python-native-wasm` development standards metadata,
+  root hygiene files, C++ static-analysis config, root uv lockfile, and
+  lightweight multi-OS L99 CI.
+- Added Pyright and `uv lock --check` to the L99 release signoff gate with a
+  documented legacy ratchet toward strict Python typing.
+
 ## [2026.5.25] - 2026-05-25
 
 ### Added

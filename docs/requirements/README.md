@@ -10,3 +10,4 @@ wire formats.
 - [REQ-004 Python Package](004_python_package.md)
 - [REQ-005 WASM Browser Interfaces](005_wasm_browser_interfaces.md)
 - [REQ-006 Release Quality Gates](006_release_quality_gates.md)
+- [REQ-007 Development Standards Baseline](007_development_standards_baseline.md)

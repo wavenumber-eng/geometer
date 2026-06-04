@@ -1,0 +1,37 @@
+name: Release Validation
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v8.2.0
+      - name: Verify date tag maps to package version
+        shell: bash
+        run: |
+          VERSION="$(python -c 'import tomllib; print(tomllib.load(open("pyproject.toml","rb"))["project"]["version"])')"
+          TAG="$(python - <<'PY'
+          import tomllib
+          version = tomllib.load(open("pyproject.toml", "rb"))["project"]["version"]
+          parts = [int(part) for part in version.split(".")]
+          suffix = "" if len(parts) == 3 else "-" + ".".join(str(part) for part in parts[3:])
+          print(f"v{parts[0]:04d}-{parts[1]:02d}-{parts[2]:02d}{suffix}")
+          PY
+          )"
+          test "${TAG}" = "${GITHUB_REF_NAME}"
+          echo "Validated ${GITHUB_REF_NAME} for ${VERSION}"
+      - name: Sync dev tools
+        run: uv sync --group dev
+      - name: Run release signoff
+        run: uv run pytest tests/L99_release -q
+      - name: Build wheel
+        run: uv run python -m build --wheel --outdir out/wheelhouse
+      - name: Check wheel
+        run: uv run twine check out/wheelhouse/*

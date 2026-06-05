@@ -1,0 +1,34 @@
+name: macOS Wheel
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  macos-arm64:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v8.2.0
+      - name: Sync dev tools
+        run: uv sync --group dev
+      - name: Run release signoff
+        run: uv run pytest tests/L99_release -q
+      - name: Validate native build
+        run: uv run python scripts/validate_native.py
+      - name: Validate Python package
+        run: uv run python scripts/validate_python_package.py --skip-native-validation
+      - name: Check wheel
+        run: uv run twine check out/wheelhouse/macos-arm64/*.whl
+      - name: Upload macOS native artifacts
+        uses: actions/upload-artifact@v6
+        with:
+          name: geometer-macos-arm64-native
+          path: dist/native/macos-arm64/**
+      - name: Upload macOS wheel
+        uses: actions/upload-artifact@v6
+        with:
+          name: geometer-macos-arm64-wheel
+          path: out/wheelhouse/macos-arm64/*.whl

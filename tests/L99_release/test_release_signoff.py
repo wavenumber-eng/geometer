@@ -29,10 +29,10 @@ def run_checked(command: list[str]) -> None:
 
 
 def clang_format_command() -> list[str]:
+    if shutil.which("uvx") is not None:
+        return ["uvx", "--from", "clang-format==22.1.5", "clang-format"]
     if shutil.which("clang-format") is not None:
         return ["clang-format"]
-    if shutil.which("uvx") is not None:
-        return ["uvx", "clang-format"]
     pytest.fail("clang-format is required for release signoff; install clang-format or uv.")
 
 

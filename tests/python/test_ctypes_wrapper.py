@@ -17,11 +17,11 @@ def test_executable_path_finds_dist_cli() -> None:
 def test_version_reports_geometer_abi() -> None:
     version = geometer.version()
 
-    assert version.string == "2026.5.25"
+    assert version.string == "2026.6.4"
     assert version.major == 2026
     assert version.minor == 5
     assert version.patch == 25
-    assert version.abi == 20260525
+    assert version.abi == 20260604
 
 
 def test_project_step_hlr_returns_projection_result() -> None:

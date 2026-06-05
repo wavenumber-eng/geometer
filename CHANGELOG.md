@@ -4,6 +4,8 @@ All notable changes to geometer are documented here.
 
 ## [Unreleased]
 
+## [2026.6.4] - 2026-06-04
+
 ### Fixed
 
 - Default macOS native and wheel builds to deployment target 11.0 for Apple
@@ -16,6 +18,11 @@ All notable changes to geometer are documented here.
   lightweight multi-OS L99 CI.
 - Added Pyright and `uv lock --check` to the L99 release signoff gate with a
   documented legacy ratchet toward strict Python typing.
+
+### Changed
+
+- Updated the release identity to `v2026-06-04`,
+  `wn-geometer==2026.6.4`, and C ABI generation `20260604`.
 
 ## [2026.5.25] - 2026-05-25
 

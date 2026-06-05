@@ -8,7 +8,7 @@ dependencies = [
     "pyvista",
     "pyvistaqt",
     "trimesh",
-    "wn-geometer==2026.5.25",
+    "wn-geometer==2026.6.4",
 ]
 
 [tool.uv]

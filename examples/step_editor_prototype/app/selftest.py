@@ -313,6 +313,10 @@ def selftest_m6(fixture: Path | None = None) -> None:
         if body.mesh is not None:
             body.mesh.face_colors = {}
 
+    # Paintbrush-style per-face colour on body 0, face 1.
+    face_red = (200 / 255, 30 / 255, 30 / 255)
+    document.bodies[0].mesh.face_colors[1] = face_red
+
     with tempfile.TemporaryDirectory(prefix="step_editor_m6_") as temp:
         out_path = Path(temp) / "recolored.step"
         report = export_ap242(document, out_path)
@@ -325,7 +329,12 @@ def selftest_m6(fixture: Path | None = None) -> None:
             for a, b in zip(body.color, expected):
                 _check(abs(a - b) <= 1.0 / 255.0 + 1e-9,
                        f"body {index} colour drifted: {body.color} vs {expected}")
-    print(f"colour round-trip OK for {len(document.bodies)} bodies")
+        reread_face = reread.bodies[0].mesh.face_colors.get(1)
+        _check(reread_face is not None, "face colour lost on export")
+        for a, b in zip(reread_face, face_red):
+            _check(abs(a - b) <= 1.0 / 255.0 + 1e-9,
+                   f"face colour drifted: {reread_face} vs {face_red}")
+    print(f"colour round-trip OK for {len(document.bodies)} bodies + 1 painted face")
 
 
 SELFTESTS = {

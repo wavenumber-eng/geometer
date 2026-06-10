@@ -1,20 +1,24 @@
-"""Redefine Colors: click a body, assign it a colour. Useful once a chip has
-been dissected and new bodies (pins, pads) deserve colours the original model
-never defined. Colours persist into the AP242 export via XCAF."""
+"""Redefine Colors: pick a colour, select bodies or faces (Shift+click to
+build up a selection), then Apply — or switch on the paintbrush and every
+click paints immediately. Body and face colours persist into the AP242
+export via XCAF (faces as sub-shape colours)."""
 
 from __future__ import annotations
 
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
+    QCheckBox,
     QColorDialog,
+    QComboBox,
     QGridLayout,
+    QHBoxLayout,
     QLabel,
     QPushButton,
     QVBoxLayout,
     QWidget,
 )
 
-from .base import ToolMode
+from .base import ToolMode, make_apply_button
 
 SWATCHES = [
     ("#c0c0c0", "tin"),
@@ -35,7 +39,10 @@ class ColorsTool(ToolMode):
 
     def __init__(self, ctx) -> None:
         super().__init__(ctx)
-        self.selected_body: int | None = None
+        self.current_color = "#d4af37"
+        self.selection: set = set()  # body indices, or (body, face) pairs
+
+    # ------------------------------------------------------------------- UI
 
     def build_actions_widget(self) -> QWidget:
         widget = QWidget()
@@ -43,11 +50,24 @@ class ColorsTool(ToolMode):
         layout.setContentsMargins(8, 8, 8, 8)
         layout.addWidget(QLabel(
             "<b>Redefine Colors</b><br>"
-            "Click a body in the 3D view, then pick a colour."
+            "Pick a colour, click to select (Shift+click adds more), then "
+            "Apply — or enable the paintbrush to paint on every click."
         ))
-        self.selection_label = QLabel("No body selected.")
-        self.selection_label.setStyleSheet("font-family: Consolas, monospace;")
-        layout.addWidget(self.selection_label)
+
+        target_row = QHBoxLayout()
+        target_row.addWidget(QLabel("Target"))
+        self.target_combo = QComboBox()
+        self.target_combo.addItems(["Bodies", "Faces"])
+        self.target_combo.currentTextChanged.connect(lambda _t: self.clear_selection())
+        target_row.addWidget(self.target_combo, 1)
+        target_row.addWidget(QLabel("Color"))
+        self.color_chip = QLabel()
+        self.color_chip.setFixedSize(40, 20)
+        target_row.addWidget(self.color_chip)
+        layout.addLayout(target_row)
+
+        self.brush_check = QCheckBox("Paintbrush — clicking paints immediately")
+        layout.addWidget(self.brush_check)
 
         grid = QGridLayout()
         for index, (hex_color, label) in enumerate(SWATCHES):
@@ -56,76 +76,172 @@ class ColorsTool(ToolMode):
                 f"background: {hex_color}; color: "
                 f"{'#ffffff' if QColor(hex_color).lightness() < 128 else '#101010'};"
             )
-            button.clicked.connect(lambda _c=False, h=hex_color: self.apply_color(h))
+            button.clicked.connect(lambda _c=False, h=hex_color: self.set_color(h))
             grid.addWidget(button, index // 2, index % 2)
         layout.addLayout(grid)
 
         custom_button = QPushButton("Custom colour ...")
         custom_button.clicked.connect(self._pick_custom)
         layout.addWidget(custom_button)
+
+        self.selection_label = QLabel("Nothing selected.")
+        self.selection_label.setStyleSheet("font-family: Consolas, monospace;")
+        self.selection_label.setWordWrap(True)
+        layout.addWidget(self.selection_label)
+
+        self.apply_button = make_apply_button("Apply Color")
+        self.apply_button.setEnabled(False)
+        self.apply_button.clicked.connect(self.apply)
+        layout.addWidget(self.apply_button)
+
+        misc_row = QHBoxLayout()
+        clear_button = QPushButton("Clear selection")
+        clear_button.clicked.connect(self.clear_selection)
         reset_button = QPushButton("Reset to original")
         reset_button.clicked.connect(self._reset_original)
-        layout.addWidget(reset_button)
+        misc_row.addWidget(clear_button)
+        misc_row.addWidget(reset_button)
+        layout.addLayout(misc_row)
         layout.addStretch(1)
+
+        self._update_color_chip()
         return widget
 
+    # ------------------------------------------------------------ lifecycle
+
     def enter(self) -> None:
-        self.status("Colors: click a body to select it")
+        self.status("Colors: pick a colour, then click bodies/faces (Shift adds)")
 
     def exit(self) -> None:
         self.ctx.scene.clear_highlight()
-        self.selected_body = None
+        self.selection = set()
 
     def on_document_changed(self) -> None:
-        self.selected_body = None
+        self.selection = set()
         if self._actions_widget is not None:
-            self.selection_label.setText("No body selected.")
+            self._refresh_selection_ui()
+
+    # -------------------------------------------------------------- picking
 
     def on_pick(self, pick) -> None:
-        self.selected_body = pick.body_index
-        body = self.ctx.document.bodies[pick.body_index]
-        current = body.color
-        text = f"body {pick.body_index} '{body.name}'"
-        if current:
-            text += f"\ncolour ({current[0]:.2f}, {current[1]:.2f}, {current[2]:.2f})"
-        self.selection_label.setText(text)
-        self.ctx.scene.highlight_body(pick.body_index)
-        self.status(f"Colors: selected {text.splitlines()[0]}")
+        if self.ctx.document is None:
+            return
+        key = (
+            pick.body_index
+            if self.target_combo.currentText() == "Bodies"
+            else (pick.body_index, pick.face_index)
+        )
+        if self.brush_check.isChecked():
+            self._paint(key, self.current_color)
+            self.ctx.journal.record(
+                tool=self.id,
+                params={"action": "paint", "target": self.target_combo.currentText()},
+                inputs={"key": list(key) if isinstance(key, tuple) else key},
+                result={"color": self.current_color},
+            )
+            self.status(f"Colors: painted {self._key_text(key)}")
+            return
+        if pick.shift:
+            if key in self.selection:
+                self.selection.discard(key)
+            else:
+                self.selection.add(key)
+        else:
+            self.selection = {key}
+        self._refresh_selection_ui()
+
+    # -------------------------------------------------------------- actions
+
+    def set_color(self, hex_color: str) -> None:
+        self.current_color = hex_color
+        self._update_color_chip()
+        self.status(f"Colors: current colour {hex_color}")
 
     def _pick_custom(self) -> None:
-        if self.selected_body is None:
-            self.status("Colors: click a body first")
-            return
         color = QColorDialog.getColor(parent=self.actions_widget())
         if color.isValid():
-            self.apply_color(color.name())
+            self.set_color(color.name())
 
-    def _reset_original(self) -> None:
-        if self.selected_body is None or self.ctx.document is None:
+    def apply(self) -> None:
+        if not self.selection:
+            self.status("Colors: nothing selected")
             return
-        body = self.ctx.document.bodies[self.selected_body]
-        body.color = body.original_color
-        if body.mesh is not None:
-            body.mesh.face_colors = {}
-        self.ctx.window.document_mutated()
-        self.status(f"Colors: body {self.selected_body} reset to original")
-
-    def apply_color(self, hex_color: str) -> None:
-        if self.selected_body is None or self.ctx.document is None:
-            self.status("Colors: click a body first")
-            return
-        qcolor = QColor(hex_color)
-        rgb = (qcolor.redF(), qcolor.greenF(), qcolor.blueF())
-        body = self.ctx.document.bodies[self.selected_body]
-        body.color = rgb
-        if body.mesh is not None:
-            body.mesh.face_colors = {}  # body colour overrides per-face colours
-        self.ctx.scene.clear_highlight()
-        self.ctx.scene.set_body_color(self.selected_body, rgb)
+        for key in sorted(self.selection, key=str):
+            self._paint(key, self.current_color)
         self.ctx.journal.record(
             tool=self.id,
-            params={},
-            inputs={"body_index": self.selected_body},
-            result={"color": hex_color},
+            params={"action": "apply", "target": self.target_combo.currentText()},
+            inputs={
+                "keys": [list(k) if isinstance(k, tuple) else k for k in self.selection]
+            },
+            result={"color": self.current_color},
         )
-        self.status(f"Colors: body {self.selected_body} '{body.name}' -> {hex_color}")
+        self.status(
+            f"Colors: applied {self.current_color} to {len(self.selection)} item(s)"
+        )
+
+    def clear_selection(self) -> None:
+        self.selection = set()
+        if self._actions_widget is not None:
+            self._refresh_selection_ui()
+
+    def _reset_original(self) -> None:
+        document = self.ctx.document
+        if document is None or not self.selection:
+            self.status("Colors: select bodies/faces to reset first")
+            return
+        bodies = {
+            key if isinstance(key, int) else key[0] for key in self.selection
+        }
+        for body_index in bodies:
+            body = document.bodies[body_index]
+            body.color = body.original_color
+            if body.mesh is not None:
+                body.mesh.face_colors = dict(body.original_face_colors)
+        self.selection = set()
+        self.ctx.window.document_mutated()
+        self.status(f"Colors: reset {len(bodies)} body(ies) to original")
+
+    # ---------------------------------------------------------------- impl
+
+    def _paint(self, key, hex_color: str) -> None:
+        document = self.ctx.document
+        qcolor = QColor(hex_color)
+        rgb = (qcolor.redF(), qcolor.greenF(), qcolor.blueF())
+        if isinstance(key, int):
+            body = document.bodies[key]
+            body.color = rgb
+            if body.mesh is not None:
+                body.mesh.face_colors = {}  # body colour overrides face colours
+            self.ctx.scene.set_body_color(key, rgb)
+        else:
+            body_index, face_index = key
+            body = document.bodies[body_index]
+            if body.mesh is not None:
+                body.mesh.face_colors[face_index] = rgb
+            self.ctx.scene.set_face_color(body_index, face_index, rgb)
+
+    @staticmethod
+    def _key_text(key) -> str:
+        return f"body {key}" if isinstance(key, int) else f"body {key[0]} face {key[1]}"
+
+    def _refresh_selection_ui(self) -> None:
+        scene = self.ctx.scene
+        if not self.selection:
+            scene.clear_highlight()
+            scene.plotter.render()
+            self.selection_label.setText("Nothing selected.")
+            self.apply_button.setEnabled(False)
+            return
+        if self.target_combo.currentText() == "Bodies":
+            scene.highlight_bodies(sorted(self.selection))
+        else:
+            scene.highlight_faces(sorted(self.selection))
+        names = ", ".join(self._key_text(k) for k in sorted(self.selection, key=str))
+        self.selection_label.setText(f"{len(self.selection)} selected: {names}")
+        self.apply_button.setEnabled(True)
+
+    def _update_color_chip(self) -> None:
+        self.color_chip.setStyleSheet(
+            f"background: {self.current_color}; border: 1px solid #555;"
+        )

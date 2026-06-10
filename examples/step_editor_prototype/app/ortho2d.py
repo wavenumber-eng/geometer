@@ -118,6 +118,72 @@ class Ortho2DCanvas(QWidget):
             painter.drawText(QPointF(px - 4 * len(label), py - 9), label)
 
 
+class FootprintPadsCanvas(QWidget):
+    """Pads-only land-pattern view: just the hitbox cross-sections drawn as
+    copper pads on a PCB-style background, with pin numbers and the origin
+    crosshair — what the part's real footprint would look like."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._rects: list[tuple[float, float, float, float, float]] = []
+        self._pins: list[tuple[float, float, str]] = []
+        self.setMinimumSize(200, 200)
+
+    def set_rects(self, rects) -> None:
+        self._rects = rects
+        self.update()
+
+    def set_pins(self, pins) -> None:
+        self._pins = pins
+        self.update()
+
+    def paintEvent(self, _event: Any) -> None:
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+        painter.fillRect(self.rect(), QColor("#103e1c"))  # soldermask green
+        if not self._rects:
+            painter.setPen(QColor("#9fc5a8"))
+            painter.drawText(16, 24, "No hitboxes assigned yet")
+            return
+
+        bounds = None
+        for cx, cy, hw, hh, _rot in self._rects:
+            radius = math.hypot(hw, hh)
+            bounds = _include(bounds, cx - radius, cy - radius)
+            bounds = _include(bounds, cx + radius, cy + radius)
+        bounds = _include(bounds, 0.0, 0.0)  # keep the origin in frame
+        project = _projector(bounds, self.width(), self.height())
+
+        def length(value: float) -> float:
+            x0, _ = project(0.0, 0.0)
+            x1, _ = project(value, 0.0)
+            return abs(x1 - x0)
+
+        # origin crosshair
+        painter.setPen(QPen(QColor(255, 255, 255, 90), 1.0, Qt.PenStyle.DashLine))
+        ox, oy = project(0.0, 0.0)
+        painter.drawLine(QPointF(0, oy), QPointF(self.width(), oy))
+        painter.drawLine(QPointF(ox, 0), QPointF(ox, self.height()))
+
+        for cx, cy, hw, hh, rot in self._rects:
+            px, py = project(cx, cy)
+            painter.save()
+            painter.translate(px, py)
+            painter.rotate(-rot)
+            painter.setPen(QPen(QColor("#5a3415"), 1.0))
+            painter.setBrush(QColor("#d8973c"))  # copper pad
+            painter.drawRect(-length(hw), -length(hh), 2 * length(hw), 2 * length(hh))
+            painter.restore()
+
+        font = QFont(self.font())
+        font.setBold(True)
+        painter.setFont(font)
+        painter.setPen(QColor("#ffffff"))
+        for x, y, label in self._pins:
+            px, py = project(x, y)
+            painter.drawText(QPointF(px - 4 * len(label), py + 4), label)
+
+
 def _geometry_bounds(geometry: Mapping[str, Any]):
     bounds = None
     for segment in geometry.get("segments", []):

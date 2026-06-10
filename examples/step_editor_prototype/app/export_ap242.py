@@ -21,6 +21,10 @@ from OCP.STEPControl import STEPControl_AsIs
 from OCP.TCollection import TCollection_ExtendedString
 from OCP.TDataStd import TDataStd_Name
 from OCP.TDocStd import TDocStd_Document
+from OCP.TopAbs import TopAbs_FACE
+from OCP.TopExp import TopExp
+from OCP.TopTools import TopTools_IndexedMapOfShape
+from OCP.TopoDS import TopoDS
 from OCP.XCAFApp import XCAFApp_Application
 from OCP.XCAFDoc import XCAFDoc_ColorType, XCAFDoc_DocumentTool
 
@@ -76,6 +80,25 @@ def write_step(document: EditorDocument, out_path: Path) -> None:
             color = Quantity_Color(*body.color, Quantity_TOC_RGB)
             color_tool.SetColor(label, color, XCAFDoc_ColorType.XCAFDoc_ColorGen)
             color_tool.SetColor(label, color, XCAFDoc_ColorType.XCAFDoc_ColorSurf)
+        # Per-face colours (originals and paintbrush edits) as sub-shapes.
+        if body.mesh is not None and body.mesh.face_colors:
+            face_map = TopTools_IndexedMapOfShape()
+            TopExp.MapShapes_s(body.solid, TopAbs_FACE, face_map)
+            for face_id, rgb in body.mesh.face_colors.items():
+                if not (1 <= face_id <= face_map.Extent()):
+                    continue
+                try:
+                    face = TopoDS.Face_s(face_map.FindKey(face_id))
+                    sub_label = shape_tool.AddSubShape(label, face)
+                    if sub_label.IsNull():
+                        continue
+                    color_tool.SetColor(
+                        sub_label,
+                        Quantity_Color(*rgb, Quantity_TOC_RGB),
+                        XCAFDoc_ColorType.XCAFDoc_ColorSurf,
+                    )
+                except Exception:
+                    continue
 
     # The schema parameter only exists once a STEP controller has been
     # instantiated, so the writer must be created before SetCVal.

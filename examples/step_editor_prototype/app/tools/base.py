@@ -8,7 +8,19 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from PySide6.QtWidgets import QWidget
+from PySide6.QtWidgets import QPushButton, QWidget
+
+
+def make_apply_button(text: str = "Apply") -> QPushButton:
+    """The green commit button every tool uses to apply its staged action."""
+    button = QPushButton(text)
+    button.setStyleSheet(
+        "QPushButton {background-color: #1f9d3a; color: #ffffff;"
+        " font-weight: 700; padding: 6px;}"
+        "QPushButton:hover {background-color: #23b243;}"
+        "QPushButton:disabled {background-color: #95ab9b; color: #dfe6e0;}"
+    )
+    return button
 
 if TYPE_CHECKING:
     from ..document import EditorDocument

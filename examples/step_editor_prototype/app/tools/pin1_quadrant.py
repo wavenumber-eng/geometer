@@ -20,7 +20,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from .base import ToolMode
+from .base import ToolMode, make_apply_button
 
 
 def compute_pin1_angle(x: float, y: float) -> float:
@@ -52,6 +52,7 @@ class Pin1QuadrantTool(ToolMode):
     def __init__(self, ctx) -> None:
         super().__init__(ctx)
         self.cumulative_deg = 0.0
+        self.pending_click: tuple[float, float, float] | None = None
 
     def build_actions_widget(self) -> QWidget:
         widget = QWidget()
@@ -59,9 +60,9 @@ class Pin1QuadrantTool(ToolMode):
         layout.setContentsMargins(8, 8, 8, 8)
         layout.addWidget(QLabel(
             "<b>Redefine Pin 1 Quadrant</b><br>"
-            "Click pin 1 — the model swings about Z in exact 90&deg; steps "
-            "so that pin lands in the +X +Y quadrant. Run Z-Sit first so "
-            "the origin is meaningful."
+            "Click pin 1, then press Apply — the model swings in exact "
+            "90&deg; steps about the Z axis through the origin defined by "
+            "Z-Sit, so the clicked pin lands in the +X +Y quadrant."
         ))
 
         quick_row = QHBoxLayout()
@@ -98,6 +99,11 @@ class Pin1QuadrantTool(ToolMode):
         self.reset_button.clicked.connect(self.reset_rotation)
         layout.addWidget(self.reset_button)
 
+        self.apply_button = make_apply_button("Apply Pin 1 Swing")
+        self.apply_button.setEnabled(False)
+        self.apply_button.clicked.connect(self.apply)
+        layout.addWidget(self.apply_button)
+
         self.result_label = QLabel("No rotation applied.")
         self.result_label.setStyleSheet("font-family: Consolas, monospace;")
         self.result_label.setWordWrap(True)
@@ -106,14 +112,17 @@ class Pin1QuadrantTool(ToolMode):
         return widget
 
     def enter(self) -> None:
-        self.status("Pin 1 Quadrant: click pin 1 on the model (90° swings)")
+        self.status("Pin 1 Quadrant: click pin 1, then press Apply (90° swings)")
 
     def exit(self) -> None:
+        self.pending_click = None
         self.ctx.scene.set_markers([])
 
     def on_document_changed(self) -> None:
         self.cumulative_deg = 0.0
+        self.pending_click = None
         if self._actions_widget is not None:
+            self.apply_button.setEnabled(False)
             self.result_label.setText("No rotation applied.")
 
     # -------------------------------------------------------------- actions
@@ -121,7 +130,22 @@ class Pin1QuadrantTool(ToolMode):
     def on_pick(self, pick) -> None:
         if self.ctx.document is None:
             return
-        x, y, z = pick.world_point
+        self.pending_click = pick.world_point
+        x, y, _z = pick.world_point
+        angle = math.degrees(compute_pin1_angle(x, y))
+        self.ctx.scene.set_markers([pick.world_point], color="#ffb000", point_size=20.0)
+        self.apply_button.setEnabled(True)
+        self.result_label.setText(
+            f"pin 1 candidate @ ({x:.3f}, {y:.3f})\npending swing {angle:+.0f}° — press Apply"
+        )
+        self.status(f"Pin 1 Quadrant: pending swing {angle:+.0f}° — press Apply")
+
+    def apply(self) -> None:
+        if self.ctx.document is None or self.pending_click is None:
+            return
+        x, y, z = self.pending_click
+        self.pending_click = None
+        self.apply_button.setEnabled(False)
         angle = compute_pin1_angle(x, y)
         hint = rotation_z_matrix(angle) @ np.array([x, y, z, 1.0])
         hint_point = tuple(float(v) for v in hint[:3])

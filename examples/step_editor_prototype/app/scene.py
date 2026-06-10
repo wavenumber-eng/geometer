@@ -11,8 +11,7 @@ from typing import Callable
 import numpy as np
 import pyvista as pv
 import vtk
-from PySide6.QtCore import QEvent, QObject, QPoint, QRect, QSize, Qt
-from PySide6.QtWidgets import QRubberBand
+from PySide6.QtCore import QEvent, QObject, QPoint, Qt
 
 from .document import NEUTRAL_RGB, EditorDocument
 from .viewcam import (
@@ -48,6 +47,7 @@ class PickResult:
     face_index: int          # 1-based index into the body's face map
     world_point: tuple[float, float, float]
     cell_id: int
+    shift: bool = False      # Shift was held during the click (multi-select)
 
 
 class SceneManager:
@@ -55,8 +55,11 @@ class SceneManager:
         self.plotter = plotter
         self.on_pick: Callable[[PickResult], None] | None = None
         self._body_polydata: list[pv.PolyData] = []
+        self._display_polydata: list = []  # the smooth-shaded copies the mappers render
         self._actor_to_body: dict[int, int] = {}  # id(vtkActor) -> body index
         self._actors: list = []
+        self._band_actors: tuple | None = None
+        self._band_poly = None
         self._press_position: tuple[int, int] | None = None
         self._hitbox_count = 0
         self._hover_callback: Callable[[PickResult | None], None] | None = None
@@ -80,13 +83,17 @@ class SceneManager:
         configure_lighting(self.plotter, LightingSettings())
         material = material_settings()
         self._body_polydata = []
+        self._display_polydata = []
         self._actor_to_body = {}
         self._actors = []
+        self._band_actors = None
+        self._band_poly = None
 
         for index, body in enumerate(document.bodies):
             mesh = body.mesh
             if mesh is None or len(mesh.tris) == 0:
                 self._body_polydata.append(pv.PolyData())
+                self._display_polydata.append(None)
                 self._actors.append(None)
                 continue
             cells = np.column_stack(
@@ -114,6 +121,12 @@ class SceneManager:
             )
             self._actor_to_body[id(actor)] = index
             self._actors.append(actor)
+            # add_mesh(smooth_shading=True) renders a normals-computed COPY;
+            # cell order is preserved, so keep it for live color updates.
+            try:
+                self._display_polydata.append(actor.mapper.dataset)
+            except Exception:
+                self._display_polydata.append(polydata)
 
             if show_feature_edges:
                 edges = polydata.extract_feature_edges(
@@ -142,13 +155,29 @@ class SceneManager:
             colors[mesh.tri_face_ids == face_id] = [int(round(c * 255)) for c in rgb]
         return colors
 
+    def _color_targets(self, body_index: int):
+        targets = [self._body_polydata[body_index]]
+        if body_index < len(self._display_polydata):
+            display = self._display_polydata[body_index]
+            if display is not None and display is not targets[0]:
+                targets.append(display)
+        return [t for t in targets if t is not None and t.n_cells > 0]
+
     def set_body_color(self, body_index: int, rgb: tuple[float, float, float]) -> None:
-        polydata = self._body_polydata[body_index]
-        if polydata.n_cells == 0:
-            return
-        colors = np.empty((polydata.n_cells, 3), dtype=np.uint8)
-        colors[:] = [int(round(c * 255)) for c in rgb]
-        polydata.cell_data["rgb"] = colors
+        for polydata in self._color_targets(body_index):
+            colors = np.empty((polydata.n_cells, 3), dtype=np.uint8)
+            colors[:] = [int(round(c * 255)) for c in rgb]
+            polydata.cell_data["rgb"] = colors
+        self.plotter.render()
+
+    def set_face_color(
+        self, body_index: int, face_index: int, rgb: tuple[float, float, float]
+    ) -> None:
+        for polydata in self._color_targets(body_index):
+            mask = polydata.cell_data["face_id"] == face_index
+            colors = np.asarray(polydata.cell_data["rgb"])
+            colors[mask] = [int(round(c * 255)) for c in rgb]
+            polydata.cell_data["rgb"] = colors
         self.plotter.render()
 
     # --------------------------------------------------------------- camera
@@ -178,7 +207,16 @@ class SceneManager:
             return  # camera drag
         pick = self.pick_at(x1, y1)
         if pick is not None and self.on_pick is not None:
-            self.on_pick(pick)
+            shift = bool(self.plotter.iren.interactor.GetShiftKey())
+            self.on_pick(
+                PickResult(
+                    body_index=pick.body_index,
+                    face_index=pick.face_index,
+                    world_point=pick.world_point,
+                    cell_id=pick.cell_id,
+                    shift=shift,
+                )
+            )
 
     def set_hover_callback(self, callback: Callable[[PickResult | None], None] | None) -> None:
         """Track the surface point under the cursor (None over background).
@@ -241,15 +279,52 @@ class SceneManager:
         self.plotter.render()
 
     def highlight_body(self, body_index: int) -> None:
+        self.highlight_bodies([body_index])
+
+    def highlight_bodies(self, body_indices) -> None:
         self.clear_highlight()
-        polydata = self._body_polydata[body_index]
-        if polydata.n_cells == 0:
+        meshes = [
+            self._body_polydata[i]
+            for i in body_indices
+            if 0 <= i < len(self._body_polydata) and self._body_polydata[i].n_cells > 0
+        ]
+        if not meshes:
+            self.plotter.render()
             return
+        combined = meshes[0] if len(meshes) == 1 else meshes[0].merge(meshes[1:])
         self.plotter.add_mesh(
-            polydata,
+            combined,
             color="#ffd24a",
             style="wireframe",
             line_width=2.0,
+            lighting=False,
+            pickable=False,
+            name="highlight-face",
+        )
+        self.plotter.render()
+
+    def highlight_faces(self, pairs) -> None:
+        """Highlight a set of (body_index, face_index) pairs."""
+        self.clear_highlight()
+        subsets = []
+        by_body: dict[int, list[int]] = {}
+        for body_index, face_index in pairs:
+            by_body.setdefault(body_index, []).append(face_index)
+        for body_index, faces in by_body.items():
+            polydata = self._body_polydata[body_index]
+            if polydata.n_cells == 0:
+                continue
+            mask = np.nonzero(np.isin(polydata.cell_data["face_id"], faces))[0]
+            if len(mask):
+                subsets.append(polydata.extract_cells(mask))
+        if not subsets:
+            self.plotter.render()
+            return
+        combined = subsets[0] if len(subsets) == 1 else subsets[0].merge(subsets[1:])
+        self.plotter.add_mesh(
+            combined,
+            color="#ffd24a",
+            opacity=1.0,
             lighting=False,
             pickable=False,
             name="highlight-face",
@@ -426,7 +501,9 @@ class SceneManager:
         except Exception:
             pass
 
-    def show_hitboxes(self, hitboxes: list[dict], *, selected: int = -1) -> None:
+    def show_hitboxes(
+        self, hitboxes: list[dict], *, selected: int = -1, colors: list[str] | None = None
+    ) -> None:
         """Translucent metadata volumes; never part of the B-rep."""
         for index in range(self._hitbox_count):
             self.remove_overlay(f"hitbox-{index}")
@@ -447,7 +524,12 @@ class SceneManager:
                     continue
             except Exception:
                 continue
-            color = "#ff5050" if index == selected else "#27b0d6"
+            if index == selected:
+                color = "#ff5050"
+            elif colors is not None and index < len(colors):
+                color = colors[index]
+            else:
+                color = "#27b0d6"
             self.plotter.add_mesh(
                 mesh,
                 color=color,
@@ -478,6 +560,64 @@ class SceneManager:
         )
         self.plotter.render()
 
+    # ------------------------------------------------------------- band 2D
+
+    def show_band_2d(self, x0: float, y0: float, x1: float, y1: float) -> None:
+        """Translucent selection rectangle drawn as a VTK 2D overlay (Qt
+        rubber bands cannot composite over the GL surface). Coordinates are
+        Qt widget pixels."""
+        widget = self.plotter.interactor
+        ratio = widget.devicePixelRatioF()
+        height = widget.height()
+        corners = [(x0, y0), (x1, y0), (x1, y1), (x0, y1)]
+        points = vtk.vtkPoints()
+        for qx, qy in corners:
+            points.InsertNextPoint(qx * ratio, (height - qy) * ratio, 0.0)
+
+        if self._band_actors is None:
+            self._band_poly = vtk.vtkPolyData()
+            polys = vtk.vtkCellArray()
+            polys.InsertNextCell(4)
+            for i in range(4):
+                polys.InsertCellPoint(i)
+            lines = vtk.vtkCellArray()
+            lines.InsertNextCell(5)
+            for i in (0, 1, 2, 3, 0):
+                lines.InsertCellPoint(i)
+
+            fill_poly = vtk.vtkPolyData()
+            fill_poly.SetPolys(polys)
+            outline_poly = vtk.vtkPolyData()
+            outline_poly.SetLines(lines)
+            self._band_poly = (fill_poly, outline_poly)
+
+            actors = []
+            for poly, opacity, width in ((fill_poly, 0.18, 1.0), (outline_poly, 0.9, 2.0)):
+                mapper = vtk.vtkPolyDataMapper2D()
+                mapper.SetInputData(poly)
+                actor = vtk.vtkActor2D()
+                actor.SetMapper(mapper)
+                actor.GetProperty().SetColor(0.13, 0.62, 0.27)
+                actor.GetProperty().SetOpacity(opacity)
+                actor.GetProperty().SetLineWidth(width)
+                actor.SetPickable(False)
+                self.plotter.renderer.AddActor2D(actor)
+                actors.append(actor)
+            self._band_actors = tuple(actors)
+
+        for poly in self._band_poly:
+            poly.SetPoints(points)
+            poly.Modified()
+        for actor in self._band_actors:
+            actor.SetVisibility(True)
+        self.plotter.render()
+
+    def hide_band_2d(self) -> None:
+        if self._band_actors is not None:
+            for actor in self._band_actors:
+                actor.SetVisibility(False)
+            self.plotter.render()
+
     # ---------------------------------------------------------- unprojection
 
     def display_to_world(self, x_qt: float, y_qt: float) -> tuple[float, float, float]:
@@ -499,22 +639,31 @@ class SceneManager:
 class BandSelector(QObject):
     """Qt-level rubber-band drag on the 3D viewport. While installed it
     consumes left-button drags (camera orbit stays on middle/right buttons)
-    and reports the band corners in Qt widget coordinates."""
+    and reports the band corners in Qt widget coordinates. The visible
+    rectangle itself is drawn by the scene (VTK 2D overlay) via on_update."""
 
-    def __init__(self, widget, on_band: Callable[[QPoint, QPoint], None]) -> None:
+    def __init__(
+        self,
+        widget,
+        on_band: Callable[[QPoint, QPoint], None],
+        on_update: Callable[[QPoint, QPoint], None] | None = None,
+        on_finish: Callable[[], None] | None = None,
+    ) -> None:
         super().__init__(widget)
         self._widget = widget
         self._on_band = on_band
+        self._on_update = on_update
+        self._on_finish = on_finish
         self._origin: QPoint | None = None
-        self._rubber = QRubberBand(QRubberBand.Shape.Rectangle, widget)
 
     def attach(self) -> None:
         self._widget.installEventFilter(self)
 
     def detach(self) -> None:
         self._widget.removeEventFilter(self)
-        self._rubber.hide()
         self._origin = None
+        if self._on_finish is not None:
+            self._on_finish()
 
     def eventFilter(self, obj, event) -> bool:
         if obj is not self._widget:
@@ -522,20 +671,18 @@ class BandSelector(QObject):
         etype = event.type()
         if etype == QEvent.Type.MouseButtonPress and event.button() == Qt.MouseButton.LeftButton:
             self._origin = event.position().toPoint()
-            self._rubber.setGeometry(QRect(self._origin, QSize()))
-            self._rubber.show()
             return True
         if etype == QEvent.Type.MouseMove and self._origin is not None:
-            self._rubber.setGeometry(
-                QRect(self._origin, event.position().toPoint()).normalized()
-            )
+            if self._on_update is not None:
+                self._on_update(self._origin, event.position().toPoint())
             return True
         if etype == QEvent.Type.MouseButtonRelease and event.button() == Qt.MouseButton.LeftButton:
             if self._origin is None:
                 return False
             origin, end = self._origin, event.position().toPoint()
             self._origin = None
-            self._rubber.hide()
+            if self._on_finish is not None:
+                self._on_finish()
             if (end - origin).manhattanLength() > 6:
                 self._on_band(origin, end)
             return True

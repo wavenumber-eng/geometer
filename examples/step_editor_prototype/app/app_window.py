@@ -8,7 +8,7 @@ from pathlib import Path
 
 import geometer
 import numpy as np
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QObject, QRunnable, Qt, QThreadPool, Signal
 from PySide6.QtGui import QKeySequence, QPixmap, QShortcut
 from PySide6.QtWidgets import (
     QApplication,
@@ -28,7 +28,7 @@ from PySide6.QtWidgets import (
 from pyvistaqt import QtInteractor
 
 from .document import EditorDocument
-from .export_ap242 import conditioned_path, export_ap242
+from .export_ap242 import conditioned_path, document_step_bytes, export_ap242
 from .journal import Journal
 from .mode_rect import ModeRect
 from .pins import PinRegistry
@@ -42,6 +42,32 @@ LOGO_PATH = HERE / "wn3d_logo.png"
 CAMERA_BUTTONS = ["iso", "top", "bottom", "front", "back", "left", "right"]
 
 
+class _FootprintSignals(QObject):
+    finished = Signal(object, int)  # HlrProjectionResult | None, revision
+
+
+class _FootprintTask(QRunnable):
+    """Top-view HLR projection on a worker thread. Safe off the main thread:
+    geometer drives its own subprocess — no OCP, no VTK involved."""
+
+    def __init__(self, step_bytes: bytes, revision: int, signals: _FootprintSignals) -> None:
+        super().__init__()
+        self.step_bytes = step_bytes
+        self.revision = revision
+        self.signals = signals
+
+    def run(self) -> None:
+        try:
+            result = geometer.project_step_hlr(
+                self.step_bytes,
+                views=[geometer.ProjectionView.top()],
+                options=geometer.HlrOptions.visible_detail(),
+            )
+        except Exception:
+            result = None
+        self.signals.finished.emit(result, self.revision)
+
+
 class MainWindow(QMainWindow):
     def __init__(self, step_path: Path | None) -> None:
         super().__init__()
@@ -53,6 +79,13 @@ class MainWindow(QMainWindow):
         self.model_bounds: geometer.ModelBoundsResult | None = None
         self.pin1_hint: tuple[float, float, float] | None = None
         self.pins = PinRegistry()
+        self._doc_revision = 0
+        self._footprint_cache = None
+        self._footprint_cache_rev = -1
+        self._footprint_inflight_rev: int | None = None
+        self._footprint_callbacks: list = []
+        self._footprint_signals = _FootprintSignals()
+        self._footprint_signals.finished.connect(self._on_footprint_done)
 
         self.plotter = QtInteractor(self)
         self.plotter.interactor.setMinimumSize(480, 360)
@@ -120,7 +153,8 @@ class MainWindow(QMainWindow):
             "font-family: Consolas, monospace; background: #f4f6f8; "
             "color: #1c2430; padding: 8px;"
         )
-        self.info_label.setMinimumHeight(140)
+        self.info_label.setMinimumHeight(84)
+        self.info_label.setMaximumHeight(112)
 
         right_panel = QWidget()
         right_layout = QVBoxLayout(right_panel)
@@ -130,13 +164,13 @@ class MainWindow(QMainWindow):
             "font-weight: 700; padding: 4px; background: #e8ecf2; color: #1c2430;"
         )
         right_layout.addWidget(actions_header)
-        right_layout.addWidget(self.actions_stack, 3)
+        right_layout.addWidget(self.actions_stack, 1)
         info_header = QLabel("  Model info")
         info_header.setStyleSheet(
             "font-weight: 700; padding: 4px; background: #e8ecf2; color: #1c2430;"
         )
         right_layout.addWidget(info_header)
-        right_layout.addWidget(self.info_label, 2)
+        right_layout.addWidget(self.info_label, 0)
 
         splitter = QSplitter(Qt.Orientation.Horizontal)
         splitter.addWidget(self.plotter.interactor)
@@ -217,6 +251,7 @@ class MainWindow(QMainWindow):
         QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
         try:
             self.document = EditorDocument.load(path)
+            self._doc_revision += 1
             self._tool_context.document = self.document
             self.model_label.setText(path.name)
             self.model_label.setToolTip(str(path))
@@ -283,30 +318,83 @@ class MainWindow(QMainWindow):
         keeping the current camera."""
         if self.document is None:
             return
+        self._doc_revision += 1
         self.scene.rebuild(self.document)
         self._refresh_info()
         for index, tool in enumerate(self.tools):
             if index != self.current_tool_index:
                 tool.on_document_changed()
 
+    # ------------------------------------------------------- footprint cache
+
+    def request_footprint(self, callback) -> None:
+        """Deliver the top-view HLR projection of the current geometry to
+        `callback`, from cache when fresh, else computed on a worker thread.
+        Tool switching must never block on this."""
+        if self.document is None:
+            return
+        if self._footprint_cache_rev == self._doc_revision and self._footprint_cache is not None:
+            callback(self._footprint_cache)
+            return
+        self._footprint_callbacks.append(callback)
+        if self._footprint_inflight_rev == self._doc_revision:
+            return
+        self._footprint_inflight_rev = self._doc_revision
+        try:
+            step_bytes = document_step_bytes(self.document)  # OCP: main thread only
+        except Exception as exc:
+            self._footprint_inflight_rev = None
+            self._footprint_callbacks.clear()
+            self.show_status(f"footprint: STEP snapshot failed ({exc})")
+            return
+        QThreadPool.globalInstance().start(
+            _FootprintTask(step_bytes, self._doc_revision, self._footprint_signals)
+        )
+
+    def _on_footprint_done(self, result, revision: int) -> None:
+        self._footprint_inflight_rev = None
+        callbacks = self._footprint_callbacks
+        self._footprint_callbacks = []
+        if revision != self._doc_revision:
+            # Stale: the document changed while projecting — re-request.
+            for callback in callbacks:
+                self.request_footprint(callback)
+            return
+        self._footprint_cache = result
+        self._footprint_cache_rev = revision
+        if result is not None:
+            for callback in callbacks:
+                callback(result)
+
     def _refresh_info(self) -> None:
         if self.document is None:
             self.info_label.setText("No file loaded.")
             return
         info = self.document.info()
-        lines = [
-            f"file    {info.path.name}",
-            f"schema  {info.schema}",
-            f"bodies  {info.body_count}",
-            f"faces   {info.face_count}",
-            f"edges   {info.edge_count}",
-            f"verts   {info.vertex_count}",
-        ]
         units = (self.model_bounds.units if self.model_bounds else None) or "mm"
         xmin, xmax, ymin, ymax, zmin, zmax = info.bounds
-        lines.append(
-            f"size    {xmax - xmin:.3f} x {ymax - ymin:.3f} x {zmax - zmin:.3f} {units}"
+        pairs = [
+            ("file", info.path.name),
+            ("size", f"{xmax - xmin:.2f} x {ymax - ymin:.2f} x {zmax - zmin:.2f} {units}"),
+            ("schema", info.schema),
+            ("z", f"[{zmin:.3f}, {zmax:.3f}]"),
+            ("bodies", str(info.body_count)),
+            ("faces", str(info.face_count)),
+            ("edges", str(info.edge_count)),
+            ("verts", str(info.vertex_count)),
+            ("output", conditioned_path(info.path).name),
+            ("pins", str(len(self.pins.pins))),
+        ]
+        cells = []
+        for index in range(0, 10, 2):
+            left = pairs[index]
+            right = pairs[index + 1]
+            cells.append(
+                f"<tr><td><b>{left[0]}</b></td><td>{left[1]}</td>"
+                f"<td><b>{right[0]}</b></td><td>{right[1]}</td></tr>"
+            )
+        self.info_label.setText(
+            "<table cellspacing='0' cellpadding='2' style='font-size: 11px;'>"
+            + "".join(cells)
+            + "</table>"
         )
-        lines.append(f"z range [{zmin:.3f}, {zmax:.3f}]")
-        lines.append(f"output  {conditioned_path(info.path).name}")
-        self.info_label.setText("\n".join(lines))

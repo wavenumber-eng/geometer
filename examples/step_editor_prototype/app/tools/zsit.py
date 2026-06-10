@@ -18,7 +18,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from .base import ToolMode
+from .base import ToolMode, make_apply_button
 
 ORIGIN_RULES = ("centroid", "first-pick", "rect-center")
 _EPS = 1.0e-9
@@ -166,9 +166,8 @@ class ZSitTool(ToolMode):
         button_row.addWidget(self.undo_button)
         layout.addLayout(button_row)
 
-        self.apply_button = QPushButton("Apply Z-Sit")
+        self.apply_button = make_apply_button("Apply Z-Sit")
         self.apply_button.setEnabled(False)
-        self.apply_button.setStyleSheet("font-weight: 700;")
         self.apply_button.clicked.connect(self.apply)
         layout.addWidget(self.apply_button)
         layout.addStretch(1)

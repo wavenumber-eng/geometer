@@ -5,8 +5,6 @@ flat prism, convex hull."""
 
 from __future__ import annotations
 
-import geometer
-import numpy as np
 from PySide6.QtWidgets import (
     QComboBox,
     QDoubleSpinBox,
@@ -18,7 +16,6 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from ..export_ap242 import document_step_bytes
 from ..hitbox import (
     convex_hull_hitbox,
     cube_from_point,
@@ -26,9 +23,9 @@ from ..hitbox import (
     obb_from_three_clicks,
     obb_xy_cross_section,
 )
-from ..ortho2d import Ortho2DCanvas
+from ..ortho2d import FootprintPadsCanvas, Ortho2DCanvas
 from ..pins import pin_mesh_points
-from .base import ToolMode
+from .base import ToolMode, make_apply_button
 
 VARIANTS = (
     "male box (3 clicks)",
@@ -57,6 +54,7 @@ class HitboxTool(ToolMode):
     def __init__(self, ctx) -> None:
         super().__init__(ctx)
         self.clicks: list[tuple[float, float, float]] = []
+        self.pending: dict[int, tuple[dict, str]] = {}  # pin number -> (hitbox, variant)
 
     # ------------------------------------------------------------------- UI
 
@@ -114,20 +112,37 @@ class HitboxTool(ToolMode):
         self.click_label = QLabel("")
         layout.addWidget(self.click_label)
 
-        layout.addWidget(QLabel("Footprint cross-sections (geometer HLR)"))
+        self.pending_label = QLabel("")
+        self.pending_label.setStyleSheet("color: #c97a1a; font-weight: 600;")
+        layout.addWidget(self.pending_label)
+        self.apply_button = make_apply_button("Apply Hitboxes")
+        self.apply_button.setEnabled(False)
+        self.apply_button.clicked.connect(self.apply)
+        layout.addWidget(self.apply_button)
+
+        views_row = QHBoxLayout()
+        hlr_column = QVBoxLayout()
+        hlr_column.addWidget(QLabel("Cross-sections (geometer HLR)"))
         self.canvas = Ortho2DCanvas()
-        layout.addWidget(self.canvas, 3)
+        hlr_column.addWidget(self.canvas, 1)
+        pads_column = QVBoxLayout()
+        pads_column.addWidget(QLabel("PCB footprint (hitboxes only)"))
+        self.pads_canvas = FootprintPadsCanvas()
+        pads_column.addWidget(self.pads_canvas, 1)
+        views_row.addLayout(hlr_column, 1)
+        views_row.addLayout(pads_column, 1)
+        layout.addLayout(views_row, 3)
         return widget
 
     # ------------------------------------------------------------ lifecycle
 
     def enter(self) -> None:
         self.clicks = []
-        self._refresh_footprint()
+        self.ctx.window.request_footprint(self._on_footprint)
         self._refresh_views()
         registry = self.ctx.window.pins
         if registry.pins:
-            self.status("Hitboxes: select a pin, then click to place its hitbox")
+            self.status("Hitboxes: select a pin, place its hitbox, press Apply")
         else:
             self.status("Hitboxes: no pins yet — run Detect Pins first")
 
@@ -137,8 +152,13 @@ class HitboxTool(ToolMode):
 
     def on_document_changed(self) -> None:
         self.clicks = []
+        self.pending = {}
         if self._actions_widget is not None:
             self._refresh_views()
+
+    def _on_footprint(self, result) -> None:
+        if self._actions_widget is not None and result is not None:
+            self.canvas.set_projection(result, "top")
 
     # -------------------------------------------------------------- picking
 
@@ -154,7 +174,7 @@ class HitboxTool(ToolMode):
 
         if variant == "BGA cube (1 click)":
             hitbox = cube_from_point(pick.world_point, float(self.size_spin.value()))
-            self._assign(pin, hitbox, variant, clicks=[pick.world_point])
+            self._stage(pin, hitbox, variant)
             return
 
         if variant != "male box (3 clicks)":
@@ -180,11 +200,10 @@ class HitboxTool(ToolMode):
             self.status(f"Hitboxes: {exc}")
             self.clicks = []
             return
-        clicks = list(self.clicks)
         self.clicks = []
         self.ctx.scene.set_markers([])
         self.click_label.setText("")
-        self._assign(pin, hitbox, variant, clicks=clicks)
+        self._stage(pin, hitbox, variant)
 
     # -------------------------------------------------------------- actions
 
@@ -216,30 +235,52 @@ class HitboxTool(ToolMode):
             hitbox = cube_from_point(points.mean(axis=0), size)
         else:
             hitbox = obb_from_points(points, margin=margin)
-        self._assign(pin, hitbox, variant, clicks=[])
+        self._stage(pin, hitbox, variant)
 
     def _clear_selected(self) -> None:
         row = self.pin_list.currentRow()
         registry = self.ctx.window.pins
         if 0 <= row < len(registry.pins):
-            registry.pins[row].hitbox = None
+            pin = registry.pins[row]
+            pin.hitbox = None
+            self.pending.pop(pin.number, None)
             self._refresh_views()
 
-    def _assign(self, pin, hitbox: dict, variant: str, *, clicks) -> None:
-        pin.hitbox = hitbox
-        pin.kind = VARIANT_KINDS.get(variant, pin.kind)
+    def _stage(self, pin, hitbox: dict, variant: str) -> None:
+        """Hitboxes preview in orange until the green Apply commits them."""
+        self.pending[pin.number] = (hitbox, variant)
+        self._refresh_views()
+        self.status(
+            f"Hitboxes: pin {pin.number} staged ({variant}) — "
+            f"{len(self.pending)} pending, press Apply"
+        )
+
+    def apply(self) -> None:
+        if not self.pending:
+            self.status("Hitboxes: nothing staged")
+            return
+        registry = self.ctx.window.pins
+        by_number = {pin.number: pin for pin in registry.pins}
+        applied = []
+        for number, (hitbox, variant) in self.pending.items():
+            pin = by_number.get(number)
+            if pin is None:
+                continue
+            pin.hitbox = hitbox
+            pin.kind = VARIANT_KINDS.get(variant, pin.kind)
+            applied.append({"pin": number, "variant": variant, "hitbox": hitbox})
+        self.pending = {}
         self.ctx.journal.record(
             tool=self.id,
             params={
-                "variant": variant,
                 "margin": float(self.margin_spin.value()),
                 "size": float(self.size_spin.value()),
             },
-            inputs={"pin_number": pin.number, "clicks": [list(c) for c in clicks]},
-            result={"hitbox": hitbox},
+            inputs={},
+            result={"applied": applied},
         )
         self._refresh_views()
-        self.status(f"Hitboxes: pin {pin.number} -> {hitbox['type']} ({variant})")
+        self.status(f"Hitboxes: applied {len(applied)} hitboxes")
 
     # ---------------------------------------------------------------- views
 
@@ -251,18 +292,37 @@ class HitboxTool(ToolMode):
         self.pin_list.blockSignals(True)
         self.pin_list.clear()
         for pin in registry.pins:
-            state = pin.hitbox["type"] if pin.hitbox else "—"
+            if pin.number in self.pending:
+                state = f"{self.pending[pin.number][0]['type']} (pending)"
+            elif pin.hitbox:
+                state = pin.hitbox["type"]
+            else:
+                state = "—"
             self.pin_list.addItem(f"Pin {pin.number} [{pin.kind}] hitbox: {state}")
         if 0 <= row < self.pin_list.count():
             self.pin_list.setCurrentRow(row)
         self.pin_list.blockSignals(False)
 
-        hitboxes = [pin.hitbox for pin in registry.pins if pin.hitbox]
-        selected_pin = registry.pins[row] if 0 <= row < len(registry.pins) else None
+        self.pending_label.setText(
+            f"{len(self.pending)} hitbox(es) staged" if self.pending else ""
+        )
+        self.apply_button.setEnabled(bool(self.pending))
+
+        # committed = cyan, pending = orange, selected = red
+        hitboxes: list[dict] = []
+        colors: list[str] = []
         selected_index = -1
-        if selected_pin is not None and selected_pin.hitbox is not None:
-            selected_index = hitboxes.index(selected_pin.hitbox)
-        self.ctx.scene.show_hitboxes(hitboxes, selected=selected_index)
+        selected_pin = registry.pins[row] if 0 <= row < len(registry.pins) else None
+        for pin in registry.pins:
+            pending = self.pending.get(pin.number)
+            hitbox = pending[0] if pending else pin.hitbox
+            if hitbox is None:
+                continue
+            if selected_pin is not None and pin.number == selected_pin.number:
+                selected_index = len(hitboxes)
+            hitboxes.append(hitbox)
+            colors.append("#ff9a2a" if pending else "#27b0d6")
+        self.ctx.scene.show_hitboxes(hitboxes, selected=selected_index, colors=colors)
 
         if selected_pin is not None:
             if selected_pin.body_ids:
@@ -270,24 +330,13 @@ class HitboxTool(ToolMode):
             elif selected_pin.face_ids:
                 self.ctx.scene.highlight_face(*selected_pin.face_ids[0])
 
-        self.canvas.set_pins(
-            [(p.centroid[0], p.centroid[1], str(p.number)) for p in registry.pins]
-        )
-        self.canvas.set_rects(
-            [obb_xy_cross_section(p.hitbox) for p in registry.pins
-             if p.hitbox and p.hitbox.get("type") == "obb"]
-        )
-
-    def _refresh_footprint(self) -> None:
-        if self.ctx.document is None:
-            return
-        try:
-            step_bytes = document_step_bytes(self.ctx.document)
-            result = geometer.project_step_hlr(
-                step_bytes,
-                views=[geometer.ProjectionView.top()],
-                options=geometer.HlrOptions.visible_detail(),
-            )
-            self.canvas.set_projection(result, "top")
-        except Exception as exc:
-            self.status(f"Hitboxes: footprint projection failed ({exc})")
+        pin_labels = [(p.centroid[0], p.centroid[1], str(p.number)) for p in registry.pins]
+        rects = [
+            obb_xy_cross_section(hitbox)
+            for hitbox in hitboxes
+            if hitbox.get("type") == "obb"
+        ]
+        self.canvas.set_pins(pin_labels)
+        self.canvas.set_rects(rects)
+        self.pads_canvas.set_pins(pin_labels)
+        self.pads_canvas.set_rects(rects)

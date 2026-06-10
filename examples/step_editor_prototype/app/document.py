@@ -72,6 +72,7 @@ class BodyRecord:
     role: str = "body"
     mesh: BodyMesh | None = None
     original_color: tuple[float, float, float] | None = None
+    original_face_colors: dict[int, tuple[float, float, float]] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -112,6 +113,34 @@ def _shape_rgb(color_tool, shape) -> tuple[float, float, float] | None:
         except Exception:
             continue
     return None
+
+
+def _harvest_face_colors(color_tool, solid) -> dict[int, tuple[float, float, float]]:
+    """Per-face colours keyed by face-map index. Must run BEFORE the solid's
+    location is baked — the XCAF colour tool keys by exact shape identity."""
+    result: dict[int, tuple[float, float, float]] = {}
+    if color_tool is None:
+        return result
+    face_map = TopTools_IndexedMapOfShape()
+    TopExp.MapShapes_s(solid, TopAbs_FACE, face_map)
+    for index in range(1, face_map.Extent() + 1):
+        rgb = _shape_rgb(color_tool, TopoDS.Face_s(face_map.FindKey(index)))
+        if rgb is not None:
+            result[index] = rgb
+    return result
+
+
+def _bake_location(solid):
+    """Assembly instances carry a TopLoc_Location; bake it into the geometry
+    so every body is a plain located-at-identity solid. Required for XCAF
+    sub-shape (face colour) export — located shapes register as references,
+    not simple shapes. (An identity-trsf transform is a no-op in OCCT, so
+    strip the location and re-apply it as a real copying transform.)"""
+    location = solid.Location()
+    if location.IsIdentity():
+        return solid
+    unplaced = solid.Located(TopLoc_Location())
+    return BRepBuilderAPI_Transform(unplaced, location.Transformation(), True).Shape()
 
 
 def _solid_color(color_tool, solid) -> tuple[float, float, float] | None:
@@ -331,9 +360,19 @@ class EditorDocument:
                 solids = [shape]
             for index, solid in enumerate(solids):
                 name = base_name if len(solids) == 1 else f"{base_name}.{index + 1}"
+                # Colours first (keyed by the original shape identity), then
+                # bake the instance location into the geometry.
                 color = _solid_color(color_tool, solid)
+                face_colors = _harvest_face_colors(color_tool, solid)
+                solid = _bake_location(solid)
                 bodies.append(
-                    BodyRecord(solid=solid, name=name, color=color, original_color=color)
+                    BodyRecord(
+                        solid=solid,
+                        name=name,
+                        color=color,
+                        original_color=color,
+                        original_face_colors=face_colors,
+                    )
                 )
 
         if not bodies:
@@ -341,7 +380,11 @@ class EditorDocument:
 
         document = cls(path=path, bodies=bodies, schema=_read_file_schema(path))
         document._xcaf_doc = doc
-        document.remesh_all(color_tool=color_tool)
+        document.remesh_all()
+        for body in document.bodies:
+            if body.mesh is not None and body.original_face_colors:
+                if body.mesh.face_count >= max(body.original_face_colors):
+                    body.mesh.face_colors = dict(body.original_face_colors)
         return document
 
     # ------------------------------------------------------------ tessellate

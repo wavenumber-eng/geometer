@@ -6,8 +6,6 @@ Pin 1 Quadrant tool, and can be reordered manually."""
 
 from __future__ import annotations
 
-import geometer
-import numpy as np
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -20,7 +18,6 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from ..export_ap242 import document_step_bytes
 from ..ortho2d import Ortho2DCanvas
 from ..pins import (
     Band,
@@ -30,7 +27,7 @@ from ..pins import (
     order_pins,
 )
 from ..scene import BandSelector
-from .base import ToolMode
+from .base import ToolMode, make_apply_button
 
 
 class DetectPinsTool(ToolMode):
@@ -42,6 +39,8 @@ class DetectPinsTool(ToolMode):
         super().__init__(ctx)
         self._band_selector: BandSelector | None = None
         self._last_band: Band | None = None
+        self.pending: list[Pin] = []
+        self._pending_bands: list[list[float]] = []
 
     # ------------------------------------------------------------------- UI
 
@@ -51,8 +50,9 @@ class DetectPinsTool(ToolMode):
         layout.setContentsMargins(8, 8, 8, 8)
         layout.addWidget(QLabel(
             "<b>Detect Pins</b><br>"
-            "Drag a rectangle over the pins (top view, left button). "
-            "Each drag adds the pins it finds; orbit with right/middle button."
+            "Drag a see-through rectangle over the pins (top view, left "
+            "button); orbit with right/middle button. Each drag stages the "
+            "pins it finds — press Apply to add them."
         ))
 
         self.exclude_check = QCheckBox("Exclude largest body (package)")
@@ -86,6 +86,14 @@ class DetectPinsTool(ToolMode):
         order_row.addWidget(renumber_button)
         layout.addLayout(order_row)
 
+        self.pending_label = QLabel("")
+        self.pending_label.setStyleSheet("color: #c97a1a; font-weight: 600;")
+        layout.addWidget(self.pending_label)
+        self.apply_button = make_apply_button("Apply Detected Pins")
+        self.apply_button.setEnabled(False)
+        self.apply_button.clicked.connect(self.apply)
+        layout.addWidget(self.apply_button)
+
         self.pin_list = QListWidget()
         self.pin_list.currentRowChanged.connect(self._on_list_selection)
         layout.addWidget(self.pin_list, 2)
@@ -114,10 +122,17 @@ class DetectPinsTool(ToolMode):
     def enter(self) -> None:
         if self.ctx.document is not None:
             self.ctx.window.snap_camera("top")
-        widget = self.ctx.scene.plotter.interactor
-        self._band_selector = BandSelector(widget, self._on_band_qt)
+        scene = self.ctx.scene
+        self._band_selector = BandSelector(
+            scene.plotter.interactor,
+            self._on_band_qt,
+            on_update=lambda origin, pos: scene.show_band_2d(
+                origin.x(), origin.y(), pos.x(), pos.y()
+            ),
+            on_finish=scene.hide_band_2d,
+        )
         self._band_selector.attach()
-        self._refresh_footprint()
+        self.ctx.window.request_footprint(self._on_footprint)
         self._refresh_views()
         self.status("Detect Pins: drag a rectangle over the pins (top view)")
 
@@ -126,17 +141,25 @@ class DetectPinsTool(ToolMode):
             self._band_selector.detach()
             self._band_selector = None
         self.ctx.scene.show_pin_labels([], [])
+        self.ctx.scene.set_markers([], name="pending-pins")
         self.ctx.scene.clear_highlight()
 
     def on_document_changed(self) -> None:
         registry = self.ctx.window.pins
         registry.clear()
         self._last_band = None
+        self.pending = []
+        self._pending_bands = []
         if self._actions_widget is not None:
             self.pin_list.clear()
             self.canvas.set_projection(None)
             self.canvas.set_pins([])
             self.canvas.set_band(None)
+            self._refresh_pending()
+
+    def _on_footprint(self, result) -> None:
+        if self._actions_widget is not None and result is not None:
+            self.canvas.set_projection(result, "top")
 
     # ------------------------------------------------------------ detection
 
@@ -151,6 +174,7 @@ class DetectPinsTool(ToolMode):
         self.detect_in_band(band)
 
     def detect_in_band(self, band: Band) -> None:
+        """Stage the pins found in the band; Apply commits them."""
         document = self.ctx.document
         multibody = len(document.bodies) > 1
         if multibody:
@@ -168,31 +192,63 @@ class DetectPinsTool(ToolMode):
 
         registry = self.ctx.window.pins
         existing = {self._pin_key(pin) for pin in registry.pins}
+        existing.update(self._pin_key(pin) for pin in self.pending)
         added = [pin for pin in found if self._pin_key(pin) not in existing]
+        self.pending.extend(added)
+        self._pending_bands.append([band.x_min, band.y_min, band.x_max, band.y_max])
+        self._refresh_pending()
+        self.status(
+            f"Detect Pins: {len(found)} in band, {len(added)} newly staged, "
+            f"{len(self.pending)} pending — press Apply"
+        )
+
+    def _refresh_pending(self) -> None:
+        self.ctx.scene.set_markers(
+            [pin.centroid for pin in self.pending],
+            name="pending-pins",
+            color="#ff9a2a",
+            point_size=14.0,
+        )
+        if self._actions_widget is not None:
+            count = len(self.pending)
+            self.pending_label.setText(
+                f"{count} pin(s) staged" if count else ""
+            )
+            self.apply_button.setEnabled(count > 0)
+        if self._last_band is not None and self._actions_widget is not None:
+            self.canvas.set_band(
+                (self._last_band.x_min, self._last_band.y_min,
+                 self._last_band.x_max, self._last_band.y_max)
+            )
+
+    def apply(self) -> None:
+        if not self.pending:
+            self.status("Detect Pins: nothing staged — drag a band first")
+            return
+        registry = self.ctx.window.pins
+        added = self.pending
+        self.pending = []
+        bands = self._pending_bands
+        self._pending_bands = []
         registry.set_pins(registry.pins + added)
         self.renumber(record=False)
-
         self.ctx.journal.record(
             tool=self.id,
             params={
-                "mode": "multibody" if multibody else "unibody",
                 "exclude_largest": self.exclude_check.isChecked(),
                 "flow": self.flow_combo.currentText(),
                 "smooth_angle_deg": float(self.angle_spin.value()),
                 "ordering": self.order_combo.currentText(),
             },
-            inputs={"band": [band.x_min, band.y_min, band.x_max, band.y_max]},
+            inputs={"bands": bands},
             result={
-                "found": len(found),
                 "added": len(added),
                 "total": len(registry.pins),
                 "centroids": [list(pin.centroid) for pin in added],
             },
         )
-        self.status(
-            f"Detect Pins: {len(found)} in band, {len(added)} new, "
-            f"{len(registry.pins)} total"
-        )
+        self._refresh_pending()
+        self.status(f"Detect Pins: applied {len(added)} pins, {len(registry.pins)} total")
 
     @staticmethod
     def _pin_key(pin: Pin):
@@ -249,7 +305,10 @@ class DetectPinsTool(ToolMode):
 
     def _clear(self) -> None:
         self.ctx.window.pins.clear()
+        self.pending = []
+        self._pending_bands = []
         self._last_band = None
+        self._refresh_pending()
         self._refresh_views()
 
     # --------------------------------------------------------------- views
@@ -287,16 +346,3 @@ class DetectPinsTool(ToolMode):
                  self._last_band.x_max, self._last_band.y_max)
             )
 
-    def _refresh_footprint(self) -> None:
-        if self.ctx.document is None:
-            return
-        try:
-            step_bytes = document_step_bytes(self.ctx.document)
-            result = geometer.project_step_hlr(
-                step_bytes,
-                views=[geometer.ProjectionView.top()],
-                options=geometer.HlrOptions.visible_detail(),
-            )
-            self.canvas.set_projection(result, "top")
-        except Exception as exc:
-            self.status(f"Detect Pins: footprint projection failed ({exc})")

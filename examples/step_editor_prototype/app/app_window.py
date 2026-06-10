@@ -50,6 +50,7 @@ class MainWindow(QMainWindow):
         self.document: EditorDocument | None = None
         self.journal = Journal()
         self.model_bounds: geometer.ModelBoundsResult | None = None
+        self.pin1_hint: tuple[float, float, float] | None = None
 
         self.plotter = QtInteractor(self)
         self.plotter.interactor.setMinimumSize(480, 360)

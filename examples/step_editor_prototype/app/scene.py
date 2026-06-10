@@ -62,7 +62,7 @@ class SceneManager:
         self._band_actors: tuple | None = None
         self._band_poly = None
         self._press_position: tuple[int, int] | None = None
-        self._hitbox_count = 0
+        self._hitbox_overlays: list[str] = []
         self._hover_callback: Callable[[PickResult | None], None] | None = None
         self._hover_observer = None
         self._picker = vtk.vtkCellPicker()
@@ -89,6 +89,7 @@ class SceneManager:
         self._actors = []
         self._band_actors = None
         self._band_poly = None
+        self._hitbox_overlays = []
 
         for index, body in enumerate(document.bodies):
             mesh = body.mesh
@@ -237,6 +238,12 @@ class SceneManager:
             return
         x, y = self.plotter.iren.interactor.GetEventPosition()
         self._hover_callback(self.pick_at(x, y))
+
+    def pick_at_qt(self, x_qt: float, y_qt: float) -> PickResult | None:
+        """Pick from Qt widget coordinates (converts to VTK display pixels)."""
+        widget = self.plotter.interactor
+        ratio = widget.devicePixelRatioF()
+        return self.pick_at(int(x_qt * ratio), int((widget.height() - y_qt) * ratio))
 
     def pick_at(self, x: int, y: int) -> PickResult | None:
         if not self._picker.Pick(x, y, 0, self.plotter.renderer):
@@ -505,10 +512,13 @@ class SceneManager:
     def show_hitboxes(
         self, hitboxes: list[dict], *, selected: int = -1, colors: list[str] | None = None
     ) -> None:
-        """Translucent metadata volumes; never part of the B-rep."""
-        for index in range(self._hitbox_count):
-            self.remove_overlay(f"hitbox-{index}")
-        self._hitbox_count = len(hitboxes)
+        """Translucent metadata volumes; never part of the B-rep. Boxes are
+        merged into one actor per colour — per-box actors made big BGAs crawl."""
+        for name in self._hitbox_overlays:
+            self.remove_overlay(name)
+        self._hitbox_overlays = []
+
+        groups: dict[str, list] = {}
         for index, hitbox in enumerate(hitboxes):
             if hitbox is None:
                 continue
@@ -531,13 +541,19 @@ class SceneManager:
                 color = colors[index]
             else:
                 color = "#27b0d6"
+            groups.setdefault(color, []).append(mesh)
+
+        for group_index, (color, meshes) in enumerate(groups.items()):
+            merged = meshes[0] if len(meshes) == 1 else meshes[0].merge(meshes[1:])
+            name = f"hitboxes-{group_index}"
+            self._hitbox_overlays.append(name)
             self.plotter.add_mesh(
-                mesh,
+                merged,
                 color=color,
                 opacity=0.32,
                 lighting=False,
                 pickable=False,
-                name=f"hitbox-{index}",
+                name=name,
             )
         self.plotter.render()
 
@@ -649,12 +665,14 @@ class BandSelector(QObject):
         on_band: Callable[[QPoint, QPoint], None],
         on_update: Callable[[QPoint, QPoint], None] | None = None,
         on_finish: Callable[[], None] | None = None,
+        on_click: Callable[[QPoint], None] | None = None,
     ) -> None:
         super().__init__(widget)
         self._widget = widget
         self._on_band = on_band
         self._on_update = on_update
         self._on_finish = on_finish
+        self._on_click = on_click
         self._origin: QPoint | None = None
 
     def attach(self) -> None:
@@ -686,5 +704,7 @@ class BandSelector(QObject):
                 self._on_finish()
             if (end - origin).manhattanLength() > 6:
                 self._on_band(origin, end)
+            elif self._on_click is not None:
+                self._on_click(end)
             return True
         return False

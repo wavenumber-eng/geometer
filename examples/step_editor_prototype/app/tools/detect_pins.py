@@ -12,6 +12,7 @@ from PySide6.QtWidgets import (
     QDoubleSpinBox,
     QHBoxLayout,
     QLabel,
+    QLineEdit,
     QListWidget,
     QPushButton,
     QVBoxLayout,
@@ -25,6 +26,9 @@ from ..pins import (
     detect_pins_multibody,
     detect_pins_unibody,
     order_pins,
+    parse_grid_name,
+    predict_grid_names,
+    predict_serpentine_order,
 )
 from ..scene import BandSelector
 from .base import ToolMode, make_apply_button
@@ -50,10 +54,18 @@ class DetectPinsTool(ToolMode):
         layout.setContentsMargins(8, 8, 8, 8)
         layout.addWidget(QLabel(
             "<b>Detect Pins</b><br>"
-            "Drag a see-through rectangle over the pins (top view, left "
-            "button); orbit with right/middle button. Each drag stages the "
-            "pins it finds — press Apply to add them."
+            "Left button clicks and orbits as usual. Press <b>Drag Select</b>, "
+            "then drag a see-through rectangle over the pins (top view). Each "
+            "drag stages the pins it finds — press Apply to add them."
         ))
+
+        self.band_button = QPushButton("Drag Select (band)")
+        self.band_button.setCheckable(True)
+        self.band_button.setStyleSheet(
+            "QPushButton:checked {background-color: #c89d00; color: #000000; font-weight: 700;}"
+        )
+        self.band_button.toggled.connect(self._arm_band)
+        layout.addWidget(self.band_button)
 
         self.exclude_check = QCheckBox("Exclude largest body (package)")
         self.exclude_check.setChecked(True)
@@ -79,12 +91,32 @@ class DetectPinsTool(ToolMode):
         order_row = QHBoxLayout()
         order_row.addWidget(QLabel("Ordering"))
         self.order_combo = QComboBox()
-        self.order_combo.addItems(["serpentine", "row-major"])
+        self.order_combo.addItems(["serpentine", "row-major", "bga-grid (A1..)"])
         order_row.addWidget(self.order_combo, 1)
         renumber_button = QPushButton("Renumber")
         renumber_button.clicked.connect(self.renumber)
         order_row.addWidget(renumber_button)
         layout.addLayout(order_row)
+
+        name_row = QHBoxLayout()
+        name_row.addWidget(QLabel("Name"))
+        self.name_edit = QLineEdit()
+        self.name_edit.setPlaceholderText("e.g. A1 or 5")
+        self.name_edit.returnPressed.connect(self._set_selected_name)
+        name_row.addWidget(self.name_edit, 1)
+        set_name_button = QPushButton("Set")
+        set_name_button.setMinimumWidth(36)
+        set_name_button.clicked.connect(self._set_selected_name)
+        name_row.addWidget(set_name_button)
+        predict_button = QPushButton("Predict")
+        predict_button.setMinimumWidth(36)
+        predict_button.setToolTip(
+            "Name a few pins by hand (grid names like A1/C4, or plain numbers),\n"
+            "then Predict propagates the scheme to every pin from their 3D positions."
+        )
+        predict_button.clicked.connect(self.predict_names)
+        name_row.addWidget(predict_button)
+        layout.addLayout(name_row)
 
         self.pending_label = QLabel("")
         self.pending_label.setStyleSheet("color: #c97a1a; font-weight: 600;")
@@ -123,6 +155,28 @@ class DetectPinsTool(ToolMode):
     def enter(self) -> None:
         if self.ctx.document is not None:
             self.ctx.window.snap_camera("top")
+        self.ctx.window.request_footprint(self._on_footprint)
+        self._refresh_views()
+        self.status(
+            "Detect Pins: press Drag Select then sweep over the pins; "
+            "plain clicks select pins for renaming"
+        )
+
+    def exit(self) -> None:
+        self._disarm_band()
+        if self._actions_widget is not None:
+            self.band_button.setChecked(False)
+        self.ctx.scene.show_pin_labels([], [])
+        self.ctx.scene.set_markers([], name="pending-pins")
+        self.ctx.scene.clear_highlight()
+
+    # ------------------------------------------------------------- band arm
+
+    def _arm_band(self, armed: bool) -> None:
+        if not armed:
+            self._disarm_band()
+            self.status("Detect Pins: drag-select off — left button orbits")
+            return
         scene = self.ctx.scene
         self._band_selector = BandSelector(
             scene.plotter.interactor,
@@ -131,19 +185,19 @@ class DetectPinsTool(ToolMode):
                 origin.x(), origin.y(), pos.x(), pos.y()
             ),
             on_finish=scene.hide_band_2d,
+            on_click=self._on_click_qt,
         )
         self._band_selector.attach()
-        self.ctx.window.request_footprint(self._on_footprint)
-        self._refresh_views()
         self.status("Detect Pins: drag a rectangle over the pins (top view)")
 
-    def exit(self) -> None:
+    def _disarm_band(self) -> None:
         if self._band_selector is not None:
             self._band_selector.detach()
             self._band_selector = None
-        self.ctx.scene.show_pin_labels([], [])
-        self.ctx.scene.set_markers([], name="pending-pins")
-        self.ctx.scene.clear_highlight()
+
+    def on_pick(self, pick) -> None:
+        """Plain click (drag-select off): select that pin for quick rename."""
+        self._select_pin_from_pick(pick)
 
     def on_document_changed(self) -> None:
         registry = self.ctx.window.pins
@@ -173,6 +227,9 @@ class DetectPinsTool(ToolMode):
         band = Band(min(x0, x1), min(y0, y1), max(x0, x1), max(y0, y1))
         self._last_band = band
         self.detect_in_band(band)
+        # one band per arm: hand the left button back to orbit/click
+        if self._actions_widget is not None:
+            self.band_button.setChecked(False)
 
     def detect_in_band(self, band: Band) -> None:
         """Stage the pins found in the band; Apply commits them."""
@@ -257,26 +314,162 @@ class DetectPinsTool(ToolMode):
 
     # ------------------------------------------------------------- ordering
 
+    def _ordering_mode(self) -> str:
+        return self.order_combo.currentText().split(" ")[0]
+
     def renumber(self, *, record: bool = True) -> None:
         registry = self.ctx.window.pins
         if not registry.pins:
             self._refresh_views()
             return
+        mode = self._ordering_mode()
         hint = self.ctx.window.pin1_hint
         order = order_pins(
             registry.pins,
-            mode=self.order_combo.currentText(),
+            mode=mode,
             pin1_hint=(hint[0], hint[1]) if hint else None,
         )
         registry.reorder(order)
+        if mode == "bga-grid":
+            try:
+                names = predict_grid_names(registry.pins, {})
+                for index, pin in enumerate(registry.pins):
+                    pin.name = names[index]
+                unknown = sum(1 for pin in registry.pins if pin.name.startswith("?"))
+                if unknown:
+                    self.status(
+                        f"Detect Pins: {unknown} region(s) named '?' — likely not "
+                        f"balls (index marks); select and Delete them"
+                    )
+            except ValueError as exc:
+                self.status(f"Detect Pins: grid naming failed ({exc})")
         if record:
             self.ctx.journal.record(
                 tool=self.id,
-                params={"action": "renumber", "ordering": self.order_combo.currentText()},
+                params={"action": "renumber", "ordering": mode},
                 inputs={"pin1_hint": list(hint) if hint else None},
-                result={"order": [pin.number for pin in registry.pins]},
+                result={"order": [pin.number for pin in registry.pins],
+                        "names": [pin.name for pin in registry.pins]},
             )
         self._refresh_views()
+
+    def _on_click_qt(self, point) -> None:
+        """Click while drag-select is armed: still selects a pin."""
+        if self.ctx.document is None:
+            return
+        pick = self.ctx.scene.pick_at_qt(point.x(), point.y())
+        if pick is not None:
+            self._select_pin_from_pick(pick)
+
+    def _select_pin_from_pick(self, pick) -> None:
+        """Select the clicked pin in the list and focus the name box."""
+        if self.ctx.document is None:
+            return
+        registry = self.ctx.window.pins
+        row = -1
+        for index, pin in enumerate(registry.pins):
+            if pick.body_index in pin.body_ids or (
+                (pick.body_index, pick.face_index) in pin.face_ids
+            ):
+                row = index
+                break
+        if row < 0 and registry.pins:
+            # fall back to the nearest pin centroid to the click
+            import numpy as np
+
+            centroids = np.array([pin.centroid for pin in registry.pins])
+            point3 = np.asarray(pick.world_point)
+            distances = np.linalg.norm(centroids - point3, axis=1)
+            nearest = int(np.argmin(distances))
+            bounds = self.ctx.document.bounds()
+            diag = np.linalg.norm(
+                [bounds[1] - bounds[0], bounds[3] - bounds[2], bounds[5] - bounds[4]]
+            )
+            if distances[nearest] <= diag * 0.05:
+                row = nearest
+        if row < 0:
+            return
+        self.pin_list.setCurrentRow(row)
+        self.name_edit.setFocus()
+        self.name_edit.selectAll()
+        pin = registry.pins[row]
+        self.status(
+            f"Detect Pins: pin {pin.number}{f' ({pin.name})' if pin.name else ''} "
+            f"selected — type a name and press Enter"
+        )
+
+    # ---------------------------------------------------- naming / predict
+
+    def _set_selected_name(self) -> None:
+        registry = self.ctx.window.pins
+        row = self.pin_list.currentRow()
+        if not (0 <= row < len(registry.pins)):
+            self.status("Detect Pins: select a pin in the list first")
+            return
+        registry.pins[row].name = self.name_edit.text().strip()
+        self._refresh_views()
+        self.pin_list.setCurrentRow(row)
+        self.status(
+            f"Detect Pins: pin {registry.pins[row].number} named "
+            f"'{registry.pins[row].name}' — name more or press Predict"
+        )
+
+    def predict_names(self) -> None:
+        """Treat the manually named pins as ground truth and propagate the
+        scheme to every other pin from the 3D positions."""
+        registry = self.ctx.window.pins
+        pins = registry.pins
+        anchors = {i: pin.name.strip() for i, pin in enumerate(pins) if pin.name.strip()}
+        if not anchors:
+            self.status("Detect Pins: name at least one pin first (e.g. A1)")
+            return
+
+        grid_like = all(parse_grid_name(name) is not None for name in anchors.values())
+        numeric = all(name.isdigit() for name in anchors.values())
+        try:
+            if grid_like:
+                names = predict_grid_names(pins, anchors)
+                for index, pin in enumerate(pins):
+                    pin.name = names[index]
+                order = sorted(
+                    range(len(pins)),
+                    key=lambda i: parse_grid_name(pins[i].name) or (9999, i),
+                )
+                registry.reorder(order)
+                unknown = sum(1 for pin in pins if pin.name.startswith("?"))
+                outcome = f"grid scheme propagated to {len(pins)} pins"
+                if unknown:
+                    outcome += f" ({unknown} flagged '?' — check or delete those)"
+            elif numeric:
+                order = predict_serpentine_order(
+                    pins, {index: int(name) for index, name in anchors.items()}
+                )
+                if order is None:
+                    self.status(
+                        "Detect Pins: no serpentine numbering fits those pins — "
+                        "check the numbers or use grid names"
+                    )
+                    return
+                registry.reorder(order)
+                outcome = "serpentine numbering aligned to the named pins"
+            else:
+                self.status(
+                    "Detect Pins: mix of grid names and numbers — use one scheme"
+                )
+                return
+        except ValueError as exc:
+            self.status(f"Detect Pins: predict failed — {exc}")
+            return
+
+        self.ctx.journal.record(
+            tool=self.id,
+            params={"action": "predict", "scheme": "grid" if grid_like else "numeric"},
+            inputs={"anchors": {str(k): v for k, v in anchors.items()}},
+            result={"names": [pin.name for pin in registry.pins],
+                    "order": [pin.number for pin in registry.pins]},
+        )
+        self._refresh_views()
+        self.status(f"Detect Pins: {outcome}")
 
     def _move_selected(self, delta: int) -> None:
         row = self.pin_list.currentRow()
@@ -320,6 +513,7 @@ class DetectPinsTool(ToolMode):
             self.ctx.scene.clear_highlight()
             return
         pin = registry.pins[row]
+        self.name_edit.setText(pin.name)
         if pin.body_ids:
             self.ctx.scene.highlight_body(pin.body_ids[0])
         elif pin.face_ids:
@@ -332,14 +526,16 @@ class DetectPinsTool(ToolMode):
         self.pin_list.clear()
         for pin in registry.pins:
             kind = f"bodies {pin.body_ids}" if pin.body_ids else f"{len(pin.face_ids)} faces"
+            name = f" '{pin.name}'" if pin.name else ""
             self.pin_list.addItem(
-                f"Pin {pin.number}  ({pin.centroid[0]:+.2f}, {pin.centroid[1]:+.2f})  {kind}"
+                f"Pin {pin.number}{name}  ({pin.centroid[0]:+.2f}, {pin.centroid[1]:+.2f})  {kind}"
             )
         points = [pin.centroid for pin in registry.pins]
-        labels = [str(pin.number) for pin in registry.pins]
+        labels = [pin.name or str(pin.number) for pin in registry.pins]
         self.ctx.scene.show_pin_labels(points, labels)
         self.canvas.set_pins(
-            [(pin.centroid[0], pin.centroid[1], str(pin.number)) for pin in registry.pins]
+            [(pin.centroid[0], pin.centroid[1], pin.name or str(pin.number))
+             for pin in registry.pins]
         )
         if self._last_band is not None:
             self.canvas.set_band(

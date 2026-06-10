@@ -214,10 +214,16 @@ class HitboxTool(ToolMode):
             self._auto_one(registry.pins[row])
 
     def _auto_all(self) -> None:
+        # Stage everything first, then refresh ONCE — refreshing per pin
+        # rebuilds every hitbox actor each time (O(n^2) on big BGAs).
         for pin in self.ctx.window.pins.pins:
-            self._auto_one(pin)
+            self._auto_one(pin, refresh=False)
+        self._refresh_views()
+        self.status(
+            f"Hitboxes: {len(self.pending)} staged — press Apply"
+        )
 
-    def _auto_one(self, pin) -> None:
+    def _auto_one(self, pin, *, refresh: bool = True) -> None:
         points = pin_mesh_points(self.ctx.document, pin)
         if not len(points):
             self.status(f"Hitboxes: pin {pin.number} has no mesh points")
@@ -235,7 +241,7 @@ class HitboxTool(ToolMode):
             hitbox = cube_from_point(points.mean(axis=0), size)
         else:
             hitbox = obb_from_points(points, margin=margin)
-        self._stage(pin, hitbox, variant)
+        self._stage(pin, hitbox, variant, refresh=refresh)
 
     def _clear_selected(self) -> None:
         row = self.pin_list.currentRow()
@@ -246,9 +252,11 @@ class HitboxTool(ToolMode):
             self.pending.pop(pin.number, None)
             self._refresh_views()
 
-    def _stage(self, pin, hitbox: dict, variant: str) -> None:
+    def _stage(self, pin, hitbox: dict, variant: str, *, refresh: bool = True) -> None:
         """Hitboxes preview in orange until the green Apply commits them."""
         self.pending[pin.number] = (hitbox, variant)
+        if not refresh:
+            return
         self._refresh_views()
         self.status(
             f"Hitboxes: pin {pin.number} staged ({variant}) — "

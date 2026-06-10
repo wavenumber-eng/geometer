@@ -236,6 +236,45 @@ def selftest_m3(fixture: Path | None = None) -> None:
     _check(len(south_pins) == 3, f"expected 3 south leads, got {len(south_pins)}")
     _check(len(north_pins) == 2, f"expected 2 north leads, got {len(north_pins)}")
 
+    # BGA grid naming + anchored prediction on a synthetic 4x4 ball grid.
+    from .pins import Pin, predict_grid_names, predict_serpentine_order
+
+    grid = [
+        Pin(number=0, centroid=(float(x), float(y), 0.0))
+        for y in (3, 2, 1, 0)
+        for x in (0, 1, 2, 3)
+    ]
+    default_names = predict_grid_names(grid, {})
+    _check(default_names[0] == "A1", f"default A1 corner wrong: {default_names[0]}")
+    _check(default_names[15] == "D4", f"default D4 corner wrong: {default_names[15]}")
+    # Anchor flips the row direction: the ball at (0, y=3) is declared D1.
+    flipped = predict_grid_names(grid, {0: "D1"})
+    _check(flipped[0] == "D1" and flipped[15] == "A4",
+           f"anchored prediction wrong: {flipped[0]}, {flipped[15]}")
+    print("grid prediction OK (default + anchored row flip)")
+
+    # Depopulated channel (DDR-style): two 2-column banks 4 pitches apart
+    # must number across the gap (1, 2, 6, 7), not consecutively.
+    channel = [
+        Pin(number=0, centroid=(float(x), float(y), 0.0))
+        for y in (1, 0)
+        for x in (0, 1, 5, 6)
+    ]
+    channel_names = predict_grid_names(channel, {})
+    columns = sorted({int(name[1:]) for name in channel_names.values()})
+    _check(columns == [1, 2, 6, 7], f"channel columns wrong: {columns}")
+    print("grid prediction OK (depopulated channel)")
+
+    # Numeric anchors pick the matching serpentine variant.
+    two_row = [
+        Pin(number=0, centroid=(float(x), float(y), 0.0))
+        for y in (0, 3)
+        for x in (0, 1, 2)
+    ]
+    order = predict_serpentine_order(two_row, {3: 1})  # top-left ball is pin 1
+    _check(order is not None and order[0] == 3, "serpentine prediction failed")
+    print("serpentine prediction OK (anchored)")
+
 
 def selftest_m4(fixture: Path | None = None) -> None:
     """Hitboxes: auto-boxes and 3-click boxes must contain every mesh vertex

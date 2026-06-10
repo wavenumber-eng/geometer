@@ -4,7 +4,7 @@ Click it (or press T, wired in the main window) to change tools."""
 from __future__ import annotations
 
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QColor, QFont, QPainter, QPen
+from PySide6.QtGui import QColor, QFont, QFontMetrics, QPainter, QPen
 from PySide6.QtWidgets import QMenu, QSizePolicy, QWidget
 
 
@@ -28,6 +28,17 @@ class ModeRect(QWidget):
     def set_current(self, title: str, accent: str) -> None:
         self._title = title
         self._accent = QColor(accent)
+        # Size the rectangle to its text — long tool names must fit.
+        title_font = QFont(self.font())
+        title_font.setBold(True)
+        title_font.setPointSizeF(title_font.pointSizeF() + 1.5)
+        title_width = QFontMetrics(title_font).horizontalAdvance(f"TOOL: {title}")
+        hint_font = QFont(self.font())
+        hint_font.setPointSizeF(max(hint_font.pointSizeF() - 2.0, 6.5))
+        hint_width = QFontMetrics(hint_font).horizontalAdvance(
+            "click or press Tab to change tool"
+        )
+        self.setMinimumWidth(max(title_width, hint_width) + 48)
         self.update()
 
     def paintEvent(self, _event) -> None:

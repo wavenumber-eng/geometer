@@ -4,11 +4,15 @@ the selftests."""
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 
 import numpy as np
 
 from .document import BodyMesh, EditorDocument
+
+# JEDEC ball-row letters: I, O, Q, S, X, Z are skipped.
+JEDEC_ALPHABET = "ABCDEFGHJKLMNPRTUVWY"
 
 
 @dataclass
@@ -208,8 +212,12 @@ def detect_pins_unibody(
         return []
     threshold = smooth_angle_deg if flow == "smooth-only" else None
     adjacency = document.face_smooth_adjacency(body_index, threshold)
+    return _grow_regions(body, body_index, candidates, adjacency)
 
-    pins: list[Pin] = []
+
+def _grow_regions(body, body_index: int, candidates: set[int], adjacency) -> list[Pin]:
+
+    regions: list[set[int]] = []
     remaining = set(candidates)
     while remaining:
         seed = remaining.pop()
@@ -222,6 +230,12 @@ def detect_pins_unibody(
                     remaining.discard(neighbor)
                     region.add(neighbor)
                     frontier.append(neighbor)
+        regions.append(region)
+
+    regions = _merge_regions_by_xy(body.mesh, regions)
+
+    pins: list[Pin] = []
+    for region in regions:
         centroid = mesh_region_centroid(body.mesh, sorted(region))
         if centroid is not None:
             pins.append(
@@ -234,7 +248,53 @@ def detect_pins_unibody(
     return pins
 
 
+def _merge_regions_by_xy(mesh: BodyMesh, regions: list[set[int]], factor: float = 0.5):
+    """Regions stacked at the same XY spot are one pin — a BGA ball and its
+    collar pad, or the segments of one lead. Merge regions whose centroids
+    are closer than `factor` x the median nearest-neighbour pitch."""
+    if len(regions) <= 1:
+        return regions
+    centroids = np.array(
+        [mesh_region_centroid(mesh, sorted(region))[:2] for region in regions]
+    )
+    distances = np.linalg.norm(centroids[:, None, :] - centroids[None, :, :], axis=2)
+    np.fill_diagonal(distances, np.inf)
+    pitch = float(np.median(distances.min(axis=1)))
+    if not np.isfinite(pitch) or pitch <= 0.0:
+        return regions
+    threshold = pitch * factor
+
+    parent = list(range(len(regions)))
+
+    def find(i: int) -> int:
+        while parent[i] != i:
+            parent[i] = parent[parent[i]]
+            i = parent[i]
+        return i
+
+    pairs = np.argwhere(distances < threshold)
+    for i, j in pairs:
+        ri, rj = find(int(i)), find(int(j))
+        if ri != rj:
+            parent[rj] = ri
+
+    merged: dict[int, set[int]] = {}
+    for index, region in enumerate(regions):
+        merged.setdefault(find(index), set()).update(region)
+    return list(merged.values())
+
+
 # ----------------------------------------------------------------- ordering
+
+def _serpentine_variant(centroids: np.ndarray, flip_x: bool, start_top: bool) -> list[int]:
+    y_mid = (centroids[:, 1].min() + centroids[:, 1].max()) * 0.5
+    bottom = [i for i in range(len(centroids)) if centroids[i, 1] < y_mid]
+    top = [i for i in range(len(centroids)) if centroids[i, 1] >= y_mid]
+    first, second = (top, bottom) if start_top else (bottom, top)
+    first = sorted(first, key=lambda i: centroids[i, 0], reverse=flip_x)
+    second = sorted(second, key=lambda i: centroids[i, 0], reverse=not flip_x)
+    return first + second
+
 
 def serpentine_order(
     centroids: np.ndarray,
@@ -245,30 +305,160 @@ def serpentine_order(
     ascending X, the opposite row descending X. With a pin-1 hint, the variant
     whose first pin lies nearest the hint wins."""
     centroids = np.asarray(centroids, dtype=np.float64)
-    y_mid = (centroids[:, 1].min() + centroids[:, 1].max()) * 0.5
-    bottom = [i for i in range(len(centroids)) if centroids[i, 1] < y_mid]
-    top = [i for i in range(len(centroids)) if centroids[i, 1] >= y_mid]
-
-    def variant(flip_x: bool, start_top: bool) -> list[int]:
-        first, second = (top, bottom) if start_top else (bottom, top)
-        first = sorted(first, key=lambda i: centroids[i, 0], reverse=flip_x)
-        second = sorted(second, key=lambda i: centroids[i, 0], reverse=not flip_x)
-        return first + second
-
     if pin1_hint is None:
-        return variant(False, False)
+        return _serpentine_variant(centroids, False, False)
 
     hint = np.asarray(pin1_hint[:2], dtype=np.float64)
     best, best_distance = None, np.inf
     for flip_x in (False, True):
         for start_top in (False, True):
-            order = variant(flip_x, start_top)
+            order = _serpentine_variant(centroids, flip_x, start_top)
             if not order:
                 continue
             distance = float(np.linalg.norm(centroids[order[0], :2] - hint))
             if distance < best_distance:
                 best, best_distance = order, distance
-    return best or variant(False, False)
+    return best or _serpentine_variant(centroids, False, False)
+
+
+def row_letter(ordinal: int) -> str:
+    """JEDEC row letter for a 0-based row ordinal (A..Y, then AA, AB, ...)."""
+    if ordinal < len(JEDEC_ALPHABET):
+        return JEDEC_ALPHABET[ordinal]
+    first = ordinal // len(JEDEC_ALPHABET) - 1
+    second = ordinal % len(JEDEC_ALPHABET)
+    return JEDEC_ALPHABET[first] + JEDEC_ALPHABET[second]
+
+
+def parse_grid_name(name: str) -> tuple[int, int] | None:
+    """'B3' -> (row_ordinal 1, column 3). None if not a JEDEC grid name."""
+    match = re.fullmatch(r"([A-Za-z]+)(\d+)", name.strip())
+    if not match:
+        return None
+    ordinal = 0
+    for char in match.group(1).upper():
+        if char not in JEDEC_ALPHABET:
+            return None
+        ordinal = ordinal * len(JEDEC_ALPHABET) + JEDEC_ALPHABET.index(char) + 1
+    return ordinal - 1, int(match.group(2))
+
+
+def cluster_ordinals(values) -> np.ndarray:
+    """0-based grid ordinal (ascending value) for 1D positions. The pitch is
+    the median significant gap; larger gaps advance the ordinal by the number
+    of pitches they span, so depopulated rows/columns (e.g. the DDR ball
+    channel) keep their JEDEC numbering."""
+    values = np.asarray(values, dtype=np.float64)
+    ordinals = np.zeros(len(values), dtype=int)
+    if len(values) <= 1:
+        return ordinals
+    order = np.argsort(values)
+    sorted_values = values[order]
+    spread = float(sorted_values[-1] - sorted_values[0])
+    if spread <= 1.0e-9:
+        return ordinals
+    diffs = np.diff(sorted_values)
+    noise = max(spread * 0.01, 1.0e-9)
+    significant = diffs[diffs > noise]
+    if len(significant) == 0:
+        return ordinals
+    pitch = float(np.median(significant))
+    threshold = max(pitch * 0.5, noise)
+    current = 0
+    for i in range(1, len(sorted_values)):
+        gap = float(diffs[i - 1])
+        if gap > threshold:
+            current += max(1, int(round(gap / pitch)))
+        ordinals[order[i]] = current
+    return ordinals
+
+
+def _solve_axis(anchor_pairs, *, default_sign: int, base: int, count: int) -> tuple[int, int]:
+    """Fit target = sign*cluster + offset from anchors; without anchors (or
+    with ambiguous ones) fall back to the default orientation."""
+    if not anchor_pairs:
+        offset = base if default_sign > 0 else base + count - 1
+        return default_sign, offset
+    solutions = []
+    for sign in (1, -1):
+        offsets = {target - sign * cluster for cluster, target in anchor_pairs}
+        if len(offsets) == 1:
+            solutions.append((sign, offsets.pop()))
+    if not solutions:
+        raise ValueError("the named pins contradict each other")
+
+    def lowest_ordinal(solution) -> int:
+        sign, offset = solution
+        return min(sign * cluster + offset for cluster in range(count))
+
+    # A single anchor satisfies both directions; prefer the one whose grid
+    # starts at A / 1 (chips almost always do), then the default orientation.
+    solutions.sort(
+        key=lambda solution: (lowest_ordinal(solution) != base,
+                              solution[0] != default_sign)
+    )
+    return solutions[0]
+
+
+def predict_grid_names(pins: list[Pin], anchors: dict[int, str]) -> dict[int, str]:
+    """BGA grid naming (A1, A2, ... B1, ...) from ball positions. `anchors`
+    (pin index -> name) are ground truth: they fix the row-letter and
+    column-number directions; with no anchors the JEDEC default is used
+    (A row at +Y, column 1 at -X, top view)."""
+    centroids = np.array([pin.centroid for pin in pins], dtype=np.float64)
+    rows = cluster_ordinals(centroids[:, 1])
+    cols = cluster_ordinals(centroids[:, 0])
+
+    row_anchors, col_anchors = [], []
+    for index, name in anchors.items():
+        parsed = parse_grid_name(name)
+        if parsed is None:
+            raise ValueError(f"'{name}' is not a grid name like B3")
+        letter_ordinal, column = parsed
+        row_anchors.append((int(rows[index]), letter_ordinal))
+        col_anchors.append((int(cols[index]), column))
+
+    row_sign, row_offset = _solve_axis(
+        row_anchors, default_sign=-1, base=0, count=int(rows.max()) + 1
+    )
+    col_sign, col_offset = _solve_axis(
+        col_anchors, default_sign=1, base=1, count=int(cols.max()) + 1
+    )
+
+    names: dict[int, str] = {}
+    for index in range(len(pins)):
+        letter_ordinal = row_sign * int(rows[index]) + row_offset
+        column = col_sign * int(cols[index]) + col_offset
+        if letter_ordinal < 0 or column < 1:
+            names[index] = f"?{index + 1}"  # off-grid: not a real pin, or bad anchor
+        else:
+            names[index] = f"{row_letter(letter_ordinal)}{column}"
+    # Two pins landing on the same cell means one of them isn't a ball
+    # (index marks etc.) — flag rather than fail, so the user can delete it.
+    seen: dict[str, int] = {}
+    for index in sorted(names):
+        name = names[index]
+        if name.startswith("?"):
+            continue
+        if name in seen:
+            names[index] = f"?{index + 1}"
+        else:
+            seen[name] = index
+    return names
+
+
+def predict_serpentine_order(pins: list[Pin], anchors: dict[int, int]) -> list[int] | None:
+    """Find the serpentine variant whose numbering matches every manually
+    numbered pin (pin index -> number). None if no variant fits."""
+    centroids = np.array([pin.centroid for pin in pins], dtype=np.float64)
+    for flip_x in (False, True):
+        for start_top in (False, True):
+            order = _serpentine_variant(centroids, flip_x, start_top)
+            if all(
+                order.index(index) + 1 == number for index, number in anchors.items()
+            ):
+                return order
+    return None
 
 
 def row_major_order(centroids: np.ndarray) -> list[int]:
@@ -302,6 +492,6 @@ def order_pins(
     if not pins:
         return []
     centroids = np.array([pin.centroid for pin in pins], dtype=np.float64)
-    if mode == "row-major":
+    if mode in ("row-major", "bga-grid"):
         return row_major_order(centroids)
     return serpentine_order(centroids, pin1_hint=pin1_hint)

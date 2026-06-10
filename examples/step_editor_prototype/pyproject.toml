@@ -1,0 +1,20 @@
+[project]
+name = "step-editor-prototype"
+version = "0.0.0"
+requires-python = ">=3.11"
+dependencies = [
+    "numpy",
+    "pyside6",
+    "pyvista",
+    "pyvistaqt",
+    "trimesh",
+    "cadquery-ocp==7.8.1.1.post1",
+    "ezdxf>=1.4",
+    "wn-geometer",
+]
+
+[tool.uv]
+package = false
+
+[tool.uv.sources]
+wn-geometer = { path = "../..", editable = true }

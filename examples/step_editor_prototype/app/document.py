@@ -529,11 +529,28 @@ class EditorDocument:
 
         new_bodies: list[BodyRecord] = []
         pin_indices: list[int] = []
+        color_restores: list[tuple[BodyRecord, list, float]] = []
         for body_index, body in enumerate(self.bodies):
             region_sets = by_body.get(body_index)
             if not region_sets:
                 new_bodies.append(body)
                 continue
+
+            # Per-face colours can't survive the split directly (face ids
+            # change) — capture coloured-face centroids now and re-match them
+            # onto the new bodies geometrically after remeshing. Faces the
+            # split doesn't cut keep their exact centroid.
+            colored_faces = []
+            if body.mesh is not None and body.mesh.face_colors:
+                centers = body.mesh.points[body.mesh.tris].mean(axis=1)
+                span = body.mesh.points.max(axis=0) - body.mesh.points.min(axis=0)
+                tolerance = float(np.linalg.norm(span)) * 5.0e-3
+                for face_id, rgb in body.mesh.face_colors.items():
+                    mask = body.mesh.tri_face_ids == face_id
+                    if mask.any():
+                        colored_faces.append((centers[mask].mean(axis=0), rgb))
+            else:
+                tolerance = 0.0
 
             face_map = TopTools_IndexedMapOfShape()
             TopExp.MapShapes_s(body.solid, TopAbs_FACE, face_map)
@@ -601,10 +618,29 @@ class EditorDocument:
                 )
                 if index != largest:
                     pin_indices.append(len(new_bodies))
+                if colored_faces:
+                    color_restores.append((record, colored_faces, tolerance))
                 new_bodies.append(record)
 
         self.bodies = new_bodies
         self.remesh_all(progress=progress)
+
+        # Re-attach per-face colours: a new face whose centroid coincides with
+        # an old coloured face's centroid is that same face.
+        for record, colored_faces, tolerance in color_restores:
+            mesh = record.mesh
+            if mesh is None or not len(mesh.tris) or tolerance <= 0.0:
+                continue
+            centers = mesh.points[mesh.tris].mean(axis=1)
+            anchors = np.array([c for c, _rgb in colored_faces])
+            for face_id in np.unique(mesh.tri_face_ids):
+                mask = mesh.tri_face_ids == face_id
+                centroid = centers[mask].mean(axis=0)
+                distances = np.linalg.norm(anchors - centroid, axis=1)
+                nearest = int(np.argmin(distances))
+                if distances[nearest] <= tolerance:
+                    mesh.face_colors[int(face_id)] = colored_faces[nearest][1]
+            record.original_face_colors = dict(mesh.face_colors)
         return pin_indices
 
     def face_smooth_adjacency(

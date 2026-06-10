@@ -376,6 +376,50 @@ def selftest_m6(fixture: Path | None = None) -> None:
     print(f"colour round-trip OK for {len(document.bodies)} bodies + 1 painted face")
 
 
+def selftest_sep(fixture: Path | None = None) -> None:
+    """Context-plane detection + Separate Unibody split: slicing the unibody
+    SOT-23-5 through its lead feet finds 5 closed shapes; splitting there
+    yields 5 pin bodies + the package with total volume conserved."""
+    import numpy as np
+
+    from .document import EditorDocument, shape_volume
+    from .pins import detect_pins_by_section
+
+    path = fixture or FIXTURES / "ct-sot-23-5.stp"
+    document = EditorDocument.load(path)
+    rot_x90 = np.array(
+        [[1, 0, 0, 0], [0, 0, -1, 0], [0, 1, 0, 0], [0, 0, 0, 1]], dtype=np.float64
+    )
+    document.apply_trsf(rot_x90)
+    bounds = document.bounds()
+    z = bounds[4] + (bounds[5] - bounds[4]) * 0.06  # through the lead feet
+    # (higher planes legitimately find a 6th shape: the body's standoff bump)
+    point, normal = (0.0, 0.0, z), (0.0, 0.0, -1.0)
+
+    pins = detect_pins_by_section(document, point, normal)
+    print(f"section at z={z:.3f}: {len(pins)} closed shapes")
+    _check(len(pins) == 5, f"expected 5 lead feet, got {len(pins)}")
+
+    volume_before = sum(shape_volume(b.solid) or 0.0 for b in document.bodies)
+    pin_indices = document.split_by_plane(point, normal)
+    print(f"split: {len(document.bodies)} bodies, {len(pin_indices)} on the pin side")
+    _check(len(pin_indices) == 5, f"expected 5 pin bodies, got {len(pin_indices)}")
+    _check(len(document.bodies) >= 6, "package body missing after split")
+    volume_after = sum(shape_volume(b.solid) or 0.0 for b in document.bodies)
+    _check(
+        abs(volume_after - volume_before) <= max(volume_before, 1e-9) * 1e-3,
+        f"volume not conserved: {volume_before} -> {volume_after}",
+    )
+    print(f"volume conserved: {volume_before:.4f} -> {volume_after:.4f}")
+
+    from .export_ap242 import export_ap242
+
+    with tempfile.TemporaryDirectory(prefix="step_editor_sep_") as temp:
+        report = export_ap242(document, Path(temp) / "separated.step")
+        _check(report.ok, "separated model failed export validation")
+    print("separated model exports and re-reads OK")
+
+
 SELFTESTS = {
     "m0": selftest_m0,
     "m1": selftest_m1,
@@ -383,6 +427,7 @@ SELFTESTS = {
     "m3": selftest_m3,
     "m4": selftest_m4,
     "m6": selftest_m6,
+    "sep": selftest_sep,
 }
 
 

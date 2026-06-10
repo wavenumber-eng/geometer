@@ -215,9 +215,8 @@ def detect_pins_unibody(
     return _grow_regions(body, body_index, candidates, adjacency)
 
 
-def _grow_regions(body, body_index: int, candidates: set[int], adjacency) -> list[Pin]:
-
-    regions: list[set[int]] = []
+def _connected_components(candidates: set[int], adjacency) -> list[set[int]]:
+    components: list[set[int]] = []
     remaining = set(candidates)
     while remaining:
         seed = remaining.pop()
@@ -230,8 +229,12 @@ def _grow_regions(body, body_index: int, candidates: set[int], adjacency) -> lis
                     remaining.discard(neighbor)
                     region.add(neighbor)
                     frontier.append(neighbor)
-        regions.append(region)
+        components.append(region)
+    return components
 
+
+def _grow_regions(body, body_index: int, candidates: set[int], adjacency) -> list[Pin]:
+    regions = _connected_components(candidates, adjacency)
     regions = _merge_regions_by_xy(body.mesh, regions)
 
     pins: list[Pin] = []
@@ -282,6 +285,88 @@ def _merge_regions_by_xy(mesh: BodyMesh, regions: list[set[int]], factor: float 
     for index, region in enumerate(regions):
         merged.setdefault(find(index), set()).update(region)
     return list(merged.values())
+
+
+# ----------------------------------------------------------- context plane
+
+def section_segments(mesh: BodyMesh, origin, normal) -> np.ndarray:
+    """Mesh/plane intersection segments, (S, 2, 3) — the visible section
+    curve while dragging the context plane."""
+    origin = np.asarray(origin, dtype=np.float64)
+    normal = np.asarray(normal, dtype=np.float64)
+    distances = (mesh.points - origin) @ normal
+    tri_d = distances[mesh.tris]
+    crossing = (tri_d.max(axis=1) > 0.0) & (tri_d.min(axis=1) < 0.0)
+    segments = []
+    for tri, d in zip(mesh.tris[crossing], tri_d[crossing]):
+        points = []
+        for i in range(3):
+            j = (i + 1) % 3
+            if (d[i] > 0.0) != (d[j] > 0.0):
+                t = d[i] / (d[i] - d[j])
+                a, b = mesh.points[tri[i]], mesh.points[tri[j]]
+                points.append(a + t * (b - a))
+        if len(points) == 2:
+            segments.append(points)
+    if not segments:
+        return np.empty((0, 2, 3), dtype=np.float64)
+    return np.asarray(segments, dtype=np.float64)
+
+
+def detect_pins_by_section(
+    document: EditorDocument,
+    origin,
+    normal,
+    *,
+    count_only: bool = False,
+) -> list[Pin] | int:
+    """CONTEXT-plane detection: slice the model with a plane; every closed
+    shape in that plane is a pin. A pin region = the faces on the positive
+    (outward) side of the plane connected to a face the plane crosses —
+    i.e. each ball / lead foot the plane cuts through, never the package
+    body above it. With count_only, just return the number of closed shapes
+    (for live feedback while dragging)."""
+    origin = np.asarray(origin, dtype=np.float64)
+    normal = np.asarray(normal, dtype=np.float64)
+    normal = normal / max(float(np.linalg.norm(normal)), 1.0e-12)
+    xmin, xmax, ymin, ymax, zmin, zmax = document.bounds()
+    eps = max(float(np.linalg.norm([xmax - xmin, ymax - ymin, zmax - zmin])), 1.0) * 1.0e-9
+
+    count = 0
+    pins: list[Pin] = []
+    for body_index, body in enumerate(document.bodies):
+        mesh = body.mesh
+        if mesh is None or len(mesh.tris) == 0:
+            continue
+        distances = (mesh.points - origin) @ normal
+        tri_d = distances[mesh.tris]
+        crossing = (tri_d.max(axis=1) > eps) & (tri_d.min(axis=1) < -eps)
+        crossed_faces = set(int(f) for f in np.unique(mesh.tri_face_ids[crossing]))
+        if not crossed_faces:
+            continue
+        positive = tri_d.max(axis=1) > eps
+        candidates = set(int(f) for f in np.unique(mesh.tri_face_ids[positive]))
+        adjacency = document.face_smooth_adjacency(body_index, None)
+        components = [
+            component
+            for component in _connected_components(candidates, adjacency)
+            if component & crossed_faces
+        ]
+        components = _merge_regions_by_xy(mesh, components)
+        count += len(components)
+        if count_only:
+            continue
+        for region in components:
+            centroid = mesh_region_centroid(mesh, sorted(region))
+            if centroid is not None:
+                pins.append(
+                    Pin(
+                        number=0,
+                        centroid=centroid,
+                        face_ids=[(body_index, fid) for fid in sorted(region)],
+                    )
+                )
+    return count if count_only else pins
 
 
 # ----------------------------------------------------------------- ordering

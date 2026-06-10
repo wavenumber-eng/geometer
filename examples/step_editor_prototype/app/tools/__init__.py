@@ -9,6 +9,7 @@ from .detect_pins import DetectPinsTool
 from .hitboxes import HitboxTool
 from .inspect_tool import InspectTool
 from .pin1_quadrant import Pin1QuadrantTool
+from .separate import SeparateUnibodyTool
 from .zsit import ZSitTool
 
 TOOL_CLASSES: list[type[ToolMode]] = [
@@ -16,6 +17,7 @@ TOOL_CLASSES: list[type[ToolMode]] = [
     ZSitTool,
     Pin1QuadrantTool,
     DetectPinsTool,
+    SeparateUnibodyTool,
     HitboxTool,
     ColorsTool,
 ]

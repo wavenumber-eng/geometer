@@ -82,6 +82,7 @@ class MainWindow(QMainWindow):
         self.journal = Journal()
         self.model_bounds: geometer.ModelBoundsResult | None = None
         self.pin1_hint: tuple[float, float, float] | None = None
+        self.context_plane: tuple[list, list] | None = None  # (point, normal)
         self.pins = PinRegistry()
         self._doc_revision = 0
         self._footprint_cache = None
@@ -280,6 +281,7 @@ class MainWindow(QMainWindow):
             self.model_label.setToolTip(str(path))
             self.pins.clear()
             self.pin1_hint = None
+            self.context_plane = None
             self.journal = Journal()
             self._tool_context.journal = self.journal
             try:

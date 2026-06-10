@@ -18,11 +18,13 @@ import numpy as np
 from OCP.Bnd import Bnd_Box
 from OCP.BRep import BRep_Tool
 from OCP.BRepAdaptor import BRepAdaptor_Curve
+from OCP.BRepAlgoAPI import BRepAlgoAPI_Splitter
 from OCP.BRepBndLib import BRepBndLib
-from OCP.BRepBuilderAPI import BRepBuilderAPI_Transform
+from OCP.BRepBuilderAPI import BRepBuilderAPI_MakeFace, BRepBuilderAPI_Transform
 from OCP.GeomAPI import GeomAPI_ProjectPointOnSurf
 from OCP.GeomLProp import GeomLProp_SLProps
-from OCP.gp import gp_Trsf
+from OCP.gp import gp_Dir, gp_Pln, gp_Pnt, gp_Trsf
+from OCP.TopTools import TopTools_ListOfShape
 from OCP.BRepGProp import BRepGProp
 from OCP.BRepMesh import BRepMesh_IncrementalMesh
 from OCP.GProp import GProp_GProps
@@ -432,6 +434,73 @@ class EditorDocument:
         face_map = TopTools_IndexedMapOfShape()
         TopExp.MapShapes_s(self.bodies[body_index].solid, TopAbs_FACE, face_map)
         return TopoDS.Face_s(face_map.FindKey(face_index))
+
+    def split_by_plane(self, point, normal) -> list[int]:
+        """Split every body that crosses the plane into separate solids
+        (BRepAlgoAPI_Splitter with a large planar face). Returns the indices
+        of the NEW bodies on the positive-normal side of the plane (the pin
+        side). Bodies that don't cross are kept as-is."""
+        point = np.asarray(point, dtype=np.float64)
+        normal = np.asarray(normal, dtype=np.float64)
+        normal = normal / max(float(np.linalg.norm(normal)), 1.0e-12)
+        xmin, xmax, ymin, ymax, zmin, zmax = self.bounds()
+        size = max(
+            float(np.linalg.norm([xmax - xmin, ymax - ymin, zmax - zmin])), 1.0
+        ) * 2.0
+        eps = size * 1.0e-9
+
+        plane = gp_Pln(gp_Pnt(*point), gp_Dir(*normal))
+        tool_face = BRepBuilderAPI_MakeFace(plane, -size, size, -size, size).Face()
+
+        new_bodies: list[BodyRecord] = []
+        pin_side_indices: list[int] = []
+        for body in self.bodies:
+            mesh = body.mesh
+            crosses = False
+            if mesh is not None and len(mesh.points):
+                distances = (mesh.points - point) @ normal
+                crosses = distances.max() > eps and distances.min() < -eps
+            if not crosses:
+                new_bodies.append(body)
+                continue
+
+            splitter = BRepAlgoAPI_Splitter()
+            arguments = TopTools_ListOfShape()
+            arguments.Append(body.solid)
+            tools = TopTools_ListOfShape()
+            tools.Append(tool_face)
+            splitter.SetArguments(arguments)
+            splitter.SetTools(tools)
+            splitter.Build()
+            if not splitter.IsDone():
+                new_bodies.append(body)
+                continue
+            solids = list(_iter_solids(splitter.Shape()))
+            if len(solids) <= 1:
+                new_bodies.append(body)
+                continue
+
+            for solid in solids:
+                box = Bnd_Box()
+                BRepBndLib.Add_s(solid, box)
+                bxmin, bymin, bzmin, bxmax, bymax, bzmax = box.Get()
+                center = np.array(
+                    [(bxmin + bxmax) / 2, (bymin + bymax) / 2, (bzmin + bzmax) / 2]
+                )
+                pin_side = float((center - point) @ normal) > 0.0
+                record = BodyRecord(
+                    solid=solid,
+                    name=body.name,
+                    color=body.color,
+                    original_color=body.original_color,
+                )
+                if pin_side:
+                    pin_side_indices.append(len(new_bodies))
+                new_bodies.append(record)
+
+        self.bodies = new_bodies
+        self.remesh_all()
+        return pin_side_indices
 
     def face_smooth_adjacency(
         self, body_index: int, smooth_angle_deg: float | None = 30.0

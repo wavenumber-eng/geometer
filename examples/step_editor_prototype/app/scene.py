@@ -175,10 +175,15 @@ class SceneManager:
     def set_face_color(
         self, body_index: int, face_index: int, rgb: tuple[float, float, float]
     ) -> None:
+        self.paint_faces(body_index, {face_index: rgb})
+
+    def paint_faces(self, body_index: int, face_rgb: dict) -> None:
+        """Batch per-face recolor (display only) with a single render."""
         for polydata in self._color_targets(body_index):
-            mask = polydata.cell_data["face_id"] == face_index
             colors = np.asarray(polydata.cell_data["rgb"])
-            colors[mask] = [int(round(c * 255)) for c in rgb]
+            face_ids = polydata.cell_data["face_id"]
+            for face_index, rgb in face_rgb.items():
+                colors[face_ids == face_index] = [int(round(c * 255)) for c in rgb]
             polydata.cell_data["rgb"] = colors
         self.plotter.render()
 
@@ -496,6 +501,27 @@ class SceneManager:
                 shaft_radius=0.025,
             )
             self.plotter.add_mesh(arrow, color=color, lighting=False, pickable=False, name=name)
+        self.plotter.render()
+
+    def show_section(self, segments, *, name: str = "context-section") -> None:
+        """Section-curve overlay: (S, 2, 3) world-space segments."""
+        self.remove_overlay(name)
+        segments = np.asarray(segments, dtype=np.float64)
+        if segments.size == 0:
+            self.plotter.render()
+            return
+        points = segments.reshape(-1, 3)
+        count = len(segments)
+        lines = np.column_stack(
+            [np.full(count, 2, dtype=np.int64),
+             np.arange(0, 2 * count, 2, dtype=np.int64),
+             np.arange(1, 2 * count, 2, dtype=np.int64)]
+        ).ravel()
+        polydata = pv.PolyData(points, lines=lines)
+        self.plotter.add_mesh(
+            polydata, color="#c89d00", line_width=2.5, lighting=False,
+            pickable=False, name=name,
+        )
         self.plotter.render()
 
     def clear_triad(self) -> None:

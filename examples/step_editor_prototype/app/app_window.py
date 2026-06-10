@@ -154,6 +154,8 @@ class MainWindow(QMainWindow):
         self._apply_tool(0)
 
         QShortcut(QKeySequence("T"), self, activated=self.cycle_tool)
+        tab_shortcut = QShortcut(QKeySequence(Qt.Key.Key_Tab), self, activated=self.cycle_tool)
+        tab_shortcut.setContext(Qt.ShortcutContext.ApplicationShortcut)
         QShortcut(QKeySequence("Ctrl+S"), self, activated=self.write_ap242)
 
         if step_path is not None:

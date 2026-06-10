@@ -131,8 +131,9 @@ def selftest_m1(fixture: Path | None = None) -> None:
 
 
 def selftest_m2(fixture: Path | None = None) -> None:
-    """Pin-1 swing math: every quadrant lands in +X+Y in both modes; a real
-    document rotation is rigid (bounds-diagonal preserved)."""
+    """Pin-1 swing math: every quadrant lands in +X+Y using exact 90-degree
+    rotations only; a manual rotation followed by its reset restores the
+    document pose."""
     import math
 
     import numpy as np
@@ -141,37 +142,36 @@ def selftest_m2(fixture: Path | None = None) -> None:
     from .tools.pin1_quadrant import compute_pin1_angle, rotation_z_matrix
 
     samples = [(4.2, 3.1), (-2.0, 5.0), (-3.3, -0.7), (1.5, -6.0)]
-    for mode in ("quarter", "exact-bisector"):
-        for x, y in samples:
-            angle = compute_pin1_angle(x, y, mode=mode)
-            rotated = rotation_z_matrix(angle) @ np.array([x, y, 0.0, 1.0])
-            _check(
-                rotated[0] >= -1.0e-9 and rotated[1] >= -1.0e-9,
-                f"{mode}: ({x},{y}) -> ({rotated[0]:.3f},{rotated[1]:.3f}) not in +X+Y",
-            )
-            if mode == "quarter":
-                _check(
-                    abs(math.degrees(angle) % 90.0) < 1.0e-9,
-                    f"quarter mode produced non-90-degree angle {math.degrees(angle)}",
-                )
-    print("swing math OK for all quadrants in both modes")
+    for x, y in samples:
+        angle = compute_pin1_angle(x, y)
+        rotated = rotation_z_matrix(angle) @ np.array([x, y, 0.0, 1.0])
+        _check(
+            rotated[0] >= -1.0e-9 and rotated[1] >= -1.0e-9,
+            f"({x},{y}) -> ({rotated[0]:.3f},{rotated[1]:.3f}) not in +X+Y",
+        )
+        _check(
+            abs(math.degrees(angle) % 90.0) < 1.0e-9,
+            f"non-90-degree swing angle {math.degrees(angle)}",
+        )
+    print("swing math OK: all quadrants, exact 90-degree steps")
 
     path = fixture or FIXTURES / "SOIC-20-300.STEP"
     document = EditorDocument.load(path)
-    before = document.bounds()
-    diag_before = np.linalg.norm(
-        [before[1] - before[0], before[3] - before[2], before[5] - before[4]]
-    )
-    document.apply_trsf(rotation_z_matrix(compute_pin1_angle(-3.0, -2.0)))
-    after = document.bounds()
-    diag_after = np.linalg.norm(
-        [after[1] - after[0], after[3] - after[2], after[5] - after[4]]
-    )
+    before = np.array(document.bounds())
+    # Manual rotation (arbitrary angle) then reset must restore the pose.
+    document.apply_trsf(rotation_z_matrix(math.radians(33.0)))
+    rotated_bounds = np.array(document.bounds())
     _check(
-        abs(diag_before - diag_after) < 1.0e-6,
-        "bounds diagonal changed — rotation is not rigid",
+        bool(np.any(np.abs(rotated_bounds - before) > 1.0e-6)),
+        "manual rotation did not change the pose",
     )
-    print(f"rigid rotation OK on {path.name} (diag {diag_before:.4f})")
+    document.apply_trsf(rotation_z_matrix(math.radians(-33.0)))
+    after = np.array(document.bounds())
+    _check(
+        bool(np.all(np.abs(after - before) < 1.0e-6)),
+        "reset did not restore the original pose",
+    )
+    print(f"manual rotate + reset round-trip OK on {path.name}")
 
 
 def selftest_m3(fixture: Path | None = None) -> None:

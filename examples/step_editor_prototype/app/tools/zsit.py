@@ -91,6 +91,16 @@ PICK_PROMPTS = [
     "ready — press Apply (or Reset to start over)",
 ]
 
+PLANE_COLOR = "#e8443a"   # first three picks: RED
+Z_COLOR = "#1f5fd6"       # 4th pick + Z arrows: BLUE
+
+
+def rect_corners(p1, p2, p3) -> np.ndarray:
+    """The seating rectangle through the three picks: p1 is the shared
+    corner, the 4th corner is inferred as p2 + p3 - p1 (parallelogram)."""
+    a, b, c = (np.asarray(p, dtype=np.float64) for p in (p1, p2, p3))
+    return np.array([a, b, b + c - a, c])
+
 
 class ZSitTool(ToolMode):
     id = "zsit"
@@ -155,10 +165,17 @@ class ZSitTool(ToolMode):
 
     def enter(self) -> None:
         self.reset_points()
+        self.ctx.scene.set_hover_callback(self._on_hover)
 
     def exit(self) -> None:
-        self.ctx.scene.set_markers([])
-        self.ctx.scene.clear_triad()
+        scene = self.ctx.scene
+        scene.set_hover_callback(None)
+        scene.set_markers([], name="zsit-picks-plane")
+        scene.set_markers([], name="zsit-picks-z")
+        scene.set_markers([], name="zsit-ghost")
+        scene.show_quad([], name="zsit-rect")
+        scene.show_arrows([], (0, 0, 1), scale=1.0, name="zsit-z-arrows")
+        scene.clear_triad()
 
     def on_document_changed(self) -> None:
         self.reset_points()
@@ -197,9 +214,31 @@ class ZSitTool(ToolMode):
             self.points.pop()
         self._refresh_preview()
 
+    def _on_hover(self, pick) -> None:
+        """Ghost point: preview the nearest surface point under the cursor
+        (snapped like a real pick would be), tinted to the next pick's color."""
+        scene = self.ctx.scene
+        if pick is None or self.ctx.document is None or len(self.points) >= 4:
+            scene.set_markers([], name="zsit-ghost")
+            return
+        point = np.asarray(pick.world_point, dtype=np.float64)
+        if self.snap_check.isChecked():
+            point = self._snap_to_vertex(pick.body_index, point)
+        color = PLANE_COLOR if len(self.points) < 3 else Z_COLOR
+        scene.set_markers(
+            [tuple(float(v) for v in point)],
+            name="zsit-ghost",
+            color=color,
+            point_size=20.0,
+            opacity=0.5,
+        )
+
     def _refresh_preview(self) -> None:
         scene = self.ctx.scene
-        scene.set_markers(self.points)
+        scene.set_markers(self.points[:3], name="zsit-picks-plane", color=PLANE_COLOR)
+        scene.set_markers(self.points[3:4], name="zsit-picks-z", color=Z_COLOR)
+        if len(self.points) >= 4:
+            scene.set_markers([], name="zsit-ghost")
         self.apply_button.setEnabled(len(self.points) >= 4)
         lines = [
             f"p{i + 1}: ({p[0]:.3f}, {p[1]:.3f}, {p[2]:.3f})"
@@ -208,7 +247,13 @@ class ZSitTool(ToolMode):
         self.points_label.setText("\n".join(lines) if lines else "No points picked.")
         self.status(f"Z-Sit: {PICK_PROMPTS[min(len(self.points), 4)]}")
 
+        corners = rect_corners(*self.points[:3]) if len(self.points) >= 3 else []
+        scene.show_quad(corners, name="zsit-rect", color=PLANE_COLOR, opacity=0.25)
+
         scene.clear_triad()
+        arrow_starts: list = []
+        z_dir = (0.0, 0.0, 1.0)
+        diag = 1.0
         if len(self.points) >= 4 and self.ctx.document is not None:
             try:
                 origin, x_dir, y_dir, z_dir = compute_zsit_frame(
@@ -217,11 +262,22 @@ class ZSitTool(ToolMode):
                     flip_z=self.flip_check.isChecked(),
                 )
             except ValueError as exc:
+                scene.show_arrows([], z_dir, scale=1.0, name="zsit-z-arrows")
                 self.status(f"Z-Sit: {exc}")
                 return
             bounds = self.ctx.document.bounds()
             diag = float(np.linalg.norm([bounds[1] - bounds[0], bounds[3] - bounds[2], bounds[5] - bounds[4]]))
             scene.show_triad(origin, x_dir, y_dir, z_dir, scale=max(diag * 0.25, 1.0e-3))
+            # Blue Z arrows on all four corners of the seating rectangle
+            # (the three picks plus the inferred corner).
+            arrow_starts = list(corners)
+        scene.show_arrows(
+            arrow_starts,
+            z_dir,
+            scale=max(diag * 0.15, 1.0e-3),
+            name="zsit-z-arrows",
+            color=Z_COLOR,
+        )
 
     def apply(self) -> None:
         if self.ctx.document is None or len(self.points) < 4:

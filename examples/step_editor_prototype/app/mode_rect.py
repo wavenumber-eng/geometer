@@ -20,7 +20,7 @@ class ModeRect(QWidget):
         self.setMaximumHeight(48)
         self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.setToolTip("Click to choose a tool (or press T to cycle)")
+        self.setToolTip("Click to choose a tool (Tab or T cycles)")
 
     def set_tools(self, tools: list[tuple[str, str]]) -> None:
         self._tools = tools
@@ -55,7 +55,7 @@ class ModeRect(QWidget):
         painter.drawText(
             rect.adjusted(12, 0, -12, -4),
             Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignBottom,
-            "click or press T to change tool",
+            "click or press Tab to change tool",
         )
 
     def mousePressEvent(self, event) -> None:

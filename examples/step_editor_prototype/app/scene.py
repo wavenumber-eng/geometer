@@ -28,6 +28,20 @@ from .viewcam import (
 CLICK_SLOP_PX = 4  # press→release movement beyond this is a drag, not a pick
 
 
+def _nice_step(raw: float) -> float:
+    """Round a raw spacing up to a 1/2/5 x 10^k grid step."""
+    import math
+
+    if raw <= 0.0:
+        return 1.0
+    exponent = math.floor(math.log10(raw))
+    base = 10.0 ** exponent
+    for multiplier in (1.0, 2.0, 5.0, 10.0):
+        if multiplier * base >= raw:
+            return multiplier * base
+    return 10.0 * base
+
+
 @dataclass(frozen=True)
 class PickResult:
     body_index: int
@@ -45,6 +59,8 @@ class SceneManager:
         self._actors: list = []
         self._press_position: tuple[int, int] | None = None
         self._hitbox_count = 0
+        self._hover_callback: Callable[[PickResult | None], None] | None = None
+        self._hover_observer = None
         self._picker = vtk.vtkCellPicker()
         self._picker.SetTolerance(0.0005)
         # Polygon offset keeps highlight overlays from z-fighting their bodies.
@@ -109,10 +125,12 @@ class SceneManager:
                 )
                 if edges.n_cells:
                     self.plotter.add_mesh(
-                        edges, color="#253044", line_width=1.0, name=f"edges-{index}"
+                        edges, color="#253044", line_width=1.0,
+                        pickable=False, name=f"edges-{index}",
                     )
 
         self.plotter.add_axes()
+        self.show_ground_grid(document.bounds())
         self.plotter.render()
 
     @staticmethod
@@ -162,6 +180,25 @@ class SceneManager:
         if pick is not None and self.on_pick is not None:
             self.on_pick(pick)
 
+    def set_hover_callback(self, callback: Callable[[PickResult | None], None] | None) -> None:
+        """Track the surface point under the cursor (None over background).
+        Suppressed while a left-drag (camera orbit) is in progress."""
+        self._hover_callback = callback
+        if callback is None:
+            if self._hover_observer is not None:
+                self.plotter.iren.remove_observer(self._hover_observer)
+                self._hover_observer = None
+        elif self._hover_observer is None:
+            self._hover_observer = self.plotter.iren.add_observer(
+                "MouseMoveEvent", self._on_mouse_move
+            )
+
+    def _on_mouse_move(self, _obj, _event) -> None:
+        if self._hover_callback is None or self._press_position is not None:
+            return
+        x, y = self.plotter.iren.interactor.GetEventPosition()
+        self._hover_callback(self.pick_at(x, y))
+
     def pick_at(self, x: int, y: int) -> PickResult | None:
         if not self._picker.Pick(x, y, 0, self.plotter.renderer):
             return None
@@ -198,6 +235,7 @@ class SceneManager:
             color="#ffd24a",
             opacity=1.0,
             lighting=False,
+            pickable=False,
             name="highlight-face",
         )
         self.plotter.render()
@@ -213,6 +251,7 @@ class SceneManager:
             style="wireframe",
             line_width=2.0,
             lighting=False,
+            pickable=False,
             name="highlight-face",
         )
         self.plotter.render()
@@ -225,6 +264,50 @@ class SceneManager:
 
     # -------------------------------------------------------------- overlays
 
+    def show_ground_grid(self, bounds) -> None:
+        """Square grid on the Z=0 seating plane around the body, with the
+        X=0 / Y=0 origin lines emphasized — makes standoff and import-offset
+        problems visible at a glance."""
+        self.remove_overlay("ground-grid")
+        self.remove_overlay("ground-grid-axes")
+        xmin, xmax, ymin, ymax, _zmin, _zmax = bounds
+        cx, cy = (xmin + xmax) * 0.5, (ymin + ymax) * 0.5
+        side = max(xmax - xmin, ymax - ymin, 1.0e-6) * 1.8
+        half = side * 0.5
+        step = _nice_step(side / 10.0)
+
+        xs = np.arange(np.ceil((cx - half) / step) * step, cx + half + 1e-9, step)
+        ys = np.arange(np.ceil((cy - half) / step) * step, cy + half + 1e-9, step)
+        points: list[list[float]] = []
+        lines: list[int] = []
+        axes_points: list[list[float]] = []
+        axes_lines: list[int] = []
+
+        def add_line(bucket_points, bucket_lines, start, end) -> None:
+            bucket_lines.extend([2, len(bucket_points), len(bucket_points) + 1])
+            bucket_points.append(start)
+            bucket_points.append(end)
+
+        for x in xs:
+            target = (axes_points, axes_lines) if abs(x) < step * 1e-6 else (points, lines)
+            add_line(*target, [x, cy - half, 0.0], [x, cy + half, 0.0])
+        for y in ys:
+            target = (axes_points, axes_lines) if abs(y) < step * 1e-6 else (points, lines)
+            add_line(*target, [cx - half, y, 0.0], [cx + half, y, 0.0])
+
+        if points:
+            grid = pv.PolyData(np.array(points), lines=np.array(lines))
+            self.plotter.add_mesh(
+                grid, color="#c9ced6", line_width=1.0, lighting=False,
+                pickable=False, name="ground-grid",
+            )
+        if axes_points:
+            axes = pv.PolyData(np.array(axes_points), lines=np.array(axes_lines))
+            self.plotter.add_mesh(
+                axes, color="#7d8794", line_width=2.0, lighting=False,
+                pickable=False, name="ground-grid-axes",
+            )
+
     def set_markers(
         self,
         points,
@@ -232,6 +315,7 @@ class SceneManager:
         name: str = "pick-markers",
         color: str = "#e8443a",
         point_size: float = 16.0,
+        opacity: float = 1.0,
     ) -> None:
         self.remove_overlay(name)
         points = np.asarray(points, dtype=np.float64).reshape(-1, 3)
@@ -245,8 +329,70 @@ class SceneManager:
             point_size=point_size,
             render_points_as_spheres=True,
             lighting=False,
+            opacity=opacity,
+            pickable=False,
             name=name,
         )
+        self.plotter.render()
+
+    def show_quad(
+        self,
+        corners,
+        *,
+        name: str = "preview-quad",
+        color: str = "#1f5fd6",
+        opacity: float = 0.30,
+    ) -> None:
+        """Translucent quadrilateral (e.g. the Z-sit seating rectangle)."""
+        self.remove_overlay(name)
+        self.remove_overlay(f"{name}-outline")
+        corners = np.asarray(corners, dtype=np.float64).reshape(-1, 3)
+        if len(corners) != 4:
+            self.plotter.render()
+            return
+        quad = pv.PolyData(corners, np.array([4, 0, 1, 2, 3], dtype=np.int64))
+        self.plotter.add_mesh(
+            quad, color=color, opacity=opacity, lighting=False, pickable=False, name=name
+        )
+        outline = pv.PolyData(
+            corners, lines=np.array([5, 0, 1, 2, 3, 0], dtype=np.int64)
+        )
+        self.plotter.add_mesh(
+            outline, color=color, line_width=2.0, lighting=False,
+            pickable=False, name=f"{name}-outline",
+        )
+        self.plotter.render()
+
+    def show_arrows(
+        self,
+        starts,
+        direction,
+        *,
+        scale: float,
+        name: str = "preview-arrows",
+        color: str = "#1f5fd6",
+    ) -> None:
+        """One arrow per start point, all pointing along `direction`."""
+        self.remove_overlay(name)
+        starts = np.asarray(starts, dtype=np.float64).reshape(-1, 3)
+        if len(starts) == 0:
+            self.plotter.render()
+            return
+        direction = np.asarray(direction, dtype=np.float64)
+        arrows = [
+            pv.Arrow(
+                start=start,
+                direction=direction,
+                scale=scale,
+                tip_radius=0.08,
+                shaft_radius=0.03,
+            )
+            for start in starts
+        ]
+        merged = arrows[0]
+        for arrow in arrows[1:]:
+            merged = merged.merge(arrow)
+        self.plotter.add_mesh(merged, color=color, lighting=False, pickable=False, name=name)
         self.plotter.render()
 
     def show_triad(self, origin, x_dir, y_dir, z_dir, scale: float) -> None:
@@ -266,7 +412,7 @@ class SceneManager:
                 tip_radius=0.06,
                 shaft_radius=0.025,
             )
-            self.plotter.add_mesh(arrow, color=color, lighting=False, name=name)
+            self.plotter.add_mesh(arrow, color=color, lighting=False, pickable=False, name=name)
         self.plotter.render()
 
     def clear_triad(self) -> None:
@@ -307,6 +453,7 @@ class SceneManager:
                 color=color,
                 opacity=0.32,
                 lighting=False,
+                pickable=False,
                 name=f"hitbox-{index}",
             )
         self.plotter.render()
@@ -327,6 +474,7 @@ class SceneManager:
             shape_color="#ffffff",
             shape_opacity=0.85,
             always_visible=True,
+            pickable=False,
         )
         self.plotter.render()
 

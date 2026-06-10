@@ -4,6 +4,25 @@ All notable changes to geometer are documented here.
 
 ## [Unreleased]
 
+## [2026.6.10] - 2026-06-10
+
+### Added
+
+- Added Wavenumber R2 dependency-cache support for OCCT native and WASM
+  install trees, including CI producer workflow coverage for Windows, Linux,
+  Linux ARM64, macOS ARM64, and WASM targets.
+- Added developer documentation for read-only R2 cache setup on new machines.
+- Added Lizard complexity checking and reproducible `clang-format` tooling to
+  the release signoff environment.
+
+### Changed
+
+- Updated the pinned OCCT dependency to `V8_0_0`.
+- Updated GitHub workflows to use the OCCT dependency cache and Node
+  24-capable action majors.
+- Updated the release identity to `v2026-06-10`,
+  `wn-geometer==2026.6.10`, and C ABI generation `20260610`.
+
 ## [2026.6.9] - 2026-06-09
 
 ### Added

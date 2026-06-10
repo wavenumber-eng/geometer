@@ -57,7 +57,7 @@ Import package: `geometer`
 Install the current release:
 
 ```bash
-python -m pip install wn-geometer==2026.6.9
+python -m pip install wn-geometer==2026.6.10
 ```
 
 Basic Python use:

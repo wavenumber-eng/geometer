@@ -6,6 +6,7 @@ import hmac
 import json
 import os
 import posixpath
+import re
 import shutil
 import tempfile
 import urllib.error
@@ -16,8 +17,10 @@ from pathlib import Path
 from typing import Any
 
 
-SCHEMA = "geometry.occt_binary_cache_manifest.a0"
-DEFAULT_PREFIX = "geometer/occt"
+SCHEMA = "wavenumber.dependency_cache_manifest.a1"
+LEGACY_SCHEMA = "geometry.occt_binary_cache_manifest.a0"
+DEFAULT_PREFIX = "deps/v1/geometer/occt"
+LEGACY_DEFAULT_PREFIX = "geometer/occt"
 DEFAULT_REGION = "auto"
 ARCHIVE_NAME = "occt-install.zip"
 MANIFEST_NAME = "manifest.json"
@@ -132,6 +135,34 @@ def install_ready(install_dir: Path) -> bool:
     )
 
 
+def occt_version_from_tag(tag: str) -> str:
+    return tag.removeprefix("V").replace("_", ".")
+
+
+def installed_occt_version(install_dir: Path) -> str | None:
+    for version_file in (
+        install_dir / "lib" / "cmake" / "opencascade" / "OpenCASCADEConfigVersion.cmake",
+        install_dir / "cmake" / "OpenCASCADEConfigVersion.cmake",
+    ):
+        if not version_file.exists():
+            continue
+        match = re.search(
+            r'set\s*\(\s*PACKAGE_VERSION\s+"([^"]+)"\s*\)',
+            version_file.read_text(encoding="utf-8", errors="replace"),
+        )
+        if match:
+            return match.group(1)
+    return None
+
+
+def install_matches_profile(install_dir: Path, profile: OcctCacheProfile) -> bool:
+    if not install_ready(install_dir):
+        return False
+    expected = occt_version_from_tag(profile.occt_tag)
+    actual = installed_occt_version(install_dir)
+    return actual == expected
+
+
 def restore_prebuilt_install(profile: OcctCacheProfile, install_dir: Path, *, mode: str | None = None) -> bool:
     selected_mode = mode_from_value(mode)
     if selected_mode == "off":
@@ -146,9 +177,14 @@ def restore_prebuilt_install(profile: OcctCacheProfile, install_dir: Path, *, mo
         print(message)
         return False
 
-    prefix = object_prefix(config, profile)
-    print(f"Checking OCCT binary cache: s3://{config.bucket}/{prefix}/{MANIFEST_NAME}")
-    manifest_bytes = _r2_get_object(config, f"{prefix}/{MANIFEST_NAME}")
+    prefix = ""
+    manifest_bytes = None
+    for candidate_prefix in object_prefix_candidates(config, profile):
+        print(f"Checking OCCT binary cache: s3://{config.bucket}/{candidate_prefix}/{MANIFEST_NAME}")
+        manifest_bytes = _r2_get_object(config, f"{candidate_prefix}/{MANIFEST_NAME}")
+        if manifest_bytes is not None:
+            prefix = candidate_prefix
+            break
     if manifest_bytes is None:
         message = f"OCCT binary cache miss for {profile.cache_key}"
         if selected_mode == "only":
@@ -236,6 +272,23 @@ def extract_install_archive(archive_path: Path, install_dir: Path) -> None:
 def build_manifest(profile: OcctCacheProfile, archive_path: Path, archive_sha256: str) -> dict[str, Any]:
     return {
         "schema": SCHEMA,
+        "project": "geometer",
+        "dependency": {
+            "name": "occt",
+            "version": profile.occt_tag,
+            "source_repo": profile.occt_repo,
+        },
+        "target": {
+            "kind": profile.kind,
+            "platform_tag": profile.platform_tag,
+            "toolchain": "emscripten" if profile.kind == "wasm" else None,
+        },
+        "build": {
+            "config": profile.config,
+            "library_type": profile.library_type,
+            "macos_deployment_target": profile.macos_deployment_target,
+            "emsdk_version": profile.emsdk_version,
+        },
         "cache_key": profile.cache_key,
         "kind": profile.kind,
         "platform_tag": profile.platform_tag,
@@ -263,8 +316,9 @@ def build_manifest(profile: OcctCacheProfile, archive_path: Path, archive_sha256
 
 
 def validate_manifest(manifest: dict[str, Any], profile: OcctCacheProfile) -> None:
+    if manifest.get("schema") not in {SCHEMA, LEGACY_SCHEMA}:
+        raise RuntimeError("OCCT binary cache manifest field 'schema' mismatch.")
     expected = {
-        "schema": SCHEMA,
         "cache_key": profile.cache_key,
         "kind": profile.kind,
         "platform_tag": profile.platform_tag,
@@ -278,10 +332,27 @@ def validate_manifest(manifest: dict[str, Any], profile: OcctCacheProfile) -> No
     archive = manifest.get("archive")
     if not isinstance(archive, dict) or archive.get("name") != ARCHIVE_NAME or not archive.get("sha256"):
         raise RuntimeError("OCCT binary cache manifest has an invalid archive block.")
+    dependency = manifest.get("dependency")
+    if isinstance(dependency, dict):
+        if dependency.get("name") not in {None, "occt"}:
+            raise RuntimeError("OCCT binary cache manifest dependency name mismatch.")
+        if dependency.get("version") not in {None, profile.occt_tag}:
+            raise RuntimeError("OCCT binary cache manifest dependency version mismatch.")
 
 
 def object_prefix(config: CacheConfig, profile: OcctCacheProfile) -> str:
-    return posixpath.join(config.prefix, profile.kind, profile.platform_tag, profile.cache_key)
+    return posixpath.join(config.prefix, profile.occt_tag, profile.kind, profile.platform_tag, profile.cache_key)
+
+
+def object_prefix_candidates(config: CacheConfig, profile: OcctCacheProfile) -> list[str]:
+    candidates = [
+        object_prefix(config, profile),
+        posixpath.join(config.prefix, profile.kind, profile.platform_tag, profile.cache_key),
+    ]
+    legacy_default = posixpath.join(LEGACY_DEFAULT_PREFIX, profile.kind, profile.platform_tag, profile.cache_key)
+    if legacy_default not in candidates:
+        candidates.append(legacy_default)
+    return candidates
 
 
 def sha256_file(path: Path) -> str:

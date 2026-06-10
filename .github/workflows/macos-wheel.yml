@@ -16,6 +16,9 @@ jobs:
       - uses: astral-sh/setup-uv@v8.2.0
       - name: Sync dev tools
         run: uv sync --group dev
+      - name: Read dependency versions
+        id: dependency_versions
+        run: uv run --no-project python scripts/dependency_versions.py --github-output
       - name: Run release signoff
         run: uv run pytest tests/L99_release -q
       - name: Cache OCCT
@@ -25,9 +28,9 @@ jobs:
             .deps/occt-src
             .deps/native/macos-arm64/occt-build
             .deps/native/macos-arm64/occt-install
-          key: occt-${{ runner.os }}-${{ runner.arch }}-apple-clang-${{ hashFiles('scripts/build_occt.py', 'scripts/occt_binary_cache.py', 'third_party/rapidjson/**') }}
+          key: occt-${{ runner.os }}-${{ runner.arch }}-apple-clang-${{ steps.dependency_versions.outputs.occt_tag }}-${{ hashFiles('scripts/build_occt.py', 'scripts/dependency_versions.py', 'scripts/occt_binary_cache.py', 'third_party/rapidjson/**') }}
           restore-keys: |
-            occt-${{ runner.os }}-${{ runner.arch }}-apple-clang-
+            occt-${{ runner.os }}-${{ runner.arch }}-apple-clang-${{ steps.dependency_versions.outputs.occt_tag }}-
       - name: Validate native build
         env:
           R2_BUCKET: ${{ vars.R2_BUCKET || secrets.R2_BUCKET }}

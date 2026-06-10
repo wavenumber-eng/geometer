@@ -14,8 +14,8 @@ single mechanical cleanup in this change.
    `.clang-tidy`, `LICENSE`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, and
    `SECURITY.md`.
 3. CMake presets must use Ninja and set `CMAKE_EXPORT_COMPILE_COMMANDS=ON`.
-4. Release signoff must run Ruff, Pyright, clang-format, code hygiene, and
-   `uv lock --check`.
+4. Release signoff must run Ruff, Pyright, clang-format, Lizard complexity
+   checking, code hygiene, and `uv lock --check`.
 5. Wheel builds must write to `out/wheelhouse/` or another disposable output
    directory, not root `dist/`, because Geometer's `dist/` stores committed
    runtime artifacts.

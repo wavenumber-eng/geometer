@@ -39,6 +39,10 @@ jobs:
       - name: Set up Python
         run: uv python install 3.12
 
+      - name: Read dependency versions
+        id: dependency_versions
+        run: uv run --no-project python scripts/dependency_versions.py --github-output
+
       - name: Set up Node
         uses: actions/setup-node@v6
         with:
@@ -49,18 +53,29 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y build-essential cmake ninja-build
 
-      - name: Cache WASM toolchain and OCCT
+      - name: Cache Emscripten SDK
         uses: actions/cache@v5
         with:
-          path: |
-            .deps/emsdk
-            .deps/occt-src
-            .deps/occt-wasm-build
-            .deps/occt-wasm-install
-            build-wasm
-          key: wasm-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/build_wasm.py', 'scripts/build_occt.py', 'scripts/occt_binary_cache.py', 'third_party/rapidjson/**') }}
+          path: .deps/emsdk
+          key: emsdk-${{ runner.os }}-${{ runner.arch }}-${{ steps.dependency_versions.outputs.emsdk_version }}
           restore-keys: |
-            wasm-${{ runner.os }}-${{ runner.arch }}-
+            emsdk-${{ runner.os }}-${{ runner.arch }}-
+
+      - name: Cache WASM OCCT install
+        uses: actions/cache@v5
+        with:
+          path: .deps/occt-wasm-install
+          key: wasm-occt-install-${{ runner.os }}-${{ runner.arch }}-${{ steps.dependency_versions.outputs.occt_tag }}-${{ steps.dependency_versions.outputs.emsdk_version }}-${{ hashFiles('scripts/build_wasm.py', 'scripts/build_occt.py', 'scripts/dependency_versions.py', 'scripts/occt_binary_cache.py', 'third_party/rapidjson/**') }}
+          restore-keys: |
+            wasm-occt-install-${{ runner.os }}-${{ runner.arch }}-${{ steps.dependency_versions.outputs.occt_tag }}-${{ steps.dependency_versions.outputs.emsdk_version }}-
+
+      - name: Cache Geometer WASM build
+        uses: actions/cache@v5
+        with:
+          path: build-wasm
+          key: geometer-wasm-build-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('CMakeLists.txt', 'CMakePresets.json', 'src/cpp/**', 'tests/cpp/**', 'third_party/clipper2/**') }}
+          restore-keys: |
+            geometer-wasm-build-${{ runner.os }}-${{ runner.arch }}-
 
       - name: Build WASM artifacts
         env:

@@ -62,6 +62,9 @@ jobs:
       - uses: astral-sh/setup-uv@v8.2.0
       - name: Set up Python
         run: uv python install 3.12
+      - name: Read dependency versions
+        id: dependency_versions
+        run: uv run --no-project python scripts/dependency_versions.py --github-output
       - name: Set up MSVC
         if: runner.os == 'Windows'
         uses: ilammy/msvc-dev-cmd@v1
@@ -80,9 +83,9 @@ jobs:
             .deps/occt-src
             .deps/native/${{ matrix.platform }}/occt-build
             .deps/native/${{ matrix.platform }}/occt-install
-          key: occt-${{ runner.os }}-${{ runner.arch }}-${{ matrix.compiler }}-${{ hashFiles('scripts/build_occt.py', 'scripts/occt_binary_cache.py', 'third_party/rapidjson/**') }}
+          key: occt-${{ runner.os }}-${{ runner.arch }}-${{ matrix.compiler }}-${{ steps.dependency_versions.outputs.occt_tag }}-${{ hashFiles('scripts/build_occt.py', 'scripts/dependency_versions.py', 'scripts/occt_binary_cache.py', 'third_party/rapidjson/**') }}
           restore-keys: |
-            occt-${{ runner.os }}-${{ runner.arch }}-${{ matrix.compiler }}-
+            occt-${{ runner.os }}-${{ runner.arch }}-${{ matrix.compiler }}-${{ steps.dependency_versions.outputs.occt_tag }}-
       - name: Build or restore OCCT and upload to R2
         shell: pwsh
         run: |
@@ -104,22 +107,30 @@ jobs:
       - uses: astral-sh/setup-uv@v8.2.0
       - name: Set up Python
         run: uv python install 3.12
+      - name: Read dependency versions
+        id: dependency_versions
+        run: uv run --no-project python scripts/dependency_versions.py --github-output
       - name: Install build tools
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential cmake ninja-build
+      - name: Restore GitHub Emscripten cache
+        uses: actions/cache@v5
+        with:
+          path: .deps/emsdk
+          key: emsdk-${{ runner.os }}-${{ runner.arch }}-${{ steps.dependency_versions.outputs.emsdk_version }}
+          restore-keys: |
+            emsdk-${{ runner.os }}-${{ runner.arch }}-
       - name: Restore GitHub WASM OCCT cache
         uses: actions/cache@v5
         with:
           path: |
-            .deps/emsdk
             .deps/occt-src
             .deps/occt-wasm-build
             .deps/occt-wasm-install
-          key: wasm-occt-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/build_wasm.py', 'scripts/build_occt.py', 'scripts/occt_binary_cache.py', 'third_party/rapidjson/**') }}
+          key: wasm-occt-${{ runner.os }}-${{ runner.arch }}-${{ steps.dependency_versions.outputs.occt_tag }}-${{ steps.dependency_versions.outputs.emsdk_version }}-${{ hashFiles('scripts/build_wasm.py', 'scripts/build_occt.py', 'scripts/dependency_versions.py', 'scripts/occt_binary_cache.py', 'third_party/rapidjson/**') }}
           restore-keys: |
-            wasm-occt-${{ runner.os }}-${{ runner.arch }}-
-            wasm-${{ runner.os }}-${{ runner.arch }}-
+            wasm-occt-${{ runner.os }}-${{ runner.arch }}-${{ steps.dependency_versions.outputs.occt_tag }}-${{ steps.dependency_versions.outputs.emsdk_version }}-
       - name: Build or restore WASM OCCT and upload to R2
         shell: pwsh
         run: |

@@ -23,6 +23,9 @@ name: OCCT Dependency Cache
 permissions:
   contents: read
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
 concurrency:
   group: occt-deps-${{ github.ref }}-${{ inputs.target }}
   cancel-in-progress: false
@@ -71,7 +74,7 @@ jobs:
         if: runner.os == 'macOS'
         run: brew list ninja >/dev/null 2>&1 || brew install ninja
       - name: Restore GitHub OCCT cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             .deps/occt-src
@@ -106,7 +109,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y build-essential cmake ninja-build
       - name: Restore GitHub WASM OCCT cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             .deps/emsdk

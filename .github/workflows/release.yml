@@ -9,6 +9,9 @@ name: Publish
 permissions:
   contents: read
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
 jobs:
   verify:
     name: release metadata
@@ -74,7 +77,7 @@ jobs:
         run: brew list ninja >/dev/null 2>&1 || brew install ninja
 
       - name: Cache OCCT
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             .deps/occt-src
@@ -106,14 +109,14 @@ jobs:
         run: python -c "import pathlib, shutil; pathlib.Path('out').mkdir(exist_ok=True); shutil.make_archive('out/native-${{ matrix.platform }}', 'zip', 'dist/native/${{ matrix.platform }}')"
 
       - name: Upload wheel artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: python-dist-${{ matrix.platform }}
           path: out/wheelhouse/*.whl
           if-no-files-found: error
 
       - name: Upload native artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: native-dist-${{ matrix.platform }}
           path: out/native-${{ matrix.platform }}.zip
@@ -133,7 +136,7 @@ jobs:
         run: uv python install 3.12
 
       - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: "24"
 
@@ -143,7 +146,7 @@ jobs:
           sudo apt-get install -y build-essential cmake ninja-build
 
       - name: Cache WASM toolchain and OCCT
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             .deps/emsdk
@@ -178,7 +181,7 @@ jobs:
         run: python -c "import pathlib, shutil; pathlib.Path('out').mkdir(exist_ok=True); shutil.make_archive('out/wasm-dist', 'zip', 'dist/wasm')"
 
       - name: Upload WASM artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: wasm-dist
           path: out/wasm-dist.zip
@@ -192,7 +195,7 @@ jobs:
       contents: write
     steps:
       - name: Download release artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: out/release
 
@@ -215,7 +218,7 @@ jobs:
       id-token: write
     steps:
       - name: Download wheel artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: python-dist-*
           path: dist-pypi

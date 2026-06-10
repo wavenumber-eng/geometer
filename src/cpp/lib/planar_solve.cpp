@@ -6,7 +6,9 @@
 #include <cmath>
 #include <cstdint>
 #include <cstring>
+#include <iomanip>
 #include <limits>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -895,6 +897,51 @@ std::vector<unsigned char> encode_response(const PlanarBatchSolveResult& result)
     return writer.take();
 }
 
+void append_point_json(std::ostringstream& out, const PlanarSolvePoint& point)
+{
+    out << '[' << point.x << ',' << point.y << ']';
+}
+
+void append_ring_json(std::ostringstream& out, const PlanarSolveRing& ring)
+{
+    out << '[';
+    for (std::size_t i = 0; i < ring.size(); ++i)
+    {
+        if (i > 0)
+        {
+            out << ',';
+        }
+        append_point_json(out, ring[i]);
+    }
+    out << ']';
+}
+
+void append_regions_json(std::ostringstream& out, const std::vector<PlanarSolveRegion>& regions)
+{
+    out << '[';
+    for (std::size_t i = 0; i < regions.size(); ++i)
+    {
+        if (i > 0)
+        {
+            out << ',';
+        }
+        const PlanarSolveRegion& region = regions[i];
+        out << "{\"outline\":";
+        append_ring_json(out, region.outline);
+        out << ",\"holes\":[";
+        for (std::size_t h = 0; h < region.holes.size(); ++h)
+        {
+            if (h > 0)
+            {
+                out << ',';
+            }
+            append_ring_json(out, region.holes[h]);
+        }
+        out << "]}";
+    }
+    out << ']';
+}
+
 bool valid_options(const PlanarBatchSolveOptions& options, Status* status)
 {
     if (options.decimal_precision < 0 || options.decimal_precision > 8)
@@ -974,6 +1021,71 @@ int solve_planar_batch_from_bytes(const unsigned char* request_data, std::size_t
 
     set_status(status, 0, "");
     return 0;
+}
+
+int write_planar_batch_solve_json(const PlanarBatchSolveResult& result, std::string* json,
+                                  Status* status)
+{
+    if (json == nullptr)
+    {
+        set_status(status, 2, "Planar batch JSON output pointer is null.");
+        return 2;
+    }
+
+    std::ostringstream out;
+    out << std::setprecision(17);
+    out << "{\"schema\":\"geometry.planar_batch_solve.a0\",\"units\":\"mm\",\"jobs\":[";
+    for (std::size_t i = 0; i < result.jobs.size(); ++i)
+    {
+        if (i > 0)
+        {
+            out << ',';
+        }
+        const PlanarSolveJobResult& job = result.jobs[i];
+        out << "{\"area_mm2\":" << job.area_mm2;
+        out << ",\"source_subject_ring_count\":" << job.source_subject_ring_count;
+        out << ",\"raw_subject_ring_count\":" << job.raw_subject_ring_count;
+        out << ",\"stroke_path_count\":" << job.stroke_path_count;
+        out << ",\"stroke_region_count\":" << job.stroke_region_count;
+        out << ",\"local_subtract_ring_count\":" << job.local_subtract_ring_count;
+        out << ",\"common_subtract_ring_count\":" << job.common_subtract_ring_count;
+        out << ",\"regions\":";
+        append_regions_json(out, job.regions);
+        out << '}';
+    }
+    out << "]}";
+
+    *json = out.str();
+    set_status(status, 0, "");
+    return 0;
+}
+
+int solve_planar_batch_json_from_bytes(const unsigned char* request_data, std::size_t request_size,
+                                       std::string* response_json, Status* status)
+{
+    if (response_json == nullptr)
+    {
+        set_status(status, 2, "Planar batch JSON response pointer is null.");
+        return 2;
+    }
+    response_json->clear();
+
+    try
+    {
+        PlanarBatchSolveInput input = decode_request(request_data, request_size);
+        PlanarBatchSolveResult result;
+        const int code = solve_planar_batch(input, &result, status);
+        if (code != 0)
+        {
+            return code;
+        }
+        return write_planar_batch_solve_json(result, response_json, status);
+    }
+    catch (const std::exception& error)
+    {
+        set_status(status, 4, error.what());
+        return 4;
+    }
 }
 
 } // namespace geometer

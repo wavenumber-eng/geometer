@@ -23,6 +23,7 @@ def main() -> int:
     parser.add_argument("--config", default="Release")
     parser.add_argument("--step", type=Path, default=DEFAULT_STEP)
     parser.add_argument("--skip-ctest", action="store_true")
+    parser.add_argument("--skip-examples", action="store_true")
     parser.add_argument("--skip-python", action="store_true")
     parser.add_argument("--skip-ldd", action="store_true")
     args = parser.parse_args()
@@ -33,12 +34,16 @@ def main() -> int:
 
     build_dir = args.build_dir.resolve()
     env = native_build_env()
-    run(cmake_configure_command(build_dir), env=env)
+    run(cmake_configure_command(build_dir, build_examples=not args.skip_examples), env=env)
     run(["cmake", "--build", str(build_dir), "--config", args.config], env=env)
 
     exe = ROOT / "dist" / "native" / tag / executable_name()
     if not exe.exists():
         raise FileNotFoundError(f"Expected native executable was not produced: {exe}")
+    if not args.skip_examples:
+        preview_exe = ROOT / "dist" / "native" / tag / preview_executable_name()
+        if not preview_exe.exists():
+            raise FileNotFoundError(f"Expected native preview executable was not produced: {preview_exe}")
 
     run([str(exe), "--version"])
     if sys.platform == "darwin":
@@ -63,24 +68,26 @@ def validate_cli_outputs(exe: Path, step_path: Path, tag: str) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
 
     projection_path = out_dir / "SOT-23.projection.json"
-    svg_path = out_dir / "SOT-23.top.simple.svg"
+    svg_path = out_dir / "SOT-23.top.outline.svg"
     glb_path = out_dir / "SOT-23.glb"
     planar_request_path = out_dir / "planar-step-request.json"
     planar_step_path = out_dir / "planar.step"
 
     run([str(exe), "step-project-hlr", str(step_path), str(projection_path)])
-    run([
-        str(exe),
-        "step-project-svg",
-        str(step_path),
-        str(svg_path),
-        "--mode",
-        "simple",
-        "--view",
-        "top",
-        "--curve-mode",
-        "polyline",
-    ])
+    run(
+        [
+            str(exe),
+            "step-project-svg",
+            str(step_path),
+            str(svg_path),
+            "--mode",
+            "outline",
+            "--view",
+            "top",
+            "--curve-mode",
+            "polyline",
+        ]
+    )
     run([str(exe), "step-to-glb", str(step_path), str(glb_path)])
     planar_request_path.write_text(
         json.dumps(
@@ -109,7 +116,7 @@ def validate_cli_outputs(exe: Path, step_path: Path, tag: str) -> None:
     run([str(exe), "planar-step", str(planar_request_path), str(planar_step_path)])
 
     projection = json.loads(projection_path.read_text(encoding="utf-8"))
-    if projection.get("schema") != "geometry.projection.a0":
+    if projection.get("schema") != "geometry.projection.b0":
         raise RuntimeError(f"Unexpected projection schema in {projection_path}")
     if not svg_path.read_text(encoding="utf-8").lstrip().startswith("<svg"):
         raise RuntimeError(f"SVG output does not start with <svg: {svg_path}")
@@ -205,6 +212,10 @@ def executable_name() -> str:
     return "geometer.exe" if sys.platform == "win32" else "geometer"
 
 
+def preview_executable_name() -> str:
+    return "geometer_hlr_preview.exe" if sys.platform == "win32" else "geometer_hlr_preview"
+
+
 def prepend_path(path: Path, current: str | None) -> str:
     if not current:
         return str(path)
@@ -228,8 +239,9 @@ def native_build_env() -> dict[str, str]:
     return env
 
 
-def cmake_configure_command(build_dir: Path) -> list[str]:
+def cmake_configure_command(build_dir: Path, *, build_examples: bool) -> list[str]:
     command = ["cmake", "--preset", "default", "-B", str(build_dir)]
+    command.append(f"-DGEOMETER_BUILD_EXAMPLES={'ON' if build_examples else 'OFF'}")
     if sys.platform == "darwin":
         command.append(f"-DCMAKE_OSX_DEPLOYMENT_TARGET={macos_deployment_target()}")
     return command
@@ -241,8 +253,7 @@ def validate_macos_executable_target(exe: Path, target: str) -> None:
         raise RuntimeError(f"Could not determine macOS minimum OS version for {exe}")
     if version_pair(min_version) > version_pair(target):
         raise RuntimeError(
-            f"{exe} requires macOS {min_version}, which is newer than "
-            f"the configured deployment target {target}."
+            f"{exe} requires macOS {min_version}, which is newer than the configured deployment target {target}."
         )
     print(f"macOS deployment target ok: binary minos {min_version}, configured target {target}")
 

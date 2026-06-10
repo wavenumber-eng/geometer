@@ -55,6 +55,13 @@ extern "C"
                                                          size_t request_size, unsigned char** value,
                                                          size_t* value_size, char** error);
 
+    GEOMETER_C_API GeometerStringResult
+    geometer_planar_batch_solve_json(GeometerBuffer request_data);
+
+    GEOMETER_C_API int geometer_planar_batch_solve_json_bytes(const unsigned char* request_data,
+                                                              size_t request_size, char** value,
+                                                              char** error);
+
     GEOMETER_C_API GeometerByteResult geometer_planar_triangulate(GeometerBuffer request_data);
 
     GEOMETER_C_API int geometer_planar_triangulate_bytes(const unsigned char* request_data,

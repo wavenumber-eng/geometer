@@ -39,6 +39,8 @@ The full browser target exports:
 - `_geometer_step_to_glb_bytes`
 - `_geometer_planar_batch_solve`
 - `_geometer_planar_batch_solve_bytes`
+- `_geometer_planar_batch_solve_json`
+- `_geometer_planar_batch_solve_json_bytes`
 - `_geometer_planar_triangulate`
 - `_geometer_planar_triangulate_bytes`
 - `_geometer_clipper2_boolean`
@@ -64,6 +66,8 @@ The planar-only browser target is modularized with the factory name
 - `_free`
 - `_geometer_planar_batch_solve`
 - `_geometer_planar_batch_solve_bytes`
+- `_geometer_planar_batch_solve_json`
+- `_geometer_planar_batch_solve_json_bytes`
 - `_geometer_planar_triangulate`
 - `_geometer_planar_triangulate_bytes`
 - `_geometer_clipper2_boolean`

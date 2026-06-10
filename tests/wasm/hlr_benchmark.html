@@ -218,7 +218,7 @@
             <th class="number" style="width: 7%">Extract</th>
             <th class="number" style="width: 6%">JSON</th>
             <th class="number" style="width: 6%">Detail</th>
-            <th class="number" style="width: 6%">Simple</th>
+            <th class="number" style="width: 6%">Outline</th>
             <th style="width: 9%">Error</th>
           </tr>
         </thead>
@@ -346,10 +346,10 @@
     function countProjection(projection, viewId) {
       const view = (projection.views || []).find((item) => item.id === viewId);
       const detail = view && view.modes && view.modes.detail ? view.modes.detail : { segments: [], arcs: [] };
-      const simple = view && view.modes && view.modes.simple ? view.modes.simple : { segments: [], arcs: [] };
+      const outline = view && view.modes && view.modes.outline ? view.modes.outline : { segments: [], arcs: [] };
       return {
         detail: (detail.segments || []).length + (detail.arcs || []).length,
-        simple: (simple.segments || []).length + (simple.arcs || []).length,
+        outline: (outline.segments || []).length + (outline.arcs || []).length,
       };
     }
 
@@ -381,7 +381,7 @@
         extract: tr.children[8],
         json: tr.children[9],
         detail: tr.children[10],
-        simple: tr.children[11],
+        outline: tr.children[11],
         error: tr.children[12],
       };
       return tr;
@@ -398,7 +398,7 @@
       row.cells.extract.textContent = formatMs(row.extractMs);
       row.cells.json.textContent = formatMs(row.jsonParseMs);
       row.cells.detail.textContent = Number.isFinite(row.detailCount) ? row.detailCount : "";
-      row.cells.simple.textContent = Number.isFinite(row.simpleCount) ? row.simpleCount : "";
+      row.cells.outline.textContent = Number.isFinite(row.outlineCount) ? row.outlineCount : "";
       row.cells.error.textContent = row.error || "";
       row.cells.error.title = row.error || "";
     }
@@ -470,7 +470,7 @@
         row.jsonParseMs = result.timings.jsonParseMs || 0;
         const counts = countProjection(result.projection, viewId);
         row.detailCount = counts.detail;
-        row.simpleCount = counts.simple;
+        row.outlineCount = counts.outline;
         row.state = "done";
       } catch (error) {
         row.state = "failed";
@@ -518,7 +518,7 @@
         "model", "state", "algorithm",
         "step_bytes", "fetch_ms", "wasm_ms", "step_read_ms",
         "mesh_ms", "hlr_ms", "extract_ms", "json_ms",
-        "detail", "simple", "error",
+        "detail", "outline", "error",
       ];
       const algo = els.algoSelect.value;
       const rows = state.rows.map((r) => [
@@ -526,7 +526,7 @@
         r.model.stepBytes,
         r.stepBytesMs ?? "", r.moduleMs ?? "", r.stepReadMs ?? "",
         r.meshMs ?? "", r.nativeHlrMs ?? r.hlrMs ?? "", r.extractMs ?? "", r.jsonParseMs ?? "",
-        r.detailCount ?? "", r.simpleCount ?? "", (r.error || "").replaceAll('"', "''"),
+        r.detailCount ?? "", r.outlineCount ?? "", (r.error || "").replaceAll('"', "''"),
       ]);
       const csv = [headers, ...rows].map((row) => row.map((c) => `"${c}"`).join(",")).join("\n");
       const blob = new Blob([csv], { type: "text/csv" });

@@ -1,6 +1,8 @@
-name: Release Validation
+---
+# yamllint disable rule:line-length
+name: Publish
 
-on:
+"on":
   release:
     types: [published]
 
@@ -8,30 +10,206 @@ permissions:
   contents: read
 
 jobs:
-  validate:
-    runs-on: ubuntu-latest
+  verify:
+    name: release metadata
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v6
       - uses: astral-sh/setup-uv@v8.2.0
-      - name: Verify date tag maps to package version
+      - name: Set up Python
+        run: uv python install 3.12
+      - name: Verify tag matches package version
         shell: bash
+        run: uv run python scripts/ci_release_metadata.py check-tag "${GITHUB_REF_NAME}"
+      - name: Verify release notes mention package version
+        shell: bash
+        run: uv run python scripts/ci_release_metadata.py check-notes
+      - name: Run Rack suite
+        run: uv run --group dev rack run --all
+      - name: Run standards check
+        run: uvx --from git+https://github.com/wavenumber-eng/wn-dev-std wn-dev-std check . --format json
+
+  build:
+    name: build (${{ matrix.platform }}, py3.12)
+    needs: verify
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            platform: windows-x64
+            compiler: msvc
+          - os: ubuntu-24.04
+            platform: linux-x64
+            compiler: gcc
+          - os: ubuntu-24.04-arm
+            platform: linux-arm64
+            compiler: gcc
+          - os: macos-15
+            platform: macos-arm64
+            compiler: apple-clang
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - uses: astral-sh/setup-uv@v8.2.0
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Set up MSVC
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Install Linux build tools
+        if: runner.os == 'Linux'
         run: |
-          VERSION="$(python -c 'import tomllib; print(tomllib.load(open("pyproject.toml","rb"))["project"]["version"])')"
-          TAG="$(python - <<'PY'
-          import tomllib
-          version = tomllib.load(open("pyproject.toml", "rb"))["project"]["version"]
-          parts = [int(part) for part in version.split(".")]
-          suffix = "" if len(parts) == 3 else "-" + ".".join(str(part) for part in parts[3:])
-          print(f"v{parts[0]:04d}-{parts[1]:02d}-{parts[2]:02d}{suffix}")
-          PY
-          )"
-          test "${TAG}" = "${GITHUB_REF_NAME}"
-          echo "Validated ${GITHUB_REF_NAME} for ${VERSION}"
-      - name: Sync dev tools
-        run: uv sync --group dev
-      - name: Run release signoff
-        run: uv run pytest tests/L99_release -q
+          sudo apt-get update
+          sudo apt-get install -y build-essential ninja-build libgl1-mesa-dev libdbus-1-dev libudev-dev libx11-dev libxcursor-dev libxext-dev libxi-dev libxinerama-dev libxkbcommon-dev libxrandr-dev libwayland-dev wayland-protocols
+
+      - name: Install macOS build tools
+        if: runner.os == 'macOS'
+        run: brew list ninja >/dev/null 2>&1 || brew install ninja
+
+      - name: Cache OCCT
+        uses: actions/cache@v4
+        with:
+          path: |
+            .deps/occt-src
+            .deps/native/${{ matrix.platform }}/occt-build
+            .deps/native/${{ matrix.platform }}/occt-install
+          key: occt-${{ runner.os }}-${{ runner.arch }}-${{ matrix.compiler }}-${{ hashFiles('scripts/build_occt.py', 'third_party/rapidjson/**') }}
+          restore-keys: |
+            occt-${{ runner.os }}-${{ runner.arch }}-${{ matrix.compiler }}-
+
+      - name: Build and test native code
+        run: uv run --group dev python scripts/validate_native.py
+
+      - name: Test Python package
+        run: uv run --group dev python scripts/validate_python_package.py
+
       - name: Build wheel
-        run: uv run python -m build --wheel --outdir out/wheelhouse
-      - name: Check wheel
-        run: uv run twine check out/wheelhouse/*
+        run: uv run --group dev python -m build --wheel --outdir out/wheelhouse
+
+      - name: Check wheel metadata
+        run: uv run --group dev twine check out/wheelhouse/*
+
+      - name: Package native dist
+        run: python -c "import pathlib, shutil; pathlib.Path('out').mkdir(exist_ok=True); shutil.make_archive('out/native-${{ matrix.platform }}', 'zip', 'dist/native/${{ matrix.platform }}')"
+
+      - name: Upload wheel artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-dist-${{ matrix.platform }}
+          path: out/wheelhouse/*.whl
+          if-no-files-found: error
+
+      - name: Upload native artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-dist-${{ matrix.platform }}
+          path: out/native-${{ matrix.platform }}.zip
+          if-no-files-found: error
+
+  wasm:
+    name: wasm dist
+    needs: verify
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - uses: astral-sh/setup-uv@v8.2.0
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Install build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake ninja-build
+
+      - name: Cache WASM toolchain and OCCT
+        uses: actions/cache@v4
+        with:
+          path: |
+            .deps/emsdk
+            .deps/occt-src
+            .deps/occt-wasm-build
+            .deps/occt-wasm-install
+            build-wasm
+          key: wasm-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/build_wasm.py', 'scripts/build_occt.py', 'third_party/rapidjson/**') }}
+          restore-keys: |
+            wasm-${{ runner.os }}-${{ runner.arch }}-
+
+      - name: Build WASM artifacts
+        run: uv run python scripts/build_wasm.py
+
+      - name: Build browser demos
+        run: |
+          uv run python scripts/build_self_contained_hlr_demo.py
+          uv run python scripts/build_self_contained_planar_ring_solver_demo.py
+
+      - name: Run WASM validation tests
+        run: |
+          node tests/wasm/planar_batch_solve_bytes_validation.js
+          node tests/wasm/step_to_glb_bytes_validation.js
+
+      - name: Package WASM dist
+        run: python -c "import pathlib, shutil; pathlib.Path('out').mkdir(exist_ok=True); shutil.make_archive('out/wasm-dist', 'zip', 'dist/wasm')"
+
+      - name: Upload WASM artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: wasm-dist
+          path: out/wasm-dist.zip
+          if-no-files-found: error
+
+  github-assets:
+    name: GitHub release assets
+    needs: [build, wasm]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - name: Download release artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: out/release
+
+      - name: Upload GitHub release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          find out/release -type f -print0 | xargs -0 gh release upload "$TAG_NAME" --clobber
+
+  pypi:
+    name: PyPI trusted publish
+    needs: [build, wasm]
+    runs-on: ubuntu-24.04
+    environment:
+      name: pypi
+      url: https://pypi.org/p/wn-geometer
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Download wheel artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: python-dist-*
+          path: dist-pypi
+          merge-multiple: true
+
+      - name: Publish package distributions to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist-pypi

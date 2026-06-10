@@ -43,7 +43,7 @@ function buildOptionsJson(views, options) {
     curve_mode: opts.curve_mode || "polyline",
     samples_per_curve: opts.samples_per_curve ?? 24,
     round_digits: opts.round_digits ?? 3,
-    union_simple_polygons: opts.union_simple_polygons ?? true,
+    union_outline_polygons: opts.union_outline_polygons ?? true,
   };
   if (Array.isArray(opts.model_transform)) {
     payload.model_transform = opts.model_transform;
@@ -58,6 +58,9 @@ function buildOptionsJson(views, options) {
   if (opts.projection_algorithm) {
     payload.projection_algorithm = opts.projection_algorithm;
   }
+  if (opts.outline_algorithm) {
+    payload.outline_algorithm = opts.outline_algorithm;
+  }
   if (Number.isFinite(opts.mesh_linear_deflection)) {
     payload.mesh_linear_deflection = opts.mesh_linear_deflection;
   }
@@ -66,6 +69,12 @@ function buildOptionsJson(views, options) {
   }
   if (typeof opts.mesh_relative === "boolean") {
     payload.mesh_relative = opts.mesh_relative;
+  }
+  if (opts.mesh_deflection_mode) {
+    payload.mesh_deflection_mode = opts.mesh_deflection_mode;
+  }
+  if (Number.isFinite(opts.mesh_deflection_coefficient)) {
+    payload.mesh_deflection_coefficient = opts.mesh_deflection_coefficient;
   }
   if (Number.isFinite(opts.hlr_angle_tolerance)) {
     payload.hlr_angle_tolerance = opts.hlr_angle_tolerance;

@@ -99,6 +99,33 @@ void subtract_then_clip()
     require_near(result.jobs[0].area_mm2, 48.0, 1.0e-6, "subtract then clip area should be stable");
 }
 
+void planar_solve_result_writes_json_rings()
+{
+    geometer::PlanarBatchSolveInput input;
+    input.options.decimal_precision = 6;
+    input.final_clip_rings.push_back(rect(0.0, 0.0, 5.0, 10.0));
+
+    geometer::PlanarSolveJob job;
+    job.subject_rings.push_back(rect(0.0, 0.0, 10.0, 10.0));
+    job.subtract_rings.push_back(rect(4.0, 4.0, 6.0, 6.0));
+    input.jobs.push_back(job);
+
+    geometer::PlanarBatchSolveResult result;
+    geometer::Status status;
+    int code = geometer::solve_planar_batch(input, &result, &status);
+    require(code == 0, "solve_planar_batch failed: " + status.message);
+
+    std::string json;
+    code = geometer::write_planar_batch_solve_json(result, &json, &status);
+    require(code == 0, "write_planar_batch_solve_json failed: " + status.message);
+    require(json.find("\"schema\":\"geometry.planar_batch_solve.a0\"") != std::string::npos,
+            "JSON should include planar solve schema");
+    require(json.find("\"regions\"") != std::string::npos, "JSON should include regions");
+    require(json.find("\"outline\"") != std::string::npos, "JSON should include outlines");
+    require(json.find("\"holes\"") != std::string::npos, "JSON should include holes");
+    require(json.find("\"area_mm2\":48") != std::string::npos, "JSON should include area");
+}
+
 class Writer
 {
   public:
@@ -188,7 +215,7 @@ void write_ring(Writer* writer, const geometer::PlanarSolveRing& ring)
     }
 }
 
-void c_api_binary_batch_solve()
+std::vector<unsigned char> make_c_api_request()
 {
     Writer writer;
     writer.bytes(REQUEST_MAGIC, 8);
@@ -212,12 +239,17 @@ void c_api_binary_batch_solve()
     writer.u32(0);
     writer.u32(0);
     write_ring(&writer, rect(0.0, 0.0, 3.0, 3.0));
+    return writer.data();
+}
 
+void c_api_binary_batch_solve()
+{
+    const std::vector<unsigned char> request = make_c_api_request();
     unsigned char* value = nullptr;
     std::size_t value_size = 0;
     char* error = nullptr;
-    const int code = geometer_planar_batch_solve_bytes(writer.data().data(), writer.data().size(),
-                                                       &value, &value_size, &error);
+    const int code = geometer_planar_batch_solve_bytes(request.data(), request.size(), &value,
+                                                       &value_size, &error);
     if (code != 0)
     {
         const std::string message = error == nullptr ? "" : error;
@@ -247,6 +279,29 @@ void c_api_binary_batch_solve()
     geometer_free_bytes(value);
 }
 
+void c_api_json_batch_solve()
+{
+    const std::vector<unsigned char> request = make_c_api_request();
+    char* value = nullptr;
+    char* error = nullptr;
+    const int code =
+        geometer_planar_batch_solve_json_bytes(request.data(), request.size(), &value, &error);
+    if (code != 0)
+    {
+        const std::string message = error == nullptr ? "" : error;
+        geometer_free_string(error);
+        throw std::runtime_error("geometer_planar_batch_solve_json_bytes failed: " + message);
+    }
+
+    const std::string json = value == nullptr ? "" : value;
+    geometer_free_string(value);
+    require(json.find("\"schema\":\"geometry.planar_batch_solve.a0\"") != std::string::npos,
+            "C API JSON should include schema");
+    require(json.find("\"common_subtract_ring_count\":1") != std::string::npos,
+            "C API JSON should include diagnostics");
+    require(json.find("\"outline\"") != std::string::npos, "C API JSON should include rings");
+}
+
 } // namespace
 
 int main()
@@ -255,7 +310,9 @@ int main()
     {
         overlapping_strokes_fuse_to_one_region();
         subtract_then_clip();
+        planar_solve_result_writes_json_rings();
         c_api_binary_batch_solve();
+        c_api_json_batch_solve();
     }
     catch (const std::exception& error)
     {

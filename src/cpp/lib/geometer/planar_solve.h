@@ -4,6 +4,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <string>
 #include <vector>
 
 namespace geometer
@@ -100,5 +101,11 @@ int solve_planar_batch(const PlanarBatchSolveInput& input, PlanarBatchSolveResul
 int solve_planar_batch_from_bytes(const unsigned char* request_data, std::size_t request_size,
                                   std::vector<unsigned char>* response_bytes,
                                   Status* status = nullptr);
+
+int write_planar_batch_solve_json(const PlanarBatchSolveResult& result, std::string* json,
+                                  Status* status = nullptr);
+
+int solve_planar_batch_json_from_bytes(const unsigned char* request_data, std::size_t request_size,
+                                       std::string* response_json, Status* status = nullptr);
 
 } // namespace geometer

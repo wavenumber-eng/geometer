@@ -39,10 +39,10 @@ projection = geometer.project_step_hlr(
     options=geometer.HlrOptions.assembly_outline(),
 )
 detail = projection.geometry("top", "detail")
-simple = projection.geometry("top", "simple")
+outline = projection.geometry("top", "outline")
 detail_count = len(detail.get("segments", [])) + len(detail.get("arcs", []))
-simple_count = len(simple.get("segments", [])) + len(simple.get("arcs", []))
-if projection.schema != "geometry.projection.a0" or detail_count <= 0 or simple_count <= 0:
+outline_count = len(outline.get("segments", [])) + len(outline.get("arcs", []))
+if projection.schema != "geometry.projection.b0" or detail_count <= 0 or outline_count <= 0:
     raise RuntimeError("projection did not produce expected top-view geometry")
 
 glb = geometer.step_to_glb(step)
@@ -66,7 +66,7 @@ planar_step = geometer.planar_step({
 if not planar_step.startswith(b"ISO-10303-21;"):
     raise RuntimeError("planar_step did not produce STEP bytes")
 
-svg_path = out_dir / "SOT-23.package.top.simple.svg"
+svg_path = out_dir / "SOT-23.package.top.outline.svg"
 response = geometer.run_batch(
     [
         {
@@ -74,7 +74,7 @@ response = geometer.run_batch(
             "operation": "step_hlr_projection_svg",
             "step_path": str(step),
             "output_path": str(svg_path),
-            "mode": "simple",
+            "mode": "outline",
             "view": "top",
         }
     ],
@@ -95,7 +95,7 @@ print(json.dumps({
     "package_dir": str(package_dir),
     "executable": str(exe),
     "detail_edges": detail_count,
-    "simple_edges": simple_count,
+    "outline_edges": outline_count,
     "glb_bytes": len(glb),
     "planar_step_bytes": len(planar_step),
     "svg": str(svg_path),
@@ -119,13 +119,16 @@ def main() -> int:
         raise FileNotFoundError(step_path)
 
     if not args.skip_native_validation:
-        run([
-            sys.executable,
-            str(ROOT / "scripts" / "validate_native.py"),
-            "--build-dir",
-            str(args.build_dir),
-            "--skip-ctest",
-        ], env=package_build_env())
+        run(
+            [
+                sys.executable,
+                str(ROOT / "scripts" / "validate_native.py"),
+                "--build-dir",
+                str(args.build_dir),
+                "--skip-ctest",
+            ],
+            env=package_build_env(),
+        )
     elif sys.platform == "darwin":
         validate_macos_dist_executable(macos_deployment_target())
 
@@ -147,11 +150,7 @@ def build_wheel(wheelhouse: Path) -> Path:
         run([str(build_python), "-m", "pip", "install", "--upgrade", "pip", "build"], env=env)
         run([str(build_python), "-m", "build", "--wheel", "--outdir", str(wheelhouse)], env=env)
 
-    candidates = [
-        path
-        for path in wheelhouse.glob("wn_geometer-*.whl")
-        if path.stat().st_mtime >= started_at - 1.0
-    ]
+    candidates = [path for path in wheelhouse.glob("wn_geometer-*.whl") if path.stat().st_mtime >= started_at - 1.0]
     if not candidates:
         raise FileNotFoundError(f"No wheel was built under {wheelhouse}")
     return max(candidates, key=lambda path: path.stat().st_mtime)
@@ -182,13 +181,17 @@ def validate_wheel_install(wheel: Path, step_path: Path, *, keep_temp: bool) -> 
         run([str(test_python), "-c", PACKAGE_VALIDATION_CODE], env=env, cwd=run_dir)
         run([str(venv_script(venv_dir, "geometer")), "--version"], env=env, cwd=run_dir)
 
-        run([
-            str(test_python),
-            str(ROOT / "examples" / "python" / "step_hlr_svg.py"),
-            str(step_path),
-            "--out-dir",
-            str(example_output_dir),
-        ], env=env, cwd=run_dir)
+        run(
+            [
+                str(test_python),
+                str(ROOT / "examples" / "python" / "step_hlr_svg.py"),
+                str(step_path),
+                "--out-dir",
+                str(example_output_dir),
+            ],
+            env=env,
+            cwd=run_dir,
+        )
 
         if keep_temp:
             print(f"Kept package validation temp directory: {temp_dir}")
@@ -231,8 +234,7 @@ def validate_macos_dist_executable(target: str) -> None:
         raise RuntimeError(f"Could not determine macOS minimum OS version for {exe}")
     if version_pair(min_version) > version_pair(target):
         raise RuntimeError(
-            f"{exe} requires macOS {min_version}, which is newer than "
-            f"the configured deployment target {target}."
+            f"{exe} requires macOS {min_version}, which is newer than the configured deployment target {target}."
         )
     print(f"macOS deployment target ok: binary minos {min_version}, configured target {target}")
 

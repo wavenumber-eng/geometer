@@ -26,10 +26,10 @@
       });
       const version = module.ccall("geometer_version_string", "string", [], []);
       const abi = module.ccall("geometer_abi_version", "number", [], []);
-      if (version !== "2026.6.4") {
+      if (version !== "2026.6.9") {
         throw new Error(`Unexpected geometer version: ${version}`);
       }
-      if (abi !== 20260604) {
+      if (abi !== 20260609) {
         throw new Error(`Unexpected geometer ABI version: ${abi}`);
       }
 
@@ -47,7 +47,7 @@
         round_digits: 3,
         include_visible: true,
         include_outline: true,
-        union_simple_polygons: true,
+        union_outline_polygons: true,
       });
 
       const stepPtr = module._malloc(stepBytes.length);
@@ -88,23 +88,23 @@
 
       const projection = JSON.parse(text);
       const view = projection.views && projection.views[0];
-      if (projection.schema !== "geometry.projection.a0" || !view) {
+      if (projection.schema !== "geometry.projection.b0" || !view) {
         throw new Error("Projection JSON had unexpected schema or no views.");
       }
-      const simple = view.modes && view.modes.simple;
+      const outline = view.modes && view.modes.outline;
       const detail = view.modes && view.modes.detail;
-      const simpleCount = (simple && simple.segments ? simple.segments.length : 0) +
-        (simple && simple.arcs ? simple.arcs.length : 0);
+      const outlineCount = (outline && outline.segments ? outline.segments.length : 0) +
+        (outline && outline.arcs ? outline.arcs.length : 0);
       const detailCount = (detail && detail.segments ? detail.segments.length : 0) +
         (detail && detail.arcs ? detail.arcs.length : 0);
       if (detailCount === 0) {
         throw new Error("Projection JSON had no detail geometry.");
       }
-      if (simpleCount === 0) {
-        throw new Error("Projection JSON had no simple geometry.");
+      if (outlineCount === 0) {
+        throw new Error("Projection JSON had no outline geometry.");
       }
 
-      write(`PASS version=${version} abi=${abi} schema=${projection.schema} detail=${detailCount} simple=${simpleCount}`);
+      write(`PASS version=${version} abi=${abi} schema=${projection.schema} detail=${detailCount} outline=${outlineCount}`);
     }
 
     run().catch((error) => {

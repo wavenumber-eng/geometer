@@ -42,4 +42,5 @@ else()
             "${GEOMETER_NATIVE_DIST_DIR}/"
         COMMENT "Copying geometer to dist/native/${GEOMETER_NATIVE_DIST_PLATFORM}/"
     )
+    geometer_copy_occt_runtime_to_native_dist(geometer)
 endif()

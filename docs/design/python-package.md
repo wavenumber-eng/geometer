@@ -45,6 +45,11 @@ planar_step_request = {
 planar_step_bytes = geometer.planar_step(planar_step_request)
 geometer.write_planar_step(planar_step_request, "layer.step")
 
+planar_rings = geometer.planar_batch_solve("planar-batch-request.bin")
+first_region = planar_rings.regions()[0]
+outer_ring_mm = first_region.outer
+hole_rings_mm = first_region.holes
+
 runner = geometer.GeometerBatchRunner(max_workers=8, chunk_size=5)
 runner_version = runner.version()
 batch = runner.run(

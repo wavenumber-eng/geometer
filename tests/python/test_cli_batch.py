@@ -50,7 +50,7 @@ def test_cli_init_request_and_run_hlr_json(tmp_path: Path) -> None:
     assert result["schema"] == "geometer.batch.response.a0"
     assert result["ok"] is True
     assert result["jobs"][0]["ok"] is True
-    assert json.loads(projection.read_text(encoding="utf-8"))["schema"] == "geometry.projection.a0"
+    assert json.loads(projection.read_text(encoding="utf-8"))["schema"] == "geometry.projection.b0"
 
 
 def test_cli_run_batch_hlr_svg_and_glb(tmp_path: Path) -> None:
@@ -70,9 +70,7 @@ def test_cli_run_batch_hlr_svg_and_glb(tmp_path: Path) -> None:
                         "step_path": str(SOT23_STEP),
                         "output_path": str(projection),
                         "options": {
-                            "views": [
-                                {"id": "top", "direction": [0, 0, 1], "up": [0, 1, 0]}
-                            ],
+                            "views": [{"id": "top", "direction": [0, 0, 1], "up": [0, 1, 0]}],
                             "curve_mode": "polyline",
                         },
                     },
@@ -81,12 +79,10 @@ def test_cli_run_batch_hlr_svg_and_glb(tmp_path: Path) -> None:
                         "operation": "step_hlr_projection_svg",
                         "step_path": str(SOT23_STEP),
                         "output_path": str(svg),
-                        "mode": "simple",
+                        "mode": "outline",
                         "view": "top",
                         "options": {
-                            "views": [
-                                {"id": "top", "direction": [0, 0, 1], "up": [0, 1, 0]}
-                            ],
+                            "views": [{"id": "top", "direction": [0, 0, 1], "up": [0, 1, 0]}],
                             "curve_mode": "polyline",
                         },
                     },
@@ -204,7 +200,7 @@ def test_cli_run_batch_generic_model_aliases(tmp_path: Path) -> None:
                         "model_path": str(SOT23_STEP),
                         "output_path": str(svg),
                         "view": "top",
-                        "mode": "simple",
+                        "mode": "outline",
                     },
                     {
                         "id": "glb",
@@ -231,7 +227,7 @@ def test_cli_run_batch_generic_model_aliases(tmp_path: Path) -> None:
         "model_hlr_projection_svg",
         "model_to_glb",
     ]
-    assert json.loads(projection.read_text(encoding="utf-8"))["schema"] == "geometry.projection.a0"
+    assert json.loads(projection.read_text(encoding="utf-8"))["schema"] == "geometry.projection.b0"
     assert svg.read_text(encoding="utf-8").lstrip().startswith("<svg")
     assert glb.read_bytes()[:4] == b"glTF"
 
@@ -246,9 +242,7 @@ def test_cli_run_batch_uses_request_options_with_job_overrides(tmp_path: Path) -
             {
                 "schema": "geometer.batch.request.a0",
                 "options": {
-                    "views": [
-                        {"id": "root-view", "direction": [0, 0, 1], "up": [0, 1, 0]}
-                    ],
+                    "views": [{"id": "root-view", "direction": [0, 0, 1], "up": [0, 1, 0]}],
                     "curve_mode": "polyline",
                     "mesh_linear_deflection": 0.2,
                 },
@@ -265,9 +259,7 @@ def test_cli_run_batch_uses_request_options_with_job_overrides(tmp_path: Path) -
                         "step_path": str(SOT23_STEP),
                         "output_path": str(job_projection),
                         "options": {
-                            "views": [
-                                {"id": "job-view", "direction": [0, 0, 1], "up": [0, 1, 0]}
-                            ],
+                            "views": [{"id": "job-view", "direction": [0, 0, 1], "up": [0, 1, 0]}],
                             "meshLinearDeflection": 0.1,
                         },
                     },
@@ -420,7 +412,7 @@ def test_python_batch_runner_chunks_jobs(tmp_path: Path) -> None:
         chunk_size=3,
         work_dir=tmp_path / "batches",
     )
-    assert runner.version().string == "2026.6.4"
+    assert runner.version().string == "2026.6.9"
     result = runner.run(
         jobs,
         options={
@@ -433,8 +425,8 @@ def test_python_batch_runner_chunks_jobs(tmp_path: Path) -> None:
     assert [job["id"] for job in result.jobs] == [f"projection-{index}" for index in range(7)]
     assert [batch["job_count"] for batch in result.batches] == [3, 3, 1]
     assert result.work_dir == tmp_path / "batches"
-    assert result.version == "2026.6.4"
-    assert result.abi == 20260604
+    assert result.version == "2026.6.9"
+    assert result.abi == 20260609
     for output_path in outputs:
         payload = json.loads(output_path.read_text(encoding="utf-8"))
         assert payload["views"][0]["id"] == "chunked-top"

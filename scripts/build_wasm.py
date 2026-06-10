@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -49,6 +50,14 @@ OCCT_TAG = "V7_8_1"
 def run(cmd: list[str], **kwargs) -> None:
     print(f"  > {' '.join(cmd)}")
     subprocess.check_call(cmd, **kwargs)
+
+
+def normalize_generated_js(path: Path) -> None:
+    """Keep committed Emscripten JS artifacts compatible with diff hygiene."""
+    text = path.read_text(encoding="utf-8")
+    normalized = re.sub(r"[ \t]+(?=\r?\n|$)", "", text).replace("\r\n", "\n")
+    if normalized != text:
+        path.write_text(normalized, encoding="utf-8", newline="\n")
 
 
 def _emsdk_exe() -> str:
@@ -241,7 +250,9 @@ def build_geometer_wasm() -> None:
             target_dir.mkdir(parents=True, exist_ok=True)
             dst = target_dir / src.name
             shutil.copy2(str(src), str(dst))
-            print(f"Copied {src.name} to {target_dir.relative_to(DIST_DIR)}/ ({src.stat().st_size:,} bytes)")
+            if dst.suffix == ".js":
+                normalize_generated_js(dst)
+            print(f"Copied {src.name} to {target_dir.relative_to(DIST_DIR)}/ ({dst.stat().st_size:,} bytes)")
 
     run([sys.executable, str(ROOT / "scripts" / "write_dist_manifest.py")])
     print("geometer WASM build complete.")

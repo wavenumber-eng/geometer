@@ -13,6 +13,7 @@ from ._batch import (
 from ._cli import model_bounds_json as cli_model_bounds_json
 from ._cli import model_projection_json as cli_model_projection_json
 from ._cli import model_to_glb as cli_model_to_glb
+from ._cli import planar_batch_solve_json as cli_planar_batch_solve_json
 from ._cli import planar_step as cli_planar_step
 from ._cli import run_batch as cli_run_batch
 from ._cli import step_to_glb as cli_step_to_glb
@@ -24,6 +25,8 @@ from ._types import (
     Matrix4,
     ModelBoundsResult,
     ModelInput,
+    PlanarBatchInput,
+    PlanarBatchSolveResult,
     ProjectionView,
     StepInput,
     Version,
@@ -179,6 +182,18 @@ def step_to_glb(step: StepInput, *, options: Mapping[str, Any] | None = None) ->
 def planar_step(request: Mapping[str, Any] | str | bytes | bytearray) -> bytes:
     _ensure_exe_backend()
     return cli_planar_step(request)
+
+
+def planar_batch_solve_json(request: PlanarBatchInput) -> str:
+    _ensure_exe_backend()
+    return cli_planar_batch_solve_json(request)
+
+
+def planar_batch_solve(request: PlanarBatchInput) -> PlanarBatchSolveResult:
+    loaded = json.loads(planar_batch_solve_json(request))
+    if not isinstance(loaded, dict):
+        raise RuntimeError("geometer planar-batch-solve returned non-object JSON")
+    return PlanarBatchSolveResult.from_json_value(loaded)
 
 
 def write_planar_step(

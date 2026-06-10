@@ -72,13 +72,13 @@ function runProjection(stepPath, jsonOutPath, view) {
 
   const v = (payload.views || []).find((view0) => view0.id === view) || (payload.views || [])[0];
   const detail = v && v.modes && v.modes.detail ? v.modes.detail : { segments: [], arcs: [] };
-  const simple = v && v.modes && v.modes.simple ? v.modes.simple : { segments: [], arcs: [] };
+  const outline = v && v.modes && v.modes.outline ? v.modes.outline : { segments: [], arcs: [] };
   return {
     ok: true,
     wallMs,
     timings: payload.timings || {},
     detail: (detail.segments || []).length + (detail.arcs || []).length,
-    simple: (simple.segments || []).length + (simple.arcs || []).length,
+    outline: (outline.segments || []).length + (outline.arcs || []).length,
   };
 }
 
@@ -119,7 +119,7 @@ function main() {
         current.timings.hlr_ms != null ? `hlr ${formatMs(current.timings.hlr_ms)}` : null,
         current.timings.extract_ms != null ? `ext ${formatMs(current.timings.extract_ms)}` : null,
       ].filter(Boolean).join(" / ");
-      console.log(`wall ${formatMs(current.wallMs)} [${phases}] detail=${current.detail} simple=${current.simple}`);
+      console.log(`wall ${formatMs(current.wallMs)} [${phases}] detail=${current.detail} outline=${current.outline}`);
     } else {
       console.log(`FAIL ${current.error}`);
     }
@@ -134,7 +134,7 @@ function main() {
   lines.push("");
   lines.push("Per-model wall-clock time includes Node startup, module init, HLR, and JSON write.");
   lines.push("");
-  lines.push("| Model | STEP | Wall | Mesh | HLR | Extract | Detail | Simple |");
+  lines.push("| Model | STEP | Wall | Mesh | HLR | Extract | Detail | Outline |");
   lines.push("|---|---:|---:|---:|---:|---:|---:|---:|");
 
   let total = 0;
@@ -153,7 +153,7 @@ function main() {
       current.ok ? formatMs(current.timings.hlr_ms) : "-",
       current.ok ? formatMs(current.timings.extract_ms) : "-",
       current.ok ? current.detail : "-",
-      current.ok ? current.simple : "-",
+      current.ok ? current.outline : "-",
     ].map(String).join(" | ").replace(/^/, "| ").replace(/$/, " |"));
   }
 

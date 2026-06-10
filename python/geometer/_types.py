@@ -9,6 +9,9 @@ from typing import Any, Mapping, Sequence
 Matrix4 = Sequence[Sequence[float]] | Sequence[float]
 StepInput = bytes | bytearray | memoryview | str | Path
 ModelInput = StepInput
+PlanarBatchInput = bytes | bytearray | memoryview | str | Path
+PlanarPoint = tuple[float, float]
+PlanarRing = list[PlanarPoint]
 
 
 @dataclass(frozen=True)
@@ -64,10 +67,13 @@ class HlrOptions:
     curve_mode: str = "polyline"
     samples_per_curve: int = 24
     round_digits: int = 3
-    union_simple_polygons: bool = True
+    union_outline_polygons: bool = True
     mesh_linear_deflection: float = 0.01
     mesh_angular_deflection: float = 0.5
     mesh_relative: bool = False
+    mesh_deflection_mode: str = "bbox-relative"
+    mesh_deflection_coefficient: float = 0.004
+    outline_algorithm: str = "hlr-close"
     hlr_angle_tolerance: float = 0.0174533
     edge_v_sharp: bool = True
     edge_v_outline: bool = True
@@ -82,7 +88,7 @@ class HlrOptions:
 
     @classmethod
     def assembly_outline(cls) -> "HlrOptions":
-        return cls()
+        return cls(outline_algorithm="mesh-shadow")
 
     @classmethod
     def visible_detail(cls) -> "HlrOptions":
@@ -165,6 +171,72 @@ class HlrProjectionResult:
 
 
 @dataclass(frozen=True)
+class PlanarRegion:
+    outer: PlanarRing
+    holes: list[PlanarRing]
+
+    def to_json_value(self) -> dict[str, Any]:
+        return {
+            "outer": _ring_json_value(self.outer),
+            "holes": [_ring_json_value(hole) for hole in self.holes],
+        }
+
+
+@dataclass(frozen=True)
+class PlanarBatchSolveJob:
+    regions: list[PlanarRegion]
+    area_mm2: float
+    source_subject_ring_count: int = 0
+    raw_subject_ring_count: int = 0
+    stroke_path_count: int = 0
+    stroke_region_count: int = 0
+    local_subtract_ring_count: int = 0
+    common_subtract_ring_count: int = 0
+
+
+@dataclass(frozen=True)
+class PlanarBatchSolveResult:
+    data: dict[str, Any]
+    jobs: list[PlanarBatchSolveJob]
+
+    @classmethod
+    def from_json_value(cls, data: dict[str, Any]) -> "PlanarBatchSolveResult":
+        jobs_value = data.get("jobs", [])
+        if not isinstance(jobs_value, list):
+            raise ValueError("planar solve JSON field 'jobs' must be a list")
+        return cls(data=data, jobs=[_planar_job(job, index) for index, job in enumerate(jobs_value)])
+
+    @property
+    def schema(self) -> str | None:
+        schema = self.data.get("schema")
+        return schema if isinstance(schema, str) else None
+
+    @property
+    def units(self) -> str | None:
+        units = self.data.get("units")
+        return units if isinstance(units, str) else None
+
+    def regions(self, job_index: int = 0) -> list[PlanarRegion]:
+        return self.jobs[job_index].regions
+
+    def to_json(self) -> str:
+        return json.dumps(self.data, separators=(",", ":"))
+
+    def to_region_json_value(self) -> dict[str, Any]:
+        return {
+            "schema": self.schema,
+            "units": self.units,
+            "jobs": [
+                {
+                    "area_mm2": job.area_mm2,
+                    "regions": [region.to_json_value() for region in job.regions],
+                }
+                for job in self.jobs
+            ],
+        }
+
+
+@dataclass(frozen=True)
 class ModelBoundsResult:
     data: dict[str, Any]
 
@@ -216,6 +288,18 @@ def read_step_input(step: StepInput) -> bytes:
     if isinstance(step, (str, Path)):
         return Path(step).read_bytes()
     raise TypeError("step must be bytes, bytearray, memoryview, str, or pathlib.Path")
+
+
+def read_planar_batch_input(request: PlanarBatchInput) -> bytes:
+    if isinstance(request, bytes):
+        return request
+    if isinstance(request, bytearray):
+        return bytes(request)
+    if isinstance(request, memoryview):
+        return request.tobytes()
+    if isinstance(request, (str, Path)):
+        return Path(request).read_bytes()
+    raise TypeError("request must be bytes, bytearray, memoryview, str, or pathlib.Path")
 
 
 def normalize_model_format(format: str) -> str:
@@ -270,6 +354,63 @@ def encode_json_options(payload: Mapping[str, Any] | None) -> bytes | None:
     if not payload:
         return None
     return json.dumps(payload, separators=(",", ":")).encode("utf-8")
+
+
+def _planar_job(value: Any, index: int) -> PlanarBatchSolveJob:
+    if not isinstance(value, Mapping):
+        raise ValueError(f"planar solve job {index} must be an object")
+    regions_value = value.get("regions", [])
+    if not isinstance(regions_value, list):
+        raise ValueError(f"planar solve job {index} field 'regions' must be a list")
+    return PlanarBatchSolveJob(
+        regions=[_planar_region(region, region_index) for region_index, region in enumerate(regions_value)],
+        area_mm2=_float_field(value, "area_mm2"),
+        source_subject_ring_count=_int_field(value, "source_subject_ring_count"),
+        raw_subject_ring_count=_int_field(value, "raw_subject_ring_count"),
+        stroke_path_count=_int_field(value, "stroke_path_count"),
+        stroke_region_count=_int_field(value, "stroke_region_count"),
+        local_subtract_ring_count=_int_field(value, "local_subtract_ring_count"),
+        common_subtract_ring_count=_int_field(value, "common_subtract_ring_count"),
+    )
+
+
+def _planar_region(value: Any, index: int) -> PlanarRegion:
+    if not isinstance(value, Mapping):
+        raise ValueError(f"planar solve region {index} must be an object")
+    outer_value = value.get("outer", value.get("outline"))
+    if outer_value is None:
+        raise ValueError(f"planar solve region {index} must contain 'outer' or 'outline'")
+    holes_value = value.get("holes", [])
+    if not isinstance(holes_value, list):
+        raise ValueError(f"planar solve region {index} field 'holes' must be a list")
+    return PlanarRegion(
+        outer=_planar_ring(outer_value, f"region {index} outer"),
+        holes=[_planar_ring(hole, f"region {index} hole {hole_index}") for hole_index, hole in enumerate(holes_value)],
+    )
+
+
+def _planar_ring(value: Any, label: str) -> PlanarRing:
+    if not isinstance(value, list):
+        raise ValueError(f"planar solve {label} must be a list of [x, y] points")
+    return [_planar_point(point, f"{label} point {point_index}") for point_index, point in enumerate(value)]
+
+
+def _planar_point(value: Any, label: str) -> PlanarPoint:
+    if not isinstance(value, (list, tuple)) or len(value) != 2:
+        raise ValueError(f"planar solve {label} must be a 2D point")
+    return (float(value[0]), float(value[1]))
+
+
+def _int_field(value: Mapping[str, Any], key: str) -> int:
+    return int(value.get(key, 0) or 0)
+
+
+def _float_field(value: Mapping[str, Any], key: str) -> float:
+    return float(value.get(key, 0.0) or 0.0)
+
+
+def _ring_json_value(ring: PlanarRing) -> list[list[float]]:
+    return [[point[0], point[1]] for point in ring]
 
 
 def _view_json_value(view: ProjectionView | Mapping[str, Any]) -> dict[str, Any]:

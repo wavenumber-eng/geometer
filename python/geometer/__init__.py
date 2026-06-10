@@ -10,6 +10,8 @@ from ._api import (
     model_bounds_json,
     model_hlr_projection_json,
     model_to_glb,
+    planar_batch_solve,
+    planar_batch_solve_json,
     planar_step,
     project_model_hlr,
     project_step_hlr,
@@ -19,7 +21,18 @@ from ._api import (
     write_planar_step,
 )
 from ._errors import GeometerError
-from ._types import HlrOptions, HlrProjectionResult, ModelBoundsResult, ProjectionView, Version
+from ._types import (
+    HlrOptions,
+    HlrProjectionResult,
+    ModelBoundsResult,
+    PlanarBatchSolveJob,
+    PlanarBatchSolveResult,
+    PlanarPoint,
+    PlanarRegion,
+    PlanarRing,
+    ProjectionView,
+    Version,
+)
 
 __all__ = [
     "GeometerError",
@@ -29,6 +42,11 @@ __all__ = [
     "HlrOptions",
     "HlrProjectionResult",
     "ModelBoundsResult",
+    "PlanarBatchSolveJob",
+    "PlanarBatchSolveResult",
+    "PlanarPoint",
+    "PlanarRegion",
+    "PlanarRing",
     "ProjectionView",
     "Version",
     "executable_path",
@@ -37,6 +55,8 @@ __all__ = [
     "model_bounds_json",
     "model_hlr_projection_json",
     "model_to_glb",
+    "planar_batch_solve",
+    "planar_batch_solve_json",
     "planar_step",
     "project_model_hlr",
     "project_step_hlr",

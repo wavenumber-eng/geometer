@@ -14,8 +14,8 @@ models into backend-neutral hidden-line geometry.
 4. Support configurable tessellation through linear and angular deflection.
 5. Project one or more orthographic HLR views, including top and bottom helper
    presets.
-6. Return projection geometry as generic `geometry.projection.a0` JSON with
-   `detail` and `simple` modes.
+6. Return projection geometry as generic `geometry.projection.b0` JSON with
+   `detail`, `outline`, and `bbox` modes.
 7. Preserve line segments and circular arcs when `native_arcs` mode is
    requested.
 8. Support deterministic polyline flattening with configurable samples per

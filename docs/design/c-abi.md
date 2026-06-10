@@ -50,11 +50,20 @@ int geometer_step_to_glb_bytes(
 
 GeometerByteResult geometer_planar_batch_solve(GeometerBuffer request_data);
 
+GeometerStringResult geometer_planar_batch_solve_json(GeometerBuffer request_data);
+
 int geometer_planar_batch_solve_bytes(
     const unsigned char* request_data,
     size_t request_size,
     unsigned char** value,
     size_t* value_size,
+    char** error
+);
+
+int geometer_planar_batch_solve_json_bytes(
+    const unsigned char* request_data,
+    size_t request_size,
+    char** value,
     char** error
 );
 
@@ -98,8 +107,8 @@ void geometer_free_string(char* value);
 void geometer_free_bytes(unsigned char* value);
 ```
 
-Returned `error` strings and projection JSON `value` strings are heap-allocated
-and owned by the caller. Release them with `geometer_free_string`. Returned GLB
-and planar byte buffers are heap-allocated and owned by the caller. Release
-them with `geometer_free_bytes`. The version string is static storage and does
-not use either free function.
+Returned `error` strings, projection JSON strings, and planar solve JSON strings
+are heap-allocated and owned by the caller. Release them with
+`geometer_free_string`. Returned GLB and planar byte buffers are heap-allocated
+and owned by the caller. Release them with `geometer_free_bytes`. The version
+string is static storage and does not use either free function.

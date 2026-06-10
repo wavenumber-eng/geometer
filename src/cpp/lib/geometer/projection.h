@@ -22,6 +22,27 @@ enum class ProjectionAlgorithm
     Exact
 };
 
+enum class MeshDeflectionMode
+{
+    // Use mesh_linear_deflection verbatim as an absolute chordal tolerance.
+    Absolute,
+    // Compute the chordal tolerance per shape as
+    // maxBoundingBoxDimension * mesh_deflection_coefficient, passed to
+    // BRepMesh as an absolute value. This matches Altium Draftsman, whose
+    // native OccProxy uses Prs3d::GetDeflection (relative to the model bbox).
+    BboxRelative
+};
+
+enum class ProjectionOutlineAlgorithm
+{
+    // Build outline from the complete visible+hidden HLR edge contour source,
+    // then close small HLR gaps with Clipper2 morphology.
+    HlrClosedEdges,
+    // Build outline from the orthographic shadow of tessellated faces. This is
+    // better for pure assembly silhouettes and can preserve projected holes.
+    MeshShadow
+};
+
 struct ProjectionViewSpec
 {
     std::string id = "top";
@@ -57,13 +78,19 @@ struct HlrProjectionOptions
     bool edge_h_sewn = false;    // RgNLineHCompound   (hidden, sewn/manifold)
     bool edge_h_iso = false;     // IsoLineHCompound   (hidden, parametric isolines)
 
-    bool union_simple_polygons = true;
+    bool union_outline_polygons = true;
 
     // 1.1: poly-algo path defaults. Exact path is selected explicitly.
     ProjectionAlgorithm projection_algorithm = ProjectionAlgorithm::Poly;
-    double mesh_linear_deflection = 0.01; // mm
+    double mesh_linear_deflection = 0.01; // mm (used when mode == Absolute)
     double mesh_angular_deflection = 0.5; // rad (~28.6 deg)
     bool mesh_relative = false;
+    // Default to bbox-relative deflection (Altium Draftsman parity). The
+    // effective linear deflection becomes maxBoundingBoxDimension *
+    // mesh_deflection_coefficient; Altium's native OccProxy uses 0.004.
+    MeshDeflectionMode mesh_deflection_mode = MeshDeflectionMode::BboxRelative;
+    double mesh_deflection_coefficient = 0.004;
+    ProjectionOutlineAlgorithm outline_algorithm = ProjectionOutlineAlgorithm::HlrClosedEdges;
     double hlr_angle_tolerance = 0.0174533; // ~1 deg
 };
 
@@ -95,8 +122,9 @@ struct ProjectedModeGeometry
 struct ProjectedViewGeometry
 {
     ProjectionViewSpec view;
-    ProjectedModeGeometry simple;
+    ProjectedModeGeometry outline;
     ProjectedModeGeometry detail;
+    ProjectedModeGeometry bbox;
 };
 
 struct HlrProjectionTimings
@@ -109,7 +137,7 @@ struct HlrProjectionTimings
 
 struct HlrProjectionResult
 {
-    std::string schema = "geometry.projection.a0";
+    std::string schema = "geometry.projection.b0";
     std::string units = "mm";
     std::string source_hash;
     std::vector<ProjectedViewGeometry> views;

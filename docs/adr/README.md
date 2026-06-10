@@ -10,3 +10,4 @@ and should not be treated as docs of record after a change ships.
 - [ADR 005: Vendored Clipper2 For Planar Batch Solve](005_vendored_clipper2_for_planar_batch_solve.md)
 - [ADR 006: Date-Based Versioning Policy](006_date_based_versioning_policy.md)
 - [ADR 007: Generic Model Input API Names](007_generic_model_input_api_names.md)
+- [ADR 008: Projection Modes And Outline Policy](008_projection_modes_and_outline_policy.md)

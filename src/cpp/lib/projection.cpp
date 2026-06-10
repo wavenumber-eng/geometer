@@ -101,20 +101,6 @@ void append_arcs(std::ostringstream& out, const std::vector<ProjectedArc>& arcs)
     out << ']';
 }
 
-void append_mode(std::ostringstream& out, const ProjectedModeGeometry& mode)
-{
-    out << "{\"segments\":";
-    append_segments(out, mode.segments);
-    out << ",\"arcs\":";
-    append_arcs(out, mode.arcs);
-    out << '}';
-}
-
-const ProjectedModeGeometry* select_mode(const ProjectedViewGeometry& view, const std::string& mode)
-{
-    return mode == "simple" ? &view.simple : &view.detail;
-}
-
 struct Bounds
 {
     double min_x = std::numeric_limits<double>::infinity();
@@ -161,6 +147,50 @@ Bounds geometry_bounds(const ProjectedModeGeometry& geometry)
     return bounds;
 }
 
+void append_bounds(std::ostringstream& out, const Bounds& bounds)
+{
+    if (!bounds.valid())
+    {
+        out << "null";
+        return;
+    }
+    out << "{\"min_x\":" << bounds.min_x;
+    out << ",\"min_y\":" << bounds.min_y;
+    out << ",\"max_x\":" << bounds.max_x;
+    out << ",\"max_y\":" << bounds.max_y;
+    out << ",\"width\":" << bounds.max_x - bounds.min_x;
+    out << ",\"height\":" << bounds.max_y - bounds.min_y;
+    out << '}';
+}
+
+void append_mode(std::ostringstream& out, const ProjectedModeGeometry& mode)
+{
+    out << "{\"segments\":";
+    append_segments(out, mode.segments);
+    out << ",\"arcs\":";
+    append_arcs(out, mode.arcs);
+    out << ",\"bounds\":";
+    append_bounds(out, geometry_bounds(mode));
+    out << '}';
+}
+
+const ProjectedModeGeometry* select_mode(const ProjectedViewGeometry& view, const std::string& mode)
+{
+    if (mode == "outline")
+    {
+        return &view.outline;
+    }
+    if (mode == "detail")
+    {
+        return &view.detail;
+    }
+    if (mode == "bbox")
+    {
+        return &view.bbox;
+    }
+    return nullptr;
+}
+
 std::string svg_number(double value)
 {
     std::ostringstream out;
@@ -200,10 +230,12 @@ int write_hlr_projection_json(const HlrProjectionResult& result, std::string* js
         append_vec3(out, view.view.direction);
         out << ",\"up\":";
         append_vec3(out, view.view.up);
-        out << ",\"modes\":{\"simple\":";
-        append_mode(out, view.simple);
+        out << ",\"modes\":{\"outline\":";
+        append_mode(out, view.outline);
         out << ",\"detail\":";
         append_mode(out, view.detail);
+        out << ",\"bbox\":";
+        append_mode(out, view.bbox);
         out << "}}";
     }
     out << "],\"timings\":{";
@@ -242,8 +274,13 @@ int write_hlr_projection_svg(const HlrProjectionResult& result, const std::strin
         return 3;
     }
 
-    const std::string normalized_mode = mode == "simple" ? "simple" : "detail";
+    const std::string normalized_mode = mode.empty() ? "outline" : mode;
     const ProjectedModeGeometry* geometry = select_mode(*selected_view, normalized_mode);
+    if (geometry == nullptr)
+    {
+        set_status(status, 4, "Requested projection mode must be outline, detail, or bbox.");
+        return 4;
+    }
     Bounds bounds = geometry_bounds(*geometry);
     if (!bounds.valid())
     {

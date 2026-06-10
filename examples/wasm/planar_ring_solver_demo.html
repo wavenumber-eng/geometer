@@ -1,0 +1,922 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Geometer Planar Ring Solver Demo</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f5f6f3;
+      --panel: #ffffff;
+      --panel-2: #f9faf7;
+      --ink: #15201f;
+      --muted: #5e6a66;
+      --line: #d7ddd7;
+      --subject: #256f9f;
+      --subject-fill: rgba(37, 111, 159, 0.18);
+      --subtract: #bf4f45;
+      --subtract-fill: rgba(191, 79, 69, 0.2);
+      --result: #1d7a52;
+      --result-fill: rgba(29, 122, 82, 0.2);
+      --hole-fill: rgba(255, 255, 255, 0.72);
+      --grid: #dfe5df;
+      --shadow: rgba(21, 32, 31, 0.08);
+      font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      border-width: 0px;
+      font-family: inherit;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+    }
+
+    main {
+      min-height: 100vh;
+      padding: 20px;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      gap: 14px;
+    }
+
+    header {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: end;
+      border: 0px;
+      border-radius: 8px;
+      background: var(--panel);
+      padding: 14px 16px;
+      box-shadow: 0 8px 24px var(--shadow);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 20px;
+      line-height: 1.2;
+      letter-spacing: 0;
+    }
+
+    .subhead {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .status {
+      min-width: 260px;
+      border: 0px;
+      border-radius: 8px;
+      background: var(--panel-2);
+      padding: 10px 12px;
+      text-align: right;
+      font-size: 12px;
+      line-height: 1.5;
+      white-space: pre-line;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: minmax(260px, 1fr) minmax(260px, 1fr);
+      gap: 14px;
+      min-height: 0;
+    }
+
+    .panel {
+      min-width: 0;
+      min-height: 0;
+      border: 0px;
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: 0 8px 24px var(--shadow);
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      overflow: hidden;
+    }
+
+    .panel header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border: 0px;
+      border-bottom: 0px;
+      border-radius: 0;
+      box-shadow: none;
+      padding: 10px 12px;
+      background: var(--panel-2);
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.2;
+      letter-spacing: 0;
+    }
+
+    .metric {
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.2;
+    }
+
+    .svg-wrap {
+      min-height: 0;
+      padding: 12px;
+      display: grid;
+    }
+
+    svg {
+      width: 100%;
+      height: 100%;
+      min-height: 280px;
+      border: 0px;
+      border-radius: 8px;
+      background: #fcfdfb;
+    }
+
+    .text-panel {
+      grid-template-rows: auto minmax(0, 1fr);
+    }
+
+    pre {
+      margin: 0;
+      padding: 12px;
+      min-height: 0;
+      overflow: auto;
+      background: #111817;
+      color: #e6ece9;
+      font-size: 11px;
+      line-height: 1.45;
+      white-space: pre;
+      tab-size: 2;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.2;
+    }
+
+    .key {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .swatch {
+      width: 11px;
+      height: 11px;
+      border-radius: 3px;
+      border: 0px;
+      display: inline-block;
+    }
+
+    .swatch.subject {
+      color: var(--subject);
+      background: var(--subject-fill);
+    }
+
+    .swatch.subtract {
+      color: var(--subtract);
+      background: var(--subtract-fill);
+    }
+
+    .swatch.result {
+      color: var(--result);
+      background: var(--result-fill);
+    }
+
+    .error {
+      color: #9c2b23;
+      white-space: pre-wrap;
+    }
+
+    .draggable-ring {
+      cursor: grab;
+      touch-action: none;
+    }
+
+    .draggable-ring.dragging {
+      cursor: grabbing;
+      filter: drop-shadow(0 0 0.12px rgba(21, 32, 31, 0.45));
+    }
+
+    .watermark {
+      position: fixed;
+      right: 18px;
+      bottom: 14px;
+      width: min(140px, 18vw);
+      max-height: 88px;
+      opacity: 0.25;
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    @media (max-width: 900px) {
+      main {
+        padding: 12px;
+      }
+
+      header {
+        grid-template-columns: 1fr;
+        align-items: start;
+      }
+
+      .status {
+        min-width: 0;
+        width: 100%;
+        text-align: left;
+      }
+
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      svg {
+        height: 340px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <h1>Geometer Planar Ring Solver</h1>
+        <p class="subhead">Packed planar batch request in, fused outline and hole rings out.</p>
+      </div>
+      <div class="status" id="status">loading WASM...</div>
+    </header>
+
+    <section class="grid" aria-label="Planar rings demo">
+      <article class="panel">
+        <header>
+          <h2>Input Rings</h2>
+          <div class="legend" aria-label="Input ring legend">
+            <span class="key"><span class="swatch subject"></span>subject</span>
+            <span class="key"><span class="swatch subtract"></span>subtract</span>
+          </div>
+        </header>
+        <div class="svg-wrap" id="inputSvg"></div>
+      </article>
+
+      <article class="panel">
+        <header>
+          <h2>Fused Rings</h2>
+          <span class="metric" id="resultMetric">pending</span>
+        </header>
+        <div class="svg-wrap" id="resultSvg"></div>
+      </article>
+
+      <article class="panel text-panel">
+        <header>
+          <h2>JSON</h2>
+          <span class="metric" id="jsonMetric">pending</span>
+        </header>
+        <pre id="jsonText"></pre>
+      </article>
+
+      <article class="panel text-panel">
+        <header>
+          <h2>SVG Export</h2>
+          <span class="metric" id="svgMetric">pending</span>
+        </header>
+        <pre id="svgText"></pre>
+      </article>
+    </section>
+  </main>
+  <img class="watermark" src="/tests/wasm/vendor/wn/logo.svg" alt="" aria-hidden="true">
+
+  <script id="planarDemoApp">
+    const requestMagic = "GMPBRQ01";
+    const formatVersion = 2;
+    const jobSubtractCommonRings = 1 << 0;
+    const jobFilterCommonSubtractByBounds = 1 << 1;
+    let geometerModule = null;
+    let activeDrag = null;
+    let inputDragWindowListenersAttached = false;
+    let solveQueued = false;
+
+    const sample = {
+      commonSubtract: [
+        rect(1.0, 0.75, 2.25, 2.0),
+        circleRing(5.05, 2.85, 0.48, 32),
+      ],
+      finalClip: [],
+      jobs: [
+        {
+          subject: [
+            roundedRect(0.0, 0.0, 4.3, 3.1, 0.42, 8),
+            rect(3.2, 1.2, 7.2, 4.35),
+            roundedRect(1.45, 2.75, 5.55, 5.45, 0.55, 10),
+          ],
+          localSubtract: [
+            roundedRect(4.52, 2.25, 5.78, 3.45, 0.22, 8),
+          ],
+        },
+      ],
+    };
+
+    function rect(minX, minY, maxX, maxY) {
+      return [
+        [minX, minY],
+        [maxX, minY],
+        [maxX, maxY],
+        [minX, maxY],
+      ];
+    }
+
+    function circleRing(centerX, centerY, radius, segments) {
+      const points = [];
+      for (let index = 0; index < segments; index += 1) {
+        const angle = (Math.PI * 2 * index) / segments;
+        points.push([
+          centerX + Math.cos(angle) * radius,
+          centerY + Math.sin(angle) * radius,
+        ]);
+      }
+      return points;
+    }
+
+    function roundedRect(minX, minY, maxX, maxY, radius, segmentsPerCorner) {
+      const radiusX = Math.min(radius, (maxX - minX) * 0.5);
+      const radiusY = Math.min(radius, (maxY - minY) * 0.5);
+      const points = [];
+      appendEllipticArc(points, maxX - radiusX, minY + radiusY, radiusX, radiusY, -90, 0, segmentsPerCorner);
+      appendEllipticArc(points, maxX - radiusX, maxY - radiusY, radiusX, radiusY, 0, 90, segmentsPerCorner);
+      appendEllipticArc(points, minX + radiusX, maxY - radiusY, radiusX, radiusY, 90, 180, segmentsPerCorner);
+      appendEllipticArc(points, minX + radiusX, minY + radiusY, radiusX, radiusY, 180, 270, segmentsPerCorner);
+      return points;
+    }
+
+    function appendEllipticArc(points, centerX, centerY, radiusX, radiusY, startDeg, endDeg, segments) {
+      for (let index = 0; index <= segments; index += 1) {
+        if (points.length > 0 && index === 0) {
+          continue;
+        }
+        const t = index / segments;
+        const angle = (startDeg + (endDeg - startDeg) * t) * Math.PI / 180;
+        points.push([
+          centerX + Math.cos(angle) * radiusX,
+          centerY + Math.sin(angle) * radiusY,
+        ]);
+      }
+    }
+
+    class Writer {
+      constructor() {
+        this.bytes = [];
+      }
+
+      ascii(value) {
+        for (let index = 0; index < value.length; index += 1) {
+          this.bytes.push(value.charCodeAt(index));
+        }
+      }
+
+      raw(values) {
+        for (const value of values) {
+          this.bytes.push(value);
+        }
+      }
+
+      u32(value) {
+        const buffer = new ArrayBuffer(4);
+        new DataView(buffer).setUint32(0, value >>> 0, true);
+        this.raw(new Uint8Array(buffer));
+      }
+
+      f64(value) {
+        const buffer = new ArrayBuffer(8);
+        new DataView(buffer).setFloat64(0, Number(value), true);
+        this.raw(new Uint8Array(buffer));
+      }
+
+      ring(points) {
+        this.u32(points.length);
+        for (const point of points) {
+          this.f64(point[0]);
+          this.f64(point[1]);
+        }
+      }
+
+      take() {
+        return new Uint8Array(this.bytes);
+      }
+    }
+
+    function makePlanarBatchRequest() {
+      const writer = new Writer();
+      writer.ascii(requestMagic);
+      writer.u32(formatVersion);
+      writer.u32(0);
+      writer.u32(6);
+      writer.u32(sample.jobs.length);
+      writer.f64(0.0);
+      writer.f64(2.0);
+      writer.f64(0.0);
+      writer.u32(sample.commonSubtract.length);
+      writer.u32(sample.finalClip.length);
+      writer.u32(0);
+      writer.u32(0);
+      for (const ring of sample.commonSubtract) {
+        writer.ring(ring);
+      }
+      for (const ring of sample.finalClip) {
+        writer.ring(ring);
+      }
+      for (const job of sample.jobs) {
+        writer.u32(jobSubtractCommonRings | jobFilterCommonSubtractByBounds);
+        writer.f64(0.0);
+        writer.u32(job.subject.length);
+        writer.u32(job.localSubtract.length);
+        writer.u32(0);
+        writer.u32(0);
+        for (const ring of job.subject) {
+          writer.ring(ring);
+        }
+        for (const ring of job.localSubtract) {
+          writer.ring(ring);
+        }
+      }
+      return writer.take();
+    }
+
+    function readCarrier(id) {
+      const element = document.getElementById(id);
+      return element ? element.textContent.trim() : "";
+    }
+
+    function decodeBase64Bytes(value) {
+      const binary = atob(value);
+      const bytes = new Uint8Array(binary.length);
+      for (let index = 0; index < binary.length; index += 1) {
+        bytes[index] = binary.charCodeAt(index);
+      }
+      return bytes;
+    }
+
+    function loadScript(src) {
+      return new Promise((resolve, reject) => {
+        const script = document.createElement("script");
+        script.src = src;
+        script.onload = () => resolve(src);
+        script.onerror = () => {
+          script.remove();
+          reject(new Error(`failed to load ${src}`));
+        };
+        document.head.appendChild(script);
+      });
+    }
+
+    async function loadExternalPlanarModuleScript() {
+      const candidates = [
+        "wasm/planar-browser/geometer-planar-browser.js",
+        "../../dist/wasm/planar-browser/geometer-planar-browser.js",
+        "/dist/wasm/planar-browser/geometer-planar-browser.js",
+      ];
+      let lastError = null;
+      for (const candidate of candidates) {
+        try {
+          return await loadScript(candidate);
+        } catch (error) {
+          lastError = error;
+        }
+      }
+      throw lastError || new Error("geometer-planar-browser.js was not found");
+    }
+
+    async function loadGeometer() {
+      const embeddedJs = readCarrier("planarGeometerJsB64");
+      const embeddedWasm = readCarrier("planarWasmB64");
+      if (embeddedJs && embeddedWasm) {
+        const scriptBlob = new Blob([decodeBase64Bytes(embeddedJs)], { type: "text/javascript" });
+        const scriptUrl = URL.createObjectURL(scriptBlob);
+        try {
+          await loadScript(scriptUrl);
+        } finally {
+          URL.revokeObjectURL(scriptUrl);
+        }
+        return createGeometerPlanarModule({
+          wasmBinary: decodeBase64Bytes(embeddedWasm),
+        });
+      }
+
+      const scriptSrc = await loadExternalPlanarModuleScript();
+      const baseUrl = new URL(scriptSrc, window.location.href);
+      return createGeometerPlanarModule({
+        locateFile(path) {
+          return new URL(path, baseUrl).toString();
+        },
+      });
+    }
+
+    function callPlanarBatchSolveJsonBytes(module, requestBytes) {
+      const requestPtr = module._malloc(requestBytes.length);
+      const valueOut = module._malloc(4);
+      const errorOut = module._malloc(4);
+      module.HEAPU8.set(requestBytes, requestPtr);
+      module.HEAPU32[valueOut >> 2] = 0;
+      module.HEAPU32[errorOut >> 2] = 0;
+
+      let code = -1;
+      let value = "";
+      let error = "";
+      try {
+        code = module.ccall(
+          "geometer_planar_batch_solve_json_bytes",
+          "number",
+          ["number", "number", "number", "number"],
+          [requestPtr, requestBytes.length, valueOut, errorOut],
+        );
+        const valuePtr = module.getValue(valueOut, "*");
+        const errorPtr = module.getValue(errorOut, "*");
+        value = valuePtr ? module.UTF8ToString(valuePtr) : "";
+        error = errorPtr ? module.UTF8ToString(errorPtr) : "";
+        if (valuePtr) {
+          module._geometer_free_string(valuePtr);
+        }
+        if (errorPtr) {
+          module._geometer_free_string(errorPtr);
+        }
+      } finally {
+        module._free(requestPtr);
+        module._free(valueOut);
+        module._free(errorOut);
+      }
+      return { code, value, error };
+    }
+
+    function svgPoint(point) {
+      return `${formatNumber(point[0])},${formatNumber(-point[1])}`;
+    }
+
+    function ringPath(ring) {
+      if (!ring || ring.length === 0) {
+        return "";
+      }
+      return `M ${ring.map(svgPoint).join(" L ")} Z`;
+    }
+
+    function inputShapes() {
+      const shapes = [];
+      for (const job of sample.jobs) {
+        for (const ring of job.subject) {
+          shapes.push({ kind: "subject", ring });
+        }
+      }
+      for (const ring of sample.commonSubtract) {
+        shapes.push({ kind: "subtract", ring });
+      }
+      for (const job of sample.jobs) {
+        for (const ring of job.localSubtract) {
+          shapes.push({ kind: "subtract", ring });
+        }
+      }
+      return shapes;
+    }
+
+    function collectInputRings() {
+      const shapes = inputShapes();
+      return shapes.reduce((rings, shape) => {
+        rings[shape.kind].push(shape.ring);
+        return rings;
+      }, { subject: [], subtract: [] });
+    }
+
+    function collectOutputRings(result) {
+      const rings = [];
+      for (const job of result.jobs || []) {
+        for (const region of job.regions || []) {
+          rings.push(region.outline);
+          for (const hole of region.holes || []) {
+            rings.push(hole);
+          }
+        }
+      }
+      return rings;
+    }
+
+    function boundsForRings(rings) {
+      const bounds = { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity };
+      for (const ring of rings) {
+        for (const point of ring) {
+          bounds.minX = Math.min(bounds.minX, point[0]);
+          bounds.minY = Math.min(bounds.minY, point[1]);
+          bounds.maxX = Math.max(bounds.maxX, point[0]);
+          bounds.maxY = Math.max(bounds.maxY, point[1]);
+        }
+      }
+      if (!Number.isFinite(bounds.minX)) {
+        return { minX: -1, minY: -1, maxX: 1, maxY: 1 };
+      }
+      return bounds;
+    }
+
+    function viewBoxFor(bounds) {
+      const width = Math.max(0.1, bounds.maxX - bounds.minX);
+      const height = Math.max(0.1, bounds.maxY - bounds.minY);
+      const pad = Math.max(width, height) * 0.12;
+      return {
+        minX: bounds.minX - pad,
+        minY: -bounds.maxY - pad,
+        width: width + (pad * 2),
+        height: height + (pad * 2),
+      };
+    }
+
+    function gridLines(bounds) {
+      const lines = [];
+      const startX = Math.floor(bounds.minX);
+      const endX = Math.ceil(bounds.maxX);
+      const startY = Math.floor(bounds.minY);
+      const endY = Math.ceil(bounds.maxY);
+      for (let x = startX; x <= endX; x += 1) {
+        lines.push(`<line x1="${x}" y1="${-endY}" x2="${x}" y2="${-startY}"></line>`);
+      }
+      for (let y = startY; y <= endY; y += 1) {
+        lines.push(`<line x1="${startX}" y1="${-y}" x2="${endX}" y2="${-y}"></line>`);
+      }
+      return lines.join("");
+    }
+
+    function makeInputSvg() {
+      const shapes = inputShapes();
+      const bounds = boundsForRings(shapes.map((shape) => shape.ring));
+      const box = viewBoxFor(bounds);
+      const paths = shapes
+        .map((shape, index) => {
+          return `<path d="${ringPath(shape.ring)}" class="${shape.kind} draggable-ring" data-shape-index="${index}"></path>`;
+        })
+        .join("");
+      return `
+        <svg viewBox="${box.minX} ${box.minY} ${box.width} ${box.height}" role="img" aria-label="Input subject and subtract rings">
+          <style>
+            .grid line { stroke: var(--grid); stroke-width: 0.015; }
+            .subject { fill: var(--subject-fill); stroke: var(--subject); stroke-width: 0.06; }
+            .subtract { fill: var(--subtract-fill); stroke: var(--subtract); stroke-width: 0.06; stroke-dasharray: 0.16 0.1; }
+          </style>
+          <g class="grid">${gridLines(bounds)}</g>
+          ${paths}
+        </svg>`;
+    }
+
+    function renderInput() {
+      setHtml("inputSvg", makeInputSvg());
+      attachInputDrag();
+    }
+
+    function attachInputDrag() {
+      const svg = document.querySelector("#inputSvg svg");
+      if (!svg) {
+        return;
+      }
+      const shapes = inputShapes();
+      svg.querySelectorAll("[data-shape-index]").forEach((path) => {
+        path.addEventListener("pointerdown", (event) => {
+          const shapeIndex = Number(path.dataset.shapeIndex);
+          const shape = shapes[shapeIndex];
+          const pointerId = event.pointerType === "mouse" ? "mouse" : event.pointerId;
+          startDrag(event, path, shape, svg, pointerId);
+        });
+        path.addEventListener("mousedown", (event) => {
+          const shapeIndex = Number(path.dataset.shapeIndex);
+          const shape = shapes[shapeIndex];
+          startDrag(event, path, shape, svg, "mouse");
+        });
+      });
+      svg.addEventListener("pointermove", (event) => {
+        const pointerId = event.pointerType === "mouse" ? "mouse" : event.pointerId;
+        moveDrag(event, svg, pointerId);
+      });
+      svg.addEventListener("pointerup", finishDrag);
+      svg.addEventListener("pointercancel", finishDrag);
+      attachInputDragWindowListeners();
+    }
+
+    function attachInputDragWindowListeners() {
+      if (inputDragWindowListenersAttached) {
+        return;
+      }
+      inputDragWindowListenersAttached = true;
+      window.addEventListener("pointermove", (event) => {
+        const pointerId = event.pointerType === "mouse" ? "mouse" : event.pointerId;
+        if (activeDrag) {
+          moveDrag(event, activeDrag.svg, pointerId);
+        }
+      });
+      window.addEventListener("pointerup", finishDrag);
+      window.addEventListener("pointercancel", finishDrag);
+      window.addEventListener("mousemove", (event) => {
+        if (activeDrag) {
+          moveDrag(event, activeDrag.svg, "mouse");
+        }
+      });
+      window.addEventListener("mouseup", finishDrag);
+    }
+
+    function startDrag(event, path, shape, svg, pointerId) {
+      if (activeDrag || !shape || (event.button !== undefined && event.button !== 0)) {
+        return;
+      }
+      const point = svgToModel(svg, event);
+      if (!point) {
+        return;
+      }
+      event.preventDefault();
+      if (pointerId !== "mouse" && path.setPointerCapture) {
+        path.setPointerCapture(pointerId);
+      }
+      path.classList.add("dragging");
+      activeDrag = {
+        pointerId,
+        path,
+        ring: shape.ring,
+        svg,
+        last: point,
+      };
+    }
+
+    function moveDrag(event, svg, pointerId) {
+      if (!activeDrag || activeDrag.svg !== svg || activeDrag.pointerId !== pointerId) {
+        return;
+      }
+      const point = svgToModel(svg, event);
+      if (!point) {
+        return;
+      }
+      const dx = point.x - activeDrag.last.x;
+      const dy = point.y - activeDrag.last.y;
+      translateRing(activeDrag.ring, dx, dy);
+      activeDrag.last = point;
+      updateInputPaths();
+      queueSolve();
+    }
+
+    function finishDrag(event) {
+      const pointerId = event.pointerType === "mouse" ? "mouse" : (event.pointerId ?? "mouse");
+      if (!activeDrag || activeDrag.pointerId !== pointerId) {
+        return;
+      }
+      activeDrag.path.classList.remove("dragging");
+      activeDrag = null;
+      renderInput();
+      queueSolve();
+    }
+
+    function svgToModel(svg, event) {
+      const matrix = svg.getScreenCTM();
+      if (!matrix) {
+        return null;
+      }
+      const point = svg.createSVGPoint();
+      point.x = event.clientX;
+      point.y = event.clientY;
+      const svgPoint = point.matrixTransform(matrix.inverse());
+      return { x: svgPoint.x, y: -svgPoint.y };
+    }
+
+    function translateRing(ring, dx, dy) {
+      for (const point of ring) {
+        point[0] += dx;
+        point[1] += dy;
+      }
+    }
+
+    function updateInputPaths() {
+      const shapes = inputShapes();
+      document.querySelectorAll("#inputSvg [data-shape-index]").forEach((path) => {
+        const shape = shapes[Number(path.dataset.shapeIndex)];
+        if (shape) {
+          path.setAttribute("d", ringPath(shape.ring));
+        }
+      });
+    }
+
+    function queueSolve() {
+      if (!geometerModule || solveQueued) {
+        return;
+      }
+      solveQueued = true;
+      requestAnimationFrame(() => {
+        solveQueued = false;
+        renderSolution();
+      });
+    }
+
+    function makeResultSvg(result) {
+      const outputRings = collectOutputRings(result);
+      const bounds = boundsForRings(outputRings);
+      const box = viewBoxFor(bounds);
+      const regions = (result.jobs || []).flatMap((job) => job.regions || []);
+      const regionPaths = regions.map((region) => {
+        const path = [region.outline, ...(region.holes || [])].map(ringPath).join(" ");
+        const holePaths = (region.holes || [])
+          .map((ring) => `<path d="${ringPath(ring)}" class="hole-edge"></path>`)
+          .join("");
+        return `
+          <path d="${path}" class="region-fill" fill-rule="evenodd"></path>
+          <path d="${ringPath(region.outline)}" class="region-edge"></path>
+          ${holePaths}`;
+      }).join("");
+      return `
+        <svg viewBox="${box.minX} ${box.minY} ${box.width} ${box.height}" role="img" aria-label="Fused output outline and hole rings">
+          <style>
+            .grid line { stroke: var(--grid); stroke-width: 0.015; }
+            .region-fill { fill: var(--result-fill); stroke: none; }
+            .region-edge { fill: none; stroke: var(--result); stroke-width: 0.07; }
+            .hole-edge { fill: var(--hole-fill); stroke: var(--subtract); stroke-width: 0.055; }
+          </style>
+          <g class="grid">${gridLines(bounds)}</g>
+          ${regionPaths}
+        </svg>`;
+    }
+
+    function makeExportSvg(result) {
+      const outputRings = collectOutputRings(result);
+      const bounds = boundsForRings(outputRings);
+      const box = viewBoxFor(bounds);
+      const regions = (result.jobs || []).flatMap((job) => job.regions || []);
+      const paths = regions.map((region) => {
+        const path = [region.outline, ...(region.holes || [])].map(ringPath).join(" ");
+        return `  <path d="${path}" fill="#cfe8db" stroke="#1d7a52" stroke-width="0.07" fill-rule="evenodd"/>`;
+      }).join("\n");
+      return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${formatNumber(box.minX)} ${formatNumber(box.minY)} ${formatNumber(box.width)} ${formatNumber(box.height)}">\n${paths}\n</svg>`;
+    }
+
+    function formatNumber(value) {
+      if (Math.abs(value) < 1e-12) {
+        return "0";
+      }
+      return Number(value.toFixed(6)).toString();
+    }
+
+    function setText(id, value) {
+      document.getElementById(id).textContent = value;
+    }
+
+    function setHtml(id, value) {
+      document.getElementById(id).innerHTML = value;
+    }
+
+    function summarize(result, requestBytes, jsonText, elapsedMs, module) {
+      const job = result.jobs && result.jobs[0] ? result.jobs[0] : {};
+      const regionCount = (job.regions || []).length;
+      const holeCount = (job.regions || []).reduce((sum, region) => sum + (region.holes || []).length, 0);
+      const version = module.ccall("geometer_version_string", "string", [], []);
+      const abi = module.ccall("geometer_abi_version", "number", [], []);
+      setText("status", `${version} ABI ${abi}\nrequest ${requestBytes.length} B - JSON ${jsonText.length} B\nsolve ${elapsedMs.toFixed(2)} ms`);
+      setText("resultMetric", `${regionCount} region, ${holeCount} holes, area ${formatNumber(job.area_mm2 || 0)} mm^2`);
+      setText("jsonMetric", `${result.schema || "schema"} - ${jsonText.length} bytes`);
+    }
+
+    function renderSolution() {
+      if (!geometerModule) {
+        return;
+      }
+      const requestBytes = makePlanarBatchRequest();
+      const start = performance.now();
+      const response = callPlanarBatchSolveJsonBytes(geometerModule, requestBytes);
+      const elapsedMs = performance.now() - start;
+      if (response.code !== 0) {
+        throw new Error(response.error || `geometer returned ${response.code}`);
+      }
+      const result = JSON.parse(response.value);
+      const exportSvg = makeExportSvg(result);
+      document.getElementById("jsonText").classList.remove("error");
+      setHtml("resultSvg", makeResultSvg(result));
+      setText("jsonText", JSON.stringify(result, null, 2));
+      setText("svgText", exportSvg);
+      setText("svgMetric", `${exportSvg.length} bytes`);
+      summarize(result, requestBytes, response.value, elapsedMs, geometerModule);
+    }
+
+    async function main() {
+      renderInput();
+      try {
+        geometerModule = await loadGeometer();
+        renderSolution();
+      } catch (error) {
+        const message = error && error.stack ? error.stack : String(error);
+        setText("status", "failed");
+        setText("jsonText", message);
+        setText("svgText", "");
+        document.getElementById("jsonText").classList.add("error");
+      }
+    }
+
+    main();
+  </script>
+</body>
+</html>

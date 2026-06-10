@@ -56,7 +56,14 @@ def conditioned_path(input_path: Path) -> Path:
 
 def export_ap242(document: EditorDocument, out_path: Path | None = None) -> ExportReport:
     out_path = out_path or conditioned_path(document.path)
+    write_step(document, out_path)
+    return _validate(document, out_path)
 
+
+def write_step(document: EditorDocument, out_path: Path) -> None:
+    """Write the live body table (names + colours) as AP242, no validation.
+    Also used to feed the current in-memory geometry to geometer for HLR
+    footprint projections."""
     doc = TDocStd_Document(TCollection_ExtendedString("MDTV-XCAF"))
     XCAFApp_Application.GetApplication_s().InitDocument(doc)
     shape_tool = XCAFDoc_DocumentTool.ShapeTool_s(doc.Main())
@@ -83,7 +90,15 @@ def export_ap242(document: EditorDocument, out_path: Path | None = None) -> Expo
     if status != IFSelect_RetDone:
         raise RuntimeError(f"STEP write failed for {out_path}")
 
-    return _validate(document, out_path)
+
+def document_step_bytes(document: EditorDocument) -> bytes:
+    """Current in-memory geometry as STEP bytes (for geometer projections)."""
+    import tempfile
+
+    with tempfile.TemporaryDirectory(prefix="step_editor_proj_") as temp:
+        path = Path(temp) / "current.step"
+        write_step(document, path)
+        return path.read_bytes()
 
 
 def _validate(document: EditorDocument, out_path: Path) -> ExportReport:

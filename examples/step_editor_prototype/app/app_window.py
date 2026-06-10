@@ -31,6 +31,7 @@ from .document import EditorDocument
 from .export_ap242 import conditioned_path, export_ap242
 from .journal import Journal
 from .mode_rect import ModeRect
+from .pins import PinRegistry
 from .scene import SceneManager
 from .tools import TOOL_CLASSES
 from .tools.base import ToolContext
@@ -51,6 +52,7 @@ class MainWindow(QMainWindow):
         self.journal = Journal()
         self.model_bounds: geometer.ModelBoundsResult | None = None
         self.pin1_hint: tuple[float, float, float] | None = None
+        self.pins = PinRegistry()
 
         self.plotter = QtInteractor(self)
         self.plotter.interactor.setMinimumSize(480, 360)
@@ -201,6 +203,10 @@ class MainWindow(QMainWindow):
         try:
             self.document = EditorDocument.load(path)
             self._tool_context.document = self.document
+            self.pins.clear()
+            self.pin1_hint = None
+            self.journal = Journal()
+            self._tool_context.journal = self.journal
             try:
                 self.model_bounds = geometer.model_bounds(path)
             except Exception:

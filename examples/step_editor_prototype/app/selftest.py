@@ -174,10 +174,74 @@ def selftest_m2(fixture: Path | None = None) -> None:
     print(f"rigid rotation OK on {path.name} (diag {diag_before:.4f})")
 
 
+def selftest_m3(fixture: Path | None = None) -> None:
+    """Pin detection: SOIC-20-300 (pins as bodies) must yield exactly 20 pins
+    with 10 per row and serpentine numbering; unibody segmentation on
+    ct-sot-23-5 is logged (best-effort by design)."""
+    import numpy as np
+
+    from .document import EditorDocument
+    from .pins import Band, PinRegistry, detect_pins_multibody, detect_pins_unibody, order_pins
+
+    path = fixture or FIXTURES / "SOIC-20-300.STEP"
+    document = EditorDocument.load(path)
+    if fixture is None:
+        # The fixture ships lying on its side (pin rows split along Z) —
+        # condition it the way the workflow would: stand it up first.
+        rot_x90 = np.array(
+            [[1, 0, 0, 0], [0, 0, -1, 0], [0, 1, 0, 0], [0, 0, 0, 1]],
+            dtype=np.float64,
+        )
+        document.apply_trsf(rot_x90)
+    xmin, xmax, ymin, ymax, _zmin, _zmax = document.bounds()
+    pad = 1.0
+    band = Band(xmin - pad, ymin - pad, xmax + pad, ymax + pad)
+
+    pins = detect_pins_multibody(document, band, exclude_largest=True)
+    print(f"multibody candidates in band: {len(pins)}")
+    _check(len(pins) == 20, f"expected 20 pins on SOIC-20, got {len(pins)}")
+
+    registry = PinRegistry()
+    registry.set_pins([pins[i] for i in order_pins(pins, mode="serpentine")])
+    centroids = np.array([p.centroid for p in registry.pins])
+    y_mid = (centroids[:, 1].min() + centroids[:, 1].max()) * 0.5
+    row1 = centroids[:10]
+    row2 = centroids[10:]
+    _check(
+        np.all(row1[:, 1] < y_mid) and np.all(row2[:, 1] >= y_mid),
+        "serpentine rows are mixed",
+    )
+    _check(
+        np.all(np.diff(row1[:, 0]) > 0) and np.all(np.diff(row2[:, 0]) < 0),
+        "serpentine X ordering is not monotone",
+    )
+    print("serpentine ordering OK: 10 ascending-X + 10 descending-X")
+
+    # Unibody hard case: SOT-23-5 is one solid; banding each lead row (the
+    # band stops short of the package wall, as a user would draw it) must
+    # find exactly the 3+2 leads.
+    unibody_path = FIXTURES / "ct-sot-23-5.stp"
+    unibody = EditorDocument.load(unibody_path)
+    rot_x90 = np.array(
+        [[1, 0, 0, 0], [0, 0, -1, 0], [0, 1, 0, 0], [0, 0, 0, 1]], dtype=np.float64
+    )
+    unibody.apply_trsf(rot_x90)
+    bx = unibody.bounds()
+    span = bx[3] - bx[2]
+    south = Band(bx[0] - 1, bx[2] - 1, bx[1] + 1, bx[2] + span * 0.15)
+    north = Band(bx[0] - 1, bx[3] - span * 0.15, bx[1] + 1, bx[3] + 1)
+    south_pins = detect_pins_unibody(unibody, 0, south)
+    north_pins = detect_pins_unibody(unibody, 0, north)
+    print(f"unibody {unibody_path.name}: south={len(south_pins)} north={len(north_pins)}")
+    _check(len(south_pins) == 3, f"expected 3 south leads, got {len(south_pins)}")
+    _check(len(north_pins) == 2, f"expected 2 north leads, got {len(north_pins)}")
+
+
 SELFTESTS = {
     "m0": selftest_m0,
     "m1": selftest_m1,
     "m2": selftest_m2,
+    "m3": selftest_m3,
 }
 
 

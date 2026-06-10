@@ -17,8 +17,11 @@ import numpy as np
 
 from OCP.Bnd import Bnd_Box
 from OCP.BRep import BRep_Tool
+from OCP.BRepAdaptor import BRepAdaptor_Curve
 from OCP.BRepBndLib import BRepBndLib
 from OCP.BRepBuilderAPI import BRepBuilderAPI_Transform
+from OCP.GeomAPI import GeomAPI_ProjectPointOnSurf
+from OCP.GeomLProp import GeomLProp_SLProps
 from OCP.gp import gp_Trsf
 from OCP.BRepGProp import BRepGProp
 from OCP.BRepMesh import BRepMesh_IncrementalMesh
@@ -40,7 +43,10 @@ from OCP.TopAbs import (
 )
 from OCP.TopExp import TopExp, TopExp_Explorer
 from OCP.TopLoc import TopLoc_Location
-from OCP.TopTools import TopTools_IndexedMapOfShape
+from OCP.TopTools import (
+    TopTools_IndexedDataMapOfShapeListOfShape,
+    TopTools_IndexedMapOfShape,
+)
 from OCP.TopoDS import TopoDS, TopoDS_Shape
 from OCP.XCAFApp import XCAFApp_Application
 from OCP.XCAFDoc import XCAFDoc_ColorType, XCAFDoc_DocumentTool, XCAFDoc_ShapeTool
@@ -229,6 +235,34 @@ def tessellate_body(
     )
 
 
+def _edge_dihedral_deg(edge, face1, face2) -> float | None:
+    """Angle between the two faces' outward normals at the edge midpoint.
+    None means the normal could not be evaluated (treated as sharp)."""
+    try:
+        curve = BRepAdaptor_Curve(edge)
+        t = 0.5 * (curve.FirstParameter() + curve.LastParameter())
+        point = curve.Value(t)
+        normals = []
+        for face in (face1, face2):
+            surface = BRep_Tool.Surface_s(face)
+            projector = GeomAPI_ProjectPointOnSurf(point, surface)
+            if projector.NbPoints() < 1:
+                return None
+            u, v = projector.LowerDistanceParameters()
+            props = GeomLProp_SLProps(surface, u, v, 1, 1.0e-6)
+            if not props.IsNormalDefined():
+                return None
+            direction = props.Normal()
+            normal = np.array([direction.X(), direction.Y(), direction.Z()])
+            if face.Orientation() == TopAbs_REVERSED:
+                normal = -normal
+            normals.append(normal)
+        cosine = float(np.clip(np.dot(normals[0], normals[1]), -1.0, 1.0))
+        return math.degrees(math.acos(cosine))
+    except Exception:
+        return None
+
+
 def _carry_face_colors(previous: BodyMesh | None, current: BodyMesh) -> None:
     """Re-tessellation drops XCAF colour lookups (the source document is
     gone), but face ids are stable across rigid transforms, so reuse the
@@ -355,6 +389,44 @@ class EditorDocument:
         face_map = TopTools_IndexedMapOfShape()
         TopExp.MapShapes_s(self.bodies[body_index].solid, TopAbs_FACE, face_map)
         return TopoDS.Face_s(face_map.FindKey(face_index))
+
+    def face_smooth_adjacency(
+        self, body_index: int, smooth_angle_deg: float | None = 30.0
+    ) -> dict[int, set[int]]:
+        """Face adjacency graph of one body. With a threshold, only edges
+        whose dihedral angle (surface normals sampled at the shared edge
+        midpoint) is below it are kept — region growing 'flows' across those
+        and stops at discontinuities. With None, every shared edge connects."""
+        solid = self.bodies[body_index].solid
+        face_map = TopTools_IndexedMapOfShape()
+        TopExp.MapShapes_s(solid, TopAbs_FACE, face_map)
+        edge_faces = TopTools_IndexedDataMapOfShapeListOfShape()
+        TopExp.MapShapesAndAncestors_s(solid, TopAbs_EDGE, TopAbs_FACE, edge_faces)
+
+        adjacency: dict[int, set[int]] = {
+            i: set() for i in range(1, face_map.Extent() + 1)
+        }
+        for edge_index in range(1, edge_faces.Extent() + 1):
+            edge = TopoDS.Edge_s(edge_faces.FindKey(edge_index))
+            faces = []
+            for shape in edge_faces.FindFromIndex(edge_index):
+                index = face_map.FindIndex(shape)
+                if index > 0 and index not in faces:
+                    faces.append(index)
+            if len(faces) != 2:
+                continue
+            f1, f2 = faces
+            if smooth_angle_deg is not None:
+                angle = _edge_dihedral_deg(
+                    edge,
+                    TopoDS.Face_s(face_map.FindKey(f1)),
+                    TopoDS.Face_s(face_map.FindKey(f2)),
+                )
+                if angle is None or angle > smooth_angle_deg:
+                    continue
+            adjacency[f1].add(f2)
+            adjacency[f2].add(f1)
+        return adjacency
 
     def info(self) -> DocumentInfo:
         faces = sum(_count(body.solid, TopAbs_FACE) for body in self.bodies)

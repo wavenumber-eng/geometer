@@ -1,7 +1,7 @@
 """SceneManager: owns everything in the PyVista plotter — body actors with
 per-face STEP colours, click picking that resolves back to (body, B-rep face),
-and highlight overlays. No OCP imports here; geometry arrives as numpy from
-EditorDocument."""
+rubber-band selection, and highlight overlays. No OCP imports here; geometry
+arrives as numpy from EditorDocument."""
 
 from __future__ import annotations
 
@@ -11,6 +11,8 @@ from typing import Callable
 import numpy as np
 import pyvista as pv
 import vtk
+from PySide6.QtCore import QEvent, QObject, QPoint, QRect, QSize, Qt
+from PySide6.QtWidgets import QRubberBand
 
 from .document import NEUTRAL_RGB, EditorDocument
 from .viewcam import (
@@ -276,3 +278,85 @@ class SceneManager:
             self.plotter.remove_actor(name, render=False)
         except Exception:
             pass
+
+    def show_pin_labels(self, points, labels) -> None:
+        self.remove_overlay("pin-labels")
+        if len(points) == 0:
+            self.plotter.render()
+            return
+        self.plotter.add_point_labels(
+            np.asarray(points, dtype=np.float64),
+            list(labels),
+            name="pin-labels",
+            font_size=16,
+            point_size=12,
+            point_color="#ff8800",
+            text_color="#1a1a1a",
+            shape_color="#ffffff",
+            shape_opacity=0.85,
+            always_visible=True,
+        )
+        self.plotter.render()
+
+    # ---------------------------------------------------------- unprojection
+
+    def display_to_world(self, x_qt: float, y_qt: float) -> tuple[float, float, float]:
+        """Qt widget coordinates -> world point on the near plane. With a
+        parallel top view this yields the world XY under the cursor."""
+        widget = self.plotter.interactor
+        ratio = widget.devicePixelRatioF()
+        xd = x_qt * ratio
+        yd = (widget.height() - y_qt) * ratio
+        renderer = self.plotter.renderer
+        renderer.SetDisplayPoint(xd, yd, 0.0)
+        renderer.DisplayToWorld()
+        wx, wy, wz, w = renderer.GetWorldPoint()
+        if w not in (0.0, 1.0):
+            wx, wy, wz = wx / w, wy / w, wz / w
+        return float(wx), float(wy), float(wz)
+
+
+class BandSelector(QObject):
+    """Qt-level rubber-band drag on the 3D viewport. While installed it
+    consumes left-button drags (camera orbit stays on middle/right buttons)
+    and reports the band corners in Qt widget coordinates."""
+
+    def __init__(self, widget, on_band: Callable[[QPoint, QPoint], None]) -> None:
+        super().__init__(widget)
+        self._widget = widget
+        self._on_band = on_band
+        self._origin: QPoint | None = None
+        self._rubber = QRubberBand(QRubberBand.Shape.Rectangle, widget)
+
+    def attach(self) -> None:
+        self._widget.installEventFilter(self)
+
+    def detach(self) -> None:
+        self._widget.removeEventFilter(self)
+        self._rubber.hide()
+        self._origin = None
+
+    def eventFilter(self, obj, event) -> bool:
+        if obj is not self._widget:
+            return False
+        etype = event.type()
+        if etype == QEvent.Type.MouseButtonPress and event.button() == Qt.MouseButton.LeftButton:
+            self._origin = event.position().toPoint()
+            self._rubber.setGeometry(QRect(self._origin, QSize()))
+            self._rubber.show()
+            return True
+        if etype == QEvent.Type.MouseMove and self._origin is not None:
+            self._rubber.setGeometry(
+                QRect(self._origin, event.position().toPoint()).normalized()
+            )
+            return True
+        if etype == QEvent.Type.MouseButtonRelease and event.button() == Qt.MouseButton.LeftButton:
+            if self._origin is None:
+                return False
+            origin, end = self._origin, event.position().toPoint()
+            self._origin = None
+            self._rubber.hide()
+            if (end - origin).manhattanLength() > 6:
+                self._on_band(origin, end)
+            return True
+        return False

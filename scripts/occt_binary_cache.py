@@ -28,6 +28,10 @@ SHA256_NAME = "occt-install.zip.sha256"
 VALID_MODES = {"auto", "off", "only"}
 
 
+class CacheReadError(RuntimeError):
+    """Raised when the remote cache cannot be checked reliably."""
+
+
 @dataclasses.dataclass(frozen=True)
 class CacheConfig:
     bucket: str
@@ -181,7 +185,14 @@ def restore_prebuilt_install(profile: OcctCacheProfile, install_dir: Path, *, mo
     manifest_bytes = None
     for candidate_prefix in object_prefix_candidates(config, profile):
         print(f"Checking OCCT binary cache: s3://{config.bucket}/{candidate_prefix}/{MANIFEST_NAME}")
-        manifest_bytes = _r2_get_object(config, f"{candidate_prefix}/{MANIFEST_NAME}")
+        try:
+            manifest_bytes = _r2_get_object(config, f"{candidate_prefix}/{MANIFEST_NAME}")
+        except CacheReadError as exc:
+            message = f"OCCT binary cache read failed for {profile.cache_key}: {exc}"
+            if selected_mode == "only":
+                raise RuntimeError(message) from exc
+            print(f"{message}; building from source.")
+            return False
         if manifest_bytes is not None:
             prefix = candidate_prefix
             break
@@ -397,7 +408,9 @@ def _r2_get_object(config: CacheConfig, key: str) -> bytes | None:
     except urllib.error.HTTPError as exc:
         if exc.code in {403, 404}:
             return None
-        raise
+        raise CacheReadError(f"GET {key} returned HTTP {exc.code}") from exc
+    except urllib.error.URLError as exc:
+        raise CacheReadError(f"GET {key} failed: {exc.reason}") from exc
 
 
 def _r2_put_object(config: CacheConfig, key: str, body: bytes, content_type: str) -> None:

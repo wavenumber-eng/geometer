@@ -6,6 +6,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
+import pytest
 from pytest import MonkeyPatch
 
 
@@ -152,3 +153,66 @@ def test_restore_auto_skips_when_cache_is_unconfigured(monkeypatch: MonkeyPatch,
     )
 
     assert not occt_binary_cache.restore_prebuilt_install(profile, tmp_path / "install", mode="auto")
+
+
+def test_restore_auto_falls_back_when_cache_read_fails(monkeypatch: MonkeyPatch, tmp_path: Path) -> None:
+    monkeypatch.setattr(
+        occt_binary_cache,
+        "config_from_env",
+        lambda: occt_binary_cache.CacheConfig(
+            bucket="wn-build-deps",
+            endpoint_url="https://example.invalid",
+            access_key_id="key",
+            secret_access_key="secret",
+            region="auto",
+            prefix="deps/v1/geometer/occt",
+        ),
+    )
+    monkeypatch.setattr(
+        occt_binary_cache,
+        "_r2_get_object",
+        lambda _config, _key: (_ for _ in ()).throw(occt_binary_cache.CacheReadError("HTTP 500")),
+    )
+    profile = occt_binary_cache.OcctCacheProfile(
+        kind="native",
+        platform_tag="windows-x64",
+        config="Release",
+        library_type="Static",
+        occt_repo="https://example.invalid/OCCT.git",
+        occt_tag="V8_0_0",
+        recipe_hash="c" * 64,
+    )
+
+    assert not occt_binary_cache.restore_prebuilt_install(profile, tmp_path / "install", mode="auto")
+
+
+def test_restore_only_fails_when_cache_read_fails(monkeypatch: MonkeyPatch, tmp_path: Path) -> None:
+    monkeypatch.setattr(
+        occt_binary_cache,
+        "config_from_env",
+        lambda: occt_binary_cache.CacheConfig(
+            bucket="wn-build-deps",
+            endpoint_url="https://example.invalid",
+            access_key_id="key",
+            secret_access_key="secret",
+            region="auto",
+            prefix="deps/v1/geometer/occt",
+        ),
+    )
+    monkeypatch.setattr(
+        occt_binary_cache,
+        "_r2_get_object",
+        lambda _config, _key: (_ for _ in ()).throw(occt_binary_cache.CacheReadError("HTTP 500")),
+    )
+    profile = occt_binary_cache.OcctCacheProfile(
+        kind="native",
+        platform_tag="windows-x64",
+        config="Release",
+        library_type="Static",
+        occt_repo="https://example.invalid/OCCT.git",
+        occt_tag="V8_0_0",
+        recipe_hash="c" * 64,
+    )
+
+    with pytest.raises(RuntimeError, match="OCCT binary cache read failed"):
+        occt_binary_cache.restore_prebuilt_install(profile, tmp_path / "install", mode="only")

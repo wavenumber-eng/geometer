@@ -20,12 +20,12 @@ from PySide6.QtWidgets import (
 
 from .base import ToolMode, make_apply_button
 
-ORIGIN_RULES = ("centroid", "first-pick", "rect-center")
+ORIGIN_RULES = ("rect-center", "centroid", "first-pick")
 _EPS = 1.0e-9
 
 
 def compute_zsit_frame(
-    p1, p2, p3, p4, *, origin_rule: str = "centroid", flip_z: bool = False
+    p1, p2, p3, p4, *, origin_rule: str = "rect-center", flip_z: bool = False
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """Return (origin, x_dir, y_dir, z_dir) of the picked seating frame, in
     current model coordinates. z points toward p4 (flipped by flip_z)."""
@@ -46,7 +46,7 @@ def compute_zsit_frame(
         uv = np.array([[(p - a) @ x_axis, (p - a) @ y_axis] for p in (a, b, c)])
         center_uv = (uv.min(axis=0) + uv.max(axis=0)) * 0.5
         origin = a + center_uv[0] * x_axis + center_uv[1] * y_axis
-    else:  # centroid (default)
+    else:  # centroid
         origin = (a + b + c) / 3.0
 
     if float((above - origin) @ normal) < 0.0:
@@ -69,7 +69,7 @@ def _in_plane_axis(a, b, c, normal) -> np.ndarray:
 
 
 def compute_zsit_matrix(
-    p1, p2, p3, p4, *, origin_rule: str = "centroid", flip_z: bool = False
+    p1, p2, p3, p4, *, origin_rule: str = "rect-center", flip_z: bool = False
 ) -> np.ndarray:
     """4x4 transform taking current model coordinates into the user-defined
     frame: picked plane -> Z=0 with the origin on it, 4th pick side -> +Z."""

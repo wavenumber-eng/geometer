@@ -64,8 +64,14 @@ not produced.
 
 OCCT is not vendored into the repository and is not added with CMake
 `FetchContent`, because OCCT uses `CMAKE_SOURCE_DIR` internally and does not work
-correctly as a subdirectory dependency. Instead, Geometer builds OCCT as a
-standalone project and finds it with `find_package(OpenCASCADE)`.
+correctly as a subdirectory dependency. Instead, Geometer restores or builds
+OCCT as generated dependency state and finds it with
+`find_package(OpenCASCADE)`.
+
+Geometer can optionally restore prebuilt OCCT install trees from the Wavenumber
+R2 dependency cache. This is a speed optimization only: restored archives are
+validated by manifest and SHA-256, still land under `.deps/`, and source builds
+remain the fallback when the cache is not configured.
 
 Pinned dependency versions live in scripts:
 
@@ -178,10 +184,28 @@ If OCCT is missing, top-level CMake automatically invokes:
 python scripts\build_occt.py
 ```
 
-That script uses vendored RapidJSON, clones OCCT, builds OCCT as static
-libraries, and installs it into `.deps/native/<platform>/occt-install/`. The
-first run is slow. Later configures reuse that platform-specific `.deps/` state
-and should be fast.
+That script uses vendored RapidJSON, checks the optional R2 binary dependency
+cache, and otherwise clones OCCT, builds OCCT as static libraries, and installs
+it into `.deps/native/<platform>/occt-install/`. The first uncached source build
+is slow. Later configures reuse that platform-specific `.deps/` state and should
+be fast.
+
+To enable R2 cache restore locally, copy `.env.example` to `.env` and set:
+
+```env
+R2_BUCKET=wn-build-deps
+R2_ENDPOINT_URL=https://<account_id>.r2.cloudflarestorage.com
+R2_ACCESS_KEY_ID=...
+R2_SECRET_ACCESS_KEY=...
+AWS_DEFAULT_REGION=auto
+GEOMETER_OCCT_BINARY=auto
+```
+
+`GEOMETER_OCCT_BINARY` accepts:
+
+- `auto` - use R2 when configured and fall back to source.
+- `off` - ignore R2 and build from source.
+- `only` - require an R2 cache hit and fail otherwise.
 
 The vendored RapidJSON v1.1.0 copy includes Geometer's small modern Clang
 compatibility patch so OCCT's GLTF toolkit compiles in native and WASM builds.
@@ -324,6 +348,16 @@ cmake --build build --config Release
 `.deps/native/<platform>/`; it does not remove vendored RapidJSON, the shared
 OCCT source checkout, or the Geometer `build/` directory. Add `--clean-source`
 only when intentionally refreshing the shared OCCT source checkout too.
+
+To inspect the dependency cache key without building:
+
+```powershell
+python scripts\build_occt.py --print-binary-cache-key
+python scripts\build_wasm.py --print-occt-binary-cache-key
+```
+
+The trusted GitHub workflow `.github/workflows/occt-deps.yml` publishes OCCT
+archives to R2. Normal CI and release workflows only consume the cache.
 
 The public Python package uses the executable backend only. Keep ctypes/native
 loading experiments out of the normal wheel and application path unless a future

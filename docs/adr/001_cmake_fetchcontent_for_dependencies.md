@@ -20,18 +20,23 @@ Options considered:
   references `CMAKE_SOURCE_DIR` internally for its own cmake modules, which
   resolves to Geometer's root when OCCT is added as a subdirectory. This causes
   immediate configure failure.
-- Standalone pre-build with `find_package`: adopted.
+- Standalone generated dependency state with `find_package`: adopted.
 
 ## Decision
 
-OCCT is built as a standalone CMake project via `scripts/build_occt.py`, which
-clones the source, configures, builds, and installs to
+OCCT is restored or built as standalone generated dependency state via
+`scripts/build_occt.py`, which installs to
 `.deps/native/<platform>/occt-install/`. Geometer's CMakeLists.txt uses
 `find_package(OpenCASCADE)` to locate the installed artifacts.
 
 If OCCT is not found at configure time, CMake automatically invokes
-`build_occt.py`. This makes the first `cmake --preset default`
-self-bootstrapping with no separate manual step required.
+`build_occt.py`. That script may restore a verified binary dependency archive
+from the optional R2 cache before falling back to cloning, configuring,
+building, and installing OCCT from source. This makes the first
+`cmake --preset default` self-bootstrapping with no separate manual step
+required.
+
+ADR 009 defines the binary dependency cache policy.
 
 The OCCT build uses vendored RapidJSON from `third_party/rapidjson` for
 glTF/GLB export support.
@@ -41,7 +46,8 @@ configurations.
 
 ## Dependency Sources
 
-- **OCCT** (V7_8_1): cloned shallow from GitHub, built as static libraries.
+- **OCCT** (V7_8_1): restored from a verified binary cache when configured, or
+  cloned shallow from GitHub and built as static libraries.
 - **RapidJSON** (v1.1.0, header-only): vendored under
   `third_party/rapidjson`, required by OCCT's `RWGltf_CafWriter` for glTF/GLB
   export.
@@ -71,8 +77,8 @@ The script disables modules and features not needed by Geometer:
 
 ## Consequences
 
-- First configure takes about 10-15 minutes because OCCT must build. Subsequent
-  configures are fast.
+- First uncached configure can take tens of minutes because OCCT must build.
+  Cache hits and subsequent configures are fast.
 - OCCT source clone is about 80 MB when shallow.
 - `.deps/` holds large generated build artifacts.
 - Updating OCCT requires changing the tag in `build_occt.py` and rebuilding.

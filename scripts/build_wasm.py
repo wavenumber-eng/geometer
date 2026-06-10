@@ -19,6 +19,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import occt_binary_cache
+
 ROOT = Path(__file__).resolve().parent.parent
 DEPS_DIR = ROOT / ".deps"
 DIST_DIR = ROOT / "dist"
@@ -45,6 +47,7 @@ GEOMETER_WASM_BUILD = ROOT / "build-wasm"
 
 OCCT_REPO = "https://github.com/Open-Cascade-SAS/OCCT.git"
 OCCT_TAG = "V7_8_1"
+OCCT_WASM_PLATFORM_TAG = "wasm-emscripten"
 
 
 def run(cmd: list[str], **kwargs) -> None:
@@ -161,6 +164,38 @@ def patch_occt_wasm_install_rules() -> None:
 
 
 # ---- OCCT WASM build ----
+
+def occt_wasm_cache_profile() -> occt_binary_cache.OcctCacheProfile:
+    recipe = occt_binary_cache.recipe_hash(
+        [
+            Path(__file__),
+            ROOT / "scripts" / "build_occt.py",
+            ROOT / "scripts" / "occt_binary_cache.py",
+            RAPIDJSON_SRC,
+        ],
+        {
+            "kind": "wasm",
+            "occt_repo": OCCT_REPO,
+            "occt_tag": OCCT_TAG,
+            "emsdk_version": EMSDK_VERSION,
+            "platform_tag": OCCT_WASM_PLATFORM_TAG,
+            "config": "Release",
+            "library_type": "Static",
+            "wasm_install_patch": "optional-helper-side-modules-a0",
+            "rapidjson_patch": RAPIDJSON_PATCH_SENTINEL,
+        },
+    )
+    return occt_binary_cache.OcctCacheProfile(
+        kind="wasm",
+        platform_tag=OCCT_WASM_PLATFORM_TAG,
+        config="Release",
+        library_type="Static",
+        occt_repo=OCCT_REPO,
+        occt_tag=OCCT_TAG,
+        recipe_hash=recipe,
+        emsdk_version=EMSDK_VERSION,
+    )
+
 
 def build_occt_wasm() -> None:
     cmake_config = OCCT_WASM_INSTALL / "lib" / "cmake" / "opencascade" / "OpenCASCADEConfig.cmake"
@@ -293,17 +328,61 @@ def clean() -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description="Build geometer for WASM via Emscripten.")
     parser.add_argument("--clean", action="store_true", help="Remove all WASM build artifacts")
+    parser.add_argument(
+        "--occt-binary-cache",
+        choices=sorted(occt_binary_cache.VALID_MODES),
+        default=None,
+        help="Use prebuilt WASM OCCT binary cache: auto, off, or only (default: env/auto).",
+    )
+    parser.add_argument(
+        "--upload-occt-binary-cache",
+        action="store_true",
+        help="Package and upload the WASM OCCT install tree to the configured binary cache.",
+    )
+    parser.add_argument(
+        "--print-occt-binary-cache-key",
+        action="store_true",
+        help="Print the computed WASM OCCT binary cache key and exit.",
+    )
+    parser.add_argument(
+        "--occt-only",
+        action="store_true",
+        help="Stop after preparing the WASM OCCT install tree.",
+    )
     args = parser.parse_args()
 
     if args.clean:
         clean()
         return
 
+    occt_binary_cache.load_dotenv(ROOT)
+    profile = occt_wasm_cache_profile()
+    if args.print_occt_binary_cache_key:
+        print(profile.cache_key)
+        return
+
     install_emsdk()
     verify_vendored_rapidjson()
-    clone_source("OCCT", OCCT_SRC, OCCT_REPO, OCCT_TAG, "CMakeLists.txt")
-    patch_occt_wasm_install_rules()
-    build_occt_wasm()
+    if occt_binary_cache.install_ready(OCCT_WASM_INSTALL):
+        print(f"OCCT WASM already built at {OCCT_WASM_INSTALL}")
+    elif not occt_binary_cache.restore_prebuilt_install(profile, OCCT_WASM_INSTALL, mode=args.occt_binary_cache):
+        clone_source("OCCT", OCCT_SRC, OCCT_REPO, OCCT_TAG, "CMakeLists.txt")
+        patch_occt_wasm_install_rules()
+        build_occt_wasm()
+
+    if not occt_binary_cache.install_ready(OCCT_WASM_INSTALL):
+        raise RuntimeError(f"OCCT WASM install did not produce OpenCASCADEConfig.cmake under {OCCT_WASM_INSTALL}")
+
+    if args.upload_occt_binary_cache:
+        occt_binary_cache.upload_prebuilt_install(
+            profile,
+            OCCT_WASM_INSTALL,
+            out_dir=ROOT / "out" / "occt-binary-cache",
+        )
+
+    if args.occt_only:
+        return
+
     build_geometer_wasm()
 
 

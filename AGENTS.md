@@ -22,6 +22,9 @@ start at [docs/design/README.md](docs/design/README.md).
   WASM and possible future non-C++ bindings. The public Python package currently
   uses the executable-backed CLI path.
 - `.deps/` is generated local dependency state and must not be committed.
+- OCCT may be restored from the optional Wavenumber R2 binary dependency cache,
+  but it still lands under `.deps/` and remains generated state. Do not commit
+  OCCT archives, `.deps/`, `.env`, or R2 credentials.
 - `dist/` contains distributable outputs by current project policy. Prefer
   grouped paths (`dist/native/<platform>/`, `dist/wasm/<target>/`) for all
   consumers. Do not recreate root-level `dist/geometer*` artifacts.
@@ -32,6 +35,8 @@ start at [docs/design/README.md](docs/design/README.md).
   `vYYYY-MM-DD`, CMake/PyPI use `YYYY.M.D`, and the C ABI generation uses
   `YYYYMMDD`.
 - Use CMake for proper native builds and CTest for registered tests.
+- Rack strata are the test index of record. `tests/python` is an enabled Python
+  unit stratum; keep new Python tests represented in `tests/python/STRATUM.toml`.
 - The default native preset uses Ninja.
 - CMake presets must set `CMAKE_EXPORT_COMPILE_COMMANDS=ON`.
 - Format touched C++ files with `clang-format`.
@@ -49,6 +54,7 @@ uv sync --group dev
 cmake --preset default
 cmake --build build --config Release
 ctest --test-dir build -C Release --output-on-failure
+uv run --group dev rack run --all
 uv run pytest tests\L99_release -q
 ```
 
@@ -71,3 +77,13 @@ python scripts\build_occt.py
 `build_occt.py` cleans/builds the current native platform under
 `.deps/native/<platform>/` by default. Use `--clean-source` only when refreshing
 the shared OCCT source checkout too.
+
+Optional OCCT binary cache:
+
+```powershell
+python scripts\build_occt.py --print-binary-cache-key
+python scripts\build_wasm.py --print-occt-binary-cache-key
+```
+
+Set R2 credentials in local `.env` only. Normal CI consumes the cache; the
+manual `OCCT Dependency Cache` GitHub workflow publishes cache archives.

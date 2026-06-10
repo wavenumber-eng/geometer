@@ -72,10 +72,16 @@ jobs:
             .deps/occt-src
             .deps/native/${{ matrix.platform }}/occt-build
             .deps/native/${{ matrix.platform }}/occt-install
-          key: occt-${{ runner.os }}-${{ runner.arch }}-${{ matrix.compiler }}-${{ hashFiles('scripts/build_occt.py', 'third_party/rapidjson/**') }}
+          key: occt-${{ runner.os }}-${{ runner.arch }}-${{ matrix.compiler }}-${{ hashFiles('scripts/build_occt.py', 'scripts/occt_binary_cache.py', 'third_party/rapidjson/**') }}
           restore-keys: |
             occt-${{ runner.os }}-${{ runner.arch }}-${{ matrix.compiler }}-
       - name: Build and test native code
+        env:
+          R2_BUCKET: ${{ vars.R2_BUCKET || secrets.R2_BUCKET }}
+          R2_ENDPOINT_URL: ${{ secrets.R2_ENDPOINT_URL || vars.R2_ENDPOINT_URL }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
         run: uv run --group dev python scripts/validate_native.py
       - name: Test Python package
         run: uv run --group dev python scripts/validate_python_package.py

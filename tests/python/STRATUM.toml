@@ -1,0 +1,32 @@
+name = "Python Units"
+order = 1
+description = "Python package and script helper unit tests."
+enabled = true
+runner = "pytest"
+concerns = ["python", "package", "scripts"]
+
+objectives = [
+    "Verify executable-backed Python helpers and package behavior.",
+    "Verify build-script helper logic that is practical to test without native rebuilds.",
+]
+
+[[subtests]]
+id = "PY_001"
+file = "test_cli_batch.py"
+name = "CLI Batch Wrapper"
+description = "Checks Python batch request helpers and executable-backed command behavior."
+test_case_type = "unit"
+
+[[subtests]]
+id = "PY_002"
+file = "test_ctypes_wrapper.py"
+name = "Python API Wrapper"
+description = "Checks public Python API wrapper behavior."
+test_case_type = "unit"
+
+[[subtests]]
+id = "PY_003"
+file = "test_occt_binary_cache.py"
+name = "OCCT Binary Cache Helper"
+description = "Checks OCCT binary cache keys, manifests, archives, and unconfigured-cache fallback."
+test_case_type = "unit"

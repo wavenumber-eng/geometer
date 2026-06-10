@@ -76,7 +76,7 @@ class _FootprintTask(QRunnable):
 class MainWindow(QMainWindow):
     def __init__(self, step_path: Path | None) -> None:
         super().__init__()
-        self.setWindowTitle("WN3D STEP Conditioning Editor (prototype)")
+        self.setWindowTitle("Wavenumber 3D STEP Editor")
         self.resize(1280, 800)
 
         self.document: EditorDocument | None = None
@@ -111,7 +111,7 @@ class MainWindow(QMainWindow):
         else:
             logo_label.setText("<b>WN3D</b>")
         top_layout.addWidget(logo_label)
-        title_label = QLabel("Wavenumber 3D")
+        title_label = QLabel("Wavenumber 3D STEP Editor")
         title_label.setStyleSheet(
             f"font-weight: 700; font-size: 15px; padding-left: 6px; color: {TEXT_PRIMARY};"
         )

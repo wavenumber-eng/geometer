@@ -7,7 +7,6 @@ Pin 1 Quadrant tool, and can be reordered manually."""
 from __future__ import annotations
 
 import numpy as np
-from PySide6.QtCore import QEvent, QObject, Qt
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -38,59 +37,6 @@ from ..scene import BandSelector
 from .base import ToolMode, make_apply_button
 
 
-def _perpendicular(normal: np.ndarray) -> np.ndarray:
-    candidate = np.array([0.0, 0.0, 1.0])
-    if abs(float(normal @ candidate)) > 0.9:
-        candidate = np.array([0.0, 1.0, 0.0])
-    u = np.cross(normal, candidate)
-    return u / max(float(np.linalg.norm(u)), 1.0e-12)
-
-
-def _plane_quad_frame(bounds, point, normal) -> tuple[np.ndarray, float]:
-    center = np.array(
-        [(bounds[0] + bounds[1]) / 2, (bounds[2] + bounds[3]) / 2, (bounds[4] + bounds[5]) / 2]
-    )
-    diag = float(np.linalg.norm(
-        [bounds[1] - bounds[0], bounds[3] - bounds[2], bounds[5] - bounds[4]]
-    ))
-    # project the model centre onto the plane so the quad stays centred
-    offset = float((center - point) @ normal)
-    return center - normal * offset, max(diag, 1.0e-6)
-
-
-class PlaneDragger(QObject):
-    """While the context plane is live: mouse movement slides the plane along
-    its normal, left click confirms, right click cancels."""
-
-    def __init__(self, widget, on_move, on_confirm, on_cancel) -> None:
-        super().__init__(widget)
-        self._widget = widget
-        self._on_move = on_move
-        self._on_confirm = on_confirm
-        self._on_cancel = on_cancel
-
-    def attach(self) -> None:
-        self._widget.installEventFilter(self)
-
-    def detach(self) -> None:
-        self._widget.removeEventFilter(self)
-
-    def eventFilter(self, obj, event) -> bool:
-        if obj is not self._widget:
-            return False
-        etype = event.type()
-        if etype == QEvent.Type.MouseMove:
-            self._on_move(event.position().y())
-            return True
-        if etype == QEvent.Type.MouseButtonPress:
-            if event.button() == Qt.MouseButton.LeftButton:
-                self._on_confirm()
-            else:
-                self._on_cancel()
-            return True
-        if etype in (QEvent.Type.MouseButtonRelease, QEvent.Type.MouseButtonDblClick):
-            return True
-        return False
 
 
 class DetectPinsTool(ToolMode):
@@ -104,14 +50,6 @@ class DetectPinsTool(ToolMode):
         self._last_band: Band | None = None
         self.pending: list[Pin] = []
         self._pending_bands: list[list[float]] = []
-        # context-plane state
-        self._context_state = "off"          # off | await-face | dragging
-        self._plane_dragger: PlaneDragger | None = None
-        self._plane_origin: np.ndarray | None = None
-        self._plane_normal: np.ndarray | None = None
-        self._plane_offset = 0.0
-        self._plane_start_y = 0.0
-        self._plane_count = 0
 
     # ------------------------------------------------------------------- UI
 
@@ -134,18 +72,13 @@ class DetectPinsTool(ToolMode):
         )
         self.band_button.toggled.connect(self._arm_band)
         select_row.addWidget(self.band_button)
-        self.context_button = QPushButton("Context Plane (slice)")
-        self.context_button.setCheckable(True)
+        self.context_button = QPushButton("Context Plane (Z+0.01)")
         self.context_button.setToolTip(
-            "Starts a section plane 0.01 mm above the Z-sit seating plane "
-            "(that work is already done) — move the mouse to slide it through "
-            "the model. Every closed shape the plane cuts is a pin.\n"
-            "Left click stages the pins; right click cancels."
+            "One click: slice the model 0.01 mm above the Z-sit seating plane "
+            "(that work is already done) — every closed shape in the section "
+            "is staged as a pin."
         )
-        self.context_button.setStyleSheet(
-            "QPushButton:checked {background-color: #c89d00; color: #000000; font-weight: 700;}"
-        )
-        self.context_button.toggled.connect(self._arm_context)
+        self.context_button.clicked.connect(self._run_context_plane)
         select_row.addWidget(self.context_button)
         layout.addLayout(select_row)
 
@@ -185,7 +118,16 @@ class DetectPinsTool(ToolMode):
         self.name_edit = QLineEdit()
         self.name_edit.setPlaceholderText("e.g. A1 or 5")
         self.name_edit.returnPressed.connect(self._set_selected_name)
+        self.name_edit.textEdited.connect(self._autocapitalize)
         name_row.addWidget(self.name_edit, 1)
+        self.autocap_button = QPushButton("aA")
+        self.autocap_button.setCheckable(True)
+        self.autocap_button.setChecked(True)
+        self.autocap_button.setMaximumWidth(34)
+        self.autocap_button.setToolTip(
+            "Auto-capitalize typed pin names (uncheck to allow lowercase)"
+        )
+        name_row.addWidget(self.autocap_button)
         set_name_button = QPushButton("Set")
         set_name_button.setMinimumWidth(36)
         set_name_button.clicked.connect(self._set_selected_name)
@@ -246,12 +188,11 @@ class DetectPinsTool(ToolMode):
 
     def exit(self) -> None:
         self._disarm_band()
-        self._cancel_context()
         if self._actions_widget is not None:
             self.band_button.setChecked(False)
-            self.context_button.setChecked(False)
         self.ctx.scene.show_pin_labels([], [])
         self.ctx.scene.set_markers([], name="pending-pins")
+        self.ctx.scene.remove_overlay("context-section")
         self.ctx.scene.clear_highlight()
 
     # ------------------------------------------------------------- band arm
@@ -285,95 +226,32 @@ class DetectPinsTool(ToolMode):
 
     # --------------------------------------------------------- context plane
 
-    def _arm_context(self, armed: bool) -> None:
-        """Start the section plane 0.01 mm above the Z-sit seating plane —
-        the user already defined that frame, so no face click is needed."""
-        if not armed:
-            self._cancel_context()
-            return
+    def _run_context_plane(self) -> None:
+        """One click: slice 0.01 mm above the Z-sit seating plane and stage
+        every closed shape as a pin — the user already defined that frame."""
         document = self.ctx.document
         if document is None:
-            self.context_button.setChecked(False)
             return
         self.band_button.setChecked(False)
         bounds = document.bounds()
-        self._plane_normal = np.array([0.0, 0.0, -1.0])
-        self._plane_origin = np.array(
-            [(bounds[0] + bounds[1]) / 2.0, (bounds[2] + bounds[3]) / 2.0, 0.01]
-        )
-        self._plane_offset = 0.0
-        widget = self.ctx.scene.plotter.interactor
-        self._plane_start_y = widget.mapFromGlobal(widget.cursor().pos()).y()
-        self._plane_dragger = PlaneDragger(
-            widget, self._on_plane_move, self._confirm_plane, self._cancel_context
-        )
-        self._plane_dragger.attach()
-        self._context_state = "dragging"
-        self._update_plane_preview()
-        self.status(
-            "Context Plane: starting 0.01 mm above Z=0 — move the mouse to "
-            "slide it; left click stages the pins, right click cancels"
-        )
-
-    def _on_plane_move(self, y: float) -> None:
-        if self._context_state != "dragging":
-            return
-        bounds = self.ctx.document.bounds()
-        diag = float(np.linalg.norm(
-            [bounds[1] - bounds[0], bounds[3] - bounds[2], bounds[5] - bounds[4]]
-        ))
-        height = max(self.ctx.scene.plotter.interactor.height(), 1)
-        offset = (self._plane_start_y - y) / height * diag * 0.6
-        if abs(offset - self._plane_offset) < diag / 800.0:
-            return
-        self._plane_offset = offset
-        self._update_plane_preview()
-
-    def _plane_point(self) -> np.ndarray:
-        # positive offset slides the plane INTO the model (against the
-        # clicked face's outward normal)
-        return self._plane_origin - self._plane_normal * self._plane_offset
-
-    def _update_plane_preview(self) -> None:
-        document = self.ctx.document
-        scene = self.ctx.scene
-        point = self._plane_point()
-        normal = self._plane_normal
+        point = [(bounds[0] + bounds[1]) / 2.0, (bounds[2] + bounds[3]) / 2.0, 0.01]
+        normal = [0.0, 0.0, -1.0]
 
         segments = [
-            section_segments(body.mesh, point, normal)
+            section_segments(body.mesh, np.asarray(point), np.asarray(normal))
             for body in document.bodies
             if body.mesh is not None and len(body.mesh.tris)
         ]
         segments = [s for s in segments if len(s)]
         merged = np.concatenate(segments) if segments else np.empty((0, 2, 3))
-        scene.show_section(merged)
-
-        bounds = document.bounds()
-        center, diag = _plane_quad_frame(bounds, point, normal)
-        u = _perpendicular(normal)
-        v = np.cross(normal, u)
-        half = diag * 0.55
-        corners = [
-            center - u * half - v * half,
-            center + u * half - v * half,
-            center + u * half + v * half,
-            center - u * half + v * half,
-        ]
-        scene.show_quad(corners, name="context-plane", color="#c89d00", opacity=0.12)
-
-        self._plane_count = detect_pins_by_section(document, point, normal, count_only=True)
-        self.status(
-            f"Context Plane: offset {self._plane_offset:+.3f} — "
-            f"{self._plane_count} closed shape(s); left click to stage"
-        )
-
-    def _confirm_plane(self) -> None:
-        if self._context_state != "dragging":
+        self.ctx.scene.show_section(merged)
+        if not len(merged):
+            self.status(
+                "Context Plane: nothing crosses Z=0.01 — run Z-Sit first so "
+                "the model sits on Z=0"
+            )
             return
-        document = self.ctx.document
-        point = self._plane_point().tolist()
-        normal = self._plane_normal.tolist()
+
         found = detect_pins_by_section(document, point, normal)
         self.ctx.window.context_plane = (list(point), list(normal))
         registry = self.ctx.window.pins
@@ -384,31 +262,15 @@ class DetectPinsTool(ToolMode):
         self.ctx.journal.record(
             tool=self.id,
             params={"action": "context_plane"},
-            inputs={"plane_point": point, "plane_normal": normal,
-                    "offset": self._plane_offset},
+            inputs={"plane_point": point, "plane_normal": normal},
             result={"closed_shapes": len(found), "added": len(added),
                     "centroids": [list(pin.centroid) for pin in added]},
         )
-        self._cancel_context()
         self._refresh_pending()
         self.status(
-            f"Context Plane: {len(found)} closed shapes, {len(added)} newly staged, "
-            f"{len(self.pending)} pending — press Apply"
+            f"Context Plane: {len(found)} closed shapes at Z=0.01, "
+            f"{len(added)} newly staged, {len(self.pending)} pending — press Apply"
         )
-
-    def _cancel_context(self) -> None:
-        if self._plane_dragger is not None:
-            self._plane_dragger.detach()
-            self._plane_dragger = None
-        if self._context_state != "off":
-            scene = self.ctx.scene
-            scene.remove_overlay("context-section")
-            scene.remove_overlay("context-plane")
-            scene.remove_overlay("context-plane-outline")
-            scene.plotter.render()
-        self._context_state = "off"
-        if self._actions_widget is not None and self.context_button.isChecked():
-            self.context_button.setChecked(False)
 
     def on_document_changed(self) -> None:
         # The registry itself survives edits (Separate Unibody remaps pins to
@@ -417,7 +279,7 @@ class DetectPinsTool(ToolMode):
         self._last_band = None
         self.pending = []
         self._pending_bands = []
-        self._cancel_context()
+        self.ctx.scene.remove_overlay("context-section")
         if self._actions_widget is not None:
             self.canvas.set_projection(None)
             self.canvas.set_band(None)
@@ -610,6 +472,15 @@ class DetectPinsTool(ToolMode):
             f"Detect Pins: pin {pin.number}{f' ({pin.name})' if pin.name else ''} "
             f"selected — type a name and press Enter"
         )
+
+    def _autocapitalize(self, text: str) -> None:
+        if not self.autocap_button.isChecked():
+            return
+        upper = text.upper()
+        if upper != text:
+            position = self.name_edit.cursorPosition()
+            self.name_edit.setText(upper)
+            self.name_edit.setCursorPosition(position)
 
     # ---------------------------------------------------- naming / predict
 

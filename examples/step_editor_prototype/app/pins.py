@@ -578,11 +578,24 @@ def _solve_axis(
 def predict_grid_names(pins: list[Pin], anchors: dict[int, str]) -> dict[int, str]:
     """BGA grid naming (A1, A2, ... B1, ...) from ball positions. `anchors`
     (pin index -> name) are ground truth: they fix the row-letter and
-    column-number directions; with no anchors the JEDEC default is used
-    (A row at +Y, column 1 at -X, top view)."""
+    column-number directions — and even which world axis carries the letters:
+    if the default (letters along Y) cannot satisfy the anchors, the swapped
+    assignment (letters along X) is tried before failing."""
+    errors: list[ValueError] = []
+    for row_axis, col_axis in ((1, 0), (0, 1)):
+        try:
+            return _predict_grid_with_axes(pins, anchors, row_axis, col_axis)
+        except ValueError as exc:
+            errors.append(exc)
+    raise errors[0]
+
+
+def _predict_grid_with_axes(
+    pins: list[Pin], anchors: dict[int, str], row_axis: int, col_axis: int
+) -> dict[int, str]:
     centroids = np.array([pin.centroid for pin in pins], dtype=np.float64)
-    rows = cluster_ordinals(centroids[:, 1])
-    cols = cluster_ordinals(centroids[:, 0])
+    rows = cluster_ordinals(centroids[:, row_axis])
+    cols = cluster_ordinals(centroids[:, col_axis])
 
     row_anchors, col_anchors = [], []
     for index, name in anchors.items():

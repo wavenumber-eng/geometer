@@ -265,6 +265,20 @@ def selftest_m3(fixture: Path | None = None) -> None:
     _check(columns == [1, 2, 6, 7], f"channel columns wrong: {columns}")
     print("grid prediction OK (depopulated channel)")
 
+    # Swapped-axis grid: letters run along X (model not re-oriented). Two
+    # anchors with different letters at the same Y must flip the axis
+    # assignment instead of failing.
+    swapped = [
+        Pin(number=0, centroid=(float(x), float(y), 0.0))
+        for x in (0, 1, 2)
+        for y in (0, 1, 2)
+    ]
+    # letters along X: A at x=0; numbers along Y: 1 at y=0
+    swapped_names = predict_grid_names(swapped, {0: "A1", 3: "B1"})
+    _check(swapped_names[1] == "A2" and swapped_names[8] == "C3",
+           f"axis-swap prediction wrong: {swapped_names}")
+    print("grid prediction OK (swapped letter axis)")
+
     # Numeric anchors pick the matching serpentine variant.
     two_row = [
         Pin(number=0, centroid=(float(x), float(y), 0.0))

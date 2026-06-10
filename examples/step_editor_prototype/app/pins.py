@@ -60,6 +60,29 @@ class PinRegistry:
         return index
 
 
+def pin_mesh_points(document: EditorDocument, pin: Pin) -> np.ndarray:
+    """All mesh vertices belonging to a pin (whole bodies or face regions)."""
+    blocks: list[np.ndarray] = []
+    for body_id in pin.body_ids:
+        mesh = document.bodies[body_id].mesh
+        if mesh is not None and len(mesh.points):
+            blocks.append(mesh.points)
+    by_body: dict[int, list[int]] = {}
+    for body_id, face_id in pin.face_ids:
+        by_body.setdefault(body_id, []).append(face_id)
+    for body_id, faces in by_body.items():
+        mesh = document.bodies[body_id].mesh
+        if mesh is None:
+            continue
+        mask = np.isin(mesh.tri_face_ids, np.asarray(faces, dtype=np.int32))
+        indices = np.unique(mesh.tris[mask])
+        if len(indices):
+            blocks.append(mesh.points[indices])
+    if not blocks:
+        return np.empty((0, 3), dtype=np.float64)
+    return np.concatenate(blocks)
+
+
 # ---------------------------------------------------------------- centroids
 
 def mesh_region_centroid(mesh: BodyMesh, face_ids: list[int] | None = None):

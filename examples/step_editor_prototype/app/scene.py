@@ -44,6 +44,7 @@ class SceneManager:
         self._actor_to_body: dict[int, int] = {}  # id(vtkActor) -> body index
         self._actors: list = []
         self._press_position: tuple[int, int] | None = None
+        self._hitbox_count = 0
         self._picker = vtk.vtkCellPicker()
         self._picker.SetTolerance(0.0005)
         # Polygon offset keeps highlight overlays from z-fighting their bodies.
@@ -278,6 +279,37 @@ class SceneManager:
             self.plotter.remove_actor(name, render=False)
         except Exception:
             pass
+
+    def show_hitboxes(self, hitboxes: list[dict], *, selected: int = -1) -> None:
+        """Translucent metadata volumes; never part of the B-rep."""
+        for index in range(self._hitbox_count):
+            self.remove_overlay(f"hitbox-{index}")
+        self._hitbox_count = len(hitboxes)
+        for index, hitbox in enumerate(hitboxes):
+            if hitbox is None:
+                continue
+            try:
+                if hitbox.get("type") == "obb":
+                    hx, hy, hz = hitbox["half_extents"]
+                    mesh = pv.Cube(x_length=2 * hx, y_length=2 * hy, z_length=2 * hz)
+                    mesh = mesh.rotate_z(float(hitbox.get("rotation_z_deg", 0.0)))
+                    mesh = mesh.translate(hitbox["center"])
+                elif hitbox.get("type") == "convex_hull":
+                    cloud = pv.PolyData(np.asarray(hitbox["vertices"], dtype=np.float64))
+                    mesh = cloud.delaunay_3d().extract_geometry()
+                else:
+                    continue
+            except Exception:
+                continue
+            color = "#ff5050" if index == selected else "#27b0d6"
+            self.plotter.add_mesh(
+                mesh,
+                color=color,
+                opacity=0.32,
+                lighting=False,
+                name=f"hitbox-{index}",
+            )
+        self.plotter.render()
 
     def show_pin_labels(self, points, labels) -> None:
         self.remove_overlay("pin-labels")

@@ -237,11 +237,69 @@ def selftest_m3(fixture: Path | None = None) -> None:
     _check(len(north_pins) == 2, f"expected 2 north leads, got {len(north_pins)}")
 
 
+def selftest_m4(fixture: Path | None = None) -> None:
+    """Hitboxes: auto-boxes and 3-click boxes must contain every mesh vertex
+    of their pin; the convex hull variant likewise."""
+    import numpy as np
+
+    from .document import EditorDocument
+    from .hitbox import (
+        convex_hull_hitbox,
+        obb_contains,
+        obb_from_points,
+        obb_from_three_clicks,
+    )
+    from .pins import Band, detect_pins_multibody, pin_mesh_points
+
+    path = fixture or FIXTURES / "SOIC-20-300.STEP"
+    document = EditorDocument.load(path)
+    rot_x90 = np.array(
+        [[1, 0, 0, 0], [0, 0, -1, 0], [0, 1, 0, 0], [0, 0, 0, 1]], dtype=np.float64
+    )
+    document.apply_trsf(rot_x90)
+    b = document.bounds()
+    pins = detect_pins_multibody(document, Band(b[0] - 1, b[2] - 1, b[1] + 1, b[3] + 1))
+    _check(len(pins) == 20, f"expected 20 pins, got {len(pins)}")
+
+    margin = 0.05
+    for pin in pins:
+        points = pin_mesh_points(document, pin)
+        _check(len(points) > 0, "pin without mesh points")
+        box = obb_from_points(points, margin=margin)
+        _check(bool(obb_contains(box, points).all()), "auto-box does not contain its pin")
+    print("auto-box containment OK for 20 pins")
+
+    # Synthetic 3-click box around the first pin's XY bounds.
+    points = pin_mesh_points(document, pins[0])
+    low, high = points.min(axis=0), points.max(axis=0)
+    box = obb_from_three_clicks(
+        (low[0] - margin, low[1] - margin, low[2]),
+        (high[0] + margin, low[1] - margin, low[2]),
+        (high[0] + margin, high[1] + margin, low[2]),
+        z_range=(low[2], high[2]),
+        margin=margin,
+    )
+    _check(bool(obb_contains(box, points).all()), "3-click box does not contain the pin")
+    angled = obb_from_three_clicks((0, 0, 0), (1, 1, 0), (0, 2, 0), z_range=(0, 1))
+    _check(abs(angled["rotation_z_deg"] - 45.0) < 1e-9, "3-click rotation wrong")
+    print("3-click OBB OK (incl. rotated base edge)")
+
+    import trimesh
+
+    hull = convex_hull_hitbox(points, margin=margin)
+    hull_mesh = trimesh.PointCloud(np.asarray(hull["vertices"])).convex_hull
+    inside = hull_mesh.contains(points)
+    _check(bool(inside.all()), "convex hull does not contain the pin")
+    _check(len(hull["vertices"]) <= 64, "hull vertex budget exceeded")
+    print(f"convex hull containment OK ({len(hull['vertices'])} vertices)")
+
+
 SELFTESTS = {
     "m0": selftest_m0,
     "m1": selftest_m1,
     "m2": selftest_m2,
     "m3": selftest_m3,
+    "m4": selftest_m4,
 }
 
 

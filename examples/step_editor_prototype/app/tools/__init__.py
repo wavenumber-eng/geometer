@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from .base import ToolMode
 from .detect_pins import DetectPinsTool
+from .hitboxes import HitboxTool
 from .inspect_tool import InspectTool
 from .pin1_quadrant import Pin1QuadrantTool
 from .zsit import ZSitTool
@@ -14,4 +15,5 @@ TOOL_CLASSES: list[type[ToolMode]] = [
     ZSitTool,
     Pin1QuadrantTool,
     DetectPinsTool,
+    HitboxTool,
 ]

@@ -66,7 +66,7 @@ jobs:
         if: runner.os == 'macOS'
         run: brew list ninja >/dev/null 2>&1 || brew install ninja
       - name: Cache OCCT
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             .deps/occt-src
@@ -90,13 +90,13 @@ jobs:
       - name: Check wheel
         run: uv run --group dev twine check out/wheelhouse/*.whl
       - name: Upload wheel artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: wheel-${{ matrix.platform }}
           path: out/wheelhouse/*.whl
           if-no-files-found: error
       - name: Upload native artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: native-${{ matrix.platform }}
           path: dist/native/${{ matrix.platform }}/*

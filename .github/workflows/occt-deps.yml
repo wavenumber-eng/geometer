@@ -71,7 +71,7 @@ jobs:
         if: runner.os == 'macOS'
         run: brew list ninja >/dev/null 2>&1 || brew install ninja
       - name: Restore GitHub OCCT cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             .deps/occt-src
@@ -106,7 +106,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y build-essential cmake ninja-build
       - name: Restore GitHub WASM OCCT cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             .deps/emsdk

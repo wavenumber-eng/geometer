@@ -19,7 +19,7 @@ jobs:
       - name: Run release signoff
         run: uv run pytest tests/L99_release -q
       - name: Cache OCCT
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             .deps/occt-src
@@ -41,12 +41,12 @@ jobs:
       - name: Check wheel
         run: uv run twine check out/wheelhouse/macos-arm64/*.whl
       - name: Upload macOS native artifacts
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: geometer-macos-arm64-native
           path: dist/native/macos-arm64/**
       - name: Upload macOS wheel
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: geometer-macos-arm64-wheel
           path: out/wheelhouse/macos-arm64/*.whl

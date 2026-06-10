@@ -34,6 +34,10 @@ start at [docs/design/README.md](docs/design/README.md).
 - Versioned releases use ADR 006 date versions: release tags use
   `vYYYY-MM-DD`, CMake/PyPI use `YYYY.M.D`, and the C ABI generation uses
   `YYYYMMDD`.
+- GitHub workflow edits must use Node 24-capable action majors where available
+  (for example `actions/cache@v5`, `actions/setup-node@v6`,
+  `actions/upload-artifact@v7`, and `actions/download-artifact@v8`). Do not
+  reintroduce Node 20-backed action majors.
 - Use CMake for proper native builds and CTest for registered tests.
 - Rack strata are the test index of record. `tests/python` is an enabled Python
   unit stratum; keep new Python tests represented in `tests/python/STRATUM.toml`.

@@ -294,12 +294,47 @@ def selftest_m4(fixture: Path | None = None) -> None:
     print(f"convex hull containment OK ({len(hull['vertices'])} vertices)")
 
 
+def selftest_m6(fixture: Path | None = None) -> None:
+    """Colors: assign known colours to bodies, export, re-read with the XCAF
+    colour tool — RGB must round-trip within 1/255."""
+    from .document import EditorDocument
+    from .export_ap242 import export_ap242
+
+    path = fixture or FIXTURES / "RESC3216X07L.step"
+    document = EditorDocument.load(path)
+    _check(len(document.bodies) >= 2, "fixture should be multi-body")
+
+    assigned = [
+        (212 / 255, 175 / 255, 55 / 255),   # gold
+        (32 / 255, 36 / 255, 40 / 255),     # epoxy black
+    ]
+    for index, body in enumerate(document.bodies):
+        body.color = assigned[index % len(assigned)]
+        if body.mesh is not None:
+            body.mesh.face_colors = {}
+
+    with tempfile.TemporaryDirectory(prefix="step_editor_m6_") as temp:
+        out_path = Path(temp) / "recolored.step"
+        report = export_ap242(document, out_path)
+        _check(report.ok, "export validation failed")
+        reread = EditorDocument.load(out_path)
+        _check(len(reread.bodies) == len(document.bodies), "body count changed")
+        for index, body in enumerate(reread.bodies):
+            expected = assigned[index % len(assigned)]
+            _check(body.color is not None, f"body {index} lost its colour")
+            for a, b in zip(body.color, expected):
+                _check(abs(a - b) <= 1.0 / 255.0 + 1e-9,
+                       f"body {index} colour drifted: {body.color} vs {expected}")
+    print(f"colour round-trip OK for {len(document.bodies)} bodies")
+
+
 SELFTESTS = {
     "m0": selftest_m0,
     "m1": selftest_m1,
     "m2": selftest_m2,
     "m3": selftest_m3,
     "m4": selftest_m4,
+    "m6": selftest_m6,
 }
 
 

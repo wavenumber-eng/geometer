@@ -58,6 +58,9 @@ target_link_libraries(geometer_hlr_preview PRIVATE
     geometer_lib
     geometer_imgui_sdl3_opengl3
 )
+if(WIN32)
+    target_link_libraries(geometer_hlr_preview PRIVATE comdlg32)
+endif()
 target_include_directories(geometer_hlr_preview PRIVATE
     "${CMAKE_SOURCE_DIR}/third_party/rapidjson/include"
 )
@@ -74,3 +77,12 @@ endif()
 set_target_properties(geometer_hlr_preview PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/examples/cpp"
 )
+
+add_custom_command(TARGET geometer_hlr_preview POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${GEOMETER_NATIVE_DIST_DIR}"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "$<TARGET_FILE:geometer_hlr_preview>"
+        "${GEOMETER_NATIVE_DIST_DIR}/"
+    COMMENT "Copying geometer_hlr_preview to dist/native/${GEOMETER_NATIVE_DIST_PLATFORM}/"
+)
+geometer_copy_occt_runtime_to_native_dist(geometer_hlr_preview)

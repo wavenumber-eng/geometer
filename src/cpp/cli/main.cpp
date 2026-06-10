@@ -49,11 +49,14 @@ static void print_usage()
                  "                                               Solve packed planar batch bytes\n"
                  "\n"
                  "Options:\n"
-                 "  --deflection <value>   Linear deflection (default: 0.1)\n"
+                 "  --deflection <value>   Absolute linear deflection (forces absolute mode)\n"
+                 "  --deflection-mode <absolute|bbox-relative>  (default: bbox-relative)\n"
+                 "  --deflection-coefficient <value>            (default: 0.004)\n"
                  "  --angular <value>      Angular deflection (default: 0.5)\n"
+                 "  --outline-algorithm <hlr-close|mesh-shadow>\n"
                  "  --format <step>        Source model format (only step is supported)\n"
                  "  --view <id>            SVG view id (default: top)\n"
-                 "  --mode <simple|detail> SVG mode (default: simple)\n"
+                 "  --mode <outline|detail|bbox> SVG mode (default: outline)\n"
                  "  --curve-mode <native-arcs|polyline>\n"
                  "  --samples <count>      Curve polyline samples (default: 24)\n"
                  "  --round-digits <count> Projection rounding digits (default: 3)\n"
@@ -61,7 +64,9 @@ static void print_usage()
                  "  --output <path>        init-request output path\n"
                  "  --repeat <count>       Planar benchmark repeat count (default: 1)\n"
                  "  --warmup <count>       Planar benchmark warmup count (default: 0)\n"
-                 "  --metrics <path>       Write planar benchmark JSON metrics\n");
+                 "  --metrics <path>       Write planar benchmark JSON metrics\n"
+                 "  --format <binary|json> planar-batch-solve output format\n"
+                 "  --return-rings <true|false> alias for --format json\n");
 }
 
 static bool read_file_bytes(const char* path, std::vector<unsigned char>* bytes)
@@ -191,6 +196,81 @@ static std::string default_output_for_step(const std::string& step_path,
         return name + ".bounds.json";
     }
     return name + ".projection.json";
+}
+
+static bool preset_projection_view(const std::string& id, geometer::ProjectionViewSpec* view)
+{
+    if (view == nullptr)
+    {
+        return false;
+    }
+    if (id == "top")
+    {
+        *view = {"top", {0.0, 0.0, 1.0}, {0.0, 1.0, 0.0}};
+        return true;
+    }
+    if (id == "bottom" || id == "bot")
+    {
+        *view = {"bottom", {0.0, 0.0, -1.0}, {0.0, 1.0, 0.0}};
+        return true;
+    }
+    if (id == "front")
+    {
+        *view = {"front", {0.0, -1.0, 0.0}, {0.0, 0.0, 1.0}};
+        return true;
+    }
+    if (id == "back")
+    {
+        *view = {"back", {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}};
+        return true;
+    }
+    if (id == "right")
+    {
+        *view = {"right", {1.0, 0.0, 0.0}, {0.0, 0.0, 1.0}};
+        return true;
+    }
+    if (id == "left")
+    {
+        *view = {"left", {-1.0, 0.0, 0.0}, {0.0, 0.0, 1.0}};
+        return true;
+    }
+    return false;
+}
+
+static bool has_projection_view(const geometer::HlrProjectionOptions& options,
+                                const std::string& id)
+{
+    for (const geometer::ProjectionViewSpec& view : options.views)
+    {
+        if (view.id == id)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+static void ensure_projection_view(geometer::HlrProjectionOptions* options, const std::string& id)
+{
+    if (options == nullptr || id.empty() || has_projection_view(*options, id))
+    {
+        return;
+    }
+
+    geometer::ProjectionViewSpec view;
+    if (!preset_projection_view(id, &view))
+    {
+        return;
+    }
+
+    if (options->views.empty())
+    {
+        options->views = {view};
+    }
+    else
+    {
+        options->views.push_back(view);
+    }
 }
 
 static std::string normalize_operation(const std::string& operation)
@@ -394,6 +474,7 @@ static void parse_projection_options(int argc, char* argv[], int start,
         if (std::strcmp(argv[i], "--view") == 0)
         {
             *view_id = argv[i + 1];
+            ensure_projection_view(options, *view_id);
         }
         else if (std::strcmp(argv[i], "--mode") == 0)
         {
@@ -417,6 +498,34 @@ static void parse_projection_options(int argc, char* argv[], int start,
         else if (std::strcmp(argv[i], "--round-digits") == 0)
         {
             options->round_digits = std::atoi(argv[i + 1]);
+        }
+        else if (std::strcmp(argv[i], "--deflection") == 0)
+        {
+            options->mesh_linear_deflection = std::atof(argv[i + 1]);
+            options->mesh_deflection_mode = geometer::MeshDeflectionMode::Absolute;
+        }
+        else if (std::strcmp(argv[i], "--angular") == 0)
+        {
+            options->mesh_angular_deflection = std::atof(argv[i + 1]);
+        }
+        else if (std::strcmp(argv[i], "--deflection-mode") == 0)
+        {
+            options->mesh_deflection_mode = std::strcmp(argv[i + 1], "absolute") == 0
+                                                ? geometer::MeshDeflectionMode::Absolute
+                                                : geometer::MeshDeflectionMode::BboxRelative;
+        }
+        else if (std::strcmp(argv[i], "--deflection-coefficient") == 0)
+        {
+            options->mesh_deflection_coefficient = std::atof(argv[i + 1]);
+            options->mesh_deflection_mode = geometer::MeshDeflectionMode::BboxRelative;
+        }
+        else if (std::strcmp(argv[i], "--outline-algorithm") == 0)
+        {
+            const char* value = argv[i + 1];
+            options->outline_algorithm =
+                (std::strcmp(value, "mesh-shadow") == 0 || std::strcmp(value, "mesh_shadow") == 0)
+                    ? geometer::ProjectionOutlineAlgorithm::MeshShadow
+                    : geometer::ProjectionOutlineAlgorithm::HlrClosedEdges;
         }
     }
 }
@@ -499,10 +608,11 @@ static int execute_hlr_job(const rapidjson::Value& job, const rapidjson::Value* 
     if (operation == "step_hlr_projection_svg" || operation == "model_hlr_projection_svg")
     {
         std::string view_id = "top";
-        std::string mode = "simple";
+        std::string mode = "outline";
         member_string(job, "view", &view_id);
         member_string(job, "view_id", &view_id);
         member_string(job, "mode", &mode);
+        ensure_projection_view(&options, view_id);
         code = geometer::write_hlr_projection_svg(projection, view_id, mode, &text, &status);
     }
     else
@@ -952,7 +1062,7 @@ static int init_request(int argc, char* argv[])
         options.AddMember("round_digits", 3, allocator);
         options.AddMember("include_visible", true, allocator);
         options.AddMember("include_outline", true, allocator);
-        options.AddMember("union_simple_polygons", true, allocator);
+        options.AddMember("union_outline_polygons", true, allocator);
     }
     job.AddMember("options", options, allocator);
     jobs.PushBack(job, allocator);
@@ -1137,7 +1247,7 @@ int main(int argc, char* argv[])
         const char* output = argv[3];
         geometer::HlrProjectionOptions options;
         std::string view_id = "top";
-        std::string mode = "simple";
+        std::string mode = "outline";
         const int format_result = validate_model_format_args(argc, argv, 4);
         if (format_result != 0)
         {
@@ -1199,6 +1309,7 @@ int main(int argc, char* argv[])
         int repeat = 1;
         int warmup = 0;
         const char* metrics_path = nullptr;
+        bool output_json = false;
         for (int i = 4; i < argc; i += 1)
         {
             if (std::strcmp(argv[i], "--repeat") == 0 && i + 1 < argc)
@@ -1213,6 +1324,16 @@ int main(int argc, char* argv[])
             {
                 metrics_path = argv[++i];
             }
+            else if (std::strcmp(argv[i], "--format") == 0 && i + 1 < argc)
+            {
+                const char* value = argv[++i];
+                output_json = std::strcmp(value, "json") == 0;
+            }
+            else if (std::strcmp(argv[i], "--return-rings") == 0 && i + 1 < argc)
+            {
+                const char* value = argv[++i];
+                output_json = std::strcmp(value, "0") != 0 && std::strcmp(value, "false") != 0;
+            }
         }
 
         std::vector<unsigned char> request_bytes;
@@ -1223,13 +1344,24 @@ int main(int argc, char* argv[])
         }
 
         std::vector<unsigned char> response_bytes;
+        std::string response_json;
         geometer::Status status;
         for (int i = 0; i < warmup; i += 1)
         {
-            std::vector<unsigned char> warmup_response;
             status = {};
-            const int code = geometer::solve_planar_batch_from_bytes(
-                request_bytes.data(), request_bytes.size(), &warmup_response, &status);
+            int code = 0;
+            if (output_json)
+            {
+                std::string warmup_response;
+                code = geometer::solve_planar_batch_json_from_bytes(
+                    request_bytes.data(), request_bytes.size(), &warmup_response, &status);
+            }
+            else
+            {
+                std::vector<unsigned char> warmup_response;
+                code = geometer::solve_planar_batch_from_bytes(
+                    request_bytes.data(), request_bytes.size(), &warmup_response, &status);
+            }
             if (code != 0)
             {
                 std::fprintf(stderr, "Planar warmup failed (%d): %s\n", code,
@@ -1243,10 +1375,22 @@ int main(int argc, char* argv[])
         for (int i = 0; i < repeat; i += 1)
         {
             status = {};
-            std::vector<unsigned char> run_response;
             const auto started = std::chrono::steady_clock::now();
-            const int code = geometer::solve_planar_batch_from_bytes(
-                request_bytes.data(), request_bytes.size(), &run_response, &status);
+            int code = 0;
+            if (output_json)
+            {
+                std::string run_response;
+                code = geometer::solve_planar_batch_json_from_bytes(
+                    request_bytes.data(), request_bytes.size(), &run_response, &status);
+                response_json = std::move(run_response);
+            }
+            else
+            {
+                std::vector<unsigned char> run_response;
+                code = geometer::solve_planar_batch_from_bytes(
+                    request_bytes.data(), request_bytes.size(), &run_response, &status);
+                response_bytes = std::move(run_response);
+            }
             const auto finished = std::chrono::steady_clock::now();
             if (code != 0)
             {
@@ -1254,18 +1398,21 @@ int main(int argc, char* argv[])
                              status.message.c_str());
                 return code;
             }
-            response_bytes = std::move(run_response);
             const auto elapsed =
                 std::chrono::duration<double, std::milli>(finished - started).count();
             timings_ms.push_back(elapsed);
         }
 
-        if (!write_file_bytes(output, response_bytes))
+        const bool wrote_output = output_json ? write_text_file(output, response_json)
+                                              : write_file_bytes(output, response_bytes);
+        if (!wrote_output)
         {
             std::fprintf(stderr, "Failed writing %s\n", output);
             return 1;
         }
 
+        const std::size_t response_size =
+            output_json ? response_json.size() : response_bytes.size();
         const double min_ms = *std::min_element(timings_ms.begin(), timings_ms.end());
         const double max_ms = *std::max_element(timings_ms.begin(), timings_ms.end());
         const double mean_ms = std::accumulate(timings_ms.begin(), timings_ms.end(), 0.0) /
@@ -1278,6 +1425,7 @@ int main(int argc, char* argv[])
                       "  \"abi\": %d,\n"
                       "  \"requestBytes\": %zu,\n"
                       "  \"responseBytes\": %zu,\n"
+                      "  \"format\": \"%s\",\n"
                       "  \"warmup\": %d,\n"
                       "  \"repeat\": %d,\n"
                       "  \"minMs\": %.6f,\n"
@@ -1286,7 +1434,8 @@ int main(int argc, char* argv[])
                       "  \"lastMs\": %.6f\n"
                       "}\n",
                       geometer::version_string(), geometer::abi_version(), request_bytes.size(),
-                      response_bytes.size(), warmup, repeat, min_ms, mean_ms, max_ms, last_ms);
+                      response_size, output_json ? "json" : "binary", warmup, repeat, min_ms,
+                      mean_ms, max_ms, last_ms);
         std::printf("%s", metrics);
         if (metrics_path != nullptr && !write_text_file(metrics_path, metrics))
         {

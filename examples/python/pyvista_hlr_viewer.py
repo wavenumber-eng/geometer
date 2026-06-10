@@ -167,20 +167,20 @@ class ProjectionCanvas(QWidget):
             self._draw_model_bounds(painter, projected_model_bounds, project)
 
         detail = self._result.geometry(self._view_id, "detail")
-        simple = self._result.geometry(self._view_id, "simple")
+        outline = self._result.geometry(self._view_id, "outline")
         painter.setPen(QColor("#243044"))
         painter.drawText(
             16,
             self.height() - 18,
-            f"{self._view_id} detail {edge_count(detail)} simple {edge_count(simple)}",
+            f"{self._view_id} detail {edge_count(detail)} outline {edge_count(outline)}",
         )
 
     def _selected_geometries(self) -> list[tuple[str, Mapping[str, Any], QColor]]:
         result: list[tuple[str, Mapping[str, Any], QColor]] = []
         if self._result is None:
             return result
-        if self._mode in {"simple", "both"}:
-            result.append(("simple", self._result.geometry(self._view_id, "simple"), QColor(32, 128, 110, 210)))
+        if self._mode in {"outline", "both"}:
+            result.append(("outline", self._result.geometry(self._view_id, "outline"), QColor(0, 0, 0, 255)))
         if self._mode in {"detail", "both"}:
             result.append(("detail", self._result.geometry(self._view_id, "detail"), QColor(42, 54, 72, 255)))
         return result
@@ -243,7 +243,7 @@ class PyVistaHlrViewer(QMainWindow):
         self.version_label = QLabel(version_label_text())
         self.version_label.setStyleSheet("font-weight: 600; color: #243044;")
         self.mode_combo = QComboBox()
-        self.mode_combo.addItems(["detail", "simple", "both"])
+        self.mode_combo.addItems(["detail", "outline", "both"])
         self.bounds_check = QCheckBox("Bounds")
         self.bounds_check.setChecked(True)
         self.feature_edges_check = QCheckBox("Feature edges")
@@ -501,13 +501,13 @@ class PyVistaHlrViewer(QMainWindow):
             self.current_projection = result
             self.projection.set_projection(result, view.id, self.mode_combo.currentText())
             detail = result.geometry(view.id, "detail")
-            simple = result.geometry(view.id, "simple")
+            outline = result.geometry(view.id, "outline")
             timings = result.timings
             bounds_text = model_bounds_size_text(self.model_bounds)
             bounds_status = f" | bounds {bounds_text}" if bounds_text else ""
             self.status.showMessage(
                 f"{self.step_path.name} | {view.id} | detail {edge_count(detail)} | "
-                f"simple {edge_count(simple)} | HLR {float(timings.get('hlr_ms', 0.0)):.2f} ms"
+                f"outline {edge_count(outline)} | HLR {float(timings.get('hlr_ms', 0.0)):.2f} ms"
                 f"{bounds_status}"
             )
         except Exception as exc:

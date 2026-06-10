@@ -48,6 +48,8 @@ class bdist_wheel(_bdist_wheel):
         _, _, platform_tag = super().get_tag()
         if sys.platform == "darwin":
             platform_tag = _macos_wheel_platform_tag()
+        elif sys.platform.startswith("linux"):
+            platform_tag = _linux_wheel_platform_tag()
         return "py3", "none", platform_tag
 
 
@@ -104,6 +106,25 @@ def _macos_wheel_platform_tag() -> str:
     if _wheel_arch() == "arm64" and (major, minor) < (11, 0):
         raise RuntimeError("macOS arm64 wheels require deployment target 11.0 or newer.")
     return f"macosx_{major}_{0 if major >= 11 else minor}_{_wheel_arch()}"
+
+
+def _linux_wheel_platform_tag() -> str:
+    libc_name, libc_version = platform.libc_ver()
+    if libc_name != "glibc" or not libc_version:
+        raise RuntimeError(f"Linux wheels require glibc for PyPI publishing, got {libc_name or 'unknown'} {libc_version}")
+    major, minor = _version_pair(libc_version)
+    return f"manylinux_{major}_{minor}_{_linux_wheel_arch()}"
+
+
+def _linux_wheel_arch() -> str:
+    machine = platform.machine().strip().lower()
+    if machine in {"amd64", "x86_64"}:
+        return "x86_64"
+    if machine in {"aarch64", "arm64"}:
+        return "aarch64"
+    if machine in {"i386", "i686", "x86"}:
+        return "i686"
+    return machine or "unknown"
 
 
 def _wheel_arch() -> str:

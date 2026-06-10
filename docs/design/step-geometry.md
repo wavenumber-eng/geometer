@@ -122,11 +122,14 @@ struct HlrProjectionOptions {
     bool edge_h_smooth = false;
     bool edge_h_sewn = false;
     bool edge_h_iso = false;
-    bool union_simple_polygons = true;
+    bool union_outline_polygons = true;
     ProjectionAlgorithm projection_algorithm = ProjectionAlgorithm::Poly;
     double mesh_linear_deflection = 0.01;
     double mesh_angular_deflection = 0.5;
     bool mesh_relative = false;
+    MeshDeflectionMode mesh_deflection_mode = MeshDeflectionMode::BboxRelative;
+    double mesh_deflection_coefficient = 0.004;
+    ProjectionOutlineAlgorithm outline_algorithm = ProjectionOutlineAlgorithm::HlrClosedEdges;
     double hlr_angle_tolerance = 0.0174533;
 };
 ```
@@ -158,8 +161,9 @@ struct ProjectedModeGeometry {
 
 struct ProjectedViewGeometry {
     ProjectionViewSpec view;
-    ProjectedModeGeometry simple;
+    ProjectedModeGeometry outline;
     ProjectedModeGeometry detail;
+    ProjectedModeGeometry bbox;
 };
 
 struct HlrProjectionTimings {
@@ -170,7 +174,7 @@ struct HlrProjectionTimings {
 };
 
 struct HlrProjectionResult {
-    std::string schema = "geometry.projection.a0";
+    std::string schema = "geometry.projection.b0";
     std::string units = "mm";
     std::string source_hash;
     std::vector<ProjectedViewGeometry> views;
@@ -204,10 +208,12 @@ int write_hlr_projection_svg(
 );
 ```
 
-`step_hlr_projection_from_bytes` parses STEP bytes, runs OCCT HLR for each
-requested view, and fills both `detail` and `simple` geometry. `simple` is built
-from projected edge contours. `write_hlr_projection_json` emits
-`geometry.projection.a0` JSON. `write_hlr_projection_svg` emits a quick
+`step_hlr_projection_from_bytes` parses STEP bytes, runs projection for each
+requested view, and fills `detail`, `outline`, and `bbox` geometry. `detail`
+is the configured HLR edge-category output. `outline` is the assembly
+projection silhouette, using either tessellated mesh shadow or closed HLR edge
+contours. `bbox` is the projected 3D shape bounding box. `write_hlr_projection_json`
+emits `geometry.projection.b0` JSON. `write_hlr_projection_svg` emits a quick
 inspection SVG for one view and mode.
 
 Preferred Python, CLI, and batch callers should use the generic model names

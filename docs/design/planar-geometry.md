@@ -136,8 +136,27 @@ int solve_planar_batch_from_bytes(
     std::vector<unsigned char>* response_bytes,
     Status* status = nullptr
 );
+
+int write_planar_batch_solve_json(
+    const PlanarBatchSolveResult& result,
+    std::string* json,
+    Status* status = nullptr
+);
+
+int solve_planar_batch_json_from_bytes(
+    const unsigned char* request_data,
+    std::size_t request_size,
+    std::string* response_json,
+    Status* status = nullptr
+);
 ```
 
 Closed rings should be supplied without a duplicate closing point. Output
 outlines are oriented positive and holes are oriented negative. Inputs that
 contain duplicate closing points are tolerated and cleaned.
+
+The CLI exposes the JSON ring form with
+`planar-batch-solve request.bin rings.json --format json` or
+`--return-rings true`. Python exposes the same fused regions as
+`geometer.planar_batch_solve(...)`, returning jobs with `regions[].outer` and
+`regions[].holes` in millimeters.

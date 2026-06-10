@@ -10,7 +10,15 @@ from typing import Any
 
 from ._errors import GeometerError
 from ._paths import executable_path
-from ._types import HlrOptions, ModelInput, StepInput, Version, read_step_input
+from ._types import (
+    HlrOptions,
+    ModelInput,
+    PlanarBatchInput,
+    StepInput,
+    Version,
+    read_planar_batch_input,
+    read_step_input,
+)
 
 
 _VERSION_RE = re.compile(r"^geometer\s+(\d+)\.(\d+)\.(\d+)(?:\.(\d+))?\s+\(abi\s+(\d+)\)\s*$")
@@ -25,9 +33,7 @@ def version() -> Version:
     )
     if completed.returncode != 0:
         message = completed.stderr.strip() or completed.stdout.strip()
-        raise RuntimeError(
-            f"geometer --version failed with exit code {completed.returncode}: {message}"
-        )
+        raise RuntimeError(f"geometer --version failed with exit code {completed.returncode}: {message}")
 
     text = completed.stdout.strip()
     match = _VERSION_RE.match(text)
@@ -129,11 +135,36 @@ def planar_step(request: Mapping[str, Any] | str | bytes | bytearray) -> bytes:
         )
         if completed.returncode != 0:
             message = completed.stderr.strip() or completed.stdout.strip()
-            raise RuntimeError(
-                "geometer planar-step failed with exit code "
-                f"{completed.returncode}: {message}"
-            )
+            raise RuntimeError(f"geometer planar-step failed with exit code {completed.returncode}: {message}")
         return output_path.read_bytes()
+
+
+def planar_batch_solve_json(request: PlanarBatchInput) -> str:
+    with tempfile.TemporaryDirectory(prefix="geometer-planar-") as directory_text:
+        directory = Path(directory_text)
+        request_path = _materialize_planar_batch_request(request, directory)
+        output_path = directory / "rings.json"
+        completed = subprocess.run(
+            [
+                str(executable_path()),
+                "planar-batch-solve",
+                str(request_path),
+                str(output_path),
+                "--format",
+                "json",
+            ],
+            capture_output=True,
+            check=False,
+            encoding="utf-8",
+        )
+        if completed.returncode != 0 or not output_path.exists():
+            message = completed.stderr.strip() or completed.stdout.strip() or "CLI call failed"
+            raise GeometerError(
+                code=completed.returncode or -1,
+                message=message,
+                function="geometer planar-batch-solve",
+            )
+        return output_path.read_text(encoding="utf-8")
 
 
 def run_batch(
@@ -218,8 +249,7 @@ def _read_response(response_path: Path, completed: subprocess.CompletedProcess[s
     if not response_path.exists():
         message = completed.stderr.strip() or completed.stdout.strip()
         raise RuntimeError(
-            "geometer run failed with exit code "
-            f"{completed.returncode} and did not write a response: {message}"
+            f"geometer run failed with exit code {completed.returncode} and did not write a response: {message}"
         )
     try:
         loaded = json.loads(response_path.read_text(encoding="utf-8"))
@@ -236,12 +266,7 @@ def _error_from_response(
     completed: subprocess.CompletedProcess[str],
 ) -> GeometerError:
     source = response_job if response_job is not None else response
-    message = str(
-        source.get("message")
-        or completed.stderr.strip()
-        or completed.stdout.strip()
-        or "CLI call failed"
-    )
+    message = str(source.get("message") or completed.stderr.strip() or completed.stdout.strip() or "CLI call failed")
     return GeometerError(
         code=int(source.get("code", completed.returncode or -1)),
         message=message,
@@ -261,6 +286,14 @@ def _materialize_step(step: StepInput, directory: Path) -> Path:
 
 def _materialize_model(model: ModelInput, directory: Path) -> Path:
     return _materialize_step(model, directory)
+
+
+def _materialize_planar_batch_request(request: PlanarBatchInput, directory: Path) -> Path:
+    if isinstance(request, (str, Path)):
+        return Path(request).resolve()
+    request_path = directory / "request.bin"
+    request_path.write_bytes(read_planar_batch_input(request))
+    return request_path
 
 
 def _decode_options(options_json: bytes | None) -> dict[str, Any]:

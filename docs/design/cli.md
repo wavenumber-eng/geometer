@@ -7,10 +7,10 @@ Native CLI:
 .\dist\native\windows-x64\geometer.exe model-bounds input.step output.bounds.json --format step
 .\dist\native\windows-x64\geometer.exe model-to-glb input.step output.glb --format step
 .\dist\native\windows-x64\geometer.exe model-project-hlr input.step output.json --format step
-.\dist\native\windows-x64\geometer.exe model-project-svg input.step output.svg --format step --mode simple --view top
+.\dist\native\windows-x64\geometer.exe model-project-svg input.step output.svg --format step --mode outline --view top
 .\dist\native\windows-x64\geometer.exe step-to-glb input.step output.glb
 .\dist\native\windows-x64\geometer.exe step-project-hlr input.step output.json
-.\dist\native\windows-x64\geometer.exe step-project-svg input.step output.svg --mode simple --view top
+.\dist\native\windows-x64\geometer.exe step-project-svg input.step output.svg --mode outline --view top
 .\dist\native\windows-x64\geometer.exe planar-step planar-step-request.json output.step
 .\dist\native\windows-x64\geometer.exe init-request request.json --step input.step --operation step_hlr_projection_json --output output.json
 .\dist\native\windows-x64\geometer.exe run request.json response.json
@@ -30,10 +30,13 @@ Projection CLI options:
 
 - `--format <step>`
 - `--view <id>`
-- `--mode <simple|detail>`
+- `--mode <outline|detail|bbox>`
 - `--curve-mode <native-arcs|polyline>`
 - `--samples <count>`
 - `--round-digits <count>`
+- `--outline-algorithm <mesh-shadow|hlr-close>`
+- `--deflection-mode <absolute|bbox-relative>`
+- `--deflection-coefficient <value>`
 
 STEP-to-GLB CLI options:
 
@@ -84,6 +87,8 @@ Planar batch solve CLI options:
 - `--repeat <count>`: measured solve repeats.
 - `--metrics <path>`: write JSON metrics with request/response byte sizes and
   min/mean/max/last solve time.
+- `--format <binary|json>`: choose packed binary output or fused ring JSON.
+- `--return-rings <true|false>`: compatibility alias for `--format json`.
 
 `planar-batch-solve` uses the same packed request/response byte format as
 `solve_planar_batch_from_bytes` and the browser C ABI. It is intended for

@@ -1,0 +1,83 @@
+---
+# yamllint disable rule:line-length
+name: WASM
+
+"on":
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - ".github/workflows/wasm.yml"
+      - "CMakeLists.txt"
+      - "CMakePresets.json"
+      - "scripts/build_wasm.py"
+      - "scripts/build_self_contained_hlr_demo.py"
+      - "scripts/build_self_contained_planar_ring_solver_demo.py"
+      - "src/cpp/**"
+      - "tests/wasm/**"
+      - "examples/wasm/**"
+      - "third_party/**"
+  schedule:
+    - cron: "18 8 * * 1"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: wasm-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  wasm:
+    name: Browser and Node WASM
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - uses: astral-sh/setup-uv@v8.2.0
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Install build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake ninja-build
+
+      - name: Cache WASM toolchain and OCCT
+        uses: actions/cache@v4
+        with:
+          path: |
+            .deps/emsdk
+            .deps/occt-src
+            .deps/occt-wasm-build
+            .deps/occt-wasm-install
+            build-wasm
+          key: wasm-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/build_wasm.py', 'scripts/build_occt.py', 'third_party/rapidjson/**') }}
+          restore-keys: |
+            wasm-${{ runner.os }}-${{ runner.arch }}-
+
+      - name: Build WASM artifacts
+        run: uv run python scripts/build_wasm.py
+
+      - name: Build browser demos
+        run: |
+          uv run python scripts/build_self_contained_hlr_demo.py
+          uv run python scripts/build_self_contained_planar_ring_solver_demo.py
+
+      - name: Run WASM validation tests
+        run: |
+          node tests/wasm/planar_batch_solve_bytes_validation.js
+          node tests/wasm/step_to_glb_bytes_validation.js
+
+      - name: Upload WASM artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: wasm-dist
+          path: dist/wasm/**
+          if-no-files-found: error

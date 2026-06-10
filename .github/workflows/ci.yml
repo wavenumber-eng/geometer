@@ -1,24 +1,97 @@
+---
+# yamllint disable rule:line-length
 name: CI
 
-on:
-  push:
-    branches: [main, dev]
-  pull_request:
+"on":
   workflow_dispatch:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  release-signoff:
-    name: ${{ matrix.os }} / L99
+  standards:
+    name: wn-dev-std
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v8.2.0
+      - name: Set up Python
+        run: uv python install 3.12
+      - name: Run Rack suite
+        run: uv run --group dev rack run --all
+      - name: Run standards check
+        run: uvx --from git+https://github.com/wavenumber-eng/wn-dev-std wn-dev-std check . --format json
+
+  native:
+    name: native (${{ matrix.platform }}, py3.12)
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: windows-latest
+            platform: windows-x64
+            compiler: msvc
+          - os: ubuntu-24.04
+            platform: linux-x64
+            compiler: gcc
+          - os: ubuntu-24.04-arm
+            platform: linux-arm64
+            compiler: gcc
+          - os: macos-15
+            platform: macos-arm64
+            compiler: apple-clang
 
     steps:
       - uses: actions/checkout@v6
       - uses: astral-sh/setup-uv@v8.2.0
-      - name: Sync dev tools
-        run: uv sync --group dev --no-install-project
-      - name: Run release signoff
-        run: uv run --no-sync pytest tests/L99_release -q
+      - name: Set up Python
+        run: uv python install 3.12
+      - name: Set up MSVC
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+      - name: Install Linux build tools
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential ninja-build libgl1-mesa-dev libdbus-1-dev libudev-dev libx11-dev libxcursor-dev libxext-dev libxi-dev libxinerama-dev libxkbcommon-dev libxrandr-dev libwayland-dev wayland-protocols
+      - name: Install macOS build tools
+        if: runner.os == 'macOS'
+        run: brew list ninja >/dev/null 2>&1 || brew install ninja
+      - name: Cache OCCT
+        uses: actions/cache@v4
+        with:
+          path: |
+            .deps/occt-src
+            .deps/native/${{ matrix.platform }}/occt-build
+            .deps/native/${{ matrix.platform }}/occt-install
+          key: occt-${{ runner.os }}-${{ runner.arch }}-${{ matrix.compiler }}-${{ hashFiles('scripts/build_occt.py', 'third_party/rapidjson/**') }}
+          restore-keys: |
+            occt-${{ runner.os }}-${{ runner.arch }}-${{ matrix.compiler }}-
+      - name: Build and test native code
+        run: uv run --group dev python scripts/validate_native.py
+      - name: Test Python package
+        run: uv run --group dev python scripts/validate_python_package.py
+      - name: Build wheel
+        run: uv run --group dev python -m build --wheel --outdir out/wheelhouse
+      - name: Check wheel
+        run: uv run --group dev twine check out/wheelhouse/*.whl
+      - name: Upload wheel artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheel-${{ matrix.platform }}
+          path: out/wheelhouse/*.whl
+          if-no-files-found: error
+      - name: Upload native artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-${{ matrix.platform }}
+          path: dist/native/${{ matrix.platform }}/*
+          if-no-files-found: error

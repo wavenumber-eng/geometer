@@ -14,7 +14,7 @@ ROWS = [
     (
         "`native/<platform>/geometer(.exe)`",
         "Native CLI",
-        "Command-line STEP/HLR/planar tool for source checkouts. Current platform names use `windows-x64`, `linux-x64`, `macos-x64`, and `macos-arm64`.",
+        "Command-line STEP/HLR/planar tool for source checkouts. Current release platform names use `windows-x64`, `linux-x64`, `linux-arm64`, and `macos-arm64`.",
     ),
     (
         "`native/<platform>/geometer.lib`, `native/<platform>/libgeometer.a`",
@@ -36,6 +36,11 @@ ROWS = [
         "Planar-only browser/Web Worker optimization",
         "Smaller optional build exporting `createGeometerPlanarModule` and planar byte APIs only. Use when STEP/OCCT operations are not needed and startup, download size, or worker memory matter.",
     ),
+    (
+        "`wasm/demos/hlr_demo.html`, `wasm/demos/planar_ring_solver_demo.html`",
+        "Standalone browser demos",
+        "One-file HTML demos with their runtime assets embedded. They may be opened directly from disk and must not depend on separate demo workers, model fixtures, CDN modules, or WASM files.",
+    ),
 ]
 
 
@@ -53,6 +58,7 @@ def main() -> None:
         "- `wasm/browser/` for the full browser integration target.",
         "- `wasm/node-test/` for the Node CLI parity/test target.",
         "- `wasm/planar-browser/` for the smaller planar-only browser target.",
+        "- `wasm/demos/` for one-file standalone browser demos.",
         "",
         "`wasm/browser/geometer.js` / `geometer.wasm` is the official browser integration target.",
         "`wasm/planar-browser/geometer-planar-browser.js` / `geometer-planar-browser.wasm` is retained as",

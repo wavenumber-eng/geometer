@@ -52,7 +52,7 @@ Import package: `geometer`
 Install the current release:
 
 ```bash
-python -m pip install wn-geometer==2026.6.4
+python -m pip install wn-geometer==2026.6.9
 ```
 
 Basic Python use:
@@ -121,7 +121,7 @@ install environment, and call the executable through the JSON batch CLI.
 geometer --version
 geometer step-to-glb input.step output.glb
 geometer step-project-hlr input.step output.json
-geometer step-project-svg input.step output.svg --mode simple --view top
+geometer step-project-svg input.step output.svg --mode outline --view top
 geometer planar-step planar-step-request.json output.step
 geometer init-request request.json --step input.step --operation step_hlr_projection_json --output output.json
 geometer run request.json response.json
@@ -134,6 +134,9 @@ geometer run request.json response.json
 - `examples/python/pyvista_hlr_viewer.py` - PyVista/Qt STEP 3D + HLR preview.
 - `examples/wasm/embedded_model_viewer.html` - browser viewer using prepared GLB
   fixtures and the WASM HLR worker.
+- `dist/wasm/demos/hlr_demo.html` and
+  `dist/wasm/demos/planar_ring_solver_demo.html` - one-file standalone browser
+  demos for release review.
 - `examples/cpp/` - native Dear ImGui + SDL3 + OpenGL HLR preview.
 
 Serve browser examples from the repo root:
@@ -143,6 +146,9 @@ python -m http.server 8123 --bind 127.0.0.1
 ```
 
 Open `http://127.0.0.1:8123/examples/wasm/embedded_model_viewer.html`.
+
+The `dist/wasm/demos/*.html` files can also be opened directly from disk after
+running `python scripts/build_wasm.py` and the demo bake scripts.
 
 ## Release
 

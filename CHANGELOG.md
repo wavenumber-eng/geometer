@@ -4,6 +4,24 @@ All notable changes to geometer are documented here.
 
 ## [Unreleased]
 
+## [2026.6.9] - 2026-06-09
+
+### Added
+
+- Added `geometry.projection.b0` with `outline`, `detail`, and `bbox`
+  projection modes.
+- Added the mesh-shadow outline algorithm for assembly projection silhouettes.
+- Added planar batch solve JSON ring output through the C ABI, CLI, WASM, and
+  Python package.
+- Added platform-grouped native preview app output under
+  `dist/native/<platform>/`.
+
+### Changed
+
+- Removed the public `simple` projection mode name. Use `outline`.
+- Updated the release identity to `v2026-06-09`,
+  `wn-geometer==2026.6.9`, and C ABI generation `20260609`.
+
 ## [2026.6.4] - 2026-06-04
 
 ### Fixed

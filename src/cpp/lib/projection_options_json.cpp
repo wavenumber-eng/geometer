@@ -486,6 +486,52 @@ bool parse_projection_algorithm(const JsonValue& value, ProjectionAlgorithm* out
     return false;
 }
 
+bool parse_mesh_deflection_mode(const JsonValue& value, MeshDeflectionMode* output,
+                                std::string* error)
+{
+    if (value.type != JsonValue::Type::String)
+    {
+        *error = "mesh_deflection_mode must be a string.";
+        return false;
+    }
+    if (value.string_value == "absolute")
+    {
+        *output = MeshDeflectionMode::Absolute;
+        return true;
+    }
+    if (value.string_value == "bbox-relative" || value.string_value == "bbox_relative")
+    {
+        *output = MeshDeflectionMode::BboxRelative;
+        return true;
+    }
+    *error = "mesh_deflection_mode must be absolute or bbox-relative.";
+    return false;
+}
+
+bool parse_projection_outline_algorithm(const JsonValue& value, ProjectionOutlineAlgorithm* output,
+                                        std::string* error)
+{
+    if (value.type != JsonValue::Type::String)
+    {
+        *error = "outline_algorithm must be a string.";
+        return false;
+    }
+    if (value.string_value == "hlr-close" || value.string_value == "hlr_close" ||
+        value.string_value == "hlr")
+    {
+        *output = ProjectionOutlineAlgorithm::HlrClosedEdges;
+        return true;
+    }
+    if (value.string_value == "mesh-shadow" || value.string_value == "mesh_shadow" ||
+        value.string_value == "shadow")
+    {
+        *output = ProjectionOutlineAlgorithm::MeshShadow;
+        return true;
+    }
+    *error = "outline_algorithm must be hlr-close or mesh-shadow.";
+    return false;
+}
+
 bool double_field(const JsonValue& value, double* output, std::string* error,
                   const std::string& field_name)
 {
@@ -671,11 +717,11 @@ int parse_hlr_projection_options_json(const char* json, HlrProjectionOptions* op
             }
         }
     }
-    if (const JsonValue* union_polygons =
-            find_any_member(root, {"union_simple_polygons", "unionPolygons"}))
+    if (const JsonValue* union_polygons = find_any_member(
+            root, {"union_outline_polygons", "unionOutlinePolygons", "unionPolygons"}))
     {
-        if (!bool_field(*union_polygons, &parsed.union_simple_polygons, &error,
-                        "union_simple_polygons"))
+        if (!bool_field(*union_polygons, &parsed.union_outline_polygons, &error,
+                        "union_outline_polygons"))
         {
             set_status(status, 91, error);
             return 91;
@@ -713,6 +759,35 @@ int parse_hlr_projection_options_json(const char* json, HlrProjectionOptions* op
     if (const JsonValue* relative = find_any_member(root, {"mesh_relative", "meshRelative"}))
     {
         if (!bool_field(*relative, &parsed.mesh_relative, &error, "mesh_relative"))
+        {
+            set_status(status, 91, error);
+            return 91;
+        }
+    }
+    if (const JsonValue* mode =
+            find_any_member(root, {"mesh_deflection_mode", "meshDeflectionMode"}))
+    {
+        if (!parse_mesh_deflection_mode(*mode, &parsed.mesh_deflection_mode, &error))
+        {
+            set_status(status, 91, error);
+            return 91;
+        }
+    }
+    if (const JsonValue* coeff =
+            find_any_member(root, {"mesh_deflection_coefficient", "meshDeflectionCoefficient"}))
+    {
+        if (!double_field(*coeff, &parsed.mesh_deflection_coefficient, &error,
+                          "mesh_deflection_coefficient"))
+        {
+            set_status(status, 91, error);
+            return 91;
+        }
+    }
+    if (const JsonValue* outline_algorithm =
+            find_any_member(root, {"outline_algorithm", "outlineAlgorithm"}))
+    {
+        if (!parse_projection_outline_algorithm(*outline_algorithm, &parsed.outline_algorithm,
+                                                &error))
         {
             set_status(status, 91, error);
             return 91;

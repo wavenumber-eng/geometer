@@ -11,6 +11,9 @@
       font-size: 11px;
       background: #f5f5f5;
       color: #18202a;
+      --projection-detail-color: #000000;
+      --projection-outline-color: #000000;
+      --projection-bbox-color: #d97706;
     }
 
     * { box-sizing: border-box; }
@@ -121,16 +124,20 @@
     .segmented button:last-child { border-right: 0; }
     .segmented button.active { background: #1f6feb; color: #fff; }
 
-    .status {
-      flex: 1 1 200px;
-      min-width: 0;
-      color: #4a5565;
+    .status { display: none; }
+
+    .toolbar-check {
+      display: inline-flex;
+      gap: 4px;
+      align-items: center;
+      height: 24px;
+      padding: 0 6px;
+      background: #fff;
+      color: #344154;
       font-size: 11px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      text-align: right;
+      user-select: none;
     }
+    .toolbar-check input { margin: 0; }
 
     button.reproject {
       height: 24px;
@@ -143,7 +150,7 @@
       font-size: 11px;
     }
 
-    .main { display: grid; grid-template-columns: minmax(280px, 1fr) minmax(280px, 1fr); min-height: 0; }
+    .main { position: relative; display: grid; grid-template-columns: minmax(280px, 1fr) minmax(280px, 1fr); min-height: 0; }
     .pane { position: relative; min-width: 0; min-height: 0; background: #fff; }
     .pane + .pane { border: 0; }
     #modelPane { background: #fff; }
@@ -152,6 +159,7 @@
     #projectionSvg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 
     .overlay {
+      display: none;
       position: absolute;
       left: 8px;
       right: 8px;
@@ -164,16 +172,30 @@
     }
 
     .metric-row { display: flex; flex-wrap: wrap; gap: 6px; }
+    .info-overlay {
+      position: absolute;
+      left: 8px;
+      bottom: 8px;
+      z-index: 4;
+      max-width: min(720px, calc(100vw - 180px));
+      pointer-events: none;
+    }
     .metric {
-      min-height: 22px;
-      padding: 3px 6px;
+      min-height: 14px;
+      padding: 1px 4px;
       border: 0;
       border-radius: 0;
-      background: rgba(255, 255, 255, 0.9);
+      background: rgba(255, 255, 255, 0.82);
       color: #253244;
-      font-size: 11px;
-      line-height: 1.2;
+      font-size: 9px;
+      line-height: 1.15;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
+
+    #wnWatermark { position: absolute; right: 12px; bottom: 12px; z-index: 3; pointer-events: none; opacity: 0.25; }
+    #wnWatermarkImg { display: block; width: 132px; height: auto; }
 
     body.busy #projectionSvg { opacity: 0.72; }
 
@@ -244,9 +266,13 @@
       </div>
       <div class="segmented" id="modeButtons" aria-label="Projection mode">
         <button type="button" data-mode="detail" class="active">Detail</button>
-        <button type="button" data-mode="simple">Simple</button>
+        <button type="button" data-mode="outline">Outline</button>
         <button type="button" data-mode="both">Both</button>
       </div>
+      <label class="toolbar-check" title="Show projected bounding box overlay.">
+        <input id="bboxToggleInput" type="checkbox">
+        <span>BBox</span>
+      </label>
       <div class="status" id="status">Idle</div>
     </div>
     <div class="tunables">
@@ -255,6 +281,13 @@
         <select id="algoSelect">
           <option value="poly">Poly</option>
           <option value="exact">Exact</option>
+        </select>
+      </label>
+      <label class="control" title="Outline source algorithm. Mesh shadow is intended for assembly projection silhouettes.">
+        <span>Outline</span>
+        <select id="outlineAlgoSelect">
+          <option value="mesh-shadow">Mesh shadow</option>
+          <option value="hlr-close">HLR close</option>
         </select>
       </label>
       <label class="control" title="Linear mesh deflection (mm). Draftsman uses ~0.01.">
@@ -273,6 +306,22 @@
         <span>Mesh rel</span>
         <select id="meshRelativeSelect"><option value="false">No</option><option value="true">Yes</option></select>
       </label>
+      <label class="control" title="Bbox-relative deflection coefficient.">
+        <span>Coef</span>
+        <input id="deflCoeffInput" type="number" min="0.00001" step="0.0005" value="0.004">
+      </label>
+      <label class="control" title="Projection detail color.">
+        <span>Detail</span>
+        <input id="detailColorInput" type="color" value="#000000">
+      </label>
+      <label class="control" title="Projection outline color.">
+        <span>Outline</span>
+        <input id="outlineColorInput" type="color" value="#000000">
+      </label>
+      <label class="control" title="Projection bounding box color.">
+        <span>BBox</span>
+        <input id="bboxColorInput" type="color" value="#d97706">
+      </label>
       <button type="button" class="reproject" id="reprojectButton">Re-project</button>
     </div>
     <div class="edge-row" id="edgeRow">
@@ -280,7 +329,6 @@
         <span>Profile</span>
         <select id="profileSelect">
           <option value="detail">Detail (default)</option>
-          <option value="simple">Simple (outline only)</option>
           <option value="all-visible">All visible</option>
           <option value="visible+hidden">Visible + hidden</option>
           <option value="custom">Custom</option>
@@ -318,27 +366,24 @@
       <label class="flag" title="HLRBRep_HLRToShape::IsoLineHCompound() - hidden isolines. Exact only." data-algo-poly="no">
         <input type="checkbox" data-edge="edge_h_iso"><span>Iso</span>
       </label>
-      <span class="legend" id="edgeLegend">Detail = active flags. Simple = planar contour post-process of those same edges.</span>
+      <span class="legend" id="edgeLegend">Detail = active flags. Outline = silhouette geometry. BBox = projected shape bounds.</span>
     </div>
     <main class="main">
       <section class="pane" id="modelPane">
         <canvas id="modelCanvas"></canvas>
-        <div class="overlay">
-          <div class="metric-row">
-            <div class="metric" id="modelMetric">3D</div>
-            <div class="metric" id="meshMetric">GLB</div>
-          </div>
-        </div>
       </section>
       <section class="pane" id="projectionPane">
         <svg id="projectionSvg" xmlns="http://www.w3.org/2000/svg" role="img"></svg>
-        <div class="overlay">
-          <div class="metric-row">
-            <div class="metric" id="projectionMetric">HLR</div>
-            <div class="metric" id="sourceMetric">STEP</div>
-          </div>
-        </div>
       </section>
+      <div class="info-overlay" id="infoOverlay">
+        <div class="metric" id="modelMetric">Model</div>
+        <div class="metric" id="meshMetric">GLB</div>
+        <div class="metric" id="projectionMetric">Projection</div>
+        <div class="metric" id="sourceMetric">STEP</div>
+      </div>
+      <div id="wnWatermark" aria-hidden="true">
+        <img id="wnWatermarkImg" alt="" src="/tests/wasm/vendor/wn/logo.svg">
+      </div>
     </main>
   </div>
   <div class="work-overlay" id="workOverlay" aria-live="polite" aria-busy="true">
@@ -397,6 +442,8 @@
       stepCache: new Map(),
       activeLoad: 0,
       activeProjection: 0,
+      cameraReprojectTimer: 0,
+      suppressCameraChange: false,
       validation: new URLSearchParams(window.location.search).get("validation") === "1",
     };
 
@@ -416,10 +463,16 @@
       workSubtitle: document.getElementById("workSubtitle"),
       validationResult: document.getElementById("validationResult"),
       algoSelect: document.getElementById("algoSelect"),
+      outlineAlgoSelect: document.getElementById("outlineAlgoSelect"),
       linDeflInput: document.getElementById("linDeflInput"),
       angDeflInput: document.getElementById("angDeflInput"),
       hlrTolInput: document.getElementById("hlrTolInput"),
       meshRelativeSelect: document.getElementById("meshRelativeSelect"),
+      deflCoeffInput: document.getElementById("deflCoeffInput"),
+      detailColorInput: document.getElementById("detailColorInput"),
+      outlineColorInput: document.getElementById("outlineColorInput"),
+      bboxColorInput: document.getElementById("bboxColorInput"),
+      bboxToggleInput: document.getElementById("bboxToggleInput"),
       reprojectButton: document.getElementById("reprojectButton"),
       profileSelect: document.getElementById("profileSelect"),
       edgeRow: document.getElementById("edgeRow"),
@@ -434,7 +487,6 @@
     // Profile presets â€” each lists which flags are enabled.
     const EDGE_PROFILES = {
       "detail":          ["edge_v_sharp", "edge_v_outline"],
-      "simple":          ["edge_v_outline"],
       "all-visible":     ["edge_v_sharp", "edge_v_outline", "edge_v_smooth", "edge_v_sewn"],
       "visible+hidden":  ["edge_v_sharp", "edge_v_outline", "edge_h_sharp", "edge_h_outline"],
     };
@@ -478,8 +530,7 @@
     scene.background = new THREE.Color(0xffffff);
     const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100000);
     const controls = new OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.08;
+    controls.enableDamping = false;
     controls.screenSpacePanning = true;
 
     const ambient = new THREE.HemisphereLight(0xffffff, 0x8b97a6, 2.1);
@@ -542,6 +593,12 @@
     function setValidation(text, pass) {
       els.validationResult.textContent = text;
       if (state.validation) document.title = text.startsWith("RUNNING") ? "RUNNING" : (pass ? "PASS" : "FAIL");
+    }
+
+    function applyProjectionColors() {
+      document.documentElement.style.setProperty("--projection-detail-color", els.detailColorInput.value);
+      document.documentElement.style.setProperty("--projection-outline-color", els.outlineColorInput.value);
+      document.documentElement.style.setProperty("--projection-bbox-color", els.bboxColorInput.value);
     }
 
     function resizeRenderer() {
@@ -618,7 +675,9 @@
       camera.position.copy(viewDirection.multiplyScalar(distance));
       camera.updateProjectionMatrix();
       controls.target.set(0, 0, 0);
+      state.suppressCameraChange = true;
       controls.update();
+      state.suppressCameraChange = false;
       controls.minDistance = Math.max(radius * 0.01, 0.0001);
       controls.maxDistance = Math.max(distance * 8, radius * 8);
 
@@ -629,10 +688,13 @@
     function currentOptions() {
       return {
         projection_algorithm: els.algoSelect.value,
+        outline_algorithm: els.outlineAlgoSelect.value,
         mesh_linear_deflection: Number.parseFloat(els.linDeflInput.value) || 0.01,
         mesh_angular_deflection: Number.parseFloat(els.angDeflInput.value) || 0.5,
         hlr_angle_tolerance: Number.parseFloat(els.hlrTolInput.value) || 0.0174533,
         mesh_relative: els.meshRelativeSelect.value === "true",
+        mesh_deflection_mode: "bbox-relative",
+        mesh_deflection_coefficient: Number.parseFloat(els.deflCoeffInput.value) || 0.004,
         ...readEdgeFlags(),
       };
     }
@@ -656,6 +718,17 @@
           failure.timings = timings || {};
           request.reject(failure);
         }
+      };
+      const rejectPending = (error) => {
+        const failure = error instanceof Error ? error : new Error(String(error || "HLR worker failed."));
+        for (const request of state.projectionRequests.values()) request.reject(failure);
+        state.projectionRequests.clear();
+      };
+      state.projectionWorker.onerror = (event) => {
+        rejectPending(event.message || "HLR worker startup failed.");
+      };
+      state.projectionWorker.onmessageerror = () => {
+        rejectPending("HLR worker returned an unreadable message.");
       };
       return state.projectionWorker;
     }
@@ -696,12 +769,23 @@
       camera.up.set(viewSpec.up[0], viewSpec.up[1], viewSpec.up[2]).normalize();
       camera.position.copy(target).addScaledVector(dir, currentDistance);
       camera.lookAt(target);
+      state.suppressCameraChange = true;
       controls.update();
+      state.suppressCameraChange = false;
       renderOnce();
     }
 
     function optionsCacheTag(opts) {
-      const base = [opts.projection_algorithm, opts.mesh_linear_deflection, opts.mesh_angular_deflection, opts.hlr_angle_tolerance, opts.mesh_relative];
+      const base = [
+        opts.projection_algorithm,
+        opts.outline_algorithm,
+        opts.mesh_linear_deflection,
+        opts.mesh_angular_deflection,
+        opts.hlr_angle_tolerance,
+        opts.mesh_relative,
+        opts.mesh_deflection_mode,
+        opts.mesh_deflection_coefficient,
+      ];
       const edges = EDGE_FLAGS.map((name) => opts[name] ? 1 : 0).join("");
       return [...base, edges].join(":");
     }
@@ -785,8 +869,9 @@
         for (const segment of geometry.segments || []) result.push({ type: "segment", className, value: segment });
         for (const arc of geometry.arcs || []) result.push({ type: "arc", className, value: arc });
       };
-      if (mode === "both") { addMode("detail", "detail muted"); addMode("simple", "simple"); }
+      if (mode === "both") { addMode("detail", "detail muted"); addMode("outline", "outline"); }
       else addMode(mode, mode);
+      if (els.bboxToggleInput.checked && mode !== "bbox") addMode("bbox", "bbox");
       return result;
     }
 
@@ -845,8 +930,9 @@
       const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
       const style = document.createElementNS("http://www.w3.org/2000/svg", "style");
       style.textContent = `
-        .detail { stroke: #2f3b4c; stroke-width: 2.4px; }
-        .simple { stroke: #0f6f5f; stroke-width: 3.6px; }
+        .detail { stroke: var(--projection-detail-color); stroke-width: 2.4px; }
+        .outline { stroke: var(--projection-outline-color); stroke-width: 3.6px; }
+        .bbox { stroke: var(--projection-bbox-color); stroke-width: 1.8px; stroke-dasharray: 6 4; }
         .muted { stroke: #9aa5b1; stroke-width: 1.8px; }
         line, path, circle { fill: none; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
       `;
@@ -885,11 +971,13 @@
       }
 
       const detail = viewGeometry.modes.detail || { segments: [], arcs: [] };
-      const simple = viewGeometry.modes.simple || { segments: [], arcs: [] };
+      const outline = viewGeometry.modes.outline || { segments: [], arcs: [] };
+      const bbox = viewGeometry.modes.bbox || { segments: [], arcs: [] };
       const detailCount = (detail.segments || []).length + (detail.arcs || []).length;
-      const simpleCount = (simple.segments || []).length + (simple.arcs || []).length;
-      els.projectionMetric.textContent = `${viewId} detail ${detailCount} simple ${simpleCount}`;
-      return { detailCount, simpleCount, primitiveCount: primitives.length };
+      const outlineCount = (outline.segments || []).length + (outline.arcs || []).length;
+      const bboxCount = (bbox.segments || []).length + (bbox.arcs || []).length;
+      els.projectionMetric.textContent = `${viewId} detail ${detailCount} outline ${outlineCount} bbox ${bboxCount}`;
+      return { detailCount, outlineCount, bboxCount, primitiveCount: primitives.length };
     }
 
     function activateSegmented(container, attribute, value) {
@@ -914,13 +1002,21 @@
       setValidation("RUNNING", false);
 
       try {
-        const projectionPromise = loadProjection(model, viewId, opts, backend)
-          .then((projectionResult) => ({ projectionResult }))
-          .catch((projectionError) => ({ projectionError }));
+        let projectionPromise = null;
+        if (viewId !== "camera") {
+          projectionPromise = loadProjection(model, viewId, opts, backend)
+            .then((projectionResult) => ({ projectionResult }))
+            .catch((projectionError) => ({ projectionError }));
+        }
 
         const glbResult = await loadGlb(model, loadId);
         if (loadId !== state.activeLoad) return;
         setStatus(`${model.name} 3D ready - projecting ${viewId}`, true, "Use the 3D controls while HLR finishes.");
+        if (viewId === "camera") {
+          projectionPromise = loadProjection(model, viewId, opts, backend)
+            .then((projectionResult) => ({ projectionResult }))
+            .catch((projectionError) => ({ projectionError }));
+        }
 
         const projectionOutcome = await projectionPromise;
         if (loadId !== state.activeLoad) return;
@@ -943,8 +1039,8 @@
           await new Promise((resolve) => requestAnimationFrame(resolve));
           await new Promise((resolve) => requestAnimationFrame(resolve));
           const nonBlank = canvasHasPixels();
-          const pass = nonBlank && counts.detailCount > 0 && counts.simpleCount > 0;
-          setValidation(pass ? `PASS model=${model.name} detail=${counts.detailCount} simple=${counts.simpleCount} hlr=${formatMs(timings.hlrMs)} glb=${formatMs(glbResult.glbMs)}` : "FAIL render check", pass);
+          const pass = nonBlank && counts.detailCount > 0 && counts.outlineCount > 0;
+          setValidation(pass ? `PASS model=${model.name} detail=${counts.detailCount} outline=${counts.outlineCount} hlr=${formatMs(timings.hlrMs)} glb=${formatMs(glbResult.glbMs)}` : "FAIL render check", pass);
         }
       } catch (error) {
         const message = error && error.stack ? error.stack : String(error);
@@ -992,6 +1088,34 @@
       return loadSelectedModel();
     }
 
+    function reprojectCurrent({ force = true } = {}) {
+      if (!state.selectedModel) return;
+      const opts = currentOptions();
+      if (force) {
+        state.projectionCache.delete(projectionCacheKey(state.selectedModel, state.viewId, opts, state.backend));
+      }
+      renderProjectionForCurrentView().catch(console.error);
+    }
+
+    function redrawCurrentProjection() {
+      if (!state.selectedModel) return;
+      applyProjectionColors();
+      const opts = currentOptions();
+      const cached = state.projectionCache.get(projectionCacheKey(state.selectedModel, state.viewId, opts, state.backend));
+      if (cached) drawProjection(cached);
+      else renderProjectionForCurrentView().catch(console.error);
+    }
+
+    function scheduleCameraProjection() {
+      if (!state.selectedModel || state.suppressCameraChange) return;
+      if (state.viewId !== "camera") {
+        state.viewId = "camera";
+        activateSegmented(els.viewButtons, "view", state.viewId);
+      }
+      window.clearTimeout(state.cameraReprojectTimer);
+      state.cameraReprojectTimer = window.setTimeout(() => reprojectCurrent({ force: true }), 160);
+    }
+
     async function init() {
       setStatus("Loading manifest", true, "Reading embedded model fixture list.");
       const response = await fetch(manifestUrl);
@@ -1009,6 +1133,8 @@
         selectModelByName(els.modelSelect.value).catch(console.error);
       });
 
+      controls.addEventListener("change", scheduleCameraProjection);
+
       els.viewButtons.addEventListener("click", (event) => {
         const button = event.target.closest("button[data-view]");
         if (!button) return;
@@ -1025,20 +1151,28 @@
         if (!button) return;
         state.mode = button.dataset.mode;
         activateSegmented(els.modeButtons, "mode", state.mode);
-        const opts = currentOptions();
-        const cached = state.projectionCache.get(projectionCacheKey(state.selectedModel, state.viewId, opts, state.backend));
-        if (cached) drawProjection(cached);
-        else renderProjectionForCurrentView().catch(console.error);
+        redrawCurrentProjection();
       });
 
       els.algoSelect.addEventListener("change", () => {
         syncEdgeRowToAlgo();
+        reprojectCurrent({ force: true });
       });
+
+      for (const input of [els.outlineAlgoSelect, els.linDeflInput, els.angDeflInput, els.hlrTolInput, els.meshRelativeSelect, els.deflCoeffInput]) {
+        input.addEventListener("change", () => reprojectCurrent({ force: true }));
+      }
+
+      for (const input of [els.detailColorInput, els.outlineColorInput, els.bboxColorInput]) {
+        input.addEventListener("input", redrawCurrentProjection);
+      }
+
+      els.bboxToggleInput.addEventListener("change", redrawCurrentProjection);
 
       els.profileSelect.addEventListener("change", () => {
         if (els.profileSelect.value === "custom") return;
         applyProfile(els.profileSelect.value);
-        renderProjectionForCurrentView().catch(console.error);
+        reprojectCurrent({ force: true });
       });
 
       // Manually toggling any edge checkbox flips Profile -> Custom and re-projects.
@@ -1046,31 +1180,28 @@
         const cb = event.target.closest("input[data-edge]");
         if (!cb) return;
         els.profileSelect.value = "custom";
-        renderProjectionForCurrentView().catch(console.error);
+        reprojectCurrent({ force: true });
       });
 
       els.reprojectButton.addEventListener("click", () => {
-        // Force a fresh HLR run: bust the cache entry for the current model/view/options.
-        if (state.selectedModel) {
-          const opts = currentOptions();
-          state.projectionCache.delete(projectionCacheKey(state.selectedModel, state.viewId, opts, state.backend));
-        }
-        renderProjectionForCurrentView().catch(console.error);
+        reprojectCurrent({ force: true });
       });
 
       const params = new URLSearchParams(window.location.search);
       const requestedView = params.get("view");
-      if (projectionViews.some((view) => view.id === requestedView)) {
+      if (requestedView === "camera" || projectionViews.some((view) => view.id === requestedView)) {
         state.viewId = requestedView;
         activateSegmented(els.viewButtons, "view", state.viewId);
       }
       const requestedMode = params.get("mode");
-      if (["detail", "simple", "both"].includes(requestedMode)) {
+      if (["detail", "outline", "both"].includes(requestedMode)) {
         state.mode = requestedMode;
         activateSegmented(els.modeButtons, "mode", state.mode);
       }
       const requestedAlgo = params.get("algo");
       if (["poly", "exact"].includes(requestedAlgo)) els.algoSelect.value = requestedAlgo;
+      const requestedOutlineAlgo = params.get("outlineAlgo") || params.get("outline_algorithm");
+      if (["mesh-shadow", "hlr-close"].includes(requestedOutlineAlgo)) els.outlineAlgoSelect.value = requestedOutlineAlgo;
       const requestedProfile = params.get("profile");
       if (requestedProfile && EDGE_PROFILES[requestedProfile]) {
         els.profileSelect.value = requestedProfile;
@@ -1083,6 +1214,9 @@
       if (lin) els.linDeflInput.value = lin;
       const ang = params.get("ang");
       if (ang) els.angDeflInput.value = ang;
+      const coef = params.get("coef");
+      if (coef) els.deflCoeffInput.value = coef;
+      applyProjectionColors();
 
       const requested = params.get("model");
       const index = Number.parseInt(params.get("index") || "0", 10);

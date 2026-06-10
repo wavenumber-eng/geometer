@@ -4,11 +4,27 @@
 #include "imgui_impl_opengl3.h"
 #include "imgui_impl_sdl3.h"
 
+#if defined(_WIN32)
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#endif
+
 #include <SDL3/SDL.h>
 #if defined(IMGUI_IMPL_OPENGL_ES2)
 #include <SDL3/SDL_opengles2.h>
 #else
 #include <SDL3/SDL_opengl.h>
+#endif
+
+#if defined(_WIN32)
+// clang-format off
+#include <windows.h>
+#include <commdlg.h>
+// clang-format on
 #endif
 
 #include <rapidjson/document.h>
@@ -150,15 +166,16 @@ struct Lighting
 
 struct Camera
 {
-    Vec3 direction = {0.72, 0.54, 1.0};
-    Vec3 up = {0.0, 0.0, 1.0};
+    Vec3 direction = {1.0, 1.0, 1.0};
+    Vec3 up = {0.0, 1.0, 0.0};
     double zoom = 1.0;
 };
 
 enum class ProjectionMode
 {
     Detail,
-    Simple,
+    Outline,
+    Bbox,
     Both,
 };
 
@@ -167,12 +184,12 @@ struct AppState
     std::array<char, 1024> step_path = {};
     std::vector<unsigned char> step_bytes;
     MeshPreview preview;
-    geometer::ModelBoundsResult model_bounds;
     geometer::HlrProjectionResult projection;
-    bool has_model_bounds = false;
     bool has_projection = false;
     ProjectionMode mode = ProjectionMode::Detail;
-    bool show_model_bounds = true;
+    bool show_bbox = false;
+    geometer::ProjectionOutlineAlgorithm outline_algorithm =
+        geometer::ProjectionOutlineAlgorithm::MeshShadow;
     Camera camera;
     Lighting lighting;
     std::string status = "Ready";
@@ -761,6 +778,37 @@ projected_triangle_points(const Triangle& triangle, const Vec3& center, const Ve
     return result;
 }
 
+Bounds2 projected_preview_bounds(const MeshPreview& preview, const Vec3& center, const Vec3& right,
+                                 const Vec3& up)
+{
+    Bounds2 bounds;
+    for (const Triangle& triangle : preview.triangles)
+    {
+        for (const Vec3& point : {triangle.a, triangle.b, triangle.c})
+        {
+            const Vec3 local = point - center;
+            bounds.add(dot(local, right), dot(local, up));
+        }
+    }
+    return bounds;
+}
+
+double fit_preview_scale(const MeshPreview& preview, const Vec3& center, const Vec3& right,
+                         const Vec3& up, const ImVec2& canvas_size)
+{
+    const Bounds2 bounds = projected_preview_bounds(preview, center, right, up);
+    if (!bounds.valid())
+    {
+        return 1.0;
+    }
+    const double usable_width =
+        std::max(1.0, static_cast<double>(canvas_size.x) - (2.0 * kCanvasMargin));
+    const double usable_height =
+        std::max(1.0, static_cast<double>(canvas_size.y) - (2.0 * kCanvasMargin));
+    return std::max(1.0e-6,
+                    std::min(usable_width / bounds.width(), usable_height / bounds.height()));
+}
+
 ImU32 shaded_color(const Triangle& triangle, const Camera& camera, const Lighting& lighting)
 {
     Vec3 normal = normalize(cross(triangle.b - triangle.a, triangle.c - triangle.a));
@@ -784,68 +832,6 @@ ImU32 shaded_color(const Triangle& triangle, const Camera& camera, const Lightin
     };
     return IM_COL32(channel(triangle.color.r), channel(triangle.color.g), channel(triangle.color.b),
                     static_cast<int>(std::max(0.0f, std::min(1.0f, triangle.color.a)) * 255.0f));
-}
-
-bool model_bounds_valid(const geometer::ModelBoundsResult& bounds)
-{
-    for (std::size_t i = 0; i < 3; ++i)
-    {
-        if (!std::isfinite(bounds.min[i]) || !std::isfinite(bounds.max[i]) ||
-            bounds.max[i] < bounds.min[i])
-        {
-            return false;
-        }
-    }
-    return true;
-}
-
-std::array<Vec3, 8> model_bounds_corners(const geometer::ModelBoundsResult& bounds)
-{
-    const double xmin = bounds.min[0];
-    const double ymin = bounds.min[1];
-    const double zmin = bounds.min[2];
-    const double xmax = bounds.max[0];
-    const double ymax = bounds.max[1];
-    const double zmax = bounds.max[2];
-    return {{{xmin, ymin, zmin},
-             {xmax, ymin, zmin},
-             {xmin, ymax, zmin},
-             {xmax, ymax, zmin},
-             {xmin, ymin, zmax},
-             {xmax, ymin, zmax},
-             {xmin, ymax, zmax},
-             {xmax, ymax, zmax}}};
-}
-
-Bounds2 project_model_bounds_to_camera(const geometer::ModelBoundsResult& bounds, Vec3 direction,
-                                       Vec3 up)
-{
-    Bounds2 result;
-    if (!model_bounds_valid(bounds))
-    {
-        return result;
-    }
-
-    direction = normalize(direction);
-    up = orthogonalized_up(up, direction);
-    const Vec3 right = normalize(cross(up, direction), {1.0, 0.0, 0.0});
-    for (const Vec3& point : model_bounds_corners(bounds))
-    {
-        result.add(dot(point, right), dot(point, up));
-    }
-    return result;
-}
-
-void draw_screen_bounds_rect(ImDrawList* draw_list, const Bounds2& bounds)
-{
-    if (!bounds.valid())
-    {
-        return;
-    }
-    const ImVec2 min_point{static_cast<float>(bounds.min_x), static_cast<float>(bounds.min_y)};
-    const ImVec2 max_point{static_cast<float>(bounds.max_x), static_cast<float>(bounds.max_y)};
-    draw_list->AddRect(min_point, max_point, IM_COL32(24, 28, 32, 150), 0.0f, 0, 4.0f);
-    draw_list->AddRect(min_point, max_point, IM_COL32(238, 132, 52, 245), 0.0f, 0, 2.0f);
 }
 
 void draw_3d_preview(AppState* app)
@@ -878,7 +864,7 @@ void draw_3d_preview(AppState* app)
     if (hovered && ImGui::GetIO().MouseWheel != 0.0f)
     {
         app->camera.zoom *= std::pow(1.12, static_cast<double>(ImGui::GetIO().MouseWheel));
-        app->camera.zoom = std::max(0.2, std::min(4.0, app->camera.zoom));
+        app->camera.zoom = std::max(0.05, std::min(20.0, app->camera.zoom));
     }
 
     if (app->preview.triangles.empty() || !app->preview.bounds.valid())
@@ -894,18 +880,8 @@ void draw_3d_preview(AppState* app)
     const Vec3 up = app->camera.up;
     const Vec3 right = normalize(cross(up, direction), {1.0, 0.0, 0.0});
 
-    double model_radius = 1.0;
-    for (const Triangle& triangle : app->preview.triangles)
-    {
-        for (const Vec3& point : {triangle.a, triangle.b, triangle.c})
-        {
-            model_radius = std::max(model_radius, length(point - center));
-        }
-    }
-    const double usable =
-        std::max(1.0, static_cast<double>(std::min(canvas_size.x, canvas_size.y)) -
-                          (2.0 * static_cast<double>(kCanvasMargin)));
-    const double scale = std::max(1.0e-6, (usable / (2.0 * model_radius)) * app->camera.zoom);
+    const double scale = std::max(
+        1.0e-6, fit_preview_scale(app->preview, center, right, up, canvas_size) * app->camera.zoom);
 
     struct DrawTriangle
     {
@@ -988,8 +964,20 @@ int edge_count(const geometer::ProjectedModeGeometry& geometry)
     return static_cast<int>(geometry.segments.size() + geometry.arcs.size());
 }
 
-ImVec2 project_hlr_canvas_point(double x, double y, const Bounds2& bounds, const ImVec2& origin,
-                                const ImVec2& size)
+const geometer::ProjectedModeGeometry& outline_geometry(const geometer::ProjectedViewGeometry& view)
+{
+    return view.outline;
+}
+
+Bounds2 geometry_bounds(const geometer::ProjectedModeGeometry& geometry)
+{
+    Bounds2 bounds;
+    include_geometry(&bounds, geometry);
+    return bounds;
+}
+
+ImVec2 project_point(const Bounds2& bounds, const ImVec2& origin, const ImVec2& size, double x,
+                     double y)
 {
     const double scale = std::min((size.x - (2.0 * kCanvasMargin)) / bounds.width(),
                                   (size.y - (2.0 * kCanvasMargin)) / bounds.height());
@@ -1008,7 +996,7 @@ void draw_mode_geometry(ImDrawList* draw_list, const geometer::ProjectedModeGeom
                         ImU32 color)
 {
     const auto project = [&](double x, double y)
-    { return project_hlr_canvas_point(x, y, bounds, origin, size); };
+    { return project_point(bounds, origin, size, x, y); };
 
     for (const geometer::ProjectedSegment& segment : geometry.segments)
     {
@@ -1033,30 +1021,23 @@ void draw_mode_geometry(ImDrawList* draw_list, const geometer::ProjectedModeGeom
     }
 }
 
-void draw_model_bounds_projection(ImDrawList* draw_list, const Bounds2& model_bounds,
-                                  const Bounds2& canvas_bounds, const ImVec2& origin,
-                                  const ImVec2& size)
+void draw_bounds_box(ImDrawList* draw_list, const Bounds2& box, const Bounds2& bounds,
+                     const ImVec2& origin, const ImVec2& size, ImU32 color)
 {
-    if (!model_bounds.valid())
+    if (!box.valid())
     {
         return;
     }
-
-    Bounds2 screen_bounds;
-    const ImVec2 top_left = project_hlr_canvas_point(model_bounds.min_x, model_bounds.max_y,
-                                                     canvas_bounds, origin, size);
-    const ImVec2 bottom_right = project_hlr_canvas_point(model_bounds.max_x, model_bounds.min_y,
-                                                         canvas_bounds, origin, size);
-    screen_bounds.add(top_left.x, top_left.y);
-    screen_bounds.add(bottom_right.x, bottom_right.y);
-    draw_screen_bounds_rect(draw_list, screen_bounds);
+    const ImVec2 a = project_point(bounds, origin, size, box.min_x, box.min_y);
+    const ImVec2 b = project_point(bounds, origin, size, box.max_x, box.max_y);
+    const ImVec2 min{std::min(a.x, b.x), std::min(a.y, b.y)};
+    const ImVec2 max{std::max(a.x, b.x), std::max(a.y, b.y)};
+    draw_list->AddRect(min, max, color, 0.0f, 0, 1.4f);
 }
 
 void draw_hlr_preview(AppState* app)
 {
     ImGui::TextUnformatted("HLR projection");
-    ImGui::SameLine();
-    ImGui::Checkbox("Bounds", &app->show_model_bounds);
     const ImVec2 size = ImGui::GetContentRegionAvail();
     const ImVec2 canvas_size = {std::max(size.x, 120.0f), std::max(size.y, 120.0f)};
     ImGui::InvisibleButton("hlr_canvas", canvas_size);
@@ -1075,27 +1056,26 @@ void draw_hlr_preview(AppState* app)
     }
 
     const geometer::ProjectedViewGeometry& view = app->projection.views.front();
+    const geometer::ProjectedModeGeometry& outline = outline_geometry(view);
+    const geometer::ProjectedModeGeometry& bbox = view.bbox;
+    const Bounds2 bbox_bounds = geometry_bounds(bbox);
     Bounds2 bounds;
     if (app->mode == ProjectionMode::Detail || app->mode == ProjectionMode::Both)
     {
         include_geometry(&bounds, view.detail);
     }
-    if (app->mode == ProjectionMode::Simple || app->mode == ProjectionMode::Both)
+    if (app->mode == ProjectionMode::Outline || app->mode == ProjectionMode::Both)
     {
-        include_geometry(&bounds, view.simple);
+        include_geometry(&bounds, outline);
     }
-    Bounds2 projected_model_bounds;
-    if (app->show_model_bounds && app->has_model_bounds)
+    if (app->mode == ProjectionMode::Bbox)
     {
-        projected_model_bounds = project_model_bounds_to_camera(
-            app->model_bounds,
-            {view.view.direction[0], view.view.direction[1], view.view.direction[2]},
-            {view.view.up[0], view.view.up[1], view.view.up[2]});
-        if (projected_model_bounds.valid())
-        {
-            bounds.add(projected_model_bounds.min_x, projected_model_bounds.min_y);
-            bounds.add(projected_model_bounds.max_x, projected_model_bounds.max_y);
-        }
+        include_geometry(&bounds, bbox);
+    }
+    if (app->show_bbox && bbox_bounds.valid())
+    {
+        bounds.add(bbox_bounds.min_x, bbox_bounds.min_y);
+        bounds.add(bbox_bounds.max_x, bbox_bounds.max_y);
     }
     if (!bounds.valid())
     {
@@ -1105,25 +1085,29 @@ void draw_hlr_preview(AppState* app)
     }
 
     draw_list->PushClipRect(origin, {origin.x + canvas_size.x, origin.y + canvas_size.y}, true);
-    if (app->mode == ProjectionMode::Simple || app->mode == ProjectionMode::Both)
+    if (app->mode == ProjectionMode::Outline || app->mode == ProjectionMode::Both)
     {
-        draw_mode_geometry(draw_list, view.simple, bounds, origin, canvas_size,
-                           IM_COL32(32, 128, 110, 210));
+        draw_mode_geometry(draw_list, outline, bounds, origin, canvas_size, IM_COL32(0, 0, 0, 255));
     }
     if (app->mode == ProjectionMode::Detail || app->mode == ProjectionMode::Both)
     {
         draw_mode_geometry(draw_list, view.detail, bounds, origin, canvas_size,
-                           IM_COL32(42, 54, 72, 255));
+                           IM_COL32(0, 0, 0, 255));
     }
-    if (projected_model_bounds.valid())
+    if (app->mode == ProjectionMode::Bbox)
     {
-        draw_model_bounds_projection(draw_list, projected_model_bounds, bounds, origin,
-                                     canvas_size);
+        draw_mode_geometry(draw_list, bbox, bounds, origin, canvas_size,
+                           IM_COL32(218, 126, 22, 255));
+    }
+    if (app->show_bbox && app->mode != ProjectionMode::Bbox)
+    {
+        draw_bounds_box(draw_list, bbox_bounds, bounds, origin, canvas_size,
+                        IM_COL32(218, 126, 22, 220));
     }
     draw_list->PopClipRect();
 
-    const std::string label = "detail " + std::to_string(edge_count(view.detail)) + " | simple " +
-                              std::to_string(edge_count(view.simple));
+    const std::string label = "detail " + std::to_string(edge_count(view.detail)) + " | outline " +
+                              std::to_string(edge_count(outline));
     draw_list->AddText({origin.x + 14.0f, origin.y + canvas_size.y - 24.0f},
                        IM_COL32(36, 48, 68, 255), label.c_str());
 }
@@ -1162,8 +1146,8 @@ void apply_camera_preset(AppState* app, const char* preset)
     }
     else
     {
-        app->camera.direction = {0.72, 0.54, 1.0};
-        app->camera.up = {0.0, 0.0, 1.0};
+        app->camera.direction = {1.0, 1.0, 1.0};
+        app->camera.up = {0.0, 1.0, 0.0};
     }
     normalize_camera(app->camera);
     app->projection_dirty = true;
@@ -1174,13 +1158,27 @@ std::string projection_mode_name(ProjectionMode mode)
 {
     switch (mode)
     {
-    case ProjectionMode::Simple:
-        return "simple";
+    case ProjectionMode::Outline:
+        return "outline";
+    case ProjectionMode::Bbox:
+        return "bbox";
     case ProjectionMode::Both:
         return "both";
     case ProjectionMode::Detail:
     default:
         return "detail";
+    }
+}
+
+std::string outline_algorithm_name(geometer::ProjectionOutlineAlgorithm algorithm)
+{
+    switch (algorithm)
+    {
+    case geometer::ProjectionOutlineAlgorithm::MeshShadow:
+        return "mesh-shadow";
+    case geometer::ProjectionOutlineAlgorithm::HlrClosedEdges:
+    default:
+        return "hlr-close";
     }
 }
 
@@ -1193,6 +1191,7 @@ void project_hlr(AppState* app)
     geometer::HlrProjectionOptions options;
     options.curve_mode = geometer::ProjectionCurveMode::Polyline;
     options.projection_algorithm = geometer::ProjectionAlgorithm::Poly;
+    options.outline_algorithm = app->outline_algorithm;
     options.views = {{"camera",
                       {app->camera.direction.x, app->camera.direction.y, app->camera.direction.z},
                       {app->camera.up.x, app->camera.up.y, app->camera.up.z}}};
@@ -1210,10 +1209,12 @@ void project_hlr(AppState* app)
     app->projection = std::move(result);
     app->has_projection = true;
     app->projection_dirty = false;
+    const geometer::ProjectedViewGeometry& view = app->projection.views.front();
     std::ostringstream stream;
     stream << "Projected " << std::filesystem::path(app->step_path.data()).filename().string()
-           << " | detail " << edge_count(app->projection.views.front().detail) << " | simple "
-           << edge_count(app->projection.views.front().simple) << " | HLR "
+           << " | detail " << edge_count(view.detail) << " | outline "
+           << edge_count(outline_geometry(view)) << " | bbox " << edge_count(view.bbox) << " | "
+           << outline_algorithm_name(app->outline_algorithm) << " | HLR "
            << app->projection.timings.hlr_ms << " ms";
     app->status = stream.str();
 }
@@ -1222,25 +1223,12 @@ void load_step(AppState* app)
 {
     const std::filesystem::path path(app->step_path.data());
     app->status = "Loading " + path.filename().string();
-    app->has_model_bounds = false;
     app->has_projection = false;
     app->preview = {};
     app->step_bytes = read_file_bytes(path);
 
-    geometer::Status status;
-    geometer::ModelBoundsResult bounds;
-    const int bounds_code =
-        geometer::model_bounds_from_bytes(app->step_bytes.data(), app->step_bytes.size(),
-                                          geometer::ModelBoundsOptions{}, &bounds, &status);
-    if (bounds_code != 0)
-    {
-        throw std::runtime_error("model_bounds failed: " + status.message);
-    }
-    app->model_bounds = std::move(bounds);
-    app->has_model_bounds = true;
-
     std::vector<unsigned char> glb_bytes;
-    status = {};
+    geometer::Status status;
     const int glb_code =
         geometer::step_to_glb_from_bytes(app->step_bytes.data(), app->step_bytes.size(),
                                          geometer::StepToGlbOptions{}, &glb_bytes, &status);
@@ -1249,7 +1237,65 @@ void load_step(AppState* app)
         throw std::runtime_error("STEP-to-GLB failed: " + status.message);
     }
     app->preview = parse_glb_preview(glb_bytes);
+    app->camera.zoom = 1.0;
     project_hlr(app);
+}
+
+void set_step_path(AppState* app, const std::filesystem::path& path)
+{
+    const std::string path_text = path.string();
+    std::snprintf(app->step_path.data(), app->step_path.size(), "%s", path_text.c_str());
+}
+
+void try_load_step(AppState* app)
+{
+    try
+    {
+        load_step(app);
+    }
+    catch (const std::exception& exc)
+    {
+        app->status = exc.what();
+    }
+}
+
+std::optional<std::filesystem::path> choose_step_file_dialog(const AppState* app)
+{
+#if defined(_WIN32)
+    const std::filesystem::path current_path(app->step_path.data());
+    std::array<wchar_t, 4096> file_name = {};
+    const std::wstring initial_file = current_path.wstring();
+    const std::size_t copy_size = std::min(initial_file.size(), file_name.size() - 1);
+    std::copy_n(initial_file.c_str(), copy_size, file_name.data());
+
+    std::wstring initial_dir;
+    if (current_path.has_parent_path())
+    {
+        initial_dir = current_path.parent_path().wstring();
+    }
+    else
+    {
+        initial_dir = std::filesystem::current_path().wstring();
+    }
+
+    OPENFILENAMEW open_file = {};
+    open_file.lStructSize = sizeof(open_file);
+    open_file.lpstrFile = file_name.data();
+    open_file.nMaxFile = static_cast<DWORD>(file_name.size());
+    open_file.lpstrFilter = L"STEP files (*.step;*.stp)\0*.step;*.stp\0All files (*.*)\0*.*\0";
+    open_file.nFilterIndex = 1;
+    open_file.lpstrInitialDir = initial_dir.c_str();
+    open_file.Flags = OFN_EXPLORER | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR | OFN_PATHMUSTEXIST;
+
+    if (GetOpenFileNameW(&open_file) == TRUE)
+    {
+        return std::filesystem::path(file_name.data());
+    }
+    return std::nullopt;
+#else
+    (void)app;
+    return std::nullopt;
+#endif
 }
 
 void draw_controls(AppState* app)
@@ -1257,19 +1303,21 @@ void draw_controls(AppState* app)
     ImGui::Text("Geometer %s | ABI %d", geometer::version_string(), geometer::abi_version());
     ImGui::Separator();
 
-    ImGui::SetNextItemWidth(-84.0f);
+    ImGui::SetNextItemWidth(-174.0f);
     ImGui::InputText("STEP", app->step_path.data(), app->step_path.size());
+    ImGui::SameLine();
+    if (ImGui::Button("Open...", {82.0f, 0.0f}))
+    {
+        if (const std::optional<std::filesystem::path> selected = choose_step_file_dialog(app))
+        {
+            set_step_path(app, *selected);
+            try_load_step(app);
+        }
+    }
     ImGui::SameLine();
     if (ImGui::Button("Load", {70.0f, 0.0f}))
     {
-        try
-        {
-            load_step(app);
-        }
-        catch (const std::exception& exc)
-        {
-            app->status = exc.what();
-        }
+        try_load_step(app);
     }
 
     ImGui::TextUnformatted("Camera");
@@ -1289,21 +1337,34 @@ void draw_controls(AppState* app)
     {
         app->camera.zoom = 1.0;
     }
+
+    ImGui::TextUnformatted("Projection");
     ImGui::SameLine();
-    const char* modes[] = {"detail", "simple", "both"};
-    int mode_index =
-        app->mode == ProjectionMode::Detail ? 0 : (app->mode == ProjectionMode::Simple ? 1 : 2);
+    const char* modes[] = {"detail", "outline", "both"};
+    int mode_index = app->mode == ProjectionMode::Detail    ? 0
+                     : app->mode == ProjectionMode::Outline ? 1
+                                                            : 2;
     ImGui::SetNextItemWidth(100.0f);
     if (ImGui::Combo("Mode", &mode_index, modes, 3))
     {
         app->mode = mode_index == 0
                         ? ProjectionMode::Detail
-                        : (mode_index == 1 ? ProjectionMode::Simple : ProjectionMode::Both);
+                        : (mode_index == 1 ? ProjectionMode::Outline : ProjectionMode::Both);
     }
-    if (app->has_model_bounds)
+    ImGui::SameLine();
+    ImGui::Checkbox("BBox", &app->show_bbox);
+    ImGui::SameLine();
+    const char* outline_algorithms[] = {"mesh-shadow", "hlr-close"};
+    int outline_algorithm_index =
+        app->outline_algorithm == geometer::ProjectionOutlineAlgorithm::MeshShadow ? 0 : 1;
+    ImGui::SetNextItemWidth(132.0f);
+    if (ImGui::Combo("Outline alg", &outline_algorithm_index, outline_algorithms, 2))
     {
-        ImGui::Text("Bounds: %.3f x %.3f x %.3f mm", app->model_bounds.size[0],
-                    app->model_bounds.size[1], app->model_bounds.size[2]);
+        app->outline_algorithm = outline_algorithm_index == 0
+                                     ? geometer::ProjectionOutlineAlgorithm::MeshShadow
+                                     : geometer::ProjectionOutlineAlgorithm::HlrClosedEdges;
+        app->projection_dirty = true;
+        app->last_camera_change_ms = SDL_GetTicks();
     }
 
     ImGui::TextUnformatted("Lighting");
@@ -1365,7 +1426,31 @@ std::filesystem::path default_step_path(int argc, char** argv)
     {
         return argv[1];
     }
-    return std::filesystem::path("tests") / "fixtures" / "step" / "embedded_models" / "SOT-23.STEP";
+    const std::filesystem::path relative =
+        std::filesystem::path("tests") / "fixtures" / "step" / "embedded_models" / "SOT-23.STEP";
+    std::vector<std::filesystem::path> roots = {std::filesystem::current_path()};
+    if (argc > 0 && argv[0] != nullptr)
+    {
+        roots.push_back(std::filesystem::absolute(argv[0]).parent_path());
+    }
+    for (const std::filesystem::path& root : roots)
+    {
+        std::filesystem::path current = root;
+        for (int depth = 0; depth < 6; ++depth)
+        {
+            const std::filesystem::path candidate = current / relative;
+            if (std::filesystem::exists(candidate))
+            {
+                return candidate;
+            }
+            if (!current.has_parent_path() || current == current.parent_path())
+            {
+                break;
+            }
+            current = current.parent_path();
+        }
+    }
+    return relative;
 }
 
 float dpi_scale_for_window(SDL_Window* window)
@@ -1377,18 +1462,6 @@ float dpi_scale_for_window(SDL_Window* window)
     }
     return std::max(1.0f, scale);
 }
-
-#if defined(__APPLE__)
-constexpr int kGlContextFlags = SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG;
-constexpr int kGlMajorVersion = 3;
-constexpr int kGlMinorVersion = 2;
-constexpr const char* kGlslVersion = "#version 150";
-#else
-constexpr int kGlContextFlags = 0;
-constexpr int kGlMajorVersion = 3;
-constexpr int kGlMinorVersion = 0;
-constexpr const char* kGlslVersion = "#version 130";
-#endif
 
 } // namespace
 
@@ -1405,16 +1478,16 @@ int main(int argc, char** argv)
         return 1;
     }
 
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, kGlContextFlags);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, 0);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, kGlMajorVersion);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, kGlMinorVersion);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
     SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
 
     SDL_Window* window =
-        SDL_CreateWindow("Geometer HLR Preview", 1180, 760,
+        SDL_CreateWindow("Geometer HLR Preview", 1500, 940,
                          SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY);
     if (window == nullptr)
     {
@@ -1422,6 +1495,7 @@ int main(int argc, char** argv)
         SDL_Quit();
         return 1;
     }
+    SDL_SetWindowMinimumSize(window, 1100, 720);
 
     SDL_GLContext gl_context = SDL_GL_CreateContext(window);
     if (gl_context == nullptr)
@@ -1438,6 +1512,7 @@ int main(int argc, char** argv)
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO();
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+    io.IniFilename = nullptr;
     ImGui::StyleColorsDark();
     ImGuiStyle& style = ImGui::GetStyle();
     const float dpi_scale = dpi_scale_for_window(window);
@@ -1445,7 +1520,7 @@ int main(int argc, char** argv)
     style.ScaleAllSizes(dpi_scale);
 
     ImGui_ImplSDL3_InitForOpenGL(window, gl_context);
-    ImGui_ImplOpenGL3_Init(kGlslVersion);
+    ImGui_ImplOpenGL3_Init("#version 130");
 
     try
     {

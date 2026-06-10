@@ -43,9 +43,12 @@ void parse_explicit_options()
                        "\"curve_mode\":\"polyline\","
                        "\"samples_per_curve\":12,"
                        "\"round_digits\":4,"
+                       "\"mesh_deflection_mode\":\"absolute\","
+                       "\"mesh_deflection_coefficient\":0.002,"
+                       "\"outline_algorithm\":\"mesh-shadow\","
                        "\"include_visible\":false,"
                        "\"include_outline\":true,"
-                       "\"union_simple_polygons\":false"
+                       "\"union_outline_polygons\":false"
                        "}";
 
     geometer::HlrProjectionOptions options;
@@ -63,11 +66,17 @@ void parse_explicit_options()
             "curve mode should parse");
     require(options.samples_per_curve == 12, "samples should parse");
     require(options.round_digits == 4, "round digits should parse");
+    require(options.mesh_deflection_mode == geometer::MeshDeflectionMode::Absolute,
+            "mesh_deflection_mode should parse");
+    require(options.mesh_deflection_coefficient == 0.002,
+            "mesh_deflection_coefficient should parse");
+    require(options.outline_algorithm == geometer::ProjectionOutlineAlgorithm::MeshShadow,
+            "outline_algorithm should parse");
     // Legacy include_visible:false zeroes both visible-sharp and visible-outline.
     // Then include_outline:true re-enables visible-outline only.
     require(!options.edge_v_sharp, "include_visible should clear edge_v_sharp");
     require(options.edge_v_outline, "include_outline should set edge_v_outline");
-    require(!options.union_simple_polygons, "union_simple_polygons should parse");
+    require(!options.union_outline_polygons, "union_outline_polygons should parse");
 }
 
 void parse_aliases()
@@ -78,6 +87,9 @@ void parse_aliases()
                        "\"roundDigits\":2,"
                        "\"includeVisible\":true,"
                        "\"includeOutline\":false,"
+                       "\"meshDeflectionMode\":\"bbox_relative\","
+                       "\"meshDeflectionCoefficient\":0.005,"
+                       "\"outlineAlgorithm\":\"hlr_close\","
                        "\"unionPolygons\":true,"
                        "\"modelTransform\":[1,0,0,4,0,1,0,5,0,0,1,6,0,0,0,1]"
                        "}";
@@ -94,7 +106,13 @@ void parse_aliases()
     require(options.round_digits == 2, "roundDigits alias should parse");
     require(options.edge_v_sharp, "includeVisible alias should set edge_v_sharp");
     require(!options.edge_v_outline, "includeOutline alias should clear edge_v_outline");
-    require(options.union_simple_polygons, "unionPolygons alias should parse");
+    require(options.mesh_deflection_mode == geometer::MeshDeflectionMode::BboxRelative,
+            "meshDeflectionMode alias should parse");
+    require(options.mesh_deflection_coefficient == 0.005,
+            "meshDeflectionCoefficient alias should parse");
+    require(options.outline_algorithm == geometer::ProjectionOutlineAlgorithm::HlrClosedEdges,
+            "outlineAlgorithm alias should parse");
+    require(options.union_outline_polygons, "unionPolygons alias should parse");
     require(options.model_transform[3] == 4.0, "flat modelTransform alias should parse");
     require(options.model_transform[7] == 5.0, "flat modelTransform y translation should parse");
     require(options.model_transform[11] == 6.0, "flat modelTransform z translation should parse");
@@ -114,6 +132,10 @@ void reject_invalid_options()
     code = geometer::parse_hlr_projection_options_json("{\"curve_mode\":\"splines\"}", &options,
                                                        &status);
     require(code == 91, "invalid curve mode should return parse error");
+
+    code = geometer::parse_hlr_projection_options_json("{\"outline_algorithm\":\"bad\"}", &options,
+                                                       &status);
+    require(code == 91, "invalid outline_algorithm should return parse error");
 
     code = geometer::parse_hlr_projection_options_json("{\"model_transform\":[[1,0,0,0]]}",
                                                        &options, &status);

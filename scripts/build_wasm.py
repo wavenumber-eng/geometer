@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -49,6 +50,14 @@ OCCT_TAG = "V7_8_1"
 def run(cmd: list[str], **kwargs) -> None:
     print(f"  > {' '.join(cmd)}")
     subprocess.check_call(cmd, **kwargs)
+
+
+def normalize_generated_js(path: Path) -> None:
+    """Keep committed Emscripten JS artifacts compatible with diff hygiene."""
+    text = path.read_text(encoding="utf-8")
+    normalized = re.sub(r"[ \t]+(?=\r?\n|$)", "", text).replace("\r\n", "\n")
+    if normalized != text:
+        path.write_text(normalized, encoding="utf-8", newline="\n")
 
 
 def _emsdk_exe() -> str:
@@ -126,8 +135,29 @@ def verify_vendored_rapidjson() -> None:
         raise RuntimeError(
             "Vendored RapidJSON is missing Geometer's modern Clang "
             "compatibility patch."
-        )
+    )
     print(f"Using vendored RapidJSON at {RAPIDJSON_SRC}")
+
+
+def patch_occt_wasm_install_rules() -> None:
+    """Allow OCCT's Emscripten helper executables to omit .wasm side files."""
+    toolkit_cmake = OCCT_SRC / "adm" / "cmake" / "occt_toolkit.cmake"
+    text = toolkit_cmake.read_text(encoding="utf-8")
+    original = (
+        '    install(FILES ${CMAKE_BINARY_DIR}/${OS_WITH_BIT}/${COMPILER}/bin\\${OCCT_INSTALL_BIN_LETTER}/${PROJECT_NAME}.wasm '
+        'DESTINATION "${INSTALL_DIR_BIN}/${OCCT_INSTALL_BIN_LETTER}")'
+    )
+    patched = (
+        '    install(FILES ${CMAKE_BINARY_DIR}/${OS_WITH_BIT}/${COMPILER}/bin\\${OCCT_INSTALL_BIN_LETTER}/${PROJECT_NAME}.wasm '
+        'DESTINATION "${INSTALL_DIR_BIN}/${OCCT_INSTALL_BIN_LETTER}" OPTIONAL)'
+    )
+    if patched in text:
+        print("OCCT WASM install rules already patched.")
+        return
+    if original not in text:
+        raise RuntimeError(f"OCCT WASM install rule not found in {toolkit_cmake}")
+    toolkit_cmake.write_text(text.replace(original, patched), encoding="utf-8", newline="\n")
+    print("Patched OCCT WASM install rules for optional executable side modules.")
 
 
 # ---- OCCT WASM build ----
@@ -241,7 +271,9 @@ def build_geometer_wasm() -> None:
             target_dir.mkdir(parents=True, exist_ok=True)
             dst = target_dir / src.name
             shutil.copy2(str(src), str(dst))
-            print(f"Copied {src.name} to {target_dir.relative_to(DIST_DIR)}/ ({src.stat().st_size:,} bytes)")
+            if dst.suffix == ".js":
+                normalize_generated_js(dst)
+            print(f"Copied {src.name} to {target_dir.relative_to(DIST_DIR)}/ ({dst.stat().st_size:,} bytes)")
 
     run([sys.executable, str(ROOT / "scripts" / "write_dist_manifest.py")])
     print("geometer WASM build complete.")
@@ -270,6 +302,7 @@ def main() -> None:
     install_emsdk()
     verify_vendored_rapidjson()
     clone_source("OCCT", OCCT_SRC, OCCT_REPO, OCCT_TAG, "CMakeLists.txt")
+    patch_occt_wasm_install_rules()
     build_occt_wasm()
     build_geometer_wasm()
 

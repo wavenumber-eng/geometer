@@ -4,9 +4,9 @@ if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Darwin" AND NOT CMAKE_OSX_DEPLOYMENT_TARGET)
     set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0" CACHE STRING "Minimum macOS deployment target")
 endif()
 
-set(GEOMETER_RELEASE_DATE "2026-06-04" CACHE STRING "Geometer UTC release date" FORCE)
-set(GEOMETER_RELEASE_VERSION "2026.6.4" CACHE STRING "Geometer package/build version" FORCE)
-set(GEOMETER_ABI_VERSION "20260604" CACHE STRING "Geometer C ABI generation date" FORCE)
+set(GEOMETER_RELEASE_DATE "2026-06-09" CACHE STRING "Geometer UTC release date" FORCE)
+set(GEOMETER_RELEASE_VERSION "2026.6.9" CACHE STRING "Geometer package/build version" FORCE)
+set(GEOMETER_ABI_VERSION "20260609" CACHE STRING "Geometer C ABI generation date" FORCE)
 
 project(geometer VERSION ${GEOMETER_RELEASE_VERSION} LANGUAGES CXX)
 
@@ -63,6 +63,7 @@ set(GEOMETER_WASM_PLANAR_BROWSER_DIST_DIR
 # ---------------------------------------------------------------------------
 set(GEOMETER_OCCT_LIBRARY_TYPE "Static" CACHE STRING "OCCT library type to auto-build when missing")
 set_property(CACHE GEOMETER_OCCT_LIBRARY_TYPE PROPERTY STRINGS Static Shared)
+option(GEOMETER_COPY_OCCT_RUNTIME "Copy shared OCCT runtime DLLs into the native dist folder" OFF)
 
 if(APPLE)
     set(GEOMETER_MACOS_DEPLOYMENT_TARGET "${CMAKE_OSX_DEPLOYMENT_TARGET}"
@@ -122,6 +123,32 @@ if(NOT OpenCASCADE_FOUND)
 endif()
 
 message(STATUS "OpenCASCADE ${OpenCASCADE_VERSION} found at ${OpenCASCADE_INSTALL_PREFIX}")
+
+set(GEOMETER_OCCT_RUNTIME_FILES "")
+if(WIN32 AND GEOMETER_OCCT_LIBRARY_TYPE STREQUAL "Shared")
+    set(_geometer_occt_runtime_dir "${OpenCASCADE_INSTALL_PREFIX}/win64/vc14/bin")
+    if(EXISTS "${_geometer_occt_runtime_dir}")
+        file(GLOB GEOMETER_OCCT_RUNTIME_FILES CONFIGURE_DEPENDS
+            "${_geometer_occt_runtime_dir}/*.dll")
+    elseif(GEOMETER_COPY_OCCT_RUNTIME)
+        message(WARNING
+            "GEOMETER_COPY_OCCT_RUNTIME is ON, but OCCT runtime DLL directory "
+            "was not found: ${_geometer_occt_runtime_dir}")
+    endif()
+endif()
+
+function(geometer_copy_occt_runtime_to_native_dist target_name)
+    if(NOT EMSCRIPTEN AND GEOMETER_COPY_OCCT_RUNTIME AND GEOMETER_OCCT_RUNTIME_FILES)
+        add_custom_command(TARGET ${target_name} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E make_directory "${GEOMETER_NATIVE_DIST_DIR}"
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                ${GEOMETER_OCCT_RUNTIME_FILES}
+                "${GEOMETER_NATIVE_DIST_DIR}/"
+            COMMAND_EXPAND_LISTS
+            COMMENT "Copying OCCT runtime DLLs to native dist/"
+        )
+    endif()
+endfunction()
 
 include(CTest)
 add_subdirectory(src/cpp)

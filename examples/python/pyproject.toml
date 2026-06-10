@@ -8,8 +8,11 @@ dependencies = [
     "pyvista",
     "pyvistaqt",
     "trimesh",
-    "wn-geometer==2026.6.4",
+    "wn-geometer",
 ]
 
 [tool.uv]
 package = false
+
+[tool.uv.sources]
+wn-geometer = { path = "../..", editable = true }

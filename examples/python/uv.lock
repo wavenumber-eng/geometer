@@ -397,7 +397,7 @@ requires-dist = [
     { name = "pyvista" },
     { name = "pyvistaqt" },
     { name = "trimesh" },
-    { name = "wn-geometer", specifier = "==2026.5.25" },
+    { name = "wn-geometer", editable = "../../" },
 ]
 
 [[package]]
@@ -1225,8 +1225,17 @@ wheels = [
 
 [[package]]
 name = "wn-geometer"
-version = "2026.5.25"
-source = { registry = "https://pypi.org/simple" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/0c/83/ced4b909a763579ecb123ca0c079d439fc2c986232fb9b6600ee359fad60/wn_geometer-2026.5.25-py3-none-macosx_26_0_arm64.whl", hash = "sha256:3e710c5b069ddc73b4e8b5caefbe9b7d7a0eaa2284b9028821a2147b8c41d181", size = 10611574, upload-time = "2026-05-25T17:18:17.228Z" },
+version = "2026.6.9"
+source = { editable = "../../" }
+
+[package.metadata]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "build", specifier = ">=1.2.0" },
+    { name = "pyright", specifier = ">=1.1.390" },
+    { name = "pytest", specifier = ">=8.0.0" },
+    { name = "ruff", specifier = ">=0.8.0" },
+    { name = "twine", specifier = ">=5.0.0" },
+    { name = "wn-rack", marker = "python_full_version >= '3.11'", specifier = ">=1.1.0" },
 ]

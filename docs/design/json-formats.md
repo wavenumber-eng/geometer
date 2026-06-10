@@ -71,6 +71,10 @@ Accepted option keys:
 - `mesh_linear_deflection` or `meshLinearDeflection`.
 - `mesh_angular_deflection` or `meshAngularDeflection`.
 - `mesh_relative` or `meshRelative`.
+- `mesh_deflection_mode` or `meshDeflectionMode`: `absolute` or
+  `bbox-relative`.
+- `mesh_deflection_coefficient` or `meshDeflectionCoefficient`.
+- `outline_algorithm` or `outlineAlgorithm`: `mesh-shadow` or `hlr-close`.
 - `hlr_angle_tolerance` or `hlrAngleTolerance`.
 - `edge_v_sharp`, `edge_v_outline`, `edge_v_smooth`, `edge_v_sewn`,
   `edge_v_iso`, `edge_h_sharp`, `edge_h_outline`, `edge_h_smooth`,
@@ -79,7 +83,7 @@ Accepted option keys:
   and visible outline edges together.
 - legacy `include_outline` or `includeOutline`, which toggles visible outline
   edges.
-- `union_simple_polygons` or `unionPolygons`.
+- `union_outline_polygons`, `unionOutlinePolygons`, or `unionPolygons`.
 
 The browser test pages currently use the viz-compatible setting set:
 
@@ -89,28 +93,32 @@ The browser test pages currently use the viz-compatible setting set:
   "samples_per_curve": 24,
   "round_digits": 3,
   "projection_algorithm": "poly",
+  "outline_algorithm": "mesh-shadow",
+  "mesh_deflection_mode": "bbox-relative",
+  "mesh_deflection_coefficient": 0.004,
   "edge_v_sharp": true,
   "edge_v_outline": true,
-  "union_simple_polygons": true
+  "union_outline_polygons": true
 }
 ```
 
 ## HLR Projection Result JSON
 
-Projection JSON uses schema `geometry.projection.a0`.
+Projection JSON uses schema `geometry.projection.b0`.
 
 Required top-level fields:
 
-- `schema`: currently `geometry.projection.a0`.
+- `schema`: currently `geometry.projection.b0`.
 - `units`: currently `mm`.
-- `source_hash`: hash of the STEP source bytes.
+- `source`: source metadata, including `kind` and `hash`.
 - `views`: array of projected view payloads.
 
 Each projected view contains:
 
-- `view`: `{ id, direction, up }`.
-- `simple`: simplified geometry with `segments` and `arcs`.
-- `detail`: HLR detail geometry with `segments` and `arcs`.
+- `id`, `direction`, and `up`.
+- `modes.outline`: assembly projection outline geometry.
+- `modes.detail`: HLR detail geometry.
+- `modes.bbox`: projected 3D shape bounding box geometry.
 
 Segment objects contain `x1`, `y1`, `x2`, and `y2`. Arc objects contain
 `start`, `end`, `center`, `radius`, `extent_rad`, `ccw`, and `full_circle`.
@@ -194,8 +202,8 @@ The native CLI batch command accepts `geometer.batch.request.a0`:
 ```json
 {
   "schema": "geometer.batch.request.a0",
-  "version": "2026.6.4",
-  "abi": 20260604,
+  "version": "2026.6.9",
+  "abi": 20260609,
   "options": {
     "curve_mode": "polyline"
   },
@@ -244,8 +252,8 @@ The native CLI writes `geometer.batch.response.a0`:
 ```json
 {
   "schema": "geometer.batch.response.a0",
-  "version": "2026.6.4",
-  "abi": 20260604,
+  "version": "2026.6.9",
+  "abi": 20260609,
   "ok": true,
   "jobs": [
     {

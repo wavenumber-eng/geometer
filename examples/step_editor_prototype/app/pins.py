@@ -23,6 +23,7 @@ class Pin:
     face_ids: list[tuple[int, int]] = field(default_factory=list)  # (body, face) regions
     kind: str = "pin"
     name: str = ""
+    name_source: str = ""  # "" (default) | "anchor" (user-typed) | "predicted"
     function: str = ""
     hitbox: dict | None = None
 
@@ -527,19 +528,39 @@ def cluster_ordinals(values) -> np.ndarray:
     return ordinals
 
 
-def _solve_axis(anchor_pairs, *, default_sign: int, base: int, count: int) -> tuple[int, int]:
+def _solve_axis(
+    anchor_pairs, *, default_sign: int, base: int, count: int, axis: str = "axis"
+) -> tuple[int, int]:
     """Fit target = sign*cluster + offset from anchors; without anchors (or
-    with ambiguous ones) fall back to the default orientation."""
+    with ambiguous ones) fall back to the default orientation. anchor_pairs
+    items are (cluster, target, label) — labels make conflicts reportable."""
     if not anchor_pairs:
         offset = base if default_sign > 0 else base + count - 1
         return default_sign, offset
     solutions = []
+    best_outliers: list[str] | None = None
     for sign in (1, -1):
-        offsets = {target - sign * cluster for cluster, target in anchor_pairs}
+        offsets: dict[int, list[str]] = {}
+        for cluster, target, label in anchor_pairs:
+            offsets.setdefault(target - sign * cluster, []).append(label)
         if len(offsets) == 1:
-            solutions.append((sign, offsets.pop()))
+            solutions.append((sign, next(iter(offsets))))
+        else:
+            majority = max(offsets.values(), key=len)
+            outliers = [
+                label
+                for group in offsets.values()
+                if group is not majority
+                for label in group
+            ]
+            if best_outliers is None or len(outliers) < len(best_outliers):
+                best_outliers = outliers
     if not solutions:
-        raise ValueError("the named pins contradict each other")
+        suspects = ", ".join((best_outliers or [])[:6]) or "?"
+        raise ValueError(
+            f"{axis} anchors disagree — no single orientation fits; "
+            f"check pin(s) named {suspects}"
+        )
 
     def lowest_ordinal(solution) -> int:
         sign, offset = solution
@@ -569,14 +590,14 @@ def predict_grid_names(pins: list[Pin], anchors: dict[int, str]) -> dict[int, st
         if parsed is None:
             raise ValueError(f"'{name}' is not a grid name like B3")
         letter_ordinal, column = parsed
-        row_anchors.append((int(rows[index]), letter_ordinal))
-        col_anchors.append((int(cols[index]), column))
+        row_anchors.append((int(rows[index]), letter_ordinal, name))
+        col_anchors.append((int(cols[index]), column, name))
 
     row_sign, row_offset = _solve_axis(
-        row_anchors, default_sign=-1, base=0, count=int(rows.max()) + 1
+        row_anchors, default_sign=-1, base=0, count=int(rows.max()) + 1, axis="row-letter"
     )
     col_sign, col_offset = _solve_axis(
-        col_anchors, default_sign=1, base=1, count=int(cols.max()) + 1
+        col_anchors, default_sign=1, base=1, count=int(cols.max()) + 1, axis="column"
     )
 
     names: dict[int, str] = {}

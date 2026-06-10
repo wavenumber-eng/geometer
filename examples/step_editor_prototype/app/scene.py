@@ -63,6 +63,7 @@ class SceneManager:
         self._band_poly = None
         self._press_position: tuple[int, int] | None = None
         self._hitbox_overlays: list[str] = []
+        self._label_groups = 0
         self._hover_callback: Callable[[PickResult | None], None] | None = None
         self._hover_observer = None
         self._picker = vtk.vtkCellPicker()
@@ -583,24 +584,38 @@ class SceneManager:
             )
         self.plotter.render()
 
-    def show_pin_labels(self, points, labels) -> None:
-        self.remove_overlay("pin-labels")
+    def show_pin_labels(self, points, labels, colors=None) -> None:
+        """Pin labels, optionally per-label text colour (anchored green,
+        predicted orange, default dark) — one label actor per colour group."""
+        for index in range(self._label_groups):
+            self.remove_overlay(f"pin-labels-{index}")
+        self._label_groups = 0
         if len(points) == 0:
             self.plotter.render()
             return
-        self.plotter.add_point_labels(
-            np.asarray(points, dtype=np.float64),
-            list(labels),
-            name="pin-labels",
-            font_size=16,
-            point_size=12,
-            point_color="#ff8800",
-            text_color="#1a1a1a",
-            shape_color="#ffffff",
-            shape_opacity=0.85,
-            always_visible=True,
-            pickable=False,
-        )
+        points = np.asarray(points, dtype=np.float64)
+        labels = list(labels)
+        if colors is None:
+            colors = ["#1a1a1a"] * len(labels)
+        groups: dict[str, list[int]] = {}
+        for index, color in enumerate(colors):
+            groups.setdefault(color, []).append(index)
+        for color, members in groups.items():
+            name = f"pin-labels-{self._label_groups}"
+            self._label_groups += 1
+            self.plotter.add_point_labels(
+                points[members],
+                [labels[i] for i in members],
+                name=name,
+                font_size=16,
+                point_size=12,
+                point_color="#ff8800",
+                text_color=color,
+                shape_color="#ffffff",
+                shape_opacity=0.85,
+                always_visible=True,
+                pickable=False,
+            )
         self.plotter.render()
 
     # ------------------------------------------------------------- band 2D

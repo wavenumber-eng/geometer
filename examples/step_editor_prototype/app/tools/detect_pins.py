@@ -547,6 +547,7 @@ class DetectPinsTool(ToolMode):
                 names = predict_grid_names(registry.pins, {})
                 for index, pin in enumerate(registry.pins):
                     pin.name = names[index]
+                    pin.name_source = ""  # default scheme: plain white
                 unknown = sum(1 for pin in registry.pins if pin.name.startswith("?"))
                 if unknown:
                     self.status(
@@ -618,7 +619,9 @@ class DetectPinsTool(ToolMode):
         if not (0 <= row < len(registry.pins)):
             self.status("Detect Pins: select a pin in the list first")
             return
-        registry.pins[row].name = self.name_edit.text().strip()
+        pin = registry.pins[row]
+        pin.name = self.name_edit.text().strip()
+        pin.name_source = "anchor" if pin.name else ""
         self._refresh_views()
         self.pin_list.setCurrentRow(row)
         self.status(
@@ -652,6 +655,7 @@ class DetectPinsTool(ToolMode):
                 for index, pin in enumerate(pins):
                     if index not in anchors:
                         pin.name = names[index]
+                        pin.name_source = "predicted"
                 order = sorted(
                     range(len(pins)),
                     key=lambda i: parse_grid_name(pins[i].name) or (9999, i),
@@ -756,7 +760,13 @@ class DetectPinsTool(ToolMode):
             )
         points = [pin.centroid for pin in registry.pins]
         labels = [pin.name or str(pin.number) for pin in registry.pins]
-        self.ctx.scene.show_pin_labels(points, labels)
+        label_colors = [
+            "#1f9d3a" if pin.name_source == "anchor"
+            else "#e07b00" if pin.name_source == "predicted"
+            else "#1a1a1a"
+            for pin in registry.pins
+        ]
+        self.ctx.scene.show_pin_labels(points, labels, label_colors)
         self.canvas.set_pins(
             [(pin.centroid[0], pin.centroid[1], pin.name or str(pin.number))
              for pin in registry.pins]

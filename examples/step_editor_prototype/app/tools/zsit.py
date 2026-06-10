@@ -153,7 +153,6 @@ class ZSitTool(ToolMode):
         layout.addWidget(self.flip_check)
 
         self.points_label = QLabel("No points picked.")
-        self.points_label.setStyleSheet("font-family: Consolas, monospace;")
         self.points_label.setWordWrap(True)
         layout.addWidget(self.points_label)
 

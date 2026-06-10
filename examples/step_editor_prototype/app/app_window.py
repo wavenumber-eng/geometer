@@ -32,13 +32,16 @@ from .export_ap242 import conditioned_path, document_step_bytes, export_ap242
 from .journal import Journal
 from .mode_rect import ModeRect
 from .pins import PinRegistry
+from .style import ACCENT_HOVER, BORDER, CONSOLE_BG, TEXT_MUTED, TEXT_PRIMARY, WINDOW_BG
 from .scene import SceneManager
 from .tools import TOOL_CLASSES
 from .tools.base import ToolContext
 
 
 HERE = Path(__file__).resolve().parent.parent
-LOGO_PATH = HERE / "wn3d_logo.png"
+# White version generated from WN3D_LOGO.png for the dark theme.
+LOGO_CANDIDATES = [HERE / "wn3d_logo_white.png", HERE / "WN3D_LOGO.png", HERE / "wn3d_logo.png"]
+LOGO_PATH = next((p for p in LOGO_CANDIDATES if p.is_file()), LOGO_CANDIDATES[0])
 CAMERA_BUTTONS = ["iso", "top", "bottom", "front", "back", "left", "right"]
 
 
@@ -106,7 +109,9 @@ class MainWindow(QMainWindow):
             logo_label.setText("<b>WN3D</b>")
         top_layout.addWidget(logo_label)
         title_label = QLabel("Wavenumber 3D")
-        title_label.setStyleSheet("font-weight: 700; font-size: 15px; padding-left: 6px;")
+        title_label.setStyleSheet(
+            f"font-weight: 700; font-size: 15px; padding-left: 6px; color: {TEXT_PRIMARY};"
+        )
         top_layout.addWidget(title_label)
         top_layout.addStretch(1)
 
@@ -114,7 +119,7 @@ class MainWindow(QMainWindow):
         top_layout.addWidget(self.mode_rect, 0, Qt.AlignmentFlag.AlignHCenter)
         self.model_label = QLabel("no model")
         self.model_label.setStyleSheet(
-            "font-weight: 600; color: #7d8aa3; padding-left: 10px;"
+            f"font-weight: 600; color: {ACCENT_HOVER}; padding-left: 10px;"
         )
         top_layout.addWidget(self.model_label)
         top_layout.addStretch(1)
@@ -135,13 +140,13 @@ class MainWindow(QMainWindow):
         camera_layout.addWidget(QLabel("Camera"))
         for view_id in CAMERA_BUTTONS:
             button = QPushButton(view_id.upper() if view_id == "iso" else view_id.title())
-            button.setMaximumWidth(64)
+            button.setMaximumWidth(82)
             button.clicked.connect(lambda _checked=False, v=view_id: self.snap_camera(v))
             camera_layout.addWidget(button)
         camera_layout.addStretch(1)
         version = geometer.version()
         version_label = QLabel(f"Geometer {version.string} | ABI {version.abi}")
-        version_label.setStyleSheet("color: #44506a; font-weight: 600;")
+        version_label.setStyleSheet(f"color: {TEXT_MUTED};")
         camera_layout.addWidget(version_label)
 
         # --- right panel: actions stack + info -----------------------------
@@ -150,8 +155,8 @@ class MainWindow(QMainWindow):
         self.info_label.setWordWrap(True)
         self.info_label.setAlignment(Qt.AlignmentFlag.AlignTop)
         self.info_label.setStyleSheet(
-            "font-family: Consolas, monospace; background: #f4f6f8; "
-            "color: #1c2430; padding: 8px;"
+            f"background: {CONSOLE_BG}; color: {TEXT_PRIMARY}; "
+            f"border-top: 1px solid {BORDER}; padding: 8px;"
         )
         self.info_label.setMinimumHeight(84)
         self.info_label.setMaximumHeight(112)
@@ -159,15 +164,17 @@ class MainWindow(QMainWindow):
         right_panel = QWidget()
         right_layout = QVBoxLayout(right_panel)
         right_layout.setContentsMargins(0, 0, 0, 0)
-        actions_header = QLabel("  Tool actions")
+        actions_header = QLabel("  TOOL ACTIONS")
         actions_header.setStyleSheet(
-            "font-weight: 700; padding: 4px; background: #e8ecf2; color: #1c2430;"
+            f"font-weight: 700; padding: 4px; background: {WINDOW_BG}; "
+            f"color: {TEXT_MUTED}; border-bottom: 1px solid {BORDER};"
         )
         right_layout.addWidget(actions_header)
         right_layout.addWidget(self.actions_stack, 1)
-        info_header = QLabel("  Model info")
+        info_header = QLabel("  MODEL INFO")
         info_header.setStyleSheet(
-            "font-weight: 700; padding: 4px; background: #e8ecf2; color: #1c2430;"
+            f"font-weight: 700; padding: 4px; background: {WINDOW_BG}; "
+            f"color: {TEXT_MUTED}; border-bottom: 1px solid {BORDER};"
         )
         right_layout.addWidget(info_header)
         right_layout.addWidget(self.info_label, 0)

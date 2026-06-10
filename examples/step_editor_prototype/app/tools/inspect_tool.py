@@ -21,7 +21,6 @@ class InspectTool(ToolMode):
         header = QLabel("<b>Inspect</b>")
         self.info_label = QLabel("Click a face in the 3D view.")
         self.info_label.setWordWrap(True)
-        self.info_label.setStyleSheet("font-family: Consolas, monospace;")
         layout.addWidget(header)
         layout.addWidget(self.info_label)
         layout.addStretch(1)

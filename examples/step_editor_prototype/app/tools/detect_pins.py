@@ -207,7 +207,7 @@ class DetectPinsTool(ToolMode):
             [pin.centroid for pin in self.pending],
             name="pending-pins",
             color="#ff9a2a",
-            point_size=14.0,
+            point_size=26.0,
         )
         if self._actions_widget is not None:
             count = len(self.pending)

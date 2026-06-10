@@ -14,6 +14,7 @@ import vtk
 from PySide6.QtCore import QEvent, QObject, QPoint, Qt
 
 from .document import NEUTRAL_RGB, EditorDocument
+from .style import VIEWPORT_BG
 from .viewcam import (
     CAMERA_PRESETS,
     EDGE_FEATURE_ANGLE_DEG,
@@ -69,7 +70,7 @@ class SceneManager:
         # Polygon offset keeps highlight overlays from z-fighting their bodies.
         vtk.vtkMapper.SetResolveCoincidentTopologyToPolygonOffset()
 
-        plotter.set_background("white")
+        plotter.set_background(VIEWPORT_BG)
         plotter.enable_anti_aliasing()
         plotter.enable_parallel_projection()
         configure_lighting(plotter)
@@ -138,7 +139,7 @@ class SceneManager:
                 )
                 if edges.n_cells:
                     self.plotter.add_mesh(
-                        edges, color="#253044", line_width=1.0,
+                        edges, color="#9fb0c4", line_width=1.0,
                         pickable=False, name=f"edges-{index}",
                     )
 
@@ -373,13 +374,13 @@ class SceneManager:
         if points:
             grid = pv.PolyData(np.array(points), lines=np.array(lines))
             self.plotter.add_mesh(
-                grid, color="#c9ced6", line_width=1.0, lighting=False,
+                grid, color="#2a2a34", line_width=1.0, lighting=False,
                 pickable=False, name="ground-grid",
             )
         if axes_points:
             axes = pv.PolyData(np.array(axes_points), lines=np.array(axes_lines))
             self.plotter.add_mesh(
-                axes, color="#7d8794", line_width=2.0, lighting=False,
+                axes, color="#5a5a6a", line_width=2.0, lighting=False,
                 pickable=False, name="ground-grid-axes",
             )
 

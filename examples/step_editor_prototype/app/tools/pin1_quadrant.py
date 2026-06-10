@@ -105,7 +105,6 @@ class Pin1QuadrantTool(ToolMode):
         layout.addWidget(self.apply_button)
 
         self.result_label = QLabel("No rotation applied.")
-        self.result_label.setStyleSheet("font-family: Consolas, monospace;")
         self.result_label.setWordWrap(True)
         layout.addWidget(self.result_label)
         layout.addStretch(1)

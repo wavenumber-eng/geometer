@@ -41,9 +41,11 @@ def main() -> int:
     from PySide6.QtWidgets import QApplication
 
     from app.app_window import MainWindow
+    from app.style import apply_wavenumber_style
 
     step_path = Path(args.step) if args.step else DEFAULT_STEP
     app = QApplication.instance() or QApplication(sys.argv[:1])
+    apply_wavenumber_style(app)
     window = MainWindow(step_path if step_path.is_file() else None)
     window.show()
     return int(app.exec())

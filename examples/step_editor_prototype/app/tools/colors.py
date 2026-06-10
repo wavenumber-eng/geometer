@@ -85,7 +85,6 @@ class ColorsTool(ToolMode):
         layout.addWidget(custom_button)
 
         self.selection_label = QLabel("Nothing selected.")
-        self.selection_label.setStyleSheet("font-family: Consolas, monospace;")
         self.selection_label.setWordWrap(True)
         layout.addWidget(self.selection_label)
 

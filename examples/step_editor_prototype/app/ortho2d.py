@@ -12,6 +12,8 @@ from PySide6.QtCore import QPointF, Qt
 from PySide6.QtGui import QColor, QFont, QPainter, QPen
 from PySide6.QtWidgets import QWidget
 
+from .style import ACCENT_HOVER, BORDER, CONSOLE_BG, ERROR, TEXT_MUTED, TEXT_PRIMARY
+
 
 class Ortho2DCanvas(QWidget):
     def __init__(self) -> None:
@@ -45,16 +47,18 @@ class Ortho2DCanvas(QWidget):
     def paintEvent(self, _event: Any) -> None:
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
-        painter.fillRect(self.rect(), QColor("#ffffff"))
+        painter.fillRect(self.rect(), QColor(CONSOLE_BG))
+        painter.setPen(QPen(QColor(BORDER), 1.0))
+        painter.drawRect(self.rect().adjusted(0, 0, -1, -1))
         if self._result is None:
-            painter.setPen(QColor("#657080"))
+            painter.setPen(QColor(TEXT_MUTED))
             painter.drawText(16, 24, "No footprint projection")
             return
 
         try:
             geometry = self._result.geometry(self._view_id, "detail")
         except KeyError:
-            painter.setPen(QColor("#a33a3a"))
+            painter.setPen(QColor(ERROR))
             painter.drawText(16, 24, "Projection view missing")
             return
 
@@ -65,13 +69,13 @@ class Ortho2DCanvas(QWidget):
             bounds = _include(bounds, self._band[0], self._band[1])
             bounds = _include(bounds, self._band[2], self._band[3])
         if bounds is None:
-            painter.setPen(QColor("#657080"))
+            painter.setPen(QColor(TEXT_MUTED))
             painter.drawText(16, 24, "Empty projection")
             return
 
         project = _projector(bounds, self.width(), self.height())
 
-        painter.setPen(QPen(QColor(42, 54, 72), 1.4, Qt.PenStyle.SolidLine,
+        painter.setPen(QPen(QColor(TEXT_PRIMARY), 1.2, Qt.PenStyle.SolidLine,
                             Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin))
         for segment in geometry.get("segments", []):
             if len(segment) == 4:
@@ -111,10 +115,10 @@ class Ortho2DCanvas(QWidget):
         painter.setFont(font)
         for x, y, label in self._pins:
             px, py = project(x, y)
-            painter.setPen(QPen(QColor("#b02020"), 1.0))
-            painter.setBrush(QColor(255, 176, 0, 230))
+            painter.setPen(QPen(QColor("#7a5c00"), 1.0))
+            painter.setBrush(QColor(ACCENT_HOVER))
             painter.drawEllipse(QPointF(px, py), 7.0, 7.0)
-            painter.setPen(QColor("#202020"))
+            painter.setPen(QColor(TEXT_PRIMARY))
             painter.drawText(QPointF(px - 4 * len(label), py - 9), label)
 
 

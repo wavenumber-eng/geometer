@@ -72,10 +72,18 @@ class MainWindow(QMainWindow):
         else:
             logo_label.setText("<b>WN3D</b>")
         top_layout.addWidget(logo_label)
+        title_label = QLabel("Wavenumber 3D")
+        title_label.setStyleSheet("font-weight: 700; font-size: 15px; padding-left: 6px;")
+        top_layout.addWidget(title_label)
         top_layout.addStretch(1)
 
         self.mode_rect = ModeRect()
         top_layout.addWidget(self.mode_rect, 0, Qt.AlignmentFlag.AlignHCenter)
+        self.model_label = QLabel("no model")
+        self.model_label.setStyleSheet(
+            "font-weight: 600; color: #7d8aa3; padding-left: 10px;"
+        )
+        top_layout.addWidget(self.model_label)
         top_layout.addStretch(1)
 
         open_button = QPushButton("Open STEP")
@@ -109,7 +117,8 @@ class MainWindow(QMainWindow):
         self.info_label.setWordWrap(True)
         self.info_label.setAlignment(Qt.AlignmentFlag.AlignTop)
         self.info_label.setStyleSheet(
-            "font-family: Consolas, monospace; background: #f4f6f8; padding: 8px;"
+            "font-family: Consolas, monospace; background: #f4f6f8; "
+            "color: #1c2430; padding: 8px;"
         )
         self.info_label.setMinimumHeight(140)
 
@@ -117,11 +126,15 @@ class MainWindow(QMainWindow):
         right_layout = QVBoxLayout(right_panel)
         right_layout.setContentsMargins(0, 0, 0, 0)
         actions_header = QLabel("  Tool actions")
-        actions_header.setStyleSheet("font-weight: 700; padding: 4px; background: #e8ecf2;")
+        actions_header.setStyleSheet(
+            "font-weight: 700; padding: 4px; background: #e8ecf2; color: #1c2430;"
+        )
         right_layout.addWidget(actions_header)
         right_layout.addWidget(self.actions_stack, 3)
         info_header = QLabel("  Model info")
-        info_header.setStyleSheet("font-weight: 700; padding: 4px; background: #e8ecf2;")
+        info_header.setStyleSheet(
+            "font-weight: 700; padding: 4px; background: #e8ecf2; color: #1c2430;"
+        )
         right_layout.addWidget(info_header)
         right_layout.addWidget(self.info_label, 2)
 
@@ -205,6 +218,8 @@ class MainWindow(QMainWindow):
         try:
             self.document = EditorDocument.load(path)
             self._tool_context.document = self.document
+            self.model_label.setText(path.name)
+            self.model_label.setToolTip(str(path))
             self.pins.clear()
             self.pin1_hint = None
             self.journal = Journal()
@@ -225,6 +240,8 @@ class MainWindow(QMainWindow):
         except Exception as exc:
             self.document = None
             self._tool_context.document = None
+            self.model_label.setText("no model")
+            self.model_label.setToolTip("")
             self.show_status(f"Load failed: {exc}")
             QMessageBox.critical(self, "Load failed", str(exc))
         finally:

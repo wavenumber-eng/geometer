@@ -26,6 +26,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import occt_binary_cache
+
 ROOT = Path(__file__).resolve().parent.parent
 DEPS_DIR = ROOT / ".deps"
 NATIVE_DEPS_DIR = DEPS_DIR / "native"
@@ -111,6 +113,44 @@ def occt_paths(platform_name: str, library_type: str) -> tuple[Path, Path]:
     if library_type == "Shared":
         return platform_dir / "occt-shared-build", platform_dir / "occt-shared-install"
     return platform_dir / "occt-build", platform_dir / "occt-install"
+
+
+def occt_cache_profile(
+    platform_name: str,
+    config: str,
+    library_type: str,
+    macos_deployment_target_value: str | None,
+) -> occt_binary_cache.OcctCacheProfile:
+    resolved_macos_target = None
+    if platform_name.startswith("macos-"):
+        resolved_macos_target = macos_deployment_target(macos_deployment_target_value)
+    recipe = occt_binary_cache.recipe_hash(
+        [
+            Path(__file__),
+            ROOT / "scripts" / "occt_binary_cache.py",
+            RAPIDJSON_SRC,
+        ],
+        {
+            "kind": "native",
+            "occt_repo": OCCT_REPO,
+            "occt_tag": OCCT_TAG,
+            "platform_tag": platform_name,
+            "config": config,
+            "library_type": library_type,
+            "macos_deployment_target": resolved_macos_target or "",
+            "rapidjson_patch": RAPIDJSON_PATCH_SENTINEL,
+        },
+    )
+    return occt_binary_cache.OcctCacheProfile(
+        kind="native",
+        platform_tag=platform_name,
+        config=config,
+        library_type=library_type,
+        occt_repo=OCCT_REPO,
+        occt_tag=OCCT_TAG,
+        recipe_hash=recipe,
+        macos_deployment_target=resolved_macos_target,
+    )
 
 
 def configure_occt(
@@ -227,21 +267,62 @@ def main() -> None:
         action="store_true",
         help="Also remove the shared OCCT source checkout when cleaning.",
     )
+    parser.add_argument(
+        "--binary-cache",
+        choices=sorted(occt_binary_cache.VALID_MODES),
+        default=None,
+        help="Use prebuilt OCCT binary cache: auto, off, or only (default: env/auto).",
+    )
+    parser.add_argument(
+        "--upload-binary-cache",
+        action="store_true",
+        help="Package and upload the resulting OCCT install tree to the configured binary cache.",
+    )
+    parser.add_argument(
+        "--print-binary-cache-key",
+        action="store_true",
+        help="Print the computed OCCT binary cache key and exit.",
+    )
     args = parser.parse_args()
 
     if args.clean:
         clean(args.platform_tag, include_source=args.clean_source)
         return
 
+    occt_binary_cache.load_dotenv(ROOT)
+    profile = occt_cache_profile(
+        args.platform_tag,
+        args.config,
+        args.library_type,
+        args.macos_deployment_target,
+    )
+    if args.print_binary_cache_key:
+        print(profile.cache_key)
+        return
+
     print(f"Using native dependency platform {args.platform_tag}")
     if args.platform_tag.startswith("macos-"):
         print(f"Using macOS deployment target {macos_deployment_target(args.macos_deployment_target)}")
     verify_vendored_rapidjson()
-    clone_occt()
-    configure_occt(args.platform_tag, args.config, args.library_type, args.macos_deployment_target)
-    build_occt(args.platform_tag, args.config, args.library_type)
-    install_occt(args.platform_tag, args.config, args.library_type)
     _, install_dir = occt_paths(args.platform_tag, args.library_type)
+    if occt_binary_cache.install_ready(install_dir):
+        print(f"OCCT install already present at {install_dir}")
+    elif not occt_binary_cache.restore_prebuilt_install(profile, install_dir, mode=args.binary_cache):
+        clone_occt()
+        configure_occt(args.platform_tag, args.config, args.library_type, args.macos_deployment_target)
+        build_occt(args.platform_tag, args.config, args.library_type)
+        install_occt(args.platform_tag, args.config, args.library_type)
+
+    if not occt_binary_cache.install_ready(install_dir):
+        raise RuntimeError(f"OCCT install did not produce OpenCASCADEConfig.cmake under {install_dir}")
+
+    if args.upload_binary_cache:
+        occt_binary_cache.upload_prebuilt_install(
+            profile,
+            install_dir,
+            out_dir=ROOT / "out" / "occt-binary-cache",
+        )
+
     print(f"\nOCCT installed to {install_dir}")
     if args.library_type == "Shared":
         print("Now run:  cmake --preset shared-occt")

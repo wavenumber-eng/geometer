@@ -38,5 +38,12 @@ python scripts/validate_python_package.py</code></pre>
     as <code>.deps/</code>, <code>build/</code>, <code>build-wasm/</code>,
     <code>out/</code>, and <code>.venv/</code> must not be committed.
   </p>
+
+  <h2>Dependency Cache</h2>
+  <p>
+    OCCT may be restored from the Wavenumber R2 binary dependency cache when
+    credentials are configured. Restored archives are verified and extracted
+    into <code>.deps/</code>; source builds remain the fallback.
+  </p>
 </body>
 </html>

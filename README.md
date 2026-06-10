@@ -23,6 +23,7 @@ contouring, and packed planar boolean work.
 uv sync --group dev
 cmake --preset default
 cmake --build build --config Release
+uv run --group dev rack run --all
 uv run pytest tests/L99_release -q
 uv run python scripts/validate_native.py
 uv run python scripts/validate_python_package.py
@@ -30,6 +31,10 @@ uv run python scripts/validate_python_package.py
 
 Native artifacts are copied to `dist/native/<platform>/`. Root-level
 `dist/geometer*` artifacts are intentionally not produced.
+
+OCCT is generated dependency state under `.deps/`. When R2 cache credentials
+are configured, build scripts can restore verified prebuilt OCCT archives before
+falling back to source builds.
 
 Build WASM artifacts:
 

@@ -19,3 +19,5 @@ hygiene checks before publication.
    executable does not dynamically depend on OCCT `libTK*` libraries.
 10. After PyPI publication, install from PyPI in WSL2 and validate downstream
    use through Altium Cruncher or the headless package example.
+11. When OCCT is restored from the binary dependency cache, validate the cache
+    manifest and archive SHA-256 before using the restored install tree.

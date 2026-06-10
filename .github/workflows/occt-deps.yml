@@ -1,0 +1,124 @@
+---
+# yamllint disable rule:line-length
+name: OCCT Dependency Cache
+
+"on":
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Dependency target set to build/upload.
+        required: true
+        default: all
+        type: choice
+        options:
+          - all
+          - native
+          - wasm
+      force_source_build:
+        description: Ignore existing R2 binary cache and rebuild OCCT from source before upload.
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: occt-deps-${{ github.ref }}-${{ inputs.target }}
+  cancel-in-progress: false
+
+jobs:
+  native:
+    name: native OCCT (${{ matrix.platform }})
+    if: inputs.target == 'all' || inputs.target == 'native'
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            platform: windows-x64
+            compiler: msvc
+          - os: ubuntu-24.04
+            platform: linux-x64
+            compiler: gcc
+          - os: ubuntu-24.04-arm
+            platform: linux-arm64
+            compiler: gcc
+          - os: macos-15
+            platform: macos-arm64
+            compiler: apple-clang
+    env:
+      R2_BUCKET: ${{ vars.R2_BUCKET || secrets.R2_BUCKET }}
+      R2_ENDPOINT_URL: ${{ secrets.R2_ENDPOINT_URL || vars.R2_ENDPOINT_URL }}
+      R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: auto
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v8.2.0
+      - name: Set up Python
+        run: uv python install 3.12
+      - name: Set up MSVC
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+      - name: Install Linux build tools
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential ninja-build libgl1-mesa-dev libdbus-1-dev libudev-dev libx11-dev libxcursor-dev libxext-dev libxi-dev libxinerama-dev libxkbcommon-dev libxrandr-dev libwayland-dev wayland-protocols
+      - name: Install macOS build tools
+        if: runner.os == 'macOS'
+        run: brew list ninja >/dev/null 2>&1 || brew install ninja
+      - name: Restore GitHub OCCT cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            .deps/occt-src
+            .deps/native/${{ matrix.platform }}/occt-build
+            .deps/native/${{ matrix.platform }}/occt-install
+          key: occt-${{ runner.os }}-${{ runner.arch }}-${{ matrix.compiler }}-${{ hashFiles('scripts/build_occt.py', 'scripts/occt_binary_cache.py', 'third_party/rapidjson/**') }}
+          restore-keys: |
+            occt-${{ runner.os }}-${{ runner.arch }}-${{ matrix.compiler }}-
+      - name: Build or restore OCCT and upload to R2
+        shell: pwsh
+        run: |
+          $mode = if ("${{ inputs.force_source_build }}" -eq "true") { "off" } else { "auto" }
+          uv run python scripts/build_occt.py --platform-tag "${{ matrix.platform }}" --binary-cache $mode --upload-binary-cache
+
+  wasm:
+    name: wasm OCCT
+    if: inputs.target == 'all' || inputs.target == 'wasm'
+    runs-on: ubuntu-24.04
+    env:
+      R2_BUCKET: ${{ vars.R2_BUCKET || secrets.R2_BUCKET }}
+      R2_ENDPOINT_URL: ${{ secrets.R2_ENDPOINT_URL || vars.R2_ENDPOINT_URL }}
+      R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: auto
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v8.2.0
+      - name: Set up Python
+        run: uv python install 3.12
+      - name: Install build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake ninja-build
+      - name: Restore GitHub WASM OCCT cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            .deps/emsdk
+            .deps/occt-src
+            .deps/occt-wasm-build
+            .deps/occt-wasm-install
+          key: wasm-occt-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/build_wasm.py', 'scripts/build_occt.py', 'scripts/occt_binary_cache.py', 'third_party/rapidjson/**') }}
+          restore-keys: |
+            wasm-occt-${{ runner.os }}-${{ runner.arch }}-
+            wasm-${{ runner.os }}-${{ runner.arch }}-
+      - name: Build or restore WASM OCCT and upload to R2
+        shell: pwsh
+        run: |
+          $mode = if ("${{ inputs.force_source_build }}" -eq "true") { "off" } else { "auto" }
+          uv run python scripts/build_wasm.py --occt-only --occt-binary-cache $mode --upload-occt-binary-cache

@@ -21,14 +21,15 @@ Options considered:
 `scripts/build_wasm.py` manages the full WASM toolchain:
 
 1. Clones emsdk into `.deps/emsdk/` and installs a pinned Emscripten version.
-2. Cross-compiles OCCT to WASM static libraries
-   (`.deps/occt-wasm-install/`).
+2. Restores prebuilt OCCT WASM static libraries from the optional R2 dependency
+   cache, or cross-compiles OCCT to `.deps/occt-wasm-install/`.
 3. Cross-compiles Geometer against the WASM OCCT build.
 4. Copies the Node CLI and browser C ABI WASM outputs to grouped
    `dist/wasm/<target>/` folders.
 
-OCCT source is shared with the native `build_occt.py` flow. RapidJSON is
-vendored under `third_party/rapidjson` and passed to OCCT during configure.
+OCCT source is shared with the native `build_occt.py` flow when a source build
+is needed. RapidJSON is vendored under `third_party/rapidjson` and passed to
+OCCT during configure.
 
 ## WASM Build Specifics
 
@@ -59,5 +60,5 @@ python scripts/build_wasm.py --clean
 ## Consequences
 
 - `.deps/emsdk/` is about 1.5 GB on disk.
-- OCCT WASM build takes about 15-20 minutes the first time.
-- Total first-time WASM setup is about 20-30 minutes.
+- OCCT WASM source builds take about 15-20 minutes on a cold cache.
+- Total first-time WASM setup is about 20-30 minutes without an OCCT cache hit.

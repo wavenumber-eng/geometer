@@ -21,7 +21,7 @@ Native platform directory names use:
 
 - `windows-x64`
 - `linux-x64`
-- `macos-x64`
+- `linux-arm64`
 - `macos-arm64`
 
 Root-level build artifacts are intentionally not produced. Source-checkout
@@ -32,3 +32,7 @@ Do not commit local generated build state:
 - `.deps/`
 - `build/`
 - `build-wasm/`
+
+OCCT binary dependency archives may be stored in the Wavenumber R2 build
+dependency cache, but they remain generated dependency state. They are restored
+under `.deps/` and are not committed to `dist/`.

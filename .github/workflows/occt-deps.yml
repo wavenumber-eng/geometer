@@ -23,6 +23,9 @@ name: OCCT Dependency Cache
 permissions:
   contents: read
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
 concurrency:
   group: occt-deps-${{ github.ref }}-${{ inputs.target }}
   cancel-in-progress: false

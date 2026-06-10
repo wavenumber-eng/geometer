@@ -252,6 +252,17 @@ class MainWindow(QMainWindow):
     def show_status(self, message: str) -> None:
         self.statusBar().showMessage(message)
 
+    def document_mutated(self) -> None:
+        """A tool changed the B-rep: re-render and refresh dependent state,
+        keeping the current camera."""
+        if self.document is None:
+            return
+        self.scene.rebuild(self.document)
+        self._refresh_info()
+        for index, tool in enumerate(self.tools):
+            if index != self.current_tool_index:
+                tool.on_document_changed()
+
     def _refresh_info(self) -> None:
         if self.document is None:
             self.info_label.setText("No file loaded.")
@@ -265,12 +276,11 @@ class MainWindow(QMainWindow):
             f"edges   {info.edge_count}",
             f"verts   {info.vertex_count}",
         ]
-        if self.model_bounds is not None:
-            size = self.model_bounds.bounds.get("size")
-            units = self.model_bounds.units or "mm"
-            if size:
-                lines.append(
-                    f"size    {size[0]:.3f} x {size[1]:.3f} x {size[2]:.3f} {units}"
-                )
+        units = (self.model_bounds.units if self.model_bounds else None) or "mm"
+        xmin, xmax, ymin, ymax, zmin, zmax = info.bounds
+        lines.append(
+            f"size    {xmax - xmin:.3f} x {ymax - ymin:.3f} x {zmax - zmin:.3f} {units}"
+        )
+        lines.append(f"z range [{zmin:.3f}, {zmax:.3f}]")
         lines.append(f"output  {conditioned_path(info.path).name}")
         self.info_label.setText("\n".join(lines))

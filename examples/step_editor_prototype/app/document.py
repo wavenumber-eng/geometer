@@ -18,6 +18,8 @@ import numpy as np
 from OCP.Bnd import Bnd_Box
 from OCP.BRep import BRep_Tool
 from OCP.BRepBndLib import BRepBndLib
+from OCP.BRepBuilderAPI import BRepBuilderAPI_Transform
+from OCP.gp import gp_Trsf
 from OCP.BRepGProp import BRepGProp
 from OCP.BRepMesh import BRepMesh_IncrementalMesh
 from OCP.GProp import GProp_GProps
@@ -227,6 +229,16 @@ def tessellate_body(
     )
 
 
+def _carry_face_colors(previous: BodyMesh | None, current: BodyMesh) -> None:
+    """Re-tessellation drops XCAF colour lookups (the source document is
+    gone), but face ids are stable across rigid transforms, so reuse the
+    colours harvested at load time."""
+    if previous is None or current.face_colors:
+        return
+    if previous.face_count == current.face_count:
+        current.face_colors = dict(previous.face_colors)
+
+
 def _read_file_schema(path: Path) -> str:
     try:
         head = path.read_text(encoding="utf-8", errors="replace")[:4096]
@@ -303,12 +315,36 @@ class EditorDocument:
     def remesh_all(self, color_tool=None) -> None:
         deflection = preview_deflection(self.bounds())
         for body in self.bodies:
+            previous = body.mesh
             body.mesh = tessellate_body(body.solid, deflection, color_tool)
+            _carry_face_colors(previous, body.mesh)
 
     def remesh_body(self, body_index: int) -> None:
         deflection = preview_deflection(self.bounds())
         body = self.bodies[body_index]
+        previous = body.mesh
         body.mesh = tessellate_body(body.solid, deflection)
+        _carry_face_colors(previous, body.mesh)
+
+    # ------------------------------------------------------------- mutation
+
+    def apply_trsf(self, matrix) -> None:
+        """Apply a rigid 4x4 transform (row-major, numpy or nested lists) to
+        every body. Topology is preserved, so face ids — and therefore pin
+        face references and face colours — stay valid."""
+        m = np.asarray(matrix, dtype=np.float64)
+        if m.shape != (4, 4):
+            raise ValueError("apply_trsf expects a 4x4 matrix")
+        trsf = gp_Trsf()
+        trsf.SetValues(
+            m[0, 0], m[0, 1], m[0, 2], m[0, 3],
+            m[1, 0], m[1, 1], m[1, 2], m[1, 3],
+            m[2, 0], m[2, 1], m[2, 2], m[2, 3],
+        )
+        for body in self.bodies:
+            builder = BRepBuilderAPI_Transform(body.solid, trsf, True)
+            body.solid = builder.Shape()
+        self.remesh_all()
 
     # ----------------------------------------------------------------- query
 

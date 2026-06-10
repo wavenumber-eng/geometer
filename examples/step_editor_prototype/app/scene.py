@@ -219,3 +219,60 @@ class SceneManager:
             self.plotter.remove_actor("highlight-face", render=False)
         except Exception:
             pass
+
+    # -------------------------------------------------------------- overlays
+
+    def set_markers(
+        self,
+        points,
+        *,
+        name: str = "pick-markers",
+        color: str = "#e8443a",
+        point_size: float = 16.0,
+    ) -> None:
+        self.remove_overlay(name)
+        points = np.asarray(points, dtype=np.float64).reshape(-1, 3)
+        if len(points) == 0:
+            self.plotter.render()
+            return
+        cloud = pv.PolyData(points)
+        self.plotter.add_mesh(
+            cloud,
+            color=color,
+            point_size=point_size,
+            render_points_as_spheres=True,
+            lighting=False,
+            name=name,
+        )
+        self.plotter.render()
+
+    def show_triad(self, origin, x_dir, y_dir, z_dir, scale: float) -> None:
+        """Preview axes for a frame definition (e.g. the Z-sit plane)."""
+        origin = np.asarray(origin, dtype=np.float64)
+        for suffix, direction, color in (
+            ("x", x_dir, "#d62828"),
+            ("y", y_dir, "#2a9d2a"),
+            ("z", z_dir, "#1f5fd6"),
+        ):
+            name = f"triad-{suffix}"
+            self.remove_overlay(name)
+            arrow = pv.Arrow(
+                start=origin,
+                direction=np.asarray(direction, dtype=np.float64),
+                scale=scale,
+                tip_radius=0.06,
+                shaft_radius=0.025,
+            )
+            self.plotter.add_mesh(arrow, color=color, lighting=False, name=name)
+        self.plotter.render()
+
+    def clear_triad(self) -> None:
+        for suffix in ("x", "y", "z"):
+            self.remove_overlay(f"triad-{suffix}")
+        self.plotter.render()
+
+    def remove_overlay(self, name: str) -> None:
+        try:
+            self.plotter.remove_actor(name, render=False)
+        except Exception:
+            pass

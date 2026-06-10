@@ -5,7 +5,9 @@ from __future__ import annotations
 
 from .base import ToolMode
 from .inspect_tool import InspectTool
+from .zsit import ZSitTool
 
 TOOL_CLASSES: list[type[ToolMode]] = [
     InspectTool,
+    ZSitTool,
 ]

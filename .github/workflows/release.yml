@@ -189,7 +189,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG_NAME: ${{ github.ref_name }}
         run: |
-          find out/release -type f -print0 | xargs -0 gh release upload "$TAG_NAME" --clobber
+          find out/release -type f -print0 | xargs -0 gh release upload "$TAG_NAME" --repo "$GITHUB_REPOSITORY" --clobber
 
   pypi:
     name: PyPI trusted publish

@@ -218,11 +218,14 @@ def package_build_env() -> dict[str, str]:
 
 
 def validate_wheel_platform_tag(wheel: Path) -> None:
-    if sys.platform != "darwin":
+    if sys.platform == "darwin":
+        expected = expected_macos_wheel_platform_tag()
+    elif sys.platform.startswith("linux"):
+        expected = expected_linux_wheel_platform_tag()
+    else:
         return
-    expected = expected_macos_wheel_platform_tag()
     if expected not in wheel.name:
-        raise RuntimeError(f"Expected macOS wheel tag {expected} in {wheel.name}")
+        raise RuntimeError(f"Expected wheel tag {expected} in {wheel.name}")
 
 
 def validate_macos_dist_executable(target: str) -> None:
@@ -255,12 +258,31 @@ def expected_macos_wheel_platform_tag() -> str:
     return f"macosx_{major}_{0 if major >= 11 else minor}_{arch}"
 
 
+def expected_linux_wheel_platform_tag() -> str:
+    libc_name, libc_version = platform.libc_ver()
+    if libc_name != "glibc" or not libc_version:
+        raise RuntimeError(f"Linux wheels require glibc for PyPI publishing, got {libc_name or 'unknown'} {libc_version}")
+    major, minor = version_pair(libc_version)
+    return f"manylinux_{major}_{minor}_{linux_wheel_arch()}"
+
+
 def macos_wheel_arch() -> str:
     machine = platform.machine().strip().lower()
     if machine in {"aarch64", "arm64"}:
         return "arm64"
     if machine in {"amd64", "x86_64"}:
         return "x86_64"
+    return machine or "unknown"
+
+
+def linux_wheel_arch() -> str:
+    machine = platform.machine().strip().lower()
+    if machine in {"amd64", "x86_64"}:
+        return "x86_64"
+    if machine in {"aarch64", "arm64"}:
+        return "aarch64"
+    if machine in {"i386", "i686", "x86"}:
+        return "i686"
     return machine or "unknown"
 
 

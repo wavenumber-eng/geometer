@@ -20,7 +20,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from ..pins import grow_pin_regions, mesh_region_centroid
+from ..pins import dominant_face_color, grow_pin_regions, mesh_region_centroid
 from .base import ToolMode, make_apply_button
 
 
@@ -163,6 +163,40 @@ class SeparateUnibodyTool(ToolMode):
 
         before = len(document.bodies)
         window = self.ctx.window
+
+        # The split re-tessellates with new face ids, so the original per-face
+        # colours can't survive as faces — carry them as BODY colours instead:
+        # each pin body takes its region's dominant colour, the package the
+        # dominant of what remains.
+        grown_list = list(self._grown)
+        pin_region_colors: list = []
+        for pin, region in zip(registry.pins, grown_list):
+            color = None
+            if region:
+                by_body: dict[int, list[int]] = {}
+                for body_index, face_index in region:
+                    by_body.setdefault(body_index, []).append(face_index)
+                for body_index, faces in by_body.items():
+                    color = dominant_face_color(
+                        document.bodies[body_index].mesh, faces
+                    )
+                    if color:
+                        break
+            pin_region_colors.append(color)
+        all_region_faces: dict[int, set[int]] = {}
+        for region in regions:
+            for body_index, face_index in region:
+                all_region_faces.setdefault(body_index, set()).add(face_index)
+        remainder_colors = {
+            body_index: dominant_face_color(
+                document.bodies[body_index].mesh,
+                [f for f in range(1, document.bodies[body_index].mesh.face_count + 1)
+                 if f not in faces],
+            )
+            for body_index, faces in all_region_faces.items()
+        }
+        old_records = {id(body) for body in document.bodies}
+
         try:
             pin_indices = document.split_by_face_regions(
                 regions, progress=window.progress
@@ -184,7 +218,7 @@ class SeparateUnibodyTool(ToolMode):
             new_centroids = np.asarray(new_centroids)
 
             matched = 0
-            for pin in registry.pins:
+            for pin_index, pin in enumerate(registry.pins):
                 if not pin.face_ids or not len(new_centroids):
                     continue
                 distances = np.linalg.norm(
@@ -196,7 +230,24 @@ class SeparateUnibodyTool(ToolMode):
                 pin.face_ids = []
                 document.bodies[body_index].name = pin.name or f"PIN_{pin.number}"
                 document.bodies[body_index].role = "pin"
+                region_color = (
+                    pin_region_colors[pin_index]
+                    if pin_index < len(pin_region_colors) else None
+                )
+                if region_color is not None:
+                    document.bodies[body_index].color = region_color
                 matched += 1
+
+            # Package pieces (newly created, not pins) inherit the dominant
+            # colour of the faces that were NOT part of any pin region.
+            fallback = next(
+                (c for c in remainder_colors.values() if c is not None), None
+            )
+            for body_index, body in enumerate(document.bodies):
+                if id(body) in old_records or body_index in set(pin_indices):
+                    continue
+                if body.color is None and fallback is not None:
+                    body.color = fallback
 
             self.ctx.journal.record(
                 tool=self.id,

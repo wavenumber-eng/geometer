@@ -299,6 +299,23 @@ def mesh_face_areas(mesh: BodyMesh) -> dict[int, float]:
     return result
 
 
+def dominant_face_color(mesh: BodyMesh, face_ids=None):
+    """Area-weighted dominant colour among the given faces (all faces when
+    None). None if none of them carry a colour."""
+    if mesh is None or not mesh.face_colors:
+        return None
+    areas = mesh_face_areas(mesh)
+    targets = face_ids if face_ids is not None else list(areas)
+    weights: dict[tuple, float] = {}
+    for face_id in targets:
+        rgb = mesh.face_colors.get(face_id)
+        if rgb is not None:
+            weights[tuple(rgb)] = weights.get(tuple(rgb), 0.0) + areas.get(face_id, 0.0)
+    if not weights:
+        return None
+    return max(weights, key=weights.get)
+
+
 def grow_pin_regions(
     document: EditorDocument,
     pins: list[Pin],

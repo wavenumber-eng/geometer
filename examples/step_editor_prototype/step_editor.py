@@ -17,7 +17,6 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_STEP = ROOT / "tests" / "fixtures" / "step" / "embedded_models" / "SOIC-20-300.STEP"
 
 
 def main() -> int:
@@ -43,10 +42,10 @@ def main() -> int:
     from app.app_window import MainWindow
     from app.style import apply_wavenumber_style
 
-    step_path = Path(args.step) if args.step else DEFAULT_STEP
+    step_path = Path(args.step) if args.step else None
     app = QApplication.instance() or QApplication(sys.argv[:1])
     apply_wavenumber_style(app)
-    window = MainWindow(step_path if step_path.is_file() else None)
+    window = MainWindow(step_path if step_path and step_path.is_file() else None)
     window.show()
     return int(app.exec())
 

@@ -8,7 +8,7 @@ from pathlib import Path
 
 import geometer
 import numpy as np
-from PySide6.QtCore import QObject, QRunnable, Qt, QThreadPool, Signal
+from PySide6.QtCore import QObject, QRunnable, QSettings, Qt, QThreadPool, Signal
 from PySide6.QtGui import QKeySequence, QPixmap, QShortcut
 from PySide6.QtWidgets import (
     QApplication,
@@ -42,6 +42,7 @@ HERE = Path(__file__).resolve().parent.parent
 # White version generated from WN3D_LOGO.png for the dark theme.
 LOGO_CANDIDATES = [HERE / "wn3d_logo_white.png", HERE / "WN3D_LOGO.png", HERE / "wn3d_logo.png"]
 LOGO_PATH = next((p for p in LOGO_CANDIDATES if p.is_file()), LOGO_CANDIDATES[0])
+DEFAULT_OPEN_DIR = HERE / "TEST_STEP_FILES"
 CAMERA_BUTTONS = ["iso", "top", "bottom", "front", "back", "left", "right"]
 
 
@@ -249,12 +250,24 @@ class MainWindow(QMainWindow):
     # ------------------------------------------------------------------- load
 
     def open_step_dialog(self) -> None:
-        start_dir = str(self.document.path.parent) if self.document else str(HERE)
         file_name, _filter = QFileDialog.getOpenFileName(
-            self, "Open STEP", start_dir, "STEP files (*.step *.stp);;All files (*.*)"
+            self,
+            "Open STEP",
+            self._open_dir(),
+            "STEP files (*.step *.stp);;All files (*.*)",
         )
         if file_name:
-            self.load_step(Path(file_name))
+            path = Path(file_name)
+            QSettings("Wavenumber", "StepEditor").setValue("open_dir", str(path.parent))
+            self.load_step(path)
+
+    def _open_dir(self) -> str:
+        """Last folder the user opened from; defaults to TEST_STEP_FILES."""
+        saved = QSettings("Wavenumber", "StepEditor").value("open_dir")
+        for candidate in (saved, DEFAULT_OPEN_DIR, HERE):
+            if candidate and Path(candidate).is_dir():
+                return str(candidate)
+        return str(HERE)
 
     def load_step(self, path: Path) -> None:
         self.show_status(f"Loading {path.name} ...")

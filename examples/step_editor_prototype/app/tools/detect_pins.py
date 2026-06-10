@@ -518,9 +518,10 @@ class DetectPinsTool(ToolMode):
         }
         grid_like = bool(grid_anchors)
         numeric = not grid_like and bool(numeric_anchors)
+        conflicting: list = []
         try:
             if grid_like:
-                names = predict_grid_names(pins, grid_anchors)
+                names = predict_grid_names(pins, grid_anchors, outliers=conflicting)
                 # anchors (and any custom-named pins) keep what the user
                 # typed; prediction fills in every non-anchored pin
                 for index, pin in enumerate(pins):
@@ -538,6 +539,11 @@ class DetectPinsTool(ToolMode):
                     f"{predicted} non-anchored pin(s) predicted from "
                     f"{len(grid_anchors)} anchor(s)"
                 )
+                if conflicting:
+                    outcome += (
+                        f" — majority fit used; CHECK anchor(s) "
+                        f"{', '.join(conflicting[:6])}"
+                    )
                 if unknown:
                     outcome += f" ({unknown} flagged '?' — check or delete those)"
             elif numeric:

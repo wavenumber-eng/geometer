@@ -547,69 +547,67 @@ def cluster_ordinals(values) -> np.ndarray:
 
 def _solve_axis(
     anchor_pairs, *, default_sign: int, base: int, count: int, axis: str = "axis"
-) -> tuple[int, int]:
-    """Fit target = sign*cluster + offset from anchors; without anchors (or
-    with ambiguous ones) fall back to the default orientation. anchor_pairs
-    items are (cluster, target, label) — labels make conflicts reportable."""
+) -> tuple[int, int, list[str]]:
+    """Fit target = sign*cluster + offset from anchors by MAJORITY: the
+    orientation most anchors agree on wins; disagreeing anchors are returned
+    as outlier labels instead of failing the whole prediction. Without
+    anchors, the default orientation is used."""
     if not anchor_pairs:
         offset = base if default_sign > 0 else base + count - 1
-        return default_sign, offset
-    solutions = []
-    best_outliers: list[str] | None = None
+        return default_sign, offset, []
+    candidates = []
     for sign in (1, -1):
         offsets: dict[int, list[str]] = {}
         for cluster, target, label in anchor_pairs:
             offsets.setdefault(target - sign * cluster, []).append(label)
-        if len(offsets) == 1:
-            solutions.append((sign, next(iter(offsets))))
-        else:
-            majority = max(offsets.values(), key=len)
-            outliers = [
-                label
-                for group in offsets.values()
-                if group is not majority
-                for label in group
-            ]
-            if best_outliers is None or len(outliers) < len(best_outliers):
-                best_outliers = outliers
-    if not solutions:
-        suspects = ", ".join((best_outliers or [])[:6]) or "?"
-        raise ValueError(
-            f"{axis} anchors disagree — no single orientation fits; "
-            f"check pin(s) named {suspects}"
-        )
+        best_offset = max(offsets, key=lambda off: len(offsets[off]))
+        outliers = [
+            label
+            for off, labels in offsets.items()
+            if off != best_offset
+            for label in labels
+        ]
+        candidates.append((sign, best_offset, outliers))
 
-    def lowest_ordinal(solution) -> int:
-        sign, offset = solution
+    def lowest_ordinal(candidate) -> int:
+        sign, offset, _ = candidate
         return min(sign * cluster + offset for cluster in range(count))
 
-    # A single anchor satisfies both directions; prefer the one whose grid
-    # starts at A / 1 (chips almost always do), then the default orientation.
-    solutions.sort(
-        key=lambda solution: (lowest_ordinal(solution) != base,
-                              solution[0] != default_sign)
+    # Most agreeing anchors first; then grids starting at A/1; then default.
+    candidates.sort(
+        key=lambda c: (len(c[2]), lowest_ordinal(c) != base, c[0] != default_sign)
     )
-    return solutions[0]
+    return candidates[0]
 
 
-def predict_grid_names(pins: list[Pin], anchors: dict[int, str]) -> dict[int, str]:
+def predict_grid_names(
+    pins: list[Pin], anchors: dict[int, str], outliers: list | None = None
+) -> dict[int, str]:
     """BGA grid naming (A1, A2, ... B1, ...) from ball positions. `anchors`
-    (pin index -> name) are ground truth: they fix the row-letter and
-    column-number directions — and even which world axis carries the letters:
-    if the default (letters along Y) cannot satisfy the anchors, the swapped
-    assignment (letters along X) is tried before failing."""
-    errors: list[ValueError] = []
+    (pin index -> name) are ground truth by MAJORITY: the axis assignment and
+    orientation most anchors agree on wins (letters along Y is tried first,
+    then along X), and any anchors that contradict the majority are appended
+    to `outliers` (when given) so the user can fix those names."""
+    attempts = []
     for row_axis, col_axis in ((1, 0), (0, 1)):
         try:
-            return _predict_grid_with_axes(pins, anchors, row_axis, col_axis)
-        except ValueError as exc:
-            errors.append(exc)
-    raise errors[0]
+            attempts.append(
+                _predict_grid_with_axes(pins, anchors, row_axis, col_axis)
+            )
+        except ValueError:
+            continue
+    if not attempts:
+        raise ValueError("no grid orientation fits these pins")
+    attempts.sort(key=lambda a: len(a[1]))  # fewest disagreeing anchors wins
+    names, bad = attempts[0]
+    if outliers is not None:
+        outliers.extend(bad)
+    return names
 
 
 def _predict_grid_with_axes(
     pins: list[Pin], anchors: dict[int, str], row_axis: int, col_axis: int
-) -> dict[int, str]:
+) -> tuple[dict[int, str], list[str]]:
     centroids = np.array([pin.centroid for pin in pins], dtype=np.float64)
     rows = cluster_ordinals(centroids[:, row_axis])
     cols = cluster_ordinals(centroids[:, col_axis])
@@ -623,12 +621,13 @@ def _predict_grid_with_axes(
         row_anchors.append((int(rows[index]), letter_ordinal, name))
         col_anchors.append((int(cols[index]), column, name))
 
-    row_sign, row_offset = _solve_axis(
+    row_sign, row_offset, row_outliers = _solve_axis(
         row_anchors, default_sign=-1, base=0, count=int(rows.max()) + 1, axis="row-letter"
     )
-    col_sign, col_offset = _solve_axis(
+    col_sign, col_offset, col_outliers = _solve_axis(
         col_anchors, default_sign=1, base=1, count=int(cols.max()) + 1, axis="column"
     )
+    outliers = sorted(set(row_outliers) | set(col_outliers))
 
     names: dict[int, str] = {}
     for index in range(len(pins)):
@@ -649,7 +648,7 @@ def _predict_grid_with_axes(
             names[index] = f"?{index + 1}"
         else:
             seen[name] = index
-    return names
+    return names, outliers
 
 
 def predict_serpentine_order(pins: list[Pin], anchors: dict[int, int]) -> list[int] | None:

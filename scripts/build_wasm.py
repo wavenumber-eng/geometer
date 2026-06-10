@@ -135,8 +135,29 @@ def verify_vendored_rapidjson() -> None:
         raise RuntimeError(
             "Vendored RapidJSON is missing Geometer's modern Clang "
             "compatibility patch."
-        )
+    )
     print(f"Using vendored RapidJSON at {RAPIDJSON_SRC}")
+
+
+def patch_occt_wasm_install_rules() -> None:
+    """Allow OCCT's Emscripten helper executables to omit .wasm side files."""
+    toolkit_cmake = OCCT_SRC / "adm" / "cmake" / "occt_toolkit.cmake"
+    text = toolkit_cmake.read_text(encoding="utf-8")
+    original = (
+        '    install(FILES ${CMAKE_BINARY_DIR}/${OS_WITH_BIT}/${COMPILER}/bin\\${OCCT_INSTALL_BIN_LETTER}/${PROJECT_NAME}.wasm '
+        'DESTINATION "${INSTALL_DIR_BIN}/${OCCT_INSTALL_BIN_LETTER}")'
+    )
+    patched = (
+        '    install(FILES ${CMAKE_BINARY_DIR}/${OS_WITH_BIT}/${COMPILER}/bin\\${OCCT_INSTALL_BIN_LETTER}/${PROJECT_NAME}.wasm '
+        'DESTINATION "${INSTALL_DIR_BIN}/${OCCT_INSTALL_BIN_LETTER}" OPTIONAL)'
+    )
+    if patched in text:
+        print("OCCT WASM install rules already patched.")
+        return
+    if original not in text:
+        raise RuntimeError(f"OCCT WASM install rule not found in {toolkit_cmake}")
+    toolkit_cmake.write_text(text.replace(original, patched), encoding="utf-8", newline="\n")
+    print("Patched OCCT WASM install rules for optional executable side modules.")
 
 
 # ---- OCCT WASM build ----
@@ -281,6 +302,7 @@ def main() -> None:
     install_emsdk()
     verify_vendored_rapidjson()
     clone_source("OCCT", OCCT_SRC, OCCT_REPO, OCCT_TAG, "CMakeLists.txt")
+    patch_occt_wasm_install_rules()
     build_occt_wasm()
     build_geometer_wasm()
 

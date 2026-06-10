@@ -104,9 +104,9 @@ class HitboxTool(ToolMode):
         all_button.clicked.connect(self._auto_all)
         clear_button = QPushButton("Clear hitbox")
         clear_button.clicked.connect(self._clear_selected)
-        action_row.addWidget(auto_button)
-        action_row.addWidget(all_button)
-        action_row.addWidget(clear_button)
+        for button in (auto_button, all_button, clear_button):
+            button.setMinimumWidth(36)  # let the panel compress to 1/3 width
+            action_row.addWidget(button)
         layout.addLayout(action_row)
 
         self.click_label = QLabel("")

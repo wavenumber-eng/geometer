@@ -179,12 +179,15 @@ class MainWindow(QMainWindow):
         right_layout.addWidget(info_header)
         right_layout.addWidget(self.info_label, 0)
 
+        right_panel.setMinimumWidth(280)
         splitter = QSplitter(Qt.Orientation.Horizontal)
         splitter.addWidget(self.plotter.interactor)
         splitter.addWidget(right_panel)
-        splitter.setStretchFactor(0, 3)
+        splitter.setStretchFactor(0, 2)
         splitter.setStretchFactor(1, 1)
-        splitter.setSizes([900, 360])
+        splitter.setCollapsible(0, False)
+        self._splitter = splitter
+        self._splitter_initialized = False
 
         central = QWidget()
         layout = QVBoxLayout(central)
@@ -316,6 +319,14 @@ class MainWindow(QMainWindow):
         size = self.plotter.interactor.size()
         aspect = max(float(size.width()) / max(float(size.height()), 1.0), 0.01)
         self.scene.snap_camera(view_id, bounds, aspect)
+
+    def showEvent(self, event) -> None:
+        super().showEvent(event)
+        if not self._splitter_initialized:
+            self._splitter_initialized = True
+            # 3D edit view gets 2/3 of the width, the tool panel 1/3.
+            width = max(self._splitter.width(), 1)
+            self._splitter.setSizes([(width * 2) // 3, width // 3])
 
     def show_status(self, message: str) -> None:
         self.statusBar().showMessage(message)

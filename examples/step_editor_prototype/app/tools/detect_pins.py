@@ -108,6 +108,7 @@ class DetectPinsTool(ToolMode):
             ("Clear", self._clear),
         ):
             button = QPushButton(label)
+            button.setMinimumWidth(36)  # let the panel compress to 1/3 width
             button.clicked.connect(handler)
             edit_row.addWidget(button)
         layout.addLayout(edit_row)

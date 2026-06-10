@@ -82,7 +82,7 @@ jobs:
       - name: Build wheel
         run: uv run --group dev python -m build --wheel --outdir out/wheelhouse
       - name: Check wheel
-        run: uv run --group dev twine check out/wheelhouse/*
+        run: uv run --group dev twine check out/wheelhouse/*.whl
       - name: Upload wheel artifact
         uses: actions/upload-artifact@v4
         with:

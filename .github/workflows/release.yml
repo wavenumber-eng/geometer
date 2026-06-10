@@ -94,7 +94,7 @@ jobs:
         run: uv run --group dev python -m build --wheel --outdir out/wheelhouse
 
       - name: Check wheel metadata
-        run: uv run --group dev twine check out/wheelhouse/*
+        run: uv run --group dev twine check out/wheelhouse/*.whl
 
       - name: Package native dist
         run: python -c "import pathlib, shutil; pathlib.Path('out').mkdir(exist_ok=True); shutil.make_archive('out/native-${{ matrix.platform }}', 'zip', 'dist/native/${{ matrix.platform }}')"

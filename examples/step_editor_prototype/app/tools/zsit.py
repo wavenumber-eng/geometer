@@ -96,10 +96,26 @@ Z_COLOR = "#1f5fd6"       # 4th pick + Z arrows: BLUE
 
 
 def rect_corners(p1, p2, p3) -> np.ndarray:
-    """The seating rectangle through the three picks: p1 is the shared
-    corner, the 4th corner is inferred as p2 + p3 - p1 (parallelogram)."""
+    """The seating rectangle: a true rectangle in the picked plane — the
+    in-plane bounding box of the three picks, sides aligned with the p1->p2
+    direction. Raises ValueError for collinear picks."""
     a, b, c = (np.asarray(p, dtype=np.float64) for p in (p1, p2, p3))
-    return np.array([a, b, b + c - a, c])
+    normal = np.cross(b - a, c - a)
+    length = float(np.linalg.norm(normal))
+    if length < _EPS:
+        raise ValueError("the three plane picks are collinear")
+    normal /= length
+    x_axis = _in_plane_axis(a, b, c, normal)
+    y_axis = np.cross(normal, x_axis)
+    uv = np.array([[(p - a) @ x_axis, (p - a) @ y_axis] for p in (a, b, c)])
+    u_min, v_min = uv.min(axis=0)
+    u_max, v_max = uv.max(axis=0)
+    return np.array(
+        [
+            a + u * x_axis + v * y_axis
+            for u, v in ((u_min, v_min), (u_max, v_min), (u_max, v_max), (u_min, v_max))
+        ]
+    )
 
 
 class ZSitTool(ToolMode):
@@ -247,7 +263,12 @@ class ZSitTool(ToolMode):
         self.points_label.setText("\n".join(lines) if lines else "No points picked.")
         self.status(f"Z-Sit: {PICK_PROMPTS[min(len(self.points), 4)]}")
 
-        corners = rect_corners(*self.points[:3]) if len(self.points) >= 3 else []
+        corners = []
+        if len(self.points) >= 3:
+            try:
+                corners = rect_corners(*self.points[:3])
+            except ValueError:
+                self.status("Z-Sit: picks are collinear — pick a wider triangle")
         scene.show_quad(corners, name="zsit-rect", color=PLANE_COLOR, opacity=0.25)
 
         scene.clear_triad()

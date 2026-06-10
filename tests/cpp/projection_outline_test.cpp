@@ -146,7 +146,7 @@ void representative_outlines_are_closed()
         std::size_t expected_segments;
     };
     const Case cases[] = {
-        {"TSOT-23-5.STEP", "top", 98},
+        {"TSOT-23-5.STEP", "top", 94},
         {"TSOT-23-5.STEP", "front", 73},
         {"SOT-23.STEP", "front", 16},
         {"sot223.stp", "front", 20},

@@ -1225,7 +1225,7 @@ wheels = [
 
 [[package]]
 name = "wn-geometer"
-version = "2026.6.9"
+version = "2026.6.10"
 source = { editable = "../../" }
 
 [package.metadata]
@@ -1233,6 +1233,8 @@ source = { editable = "../../" }
 [package.metadata.requires-dev]
 dev = [
     { name = "build", specifier = ">=1.2.0" },
+    { name = "clang-format", specifier = ">=22.1.5" },
+    { name = "lizard", specifier = ">=1.17.10" },
     { name = "pyright", specifier = ">=1.1.390" },
     { name = "pytest", specifier = ">=8.0.0" },
     { name = "ruff", specifier = ">=0.8.0" },

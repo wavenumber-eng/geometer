@@ -26,6 +26,7 @@ imgui.ini
 __pycache__/
 *.pyc
 .venv/
+.venv-wsl/
 *.egg-info/
 
 # Rack results

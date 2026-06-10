@@ -92,5 +92,7 @@ python scripts\build_occt.py --print-binary-cache-key
 python scripts\build_wasm.py --print-occt-binary-cache-key
 ```
 
-Set R2 credentials in local `.env` only. Normal CI consumes the cache; the
-manual `OCCT Dependency Cache` GitHub workflow publishes cache archives.
+Set R2 credentials in shell environment variables or a temporary local `.env`
+only. Remove or move root `.env` before release signoff. Normal CI consumes the
+cache; the manual `OCCT Dependency Cache` GitHub workflow publishes cache
+archives.

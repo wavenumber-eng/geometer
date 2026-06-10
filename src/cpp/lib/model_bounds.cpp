@@ -280,19 +280,19 @@ int model_bounds_from_bytes(const unsigned char* model_data, std::size_t model_s
 
         const auto bounds_start = std::chrono::high_resolution_clock::now();
         Bnd_Box bounds;
-        BRepBndLib::AddOptimal(shape, bounds, Standard_False, Standard_False);
+        BRepBndLib::AddOptimal(shape, bounds, false, false);
         if (bounds.IsVoid())
         {
             set_status(status, 9, "Model bounds computation produced an empty box.");
             return 9;
         }
 
-        Standard_Real xmin = 0.0;
-        Standard_Real ymin = 0.0;
-        Standard_Real zmin = 0.0;
-        Standard_Real xmax = 0.0;
-        Standard_Real ymax = 0.0;
-        Standard_Real zmax = 0.0;
+        double xmin = 0.0;
+        double ymin = 0.0;
+        double zmin = 0.0;
+        double xmax = 0.0;
+        double ymax = 0.0;
+        double zmax = 0.0;
         bounds.Get(xmin, ymin, zmin, xmax, ymax, zmax);
         timings.bounds_ms = elapsed_ms(bounds_start);
 
@@ -318,7 +318,7 @@ int model_bounds_from_bytes(const unsigned char* model_data, std::size_t model_s
     }
     catch (const Standard_Failure& failure)
     {
-        set_status(status, 7, failure.GetMessageString());
+        set_status(status, 7, failure.what());
         return 7;
     }
     catch (const std::exception& error)

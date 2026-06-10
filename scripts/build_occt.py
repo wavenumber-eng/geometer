@@ -22,10 +22,12 @@ import argparse
 import os
 import platform
 import shutil
+import stat
 import subprocess
 import sys
 from pathlib import Path
 
+import dependency_versions
 import occt_binary_cache
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -39,12 +41,19 @@ RAPIDJSON_PATCH_SENTINEL = (
     "    GenericStringRef& operator=(const GenericStringRef& rhs) = delete;"
 )
 
-OCCT_REPO = "https://github.com/Open-Cascade-SAS/OCCT.git"
-OCCT_TAG = "V7_8_1"
+OCCT_REPO = dependency_versions.OCCT_REPO
+OCCT_TAG = dependency_versions.OCCT_TAG
 DEFAULT_MACOS_DEPLOYMENT_TARGET = "11.0"
 
 
 def cmake_generator_args() -> list[str]:
+    if sys.platform == "win32" and not shutil.which("cl"):
+        machine = platform.machine().strip().lower()
+        if machine in {"amd64", "x86_64"}:
+            return ["-A", "x64"]
+        if machine in {"aarch64", "arm64"}:
+            return ["-A", "ARM64"]
+        return []
     if shutil.which("ninja"):
         return ["-G", "Ninja"]
     return []
@@ -77,6 +86,38 @@ def run(cmd: list[str], **kwargs) -> None:
     subprocess.check_call(cmd, **kwargs)
 
 
+def remove_tree(path: Path) -> None:
+    def handle_remove_error(function, failed_path, _exc_info) -> None:
+        os.chmod(failed_path, stat.S_IWRITE)
+        function(failed_path)
+
+    shutil.rmtree(path, onerror=handle_remove_error)
+
+
+def source_tag(dest: Path) -> str | None:
+    if not (dest / ".git").exists():
+        return None
+    try:
+        return subprocess.check_output(
+            ["git", "-C", str(dest), "describe", "--tags", "--exact-match", "HEAD"],
+            text=True,
+            stderr=subprocess.DEVNULL,
+        ).strip()
+    except subprocess.CalledProcessError:
+        return None
+
+
+def verify_source_tag(dest: Path, expected_tag: str) -> None:
+    current_tag = source_tag(dest)
+    if current_tag == expected_tag:
+        return
+    raise RuntimeError(
+        f"OCCT source at {dest} is not {expected_tag} "
+        f"(found {current_tag or 'unknown'}). Run "
+        "`python scripts\\build_occt.py --clean --clean-source` before rebuilding."
+    )
+
+
 def verify_vendored_rapidjson() -> None:
     document_h = RAPIDJSON_INCLUDE / "document.h"
     if not document_h.exists():
@@ -95,6 +136,7 @@ def verify_vendored_rapidjson() -> None:
 
 def clone_occt() -> None:
     if (OCCT_SRC / "CMakeLists.txt").exists():
+        verify_source_tag(OCCT_SRC, OCCT_TAG)
         print(f"OCCT source already present at {OCCT_SRC}")
         return
     print(f"Cloning OCCT {OCCT_TAG} ...")
@@ -127,6 +169,7 @@ def occt_cache_profile(
     recipe = occt_binary_cache.recipe_hash(
         [
             Path(__file__),
+            ROOT / "scripts" / "dependency_versions.py",
             ROOT / "scripts" / "occt_binary_cache.py",
             RAPIDJSON_SRC,
         ],
@@ -173,7 +216,6 @@ def configure_occt(
         "-DBUILD_MODULE_Draw=OFF",
         "-DBUILD_MODULE_Visualization=OFF",
         "-DBUILD_MODULE_ApplicationFramework=OFF",
-        "-DBUILD_MODULE_DETools=OFF",
         "-DBUILD_YACCLEX=OFF",
         "-DBUILD_DOC_Overview=OFF",
         "-DUSE_FREETYPE=OFF",
@@ -216,7 +258,15 @@ def clean(platform_name: str, *, include_source: bool) -> None:
     for d in targets:
         if d.exists():
             print(f"Removing {d}")
-            shutil.rmtree(d)
+            remove_tree(d)
+
+
+def prepare_source_build(platform_name: str, library_type: str) -> None:
+    build_dir, install_dir = occt_paths(platform_name, library_type)
+    for path in (build_dir, install_dir):
+        if path.exists():
+            print(f"Removing stale OCCT path {path}")
+            remove_tree(path)
 
 
 def macos_deployment_target(configured: str | None) -> str:
@@ -305,16 +355,19 @@ def main() -> None:
         print(f"Using macOS deployment target {macos_deployment_target(args.macos_deployment_target)}")
     verify_vendored_rapidjson()
     _, install_dir = occt_paths(args.platform_tag, args.library_type)
-    if occt_binary_cache.install_ready(install_dir):
+    if occt_binary_cache.install_matches_profile(install_dir, profile):
         print(f"OCCT install already present at {install_dir}")
     elif not occt_binary_cache.restore_prebuilt_install(profile, install_dir, mode=args.binary_cache):
+        prepare_source_build(args.platform_tag, args.library_type)
         clone_occt()
         configure_occt(args.platform_tag, args.config, args.library_type, args.macos_deployment_target)
         build_occt(args.platform_tag, args.config, args.library_type)
         install_occt(args.platform_tag, args.config, args.library_type)
 
-    if not occt_binary_cache.install_ready(install_dir):
-        raise RuntimeError(f"OCCT install did not produce OpenCASCADEConfig.cmake under {install_dir}")
+    if not occt_binary_cache.install_matches_profile(install_dir, profile):
+        expected = occt_binary_cache.occt_version_from_tag(profile.occt_tag)
+        actual = occt_binary_cache.installed_occt_version(install_dir) or "unknown"
+        raise RuntimeError(f"OCCT install under {install_dir} is {actual}, expected {expected}.")
 
     if args.upload_binary_cache:
         occt_binary_cache.upload_prebuilt_install(

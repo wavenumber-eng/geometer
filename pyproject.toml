@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "wn-geometer"
-version = "2026.6.9"
+version = "2026.6.10"
 description = "Python bindings for Geometer CAD geometry operations"
 requires-python = ">=3.10"
 readme = "README.md"
@@ -24,6 +24,8 @@ classifiers = [
 [dependency-groups]
 dev = [
     "build>=1.2.0",
+    "clang-format>=22.1.5",
+    "lizard>=1.17.10",
     "pyright>=1.1.390",
     "pytest>=8.0.0",
     "ruff>=0.8.0",

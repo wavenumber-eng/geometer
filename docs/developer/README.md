@@ -73,12 +73,14 @@ R2 dependency cache. This is a speed optimization only: restored archives are
 validated by manifest and SHA-256, still land under `.deps/`, and source builds
 remain the fallback when the cache is not configured.
 
+For read-only developer machine setup, see
+[r2-dependency-cache.md](r2-dependency-cache.md).
+
 Pinned dependency versions live in scripts:
 
-- OCCT: `scripts/build_occt.py`
+- OCCT and emsdk: `scripts/dependency_versions.py`
 - RapidJSON: `third_party/rapidjson/`
 - Clipper2: `third_party/clipper2/`
-- emsdk: `scripts/build_wasm.py`
 
 ## Workspace Copy Setup
 
@@ -207,6 +209,10 @@ GEOMETER_OCCT_BINARY=auto
 - `off` - ignore R2 and build from source.
 - `only` - require an R2 cache hit and fail otherwise.
 
+Root `.env` is for local development only and must not be present when running
+release signoff or `wn-dev-std check`. Move it to an ignored local location, or
+set the same variables in the shell environment before signoff.
+
 The vendored RapidJSON v1.1.0 copy includes Geometer's small modern Clang
 compatibility patch so OCCT's GLTF toolkit compiles in native and WASM builds.
 
@@ -283,7 +289,7 @@ Before uploading, verify both the filename and the bundled executable:
 
 ```bash
 otool -l dist/native/macos-arm64/geometer | rg -A5 'LC_BUILD_VERSION|LC_VERSION_MIN_MACOSX'
-python -m twine check out/wheelhouse/macos-arm64/wn_geometer-2026.6.9-py3-none-macosx_11_0_arm64.whl
+python -m twine check out/wheelhouse/macos-arm64/wn_geometer-2026.6.10-py3-none-macosx_11_0_arm64.whl
 ```
 
 The Mach-O `minos` value must not be newer than the wheel platform tag. Do not
@@ -303,7 +309,7 @@ upload:
 
 ```bash
 uvx --from auditwheel --with patchelf auditwheel show out/wheelhouse/linux-x64/wn_geometer-*.whl
-uvx --from auditwheel --with patchelf auditwheel repair --plat manylinux_2_39_x86_64 --wheel-dir out/wheelhouse/linux-x64/repaired out/wheelhouse/linux-x64/wn_geometer-2026.6.9-py3-none-linux_x86_64.whl
+uvx --from auditwheel --with patchelf auditwheel repair --plat manylinux_2_39_x86_64 --wheel-dir out/wheelhouse/linux-x64/repaired out/wheelhouse/linux-x64/wn_geometer-2026.6.10-py3-none-linux_x86_64.whl
 ```
 
 The exact manylinux tag is determined by `auditwheel show`; rebuild in an older
@@ -313,21 +319,21 @@ PyPI upload commands:
 
 ```powershell
 # Preflight metadata.
-python -m twine check out\wheelhouse\windows-x64\wn_geometer-2026.6.9-py3-none-win_amd64.whl out\wheelhouse\linux-x64\repaired\wn_geometer-2026.6.9-py3-none-manylinux_2_39_x86_64.whl out\wheelhouse\macos-arm64\wn_geometer-2026.6.9-py3-none-macosx_11_0_arm64.whl
+python -m twine check out\wheelhouse\windows-x64\wn_geometer-2026.6.10-py3-none-win_amd64.whl out\wheelhouse\linux-x64\repaired\wn_geometer-2026.6.10-py3-none-manylinux_2_39_x86_64.whl out\wheelhouse\macos-arm64\wn_geometer-2026.6.10-py3-none-macosx_11_0_arm64.whl
 
 # Optional dry-run project on TestPyPI.
-python -m twine upload --repository testpypi out\wheelhouse\windows-x64\wn_geometer-2026.6.9-py3-none-win_amd64.whl out\wheelhouse\linux-x64\repaired\wn_geometer-2026.6.9-py3-none-manylinux_2_39_x86_64.whl out\wheelhouse\macos-arm64\wn_geometer-2026.6.9-py3-none-macosx_11_0_arm64.whl
+python -m twine upload --repository testpypi out\wheelhouse\windows-x64\wn_geometer-2026.6.10-py3-none-win_amd64.whl out\wheelhouse\linux-x64\repaired\wn_geometer-2026.6.10-py3-none-manylinux_2_39_x86_64.whl out\wheelhouse\macos-arm64\wn_geometer-2026.6.10-py3-none-macosx_11_0_arm64.whl
 
 # Public PyPI release.
-python -m twine upload --repository pypi out\wheelhouse\windows-x64\wn_geometer-2026.6.9-py3-none-win_amd64.whl out\wheelhouse\linux-x64\repaired\wn_geometer-2026.6.9-py3-none-manylinux_2_39_x86_64.whl out\wheelhouse\macos-arm64\wn_geometer-2026.6.9-py3-none-macosx_11_0_arm64.whl
+python -m twine upload --repository pypi out\wheelhouse\windows-x64\wn_geometer-2026.6.10-py3-none-win_amd64.whl out\wheelhouse\linux-x64\repaired\wn_geometer-2026.6.10-py3-none-manylinux_2_39_x86_64.whl out\wheelhouse\macos-arm64\wn_geometer-2026.6.10-py3-none-macosx_11_0_arm64.whl
 ```
 
 For token-based upload, set `TWINE_USERNAME=__token__` and put the PyPI or
 TestPyPI API token in `TWINE_PASSWORD`, or use an equivalent `.pypirc`/keyring
 setup. Do not write upload tokens into the repository.
 
-The current release target is `wn-geometer==2026.6.9`; callers install
-`wn-geometer==2026.6.9` and import `geometer`.
+The current release target is `wn-geometer==2026.6.10`; callers install
+`wn-geometer==2026.6.10` and import `geometer`.
 
 For local token setup, copy `.env.example` to `.env`, fill the token values,
 and keep `.env` out of version control.
@@ -403,13 +409,13 @@ The full browser target also exports `geometer_version_string` and
 `geometer_abi_version`. Downstream browser consumers should check those before
 depending on a specific ABI. Earlier pre-date ABI integers tracked planar batch,
 diagnostic, and triangulation additions; current releases use the ADR 006
-date-based ABI generation, for example `20260609`.
+date-based ABI generation, for example `20260610`.
 
 ## Versioning
 
 Geometer follows [ADR 006](docs/adr/006_date_based_versioning_policy.md).
-The current release identity is `v2026-06-09`; the CMake/PyPI package version
-is `2026.6.9`; the C ABI generation is `20260609`.
+The current release identity is `v2026-06-10`; the CMake/PyPI package version
+is `2026.6.10`; the C ABI generation is `20260610`.
 
 The root `CMakeLists.txt` declares `GEOMETER_RELEASE_DATE`,
 `GEOMETER_RELEASE_VERSION`, and `GEOMETER_ABI_VERSION`. The root
@@ -515,6 +521,9 @@ uv run pytest tests\L99_release -q
 uv run python scripts\validate_native.py
 uv run python scripts\validate_python_package.py
 ```
+
+The L99 release stratum includes Ruff, Pyright, `uv lock --check`,
+clang-format dry-run, Lizard complexity checking, and repository hygiene checks.
 
 ## Common Troubleshooting
 

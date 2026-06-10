@@ -113,7 +113,18 @@ def _linux_wheel_platform_tag() -> str:
     if libc_name != "glibc" or not libc_version:
         raise RuntimeError(f"Linux wheels require glibc for PyPI publishing, got {libc_name or 'unknown'} {libc_version}")
     major, minor = _version_pair(libc_version)
-    return f"manylinux_{major}_{minor}_{_wheel_arch()}"
+    return f"manylinux_{major}_{minor}_{_linux_wheel_arch()}"
+
+
+def _linux_wheel_arch() -> str:
+    machine = platform.machine().strip().lower()
+    if machine in {"amd64", "x86_64"}:
+        return "x86_64"
+    if machine in {"aarch64", "arm64"}:
+        return "aarch64"
+    if machine in {"i386", "i686", "x86"}:
+        return "i686"
+    return machine or "unknown"
 
 
 def _wheel_arch() -> str:

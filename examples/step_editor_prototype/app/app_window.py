@@ -252,8 +252,9 @@ class MainWindow(QMainWindow):
 
     def _apply_tool(self, index: int) -> None:
         tool = self.tools[index]
+        next_tool = self.tools[(index + 1) % len(self.tools)]
         self.actions_stack.setCurrentIndex(index)
-        self.mode_rect.set_current(tool.title, tool.accent)
+        self.mode_rect.set_current(tool.title, tool.accent, next_tool.title)
         tool.enter()
 
     def _route_pick(self, pick) -> None:

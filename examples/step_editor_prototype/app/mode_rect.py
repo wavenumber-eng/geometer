@@ -14,6 +14,7 @@ class ModeRect(QWidget):
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
         self._title = ""
+        self._next_title = ""
         self._accent = QColor("#4477aa")
         self._tools: list[tuple[str, str]] = []  # (id, title)
         self.setMinimumSize(260, 44)
@@ -25,9 +26,10 @@ class ModeRect(QWidget):
     def set_tools(self, tools: list[tuple[str, str]]) -> None:
         self._tools = tools
 
-    def set_current(self, title: str, accent: str) -> None:
+    def set_current(self, title: str, accent: str, next_title: str = "") -> None:
         self._title = title
         self._accent = QColor(accent)
+        self._next_title = next_title
         # Size the rectangle to its text — long tool names must fit.
         title_font = QFont(self.font())
         title_font.setBold(True)
@@ -35,11 +37,14 @@ class ModeRect(QWidget):
         title_width = QFontMetrics(title_font).horizontalAdvance(f"TOOL: {title}")
         hint_font = QFont(self.font())
         hint_font.setPointSizeF(max(hint_font.pointSizeF() - 2.0, 6.5))
-        hint_width = QFontMetrics(hint_font).horizontalAdvance(
-            "click or press Tab to change tool"
-        )
+        hint_width = QFontMetrics(hint_font).horizontalAdvance(self._hint_text())
         self.setMinimumWidth(max(title_width, hint_width) + 48)
         self.update()
+
+    def _hint_text(self) -> str:
+        if self._next_title:
+            return f"Tab ⇥ next: {self._next_title}"
+        return "click or press Tab to change tool"
 
     def paintEvent(self, _event) -> None:
         painter = QPainter(self)
@@ -66,7 +71,7 @@ class ModeRect(QWidget):
         painter.drawText(
             rect.adjusted(12, 0, -12, -4),
             Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignBottom,
-            "click or press Tab to change tool",
+            self._hint_text(),
         )
 
     def mousePressEvent(self, event) -> None:

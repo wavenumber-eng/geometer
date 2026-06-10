@@ -502,6 +502,102 @@ class EditorDocument:
         self.remesh_all()
         return pin_side_indices
 
+    def split_by_face_regions(self, regions: list[list[tuple[int, int]]]) -> list[int]:
+        """Split bodies along detected pin-region boundaries: for each region
+        the boundary loops (edges between region and body faces) are capped
+        with planar faces, and those caps drive BRepAlgoAPI_Splitter — each
+        pin separates as the whole shape the edge flow found. Returns the new
+        body indices that are NOT the largest piece of their split (the pin
+        solids)."""
+        from OCP.ShapeAnalysis import ShapeAnalysis_FreeBounds
+        from OCP.TopTools import TopTools_HSequenceOfShape
+
+        by_body: dict[int, list[set[int]]] = {}
+        for region in regions:
+            if not region:
+                continue
+            groups: dict[int, set[int]] = {}
+            for body_index, face_index in region:
+                groups.setdefault(body_index, set()).add(face_index)
+            for body_index, faces in groups.items():
+                by_body.setdefault(body_index, []).append(faces)
+
+        new_bodies: list[BodyRecord] = []
+        pin_indices: list[int] = []
+        for body_index, body in enumerate(self.bodies):
+            region_sets = by_body.get(body_index)
+            if not region_sets:
+                new_bodies.append(body)
+                continue
+
+            face_map = TopTools_IndexedMapOfShape()
+            TopExp.MapShapes_s(body.solid, TopAbs_FACE, face_map)
+            edge_faces = TopTools_IndexedDataMapOfShapeListOfShape()
+            TopExp.MapShapesAndAncestors_s(body.solid, TopAbs_EDGE, TopAbs_FACE, edge_faces)
+
+            caps = []
+            for region in region_sets:
+                boundary = []
+                for edge_index in range(1, edge_faces.Extent() + 1):
+                    sides = set()
+                    for shape in edge_faces.FindFromIndex(edge_index):
+                        index = face_map.FindIndex(shape)
+                        if index > 0:
+                            sides.add(index in region)
+                    if sides == {True, False}:
+                        boundary.append(TopoDS.Edge_s(edge_faces.FindKey(edge_index)))
+                if not boundary:
+                    continue
+                edges = TopTools_HSequenceOfShape()
+                for edge in boundary:
+                    edges.Append(edge)
+                wires = TopTools_HSequenceOfShape()
+                ShapeAnalysis_FreeBounds.ConnectEdgesToWires_s(edges, 1.0e-7, False, wires)
+                for wire_index in range(1, wires.Length() + 1):
+                    try:
+                        maker = BRepBuilderAPI_MakeFace(
+                            TopoDS.Wire_s(wires.Value(wire_index)), True
+                        )
+                        if maker.IsDone():
+                            caps.append(maker.Face())
+                    except Exception:
+                        continue
+
+            if not caps:
+                new_bodies.append(body)
+                continue
+
+            splitter = BRepAlgoAPI_Splitter()
+            arguments = TopTools_ListOfShape()
+            arguments.Append(body.solid)
+            tools = TopTools_ListOfShape()
+            for cap in caps:
+                tools.Append(cap)
+            splitter.SetArguments(arguments)
+            splitter.SetTools(tools)
+            splitter.Build()
+            solids = list(_iter_solids(splitter.Shape())) if splitter.IsDone() else []
+            if len(solids) <= 1:
+                new_bodies.append(body)
+                continue
+
+            volumes = [shape_volume(solid) or 0.0 for solid in solids]
+            largest = int(np.argmax(volumes))
+            for index, solid in enumerate(solids):
+                record = BodyRecord(
+                    solid=solid,
+                    name=body.name,
+                    color=body.color,
+                    original_color=body.original_color,
+                )
+                if index != largest:
+                    pin_indices.append(len(new_bodies))
+                new_bodies.append(record)
+
+        self.bodies = new_bodies
+        self.remesh_all()
+        return pin_indices
+
     def face_smooth_adjacency(
         self, body_index: int, smooth_angle_deg: float | None = 30.0
     ) -> dict[int, set[int]]:

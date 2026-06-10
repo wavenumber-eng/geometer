@@ -636,26 +636,37 @@ class DetectPinsTool(ToolMode):
             self.status("Detect Pins: name at least one pin first (e.g. A1)")
             return
 
-        grid_like = all(parse_grid_name(name) is not None for name in anchors.values())
-        numeric = all(name.isdigit() for name in anchors.values())
+        grid_anchors = {
+            i: name for i, name in anchors.items() if parse_grid_name(name) is not None
+        }
+        numeric_anchors = {
+            i: int(name) for i, name in anchors.items() if name.isdigit()
+        }
+        grid_like = bool(grid_anchors)
+        numeric = not grid_like and bool(numeric_anchors)
         try:
             if grid_like:
-                names = predict_grid_names(pins, anchors)
+                names = predict_grid_names(pins, grid_anchors)
+                # anchors (and any custom-named pins) keep what the user
+                # typed; prediction fills in every non-anchored pin
                 for index, pin in enumerate(pins):
-                    pin.name = names[index]
+                    if index not in anchors:
+                        pin.name = names[index]
                 order = sorted(
                     range(len(pins)),
                     key=lambda i: parse_grid_name(pins[i].name) or (9999, i),
                 )
                 registry.reorder(order)
                 unknown = sum(1 for pin in pins if pin.name.startswith("?"))
-                outcome = f"grid scheme propagated to {len(pins)} pins"
+                predicted = len(pins) - len(anchors)
+                outcome = (
+                    f"{predicted} non-anchored pin(s) predicted from "
+                    f"{len(grid_anchors)} anchor(s)"
+                )
                 if unknown:
                     outcome += f" ({unknown} flagged '?' — check or delete those)"
             elif numeric:
-                order = predict_serpentine_order(
-                    pins, {index: int(name) for index, name in anchors.items()}
-                )
+                order = predict_serpentine_order(pins, numeric_anchors)
                 if order is None:
                     self.status(
                         "Detect Pins: no serpentine numbering fits those pins — "
@@ -666,7 +677,8 @@ class DetectPinsTool(ToolMode):
                 outcome = "serpentine numbering aligned to the named pins"
             else:
                 self.status(
-                    "Detect Pins: mix of grid names and numbers — use one scheme"
+                    "Detect Pins: name at least one pin with a grid name (A1) "
+                    "or a number first"
                 )
                 return
         except ValueError as exc:

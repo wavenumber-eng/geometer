@@ -287,6 +287,75 @@ def _merge_regions_by_xy(mesh: BodyMesh, regions: list[set[int]], factor: float 
     return list(merged.values())
 
 
+def mesh_face_areas(mesh: BodyMesh) -> dict[int, float]:
+    corners = mesh.points[mesh.tris]
+    areas = 0.5 * np.linalg.norm(
+        np.cross(corners[:, 1] - corners[:, 0], corners[:, 2] - corners[:, 0]), axis=1
+    )
+    result: dict[int, float] = {}
+    for face_id in np.unique(mesh.tri_face_ids):
+        result[int(face_id)] = float(areas[mesh.tri_face_ids == face_id].sum())
+    return result
+
+
+def grow_pin_regions(
+    document: EditorDocument,
+    pins: list[Pin],
+    *,
+    area_factor: float = 4.0,
+) -> list[list[tuple[int, int]] | None]:
+    """Grow each detected pin from its seed faces by edge flow: expand across
+    shared edges for as long as the faces stay pin-scaled, stopping when the
+    flow would enter a BODY face (area beyond `area_factor` x the largest
+    seed face) or another pin's territory. Returns the grown (body, face)
+    region per pin; None for pins that already are whole bodies."""
+    claimed: dict[tuple[int, int], int] = {}
+    for pin_index, pin in enumerate(pins):
+        for key in pin.face_ids:
+            claimed[key] = pin_index
+
+    areas_cache: dict[int, dict[int, float]] = {}
+    adjacency_cache: dict[int, dict] = {}
+
+    def body_areas(body_index: int) -> dict[int, float]:
+        if body_index not in areas_cache:
+            areas_cache[body_index] = mesh_face_areas(document.bodies[body_index].mesh)
+        return areas_cache[body_index]
+
+    def body_adjacency(body_index: int):
+        if body_index not in adjacency_cache:
+            adjacency_cache[body_index] = document.face_smooth_adjacency(body_index, None)
+        return adjacency_cache[body_index]
+
+    grown: list[list[tuple[int, int]] | None] = []
+    for pin_index, pin in enumerate(pins):
+        if pin.body_ids or not pin.face_ids:
+            grown.append(None)  # already its own body (or nothing to grow)
+            continue
+        region = set(pin.face_ids)
+        by_body: dict[int, set[int]] = {}
+        for body_index, face_index in pin.face_ids:
+            by_body.setdefault(body_index, set()).add(face_index)
+        for body_index, seeds in by_body.items():
+            areas = body_areas(body_index)
+            adjacency = body_adjacency(body_index)
+            limit = max(areas.get(face, 0.0) for face in seeds) * area_factor
+            frontier = list(seeds)
+            while frontier:
+                face = frontier.pop()
+                for neighbor in adjacency.get(face, ()):
+                    key = (body_index, neighbor)
+                    if key in claimed:
+                        continue
+                    if areas.get(neighbor, np.inf) > limit:
+                        continue  # reached the BODY — flow stops here
+                    claimed[key] = pin_index
+                    region.add(key)
+                    frontier.append(neighbor)
+        grown.append(sorted(region))
+    return grown
+
+
 # ----------------------------------------------------------- context plane
 
 def section_segments(mesh: BodyMesh, origin, normal) -> np.ndarray:

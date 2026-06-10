@@ -377,13 +377,14 @@ def selftest_m6(fixture: Path | None = None) -> None:
 
 
 def selftest_sep(fixture: Path | None = None) -> None:
-    """Context-plane detection + Separate Unibody split: slicing the unibody
-    SOT-23-5 through its lead feet finds 5 closed shapes; splitting there
-    yields 5 pin bodies + the package with total volume conserved."""
+    """Separate Unibody by edge flow: section-detect the SOT-23-5 lead feet
+    (the seeds), grow each pin until the flow reaches the BODY, then split at
+    the pin/body junctions. Pin bodies must be WHOLE leads (they extend far
+    above the section plane), volume is conserved, and the result exports."""
     import numpy as np
 
     from .document import EditorDocument, shape_volume
-    from .pins import detect_pins_by_section
+    from .pins import detect_pins_by_section, grow_pin_regions
 
     path = fixture or FIXTURES / "ct-sot-23-5.stp"
     document = EditorDocument.load(path)
@@ -393,18 +394,32 @@ def selftest_sep(fixture: Path | None = None) -> None:
     document.apply_trsf(rot_x90)
     bounds = document.bounds()
     z = bounds[4] + (bounds[5] - bounds[4]) * 0.06  # through the lead feet
-    # (higher planes legitimately find a 6th shape: the body's standoff bump)
     point, normal = (0.0, 0.0, z), (0.0, 0.0, -1.0)
 
     pins = detect_pins_by_section(document, point, normal)
     print(f"section at z={z:.3f}: {len(pins)} closed shapes")
     _check(len(pins) == 5, f"expected 5 lead feet, got {len(pins)}")
 
+    grown = grow_pin_regions(document, pins, area_factor=4.0)
+    seed_count = sum(len(pin.face_ids) for pin in pins)
+    grown_count = sum(len(region) for region in grown if region)
+    print(f"edge flow grew {seed_count} seed faces to {grown_count}")
+    _check(grown_count > seed_count, "edge flow did not grow past the seeds")
+
     volume_before = sum(shape_volume(b.solid) or 0.0 for b in document.bodies)
-    pin_indices = document.split_by_plane(point, normal)
-    print(f"split: {len(document.bodies)} bodies, {len(pin_indices)} on the pin side")
+    pin_indices = document.split_by_face_regions([r for r in grown if r])
+    print(f"split: {len(document.bodies)} bodies, {len(pin_indices)} pin solids")
     _check(len(pin_indices) == 5, f"expected 5 pin bodies, got {len(pin_indices)}")
     _check(len(document.bodies) >= 6, "package body missing after split")
+
+    # Whole-lead check: a plane split would cap the pins exactly at the
+    # section plane; edge-flow pins must rise well above it.
+    rise = (bounds[5] - bounds[4]) * 0.15
+    for body_index in pin_indices:
+        top = float(document.bodies[body_index].mesh.points[:, 2].max())
+        _check(top > z + rise, f"pin body capped too low: top={top:.3f} vs plane z={z:.3f}")
+    print(f"pin bodies are whole leads (tops > {z + rise:.3f})")
+
     volume_after = sum(shape_volume(b.solid) or 0.0 for b in document.bodies)
     _check(
         abs(volume_after - volume_before) <= max(volume_before, 1e-9) * 1e-3,

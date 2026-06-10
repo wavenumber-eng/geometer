@@ -387,6 +387,27 @@ def selftest_m6(fixture: Path | None = None) -> None:
         for a, b in zip(reread_face, face_red):
             _check(abs(a - b) <= 1.0 / 255.0 + 1e-9,
                    f"face colour drifted: {reread_face} vs {face_red}")
+
+        # Viewers (wn3d browser) only colour single-free-shape files: the
+        # export must be ONE assembly, not N top-level solids.
+        from OCP.IFSelect import IFSelect_RetDone
+        from OCP.STEPCAFControl import STEPCAFControl_Reader
+        from OCP.TCollection import TCollection_ExtendedString
+        from OCP.TDF import TDF_LabelSequence
+        from OCP.TDocStd import TDocStd_Document
+        from OCP.XCAFApp import XCAFApp_Application
+        from OCP.XCAFDoc import XCAFDoc_DocumentTool
+
+        doc2 = TDocStd_Document(TCollection_ExtendedString("MDTV-XCAF"))
+        XCAFApp_Application.GetApplication_s().InitDocument(doc2)
+        reader = STEPCAFControl_Reader()
+        reader.SetColorMode(True)
+        _check(reader.ReadFile(str(out_path)) == IFSelect_RetDone, "re-read failed")
+        reader.Transfer(doc2)
+        labels = TDF_LabelSequence()
+        XCAFDoc_DocumentTool.ShapeTool_s(doc2.Main()).GetFreeShapes(labels)
+        _check(labels.Length() == 1,
+               f"export should be 1 assembly, got {labels.Length()} free shapes")
     print(f"colour round-trip OK for {len(document.bodies)} bodies + 1 painted face")
 
 

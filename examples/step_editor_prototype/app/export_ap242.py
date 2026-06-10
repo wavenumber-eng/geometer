@@ -13,8 +13,10 @@ from pathlib import Path
 
 import geometer
 
+from OCP.BRep import BRep_Builder
 from OCP.IFSelect import IFSelect_RetDone
 from OCP.Interface import Interface_Static
+from OCP.TopoDS import TopoDS_Compound
 from OCP.Quantity import Quantity_Color, Quantity_TOC_RGB
 from OCP.STEPCAFControl import STEPCAFControl_Writer
 from OCP.STEPControl import STEPControl_AsIs
@@ -73,8 +75,21 @@ def write_step(document: EditorDocument, out_path: Path) -> None:
     shape_tool = XCAFDoc_DocumentTool.ShapeTool_s(doc.Main())
     color_tool = XCAFDoc_DocumentTool.ColorTool_s(doc.Main())
 
+    # One assembly root, bodies as components: viewers (incl. the wn3d
+    # browser) only resolve XCAF colours reliably for a single free shape —
+    # N top-level shapes made them fall back to uncoloured.
+    builder = BRep_Builder()
+    compound = TopoDS_Compound()
+    builder.MakeCompound(compound)
     for body in document.bodies:
-        label = shape_tool.AddShape(body.solid, False)
+        builder.Add(compound, body.solid)
+    root = shape_tool.AddShape(compound, False)  # one free shape, sub-shape colours
+    TDataStd_Name.Set_s(root, TCollection_ExtendedString(document.path.stem))
+
+    for body in document.bodies:
+        label = shape_tool.AddSubShape(root, body.solid)
+        if label is None or label.IsNull():
+            continue
         TDataStd_Name.Set_s(label, TCollection_ExtendedString(body.name))
         if body.color is not None:
             color = Quantity_Color(*body.color, Quantity_TOC_RGB)
@@ -89,7 +104,7 @@ def write_step(document: EditorDocument, out_path: Path) -> None:
                     continue
                 try:
                     face = TopoDS.Face_s(face_map.FindKey(face_id))
-                    sub_label = shape_tool.AddSubShape(label, face)
+                    sub_label = shape_tool.AddSubShape(root, face)
                     if sub_label.IsNull():
                         continue
                     color_tool.SetColor(

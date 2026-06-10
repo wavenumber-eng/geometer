@@ -162,50 +162,57 @@ class SeparateUnibodyTool(ToolMode):
             return
 
         before = len(document.bodies)
-        pin_indices = document.split_by_face_regions(regions)
-        self._preview_painted = False
-        self._grown = None
-        if not pin_indices:
-            self.status(
-                "Separate Unibody: split produced nothing — junction loops may "
-                "not be planar; adjust the cutoff and retry"
+        window = self.ctx.window
+        try:
+            pin_indices = document.split_by_face_regions(
+                regions, progress=window.progress
             )
-            return
+            self._preview_painted = False
+            self._grown = None
+            if not pin_indices:
+                self.status(
+                    "Separate Unibody: split produced nothing — junction loops may "
+                    "not be planar; adjust the cutoff and retry"
+                )
+                return
 
-        new_centroids = []
-        for body_index in pin_indices:
-            mesh = document.bodies[body_index].mesh
-            centroid = mesh_region_centroid(mesh) if mesh is not None else None
-            new_centroids.append(centroid or (0.0, 0.0, 0.0))
-        new_centroids = np.asarray(new_centroids)
+            new_centroids = []
+            for body_index in pin_indices:
+                mesh = document.bodies[body_index].mesh
+                centroid = mesh_region_centroid(mesh) if mesh is not None else None
+                new_centroids.append(centroid or (0.0, 0.0, 0.0))
+            new_centroids = np.asarray(new_centroids)
 
-        matched = 0
-        for pin in registry.pins:
-            if not pin.face_ids or not len(new_centroids):
-                continue
-            distances = np.linalg.norm(
-                new_centroids[:, :2] - np.asarray(pin.centroid[:2]), axis=1
+            matched = 0
+            for pin in registry.pins:
+                if not pin.face_ids or not len(new_centroids):
+                    continue
+                distances = np.linalg.norm(
+                    new_centroids[:, :2] - np.asarray(pin.centroid[:2]), axis=1
+                )
+                nearest = int(np.argmin(distances))
+                body_index = pin_indices[nearest]
+                pin.body_ids = [body_index]
+                pin.face_ids = []
+                document.bodies[body_index].name = pin.name or f"PIN_{pin.number}"
+                document.bodies[body_index].role = "pin"
+                matched += 1
+
+            self.ctx.journal.record(
+                tool=self.id,
+                params={"area_factor": float(self.factor_spin.value())},
+                inputs={"regions": len(regions)},
+                result={
+                    "bodies_before": before,
+                    "bodies_after": len(document.bodies),
+                    "pin_bodies": len(pin_indices),
+                    "pins_matched": matched,
+                },
             )
-            nearest = int(np.argmin(distances))
-            body_index = pin_indices[nearest]
-            pin.body_ids = [body_index]
-            pin.face_ids = []
-            document.bodies[body_index].name = pin.name or f"PIN_{pin.number}"
-            document.bodies[body_index].role = "pin"
-            matched += 1
-
-        self.ctx.journal.record(
-            tool=self.id,
-            params={"area_factor": float(self.factor_spin.value())},
-            inputs={"regions": len(regions)},
-            result={
-                "bodies_before": before,
-                "bodies_after": len(document.bodies),
-                "pin_bodies": len(pin_indices),
-                "pins_matched": matched,
-            },
-        )
-        self.ctx.window.document_mutated()
+            window.progress("Rendering bodies", 0, 0)
+            window.document_mutated()
+        finally:
+            window.progress_done()
         self.info_label.setText(
             f"Split done: {before} body(ies) -> {len(document.bodies)} "
             f"({len(pin_indices)} pin bodies, {matched} pins re-linked)."

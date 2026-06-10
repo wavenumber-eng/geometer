@@ -17,6 +17,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QMainWindow,
     QMessageBox,
+    QProgressBar,
     QPushButton,
     QSizePolicy,
     QSplitter,
@@ -200,6 +201,16 @@ class MainWindow(QMainWindow):
         layout.addWidget(splitter, 1)
         self.setCentralWidget(central)
         self.setStatusBar(QStatusBar())
+        self.progress_bar = QProgressBar()
+        self.progress_bar.setMaximumWidth(240)
+        self.progress_bar.setMaximumHeight(14)
+        self.progress_bar.setStyleSheet(
+            f"QProgressBar {{border: 1px solid {BORDER}; background: {CONSOLE_BG};"
+            f" color: {TEXT_PRIMARY}; text-align: center; font-size: 9px;}}"
+            "QProgressBar::chunk {background-color: #1f9d3a;}"
+        )
+        self.progress_bar.setVisible(False)
+        self.statusBar().addPermanentWidget(self.progress_bar)
 
         # --- tools ----------------------------------------------------------
         context = ToolContext(document=None, scene=self.scene, journal=self.journal, window=self)
@@ -345,6 +356,21 @@ class MainWindow(QMainWindow):
 
     def show_status(self, message: str) -> None:
         self.statusBar().showMessage(message)
+
+    def progress(self, label: str, value: int, maximum: int) -> None:
+        """Long main-thread operations report here; the green bar repaints
+        between steps so the app never looks hung. maximum=0 shows a busy
+        indicator."""
+        self.progress_bar.setVisible(True)
+        self.progress_bar.setMaximum(maximum)
+        self.progress_bar.setValue(value)
+        self.progress_bar.setFormat(f"{label}  %p%" if maximum else label)
+        self.show_status(label)
+        QApplication.processEvents()
+
+    def progress_done(self) -> None:
+        self.progress_bar.setVisible(False)
+        QApplication.processEvents()
 
     def document_mutated(self) -> None:
         """A tool changed the B-rep: re-render and refresh dependent state,

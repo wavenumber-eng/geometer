@@ -94,10 +94,13 @@ class ColorsTool(ToolMode):
         layout.addWidget(self.apply_button)
 
         misc_row = QHBoxLayout()
+        pins_button = QPushButton("Select all pins")
+        pins_button.clicked.connect(self.select_all_pins)
         clear_button = QPushButton("Clear selection")
         clear_button.clicked.connect(self.clear_selection)
         reset_button = QPushButton("Reset to original")
         reset_button.clicked.connect(self._reset_original)
+        misc_row.addWidget(pins_button)
         misc_row.addWidget(clear_button)
         misc_row.addWidget(reset_button)
         layout.addLayout(misc_row)
@@ -178,6 +181,33 @@ class ColorsTool(ToolMode):
         self.status(
             f"Colors: applied {self.current_color} to {len(self.selection)} item(s)"
         )
+
+    def select_all_pins(self) -> None:
+        """Select every detected pin — pin bodies (after Separate Unibody) in
+        Bodies mode, pin face regions in Faces mode."""
+        document = self.ctx.document
+        registry = self.ctx.window.pins
+        if document is None:
+            return
+        if self.target_combo.currentText() == "Bodies":
+            keys = {
+                index for index, body in enumerate(document.bodies)
+                if body.role == "pin"
+            }
+            for pin in registry.pins:
+                keys.update(pin.body_ids)
+        else:
+            keys = {
+                (body_index, face_index)
+                for pin in registry.pins
+                for body_index, face_index in pin.face_ids
+            }
+        if not keys:
+            self.status("Colors: no pins detected yet — run Detect Pins first")
+            return
+        self.selection = keys
+        self._refresh_selection_ui()
+        self.status(f"Colors: selected {len(keys)} pin item(s)")
 
     def clear_selection(self) -> None:
         self.selection = set()

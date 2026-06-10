@@ -391,9 +391,12 @@ class EditorDocument:
 
     # ------------------------------------------------------------ tessellate
 
-    def remesh_all(self, color_tool=None) -> None:
+    def remesh_all(self, color_tool=None, progress=None) -> None:
         deflection = preview_deflection(self.bounds())
-        for body in self.bodies:
+        total = len(self.bodies)
+        for index, body in enumerate(self.bodies):
+            if progress is not None:
+                progress("Meshing bodies", index, total)
             previous = body.mesh
             body.mesh = tessellate_body(body.solid, deflection, color_tool)
             _carry_face_colors(previous, body.mesh)
@@ -502,7 +505,9 @@ class EditorDocument:
         self.remesh_all()
         return pin_side_indices
 
-    def split_by_face_regions(self, regions: list[list[tuple[int, int]]]) -> list[int]:
+    def split_by_face_regions(
+        self, regions: list[list[tuple[int, int]]], progress=None
+    ) -> list[int]:
         """Split bodies along detected pin-region boundaries: for each region
         the boundary loops (edges between region and body faces) are capped
         with planar faces, and those caps drive BRepAlgoAPI_Splitter — each
@@ -536,7 +541,9 @@ class EditorDocument:
             TopExp.MapShapesAndAncestors_s(body.solid, TopAbs_EDGE, TopAbs_FACE, edge_faces)
 
             caps = []
-            for region in region_sets:
+            for region_number, region in enumerate(region_sets):
+                if progress is not None:
+                    progress("Capping pin junctions", region_number, len(region_sets))
                 boundary = []
                 for edge_index in range(1, edge_faces.Extent() + 1):
                     sides = set()
@@ -567,6 +574,8 @@ class EditorDocument:
                 new_bodies.append(body)
                 continue
 
+            if progress is not None:
+                progress(f"Splitting {body.name} at {len(caps)} junction(s)", 0, 0)
             splitter = BRepAlgoAPI_Splitter()
             arguments = TopTools_ListOfShape()
             arguments.Append(body.solid)
@@ -595,7 +604,7 @@ class EditorDocument:
                 new_bodies.append(record)
 
         self.bodies = new_bodies
-        self.remesh_all()
+        self.remesh_all(progress=progress)
         return pin_indices
 
     def face_smooth_adjacency(

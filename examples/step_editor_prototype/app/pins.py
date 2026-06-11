@@ -316,6 +316,30 @@ def dominant_face_color(mesh: BodyMesh, face_ids=None):
     return max(weights, key=weights.get)
 
 
+def grow_smooth_region(
+    document: EditorDocument,
+    body_index: int,
+    face_index: int,
+    *,
+    smooth_angle_deg: float = 30.0,
+    claimed: set | None = None,
+) -> set[int]:
+    """Manual pin seeding: from one clicked face, flow across smooth shared
+    edges until every path hits a discontinuity (sharp dihedral) or a face
+    already claimed by another pin. Returns the face ids of the region."""
+    adjacency = document.face_smooth_adjacency(body_index, smooth_angle_deg)
+    blocked = claimed or set()
+    region = {face_index}
+    frontier = [face_index]
+    while frontier:
+        face = frontier.pop()
+        for neighbor in adjacency.get(face, ()):
+            if neighbor not in region and neighbor not in blocked:
+                region.add(neighbor)
+                frontier.append(neighbor)
+    return region
+
+
 def grow_pin_regions(
     document: EditorDocument,
     pins: list[Pin],

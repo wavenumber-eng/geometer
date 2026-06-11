@@ -27,6 +27,8 @@ from ..pins import (
     detect_pins_by_section,
     detect_pins_multibody,
     detect_pins_unibody,
+    grow_smooth_region,
+    mesh_region_centroid,
     order_pins,
     parse_grid_name,
     predict_grid_names,
@@ -80,6 +82,17 @@ class DetectPinsTool(ToolMode):
         )
         self.context_button.clicked.connect(self._run_context_plane)
         select_row.addWidget(self.context_button)
+        self.seed_button = QPushButton("Seed Pin (click face)")
+        self.seed_button.setCheckable(True)
+        self.seed_button.setToolTip(
+            "For parts the automatic detection can't solve: click a face on a "
+            "pin tip/pad and it grows across smooth edges until a "
+            "discontinuity — each click stages one pin."
+        )
+        self.seed_button.setStyleSheet(
+            "QPushButton:checked {background-color: #c89d00; color: #000000; font-weight: 700;}"
+        )
+        select_row.addWidget(self.seed_button)
         layout.addLayout(select_row)
 
         self.exclude_check = QCheckBox("Exclude largest body (package)")
@@ -221,8 +234,57 @@ class DetectPinsTool(ToolMode):
             self._band_selector = None
 
     def on_pick(self, pick) -> None:
-        """Plain click: select that pin for quick rename."""
+        """Plain click: seed a pin from the clicked face when armed,
+        otherwise select that pin for quick rename."""
+        if self._actions_widget is not None and self.seed_button.isChecked():
+            self._seed_pin_from_pick(pick)
+            return
         self._select_pin_from_pick(pick)
+
+    def _seed_pin_from_pick(self, pick) -> None:
+        document = self.ctx.document
+        if document is None:
+            return
+        registry = self.ctx.window.pins
+        claimed = {
+            face
+            for pin in (*registry.pins, *self.pending)
+            for body, face in pin.face_ids
+            if body == pick.body_index
+        }
+        if pick.face_index in claimed:
+            self.status("Seed Pin: that face already belongs to a pin")
+            return
+        region = grow_smooth_region(
+            document,
+            pick.body_index,
+            pick.face_index,
+            smooth_angle_deg=float(self.angle_spin.value()),
+            claimed=claimed,
+        )
+        mesh = document.bodies[pick.body_index].mesh
+        centroid = mesh_region_centroid(mesh, sorted(region))
+        if centroid is None:
+            return
+        pin = Pin(
+            number=0,
+            centroid=centroid,
+            face_ids=[(pick.body_index, face) for face in sorted(region)],
+        )
+        self.pending.append(pin)
+        self.ctx.journal.record(
+            tool=self.id,
+            params={"action": "seed_pin",
+                    "smooth_angle_deg": float(self.angle_spin.value())},
+            inputs={"body": pick.body_index, "face": pick.face_index,
+                    "point": list(pick.world_point)},
+            result={"faces": len(region), "centroid": list(centroid)},
+        )
+        self._refresh_pending()
+        self.status(
+            f"Seed Pin: grew {len(region)} face(s) from the click — "
+            f"{len(self.pending)} pending; keep clicking or press Apply"
+        )
 
     # --------------------------------------------------------- context plane
 

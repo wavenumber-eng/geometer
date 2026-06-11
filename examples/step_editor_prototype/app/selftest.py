@@ -528,6 +528,28 @@ def selftest_sep(fixture: Path | None = None) -> None:
     print(f"edge flow grew {seed_count} seed faces to {grown_count}")
     _check(grown_count > seed_count, "edge flow did not grow past the seeds")
 
+    # A mouth pin (face not in any cut region) must survive the split: its
+    # (body, face) reference dies with the old body table and is remapped by
+    # centroid onto the rebuilt one.
+    from .pins import (
+        Pin,
+        capture_pin_face_anchors,
+        mesh_face_areas,
+        mesh_region_centroid,
+        remap_pin_faces,
+    )
+
+    cut_faces = {face for region in grown if region for _b, face in region}
+    mesh0 = document.bodies[0].mesh
+    mouth_face = max(
+        (f for f in mesh_face_areas(mesh0) if f not in cut_faces),
+        key=lambda f: mesh_face_areas(mesh0)[f],
+    )
+    mouth_centroid = mesh_region_centroid(mesh0, [mouth_face])
+    mouth = Pin(number=99, centroid=mouth_centroid,
+                face_ids=[(0, mouth_face)], role="mouth")
+    anchors = capture_pin_face_anchors(document, [mouth])
+
     volume_before = sum(shape_volume(b.solid) or 0.0 for b in document.bodies)
     pin_indices = document.split_by_face_regions([r for r in grown if r])
     print(f"split: {len(document.bodies)} bodies, {len(pin_indices)} pin solids")
@@ -548,6 +570,22 @@ def selftest_sep(fixture: Path | None = None) -> None:
         f"volume not conserved: {volume_before} -> {volume_after}",
     )
     print(f"volume conserved: {volume_before:.4f} -> {volume_after:.4f}")
+
+    diag = float(np.linalg.norm([
+        bounds[1] - bounds[0], bounds[3] - bounds[2], bounds[5] - bounds[4],
+    ]))
+    remapped = remap_pin_faces(document, anchors, diag * 5.0e-3)
+    _check(remapped == 1, "mouth pin was not remapped across the split")
+    new_body, new_face = mouth.face_ids[0]
+    new_centroid = mesh_region_centroid(
+        document.bodies[new_body].mesh, [new_face]
+    )
+    drift = float(np.linalg.norm(
+        np.asarray(new_centroid) - np.asarray(mouth_centroid)
+    ))
+    _check(drift <= diag * 5.0e-3,
+           f"remapped mouth face drifted {drift:.4f}")
+    print(f"mouth pin remapped across the split (drift {drift:.2e})")
 
     from .export_ap242 import export_ap242
 

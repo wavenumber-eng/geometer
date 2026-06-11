@@ -21,9 +21,11 @@ from PySide6.QtWidgets import (
 )
 
 from ..pins import (
+    capture_pin_face_anchors,
     dominant_face_color,
     grow_pin_regions,
     mesh_region_centroid,
+    remap_pin_faces,
 )
 from .base import ToolMode, make_apply_button
 
@@ -231,6 +233,15 @@ class SeparateUnibodyTool(ToolMode):
             [(pin, list(pin.body_ids), list(pin.face_ids)) for pin in registry.pins],
         )
 
+        # (body, face) references die with the old body table — capture every
+        # face-region pin's geometry now so mouth pins and unsplit primaries
+        # can be re-pointed at the new faces after the split.
+        face_anchors = capture_pin_face_anchors(document, registry.pins)
+        b = document.bounds()
+        remap_tol = float(np.linalg.norm(
+            [b[1] - b[0], b[3] - b[2], b[5] - b[4]]
+        )) * 5.0e-3
+
         try:
             # Cut EXACTLY what the preview shows: the grown regions' junction
             # loops. (find_pin_cut cross-section planes are benched until the
@@ -296,6 +307,8 @@ class SeparateUnibodyTool(ToolMode):
                     document.bodies[body_index].color = region_color
                 matched += 1
 
+            remapped = remap_pin_faces(document, face_anchors, remap_tol)
+
             # Package pieces (newly created, not pins) inherit the dominant
             # colour of the faces that were NOT part of any pin region.
             fallback = next(
@@ -316,6 +329,7 @@ class SeparateUnibodyTool(ToolMode):
                     "bodies_after": len(document.bodies),
                     "pin_bodies": len(pin_indices),
                     "pins_matched": matched,
+                    "face_pins_remapped": remapped,
                 },
             )
             window.progress("Rendering bodies", 0, 0)

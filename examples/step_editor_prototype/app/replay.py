@@ -218,6 +218,14 @@ def replay(document: EditorDocument, journal: Journal) -> PinRegistry:
                 [(pin, list(pin.body_ids), list(pin.face_ids))
                  for pin in registry.pins],
             )
+            from .pins import capture_pin_face_anchors, remap_pin_faces
+
+            face_anchors = capture_pin_face_anchors(document, registry.pins)
+            bounds = document.bounds()
+            remap_tol = float(np.linalg.norm([
+                bounds[1] - bounds[0], bounds[3] - bounds[2],
+                bounds[5] - bounds[4],
+            ])) * 5.0e-3
             grown = grow_pin_regions(
                 document, registry.pins,
                 area_factor=params.get("area_factor", 4.0),
@@ -231,6 +239,8 @@ def replay(document: EditorDocument, journal: Journal) -> PinRegistry:
             for pin in registry.pins:
                 if not pin.face_ids or not len(centroids):
                     continue
+                if pin.role == "mouth":
+                    continue  # keeps its face region; remapped below
                 nearest = int(np.argmin(np.linalg.norm(
                     centroids[:, :2] - np.asarray(pin.centroid[:2]), axis=1
                 )))
@@ -239,6 +249,7 @@ def replay(document: EditorDocument, journal: Journal) -> PinRegistry:
                 pin.face_ids = []
                 document.bodies[body_index].name = pin.name or f"PIN_{pin.number}"
                 document.bodies[body_index].role = "pin"
+            remap_pin_faces(document, face_anchors, remap_tol)
 
         elif tool == "hitboxes":
             by_number = {pin.number: pin for pin in registry.pins}

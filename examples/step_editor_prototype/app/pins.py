@@ -430,6 +430,68 @@ def find_similar_regions(
     return matches
 
 
+def capture_pin_face_anchors(
+    document: EditorDocument, pins: list[Pin]
+) -> list[tuple[Pin, list[tuple[float, float, float]]]]:
+    """Geometric anchors (per-face centroids) for every face-region pin,
+    captured BEFORE a split rebuilds the body table and renumbers faces —
+    (body, face) references do not survive, centroids do."""
+    anchors = []
+    for pin in pins:
+        if not pin.face_ids:
+            continue
+        points = []
+        for body_index, face_index in pin.face_ids:
+            if not (0 <= body_index < len(document.bodies)):
+                continue
+            mesh = document.bodies[body_index].mesh
+            if mesh is None:
+                continue
+            centroid = mesh_region_centroid(mesh, [face_index])
+            if centroid is not None:
+                points.append(centroid)
+        if points:
+            anchors.append((pin, points))
+    return anchors
+
+
+def remap_pin_faces(
+    document: EditorDocument,
+    anchors: list[tuple[Pin, list[tuple[float, float, float]]]],
+    tolerance: float,
+) -> int:
+    """Re-point face-region pins at the rebuilt body table: a new face whose
+    centroid coincides with the pin's old face centroid is that same (uncut)
+    face. Mouth pins and unsplit primaries stay valid through Separate this
+    way. Returns how many pins were remapped."""
+    table: list[tuple[int, int]] = []
+    points = []
+    for b, body in enumerate(document.bodies):
+        mesh = body.mesh
+        if mesh is None or not len(mesh.tris):
+            continue
+        for face, centroid in face_centroids(mesh).items():
+            table.append((b, int(face)))
+            points.append(centroid)
+    if not table:
+        return 0
+    points = np.asarray(points)
+    remapped = 0
+    for pin, old_points in anchors:
+        if pin.body_ids or not pin.face_ids:
+            continue  # linked to its own body — nothing left to remap
+        new_faces = []
+        for centroid in old_points:
+            distances = np.linalg.norm(points - np.asarray(centroid), axis=1)
+            nearest = int(np.argmin(distances))
+            if float(distances[nearest]) <= tolerance:
+                new_faces.append(table[nearest])
+        if new_faces:
+            pin.face_ids = sorted(set(new_faces))
+            remapped += 1
+    return remapped
+
+
 def join_mouth_pins(
     primaries: list[Pin], mouths: list[Pin]
 ) -> tuple[dict[int, Pin], list[int]]:

@@ -93,6 +93,15 @@ class ColorsTool(ToolMode):
         self.apply_button.clicked.connect(self.apply)
         layout.addWidget(self.apply_button)
 
+        propagate_button = QPushButton("Propagate 1 connected face outwards")
+        propagate_button.setToolTip(
+            "Grow the face selection by one ring: every face sharing an edge "
+            "with a selected face joins the selection. Shift+click afterwards "
+            "to drop the ones you don't want."
+        )
+        propagate_button.clicked.connect(self.propagate_selection)
+        layout.addWidget(propagate_button)
+
         misc_row = QHBoxLayout()
         pins_button = QPushButton("Select all pins")
         pins_button.clicked.connect(self.select_all_pins)
@@ -208,6 +217,33 @@ class ColorsTool(ToolMode):
         self.selection = keys
         self._refresh_selection_ui()
         self.status(f"Colors: selected {len(keys)} pin item(s)")
+
+    def propagate_selection(self) -> None:
+        """Grow the face selection by one adjacency ring."""
+        document = self.ctx.document
+        if document is None or not self.selection:
+            self.status("Colors: select some faces first")
+            return
+        if self.target_combo.currentText() != "Faces":
+            self.status("Colors: propagate works in Faces mode")
+            return
+        by_body: dict[int, set[int]] = {}
+        for body_index, face_index in self.selection:
+            by_body.setdefault(body_index, set()).add(face_index)
+        added = 0
+        for body_index, faces in by_body.items():
+            adjacency = document.face_smooth_adjacency(body_index, None)
+            for face_index in list(faces):
+                for neighbor in adjacency.get(face_index, ()):
+                    key = (body_index, int(neighbor))
+                    if key not in self.selection:
+                        self.selection.add(key)
+                        added += 1
+        self._refresh_selection_ui()
+        self.status(
+            f"Colors: propagated outwards — {added} face(s) joined "
+            f"({len(self.selection)} selected); Shift+click to drop extras"
+        )
 
     def on_miss(self) -> None:
         """Click into empty space deselects."""

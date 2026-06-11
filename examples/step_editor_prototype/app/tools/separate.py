@@ -66,12 +66,15 @@ class SeparateUnibodyTool(ToolMode):
         factor_row = QHBoxLayout()
         factor_row.addWidget(QLabel("Body face cutoff"))
         self.factor_spin = QDoubleSpinBox()
-        self.factor_spin.setRange(1.5, 200.0)
+        self.factor_spin.setRange(0.1, 1000.0)
+        self.factor_spin.setDecimals(2)
         self.factor_spin.setValue(4.0)
-        self.factor_spin.setSingleStep(1.0)
+        self.factor_spin.setSingleStep(0.5)
         self.factor_spin.setToolTip(
-            "Edge flow stops at faces larger than this multiple of the pin's "
-            "largest seed face — that's where the BODY starts."
+            "Growth flows from the seed right up to the BODY: it stops at the "
+            "first face larger than this multiple of the pin's largest seed "
+            "face. LOWER = stops sooner (tighter pins, 0.1 ~ seeds only); "
+            "HIGHER = grows farther (risk of leaking into the body)."
         )
         self.factor_spin.valueChanged.connect(lambda _v: self._regrow())
         factor_row.addWidget(self.factor_spin, 1)
@@ -157,6 +160,10 @@ class SeparateUnibodyTool(ToolMode):
         for body_index, face_rgb in by_body.items():
             self.ctx.scene.paint_faces(body_index, face_rgb)
         self._preview_painted = True
+
+        # keep the alpha inspection view through live cutoff edits (the
+        # rebuild above resets opacity)
+        self.ctx.scene.set_model_opacity(0.5)
 
         parts = []
         if grown_faces:

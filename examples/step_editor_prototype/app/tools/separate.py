@@ -12,6 +12,7 @@ import colorsys
 
 import numpy as np
 from PySide6.QtWidgets import (
+    QComboBox,
     QDoubleSpinBox,
     QHBoxLayout,
     QLabel,
@@ -60,6 +61,10 @@ class SeparateUnibodyTool(ToolMode):
         super().__init__(ctx)
         self._preview_painted = False
         self._grown: list | None = None
+        # manual face bundles: {pin index -> {(body, face), ...}} — when set,
+        # the preview shows EXACTLY these and Apply splits EXACTLY these
+        self._manual: dict[int, set[tuple[int, int]]] | None = None
+        self._bundle_pins: list[int] = []
 
     # ------------------------------------------------------------------- UI
 
@@ -108,6 +113,34 @@ class SeparateUnibodyTool(ToolMode):
         factor_row.addWidget(auto_button)
         layout.addLayout(factor_row)
 
+        paint_row = QHBoxLayout()
+        self.paint_button = QPushButton("Paint Regions")
+        self.paint_button.setCheckable(True)
+        self.paint_button.setToolTip(
+            "Take over when the grown preview is wrong: bundles start from\n"
+            "the current preview, then every click adds the face to the\n"
+            "selected pin's bundle (click again to remove). Apply splits\n"
+            "EXACTLY the painted bundles."
+        )
+        self.paint_button.setStyleSheet(
+            "QPushButton:checked {background-color: #5a3e9e; color: #ffffff; "
+            "font-weight: 700;}"
+        )
+        self.paint_button.toggled.connect(self._arm_paint)
+        paint_row.addWidget(self.paint_button)
+        self.bundle_combo = QComboBox()
+        self.bundle_combo.setToolTip("The pin whose bundle your clicks edit")
+        paint_row.addWidget(self.bundle_combo, 1)
+        propagate_button = QPushButton("+1 ring")
+        propagate_button.setToolTip(
+            "Grow the selected bundle by one ring: every face sharing an\n"
+            "edge with the bundle joins it (same as the Colors tool's\n"
+            "propagate button). Faces owned by other bundles stay put."
+        )
+        propagate_button.clicked.connect(self._propagate_bundle)
+        paint_row.addWidget(propagate_button)
+        layout.addLayout(paint_row)
+
         self.apply_button = make_apply_button("Apply Separate")
         self.apply_button.clicked.connect(self.apply)
         layout.addWidget(self.apply_button)
@@ -152,6 +185,137 @@ class SeparateUnibodyTool(ToolMode):
     def on_document_changed(self) -> None:
         self._preview_painted = False
         self._grown = None
+        self._manual = None
+        if self._actions_widget is not None:
+            self.paint_button.setChecked(False)
+
+    # --------------------------------------------------------- paint regions
+
+    def _arm_paint(self, checked: bool) -> None:
+        if not checked:
+            return  # bundles stay active until Regrow/Apply discards them
+        document = self.ctx.document
+        registry = self.ctx.window.pins
+        if document is None or not registry.pins:
+            self.paint_button.setChecked(False)
+            return
+        if self._grown is None:
+            self._grown = grow_pin_regions(
+                document, registry.pins,
+                area_factor=float(self.factor_spin.value()),
+            )
+        if self._manual is None:
+            # bundles start from what the preview shows: the grown region,
+            # or the pin's own faces for passive CON/HEAD anchors
+            self._manual = {}
+            for index, (pin, region) in enumerate(
+                zip(registry.pins, self._grown)
+            ):
+                if pin.body_ids:
+                    continue
+                faces = region if region else pin.face_ids
+                if faces:
+                    self._manual[index] = {tuple(key) for key in faces}
+        self._bundle_pins = sorted(self._manual)
+        self.bundle_combo.clear()
+        for index in self._bundle_pins:
+            pin = registry.pins[index]
+            tag = " [CON/HEAD]" if pin.role == "mouth" else ""
+            name = f" '{pin.name}'" if pin.name else ""
+            self.bundle_combo.addItem(f"Pin {pin.number}{name}{tag}")
+        self._paint_manual()
+        self.status(
+            "Paint Regions: pick the bundle in the dropdown, click faces to "
+            "add them (click again to remove) — Apply splits exactly these"
+        )
+
+    def on_pick(self, pick) -> None:
+        if (
+            self._actions_widget is None
+            or not self.paint_button.isChecked()
+            or self._manual is None
+            or not self._bundle_pins
+        ):
+            return
+        active = self._bundle_pins[max(0, self.bundle_combo.currentIndex())]
+        key = (pick.body_index, pick.face_index)
+        if key in self._manual.get(active, set()):
+            self._manual[active].discard(key)
+            action = "removed from"
+        else:
+            for bundle in self._manual.values():
+                bundle.discard(key)  # a face belongs to one bundle only
+            self._manual.setdefault(active, set()).add(key)
+            action = "added to"
+        self._paint_manual()
+        registry = self.ctx.window.pins
+        self.status(
+            f"Paint Regions: face {pick.face_index} {action} pin "
+            f"{registry.pins[active].number}'s bundle "
+            f"({len(self._manual[active])} faces)"
+        )
+
+    def _propagate_bundle(self) -> None:
+        """Grow the active bundle by one adjacency ring (any shared edge)."""
+        document = self.ctx.document
+        if document is None or self._manual is None or not self._bundle_pins:
+            self.status("Paint Regions: arm Paint Regions first")
+            return
+        active = self._bundle_pins[max(0, self.bundle_combo.currentIndex())]
+        bundle = self._manual.setdefault(active, set())
+        claimed = {
+            key
+            for index, other in self._manual.items()
+            if index != active
+            for key in other
+        }
+        adjacency: dict[int, dict] = {}
+        added: set[tuple[int, int]] = set()
+        for body_index, face_index in list(bundle):
+            if body_index not in adjacency:
+                adjacency[body_index] = document.face_smooth_adjacency(
+                    body_index, None
+                )
+            for neighbor in adjacency[body_index].get(face_index, ()):
+                key = (body_index, neighbor)
+                if key not in bundle and key not in claimed:
+                    added.add(key)
+        bundle |= added
+        self._paint_manual()
+        registry = self.ctx.window.pins
+        self.status(
+            f"Paint Regions: +{len(added)} face(s) on pin "
+            f"{registry.pins[active].number} ({len(bundle)} total)"
+        )
+
+    def _paint_manual(self) -> None:
+        """Preview EXACTLY the manual bundles."""
+        document = self.ctx.document
+        registry = self.ctx.window.pins
+        if document is None or self._manual is None:
+            return
+        if self._preview_painted:
+            self.ctx.scene.rebuild(document)
+        net_pastels = designator_pastels(registry.pins)
+        by_body: dict[int, dict[int, tuple[float, float, float]]] = {}
+        total = 0
+        for index, bundle in self._manual.items():
+            pin = registry.pins[index]
+            rgb = (
+                net_pastels.get(pin.name, UNJOINED_MOUTH_RGB)
+                if pin.role == "mouth" else pastel(index)
+            )
+            total += len(bundle)
+            for body_index, face_index in bundle:
+                by_body.setdefault(body_index, {})[face_index] = rgb
+        for body_index, face_rgb in by_body.items():
+            self.ctx.scene.paint_faces(body_index, face_rgb)
+        self._preview_painted = True
+        self.ctx.scene.set_model_opacity(0.5)
+        self.info_label.setText(
+            f"PAINTED bundles: {sum(1 for b in self._manual.values() if b)} "
+            f"bundle(s), {total} faces — Apply splits exactly these."
+        )
 
     def run_auto(self) -> None:
         """Choose the growth cutoff automatically and refresh the preview."""
@@ -181,6 +345,10 @@ class SeparateUnibodyTool(ToolMode):
         registry = self.ctx.window.pins
         if document is None or not registry.pins:
             return
+        if self._manual is not None:
+            self._manual = None  # regrowing replaces the painted bundles
+            if self._actions_widget is not None:
+                self.paint_button.setChecked(False)
         self._grown = grow_pin_regions(
             document, registry.pins, area_factor=float(self.factor_spin.value())
         )
@@ -253,7 +421,23 @@ class SeparateUnibodyTool(ToolMode):
         registry = self.ctx.window.pins
         if document is None or not registry.pins:
             return
-        if self._grown is None:
+        painted_bundles = None
+        if self._manual is not None:
+            # split EXACTLY the painted bundles
+            self._grown = [
+                sorted(self._manual.get(index))
+                if self._manual.get(index) else None
+                for index in range(len(registry.pins))
+            ]
+            painted_bundles = {
+                str(registry.pins[index].number): [list(key) for key in sorted(bundle)]
+                for index, bundle in self._manual.items()
+                if bundle
+            }
+            self._manual = None
+            if self._actions_widget is not None:
+                self.paint_button.setChecked(False)
+        elif self._grown is None:
             self._regrow()
         regions = [region for region in self._grown if region]
         if not regions:
@@ -378,10 +562,14 @@ class SeparateUnibodyTool(ToolMode):
                 if body.color is None and fallback is not None:
                     body.color = fallback
 
+            inputs: dict = {"regions": len(regions)}
+            if painted_bundles is not None:
+                inputs["bundles"] = painted_bundles
             self.ctx.journal.record(
                 tool=self.id,
-                params={"area_factor": float(self.factor_spin.value())},
-                inputs={"regions": len(regions)},
+                params={"area_factor": float(self.factor_spin.value()),
+                        "painted": painted_bundles is not None},
+                inputs=inputs,
                 result={
                     "bodies_before": before,
                     "bodies_after": len(document.bodies),

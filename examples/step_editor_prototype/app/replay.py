@@ -226,10 +226,19 @@ def replay(document: EditorDocument, journal: Journal) -> PinRegistry:
                 bounds[1] - bounds[0], bounds[3] - bounds[2],
                 bounds[5] - bounds[4],
             ])) * 5.0e-3
-            grown = grow_pin_regions(
-                document, registry.pins,
-                area_factor=params.get("area_factor", 4.0),
-            )
+            bundles = inputs.get("bundles")
+            if bundles:
+                # the session painted its regions by hand — split exactly those
+                grown = [
+                    [tuple(key) for key in bundles[str(pin.number)]]
+                    if str(pin.number) in bundles else None
+                    for pin in registry.pins
+                ]
+            else:
+                grown = grow_pin_regions(
+                    document, registry.pins,
+                    area_factor=params.get("area_factor", 4.0),
+                )
             regions = [r for r in grown if r]
             region_bodies = document.split_by_face_regions(regions)
             # exact linking by region identity (mirrors the tool)

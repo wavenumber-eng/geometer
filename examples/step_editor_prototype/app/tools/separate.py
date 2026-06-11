@@ -20,7 +20,12 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from ..pins import dominant_face_color, grow_pin_regions, mesh_region_centroid
+from ..pins import (
+    dominant_face_color,
+    find_pin_cut,
+    grow_pin_regions,
+    mesh_region_centroid,
+)
 from .base import ToolMode, make_apply_button
 
 
@@ -78,6 +83,14 @@ class SeparateUnibodyTool(ToolMode):
         self.apply_button = make_apply_button("Apply Separate")
         self.apply_button.clicked.connect(self.apply)
         layout.addWidget(self.apply_button)
+        self.undo_button = QPushButton("Undo Separate")
+        self.undo_button.setToolTip(
+            "Separation only reorganises in-memory geometry — restore the "
+            "pre-split bodies and pin links."
+        )
+        self.undo_button.setEnabled(False)
+        self.undo_button.clicked.connect(self.undo)
+        layout.addWidget(self.undo_button)
         layout.addStretch(1)
         return widget
 
@@ -197,9 +210,21 @@ class SeparateUnibodyTool(ToolMode):
         }
         old_records = {id(body) for body in document.bodies}
 
+        # Reversible: the split only reorganises in-memory geometry, so a
+        # snapshot of the body table + pin links restores everything.
+        self._undo_state = (
+            list(document.bodies),
+            [(pin, list(pin.body_ids), list(pin.face_ids)) for pin in registry.pins],
+        )
+
         try:
+            window.progress("Finding pin cross-section cuts", 0, 0)
+            cuts = [
+                find_pin_cut(document, region) for region in regions
+            ]
+            cut_count = sum(1 for cut in cuts if cut is not None)
             pin_indices = document.split_by_face_regions(
-                regions, progress=window.progress
+                regions, cuts=cuts, progress=window.progress
             )
             self._preview_painted = False
             self._grown = None
@@ -264,11 +289,36 @@ class SeparateUnibodyTool(ToolMode):
             window.document_mutated()
         finally:
             window.progress_done()
+        self.undo_button.setEnabled(True)
         self.info_label.setText(
             f"Split done: {before} body(ies) -> {len(document.bodies)} "
-            f"({len(pin_indices)} pin bodies, {matched} pins re-linked)."
+            f"({len(pin_indices)} pin bodies, {matched} pins re-linked; "
+            f"{cut_count} cross-section cut(s), "
+            f"{len(regions) - cut_count} junction-loop cap(s))."
         )
         self.status(
             f"Separate Unibody: {len(pin_indices)} whole-pin bodies created — "
-            f"{len(document.bodies)} bodies total"
+            f"{len(document.bodies)} bodies total (Undo available)"
         )
+
+    def undo(self) -> None:
+        """Restore the pre-split body table and pin links — separation only
+        reorganises in-memory geometry, so it is fully reversible."""
+        document = self.ctx.document
+        if document is None or not getattr(self, "_undo_state", None):
+            return
+        bodies, pin_links = self._undo_state
+        self._undo_state = None
+        document.bodies = list(bodies)
+        for pin, body_ids, face_ids in pin_links:
+            pin.body_ids = body_ids
+            pin.face_ids = face_ids
+        self._grown = None
+        self._preview_painted = False
+        self.undo_button.setEnabled(False)
+        self.ctx.journal.record(
+            tool=self.id, params={"action": "undo"}, inputs={}, result={}
+        )
+        self.ctx.window.document_mutated()
+        self.info_label.setText("Separation undone — pre-split bodies restored.")
+        self.status("Separate Unibody: undone")

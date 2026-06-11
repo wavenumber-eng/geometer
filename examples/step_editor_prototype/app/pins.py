@@ -340,6 +340,112 @@ def grow_smooth_region(
     return region
 
 
+def find_pin_cut(
+    document: EditorDocument,
+    region: list[tuple[int, int]],
+    *,
+    jump_ratio: float = 3.0,
+    samples: int = 80,
+):
+    """Find where a pin ENDS by geometry, not by existing face boundaries:
+    start at the pin tip, march a section plane back along the tip's normal,
+    and watch the local cross-section — where it grows by `jump_ratio` the
+    body has started. Returns (cut_point, axis, half_size) for a bounded
+    cutting plane (which may split model faces mid-face), or None if no
+    clear jump is found."""
+    if not region:
+        return None
+    body_index = region[0][0]
+    faces = sorted({face for body, face in region if body == body_index})
+    mesh = document.bodies[body_index].mesh
+    if mesh is None or not len(mesh.tris):
+        return None
+
+    region_mask = np.isin(mesh.tri_face_ids, np.asarray(faces, dtype=np.int32))
+    region_points = mesh.points[np.unique(mesh.tris[region_mask])]
+    if not len(region_points):
+        return None
+    region_centroid = region_points.mean(axis=0)
+    body_centroid = mesh.points.mean(axis=0)
+    outward = region_centroid - body_centroid
+    norm = float(np.linalg.norm(outward))
+    outward = outward / norm if norm > 1e-9 else np.array([0.0, 0.0, -1.0])
+
+    # tip face: the region face whose centroid lies farthest outward; the
+    # march axis is its (outward) normal flipped to point INTO the body.
+    tri_corners = mesh.points[mesh.tris]
+    tri_centers = tri_corners.mean(axis=1)
+    tri_normals = np.cross(
+        tri_corners[:, 1] - tri_corners[:, 0], tri_corners[:, 2] - tri_corners[:, 0]
+    )
+    best_face, best_proj = faces[0], -np.inf
+    for face in faces:
+        mask = mesh.tri_face_ids == face
+        proj = float(tri_centers[mask].mean(axis=0) @ outward)
+        if proj > best_proj:
+            best_face, best_proj = face, proj
+    tip_mask = mesh.tri_face_ids == best_face
+    axis = tri_normals[tip_mask].sum(axis=0)
+    norm = float(np.linalg.norm(axis))
+    if norm < 1e-12:
+        return None
+    axis /= norm
+    if float(axis @ outward) > 0.0:
+        axis = -axis  # march into the body
+
+    # start at the region's outermost point along the axis
+    start_t = float((region_points @ axis).min())
+    tip_point = region_centroid + axis * (start_t - float(region_centroid @ axis))
+
+    span = mesh.points @ axis
+    length = float(span.max() - (tip_point @ axis))
+    if length <= 1e-9:
+        return None
+    step = length / samples
+
+    u = np.cross(axis, [0.0, 0.0, 1.0])
+    if np.linalg.norm(u) < 1e-6:
+        u = np.cross(axis, [0.0, 1.0, 0.0])
+    u /= np.linalg.norm(u)
+    v = np.cross(axis, u)
+
+    baseline = None
+    radius = None
+    for i in range(1, samples):
+        t = i * step
+        plane_point = tip_point + axis * t
+        segments = section_segments(mesh, plane_point, axis)
+        if not len(segments):
+            continue
+        pts = segments.reshape(-1, 3)
+        offsets = pts - plane_point
+        if radius is not None:
+            radial = offsets - np.outer(offsets @ axis, axis)
+            keep = np.linalg.norm(radial, axis=1) <= radius
+            if not keep.any():
+                continue
+            pts, offsets = pts[keep], offsets[keep]
+        pu, pv = offsets @ u, offsets @ v
+        area = float((pu.max() - pu.min()) * (pv.max() - pv.min()))
+        if area <= 1e-12:
+            continue
+        if baseline is None:
+            baseline = area
+            radial = offsets - np.outer(offsets @ axis, axis)
+            radius = float(np.linalg.norm(radial, axis=1).max()) * 2.0 + step
+            continue
+        if area > jump_ratio * baseline:
+            cut_point = tip_point + axis * (t - step * 0.5)
+            half_size = radius * 1.25
+            return (
+                tuple(float(x) for x in cut_point),
+                tuple(float(x) for x in axis),
+                half_size,
+            )
+        baseline = max(baseline, area)
+    return None
+
+
 def grow_pin_regions(
     document: EditorDocument,
     pins: list[Pin],

@@ -506,7 +506,7 @@ class EditorDocument:
         return pin_side_indices
 
     def split_by_face_regions(
-        self, regions: list[list[tuple[int, int]]], progress=None
+        self, regions: list[list[tuple[int, int]]], cuts=None, progress=None
     ) -> list[int]:
         """Split bodies along detected pin-region boundaries: for each region
         the boundary loops (edges between region and body faces) are capped
@@ -517,15 +517,16 @@ class EditorDocument:
         from OCP.ShapeAnalysis import ShapeAnalysis_FreeBounds
         from OCP.TopTools import TopTools_HSequenceOfShape
 
-        by_body: dict[int, list[set[int]]] = {}
-        for region in regions:
+        cuts = cuts if cuts is not None else [None] * len(regions)
+        by_body: dict[int, list[tuple[set[int], object]]] = {}
+        for region, cut in zip(regions, cuts):
             if not region:
                 continue
             groups: dict[int, set[int]] = {}
             for body_index, face_index in region:
                 groups.setdefault(body_index, set()).add(face_index)
             for body_index, faces in groups.items():
-                by_body.setdefault(body_index, []).append(faces)
+                by_body.setdefault(body_index, []).append((faces, cut))
 
         new_bodies: list[BodyRecord] = []
         pin_indices: list[int] = []
@@ -558,9 +559,20 @@ class EditorDocument:
             TopExp.MapShapesAndAncestors_s(body.solid, TopAbs_EDGE, TopAbs_FACE, edge_faces)
 
             caps = []
-            for region_number, region in enumerate(region_sets):
+            for region_number, (region, cut) in enumerate(region_sets):
                 if progress is not None:
                     progress("Capping pin junctions", region_number, len(region_sets))
+                if cut is not None:
+                    # cross-section cut: a bounded plane where the pin's
+                    # cross-section jumps — may slice model faces mid-face
+                    point, axis, half_size = cut
+                    plane = gp_Pln(gp_Pnt(*point), gp_Dir(*axis))
+                    caps.append(
+                        BRepBuilderAPI_MakeFace(
+                            plane, -half_size, half_size, -half_size, half_size
+                        ).Face()
+                    )
+                    continue
                 boundary = []
                 for edge_index in range(1, edge_faces.Extent() + 1):
                     sides = set()

@@ -21,10 +21,31 @@ from PySide6.QtWidgets import (
 from ..style import ACCENT_HOVER, BORDER, CONSOLE_BG, SELECT_BG, TEXT_MUTED, TEXT_PRIMARY
 from .base import ToolMode
 
+# (designator, short description shown in the dropdown)
 FUNCTIONS = [
-    "GND", "PWR", "AGND", "VREF", "GPIO", "PWM", "CLK", "SDA", "SCL",
-    "RX", "TX", "EN", "CS", "MISO", "MOSI", "NC",
+    ("GND", "ground / 0 V return"),
+    ("PWR", "power supply (VCC/VDD)"),
+    ("AGND", "analog ground"),
+    ("VREF", "voltage reference"),
+    ("GPIO", "general-purpose I/O"),
+    ("PWM", "pulse-width modulated output"),
+    ("CLK", "clock signal"),
+    ("SDA", "I2C data"),
+    ("SCL", "I2C clock"),
+    ("RX", "UART receive"),
+    ("TX", "UART transmit"),
+    ("EN", "enable / shutdown control"),
+    ("CS", "SPI chip select"),
+    ("MISO", "SPI data, peripheral to host"),
+    ("MOSI", "SPI data, host to peripheral"),
+    ("NC", "not connected"),
 ]
+_SEPARATOR = " — "
+
+
+def combo_token(text: str) -> str:
+    """'GND — ground / 0 V return' -> 'GND'; free text passes through."""
+    return text.split(_SEPARATOR)[0].strip()
 
 
 def parse_function_assignments(text: str) -> dict[int, str]:
@@ -200,7 +221,8 @@ class PinFunctionsTool(ToolMode):
         row.addWidget(self.selected_label)
         self.function_combo = QComboBox()
         self.function_combo.setEditable(True)
-        self.function_combo.addItems(FUNCTIONS)
+        for token, description in FUNCTIONS:
+            self.function_combo.addItem(f"{token}{_SEPARATOR}{description}")
         row.addWidget(self.function_combo, 1)
         set_button = QPushButton("Set")
         set_button.setMinimumWidth(36)
@@ -251,7 +273,13 @@ class PinFunctionsTool(ToolMode):
         pin = registry.pins[index]
         self.selected_label.setText(f"Pin {pin.number} {pin.name or ''}".strip())
         if pin.function:
-            self.function_combo.setCurrentText(pin.function)
+            match = self.function_combo.findText(
+                f"{pin.function}{_SEPARATOR}", Qt.MatchFlag.MatchStartsWith
+            )
+            if match >= 0:
+                self.function_combo.setCurrentIndex(match)
+            else:
+                self.function_combo.setCurrentText(pin.function)
         if pin.body_ids:
             self.ctx.scene.highlight_body(pin.body_ids[0])
         elif pin.face_ids:
@@ -265,7 +293,7 @@ class PinFunctionsTool(ToolMode):
             self.status("Pin Functions: select a pin first")
             return
         pin = registry.pins[index]
-        pin.function = self.function_combo.currentText().strip()
+        pin.function = combo_token(self.function_combo.currentText())
         self.ctx.journal.record(
             tool=self.id, params={},
             inputs={"pin_number": pin.number},

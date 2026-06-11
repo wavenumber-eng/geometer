@@ -887,6 +887,209 @@ def selftest_auto(fixture: Path | None = None) -> None:
     print("auto journal replays headlessly")
 
 
+PROTO = Path(__file__).resolve().parents[1]
+
+
+def _condition_fixture(temp: Path, src: Path) -> bytes:
+    """Run the headless conditioner on `src`, return conditioned AP242 bytes."""
+    from .auto import condition_auto
+    from .document import EditorDocument
+    from .export_ap242 import export_ap242
+    from .journal import Journal
+
+    document = EditorDocument.load(src)
+    journal = Journal()
+    registry = condition_auto(document, journal)
+    out = temp / "conditioned.step"
+    report = export_ap242(document, out, pins=registry, journal=journal)
+    _check(report.ok, "conditioning export failed")
+    return out.read_bytes()
+
+
+def _find_kicad_cli() -> str | None:
+    import os
+    import shutil
+
+    candidates = [
+        os.environ.get("KICAD_CLI"),
+        os.path.expandvars(r"%LOCALAPPDATA%\Programs\KiCad\10.0\bin\kicad-cli.exe"),
+        r"C:\Program Files\KiCad\9.0\bin\kicad-cli.exe",
+        shutil.which("kicad-cli"),
+    ]
+    for cand in candidates:
+        if cand and Path(cand).exists():
+            return cand
+    return None
+
+
+def selftest_kicad_rt(fixture: Path | None = None) -> None:
+    """The design-intent KiCad chain, [1] kicad_mod -> [2] AP242 -> [3]
+    kicad_mod -> [4] AP242 -> [5] kicad_mod: [2]==[4] and [3]==[5] byte-for-
+    byte, [3] loads in kicad-cli, metadata survives [4]. Then a bake/extract
+    identity sweep over the TEST_KICAD_MOD corpus when present."""
+    import subprocess
+
+    from .export_ap242 import extract_metadata, verify_metadata_text
+    from .kicad_embed import (
+        bake_step_into_kicad_mod,
+        checksum_matches,
+        decode_payload,
+        find_embedded_files,
+        replace_embedded_payload,
+        scaffold_kicad_mod,
+    )
+
+    src = fixture or FIXTURES / "SOIC-20-300.STEP"
+    raw = src.read_bytes()
+    with tempfile.TemporaryDirectory(prefix="step_editor_kicad_rt_") as tempdir:
+        temp = Path(tempdir)
+        mod1 = temp / "rt_part.kicad_mod"
+        with open(mod1, "w", encoding="utf-8", newline="") as fh:
+            fh.write(scaffold_kicad_mod("rt_part", "rt_part.step", raw))
+
+        # [1] -> extract -> condition -> [2]
+        with open(mod1, encoding="utf-8", newline="") as fh:
+            text1 = fh.read()
+        step1 = decode_payload(find_embedded_files(text1)[0].data_base64)
+        _check(step1 == raw, "extraction from [1] is not byte-identical")
+        in_step = temp / "in.step"
+        in_step.write_bytes(step1)
+        step2 = _condition_fixture(temp, in_step)
+
+        # [2] -> bake -> [3]
+        mod3 = temp / "rt_part_3.kicad_mod"
+        bake_step_into_kicad_mod(str(mod1), step2, str(mod3))
+
+        # [3] must load in KiCad (parse success also proves the checksum:
+        # KiCad raises CHECKSUM_ERROR otherwise — but exits 0, so gate on text)
+        cli = _find_kicad_cli()
+        if cli:
+            gate = temp / "gate.pretty"
+            gate.mkdir()
+            (gate / "rt_part.kicad_mod").write_bytes(mod3.read_bytes())
+            proc = subprocess.run(
+                [cli, "fp", "upgrade", "--force",
+                 "--output", str(temp / "upgraded"), str(gate)],
+                capture_output=True, text=True,
+            )
+            blob = proc.stdout + proc.stderr
+            _check(proc.returncode == 0 and "rror" not in blob,
+                   f"kicad-cli rejected [3]: {blob[:300]}")
+            print("kicad-cli load gate OK")
+        else:
+            print("kicad-cli not found — load gate skipped")
+
+        # [3] -> extract -> [4]: identity + checksum + metadata survival
+        with open(mod3, encoding="utf-8", newline="") as fh:
+            text3 = fh.read()
+        entry3 = find_embedded_files(text3)[0]
+        step4 = decode_payload(entry3.data_base64)
+        _check(step4 == step2, "[4] != [2]")
+        _check(checksum_matches(entry3.checksum, step4), "[3] checksum invalid")
+        audit = verify_metadata_text(step4.decode("utf-8", errors="replace"))
+        _check(audit["ok"], f"metadata structure in [4]: {audit['errors']}")
+        step4_path = temp / "step4.step"
+        step4_path.write_bytes(step4)
+        payload = extract_metadata(step4_path)
+        _check(payload is not None and len(payload["nets"]) == 20,
+               "metadata content lost across the chain")
+
+        # [4] -> bake -> [5]
+        mod5 = temp / "rt_part_5.kicad_mod"
+        bake_step_into_kicad_mod(str(mod3), step4, str(mod5))
+        _check(mod5.read_bytes() == mod3.read_bytes(), "[5] != [3]")
+    print("chain [1]->[5]: [2]==[4], [3]==[5], metadata intact")
+
+    corpus = PROTO / "TEST_KICAD_MOD"
+    if corpus.is_dir():
+        swept = 0
+        for mod in sorted(corpus.glob("*.kicad_mod")):
+            with open(mod, encoding="utf-8", newline="") as fh:
+                text = fh.read()
+            models = [e for e in find_embedded_files(text)
+                      if e.file_type == "model"]
+            if not models:
+                continue
+            payload_bytes = decode_payload(models[0].data_base64)
+            _check(checksum_matches(models[0].checksum, payload_bytes),
+                   f"{mod.name}: stored checksum invalid")
+            baked = replace_embedded_payload(text, models[0], payload_bytes)
+            rebaked = replace_embedded_payload(
+                baked,
+                [e for e in find_embedded_files(baked)
+                 if e.file_type == "model"][0],
+                payload_bytes,
+            )
+            _check(rebaked == baked, f"{mod.name}: bake not deterministic")
+            re_extracted = decode_payload(
+                [e for e in find_embedded_files(baked)
+                 if e.file_type == "model"][0].data_base64
+            )
+            _check(re_extracted == payload_bytes,
+                   f"{mod.name}: bake/extract identity broken")
+            swept += 1
+        print(f"corpus sweep: {swept} footprints bake/extract identical")
+    else:
+        print("TEST_KICAD_MOD corpus not present — sweep skipped")
+
+
+def selftest_altium_rt(fixture: Path | None = None) -> None:
+    """The Altium chain via altium_bake.py in toolz/altium_monkey's venv:
+    condition -> bake a fresh PcbLib (self-verifies re-extraction identity)
+    -> metadata audit; plus the replace primitive on the TiMM corpus library
+    when present. Skips cleanly when the toolz sibling or uv is missing."""
+    import json
+    import shutil
+    import subprocess
+
+    from .export_ap242 import verify_metadata_text
+
+    monkey = PROTO.parents[2] / "toolz" / "altium_monkey"
+    uv = shutil.which("uv")
+    if not monkey.is_dir() or uv is None:
+        print("toolz/altium_monkey or uv not available — altium_rt skipped")
+        return
+    baker = PROTO / "altium_bake.py"
+
+    src = fixture or FIXTURES / "SOIC-20-300.STEP"
+    with tempfile.TemporaryDirectory(prefix="step_editor_altium_rt_") as tempdir:
+        temp = Path(tempdir)
+        step2 = _condition_fixture(temp, src)
+        audit = verify_metadata_text(step2.decode("utf-8", errors="replace"))
+        _check(audit["ok"], f"conditioned metadata structure: {audit['errors']}")
+
+        bake_in = temp / "bake_in"
+        bake_in.mkdir()
+        (bake_in / "conditioned.step").write_bytes(step2)
+        bounds = geometer.model_bounds(str(bake_in / "conditioned.step")).bounds
+        (bake_in / "bounds_mm.json").write_text(
+            json.dumps({"conditioned": {"min": bounds["min"], "max": bounds["max"]}})
+        )
+        proc = subprocess.run(
+            [uv, "run", "--project", str(monkey), "python", str(baker),
+             str(bake_in), str(temp / "bake_out")],
+            capture_output=True, text=True, cwd=str(monkey),
+        )
+        _check(proc.returncode == 0 and "IDENTICAL" in proc.stdout,
+               f"altium bake/re-extract failed: {(proc.stdout + proc.stderr)[:300]}")
+        print("altium bake + re-extract identity OK")
+
+        timm = PROTO / "TEST_ALTIUM_PCB" / "TiMM.PcbLib"
+        if timm.exists():
+            proc = subprocess.run(
+                [uv, "run", "--project", str(monkey), "python", str(baker),
+                 "--replace", str(timm), "User Library-SOIC-8.STEP",
+                 str(bake_in / "conditioned.step"),
+                 str(temp / "TiMM_swap.PcbLib")],
+                capture_output=True, text=True, cwd=str(monkey),
+            )
+            _check(proc.returncode == 0,
+                   f"altium replace failed: {(proc.stdout + proc.stderr)[:300]}")
+            print("altium replace primitive OK (TiMM corpus)")
+        else:
+            print("TEST_ALTIUM_PCB corpus not present — replace check skipped")
+
+
 SELFTESTS = {
     "m0": selftest_m0,
     "auto": selftest_auto,
@@ -899,6 +1102,8 @@ SELFTESTS = {
     "m4": selftest_m4,
     "m6": selftest_m6,
     "sep": selftest_sep,
+    "kicad_rt": selftest_kicad_rt,
+    "altium_rt": selftest_altium_rt,
 }
 
 

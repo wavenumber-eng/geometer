@@ -209,6 +209,10 @@ class ColorsTool(ToolMode):
         self._refresh_selection_ui()
         self.status(f"Colors: selected {len(keys)} pin item(s)")
 
+    def on_miss(self) -> None:
+        """Click into empty space deselects."""
+        self.clear_selection()
+
     def clear_selection(self) -> None:
         self.selection = set()
         if self._actions_widget is not None:

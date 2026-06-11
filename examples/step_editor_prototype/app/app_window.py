@@ -97,6 +97,7 @@ class MainWindow(QMainWindow):
         self.plotter.interactor.setMinimumSize(480, 360)
         self.scene = SceneManager(self.plotter)
         self.scene.on_pick = self._route_pick
+        self.scene.on_miss = self._route_miss
 
         # --- top bar: logo | mode rect | open/save -------------------------
         top_bar = QWidget()
@@ -263,6 +264,11 @@ class MainWindow(QMainWindow):
 
     def _route_pick(self, pick) -> None:
         self.tools[self.current_tool_index].on_pick(pick)
+
+    def _route_miss(self) -> None:
+        tool = self.tools[self.current_tool_index]
+        if hasattr(tool, "on_miss"):
+            tool.on_miss()
 
     # ------------------------------------------------------------------- load
 

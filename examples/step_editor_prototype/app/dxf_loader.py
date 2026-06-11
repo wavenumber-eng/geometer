@@ -36,6 +36,46 @@ def load_dxf_loops(path: Path, flatten_tol: float = 0.02) -> list[np.ndarray]:
     return loops
 
 
+WATERMARK_LINES = ["Model Conditioned", "With Metadata"]
+
+
+def _text_loops(text: str, size: float = 100.0) -> list[np.ndarray]:
+    """Glyph outline loops for one line of text (matplotlib TextPath)."""
+    from matplotlib.font_manager import FontProperties
+    from matplotlib.textpath import TextPath
+
+    path = TextPath((0, 0), text, size=size,
+                    prop=FontProperties(family="DejaVu Sans", weight="bold"))
+    return [np.asarray(polygon) for polygon in path.to_polygons()
+            if len(polygon) >= 3]
+
+
+def load_watermark_loops(dxf_path: Path) -> list[np.ndarray]:
+    """The full watermark: the DXF logo with 'Model Conditioned / With
+    Metadata' beneath it — we mark the conditioning, not ownership."""
+    loops = load_dxf_loops(dxf_path)
+    if not loops:
+        return loops
+    stack = np.vstack(loops)
+    low, high = stack.min(axis=0), stack.max(axis=0)
+    logo_width = max(high[0] - low[0], 1e-9)
+    center_x = (low[0] + high[0]) / 2
+    out = list(loops)
+    y_top = low[1] - logo_width * 0.10
+    for line in WATERMARK_LINES:
+        glyphs = _text_loops(line)
+        if not glyphs:
+            continue
+        gstack = np.vstack(glyphs)
+        glow, ghigh = gstack.min(axis=0), gstack.max(axis=0)
+        scale = logo_width / max(ghigh[0] - glow[0], 1e-9)
+        anchor = np.array([(glow[0] + ghigh[0]) / 2, ghigh[1]])
+        for glyph in glyphs:
+            out.append((glyph - anchor) * scale + np.array([center_x, y_top]))
+        y_top -= (ghigh[1] - glow[1]) * scale + logo_width * 0.06
+    return out
+
+
 def _point_in_polygon(point, polygon) -> bool:
     x, y = point
     inside = False
@@ -84,13 +124,14 @@ def logo_tool_shape(
     *,
     width_mm: float,
     depth_mm: float,
+    mirror_y: bool = False,
 ):
     """Build the extruded logo tool solid via geometer.planar_step, centred
     on the origin, spanning z in [0, depth_mm]. Returns a TopoDS shape."""
     from OCP.IFSelect import IFSelect_RetDone
     from OCP.STEPControl import STEPControl_Reader
 
-    loops = load_dxf_loops(dxf_path)
+    loops = load_watermark_loops(dxf_path)
     if not loops:
         raise ValueError(f"no closed loops in {dxf_path}")
     stack = np.vstack(loops)
@@ -100,6 +141,20 @@ def logo_tool_shape(
 
     def ring(points: np.ndarray) -> dict:
         scaled = (points - center) * scale
+        if mirror_y:
+            # extruding INTO a face flips handedness; pre-mirroring keeps the
+            # engraved footprint matching the on-face preview
+            scaled = scaled * np.array([1.0, -1.0])
+        # glyph outlines often repeat the first vertex at the end and may
+        # carry coincident consecutive points — the planar schema wants a
+        # clean open ring
+        kept = [scaled[0]]
+        for point in scaled[1:]:
+            if np.linalg.norm(point - kept[-1]) > 1e-9:
+                kept.append(point)
+        if len(kept) > 1 and np.linalg.norm(kept[0] - kept[-1]) < 1e-9:
+            kept.pop()
+        scaled = np.asarray(kept)
         return {
             "points": [[float(x), float(y)] for x, y in scaled],
             "segments": [{"kind": "line"}] * len(scaled),
@@ -144,6 +199,7 @@ def emboss_logo(
     offset_uv: tuple[float, float] = (0.0, 0.0),
     raised: bool = False,
     logo_rgb: tuple[float, float, float] | None = None,
+    rotation_deg: float = 0.0,
 ) -> float:
     """Full pipeline: logo tool from the DXF -> placed on the picked planar
     face (sunk by depth for engrave) -> boolean cut/fuse. Returns the volume
@@ -151,8 +207,11 @@ def emboss_logo(
     frame = document.face_plane(body_index, face_index)
     if frame is None:
         raise ValueError("the picked face is not planar")
-    tool = logo_tool_shape(dxf_path, width_mm=width_mm, depth_mm=depth_mm)
+    tool = logo_tool_shape(
+        dxf_path, width_mm=width_mm, depth_mm=depth_mm, mirror_y=not raised
+    )
     return document.emboss(
         body_index, tool, frame, depth_mm=depth_mm,
         offset_uv=offset_uv, raised=raised, logo_rgb=logo_rgb,
+        rotation_deg=rotation_deg,
     )

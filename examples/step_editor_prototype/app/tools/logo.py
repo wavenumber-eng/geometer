@@ -21,7 +21,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from ..dxf_loader import emboss_logo, load_dxf_loops
+from ..dxf_loader import emboss_logo, load_watermark_loops
 from .base import ToolMode, make_apply_button
 
 HERE = Path(__file__).resolve().parents[2]
@@ -118,6 +118,13 @@ class LogoTool(ToolMode):
         self.offset_v.setSingleStep(0.1)
         self.offset_v.valueChanged.connect(lambda _v: self._preview())
         offset_row.addWidget(self.offset_v)
+        offset_row.addWidget(QLabel("Rot"))
+        self.rotation_spin = QDoubleSpinBox()
+        self.rotation_spin.setRange(-360.0, 360.0)
+        self.rotation_spin.setSuffix(" °")
+        self.rotation_spin.setSingleStep(5.0)
+        self.rotation_spin.valueChanged.connect(lambda _v: self._preview())
+        offset_row.addWidget(self.rotation_spin)
         layout.addLayout(offset_row)
 
         style_row = QHBoxLayout()
@@ -137,6 +144,10 @@ class LogoTool(ToolMode):
         self.apply_button.setEnabled(False)
         self.apply_button.clicked.connect(self.apply)
         layout.addWidget(self.apply_button)
+        self.undo_button = QPushButton("Undo LOGO")
+        self.undo_button.setEnabled(False)
+        self.undo_button.clicked.connect(self.undo)
+        layout.addWidget(self.undo_button)
         layout.addStretch(1)
         return widget
 
@@ -145,7 +156,7 @@ class LogoTool(ToolMode):
     def enter(self) -> None:
         if self._loops is None and DXF_PATH.is_file():
             try:
-                self._loops = load_dxf_loops(DXF_PATH)
+                self._loops = load_watermark_loops(DXF_PATH)
             except Exception as exc:
                 self.status(f"LOGO: could not read {DXF_PATH.name} ({exc})")
                 self._loops = []
@@ -159,6 +170,7 @@ class LogoTool(ToolMode):
         scene.remove_overlay("logo-preview")
         scene.set_markers([], name="logo-handle-move")
         scene.set_markers([], name="logo-handle-scale")
+        scene.set_markers([], name="logo-handle-rotate")
         scene.clear_highlight()
         scene.plotter.render()
 
@@ -226,21 +238,28 @@ class LogoTool(ToolMode):
         v = np.cross(n, u)
         origin = (origin + u * float(self.offset_u.value())
                   + v * float(self.offset_v.value()) + n * 0.02)
+        theta = np.radians(float(self.rotation_spin.value()))
+        c, s = np.cos(theta), np.sin(theta)
+        u_eff = u * c + v * s
+        v_eff = -u * s + v * c
         segments = []
         for loop in self._loops:
             pts2 = (loop - center) * scale
-            pts3 = origin + np.outer(pts2[:, 0], u) + np.outer(pts2[:, 1], v)
+            pts3 = origin + np.outer(pts2[:, 0], u_eff) + np.outer(pts2[:, 1], v_eff)
             closed = np.vstack([pts3, pts3[:1]])
             segments.extend(
                 [[closed[i], closed[i + 1]] for i in range(len(closed) - 1)]
             )
         self.ctx.scene.show_section(np.asarray(segments), name="logo-preview")
-        center, edge = self._handle_points()
+        center, edge, rotator = self._handle_points()
         self.ctx.scene.set_markers(
             [center], name="logo-handle-move", color="#1f5fd6", point_size=18.0
         )
         self.ctx.scene.set_markers(
             [edge], name="logo-handle-scale", color="#c89d00", point_size=16.0
+        )
+        self.ctx.scene.set_markers(
+            [rotator], name="logo-handle-rotate", color="#2a9d2a", point_size=16.0
         )
 
     def _handle_points(self):
@@ -248,19 +267,22 @@ class LogoTool(ToolMode):
         u = np.asarray(self._frame["u"])
         n = np.asarray(self._frame["normal"])
         v = np.cross(n, u)
+        theta = np.radians(float(self.rotation_spin.value()))
+        u_eff = u * np.cos(theta) + v * np.sin(theta)
+        v_eff = -u * np.sin(theta) + v * np.cos(theta)
         center = (origin + u * float(self.offset_u.value())
                   + v * float(self.offset_v.value()) + n * 0.03)
-        edge = center + u * (float(self.width_spin.value()) / 2.0)
-        return center, edge
+        half = float(self.width_spin.value()) / 2.0
+        return center, center + u_eff * half, center + v_eff * half
 
     # ------------------------------------------------------------- handles
 
     def hit_handle(self, position) -> str | None:
         if self._frame is None:
             return None
-        center, edge = self._handle_points()
+        center, edge, rotator = self._handle_points()
         scene = self.ctx.scene
-        for name, point in (("scale", edge), ("move", center)):
+        for name, point in (("scale", edge), ("rotate", rotator), ("move", center)):
             sx, sy = scene.world_to_display_qt(point)
             if (abs(sx - position.x()) ** 2
                     + abs(sy - position.y()) ** 2) ** 0.5 <= HANDLE_RADIUS_PX:
@@ -288,12 +310,19 @@ class LogoTool(ToolMode):
                 spin.blockSignals(True)
                 spin.setValue(value)
                 spin.blockSignals(False)
-        else:  # scale: width follows the distance from the centre
-            center, _edge = self._handle_points()
-            width = 2.0 * float(np.linalg.norm(hit - (center - n * 0.03)))
-            self.width_spin.blockSignals(True)
-            self.width_spin.setValue(max(0.1, width))
-            self.width_spin.blockSignals(False)
+        else:
+            center, _edge, _rot = self._handle_points()
+            vector = hit - (center - n * 0.03)
+            if which == "scale":
+                width = 2.0 * float(np.linalg.norm(vector))
+                self.width_spin.blockSignals(True)
+                self.width_spin.setValue(max(0.1, width))
+                self.width_spin.blockSignals(False)
+            else:  # rotate: the handle sits on the logo's +v axis
+                angle = np.degrees(np.arctan2(float(vector @ v), float(vector @ u))) - 90.0
+                self.rotation_spin.blockSignals(True)
+                self.rotation_spin.setValue(float((angle + 180.0) % 360.0 - 180.0))
+                self.rotation_spin.blockSignals(False)
         self._preview()
 
     def _pick_color(self) -> None:
@@ -317,6 +346,8 @@ class LogoTool(ToolMode):
         body_index, face_index = self._target
         raised = self.mode_combo.currentIndex() == 1
         window = self.ctx.window
+        body = document.bodies[body_index]
+        self._undo_state = (body_index, body.solid, body.mesh)
         try:
             window.progress("Embossing logo", 0, 0)
             delta = emboss_logo(
@@ -327,6 +358,7 @@ class LogoTool(ToolMode):
                            float(self.offset_v.value())),
                 raised=raised,
                 logo_rgb=self._logo_rgb,
+                rotation_deg=float(self.rotation_spin.value()),
             )
         except Exception as exc:
             self.status(f"LOGO: emboss failed — {exc}")
@@ -338,6 +370,7 @@ class LogoTool(ToolMode):
             params={
                 "width_mm": float(self.width_spin.value()),
                 "depth_mm": float(self.depth_spin.value()),
+                "rotation_deg": float(self.rotation_spin.value()),
                 "raised": raised,
                 "logo_rgb": list(self._logo_rgb),
             },
@@ -351,8 +384,28 @@ class LogoTool(ToolMode):
         self._frame = None
         self._detach_handles()
         self.apply_button.setEnabled(False)
+        self.undo_button.setEnabled(True)
         window.document_mutated()
         self.status(
             f"LOGO: {'raised' if raised else 'engraved'} — volume change "
-            f"{delta:+.6f} mm^3"
+            f"{delta:+.6f} mm^3 (Undo available)"
         )
+
+    def undo(self) -> None:
+        """The emboss only replaced one body's in-memory solid — restore it."""
+        document = self.ctx.document
+        state = getattr(self, "_undo_state", None)
+        if document is None or state is None:
+            return
+        body_index, solid, mesh = state
+        self._undo_state = None
+        if body_index >= len(document.bodies):
+            return
+        document.bodies[body_index].solid = solid
+        document.bodies[body_index].mesh = mesh
+        self.undo_button.setEnabled(False)
+        self.ctx.journal.record(
+            tool=self.id, params={"action": "undo"}, inputs={}, result={}
+        )
+        self.ctx.window.document_mutated()
+        self.status("LOGO: undone — body restored")

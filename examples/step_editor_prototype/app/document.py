@@ -687,6 +687,7 @@ class EditorDocument:
         offset_uv: tuple[float, float] = (0.0, 0.0),
         raised: bool = False,
         logo_rgb: tuple[float, float, float] | None = None,
+        rotation_deg: float = 0.0,
     ) -> float:
         """Place a logo tool (built at origin, extruded +Z over [0, depth])
         onto the planar face frame and boolean it into the body. Engrave
@@ -695,14 +696,12 @@ class EditorDocument:
         origin = np.asarray(frame["origin"], dtype=np.float64)
         n = np.asarray(frame["normal"], dtype=np.float64)
         u = np.asarray(frame["u"], dtype=np.float64)
-        origin = origin + u * offset_uv[0] + np.cross(n, u) * offset_uv[1]
-        if raised:
-            target_z = n            # extrude outward from the surface
-            place = origin
-        else:
-            target_z = -n           # extrude into the body
-            place = origin
-        ax3 = gp_Ax3(gp_Pnt(*place), gp_Dir(*target_z), gp_Dir(*u))
+        v = np.cross(n, u)
+        origin = origin + u * offset_uv[0] + v * offset_uv[1]
+        theta = math.radians(rotation_deg)
+        u_eff = u * math.cos(theta) + v * math.sin(theta)
+        target_z = n if raised else -n  # raised grows out, engrave sinks in
+        ax3 = gp_Ax3(gp_Pnt(*origin), gp_Dir(*target_z), gp_Dir(*u_eff))
         trsf = gp_Trsf()
         trsf.SetTransformation(ax3, gp_Ax3())
         placed = BRepBuilderAPI_Transform(tool_shape, trsf, True).Shape()
@@ -710,12 +709,19 @@ class EditorDocument:
         body = self.bodies[body_index]
         before = shape_volume(body.solid) or 0.0
         old_centers = None
-        if logo_rgb is not None and body.mesh is not None:
+        old_colored: list = []
+        if body.mesh is not None:
             tri_centers = body.mesh.points[body.mesh.tris].mean(axis=1)
+            face_ids = np.unique(body.mesh.tri_face_ids)
             old_centers = np.array([
                 tri_centers[body.mesh.tri_face_ids == fid].mean(axis=0)
-                for fid in np.unique(body.mesh.tri_face_ids)
+                for fid in face_ids
             ])
+            old_colored = [
+                (old_centers[i], body.mesh.face_colors[int(fid)])
+                for i, fid in enumerate(face_ids)
+                if int(fid) in body.mesh.face_colors
+            ]
         operation = BRepAlgoAPI_Fuse if raised else BRepAlgoAPI_Cut
         boolean = operation(body.solid, placed)
         boolean.Build()
@@ -729,16 +735,26 @@ class EditorDocument:
         self.remesh_body(body_index)
         after = shape_volume(body.solid) or 0.0
 
-        if logo_rgb is not None and old_centers is not None and body.mesh is not None:
-            # faces the boolean CREATED (no pre-existing centroid nearby)
-            # get the logo colour
+        if old_centers is not None and body.mesh is not None and len(old_centers):
+            # the boolean re-fids every face: faces that SURVIVED (centroid
+            # unchanged) keep their previous colours; faces the boolean
+            # CREATED take the logo colour.
             span = body.mesh.points.max(axis=0) - body.mesh.points.min(axis=0)
             tolerance = float(np.linalg.norm(span)) * 2.0e-3
+            colored_centers = (
+                np.array([c for c, _rgb in old_colored]) if old_colored else None
+            )
             tri_centers = body.mesh.points[body.mesh.tris].mean(axis=1)
             for fid in np.unique(body.mesh.tri_face_ids):
                 center = tri_centers[body.mesh.tri_face_ids == fid].mean(axis=0)
                 if np.linalg.norm(old_centers - center, axis=1).min() > tolerance:
-                    body.mesh.face_colors[int(fid)] = tuple(logo_rgb)
+                    if logo_rgb is not None:
+                        body.mesh.face_colors[int(fid)] = tuple(logo_rgb)
+                elif colored_centers is not None:
+                    distances = np.linalg.norm(colored_centers - center, axis=1)
+                    nearest = int(np.argmin(distances))
+                    if distances[nearest] <= tolerance:
+                        body.mesh.face_colors[int(fid)] = old_colored[nearest][1]
         return after - before
 
     def face_smooth_adjacency(

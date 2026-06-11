@@ -55,6 +55,7 @@ class SceneManager:
     def __init__(self, plotter) -> None:
         self.plotter = plotter
         self.on_pick: Callable[[PickResult], None] | None = None
+        self.on_miss: Callable[[], None] | None = None  # click on empty space
         self._body_polydata: list[pv.PolyData] = []
         self._display_polydata: list = []  # the smooth-shaded copies the mappers render
         self._actor_to_body: dict[int, int] = {}  # id(vtkActor) -> body index
@@ -222,6 +223,12 @@ class SceneManager:
         if abs(x1 - x0) > CLICK_SLOP_PX or abs(y1 - y0) > CLICK_SLOP_PX:
             return  # camera drag
         pick = self.pick_at(x1, y1)
+        if pick is None:
+            self.clear_highlight()
+            if self.on_miss is not None:
+                self.on_miss()
+            self.plotter.render()
+            return
         if pick is not None and self.on_pick is not None:
             shift = bool(self.plotter.iren.interactor.GetShiftKey())
             self.on_pick(

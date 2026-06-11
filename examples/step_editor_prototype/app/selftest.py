@@ -470,8 +470,28 @@ def selftest_sep(fixture: Path | None = None) -> None:
     print("separated model exports and re-reads OK")
 
 
+def selftest_m5(fixture: Path | None = None) -> None:
+    """Pin functions: bulk-assignment parsing and storage on the registry."""
+    from .pins import Pin, PinRegistry
+    from .tools.pin_functions import parse_function_assignments
+
+    parsed = parse_function_assignments(" 1:GND, 2 : VCC ; 5:SDA, bad, 7:")
+    _check(parsed == {1: "GND", 2: "VCC", 5: "SDA", 7: ""},
+           f"bulk parse wrong: {parsed}")
+
+    registry = PinRegistry()
+    registry.set_pins([Pin(number=0, centroid=(float(i), 0.0, 0.0)) for i in range(4)])
+    by_number = {pin.number: pin for pin in registry.pins}
+    for number, function in parse_function_assignments("1:GND,2:PWR,4:SDA").items():
+        by_number[number].function = function
+    functions = [pin.function for pin in registry.pins]
+    _check(functions == ["GND", "PWR", "", "SDA"], f"functions wrong: {functions}")
+    print("bulk parse + registry function assignment OK")
+
+
 SELFTESTS = {
     "m0": selftest_m0,
+    "m5": selftest_m5,
     "m1": selftest_m1,
     "m2": selftest_m2,
     "m3": selftest_m3,

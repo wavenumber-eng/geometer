@@ -1002,7 +1002,31 @@ class EditorDocument:
         fixer.Perform()
         result = fixer.Shape()
         solids = list(_iter_solids(result))
-        body.solid = solids[0] if len(solids) == 1 else result
+        if len(solids) > 1:
+            # A shallow engrave can fragment hairline slivers off the
+            # surface as separate solids — keep the meaningful pieces, drop
+            # sub-tolerance debris (it pollutes the body count and viewers).
+            from OCP.BRep import BRep_Builder
+            from OCP.TopoDS import TopoDS_Compound
+
+            volumes = [abs(shape_volume(s) or 0.0) for s in solids]
+            threshold = max(max(volumes) * 1.0e-5, 1.0e-9)
+            keep = [s for s, v in zip(solids, volumes) if v > threshold]
+            if len(keep) == 1:
+                body.solid = keep[0]
+            elif keep:
+                builder = BRep_Builder()
+                compound = TopoDS_Compound()
+                builder.MakeCompound(compound)
+                for solid in keep:
+                    builder.Add(compound, solid)
+                body.solid = compound
+            else:
+                body.solid = result
+        elif solids:
+            body.solid = solids[0]
+        else:
+            body.solid = result
         self.remesh_body(body_index)
         after = shape_volume(body.solid) or 0.0
 

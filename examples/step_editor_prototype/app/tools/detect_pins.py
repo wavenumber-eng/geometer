@@ -555,6 +555,11 @@ class DetectPinsTool(ToolMode):
         pin = registry.pins[row]
         pin.name = self.name_edit.text().strip()
         pin.name_source = "anchor" if pin.name else ""
+        self.ctx.journal.record(
+            tool=self.id, params={"action": "rename"},
+            inputs={"pin_number": pin.number, "centroid": list(pin.centroid)},
+            result={"name": pin.name, "name_source": pin.name_source},
+        )
         self._refresh_views()
         self.pin_list.setCurrentRow(row)
         self.status(
@@ -638,21 +643,34 @@ class DetectPinsTool(ToolMode):
         self._refresh_views()
         self.status(f"Detect Pins: {outcome}")
 
+    def _journal_order(self) -> None:
+        """Manual list edits change the numbering everything downstream keys
+        on (hitboxes, functions, nets) — record the resulting order so replay
+        reproduces it (matched by centroid, robust to renumbering)."""
+        self.ctx.journal.record(
+            tool=self.id, params={"action": "set_order"}, inputs={},
+            result={"centroids": [list(p.centroid)
+                                  for p in self.ctx.window.pins.pins]},
+        )
+
     def _move_selected(self, delta: int) -> None:
         row = self.pin_list.currentRow()
         if row >= 0:
             new_row = self.ctx.window.pins.move(row, delta)
+            self._journal_order()
             self._refresh_views()
             self.pin_list.setCurrentRow(new_row)
 
     def _reverse(self) -> None:
         self.ctx.window.pins.reverse()
+        self._journal_order()
         self._refresh_views()
 
     def _make_pin1(self) -> None:
         row = self.pin_list.currentRow()
         if row >= 0:
             self.ctx.window.pins.make_pin1(row)
+            self._journal_order()
             self._refresh_views()
             self.pin_list.setCurrentRow(0)
 
@@ -660,11 +678,22 @@ class DetectPinsTool(ToolMode):
         row = self.pin_list.currentRow()
         registry = self.ctx.window.pins
         if 0 <= row < len(registry.pins):
+            pin = registry.pins[row]
+            self.ctx.journal.record(
+                tool=self.id, params={"action": "delete"},
+                inputs={"pin_number": pin.number,
+                        "centroid": list(pin.centroid)},
+                result={"remaining": len(registry.pins) - 1},
+            )
             del registry.pins[row]
             registry.set_pins(registry.pins)
             self._refresh_views()
 
     def _clear(self) -> None:
+        if self.ctx.window.pins.pins:
+            self.ctx.journal.record(
+                tool=self.id, params={"action": "clear"}, inputs={}, result={}
+            )
         self.ctx.window.pins.clear()
         self.pending = []
         self._pending_bands = []

@@ -41,7 +41,35 @@ def replay(document: EditorDocument, journal: Journal) -> PinRegistry:
     assignment ops (names, functions, hitboxes, colours) re-apply their
     recorded results."""
     registry = PinRegistry()
-    for op in journal.operations:
+
+    # A logo undo cancels its emboss entirely — pair each undo with the
+    # nearest preceding un-undone apply and skip both (cheaper than embossing
+    # and snapshotting solids).
+    skip: set[int] = set()
+    pending_logo: list[int] = []
+    for index, op in enumerate(journal.operations):
+        if op.tool != "logo":
+            continue
+        if op.params.get("action") == "undo":
+            if pending_logo:
+                skip.update((pending_logo.pop(), index))
+        else:
+            pending_logo.append(index)
+
+    def _nearest_pin(centroid):
+        if not registry.pins:
+            return None
+        points = np.array([pin.centroid for pin in registry.pins])
+        return registry.pins[int(np.argmin(
+            np.linalg.norm(points - np.asarray(centroid), axis=1)
+        ))]
+
+    # Separate is reversible in the GUI (snapshot of body table + pin links);
+    # replay mirrors that so undo ops restore instead of being ignored.
+    separate_snapshot = None
+    for op_index, op in enumerate(journal.operations):
+        if op_index in skip:
+            continue
         tool, params, inputs, result = op.tool, op.params, op.inputs, op.result
 
         if tool == "zsit":
@@ -85,6 +113,29 @@ def replay(document: EditorDocument, journal: Journal) -> PinRegistry:
                     registry.set_pins(ordered)
                 for pin, name in zip(registry.pins, names):
                     pin.name = name
+            elif action == "rename":
+                pin = _nearest_pin(inputs["centroid"])
+                if pin is not None:
+                    pin.name = result.get("name", "")
+                    pin.name_source = result.get("name_source", "")
+            elif action == "delete":
+                pin = _nearest_pin(inputs["centroid"])
+                if pin is not None:
+                    registry.set_pins([p for p in registry.pins if p is not pin])
+            elif action == "set_order":
+                remaining = list(registry.pins)
+                ordered = []
+                for centroid in result.get("centroids", []):
+                    if not remaining:
+                        break
+                    points = np.array([p.centroid for p in remaining])
+                    nearest = int(np.argmin(np.linalg.norm(
+                        points - np.asarray(centroid), axis=1
+                    )))
+                    ordered.append(remaining.pop(nearest))
+                registry.set_pins(ordered + remaining)
+            elif action == "clear":
+                registry.set_pins([])
             elif "bands" in inputs:  # committed band detection
                 for band in inputs["bands"]:
                     b = Band(*band)
@@ -105,7 +156,30 @@ def replay(document: EditorDocument, journal: Journal) -> PinRegistry:
 
         elif tool == "separate":
             if params.get("action") == "undo":
-                continue  # replay of an undone op-pair nets out via re-load
+                if separate_snapshot is not None:
+                    bodies, links = separate_snapshot
+                    document.bodies[:] = bodies
+                    for pin, body_ids, face_ids in links:
+                        pin.body_ids = body_ids
+                        pin.face_ids = face_ids
+                    separate_snapshot = None
+                continue
+            # Self-heal: the recorded body count is ground truth for the
+            # pre-apply state. A mismatch means an unjournaled restore
+            # happened between two applies — roll back to the snapshot.
+            before = result.get("bodies_before")
+            if (before is not None and before != len(document.bodies)
+                    and separate_snapshot is not None):
+                bodies, links = separate_snapshot
+                document.bodies[:] = bodies
+                for pin, body_ids, face_ids in links:
+                    pin.body_ids = body_ids
+                    pin.face_ids = face_ids
+            separate_snapshot = (
+                list(document.bodies),
+                [(pin, list(pin.body_ids), list(pin.face_ids))
+                 for pin in registry.pins],
+            )
             grown = grow_pin_regions(
                 document, registry.pins,
                 area_factor=params.get("area_factor", 4.0),

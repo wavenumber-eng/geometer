@@ -183,7 +183,9 @@ class DetectPinsTool(ToolMode):
         predict_button.setMinimumWidth(36)
         predict_button.setToolTip(
             "Name a few pins by hand (grid names like A1/C4, or plain numbers),\n"
-            "then Predict propagates the scheme to every pin from their 3D positions."
+            "then Predict propagates the scheme to every pin from their 3D\n"
+            "positions. Blue mouth pins are joined to the tail they line up\n"
+            "with automatically (same as Join to Pins)."
         )
         predict_button.clicked.connect(self.predict_names)
         name_row.addWidget(predict_button)
@@ -401,19 +403,20 @@ class DetectPinsTool(ToolMode):
             f"{len(self.pending)} pending; press Apply, then Join to Pins"
         )
 
-    def _join_mouth_pins(self) -> None:
+    def _join_mouth_pins(self) -> str | None:
         """Pair each mouth pin with the primary pin it lines up with along
         the connector row and inherit its designator (same designator = same
-        net, hitboxes linked)."""
+        net, hitboxes linked). Returns the outcome line (also shown in the
+        status bar) or None when there was nothing to join."""
         registry = self.ctx.window.pins
         primaries = registry.primaries()
         mouths = registry.mouths() + [p for p in self.pending if p.role == "mouth"]
         if not mouths:
             self.status("Join: no mouth pins — stage some with Mouth Seed first")
-            return
+            return None
         if not primaries:
             self.status("Join: detect and Apply the primary (tail) pins first")
-            return
+            return None
         assigned, conflicts = join_mouth_pins(primaries, mouths)
         for index, primary in assigned.items():
             mouths[index].name = primary.name or str(primary.number)
@@ -430,10 +433,11 @@ class DetectPinsTool(ToolMode):
         )
         self._refresh_views()
         self._refresh_pending()
-        outcome = f"Join: {len(assigned)} mouth pin(s) inherited designators"
+        outcome = f"{len(assigned)} mouth pin(s) inherited designators"
         if conflicts:
-            outcome += f" — {len(conflicts)} had no free primary in line; check those"
-        self.status(outcome)
+            outcome += f" — {len(conflicts)} had no primary in line; check those"
+        self.status(f"Join: {outcome}")
+        return outcome
 
     # --------------------------------------------------------- context plane
 
@@ -728,9 +732,17 @@ class DetectPinsTool(ToolMode):
         """Treat the manually named pins as ground truth and propagate the
         scheme to every other pin from the 3D positions."""
         registry = self.ctx.window.pins
-        pins = registry.primaries()  # mouth pins are named by Join, not Predict
+        pins = registry.primaries()  # mouth designators come from the join below
+        has_mouths = bool(
+            registry.mouths() or any(p.role == "mouth" for p in self.pending)
+        )
         anchors = {i: pin.name.strip() for i, pin in enumerate(pins) if pin.name.strip()}
         if not anchors:
+            if has_mouths and pins:
+                # nothing to predict on the primaries — Predict still joins
+                # the mouth pins to the tails they line up with
+                self._join_mouth_pins()
+                return
             self.status("Detect Pins: name at least one pin first (e.g. A1)")
             return
 
@@ -798,6 +810,12 @@ class DetectPinsTool(ToolMode):
                     "order": [pin.number for pin in registry.pins]},
         )
         self._refresh_views()
+        if has_mouths:
+            # the primaries just got their final designators — propagate them
+            # into the mouth, exactly like running Join afterwards
+            joined = self._join_mouth_pins()
+            if joined:
+                outcome += f"; {joined}"
         self.status(f"Detect Pins: {outcome}")
 
     def _journal_order(self) -> None:

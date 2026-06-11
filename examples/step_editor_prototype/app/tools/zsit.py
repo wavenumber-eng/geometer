@@ -24,43 +24,25 @@ ORIGIN_RULES = ("rect-center", "centroid", "first-pick")
 _EPS = 1.0e-9
 
 
-def compute_zsit_frame(
-    p1, p2, p3, p4, *, origin_rule: str = "rect-center", flip_z: bool = False
-) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    """Return (origin, x_dir, y_dir, z_dir) of the picked seating frame, in
-    current model coordinates. z points toward p4 (flipped by flip_z)."""
-    a, b, c, above = (np.asarray(p, dtype=np.float64) for p in (p1, p2, p3, p4))
-
-    normal = np.cross(b - a, c - a)
+def _fit_plane(points) -> tuple[np.ndarray, np.ndarray]:
+    """Best-fit plane through 3+ points (SVD); exact for 3. Returns
+    (centroid-on-plane, unit normal)."""
+    pts = np.asarray(points, dtype=np.float64)
+    centroid = pts.mean(axis=0)
+    _u, s, vt = np.linalg.svd(pts - centroid)
+    if len(pts) > 2 and s[1] < _EPS:
+        raise ValueError("the plane picks are collinear — pick again")
+    normal = vt[-1]
     length = float(np.linalg.norm(normal))
     if length < _EPS:
-        raise ValueError("the three plane picks are collinear — pick again")
-    normal /= length
-
-    if origin_rule == "first-pick":
-        origin = a
-    elif origin_rule == "rect-center":
-        # In-plane bounding-rectangle centre of the three picks.
-        x_axis = _in_plane_axis(a, b, c, normal)
-        y_axis = np.cross(normal, x_axis)
-        uv = np.array([[(p - a) @ x_axis, (p - a) @ y_axis] for p in (a, b, c)])
-        center_uv = (uv.min(axis=0) + uv.max(axis=0)) * 0.5
-        origin = a + center_uv[0] * x_axis + center_uv[1] * y_axis
-    else:  # centroid
-        origin = (a + b + c) / 3.0
-
-    if float((above - origin) @ normal) < 0.0:
-        normal = -normal
-    if flip_z:
-        normal = -normal
-
-    x_dir = _in_plane_axis(a, b, c, normal)
-    y_dir = np.cross(normal, x_dir)
-    return origin, x_dir, y_dir, normal
+        raise ValueError("could not fit a plane through the picks")
+    return centroid, normal / length
 
 
-def _in_plane_axis(a, b, c, normal) -> np.ndarray:
-    for candidate in (b - a, c - a):
+def _in_plane_axis(points, normal) -> np.ndarray:
+    base = np.asarray(points[0], dtype=np.float64)
+    for other in points[1:]:
+        candidate = np.asarray(other, dtype=np.float64) - base
         in_plane = candidate - normal * float(candidate @ normal)
         length = float(np.linalg.norm(in_plane))
         if length > _EPS:
@@ -68,13 +50,48 @@ def _in_plane_axis(a, b, c, normal) -> np.ndarray:
     raise ValueError("cannot derive an in-plane axis from the picks")
 
 
+def compute_zsit_frame(
+    plane_points, above, *, origin_rule: str = "rect-center", flip_z: bool = False
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """Return (origin, x_dir, y_dir, z_dir) of the picked seating frame.
+    plane_points is 3 OR 4 picks — with 4, the best-fit plane through all of
+    them is used and the rectangle bounds every pick. z points toward
+    `above` (flipped by flip_z)."""
+    pts = [np.asarray(p, dtype=np.float64) for p in plane_points]
+    if len(pts) < 3:
+        raise ValueError("need at least 3 plane picks")
+    above = np.asarray(above, dtype=np.float64)
+    centroid, normal = _fit_plane(pts)
+    x_axis = _in_plane_axis(pts, normal)
+    y_axis = np.cross(normal, x_axis)
+
+    if origin_rule == "first-pick":
+        offset = pts[0] - centroid
+        origin = pts[0] - normal * float(offset @ normal)  # projected to plane
+    elif origin_rule == "rect-center":
+        uv = np.array([[(p - centroid) @ x_axis, (p - centroid) @ y_axis]
+                       for p in pts])
+        center_uv = (uv.min(axis=0) + uv.max(axis=0)) * 0.5
+        origin = centroid + center_uv[0] * x_axis + center_uv[1] * y_axis
+    else:  # centroid
+        origin = centroid
+
+    if float((above - origin) @ normal) < 0.0:
+        normal = -normal
+    if flip_z:
+        normal = -normal
+    x_dir = _in_plane_axis(pts, normal)
+    y_dir = np.cross(normal, x_dir)
+    return origin, x_dir, y_dir, normal
+
+
 def compute_zsit_matrix(
-    p1, p2, p3, p4, *, origin_rule: str = "rect-center", flip_z: bool = False
+    plane_points, above, *, origin_rule: str = "rect-center", flip_z: bool = False
 ) -> np.ndarray:
     """4x4 transform taking current model coordinates into the user-defined
-    frame: picked plane -> Z=0 with the origin on it, 4th pick side -> +Z."""
+    frame: picked plane -> Z=0 with the origin on it, `above` side -> +Z."""
     origin, x_dir, y_dir, z_dir = compute_zsit_frame(
-        p1, p2, p3, p4, origin_rule=origin_rule, flip_z=flip_z
+        plane_points, above, origin_rule=origin_rule, flip_z=flip_z
     )
     rotation = np.vstack([x_dir, y_dir, z_dir])  # frame axes as rows
     matrix = np.eye(4, dtype=np.float64)
@@ -83,36 +100,24 @@ def compute_zsit_matrix(
     return matrix
 
 
-PICK_PROMPTS = [
-    "pick point 1 of 3 on the seating plane",
-    "pick point 2 of 3 on the seating plane",
-    "pick point 3 of 3 on the seating plane",
-    "pick a 4th point on the +Z side of the plane",
-    "ready — press Apply (or Reset to start over)",
-]
-
-PLANE_COLOR = "#e8443a"   # first three picks: RED
-Z_COLOR = "#1f5fd6"       # 4th pick + Z arrows: BLUE
+PLANE_COLOR = "#e8443a"   # plane picks: RED
+Z_COLOR = "#1f5fd6"       # +Z pick + Z arrows: BLUE
 
 
-def rect_corners(p1, p2, p3) -> np.ndarray:
-    """The seating rectangle: a true rectangle in the picked plane — the
-    in-plane bounding box of the three picks, sides aligned with the p1->p2
-    direction. Raises ValueError for collinear picks."""
-    a, b, c = (np.asarray(p, dtype=np.float64) for p in (p1, p2, p3))
-    normal = np.cross(b - a, c - a)
-    length = float(np.linalg.norm(normal))
-    if length < _EPS:
-        raise ValueError("the three plane picks are collinear")
-    normal /= length
-    x_axis = _in_plane_axis(a, b, c, normal)
+def rect_corners(plane_points) -> np.ndarray:
+    """The seating rectangle: a true rectangle in the (best-fit) plane — the
+    in-plane bounding box of ALL plane picks (3 or 4), sides aligned with
+    the first pick pair. Raises ValueError for degenerate picks."""
+    pts = [np.asarray(p, dtype=np.float64) for p in plane_points]
+    centroid, normal = _fit_plane(pts)
+    x_axis = _in_plane_axis(pts, normal)
     y_axis = np.cross(normal, x_axis)
-    uv = np.array([[(p - a) @ x_axis, (p - a) @ y_axis] for p in (a, b, c)])
+    uv = np.array([[(p - centroid) @ x_axis, (p - centroid) @ y_axis] for p in pts])
     u_min, v_min = uv.min(axis=0)
     u_max, v_max = uv.max(axis=0)
     return np.array(
         [
-            a + u * x_axis + v * y_axis
+            centroid + u * x_axis + v * y_axis
             for u, v in ((u_min, v_min), (u_max, v_min), (u_max, v_max), (u_min, v_max))
         ]
     )
@@ -140,7 +145,16 @@ class ZSitTool(ToolMode):
         ))
 
         rule_row = QHBoxLayout()
-        rule_row.addWidget(QLabel("Origin rule"))
+        rule_row.addWidget(QLabel("Plane picks"))
+        self.count_combo = QComboBox()
+        self.count_combo.addItems(["3 points", "4 points"])
+        self.count_combo.setToolTip(
+            "4 points: best-fit plane through all four picks, rectangle "
+            "bounds them all — for parts where 3 picks can't frame the pads."
+        )
+        self.count_combo.currentTextChanged.connect(lambda _t: self.reset_points())
+        rule_row.addWidget(self.count_combo)
+        rule_row.addWidget(QLabel("Origin"))
         self.origin_combo = QComboBox()
         self.origin_combo.addItems(ORIGIN_RULES)
         rule_row.addWidget(self.origin_combo, 1)
@@ -196,8 +210,11 @@ class ZSitTool(ToolMode):
 
     # -------------------------------------------------------------- picking
 
+    def _plane_count(self) -> int:
+        return 4 if self.count_combo.currentText().startswith("4") else 3
+
     def on_pick(self, pick) -> None:
-        if self.ctx.document is None or len(self.points) >= 4:
+        if self.ctx.document is None or len(self.points) >= self._plane_count() + 1:
             return
         point = np.asarray(pick.world_point, dtype=np.float64)
         if self.snap_check.isChecked():
@@ -232,13 +249,14 @@ class ZSitTool(ToolMode):
         """Ghost point: preview the nearest surface point under the cursor
         (snapped like a real pick would be), tinted to the next pick's color."""
         scene = self.ctx.scene
-        if pick is None or self.ctx.document is None or len(self.points) >= 4:
+        needed = self._plane_count()
+        if pick is None or self.ctx.document is None or len(self.points) >= needed + 1:
             scene.set_markers([], name="zsit-ghost")
             return
         point = np.asarray(pick.world_point, dtype=np.float64)
         if self.snap_check.isChecked():
             point = self._snap_to_vertex(pick.body_index, point)
-        color = PLANE_COLOR if len(self.points) < 3 else Z_COLOR
+        color = PLANE_COLOR if len(self.points) < needed else Z_COLOR
         scene.set_markers(
             [tuple(float(v) for v in point)],
             name="zsit-ghost",
@@ -249,34 +267,43 @@ class ZSitTool(ToolMode):
 
     def _refresh_preview(self) -> None:
         scene = self.ctx.scene
-        scene.set_markers(self.points[:3], name="zsit-picks-plane", color=PLANE_COLOR)
-        scene.set_markers(self.points[3:4], name="zsit-picks-z", color=Z_COLOR)
-        if len(self.points) >= 4:
+        needed = self._plane_count()
+        scene.set_markers(self.points[:needed], name="zsit-picks-plane",
+                          color=PLANE_COLOR)
+        scene.set_markers(self.points[needed:needed + 1], name="zsit-picks-z",
+                          color=Z_COLOR)
+        if len(self.points) >= needed + 1:
             scene.set_markers([], name="zsit-ghost")
-        self.apply_button.setEnabled(len(self.points) >= 4)
+        self.apply_button.setEnabled(len(self.points) >= needed + 1)
         lines = [
             f"p{i + 1}: ({p[0]:.3f}, {p[1]:.3f}, {p[2]:.3f})"
             for i, p in enumerate(self.points)
         ]
         self.points_label.setText("\n".join(lines) if lines else "No points picked.")
-        self.status(f"Z-Sit: {PICK_PROMPTS[min(len(self.points), 4)]}")
+        if len(self.points) < needed:
+            prompt = f"pick point {len(self.points) + 1} of {needed} on the seating plane"
+        elif len(self.points) == needed:
+            prompt = "pick one more point on the +Z side of the plane"
+        else:
+            prompt = "ready — press Apply (or Reset to start over)"
+        self.status(f"Z-Sit: {prompt}")
 
         corners = []
-        if len(self.points) >= 3:
+        if len(self.points) >= needed:
             try:
-                corners = rect_corners(*self.points[:3])
+                corners = rect_corners(self.points[:needed])
             except ValueError:
-                self.status("Z-Sit: picks are collinear — pick a wider triangle")
+                self.status("Z-Sit: picks are collinear — spread them out")
         scene.show_quad(corners, name="zsit-rect", color=PLANE_COLOR, opacity=0.25)
 
         scene.clear_triad()
         arrow_starts: list = []
         z_dir = (0.0, 0.0, 1.0)
         diag = 1.0
-        if len(self.points) >= 4 and self.ctx.document is not None:
+        if len(self.points) >= needed + 1 and self.ctx.document is not None:
             try:
                 origin, x_dir, y_dir, z_dir = compute_zsit_frame(
-                    *self.points[:4],
+                    self.points[:needed], self.points[needed],
                     origin_rule=self.origin_combo.currentText(),
                     flip_z=self.flip_check.isChecked(),
                 )
@@ -299,13 +326,15 @@ class ZSitTool(ToolMode):
         )
 
     def apply(self) -> None:
-        if self.ctx.document is None or len(self.points) < 4:
+        needed = self._plane_count()
+        if self.ctx.document is None or len(self.points) < needed + 1:
             return
         origin_rule = self.origin_combo.currentText()
         flip_z = self.flip_check.isChecked()
         try:
             matrix = compute_zsit_matrix(
-                *self.points[:4], origin_rule=origin_rule, flip_z=flip_z
+                self.points[:needed], self.points[needed],
+                origin_rule=origin_rule, flip_z=flip_z,
             )
         except ValueError as exc:
             self.status(f"Z-Sit: {exc}")
@@ -313,8 +342,9 @@ class ZSitTool(ToolMode):
         self.ctx.document.apply_trsf(matrix)
         self.ctx.journal.record(
             tool=self.id,
-            params={"origin_rule": origin_rule, "flip_z": flip_z},
-            inputs={"points": [list(p) for p in self.points[:4]]},
+            params={"origin_rule": origin_rule, "flip_z": flip_z,
+                    "plane_points": needed},
+            inputs={"points": [list(p) for p in self.points[:needed + 1]]},
             result={"matrix": matrix.tolist()},
         )
         self.points = []

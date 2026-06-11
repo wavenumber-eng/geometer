@@ -108,11 +108,24 @@ def selftest_m1(fixture: Path | None = None) -> None:
         scrambled((xmin + 0.4, ymax - 0.2, zmin)),
         scrambled(((xmin + xmax) / 2, (ymin + ymax) / 2, zmax)),
     ]
-    matrix = compute_zsit_matrix(*picks, origin_rule="centroid")
+    matrix = compute_zsit_matrix(picks[:3], picks[3], origin_rule="centroid")
     document.apply_trsf(matrix)
     nb = document.bounds()
     print(f"re-sat    z=[{nb[4]:.4f}, {nb[5]:.4f}]")
     _check(abs(nb[4]) < 1.0e-4, f"z-min should be 0, got {nb[4]}")
+
+    # 4-point mode: best-fit plane through four (noisy) seating picks
+    import numpy as _np
+
+    four = [scrambled := None]  # placeholder to keep flake quiet
+    four = [
+        ((-1.0, -1.0, 0.001), (1.0, -1.0, -0.001), (1.0, 1.0, 0.001),
+         (-1.0, 1.0, -0.001)),
+    ][0]
+    m4 = compute_zsit_matrix(four, (0.0, 0.0, 5.0), origin_rule="rect-center")
+    origin_world = m4 @ _np.array([0.0, 0.0, 0.0, 1.0])
+    _check(abs(origin_world[2]) < 0.01, "4-point plane fit off")
+    print("4-point best-fit plane OK")
     _check(
         abs((nb[5] - nb[4]) - original_height) < 1.0e-4,
         "height changed — transform is not rigid",

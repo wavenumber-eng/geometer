@@ -22,7 +22,6 @@ from PySide6.QtWidgets import (
 
 from ..pins import (
     dominant_face_color,
-    find_pin_cut,
     grow_pin_regions,
     mesh_region_centroid,
 )
@@ -233,13 +232,13 @@ class SeparateUnibodyTool(ToolMode):
         )
 
         try:
-            window.progress("Finding pin cross-section cuts", 0, 0)
-            cuts = [
-                find_pin_cut(document, region) for region in regions
-            ]
-            cut_count = sum(1 for cut in cuts if cut is not None)
+            # Cut EXACTLY what the preview shows: the grown regions' junction
+            # loops. (find_pin_cut cross-section planes are benched until the
+            # detector is tuned — they could land cuts the preview never
+            # showed, and preview/apply must never disagree.)
+            cut_count = 0
             pin_indices = document.split_by_face_regions(
-                regions, cuts=cuts, progress=window.progress
+                regions, progress=window.progress
             )
             self._preview_painted = False
             self._grown = None
@@ -316,8 +315,7 @@ class SeparateUnibodyTool(ToolMode):
         self.info_label.setText(
             f"Split done: {before} body(ies) -> {len(document.bodies)} "
             f"({len(pin_indices)} pin bodies, {matched} pins re-linked; "
-            f"{cut_count} cross-section cut(s), "
-            f"{len(regions) - cut_count} junction-loop cap(s))."
+            f"cut along the previewed region boundaries)."
         )
         self.status(
             f"Separate Unibody: {len(pin_indices)} whole-pin bodies created — "

@@ -128,6 +128,80 @@ def main(ref_dir: str, out_dir: str) -> int:
     return 0 if ok else 1
 
 
+def _payload_kind(raw: bytes) -> str:
+    """Sniff an embedded payload — never trust the model's file extension."""
+    head = raw[:200].lstrip()
+    if head.startswith(b"ISO-10303-21"):
+        return "step"
+    if head.startswith(b"**"):
+        return "parasolid"
+    return "other"
+
+
+def list_footprints(lib_path: Path) -> list[dict]:
+    """Picker data: every footprint with its embedded models and payload kinds."""
+    from altium_monkey.altium_pcb_embedded_model_compose import (
+        collect_pcblib_embedded_model_entries,
+        resolve_footprint_body_model_entries,
+    )
+
+    lib = AltiumPcbLib.from_file(lib_path)
+    model_entries = collect_pcblib_embedded_model_entries(
+        lib.raw_models_data, lib.raw_models
+    )
+    rows = []
+    for fp in lib.footprints:
+        resolved = resolve_footprint_body_model_entries(fp, model_entries)
+        models = []
+        for _body, model, payload in resolved:
+            raw = zlib.decompress(payload) if payload[:1] == b"\x78" else bytes(payload)
+            models.append(
+                {
+                    "name": model.name,
+                    "id": str(model.id),
+                    "kind": _payload_kind(raw),
+                    "bytes": len(raw),
+                }
+            )
+        rows.append({"footprint": fp.name, "models": models})
+    return rows
+
+
+def split_footprint(lib_path: Path, footprint_name: str, out_path: Path) -> None:
+    """Split ONE footprint (with only its models) into a standalone PcbLib.
+
+    The database-grade form is one part per file; multi-footprint libs are
+    board-extraction artifacts. The editor's flow: split -> condition the
+    model -> replace_model_payload() on the split lib -> single-part output.
+    """
+    from altium_monkey.altium_pcb_embedded_model_compose import (
+        collect_pcblib_embedded_model_entries,
+        copy_footprint_with_models_into_builder,
+    )
+    from altium_monkey.altium_pcblib_builder import PcbLibBuilder
+
+    lib = AltiumPcbLib.from_file(lib_path)
+    matches = [fp for fp in lib.footprints if fp.name == footprint_name]
+    if not matches:
+        raise ValueError(f"{lib_path}: no footprint named {footprint_name!r}")
+    fp = matches[0]
+    model_entries = collect_pcblib_embedded_model_entries(
+        lib.raw_models_data, lib.raw_models
+    )
+    builder = PcbLibBuilder()
+    copy_footprint_with_models_into_builder(
+        builder,
+        fp,
+        model_entries,
+        height=fp.parameters.get("HEIGHT", "0mil"),
+        description=fp.parameters.get("DESCRIPTION", ""),
+        item_guid=fp.parameters.get("ITEMGUID", ""),
+        revision_guid=fp.parameters.get("REVISIONGUID", ""),
+        seen_model_signatures=set(),
+    )
+    builder.build().save(out_path)
+
+
 def replace_main(lib_path: str, model_name: str, step_path: str, out_path: str) -> int:
     """CLI: replace + verify (payload identity, others untouched, determinism)."""
     src, out = Path(lib_path), Path(out_path)
@@ -176,4 +250,11 @@ def replace_main(lib_path: str, model_name: str, step_path: str, out_path: str) 
 if __name__ == "__main__":
     if sys.argv[1] == "--replace":
         raise SystemExit(replace_main(*sys.argv[2:6]))
+    if sys.argv[1] == "--list":
+        print(json.dumps(list_footprints(Path(sys.argv[2])), indent=1))
+        raise SystemExit(0)
+    if sys.argv[1] == "--split":
+        split_footprint(Path(sys.argv[2]), sys.argv[3], Path(sys.argv[4]))
+        print(f"split {sys.argv[3]!r} -> {sys.argv[4]}")
+        raise SystemExit(0)
     raise SystemExit(main(sys.argv[1], sys.argv[2]))

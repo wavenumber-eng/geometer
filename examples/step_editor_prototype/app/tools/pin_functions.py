@@ -24,6 +24,7 @@ from .base import ToolMode
 # (designator, short description shown in the dropdown) — grouped: power,
 # grounds, digital buses, control, analog, switch/relay, diode/LED, misc.
 FUNCTIONS = [
+    ("INHERIT", "flag: takes whatever function the other pins on this NET have"),
     ("PWR", "power supply, generic"),
     ("VCC", "positive supply (bipolar convention)"),
     ("VDD", "positive supply (MOS convention)"),

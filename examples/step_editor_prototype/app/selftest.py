@@ -598,9 +598,9 @@ def selftest_m8(fixture: Path | None = None) -> None:
     registry.pins[0].name = "SW_A"
     registry.pins[1].name = "SW_A"
     registry.pins[0].function = "NO"
-    registry.pins[1].function = "NO"
+    registry.pins[1].function = "INHERIT"  # flag: takes the net's function
     journal.record("pin_functions", {}, {"pin_number": 1}, {"function": "NO"})
-    journal.record("pin_functions", {}, {"pin_number": 2}, {"function": "NO"})
+    journal.record("pin_functions", {}, {"pin_number": 2}, {"function": "INHERIT"})
 
     applied = []
     for pin in registry.pins:
@@ -619,7 +619,11 @@ def selftest_m8(fixture: Path | None = None) -> None:
         nets = {net["designator"]: net for net in payload["nets"]}
         _check(len(nets["SW_A"]["pins"]) == 2,
                "same-designator pins did not group into one net")
-        _check(nets["SW_A"]["functions"] == ["NO"], nets["SW_A"]["functions"])
+        _check(nets["SW_A"]["functions"] == ["NO"],
+               f"INHERIT leaked into net functions: {nets['SW_A']['functions']}")
+        inherit_pin = next(p for p in nets["SW_A"]["pins"] if p["number"] == 2)
+        _check(inherit_pin["function"] == "INHERIT",
+               "INHERIT flag lost from the pin")
         _check(len(payload["nets"]) == 19, f"net count {len(payload['nets'])}")
         _check(all(p["hitbox"] for net in payload["nets"] for p in net["pins"]),
                "a pin lost its hitbox in the metadata")
@@ -638,7 +642,7 @@ def selftest_m8(fixture: Path | None = None) -> None:
         zb = fresh.bounds()
         _check(abs(zb[4] - b[4]) < 1e-6, "replayed transform differs")
         functions = sorted(p.function for p in replayed.pins if p.function)
-        _check(functions == ["NO", "NO"], f"replayed functions {functions}")
+        _check(functions == ["INHERIT", "NO"], f"replayed functions {functions}")
         boxed = sum(1 for p in replayed.pins if p.hitbox)
         _check(boxed == 20, f"replayed hitboxes {boxed}")
         print("journal replay reproduces the conditioning")

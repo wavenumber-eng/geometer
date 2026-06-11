@@ -27,13 +27,17 @@ def build_metadata(document, pins=None, journal=None) -> dict:
     ]
 
     # Pins sharing a designator are one net: their hitboxes are linked into a
-    # single electrical node. Unnamed pins net by their number.
+    # single electrical node. Unnamed pins net by their number. The special
+    # INHERIT function is a per-pin flag meaning "this pin carries whatever
+    # function the net has" — it stays on the pin but never becomes a net
+    # function itself.
     nets: dict[str, dict] = {}
     for pin in (pins.pins if pins is not None else []):
         designator = pin.name or str(pin.number)
         net = nets.setdefault(designator, {"designator": designator,
                                            "functions": [], "pins": []})
-        if pin.function and pin.function not in net["functions"]:
+        if (pin.function and pin.function != "INHERIT"
+                and pin.function not in net["functions"]):
             net["functions"].append(pin.function)
         net["pins"].append({
             "number": pin.number,

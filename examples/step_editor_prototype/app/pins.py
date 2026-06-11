@@ -588,13 +588,18 @@ def detect_pins_by_section(
 
 # ----------------------------------------------------------------- ordering
 
-def _serpentine_variant(centroids: np.ndarray, flip_x: bool, start_top: bool) -> list[int]:
-    y_mid = (centroids[:, 1].min() + centroids[:, 1].max()) * 0.5
-    bottom = [i for i in range(len(centroids)) if centroids[i, 1] < y_mid]
-    top = [i for i in range(len(centroids)) if centroids[i, 1] >= y_mid]
-    first, second = (top, bottom) if start_top else (bottom, top)
-    first = sorted(first, key=lambda i: centroids[i, 0], reverse=flip_x)
-    second = sorted(second, key=lambda i: centroids[i, 0], reverse=not flip_x)
+def _serpentine_variant(
+    centroids: np.ndarray, flip_x: bool, start_top: bool, axis: int = 1
+) -> list[int]:
+    """axis=1: rows split along Y, ordered by X (DIP/SOIC). axis=0: rows are
+    COLUMNS split along X, ordered by Y (edge connectors)."""
+    other = 0 if axis == 1 else 1
+    mid = (centroids[:, axis].min() + centroids[:, axis].max()) * 0.5
+    low = [i for i in range(len(centroids)) if centroids[i, axis] < mid]
+    high = [i for i in range(len(centroids)) if centroids[i, axis] >= mid]
+    first, second = (high, low) if start_top else (low, high)
+    first = sorted(first, key=lambda i: centroids[i, other], reverse=flip_x)
+    second = sorted(second, key=lambda i: centroids[i, other], reverse=not flip_x)
     return first + second
 
 
@@ -612,14 +617,15 @@ def serpentine_order(
 
     hint = np.asarray(pin1_hint[:2], dtype=np.float64)
     best, best_distance = None, np.inf
-    for flip_x in (False, True):
-        for start_top in (False, True):
-            order = _serpentine_variant(centroids, flip_x, start_top)
-            if not order:
-                continue
-            distance = float(np.linalg.norm(centroids[order[0], :2] - hint))
-            if distance < best_distance:
-                best, best_distance = order, distance
+    for axis in (1, 0):
+        for flip_x in (False, True):
+            for start_top in (False, True):
+                order = _serpentine_variant(centroids, flip_x, start_top, axis)
+                if not order:
+                    continue
+                distance = float(np.linalg.norm(centroids[order[0], :2] - hint))
+                if distance < best_distance:
+                    best, best_distance = order, distance
     return best or _serpentine_variant(centroids, False, False)
 
 
@@ -785,13 +791,15 @@ def predict_serpentine_order(pins: list[Pin], anchors: dict[int, int]) -> list[i
     """Find the serpentine variant whose numbering matches every manually
     numbered pin (pin index -> number). None if no variant fits."""
     centroids = np.array([pin.centroid for pin in pins], dtype=np.float64)
-    for flip_x in (False, True):
-        for start_top in (False, True):
-            order = _serpentine_variant(centroids, flip_x, start_top)
-            if all(
-                order.index(index) + 1 == number for index, number in anchors.items()
-            ):
-                return order
+    for axis in (1, 0):  # rows along Y (chips) OR columns along X (connectors)
+        for flip_x in (False, True):
+            for start_top in (False, True):
+                order = _serpentine_variant(centroids, flip_x, start_top, axis)
+                if all(
+                    order.index(index) + 1 == number
+                    for index, number in anchors.items()
+                ):
+                    return order
     return None
 
 

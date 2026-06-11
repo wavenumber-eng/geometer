@@ -37,6 +37,13 @@ from .document import EditorDocument
 
 CONDITIONED_SUFFIX = "_AP242_conditioned"
 
+# OCCT's STEP parser rejects string literals somewhere past ~16k chars, so the
+# metadata blob is split across multiple DESCRIPTIVE_REPRESENTATION_ITEMs (all
+# referenced by one REPRESENTATION, concatenated in file order on read).
+# 6000 raw chars stays safely under the limit even if every char is an escaped
+# quote (worst case doubles to 12000).
+_METADATA_CHUNK = 6000
+
 
 @dataclass(frozen=True)
 class ExportReport:
@@ -95,15 +102,31 @@ def inject_metadata(step_path: Path, payload: dict) -> None:
     )
     if product is None or context is None:
         raise RuntimeError("could not locate PRODUCT_DEFINITION / context entities")
-    blob = json.dumps(payload, separators=(",", ":")).replace("'", "''")
-    a, b, c, d = next_id, next_id + 1, next_id + 2, next_id + 3
-    entities = (
-        f"#{a}=DESCRIPTIVE_REPRESENTATION_ITEM('WN3D_CONDITIONING','{blob}');\n"
-        f"#{b}=REPRESENTATION('WN3D_CONDITIONING',(#{a}),#{context.group(1)});\n"
-        f"#{c}=PROPERTY_DEFINITION('WN3D_CONDITIONING',"
-        f"'wn3d geometric pin metadata',#{product.group(1)});\n"
-        f"#{d}=PROPERTY_DEFINITION_REPRESENTATION(#{c},#{b});\n"
+    blob = json.dumps(payload, separators=(",", ":"))
+    chunks = [
+        blob[i : i + _METADATA_CHUNK].replace("'", "''")
+        for i in range(0, len(blob), _METADATA_CHUNK)
+    ] or [""]
+    lines, item_ids = [], []
+    for chunk in chunks:
+        lines.append(
+            f"#{next_id}=DESCRIPTIVE_REPRESENTATION_ITEM"
+            f"('WN3D_CONDITIONING','{chunk}');\n"
+        )
+        item_ids.append(next_id)
+        next_id += 1
+    refs = ",".join(f"#{i}" for i in item_ids)
+    rep_id, prop_id, pdr_id = next_id, next_id + 1, next_id + 2
+    lines.append(
+        f"#{rep_id}=REPRESENTATION('WN3D_CONDITIONING',({refs}),"
+        f"#{context.group(1)});\n"
     )
+    lines.append(
+        f"#{prop_id}=PROPERTY_DEFINITION('WN3D_CONDITIONING',"
+        f"'wn3d geometric pin metadata',#{product.group(1)});\n"
+    )
+    lines.append(f"#{pdr_id}=PROPERTY_DEFINITION_REPRESENTATION(#{prop_id},#{rep_id});\n")
+    entities = "".join(lines)
     end = text.rfind("ENDSEC;")
     if end < 0:
         raise RuntimeError("malformed STEP file (no ENDSEC)")
@@ -113,13 +136,13 @@ def inject_metadata(step_path: Path, payload: dict) -> None:
 def extract_metadata(step_path: Path) -> dict | None:
     """Read the embedded conditioning JSON back out of a STEP file."""
     text = step_path.read_text(encoding="utf-8", errors="replace")
-    match = re.search(
+    parts = re.findall(
         r"DESCRIPTIVE_REPRESENTATION_ITEM\('WN3D_CONDITIONING','((?:[^']|'')*)'\)",
         text,
     )
-    if match is None:
+    if not parts:
         return None
-    return json.loads(match.group(1).replace("''", "'"))
+    return json.loads("".join(part.replace("''", "'") for part in parts))
 
 
 def write_step(document: EditorDocument, out_path: Path) -> None:

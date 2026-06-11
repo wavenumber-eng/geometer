@@ -302,6 +302,18 @@ def selftest_m3(fixture: Path | None = None) -> None:
     _check(order is not None and order[0] == 3, "serpentine prediction failed")
     print("serpentine prediction OK (anchored)")
 
+    # Edge-connector layout: pins run in two COLUMNS (split along X, ordered
+    # by Y) — pin 1 top-left going down, then up the right column.
+    connector = [
+        Pin(number=0, centroid=(float(x), float(y), 0.0))
+        for x in (0, 5)
+        for y in (4, 3, 2, 1, 0)
+    ]
+    col_order = predict_serpentine_order(connector, {0: 1, 9: 6})
+    _check(col_order == [0, 1, 2, 3, 4, 9, 8, 7, 6, 5],
+           f"column serpentine wrong: {col_order}")
+    print("serpentine prediction OK (two-column connector)")
+
 
 def selftest_m4(fixture: Path | None = None) -> None:
     """Hitboxes: auto-boxes and 3-click boxes must contain every mesh vertex
@@ -659,6 +671,25 @@ def selftest_m8(fixture: Path | None = None) -> None:
         boxed = sum(1 for p in replayed.pins if p.hitbox)
         _check(boxed == 20, f"replayed hitboxes {boxed}")
         print("journal replay reproduces the conditioning")
+
+        # A real session journal easily exceeds the ~16k-char string limit of
+        # OCCT's STEP parser — the injected blob must be chunked across
+        # entities or the conditioned file becomes unreadable.
+        for i in range(400):
+            journal.record("seed_pin", {"angle": None},
+                           {"point": [float(i), 0.0, 0.0]},
+                           {"faces": list(range(40)),
+                            "centroid": [float(i), 0.0, 0.0]})
+        big_path = Path(temp) / "conditioned_big.step"
+        report = export_ap242(document, big_path, pins=registry, journal=journal)
+        _check(report.ok, "large-journal export not re-readable (chunking)")
+        big_payload = extract_metadata(big_path)
+        _check(big_payload is not None
+               and len(big_payload["journal"]) == len(journal.operations),
+               "large journal did not round-trip")
+        print(f"large metadata blob OK "
+              f"({len(json.dumps(big_payload, separators=(',', ':')))} chars, "
+              f"chunked)")
 
 
 SELFTESTS = {

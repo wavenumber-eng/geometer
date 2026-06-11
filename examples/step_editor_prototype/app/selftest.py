@@ -533,9 +533,19 @@ def selftest_m7(fixture: Path | None = None) -> None:
 
     _check(BRepCheck_Analyzer(document.bodies[body_index].solid).IsValid(),
            "engraved solid is invalid")
-    colored = len(document.bodies[body_index].mesh.face_colors)
-    print(f"logo-coloured faces: {colored}")
-    _check(colored > 0, "no engraved faces were coloured")
+    mesh2 = document.bodies[body_index].mesh
+    gold = [fid for fid, rgb in mesh2.face_colors.items()
+            if abs(rgb[0] - 1.0) < 0.02 and abs(rgb[1] - 0.84) < 0.02]
+    print(f"logo-coloured faces: {len(gold)}")
+    _check(len(gold) > 0, "no engraved faces were coloured")
+    # the logo colour belongs ONLY to faces strictly below the cut surface —
+    # the face the logo cuts through keeps its own colour
+    tri_centers = mesh2.points[mesh2.tris].mean(axis=1)
+    for fid in gold:
+        z = float(tri_centers[mesh2.tri_face_ids == fid].mean(axis=0)[2])
+        _check(z < best_z - 1e-4,
+               f"logo colour leaked onto a surface-level face (z={z:.4f})")
+    print("logo colour confined below the surface plane")
 
     from .export_ap242 import export_ap242
 

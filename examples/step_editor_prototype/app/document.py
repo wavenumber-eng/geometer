@@ -736,25 +736,45 @@ class EditorDocument:
         after = shape_volume(body.solid) or 0.0
 
         if old_centers is not None and body.mesh is not None and len(old_centers):
-            # the boolean re-fids every face: faces that SURVIVED (centroid
-            # unchanged) keep their previous colours; faces the boolean
-            # CREATED take the logo colour.
+            # The boolean re-fids every face. Classification:
+            #  - logo faces: geometry the boolean CREATED, lying strictly off
+            #    the surface plane (engrave: below; raised: above) — only
+            #    those take the logo colour.
+            #  - the face the logo cuts THROUGH stays at surface level; its
+            #    centroid shifts (holes punched in it), so it gets a wider
+            #    colour re-match instead of being mistaken for new geometry.
             span = body.mesh.points.max(axis=0) - body.mesh.points.min(axis=0)
             tolerance = float(np.linalg.norm(span)) * 2.0e-3
+            side_tol = max(depth_mm * 0.05, 1e-6)
             colored_centers = (
                 np.array([c for c, _rgb in old_colored]) if old_colored else None
             )
+
+            def restore(fid, center, match_tol) -> bool:
+                if colored_centers is None:
+                    return False
+                distances = np.linalg.norm(colored_centers - center, axis=1)
+                nearest = int(np.argmin(distances))
+                if distances[nearest] <= match_tol:
+                    body.mesh.face_colors[int(fid)] = old_colored[nearest][1]
+                    return True
+                return False
+
             tri_centers = body.mesh.points[body.mesh.tris].mean(axis=1)
             for fid in np.unique(body.mesh.tri_face_ids):
                 center = tri_centers[body.mesh.tri_face_ids == fid].mean(axis=0)
-                if np.linalg.norm(old_centers - center, axis=1).min() > tolerance:
+                offset_n = float((center - origin) @ n)
+                off_surface = (offset_n < -side_tol) if not raised else (offset_n > side_tol)
+                is_new = np.linalg.norm(old_centers - center, axis=1).min() > tolerance
+                if is_new and off_surface:
                     if logo_rgb is not None:
                         body.mesh.face_colors[int(fid)] = tuple(logo_rgb)
-                elif colored_centers is not None:
-                    distances = np.linalg.norm(colored_centers - center, axis=1)
-                    nearest = int(np.argmin(distances))
-                    if distances[nearest] <= tolerance:
-                        body.mesh.face_colors[int(fid)] = old_colored[nearest][1]
+                elif is_new:
+                    # surface-level face whose centroid moved: the cut-through
+                    # original — keep its colour with a generous match
+                    restore(fid, center, tolerance * 25.0)
+                else:
+                    restore(fid, center, tolerance)
         return after - before
 
     def face_smooth_adjacency(

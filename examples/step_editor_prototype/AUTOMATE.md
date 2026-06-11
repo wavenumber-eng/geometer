@@ -113,7 +113,26 @@ The integration contract that keeps this safe:
   already has. Reviewed sessions feed back into the dataset (active
   learning for free).
 
-## 6. The ladder (where we are)
+## 6. The REF convention — how the corpus accumulates
+
+A gold-standard sample is a hand-conditioned export saved as
+`<part>_AP242_conditioned_REF.step` next to the raw input. Everything the
+trainer needs is inside it (labels + journal); nothing else to maintain.
+
+- Condition the part fully by hand (or fix up an Auto pass — corrections
+  are the most valuable labels), Write AP242, rename with the `_REF`
+  suffix so later sessions can't overwrite it.
+- The journal is extracted into `benchmarks/<part>_REF.json` so the
+  geometric solvers can be scored against it (`--apply` replays it; the
+  auto chain's output diffs against its metadata).
+- First entry: `benchmarks/mtssd03_connector_REF.json` — 26 ops, 67 nets,
+  134 pins (67 SMT/THR + 67 CON/HEAD, all hitboxed, INHERIT propagated).
+  Measured against it, today's coded `--auto` chain gets the seat to
+  0.04 mm but misses the mouth pins entirely, keeps 4 false pins the
+  human deleted, and guesses pin 1 a quarter-turn off — exactly the three
+  judgment layers the learned stages are for.
+
+## 7. The ladder (where we are)
 
 1. ✅ Journaled manual tools — every session replayable (`--apply`).
 2. ✅ Deterministic automation where geometry suffices — Auto Z-Sit

@@ -268,6 +268,99 @@ def bake_step_into_kicad_mod(mod_path: str, step_bytes: bytes, out_path: str, na
         fh.write(text)
 
 
+_SCAFFOLD_VERSION = 20241229
+_SCAFFOLD_GENERATOR = "wn3d_step_editor"
+
+
+def scaffold_kicad_mod(footprint_name: str, model_name: str, step_bytes: bytes) -> str:
+    """A minimal KiCad 9 footprint whose only content is the embedded model.
+
+    Used to wrap a bare AP242 (e.g. a conditioned export) into a footprint
+    KiCad can open directly. UUIDs are derived from the footprint name so
+    regenerating the same scaffold is byte-deterministic.
+    """
+    import uuid
+
+    def uid(role: str) -> str:
+        return str(uuid.uuid5(uuid.NAMESPACE_URL, f"wn3d-scaffold:{footprint_name}:{role}"))
+
+    b64, checksum = encode_payload(step_bytes)
+    chunks = [b64[i : i + MIME_BASE64_LENGTH] for i in range(0, len(b64), MIME_BASE64_LENGTH)]
+    data_interior = "\r\n\t\t\t\t".join(chunks)
+
+    def prop(key: str, value: str, y: float, layer: str, hide: bool) -> str:
+        return (
+            f'\t(property "{key}" "{value}"\r\n'
+            f"\t\t(at 0 {y} 0)\r\n"
+            f'\t\t(layer "{layer}")\r\n'
+            + ("\t\t(hide yes)\r\n" if hide else "")
+            + f'\t\t(uuid "{uid(key)}")\r\n'
+            "\t\t(effects\r\n"
+            "\t\t\t(font\r\n"
+            "\t\t\t\t(size 1 1)\r\n"
+            "\t\t\t\t(thickness 0.15)\r\n"
+            "\t\t\t)\r\n"
+            "\t\t)\r\n"
+            "\t)\r\n"
+        )
+
+    return (
+        f'(footprint "{footprint_name}"\r\n'
+        f"\t(version {_SCAFFOLD_VERSION})\r\n"
+        f'\t(generator "{_SCAFFOLD_GENERATOR}")\r\n'
+        f'\t(generator_version "9.0")\r\n'
+        f'\t(layer "F.Cu")\r\n'
+        + prop("Reference", "REF**", -2.0, "F.SilkS", False)
+        + prop("Value", footprint_name, 2.0, "F.Fab", False)
+        + prop("Datasheet", "", 0, "F.Fab", True)
+        + prop("Description", "", 0, "F.Fab", True)
+        + "\t(attr board_only exclude_from_pos_files exclude_from_bom)\r\n"
+        + "\t(embedded_fonts no)\r\n"
+        + "\t(embedded_files\r\n"
+        + "\t\t(file\r\n"
+        + f'\t\t\t(name "{model_name}")\r\n'
+        + "\t\t\t(type model)\r\n"
+        + f"\t\t\t(data |{data_interior}|\r\n"
+        + "\t\t\t)\r\n"
+        + f'\t\t\t(checksum "{checksum}")\r\n'
+        + "\t\t)\r\n"
+        + "\t)\r\n"
+        + f'\t(model "kicad-embed://{model_name}"\r\n'
+        + "\t\t(offset\r\n\t\t\t(xyz 0 0 0)\r\n\t\t)\r\n"
+        + "\t\t(scale\r\n\t\t\t(xyz 1 1 1)\r\n\t\t)\r\n"
+        + "\t\t(rotate\r\n\t\t\t(xyz 0 0 0)\r\n\t\t)\r\n"
+        + "\t)\r\n"
+        + ")\r\n"
+    )
+
+
+def _scaffold(out_dir: str, step_paths: list[str]) -> int:
+    import os
+
+    os.makedirs(out_dir, exist_ok=True)
+    ok = True
+    for path in step_paths:
+        with open(path, "rb") as fh:
+            step_bytes = fh.read()
+        stem = os.path.splitext(os.path.basename(path))[0]
+        model_name = stem + ".step"
+        text = scaffold_kicad_mod(stem, model_name, step_bytes)
+
+        entry = find_embedded_files(text)[0]
+        raw = decode_payload(entry.data_base64)
+        identity = raw == step_bytes and checksum_matches(entry.checksum, raw)
+        ok &= identity
+
+        out_path = os.path.join(out_dir, stem + ".kicad_mod")
+        with open(out_path, "w", encoding="utf-8", newline="") as fh:
+            fh.write(text)
+        print(
+            f"{stem}.kicad_mod: {len(step_bytes)} -> {os.path.getsize(out_path)} bytes, "
+            f"re-extract {'OK' if identity else 'FAIL'}"
+        )
+    return 0 if ok else 1
+
+
 def _self_check(paths: list[str]) -> int:
     ok = True
     for path in paths:
@@ -331,4 +424,6 @@ if __name__ == "__main__":
     args = sys.argv[1:]
     if args and args[0] == "--bake-test":
         raise SystemExit(_bake_test(args[1:]))
+    if args and args[0] == "--scaffold":
+        raise SystemExit(_scaffold(args[1], args[2:]))
     raise SystemExit(_self_check(args))

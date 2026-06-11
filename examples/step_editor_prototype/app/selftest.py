@@ -335,6 +335,23 @@ def selftest_m3(fixture: Path | None = None) -> None:
         )
     print("mouth join OK (4 contacts inherited the in-line designator)")
 
+    # A mouth row SHIFTED by more than half a pitch pairs wrong by nearest
+    # alone — one green anchor must calibrate the offset for all the rest.
+    shifted = [
+        Pin(number=0, centroid=(float(i) + 0.6, 2.0, 1.5), role="mouth")
+        for i in range(4)
+    ]
+    naive, _c = join_mouth_pins(primaries, shifted)
+    _check(naive[0].name == "2", "expected the naive shifted pairing to miss")
+    shifted[0].name = "1"
+    shifted[0].name_source = "anchor"
+    calibrated, conflicts = join_mouth_pins(primaries, shifted)
+    _check(not conflicts, f"calibrated join conflicts: {len(conflicts)}")
+    for index, primary in calibrated.items():
+        _check(primary.name == str(index + 1),
+               f"anchored join wrong: mouth {index} -> {primary.name}")
+    print("mouth join OK (one anchor recalibrated a shifted row)")
+
     # BGA grid naming + anchored prediction on a synthetic 4x4 ball grid.
     from .pins import Pin, predict_grid_names, predict_serpentine_order
 

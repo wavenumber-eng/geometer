@@ -498,11 +498,14 @@ def join_mouth_pins(
     """Give each mouth pin the designator of the primary (tail) pin it lines
     up with along the connector row: contacts run perpendicular to the row,
     so projecting centroids onto the primaries' dominant XY axis pairs them
-    naturally. Several mouth faces may join the same primary (one contact
-    can expose more than one face in the mouth). Returns
+    naturally. Mouth pins the user named by hand (green anchors) calibrate
+    the pairing — they reveal the offset and direction between the mouth
+    row and the tail row, so shifted or mirrored rows still pair right —
+    and are never reassigned. Several mouth faces may join the same primary
+    (one contact can expose more than one face in the mouth). Returns
     ({mouth list-index: primary}, [conflicted indices]) where conflicts are
-    mouth pins farther than half the primary pitch from any primary —
-    misaligned, left unjoined for the user to check."""
+    mouth pins farther than half the primary pitch from any (calibrated)
+    primary position — misaligned, left unjoined for the user to check."""
     if not primaries or not mouths:
         return {}, list(range(len(mouths)))
     points = np.array([p.centroid for p in primaries], dtype=np.float64)[:, :2]
@@ -518,6 +521,31 @@ def join_mouth_pins(
         np.array([p.centroid for p in mouths], dtype=np.float64)[:, :2] - center
     ) @ axis
 
+    # Anchored mouth pins: t_mouth ~= sign * t_primary + offset, fit from
+    # the user's anchors (2+ anchors can also detect a mirrored row).
+    by_designator = {
+        (p.name or str(p.number)): i for i, p in enumerate(primaries)
+    }
+    anchor_pairs = [
+        (m, by_designator[pin.name.strip()])
+        for m, pin in enumerate(mouths)
+        if pin.name_source == "anchor" and pin.name.strip() in by_designator
+    ]
+    sign, offset = 1.0, 0.0
+    if len(anchor_pairs) >= 2:
+        tm = np.array([t_mouth[m] for m, _p in anchor_pairs])
+        tp = np.array([t_primary[p] for _m, p in anchor_pairs])
+        best_fit = None
+        for a in (1.0, -1.0):
+            b = float(np.mean(tm - a * tp))
+            residual = float(np.abs(tm - (a * tp + b)).max())
+            if best_fit is None or residual < best_fit[0]:
+                best_fit = (residual, a, b)
+        _residual, sign, offset = best_fit
+    elif len(anchor_pairs) == 1:
+        m, p = anchor_pairs[0]
+        offset = float(t_mouth[m] - t_primary[p])
+
     if len(primaries) > 1:
         gaps = np.diff(np.sort(t_primary))
         gaps = gaps[gaps > 1e-9]
@@ -527,8 +555,13 @@ def join_mouth_pins(
 
     assigned: dict[int, Pin] = {}
     conflicts: list[int] = []
+    anchored = dict(anchor_pairs)
+    expected = sign * t_primary + offset  # where each primary's mouth sits
     for m, tm in enumerate(t_mouth):
-        distances = np.abs(t_primary - tm)
+        if m in anchored:
+            assigned[m] = primaries[anchored[m]]
+            continue
+        distances = np.abs(expected - tm)
         nearest = int(np.argmin(distances))
         if float(distances[nearest]) <= tolerance:
             assigned[m] = primaries[nearest]

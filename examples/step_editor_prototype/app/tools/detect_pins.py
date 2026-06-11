@@ -418,7 +418,10 @@ class DetectPinsTool(ToolMode):
             self.status("Join: detect and Apply the primary (tail) pins first")
             return None
         assigned, conflicts = join_mouth_pins(primaries, mouths)
+        anchors = sum(1 for pin in mouths if pin.name_source == "anchor")
         for index, primary in assigned.items():
+            if mouths[index].name_source == "anchor":
+                continue  # the user's green anchors are ground truth
             mouths[index].name = primary.name or str(primary.number)
             mouths[index].name_source = "joined"
         self.ctx.journal.record(
@@ -434,6 +437,8 @@ class DetectPinsTool(ToolMode):
         self._refresh_views()
         self._refresh_pending()
         outcome = f"{len(assigned)} mouth pin(s) inherited designators"
+        if anchors:
+            outcome += f" ({anchors} anchor(s) calibrated the pairing)"
         if conflicts:
             outcome += f" — {len(conflicts)} had no primary in line; check those"
         self.status(f"Join: {outcome}")
@@ -906,8 +911,8 @@ class DetectPinsTool(ToolMode):
         points = [pin.centroid for pin in registry.pins]
         labels = [pin.name or str(pin.number) for pin in registry.pins]
         label_colors = [
-            "#2a6fd4" if pin.role == "mouth"
-            else "#1f9d3a" if pin.name_source == "anchor"
+            "#1f9d3a" if pin.name_source == "anchor"  # green anchors,
+            else "#2a6fd4" if pin.role == "mouth"     # CON/HEAD included
             else "#e07b00" if pin.name_source == "predicted"
             else "#1a1a1a"
             for pin in registry.pins

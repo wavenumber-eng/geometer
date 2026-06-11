@@ -264,7 +264,12 @@ def replay(document: EditorDocument, journal: Journal) -> PinRegistry:
 
         elif tool == "pin_functions":
             by_number = {pin.number: pin for pin in registry.pins}
-            if params.get("action") == "bulk":
+            if params.get("action") == "set_multi":
+                for number in inputs.get("pin_numbers", []):
+                    pin = by_number.get(number)
+                    if pin is not None:
+                        pin.function = result.get("function", "")
+            elif params.get("action") == "bulk":
                 from .tools.pin_functions import parse_function_assignments
 
                 for number, function in parse_function_assignments(

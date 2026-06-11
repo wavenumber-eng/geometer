@@ -105,25 +105,65 @@ def parse_function_assignments(text: str) -> dict[int, str]:
     return result
 
 
+SIDE_MODES = ["Auto", "2 sides", "4 sides"]
+
+
 class MiniSchematicWidget(QWidget):
-    pin_clicked = Signal(int)  # index into the registry
+    pin_clicked = Signal(int)        # index into the registry
+    pins_band_selected = Signal(list)  # indices captured by a drag rectangle
 
     def __init__(self) -> None:
         super().__init__()
         self._pins: list = []      # (number, name, function, centroid)
-        self._selected = -1
+        self._selected: set[int] = set()
         self._hits: list[tuple[QRectF, int]] = []
+        self._side_mode = "Auto"
+        self._band_origin: QPointF | None = None
+        self._band_rect: QRectF | None = None
         self.setMinimumSize(220, 240)
 
-    def set_pins(self, pins, selected: int = -1) -> None:
+    def set_pins(self, pins, selected=()) -> None:
         self._pins = pins
-        self._selected = selected
+        if isinstance(selected, int):
+            selected = {selected} if selected >= 0 else set()
+        self._selected = set(selected)
         self.update()
 
+    def set_side_mode(self, mode: str) -> None:
+        self._side_mode = mode
+        self.update()
+
+    # Drag a rectangle to select many pins at once; a short click still
+    # selects the single pin under the cursor.
     def mousePressEvent(self, event) -> None:
+        self._band_origin = event.position()
+        self._band_rect = None
+
+    def mouseMoveEvent(self, event) -> None:
+        if self._band_origin is None:
+            return
         point = event.position()
+        if (point - self._band_origin).manhattanLength() > 6:
+            self._band_rect = QRectF(self._band_origin, point).normalized()
+            self.update()
+
+    def mouseReleaseEvent(self, event) -> None:
+        origin, band = self._band_origin, self._band_rect
+        self._band_origin = None
+        self._band_rect = None
+        self.update()
+        if band is not None:
+            captured = sorted(
+                index for rect, index in self._hits
+                if band.contains(rect.center())
+            )
+            if captured:
+                self.pins_band_selected.emit(captured)
+            return
+        if origin is None:
+            return
         for rect, index in self._hits:
-            if rect.contains(point):
+            if rect.contains(origin):
                 self.pin_clicked.emit(index)
                 return
 
@@ -146,19 +186,30 @@ class MiniSchematicWidget(QWidget):
         sx = max(max(xs) - min(xs), 1e-9)
         sy = max(max(ys) - min(ys), 1e-9)
 
-        sides: dict[str, list[int]] = {"left": [], "right": [], "top": [], "bottom": []}
-        for index, (_n, _name, _f, c) in enumerate(self._pins):
-            dx = (c[0] - cx) / sx
-            dy = (c[1] - cy) / sy
-            if abs(dx) >= abs(dy):
-                sides["right" if dx >= 0 else "left"].append(index)
-            else:
-                sides["top" if dy >= 0 else "bottom"].append(index)
         key = lambda i: self._pins[i][3]
-        sides["left"].sort(key=lambda i: -key(i)[1])
-        sides["right"].sort(key=lambda i: -key(i)[1])
-        sides["top"].sort(key=lambda i: key(i)[0])
-        sides["bottom"].sort(key=lambda i: key(i)[0])
+        sides: dict[str, list[int]] = {"left": [], "right": [], "top": [], "bottom": []}
+        if self._side_mode == "2 sides":
+            # connector layout: split along the axis with the SMALLER spread
+            # (the row/column separation axis), everything on left or right
+            axis = 0 if sx <= sy else 1
+            center = cx if axis == 0 else cy
+            for index, (_n, _name, _f, c) in enumerate(self._pins):
+                sides["left" if c[axis] < center else "right"].append(index)
+            sides["left"].sort(key=lambda i: (-key(i)[1], key(i)[0]))
+            sides["right"].sort(key=lambda i: (-key(i)[1], -key(i)[0]))
+        else:
+            # Auto / 4 sides (QFN): nearest side by normalized centroid
+            for index, (_n, _name, _f, c) in enumerate(self._pins):
+                dx = (c[0] - cx) / sx
+                dy = (c[1] - cy) / sy
+                if abs(dx) >= abs(dy):
+                    sides["right" if dx >= 0 else "left"].append(index)
+                else:
+                    sides["top" if dy >= 0 else "bottom"].append(index)
+            sides["left"].sort(key=lambda i: -key(i)[1])
+            sides["right"].sort(key=lambda i: -key(i)[1])
+            sides["top"].sort(key=lambda i: key(i)[0])
+            sides["bottom"].sort(key=lambda i: key(i)[0])
 
         # classic KiCad symbol colours
         BODY_FILL = QColor(255, 255, 194)
@@ -181,7 +232,7 @@ class MiniSchematicWidget(QWidget):
         def draw_pin(index, line_a, line_b, designator_rect, d_align,
                      function_rect, f_align):
             number, name, function, _c = self._pins[index]
-            selected = index == self._selected
+            selected = index in self._selected
             painter.setPen(QPen(OUTLINE, 1.2))
             painter.drawLine(line_a, line_b)
             if selected:
@@ -238,6 +289,12 @@ class MiniSchematicWidget(QWidget):
                              QRectF(x - 30, body.bottom() - 17, 60, 14),
                              h | Qt.AlignmentFlag.AlignBottom)
 
+        if self._band_rect is not None:
+            band_pen = QPen(QColor(ACCENT_HOVER), 1.0, Qt.PenStyle.DashLine)
+            painter.setPen(band_pen)
+            painter.setBrush(Qt.BrushStyle.NoBrush)
+            painter.drawRect(self._band_rect)
+
 
 class PinFunctionsTool(ToolMode):
     id = "pin_functions"
@@ -250,13 +307,27 @@ class PinFunctionsTool(ToolMode):
         layout.setContentsMargins(8, 8, 8, 8)
         layout.addWidget(QLabel(
             "<b>Assign Pin Functions/Names</b><br>"
-            "Click a pin in the schematic or the 3D view, pick a function "
-            "(or type one), press Set. Functions are geometric — each label "
-            "lives on a physically located pin."
+            "Click a pin (or drag a rectangle over several) in the schematic "
+            "or the 3D view, pick a function, press Set — it applies to the "
+            "whole selection and steps to the next pin."
         ))
+
+        sides_row = QHBoxLayout()
+        self.sides_button = QPushButton("Sides: Auto")
+        self.sides_button.setToolTip(
+            "How pins distribute on the schematic symbol:\n"
+            "Auto — nearest side from the 3D positions\n"
+            "2 sides — left/right only (connectors)\n"
+            "4 sides — all four sides (QFN etc.)"
+        )
+        self.sides_button.clicked.connect(self._cycle_sides)
+        sides_row.addWidget(self.sides_button)
+        sides_row.addStretch(1)
+        layout.addLayout(sides_row)
 
         self.schematic = MiniSchematicWidget()
         self.schematic.pin_clicked.connect(self._select)
+        self.schematic.pins_band_selected.connect(self._select_many)
         layout.addWidget(self.schematic, 3)
 
         row = QHBoxLayout()
@@ -296,9 +367,18 @@ class PinFunctionsTool(ToolMode):
         return widget
 
     def enter(self) -> None:
-        self._selected = -1
+        self._selection: list[int] = []
         self._refresh()
-        self.status("Pin Functions: click a pin, choose a function, press Set")
+        self.status(
+            "Pin Functions: click a pin (or drag over several), choose a "
+            "function, press Set"
+        )
+
+    def _cycle_sides(self) -> None:
+        current = self.sides_button.text().split(": ", 1)[1]
+        mode = SIDE_MODES[(SIDE_MODES.index(current) + 1) % len(SIDE_MODES)]
+        self.sides_button.setText(f"Sides: {mode}")
+        self.schematic.set_side_mode(mode)
 
     def exit(self) -> None:
         self.ctx.scene.clear_highlight()
@@ -331,10 +411,10 @@ class PinFunctionsTool(ToolMode):
         self.description_label.setText(description)
 
     def _select(self, index: int) -> None:
-        self._selected = index
         registry = self.ctx.window.pins
         if not (0 <= index < len(registry.pins)):
             return
+        self._selection = [index]
         pin = registry.pins[index]
         self.selected_label.setText(f"Pin {pin.number} {pin.name or ''}".strip())
         if pin.function:
@@ -346,21 +426,69 @@ class PinFunctionsTool(ToolMode):
             self.ctx.scene.highlight_faces(pin.face_ids)
         self._refresh()
 
+    def _select_many(self, indices: list[int]) -> None:
+        registry = self.ctx.window.pins
+        self._selection = [i for i in indices if 0 <= i < len(registry.pins)]
+        if not self._selection:
+            return
+        self.selected_label.setText(f"{len(self._selection)} pins")
+        faces = [
+            key
+            for i in self._selection
+            for key in registry.pins[i].face_ids
+        ]
+        if faces:
+            self.ctx.scene.highlight_faces(faces)
+        self._refresh()
+        self.status(
+            f"Pin Functions: {len(self._selection)} pins selected — choose a "
+            f"function and press Set to assign it to all of them"
+        )
+
     def _set_function(self) -> None:
         registry = self.ctx.window.pins
-        index = getattr(self, "_selected", -1)
-        if not (0 <= index < len(registry.pins)):
+        selection = [
+            i for i in getattr(self, "_selection", [])
+            if 0 <= i < len(registry.pins)
+        ]
+        if not selection:
             self.status("Pin Functions: select a pin first")
             return
-        pin = registry.pins[index]
-        pin.function = combo_token(self.function_combo.currentText())
-        self.ctx.journal.record(
-            tool=self.id, params={},
-            inputs={"pin_number": pin.number},
-            result={"function": pin.function},
-        )
+        function = combo_token(self.function_combo.currentText())
+        for index in selection:
+            registry.pins[index].function = function
+        if len(selection) == 1:
+            self.ctx.journal.record(
+                tool=self.id, params={},
+                inputs={"pin_number": registry.pins[selection[0]].number},
+                result={"function": function},
+            )
+        else:
+            self.ctx.journal.record(
+                tool=self.id, params={"action": "set_multi"},
+                inputs={"pin_numbers": [registry.pins[i].number
+                                        for i in selection]},
+                result={"function": function},
+            )
+        numbers = ", ".join(str(registry.pins[i].number) for i in selection[:8])
         self._refresh()
-        self.status(f"Pin Functions: pin {pin.number} -> {pin.function}")
+        # single assignment: step to the next pin so the user can rattle
+        # down the sequence (skipping CON/HEAD pins — they inherit via nets)
+        following = selection[-1] + 1
+        if (
+            len(selection) == 1
+            and following < len(registry.pins)
+            and registry.pins[following].role != "mouth"
+        ):
+            self._select(following)
+            self.status(
+                f"Pin Functions: pin {numbers} -> {function or '(cleared)'} — "
+                f"next: pin {registry.pins[following].number}"
+            )
+        else:
+            self.status(
+                f"Pin Functions: pin(s) {numbers} -> {function or '(cleared)'}"
+            )
 
     def _bulk_assign(self) -> None:
         registry = self.ctx.window.pins
@@ -392,5 +520,5 @@ class PinFunctionsTool(ToolMode):
         self.schematic.set_pins(
             [(pin.number, pin.name, pin.function, pin.centroid)
              for pin in registry.pins if pin.role != "mouth"],
-            getattr(self, "_selected", -1),
+            set(getattr(self, "_selection", [])),
         )

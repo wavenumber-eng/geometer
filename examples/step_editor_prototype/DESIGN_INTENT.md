@@ -34,3 +34,23 @@ Makes DUPONT connectors on PCBs have actual utility instead of for 3D crosscheck
 Complex board connections could now be done using the hitboxes.
 Makes all 3D models useful and coherent.
 
+
+Additive Design Intent
+
+ - The project should depend on Altium monkey and Kicad monkey systems to allow it to open standard KICAD and ALTIUM files which have embedded STEP files within them.
+
+ The flow:
+ - Open an Altium or Kicad file and extract the STEP data within.
+ - User applies the process we have honed in here to add metadata and fix up the STEP file.
+ - STEP AP242 is generated with metadata within.
+ - Bake the STEP file into the Altium/Kicad file and open it in the respective program.
+ - Ensure no load problems with this new baked in format.
+ - Re-extract the baked STEP file into AP242 and see if the metadata has survived.
+
+ What has to work (kicad and altium must both work):
+ - [1] kicad_mod -> [2] STEP AP242 -> [3] kicad_mod -> [4] STEP AP242 -> [5] kicad_mod
+ - system loads in [1] and user generates [2] with the editor
+ - [3] must work in kicad
+ - [2] and [4] must be completely identical line for line.
+ - [3] and [5] must be completely identical line for line.
+ - [4] must contain metadata

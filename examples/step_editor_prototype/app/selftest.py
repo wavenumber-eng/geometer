@@ -592,7 +592,8 @@ def selftest_sep(fixture: Path | None = None) -> None:
     anchors = capture_pin_face_anchors(document, [mouth])
 
     volume_before = sum(shape_volume(b.solid) or 0.0 for b in document.bodies)
-    pin_indices = document.split_by_face_regions([r for r in grown if r])
+    region_bodies = document.split_by_face_regions([r for r in grown if r])
+    pin_indices = [b for b in region_bodies if b is not None]
     print(f"split: {len(document.bodies)} bodies, {len(pin_indices)} pin solids")
     _check(len(pin_indices) == 5, f"expected 5 pin bodies, got {len(pin_indices)}")
     _check(len(document.bodies) >= 6, "package body missing after split")

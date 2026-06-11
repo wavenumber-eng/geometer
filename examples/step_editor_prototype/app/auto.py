@@ -75,19 +75,57 @@ def auto_pin1_point(
 def auto_separate_factor(
     document: EditorDocument,
     pins: list[Pin],
-    factors=(2.0, 3.0, 4.0, 6.0, 8.0),
+    factors=(0.25, 0.5, 1.0, 2.0, 3.0, 4.0, 6.0, 8.0),
 ) -> tuple[float, int]:
-    """Smallest cutoff where edge-flow growth PLATEAUS: once two successive
-    factors grow to the same face count, the pins have reached the body and
-    a bigger cutoff only risks leaking into it."""
-    counts = []
+    """Pick the growth cutoff: the first factor of the LAST stable run of
+    non-flooded growth. Stable = two successive factors grow to the same
+    face count (the pins reached the body). Flooded = some region's bbox
+    diagonal approaches its body's own diagonal — the flow leaked across
+    the housing (through-hole headers with a big pad face in the seed do
+    this at the default 4x), so those factors are discarded."""
+    body_diag = {}
+    for body_index, body in enumerate(document.bodies):
+        mesh = body.mesh
+        if mesh is not None and len(mesh.points):
+            span = mesh.points.max(axis=0) - mesh.points.min(axis=0)
+            body_diag[body_index] = max(float(np.linalg.norm(span)), 1e-9)
+
+    usable: list[tuple[float, int]] = []
     for factor in factors:
         grown = grow_pin_regions(document, pins, area_factor=factor)
-        counts.append(sum(len(region) for region in grown if region))
-    for index in range(len(counts) - 1):
-        if counts[index] and counts[index] == counts[index + 1]:
-            return float(factors[index]), counts[index]
-    return 4.0, counts[list(factors).index(4.0)] if 4.0 in factors else 0
+        count = 0
+        flooded = False
+        for region in grown:
+            if not region:
+                continue
+            count += len(region)
+            by_body: dict[int, list[int]] = {}
+            for body_index, face_index in region:
+                by_body.setdefault(body_index, []).append(face_index)
+            for body_index, faces in by_body.items():
+                mesh = document.bodies[body_index].mesh
+                if mesh is None or body_index not in body_diag:
+                    continue
+                mask = np.isin(
+                    mesh.tri_face_ids, np.asarray(faces, dtype=np.int32)
+                )
+                points = mesh.points[np.unique(mesh.tris[mask])]
+                if not len(points):
+                    continue
+                span = points.max(axis=0) - points.min(axis=0)
+                if float(np.linalg.norm(span)) > 0.6 * body_diag[body_index]:
+                    flooded = True
+        if count and not flooded:
+            usable.append((float(factor), count))
+    if not usable:
+        return 4.0, 0
+    best = usable[-1]
+    for index in range(len(usable) - 1, 0, -1):
+        if usable[index][1] == usable[index - 1][1]:
+            best = usable[index - 1]
+        else:
+            break
+    return best
 
 
 def auto_inherit_functions(registry: PinRegistry) -> int:
@@ -228,7 +266,7 @@ def condition_auto(document: EditorDocument, journal) -> PinRegistry:
     face_pins = [p for p in registry.pins if p.face_ids]
     if face_pins:
         factor, _faces = auto_separate_factor(document, registry.pins)
-        from .pins import capture_pin_face_anchors, mesh_region_centroid, remap_pin_faces
+        from .pins import capture_pin_face_anchors, remap_pin_faces
 
         anchors = capture_pin_face_anchors(document, registry.pins)
         bounds = document.bounds()
@@ -238,47 +276,37 @@ def condition_auto(document: EditorDocument, journal) -> PinRegistry:
         before = len(document.bodies)
         grown = grow_pin_regions(document, registry.pins, area_factor=factor)
         regions = [r for r in grown if r]
-        pin_indices = document.split_by_face_regions(regions)
-        centroids = np.array([
-            mesh_region_centroid(document.bodies[i].mesh) or (0, 0, 0)
-            for i in pin_indices
-        ])
+        region_bodies = document.split_by_face_regions(regions)
+        region_position: dict[int, int] = {}
+        position = 0
+        for pin_index, region in enumerate(grown):
+            if region:
+                region_position[pin_index] = position
+                position += 1
         matched = 0
-        if len(centroids):
-            if len(centroids) > 1:
-                gaps = np.linalg.norm(
-                    centroids[:, None, :] - centroids[None, :, :], axis=2
-                )
-                np.fill_diagonal(gaps, np.inf)
-                link_tol = float(np.median(gaps.min(axis=1))) * 0.6
-            else:
-                link_tol = np.inf
-            for pin_index, pin in enumerate(registry.pins):
-                if not pin.face_ids:
-                    continue
-                if pin_index < len(grown) and not grown[pin_index]:
-                    continue
-                distances = np.linalg.norm(
-                    centroids - np.asarray(pin.centroid), axis=1
-                )
-                nearest = int(np.argmin(distances))
-                if float(distances[nearest]) > link_tol:
-                    continue
-                body_index = pin_indices[nearest]
-                pin.body_ids = [body_index]
-                pin.face_ids = []
-                suffix = "_HEAD" if pin.role == "mouth" else ""
-                document.bodies[body_index].name = (
-                    pin.name or f"PIN_{pin.number}"
-                ) + suffix
-                document.bodies[body_index].role = "pin"
-                matched += 1
+        for pin_index, pin in enumerate(registry.pins):
+            position = region_position.get(pin_index)
+            if position is None:
+                continue
+            body_index = region_bodies[position]
+            if body_index is None:
+                continue
+            pin.body_ids = [body_index]
+            pin.face_ids = []
+            suffix = "_HEAD" if pin.role == "mouth" else ""
+            document.bodies[body_index].name = (
+                pin.name or f"PIN_{pin.number}"
+            ) + suffix
+            document.bodies[body_index].role = "pin"
+            matched += 1
         remap_pin_faces(document, anchors, remap_tol)
         journal.record("separate", {"area_factor": factor},
                        {"regions": len(regions)},
                        {"bodies_before": before,
                         "bodies_after": len(document.bodies),
-                        "pin_bodies": len(pin_indices),
+                        "pin_bodies": sum(
+                            1 for b in region_bodies if b is not None
+                        ),
                         "pins_matched": matched})
 
     if registry.pins:

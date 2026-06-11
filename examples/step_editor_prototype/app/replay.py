@@ -231,31 +231,21 @@ def replay(document: EditorDocument, journal: Journal) -> PinRegistry:
                 area_factor=params.get("area_factor", 4.0),
             )
             regions = [r for r in grown if r]
-            pin_indices = document.split_by_face_regions(regions)
-            centroids = np.array([
-                mesh_region_centroid(document.bodies[i].mesh) or (0, 0, 0)
-                for i in pin_indices
-            ])
-            if len(centroids) > 1:
-                gaps = np.linalg.norm(
-                    centroids[:, None, :] - centroids[None, :, :], axis=2
-                )
-                np.fill_diagonal(gaps, np.inf)
-                link_tol = float(np.median(gaps.min(axis=1))) * 0.6
-            else:
-                link_tol = np.inf
+            region_bodies = document.split_by_face_regions(regions)
+            # exact linking by region identity (mirrors the tool)
+            region_position: dict[int, int] = {}
+            position = 0
+            for pin_index, region in enumerate(grown):
+                if region:
+                    region_position[pin_index] = position
+                    position += 1
             for pin_index, pin in enumerate(registry.pins):
-                if not pin.face_ids or not len(centroids):
+                position = region_position.get(pin_index)
+                if position is None:
                     continue
-                if pin_index < len(grown) and not grown[pin_index]:
-                    continue  # passive anchor (no region cut) — never links
-                distances = np.linalg.norm(
-                    centroids - np.asarray(pin.centroid), axis=1
-                )
-                nearest = int(np.argmin(distances))
-                if float(distances[nearest]) > link_tol:
+                body_index = region_bodies[position]
+                if body_index is None:
                     continue  # did not separate — stays a face-region pin
-                body_index = pin_indices[nearest]
                 pin.body_ids = [body_index]
                 pin.face_ids = []
                 suffix = "_HEAD" if pin.role == "mouth" else ""

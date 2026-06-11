@@ -317,12 +317,12 @@ class SeparateUnibodyTool(ToolMode):
             # loops. (find_pin_cut cross-section planes are benched until the
             # detector is tuned — they could land cuts the preview never
             # showed, and preview/apply must never disagree.)
-            cut_count = 0
-            pin_indices = document.split_by_face_regions(
+            region_bodies = document.split_by_face_regions(
                 regions, progress=window.progress
             )
             self._preview_painted = False
             self._grown = None
+            pin_indices = [b for b in region_bodies if b is not None]
             if not pin_indices:
                 self.status(
                     "Separate Unibody: split produced nothing — junction loops may "
@@ -330,41 +330,26 @@ class SeparateUnibodyTool(ToolMode):
                 )
                 return
 
-            new_centroids = []
-            for body_index in pin_indices:
-                mesh = document.bodies[body_index].mesh
-                centroid = mesh_region_centroid(mesh) if mesh is not None else None
-                new_centroids.append(centroid or (0.0, 0.0, 0.0))
-            new_centroids = np.asarray(new_centroids)
-
-            # distance guard: a pin only links to a new body that is actually
-            # AT its location — pins whose region failed to split must not
-            # steal a neighbour's piece
-            # 3D linking: a CON/HEAD sliver sits directly above its tail in
-            # XY, so only the full 3D distance can tell their pieces apart.
-            if len(new_centroids) > 1:
-                d = np.linalg.norm(
-                    new_centroids[:, None, :] - new_centroids[None, :, :], axis=2
-                )
-                np.fill_diagonal(d, np.inf)
-                link_tol = float(np.median(d.min(axis=1))) * 0.6
-            else:
-                link_tol = np.inf
+            # Exact linking: regions was built as [r for r in grown if r], so
+            # each pin with a grown region owns one slot of region_bodies —
+            # by IDENTITY, no centroid guessing (a pin grown through the
+            # whole body has its centroid far from the seed; guessing fails).
+            region_position: dict[int, int] = {}
+            position = 0
+            for pin_index, region in enumerate(grown_list):
+                if region:
+                    region_position[pin_index] = position
+                    position += 1
             matched = 0
             unsplit = 0
             for pin_index, pin in enumerate(registry.pins):
-                if not pin.face_ids or not len(new_centroids):
-                    continue
-                if pin_index < len(grown_list) and not grown_list[pin_index]:
-                    continue  # passive anchor (no region cut) — never links
-                distances = np.linalg.norm(
-                    new_centroids - np.asarray(pin.centroid), axis=1
-                )
-                nearest = int(np.argmin(distances))
-                if distances[nearest] > link_tol:
+                position = region_position.get(pin_index)
+                if position is None:
+                    continue  # already a body, or a passive anchor
+                body_index = region_bodies[position]
+                if body_index is None:
                     unsplit += 1  # stays a face-region pin (still valid metadata)
                     continue
-                body_index = pin_indices[nearest]
                 pin.body_ids = [body_index]
                 pin.face_ids = []
                 suffix = "_HEAD" if pin.role == "mouth" else ""

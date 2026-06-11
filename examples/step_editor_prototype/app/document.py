@@ -312,7 +312,53 @@ def _cap_faces_for_wires(wires, anchor_points=None) -> list:
     return caps
 
 
-def _sew_solid(faces: list):
+def _fan_cap_faces(wires) -> list:
+    """Last-resort caps: triangulate each boundary loop as a FAN from its
+    centroid — many small planar faces that, by construction, cannot leave
+    the loop's convex hull (smooth fillings balloon on L-shaped and slit
+    loops; a fan cannot). The chord edges deviate from the exact curves by
+    at most the sampling sag, so sewing needs a matching tolerance."""
+    from OCP.BRepBuilderAPI import BRepBuilderAPI_MakePolygon
+    from OCP.BRepTools import BRepTools_WireExplorer
+    from OCP.TopAbs import TopAbs_REVERSED
+
+    caps = []
+    for wire_index in range(1, wires.Length() + 1):
+        wire = TopoDS.Wire_s(wires.Value(wire_index))
+        points: list[np.ndarray] = []
+        explorer = BRepTools_WireExplorer(wire)
+        while explorer.More():
+            edge = explorer.Current()
+            curve = BRepAdaptor_Curve(edge)
+            first, last = curve.FirstParameter(), curve.LastParameter()
+            samples = 8
+            params = [first + (last - first) * i / samples for i in range(samples)]
+            if edge.Orientation() == TopAbs_REVERSED:
+                params = [first + last - p for p in params]
+            for parameter in params:
+                value = curve.Value(parameter)
+                points.append(np.array([value.X(), value.Y(), value.Z()]))
+            explorer.Next()
+        if len(points) < 3:
+            continue
+        arr = np.asarray(points)
+        center = arr.mean(axis=0)
+        for i in range(len(arr)):
+            a, b = arr[i], arr[(i + 1) % len(arr)]
+            if (np.linalg.norm(a - b) < 1e-9
+                    or np.linalg.norm(np.cross(a - center, b - center)) < 1e-12):
+                continue
+            try:
+                polygon = BRepBuilderAPI_MakePolygon(
+                    gp_Pnt(*center), gp_Pnt(*a), gp_Pnt(*b), True
+                )
+                caps.append(BRepBuilderAPI_MakeFace(polygon.Wire()).Face())
+            except Exception:
+                continue
+    return caps
+
+
+def _sew_solid(faces: list, tolerance: float = 1.0e-6):
     """Sew faces into a closed shell and build a correctly oriented solid.
     None when they do not close up into exactly one solid."""
     from OCP.BRepBuilderAPI import BRepBuilderAPI_MakeSolid, BRepBuilderAPI_Sewing
@@ -320,7 +366,7 @@ def _sew_solid(faces: list):
     from OCP.TopAbs import TopAbs_SHELL
 
     try:
-        sewing = BRepBuilderAPI_Sewing(1.0e-6)
+        sewing = BRepBuilderAPI_Sewing(tolerance)
         for face in faces:
             sewing.Add(face)
         sewing.Perform()
@@ -661,7 +707,7 @@ class EditorDocument:
 
     def split_by_face_regions(
         self, regions: list[list[tuple[int, int]]], cuts=None, progress=None
-    ) -> list[int]:
+    ) -> list[int | None]:
         """Split bodies into EXACTLY the previewed pin regions: each region's
         own faces are closed with caps over its boundary loops and sewn into
         a solid, and the package is rebuilt the same way from the remaining
@@ -669,20 +715,24 @@ class EditorDocument:
         the result cannot diverge from the preview, and contacts that touch
         the housing along their whole length still sever. A body is left
         untouched unless the rebuilt pieces conserve its volume to 1%.
-        Returns the new body indices of the pin solids."""
+        Returns, PER INPUT REGION, the new body index of its sealed solid
+        (None where the region did not separate) — callers link pins to
+        pieces by identity, never by guessing from centroids."""
         cuts = cuts if cuts is not None else [None] * len(regions)
-        by_body: dict[int, list[tuple[set[int], object]]] = {}
-        for region, cut in zip(regions, cuts):
+        region_bodies: list[int | None] = [None] * len(regions)
+        by_body: dict[int, list[tuple[int, set[int], object]]] = {}
+        for region_index, (region, cut) in enumerate(zip(regions, cuts)):
             if not region:
                 continue
             groups: dict[int, set[int]] = {}
             for body_index, face_index in region:
                 groups.setdefault(body_index, set()).add(face_index)
             for body_index, faces in groups.items():
-                by_body.setdefault(body_index, []).append((faces, cut))
+                by_body.setdefault(body_index, []).append(
+                    (region_index, faces, cut)
+                )
 
         new_bodies: list[BodyRecord] = []
-        pin_indices: list[int] = []
         color_restores: list[tuple[BodyRecord, list, float]] = []
         for body_index, body in enumerate(self.bodies):
             region_sets = by_body.get(body_index)
@@ -715,20 +765,18 @@ class EditorDocument:
             # meets the body, plugged. Caps larger than the region itself are
             # rejected (a billowing patch over a bent loop is worse than an
             # honest "did not separate").
-            sealed: list[tuple[set[int], object, list]] = []
-            for region_number, (region, _cut) in enumerate(region_sets):
+            fan_tolerance = max(
+                1.0e-4,
+                2.0 * preview_deflection(shape_bounds([body.solid])),
+            )
+            sealed: list[tuple[int, set[int], object, list, float]] = []
+            for region_number, (region_index, region, _cut) in enumerate(region_sets):
                 if progress is not None:
                     progress("Sealing pin regions", region_number, len(region_sets))
                 wires = _boundary_wires(edge_table, region)
                 if wires is None:
                     continue
-                anchors = (
-                    _region_anchor_points(body.mesh, region)
-                    if body.mesh is not None else []
-                )
-                caps = _cap_faces_for_wires(wires, anchor_points=anchors)
-                if not caps:
-                    continue
+                region_area = 0.0
                 region_bounds = None
                 if body.mesh is not None:
                     mask = np.isin(
@@ -740,35 +788,52 @@ class EditorDocument:
                         corners[:, 1] - corners[:, 0],
                         corners[:, 2] - corners[:, 0],
                     ), axis=1).sum())
-                    cap_area = sum(shape_area(cap) or 0.0 for cap in caps)
-                    if region_area > 0.0 and cap_area > 1.2 * region_area:
-                        continue
                     if len(corners):
                         flat = corners.reshape(-1, 3)
                         region_bounds = (flat.min(axis=0), flat.max(axis=0))
                 faces = [
                     TopoDS.Face_s(face_map.FindKey(index)) for index in sorted(region)
                 ]
-                solid = _sew_solid(faces + caps)
-                if solid is None:
-                    continue
-                # Caps must stay NEAR the region: a ballooned patch (bent
-                # boundary loop the filling could not follow) shoots far
-                # outside the region's own bounds — and would corrupt the
-                # package too, since both sides share the cap.
-                if region_bounds is not None:
-                    low, high = region_bounds
-                    margin = 0.35 * float(np.linalg.norm(high - low)) + 1e-3
-                    sxmin, sxmax, symin, symax, szmin, szmax = shape_bounds(
-                        [solid]
-                    )
-                    if (
-                        sxmin < low[0] - margin or sxmax > high[0] + margin
-                        or symin < low[1] - margin or symax > high[1] + margin
-                        or szmin < low[2] - margin or szmax > high[2] + margin
-                    ):
+                anchors = (
+                    _region_anchor_points(body.mesh, region)
+                    if body.mesh is not None else []
+                )
+                # Two cap strategies: exact filled patches first; when those
+                # balloon past the guards (L-shaped / slit loops), fall back
+                # to centroid-fan triangulation, which cannot leave the
+                # loop's hull, sewn at chord tolerance.
+                attempts = []
+                filled = _cap_faces_for_wires(wires, anchor_points=anchors)
+                if filled:
+                    attempts.append((filled, 1.0e-6))
+                fan = _fan_cap_faces(wires)
+                if fan:
+                    attempts.append((fan, fan_tolerance))
+                for caps, sew_tolerance in attempts:
+                    cap_area = sum(shape_area(cap) or 0.0 for cap in caps)
+                    if region_area > 0.0 and cap_area > 1.2 * region_area:
                         continue
-                sealed.append((region, solid, caps))
+                    solid = _sew_solid(faces + caps, tolerance=sew_tolerance)
+                    if solid is None:
+                        continue
+                    # Caps must stay NEAR the region: a ballooned patch
+                    # would corrupt the package too (both sides share it).
+                    if region_bounds is not None:
+                        low, high = region_bounds
+                        margin = 0.35 * float(np.linalg.norm(high - low)) + 1e-3
+                        sxmin, sxmax, symin, symax, szmin, szmax = shape_bounds(
+                            [solid]
+                        )
+                        if (
+                            sxmin < low[0] - margin or sxmax > high[0] + margin
+                            or symin < low[1] - margin or symax > high[1] + margin
+                            or szmin < low[2] - margin or szmax > high[2] + margin
+                        ):
+                            continue
+                    sealed.append(
+                        (region_index, region, solid, caps, sew_tolerance)
+                    )
+                    break
 
             if not sealed:
                 new_bodies.append(body)
@@ -788,7 +853,9 @@ class EditorDocument:
             while sealed:
                 if progress is not None:
                     progress(f"Sealing {body.name} package", 0, 0)
-                claimed = set().union(*(region for region, _solid, _caps in sealed))
+                claimed = set().union(
+                    *(region for _ri, region, _solid, _caps, _tol in sealed)
+                )
                 remainder = [
                     index
                     for index in range(1, face_map.Extent() + 1)
@@ -797,16 +864,19 @@ class EditorDocument:
                 if not remainder:
                     break
                 package_caps = [
-                    cap for _region, _solid, caps in sealed for cap in caps
+                    cap
+                    for _ri, _region, _solid, caps, _tol in sealed
+                    for cap in caps
                 ]
                 package = _sew_solid(
                     [TopoDS.Face_s(face_map.FindKey(index)) for index in remainder]
-                    + package_caps
+                    + package_caps,
+                    tolerance=max(tol for _ri, _r, _s, _c, tol in sealed),
                 )
                 if package is not None:
                     pieces_volume = abs(shape_volume(package) or 0.0) + sum(
                         abs(shape_volume(solid) or 0.0)
-                        for _region, solid, _caps in sealed
+                        for _ri, _region, solid, _caps, _tol in sealed
                     )
                     if (
                         original_volume <= 0.0
@@ -816,14 +886,15 @@ class EditorDocument:
                         break
                     package = None
                 sealed.remove(
-                    max(sealed, key=lambda item: abs(shape_volume(item[1]) or 0.0))
+                    max(sealed, key=lambda item: abs(shape_volume(item[2]) or 0.0))
                 )
             if package is None or not sealed:
                 new_bodies.append(body)
                 continue
 
-            solids = [package] + [solid for _region, solid, _caps in sealed]
-            for index, solid in enumerate(solids):
+            for index, solid in enumerate(
+                [package] + [solid for _ri, _region, solid, _caps, _tol in sealed]
+            ):
                 record = BodyRecord(
                     solid=solid,
                     name=body.name,
@@ -831,7 +902,7 @@ class EditorDocument:
                     original_color=body.original_color,
                 )
                 if index != 0:
-                    pin_indices.append(len(new_bodies))
+                    region_bodies[sealed[index - 1][0]] = len(new_bodies)
                 if colored_faces:
                     color_restores.append((record, colored_faces, tolerance))
                 new_bodies.append(record)
@@ -855,7 +926,7 @@ class EditorDocument:
                 if distances[nearest] <= tolerance:
                     mesh.face_colors[int(face_id)] = colored_faces[nearest][1]
             record.original_face_colors = dict(mesh.face_colors)
-        return pin_indices
+        return region_bodies
 
     def face_plane(self, body_index: int, face_index: int) -> dict | None:
         """Frame of a planar face: origin (face centre), outward normal, and

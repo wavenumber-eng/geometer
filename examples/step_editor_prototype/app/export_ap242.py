@@ -154,6 +154,101 @@ def inject_metadata(step_path: Path, payload: dict) -> None:
     step_path.write_text(text[:end] + entities + text[end:], encoding="utf-8")
 
 
+def verify_metadata_text(text: str) -> dict:
+    """Pure-text structural audit of the injected conditioning block.
+
+    Re-derives every invariant inject_metadata() promises, from the raw STEP
+    text alone (no OCCT): chunking, entity-id hygiene, the REPRESENTATION ->
+    PROPERTY_DEFINITION -> PRODUCT_DEFINITION wiring, placement flush against
+    ENDSEC, and that the reassembled JSON parses. Returns a report dict with
+    ok/errors plus the facts found, so chain tests can assert on specifics.
+    """
+    errors: list[str] = []
+    report: dict = {"ok": False, "errors": errors}
+
+    items = list(
+        re.finditer(
+            r"#(\d+)=DESCRIPTIVE_REPRESENTATION_ITEM"
+            r"\('WN3D_CONDITIONING','((?:[^']|'')*)'\);",
+            text,
+        )
+    )
+    if not items:
+        errors.append("no WN3D_CONDITIONING items found")
+        return report
+    item_ids = [int(m.group(1)) for m in items]
+    report["chunks"] = len(items)
+    report["chunk_max"] = max(len(m.group(2)) for m in items)
+    if item_ids != list(range(item_ids[0], item_ids[0] + len(item_ids))):
+        errors.append(f"item ids not sequential: {item_ids}")
+    oversize = [i for i, m in enumerate(items) if len(m.group(2)) > _METADATA_CHUNK]
+    if oversize:
+        errors.append(f"chunks over {_METADATA_CHUNK} chars at indices {oversize}")
+
+    reps = list(
+        re.finditer(
+            r"#(\d+)=REPRESENTATION\('WN3D_CONDITIONING',\(([^)]*)\),#(\d+)\);", text
+        )
+    )
+    if len(reps) != 1:
+        errors.append(f"expected exactly 1 WN3D REPRESENTATION, found {len(reps)}")
+        return report
+    rep = reps[0]
+    refs = [int(r) for r in re.findall(r"#(\d+)", rep.group(2))]
+    if refs != item_ids:
+        errors.append("REPRESENTATION does not reference exactly the item ids in order")
+    context_id = int(rep.group(3))
+    if not re.search(
+        rf"#{context_id}\s*=\s*\(?[^;]{{0,200}}GEOMETRIC_REPRESENTATION_CONTEXT", text
+    ):
+        errors.append(f"context #{context_id} is not a GEOMETRIC_REPRESENTATION_CONTEXT")
+
+    prop = re.search(
+        r"#(\d+)=PROPERTY_DEFINITION\('WN3D_CONDITIONING',"
+        r"'wn3d geometric pin metadata',#(\d+)\);",
+        text,
+    )
+    if prop is None:
+        errors.append("PROPERTY_DEFINITION missing")
+        return report
+    product_id = int(prop.group(2))
+    if not re.search(rf"#{product_id}\s*=\s*PRODUCT_DEFINITION\(", text):
+        errors.append(f"#{product_id} is not a PRODUCT_DEFINITION")
+
+    pdr = re.search(r"#(\d+)=PROPERTY_DEFINITION_REPRESENTATION\(#(\d+),#(\d+)\);", text)
+    if pdr is None:
+        errors.append("PROPERTY_DEFINITION_REPRESENTATION missing")
+        return report
+    if int(pdr.group(2)) != int(prop.group(1)) or int(pdr.group(3)) != int(rep.group(1)):
+        errors.append("PDR does not wire PROPERTY_DEFINITION to REPRESENTATION")
+
+    block = text[items[0].start() : pdr.end()]
+    if len(re.findall(r"#\d+=", block)) != len(items) + 3:
+        errors.append("foreign entities interleaved inside the metadata block")
+    endsec = text.rfind("ENDSEC;")
+    if endsec < 0:
+        errors.append("no ENDSEC")
+    elif text[pdr.end() : endsec].strip():
+        errors.append("metadata block is not flush against ENDSEC")
+    report["tail_gap"] = max(0, endsec - pdr.end()) if endsec >= 0 else None
+
+    all_ids = [int(i) for i in re.findall(r"#(\d+)\s*=", text)]
+    if len(all_ids) != len(set(all_ids)):
+        errors.append("duplicate entity ids in file")
+
+    blob = "".join(m.group(2).replace("''", "'") for m in items)
+    try:
+        payload = json.loads(blob)
+        report["schema"] = payload.get("schema")
+        report["json_bytes"] = len(blob)
+    except json.JSONDecodeError as ex:
+        errors.append(f"reassembled JSON does not parse: {ex}")
+
+    report["block_span"] = (items[0].start(), pdr.end())
+    report["ok"] = not errors
+    return report
+
+
 def extract_metadata(step_path: Path) -> dict | None:
     """Read the embedded conditioning JSON back out of a STEP file."""
     text = step_path.read_text(encoding="utf-8", errors="replace")

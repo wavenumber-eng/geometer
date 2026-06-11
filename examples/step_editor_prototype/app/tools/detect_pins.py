@@ -84,7 +84,7 @@ class DetectPinsTool(ToolMode):
         )
         self.context_button.clicked.connect(self._run_context_plane)
         select_row.addWidget(self.context_button)
-        self.seed_button = QPushButton("Seed Pin (click face)")
+        self.seed_button = QPushButton("SMT/THR Seed Face")
         self.seed_button.setCheckable(True)
         self.seed_button.setToolTip(
             "For parts the automatic detection can't solve: click a face on a "
@@ -103,7 +103,7 @@ class DetectPinsTool(ToolMode):
         layout.addWidget(self.exclude_check)
 
         mouth_row = QHBoxLayout()
-        self.mouth_seed_button = QPushButton("Mouth Seed (click face)")
+        self.mouth_seed_button = QPushButton("CON/HEAD Seed Face")
         self.mouth_seed_button.setCheckable(True)
         self.mouth_seed_button.setToolTip(
             "Second detector set for contacts that pop out inside the\n"

@@ -304,7 +304,14 @@ class SeparateUnibodyTool(ToolMode):
             window.document_mutated()
         finally:
             window.progress_done()
-        self.ctx.scene.set_model_opacity(0.5)  # stay translucent for inspection
+        # pastel-preview the NEW pin bodies (display only — exported colours
+        # stay the real ones) so the separation result is verifiable at a
+        # glance, still translucent.
+        for pin_index, pin in enumerate(registry.pins):
+            for body_id in pin.body_ids:
+                self.ctx.scene.set_body_color(body_id, pastel(pin_index))
+        self.ctx.scene.set_model_opacity(0.5)
+        self._preview_painted = True  # exit() rebuilds to restore real colours
         self.undo_button.setEnabled(True)
         self.info_label.setText(
             f"Split done: {before} body(ies) -> {len(document.bodies)} "

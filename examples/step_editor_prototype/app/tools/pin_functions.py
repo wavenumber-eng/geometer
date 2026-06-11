@@ -64,6 +64,9 @@ class MiniSchematicWidget(QWidget):
                 return
 
     def paintEvent(self, _event) -> None:
+        """Standard Wavenumber schematic symbol: a box with pin leads
+        sticking out each side; the pin's FUNCTION sits inside the box
+        justified toward its side, the designator sits outside the lead."""
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
         painter.fillRect(self.rect(), QColor(CONSOLE_BG))
@@ -75,11 +78,25 @@ class MiniSchematicWidget(QWidget):
 
         xs = [p[3][0] for p in self._pins]
         ys = [p[3][1] for p in self._pins]
-        x0, x1 = min(xs), max(xs)
-        y0, y1 = min(ys), max(ys)
-        sx = max(x1 - x0, 1e-9)
-        sy = max(y1 - y0, 1e-9)
-        margin = 64.0
+        cx, cy = (min(xs) + max(xs)) / 2, (min(ys) + max(ys)) / 2
+        sx = max(max(xs) - min(xs), 1e-9)
+        sy = max(max(ys) - min(ys), 1e-9)
+
+        sides: dict[str, list[int]] = {"left": [], "right": [], "top": [], "bottom": []}
+        for index, (_n, _name, _f, c) in enumerate(self._pins):
+            dx = (c[0] - cx) / sx
+            dy = (c[1] - cy) / sy
+            if abs(dx) >= abs(dy):
+                sides["right" if dx >= 0 else "left"].append(index)
+            else:
+                sides["top" if dy >= 0 else "bottom"].append(index)
+        key = lambda i: self._pins[i][3]
+        sides["left"].sort(key=lambda i: -key(i)[1])
+        sides["right"].sort(key=lambda i: -key(i)[1])
+        sides["top"].sort(key=lambda i: key(i)[0])
+        sides["bottom"].sort(key=lambda i: key(i)[0])
+
+        margin, stub = 70.0, 16.0
         body = QRectF(margin, margin,
                       self.width() - 2 * margin, self.height() - 2 * margin)
         painter.setPen(QPen(QColor(TEXT_PRIMARY), 1.5))
@@ -88,26 +105,64 @@ class MiniSchematicWidget(QWidget):
         font = QFont(self.font())
         font.setPointSizeF(max(font.pointSizeF() - 1.5, 6.5))
         painter.setFont(font)
-        stub = 10.0
-        for index, (number, name, function, centroid) in enumerate(self._pins):
-            # map the real XY into the body rect (schematic = top view)
-            fx = (centroid[0] - x0) / sx
-            fy = 1.0 - (centroid[1] - y0) / sy
-            px = body.left() + fx * body.width()
-            py = body.top() + fy * body.height()
-            painter.setPen(QPen(QColor(BORDER), 1.0))
-            painter.drawLine(QPointF(px - stub / 2, py), QPointF(px + stub / 2, py))
-            dot = QRectF(px - 4, py - 4, 8, 8)
+
+        def draw_pin(index, line_a, line_b, designator_rect, d_align,
+                     function_rect, f_align):
+            number, name, function, _c = self._pins[index]
             selected = index == self._selected
+            painter.setPen(QPen(QColor(TEXT_PRIMARY), 1.2))
+            painter.drawLine(line_a, line_b)
+            dot = QRectF(line_a.x() - 4, line_a.y() - 4, 8, 8)
             painter.setBrush(QColor(SELECT_BG) if selected else QColor(ACCENT_HOVER))
             painter.setPen(QPen(QColor("#000000"), 1.0))
             painter.drawEllipse(dot)
-            label = name or str(number)
-            if function:
-                label += f":{function}"
             painter.setPen(QColor(TEXT_PRIMARY) if selected else QColor(TEXT_MUTED))
-            painter.drawText(QPointF(px + 6, py - 4), label)
-            self._hits.append((dot.adjusted(-4, -4, 4, 4), index))
+            painter.drawText(designator_rect, d_align, name or str(number))
+            if function:
+                painter.setPen(QColor(ACCENT_HOVER))
+                painter.drawText(function_rect, f_align, function)
+            self._hits.append((dot.adjusted(-5, -5, 5, 5), index))
+
+        v = Qt.AlignmentFlag.AlignVCenter
+        for k, indices in (("left", sides["left"]), ("right", sides["right"])):
+            n = len(indices)
+            for slot, index in enumerate(indices):
+                y = body.top() + (slot + 1) * body.height() / (n + 1)
+                if k == "left":
+                    draw_pin(index,
+                             QPointF(body.left() - stub, y), QPointF(body.left(), y),
+                             QRectF(2, y - 8, body.left() - stub - 6, 16),
+                             Qt.AlignmentFlag.AlignRight | v,
+                             QRectF(body.left() + 4, y - 8, body.width() / 2 - 8, 16),
+                             Qt.AlignmentFlag.AlignLeft | v)
+                else:
+                    draw_pin(index,
+                             QPointF(body.right() + stub, y), QPointF(body.right(), y),
+                             QRectF(body.right() + stub + 4, y - 8,
+                                    self.width() - body.right() - stub - 6, 16),
+                             Qt.AlignmentFlag.AlignLeft | v,
+                             QRectF(body.center().x() + 4, y - 8,
+                                    body.width() / 2 - 8, 16),
+                             Qt.AlignmentFlag.AlignRight | v)
+        h = Qt.AlignmentFlag.AlignHCenter
+        for k, indices in (("top", sides["top"]), ("bottom", sides["bottom"])):
+            n = len(indices)
+            for slot, index in enumerate(indices):
+                x = body.left() + (slot + 1) * body.width() / (n + 1)
+                if k == "top":
+                    draw_pin(index,
+                             QPointF(x, body.top() - stub), QPointF(x, body.top()),
+                             QRectF(x - 30, body.top() - stub - 18, 60, 14),
+                             h | Qt.AlignmentFlag.AlignBottom,
+                             QRectF(x - 30, body.top() + 3, 60, 14),
+                             h | Qt.AlignmentFlag.AlignTop)
+                else:
+                    draw_pin(index,
+                             QPointF(x, body.bottom() + stub), QPointF(x, body.bottom()),
+                             QRectF(x - 30, body.bottom() + stub + 4, 60, 14),
+                             h | Qt.AlignmentFlag.AlignTop,
+                             QRectF(x - 30, body.bottom() - 17, 60, 14),
+                             h | Qt.AlignmentFlag.AlignBottom)
 
 
 class PinFunctionsTool(ToolMode):

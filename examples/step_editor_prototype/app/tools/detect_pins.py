@@ -43,7 +43,7 @@ from .base import ToolMode, make_apply_button
 
 class DetectPinsTool(ToolMode):
     id = "detect_pins"
-    title = "Detect Pins"
+    title = "Detect and Name Pins"
     accent = "#2a7a2a"
 
     def __init__(self, ctx) -> None:

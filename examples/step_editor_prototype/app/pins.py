@@ -372,11 +372,12 @@ def find_similar_regions(
     dim_tol: float = 0.25,
 ) -> list[list[tuple[int, int]]]:
     """Find every disjoint face region that looks like the seed: repeated
-    contacts inside a connector mouth are copies of one another, so a region
-    grown from any face whose area matches the seed's largest face, with a
-    matching total area and bbox size, is another instance. Searches all
-    bodies (multibody connectors keep each contact as its own solid).
-    Returns the matches as (body, face) regions, seed excluded."""
+    contacts inside a connector mouth are copies of one another, so anything
+    with a matching area and bbox size is another instance. A single-face
+    seed (normal face picking) is matched against individual faces; a grown
+    seed is matched against regions grown the same way. Searches all bodies
+    (multibody connectors keep each contact as its own solid). Returns the
+    matches as (body, face) regions, seed excluded."""
     seed_mesh = document.bodies[body_index].mesh
     if seed_mesh is None or not seed_region:
         return []
@@ -388,6 +389,7 @@ def find_similar_regions(
     template_face = max(seed_region, key=lambda f: seed_areas.get(f, 0.0))
     template_area = seed_areas[template_face]
     dim_floor = max(float(seed_dims.max()), 1e-9)
+    single_face = len(seed_region) == 1
 
     claimed = claimed or set()
     matches: list[list[tuple[int, int]]] = []
@@ -407,11 +409,14 @@ def find_similar_regions(
         for face in sorted(candidates):
             if face in blocked_faces:
                 continue
-            region = grow_smooth_region(
-                document, b, face,
-                smooth_angle_deg=smooth_angle_deg,
-                claimed=blocked_faces,
-            )
+            if single_face:
+                region = {face}
+            else:
+                region = grow_smooth_region(
+                    document, b, face,
+                    smooth_angle_deg=smooth_angle_deg,
+                    claimed=blocked_faces,
+                )
             total = sum(areas.get(f, 0.0) for f in region)
             dims = _region_dims(mesh, region)
             if (
@@ -431,9 +436,11 @@ def join_mouth_pins(
     """Give each mouth pin the designator of the primary (tail) pin it lines
     up with along the connector row: contacts run perpendicular to the row,
     so projecting centroids onto the primaries' dominant XY axis pairs them
-    naturally. Returns ({mouth list-index: primary}, [conflicted indices])
-    where conflicts are mouth pins whose nearest primary was already taken
-    by a closer mouth pin."""
+    naturally. Several mouth faces may join the same primary (one contact
+    can expose more than one face in the mouth). Returns
+    ({mouth list-index: primary}, [conflicted indices]) where conflicts are
+    mouth pins farther than half the primary pitch from any primary —
+    misaligned, left unjoined for the user to check."""
     if not primaries or not mouths:
         return {}, list(range(len(mouths)))
     points = np.array([p.centroid for p in primaries], dtype=np.float64)[:, :2]
@@ -449,22 +456,22 @@ def join_mouth_pins(
         np.array([p.centroid for p in mouths], dtype=np.float64)[:, :2] - center
     ) @ axis
 
-    # Greedy by distance along the row: closest pairs claim first, each
-    # primary serves at most one mouth pin.
-    pairs = sorted(
-        ((abs(tm - tp), m, p)
-         for m, tm in enumerate(t_mouth)
-         for p, tp in enumerate(t_primary)),
-        key=lambda item: item[0],
-    )
+    if len(primaries) > 1:
+        gaps = np.diff(np.sort(t_primary))
+        gaps = gaps[gaps > 1e-9]
+        tolerance = float(np.median(gaps)) * 0.5 if len(gaps) else np.inf
+    else:
+        tolerance = np.inf
+
     assigned: dict[int, Pin] = {}
-    used_primaries: set[int] = set()
-    for _distance, m, p in pairs:
-        if m in assigned or p in used_primaries:
-            continue
-        assigned[m] = primaries[p]
-        used_primaries.add(p)
-    conflicts = [m for m in range(len(mouths)) if m not in assigned]
+    conflicts: list[int] = []
+    for m, tm in enumerate(t_mouth):
+        distances = np.abs(t_primary - tm)
+        nearest = int(np.argmin(distances))
+        if float(distances[nearest]) <= tolerance:
+            assigned[m] = primaries[nearest]
+        else:
+            conflicts.append(m)
     return assigned, conflicts
 
 

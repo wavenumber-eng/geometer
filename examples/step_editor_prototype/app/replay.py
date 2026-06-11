@@ -89,16 +89,21 @@ def replay(document: EditorDocument, journal: Journal) -> PinRegistry:
                 )
                 registry.set_pins(registry.pins + found)
             elif action == "seed_pin":
-                region = grow_smooth_region(
-                    document, inputs["body"], inputs["face"],
-                    smooth_angle_deg=params.get("smooth_angle_deg", 30.0),
-                )
+                role = params.get("role", "primary")
+                if role == "mouth":
+                    # mouth seeding is normal face picking — no growth
+                    region = {inputs["face"]}
+                else:
+                    region = grow_smooth_region(
+                        document, inputs["body"], inputs["face"],
+                        smooth_angle_deg=params.get("smooth_angle_deg", 30.0),
+                    )
                 mesh = document.bodies[inputs["body"]].mesh
                 centroid = mesh_region_centroid(mesh, sorted(region))
                 registry.set_pins(registry.pins + [Pin(
                     number=0, centroid=centroid,
                     face_ids=[(inputs["body"], f) for f in sorted(region)],
-                    role=params.get("role", "primary"),
+                    role=role,
                 )])
             elif action == "detect_similar":
                 from .pins import find_similar_regions

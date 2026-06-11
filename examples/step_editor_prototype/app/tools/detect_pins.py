@@ -107,8 +107,8 @@ class DetectPinsTool(ToolMode):
         self.mouth_seed_button.setCheckable(True)
         self.mouth_seed_button.setToolTip(
             "Second detector set for contacts that pop out inside the\n"
-            "connector mouth: click a mating-contact face — it grows like\n"
-            "Seed Pin but stages a BLUE mouth pin."
+            "connector mouth: normal face picking — each clicked face is\n"
+            "staged as a BLUE mouth pin, exactly the face you click."
         )
         self.mouth_seed_button.setStyleSheet(
             "QPushButton:checked {background-color: #2a6fd4; color: #ffffff; font-weight: 700;}"
@@ -306,13 +306,18 @@ class DetectPinsTool(ToolMode):
         if pick.face_index in claimed:
             self.status("Seed Pin: that face already belongs to a pin")
             return
-        region = grow_smooth_region(
-            document,
-            pick.body_index,
-            pick.face_index,
-            smooth_angle_deg=float(self.angle_spin.value()),
-            claimed=claimed,
-        )
+        if role == "mouth":
+            # normal face picking: the clicked face IS the mouth pin —
+            # no growth, the marker sits exactly where the user clicked
+            region = {pick.face_index}
+        else:
+            region = grow_smooth_region(
+                document,
+                pick.body_index,
+                pick.face_index,
+                smooth_angle_deg=float(self.angle_spin.value()),
+                claimed=claimed,
+            )
         mesh = document.bodies[pick.body_index].mesh
         centroid = mesh_region_centroid(mesh, sorted(region))
         if centroid is None:
@@ -333,11 +338,16 @@ class DetectPinsTool(ToolMode):
             result={"faces": len(region), "centroid": list(centroid)},
         )
         self._refresh_pending()
-        label = "Mouth Seed" if role == "mouth" else "Seed Pin"
-        self.status(
-            f"{label}: grew {len(region)} face(s) from the click — "
-            f"{len(self.pending)} pending; keep clicking or press Apply"
-        )
+        if role == "mouth":
+            self.status(
+                f"Mouth Seed: staged the clicked face — {len(self.pending)} "
+                f"pending; keep clicking, then Detect Similar"
+            )
+        else:
+            self.status(
+                f"Seed Pin: grew {len(region)} face(s) from the click — "
+                f"{len(self.pending)} pending; keep clicking or press Apply"
+            )
 
     # ----------------------------------------------------------- mouth pins
 

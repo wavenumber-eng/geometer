@@ -281,6 +281,16 @@ def selftest_m3(fixture: Path | None = None) -> None:
     _check(hits >= 3, f"similarity search found only {hits}/4 other leads")
     print(f"similarity search OK ({len(matches)} matches, {hits} on real leads)")
 
+    # Single-face seed (Mouth Seed is normal face picking): matching faces on
+    # the other leads must be found without any region growth.
+    single = find_similar_regions(unibody, 0, {seed_face})
+    _check(
+        all(len(match) == 1 for match in single),
+        "single-face seed returned grown regions",
+    )
+    _check(len(single) >= 3, f"single-face similarity found only {len(single)}")
+    print(f"single-face similarity OK ({len(single)} matching faces)")
+
     # Joining: mouth contacts inherit the designator of the tail pin they
     # line up with along the connector row, regardless of staging order.
     primaries = [

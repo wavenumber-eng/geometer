@@ -265,12 +265,22 @@ class PinFunctionsTool(ToolMode):
         self.function_combo.setEditable(True)
         for token, description in FUNCTIONS:
             self.function_combo.addItem(f"{token}{_SEPARATOR}{description}")
+        # the description is information only: picking an item puts just the
+        # designator in the text field; the description shows greyed below
+        self.function_combo.activated.connect(self._on_combo_pick)
+        self.function_combo.lineEdit().textEdited.connect(self._update_description)
         row.addWidget(self.function_combo, 1)
         set_button = QPushButton("Set")
         set_button.setMinimumWidth(36)
         set_button.clicked.connect(self._set_function)
         row.addWidget(set_button)
         layout.addLayout(row)
+
+        self.description_label = QLabel("")
+        self.description_label.setStyleSheet(
+            f"color: {TEXT_MUTED}; font-style: italic; padding-left: 4px;"
+        )
+        layout.addWidget(self.description_label)
 
         bulk_row = QHBoxLayout()
         self.bulk_edit = QLineEdit()
@@ -307,6 +317,18 @@ class PinFunctionsTool(ToolMode):
 
     # ---------------------------------------------------------------- impl
 
+    def _on_combo_pick(self, index: int) -> None:
+        token = combo_token(self.function_combo.itemText(index))
+        self.function_combo.setEditText(token)
+        self._update_description(token)
+
+    def _update_description(self, text: str) -> None:
+        token = combo_token(text).upper()
+        description = next(
+            (desc for tok, desc in FUNCTIONS if tok == token), ""
+        )
+        self.description_label.setText(description)
+
     def _select(self, index: int) -> None:
         self._selected = index
         registry = self.ctx.window.pins
@@ -315,13 +337,8 @@ class PinFunctionsTool(ToolMode):
         pin = registry.pins[index]
         self.selected_label.setText(f"Pin {pin.number} {pin.name or ''}".strip())
         if pin.function:
-            match = self.function_combo.findText(
-                f"{pin.function}{_SEPARATOR}", Qt.MatchFlag.MatchStartsWith
-            )
-            if match >= 0:
-                self.function_combo.setCurrentIndex(match)
-            else:
-                self.function_combo.setCurrentText(pin.function)
+            self.function_combo.setEditText(pin.function)
+            self._update_description(pin.function)
         if pin.body_ids:
             self.ctx.scene.highlight_body(pin.body_ids[0])
         elif pin.face_ids:

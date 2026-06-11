@@ -106,12 +106,20 @@ class SeparateUnibodyTool(ToolMode):
             self.status("Separate Unibody: run Detect Pins first")
             return
         self._regrow()
-        self.status("Separate Unibody: check the grown pin shapes, then Apply")
+        # whole model at 0.5 alpha so the pin regions show through the body
+        self.ctx.scene.set_model_opacity(0.5)
+        self.status(
+            "Separate Unibody: check the grown pin shapes (model at 0.5 alpha), "
+            "then Apply"
+        )
 
     def exit(self) -> None:
-        if self._preview_painted and self.ctx.document is not None:
-            self.ctx.scene.rebuild(self.ctx.document)  # restore real colours
-            self._preview_painted = False
+        if self.ctx.document is not None:
+            if self._preview_painted:
+                self.ctx.scene.rebuild(self.ctx.document)  # restore real colours
+                self._preview_painted = False
+            else:
+                self.ctx.scene.set_model_opacity(1.0)
 
     def on_document_changed(self) -> None:
         self._preview_painted = False
@@ -289,6 +297,7 @@ class SeparateUnibodyTool(ToolMode):
             window.document_mutated()
         finally:
             window.progress_done()
+        self.ctx.scene.set_model_opacity(0.5)  # stay translucent for inspection
         self.undo_button.setEnabled(True)
         self.info_label.setText(
             f"Split done: {before} body(ies) -> {len(document.bodies)} "
@@ -320,5 +329,6 @@ class SeparateUnibodyTool(ToolMode):
             tool=self.id, params={"action": "undo"}, inputs={}, result={}
         )
         self.ctx.window.document_mutated()
+        self.ctx.scene.set_model_opacity(0.5)
         self.info_label.setText("Separation undone — pre-split bodies restored.")
         self.status("Separate Unibody: undone")

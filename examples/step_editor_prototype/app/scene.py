@@ -166,6 +166,14 @@ class SceneManager:
                 targets.append(display)
         return [t for t in targets if t is not None and t.n_cells > 0]
 
+    def set_model_opacity(self, opacity: float) -> None:
+        """Whole-model translucency (the browser's Alpha-view look) — used by
+        Separate Unibody so the grown pin regions show through the body."""
+        for actor in self._actors:
+            if actor is not None:
+                actor.GetProperty().SetOpacity(opacity)
+        self.plotter.render()
+
     def set_body_color(self, body_index: int, rgb: tuple[float, float, float]) -> None:
         for polydata in self._color_targets(body_index):
             colors = np.empty((polydata.n_cells, 3), dtype=np.uint8)

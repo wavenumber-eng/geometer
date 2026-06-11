@@ -220,8 +220,9 @@ class MainWindow(QMainWindow):
             self.actions_stack.addWidget(tool.actions_widget())
         self.mode_rect.set_tools([(tool.id, tool.title) for tool in self.tools])
         self.mode_rect.tool_selected.connect(self.set_tool)
+        self.mode_rect.next_clicked.connect(self.cycle_tool)
         self.current_tool_index = 0
-        self._apply_tool(0)
+        self._apply_tool(0, animate=False)
 
         QShortcut(QKeySequence("T"), self, activated=self.cycle_tool)
         tab_shortcut = QShortcut(QKeySequence(Qt.Key.Key_Tab), self, activated=self.cycle_tool)
@@ -250,11 +251,14 @@ class MainWindow(QMainWindow):
         self.current_tool_index = index
         self._apply_tool(index)
 
-    def _apply_tool(self, index: int) -> None:
+    def _apply_tool(self, index: int, *, animate: bool = True) -> None:
         tool = self.tools[index]
         next_tool = self.tools[(index + 1) % len(self.tools)]
         self.actions_stack.setCurrentIndex(index)
-        self.mode_rect.set_current(tool.title, tool.accent, next_tool.title)
+        self.mode_rect.set_current(
+            tool.title, tool.accent, next_tool.title, next_tool.accent,
+            animate=animate,
+        )
         tool.enter()
 
     def _route_pick(self, pick) -> None:

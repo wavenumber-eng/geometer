@@ -96,11 +96,19 @@ class MiniSchematicWidget(QWidget):
         sides["top"].sort(key=lambda i: key(i)[0])
         sides["bottom"].sort(key=lambda i: key(i)[0])
 
+        # classic KiCad symbol colours
+        BODY_FILL = QColor(255, 255, 194)
+        OUTLINE = QColor(132, 0, 0)
+        PIN_NAME = QColor(0, 132, 132)
+        PIN_NUMBER = QColor(132, 0, 0)
+
         margin, stub = 70.0, 16.0
         body = QRectF(margin, margin,
                       self.width() - 2 * margin, self.height() - 2 * margin)
-        painter.setPen(QPen(QColor(TEXT_PRIMARY), 1.5))
+        painter.setBrush(BODY_FILL)
+        painter.setPen(QPen(OUTLINE, 2.0))
         painter.drawRect(body)
+        painter.setBrush(Qt.BrushStyle.NoBrush)
 
         font = QFont(self.font())
         font.setPointSizeF(max(font.pointSizeF() - 1.5, 6.5))
@@ -110,18 +118,20 @@ class MiniSchematicWidget(QWidget):
                      function_rect, f_align):
             number, name, function, _c = self._pins[index]
             selected = index == self._selected
-            painter.setPen(QPen(QColor(TEXT_PRIMARY), 1.2))
+            painter.setPen(QPen(OUTLINE, 1.2))
             painter.drawLine(line_a, line_b)
-            dot = QRectF(line_a.x() - 4, line_a.y() - 4, 8, 8)
-            painter.setBrush(QColor(SELECT_BG) if selected else QColor(ACCENT_HOVER))
-            painter.setPen(QPen(QColor("#000000"), 1.0))
-            painter.drawEllipse(dot)
-            painter.setPen(QColor(TEXT_PRIMARY) if selected else QColor(TEXT_MUTED))
+            if selected:
+                painter.setPen(QPen(QColor(SELECT_BG), 2.0))
+                painter.setBrush(Qt.BrushStyle.NoBrush)
+                painter.drawEllipse(QRectF(line_a.x() - 6, line_a.y() - 6, 12, 12))
+            painter.setPen(QColor(SELECT_BG) if selected else PIN_NUMBER)
             painter.drawText(designator_rect, d_align, name or str(number))
             if function:
-                painter.setPen(QColor(ACCENT_HOVER))
+                painter.setPen(PIN_NAME)
                 painter.drawText(function_rect, f_align, function)
-            self._hits.append((dot.adjusted(-5, -5, 5, 5), index))
+            self._hits.append(
+                (QRectF(line_a.x() - 8, line_a.y() - 8, 16, 16), index)
+            )
 
         v = Qt.AlignmentFlag.AlignVCenter
         for k, indices in (("left", sides["left"]), ("right", sides["right"])):
@@ -131,16 +141,16 @@ class MiniSchematicWidget(QWidget):
                 if k == "left":
                     draw_pin(index,
                              QPointF(body.left() - stub, y), QPointF(body.left(), y),
-                             QRectF(2, y - 8, body.left() - stub - 6, 16),
-                             Qt.AlignmentFlag.AlignRight | v,
+                             # KiCad: pin number ABOVE the lead
+                             QRectF(body.left() - stub - 14, y - 16, stub + 28, 13),
+                             Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignBottom,
                              QRectF(body.left() + 4, y - 8, body.width() / 2 - 8, 16),
                              Qt.AlignmentFlag.AlignLeft | v)
                 else:
                     draw_pin(index,
                              QPointF(body.right() + stub, y), QPointF(body.right(), y),
-                             QRectF(body.right() + stub + 4, y - 8,
-                                    self.width() - body.right() - stub - 6, 16),
-                             Qt.AlignmentFlag.AlignLeft | v,
+                             QRectF(body.right() - 14, y - 16, stub + 28, 13),
+                             Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignBottom,
                              QRectF(body.center().x() + 4, y - 8,
                                     body.width() / 2 - 8, 16),
                              Qt.AlignmentFlag.AlignRight | v)

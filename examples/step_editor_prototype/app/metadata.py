@@ -44,6 +44,7 @@ def build_metadata(document, pins=None, journal=None) -> dict:
             "name": pin.name,
             "function": pin.function,
             "kind": pin.kind,
+            "role": pin.role,
             "centroid": list(pin.centroid),
             "body_ids": list(pin.body_ids),
             "face_ids": [list(item) for item in pin.face_ids],

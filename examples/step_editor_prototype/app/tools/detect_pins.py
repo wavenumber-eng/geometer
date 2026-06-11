@@ -27,7 +27,9 @@ from ..pins import (
     detect_pins_by_section,
     detect_pins_multibody,
     detect_pins_unibody,
+    find_similar_regions,
     grow_smooth_region,
+    join_mouth_pins,
     mesh_region_centroid,
     order_pins,
     parse_grid_name,
@@ -92,12 +94,44 @@ class DetectPinsTool(ToolMode):
         self.seed_button.setStyleSheet(
             "QPushButton:checked {background-color: #c89d00; color: #000000; font-weight: 700;}"
         )
+        self.seed_button.toggled.connect(self._on_seed_toggled)
         select_row.addWidget(self.seed_button)
         layout.addLayout(select_row)
 
         self.exclude_check = QCheckBox("Exclude largest body (package)")
         self.exclude_check.setChecked(True)
         layout.addWidget(self.exclude_check)
+
+        mouth_row = QHBoxLayout()
+        self.mouth_seed_button = QPushButton("Mouth Seed (click face)")
+        self.mouth_seed_button.setCheckable(True)
+        self.mouth_seed_button.setToolTip(
+            "Second detector set for contacts that pop out inside the\n"
+            "connector mouth: click a mating-contact face — it grows like\n"
+            "Seed Pin but stages a BLUE mouth pin."
+        )
+        self.mouth_seed_button.setStyleSheet(
+            "QPushButton:checked {background-color: #2a6fd4; color: #ffffff; font-weight: 700;}"
+        )
+        self.mouth_seed_button.toggled.connect(self._on_mouth_seed_toggled)
+        mouth_row.addWidget(self.mouth_seed_button)
+        similar_button = QPushButton("Detect Similar")
+        similar_button.setToolTip(
+            "Find every face region that looks like the last mouth seed\n"
+            "(same area and size) across the whole model — the other mouth\n"
+            "contacts — and stage them in blue."
+        )
+        similar_button.clicked.connect(self._detect_similar)
+        mouth_row.addWidget(similar_button)
+        join_button = QPushButton("Join to Pins")
+        join_button.setToolTip(
+            "Give each blue mouth pin the designator of the primary pin it\n"
+            "lines up with along the connector row — same designator = same\n"
+            "net, so their hitboxes link as one electrical node."
+        )
+        join_button.clicked.connect(self._join_mouth_pins)
+        mouth_row.addWidget(join_button)
+        layout.addLayout(mouth_row)
 
         flow_row = QHBoxLayout()
         flow_row.addWidget(QLabel("Unibody flow"))
@@ -205,6 +239,7 @@ class DetectPinsTool(ToolMode):
             self.band_button.setChecked(False)
         self.ctx.scene.show_pin_labels([], [])
         self.ctx.scene.set_markers([], name="pending-pins")
+        self.ctx.scene.set_markers([], name="pending-mouth")
         self.ctx.scene.remove_overlay("context-section")
         self.ctx.scene.clear_highlight()
 
@@ -233,15 +268,31 @@ class DetectPinsTool(ToolMode):
             self._band_selector.detach()
             self._band_selector = None
 
+    def _on_seed_toggled(self, checked: bool) -> None:
+        if checked and self._actions_widget is not None:
+            self.mouth_seed_button.setChecked(False)
+
+    def _on_mouth_seed_toggled(self, checked: bool) -> None:
+        if checked and self._actions_widget is not None:
+            self.seed_button.setChecked(False)
+            self.band_button.setChecked(False)
+            self.status(
+                "Mouth Seed: click a mating-contact face inside the mouth — "
+                "each click stages one blue mouth pin"
+            )
+
     def on_pick(self, pick) -> None:
         """Plain click: seed a pin from the clicked face when armed,
         otherwise select that pin for quick rename."""
+        if self._actions_widget is not None and self.mouth_seed_button.isChecked():
+            self._seed_pin_from_pick(pick, role="mouth")
+            return
         if self._actions_widget is not None and self.seed_button.isChecked():
             self._seed_pin_from_pick(pick)
             return
         self._select_pin_from_pick(pick)
 
-    def _seed_pin_from_pick(self, pick) -> None:
+    def _seed_pin_from_pick(self, pick, role: str = "primary") -> None:
         document = self.ctx.document
         if document is None:
             return
@@ -270,21 +321,109 @@ class DetectPinsTool(ToolMode):
             number=0,
             centroid=centroid,
             face_ids=[(pick.body_index, face) for face in sorted(region)],
+            role=role,
         )
         self.pending.append(pin)
         self.ctx.journal.record(
             tool=self.id,
-            params={"action": "seed_pin",
+            params={"action": "seed_pin", "role": role,
                     "smooth_angle_deg": float(self.angle_spin.value())},
             inputs={"body": pick.body_index, "face": pick.face_index,
                     "point": list(pick.world_point)},
             result={"faces": len(region), "centroid": list(centroid)},
         )
         self._refresh_pending()
+        label = "Mouth Seed" if role == "mouth" else "Seed Pin"
         self.status(
-            f"Seed Pin: grew {len(region)} face(s) from the click — "
+            f"{label}: grew {len(region)} face(s) from the click — "
             f"{len(self.pending)} pending; keep clicking or press Apply"
         )
+
+    # ----------------------------------------------------------- mouth pins
+
+    def _detect_similar(self) -> None:
+        """Stage a blue mouth pin for every region that looks like the last
+        mouth seed — the other contacts inside the mouth."""
+        document = self.ctx.document
+        if document is None:
+            return
+        registry = self.ctx.window.pins
+        mouths = [p for p in self.pending if p.role == "mouth"] or registry.mouths()
+        if not mouths:
+            self.status("Detect Similar: stage a Mouth Seed first (blue button)")
+            return
+        template = mouths[-1]
+        seed_body = template.face_ids[0][0]
+        seed_region = {face for body, face in template.face_ids if body == seed_body}
+        claimed = {
+            (body, face)
+            for pin in (*registry.pins, *self.pending)
+            for body, face in pin.face_ids
+        }
+        matches = find_similar_regions(
+            document, seed_body, seed_region,
+            smooth_angle_deg=float(self.angle_spin.value()),
+            claimed=claimed,
+        )
+        added = []
+        for region in matches:
+            mesh = document.bodies[region[0][0]].mesh
+            centroid = mesh_region_centroid(
+                mesh, sorted(face for _body, face in region)
+            )
+            if centroid is None:
+                continue
+            added.append(Pin(number=0, centroid=centroid,
+                             face_ids=region, role="mouth"))
+        self.pending.extend(added)
+        self.ctx.journal.record(
+            tool=self.id,
+            params={"action": "detect_similar",
+                    "smooth_angle_deg": float(self.angle_spin.value())},
+            inputs={"body": seed_body,
+                    "faces": sorted(seed_region)},
+            result={"matches": len(added),
+                    "centroids": [list(pin.centroid) for pin in added]},
+        )
+        self._refresh_pending()
+        self.status(
+            f"Detect Similar: {len(added)} matching region(s) staged in blue — "
+            f"{len(self.pending)} pending; press Apply, then Join to Pins"
+        )
+
+    def _join_mouth_pins(self) -> None:
+        """Pair each mouth pin with the primary pin it lines up with along
+        the connector row and inherit its designator (same designator = same
+        net, hitboxes linked)."""
+        registry = self.ctx.window.pins
+        primaries = registry.primaries()
+        mouths = registry.mouths() + [p for p in self.pending if p.role == "mouth"]
+        if not mouths:
+            self.status("Join: no mouth pins — stage some with Mouth Seed first")
+            return
+        if not primaries:
+            self.status("Join: detect and Apply the primary (tail) pins first")
+            return
+        assigned, conflicts = join_mouth_pins(primaries, mouths)
+        for index, primary in assigned.items():
+            mouths[index].name = primary.name or str(primary.number)
+            mouths[index].name_source = "joined"
+        self.ctx.journal.record(
+            tool=self.id,
+            params={"action": "join_mouth"},
+            inputs={},
+            result={
+                "centroids": [list(mouths[i].centroid) for i in sorted(assigned)],
+                "names": [mouths[i].name for i in sorted(assigned)],
+                "conflicts": len(conflicts),
+            },
+        )
+        self._refresh_views()
+        self._refresh_pending()
+        outcome = f"Join: {len(assigned)} mouth pin(s) inherited designators"
+        if conflicts:
+            outcome += f" — {len(conflicts)} had no free primary in line; check those"
+        self.status(outcome)
 
     # --------------------------------------------------------- context plane
 
@@ -398,9 +537,15 @@ class DetectPinsTool(ToolMode):
 
     def _refresh_pending(self) -> None:
         self.ctx.scene.set_markers(
-            [pin.centroid for pin in self.pending],
+            [pin.centroid for pin in self.pending if pin.role != "mouth"],
             name="pending-pins",
             color="#ff9a2a",
+            point_size=26.0,
+        )
+        self.ctx.scene.set_markers(
+            [pin.centroid for pin in self.pending if pin.role == "mouth"],
+            name="pending-mouth",
+            color="#2a6fd4",
             point_size=26.0,
         )
         if self._actions_widget is not None:
@@ -460,19 +605,21 @@ class DetectPinsTool(ToolMode):
             return
         mode = self._ordering_mode()
         hint = self.ctx.window.pin1_hint
+        primaries = registry.primaries()
         order = order_pins(
-            registry.pins,
+            primaries,
             mode=mode,
             pin1_hint=(hint[0], hint[1]) if hint else None,
         )
-        registry.reorder(order)
+        registry.set_pins([primaries[i] for i in order] + registry.mouths())
         if mode == "bga-grid":
             try:
-                names = predict_grid_names(registry.pins, {})
-                for index, pin in enumerate(registry.pins):
+                primaries = registry.primaries()
+                names = predict_grid_names(primaries, {})
+                for index, pin in enumerate(primaries):
                     pin.name = names[index]
                     pin.name_source = ""  # default scheme: plain white
-                unknown = sum(1 for pin in registry.pins if pin.name.startswith("?"))
+                unknown = sum(1 for pin in primaries if pin.name.startswith("?"))
                 if unknown:
                     self.status(
                         f"Detect Pins: {unknown} region(s) named '?' — likely not "
@@ -571,7 +718,7 @@ class DetectPinsTool(ToolMode):
         """Treat the manually named pins as ground truth and propagate the
         scheme to every other pin from the 3D positions."""
         registry = self.ctx.window.pins
-        pins = registry.pins
+        pins = registry.primaries()  # mouth pins are named by Join, not Predict
         anchors = {i: pin.name.strip() for i, pin in enumerate(pins) if pin.name.strip()}
         if not anchors:
             self.status("Detect Pins: name at least one pin first (e.g. A1)")
@@ -599,7 +746,7 @@ class DetectPinsTool(ToolMode):
                     range(len(pins)),
                     key=lambda i: parse_grid_name(pins[i].name) or (9999, i),
                 )
-                registry.reorder(order)
+                registry.set_pins([pins[i] for i in order] + registry.mouths())
                 unknown = sum(1 for pin in pins if pin.name.startswith("?"))
                 predicted = len(pins) - len(anchors)
                 outcome = (
@@ -621,7 +768,7 @@ class DetectPinsTool(ToolMode):
                         "check the numbers or use grid names"
                     )
                     return
-                registry.reorder(order)
+                registry.set_pins([pins[i] for i in order] + registry.mouths())
                 outcome = "serpentine numbering aligned to the named pins"
             else:
                 self.status(
@@ -723,13 +870,16 @@ class DetectPinsTool(ToolMode):
         for pin in registry.pins:
             kind = f"bodies {pin.body_ids}" if pin.body_ids else f"{len(pin.face_ids)} faces"
             name = f" '{pin.name}'" if pin.name else ""
+            mouth = " [mouth]" if pin.role == "mouth" else ""
             self.pin_list.addItem(
-                f"Pin {pin.number}{name}  ({pin.centroid[0]:+.2f}, {pin.centroid[1]:+.2f})  {kind}"
+                f"Pin {pin.number}{name}{mouth}  "
+                f"({pin.centroid[0]:+.2f}, {pin.centroid[1]:+.2f})  {kind}"
             )
         points = [pin.centroid for pin in registry.pins]
         labels = [pin.name or str(pin.number) for pin in registry.pins]
         label_colors = [
-            "#1f9d3a" if pin.name_source == "anchor"
+            "#2a6fd4" if pin.role == "mouth"
+            else "#1f9d3a" if pin.name_source == "anchor"
             else "#e07b00" if pin.name_source == "predicted"
             else "#1a1a1a"
             for pin in registry.pins

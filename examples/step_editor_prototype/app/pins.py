@@ -22,8 +22,9 @@ class Pin:
     body_ids: list[int] = field(default_factory=list)            # pins that are whole solids
     face_ids: list[tuple[int, int]] = field(default_factory=list)  # (body, face) regions
     kind: str = "pin"
+    role: str = "primary"  # "primary" (tail at the PCB) | "mouth" (mating contact)
     name: str = ""
-    name_source: str = ""  # "" (default) | "anchor" (user-typed) | "predicted"
+    name_source: str = ""  # "" | "anchor" (user-typed) | "predicted" | "joined"
     function: str = ""
     hitbox: dict | None = None
 
@@ -36,8 +37,18 @@ class PinRegistry:
         self.pins = []
 
     def set_pins(self, pins: list[Pin]) -> None:
-        self.pins = pins
+        # Primaries first, mouth pins after: numbering/ordering/prediction all
+        # run over the primary prefix, mouth pins ride along at the tail.
+        self.pins = [p for p in pins if p.role != "mouth"] + [
+            p for p in pins if p.role == "mouth"
+        ]
         self._renumber()
+
+    def primaries(self) -> list[Pin]:
+        return [p for p in self.pins if p.role != "mouth"]
+
+    def mouths(self) -> list[Pin]:
+        return [p for p in self.pins if p.role == "mouth"]
 
     def _renumber(self) -> None:
         for index, pin in enumerate(self.pins):
@@ -340,6 +351,123 @@ def grow_smooth_region(
     return region
 
 
+def _region_dims(mesh: BodyMesh, region: set[int]) -> np.ndarray | None:
+    """Sorted bbox extents of a face region — its orientation-free size."""
+    mask = np.isin(mesh.tri_face_ids, np.asarray(sorted(region), dtype=np.int32))
+    indices = np.unique(mesh.tris[mask])
+    if not len(indices):
+        return None
+    points = mesh.points[indices]
+    return np.sort(points.max(axis=0) - points.min(axis=0))
+
+
+def find_similar_regions(
+    document: EditorDocument,
+    body_index: int,
+    seed_region: set[int],
+    *,
+    smooth_angle_deg: float = 30.0,
+    claimed: set[tuple[int, int]] | None = None,
+    area_tol: float = 0.12,
+    dim_tol: float = 0.25,
+) -> list[list[tuple[int, int]]]:
+    """Find every disjoint face region that looks like the seed: repeated
+    contacts inside a connector mouth are copies of one another, so a region
+    grown from any face whose area matches the seed's largest face, with a
+    matching total area and bbox size, is another instance. Searches all
+    bodies (multibody connectors keep each contact as its own solid).
+    Returns the matches as (body, face) regions, seed excluded."""
+    seed_mesh = document.bodies[body_index].mesh
+    if seed_mesh is None or not seed_region:
+        return []
+    seed_areas = mesh_face_areas(seed_mesh)
+    seed_total = sum(seed_areas.get(f, 0.0) for f in seed_region)
+    seed_dims = _region_dims(seed_mesh, seed_region)
+    if seed_total <= 0.0 or seed_dims is None:
+        return []
+    template_face = max(seed_region, key=lambda f: seed_areas.get(f, 0.0))
+    template_area = seed_areas[template_face]
+    dim_floor = max(float(seed_dims.max()), 1e-9)
+
+    claimed = claimed or set()
+    matches: list[list[tuple[int, int]]] = []
+    taken: set[tuple[int, int]] = {(body_index, f) for f in seed_region} | set(claimed)
+    for b, body in enumerate(document.bodies):
+        mesh = body.mesh
+        if mesh is None or not len(mesh.tris):
+            continue
+        areas = mesh_face_areas(mesh)
+        blocked_faces = {face for (bb, face) in taken if bb == b}
+        candidates = [
+            face
+            for face, area in areas.items()
+            if abs(area - template_area) <= area_tol * template_area
+            and face not in blocked_faces
+        ]
+        for face in sorted(candidates):
+            if face in blocked_faces:
+                continue
+            region = grow_smooth_region(
+                document, b, face,
+                smooth_angle_deg=smooth_angle_deg,
+                claimed=blocked_faces,
+            )
+            total = sum(areas.get(f, 0.0) for f in region)
+            dims = _region_dims(mesh, region)
+            if (
+                dims is not None
+                and abs(total - seed_total) <= area_tol * seed_total
+                and float(np.abs(dims - seed_dims).max()) <= dim_tol * dim_floor
+            ):
+                matches.append([(b, f) for f in sorted(region)])
+                blocked_faces |= region
+                taken |= {(b, f) for f in region}
+    return matches
+
+
+def join_mouth_pins(
+    primaries: list[Pin], mouths: list[Pin]
+) -> tuple[dict[int, Pin], list[int]]:
+    """Give each mouth pin the designator of the primary (tail) pin it lines
+    up with along the connector row: contacts run perpendicular to the row,
+    so projecting centroids onto the primaries' dominant XY axis pairs them
+    naturally. Returns ({mouth list-index: primary}, [conflicted indices])
+    where conflicts are mouth pins whose nearest primary was already taken
+    by a closer mouth pin."""
+    if not primaries or not mouths:
+        return {}, list(range(len(mouths)))
+    points = np.array([p.centroid for p in primaries], dtype=np.float64)[:, :2]
+    center = points.mean(axis=0)
+    spread = points - center
+    if len(primaries) > 1:
+        _u, _s, vt = np.linalg.svd(spread, full_matrices=False)
+        axis = vt[0]
+    else:
+        axis = np.array([1.0, 0.0])
+    t_primary = spread @ axis
+    t_mouth = (
+        np.array([p.centroid for p in mouths], dtype=np.float64)[:, :2] - center
+    ) @ axis
+
+    # Greedy by distance along the row: closest pairs claim first, each
+    # primary serves at most one mouth pin.
+    pairs = sorted(
+        ((abs(tm - tp), m, p)
+         for m, tm in enumerate(t_mouth)
+         for p, tp in enumerate(t_primary)),
+        key=lambda item: item[0],
+    )
+    assigned: dict[int, Pin] = {}
+    used_primaries: set[int] = set()
+    for _distance, m, p in pairs:
+        if m in assigned or p in used_primaries:
+            continue
+        assigned[m] = primaries[p]
+        used_primaries.add(p)
+    conflicts = [m for m in range(len(mouths)) if m not in assigned]
+    return assigned, conflicts
+
+
 def find_pin_cut(
     document: EditorDocument,
     region: list[tuple[int, int]],
@@ -477,8 +605,10 @@ def grow_pin_regions(
 
     grown: list[list[tuple[int, int]] | None] = []
     for pin_index, pin in enumerate(pins):
-        if pin.body_ids or not pin.face_ids:
-            grown.append(None)  # already its own body (or nothing to grow)
+        if pin.body_ids or not pin.face_ids or pin.role == "mouth":
+            # already its own body, nothing to grow, or a mouth contact —
+            # mouth pins are metadata anchors (hitbox + net), never cut out
+            grown.append(None)
             continue
         region = set(pin.face_ids)
         by_body: dict[int, set[int]] = {}

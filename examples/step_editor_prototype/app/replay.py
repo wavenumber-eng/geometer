@@ -98,10 +98,43 @@ def replay(document: EditorDocument, journal: Journal) -> PinRegistry:
                 registry.set_pins(registry.pins + [Pin(
                     number=0, centroid=centroid,
                     face_ids=[(inputs["body"], f) for f in sorted(region)],
+                    role=params.get("role", "primary"),
                 )])
+            elif action == "detect_similar":
+                from .pins import find_similar_regions
+
+                claimed = {
+                    (body, face)
+                    for pin in registry.pins
+                    for body, face in pin.face_ids
+                }
+                matches = find_similar_regions(
+                    document, inputs["body"], set(inputs["faces"]),
+                    smooth_angle_deg=params.get("smooth_angle_deg", 30.0),
+                    claimed=claimed,
+                )
+                found = []
+                for match in matches:
+                    mesh = document.bodies[match[0][0]].mesh
+                    centroid = mesh_region_centroid(
+                        mesh, sorted(face for _body, face in match)
+                    )
+                    if centroid is not None:
+                        found.append(Pin(number=0, centroid=centroid,
+                                         face_ids=match, role="mouth"))
+                registry.set_pins(registry.pins + found)
+            elif action == "join_mouth":
+                for centroid, name in zip(result.get("centroids", []),
+                                          result.get("names", [])):
+                    pin = _nearest_pin(centroid)
+                    if pin is not None:
+                        pin.name = name
+                        pin.name_source = "joined"
             elif action == "renumber":
-                order = order_pins(registry.pins, mode=params.get("ordering", "serpentine"))
-                registry.reorder(order)
+                primaries = [p for p in registry.pins if p.role != "mouth"]
+                mouths = [p for p in registry.pins if p.role == "mouth"]
+                order = order_pins(primaries, mode=params.get("ordering", "serpentine"))
+                registry.set_pins([primaries[i] for i in order] + mouths)
                 for pin, name in zip(registry.pins, result.get("names", [])):
                     pin.name = name
             elif action == "predict":

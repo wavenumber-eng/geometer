@@ -272,6 +272,10 @@ class SeparateUnibodyTool(ToolMode):
             for pin_index, pin in enumerate(registry.pins):
                 if not pin.face_ids or not len(new_centroids):
                     continue
+                if pin.role == "mouth":
+                    continue  # mouth pins keep their face region — a mouth
+                    # contact sits right above its tail and would steal the
+                    # tail's new body otherwise
                 distances = np.linalg.norm(
                     new_centroids[:, :2] - np.asarray(pin.centroid[:2]), axis=1
                 )

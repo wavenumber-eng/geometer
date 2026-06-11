@@ -249,6 +249,58 @@ def selftest_m3(fixture: Path | None = None) -> None:
     _check(len(south_pins) == 3, f"expected 3 south leads, got {len(south_pins)}")
     _check(len(north_pins) == 2, f"expected 2 north leads, got {len(north_pins)}")
 
+    # Mouth-pin similarity search: a smooth region seeded on one lead (the
+    # same growth Mouth Seed uses) must find matching regions on the other
+    # (identical) leads of the SOT-23.
+    from .pins import (
+        Pin,
+        find_similar_regions,
+        grow_smooth_region,
+        join_mouth_pins,
+        mesh_face_areas,
+        mesh_region_centroid,
+    )
+
+    areas = mesh_face_areas(unibody.bodies[0].mesh)
+    seed_face = max(
+        (face for _body, face in south_pins[0].face_ids),
+        key=lambda face: areas.get(face, 0.0),
+    )
+    seed = grow_smooth_region(unibody, 0, seed_face)
+    matches = find_similar_regions(unibody, 0, seed)
+    known = np.array([p.centroid for p in (south_pins[1:] + north_pins)])
+    hits = 0
+    for match in matches:
+        centroid = mesh_region_centroid(
+            unibody.bodies[0].mesh, sorted(face for _b, face in match)
+        )
+        if centroid is not None and np.min(
+            np.linalg.norm(known - np.asarray(centroid), axis=1)
+        ) < 0.6:
+            hits += 1
+    _check(hits >= 3, f"similarity search found only {hits}/4 other leads")
+    print(f"similarity search OK ({len(matches)} matches, {hits} on real leads)")
+
+    # Joining: mouth contacts inherit the designator of the tail pin they
+    # line up with along the connector row, regardless of staging order.
+    primaries = [
+        Pin(number=i + 1, centroid=(float(i), 0.0, 0.0), name=str(i + 1))
+        for i in range(4)
+    ]
+    mouths = [
+        Pin(number=0, centroid=(float(i), 2.0, 1.5), role="mouth")
+        for i in (2, 0, 3, 1)  # shuffled
+    ]
+    assigned, conflicts = join_mouth_pins(primaries, mouths)
+    _check(not conflicts, f"join reported {len(conflicts)} conflicts")
+    for index, primary in assigned.items():
+        _check(
+            float(mouths[index].centroid[0]) == float(primary.centroid[0]),
+            f"mouth at x={mouths[index].centroid[0]} joined to "
+            f"primary at x={primary.centroid[0]}",
+        )
+    print("mouth join OK (4 contacts inherited the in-line designator)")
+
     # BGA grid naming + anchored prediction on a synthetic 4x4 ball grid.
     from .pins import Pin, predict_grid_names, predict_serpentine_order
 

@@ -387,8 +387,10 @@ class PinFunctionsTool(ToolMode):
         if self._actions_widget is None:
             return
         registry = self.ctx.window.pins
+        # mouth pins are second exposures of a primary contact (joined by
+        # designator) — drawing them would double every schematic stub
         self.schematic.set_pins(
             [(pin.number, pin.name, pin.function, pin.centroid)
-             for pin in registry.pins],
+             for pin in registry.pins if pin.role != "mouth"],
             getattr(self, "_selected", -1),
         )

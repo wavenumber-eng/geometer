@@ -34,8 +34,14 @@ def main() -> int:
         return run(args.selftest, args.fixture)
 
     if args.apply:
-        print("--apply journal replay arrives in milestone M8")
-        return 2
+        if not args.step:
+            print("--apply needs an input STEP file")
+            return 2
+        from app.replay import apply_journal_file
+
+        report, registry = apply_journal_file(Path(args.step), args.apply)
+        print(f"replayed journal: {len(registry.pins)} pins | {report.summary()}")
+        return 0 if report.ok else 1
 
     from PySide6.QtWidgets import QApplication
 

@@ -8,6 +8,8 @@ the writer + validation skeleton so every milestone exports through one path.
 
 from __future__ import annotations
 
+import json
+import re
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -60,10 +62,64 @@ def conditioned_path(input_path: Path) -> Path:
     return input_path.with_name(f"{input_path.stem}{CONDITIONED_SUFFIX}.step")
 
 
-def export_ap242(document: EditorDocument, out_path: Path | None = None) -> ExportReport:
+def export_ap242(
+    document: EditorDocument,
+    out_path: Path | None = None,
+    pins=None,
+    journal=None,
+) -> ExportReport:
     out_path = out_path or conditioned_path(document.path)
     write_step(document, out_path)
+    if pins is not None or journal is not None:
+        from .metadata import build_metadata
+
+        payload = build_metadata(document, pins, journal)
+        inject_metadata(out_path, payload)
+        sidecar = out_path.with_suffix(".metadata.json")
+        sidecar.write_text(json.dumps(payload, indent=2), encoding="utf-8")
     return _validate(document, out_path)
+
+
+def inject_metadata(step_path: Path, payload: dict) -> None:
+    """Embed the conditioning JSON as legal AP242 entities: a
+    DESCRIPTIVE_REPRESENTATION_ITEM carrying the payload, wired through
+    REPRESENTATION -> PROPERTY_DEFINITION_REPRESENTATION to the file's
+    PRODUCT_DEFINITION — readable by any STEP parser, queryable from the 3D
+    file alone."""
+    text = step_path.read_text(encoding="utf-8", errors="replace")
+    ids = [int(match) for match in re.findall(r"#(\d+)\s*=", text)]
+    next_id = (max(ids) if ids else 0) + 1
+    product = re.search(r"#(\d+)\s*=\s*PRODUCT_DEFINITION\(", text)
+    context = re.search(
+        r"#(\d+)\s*=\s*\(?[^;]{0,200}GEOMETRIC_REPRESENTATION_CONTEXT", text
+    )
+    if product is None or context is None:
+        raise RuntimeError("could not locate PRODUCT_DEFINITION / context entities")
+    blob = json.dumps(payload, separators=(",", ":")).replace("'", "''")
+    a, b, c, d = next_id, next_id + 1, next_id + 2, next_id + 3
+    entities = (
+        f"#{a}=DESCRIPTIVE_REPRESENTATION_ITEM('WN3D_CONDITIONING','{blob}');\n"
+        f"#{b}=REPRESENTATION('WN3D_CONDITIONING',(#{a}),#{context.group(1)});\n"
+        f"#{c}=PROPERTY_DEFINITION('WN3D_CONDITIONING',"
+        f"'wn3d geometric pin metadata',#{product.group(1)});\n"
+        f"#{d}=PROPERTY_DEFINITION_REPRESENTATION(#{c},#{b});\n"
+    )
+    end = text.rfind("ENDSEC;")
+    if end < 0:
+        raise RuntimeError("malformed STEP file (no ENDSEC)")
+    step_path.write_text(text[:end] + entities + text[end:], encoding="utf-8")
+
+
+def extract_metadata(step_path: Path) -> dict | None:
+    """Read the embedded conditioning JSON back out of a STEP file."""
+    text = step_path.read_text(encoding="utf-8", errors="replace")
+    match = re.search(
+        r"DESCRIPTIVE_REPRESENTATION_ITEM\('WN3D_CONDITIONING','((?:[^']|'')*)'\)",
+        text,
+    )
+    if match is None:
+        return None
+    return json.loads(match.group(1).replace("''", "'"))
 
 
 def write_step(document: EditorDocument, out_path: Path) -> None:

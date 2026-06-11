@@ -555,10 +555,100 @@ def selftest_m7(fixture: Path | None = None) -> None:
     print("engraved model exports and re-reads OK")
 
 
+def selftest_m8(fixture: Path | None = None) -> None:
+    """End-to-end conditioning with metadata + journal replay: scramble ->
+    Z-sit -> detect -> name -> functions -> hitboxes -> export. The embedded
+    JSON must round-trip, pins sharing a designator must group into one net,
+    and replaying the journal headlessly must reproduce the same nets."""
+    import json
+
+    import numpy as np
+
+    from .document import EditorDocument
+    from .export_ap242 import export_ap242, extract_metadata
+    from .hitbox import obb_from_points
+    from .journal import Journal
+    from .pins import Band, PinRegistry, detect_pins_multibody, order_pins, pin_mesh_points
+    from .replay import replay
+    from .tools.zsit import compute_zsit_matrix
+
+    path = fixture or FIXTURES / "SOIC-20-300.STEP"
+    document = EditorDocument.load(path)
+    journal = Journal()
+
+    rot_x90 = np.array(
+        [[1, 0, 0, 0], [0, 0, -1, 0], [0, 1, 0, 0], [0, 0, 0, 1]], dtype=np.float64
+    )
+    document.apply_trsf(rot_x90)
+    journal.record("zsit", {"origin_rule": "rect-center"}, {"points": []},
+                   {"matrix": rot_x90.tolist()})
+
+    b = document.bounds()
+    band = [b[0] - 1, b[2] - 1, b[1] + 1, b[3] + 1]
+    pins = detect_pins_multibody(document, Band(*band), exclude_largest=True)
+    registry = PinRegistry()
+    registry.set_pins(pins)
+    registry.reorder(order_pins(registry.pins, mode="serpentine"))
+    journal.record("detect_pins", {"exclude_largest": True,
+                                   "ordering": "serpentine"},
+                   {"bands": [band]}, {"added": len(pins)})
+    _check(len(registry.pins) == 20, f"expected 20 pins, got {len(registry.pins)}")
+
+    # bridged pair: pins 1 and 2 share designator SW_A -> ONE net
+    registry.pins[0].name = "SW_A"
+    registry.pins[1].name = "SW_A"
+    registry.pins[0].function = "NO"
+    registry.pins[1].function = "NO"
+    journal.record("pin_functions", {}, {"pin_number": 1}, {"function": "NO"})
+    journal.record("pin_functions", {}, {"pin_number": 2}, {"function": "NO"})
+
+    applied = []
+    for pin in registry.pins:
+        pin.hitbox = obb_from_points(pin_mesh_points(document, pin), margin=0.05)
+        applied.append({"pin": pin.number, "variant": "auto", "hitbox": pin.hitbox})
+    journal.record("hitboxes", {}, {}, {"applied": applied})
+
+    with tempfile.TemporaryDirectory(prefix="step_editor_m8_") as temp:
+        out_path = Path(temp) / "conditioned.step"
+        report = export_ap242(document, out_path, pins=registry, journal=journal)
+        _check(report.ok, "export validation failed")
+
+        payload = extract_metadata(out_path)
+        _check(payload is not None, "embedded metadata not found in the STEP")
+        _check(payload["schema"] == "wn3d.step_conditioning.a0", payload["schema"])
+        nets = {net["designator"]: net for net in payload["nets"]}
+        _check(len(nets["SW_A"]["pins"]) == 2,
+               "same-designator pins did not group into one net")
+        _check(nets["SW_A"]["functions"] == ["NO"], nets["SW_A"]["functions"])
+        _check(len(payload["nets"]) == 19, f"net count {len(payload['nets'])}")
+        _check(all(p["hitbox"] for net in payload["nets"] for p in net["pins"]),
+               "a pin lost its hitbox in the metadata")
+        _check(len(payload["journal"]) == len(journal.operations),
+               "journal not embedded completely")
+        sidecar = out_path.with_suffix(".metadata.json")
+        _check(json.loads(sidecar.read_text(encoding="utf-8"))["schema"]
+               == payload["schema"], "sidecar mismatch")
+        print(f"metadata embedded + extracted: {len(payload['nets'])} nets, "
+              f"{len(payload['journal'])} journal ops")
+
+        # headless replay of the same journal reproduces the same nets
+        fresh = EditorDocument.load(path)
+        replayed = replay(fresh, journal)
+        _check(len(replayed.pins) == 20, f"replay pins {len(replayed.pins)}")
+        zb = fresh.bounds()
+        _check(abs(zb[4] - b[4]) < 1e-6, "replayed transform differs")
+        functions = sorted(p.function for p in replayed.pins if p.function)
+        _check(functions == ["NO", "NO"], f"replayed functions {functions}")
+        boxed = sum(1 for p in replayed.pins if p.hitbox)
+        _check(boxed == 20, f"replayed hitboxes {boxed}")
+        print("journal replay reproduces the conditioning")
+
+
 SELFTESTS = {
     "m0": selftest_m0,
     "m5": selftest_m5,
     "m7": selftest_m7,
+    "m8": selftest_m8,
     "m1": selftest_m1,
     "m2": selftest_m2,
     "m3": selftest_m3,

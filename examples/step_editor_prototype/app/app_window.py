@@ -339,7 +339,9 @@ class MainWindow(QMainWindow):
         self.show_status(f"Writing {out_path.name} ...")
         QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
         try:
-            report = export_ap242(self.document, out_path)
+            report = export_ap242(
+                self.document, out_path, pins=self.pins, journal=self.journal
+            )
             self.show_status(report.summary())
             if not report.ok:
                 QMessageBox.warning(self, "Export validation", report.summary())

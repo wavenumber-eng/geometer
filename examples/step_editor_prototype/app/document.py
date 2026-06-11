@@ -17,13 +17,15 @@ import numpy as np
 
 from OCP.Bnd import Bnd_Box
 from OCP.BRep import BRep_Tool
-from OCP.BRepAdaptor import BRepAdaptor_Curve
-from OCP.BRepAlgoAPI import BRepAlgoAPI_Splitter
+from OCP.BRepAdaptor import BRepAdaptor_Curve, BRepAdaptor_Surface
+from OCP.BRepAlgoAPI import BRepAlgoAPI_Cut, BRepAlgoAPI_Fuse, BRepAlgoAPI_Splitter
+from OCP.GeomAbs import GeomAbs_Plane
+from OCP.ShapeFix import ShapeFix_Shape
 from OCP.BRepBndLib import BRepBndLib
 from OCP.BRepBuilderAPI import BRepBuilderAPI_MakeFace, BRepBuilderAPI_Transform
 from OCP.GeomAPI import GeomAPI_ProjectPointOnSurf
 from OCP.GeomLProp import GeomLProp_SLProps
-from OCP.gp import gp_Dir, gp_Pln, gp_Pnt, gp_Trsf
+from OCP.gp import gp_Ax3, gp_Dir, gp_Pln, gp_Pnt, gp_Trsf
 from OCP.TopTools import TopTools_ListOfShape
 from OCP.BRepGProp import BRepGProp
 from OCP.BRepMesh import BRepMesh_IncrementalMesh
@@ -654,6 +656,90 @@ class EditorDocument:
                     mesh.face_colors[int(face_id)] = colored_faces[nearest][1]
             record.original_face_colors = dict(mesh.face_colors)
         return pin_indices
+
+    def face_plane(self, body_index: int, face_index: int) -> dict | None:
+        """Frame of a planar face: origin (face centre), outward normal, and
+        in-plane u/v axes. None for non-planar faces."""
+        face = self.face_of(body_index, face_index)
+        adaptor = BRepAdaptor_Surface(face)
+        if adaptor.GetType() != GeomAbs_Plane:
+            return None
+        plane = adaptor.Plane()
+        normal = plane.Axis().Direction()
+        n = np.array([normal.X(), normal.Y(), normal.Z()])
+        if face.Orientation() == TopAbs_REVERSED:
+            n = -n
+        u_dir = plane.Position().XDirection()
+        u = np.array([u_dir.X(), u_dir.Y(), u_dir.Z()])
+        v = np.cross(n, u)
+        mesh = self.bodies[body_index].mesh
+        mask = mesh.tri_face_ids == face_index
+        origin = mesh.points[np.unique(mesh.tris[mask])].mean(axis=0)
+        return {"origin": origin, "normal": n, "u": u, "v": v}
+
+    def emboss(
+        self,
+        body_index: int,
+        tool_shape,
+        frame: dict,
+        *,
+        depth_mm: float,
+        offset_uv: tuple[float, float] = (0.0, 0.0),
+        raised: bool = False,
+        logo_rgb: tuple[float, float, float] | None = None,
+    ) -> float:
+        """Place a logo tool (built at origin, extruded +Z over [0, depth])
+        onto the planar face frame and boolean it into the body. Engrave
+        sinks the tool below the surface and cuts; raised fuses it on top.
+        Returns the signed volume change."""
+        origin = np.asarray(frame["origin"], dtype=np.float64)
+        n = np.asarray(frame["normal"], dtype=np.float64)
+        u = np.asarray(frame["u"], dtype=np.float64)
+        origin = origin + u * offset_uv[0] + np.cross(n, u) * offset_uv[1]
+        if raised:
+            target_z = n            # extrude outward from the surface
+            place = origin
+        else:
+            target_z = -n           # extrude into the body
+            place = origin
+        ax3 = gp_Ax3(gp_Pnt(*place), gp_Dir(*target_z), gp_Dir(*u))
+        trsf = gp_Trsf()
+        trsf.SetTransformation(ax3, gp_Ax3())
+        placed = BRepBuilderAPI_Transform(tool_shape, trsf, True).Shape()
+
+        body = self.bodies[body_index]
+        before = shape_volume(body.solid) or 0.0
+        old_centers = None
+        if logo_rgb is not None and body.mesh is not None:
+            tri_centers = body.mesh.points[body.mesh.tris].mean(axis=1)
+            old_centers = np.array([
+                tri_centers[body.mesh.tri_face_ids == fid].mean(axis=0)
+                for fid in np.unique(body.mesh.tri_face_ids)
+            ])
+        operation = BRepAlgoAPI_Fuse if raised else BRepAlgoAPI_Cut
+        boolean = operation(body.solid, placed)
+        boolean.Build()
+        if not boolean.IsDone():
+            raise RuntimeError("logo boolean failed")
+        fixer = ShapeFix_Shape(boolean.Shape())
+        fixer.Perform()
+        result = fixer.Shape()
+        solids = list(_iter_solids(result))
+        body.solid = solids[0] if len(solids) == 1 else result
+        self.remesh_body(body_index)
+        after = shape_volume(body.solid) or 0.0
+
+        if logo_rgb is not None and old_centers is not None and body.mesh is not None:
+            # faces the boolean CREATED (no pre-existing centroid nearby)
+            # get the logo colour
+            span = body.mesh.points.max(axis=0) - body.mesh.points.min(axis=0)
+            tolerance = float(np.linalg.norm(span)) * 2.0e-3
+            tri_centers = body.mesh.points[body.mesh.tris].mean(axis=1)
+            for fid in np.unique(body.mesh.tri_face_ids):
+                center = tri_centers[body.mesh.tri_face_ids == fid].mean(axis=0)
+                if np.linalg.norm(old_centers - center, axis=1).min() > tolerance:
+                    body.mesh.face_colors[int(fid)] = tuple(logo_rgb)
+        return after - before
 
     def face_smooth_adjacency(
         self, body_index: int, smooth_angle_deg: float | None = 30.0

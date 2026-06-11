@@ -489,9 +489,66 @@ def selftest_m5(fixture: Path | None = None) -> None:
     print("bulk parse + registry function assignment OK")
 
 
+def selftest_m7(fixture: Path | None = None) -> None:
+    """Apply LOGO: emboss WN3D.dxf into the top face of a resistor via
+    geometer.planar_step + boolean cut. Volume must drop by a plausible
+    amount, the result must stay one valid solid, and the engraved faces
+    must carry the chosen logo colour."""
+    import numpy as np
+
+    from .document import EditorDocument, shape_volume
+    from .dxf_loader import emboss_logo
+
+    here = Path(__file__).resolve().parents[1]
+    dxf = here / "WN3D.dxf"
+    _check(dxf.is_file(), f"missing {dxf}")
+
+    path = fixture or FIXTURES / "RESC3216X07L.step"
+    document = EditorDocument.load(path)
+
+    # largest body, topmost planar face (the resistor's top)
+    volumes = [shape_volume(b.solid) or 0.0 for b in document.bodies]
+    body_index = int(np.argmax(volumes))
+    mesh = document.bodies[body_index].mesh
+    best_face, best_z = None, -np.inf
+    for fid in np.unique(mesh.tri_face_ids):
+        frame = document.face_plane(body_index, int(fid))
+        if frame is None or frame["normal"][2] < 0.9:
+            continue
+        if frame["origin"][2] > best_z:
+            best_face, best_z = int(fid), float(frame["origin"][2])
+    _check(best_face is not None, "no upward planar face found")
+
+    before = shape_volume(document.bodies[body_index].solid)
+    width, depth = 2.0, 0.05
+    delta = emboss_logo(
+        document, body_index, best_face, dxf,
+        width_mm=width, depth_mm=depth, logo_rgb=(1.0, 0.84, 0.0),
+    )
+    print(f"engrave volume delta: {delta:.6f} (body was {before:.4f})")
+    _check(delta < -1e-6, "engrave did not remove material")
+    _check(abs(delta) < width * width * depth, "removed more than the logo bbox")
+
+    from OCP.BRepCheck import BRepCheck_Analyzer
+
+    _check(BRepCheck_Analyzer(document.bodies[body_index].solid).IsValid(),
+           "engraved solid is invalid")
+    colored = len(document.bodies[body_index].mesh.face_colors)
+    print(f"logo-coloured faces: {colored}")
+    _check(colored > 0, "no engraved faces were coloured")
+
+    from .export_ap242 import export_ap242
+
+    with tempfile.TemporaryDirectory(prefix="step_editor_m7_") as temp:
+        report = export_ap242(document, Path(temp) / "logo.step")
+        _check(report.ok, "engraved model failed export validation")
+    print("engraved model exports and re-reads OK")
+
+
 SELFTESTS = {
     "m0": selftest_m0,
     "m5": selftest_m5,
+    "m7": selftest_m7,
     "m1": selftest_m1,
     "m2": selftest_m2,
     "m3": selftest_m3,

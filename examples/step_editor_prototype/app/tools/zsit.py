@@ -40,14 +40,31 @@ def _fit_plane(points) -> tuple[np.ndarray, np.ndarray]:
 
 
 def _in_plane_axis(points, normal) -> np.ndarray:
-    base = np.asarray(points[0], dtype=np.float64)
-    for other in points[1:]:
-        candidate = np.asarray(other, dtype=np.float64) - base
-        in_plane = candidate - normal * float(candidate @ normal)
-        length = float(np.linalg.norm(in_plane))
-        if length > _EPS:
-            return in_plane / length
-    raise ValueError("cannot derive an in-plane axis from the picks")
+    """Rectangle orientation from the GEOMETRY, not the pick order: try the
+    direction of every pick pair and keep the one whose in-plane bounding
+    rectangle has minimum area — with two parallel pick pairs (a pad field's
+    corners) the rectangle aligns to those parallel lines."""
+    pts = [np.asarray(p, dtype=np.float64) for p in points]
+    candidates = []
+    for i in range(len(pts)):
+        for j in range(i + 1, len(pts)):
+            direction = pts[j] - pts[i]
+            in_plane = direction - normal * float(direction @ normal)
+            length = float(np.linalg.norm(in_plane))
+            if length > _EPS:
+                candidates.append(in_plane / length)
+    if not candidates:
+        raise ValueError("cannot derive an in-plane axis from the picks")
+    best, best_area = candidates[0], np.inf
+    base = pts[0]
+    for axis in candidates:
+        v_axis = np.cross(normal, axis)
+        uv = np.array([[(p - base) @ axis, (p - base) @ v_axis] for p in pts])
+        span = uv.max(axis=0) - uv.min(axis=0)
+        area = float(max(span[0], _EPS) * max(span[1], _EPS))
+        if area < best_area - 1e-12:
+            best, best_area = axis, area
+    return best
 
 
 def compute_zsit_frame(

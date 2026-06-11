@@ -19,8 +19,13 @@ We need a more predictable second-tier cache for CI and developer machines.
 ## Decision
 
 Geometer may restore OCCT install trees from immutable binary archives stored in
-Cloudflare R2. The archives are treated as generated dependency state, not as
-source and not as committed repository artifacts.
+the Wavenumber Cloudflare R2 dependency cache. The archives are treated as
+generated dependency state, not as source and not as committed repository
+artifacts.
+
+The R2 bucket is a Wavenumber-wide dependency cache. OCCT is the first Geometer
+dependency using it, but object layout must allow multiple projects,
+dependencies, versions, target kinds, and platforms.
 
 The cache consumer path is:
 
@@ -40,6 +45,33 @@ The producer path is a separate trusted workflow:
 
 Normal CI and release workflows consume the cache but do not publish dependency
 artifacts.
+
+Developer machines should use read-only R2 credentials. Upload-capable
+credentials are reserved for trusted producer workflows.
+
+## Cache Layout
+
+New dependency cache objects use:
+
+```text
+deps/v1/<project>/<dependency>/<dependency-version>/<target-kind>/<platform-tag>/<cache-key>/
+  manifest.json
+  <archive-name>.zip
+  <archive-name>.zip.sha256
+```
+
+For Geometer OCCT 8:
+
+```text
+deps/v1/geometer/occt/V8_0_0/native/windows-x64/<cache-key>/
+deps/v1/geometer/occt/V8_0_0/native/linux-x64/<cache-key>/
+deps/v1/geometer/occt/V8_0_0/native/linux-arm64/<cache-key>/
+deps/v1/geometer/occt/V8_0_0/native/macos-arm64/<cache-key>/
+deps/v1/geometer/occt/V8_0_0/wasm/wasm-emscripten/<cache-key>/
+```
+
+The legacy OCCT prefix `geometer/occt/<target-kind>/<platform-tag>/<cache-key>/`
+may be checked for compatibility with existing OCCT 7.8.1 cache objects.
 
 ## Cache Identity
 
@@ -66,7 +98,7 @@ Local and CI consumers use these environment variables:
 - `R2_ACCESS_KEY_ID` or `GEOMETER_OCCT_CACHE_ACCESS_KEY_ID`
 - `R2_SECRET_ACCESS_KEY` or `GEOMETER_OCCT_CACHE_SECRET_ACCESS_KEY`
 - `AWS_DEFAULT_REGION` or `GEOMETER_OCCT_CACHE_REGION`, default `auto`
-- `GEOMETER_OCCT_CACHE_PREFIX`, default `geometer/occt`
+- `GEOMETER_OCCT_CACHE_PREFIX`, default `deps/v1/geometer/occt`
 
 Cache mode is controlled with `GEOMETER_OCCT_BINARY`:
 

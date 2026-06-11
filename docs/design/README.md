@@ -13,6 +13,7 @@ durable record belongs here, in ADRs, and in requirements.
 - [Python package interface](python-package.md)
 - [WASM interfaces](wasm.md)
 - [CLI interfaces](cli.md)
+- [Dependency cache](dependency-cache.md)
 
 ## Format Docs
 

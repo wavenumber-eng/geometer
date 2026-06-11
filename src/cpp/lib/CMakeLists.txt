@@ -24,7 +24,7 @@ add_library(geometer_lib STATIC ${GEOMETER_LIB_SOURCES})
 set_target_properties(geometer_lib PROPERTIES OUTPUT_NAME geometer)
 
 if(NOT DEFINED GEOMETER_ABI_VERSION)
-    set(GEOMETER_ABI_VERSION "20260609" CACHE STRING "Geometer C ABI generation date")
+    set(GEOMETER_ABI_VERSION "20260610" CACHE STRING "Geometer C ABI generation date")
 endif()
 configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/geometer/version_config.h.in"
@@ -32,7 +32,7 @@ configure_file(
     @ONLY
 )
 
-# OCCT 7.8 target names.
+# OCCT toolkit target names.
 # TKV3d/TKService are pulled in because TKXCAF references Graphic3d material
 # types for PBR mapping, even though we do no rendering.
 set(GEOMETER_OCCT_LIBS

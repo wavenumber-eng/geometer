@@ -805,18 +805,18 @@ ProjectedModeGeometry projected_shape_bbox_geometry(const TopoDS_Shape& shape,
     }
 
     Bnd_Box box;
-    BRepBndLib::Add(shape, box, Standard_False);
+    BRepBndLib::Add(shape, box, false);
     if (box.IsVoid())
     {
         return geometry;
     }
 
-    Standard_Real xmin = 0.0;
-    Standard_Real ymin = 0.0;
-    Standard_Real zmin = 0.0;
-    Standard_Real xmax = 0.0;
-    Standard_Real ymax = 0.0;
-    Standard_Real zmax = 0.0;
+    double xmin = 0.0;
+    double ymin = 0.0;
+    double zmin = 0.0;
+    double xmax = 0.0;
+    double ymax = 0.0;
+    double zmax = 0.0;
     box.Get(xmin, ymin, zmin, xmax, ymax, zmax);
 
     const gp_Ax2 axes = make_view_axes(view);
@@ -1101,10 +1101,10 @@ int step_hlr_projection_from_bytes(const unsigned char* step_data, std::size_t s
                 // Match Altium Draftsman: deflection = maxBBoxDim * coefficient,
                 // applied as an absolute chordal tolerance (Prs3d::GetDeflection).
                 Bnd_Box box;
-                BRepBndLib::Add(shape, box, Standard_False);
+                BRepBndLib::Add(shape, box, false);
                 if (!box.IsVoid())
                 {
-                    Standard_Real xmin, ymin, zmin, xmax, ymax, zmax;
+                    double xmin, ymin, zmin, xmax, ymax, zmax;
                     box.Get(xmin, ymin, zmin, xmax, ymax, zmax);
                     const double max_dim =
                         std::max(xmax - xmin, std::max(ymax - ymin, zmax - zmin));
@@ -1153,7 +1153,7 @@ int step_hlr_projection_from_bytes(const unsigned char* step_data, std::size_t s
     }
     catch (const Standard_Failure& failure)
     {
-        set_status(status, 7, failure.GetMessageString());
+        set_status(status, 7, failure.what());
         return 7;
     }
     catch (const std::exception& error)

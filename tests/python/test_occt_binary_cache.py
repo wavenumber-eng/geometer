@@ -6,6 +6,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
+import pytest
 from pytest import MonkeyPatch
 
 
@@ -22,6 +23,7 @@ def make_install_tree(root: Path) -> None:
     cmake_dir = root / "lib" / "cmake" / "opencascade"
     cmake_dir.mkdir(parents=True)
     (cmake_dir / "OpenCASCADEConfig.cmake").write_text("# test config\n", encoding="utf-8")
+    (cmake_dir / "OpenCASCADEConfigVersion.cmake").write_text('set(PACKAGE_VERSION "7.8.1")\n', encoding="utf-8")
     (root / "lib").mkdir(exist_ok=True)
     (root / "lib" / "libTKTest.a").write_bytes(b"test")
 
@@ -59,6 +61,9 @@ def test_package_extract_and_manifest_round_trip(tmp_path: Path) -> None:
     manifest = occt_binary_cache.build_manifest(profile, archive_path, archive_sha)
 
     assert manifest["schema"] == occt_binary_cache.SCHEMA
+    assert manifest["project"] == "geometer"
+    assert manifest["dependency"]["name"] == "occt"
+    assert manifest["dependency"]["version"] == "V7_8_1"
     assert manifest["archive"]["sha256"] == archive_sha
     occt_binary_cache.validate_manifest(json.loads(json.dumps(manifest)), profile)
 
@@ -67,6 +72,62 @@ def test_package_extract_and_manifest_round_trip(tmp_path: Path) -> None:
 
     assert occt_binary_cache.install_ready(restored)
     assert (restored / "lib" / "libTKTest.a").read_bytes() == b"test"
+
+
+def test_install_matches_profile_requires_occt_version(tmp_path: Path) -> None:
+    install_dir = tmp_path / "occt-install"
+    make_install_tree(install_dir)
+    profile_7 = occt_binary_cache.OcctCacheProfile(
+        kind="native",
+        platform_tag="windows-x64",
+        config="Release",
+        library_type="Static",
+        occt_repo="https://example.invalid/OCCT.git",
+        occt_tag="V7_8_1",
+        recipe_hash="b" * 64,
+    )
+    profile_8 = occt_binary_cache.OcctCacheProfile(
+        kind="native",
+        platform_tag="windows-x64",
+        config="Release",
+        library_type="Static",
+        occt_repo="https://example.invalid/OCCT.git",
+        occt_tag="V8_0_0",
+        recipe_hash="b" * 64,
+    )
+
+    assert occt_binary_cache.install_matches_profile(install_dir, profile_7)
+    assert not occt_binary_cache.install_matches_profile(install_dir, profile_8)
+
+
+def test_object_prefix_uses_wavenumber_layout_and_legacy_fallback() -> None:
+    config = occt_binary_cache.CacheConfig(
+        bucket="cache",
+        endpoint_url="https://example.invalid",
+        access_key_id="id",
+        secret_access_key="secret",
+        region="auto",
+        prefix="deps/v1/geometer/occt",
+    )
+    profile = occt_binary_cache.OcctCacheProfile(
+        kind="wasm",
+        platform_tag="wasm-emscripten",
+        config="Release",
+        library_type="Static",
+        occt_repo="https://example.invalid/OCCT.git",
+        occt_tag="V8_0_0",
+        recipe_hash="d" * 64,
+        emsdk_version="3.1.56",
+    )
+
+    assert occt_binary_cache.object_prefix(config, profile) == (
+        "deps/v1/geometer/occt/V8_0_0/wasm/wasm-emscripten/"
+        "occt-wasm-v8-0-0-wasm-emscripten-release-static-emsdk-3.1.56-recipe-dddddddddddddddd"
+    )
+    assert occt_binary_cache.object_prefix_candidates(config, profile)[-1] == (
+        "geometer/occt/wasm/wasm-emscripten/"
+        "occt-wasm-v8-0-0-wasm-emscripten-release-static-emsdk-3.1.56-recipe-dddddddddddddddd"
+    )
 
 
 def test_restore_auto_skips_when_cache_is_unconfigured(monkeypatch: MonkeyPatch, tmp_path: Path) -> None:
@@ -92,3 +153,66 @@ def test_restore_auto_skips_when_cache_is_unconfigured(monkeypatch: MonkeyPatch,
     )
 
     assert not occt_binary_cache.restore_prebuilt_install(profile, tmp_path / "install", mode="auto")
+
+
+def test_restore_auto_falls_back_when_cache_read_fails(monkeypatch: MonkeyPatch, tmp_path: Path) -> None:
+    monkeypatch.setattr(
+        occt_binary_cache,
+        "config_from_env",
+        lambda: occt_binary_cache.CacheConfig(
+            bucket="wn-build-deps",
+            endpoint_url="https://example.invalid",
+            access_key_id="key",
+            secret_access_key="secret",
+            region="auto",
+            prefix="deps/v1/geometer/occt",
+        ),
+    )
+    monkeypatch.setattr(
+        occt_binary_cache,
+        "_r2_get_object",
+        lambda _config, _key: (_ for _ in ()).throw(occt_binary_cache.CacheReadError("HTTP 500")),
+    )
+    profile = occt_binary_cache.OcctCacheProfile(
+        kind="native",
+        platform_tag="windows-x64",
+        config="Release",
+        library_type="Static",
+        occt_repo="https://example.invalid/OCCT.git",
+        occt_tag="V8_0_0",
+        recipe_hash="c" * 64,
+    )
+
+    assert not occt_binary_cache.restore_prebuilt_install(profile, tmp_path / "install", mode="auto")
+
+
+def test_restore_only_fails_when_cache_read_fails(monkeypatch: MonkeyPatch, tmp_path: Path) -> None:
+    monkeypatch.setattr(
+        occt_binary_cache,
+        "config_from_env",
+        lambda: occt_binary_cache.CacheConfig(
+            bucket="wn-build-deps",
+            endpoint_url="https://example.invalid",
+            access_key_id="key",
+            secret_access_key="secret",
+            region="auto",
+            prefix="deps/v1/geometer/occt",
+        ),
+    )
+    monkeypatch.setattr(
+        occt_binary_cache,
+        "_r2_get_object",
+        lambda _config, _key: (_ for _ in ()).throw(occt_binary_cache.CacheReadError("HTTP 500")),
+    )
+    profile = occt_binary_cache.OcctCacheProfile(
+        kind="native",
+        platform_tag="windows-x64",
+        config="Release",
+        library_type="Static",
+        occt_repo="https://example.invalid/OCCT.git",
+        occt_tag="V8_0_0",
+        recipe_hash="c" * 64,
+    )
+
+    with pytest.raises(RuntimeError, match="OCCT binary cache read failed"):
+        occt_binary_cache.restore_prebuilt_install(profile, tmp_path / "install", mode="only")

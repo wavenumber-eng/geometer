@@ -1271,7 +1271,7 @@ bool write_step_file(const Request& request, const std::string& step_path, Plana
         {
             return false;
         }
-        TDF_Label label = shape_tool->AddShape(body_shape, Standard_False);
+        TDF_Label label = shape_tool->AddShape(body_shape, false);
         assign_shape_name(label, body.name.empty() ? body.id : body.name);
         Quantity_Color color(body.color.r, body.color.g, body.color.b, Quantity_TOC_RGB);
         color_tool->SetColor(label, color, XCAFDoc_ColorSurf);
@@ -1281,8 +1281,8 @@ bool write_step_file(const Request& request, const std::string& step_path, Plana
     }
 
     STEPCAFControl_Writer writer;
-    writer.SetColorMode(Standard_True);
-    writer.SetNameMode(Standard_True);
+    writer.SetColorMode(true);
+    writer.SetNameMode(true);
     if (!writer.Transfer(doc, STEPControl_AsIs, nullptr, Message_ProgressRange()))
     {
         *error = "failed transferring planar STEP document";

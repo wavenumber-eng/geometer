@@ -46,7 +46,7 @@ configurations.
 
 ## Dependency Sources
 
-- **OCCT** (V7_8_1): restored from a verified binary cache when configured, or
+- **OCCT** (V8_0_0): restored from a verified binary cache when configured, or
   cloned shallow from GitHub and built as static libraries.
 - **RapidJSON** (v1.1.0, header-only): vendored under
   `third_party/rapidjson`, required by OCCT's `RWGltf_CafWriter` for glTF/GLB
@@ -66,7 +66,7 @@ The script disables modules and features not needed by Geometer:
 ## Rationale
 
 - Single command build: `cmake --preset default && cmake --build build --config Release`.
-- OCCT version is pinned in one place (`scripts/build_occt.py`).
+- OCCT version is pinned in one place (`scripts/dependency_versions.py`).
 - RapidJSON is local and checked in, avoiding a second generated dependency
   checkout.
 - `.deps/` is gitignored and survives build directory wipes.
@@ -81,6 +81,7 @@ The script disables modules and features not needed by Geometer:
   Cache hits and subsequent configures are fast.
 - OCCT source clone is about 80 MB when shallow.
 - `.deps/` holds large generated build artifacts.
-- Updating OCCT requires changing the tag in `build_occt.py` and rebuilding.
+- Updating OCCT requires changing the tag in `scripts/dependency_versions.py`
+  and rebuilding.
 - Updating RapidJSON requires an intentional vendored source refresh under
   `third_party/rapidjson`.

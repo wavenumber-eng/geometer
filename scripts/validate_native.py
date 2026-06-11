@@ -232,11 +232,72 @@ def macos_deployment_target() -> str:
 
 def native_build_env() -> dict[str, str]:
     env = os.environ.copy()
+    if sys.platform == "win32" and shutil.which("cl") is None:
+        env.update(visual_studio_build_env())
     if sys.platform == "darwin":
         target = macos_deployment_target()
         env["MACOSX_DEPLOYMENT_TARGET"] = target
         env["GEOMETER_MACOS_DEPLOYMENT_TARGET"] = target
     return env
+
+
+def visual_studio_build_env() -> dict[str, str]:
+    vsdev = find_vsdevcmd()
+    if vsdev is None:
+        return {}
+    print(f"Activating Visual Studio build environment from {vsdev}")
+    completed = subprocess.run(
+        f'cmd /d /c call "{vsdev}" -arch=x64 -host_arch=x64 >nul && set',
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if completed.returncode != 0:
+        print(completed.stdout, end="")
+        print(completed.stderr, end="", file=sys.stderr)
+        raise RuntimeError(f"Could not activate Visual Studio build environment from {vsdev}")
+    values: dict[str, str] = {}
+    for line in completed.stdout.splitlines():
+        if "=" not in line:
+            continue
+        name, value = line.split("=", 1)
+        values[name] = value
+    return values
+
+
+def find_vsdevcmd() -> Path | None:
+    vswhere = Path(os.environ.get("ProgramFiles(x86)", "")) / "Microsoft Visual Studio" / "Installer" / "vswhere.exe"
+    if vswhere.exists():
+        completed = subprocess.run(
+            [
+                str(vswhere),
+                "-latest",
+                "-products",
+                "*",
+                "-requires",
+                "Microsoft.VisualStudio.Component.VC.Tools.x86.x64",
+                "-property",
+                "installationPath",
+            ],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        install_path = completed.stdout.strip()
+        if install_path:
+            candidate = Path(install_path) / "Common7" / "Tools" / "VsDevCmd.bat"
+            if candidate.exists():
+                return candidate
+    for base in (
+        Path(os.environ.get("ProgramFiles(x86)", "")) / "Microsoft Visual Studio" / "2022" / "BuildTools",
+        Path(os.environ.get("ProgramFiles", "")) / "Microsoft Visual Studio" / "2022" / "BuildTools",
+    ):
+        candidate = base / "Common7" / "Tools" / "VsDevCmd.bat"
+        if candidate.exists():
+            return candidate
+    return None
 
 
 def cmake_configure_command(build_dir: Path, *, build_examples: bool) -> list[str]:

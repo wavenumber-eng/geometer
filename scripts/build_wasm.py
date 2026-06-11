@@ -15,10 +15,12 @@ import argparse
 import os
 import re
 import shutil
+import stat
 import subprocess
 import sys
 from pathlib import Path
 
+import dependency_versions
 import occt_binary_cache
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -27,8 +29,8 @@ DIST_DIR = ROOT / "dist"
 
 # Emsdk
 EMSDK_DIR = DEPS_DIR / "emsdk"
-EMSDK_REPO = "https://github.com/emscripten-core/emsdk.git"
-EMSDK_VERSION = "3.1.56"
+EMSDK_REPO = dependency_versions.EMSDK_REPO
+EMSDK_VERSION = dependency_versions.EMSDK_VERSION
 
 # OCCT (shared source with build_occt.py)
 OCCT_SRC = DEPS_DIR / "occt-src"
@@ -45,14 +47,46 @@ RAPIDJSON_PATCH_SENTINEL = (
 # Geometer WASM build
 GEOMETER_WASM_BUILD = ROOT / "build-wasm"
 
-OCCT_REPO = "https://github.com/Open-Cascade-SAS/OCCT.git"
-OCCT_TAG = "V7_8_1"
+OCCT_REPO = dependency_versions.OCCT_REPO
+OCCT_TAG = dependency_versions.OCCT_TAG
 OCCT_WASM_PLATFORM_TAG = "wasm-emscripten"
 
 
 def run(cmd: list[str], **kwargs) -> None:
     print(f"  > {' '.join(cmd)}")
     subprocess.check_call(cmd, **kwargs)
+
+
+def remove_tree(path: Path) -> None:
+    def handle_remove_error(function, failed_path, _exc_info) -> None:
+        os.chmod(failed_path, stat.S_IWRITE)
+        function(failed_path)
+
+    shutil.rmtree(path, onerror=handle_remove_error)
+
+
+def source_tag(dest: Path) -> str | None:
+    if not (dest / ".git").exists():
+        return None
+    try:
+        return subprocess.check_output(
+            ["git", "-C", str(dest), "describe", "--tags", "--exact-match", "HEAD"],
+            text=True,
+            stderr=subprocess.DEVNULL,
+        ).strip()
+    except subprocess.CalledProcessError:
+        return None
+
+
+def verify_source_tag(name: str, dest: Path, expected_tag: str) -> None:
+    current_tag = source_tag(dest)
+    if current_tag == expected_tag:
+        return
+    raise RuntimeError(
+        f"{name} source at {dest} is not {expected_tag} "
+        f"(found {current_tag or 'unknown'}). Run "
+        "`python scripts\\build_wasm.py --clean` before rebuilding."
+    )
 
 
 def normalize_generated_js(path: Path) -> None:
@@ -77,6 +111,10 @@ def _emcmake() -> str:
 
 def _toolchain_file() -> Path:
     return EMSDK_DIR / "upstream" / "emscripten" / "cmake" / "Modules" / "Platform" / "Emscripten.cmake"
+
+
+def _emsdk_version_sentinel() -> Path:
+    return EMSDK_DIR / ".geometer_emsdk_version"
 
 
 def _emscripten_env() -> dict[str, str]:
@@ -104,13 +142,24 @@ def install_emsdk() -> None:
         DEPS_DIR.mkdir(parents=True, exist_ok=True)
         run(["git", "clone", "--depth", "1", EMSDK_REPO, str(EMSDK_DIR)])
 
+    toolchain = _toolchain_file()
+    version_sentinel = _emsdk_version_sentinel()
+    if (
+        toolchain.exists()
+        and (EMSDK_DIR / ".emscripten").exists()
+        and version_sentinel.exists()
+        and version_sentinel.read_text(encoding="utf-8").strip() == EMSDK_VERSION
+    ):
+        print(f"Emscripten {EMSDK_VERSION} already ready. Toolchain: {toolchain}")
+        return
+
     print(f"Installing Emscripten {EMSDK_VERSION} ...")
     run([_emsdk_exe(), "install", EMSDK_VERSION])
     run([_emsdk_exe(), "activate", EMSDK_VERSION])
 
-    toolchain = _toolchain_file()
     if not toolchain.exists():
         raise RuntimeError(f"Toolchain file not found at {toolchain}")
+    version_sentinel.write_text(f"{EMSDK_VERSION}\n", encoding="utf-8")
     print(f"Emscripten ready. Toolchain: {toolchain}")
 
 
@@ -119,6 +168,7 @@ def install_emsdk() -> None:
 def clone_source(name: str, dest: Path, repo: str, tag: str, check_path: str) -> None:
     check = dest / check_path
     if check.exists():
+        verify_source_tag(name, dest, tag)
         print(f"{name} already present at {dest}")
         return
     print(f"Cloning {name} {tag} ...")
@@ -170,6 +220,7 @@ def occt_wasm_cache_profile() -> occt_binary_cache.OcctCacheProfile:
         [
             Path(__file__),
             ROOT / "scripts" / "build_occt.py",
+            ROOT / "scripts" / "dependency_versions.py",
             ROOT / "scripts" / "occt_binary_cache.py",
             RAPIDJSON_SRC,
         ],
@@ -320,7 +371,14 @@ def clean() -> None:
     for d in [EMSDK_DIR, OCCT_WASM_BUILD, OCCT_WASM_INSTALL, GEOMETER_WASM_BUILD]:
         if d.exists():
             print(f"Removing {d}")
-            shutil.rmtree(d)
+            remove_tree(d)
+
+
+def prepare_occt_source_build() -> None:
+    for path in (OCCT_WASM_BUILD, OCCT_WASM_INSTALL):
+        if path.exists():
+            print(f"Removing stale OCCT WASM path {path}")
+            remove_tree(path)
 
 
 # ---- main ----
@@ -363,15 +421,18 @@ def main() -> None:
 
     install_emsdk()
     verify_vendored_rapidjson()
-    if occt_binary_cache.install_ready(OCCT_WASM_INSTALL):
+    if occt_binary_cache.install_matches_profile(OCCT_WASM_INSTALL, profile):
         print(f"OCCT WASM already built at {OCCT_WASM_INSTALL}")
     elif not occt_binary_cache.restore_prebuilt_install(profile, OCCT_WASM_INSTALL, mode=args.occt_binary_cache):
+        prepare_occt_source_build()
         clone_source("OCCT", OCCT_SRC, OCCT_REPO, OCCT_TAG, "CMakeLists.txt")
         patch_occt_wasm_install_rules()
         build_occt_wasm()
 
-    if not occt_binary_cache.install_ready(OCCT_WASM_INSTALL):
-        raise RuntimeError(f"OCCT WASM install did not produce OpenCASCADEConfig.cmake under {OCCT_WASM_INSTALL}")
+    if not occt_binary_cache.install_matches_profile(OCCT_WASM_INSTALL, profile):
+        expected = occt_binary_cache.occt_version_from_tag(profile.occt_tag)
+        actual = occt_binary_cache.installed_occt_version(OCCT_WASM_INSTALL) or "unknown"
+        raise RuntimeError(f"OCCT WASM install under {OCCT_WASM_INSTALL} is {actual}, expected {expected}.")
 
     if args.upload_occt_binary_cache:
         occt_binary_cache.upload_prebuilt_install(

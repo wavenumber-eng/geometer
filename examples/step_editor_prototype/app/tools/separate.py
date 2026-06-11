@@ -36,6 +36,21 @@ def pastel(index: int) -> tuple[float, float, float]:
     return colorsys.hsv_to_rgb(hue, 0.45, 0.92)
 
 
+# CON/HEAD pins not yet joined to an SMT/THR tail (no designator to share a
+# colour with) paint in this neutral blue — the mouth-detector accent.
+UNJOINED_MOUTH_RGB = (0.35, 0.55, 0.95)
+
+
+def designator_pastels(pins) -> dict[str, tuple[float, float, float]]:
+    """Pastel per designator, keyed off the SMT/THR (primary) pins — a joined
+    CON/HEAD pin paints in its tail's colour so the pair reads as one net."""
+    return {
+        (pin.name or str(pin.number)): pastel(index)
+        for index, pin in enumerate(pins)
+        if pin.role != "mouth"
+    }
+
+
 class SeparateUnibodyTool(ToolMode):
     id = "separate"
     title = "Separate Unibody"
@@ -54,10 +69,11 @@ class SeparateUnibodyTool(ToolMode):
         layout.setContentsMargins(8, 8, 8, 8)
         layout.addWidget(QLabel(
             "<b>Separate Unibody</b><br>"
-            "Each detected pin grows by edge flow from its seed faces until "
+            "Each SMT/THR pin grows by edge flow from its seed faces until "
             "the flow reaches the BODY; the preview shows the full pin shapes "
-            "in body colours. Apply splits the solid at the pin/body "
-            "junctions — every pin becomes its own body."
+            "in body colours. CON/HEAD (mouth) pins show in their net's "
+            "colour but are never cut. Apply splits the solid at the "
+            "pin/body junctions — every SMT/THR pin becomes its own body."
         ))
 
         self.info_label = QLabel("")
@@ -147,7 +163,17 @@ class SeparateUnibodyTool(ToolMode):
         grown_faces = 0
         seed_faces = 0
         body_pins = 0
+        mouth_pins = 0
+        net_pastels = designator_pastels(registry.pins)
         for index, (pin, region) in enumerate(zip(registry.pins, self._grown)):
+            if pin.role == "mouth":
+                # CON/HEAD pins are never cut, but they ARE part of a net —
+                # paint their faces in the joined SMT/THR tail's colour
+                rgb = net_pastels.get(pin.name, UNJOINED_MOUTH_RGB)
+                for body_index, face_index in pin.face_ids:
+                    by_body.setdefault(body_index, {})[face_index] = rgb
+                mouth_pins += 1
+                continue
             rgb = pastel(index)
             if region is None:
                 for body_index in pin.body_ids:
@@ -169,11 +195,19 @@ class SeparateUnibodyTool(ToolMode):
         parts = []
         if grown_faces:
             parts.append(
-                f"{len(registry.pins) - body_pins} pin(s): {seed_faces} seed faces "
-                f"grown to {grown_faces} by edge flow"
+                f"{len(registry.pins) - body_pins - mouth_pins} SMT/THR pin(s): "
+                f"{seed_faces} seed faces grown to {grown_faces} by edge flow"
             )
         if body_pins:
-            parts.append(f"{body_pins} pin(s) already separate bodies")
+            parts.append(f"{body_pins} SMT/THR pin(s) already separate bodies")
+        if mouth_pins:
+            joined = sum(
+                1 for p in registry.pins if p.role == "mouth" and p.name
+            )
+            parts.append(
+                f"{mouth_pins} CON/HEAD pin(s) shown in their net's colour "
+                f"({joined} joined, never cut)"
+            )
         self.info_label.setText("; ".join(parts) if parts else "Nothing to separate.")
 
     # --------------------------------------------------------------- apply
@@ -338,10 +372,20 @@ class SeparateUnibodyTool(ToolMode):
             window.progress_done()
         # pastel-preview the NEW pin bodies (display only — exported colours
         # stay the real ones) so the separation result is verifiable at a
-        # glance, still translucent.
+        # glance, still translucent. CON/HEAD pins keep their face regions
+        # and paint in their net's (tail's) colour.
+        net_pastels = designator_pastels(registry.pins)
+        mouth_paint: dict[int, dict[int, tuple[float, float, float]]] = {}
         for pin_index, pin in enumerate(registry.pins):
+            if pin.role == "mouth":
+                rgb = net_pastels.get(pin.name, UNJOINED_MOUTH_RGB)
+                for body_id, face_id in pin.face_ids:
+                    mouth_paint.setdefault(body_id, {})[face_id] = rgb
+                continue
             for body_id in pin.body_ids:
                 self.ctx.scene.set_body_color(body_id, pastel(pin_index))
+        for body_id, face_rgb in mouth_paint.items():
+            self.ctx.scene.paint_faces(body_id, face_rgb)
         self.ctx.scene.set_model_opacity(0.5)
         self._preview_painted = True  # exit() rebuilds to restore real colours
         self.undo_button.setEnabled(True)

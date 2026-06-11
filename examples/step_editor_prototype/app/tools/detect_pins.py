@@ -898,7 +898,7 @@ class DetectPinsTool(ToolMode):
         for pin in registry.pins:
             kind = f"bodies {pin.body_ids}" if pin.body_ids else f"{len(pin.face_ids)} faces"
             name = f" '{pin.name}'" if pin.name else ""
-            mouth = " [mouth]" if pin.role == "mouth" else ""
+            mouth = " [CON/HEAD]" if pin.role == "mouth" else ""
             self.pin_list.addItem(
                 f"Pin {pin.number}{name}{mouth}  "
                 f"({pin.centroid[0]:+.2f}, {pin.centroid[1]:+.2f})  {kind}"

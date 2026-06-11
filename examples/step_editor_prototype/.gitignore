@@ -1,4 +1,5 @@
 TEST_STEP_FILES/
+TEST_KICAD_MOD/
 *_AP242_conditioned.step
 *_AP242_conditioned.metadata.json
 assets/fonts/

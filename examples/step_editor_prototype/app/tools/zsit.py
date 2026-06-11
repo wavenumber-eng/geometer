@@ -117,8 +117,174 @@ def compute_zsit_matrix(
     return matrix
 
 
+def compute_auto_zsit(
+    document, *, tol: float = 0.08, normal_cos: float = 0.85
+) -> tuple[np.ndarray, int, list[tuple[float, float, float]]] | None:
+    """Best seating orientation with zero picks. Try candidate 'down'
+    directions (the six axes plus the model's dominant face normals) and
+    score each by how many DISTINCT faces lie flat at the very bottom —
+    pads and feet are many small coplanar faces, while an upside-down
+    package rests on one big one, so the face COUNT picks the right way up.
+    The in-plane axes align to the pads' principal direction and the origin
+    lands at their center. Returns (matrix, pad_count, pad_centroids) or
+    None when there is nothing to seat."""
+    chunks = []  # (centers, unit normals, areas, body_index, face_ids)
+    all_points = []
+    for body_index, body in enumerate(document.bodies):
+        mesh = body.mesh
+        if mesh is None or not len(mesh.tris):
+            continue
+        corners = mesh.points[mesh.tris]
+        cross = np.cross(
+            corners[:, 1] - corners[:, 0], corners[:, 2] - corners[:, 0]
+        )
+        lengths = np.linalg.norm(cross, axis=1)
+        keep = lengths > 1e-12
+        chunks.append((
+            corners.mean(axis=1)[keep],
+            cross[keep] / lengths[keep, None],
+            0.5 * lengths[keep],
+            body_index,
+            mesh.tri_face_ids[keep],
+        ))
+        all_points.append(mesh.points)
+    if not chunks:
+        return None
+    points = np.concatenate(all_points)
+
+    candidates = [
+        np.array(v, dtype=np.float64)
+        for v in ((1, 0, 0), (-1, 0, 0), (0, 1, 0),
+                  (0, -1, 0), (0, 0, 1), (0, 0, -1))
+    ]
+    normals_all = np.concatenate([n for _c, n, _a, _b, _f in chunks])
+    areas_all = np.concatenate([a for _c, _n, a, _b, _f in chunks])
+    for index in np.argsort(-areas_all)[:2000]:
+        normal = normals_all[index]
+        if all(float(normal @ c) < 0.985 for c in candidates):
+            candidates.append(normal.copy())
+        if len(candidates) >= 14:
+            break
+
+    def seat_at(up: np.ndarray):
+        """Best SUPPORT LEVEL when `up` is +Z: downward faces near the
+        bottom are clustered by height and the level holding the most
+        distinct faces wins. Anchoring at the absolute minimum would let
+        board-lock pegs (which hang BELOW the seating plane) hide the real
+        seat. Returns (count, area, level_z, pad faces) or None."""
+        z_all = points @ up
+        zmin = float(z_all.min())
+        height = float(z_all.max()) - zmin
+        band = zmin + max(0.25 * height, tol * 2.0)
+        face_z, face_area, face_center = [], [], []
+        for centers, normals, areas, body_index, face_ids in chunks:
+            mask = normals @ up < -normal_cos
+            if not mask.any():
+                continue
+            cz = centers[mask] @ up
+            inband = cz <= band
+            if not inband.any():
+                continue
+            sub_centers = centers[mask][inband]
+            sub_areas = areas[mask][inband]
+            sub_faces = face_ids[mask][inband]
+            sub_z = cz[inband]
+            for face in np.unique(sub_faces):
+                sub = sub_faces == face
+                weight = sub_areas[sub]
+                total = max(float(weight.sum()), 1e-12)
+                face_z.append(float((sub_z[sub] * weight).sum() / total))
+                face_area.append(total)
+                face_center.append(
+                    (sub_centers[sub] * weight[:, None]).sum(axis=0) / total
+                )
+        if not face_z:
+            return None
+        face_z = np.asarray(face_z)
+        face_area = np.asarray(face_area)
+        best_level = None
+        for z0 in np.unique(np.round(face_z, 6)):
+            members = np.abs(face_z - z0) <= tol
+            key = (int(members.sum()), float(face_area[members].sum()))
+            if best_level is None or key > best_level[0]:
+                best_level = (key, float(z0), members)
+        (count, area), level, members = best_level
+        pads = [face_center[i] for i in np.where(members)[0]]
+        return count, area, level, pads
+
+    best = None
+    for down in candidates:
+        up = -down / float(np.linalg.norm(down))
+        seat = seat_at(up)
+        if seat is None:
+            continue
+        count, area, _level, _pads = seat
+        if best is None or (count, area) > best[0]:
+            best = ((count, area), up)
+    if best is None or best[0][0] == 0:
+        return None
+    _score, up = best
+
+    seat = seat_at(up)
+    count, _area, level, pads = seat
+    pad_points = np.array(pads)
+    helper = (
+        np.array([1.0, 0.0, 0.0])
+        if abs(float(up[0])) < 0.9 else np.array([0.0, 1.0, 0.0])
+    )
+    x_axis = np.cross(helper, up)
+    x_axis /= float(np.linalg.norm(x_axis))
+    y_axis = np.cross(up, x_axis)
+    if len(pad_points) > 2:
+        uv = np.column_stack([pad_points @ x_axis, pad_points @ y_axis])
+        spread = uv - uv.mean(axis=0)
+        _u, s, vt = np.linalg.svd(spread, full_matrices=False)
+        if s[0] > 1e-9:
+            x_axis, y_axis = (
+                vt[0][0] * x_axis + vt[0][1] * y_axis,
+                None,
+            )
+            x_axis /= float(np.linalg.norm(x_axis))
+            y_axis = np.cross(up, x_axis)
+
+    # Origin: rect-center of the seat pads in the aligned frame (the same
+    # rule the manual tool defaults to) — centers the model on its seating
+    # field, robust to uneven pad counts per side.
+    uv = np.column_stack([pad_points @ x_axis, pad_points @ y_axis])
+    center_uv = (uv.min(axis=0) + uv.max(axis=0)) * 0.5
+    origin = (
+        center_uv[0] * x_axis + center_uv[1] * y_axis + level * up
+    )
+    rotation = np.vstack([x_axis, y_axis, up])
+    matrix = np.eye(4, dtype=np.float64)
+    matrix[:3, :3] = rotation
+    matrix[:3, 3] = -rotation @ origin
+
+    # Mesh sag correction: the tessellation can sit up to one deflection
+    # above the true B-rep surface — measure the EXACT bounds under this
+    # transform (cheap: located shapes, no copies) and zero the true
+    # minimum, but ONLY when nothing hangs below the seat (board-lock pegs
+    # legitimately reach below Z=0, like a manual seat over peg holes).
+    from OCP.Bnd import Bnd_Box
+    from OCP.BRepBndLib import BRepBndLib
+    from OCP.TopLoc import TopLoc_Location
+    from OCP.gp import gp_Trsf
+
+    trsf = gp_Trsf()
+    trsf.SetValues(*(float(v) for v in matrix[:3, :].ravel()))
+    box = Bnd_Box()
+    for body in document.bodies:
+        BRepBndLib.Add_s(body.solid.Moved(TopLoc_Location(trsf)), box)
+    if not box.IsVoid():
+        exact_zmin = float(box.Get()[2])
+        if abs(exact_zmin) <= tol:
+            matrix[2, 3] -= exact_zmin
+    return matrix, count, [tuple(float(v) for v in p) for p in pad_points]
+
+
 PLANE_COLOR = "#e8443a"   # plane picks: RED
 Z_COLOR = "#1f5fd6"       # +Z pick + Z arrows: BLUE
+AUTO_COLOR = "#1f9d3a"    # auto-detected seating pads: GREEN
 
 
 def rect_corners(plane_points) -> np.ndarray:
@@ -148,6 +314,7 @@ class ZSitTool(ToolMode):
     def __init__(self, ctx) -> None:
         super().__init__(ctx)
         self.points: list[tuple[float, float, float]] = []
+        self._auto: tuple | None = None  # staged (matrix, count, centroids)
 
     # ----------------------------------------------------------------- UI
 
@@ -196,10 +363,22 @@ class ZSitTool(ToolMode):
         button_row.addWidget(self.undo_button)
         layout.addLayout(button_row)
 
+        apply_row = QHBoxLayout()
+        self.auto_button = QPushButton("Auto")
+        self.auto_button.setToolTip(
+            "Find the seating orientation automatically: every candidate\n"
+            "'down' direction is scored by how many distinct faces rest\n"
+            "flat at the bottom (pads and feet win over a package top).\n"
+            "The result is STAGED — press Apply to accept it, or just\n"
+            "start picking points to do it manually instead."
+        )
+        self.auto_button.clicked.connect(self.run_auto)
+        apply_row.addWidget(self.auto_button)
         self.apply_button = make_apply_button("Apply Z-Sit")
         self.apply_button.setEnabled(False)
         self.apply_button.clicked.connect(self.apply)
-        layout.addWidget(self.apply_button)
+        apply_row.addWidget(self.apply_button, 1)
+        layout.addLayout(apply_row)
         layout.addStretch(1)
 
         self.origin_combo.currentTextChanged.connect(lambda _t: self._refresh_preview())
@@ -218,9 +397,11 @@ class ZSitTool(ToolMode):
         scene.set_markers([], name="zsit-picks-plane")
         scene.set_markers([], name="zsit-picks-z")
         scene.set_markers([], name="zsit-ghost")
+        scene.set_markers([], name="zsit-auto-pads")
         scene.show_quad([], name="zsit-rect")
         scene.show_arrows([], (0, 0, 1), scale=1.0, name="zsit-z-arrows")
         scene.clear_triad()
+        self._auto = None
 
     def on_document_changed(self) -> None:
         self.reset_points()
@@ -233,6 +414,11 @@ class ZSitTool(ToolMode):
     def on_pick(self, pick) -> None:
         if self.ctx.document is None or len(self.points) >= self._plane_count() + 1:
             return
+        if self._auto is not None:
+            # manual picking overrides the staged auto result silently —
+            # the user chose to redo it by hand
+            self._auto = None
+            self.ctx.scene.set_markers([], name="zsit-auto-pads")
         point = np.asarray(pick.world_point, dtype=np.float64)
         if self.snap_check.isChecked():
             point = self._snap_to_vertex(pick.body_index, point)
@@ -255,7 +441,36 @@ class ZSitTool(ToolMode):
 
     def reset_points(self) -> None:
         self.points = []
+        self._auto = None
+        if self.ctx.scene is not None:
+            self.ctx.scene.set_markers([], name="zsit-auto-pads")
         self._refresh_preview()
+
+    def run_auto(self) -> None:
+        """Stage the automatic seating orientation: the workflow is not
+        interrupted — Apply accepts it, picking points discards it."""
+        document = self.ctx.document
+        if document is None:
+            return
+        self.ctx.window.progress("Auto Z-Sit: scoring orientations", 0, 0)
+        try:
+            result = compute_auto_zsit(document)
+        finally:
+            self.ctx.window.progress_done()
+        if result is None:
+            self.status("Auto Z-Sit: no seating faces found — pick manually")
+            return
+        matrix, count, centroids = result
+        self.points = []
+        self._auto = result
+        self.ctx.scene.set_markers(
+            centroids, name="zsit-auto-pads", color=AUTO_COLOR, point_size=16.0
+        )
+        self.apply_button.setEnabled(True)
+        self.status(
+            f"Auto Z-Sit: {count} face(s) seat flat at Z=0 (green) — "
+            f"press Apply to accept, or pick points to redo manually"
+        )
 
     def undo_pick(self) -> None:
         if self.points:
@@ -291,7 +506,9 @@ class ZSitTool(ToolMode):
                           color=Z_COLOR)
         if len(self.points) >= needed + 1:
             scene.set_markers([], name="zsit-ghost")
-        self.apply_button.setEnabled(len(self.points) >= needed + 1)
+        self.apply_button.setEnabled(
+            len(self.points) >= needed + 1 or self._auto is not None
+        )
         lines = [
             f"p{i + 1}: ({p[0]:.3f}, {p[1]:.3f}, {p[2]:.3f})"
             for i, p in enumerate(self.points)
@@ -344,27 +561,36 @@ class ZSitTool(ToolMode):
 
     def apply(self) -> None:
         needed = self._plane_count()
-        if self.ctx.document is None or len(self.points) < needed + 1:
+        if self.ctx.document is None:
             return
-        origin_rule = self.origin_combo.currentText()
-        flip_z = self.flip_check.isChecked()
-        try:
-            matrix = compute_zsit_matrix(
-                self.points[:needed], self.points[needed],
-                origin_rule=origin_rule, flip_z=flip_z,
-            )
-        except ValueError as exc:
-            self.status(f"Z-Sit: {exc}")
+        if len(self.points) >= needed + 1:
+            origin_rule = self.origin_combo.currentText()
+            flip_z = self.flip_check.isChecked()
+            try:
+                matrix = compute_zsit_matrix(
+                    self.points[:needed], self.points[needed],
+                    origin_rule=origin_rule, flip_z=flip_z,
+                )
+            except ValueError as exc:
+                self.status(f"Z-Sit: {exc}")
+                return
+            params = {"origin_rule": origin_rule, "flip_z": flip_z,
+                      "plane_points": needed}
+            inputs = {"points": [list(p) for p in self.points[:needed + 1]]}
+        elif self._auto is not None:
+            matrix, count, _centroids = self._auto
+            params = {"action": "auto"}
+            inputs = {"seat_faces": count}
+        else:
             return
         self.ctx.document.apply_trsf(matrix)
         self.ctx.journal.record(
-            tool=self.id,
-            params={"origin_rule": origin_rule, "flip_z": flip_z,
-                    "plane_points": needed},
-            inputs={"points": [list(p) for p in self.points[:needed + 1]]},
-            result={"matrix": matrix.tolist()},
+            tool=self.id, params=params, inputs=inputs,
+            result={"matrix": np.asarray(matrix).tolist()},
         )
         self.points = []
+        self._auto = None
+        self.ctx.scene.set_markers([], name="zsit-auto-pads")
         self.ctx.window.document_mutated()
         bounds = self.ctx.document.bounds()
         self.status(

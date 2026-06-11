@@ -142,6 +142,30 @@ def selftest_m1(fixture: Path | None = None) -> None:
         # the exact assertion is the OCC Bnd_Box check above.
         _check(abs(exported_zmin) < 1.0e-2, "exported file does not sit on Z=0")
 
+    # AUTO Z-Sit: scramble the SOIC (multibody, 20 pads) — the zero-pick
+    # solver must stand it up so its pins land detectable at Z=0.
+    from .pins import Band, detect_pins_multibody
+    from .tools.zsit import compute_auto_zsit
+
+    soic = EditorDocument.load(FIXTURES / "SOIC-20-300.STEP")
+    soic.apply_trsf(scramble)
+    auto = compute_auto_zsit(soic)
+    _check(auto is not None, "auto z-sit found no seating faces")
+    auto_matrix, count, _centroids = auto
+    soic.apply_trsf(auto_matrix)
+    ab = soic.bounds()
+    print(f"auto z-sit: {count} seat faces, z=[{ab[4]:.4f}, {ab[5]:.4f}]")
+    _check(abs(ab[4]) < 1.0e-3, f"auto z-sit z-min {ab[4]}")
+    _check(count >= 10, f"auto z-sit found only {count} seat faces")
+    pins = detect_pins_multibody(
+        soic,
+        Band(ab[0] - 1, ab[2] - 1, ab[1] + 1, ab[3] + 1),
+        exclude_largest=True,
+    )
+    _check(len(pins) == 20,
+           f"auto orientation wrong — {len(pins)} pins detectable, want 20")
+    print("auto z-sit OK (right side up, 20 pins at the seat)")
+
 
 def selftest_m2(fixture: Path | None = None) -> None:
     """Pin-1 swing math: every quadrant lands in +X+Y using exact 90-degree

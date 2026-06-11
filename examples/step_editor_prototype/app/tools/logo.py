@@ -140,10 +140,20 @@ class LogoTool(ToolMode):
         self.target_label = QLabel("No face picked.")
         layout.addWidget(self.target_label)
 
+        apply_row = QHBoxLayout()
+        auto_button = QPushButton("Auto")
+        auto_button.setToolTip(
+            "Stage the watermark on the largest upward flat face of the\n"
+            "largest body, centered, width 45% of its short side — adjust\n"
+            "the handles or Apply."
+        )
+        auto_button.clicked.connect(self.run_auto)
+        apply_row.addWidget(auto_button)
         self.apply_button = make_apply_button("Apply LOGO")
         self.apply_button.setEnabled(False)
         self.apply_button.clicked.connect(self.apply)
-        layout.addWidget(self.apply_button)
+        apply_row.addWidget(self.apply_button, 1)
+        layout.addLayout(apply_row)
         self.undo_button = QPushButton("Undo LOGO")
         self.undo_button.setEnabled(False)
         self.undo_button.clicked.connect(self.undo)
@@ -188,6 +198,45 @@ class LogoTool(ToolMode):
             self.apply_button.setEnabled(False)
 
     # -------------------------------------------------------------- picking
+
+    def run_auto(self) -> None:
+        """Stage the watermark automatically — same staging as a face pick."""
+        from ..auto import auto_logo_placement
+
+        document = self.ctx.document
+        if document is None:
+            return
+        placement = auto_logo_placement(document)
+        if placement is None:
+            self.status("Auto LOGO: no flat top face found — pick one manually")
+            return
+        body_index, face_index, width = placement
+        frame = document.face_plane(body_index, face_index)
+        if frame is None:
+            return
+        self._target = (body_index, face_index)
+        self._frame = frame
+        for spin in (self.offset_u, self.offset_v):
+            spin.blockSignals(True)
+            spin.setValue(0.0)
+            spin.blockSignals(False)
+        self.width_spin.blockSignals(True)
+        self.width_spin.setValue(max(0.1, width))
+        self.width_spin.blockSignals(False)
+        self.ctx.scene.highlight_face(body_index, face_index)
+        body = document.bodies[body_index]
+        self.target_label.setText(
+            f"AUTO: face {face_index} of body {body_index} '{body.name}'"
+        )
+        self.apply_button.setEnabled(True)
+        if self._handles is None:
+            self._handles = LogoHandles(self.ctx.scene.plotter.interactor, self)
+            self._handles.attach()
+        self._preview()
+        self.status(
+            f"Auto LOGO: largest top face, width {width:.2f} mm — adjust "
+            f"the handles or press Apply"
+        )
 
     def on_pick(self, pick) -> None:
         document = self.ctx.document

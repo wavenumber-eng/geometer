@@ -103,6 +103,13 @@ class ColorsTool(ToolMode):
         layout.addWidget(propagate_button)
 
         misc_row = QHBoxLayout()
+        auto_button = QPushButton("Auto")
+        auto_button.setToolTip(
+            "Conditioning palette: every pin body/face that carries no\n"
+            "colour gets bare-metal tin, so exported contacts always show."
+        )
+        auto_button.clicked.connect(self.run_auto)
+        misc_row.addWidget(auto_button)
         pins_button = QPushButton("Select all pins")
         pins_button.clicked.connect(self.select_all_pins)
         clear_button = QPushButton("Clear selection")
@@ -190,6 +197,28 @@ class ColorsTool(ToolMode):
         self.status(
             f"Colors: applied {self.current_color} to {len(self.selection)} item(s)"
         )
+
+    def run_auto(self) -> None:
+        """Tin every uncoloured pin body/face (journaled like an apply)."""
+        from ..auto import auto_color_pins
+
+        document = self.ctx.document
+        registry = self.ctx.window.pins
+        if document is None or not registry.pins:
+            self.status("Colors: no pins yet — run Detect Pins first")
+            return
+        changed = auto_color_pins(document, registry)
+        if not changed:
+            self.status("Auto: every pin already carries a colour")
+            return
+        self.ctx.journal.record(
+            tool=self.id,
+            params={"action": "auto_pins"},
+            inputs={"keys": changed},
+            result={"color": "#c7c9ce"},
+        )
+        self.ctx.window.document_mutated()
+        self.status(f"Auto: tinned {len(changed)} uncoloured pin item(s)")
 
     def select_all_pins(self) -> None:
         """Select every detected pin — pin bodies (after Separate Unibody) in

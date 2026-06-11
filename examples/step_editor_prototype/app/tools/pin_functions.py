@@ -313,6 +313,14 @@ class PinFunctionsTool(ToolMode):
         ))
 
         sides_row = QHBoxLayout()
+        auto_button = QPushButton("Auto")
+        auto_button.setToolTip(
+            "Net propagation: in every net where exactly one function is\n"
+            "set, the other functionless pins take INHERIT. Real function\n"
+            "names still come from the datasheet (you, or later an LLM)."
+        )
+        auto_button.clicked.connect(self._run_auto)
+        sides_row.addWidget(auto_button)
         self.sides_button = QPushButton("Sides: Auto")
         self.sides_button.setToolTip(
             "How pins distribute on the schematic symbol:\n"
@@ -372,6 +380,26 @@ class PinFunctionsTool(ToolMode):
         self.status(
             "Pin Functions: click a pin (or drag over several), choose a "
             "function, press Set"
+        )
+
+    def _run_auto(self) -> None:
+        from ..auto import auto_inherit_functions
+
+        registry = self.ctx.window.pins
+        if not registry.pins:
+            self.status("Pin Functions: no pins yet — run Detect Pins first")
+            return
+        changed = auto_inherit_functions(registry)
+        if changed:
+            self.ctx.journal.record(
+                tool=self.id, params={"action": "auto_inherit"},
+                inputs={}, result={"applied": changed},
+            )
+        self._refresh()
+        self.status(
+            f"Auto: {changed} pin(s) took INHERIT from their net"
+            if changed else
+            "Auto: nothing to propagate — set one function per net first"
         )
 
     def _cycle_sides(self) -> None:

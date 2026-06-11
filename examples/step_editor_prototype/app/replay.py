@@ -278,7 +278,11 @@ def replay(document: EditorDocument, journal: Journal) -> PinRegistry:
 
         elif tool == "pin_functions":
             by_number = {pin.number: pin for pin in registry.pins}
-            if params.get("action") == "set_multi":
+            if params.get("action") == "auto_inherit":
+                from .auto import auto_inherit_functions
+
+                auto_inherit_functions(registry)
+            elif params.get("action") == "set_multi":
                 for number in inputs.get("pin_numbers", []):
                     pin = by_number.get(number)
                     if pin is not None:

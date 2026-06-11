@@ -832,8 +832,63 @@ def selftest_m8(fixture: Path | None = None) -> None:
               f"chunked)")
 
 
+def selftest_auto(fixture: Path | None = None) -> None:
+    """The headless conditioner (rung 6): scramble the SOIC, run every
+    tool's Auto end to end, and assert seat, pins, hitboxes, export, and
+    journal replayability."""
+    import numpy as np
+
+    from .auto import condition_auto
+    from .document import EditorDocument
+    from .export_ap242 import export_ap242, extract_metadata
+    from .journal import Journal
+    from .replay import replay
+
+    path = fixture or FIXTURES / "SOIC-20-300.STEP"
+    document = EditorDocument.load(path)
+    rx, ry = np.radians(31.0), np.radians(-17.0)
+    rot_x = np.array(
+        [[1, 0, 0], [0, np.cos(rx), -np.sin(rx)], [0, np.sin(rx), np.cos(rx)]]
+    )
+    rot_y = np.array(
+        [[np.cos(ry), 0, np.sin(ry)], [0, 1, 0], [-np.sin(ry), 0, np.cos(ry)]]
+    )
+    scramble = np.eye(4)
+    scramble[:3, :3] = rot_y @ rot_x
+    scramble[:3, 3] = (-2.0, 7.0, 3.0)
+    document.apply_trsf(scramble)
+
+    journal = Journal()
+    registry = condition_auto(document, journal)
+    bounds = document.bounds()
+    _check(abs(bounds[4]) < 1.0e-3, f"auto seat z-min {bounds[4]}")
+    _check(len(registry.pins) == 20, f"auto found {len(registry.pins)} pins")
+    boxed = sum(1 for p in registry.pins if p.hitbox)
+    _check(boxed == 20, f"auto hitboxed only {boxed}/20")
+    print(f"auto chain: 20 pins, {boxed} hitboxed, "
+          f"{len(journal.operations)} journal ops")
+
+    with tempfile.TemporaryDirectory(prefix="step_editor_auto_") as temp:
+        out_path = Path(temp) / "auto.step"
+        report = export_ap242(document, out_path, pins=registry, journal=journal)
+        _check(report.ok, "auto export validation failed")
+        payload = extract_metadata(out_path)
+        _check(payload is not None and len(payload["nets"]) == 20,
+               "auto metadata wrong")
+
+    # the auto journal must replay from the same scrambled start
+    fresh = EditorDocument.load(path)
+    fresh.apply_trsf(scramble)
+    replayed = replay(fresh, journal)
+    fb = fresh.bounds()
+    _check(len(replayed.pins) == 20, f"replay pins {len(replayed.pins)}")
+    _check(abs(fb[4]) < 1.0e-3, f"replayed seat z-min {fb[4]}")
+    print("auto journal replays headlessly")
+
+
 SELFTESTS = {
     "m0": selftest_m0,
+    "auto": selftest_auto,
     "m5": selftest_m5,
     "m7": selftest_m7,
     "m8": selftest_m8,

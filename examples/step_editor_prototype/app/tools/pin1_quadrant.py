@@ -99,10 +99,20 @@ class Pin1QuadrantTool(ToolMode):
         self.reset_button.clicked.connect(self.reset_rotation)
         layout.addWidget(self.reset_button)
 
+        apply_row = QHBoxLayout()
+        auto_button = QPushButton("Auto")
+        auto_button.setToolTip(
+            "Stage a pin-1 candidate automatically: the registry's pin 1 if\n"
+            "numbering exists, otherwise the end pin of the seat-level row.\n"
+            "Review the marker, then Apply — or click the real pin 1."
+        )
+        auto_button.clicked.connect(self.run_auto)
+        apply_row.addWidget(auto_button)
         self.apply_button = make_apply_button("Apply Pin 1 Swing")
         self.apply_button.setEnabled(False)
         self.apply_button.clicked.connect(self.apply)
-        layout.addWidget(self.apply_button)
+        apply_row.addWidget(self.apply_button, 1)
+        layout.addLayout(apply_row)
 
         self.result_label = QLabel("No rotation applied.")
         self.result_label.setWordWrap(True)
@@ -125,6 +135,30 @@ class Pin1QuadrantTool(ToolMode):
             self.result_label.setText("No rotation applied.")
 
     # -------------------------------------------------------------- actions
+
+    def run_auto(self) -> None:
+        """Stage an automatic pin-1 candidate — same staging as a click."""
+        from ..auto import auto_pin1_point
+
+        if self.ctx.document is None:
+            return
+        point, reason = auto_pin1_point(self.ctx.document, self.ctx.window.pins)
+        if point is None:
+            self.status(f"Auto Pin 1: {reason} — click pin 1 manually")
+            return
+        self.pending_click = point
+        x, y, _z = point
+        angle = math.degrees(compute_pin1_angle(x, y))
+        self.ctx.scene.set_markers([point], color="#ffb000", point_size=20.0)
+        self.apply_button.setEnabled(True)
+        self.result_label.setText(
+            f"AUTO pin 1 candidate ({reason}) @ ({x:.3f}, {y:.3f})\n"
+            f"pending swing {angle:+.0f}° — Apply to accept, click to override"
+        )
+        self.status(
+            f"Auto Pin 1: {reason}; pending swing {angle:+.0f}° — Apply to "
+            f"accept (180° later if it is the wrong end)"
+        )
 
     def on_pick(self, pick) -> None:
         if self.ctx.document is None:

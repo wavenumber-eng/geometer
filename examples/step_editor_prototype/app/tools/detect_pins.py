@@ -69,6 +69,14 @@ class DetectPinsTool(ToolMode):
         ))
 
         select_row = QHBoxLayout()
+        auto_button = QPushButton("Auto")
+        auto_button.setToolTip(
+            "Stage pins automatically: context-plane slice 0.01 mm above\n"
+            "the seat, falling back to whole-model multibody detection.\n"
+            "Everything stages orange — review, Delete strays, Apply."
+        )
+        auto_button.clicked.connect(self.run_auto)
+        select_row.addWidget(auto_button)
         self.band_button = QPushButton("Drag Select (band)")
         self.band_button.setCheckable(True)
         self.band_button.setStyleSheet(
@@ -443,6 +451,20 @@ class DetectPinsTool(ToolMode):
             outcome += f" — {len(conflicts)} had no primary in line; check those"
         self.status(f"Join: {outcome}")
         return outcome
+
+    def run_auto(self) -> None:
+        """One press: context-plane detection with a multibody fallback —
+        the same staged ops, just chained."""
+        if self.ctx.document is None:
+            return
+        before = len(self.pending)
+        self._run_context_plane()
+        if len(self.pending) > before:
+            return
+        bounds = self.ctx.document.bounds()
+        self.detect_in_band(Band(
+            bounds[0] - 1, bounds[2] - 1, bounds[1] + 1, bounds[3] + 1
+        ))
 
     # --------------------------------------------------------- context plane
 

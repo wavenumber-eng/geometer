@@ -98,6 +98,14 @@ class SeparateUnibodyTool(ToolMode):
         repaint_button = QPushButton("Regrow preview")
         repaint_button.clicked.connect(self._regrow)
         factor_row.addWidget(repaint_button)
+        auto_button = QPushButton("Auto")
+        auto_button.setToolTip(
+            "Pick the cutoff automatically: the smallest factor where the\n"
+            "edge-flow growth plateaus (pins reached the body). Sets the\n"
+            "spinbox and refreshes the preview — review, then Apply."
+        )
+        auto_button.clicked.connect(self.run_auto)
+        factor_row.addWidget(auto_button)
         layout.addLayout(factor_row)
 
         self.apply_button = make_apply_button("Apply Separate")
@@ -144,6 +152,26 @@ class SeparateUnibodyTool(ToolMode):
     def on_document_changed(self) -> None:
         self._preview_painted = False
         self._grown = None
+
+    def run_auto(self) -> None:
+        """Choose the growth cutoff automatically and refresh the preview."""
+        from ..auto import auto_separate_factor
+
+        document = self.ctx.document
+        registry = self.ctx.window.pins
+        if document is None or not registry.pins:
+            self.status("Separate Unibody: run Detect Pins first")
+            return
+        self.ctx.window.progress("Auto cutoff: probing growth plateau", 0, 0)
+        try:
+            factor, faces = auto_separate_factor(document, registry.pins)
+        finally:
+            self.ctx.window.progress_done()
+        self.factor_spin.setValue(factor)  # triggers _regrow via the signal
+        self.status(
+            f"Auto cutoff: growth plateaus at factor {factor:g} "
+            f"({faces} faces) — review the preview, then Apply"
+        )
 
     # -------------------------------------------------------------- preview
 

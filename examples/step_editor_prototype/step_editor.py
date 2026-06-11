@@ -26,6 +26,12 @@ def main() -> int:
     parser.add_argument("--fixture", type=Path, default=None, help="override the selftest fixture")
     parser.add_argument("--apply", type=Path, default=None, metavar="OPS_JSON",
                         help="replay an operation journal headlessly (M8)")
+    parser.add_argument("--auto", action="store_true",
+                        help="condition the input fully automatically: chain "
+                             "every tool's Auto, journal it, export AP242")
+    parser.add_argument("--out", type=Path, default=None,
+                        help="output path for --auto/--apply (default: "
+                             "<stem>_AP242_conditioned.step next to the input)")
     args = parser.parse_args()
 
     if args.selftest:
@@ -33,13 +39,33 @@ def main() -> int:
 
         return run(args.selftest, args.fixture)
 
+    if args.auto:
+        if not args.step:
+            print("--auto needs an input STEP file")
+            return 2
+        from app.auto import condition_auto
+        from app.document import EditorDocument
+        from app.export_ap242 import export_ap242
+        from app.journal import Journal
+
+        document = EditorDocument.load(Path(args.step))
+        journal = Journal()
+        registry = condition_auto(document, journal)
+        report = export_ap242(
+            document, args.out, pins=registry, journal=journal
+        )
+        boxed = sum(1 for p in registry.pins if p.hitbox)
+        print(f"auto-conditioned: {len(registry.pins)} pins ({boxed} hitboxed), "
+              f"{len(journal.operations)} journal ops | {report.summary()}")
+        return 0 if report.ok else 1
+
     if args.apply:
         if not args.step:
             print("--apply needs an input STEP file")
             return 2
         from app.replay import apply_journal_file
 
-        report, registry = apply_journal_file(Path(args.step), args.apply)
+        report, registry = apply_journal_file(Path(args.step), args.apply, args.out)
         print(f"replayed journal: {len(registry.pins)} pins | {report.summary()}")
         return 0 if report.ok else 1
 

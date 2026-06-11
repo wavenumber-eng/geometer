@@ -82,8 +82,11 @@ def export_ap242(
 
         payload = build_metadata(document, pins, journal)
         inject_metadata(out_path, payload)
-        sidecar = out_path.with_suffix(".metadata.json")
-        sidecar.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+        # no sidecar: the conditioned STEP is the single source of truth —
+        # the metadata lives INSIDE the AP242 (extract_metadata reads it back)
+        stale_sidecar = out_path.with_suffix(".metadata.json")
+        if stale_sidecar.exists():
+            stale_sidecar.unlink()
     return _validate(document, out_path)
 
 

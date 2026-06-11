@@ -754,9 +754,8 @@ def selftest_m8(fixture: Path | None = None) -> None:
                "a pin lost its hitbox in the metadata")
         _check(len(payload["journal"]) == len(journal.operations),
                "journal not embedded completely")
-        sidecar = out_path.with_suffix(".metadata.json")
-        _check(json.loads(sidecar.read_text(encoding="utf-8"))["schema"]
-               == payload["schema"], "sidecar mismatch")
+        _check(not out_path.with_suffix(".metadata.json").exists(),
+               "sidecar written — metadata must live only inside the AP242")
         print(f"metadata embedded + extracted: {len(payload['nets'])} nets, "
               f"{len(payload['journal'])} journal ops")
 

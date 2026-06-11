@@ -1,0 +1,582 @@
+[
+  {
+    "tool": "zsit",
+    "params": {
+      "origin_rule": "rect-center",
+      "flip_z": false
+    },
+    "inputs": {
+      "points": [
+        [
+          0.0,
+          0.0,
+          1.4
+        ],
+        [
+          5.0,
+          0.0,
+          1.4
+        ],
+        [
+          5.0,
+          0.0,
+          0.0
+        ],
+        [
+          4.39411559518755,
+          1.35,
+          1.91466224763148
+        ]
+      ]
+    },
+    "result": {
+      "matrix": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -2.5
+        ],
+        [
+          0.0,
+          0.0,
+          -1.0,
+          0.7
+        ],
+        [
+          -0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    }
+  },
+  {
+    "tool": "pin1",
+    "params": {
+      "action": "pin1_click"
+    },
+    "inputs": {
+      "clicked_point": [
+        2.1544777083128253,
+        0.35698827799791555,
+        0.1200000000000001
+      ]
+    },
+    "result": {
+      "angle_deg": 0.0,
+      "cumulative_deg": 0.0,
+      "pin1_hint": [
+        2.1544777083128253,
+        0.35698827799791555,
+        0.1200000000000001
+      ]
+    }
+  },
+  {
+    "tool": "detect_pins",
+    "params": {
+      "action": "seed_pin",
+      "smooth_angle_deg": 30.0
+    },
+    "inputs": {
+      "body": 0,
+      "face": 74,
+      "point": [
+        2.238882960445051,
+        -0.14184658818565787,
+        0.1200000000000001
+      ]
+    },
+    "result": {
+      "faces": 1,
+      "centroid": [
+        2.197057797593775,
+        0.0,
+        0.12
+      ]
+    }
+  },
+  {
+    "tool": "detect_pins",
+    "params": {
+      "action": "seed_pin",
+      "smooth_angle_deg": 30.0
+    },
+    "inputs": {
+      "body": 0,
+      "face": 79,
+      "point": [
+        -2.2369073254899337,
+        -0.023433581462805084,
+        0.12000000000000055
+      ]
+    },
+    "result": {
+      "faces": 1,
+      "centroid": [
+        -2.202942202406224,
+        0.0,
+        0.12
+      ]
+    }
+  },
+  {
+    "tool": "detect_pins",
+    "params": {
+      "exclude_largest": true,
+      "flow": "any-edge",
+      "smooth_angle_deg": 30.0,
+      "ordering": "serpentine"
+    },
+    "inputs": {
+      "bands": []
+    },
+    "result": {
+      "added": 2,
+      "total": 2,
+      "centroids": [
+        [
+          2.197057797593775,
+          0.0,
+          0.12
+        ],
+        [
+          -2.202942202406224,
+          0.0,
+          0.12
+        ]
+      ]
+    }
+  },
+  {
+    "tool": "separate",
+    "params": {
+      "area_factor": 3.5
+    },
+    "inputs": {
+      "regions": 2
+    },
+    "result": {
+      "bodies_before": 1,
+      "bodies_after": 3,
+      "pin_bodies": 2,
+      "pins_matched": 2
+    }
+  },
+  {
+    "tool": "hitboxes",
+    "params": {
+      "margin": 0.05,
+      "size": 0.5
+    },
+    "inputs": {},
+    "result": {
+      "applied": [
+        {
+          "pin": 1,
+          "variant": "male box (3 clicks)",
+          "hitbox": {
+            "type": "obb",
+            "center": [
+              2.234375,
+              0.0,
+              0.06
+            ],
+            "half_extents": [
+              0.315625,
+              0.75,
+              0.11
+            ],
+            "rotation_z_deg": 0.0
+          }
+        },
+        {
+          "pin": 2,
+          "variant": "male box (3 clicks)",
+          "hitbox": {
+            "type": "obb",
+            "center": [
+              -2.234375,
+              0.0,
+              0.06
+            ],
+            "half_extents": [
+              0.315625,
+              0.75,
+              0.11
+            ],
+            "rotation_z_deg": 0.0
+          }
+        }
+      ]
+    }
+  },
+  {
+    "tool": "pin_functions",
+    "params": {},
+    "inputs": {
+      "pin_number": 1
+    },
+    "result": {
+      "function": "NO"
+    }
+  },
+  {
+    "tool": "pin_functions",
+    "params": {},
+    "inputs": {
+      "pin_number": 2
+    },
+    "result": {
+      "function": "NO"
+    }
+  },
+  {
+    "tool": "colors",
+    "params": {
+      "action": "apply",
+      "target": "Faces"
+    },
+    "inputs": {
+      "keys": [
+        [
+          0,
+          30
+        ],
+        [
+          0,
+          39
+        ],
+        [
+          0,
+          54
+        ],
+        [
+          0,
+          51
+        ],
+        [
+          0,
+          57
+        ],
+        [
+          0,
+          5
+        ],
+        [
+          0,
+          63
+        ],
+        [
+          0,
+          69
+        ],
+        [
+          0,
+          8
+        ],
+        [
+          0,
+          14
+        ],
+        [
+          0,
+          11
+        ],
+        [
+          0,
+          17
+        ],
+        [
+          0,
+          23
+        ],
+        [
+          0,
+          75
+        ],
+        [
+          0,
+          78
+        ],
+        [
+          0,
+          20
+        ],
+        [
+          0,
+          26
+        ],
+        [
+          0,
+          29
+        ],
+        [
+          0,
+          32
+        ],
+        [
+          0,
+          38
+        ],
+        [
+          0,
+          47
+        ],
+        [
+          0,
+          53
+        ],
+        [
+          0,
+          56
+        ],
+        [
+          0,
+          62
+        ],
+        [
+          0,
+          68
+        ],
+        [
+          0,
+          7
+        ],
+        [
+          0,
+          4
+        ],
+        [
+          0,
+          10
+        ],
+        [
+          0,
+          74
+        ],
+        [
+          0,
+          13
+        ],
+        [
+          0,
+          19
+        ],
+        [
+          0,
+          77
+        ],
+        [
+          0,
+          22
+        ],
+        [
+          0,
+          28
+        ],
+        [
+          0,
+          25
+        ],
+        [
+          0,
+          31
+        ],
+        [
+          0,
+          34
+        ],
+        [
+          0,
+          46
+        ],
+        [
+          0,
+          52
+        ],
+        [
+          0,
+          55
+        ],
+        [
+          0,
+          58
+        ],
+        [
+          0,
+          9
+        ],
+        [
+          0,
+          12
+        ],
+        [
+          0,
+          76
+        ],
+        [
+          0,
+          15
+        ],
+        [
+          0,
+          18
+        ],
+        [
+          0,
+          24
+        ],
+        [
+          0,
+          27
+        ]
+      ]
+    },
+    "result": {
+      "color": "#f5f5f0"
+    }
+  },
+  {
+    "tool": "colors",
+    "params": {
+      "action": "apply",
+      "target": "Faces"
+    },
+    "inputs": {
+      "keys": [
+        [
+          0,
+          1
+        ],
+        [
+          0,
+          2
+        ],
+        [
+          0,
+          3
+        ]
+      ]
+    },
+    "result": {
+      "color": "#1f5fd6"
+    }
+  },
+  {
+    "tool": "colors",
+    "params": {
+      "action": "apply",
+      "target": "Bodies"
+    },
+    "inputs": {
+      "keys": [
+        1,
+        2
+      ]
+    },
+    "result": {
+      "color": "#c0c0c0"
+    }
+  },
+  {
+    "tool": "logo",
+    "params": {
+      "width_mm": 0.5,
+      "depth_mm": 0.05,
+      "rotation_deg": 90.0,
+      "raised": false,
+      "logo_rgb": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "inputs": {
+      "body": 0,
+      "face": 4,
+      "offset_uv": [
+        0.67,
+        -1.27
+      ],
+      "dxf": "WN3D.dxf"
+    },
+    "result": {
+      "volume_delta": -0.004613217277288584
+    }
+  },
+  {
+    "tool": "colors",
+    "params": {
+      "action": "apply",
+      "target": "Faces"
+    },
+    "inputs": {
+      "keys": [
+        [
+          0,
+          1537
+        ],
+        [
+          0,
+          1527
+        ],
+        [
+          0,
+          4
+        ],
+        [
+          0,
+          1910
+        ],
+        [
+          0,
+          1534
+        ],
+        [
+          0,
+          1530
+        ],
+        [
+          0,
+          1913
+        ],
+        [
+          0,
+          1540
+        ],
+        [
+          0,
+          1543
+        ],
+        [
+          0,
+          1542
+        ],
+        [
+          0,
+          1535
+        ],
+        [
+          0,
+          1914
+        ],
+        [
+          0,
+          1528
+        ]
+      ]
+    },
+    "result": {
+      "color": "#f5f5f0"
+    }
+  }
+]

@@ -43,13 +43,23 @@ def main() -> int:
         print(f"replayed journal: {len(registry.pins)} pins | {report.summary()}")
         return 0 if report.ok else 1
 
+    from PySide6.QtGui import QIcon
     from PySide6.QtWidgets import QApplication
 
-    from app.app_window import MainWindow
+    from app.app_window import LOGO_PATH, MainWindow
     from app.style import apply_wavenumber_style
 
     step_path = Path(args.step) if args.step else None
     app = QApplication.instance() or QApplication(sys.argv[:1])
+    try:  # taskbar identity: our logo instead of the generic Python icon
+        import ctypes
+
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
+            "Wavenumber.StepEditor")
+    except Exception:
+        pass
+    if LOGO_PATH.is_file():
+        app.setWindowIcon(QIcon(str(LOGO_PATH)))
     apply_wavenumber_style(app)
     window = MainWindow(step_path if step_path and step_path.is_file() else None)
     window.show()

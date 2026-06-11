@@ -197,6 +197,116 @@ def shape_volume(shape) -> float | None:
         return None
 
 
+def _edge_face_table(solid) -> list[tuple[object, frozenset]]:
+    """Each edge of the solid with the face indices flanking it — computed
+    once so per-region boundary scans are cheap set lookups."""
+    face_map = TopTools_IndexedMapOfShape()
+    TopExp.MapShapes_s(solid, TopAbs_FACE, face_map)
+    edge_faces = TopTools_IndexedDataMapOfShapeListOfShape()
+    TopExp.MapShapesAndAncestors_s(solid, TopAbs_EDGE, TopAbs_FACE, edge_faces)
+    table = []
+    for edge_index in range(1, edge_faces.Extent() + 1):
+        indices = frozenset(
+            index
+            for shape in edge_faces.FindFromIndex(edge_index)
+            if (index := face_map.FindIndex(shape)) > 0
+        )
+        table.append((TopoDS.Edge_s(edge_faces.FindKey(edge_index)), indices))
+    return table
+
+
+def _boundary_wires(table, inside: set):
+    """Closed wires along the edges where `inside` faces meet the rest of the
+    body. None when the set has no boundary (it is the whole shell)."""
+    from OCP.ShapeAnalysis import ShapeAnalysis_FreeBounds
+    from OCP.TopTools import TopTools_HSequenceOfShape
+
+    boundary = [
+        edge
+        for edge, faces in table
+        if not faces.isdisjoint(inside) and not faces <= inside
+    ]
+    if not boundary:
+        return None
+    edges = TopTools_HSequenceOfShape()
+    for edge in boundary:
+        edges.Append(edge)
+    wires = TopTools_HSequenceOfShape()
+    ShapeAnalysis_FreeBounds.ConnectEdgesToWires_s(edges, 1.0e-7, False, wires)
+    return wires
+
+
+def _cap_faces_for_wires(wires) -> list:
+    """One cap face per closed boundary wire: an exact planar face when the
+    loop is planar, an n-sided filled patch bounded by the loop's own edges
+    otherwise (bent connector contacts)."""
+    from OCP.BRepOffsetAPI import BRepOffsetAPI_MakeFilling
+    from OCP.GeomAbs import GeomAbs_C0
+
+    caps = []
+    for wire_index in range(1, wires.Length() + 1):
+        wire = TopoDS.Wire_s(wires.Value(wire_index))
+        try:
+            maker = BRepBuilderAPI_MakeFace(wire, True)
+            if maker.IsDone():
+                caps.append(maker.Face())
+                continue
+        except Exception:
+            pass
+        try:
+            filling = BRepOffsetAPI_MakeFilling()
+            explorer = TopExp_Explorer(wire, TopAbs_EDGE)
+            edge_count = 0
+            while explorer.More():
+                filling.Add(TopoDS.Edge_s(explorer.Current()), GeomAbs_C0, True)
+                edge_count += 1
+                explorer.Next()
+            if edge_count:
+                filling.Build()
+                if filling.IsDone():
+                    caps.append(TopoDS.Face_s(filling.Shape()))
+        except Exception:
+            continue
+    return caps
+
+
+def _sew_solid(faces: list):
+    """Sew faces into a closed shell and build a correctly oriented solid.
+    None when they do not close up into exactly one solid."""
+    from OCP.BRepBuilderAPI import BRepBuilderAPI_MakeSolid, BRepBuilderAPI_Sewing
+    from OCP.ShapeFix import ShapeFix_Solid
+    from OCP.TopAbs import TopAbs_SHELL
+
+    try:
+        sewing = BRepBuilderAPI_Sewing(1.0e-6)
+        for face in faces:
+            sewing.Add(face)
+        sewing.Perform()
+        shells = []
+        explorer = TopExp_Explorer(sewing.SewedShape(), TopAbs_SHELL)
+        while explorer.More():
+            shells.append(TopoDS.Shell_s(explorer.Current()))
+            explorer.Next()
+        if not shells:
+            return None
+        maker = BRepBuilderAPI_MakeSolid()
+        for shell in shells:
+            maker.Add(shell)
+        if not maker.IsDone():
+            return None
+        fix = ShapeFix_Solid(maker.Solid())
+        fix.Perform()
+        solids = list(_iter_solids(fix.Solid()))
+        if len(solids) != 1:
+            return None
+        volume = shape_volume(solids[0])
+        if volume is None or abs(volume) < 1.0e-12:
+            return None
+        return solids[0]
+    except Exception:
+        return None
+
+
 def tessellate_body(
     solid: TopoDS_Shape,
     deflection: float,
@@ -510,15 +620,14 @@ class EditorDocument:
     def split_by_face_regions(
         self, regions: list[list[tuple[int, int]]], cuts=None, progress=None
     ) -> list[int]:
-        """Split bodies along detected pin-region boundaries: for each region
-        the boundary loops (edges between region and body faces) are capped
-        with planar faces, and those caps drive BRepAlgoAPI_Splitter — each
-        pin separates as the whole shape the edge flow found. Returns the new
-        body indices that are NOT the largest piece of their split (the pin
-        solids)."""
-        from OCP.ShapeAnalysis import ShapeAnalysis_FreeBounds
-        from OCP.TopTools import TopTools_HSequenceOfShape
-
+        """Split bodies into EXACTLY the previewed pin regions: each region's
+        own faces are closed with caps over its boundary loops and sewn into
+        a solid, and the package is rebuilt the same way from the remaining
+        faces plus the same boundary caps. No volume splitter is involved, so
+        the result cannot diverge from the preview, and contacts that touch
+        the housing along their whole length still sever. A body is left
+        untouched unless the rebuilt pieces conserve its volume to 1%.
+        Returns the new body indices of the pin solids."""
         cuts = cuts if cuts is not None else [None] * len(regions)
         by_body: dict[int, list[tuple[set[int], object]]] = {}
         for region, cut in zip(regions, cuts):
@@ -557,94 +666,81 @@ class EditorDocument:
 
             face_map = TopTools_IndexedMapOfShape()
             TopExp.MapShapes_s(body.solid, TopAbs_FACE, face_map)
-            edge_faces = TopTools_IndexedDataMapOfShapeListOfShape()
-            TopExp.MapShapesAndAncestors_s(body.solid, TopAbs_EDGE, TopAbs_FACE, edge_faces)
+            edge_table = _edge_face_table(body.solid)
 
-            caps = []
-            for region_number, (region, cut) in enumerate(region_sets):
+            # Seal each previewed region into its own solid: its faces plus a
+            # cap over each boundary loop — the discontinuity where the pin
+            # meets the body, plugged.
+            sealed: list[tuple[set[int], object, list]] = []
+            for region_number, (region, _cut) in enumerate(region_sets):
                 if progress is not None:
-                    progress("Capping pin junctions", region_number, len(region_sets))
-                if cut is not None:
-                    # cross-section cut: a bounded plane where the pin's
-                    # cross-section jumps — may slice model faces mid-face
-                    point, axis, half_size = cut
-                    plane = gp_Pln(gp_Pnt(*point), gp_Dir(*axis))
-                    caps.append(
-                        BRepBuilderAPI_MakeFace(
-                            plane, -half_size, half_size, -half_size, half_size
-                        ).Face()
+                    progress("Sealing pin regions", region_number, len(region_sets))
+                wires = _boundary_wires(edge_table, region)
+                if wires is None:
+                    continue
+                caps = _cap_faces_for_wires(wires)
+                if not caps:
+                    continue
+                faces = [
+                    TopoDS.Face_s(face_map.FindKey(index)) for index in sorted(region)
+                ]
+                solid = _sew_solid(faces + caps)
+                if solid is not None:
+                    sealed.append((region, solid, caps))
+
+            if not sealed:
+                new_bodies.append(body)
+                continue
+
+            # Rebuild the package from the unclaimed faces plus the SAME cap
+            # faces that sealed the pins — identical geometry on both sides
+            # of every junction, and adjacent regions' caps tile their union
+            # boundary along the shared seam. The pieces must conserve the
+            # body's volume to 1%; when they don't, the largest sealed region
+            # is the suspect (a false detection grown over the housing, with
+            # a cap patch that self-intersects the shell) — drop it back into
+            # the package and retry, so junk regions are rejected one by one
+            # instead of vetoing every real pin.
+            original_volume = abs(shape_volume(body.solid) or 0.0)
+            package = None
+            while sealed:
+                if progress is not None:
+                    progress(f"Sealing {body.name} package", 0, 0)
+                claimed = set().union(*(region for region, _solid, _caps in sealed))
+                remainder = [
+                    index
+                    for index in range(1, face_map.Extent() + 1)
+                    if index not in claimed
+                ]
+                if not remainder:
+                    break
+                package_caps = [
+                    cap for _region, _solid, caps in sealed for cap in caps
+                ]
+                package = _sew_solid(
+                    [TopoDS.Face_s(face_map.FindKey(index)) for index in remainder]
+                    + package_caps
+                )
+                if package is not None:
+                    pieces_volume = abs(shape_volume(package) or 0.0) + sum(
+                        abs(shape_volume(solid) or 0.0)
+                        for _region, solid, _caps in sealed
                     )
-                    continue
-                boundary = []
-                for edge_index in range(1, edge_faces.Extent() + 1):
-                    sides = set()
-                    for shape in edge_faces.FindFromIndex(edge_index):
-                        index = face_map.FindIndex(shape)
-                        if index > 0:
-                            sides.add(index in region)
-                    if sides == {True, False}:
-                        boundary.append(TopoDS.Edge_s(edge_faces.FindKey(edge_index)))
-                if not boundary:
-                    continue
-                edges = TopTools_HSequenceOfShape()
-                for edge in boundary:
-                    edges.Append(edge)
-                wires = TopTools_HSequenceOfShape()
-                ShapeAnalysis_FreeBounds.ConnectEdgesToWires_s(edges, 1.0e-7, False, wires)
-                caps_before = len(caps)
-                for wire_index in range(1, wires.Length() + 1):
-                    try:
-                        maker = BRepBuilderAPI_MakeFace(
-                            TopoDS.Wire_s(wires.Value(wire_index)), True
-                        )
-                        if maker.IsDone():
-                            caps.append(maker.Face())
-                    except Exception:
-                        continue
-                if len(caps) == caps_before and boundary:
-                    # non-planar junction loop (bent connector contacts):
-                    # cut with the loop's best-fit plane instead of silently
-                    # leaving the pin attached
-                    pts = []
-                    for edge in boundary:
-                        curve = BRepAdaptor_Curve(edge)
-                        for t in (curve.FirstParameter(), curve.LastParameter()):
-                            p = curve.Value(t)
-                            pts.append((p.X(), p.Y(), p.Z()))
-                    arr = np.asarray(pts, dtype=np.float64)
-                    if len(arr) >= 3:
-                        center = arr.mean(axis=0)
-                        _u, s, vt = np.linalg.svd(arr - center)
-                        normal = vt[-1]
-                        if float(np.linalg.norm(normal)) > 1e-9 and s[1] > 1e-9:
-                            extent = float(np.linalg.norm(arr.max(0) - arr.min(0)))
-                            half = max(extent * 0.75, 1e-4)
-                            plane = gp_Pln(gp_Pnt(*center), gp_Dir(*normal))
-                            caps.append(BRepBuilderAPI_MakeFace(
-                                plane, -half, half, -half, half).Face())
-
-            if not caps:
+                    if (
+                        original_volume <= 0.0
+                        or abs(pieces_volume - original_volume)
+                        <= 0.01 * original_volume
+                    ):
+                        break
+                    package = None
+                sealed.remove(
+                    max(sealed, key=lambda item: abs(shape_volume(item[1]) or 0.0))
+                )
+            if package is None or not sealed:
                 new_bodies.append(body)
                 continue
 
-            if progress is not None:
-                progress(f"Splitting {body.name} at {len(caps)} junction(s)", 0, 0)
-            splitter = BRepAlgoAPI_Splitter()
-            arguments = TopTools_ListOfShape()
-            arguments.Append(body.solid)
-            tools = TopTools_ListOfShape()
-            for cap in caps:
-                tools.Append(cap)
-            splitter.SetArguments(arguments)
-            splitter.SetTools(tools)
-            splitter.Build()
-            solids = list(_iter_solids(splitter.Shape())) if splitter.IsDone() else []
-            if len(solids) <= 1:
-                new_bodies.append(body)
-                continue
-
-            volumes = [shape_volume(solid) or 0.0 for solid in solids]
-            largest = int(np.argmax(volumes))
+            solids = [package] + [solid for _region, solid, _caps in sealed]
             for index, solid in enumerate(solids):
                 record = BodyRecord(
                     solid=solid,
@@ -652,7 +748,7 @@ class EditorDocument:
                     color=body.color,
                     original_color=body.original_color,
                 )
-                if index != largest:
+                if index != 0:
                     pin_indices.append(len(new_bodies))
                 if colored_faces:
                     color_restores.append((record, colored_faces, tolerance))

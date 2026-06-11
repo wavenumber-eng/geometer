@@ -672,11 +672,24 @@ def grow_pin_regions(
             adjacency_cache[body_index] = document.face_smooth_adjacency(body_index, None)
         return adjacency_cache[body_index]
 
+    # Bodies already linked to an SMT/THR pin are whole contacts: a CON/HEAD
+    # pin whose faces sit on one is a metadata anchor on an already-separate
+    # solid — stay passive, never cut it up further.
+    primary_bodies = {
+        body_id
+        for pin in pins
+        if pin.role != "mouth"
+        for body_id in pin.body_ids
+    }
+
     grown: list[list[tuple[int, int]] | None] = []
     for pin_index, pin in enumerate(pins):
-        if pin.body_ids or not pin.face_ids or pin.role == "mouth":
-            # already its own body, nothing to grow, or a mouth contact —
-            # mouth pins are metadata anchors (hitbox + net), never cut out
+        if pin.body_ids or not pin.face_ids:
+            grown.append(None)  # already its own body (or nothing to grow)
+            continue
+        if pin.role == "mouth" and any(
+            body_id in primary_bodies for body_id, _face in pin.face_ids
+        ):
             grown.append(None)
             continue
         region = set(pin.face_ids)

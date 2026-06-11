@@ -74,19 +74,37 @@ def export_ap242(
     out_path: Path | None = None,
     pins=None,
     journal=None,
+    progress=None,
 ) -> ExportReport:
+    def stage(label: str) -> None:
+        if progress is not None:
+            progress(label, 0, 0)
+
     out_path = out_path or conditioned_path(document.path)
+    stage(f"Writing {out_path.name}")
     write_step(document, out_path)
     if pins is not None or journal is not None:
         from .metadata import build_metadata
 
         payload = build_metadata(document, pins, journal)
+        stage("Embedding metadata into the AP242")
         inject_metadata(out_path, payload)
-        # no sidecar: the conditioned STEP is the single source of truth —
-        # the metadata lives INSIDE the AP242 (extract_metadata reads it back)
-        stale_sidecar = out_path.with_suffix(".metadata.json")
-        if stale_sidecar.exists():
-            stale_sidecar.unlink()
+        # The conditioned STEP is the single source of truth, so PROVE the
+        # embedded copy reads back identically before touching the sidecar.
+        # If the round-trip ever fails, the sidecar is written as the rescue
+        # copy and the export fails loudly instead of losing the metadata.
+        stage("Auto-test: reading the embedded metadata back")
+        sidecar = out_path.with_suffix(".metadata.json")
+        extracted = extract_metadata(out_path)
+        if extracted != payload:
+            sidecar.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+            raise RuntimeError(
+                "embedded metadata did not read back from the STEP — "
+                f"rescue copy kept at {sidecar.name}"
+            )
+        if sidecar.exists():
+            sidecar.unlink()
+    stage("Validating: re-reading the conditioned STEP")
     return _validate(document, out_path)
 
 

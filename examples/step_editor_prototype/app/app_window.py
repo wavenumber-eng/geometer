@@ -340,15 +340,17 @@ class MainWindow(QMainWindow):
         QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
         try:
             report = export_ap242(
-                self.document, out_path, pins=self.pins, journal=self.journal
+                self.document, out_path, pins=self.pins, journal=self.journal,
+                progress=self.progress,
             )
-            self.show_status(report.summary())
+            self.show_status(f"{report.summary()} | embedded metadata verified")
             if not report.ok:
                 QMessageBox.warning(self, "Export validation", report.summary())
         except Exception as exc:
             self.show_status(f"Export failed: {exc}")
             QMessageBox.critical(self, "Export failed", str(exc))
         finally:
+            self.progress_done()
             QApplication.restoreOverrideCursor()
 
     # ------------------------------------------------------------------ misc

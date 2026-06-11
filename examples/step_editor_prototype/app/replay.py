@@ -236,18 +236,30 @@ def replay(document: EditorDocument, journal: Journal) -> PinRegistry:
                 mesh_region_centroid(document.bodies[i].mesh) or (0, 0, 0)
                 for i in pin_indices
             ])
+            if len(centroids) > 1:
+                gaps = np.linalg.norm(
+                    centroids[:, None, :] - centroids[None, :, :], axis=2
+                )
+                np.fill_diagonal(gaps, np.inf)
+                link_tol = float(np.median(gaps.min(axis=1))) * 0.6
+            else:
+                link_tol = np.inf
             for pin in registry.pins:
                 if not pin.face_ids or not len(centroids):
                     continue
-                if pin.role == "mouth":
-                    continue  # keeps its face region; remapped below
-                nearest = int(np.argmin(np.linalg.norm(
-                    centroids[:, :2] - np.asarray(pin.centroid[:2]), axis=1
-                )))
+                distances = np.linalg.norm(
+                    centroids - np.asarray(pin.centroid), axis=1
+                )
+                nearest = int(np.argmin(distances))
+                if float(distances[nearest]) > link_tol:
+                    continue  # did not separate — stays a face-region pin
                 body_index = pin_indices[nearest]
                 pin.body_ids = [body_index]
                 pin.face_ids = []
-                document.bodies[body_index].name = pin.name or f"PIN_{pin.number}"
+                suffix = "_HEAD" if pin.role == "mouth" else ""
+                document.bodies[body_index].name = (
+                    pin.name or f"PIN_{pin.number}"
+                ) + suffix
                 document.bodies[body_index].role = "pin"
             remap_pin_faces(document, face_anchors, remap_tol)
 

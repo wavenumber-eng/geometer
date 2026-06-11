@@ -165,14 +165,21 @@ class SeparateUnibodyTool(ToolMode):
         body_pins = 0
         mouth_pins = 0
         net_pastels = designator_pastels(registry.pins)
+        mouth_grown = 0
         for index, (pin, region) in enumerate(zip(registry.pins, self._grown)):
             if pin.role == "mouth":
-                # CON/HEAD pins are never cut, but they ARE part of a net —
-                # paint their faces in the joined SMT/THR tail's colour
+                # CON/HEAD pins paint in their net's (tail's) colour. On a
+                # unibody they grow and split like tails; on an already-split
+                # contact they stay passive anchors.
                 rgb = net_pastels.get(pin.name, UNJOINED_MOUTH_RGB)
-                for body_index, face_index in pin.face_ids:
+                faces = region if region else pin.face_ids
+                for body_index, face_index in faces:
                     by_body.setdefault(body_index, {})[face_index] = rgb
                 mouth_pins += 1
+                if region:
+                    mouth_grown += 1
+                    grown_faces += len(region)
+                    seed_faces += len(pin.face_ids)
                 continue
             rgb = pastel(index)
             if region is None:
@@ -205,8 +212,9 @@ class SeparateUnibodyTool(ToolMode):
                 1 for p in registry.pins if p.role == "mouth" and p.name
             )
             parts.append(
-                f"{mouth_pins} CON/HEAD pin(s) shown in their net's colour "
-                f"({joined} joined, never cut)"
+                f"{mouth_pins} CON/HEAD pin(s) in their net's colour "
+                f"({joined} joined, {mouth_grown} will split, "
+                f"{mouth_pins - mouth_grown} on already-split contacts)"
             )
         self.info_label.setText("; ".join(parts) if parts else "Nothing to separate.")
 
@@ -304,9 +312,11 @@ class SeparateUnibodyTool(ToolMode):
             # distance guard: a pin only links to a new body that is actually
             # AT its location — pins whose region failed to split must not
             # steal a neighbour's piece
+            # 3D linking: a CON/HEAD sliver sits directly above its tail in
+            # XY, so only the full 3D distance can tell their pieces apart.
             if len(new_centroids) > 1:
                 d = np.linalg.norm(
-                    new_centroids[:, None, :2] - new_centroids[None, :, :2], axis=2
+                    new_centroids[:, None, :] - new_centroids[None, :, :], axis=2
                 )
                 np.fill_diagonal(d, np.inf)
                 link_tol = float(np.median(d.min(axis=1))) * 0.6
@@ -317,12 +327,8 @@ class SeparateUnibodyTool(ToolMode):
             for pin_index, pin in enumerate(registry.pins):
                 if not pin.face_ids or not len(new_centroids):
                     continue
-                if pin.role == "mouth":
-                    continue  # mouth pins keep their face region — a mouth
-                    # contact sits right above its tail and would steal the
-                    # tail's new body otherwise
                 distances = np.linalg.norm(
-                    new_centroids[:, :2] - np.asarray(pin.centroid[:2]), axis=1
+                    new_centroids - np.asarray(pin.centroid), axis=1
                 )
                 nearest = int(np.argmin(distances))
                 if distances[nearest] > link_tol:
@@ -331,7 +337,10 @@ class SeparateUnibodyTool(ToolMode):
                 body_index = pin_indices[nearest]
                 pin.body_ids = [body_index]
                 pin.face_ids = []
-                document.bodies[body_index].name = pin.name or f"PIN_{pin.number}"
+                suffix = "_HEAD" if pin.role == "mouth" else ""
+                document.bodies[body_index].name = (
+                    pin.name or f"PIN_{pin.number}"
+                ) + suffix
                 document.bodies[body_index].role = "pin"
                 region_color = (
                     pin_region_colors[pin_index]
@@ -379,7 +388,9 @@ class SeparateUnibodyTool(ToolMode):
         for pin_index, pin in enumerate(registry.pins):
             if pin.role == "mouth":
                 rgb = net_pastels.get(pin.name, UNJOINED_MOUTH_RGB)
-                for body_id, face_id in pin.face_ids:
+                for body_id in pin.body_ids:  # split out as its own sliver
+                    self.ctx.scene.set_body_color(body_id, rgb)
+                for body_id, face_id in pin.face_ids:  # still a face region
                     mouth_paint.setdefault(body_id, {})[face_id] = rgb
                 continue
             for body_id in pin.body_ids:

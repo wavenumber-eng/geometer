@@ -256,7 +256,19 @@ class SeparateUnibodyTool(ToolMode):
                 new_centroids.append(centroid or (0.0, 0.0, 0.0))
             new_centroids = np.asarray(new_centroids)
 
+            # distance guard: a pin only links to a new body that is actually
+            # AT its location — pins whose region failed to split must not
+            # steal a neighbour's piece
+            if len(new_centroids) > 1:
+                d = np.linalg.norm(
+                    new_centroids[:, None, :2] - new_centroids[None, :, :2], axis=2
+                )
+                np.fill_diagonal(d, np.inf)
+                link_tol = float(np.median(d.min(axis=1))) * 0.6
+            else:
+                link_tol = np.inf
             matched = 0
+            unsplit = 0
             for pin_index, pin in enumerate(registry.pins):
                 if not pin.face_ids or not len(new_centroids):
                     continue
@@ -264,6 +276,9 @@ class SeparateUnibodyTool(ToolMode):
                     new_centroids[:, :2] - np.asarray(pin.centroid[:2]), axis=1
                 )
                 nearest = int(np.argmin(distances))
+                if distances[nearest] > link_tol:
+                    unsplit += 1  # stays a face-region pin (still valid metadata)
+                    continue
                 body_index = pin_indices[nearest]
                 pin.body_ids = [body_index]
                 pin.face_ids = []
@@ -312,11 +327,17 @@ class SeparateUnibodyTool(ToolMode):
         self.ctx.scene.set_model_opacity(0.5)
         self._preview_painted = True  # exit() rebuilds to restore real colours
         self.undo_button.setEnabled(True)
-        self.info_label.setText(
+        message = (
             f"Split done: {before} body(ies) -> {len(document.bodies)} "
             f"({len(pin_indices)} pin bodies, {matched} pins re-linked; "
             f"cut along the previewed region boundaries)."
         )
+        if unsplit:
+            message += (
+                f" WARNING: {unsplit} pin(s) did not separate (no body "
+                f"appeared at their location) — they remain face-region pins."
+            )
+        self.info_label.setText(message)
         self.status(
             f"Separate Unibody: {len(pin_indices)} whole-pin bodies created — "
             f"{len(document.bodies)} bodies total (Undo available)"

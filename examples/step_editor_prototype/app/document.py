@@ -591,6 +591,7 @@ class EditorDocument:
                     edges.Append(edge)
                 wires = TopTools_HSequenceOfShape()
                 ShapeAnalysis_FreeBounds.ConnectEdgesToWires_s(edges, 1.0e-7, False, wires)
+                caps_before = len(caps)
                 for wire_index in range(1, wires.Length() + 1):
                     try:
                         maker = BRepBuilderAPI_MakeFace(
@@ -600,6 +601,27 @@ class EditorDocument:
                             caps.append(maker.Face())
                     except Exception:
                         continue
+                if len(caps) == caps_before and boundary:
+                    # non-planar junction loop (bent connector contacts):
+                    # cut with the loop's best-fit plane instead of silently
+                    # leaving the pin attached
+                    pts = []
+                    for edge in boundary:
+                        curve = BRepAdaptor_Curve(edge)
+                        for t in (curve.FirstParameter(), curve.LastParameter()):
+                            p = curve.Value(t)
+                            pts.append((p.X(), p.Y(), p.Z()))
+                    arr = np.asarray(pts, dtype=np.float64)
+                    if len(arr) >= 3:
+                        center = arr.mean(axis=0)
+                        _u, s, vt = np.linalg.svd(arr - center)
+                        normal = vt[-1]
+                        if float(np.linalg.norm(normal)) > 1e-9 and s[1] > 1e-9:
+                            extent = float(np.linalg.norm(arr.max(0) - arr.min(0)))
+                            half = max(extent * 0.75, 1e-4)
+                            plane = gp_Pln(gp_Pnt(*center), gp_Dir(*normal))
+                            caps.append(BRepBuilderAPI_MakeFace(
+                                plane, -half, half, -half, half).Face())
 
             if not caps:
                 new_bodies.append(body)

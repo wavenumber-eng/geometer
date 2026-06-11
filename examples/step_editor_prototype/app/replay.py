@@ -244,9 +244,11 @@ def replay(document: EditorDocument, journal: Journal) -> PinRegistry:
                 link_tol = float(np.median(gaps.min(axis=1))) * 0.6
             else:
                 link_tol = np.inf
-            for pin in registry.pins:
+            for pin_index, pin in enumerate(registry.pins):
                 if not pin.face_ids or not len(centroids):
                     continue
+                if pin_index < len(grown) and not grown[pin_index]:
+                    continue  # passive anchor (no region cut) — never links
                 distances = np.linalg.norm(
                     centroids - np.asarray(pin.centroid), axis=1
                 )
@@ -308,10 +310,14 @@ def replay(document: EditorDocument, journal: Journal) -> PinRegistry:
                     continue
                 if isinstance(key, list):
                     body_index, face_index = key
+                    if not (0 <= body_index < len(document.bodies)):
+                        continue  # body table diverged from the session
                     mesh = document.bodies[body_index].mesh
                     if mesh is not None:
                         mesh.face_colors[face_index] = rgb
                 else:
+                    if not (0 <= int(key) < len(document.bodies)):
+                        continue
                     document.bodies[int(key)].color = rgb
                     if document.bodies[int(key)].mesh is not None:
                         document.bodies[int(key)].mesh.face_colors = {}

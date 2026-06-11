@@ -197,6 +197,15 @@ def shape_volume(shape) -> float | None:
         return None
 
 
+def shape_area(shape) -> float | None:
+    try:
+        props = GProp_GProps()
+        BRepGProp.SurfaceProperties_s(shape, props)
+        return float(props.Mass())
+    except Exception:
+        return None
+
+
 def _edge_face_table(solid) -> list[tuple[object, frozenset]]:
     """Each edge of the solid with the face indices flanking it — computed
     once so per-region boundary scans are cheap set lookups."""
@@ -236,12 +245,40 @@ def _boundary_wires(table, inside: set):
     return wires
 
 
-def _cap_faces_for_wires(wires) -> list:
+def _region_anchor_points(mesh, region: set[int], max_points: int = 60):
+    """Points just BELOW a face region's surface (inward along the triangle
+    normals) — constraints that make a filled cap hug the region instead of
+    billowing across a bent boundary loop like a soap film."""
+    mask = np.isin(mesh.tri_face_ids, np.asarray(sorted(region), dtype=np.int32))
+    tris = mesh.tris[mask]
+    if not len(tris):
+        return []
+    corners = mesh.points[tris]
+    centers = corners.mean(axis=1)
+    normals = np.cross(corners[:, 1] - corners[:, 0], corners[:, 2] - corners[:, 0])
+    lengths = np.linalg.norm(normals, axis=1)
+    keep = lengths > 1e-12
+    centers, normals, lengths = centers[keep], normals[keep], lengths[keep]
+    if not len(centers):
+        return []
+    extents = centers.max(axis=0) - centers.min(axis=0)
+    nonzero = extents[extents > 1e-6]
+    depth = max(0.02, 0.12 * float(nonzero.min())) if len(nonzero) else 0.02
+    # triangle winding is outward (tessellation flips REVERSED faces), so
+    # inward = -normal
+    points = centers - normals / lengths[:, None] * depth
+    step = max(1, len(points) // max_points)
+    return [tuple(float(v) for v in p) for p in points[::step]]
+
+
+def _cap_faces_for_wires(wires, anchor_points=None) -> list:
     """One cap face per closed boundary wire: an exact planar face when the
     loop is planar, an n-sided filled patch bounded by the loop's own edges
-    otherwise (bent connector contacts)."""
+    otherwise (bent connector contacts). `anchor_points` pin the filled
+    patch to the region's own surface so non-planar loops cannot balloon."""
     from OCP.BRepOffsetAPI import BRepOffsetAPI_MakeFilling
     from OCP.GeomAbs import GeomAbs_C0
+    from OCP.gp import gp_Pnt
 
     caps = []
     for wire_index in range(1, wires.Length() + 1):
@@ -253,20 +290,25 @@ def _cap_faces_for_wires(wires) -> list:
                 continue
         except Exception:
             pass
-        try:
-            filling = BRepOffsetAPI_MakeFilling()
-            explorer = TopExp_Explorer(wire, TopAbs_EDGE)
-            edge_count = 0
-            while explorer.More():
-                filling.Add(TopoDS.Edge_s(explorer.Current()), GeomAbs_C0, True)
-                edge_count += 1
-                explorer.Next()
-            if edge_count:
+        for constraints in ((anchor_points or []), []):
+            try:
+                filling = BRepOffsetAPI_MakeFilling()
+                explorer = TopExp_Explorer(wire, TopAbs_EDGE)
+                edge_count = 0
+                while explorer.More():
+                    filling.Add(TopoDS.Edge_s(explorer.Current()), GeomAbs_C0, True)
+                    edge_count += 1
+                    explorer.Next()
+                if not edge_count:
+                    break
+                for point in constraints:
+                    filling.Add(gp_Pnt(*point))
                 filling.Build()
                 if filling.IsDone():
                     caps.append(TopoDS.Face_s(filling.Shape()))
-        except Exception:
-            continue
+                    break
+            except Exception:
+                continue
     return caps
 
 
@@ -670,7 +712,9 @@ class EditorDocument:
 
             # Seal each previewed region into its own solid: its faces plus a
             # cap over each boundary loop — the discontinuity where the pin
-            # meets the body, plugged.
+            # meets the body, plugged. Caps larger than the region itself are
+            # rejected (a billowing patch over a bent loop is worse than an
+            # honest "did not separate").
             sealed: list[tuple[set[int], object, list]] = []
             for region_number, (region, _cut) in enumerate(region_sets):
                 if progress is not None:
@@ -678,15 +722,53 @@ class EditorDocument:
                 wires = _boundary_wires(edge_table, region)
                 if wires is None:
                     continue
-                caps = _cap_faces_for_wires(wires)
+                anchors = (
+                    _region_anchor_points(body.mesh, region)
+                    if body.mesh is not None else []
+                )
+                caps = _cap_faces_for_wires(wires, anchor_points=anchors)
                 if not caps:
                     continue
+                region_bounds = None
+                if body.mesh is not None:
+                    mask = np.isin(
+                        body.mesh.tri_face_ids,
+                        np.asarray(sorted(region), dtype=np.int32),
+                    )
+                    corners = body.mesh.points[body.mesh.tris[mask]]
+                    region_area = float(0.5 * np.linalg.norm(np.cross(
+                        corners[:, 1] - corners[:, 0],
+                        corners[:, 2] - corners[:, 0],
+                    ), axis=1).sum())
+                    cap_area = sum(shape_area(cap) or 0.0 for cap in caps)
+                    if region_area > 0.0 and cap_area > 1.2 * region_area:
+                        continue
+                    if len(corners):
+                        flat = corners.reshape(-1, 3)
+                        region_bounds = (flat.min(axis=0), flat.max(axis=0))
                 faces = [
                     TopoDS.Face_s(face_map.FindKey(index)) for index in sorted(region)
                 ]
                 solid = _sew_solid(faces + caps)
-                if solid is not None:
-                    sealed.append((region, solid, caps))
+                if solid is None:
+                    continue
+                # Caps must stay NEAR the region: a ballooned patch (bent
+                # boundary loop the filling could not follow) shoots far
+                # outside the region's own bounds — and would corrupt the
+                # package too, since both sides share the cap.
+                if region_bounds is not None:
+                    low, high = region_bounds
+                    margin = 0.35 * float(np.linalg.norm(high - low)) + 1e-3
+                    sxmin, sxmax, symin, symax, szmin, szmax = shape_bounds(
+                        [solid]
+                    )
+                    if (
+                        sxmin < low[0] - margin or sxmax > high[0] + margin
+                        or symin < low[1] - margin or symax > high[1] + margin
+                        or szmin < low[2] - margin or szmax > high[2] + margin
+                    ):
+                        continue
+                sealed.append((region, solid, caps))
 
             if not sealed:
                 new_bodies.append(body)

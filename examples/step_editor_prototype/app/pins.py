@@ -654,8 +654,15 @@ def grow_pin_regions(
     flow would enter a BODY face (area beyond `area_factor` x the largest
     seed face) or another pin's territory. Returns the grown (body, face)
     region per pin; None for pins that already are whole bodies."""
+    # Primaries claim their seeds first and grow first: a tail flows through
+    # the WHOLE contact, swallowing any CON/HEAD seed faces on the way. A
+    # mouth pin whose seed ends up inside a primary's region is the same
+    # piece of metal — it stays a passive anchor (no extra cut) instead of
+    # carving an un-cappable slit island out of the contact.
     claimed: dict[tuple[int, int], int] = {}
     for pin_index, pin in enumerate(pins):
+        if pin.role == "mouth":
+            continue
         for key in pin.face_ids:
             claimed[key] = pin_index
 
@@ -682,37 +689,54 @@ def grow_pin_regions(
         for body_id in pin.body_ids
     }
 
-    grown: list[list[tuple[int, int]] | None] = []
-    for pin_index, pin in enumerate(pins):
-        if pin.body_ids or not pin.face_ids:
-            grown.append(None)  # already its own body (or nothing to grow)
-            continue
-        if pin.role == "mouth" and any(
-            body_id in primary_bodies for body_id, _face in pin.face_ids
-        ):
-            grown.append(None)
-            continue
-        region = set(pin.face_ids)
-        by_body: dict[int, set[int]] = {}
-        for body_index, face_index in pin.face_ids:
-            by_body.setdefault(body_index, set()).add(face_index)
-        for body_index, seeds in by_body.items():
-            areas = body_areas(body_index)
-            adjacency = body_adjacency(body_index)
-            limit = max(areas.get(face, 0.0) for face in seeds) * area_factor
-            frontier = list(seeds)
-            while frontier:
-                face = frontier.pop()
-                for neighbor in adjacency.get(face, ()):
-                    key = (body_index, neighbor)
-                    if key in claimed:
-                        continue
-                    if areas.get(neighbor, np.inf) > limit:
-                        continue  # reached the BODY — flow stops here
+    grown: list[list[tuple[int, int]] | None] = [None] * len(pins)
+    for mouth_phase in (False, True):
+        for pin_index, pin in enumerate(pins):
+            if (pin.role == "mouth") != mouth_phase:
+                continue
+            if pin.body_ids or not pin.face_ids:
+                continue  # already its own body (or nothing to grow)
+            if mouth_phase:
+                if any(
+                    body_id in primary_bodies
+                    for body_id, _face in pin.face_ids
+                ):
+                    continue  # anchor on an already-split contact
+                owners = {
+                    claimed.get(key) for key in pin.face_ids if key in claimed
+                }
+                if any(
+                    owner is not None and pins[owner].role != "mouth"
+                    for owner in owners
+                ):
+                    continue  # seed swallowed by a tail — same metal, passive
+                for key in pin.face_ids:
                     claimed[key] = pin_index
-                    region.add(key)
-                    frontier.append(neighbor)
-        grown.append(sorted(region))
+            region = set(pin.face_ids)
+            by_body: dict[int, set[int]] = {}
+            for body_index, face_index in pin.face_ids:
+                by_body.setdefault(body_index, set()).add(face_index)
+            for body_index, seeds in by_body.items():
+                areas = body_areas(body_index)
+                adjacency = body_adjacency(body_index)
+                # CON/HEAD seeds are single small mouth faces; the region
+                # must reach the whole exposed beam or its boundary is a
+                # slit no cap can fill — give them 6x the tail headroom.
+                factor = area_factor * (6.0 if mouth_phase else 1.0)
+                limit = max(areas.get(face, 0.0) for face in seeds) * factor
+                frontier = list(seeds)
+                while frontier:
+                    face = frontier.pop()
+                    for neighbor in adjacency.get(face, ()):
+                        key = (body_index, neighbor)
+                        if key in claimed:
+                            continue
+                        if areas.get(neighbor, np.inf) > limit:
+                            continue  # reached the BODY — flow stops here
+                        claimed[key] = pin_index
+                        region.add(key)
+                        frontier.append(neighbor)
+            grown[pin_index] = sorted(region)
     return grown
 
 

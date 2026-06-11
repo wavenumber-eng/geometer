@@ -327,6 +327,8 @@ class SeparateUnibodyTool(ToolMode):
             for pin_index, pin in enumerate(registry.pins):
                 if not pin.face_ids or not len(new_centroids):
                     continue
+                if pin_index < len(grown_list) and not grown_list[pin_index]:
+                    continue  # passive anchor (no region cut) — never links
                 distances = np.linalg.norm(
                     new_centroids - np.asarray(pin.centroid), axis=1
                 )

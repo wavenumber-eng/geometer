@@ -1,5 +1,6 @@
 TEST_STEP_FILES/
 TEST_KICAD_MOD/
+TEST_ALTIUM_PCB/
 *_AP242_conditioned.step
 *_AP242_conditioned.metadata.json
 assets/fonts/

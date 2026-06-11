@@ -8,6 +8,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import numpy as np
+from PySide6.QtCore import QEvent, QObject, Qt
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
     QColorDialog,
@@ -25,6 +26,40 @@ from .base import ToolMode, make_apply_button
 
 HERE = Path(__file__).resolve().parents[2]
 DXF_PATH = HERE / "WN3D.dxf"
+HANDLE_RADIUS_PX = 16.0
+
+
+class LogoHandles(QObject):
+    """Drag the logo's MOVE (centre) and SCALE (edge) handles directly on the
+    face. Presses away from a handle fall through to normal picking/orbit."""
+
+    def __init__(self, widget, tool) -> None:
+        super().__init__(widget)
+        self._widget = widget
+        self._tool = tool
+        self._dragging: str | None = None
+
+    def attach(self) -> None:
+        self._widget.installEventFilter(self)
+
+    def detach(self) -> None:
+        self._widget.removeEventFilter(self)
+        self._dragging = None
+
+    def eventFilter(self, obj, event) -> bool:
+        if obj is not self._widget:
+            return False
+        etype = event.type()
+        if etype == QEvent.Type.MouseButtonPress and event.button() == Qt.MouseButton.LeftButton:
+            self._dragging = self._tool.hit_handle(event.position())
+            return self._dragging is not None
+        if etype == QEvent.Type.MouseMove and self._dragging:
+            self._tool.drag_handle(self._dragging, event.position())
+            return True
+        if etype == QEvent.Type.MouseButtonRelease and self._dragging:
+            self._dragging = None
+            return True
+        return False
 
 
 class LogoTool(ToolMode):
@@ -38,6 +73,7 @@ class LogoTool(ToolMode):
         self._frame: dict | None = None
         self._loops: list | None = None
         self._logo_rgb = (1.0, 0.84, 0.0)  # gold
+        self._handles: LogoHandles | None = None
 
     # ------------------------------------------------------------------- UI
 
@@ -118,13 +154,23 @@ class LogoTool(ToolMode):
     def exit(self) -> None:
         self._target = None
         self._frame = None
-        self.ctx.scene.remove_overlay("logo-preview")
-        self.ctx.scene.clear_highlight()
-        self.ctx.scene.plotter.render()
+        self._detach_handles()
+        scene = self.ctx.scene
+        scene.remove_overlay("logo-preview")
+        scene.set_markers([], name="logo-handle-move")
+        scene.set_markers([], name="logo-handle-scale")
+        scene.clear_highlight()
+        scene.plotter.render()
+
+    def _detach_handles(self) -> None:
+        if self._handles is not None:
+            self._handles.detach()
+            self._handles = None
 
     def on_document_changed(self) -> None:
         self._target = None
         self._frame = None
+        self._detach_handles()
         if self._actions_widget is not None:
             self.target_label.setText("No face picked.")
             self.apply_button.setEnabled(False)
@@ -141,14 +187,29 @@ class LogoTool(ToolMode):
             return
         self._target = (pick.body_index, pick.face_index)
         self._frame = frame
+        # the clicked POINT is the logo centre
+        clicked = np.asarray(pick.world_point) - np.asarray(frame["origin"])
+        u = np.asarray(frame["u"])
+        v = np.cross(np.asarray(frame["normal"]), u)
+        for spin, value in ((self.offset_u, float(clicked @ u)),
+                            (self.offset_v, float(clicked @ v))):
+            spin.blockSignals(True)
+            spin.setValue(value)
+            spin.blockSignals(False)
         self.ctx.scene.highlight_face(pick.body_index, pick.face_index)
         body = document.bodies[pick.body_index]
         self.target_label.setText(
             f"face {pick.face_index} of body {pick.body_index} '{body.name}'"
         )
         self.apply_button.setEnabled(True)
+        if self._handles is None:
+            self._handles = LogoHandles(self.ctx.scene.plotter.interactor, self)
+            self._handles.attach()
         self._preview()
-        self.status("LOGO: adjust width/offset, then Apply")
+        self.status(
+            "LOGO: drag the blue handle to move, the amber handle to scale, "
+            "then Apply"
+        )
 
     # -------------------------------------------------------------- preview
 
@@ -174,6 +235,66 @@ class LogoTool(ToolMode):
                 [[closed[i], closed[i + 1]] for i in range(len(closed) - 1)]
             )
         self.ctx.scene.show_section(np.asarray(segments), name="logo-preview")
+        center, edge = self._handle_points()
+        self.ctx.scene.set_markers(
+            [center], name="logo-handle-move", color="#1f5fd6", point_size=18.0
+        )
+        self.ctx.scene.set_markers(
+            [edge], name="logo-handle-scale", color="#c89d00", point_size=16.0
+        )
+
+    def _handle_points(self):
+        origin = np.asarray(self._frame["origin"])
+        u = np.asarray(self._frame["u"])
+        n = np.asarray(self._frame["normal"])
+        v = np.cross(n, u)
+        center = (origin + u * float(self.offset_u.value())
+                  + v * float(self.offset_v.value()) + n * 0.03)
+        edge = center + u * (float(self.width_spin.value()) / 2.0)
+        return center, edge
+
+    # ------------------------------------------------------------- handles
+
+    def hit_handle(self, position) -> str | None:
+        if self._frame is None:
+            return None
+        center, edge = self._handle_points()
+        scene = self.ctx.scene
+        for name, point in (("scale", edge), ("move", center)):
+            sx, sy = scene.world_to_display_qt(point)
+            if (abs(sx - position.x()) ** 2
+                    + abs(sy - position.y()) ** 2) ** 0.5 <= HANDLE_RADIUS_PX:
+                return name
+        return None
+
+    def drag_handle(self, which: str, position) -> None:
+        if self._frame is None:
+            return
+        scene = self.ctx.scene
+        hit = scene.display_to_plane(
+            position.x(), position.y(),
+            self._frame["origin"], self._frame["normal"],
+        )
+        if hit is None:
+            return
+        origin = np.asarray(self._frame["origin"])
+        u = np.asarray(self._frame["u"])
+        n = np.asarray(self._frame["normal"])
+        v = np.cross(n, u)
+        if which == "move":
+            local = hit - origin
+            for spin, value in ((self.offset_u, float(local @ u)),
+                                (self.offset_v, float(local @ v))):
+                spin.blockSignals(True)
+                spin.setValue(value)
+                spin.blockSignals(False)
+        else:  # scale: width follows the distance from the centre
+            center, _edge = self._handle_points()
+            width = 2.0 * float(np.linalg.norm(hit - (center - n * 0.03)))
+            self.width_spin.blockSignals(True)
+            self.width_spin.setValue(max(0.1, width))
+            self.width_spin.blockSignals(False)
+        self._preview()
 
     def _pick_color(self) -> None:
         color = QColorDialog.getColor(parent=self.actions_widget())
@@ -227,6 +348,8 @@ class LogoTool(ToolMode):
             result={"volume_delta": delta},
         )
         self._target = None
+        self._frame = None
+        self._detach_handles()
         self.apply_button.setEnabled(False)
         window.document_mutated()
         self.status(

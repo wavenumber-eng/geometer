@@ -702,6 +702,31 @@ class SceneManager:
         return float(wx), float(wy), float(wz)
 
 
+    def world_to_display_qt(self, point) -> tuple[float, float]:
+        renderer = self.plotter.renderer
+        renderer.SetWorldPoint(float(point[0]), float(point[1]), float(point[2]), 1.0)
+        renderer.WorldToDisplay()
+        xd, yd, _zd = renderer.GetDisplayPoint()
+        widget = self.plotter.interactor
+        ratio = widget.devicePixelRatioF()
+        return xd / ratio, widget.height() - yd / ratio
+
+    def display_to_plane(self, x_qt: float, y_qt: float, origin, normal):
+        """Cursor position -> intersection of the view ray with a plane."""
+        near = np.asarray(self.display_to_world(x_qt, y_qt), dtype=np.float64)
+        camera = self.plotter.camera
+        direction = (np.asarray(camera.GetFocalPoint())
+                     - np.asarray(camera.GetPosition()))
+        direction /= max(float(np.linalg.norm(direction)), 1e-12)
+        origin = np.asarray(origin, dtype=np.float64)
+        normal = np.asarray(normal, dtype=np.float64)
+        denominator = float(direction @ normal)
+        if abs(denominator) < 1e-9:
+            return None
+        t = float((origin - near) @ normal) / denominator
+        return near + direction * t
+
+
 class BandSelector(QObject):
     """Qt-level rubber-band drag on the 3D viewport. While installed it
     consumes left-button drags (camera orbit stays on middle/right buttons)

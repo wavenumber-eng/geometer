@@ -862,7 +862,16 @@ class EditorDocument:
                     if index not in claimed
                 ]
                 if not remainder:
-                    break
+                    # Every face is claimed: some region grew over the package
+                    # itself (seen on BGAs — one greedy region swallows the
+                    # body and the rest are honest balls). Same medicine as a
+                    # volume failure: drop the largest sealed region back into
+                    # the package and retry, instead of giving up on all pins.
+                    sealed.remove(
+                        max(sealed,
+                            key=lambda item: abs(shape_volume(item[2]) or 0.0))
+                    )
+                    continue
                 package_caps = [
                     cap
                     for _ri, _region, _solid, caps, _tol in sealed

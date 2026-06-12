@@ -11,6 +11,7 @@ from __future__ import annotations
 import colorsys
 
 import numpy as np
+import pyvista as pv
 from PySide6.QtWidgets import (
     QComboBox,
     QDoubleSpinBox,
@@ -20,6 +21,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+from pyvistaqt import QtInteractor
 
 from ..pins import (
     capture_pin_face_anchors,
@@ -141,6 +143,16 @@ class SeparateUnibodyTool(ToolMode):
         paint_row.addWidget(propagate_button)
         layout.addLayout(paint_row)
 
+        preview_header = QLabel("SPLIT PREVIEW — each future body in its own colour")
+        preview_header.setStyleSheet(
+            "font-weight: 700; color: #8a8f98; padding-top: 6px;"
+        )
+        layout.addWidget(preview_header)
+        self.preview_plotter = QtInteractor(widget)
+        self.preview_plotter.interactor.setMinimumHeight(190)
+        self.preview_plotter.set_background("#15171c")
+        layout.addWidget(self.preview_plotter.interactor, 1)
+
         self.apply_button = make_apply_button("Apply Separate")
         self.apply_button.clicked.connect(self.apply)
         layout.addWidget(self.apply_button)
@@ -152,7 +164,6 @@ class SeparateUnibodyTool(ToolMode):
         self.undo_button.setEnabled(False)
         self.undo_button.clicked.connect(self.undo)
         layout.addWidget(self.undo_button)
-        layout.addStretch(1)
         return widget
 
     # ------------------------------------------------------------ lifecycle
@@ -188,6 +199,7 @@ class SeparateUnibodyTool(ToolMode):
         self._manual = None
         if self._actions_widget is not None:
             self.paint_button.setChecked(False)
+            self._update_split_preview()
 
     # --------------------------------------------------------- paint regions
 
@@ -316,6 +328,7 @@ class SeparateUnibodyTool(ToolMode):
             f"PAINTED bundles: {sum(1 for b in self._manual.values() if b)} "
             f"bundle(s), {total} faces — Apply splits exactly these."
         )
+        self._update_split_preview()
 
     def run_auto(self) -> None:
         """Choose the growth cutoff automatically and refresh the preview."""
@@ -338,6 +351,87 @@ class SeparateUnibodyTool(ToolMode):
         )
 
     # -------------------------------------------------------------- preview
+
+    def _update_split_preview(self) -> None:
+        """The little 3D pane in the actions panel: render the POST-SPLIT
+        picture — every future body as its own solid pastel (the Bodies-view
+        look), package remainder in neutral slate — so it's always visible
+        where each split body is going."""
+        plotter = getattr(self, "preview_plotter", None)
+        if plotter is None:
+            return
+        plotter.clear()
+        document = self.ctx.document
+        registry = self.ctx.window.pins
+        if document is None or not registry.pins:
+            plotter.render()
+            return
+
+        regions = self._preview_regions()
+        net_pastels = designator_pastels(registry.pins)
+        # (body -> face -> rgb) for face-region pins; whole-body pins colour
+        # their entire solid.
+        face_rgb: dict[int, dict[int, tuple]] = {}
+        body_rgb: dict[int, tuple] = {}
+        for index, (pin, region) in enumerate(zip(registry.pins, regions)):
+            if pin.role == "mouth":
+                rgb = net_pastels.get(pin.name, UNJOINED_MOUTH_RGB)
+            else:
+                rgb = pastel(index)
+            if region:
+                for body_index, f_index in region:
+                    face_rgb.setdefault(body_index, {})[f_index] = rgb
+            elif pin.body_ids:
+                for body_index in pin.body_ids:
+                    body_rgb[body_index] = rgb
+
+        package_rgb = (0.42, 0.44, 0.50)  # neutral slate: the body remainder
+
+        def add_tris(points, tris, rgb):
+            if not len(tris):
+                return
+            cells = np.column_stack(
+                [np.full(len(tris), 3, dtype=np.int64), tris.astype(np.int64)]
+            ).ravel()
+            plotter.add_mesh(
+                pv.PolyData(points, cells), color=rgb,
+                smooth_shading=False, show_edges=False,
+            )
+
+        for body_index, body in enumerate(document.bodies):
+            mesh = body.mesh
+            if mesh is None or not len(mesh.tris):
+                continue
+            if body_index in body_rgb:
+                add_tris(mesh.points, mesh.tris, body_rgb[body_index])
+                continue
+            owned = face_rgb.get(body_index)
+            if not owned:
+                add_tris(mesh.points, mesh.tris, package_rgb)
+                continue
+            colors = sorted({rgb for rgb in owned.values()})
+            claimed_faces = np.asarray(sorted(owned), dtype=np.int32)
+            for rgb in colors:
+                faces = np.asarray(
+                    [f for f, c in owned.items() if c == rgb], dtype=np.int32
+                )
+                add_tris(mesh.points,
+                         mesh.tris[np.isin(mesh.tri_face_ids, faces)], rgb)
+            add_tris(mesh.points,
+                     mesh.tris[~np.isin(mesh.tri_face_ids, claimed_faces)],
+                     package_rgb)
+
+        plotter.view_isometric()
+        plotter.reset_camera()
+        plotter.render()
+
+    def _preview_regions(self) -> list:
+        """Regions the preview (and Apply) will use: painted bundles when the
+        user took over, else the grown regions."""
+        registry = self.ctx.window.pins
+        if self._manual is not None:
+            return [self._manual.get(i) for i in range(len(registry.pins))]
+        return self._grown or [None] * len(registry.pins)
 
     def _regrow(self) -> None:
         """Edge-flow growth from the detected pin seeds + pastel preview."""
@@ -413,6 +507,7 @@ class SeparateUnibodyTool(ToolMode):
                 f"{mouth_pins - mouth_grown} on already-split contacts)"
             )
         self.info_label.setText("; ".join(parts) if parts else "Nothing to separate.")
+        self._update_split_preview()
 
     # --------------------------------------------------------------- apply
 
@@ -614,6 +709,7 @@ class SeparateUnibodyTool(ToolMode):
                 f"appeared at their location) — they remain face-region pins."
             )
         self.info_label.setText(message)
+        self._update_split_preview()  # now shows the real post-split bodies
         self.status(
             f"Separate Unibody: {len(pin_indices)} whole-pin bodies created — "
             f"{len(document.bodies)} bodies total (Undo available)"
@@ -639,5 +735,6 @@ class SeparateUnibodyTool(ToolMode):
         )
         self.ctx.window.document_mutated()
         self.ctx.scene.set_model_opacity(0.5)
+        self._update_split_preview()
         self.info_label.setText("Separation undone — pre-split bodies restored.")
         self.status("Separate Unibody: undone")

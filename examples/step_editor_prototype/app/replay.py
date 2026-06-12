@@ -341,6 +341,10 @@ def replay(document: EditorDocument, journal: Journal) -> PinRegistry:
                 logo_rgb=tuple(params["logo_rgb"]) if params.get("logo_rgb") else None,
                 rotation_deg=params.get("rotation_deg", 0.0),
             )
+
+    from .pins import apply_pin_body_names
+
+    apply_pin_body_names(document, registry.pins)
     return registry
 
 

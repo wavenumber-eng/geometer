@@ -310,6 +310,13 @@ def condition_auto(document: EditorDocument, journal) -> PinRegistry:
                         "pins_matched": matched})
 
     if registry.pins:
+        # Body-per-pin contract: name every pin body, however it became one
+        # (vendor multibody models never pass through Separate's naming).
+        from .pins import apply_pin_body_names
+
+        apply_pin_body_names(document, registry.pins)
+
+    if registry.pins:
         from .hitbox import obb_from_points
         from .pins import pin_mesh_points
 

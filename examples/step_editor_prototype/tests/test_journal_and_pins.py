@@ -38,6 +38,61 @@ class TestJournalContract:
         ]
 
 
+class TestBodyPerPinContract:
+    """The body-split / pin-designation contract: every body that IS a pin
+    carries the pin's identity in its name and role, however it became one."""
+
+    def _doc(self, n_bodies):
+        from types import SimpleNamespace
+
+        return SimpleNamespace(bodies=[
+            SimpleNamespace(name=f"vendor.{i}", role="body") for i in range(n_bodies)
+        ])
+
+    def test_single_owner_named_pin_n(self):
+        from app.pins import apply_pin_body_names
+
+        doc = self._doc(3)
+        pins = [Pin(number=1, centroid=(0, 0, 0), body_ids=[2])]
+        assert apply_pin_body_names(doc, pins) == 1
+        assert doc.bodies[2].name == "PIN_1"
+        assert doc.bodies[2].role == "pin"
+        assert doc.bodies[0].name == "vendor.0"  # non-pin bodies untouched
+
+    def test_designator_wins_over_number(self):
+        from app.pins import apply_pin_body_names
+
+        doc = self._doc(2)
+        pins = [Pin(number=3, centroid=(0, 0, 0), body_ids=[1], name="SW_A")]
+        apply_pin_body_names(doc, pins)
+        assert doc.bodies[1].name == "SW_A"
+
+    def test_mouth_pins_get_head_suffix(self):
+        from app.pins import apply_pin_body_names
+
+        doc = self._doc(2)
+        pins = [Pin(number=2, centroid=(0, 0, 0), body_ids=[0], role="mouth")]
+        apply_pin_body_names(doc, pins)
+        assert doc.bodies[0].name == "PIN_2_HEAD"
+
+    def test_shared_body_names_all_owners(self):
+        from app.pins import apply_pin_body_names
+
+        doc = self._doc(1)
+        pins = [Pin(number=2, centroid=(0, 0, 0), body_ids=[0]),
+                Pin(number=1, centroid=(1, 0, 0), body_ids=[0])]
+        apply_pin_body_names(doc, pins)
+        assert doc.bodies[0].name == "PINS_1_2"  # bridged contacts, sorted
+
+    def test_face_region_pins_do_not_rename(self):
+        from app.pins import apply_pin_body_names
+
+        doc = self._doc(1)
+        pins = [Pin(number=1, centroid=(0, 0, 0), face_ids=[(0, 5)])]
+        assert apply_pin_body_names(doc, pins) == 0
+        assert doc.bodies[0].name == "vendor.0"
+
+
 class TestPinOrdering:
     def _grid(self):
         # two rows of five, like a SOIC-10 footprint

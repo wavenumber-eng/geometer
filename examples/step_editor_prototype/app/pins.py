@@ -570,6 +570,35 @@ def join_mouth_pins(
     return assigned, conflicts
 
 
+def apply_pin_body_names(document, pins: list["Pin"]) -> int:
+    """The body-per-pin association contract: every body that IS a pin gets
+    named for it (PIN_<n>, or the pin's designator) and role "pin" — however
+    it became one (vendor multibody, Separate, or paint). Bodies shared by
+    several pins (bridged contacts) name all of them. Returns bodies named."""
+    body_pins: dict[int, list[Pin]] = {}
+    for pin in pins:
+        for body_id in pin.body_ids:
+            body_pins.setdefault(body_id, []).append(pin)
+    named = 0
+    for body_id, owners in body_pins.items():
+        if body_id >= len(document.bodies):
+            continue
+        if len(owners) == 1:
+            pin = owners[0]
+            label = pin.name or f"PIN_{pin.number}"
+            if pin.role == "mouth":
+                label += "_HEAD"
+        else:
+            label = "PINS_" + "_".join(
+                str(p.number) for p in sorted(owners, key=lambda p: p.number)
+            )
+        body = document.bodies[body_id]
+        body.name = label
+        body.role = "pin"
+        named += 1
+    return named
+
+
 def find_pin_cut(
     document: EditorDocument,
     region: list[tuple[int, int]],

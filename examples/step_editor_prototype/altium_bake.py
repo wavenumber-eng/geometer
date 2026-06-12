@@ -202,6 +202,19 @@ def split_footprint(lib_path: Path, footprint_name: str, out_path: Path) -> None
     builder.build().save(out_path)
 
 
+def extract_first_step(lib_path: Path, out_step: Path) -> int:
+    """Write the first STEP-kind embedded model to `out_step`; print its name."""
+    lib = AltiumPcbLib.from_file(lib_path)
+    for model, compressed in lib.get_embedded_model_entries():
+        raw = zlib.decompress(compressed) if compressed[:1] == b"\x78" else bytes(compressed)
+        if _payload_kind(raw) == "step":
+            out_step.write_bytes(raw)
+            print(json.dumps({"model_name": model.name, "bytes": len(raw)}))
+            return 0
+    print(json.dumps({"error": "no STEP model found"}))
+    return 1
+
+
 def replace_main(lib_path: str, model_name: str, step_path: str, out_path: str) -> int:
     """CLI: replace + verify (payload identity, others untouched, determinism)."""
     src, out = Path(lib_path), Path(out_path)
@@ -257,4 +270,6 @@ if __name__ == "__main__":
         split_footprint(Path(sys.argv[2]), sys.argv[3], Path(sys.argv[4]))
         print(f"split {sys.argv[3]!r} -> {sys.argv[4]}")
         raise SystemExit(0)
+    if sys.argv[1] == "--extract":
+        raise SystemExit(extract_first_step(Path(sys.argv[2]), Path(sys.argv[3])))
     raise SystemExit(main(sys.argv[1], sys.argv[2]))

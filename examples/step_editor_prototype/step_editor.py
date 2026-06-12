@@ -21,7 +21,9 @@ ROOT = Path(__file__).resolve().parents[2]
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="WN3D STEP Conditioning Editor prototype")
-    parser.add_argument("step", nargs="?", default=None, help="STEP/STP file to open")
+    parser.add_argument("step", nargs="?", default=None,
+                        help="file to open: STEP/STP, .kicad_mod, or .PcbLib "
+                             "with an embedded model")
     parser.add_argument("--selftest", metavar="NAME", help="run a headless selftest (m0..m8 or 'all')")
     parser.add_argument("--fixture", type=Path, default=None, help="override the selftest fixture")
     parser.add_argument("--apply", type=Path, default=None, metavar="OPS_JSON",

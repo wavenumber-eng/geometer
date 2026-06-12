@@ -12,9 +12,13 @@ from PySide6.QtCore import QObject, QRunnable, QSettings, Qt, QThreadPool, Signa
 from PySide6.QtGui import QKeySequence, QPixmap, QShortcut
 from PySide6.QtWidgets import (
     QApplication,
+    QDialog,
+    QDialogButtonBox,
     QFileDialog,
     QHBoxLayout,
     QLabel,
+    QListWidget,
+    QListWidgetItem,
     QMainWindow,
     QMessageBox,
     QProgressBar,
@@ -30,6 +34,7 @@ from pyvistaqt import QtInteractor
 
 from .document import EditorDocument
 from .export_ap242 import conditioned_path, document_step_bytes, export_ap242
+from .vendor_files import VendorContainer, bake_conditioned, is_vendor_file, open_vendor_file
 from .journal import Journal
 from .mode_rect import ModeRect
 from .pins import PinRegistry
@@ -80,6 +85,8 @@ class MainWindow(QMainWindow):
         self.resize(1280, 800)
 
         self.document: EditorDocument | None = None
+        self.vendor: VendorContainer | None = None
+        self._vendor_workdir = None  # TemporaryDirectory kept alive with the container
         self.journal = Journal()
         self.model_bounds: geometer.ModelBoundsResult | None = None
         self.pin1_hint: tuple[float, float, float] | None = None
@@ -128,10 +135,16 @@ class MainWindow(QMainWindow):
         top_layout.addWidget(self.model_label)
         top_layout.addStretch(1)
 
-        open_button = QPushButton("Open STEP")
+        open_button = QPushButton("Open Model")
+        open_button.setToolTip("Open a STEP file, a KiCad footprint (.kicad_mod), "
+                               "or an Altium library (.PcbLib) with an embedded model")
         open_button.clicked.connect(self.open_step_dialog)
         save_button = QPushButton("Write AP242")
-        save_button.setToolTip("Write <name>_AP242_conditioned.step next to the input (Ctrl+S)")
+        save_button.setToolTip(
+            "Write <name>_AP242_conditioned.step next to the input (Ctrl+S).\n"
+            "When a .kicad_mod/.PcbLib is open, also bakes the conditioned "
+            "model into <part>_conditioned.<ext>"
+        )
         save_button.clicked.connect(self.write_ap242)
         top_layout.addWidget(open_button)
         top_layout.addWidget(save_button)
@@ -231,7 +244,7 @@ class MainWindow(QMainWindow):
         QShortcut(QKeySequence("Ctrl+S"), self, activated=self.write_ap242)
 
         if step_path is not None:
-            self.load_step(step_path)
+            self.load_any(step_path)
 
     # ------------------------------------------------------------------ tools
 
@@ -275,14 +288,105 @@ class MainWindow(QMainWindow):
     def open_step_dialog(self) -> None:
         file_name, _filter = QFileDialog.getOpenFileName(
             self,
-            "Open STEP",
+            "Open Model",
             self._open_dir(),
-            "STEP files (*.step *.stp);;All files (*.*)",
+            "3D model files (*.step *.stp *.kicad_mod *.PcbLib);;"
+            "STEP files (*.step *.stp);;"
+            "KiCad footprints (*.kicad_mod);;"
+            "Altium PCB libraries (*.PcbLib);;"
+            "All files (*.*)",
         )
         if file_name:
             path = Path(file_name)
             QSettings("Wavenumber", "StepEditor").setValue("open_dir", str(path.parent))
+            self.load_any(path)
+
+    def load_any(self, path: Path) -> None:
+        """Route by file type: vendor containers extract first, STEP loads
+        directly. Loading a plain STEP drops any active container."""
+        if is_vendor_file(path):
+            self._load_vendor(path)
+        else:
             self.load_step(path)
+
+    def _load_vendor(self, path: Path) -> None:
+        import tempfile
+
+        self.show_status(f"Opening {path.name} ...")
+        workdir = tempfile.TemporaryDirectory(prefix="step_editor_vendor_")
+        container = None
+        try:
+            QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
+            try:
+                container = open_vendor_file(
+                    Path(path), Path(workdir.name),
+                    choose_footprint=self._choose_footprint,
+                )
+            finally:
+                QApplication.restoreOverrideCursor()
+        except Exception as exc:
+            workdir.cleanup()
+            self.show_status(f"Open failed: {exc}")
+            QMessageBox.critical(self, "Open failed", str(exc))
+            return
+        if container is None:  # user cancelled the footprint chooser
+            workdir.cleanup()
+            self.show_status("Open cancelled.")
+            return
+        self.load_step(container.step_path, vendor=container, vendor_workdir=workdir)
+        if self.document is not None:
+            self.model_label.setText(f"{path.name} :: {container.part_name}")
+            self.model_label.setToolTip(
+                f"{path}\nembedded model: {container.model_name}\n"
+                f"Write AP242 also bakes {container.conditioned_container_path().name}"
+            )
+            self.show_status(
+                f"Opened {container.part_name!r} from {path.name} "
+                f"({container.model_name}) — export bakes a conditioned "
+                f"{container.conditioned_container_path().suffix} next to it"
+            )
+
+    def _choose_footprint(self, rows: list[dict]) -> str | None:
+        """Library-split picker for multi-footprint PcbLibs: choose the one
+        part to split out and condition."""
+        QApplication.restoreOverrideCursor()  # dialog needs a normal cursor
+        try:
+            dialog = QDialog(self)
+            dialog.setWindowTitle("Choose footprint to condition")
+            layout = QVBoxLayout(dialog)
+            label = QLabel(
+                f"This library holds {len(rows)} footprints with embedded STEP "
+                "models.\nThe chosen part is split into its own single-part "
+                "library; only that part is conditioned."
+            )
+            label.setWordWrap(True)
+            layout.addWidget(label)
+            listing = QListWidget()
+            for row in rows:
+                model = next(m for m in row["models"] if m["kind"] == "step")
+                item = QListWidgetItem(
+                    f"{row['footprint']}  —  {model['name']} "
+                    f"({model['bytes'] / 1e6:.1f} MB)"
+                )
+                item.setData(Qt.ItemDataRole.UserRole, row["footprint"])
+                listing.addItem(item)
+            listing.setCurrentRow(0)
+            listing.itemDoubleClicked.connect(lambda _item: dialog.accept())
+            layout.addWidget(listing)
+            buttons = QDialogButtonBox(
+                QDialogButtonBox.StandardButton.Ok
+                | QDialogButtonBox.StandardButton.Cancel
+            )
+            buttons.accepted.connect(dialog.accept)
+            buttons.rejected.connect(dialog.reject)
+            layout.addWidget(buttons)
+            dialog.resize(560, 420)
+            if dialog.exec() != QDialog.DialogCode.Accepted:
+                return None
+            current = listing.currentItem()
+            return current.data(Qt.ItemDataRole.UserRole) if current else None
+        finally:
+            QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
 
     def _open_dir(self) -> str:
         """Last folder the user opened from; defaults to TEST_STEP_FILES."""
@@ -292,7 +396,15 @@ class MainWindow(QMainWindow):
                 return str(candidate)
         return str(HERE)
 
-    def load_step(self, path: Path) -> None:
+    def load_step(self, path: Path, vendor: VendorContainer | None = None,
+                  vendor_workdir=None) -> None:
+        if self._vendor_workdir is not None and self._vendor_workdir is not vendor_workdir:
+            try:
+                self._vendor_workdir.cleanup()
+            except Exception:
+                pass
+        self.vendor = vendor
+        self._vendor_workdir = vendor_workdir
         self.show_status(f"Loading {path.name} ...")
         QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
         try:
@@ -335,7 +447,12 @@ class MainWindow(QMainWindow):
         if self.document is None:
             self.show_status("Nothing to write — open a STEP file first.")
             return
-        out_path = conditioned_path(self.document.path)
+        # Container opens load a temp extraction; route outputs next to the
+        # container the user actually opened, named after the part.
+        if self.vendor is not None:
+            out_path = self.vendor.conditioned_step_path()
+        else:
+            out_path = conditioned_path(self.document.path)
         self.show_status(f"Writing {out_path.name} ...")
         QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
         try:
@@ -343,9 +460,15 @@ class MainWindow(QMainWindow):
                 self.document, out_path, pins=self.pins, journal=self.journal,
                 progress=self.progress,
             )
-            self.show_status(f"{report.summary()} | embedded metadata verified")
+            status = f"{report.summary()} | embedded metadata verified"
             if not report.ok:
                 QMessageBox.warning(self, "Export validation", report.summary())
+            elif self.vendor is not None:
+                self.progress("Baking conditioned model into "
+                              f"{self.vendor.conditioned_container_path().name}", 0, 0)
+                baked = bake_conditioned(self.vendor, out_path)
+                status += f" | baked {baked.name}"
+            self.show_status(status)
         except Exception as exc:
             self.show_status(f"Export failed: {exc}")
             QMessageBox.critical(self, "Export failed", str(exc))
@@ -456,7 +579,9 @@ class MainWindow(QMainWindow):
             ("faces", str(info.face_count)),
             ("edges", str(info.edge_count)),
             ("verts", str(info.vertex_count)),
-            ("output", conditioned_path(info.path).name),
+            ("output",
+             self.vendor.conditioned_container_path().name
+             if self.vendor else conditioned_path(info.path).name),
             ("pins", str(len(self.pins.pins))),
         ]
         cells = []

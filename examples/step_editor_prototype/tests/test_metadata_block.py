@@ -77,6 +77,15 @@ class TestNetGrouping:
         assert payload["schema"] == SCHEMA == "wn3d.step_conditioning.a0"
         assert payload["units"] == "mm"
 
+    def test_source_file_provenance(self):
+        # A vendor container extracts to a temp STEP; the metadata must name
+        # the file the user actually opened, not the temp extraction.
+        payload = build_metadata(_doc(name="INA226__model.step"),
+                                 source_name="INA226.kicad_mod")
+        assert payload["source_file"] == "INA226.kicad_mod"
+        fallback = build_metadata(_doc(name="part.step"))
+        assert fallback["source_file"] == "part.step"
+
 
 class TestInjectExtract:
     def test_roundtrip(self, fake_step_path):

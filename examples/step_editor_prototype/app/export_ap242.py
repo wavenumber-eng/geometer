@@ -75,6 +75,7 @@ def export_ap242(
     pins=None,
     journal=None,
     progress=None,
+    source_name: str | None = None,
 ) -> ExportReport:
     def stage(label: str) -> None:
         if progress is not None:
@@ -86,7 +87,7 @@ def export_ap242(
     if pins is not None or journal is not None:
         from .metadata import build_metadata
 
-        payload = build_metadata(document, pins, journal)
+        payload = build_metadata(document, pins, journal, source_name=source_name)
         stage("Embedding metadata into the AP242")
         inject_metadata(out_path, payload)
         # The conditioned STEP is the single source of truth, so PROVE the

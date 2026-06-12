@@ -15,7 +15,7 @@ SCHEMA = "wn3d.step_conditioning.a0"
 GENERATOR = "wn3d-step-editor/0.1"
 
 
-def build_metadata(document, pins=None, journal=None) -> dict:
+def build_metadata(document, pins=None, journal=None, source_name=None) -> dict:
     bodies = [
         {
             "id": index,
@@ -55,7 +55,9 @@ def build_metadata(document, pins=None, journal=None) -> dict:
         "schema": SCHEMA,
         "generator": GENERATOR,
         "units": "mm",
-        "source_file": document.path.name,
+        # Provenance: the file the user actually opened (a vendor container
+        # extracts to a temp STEP, which is not the real source).
+        "source_file": source_name or document.path.name,
         "conditioned_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "bodies": bodies,
         "nets": list(nets.values()),

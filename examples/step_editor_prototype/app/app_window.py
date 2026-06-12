@@ -459,6 +459,7 @@ class MainWindow(QMainWindow):
             report = export_ap242(
                 self.document, out_path, pins=self.pins, journal=self.journal,
                 progress=self.progress,
+                source_name=self.vendor.source.name if self.vendor else None,
             )
             status = f"{report.summary()} | embedded metadata verified"
             if not report.ok:

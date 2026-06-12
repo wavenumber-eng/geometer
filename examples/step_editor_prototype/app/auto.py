@@ -90,9 +90,39 @@ def auto_separate_factor(
             span = mesh.points.max(axis=0) - mesh.points.min(axis=0)
             body_diag[body_index] = max(float(np.linalg.norm(span)), 1e-9)
 
+    # The sweep only needs the plateau/flood SHAPE, not every region: sample
+    # evenly across the row plus the riskiest pins (largest seed face floods
+    # first — the through-hole pad case). All seeds still claim territory in
+    # the sampled grows. A 291-pin DDR5 sweep drops from ~67s to seconds.
+    face_pin_indices = [
+        i for i, p in enumerate(pins) if p.face_ids and not p.body_ids
+    ]
+    sample: set[int] | None = None
+    if len(face_pin_indices) > 24:
+        from .pins import mesh_face_areas
+
+        areas_by_body: dict[int, dict[int, float]] = {}
+
+        def seed_area(pin) -> float:
+            best = 0.0
+            for body_index, face_index in pin.face_ids:
+                if body_index not in areas_by_body:
+                    areas_by_body[body_index] = mesh_face_areas(
+                        document.bodies[body_index].mesh
+                    )
+                best = max(best, areas_by_body[body_index].get(face_index, 0.0))
+            return best
+
+        stride = max(1, len(face_pin_indices) // 16)
+        sample = set(face_pin_indices[::stride][:16])
+        risky = sorted(
+            face_pin_indices, key=lambda i: seed_area(pins[i]), reverse=True
+        )[:8]
+        sample.update(risky)
+
     usable: list[tuple[float, int]] = []
     for factor in factors:
-        grown = grow_pin_regions(document, pins, area_factor=factor)
+        grown = grow_pin_regions(document, pins, area_factor=factor, only=sample)
         count = 0
         flooded = False
         for region in grown:

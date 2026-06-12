@@ -93,6 +93,13 @@ class SceneManager:
         self._band_poly = None
         self._hitbox_overlays = []
 
+        # Per-body feature-edge actors double the actor count and run an
+        # extraction filter per body — at DDR5 scale (577 bodies) that alone
+        # is ~580 filter passes and ~1150 actors, and VTK interaction cost
+        # scales with actors. Above this threshold the silhouette edges are
+        # dropped; shading still reads the shapes fine.
+        show_feature_edges = show_feature_edges and len(document.bodies) <= 64
+
         for index, body in enumerate(document.bodies):
             mesh = body.mesh
             if mesh is None or len(mesh.tris) == 0:

@@ -769,12 +769,18 @@ def grow_pin_regions(
     pins: list[Pin],
     *,
     area_factor: float = 4.0,
+    only: set[int] | None = None,
 ) -> list[list[tuple[int, int]] | None]:
     """Grow each detected pin from its seed faces by edge flow: expand across
     shared edges for as long as the faces stay pin-scaled, stopping when the
     flow would enter a BODY face (area beyond `area_factor` x the largest
     seed face) or another pin's territory. Returns the grown (body, face)
-    region per pin; None for pins that already are whole bodies."""
+    region per pin; None for pins that already are whole bodies.
+
+    `only` grows just those pin indices (every pin's SEEDS still claim
+    territory, so flows stop where they would in a full run) — the factor
+    sweep samples representative pins this way instead of growing all 291
+    pins of a DDR5 eight times over."""
     # Primaries claim their seeds first and grow first: a tail flows through
     # the WHOLE contact, swallowing any CON/HEAD seed faces on the way. A
     # mouth pin whose seed ends up inside a primary's region is the same
@@ -814,6 +820,8 @@ def grow_pin_regions(
     for mouth_phase in (False, True):
         for pin_index, pin in enumerate(pins):
             if (pin.role == "mouth") != mouth_phase:
+                continue
+            if only is not None and pin_index not in only:
                 continue
             if pin.body_ids or not pin.face_ids:
                 continue  # already its own body (or nothing to grow)

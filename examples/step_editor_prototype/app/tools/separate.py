@@ -100,7 +100,17 @@ class SeparateUnibodyTool(ToolMode):
             "face. LOWER = stops sooner (tighter pins, 0.1 ~ seeds only); "
             "HIGHER = grows farther (risk of leaking into the body)."
         )
-        self.factor_spin.valueChanged.connect(lambda _v: self._regrow())
+        # A regrow at DDR5 scale takes seconds — coalesce rapid spinbox ticks
+        # into one regrow instead of one per tick.
+        from PySide6.QtCore import QTimer
+
+        self._regrow_timer = QTimer(widget)
+        self._regrow_timer.setSingleShot(True)
+        self._regrow_timer.setInterval(300)
+        self._regrow_timer.timeout.connect(self._regrow)
+        self.factor_spin.valueChanged.connect(
+            lambda _v: self._regrow_timer.start()
+        )
         factor_row.addWidget(self.factor_spin, 1)
         repaint_button = QPushButton("Regrow preview")
         repaint_button.clicked.connect(self._regrow)
@@ -387,39 +397,45 @@ class SeparateUnibodyTool(ToolMode):
 
         package_rgb = (0.42, 0.44, 0.50)  # neutral slate: the body remainder
 
-        def add_tris(points, tris, rgb):
-            if not len(tris):
-                return
-            cells = np.column_stack(
-                [np.full(len(tris), 3, dtype=np.int64), tris.astype(np.int64)]
-            ).ravel()
-            plotter.add_mesh(
-                pv.PolyData(points, cells), color=rgb,
-                smooth_shading=False, show_edges=False,
-            )
-
+        # ONE actor for the whole preview: per-cell colours on a merged mesh
+        # (per-region actors crawl at DDR5 scale — VTK cost scales with actor
+        # count, and 577 future bodies would mean 577 actors).
+        point_blocks, cell_blocks, color_blocks = [], [], []
+        offset = 0
         for body_index, body in enumerate(document.bodies):
             mesh = body.mesh
             if mesh is None or not len(mesh.tris):
                 continue
+            colors = np.empty((len(mesh.tris), 3), dtype=np.uint8)
             if body_index in body_rgb:
-                add_tris(mesh.points, mesh.tris, body_rgb[body_index])
-                continue
-            owned = face_rgb.get(body_index)
-            if not owned:
-                add_tris(mesh.points, mesh.tris, package_rgb)
-                continue
-            colors = sorted({rgb for rgb in owned.values()})
-            claimed_faces = np.asarray(sorted(owned), dtype=np.int32)
-            for rgb in colors:
-                faces = np.asarray(
-                    [f for f, c in owned.items() if c == rgb], dtype=np.int32
-                )
-                add_tris(mesh.points,
-                         mesh.tris[np.isin(mesh.tri_face_ids, faces)], rgb)
-            add_tris(mesh.points,
-                     mesh.tris[~np.isin(mesh.tri_face_ids, claimed_faces)],
-                     package_rgb)
+                colors[:] = [int(c * 255) for c in body_rgb[body_index]]
+            else:
+                colors[:] = [int(c * 255) for c in package_rgb]
+                owned = face_rgb.get(body_index)
+                if owned:
+                    by_color: dict[tuple, list[int]] = {}
+                    for f_index, rgb in owned.items():
+                        by_color.setdefault(rgb, []).append(f_index)
+                    for rgb, faces in by_color.items():
+                        mask = np.isin(
+                            mesh.tri_face_ids,
+                            np.asarray(faces, dtype=np.int32),
+                        )
+                        colors[mask] = [int(c * 255) for c in rgb]
+            point_blocks.append(mesh.points)
+            cell_blocks.append(mesh.tris.astype(np.int64) + offset)
+            color_blocks.append(colors)
+            offset += len(mesh.points)
+
+        if point_blocks:
+            tris = np.vstack(cell_blocks)
+            cells = np.column_stack(
+                [np.full(len(tris), 3, dtype=np.int64), tris]
+            ).ravel()
+            merged = pv.PolyData(np.vstack(point_blocks), cells)
+            merged.cell_data["rgb"] = np.vstack(color_blocks)
+            plotter.add_mesh(merged, scalars="rgb", rgb=True,
+                             smooth_shading=False, show_edges=False)
 
         plotter.view_isometric()
         plotter.reset_camera()

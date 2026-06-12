@@ -206,6 +206,57 @@ class TestJoinMouthPins:
         assert assigned and all(id(p) in primary_ids for p in assigned.values())
 
 
+class TestCurvedFaceLogoFrame:
+    def test_tangent_frame_on_non_planar_face(self, fixtures_dir):
+        # User request (2026-06-12): logo must apply on curved/drafted faces
+        # too — as a tangent-plane stamp at the picked point.
+        import numpy as np
+        from app.document import EditorDocument
+
+        doc = EditorDocument.load(fixtures_dir / "SOIC-20-300.STEP")
+        found = None
+        for body_index, body in enumerate(doc.bodies):
+            mesh = body.mesh
+            if mesh is None or not len(mesh.tris):
+                continue
+            for face_id in np.unique(mesh.tri_face_ids)[:60]:
+                if doc.face_plane(body_index, int(face_id)) is None:
+                    mask = mesh.tri_face_ids == face_id
+                    point = mesh.points[np.unique(mesh.tris[mask])].mean(axis=0)
+                    found = (body_index, int(face_id), point)
+                    break
+            if found:
+                break
+        assert found, "fixture has no curved face to test against"
+        body_index, face_id, point = found
+        frame = doc.face_frame_at(body_index, face_id, point)
+        assert frame is not None, "curved face must yield a tangent frame"
+        n, u = np.asarray(frame["normal"]), np.asarray(frame["u"])
+        assert abs(np.linalg.norm(n) - 1.0) < 1e-6
+        assert abs(np.linalg.norm(u) - 1.0) < 1e-6
+        assert abs(float(n @ u)) < 1e-6  # orthonormal
+        assert np.linalg.norm(np.asarray(frame["origin"]) - point) < 1.0
+
+    def test_planar_face_unchanged(self, fixtures_dir):
+        import numpy as np
+        from app.document import EditorDocument
+
+        doc = EditorDocument.load(fixtures_dir / "SOIC-20-300.STEP")
+        for body_index, body in enumerate(doc.bodies):
+            mesh = body.mesh
+            if mesh is None or not len(mesh.tris):
+                continue
+            for face_id in np.unique(mesh.tri_face_ids)[:60]:
+                plane = doc.face_plane(body_index, int(face_id))
+                if plane is not None:
+                    mask = mesh.tri_face_ids == face_id
+                    point = mesh.points[np.unique(mesh.tris[mask])].mean(axis=0)
+                    frame = doc.face_frame_at(body_index, int(face_id), point)
+                    assert np.allclose(frame["normal"], plane["normal"])
+                    return
+        raise AssertionError("no planar face found")
+
+
 class TestPinOrdering:
     def _grid(self):
         # two rows of five, like a SOIC-10 footprint

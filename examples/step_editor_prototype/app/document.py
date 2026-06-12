@@ -592,6 +592,7 @@ class EditorDocument:
     # ------------------------------------------------------------ tessellate
 
     def remesh_all(self, color_tool=None, progress=None) -> None:
+        self._adjacency_cache = {}  # body table changed: adjacency is stale
         deflection = preview_deflection(self.bounds())
         total = len(self.bodies)
         for index, body in enumerate(self.bodies):
@@ -957,6 +958,49 @@ class EditorDocument:
         origin = mesh.points[np.unique(mesh.tris[mask])].mean(axis=0)
         return {"origin": origin, "normal": n, "u": u, "v": v}
 
+    def face_frame_at(self, body_index: int, face_index: int, point) -> dict | None:
+        """Embossing frame at `point` on a face: the face's own plane when it
+        is planar, else the LOCAL TANGENT plane at the nearest surface
+        location — so drafted housings, cylinders, and B-spline faces take
+        the logo as a projected stamp (deepest at the picked point, shallower
+        where the surface curves away). None only when the surface has no
+        defined normal there."""
+        frame = self.face_plane(body_index, face_index)
+        if frame is not None:
+            return frame
+        from OCP.BRep import BRep_Tool
+        from OCP.GeomLProp import GeomLProp_SLProps
+        from OCP.ShapeAnalysis import ShapeAnalysis_Surface
+
+        face = self.face_of(body_index, face_index)
+        surface = BRep_Tool.Surface_s(face)
+        if surface is None:
+            return None
+        uv = ShapeAnalysis_Surface(surface).ValueOfUV(
+            gp_Pnt(*np.asarray(point, dtype=np.float64)), 1.0e-6
+        )
+        props = GeomLProp_SLProps(surface, uv.X(), uv.Y(), 1, 1.0e-9)
+        if not props.IsNormalDefined():
+            return None
+        normal = props.Normal()
+        n = np.array([normal.X(), normal.Y(), normal.Z()])
+        if face.Orientation() == TopAbs_REVERSED:
+            n = -n
+        value = props.Value()
+        origin = np.array([value.X(), value.Y(), value.Z()])
+        d1u = props.D1U()
+        u = np.array([d1u.X(), d1u.Y(), d1u.Z()])
+        u = u - (u @ n) * n
+        norm = float(np.linalg.norm(u))
+        if norm < 1.0e-9:
+            u = np.cross(n, [0.0, 0.0, 1.0])
+            if np.linalg.norm(u) < 1.0e-6:
+                u = np.cross(n, [0.0, 1.0, 0.0])
+            norm = float(np.linalg.norm(u))
+        u = u / norm
+        v = np.cross(n, u)
+        return {"origin": origin, "normal": n, "u": u, "v": v}
+
     def emboss(
         self,
         body_index: int,
@@ -1087,7 +1131,18 @@ class EditorDocument:
         """Face adjacency graph of one body. With a threshold, only edges
         whose dihedral angle (surface normals sampled at the shared edge
         midpoint) is below it are kept — region growing 'flows' across those
-        and stops at discontinuities. With None, every shared edge connects."""
+        and stops at discontinuities. With None, every shared edge connects.
+
+        Cached per (body, angle) until the body table changes: building the
+        graph costs ~8s on a DDR5-class solid and grow/detect call it
+        repeatedly (the factor sweep alone used to pay it eight times)."""
+        cache = getattr(self, "_adjacency_cache", None)
+        if cache is None:
+            cache = self._adjacency_cache = {}
+        key = (body_index, smooth_angle_deg)
+        cached = cache.get(key)
+        if cached is not None:
+            return cached
         solid = self.bodies[body_index].solid
         face_map = TopTools_IndexedMapOfShape()
         TopExp.MapShapes_s(solid, TopAbs_FACE, face_map)
@@ -1117,6 +1172,7 @@ class EditorDocument:
                     continue
             adjacency[f1].add(f2)
             adjacency[f2].add(f1)
+        cache[key] = adjacency
         return adjacency
 
     def info(self) -> DocumentInfo:

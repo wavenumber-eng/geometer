@@ -242,9 +242,11 @@ class LogoTool(ToolMode):
         document = self.ctx.document
         if document is None:
             return
-        frame = document.face_plane(pick.body_index, pick.face_index)
+        frame = document.face_frame_at(
+            pick.body_index, pick.face_index, pick.world_point
+        )
         if frame is None:
-            self.status("LOGO: that face is not planar — pick a flat face")
+            self.status("LOGO: no surface normal at that point — pick another spot")
             return
         self._target = (pick.body_index, pick.face_index)
         self._frame = frame

@@ -93,6 +93,119 @@ class TestBodyPerPinContract:
         assert doc.bodies[0].name == "vendor.0"
 
 
+class TestJoinMouthPins:
+    """CON/HEAD designator joining. The DDR5 regression (2026-06-12): a DIMM
+    socket has TWO parallel rows of tails and contacts — 1-D projection onto
+    the dominant axis collapses the rows together and scrambles designators
+    across them. The join must be row-aware."""
+
+    def _pin(self, x, y, number, role="primary", name="", source=""):
+        pin = Pin(number=number, centroid=(x, y, 0.0), role=role, name=name)
+        pin.name_source = source
+        return pin
+
+    def test_single_row_joins_by_position(self):
+        from app.pins import join_mouth_pins
+
+        primaries = [self._pin(i * 1.0, 0.0, i + 1) for i in range(8)]
+        mouths = [self._pin(i * 1.0, 5.0, 0, role="mouth") for i in range(8)]
+        assigned, conflicts = join_mouth_pins(primaries, mouths)
+        assert not conflicts
+        assert all(assigned[m].number == m + 1 for m in range(8))
+
+    def test_two_row_connector_keeps_rows_apart(self):
+        # DDR5-style: row A tails at y=-3 with mouths at y=-1, row B tails at
+        # y=+3 with mouths at y=+1. Same X positions in both rows — the 1-D
+        # join ties every cross-row pair; row-aware must keep sides separate.
+        from app.pins import join_mouth_pins
+
+        pitch = 0.85
+        primaries, mouths = [], []
+        for i in range(20):
+            primaries.append(self._pin(i * pitch, -3.0, i + 1))           # row A
+            primaries.append(self._pin(i * pitch, +3.0, i + 101))         # row B
+            mouths.append(self._pin(i * pitch, -1.0, 0, role="mouth"))    # row A
+            mouths.append(self._pin(i * pitch, +1.0, 0, role="mouth"))    # row B
+        assigned, conflicts = join_mouth_pins(primaries, mouths)
+        assert not conflicts
+        for m in range(0, 40, 2):   # row A mouths -> row A numbers (1..20)
+            assert assigned[m].number == m // 2 + 1
+        for m in range(1, 40, 2):   # row B mouths -> row B numbers (101..120)
+            assert assigned[m].number == m // 2 + 101
+
+    def test_two_row_anchor_overrides_row_proximity(self):
+        # An anchored mouth names a primary on the FAR row: the anchor's row
+        # vote must win over perpendicular proximity for its whole row.
+        from app.pins import join_mouth_pins
+
+        primaries = [self._pin(i * 1.0, -3.0, i + 1) for i in range(12)]
+        primaries += [self._pin(i * 1.0, +3.0, i + 101) for i in range(12)]
+        mouths = [self._pin(i * 1.0, -1.0, 0, role="mouth") for i in range(12)]
+        mouths[0].name = "101"
+        mouths[0].name_source = "anchor"
+        assigned, _conflicts = join_mouth_pins(primaries, mouths)
+        assert assigned[0].number == 101
+        assert all(assigned[m].number == m + 101 for m in range(1, 12))
+
+    def test_mirrored_row_detected_by_two_anchors(self):
+        from app.pins import join_mouth_pins
+
+        primaries = [self._pin(i * 1.0, 0.0, i + 1) for i in range(6)]
+        mouths = [self._pin((5 - i) * 1.0, 4.0, 0, role="mouth") for i in range(6)]
+        mouths[0].name, mouths[0].name_source = "1", "anchor"
+        mouths[5].name, mouths[5].name_source = "6", "anchor"
+        assigned, conflicts = join_mouth_pins(primaries, mouths)
+        assert not conflicts
+        assert all(assigned[m].number == m + 1 for m in range(6))
+
+    def test_ddr5_staggered_tails_one_contact_row_per_side(self):
+        # Real DIMM-socket geometry: each side's SMT tails stagger into two
+        # sub-rows (near/far), while the contacts form one row per side
+        # inside the slot. Sub-rows must stay grouped with their side — a
+        # per-sub-row split would orphan half the designators.
+        from app.pins import join_mouth_pins
+
+        pitch = 0.85
+        primaries, mouths = [], []
+        for i in range(30):
+            stagger = -0.6 if i % 2 else -1.6   # side A staggered tails
+            primaries.append(self._pin(i * pitch, stagger - 2.0, i + 1))
+            stagger_b = 0.6 if i % 2 else 1.6   # side B staggered tails
+            primaries.append(self._pin(i * pitch, stagger_b + 2.0, i + 145))
+            mouths.append(self._pin(i * pitch, -1.0, 0, role="mouth"))  # side A
+            mouths.append(self._pin(i * pitch, +1.0, 0, role="mouth"))  # side B
+        assigned, conflicts = join_mouth_pins(primaries, mouths)
+        assert not conflicts
+        for m in range(0, 60, 2):
+            assert assigned[m].number == m // 2 + 1
+        for m in range(1, 60, 2):
+            assert assigned[m].number == m // 2 + 145
+
+    def test_misaligned_mouth_conflicts(self):
+        from app.pins import join_mouth_pins
+
+        primaries = [self._pin(i * 1.0, 0.0, i + 1) for i in range(4)]
+        mouths = [self._pin(10.0, 2.0, 0, role="mouth")]  # far past the row end
+        _assigned, conflicts = join_mouth_pins(primaries, mouths)
+        assert conflicts == [0]
+
+    def test_mouth_designators_always_from_primary_set(self):
+        # User invariant (2026-06-12): CON/HEAD pins are numbered exactly as
+        # their SMT/THR counterparts — a mouth designator outside the primary
+        # set is impossible by construction. Every join result must reference
+        # a primary OBJECT, never a fabricated number.
+        from app.pins import join_mouth_pins
+
+        pitch = 0.85
+        primaries = [self._pin(i * pitch, -3.0, i + 1) for i in range(40)]
+        primaries += [self._pin(i * pitch, +3.0, i + 145) for i in range(40)]
+        mouths = [self._pin(i * pitch, -1.0, 0, role="mouth") for i in range(40)]
+        mouths += [self._pin(i * pitch, +1.0, 0, role="mouth") for i in range(40)]
+        assigned, _conflicts = join_mouth_pins(primaries, mouths)
+        primary_ids = {id(p) for p in primaries}
+        assert assigned and all(id(p) in primary_ids for p in assigned.values())
+
+
 class TestPinOrdering:
     def _grid(self):
         # two rows of five, like a SOIC-10 footprint

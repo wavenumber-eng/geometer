@@ -516,13 +516,41 @@ def join_mouth_pins(
         axis = vt[0]
     else:
         axis = np.array([1.0, 0.0])
+    perp = np.array([-axis[1], axis[0]])
     t_primary = spread @ axis
-    t_mouth = (
+    s_primary = spread @ perp
+    mouth_xy = (
         np.array([p.centroid for p in mouths], dtype=np.float64)[:, :2] - center
-    ) @ axis
+    )
+    t_mouth = mouth_xy @ axis
+    s_mouth = mouth_xy @ perp
 
-    # Anchored mouth pins: t_mouth ~= sign * t_primary + offset, fit from
-    # the user's anchors (2+ anchors can also detect a mirrored row).
+    # Along-row pitch: the yardstick for both row clustering and the join
+    # tolerance.
+    gaps = np.diff(np.sort(t_primary))
+    gaps = gaps[gaps > 1e-9]
+    pitch = float(np.median(gaps)) if len(gaps) else np.inf
+
+    def cluster_rows(s_values: np.ndarray) -> list[np.ndarray]:
+        """Split indices into SIDES along the perpendicular axis, at the
+        single largest gap when it exceeds half the along-row pitch.
+        Two-sided connectors (DIMM sockets, dual-row headers) otherwise
+        collapse onto one line and the 1-D pairing scrambles designators
+        between the sides — the DDR5 regression. One split only: staggered
+        sub-rows WITHIN a side (common on DIMM tails) must stay together."""
+        order = np.argsort(s_values)
+        if len(order) <= 1 or not np.isfinite(pitch):
+            return [order]
+        sorted_s = s_values[order]
+        gaps = np.diff(sorted_s)
+        widest = int(np.argmax(gaps))
+        if float(gaps[widest]) <= 0.5 * pitch:
+            return [order]
+        return [order[: widest + 1], order[widest + 1 :]]
+
+    primary_rows = cluster_rows(s_primary)
+    mouth_rows = cluster_rows(s_mouth)
+
     by_designator = {
         (p.name or str(p.number)): i for i, p in enumerate(primaries)
     }
@@ -531,43 +559,74 @@ def join_mouth_pins(
         for m, pin in enumerate(mouths)
         if pin.name_source == "anchor" and pin.name.strip() in by_designator
     ]
-    sign, offset = 1.0, 0.0
-    if len(anchor_pairs) >= 2:
-        tm = np.array([t_mouth[m] for m, _p in anchor_pairs])
-        tp = np.array([t_primary[p] for _m, p in anchor_pairs])
-        best_fit = None
-        for a in (1.0, -1.0):
-            b = float(np.mean(tm - a * tp))
-            residual = float(np.abs(tm - (a * tp + b)).max())
-            if best_fit is None or residual < best_fit[0]:
-                best_fit = (residual, a, b)
-        _residual, sign, offset = best_fit
-    elif len(anchor_pairs) == 1:
-        m, p = anchor_pairs[0]
-        offset = float(t_mouth[m] - t_primary[p])
+    anchored = dict(anchor_pairs)
 
-    if len(primaries) > 1:
-        gaps = np.diff(np.sort(t_primary))
-        gaps = gaps[gaps > 1e-9]
-        tolerance = float(np.median(gaps)) * 0.5 if len(gaps) else np.inf
-    else:
-        tolerance = np.inf
+    # Pair each mouth row with a primary row: anchors vote first (they reveal
+    # the true row mapping, including swapped sides); rows without an anchor
+    # pair by perpendicular proximity of the row centres.
+    primary_row_of = {}
+    for row_index, row in enumerate(primary_rows):
+        for p in row:
+            primary_row_of[int(p)] = row_index
+    row_match: dict[int, int] = {}
+    for mouth_row_index, mouth_row in enumerate(mouth_rows):
+        votes = [
+            primary_row_of[anchored[int(m)]]
+            for m in mouth_row if int(m) in anchored
+        ]
+        if votes:
+            row_match[mouth_row_index] = max(set(votes), key=votes.count)
+    primary_centres = [float(np.mean(s_primary[row])) for row in primary_rows]
+    for mouth_row_index, mouth_row in enumerate(mouth_rows):
+        if mouth_row_index in row_match:
+            continue
+        centre = float(np.mean(s_mouth[mouth_row]))
+        row_match[mouth_row_index] = int(np.argmin(
+            [abs(centre - pc) for pc in primary_centres]
+        ))
+
+    tolerance = pitch * 0.5 if np.isfinite(pitch) else np.inf
 
     assigned: dict[int, Pin] = {}
     conflicts: list[int] = []
-    anchored = dict(anchor_pairs)
-    expected = sign * t_primary + offset  # where each primary's mouth sits
-    for m, tm in enumerate(t_mouth):
-        if m in anchored:
-            assigned[m] = primaries[anchored[m]]
-            continue
-        distances = np.abs(expected - tm)
-        nearest = int(np.argmin(distances))
-        if float(distances[nearest]) <= tolerance:
-            assigned[m] = primaries[nearest]
-        else:
-            conflicts.append(m)
-    return assigned, conflicts
+    for mouth_row_index, mouth_row in enumerate(mouth_rows):
+        primary_row = primary_rows[row_match[mouth_row_index]]
+        tp_row = t_primary[primary_row]
+
+        # Anchored mouth pins: t_mouth ~= sign * t_primary + offset. Fit from
+        # the anchors in THIS row pair, falling back to all anchors (2+ can
+        # also detect a mirrored row).
+        row_anchor_pairs = [
+            (int(m), anchored[int(m)]) for m in mouth_row if int(m) in anchored
+        ] or anchor_pairs
+        sign, offset = 1.0, 0.0
+        if len(row_anchor_pairs) >= 2:
+            tm = np.array([t_mouth[m] for m, _p in row_anchor_pairs])
+            tp = np.array([t_primary[p] for _m, p in row_anchor_pairs])
+            best_fit = None
+            for a in (1.0, -1.0):
+                b = float(np.mean(tm - a * tp))
+                residual = float(np.abs(tm - (a * tp + b)).max())
+                if best_fit is None or residual < best_fit[0]:
+                    best_fit = (residual, a, b)
+            _residual, sign, offset = best_fit
+        elif len(row_anchor_pairs) == 1:
+            m, p = row_anchor_pairs[0]
+            offset = float(t_mouth[m] - t_primary[p])
+
+        expected = sign * tp_row + offset  # where each primary's mouth sits
+        for m in mouth_row:
+            m = int(m)
+            if m in anchored:
+                assigned[m] = primaries[anchored[m]]
+                continue
+            distances = np.abs(expected - t_mouth[m])
+            nearest = int(np.argmin(distances))
+            if float(distances[nearest]) <= tolerance:
+                assigned[m] = primaries[int(primary_row[nearest])]
+            else:
+                conflicts.append(m)
+    return assigned, sorted(conflicts)
 
 
 def apply_pin_body_names(document, pins: list["Pin"]) -> int:

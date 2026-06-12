@@ -21,3 +21,9 @@ package = false
 
 [tool.uv.sources]
 wn-geometer = { path = "../..", editable = true }
+
+[dependency-groups]
+dev = [
+    "mmh3>=5.2.1",
+    "pytest>=9.0.3",
+]

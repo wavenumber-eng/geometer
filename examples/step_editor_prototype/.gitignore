@@ -7,5 +7,6 @@ assets/fonts/
 REFERENCE_STEP_FILES/
 # Trained ML models (regenerable via train_seat_model.py; 7 MB binaries)
 *.joblib
-# Generated diagnostic sweep output
+# Generated diagnostic sweep / triage output
 _pin_sweep_results.txt
+_pdet_triage.txt

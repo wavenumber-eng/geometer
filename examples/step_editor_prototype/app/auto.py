@@ -555,6 +555,33 @@ def detect_pins_from_reference(document: EditorDocument) -> list[Pin] | None:
     return pins or None
 
 
+# Packages whose leads sit at the LATERAL EXTREMES (2 terminals, or 2 rows), so
+# an over-detection — a cap body cross-section, a 3rd resistor body, a gull-wing
+# lead's knee — is always INBOARD of the real tip/end. For these, the filename's
+# lead count trims to the N pins furthest from the part centre.
+_LATERAL_LEAD_ARCHETYPES = {"passive", "diode", "soic"}
+
+
+def _trim_to_hint(document: EditorDocument, pins: list) -> list:
+    """When the filename names a 2-terminal / 2-row package with a definite lead
+    count and detection OVER-shot it, keep the N pins furthest from the part
+    centre — the real ends/tips are the lateral extremes; the extras are
+    inboard. Only trims down; never invents pins."""
+    from .package_hint import package_hint
+
+    name = document.path.name if getattr(document, "path", None) else ""
+    hint = package_hint(name)
+    if not hint or hint.get("archetype") not in _LATERAL_LEAD_ARCHETYPES:
+        return pins
+    leads = hint.get("leads")
+    if not leads or len(pins) <= leads:
+        return pins
+    centre = np.mean([p.centroid for p in pins], axis=0)
+    ranked = sorted(pins, reverse=True,
+                    key=lambda p: float(np.linalg.norm(np.asarray(p.centroid) - centre)))
+    return ranked[:leads]
+
+
 def _detect_multibody(document, section) -> tuple[list[Pin], str]:
     """Multibody part: pins are separate solids — whole-body pins win when they
     out-count the section, else the context-plane section is the fallback."""
@@ -610,9 +637,9 @@ def auto_detect_pins(
     section = detect_pins_by_section(
         document, context_plane_point(document), [0.0, 0.0, -1.0]
     )
-    if len(document.bodies) > 1:
-        return _detect_multibody(document, section)
-    return _detect_unibody(document, section)
+    pins, how = (_detect_multibody(document, section) if len(document.bodies) > 1
+                 else _detect_unibody(document, section))
+    return _trim_to_hint(document, pins), how
 
 
 def auto_pin1_point(

@@ -22,7 +22,7 @@ from pathlib import Path
 
 import numpy as np
 
-PROTO = Path(__file__).resolve().parent
+PROTO = Path(__file__).resolve().parents[1]  # prototype root (script in eval/)
 sys.path.insert(0, str(PROTO))
 
 TEST_DIR = PROTO / "TEST_STEP_FILES"

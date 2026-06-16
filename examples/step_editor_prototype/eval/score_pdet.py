@@ -28,7 +28,7 @@ from app.document import EditorDocument                  # noqa: E402
 from app.export_ap242 import extract_metadata            # noqa: E402
 from app import refs                                     # noqa: E402
 
-PROTO = Path(__file__).resolve().parent
+PROTO = Path(__file__).resolve().parents[1]  # prototype root (script in eval/)
 REF_DIR = PROTO / "REFERENCE_STEP_FILES"
 
 

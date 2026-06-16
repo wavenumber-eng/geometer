@@ -8,7 +8,7 @@ import sys
 import time
 from pathlib import Path
 
-PROTO = Path(__file__).resolve().parent
+PROTO = Path(__file__).resolve().parents[2]  # prototype root (script in eval/scratch/)
 SRC = PROTO / "TEST_STEP_FILES"
 OUT = SRC / "AUTO_FILTERED_STEP"
 OUT.mkdir(exist_ok=True)

@@ -23,7 +23,7 @@ import sys
 import time
 from pathlib import Path
 
-PROTO = Path(__file__).resolve().parent
+PROTO = Path(__file__).resolve().parents[1]  # prototype root (script in eval/)
 sys.path.insert(0, str(PROTO))
 
 def hand_truth(ref_step: Path) -> dict:

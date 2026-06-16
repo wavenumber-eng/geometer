@@ -65,6 +65,8 @@ class SceneManager:
         self._press_position: tuple[int, int] | None = None
         self._hitbox_overlays: list[str] = []
         self._label_groups = 0
+        self._pinface_groups = 0   # tinted pin-tip face overlays
+        self._pinaxis_groups = 0   # through-body pin leader lines
         self._hover_callback: Callable[[PickResult | None], None] | None = None
         self._hover_observer = None
         self._picker = vtk.vtkCellPicker()
@@ -427,6 +429,7 @@ class SceneManager:
         color: str = "#e8443a",
         point_size: float = 16.0,
         opacity: float = 1.0,
+        on_top: bool = False,
     ) -> None:
         self.remove_overlay(name)
         points = np.asarray(points, dtype=np.float64).reshape(-1, 3)
@@ -434,7 +437,7 @@ class SceneManager:
             self.plotter.render()
             return
         cloud = pv.PolyData(points)
-        self.plotter.add_mesh(
+        actor = self.plotter.add_mesh(
             cloud,
             color=color,
             point_size=point_size,
@@ -444,6 +447,18 @@ class SceneManager:
             pickable=False,
             name=name,
         )
+        if on_top and actor is not None:
+            # Draw over the model body regardless of depth (a large negative
+            # polygon offset pulls the sphere markers toward the camera in the
+            # depth buffer — the same trick pyvista uses for always-visible
+            # labels), so the marker is never swallowed by the geometry.
+            try:
+                mapper = actor.GetMapper()
+                mapper.SetResolveCoincidentTopologyToPolygonOffset()
+                mapper.SetRelativeCoincidentTopologyPolygonOffsetParameters(
+                    -66000.0, -66000.0)
+            except Exception:  # noqa: BLE001 — best-effort; fall back to in-depth
+                pass
         self.plotter.render()
 
     def show_quad(
@@ -638,6 +653,109 @@ class SceneManager:
                 always_visible=True,
                 pickable=False,
             )
+        self.plotter.render()
+
+    def _push_on_top(self, actor) -> None:
+        """Pull an overlay actor toward the camera in the depth buffer so it
+        renders over the body regardless of occlusion (the same large negative
+        polygon offset pyvista uses for always-visible labels) — used for the
+        xray pin-face callouts so faces buried inside a model stay visible."""
+        if actor is None:
+            return
+        try:
+            mapper = actor.GetMapper()
+            mapper.SetResolveCoincidentTopologyToPolygonOffset()
+            mapper.SetRelativeCoincidentTopologyPolygonOffsetParameters(
+                -66000.0, -66000.0)
+        except Exception:  # noqa: BLE001 — best-effort; fall back to in-depth
+            pass
+
+    def show_pin_faces(self, faces_by_color: dict) -> None:
+        """Tint the detected pin-tip faces and render them ON TOP of the body
+        (xray) so you can see exactly where each face is, even buried inside a
+        model. faces_by_color maps a hex colour -> list of (body, face) pairs."""
+        for index in range(self._pinface_groups):
+            self.remove_overlay(f"pin-faces-{index}")
+        self._pinface_groups = 0
+        for color, pairs in faces_by_color.items():
+            by_body: dict[int, list[int]] = {}
+            for body_index, face_index in pairs:
+                by_body.setdefault(body_index, []).append(face_index)
+            subsets = []
+            for body_index, faces in by_body.items():
+                if not 0 <= body_index < len(self._body_polydata):
+                    continue
+                polydata = self._body_polydata[body_index]
+                mask = np.nonzero(np.isin(polydata.cell_data["face_id"], faces))[0]
+                if len(mask):
+                    subsets.append(polydata.extract_cells(mask))
+            if not subsets:
+                continue
+            combined = subsets[0] if len(subsets) == 1 else subsets[0].merge(subsets[1:])
+            name = f"pin-faces-{self._pinface_groups}"
+            self._pinface_groups += 1
+            actor = self.plotter.add_mesh(combined, color=color, opacity=1.0,
+                                          lighting=False, pickable=False, name=name)
+            self._push_on_top(actor)
+        self.plotter.render()
+
+    def show_pin_axes(self, segments, colors) -> None:
+        """Per-pin leader lines (face -> off-the-face label), coloured by
+        designation (orange THR/SMT tails, blue CON/HEAD mouths) and drawn on
+        top so the whole callout reads through the body. `segments` is
+        (N, 2, 3) world-space endpoints; `colors` a hex colour per segment."""
+        for index in range(self._pinaxis_groups):
+            self.remove_overlay(f"pin-axes-{index}")
+        self._pinaxis_groups = 0
+        segments = np.asarray(segments, dtype=np.float64)
+        if segments.size == 0:
+            self.plotter.render()
+            return
+        groups: dict[str, list[int]] = {}
+        for index, color in enumerate(colors):
+            groups.setdefault(color, []).append(index)
+        for color, members in groups.items():
+            segs = segments[members]
+            count = len(segs)
+            lines = np.column_stack(
+                [np.full(count, 2, dtype=np.int64),
+                 np.arange(0, 2 * count, 2, dtype=np.int64),
+                 np.arange(1, 2 * count, 2, dtype=np.int64)]
+            ).ravel()
+            polydata = pv.PolyData(segs.reshape(-1, 3), lines=lines)
+            name = f"pin-axes-{self._pinaxis_groups}"
+            self._pinaxis_groups += 1
+            actor = self.plotter.add_mesh(polydata, color=color, line_width=3.0,
+                                          lighting=False, pickable=False, name=name)
+            self._push_on_top(actor)
+        self.plotter.render()
+
+    def show_pin_spines(self, segments, *, color: str = "#ffd24a") -> None:
+        """Dotted yellow 'spine' bridging a pin's two end faces (THR tail <->
+        CON mouth) — the per-pin axis the Separate tool carves along, drawn on
+        top. `segments` is (N, 2, 3) world-space endpoints."""
+        self.remove_overlay("pin-spines")
+        segments = np.asarray(segments, dtype=np.float64)
+        if segments.size == 0:
+            self.plotter.render()
+            return
+        count = len(segments)
+        lines = np.column_stack(
+            [np.full(count, 2, dtype=np.int64),
+             np.arange(0, 2 * count, 2, dtype=np.int64),
+             np.arange(1, 2 * count, 2, dtype=np.int64)]
+        ).ravel()
+        polydata = pv.PolyData(segments.reshape(-1, 3), lines=lines)
+        actor = self.plotter.add_mesh(polydata, color=color, line_width=2.0,
+                                      lighting=False, pickable=False,
+                                      name="pin-spines")
+        try:   # dashed stipple where the GL backend supports it
+            prop = actor.GetProperty()
+            prop.SetLineStipplePattern(0xF0F0)
+            prop.SetLineStippleRepeatFactor(2)
+        except Exception:  # noqa: BLE001 — unsupported -> solid spine
+            pass
+        self._push_on_top(actor)
         self.plotter.render()
 
     # ------------------------------------------------------------- band 2D

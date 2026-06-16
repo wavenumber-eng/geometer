@@ -271,91 +271,131 @@ def _region_anchor_points(mesh, region: set[int], max_points: int = 60):
     return [tuple(float(v) for v in p) for p in points[::step]]
 
 
-def _cap_faces_for_wires(wires, anchor_points=None) -> list:
-    """One cap face per closed boundary wire: an exact planar face when the
-    loop is planar, an n-sided filled patch bounded by the loop's own edges
-    otherwise (bent connector contacts). `anchor_points` pin the filled
-    patch to the region's own surface so non-planar loops cannot balloon."""
+def _fill_wire(wire, constraints):
+    """An n-sided filled patch bounded by the wire's own edges, optionally
+    pinned through `constraints` points. None when filling fails."""
     from OCP.BRepOffsetAPI import BRepOffsetAPI_MakeFilling
     from OCP.GeomAbs import GeomAbs_C0
     from OCP.gp import gp_Pnt
 
+    try:
+        filling = BRepOffsetAPI_MakeFilling()
+        explorer = TopExp_Explorer(wire, TopAbs_EDGE)
+        edge_count = 0
+        while explorer.More():
+            filling.Add(TopoDS.Edge_s(explorer.Current()), GeomAbs_C0, True)
+            edge_count += 1
+            explorer.Next()
+        if not edge_count:
+            return None
+        for point in constraints:
+            filling.Add(gp_Pnt(*point))
+        filling.Build()
+        if filling.IsDone():
+            return TopoDS.Face_s(filling.Shape())
+    except Exception:
+        return None
+    return None
+
+
+def _cap_face_for_wire(wire, anchor_points):
+    """One cap face for a closed boundary wire: an exact planar face when the
+    loop is planar, else a filled patch (anchored first, then unanchored)."""
+    try:
+        maker = BRepBuilderAPI_MakeFace(wire, True)
+        if maker.IsDone():
+            return maker.Face()
+    except Exception:
+        pass
+    for constraints in ((anchor_points or []), []):
+        face = _fill_wire(wire, constraints)
+        if face is not None:
+            return face
+    return None
+
+
+def _cap_faces_for_wires(wires, anchor_points=None) -> list:
+    """One cap face per closed boundary wire. `anchor_points` pin filled
+    patches to the region's own surface so non-planar loops cannot balloon."""
     caps = []
     for wire_index in range(1, wires.Length() + 1):
         wire = TopoDS.Wire_s(wires.Value(wire_index))
-        try:
-            maker = BRepBuilderAPI_MakeFace(wire, True)
-            if maker.IsDone():
-                caps.append(maker.Face())
-                continue
-        except Exception:
-            pass
-        for constraints in ((anchor_points or []), []):
-            try:
-                filling = BRepOffsetAPI_MakeFilling()
-                explorer = TopExp_Explorer(wire, TopAbs_EDGE)
-                edge_count = 0
-                while explorer.More():
-                    filling.Add(TopoDS.Edge_s(explorer.Current()), GeomAbs_C0, True)
-                    edge_count += 1
-                    explorer.Next()
-                if not edge_count:
-                    break
-                for point in constraints:
-                    filling.Add(gp_Pnt(*point))
-                filling.Build()
-                if filling.IsDone():
-                    caps.append(TopoDS.Face_s(filling.Shape()))
-                    break
-            except Exception:
-                continue
+        face = _cap_face_for_wire(wire, anchor_points)
+        if face is not None:
+            caps.append(face)
     return caps
 
 
-def _fan_cap_faces(wires) -> list:
-    """Last-resort caps: triangulate each boundary loop as a FAN from its
-    centroid — many small planar faces that, by construction, cannot leave
-    the loop's convex hull (smooth fillings balloon on L-shaped and slit
-    loops; a fan cannot). The chord edges deviate from the exact curves by
-    at most the sampling sag, so sewing needs a matching tolerance."""
-    from OCP.BRepBuilderAPI import BRepBuilderAPI_MakePolygon
+def _sample_wire_points(wire) -> list:
+    """Sample a wire's edges into a chord polyline (8 samples/edge), honouring
+    edge orientation so the loop stays consistently wound."""
     from OCP.BRepTools import BRepTools_WireExplorer
     from OCP.TopAbs import TopAbs_REVERSED
 
+    points: list[np.ndarray] = []
+    explorer = BRepTools_WireExplorer(wire)
+    while explorer.More():
+        edge = explorer.Current()
+        curve = BRepAdaptor_Curve(edge)
+        first, last = curve.FirstParameter(), curve.LastParameter()
+        samples = 8
+        params = [first + (last - first) * i / samples for i in range(samples)]
+        if edge.Orientation() == TopAbs_REVERSED:
+            params = [first + last - p for p in params]
+        for parameter in params:
+            value = curve.Value(parameter)
+            points.append(np.array([value.X(), value.Y(), value.Z()]))
+        explorer.Next()
+    return points
+
+
+def _fan_triangles(arr) -> list:
+    """Triangulate a loop polyline as a fan from its centroid — degenerate and
+    collinear slivers are skipped. Cannot leave the loop's convex hull."""
+    from OCP.BRepBuilderAPI import BRepBuilderAPI_MakePolygon
+
+    center = arr.mean(axis=0)
+    faces = []
+    for i in range(len(arr)):
+        a, b = arr[i], arr[(i + 1) % len(arr)]
+        if (np.linalg.norm(a - b) < 1e-9
+                or np.linalg.norm(np.cross(a - center, b - center)) < 1e-12):
+            continue
+        try:
+            polygon = BRepBuilderAPI_MakePolygon(
+                gp_Pnt(*center), gp_Pnt(*a), gp_Pnt(*b), True
+            )
+            faces.append(BRepBuilderAPI_MakeFace(polygon.Wire()).Face())
+        except Exception:
+            continue
+    return faces
+
+
+def _fan_cap_faces(wires) -> list:
+    """Last-resort caps: triangulate each boundary loop as a centroid fan —
+    many small planar faces that cannot leave the loop's convex hull (smooth
+    fillings balloon on L-shaped / slit loops; a fan cannot). The chord edges
+    deviate from the exact curves by the sampling sag, so sewing needs a
+    matching tolerance."""
     caps = []
     for wire_index in range(1, wires.Length() + 1):
         wire = TopoDS.Wire_s(wires.Value(wire_index))
-        points: list[np.ndarray] = []
-        explorer = BRepTools_WireExplorer(wire)
-        while explorer.More():
-            edge = explorer.Current()
-            curve = BRepAdaptor_Curve(edge)
-            first, last = curve.FirstParameter(), curve.LastParameter()
-            samples = 8
-            params = [first + (last - first) * i / samples for i in range(samples)]
-            if edge.Orientation() == TopAbs_REVERSED:
-                params = [first + last - p for p in params]
-            for parameter in params:
-                value = curve.Value(parameter)
-                points.append(np.array([value.X(), value.Y(), value.Z()]))
-            explorer.Next()
+        points = _sample_wire_points(wire)
         if len(points) < 3:
             continue
-        arr = np.asarray(points)
-        center = arr.mean(axis=0)
-        for i in range(len(arr)):
-            a, b = arr[i], arr[(i + 1) % len(arr)]
-            if (np.linalg.norm(a - b) < 1e-9
-                    or np.linalg.norm(np.cross(a - center, b - center)) < 1e-12):
-                continue
-            try:
-                polygon = BRepBuilderAPI_MakePolygon(
-                    gp_Pnt(*center), gp_Pnt(*a), gp_Pnt(*b), True
-                )
-                caps.append(BRepBuilderAPI_MakeFace(polygon.Wire()).Face())
-            except Exception:
-                continue
+        caps.extend(_fan_triangles(np.asarray(points)))
     return caps
+
+
+def _collect_shells(shape) -> list:
+    from OCP.TopAbs import TopAbs_SHELL
+
+    shells = []
+    explorer = TopExp_Explorer(shape, TopAbs_SHELL)
+    while explorer.More():
+        shells.append(TopoDS.Shell_s(explorer.Current()))
+        explorer.Next()
+    return shells
 
 
 def _sew_solid(faces: list, tolerance: float = 1.0e-6):
@@ -363,18 +403,13 @@ def _sew_solid(faces: list, tolerance: float = 1.0e-6):
     None when they do not close up into exactly one solid."""
     from OCP.BRepBuilderAPI import BRepBuilderAPI_MakeSolid, BRepBuilderAPI_Sewing
     from OCP.ShapeFix import ShapeFix_Solid
-    from OCP.TopAbs import TopAbs_SHELL
 
     try:
         sewing = BRepBuilderAPI_Sewing(tolerance)
         for face in faces:
             sewing.Add(face)
         sewing.Perform()
-        shells = []
-        explorer = TopExp_Explorer(sewing.SewedShape(), TopAbs_SHELL)
-        while explorer.More():
-            shells.append(TopoDS.Shell_s(explorer.Current()))
-            explorer.Next()
+        shells = _collect_shells(sewing.SewedShape())
         if not shells:
             return None
         maker = BRepBuilderAPI_MakeSolid()
@@ -393,6 +428,428 @@ def _sew_solid(faces: list, tolerance: float = 1.0e-6):
         return solids[0]
     except Exception:
         return None
+
+
+# --------------------------------------------------- split_by_face_regions helpers
+
+def _group_regions_by_body(regions, cuts) -> dict:
+    """Group the previewed (body, face) regions by body, keeping each region's
+    index so callers can link pins to the sealed solid by identity."""
+    by_body: dict = {}
+    for region_index, (region, cut) in enumerate(zip(regions, cuts)):
+        if not region:
+            continue
+        groups: dict = {}
+        for body_index, face_index in region:
+            groups.setdefault(body_index, set()).add(face_index)
+        for body_index, faces in groups.items():
+            by_body.setdefault(body_index, []).append((region_index, faces, cut))
+    return by_body
+
+
+def _capture_colored_faces(body):
+    """Coloured-face centroids + match tolerance: per-face colours can't follow
+    a split directly (face ids change), so they are re-matched geometrically
+    after remeshing. Returns (list of (centroid, rgb), tolerance)."""
+    if body.mesh is None or not body.mesh.face_colors:
+        return [], 0.0
+    centers = body.mesh.points[body.mesh.tris].mean(axis=1)
+    span = body.mesh.points.max(axis=0) - body.mesh.points.min(axis=0)
+    tolerance = float(np.linalg.norm(span)) * 5.0e-3
+    colored_faces = []
+    for face_id, rgb in body.mesh.face_colors.items():
+        mask = body.mesh.tri_face_ids == face_id
+        if mask.any():
+            colored_faces.append((centers[mask].mean(axis=0), rgb))
+    return colored_faces, tolerance
+
+
+def _region_area_bounds(mesh, region):
+    """Mesh area and (min, max) corner of a face region — used to reject cap
+    patches that balloon past the region they are supposed to close."""
+    if mesh is None:
+        return 0.0, None
+    mask = np.isin(mesh.tri_face_ids, np.asarray(sorted(region), dtype=np.int32))
+    corners = mesh.points[mesh.tris[mask]]
+    if not len(corners):
+        return 0.0, None
+    area = float(0.5 * np.linalg.norm(np.cross(
+        corners[:, 1] - corners[:, 0], corners[:, 2] - corners[:, 0],
+    ), axis=1).sum())
+    flat = corners.reshape(-1, 3)
+    return area, (flat.min(axis=0), flat.max(axis=0))
+
+
+def _solid_within_region_bounds(solid, region_bounds) -> bool:
+    """A ballooned cap would corrupt the package too (both sides share it), so
+    the sealed solid must stay near its region's bounds."""
+    if region_bounds is None:
+        return True
+    low, high = region_bounds
+    margin = 0.35 * float(np.linalg.norm(high - low)) + 1e-3
+    sxmin, sxmax, symin, symax, szmin, szmax = shape_bounds([solid])
+    return not (
+        sxmin < low[0] - margin or sxmax > high[0] + margin
+        or symin < low[1] - margin or symax > high[1] + margin
+        or szmin < low[2] - margin or szmax > high[2] + margin
+    )
+
+
+def _cap_attempts(wires, anchors, fan_tolerance):
+    """Cap strategies in order: exact filled patches first, then centroid-fan
+    triangulation (cannot leave the loop hull) when those balloon past the
+    guards. Each entry is (cap faces, sew tolerance)."""
+    attempts = []
+    filled = _cap_faces_for_wires(wires, anchor_points=anchors)
+    if filled:
+        attempts.append((filled, 1.0e-6))
+    fan = _fan_cap_faces(wires)
+    if fan:
+        attempts.append((fan, fan_tolerance))
+    return attempts
+
+
+def _try_seal(faces, attempts, region_area, region_bounds):
+    """First cap attempt that sews a solid staying near the region. Caps larger
+    than the region (a billowing patch over a bent loop) are rejected."""
+    for caps, sew_tolerance in attempts:
+        cap_area = sum(shape_area(cap) or 0.0 for cap in caps)
+        if region_area > 0.0 and cap_area > 1.2 * region_area:
+            continue
+        solid = _sew_solid(faces + caps, tolerance=sew_tolerance)
+        if solid is None or not _solid_within_region_bounds(solid, region_bounds):
+            continue
+        return solid, caps, sew_tolerance
+    return None
+
+
+def _seal_one_region(body, region, face_map, edge_table, fan_tolerance):
+    """Seal one previewed region into its own solid: its faces plus a cap over
+    each boundary loop. Returns (solid, caps, sew_tolerance) or None."""
+    wires = _boundary_wires(edge_table, region)
+    if wires is None:
+        return None
+    region_area, region_bounds = _region_area_bounds(body.mesh, region)
+    faces = [TopoDS.Face_s(face_map.FindKey(i)) for i in sorted(region)]
+    anchors = _region_anchor_points(body.mesh, region) if body.mesh is not None else []
+    attempts = _cap_attempts(wires, anchors, fan_tolerance)
+    return _try_seal(faces, attempts, region_area, region_bounds)
+
+
+def _seal_regions(body, region_sets, face_map, edge_table, progress):
+    """Seal every region of one body; returns the sealed tuples that took."""
+    fan_tolerance = max(1.0e-4, 2.0 * preview_deflection(shape_bounds([body.solid])))
+    sealed = []
+    for region_number, (region_index, region, _cut) in enumerate(region_sets):
+        if progress is not None:
+            progress("Sealing pin regions", region_number, len(region_sets))
+        result = _seal_one_region(body, region, face_map, edge_table, fan_tolerance)
+        if result is not None:
+            solid, caps, tol = result
+            sealed.append((region_index, region, solid, caps, tol))
+    return sealed
+
+
+def _volume_conserved(package, sealed, original_volume) -> bool:
+    if original_volume <= 0.0:
+        return True
+    pieces = abs(shape_volume(package) or 0.0) + sum(
+        abs(shape_volume(s) or 0.0) for _ri, _r, s, _c, _t in sealed
+    )
+    return abs(pieces - original_volume) <= 0.01 * original_volume
+
+
+def _drop_largest_sealed(sealed) -> None:
+    sealed.remove(max(sealed, key=lambda item: abs(shape_volume(item[2]) or 0.0)))
+
+
+def _rebuild_package(sealed, face_map):
+    """Sew the package from the unclaimed faces plus the SAME cap faces that
+    sealed the pins. Returns (package|None, all_claimed): all_claimed flags the
+    BGA case where one region swallowed the whole body, leaving no remainder."""
+    claimed = set().union(*(region for _ri, region, _s, _c, _t in sealed))
+    remainder = [i for i in range(1, face_map.Extent() + 1) if i not in claimed]
+    if not remainder:
+        return None, True
+    package = _sew_solid(
+        [TopoDS.Face_s(face_map.FindKey(i)) for i in remainder]
+        + [cap for _ri, _r, _s, caps, _t in sealed for cap in caps],
+        tolerance=max(tol for _ri, _r, _s, _c, tol in sealed),
+    )
+    return package, False
+
+
+def _seal_package(body, sealed, face_map, progress):
+    """Rebuild the package; the pieces must conserve the body's volume to 1%.
+    When they don't (a false detection grown over the housing) the largest
+    sealed region is dropped back into the package and we retry, rejecting junk
+    regions one by one. Returns (package_solid|None, sealed) — sealed shrinks."""
+    original_volume = abs(shape_volume(body.solid) or 0.0)
+    package = None
+    while sealed:
+        if progress is not None:
+            progress(f"Sealing {body.name} package", 0, 0)
+        package, all_claimed = _rebuild_package(sealed, face_map)
+        if all_claimed:
+            _drop_largest_sealed(sealed)
+            continue
+        if package is not None and _volume_conserved(package, sealed, original_volume):
+            break
+        package = None
+        _drop_largest_sealed(sealed)
+    return package, sealed
+
+
+def _emit_split_bodies(body, package, sealed, colored_faces, tolerance,
+                       new_bodies, region_bodies, color_restores) -> None:
+    """Append the package and each sealed pin as new BodyRecords, linking each
+    region to its solid by identity and queueing colour re-attachment."""
+    for index, solid in enumerate(
+        [package] + [s for _ri, _region, s, _caps, _tol in sealed]
+    ):
+        record = BodyRecord(
+            solid=solid, name=body.name, color=body.color,
+            original_color=body.original_color,
+        )
+        if index != 0:
+            region_bodies[sealed[index - 1][0]] = len(new_bodies)
+        if colored_faces:
+            color_restores.append((record, colored_faces, tolerance))
+        new_bodies.append(record)
+
+
+def _reattach_colors(color_restores) -> None:
+    """Re-attach per-face colours: a new face whose centroid coincides with an
+    old coloured face's centroid is that same face."""
+    for record, colored_faces, tolerance in color_restores:
+        mesh = record.mesh
+        if mesh is None or not len(mesh.tris) or tolerance <= 0.0:
+            continue
+        centers = mesh.points[mesh.tris].mean(axis=1)
+        anchors = np.array([c for c, _rgb in colored_faces])
+        for face_id in np.unique(mesh.tri_face_ids):
+            mask = mesh.tri_face_ids == face_id
+            centroid = centers[mask].mean(axis=0)
+            distances = np.linalg.norm(anchors - centroid, axis=1)
+            nearest = int(np.argmin(distances))
+            if distances[nearest] <= tolerance:
+                mesh.face_colors[int(face_id)] = colored_faces[nearest][1]
+        record.original_face_colors = dict(mesh.face_colors)
+
+
+def _bodies_from_label(label, color_tool, fallback_name) -> list:
+    """Build one BodyRecord per solid under a free-shape label (colours first,
+    keyed by the original shape identity, then the location is baked in)."""
+    shape = XCAFDoc_ShapeTool.GetShape_s(label)
+    if shape is None or shape.IsNull():
+        return []
+    base_name = _label_name(label) or fallback_name
+    # Open shells / loose faces: keep the shape as one body so it still renders.
+    solids = list(_iter_solids(shape)) or [shape]
+    bodies = []
+    for index, solid in enumerate(solids):
+        name = base_name if len(solids) == 1 else f"{base_name}.{index + 1}"
+        color = _solid_color(color_tool, solid)
+        face_colors = _harvest_face_colors(color_tool, solid)
+        bodies.append(BodyRecord(
+            solid=_bake_location(solid), name=name, color=color,
+            original_color=color, original_face_colors=face_colors,
+        ))
+    return bodies
+
+
+def _apply_original_face_colors(document) -> None:
+    for body in document.bodies:
+        if (body.mesh is not None and body.original_face_colors
+                and body.mesh.face_count >= max(body.original_face_colors)):
+            body.mesh.face_colors = dict(body.original_face_colors)
+
+
+def _place_logo_tool(tool_shape, frame, offset_uv, raised, rotation_deg):
+    """Place a logo tool (built at origin, extruded +Z) onto a face frame.
+    Returns (placed_shape, origin, normal) — origin/normal feed colour reattach."""
+    origin = np.asarray(frame["origin"], dtype=np.float64)
+    n = np.asarray(frame["normal"], dtype=np.float64)
+    u = np.asarray(frame["u"], dtype=np.float64)
+    v = np.cross(n, u)
+    origin = origin + u * offset_uv[0] + v * offset_uv[1]
+    theta = math.radians(rotation_deg)
+    u_eff = u * math.cos(theta) + v * math.sin(theta)
+    target_z = n if raised else -n  # raised grows out, engrave sinks in
+    ax3 = gp_Ax3(gp_Pnt(*origin), gp_Dir(*target_z), gp_Dir(*u_eff))
+    trsf = gp_Trsf()
+    trsf.SetTransformation(ax3, gp_Ax3())
+    placed = BRepBuilderAPI_Transform(tool_shape, trsf, True).Shape()
+    return placed, origin, n
+
+
+def _capture_face_colors(body):
+    """(face centroid array, [(centroid, rgb)]) so per-face colours can be
+    re-matched after the boolean re-fids every face. ([]/None when uncoloured)."""
+    if body.mesh is None:
+        return None, []
+    tri_centers = body.mesh.points[body.mesh.tris].mean(axis=1)
+    face_ids = np.unique(body.mesh.tri_face_ids)
+    old_centers = np.array([
+        tri_centers[body.mesh.tri_face_ids == fid].mean(axis=0) for fid in face_ids
+    ])
+    old_colored = [
+        (old_centers[i], body.mesh.face_colors[int(fid)])
+        for i, fid in enumerate(face_ids)
+        if int(fid) in body.mesh.face_colors
+    ]
+    return old_centers, old_colored
+
+
+def _keep_meaningful_solids(solids, fallback):
+    """Drop sub-tolerance debris slivers a shallow engrave fragments off; keep
+    the meaningful pieces as one solid or a compound."""
+    from OCP.BRep import BRep_Builder
+    from OCP.TopoDS import TopoDS_Compound
+
+    volumes = [abs(shape_volume(s) or 0.0) for s in solids]
+    threshold = max(max(volumes) * 1.0e-5, 1.0e-9)
+    keep = [s for s, vol in zip(solids, volumes) if vol > threshold]
+    if len(keep) == 1:
+        return keep[0]
+    if not keep:
+        return fallback
+    builder = BRep_Builder()
+    compound = TopoDS_Compound()
+    builder.MakeCompound(compound)
+    for solid in keep:
+        builder.Add(compound, solid)
+    return compound
+
+
+def _logo_boolean_solid(body_solid, placed, raised):
+    """Fuse (raised) or cut (engrave) the tool into the body; return the solid."""
+    operation = BRepAlgoAPI_Fuse if raised else BRepAlgoAPI_Cut
+    boolean = operation(body_solid, placed)
+    boolean.Build()
+    if not boolean.IsDone():
+        raise RuntimeError("logo boolean failed")
+    fixer = ShapeFix_Shape(boolean.Shape())
+    fixer.Perform()
+    result = fixer.Shape()
+    solids = list(_iter_solids(result))
+    if len(solids) <= 1:
+        return solids[0] if solids else result
+    return _keep_meaningful_solids(solids, result)
+
+
+def _reattach_logo_colors(body, old_centers, old_colored, origin, n,
+                          depth_mm, raised, logo_rgb) -> None:
+    """Re-colour after the boolean re-fids faces. Logo faces (geometry created
+    strictly off the surface plane) take logo_rgb; the cut-through original
+    keeps its colour via a wider centroid re-match; everything else re-matches
+    exactly. Caller guarantees old_centers and body.mesh are present."""
+    span = body.mesh.points.max(axis=0) - body.mesh.points.min(axis=0)
+    tolerance = float(np.linalg.norm(span)) * 2.0e-3
+    side_tol = max(depth_mm * 0.05, 1e-6)
+    direction = 1.0 if raised else -1.0
+    colored_centers = (
+        np.array([c for c, _rgb in old_colored]) if old_colored else None
+    )
+
+    def restore(fid, center, match_tol) -> None:
+        if colored_centers is None:
+            return
+        distances = np.linalg.norm(colored_centers - center, axis=1)
+        nearest = int(np.argmin(distances))
+        if distances[nearest] <= match_tol:
+            body.mesh.face_colors[int(fid)] = old_colored[nearest][1]
+
+    tri_centers = body.mesh.points[body.mesh.tris].mean(axis=1)
+    for fid in np.unique(body.mesh.tri_face_ids):
+        center = tri_centers[body.mesh.tri_face_ids == fid].mean(axis=0)
+        off_surface = float((center - origin) @ n) * direction > side_tol
+        is_new = np.linalg.norm(old_centers - center, axis=1).min() > tolerance
+        if is_new and off_surface:
+            if logo_rgb is not None:
+                body.mesh.face_colors[int(fid)] = tuple(logo_rgb)
+        elif is_new:
+            restore(fid, center, tolerance * 25.0)
+        else:
+            restore(fid, center, tolerance)
+
+
+def _split_one_body_by_plane(body, tool_face, point, normal, eps) -> list:
+    """Split one body by the plane; returns [(record, is_pin_side)]. A body
+    that doesn't cross or doesn't split returns itself (not pin-side)."""
+    mesh = body.mesh
+    crosses = False
+    if mesh is not None and len(mesh.points):
+        distances = (mesh.points - point) @ normal
+        crosses = distances.max() > eps and distances.min() < -eps
+    if not crosses:
+        return [(body, False)]
+    splitter = BRepAlgoAPI_Splitter()
+    arguments = TopTools_ListOfShape()
+    arguments.Append(body.solid)
+    tools = TopTools_ListOfShape()
+    tools.Append(tool_face)
+    splitter.SetArguments(arguments)
+    splitter.SetTools(tools)
+    splitter.Build()
+    if not splitter.IsDone():
+        return [(body, False)]
+    solids = list(_iter_solids(splitter.Shape()))
+    if len(solids) <= 1:
+        return [(body, False)]
+    out = []
+    for solid in solids:
+        box = Bnd_Box()
+        BRepBndLib.Add_s(solid, box)
+        bxmin, bymin, bzmin, bxmax, bymax, bzmax = box.Get()
+        center = np.array(
+            [(bxmin + bxmax) / 2, (bymin + bymax) / 2, (bzmin + bzmax) / 2]
+        )
+        pin_side = float((center - point) @ normal) > 0.0
+        out.append((
+            BodyRecord(solid=solid, name=body.name, color=body.color,
+                       original_color=body.original_color),
+            pin_side,
+        ))
+    return out
+
+
+def _edge_face_pair(edge_faces, face_map, edge_index):
+    """The two distinct body-face indices sharing an edge, or None."""
+    faces = []
+    for shape in edge_faces.FindFromIndex(edge_index):
+        index = face_map.FindIndex(shape)
+        if index > 0 and index not in faces:
+            faces.append(index)
+    return tuple(faces) if len(faces) == 2 else None
+
+
+def _smooth_adjacency(solid, smooth_angle_deg) -> dict:
+    """Build the face-adjacency graph: edges connect their two faces unless a
+    threshold is set and the dihedral angle at the edge exceeds it."""
+    face_map = TopTools_IndexedMapOfShape()
+    TopExp.MapShapes_s(solid, TopAbs_FACE, face_map)
+    edge_faces = TopTools_IndexedDataMapOfShapeListOfShape()
+    TopExp.MapShapesAndAncestors_s(solid, TopAbs_EDGE, TopAbs_FACE, edge_faces)
+    adjacency: dict[int, set[int]] = {
+        i: set() for i in range(1, face_map.Extent() + 1)
+    }
+    for edge_index in range(1, edge_faces.Extent() + 1):
+        pair = _edge_face_pair(edge_faces, face_map, edge_index)
+        if pair is None:
+            continue
+        f1, f2 = pair
+        if smooth_angle_deg is not None:
+            angle = _edge_dihedral_deg(
+                TopoDS.Edge_s(edge_faces.FindKey(edge_index)),
+                TopoDS.Face_s(face_map.FindKey(f1)),
+                TopoDS.Face_s(face_map.FindKey(f2)),
+            )
+            if angle is None or angle > smooth_angle_deg:
+                continue
+        adjacency[f1].add(f2)
+        adjacency[f2].add(f1)
+    return adjacency
 
 
 def tessellate_body(
@@ -550,32 +1007,7 @@ class EditorDocument:
 
         bodies: list[BodyRecord] = []
         for li in range(1, labels.Length() + 1):
-            label = labels.Value(li)
-            shape = XCAFDoc_ShapeTool.GetShape_s(label)
-            if shape is None or shape.IsNull():
-                continue
-            base_name = _label_name(label) or path.stem
-            solids = list(_iter_solids(shape))
-            if not solids:
-                # Open shells / loose faces: keep the shape as one body so it
-                # still renders and exports.
-                solids = [shape]
-            for index, solid in enumerate(solids):
-                name = base_name if len(solids) == 1 else f"{base_name}.{index + 1}"
-                # Colours first (keyed by the original shape identity), then
-                # bake the instance location into the geometry.
-                color = _solid_color(color_tool, solid)
-                face_colors = _harvest_face_colors(color_tool, solid)
-                solid = _bake_location(solid)
-                bodies.append(
-                    BodyRecord(
-                        solid=solid,
-                        name=name,
-                        color=color,
-                        original_color=color,
-                        original_face_colors=face_colors,
-                    )
-                )
+            bodies.extend(_bodies_from_label(labels.Value(li), color_tool, path.stem))
 
         if not bodies:
             raise RuntimeError(f"No shapes found in {path}")
@@ -583,10 +1015,7 @@ class EditorDocument:
         document = cls(path=path, bodies=bodies, schema=_read_file_schema(path))
         document._xcaf_doc = doc
         document.remesh_all()
-        for body in document.bodies:
-            if body.mesh is not None and body.original_face_colors:
-                if body.mesh.face_count >= max(body.original_face_colors):
-                    body.mesh.face_colors = dict(body.original_face_colors)
+        _apply_original_face_colors(document)
         return document
 
     # ------------------------------------------------------------ tessellate
@@ -659,45 +1088,9 @@ class EditorDocument:
         new_bodies: list[BodyRecord] = []
         pin_side_indices: list[int] = []
         for body in self.bodies:
-            mesh = body.mesh
-            crosses = False
-            if mesh is not None and len(mesh.points):
-                distances = (mesh.points - point) @ normal
-                crosses = distances.max() > eps and distances.min() < -eps
-            if not crosses:
-                new_bodies.append(body)
-                continue
-
-            splitter = BRepAlgoAPI_Splitter()
-            arguments = TopTools_ListOfShape()
-            arguments.Append(body.solid)
-            tools = TopTools_ListOfShape()
-            tools.Append(tool_face)
-            splitter.SetArguments(arguments)
-            splitter.SetTools(tools)
-            splitter.Build()
-            if not splitter.IsDone():
-                new_bodies.append(body)
-                continue
-            solids = list(_iter_solids(splitter.Shape()))
-            if len(solids) <= 1:
-                new_bodies.append(body)
-                continue
-
-            for solid in solids:
-                box = Bnd_Box()
-                BRepBndLib.Add_s(solid, box)
-                bxmin, bymin, bzmin, bxmax, bymax, bzmax = box.Get()
-                center = np.array(
-                    [(bxmin + bxmax) / 2, (bymin + bymax) / 2, (bzmin + bzmax) / 2]
-                )
-                pin_side = float((center - point) @ normal) > 0.0
-                record = BodyRecord(
-                    solid=solid,
-                    name=body.name,
-                    color=body.color,
-                    original_color=body.original_color,
-                )
+            for record, pin_side in _split_one_body_by_plane(
+                body, tool_face, point, normal, eps
+            ):
                 if pin_side:
                     pin_side_indices.append(len(new_bodies))
                 new_bodies.append(record)
@@ -721,17 +1114,7 @@ class EditorDocument:
         pieces by identity, never by guessing from centroids."""
         cuts = cuts if cuts is not None else [None] * len(regions)
         region_bodies: list[int | None] = [None] * len(regions)
-        by_body: dict[int, list[tuple[int, set[int], object]]] = {}
-        for region_index, (region, cut) in enumerate(zip(regions, cuts)):
-            if not region:
-                continue
-            groups: dict[int, set[int]] = {}
-            for body_index, face_index in region:
-                groups.setdefault(body_index, set()).add(face_index)
-            for body_index, faces in groups.items():
-                by_body.setdefault(body_index, []).append(
-                    (region_index, faces, cut)
-                )
+        by_body = _group_regions_by_body(regions, cuts)
 
         new_bodies: list[BodyRecord] = []
         color_restores: list[tuple[BodyRecord, list, float]] = []
@@ -741,201 +1124,25 @@ class EditorDocument:
                 new_bodies.append(body)
                 continue
 
-            # Per-face colours can't survive the split directly (face ids
-            # change) — capture coloured-face centroids now and re-match them
-            # onto the new bodies geometrically after remeshing. Faces the
-            # split doesn't cut keep their exact centroid.
-            colored_faces = []
-            if body.mesh is not None and body.mesh.face_colors:
-                centers = body.mesh.points[body.mesh.tris].mean(axis=1)
-                span = body.mesh.points.max(axis=0) - body.mesh.points.min(axis=0)
-                tolerance = float(np.linalg.norm(span)) * 5.0e-3
-                for face_id, rgb in body.mesh.face_colors.items():
-                    mask = body.mesh.tri_face_ids == face_id
-                    if mask.any():
-                        colored_faces.append((centers[mask].mean(axis=0), rgb))
-            else:
-                tolerance = 0.0
-
+            colored_faces, tolerance = _capture_colored_faces(body)
             face_map = TopTools_IndexedMapOfShape()
             TopExp.MapShapes_s(body.solid, TopAbs_FACE, face_map)
             edge_table = _edge_face_table(body.solid)
 
-            # Seal each previewed region into its own solid: its faces plus a
-            # cap over each boundary loop — the discontinuity where the pin
-            # meets the body, plugged. Caps larger than the region itself are
-            # rejected (a billowing patch over a bent loop is worse than an
-            # honest "did not separate").
-            fan_tolerance = max(
-                1.0e-4,
-                2.0 * preview_deflection(shape_bounds([body.solid])),
-            )
-            sealed: list[tuple[int, set[int], object, list, float]] = []
-            for region_number, (region_index, region, _cut) in enumerate(region_sets):
-                if progress is not None:
-                    progress("Sealing pin regions", region_number, len(region_sets))
-                wires = _boundary_wires(edge_table, region)
-                if wires is None:
-                    continue
-                region_area = 0.0
-                region_bounds = None
-                if body.mesh is not None:
-                    mask = np.isin(
-                        body.mesh.tri_face_ids,
-                        np.asarray(sorted(region), dtype=np.int32),
-                    )
-                    corners = body.mesh.points[body.mesh.tris[mask]]
-                    region_area = float(0.5 * np.linalg.norm(np.cross(
-                        corners[:, 1] - corners[:, 0],
-                        corners[:, 2] - corners[:, 0],
-                    ), axis=1).sum())
-                    if len(corners):
-                        flat = corners.reshape(-1, 3)
-                        region_bounds = (flat.min(axis=0), flat.max(axis=0))
-                faces = [
-                    TopoDS.Face_s(face_map.FindKey(index)) for index in sorted(region)
-                ]
-                anchors = (
-                    _region_anchor_points(body.mesh, region)
-                    if body.mesh is not None else []
-                )
-                # Two cap strategies: exact filled patches first; when those
-                # balloon past the guards (L-shaped / slit loops), fall back
-                # to centroid-fan triangulation, which cannot leave the
-                # loop's hull, sewn at chord tolerance.
-                attempts = []
-                filled = _cap_faces_for_wires(wires, anchor_points=anchors)
-                if filled:
-                    attempts.append((filled, 1.0e-6))
-                fan = _fan_cap_faces(wires)
-                if fan:
-                    attempts.append((fan, fan_tolerance))
-                for caps, sew_tolerance in attempts:
-                    cap_area = sum(shape_area(cap) or 0.0 for cap in caps)
-                    if region_area > 0.0 and cap_area > 1.2 * region_area:
-                        continue
-                    solid = _sew_solid(faces + caps, tolerance=sew_tolerance)
-                    if solid is None:
-                        continue
-                    # Caps must stay NEAR the region: a ballooned patch
-                    # would corrupt the package too (both sides share it).
-                    if region_bounds is not None:
-                        low, high = region_bounds
-                        margin = 0.35 * float(np.linalg.norm(high - low)) + 1e-3
-                        sxmin, sxmax, symin, symax, szmin, szmax = shape_bounds(
-                            [solid]
-                        )
-                        if (
-                            sxmin < low[0] - margin or sxmax > high[0] + margin
-                            or symin < low[1] - margin or symax > high[1] + margin
-                            or szmin < low[2] - margin or szmax > high[2] + margin
-                        ):
-                            continue
-                    sealed.append(
-                        (region_index, region, solid, caps, sew_tolerance)
-                    )
-                    break
-
+            sealed = _seal_regions(body, region_sets, face_map, edge_table, progress)
             if not sealed:
                 new_bodies.append(body)
                 continue
-
-            # Rebuild the package from the unclaimed faces plus the SAME cap
-            # faces that sealed the pins — identical geometry on both sides
-            # of every junction, and adjacent regions' caps tile their union
-            # boundary along the shared seam. The pieces must conserve the
-            # body's volume to 1%; when they don't, the largest sealed region
-            # is the suspect (a false detection grown over the housing, with
-            # a cap patch that self-intersects the shell) — drop it back into
-            # the package and retry, so junk regions are rejected one by one
-            # instead of vetoing every real pin.
-            original_volume = abs(shape_volume(body.solid) or 0.0)
-            package = None
-            while sealed:
-                if progress is not None:
-                    progress(f"Sealing {body.name} package", 0, 0)
-                claimed = set().union(
-                    *(region for _ri, region, _solid, _caps, _tol in sealed)
-                )
-                remainder = [
-                    index
-                    for index in range(1, face_map.Extent() + 1)
-                    if index not in claimed
-                ]
-                if not remainder:
-                    # Every face is claimed: some region grew over the package
-                    # itself (seen on BGAs — one greedy region swallows the
-                    # body and the rest are honest balls). Same medicine as a
-                    # volume failure: drop the largest sealed region back into
-                    # the package and retry, instead of giving up on all pins.
-                    sealed.remove(
-                        max(sealed,
-                            key=lambda item: abs(shape_volume(item[2]) or 0.0))
-                    )
-                    continue
-                package_caps = [
-                    cap
-                    for _ri, _region, _solid, caps, _tol in sealed
-                    for cap in caps
-                ]
-                package = _sew_solid(
-                    [TopoDS.Face_s(face_map.FindKey(index)) for index in remainder]
-                    + package_caps,
-                    tolerance=max(tol for _ri, _r, _s, _c, tol in sealed),
-                )
-                if package is not None:
-                    pieces_volume = abs(shape_volume(package) or 0.0) + sum(
-                        abs(shape_volume(solid) or 0.0)
-                        for _ri, _region, solid, _caps, _tol in sealed
-                    )
-                    if (
-                        original_volume <= 0.0
-                        or abs(pieces_volume - original_volume)
-                        <= 0.01 * original_volume
-                    ):
-                        break
-                    package = None
-                sealed.remove(
-                    max(sealed, key=lambda item: abs(shape_volume(item[2]) or 0.0))
-                )
+            package, sealed = _seal_package(body, sealed, face_map, progress)
             if package is None or not sealed:
                 new_bodies.append(body)
                 continue
-
-            for index, solid in enumerate(
-                [package] + [solid for _ri, _region, solid, _caps, _tol in sealed]
-            ):
-                record = BodyRecord(
-                    solid=solid,
-                    name=body.name,
-                    color=body.color,
-                    original_color=body.original_color,
-                )
-                if index != 0:
-                    region_bodies[sealed[index - 1][0]] = len(new_bodies)
-                if colored_faces:
-                    color_restores.append((record, colored_faces, tolerance))
-                new_bodies.append(record)
+            _emit_split_bodies(body, package, sealed, colored_faces, tolerance,
+                               new_bodies, region_bodies, color_restores)
 
         self.bodies = new_bodies
         self.remesh_all(progress=progress)
-
-        # Re-attach per-face colours: a new face whose centroid coincides with
-        # an old coloured face's centroid is that same face.
-        for record, colored_faces, tolerance in color_restores:
-            mesh = record.mesh
-            if mesh is None or not len(mesh.tris) or tolerance <= 0.0:
-                continue
-            centers = mesh.points[mesh.tris].mean(axis=1)
-            anchors = np.array([c for c, _rgb in colored_faces])
-            for face_id in np.unique(mesh.tri_face_ids):
-                mask = mesh.tri_face_ids == face_id
-                centroid = centers[mask].mean(axis=0)
-                distances = np.linalg.norm(anchors - centroid, axis=1)
-                nearest = int(np.argmin(distances))
-                if distances[nearest] <= tolerance:
-                    mesh.face_colors[int(face_id)] = colored_faces[nearest][1]
-            record.original_face_colors = dict(mesh.face_colors)
+        _reattach_colors(color_restores)
         return region_bodies
 
     def face_plane(self, body_index: int, face_index: int) -> dict | None:
@@ -1017,112 +1224,19 @@ class EditorDocument:
         onto the planar face frame and boolean it into the body. Engrave
         sinks the tool below the surface and cuts; raised fuses it on top.
         Returns the signed volume change."""
-        origin = np.asarray(frame["origin"], dtype=np.float64)
-        n = np.asarray(frame["normal"], dtype=np.float64)
-        u = np.asarray(frame["u"], dtype=np.float64)
-        v = np.cross(n, u)
-        origin = origin + u * offset_uv[0] + v * offset_uv[1]
-        theta = math.radians(rotation_deg)
-        u_eff = u * math.cos(theta) + v * math.sin(theta)
-        target_z = n if raised else -n  # raised grows out, engrave sinks in
-        ax3 = gp_Ax3(gp_Pnt(*origin), gp_Dir(*target_z), gp_Dir(*u_eff))
-        trsf = gp_Trsf()
-        trsf.SetTransformation(ax3, gp_Ax3())
-        placed = BRepBuilderAPI_Transform(tool_shape, trsf, True).Shape()
-
+        placed, origin, n = _place_logo_tool(
+            tool_shape, frame, offset_uv, raised, rotation_deg
+        )
         body = self.bodies[body_index]
         before = shape_volume(body.solid) or 0.0
-        old_centers = None
-        old_colored: list = []
-        if body.mesh is not None:
-            tri_centers = body.mesh.points[body.mesh.tris].mean(axis=1)
-            face_ids = np.unique(body.mesh.tri_face_ids)
-            old_centers = np.array([
-                tri_centers[body.mesh.tri_face_ids == fid].mean(axis=0)
-                for fid in face_ids
-            ])
-            old_colored = [
-                (old_centers[i], body.mesh.face_colors[int(fid)])
-                for i, fid in enumerate(face_ids)
-                if int(fid) in body.mesh.face_colors
-            ]
-        operation = BRepAlgoAPI_Fuse if raised else BRepAlgoAPI_Cut
-        boolean = operation(body.solid, placed)
-        boolean.Build()
-        if not boolean.IsDone():
-            raise RuntimeError("logo boolean failed")
-        fixer = ShapeFix_Shape(boolean.Shape())
-        fixer.Perform()
-        result = fixer.Shape()
-        solids = list(_iter_solids(result))
-        if len(solids) > 1:
-            # A shallow engrave can fragment hairline slivers off the
-            # surface as separate solids — keep the meaningful pieces, drop
-            # sub-tolerance debris (it pollutes the body count and viewers).
-            from OCP.BRep import BRep_Builder
-            from OCP.TopoDS import TopoDS_Compound
-
-            volumes = [abs(shape_volume(s) or 0.0) for s in solids]
-            threshold = max(max(volumes) * 1.0e-5, 1.0e-9)
-            keep = [s for s, v in zip(solids, volumes) if v > threshold]
-            if len(keep) == 1:
-                body.solid = keep[0]
-            elif keep:
-                builder = BRep_Builder()
-                compound = TopoDS_Compound()
-                builder.MakeCompound(compound)
-                for solid in keep:
-                    builder.Add(compound, solid)
-                body.solid = compound
-            else:
-                body.solid = result
-        elif solids:
-            body.solid = solids[0]
-        else:
-            body.solid = result
+        old_centers, old_colored = _capture_face_colors(body)
+        body.solid = _logo_boolean_solid(body.solid, placed, raised)
         self.remesh_body(body_index)
         after = shape_volume(body.solid) or 0.0
 
         if old_centers is not None and body.mesh is not None and len(old_centers):
-            # The boolean re-fids every face. Classification:
-            #  - logo faces: geometry the boolean CREATED, lying strictly off
-            #    the surface plane (engrave: below; raised: above) — only
-            #    those take the logo colour.
-            #  - the face the logo cuts THROUGH stays at surface level; its
-            #    centroid shifts (holes punched in it), so it gets a wider
-            #    colour re-match instead of being mistaken for new geometry.
-            span = body.mesh.points.max(axis=0) - body.mesh.points.min(axis=0)
-            tolerance = float(np.linalg.norm(span)) * 2.0e-3
-            side_tol = max(depth_mm * 0.05, 1e-6)
-            colored_centers = (
-                np.array([c for c, _rgb in old_colored]) if old_colored else None
-            )
-
-            def restore(fid, center, match_tol) -> bool:
-                if colored_centers is None:
-                    return False
-                distances = np.linalg.norm(colored_centers - center, axis=1)
-                nearest = int(np.argmin(distances))
-                if distances[nearest] <= match_tol:
-                    body.mesh.face_colors[int(fid)] = old_colored[nearest][1]
-                    return True
-                return False
-
-            tri_centers = body.mesh.points[body.mesh.tris].mean(axis=1)
-            for fid in np.unique(body.mesh.tri_face_ids):
-                center = tri_centers[body.mesh.tri_face_ids == fid].mean(axis=0)
-                offset_n = float((center - origin) @ n)
-                off_surface = (offset_n < -side_tol) if not raised else (offset_n > side_tol)
-                is_new = np.linalg.norm(old_centers - center, axis=1).min() > tolerance
-                if is_new and off_surface:
-                    if logo_rgb is not None:
-                        body.mesh.face_colors[int(fid)] = tuple(logo_rgb)
-                elif is_new:
-                    # surface-level face whose centroid moved: the cut-through
-                    # original — keep its colour with a generous match
-                    restore(fid, center, tolerance * 25.0)
-                else:
-                    restore(fid, center, tolerance)
+            _reattach_logo_colors(body, old_centers, old_colored, origin, n,
+                                  depth_mm, raised, logo_rgb)
         return after - before
 
     def face_smooth_adjacency(
@@ -1143,35 +1257,7 @@ class EditorDocument:
         cached = cache.get(key)
         if cached is not None:
             return cached
-        solid = self.bodies[body_index].solid
-        face_map = TopTools_IndexedMapOfShape()
-        TopExp.MapShapes_s(solid, TopAbs_FACE, face_map)
-        edge_faces = TopTools_IndexedDataMapOfShapeListOfShape()
-        TopExp.MapShapesAndAncestors_s(solid, TopAbs_EDGE, TopAbs_FACE, edge_faces)
-
-        adjacency: dict[int, set[int]] = {
-            i: set() for i in range(1, face_map.Extent() + 1)
-        }
-        for edge_index in range(1, edge_faces.Extent() + 1):
-            edge = TopoDS.Edge_s(edge_faces.FindKey(edge_index))
-            faces = []
-            for shape in edge_faces.FindFromIndex(edge_index):
-                index = face_map.FindIndex(shape)
-                if index > 0 and index not in faces:
-                    faces.append(index)
-            if len(faces) != 2:
-                continue
-            f1, f2 = faces
-            if smooth_angle_deg is not None:
-                angle = _edge_dihedral_deg(
-                    edge,
-                    TopoDS.Face_s(face_map.FindKey(f1)),
-                    TopoDS.Face_s(face_map.FindKey(f2)),
-                )
-                if angle is None or angle > smooth_angle_deg:
-                    continue
-            adjacency[f1].add(f2)
-            adjacency[f2].add(f1)
+        adjacency = _smooth_adjacency(self.bodies[body_index].solid, smooth_angle_deg)
         cache[key] = adjacency
         return adjacency
 

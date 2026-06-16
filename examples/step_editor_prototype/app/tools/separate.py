@@ -188,6 +188,7 @@ class SeparateUnibodyTool(ToolMode):
             self.status("Separate Unibody: run Detect Pins first")
             return
         self._regrow()
+        self._draw_spines(registry)
         # whole model at 0.5 alpha so the pin regions show through the body
         self.ctx.scene.set_model_opacity(0.5)
         self.status(
@@ -195,7 +196,23 @@ class SeparateUnibodyTool(ToolMode):
             "then Apply"
         )
 
+    def _draw_spines(self, registry) -> None:
+        """Bridge each pin's tail and mouth FACES with a dotted yellow spine —
+        the pin's central axis the split carves along. Tail<->mouth are paired
+        by their shared designator (set by Join), so each physical pin gets one
+        spine joining its two ends through the body."""
+        by_designator = {
+            (p.name or str(p.number)): p for p in registry.primaries()
+        }
+        segments = []
+        for mouth in registry.mouths():
+            primary = by_designator.get(mouth.name or str(mouth.number))
+            if primary is not None:
+                segments.append([primary.centroid, mouth.centroid])
+        self.ctx.scene.show_pin_spines(segments)
+
     def exit(self) -> None:
+        self.ctx.scene.show_pin_spines([])
         if self.ctx.document is not None:
             if self._preview_painted:
                 self.ctx.scene.rebuild(self.ctx.document)  # restore real colours
@@ -213,6 +230,35 @@ class SeparateUnibodyTool(ToolMode):
 
     # --------------------------------------------------------- paint regions
 
+    def _init_paint_bundles(self, document, registry) -> None:
+        """Seed the manual bundles from the preview: each pin's grown region,
+        or its own faces for passive CON/HEAD anchors (whole-body pins skip)."""
+        if self._grown is None:
+            self._grown = grow_pin_regions(
+                document, registry.pins,
+                area_factor=float(self.factor_spin.value()),
+                progress=self._grow_progress(),
+            )
+            if hasattr(self.ctx.window, "progress_done"):
+                self.ctx.window.progress_done()
+        if self._manual is None:
+            self._manual = {}
+            for index, (pin, region) in enumerate(zip(registry.pins, self._grown)):
+                if pin.body_ids:
+                    continue
+                faces = region if region else pin.face_ids
+                if faces:
+                    self._manual[index] = {tuple(key) for key in faces}
+
+    def _populate_bundle_combo(self, registry) -> None:
+        self._bundle_pins = sorted(self._manual)
+        self.bundle_combo.clear()
+        for index in self._bundle_pins:
+            pin = registry.pins[index]
+            tag = " [CON/HEAD]" if pin.role == "mouth" else ""
+            name = f" '{pin.name}'" if pin.name else ""
+            self.bundle_combo.addItem(f"Pin {pin.number}{name}{tag}")
+
     def _arm_paint(self, checked: bool) -> None:
         if not checked:
             return  # bundles stay active until Regrow/Apply discards them
@@ -221,30 +267,8 @@ class SeparateUnibodyTool(ToolMode):
         if document is None or not registry.pins:
             self.paint_button.setChecked(False)
             return
-        if self._grown is None:
-            self._grown = grow_pin_regions(
-                document, registry.pins,
-                area_factor=float(self.factor_spin.value()),
-            )
-        if self._manual is None:
-            # bundles start from what the preview shows: the grown region,
-            # or the pin's own faces for passive CON/HEAD anchors
-            self._manual = {}
-            for index, (pin, region) in enumerate(
-                zip(registry.pins, self._grown)
-            ):
-                if pin.body_ids:
-                    continue
-                faces = region if region else pin.face_ids
-                if faces:
-                    self._manual[index] = {tuple(key) for key in faces}
-        self._bundle_pins = sorted(self._manual)
-        self.bundle_combo.clear()
-        for index in self._bundle_pins:
-            pin = registry.pins[index]
-            tag = " [CON/HEAD]" if pin.role == "mouth" else ""
-            name = f" '{pin.name}'" if pin.name else ""
-            self.bundle_combo.addItem(f"Pin {pin.number}{name}{tag}")
+        self._init_paint_bundles(document, registry)
+        self._populate_bundle_combo(registry)
         self._paint_manual()
         self.status(
             "Paint Regions: pick the bundle in the dropdown, click faces to "
@@ -277,14 +301,9 @@ class SeparateUnibodyTool(ToolMode):
             f"({len(self._manual[active])} faces)"
         )
 
-    def _propagate_bundle(self) -> None:
-        """Grow the active bundle by one adjacency ring (any shared edge)."""
-        document = self.ctx.document
-        if document is None or self._manual is None or not self._bundle_pins:
-            self.status("Paint Regions: arm Paint Regions first")
-            return
-        active = self._bundle_pins[max(0, self.bundle_combo.currentIndex())]
-        bundle = self._manual.setdefault(active, set())
+    def _adjacency_ring(self, document, active, bundle):
+        """The faces one shared-edge ring out from `bundle`, minus the faces
+        already claimed by other bundles."""
         claimed = {
             key
             for index, other in self._manual.items()
@@ -295,13 +314,22 @@ class SeparateUnibodyTool(ToolMode):
         added: set[tuple[int, int]] = set()
         for body_index, face_index in list(bundle):
             if body_index not in adjacency:
-                adjacency[body_index] = document.face_smooth_adjacency(
-                    body_index, None
-                )
+                adjacency[body_index] = document.face_smooth_adjacency(body_index, None)
             for neighbor in adjacency[body_index].get(face_index, ()):
                 key = (body_index, neighbor)
                 if key not in bundle and key not in claimed:
                     added.add(key)
+        return added
+
+    def _propagate_bundle(self) -> None:
+        """Grow the active bundle by one adjacency ring (any shared edge)."""
+        document = self.ctx.document
+        if document is None or self._manual is None or not self._bundle_pins:
+            self.status("Paint Regions: arm Paint Regions first")
+            return
+        active = self._bundle_pins[max(0, self.bundle_combo.currentIndex())]
+        bundle = self._manual.setdefault(active, set())
+        added = self._adjacency_ring(document, active, bundle)
         bundle |= added
         self._paint_manual()
         registry = self.ctx.window.pins
@@ -309,6 +337,20 @@ class SeparateUnibodyTool(ToolMode):
             f"Paint Regions: +{len(added)} face(s) on pin "
             f"{registry.pins[active].number} ({len(bundle)} total)"
         )
+
+    def _manual_color_map(self, registry):
+        """(body -> {face: rgb}, total faces) for the painted bundles."""
+        net_pastels = designator_pastels(registry.pins)
+        by_body: dict[int, dict[int, tuple[float, float, float]]] = {}
+        total = 0
+        for index, bundle in self._manual.items():
+            pin = registry.pins[index]
+            rgb = (net_pastels.get(pin.name, UNJOINED_MOUTH_RGB)
+                   if pin.role == "mouth" else pastel(index))
+            total += len(bundle)
+            for body_index, face_index in bundle:
+                by_body.setdefault(body_index, {})[face_index] = rgb
+        return by_body, total
 
     def _paint_manual(self) -> None:
         """Preview EXACTLY the manual bundles."""
@@ -318,22 +360,13 @@ class SeparateUnibodyTool(ToolMode):
             return
         if self._preview_painted:
             self.ctx.scene.rebuild(document)
-        net_pastels = designator_pastels(registry.pins)
-        by_body: dict[int, dict[int, tuple[float, float, float]]] = {}
-        total = 0
-        for index, bundle in self._manual.items():
-            pin = registry.pins[index]
-            rgb = (
-                net_pastels.get(pin.name, UNJOINED_MOUTH_RGB)
-                if pin.role == "mouth" else pastel(index)
-            )
-            total += len(bundle)
-            for body_index, face_index in bundle:
-                by_body.setdefault(body_index, {})[face_index] = rgb
+        by_body, total = self._manual_color_map(registry)
         for body_index, face_rgb in by_body.items():
             self.ctx.scene.paint_faces(body_index, face_rgb)
         self._preview_painted = True
-        self.ctx.scene.set_model_opacity(0.5)
+        # Paint Regions: model stays OPAQUE so faces are easy to see and click
+        # (translucency is for the grow preview, not hand painting).
+        self.ctx.scene.set_model_opacity(1.0)
         self.info_label.setText(
             f"PAINTED bundles: {sum(1 for b in self._manual.values() if b)} "
             f"bundle(s), {total} faces — Apply splits exactly these."
@@ -362,11 +395,66 @@ class SeparateUnibodyTool(ToolMode):
 
     # -------------------------------------------------------------- preview
 
+    def _split_preview_color_maps(self, registry, regions):
+        """(face_rgb, body_rgb): face-region pins colour faces; whole-body pins
+        colour their entire solid."""
+        net_pastels = designator_pastels(registry.pins)
+        face_rgb: dict[int, dict[int, tuple]] = {}
+        body_rgb: dict[int, tuple] = {}
+        for index, (pin, region) in enumerate(zip(registry.pins, regions)):
+            rgb = (net_pastels.get(pin.name, UNJOINED_MOUTH_RGB)
+                   if pin.role == "mouth" else pastel(index))
+            if region:
+                for body_index, f_index in region:
+                    face_rgb.setdefault(body_index, {})[f_index] = rgb
+            elif pin.body_ids:
+                for body_index in pin.body_ids:
+                    body_rgb[body_index] = rgb
+        return face_rgb, body_rgb
+
+    def _body_preview_colors(self, mesh, body_index, face_rgb, body_rgb, package_rgb):
+        """Per-triangle colours for one body in the post-split preview."""
+        colors = np.empty((len(mesh.tris), 3), dtype=np.uint8)
+        if body_index in body_rgb:
+            colors[:] = [int(c * 255) for c in body_rgb[body_index]]
+            return colors
+        colors[:] = [int(c * 255) for c in package_rgb]
+        owned = face_rgb.get(body_index)
+        if owned:
+            by_color: dict[tuple, list[int]] = {}
+            for f_index, rgb in owned.items():
+                by_color.setdefault(rgb, []).append(f_index)
+            for rgb, faces in by_color.items():
+                mask = np.isin(mesh.tri_face_ids, np.asarray(faces, dtype=np.int32))
+                colors[mask] = [int(c * 255) for c in rgb]
+        return colors
+
+    def _build_merged_preview(self, document, face_rgb, body_rgb, package_rgb):
+        """ONE merged, per-cell-coloured mesh for the whole preview (per-region
+        actors crawl at DDR5 scale — 577 future bodies would mean 577 actors)."""
+        point_blocks, cell_blocks, color_blocks = [], [], []
+        offset = 0
+        for body_index, body in enumerate(document.bodies):
+            mesh = body.mesh
+            if mesh is None or not len(mesh.tris):
+                continue
+            color_blocks.append(self._body_preview_colors(
+                mesh, body_index, face_rgb, body_rgb, package_rgb
+            ))
+            point_blocks.append(mesh.points)
+            cell_blocks.append(mesh.tris.astype(np.int64) + offset)
+            offset += len(mesh.points)
+        if not point_blocks:
+            return None
+        tris = np.vstack(cell_blocks)
+        cells = np.column_stack([np.full(len(tris), 3, dtype=np.int64), tris]).ravel()
+        merged = pv.PolyData(np.vstack(point_blocks), cells)
+        merged.cell_data["rgb"] = np.vstack(color_blocks)
+        return merged
+
     def _update_split_preview(self) -> None:
-        """The little 3D pane in the actions panel: render the POST-SPLIT
-        picture — every future body as its own solid pastel (the Bodies-view
-        look), package remainder in neutral slate — so it's always visible
-        where each split body is going."""
+        """The little 3D pane in the actions panel: the POST-SPLIT picture —
+        every future body its own solid pastel, package remainder slate."""
         plotter = getattr(self, "preview_plotter", None)
         if plotter is None:
             return
@@ -376,67 +464,14 @@ class SeparateUnibodyTool(ToolMode):
         if document is None or not registry.pins:
             plotter.render()
             return
-
         regions = self._preview_regions()
-        net_pastels = designator_pastels(registry.pins)
-        # (body -> face -> rgb) for face-region pins; whole-body pins colour
-        # their entire solid.
-        face_rgb: dict[int, dict[int, tuple]] = {}
-        body_rgb: dict[int, tuple] = {}
-        for index, (pin, region) in enumerate(zip(registry.pins, regions)):
-            if pin.role == "mouth":
-                rgb = net_pastels.get(pin.name, UNJOINED_MOUTH_RGB)
-            else:
-                rgb = pastel(index)
-            if region:
-                for body_index, f_index in region:
-                    face_rgb.setdefault(body_index, {})[f_index] = rgb
-            elif pin.body_ids:
-                for body_index in pin.body_ids:
-                    body_rgb[body_index] = rgb
-
-        package_rgb = (0.42, 0.44, 0.50)  # neutral slate: the body remainder
-
-        # ONE actor for the whole preview: per-cell colours on a merged mesh
-        # (per-region actors crawl at DDR5 scale — VTK cost scales with actor
-        # count, and 577 future bodies would mean 577 actors).
-        point_blocks, cell_blocks, color_blocks = [], [], []
-        offset = 0
-        for body_index, body in enumerate(document.bodies):
-            mesh = body.mesh
-            if mesh is None or not len(mesh.tris):
-                continue
-            colors = np.empty((len(mesh.tris), 3), dtype=np.uint8)
-            if body_index in body_rgb:
-                colors[:] = [int(c * 255) for c in body_rgb[body_index]]
-            else:
-                colors[:] = [int(c * 255) for c in package_rgb]
-                owned = face_rgb.get(body_index)
-                if owned:
-                    by_color: dict[tuple, list[int]] = {}
-                    for f_index, rgb in owned.items():
-                        by_color.setdefault(rgb, []).append(f_index)
-                    for rgb, faces in by_color.items():
-                        mask = np.isin(
-                            mesh.tri_face_ids,
-                            np.asarray(faces, dtype=np.int32),
-                        )
-                        colors[mask] = [int(c * 255) for c in rgb]
-            point_blocks.append(mesh.points)
-            cell_blocks.append(mesh.tris.astype(np.int64) + offset)
-            color_blocks.append(colors)
-            offset += len(mesh.points)
-
-        if point_blocks:
-            tris = np.vstack(cell_blocks)
-            cells = np.column_stack(
-                [np.full(len(tris), 3, dtype=np.int64), tris]
-            ).ravel()
-            merged = pv.PolyData(np.vstack(point_blocks), cells)
-            merged.cell_data["rgb"] = np.vstack(color_blocks)
+        face_rgb, body_rgb = self._split_preview_color_maps(registry, regions)
+        merged = self._build_merged_preview(
+            document, face_rgb, body_rgb, (0.42, 0.44, 0.50)
+        )
+        if merged is not None:
             plotter.add_mesh(merged, scalars="rgb", rgb=True,
                              smooth_shading=False, show_edges=False)
-
         plotter.view_isometric()
         plotter.reset_camera()
         plotter.render()
@@ -449,6 +484,72 @@ class SeparateUnibodyTool(ToolMode):
             return [self._manual.get(i) for i in range(len(registry.pins))]
         return self._grown or [None] * len(registry.pins)
 
+    def _grow_progress(self):
+        """A loading-bar callback for grow_pin_regions, or None when there is
+        no real window (headless). Growing a big unibody connector is the
+        slow part of entering this tool — drive the status-bar bar through it
+        so a 291-pin DDR5 switch never looks hung."""
+        window = self.ctx.window
+        if not hasattr(window, "progress"):
+            return None
+
+        def tick(done: int, total: int) -> None:
+            window.progress("Growing pin regions", done, max(total, 1))
+
+        return tick
+
+    def _paint_mouth(self, pin, region, by_body, net_pastels, stats) -> None:
+        """A CON/HEAD pin paints in its net's (tail's) colour. On a unibody it
+        grows and splits like a tail; on an already-split contact it stays a
+        passive anchor."""
+        rgb = net_pastels.get(pin.name, UNJOINED_MOUTH_RGB)
+        faces = region if region else pin.face_ids
+        for body_index, face_index in faces:
+            by_body.setdefault(body_index, {})[face_index] = rgb
+        stats["mouth_pins"] += 1
+        if region:
+            stats["mouth_grown"] += 1
+            stats["grown_faces"] += len(region)
+            stats["seed_faces"] += len(pin.face_ids)
+
+    def _paint_grown(self, registry):
+        """Colour the grown preview; whole-body pins paint directly. Returns
+        (face-colour map for face-region pins, stats dict)."""
+        net_pastels = designator_pastels(registry.pins)
+        by_body: dict[int, dict[int, tuple[float, float, float]]] = {}
+        stats = {"grown_faces": 0, "seed_faces": 0, "body_pins": 0,
+                 "mouth_pins": 0, "mouth_grown": 0}
+        for index, (pin, region) in enumerate(zip(registry.pins, self._grown)):
+            if pin.role == "mouth":
+                self._paint_mouth(pin, region, by_body, net_pastels, stats)
+            elif region is None:
+                for body_index in pin.body_ids:
+                    self.ctx.scene.set_body_color(body_index, pastel(index))
+                stats["body_pins"] += 1
+            else:
+                stats["seed_faces"] += len(pin.face_ids)
+                stats["grown_faces"] += len(region)
+                for body_index, face_index in region:
+                    by_body.setdefault(body_index, {})[face_index] = pastel(index)
+        return by_body, stats
+
+    def _grown_preview_message(self, registry, stats) -> str:
+        parts = []
+        if stats["grown_faces"]:
+            smt = len(registry.pins) - stats["body_pins"] - stats["mouth_pins"]
+            parts.append(f"{smt} SMT/THR pin(s): {stats['seed_faces']} seed faces "
+                         f"grown to {stats['grown_faces']} by edge flow")
+        if stats["body_pins"]:
+            parts.append(f"{stats['body_pins']} SMT/THR pin(s) already separate bodies")
+        if stats["mouth_pins"]:
+            joined = sum(1 for p in registry.pins if p.role == "mouth" and p.name)
+            parts.append(
+                f"{stats['mouth_pins']} CON/HEAD pin(s) in their net's colour "
+                f"({joined} joined, {stats['mouth_grown']} will split, "
+                f"{stats['mouth_pins'] - stats['mouth_grown']} on already-split contacts)"
+            )
+        return "; ".join(parts) if parts else "Nothing to separate."
+
     def _regrow(self) -> None:
         """Edge-flow growth from the detected pin seeds + pastel preview."""
         document = self.ctx.document
@@ -460,110 +561,56 @@ class SeparateUnibodyTool(ToolMode):
             if self._actions_widget is not None:
                 self.paint_button.setChecked(False)
         self._grown = grow_pin_regions(
-            document, registry.pins, area_factor=float(self.factor_spin.value())
+            document, registry.pins, area_factor=float(self.factor_spin.value()),
+            progress=self._grow_progress(),
         )
+        if hasattr(self.ctx.window, "progress_done"):
+            self.ctx.window.progress_done()
         if self._preview_painted:
             self.ctx.scene.rebuild(document)
 
-        by_body: dict[int, dict[int, tuple[float, float, float]]] = {}
-        grown_faces = 0
-        seed_faces = 0
-        body_pins = 0
-        mouth_pins = 0
-        net_pastels = designator_pastels(registry.pins)
-        mouth_grown = 0
-        for index, (pin, region) in enumerate(zip(registry.pins, self._grown)):
-            if pin.role == "mouth":
-                # CON/HEAD pins paint in their net's (tail's) colour. On a
-                # unibody they grow and split like tails; on an already-split
-                # contact they stay passive anchors.
-                rgb = net_pastels.get(pin.name, UNJOINED_MOUTH_RGB)
-                faces = region if region else pin.face_ids
-                for body_index, face_index in faces:
-                    by_body.setdefault(body_index, {})[face_index] = rgb
-                mouth_pins += 1
-                if region:
-                    mouth_grown += 1
-                    grown_faces += len(region)
-                    seed_faces += len(pin.face_ids)
-                continue
-            rgb = pastel(index)
-            if region is None:
-                for body_index in pin.body_ids:
-                    self.ctx.scene.set_body_color(body_index, rgb)
-                body_pins += 1
-                continue
-            seed_faces += len(pin.face_ids)
-            grown_faces += len(region)
-            for body_index, face_index in region:
-                by_body.setdefault(body_index, {})[face_index] = rgb
+        by_body, stats = self._paint_grown(registry)
         for body_index, face_rgb in by_body.items():
             self.ctx.scene.paint_faces(body_index, face_rgb)
         self._preview_painted = True
-
-        # keep the alpha inspection view through live cutoff edits (the
-        # rebuild above resets opacity)
+        # keep the alpha inspection view through live cutoff edits
         self.ctx.scene.set_model_opacity(0.5)
-
-        parts = []
-        if grown_faces:
-            parts.append(
-                f"{len(registry.pins) - body_pins - mouth_pins} SMT/THR pin(s): "
-                f"{seed_faces} seed faces grown to {grown_faces} by edge flow"
-            )
-        if body_pins:
-            parts.append(f"{body_pins} SMT/THR pin(s) already separate bodies")
-        if mouth_pins:
-            joined = sum(
-                1 for p in registry.pins if p.role == "mouth" and p.name
-            )
-            parts.append(
-                f"{mouth_pins} CON/HEAD pin(s) in their net's colour "
-                f"({joined} joined, {mouth_grown} will split, "
-                f"{mouth_pins - mouth_grown} on already-split contacts)"
-            )
-        self.info_label.setText("; ".join(parts) if parts else "Nothing to separate.")
+        self.info_label.setText(self._grown_preview_message(registry, stats))
         self._update_split_preview()
 
     # --------------------------------------------------------------- apply
 
-    def apply(self) -> None:
-        document = self.ctx.document
-        registry = self.ctx.window.pins
-        if document is None or not registry.pins:
-            return
+    def _take_painted_bundles(self, registry):
+        """Convert the painted bundles into grown regions + a journal payload,
+        then disarm Paint Regions."""
+        self._grown = [
+            sorted(self._manual.get(index)) if self._manual.get(index) else None
+            for index in range(len(registry.pins))
+        ]
+        bundles = {
+            str(registry.pins[index].number): [list(key) for key in sorted(bundle)]
+            for index, bundle in self._manual.items()
+            if bundle
+        }
+        self._manual = None
+        if self._actions_widget is not None:
+            self.paint_button.setChecked(False)
+        return bundles
+
+    def _regions_for_apply(self, registry):
+        """What to split: painted bundles (exactly) or the grown regions.
+        Returns (non-empty regions list, painted_bundles|None)."""
         painted_bundles = None
         if self._manual is not None:
-            # split EXACTLY the painted bundles
-            self._grown = [
-                sorted(self._manual.get(index))
-                if self._manual.get(index) else None
-                for index in range(len(registry.pins))
-            ]
-            painted_bundles = {
-                str(registry.pins[index].number): [list(key) for key in sorted(bundle)]
-                for index, bundle in self._manual.items()
-                if bundle
-            }
-            self._manual = None
-            if self._actions_widget is not None:
-                self.paint_button.setChecked(False)
+            painted_bundles = self._take_painted_bundles(registry)
         elif self._grown is None:
             self._regrow()
-        regions = [region for region in self._grown if region]
-        if not regions:
-            self.status("Separate Unibody: nothing to split — pins are already bodies")
-            return
+        return [region for region in self._grown if region], painted_bundles
 
-        before = len(document.bodies)
-        window = self.ctx.window
-
-        # The split re-tessellates with new face ids, so the original per-face
-        # colours can't survive as faces — carry them as BODY colours instead:
-        # each pin body takes its region's dominant colour, the package the
-        # dominant of what remains.
-        grown_list = list(self._grown)
-        pin_region_colors: list = []
+    def _pin_region_colors(self, document, registry, grown_list):
+        """Each pin body's display colour = its region's dominant face colour
+        (face ids die in the split, so colours move to the BODY)."""
+        colors = []
         for pin, region in zip(registry.pins, grown_list):
             color = None
             if region:
@@ -571,17 +618,19 @@ class SeparateUnibodyTool(ToolMode):
                 for body_index, face_index in region:
                     by_body.setdefault(body_index, []).append(face_index)
                 for body_index, faces in by_body.items():
-                    color = dominant_face_color(
-                        document.bodies[body_index].mesh, faces
-                    )
+                    color = dominant_face_color(document.bodies[body_index].mesh, faces)
                     if color:
                         break
-            pin_region_colors.append(color)
+            colors.append(color)
+        return colors
+
+    def _remainder_colors(self, document, regions):
+        """Dominant colour of each body's faces that no pin region claimed."""
         all_region_faces: dict[int, set[int]] = {}
         for region in regions:
             for body_index, face_index in region:
                 all_region_faces.setdefault(body_index, set()).add(face_index)
-        remainder_colors = {
+        return {
             body_index: dominant_face_color(
                 document.bodies[body_index].mesh,
                 [f for f in range(1, document.bodies[body_index].mesh.face_count + 1)
@@ -589,114 +638,72 @@ class SeparateUnibodyTool(ToolMode):
             )
             for body_index, faces in all_region_faces.items()
         }
-        old_records = {id(body) for body in document.bodies}
 
-        # Reversible: the split only reorganises in-memory geometry, so a
-        # snapshot of the body table + pin links restores everything.
-        self._undo_state = (
-            list(document.bodies),
-            [(pin, list(pin.body_ids), list(pin.face_ids)) for pin in registry.pins],
+    def _name_pin_body(self, document, pin, body_index, pin_index, pin_region_colors):
+        pin.body_ids = [body_index]
+        pin.face_ids = []
+        suffix = "_HEAD" if pin.role == "mouth" else ""
+        body = document.bodies[body_index]
+        body.name = (pin.name or f"PIN_{pin.number}") + suffix
+        body.role = "pin"
+        region_color = (
+            pin_region_colors[pin_index] if pin_index < len(pin_region_colors) else None
+        )
+        if region_color is not None:
+            body.color = region_color
+
+    def _link_split_pins(self, document, registry, grown_list, region_bodies,
+                         pin_region_colors):
+        """Link each grown pin to its sealed solid by region IDENTITY (regions
+        was built as [r for r in grown if r], so each grown pin owns one slot —
+        no centroid guessing). Returns (matched, unsplit)."""
+        region_position: dict[int, int] = {}
+        position = 0
+        for pin_index, region in enumerate(grown_list):
+            if region:
+                region_position[pin_index] = position
+                position += 1
+        matched = unsplit = 0
+        for pin_index, pin in enumerate(registry.pins):
+            position = region_position.get(pin_index)
+            if position is None:
+                continue  # already a body, or a passive anchor
+            body_index = region_bodies[position]
+            if body_index is None:
+                unsplit += 1  # stays a face-region pin (still valid metadata)
+                continue
+            self._name_pin_body(document, pin, body_index, pin_index, pin_region_colors)
+            matched += 1
+        return matched, unsplit
+
+    def _color_package_pieces(self, document, old_records, pin_indices, remainder_colors):
+        """New package pieces inherit the dominant colour of the non-pin faces."""
+        fallback = next((c for c in remainder_colors.values() if c is not None), None)
+        pin_set = set(pin_indices)
+        for body_index, body in enumerate(document.bodies):
+            if id(body) in old_records or body_index in pin_set:
+                continue
+            if body.color is None and fallback is not None:
+                body.color = fallback
+
+    def _journal_split(self, document, before, regions, painted_bundles,
+                       pin_indices, matched, remapped):
+        inputs: dict = {"regions": len(regions)}
+        if painted_bundles is not None:
+            inputs["bundles"] = painted_bundles
+        self.ctx.journal.record(
+            tool=self.id,
+            params={"area_factor": float(self.factor_spin.value()),
+                    "painted": painted_bundles is not None},
+            inputs=inputs,
+            result={"bodies_before": before, "bodies_after": len(document.bodies),
+                    "pin_bodies": len(pin_indices), "pins_matched": matched,
+                    "face_pins_remapped": remapped},
         )
 
-        # (body, face) references die with the old body table — capture every
-        # face-region pin's geometry now so mouth pins and unsplit primaries
-        # can be re-pointed at the new faces after the split.
-        face_anchors = capture_pin_face_anchors(document, registry.pins)
-        b = document.bounds()
-        remap_tol = float(np.linalg.norm(
-            [b[1] - b[0], b[3] - b[2], b[5] - b[4]]
-        )) * 5.0e-3
-
-        try:
-            # Cut EXACTLY what the preview shows: the grown regions' junction
-            # loops. (find_pin_cut cross-section planes are benched until the
-            # detector is tuned — they could land cuts the preview never
-            # showed, and preview/apply must never disagree.)
-            region_bodies = document.split_by_face_regions(
-                regions, progress=window.progress
-            )
-            self._preview_painted = False
-            self._grown = None
-            pin_indices = [b for b in region_bodies if b is not None]
-            if not pin_indices:
-                self.status(
-                    "Separate Unibody: split produced nothing — junction loops may "
-                    "not be planar; adjust the cutoff and retry"
-                )
-                return
-
-            # Exact linking: regions was built as [r for r in grown if r], so
-            # each pin with a grown region owns one slot of region_bodies —
-            # by IDENTITY, no centroid guessing (a pin grown through the
-            # whole body has its centroid far from the seed; guessing fails).
-            region_position: dict[int, int] = {}
-            position = 0
-            for pin_index, region in enumerate(grown_list):
-                if region:
-                    region_position[pin_index] = position
-                    position += 1
-            matched = 0
-            unsplit = 0
-            for pin_index, pin in enumerate(registry.pins):
-                position = region_position.get(pin_index)
-                if position is None:
-                    continue  # already a body, or a passive anchor
-                body_index = region_bodies[position]
-                if body_index is None:
-                    unsplit += 1  # stays a face-region pin (still valid metadata)
-                    continue
-                pin.body_ids = [body_index]
-                pin.face_ids = []
-                suffix = "_HEAD" if pin.role == "mouth" else ""
-                document.bodies[body_index].name = (
-                    pin.name or f"PIN_{pin.number}"
-                ) + suffix
-                document.bodies[body_index].role = "pin"
-                region_color = (
-                    pin_region_colors[pin_index]
-                    if pin_index < len(pin_region_colors) else None
-                )
-                if region_color is not None:
-                    document.bodies[body_index].color = region_color
-                matched += 1
-
-            remapped = remap_pin_faces(document, face_anchors, remap_tol)
-
-            # Package pieces (newly created, not pins) inherit the dominant
-            # colour of the faces that were NOT part of any pin region.
-            fallback = next(
-                (c for c in remainder_colors.values() if c is not None), None
-            )
-            for body_index, body in enumerate(document.bodies):
-                if id(body) in old_records or body_index in set(pin_indices):
-                    continue
-                if body.color is None and fallback is not None:
-                    body.color = fallback
-
-            inputs: dict = {"regions": len(regions)}
-            if painted_bundles is not None:
-                inputs["bundles"] = painted_bundles
-            self.ctx.journal.record(
-                tool=self.id,
-                params={"area_factor": float(self.factor_spin.value()),
-                        "painted": painted_bundles is not None},
-                inputs=inputs,
-                result={
-                    "bodies_before": before,
-                    "bodies_after": len(document.bodies),
-                    "pin_bodies": len(pin_indices),
-                    "pins_matched": matched,
-                    "face_pins_remapped": remapped,
-                },
-            )
-            window.progress("Rendering bodies", 0, 0)
-            window.document_mutated()
-        finally:
-            window.progress_done()
-        # pastel-preview the NEW pin bodies (display only — exported colours
-        # stay the real ones) so the separation result is verifiable at a
-        # glance, still translucent. CON/HEAD pins keep their face regions
-        # and paint in their net's (tail's) colour.
+    def _pastel_preview_split(self, registry):
+        """Pastel-preview the new pin bodies (display only — exported colours
+        stay real), still translucent. CON/HEAD pins paint in their net colour."""
         net_pastels = designator_pastels(registry.pins)
         mouth_paint: dict[int, dict[int, tuple[float, float, float]]] = {}
         for pin_index, pin in enumerate(registry.pins):
@@ -712,8 +719,8 @@ class SeparateUnibodyTool(ToolMode):
         for body_id, face_rgb in mouth_paint.items():
             self.ctx.scene.paint_faces(body_id, face_rgb)
         self.ctx.scene.set_model_opacity(0.5)
-        self._preview_painted = True  # exit() rebuilds to restore real colours
-        self.undo_button.setEnabled(True)
+
+    def _report_split(self, before, document, pin_indices, matched, unsplit):
         message = (
             f"Split done: {before} body(ies) -> {len(document.bodies)} "
             f"({len(pin_indices)} pin bodies, {matched} pins re-linked; "
@@ -725,11 +732,72 @@ class SeparateUnibodyTool(ToolMode):
                 f"appeared at their location) — they remain face-region pins."
             )
         self.info_label.setText(message)
-        self._update_split_preview()  # now shows the real post-split bodies
         self.status(
             f"Separate Unibody: {len(pin_indices)} whole-pin bodies created — "
             f"{len(document.bodies)} bodies total (Undo available)"
         )
+
+    def apply(self) -> None:
+        document = self.ctx.document
+        registry = self.ctx.window.pins
+        if document is None or not registry.pins:
+            return
+        regions, painted_bundles = self._regions_for_apply(registry)
+        if not regions:
+            self.status("Separate Unibody: nothing to split — pins are already bodies")
+            return
+
+        before = len(document.bodies)
+        window = self.ctx.window
+        grown_list = list(self._grown)
+        pin_region_colors = self._pin_region_colors(document, registry, grown_list)
+        remainder_colors = self._remainder_colors(document, regions)
+        old_records = {id(body) for body in document.bodies}
+
+        # Reversible: the split only reorganises in-memory geometry, so a
+        # snapshot of the body table + pin links restores everything.
+        self._undo_state = (
+            list(document.bodies),
+            [(pin, list(pin.body_ids), list(pin.face_ids)) for pin in registry.pins],
+        )
+        # (body, face) references die with the old body table — capture every
+        # face-region pin's geometry so it can be re-pointed after the split.
+        face_anchors = capture_pin_face_anchors(document, registry.pins)
+        b = document.bounds()
+        remap_tol = float(np.linalg.norm([b[1] - b[0], b[3] - b[2], b[5] - b[4]])) * 5.0e-3
+
+        try:
+            # Cut EXACTLY what the preview shows: the grown regions' junction
+            # loops (preview/apply must never disagree).
+            region_bodies = document.split_by_face_regions(
+                regions, progress=window.progress
+            )
+            self._preview_painted = False
+            self._grown = None
+            pin_indices = [bi for bi in region_bodies if bi is not None]
+            if not pin_indices:
+                self.status(
+                    "Separate Unibody: split produced nothing — junction loops may "
+                    "not be planar; adjust the cutoff and retry"
+                )
+                return
+            matched, unsplit = self._link_split_pins(
+                document, registry, grown_list, region_bodies, pin_region_colors
+            )
+            remapped = remap_pin_faces(document, face_anchors, remap_tol)
+            self._color_package_pieces(document, old_records, pin_indices, remainder_colors)
+            self._journal_split(document, before, regions, painted_bundles,
+                                pin_indices, matched, remapped)
+            window.progress("Rendering bodies", 0, 0)
+            window.document_mutated()
+        finally:
+            window.progress_done()
+
+        self._pastel_preview_split(registry)
+        self._preview_painted = True  # exit() rebuilds to restore real colours
+        self.undo_button.setEnabled(True)
+        self._report_split(before, document, pin_indices, matched, unsplit)
+        self._update_split_preview()  # now shows the real post-split bodies
 
     def undo(self) -> None:
         """Restore the pre-split body table and pin links — separation only

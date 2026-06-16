@@ -1039,18 +1039,59 @@ def _serpentine_variant(
     return first + second
 
 
+def _single_line_axis(centroids: np.ndarray) -> int | None:
+    """The long-axis index (0/1) when the pins form ONE straight line — the
+    perpendicular spread is far smaller than the along-axis pitch. A
+    micro-staggered single row (sub-micron Y noise from mesh centroids) reads
+    as one line here, so it is numbered monotonically, not snaked as two
+    spurious sub-rows. None when there are genuinely separated rows."""
+    if len(centroids) < 3:
+        return 0
+    span = centroids[:, :2].max(axis=0) - centroids[:, :2].min(axis=0)
+    long_axis = int(np.argmax(span))
+    along = np.sort(centroids[:, long_axis])
+    gaps = np.diff(along)
+    gaps = gaps[gaps > 1e-9]
+    pitch = float(np.median(gaps)) if len(gaps) else 0.0
+    if pitch > 0.0 and span[1 - long_axis] < 0.5 * pitch:
+        return long_axis
+    return None
+
+
+def _line_order(centroids: np.ndarray, axis: int, pin1_hint) -> list[int]:
+    """Order pins monotonically along `axis`, flipped so pin 1 is the end
+    nearest the pin-1 hint (if any)."""
+    order = sorted(range(len(centroids)), key=lambda i: centroids[i, axis])
+    if pin1_hint is not None and order:
+        hint = np.asarray(pin1_hint[:2], dtype=np.float64)
+        if (np.linalg.norm(centroids[order[-1], :2] - hint)
+                < np.linalg.norm(centroids[order[0], :2] - hint)):
+            order = order[::-1]
+    return order
+
+
 def serpentine_order(
     centroids: np.ndarray,
     *,
     pin1_hint: tuple[float, float] | None = None,
 ) -> list[int]:
     """Two-row serpentine numbering per the design intent's example: one row
-    ascending X, the opposite row descending X. With a pin-1 hint, the variant
-    whose first pin lies nearest the hint wins."""
+    ascending X, the opposite row descending X. A genuinely single (even
+    micro-staggered) row is numbered monotonically along its long axis. With a
+    pin-1 hint, the variant whose first pin lies nearest the hint wins."""
     centroids = np.asarray(centroids, dtype=np.float64)
+    line = _single_line_axis(centroids)
+    if line is not None:
+        return _line_order(centroids, line, pin1_hint)
     if pin1_hint is None:
         return _serpentine_variant(centroids, False, False)
+    return _serpentine_with_hint(centroids, pin1_hint)
 
+
+def _serpentine_with_hint(centroids: np.ndarray, pin1_hint) -> list[int]:
+    """The serpentine variant whose first pin lies nearest the pin-1 hint, then
+    the cleanest (shortest) snake — so a column is numbered monotonically along
+    its varying axis, not scrambled by a constant one."""
     hint = np.asarray(pin1_hint[:2], dtype=np.float64)
     best, best_key = None, None
     for axis in (1, 0):
@@ -1059,9 +1100,6 @@ def serpentine_order(
                 order = _serpentine_variant(centroids, flip_x, start_top, axis)
                 if not order:
                     continue
-                # anchor pin 1 at the hint first, then prefer the cleanest
-                # (shortest) snake — so a column is numbered monotonically
-                # along its varying axis, not scrambled by a constant one.
                 key = (round(float(np.linalg.norm(centroids[order[0], :2] - hint)), 3),
                        _path_length(centroids, order))
                 if best_key is None or key < best_key:
@@ -1227,24 +1265,42 @@ def _predict_grid_with_axes(
     return names, outliers
 
 
-def predict_serpentine_order(pins: list[Pin], anchors: dict[int, int]) -> list[int] | None:
-    """Find the serpentine variant whose numbering matches every manually
-    numbered pin (pin index -> number). None if no variant fits."""
-    centroids = np.array([pin.centroid for pin in pins], dtype=np.float64)
-    matching = []
-    for axis in (1, 0):  # rows along Y (chips) OR columns along X (connectors)
+def _order_candidates(centroids: np.ndarray) -> list[list[int]]:
+    """Geometric numbering candidates for a pin set: single-axis rows/columns
+    in both directions (a straight row/column, even when micro-staggered) PLUS
+    the 2-row/col serpentine variants (snaked dual rows). The anchor-fit picks
+    among them, so straight, staggered, and snaked layouts are all covered
+    without committing to one rigid pattern up front."""
+    count = len(centroids)
+    candidates: list[list[int]] = []
+    for axis in (0, 1):
+        straight = sorted(range(count), key=lambda i: centroids[i, axis])
+        candidates.append(straight)
+        candidates.append(straight[::-1])
+    for axis in (1, 0):
         for flip_x in (False, True):
             for start_top in (False, True):
-                order = _serpentine_variant(centroids, flip_x, start_top, axis)
-                if all(
-                    order.index(index) + 1 == number
-                    for index, number in anchors.items()
-                ):
-                    matching.append(order)
-    if not matching:
+                candidates.append(
+                    _serpentine_variant(centroids, flip_x, start_top, axis))
+    return candidates
+
+
+def predict_serpentine_order(pins: list[Pin], anchors: dict[int, int]) -> list[int] | None:
+    """Geometry-adaptive numbering: order the pins along whichever geometric
+    traversal best AGREES with the manually numbered anchors (pin index ->
+    number). Robust to micro-staggered rows and to a stray/partial anchor set —
+    it maximises anchor agreement instead of demanding one exact variant, and
+    always returns an ordering (the cleanest geometric one if nothing fits)."""
+    if not pins:
         return None
-    # several variants can satisfy a single anchor — take the cleanest snake
-    return min(matching, key=lambda o: _path_length(centroids, o))
+    centroids = np.array([pin.centroid for pin in pins], dtype=np.float64)
+
+    def fit(order: list[int]) -> tuple:
+        hits = sum(1 for index, number in anchors.items()
+                   if 1 <= number <= len(order) and order[number - 1] == index)
+        return hits, -_path_length(centroids, order)
+
+    return max(_order_candidates(centroids), key=fit)
 
 
 def row_major_order(centroids: np.ndarray) -> list[int]:

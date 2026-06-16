@@ -28,7 +28,7 @@ TIN_RGB = (0.78, 0.79, 0.81)  # conditioning palette: bare contact metal
 # Pin TIPS are the most uniform, repeated feature on a connector: a small end
 # face every pin has (square/round/curved). Real pin tips are ~0.3 mm squares,
 # so the auto tip detector focuses on this absolute area window.
-TIP_AREA_MIN = 0.004  # mm^2
+TIP_AREA_MIN = 0.0015  # mm^2 (tiny lead tips exist; the hill gate winnows)
 TIP_AREA_MAX = 2.0    # mm^2 (0.3 mm square ~ 0.09)
 
 # A true tip's 1-ring neighbours (the pin's sides) all wrap away by more than
@@ -102,62 +102,21 @@ def _face_table(mesh) -> dict:
     return table
 
 
-# A pin TIP is an END-CAP: its outward normal points along the part's seating
-# axis (`up`), unlike the pin's side walls (normal perpendicular to `up`).
-# Faces within this cone of `up` are end-caps; everything else is a side wall.
-_ENDCAP_COS = 0.6   # cos ~53 deg
-
-# A real tip PROTRUDES: its neighbours recede behind it (high _behind_fraction).
-# Gated PER ROW, not per face — a per-face gate strips the moderate-protrusion
-# faces small irregular connectors need to even form a row. A whole row whose
-# mean protrusion is near zero is a POCKET row (a recess floor / mid-wall curve,
-# the DDR5 "pocket faces as tips" bug) and is dropped; a row of real tips keeps
-# its members for assembly. BGA balls detect on the grid path before this.
-_POCKET_BEHIND = 0.2
-
-
-def _behind_fraction(centroid, normal, neighbours, table) -> float:
-    """Fraction of a face's 1-ring neighbours that RECEDE behind its plane
-    (their centroids on the inner side of its outward normal). By definition a
-    pin tip protrudes, so ALL neighbours recede (~1.0); a pocket floor or a
-    face flush against a curved wall has neighbours level or ahead (low). The
-    tip binner gates on this to drop non-tip faces (pockets, mid-wall curves)."""
-    if not neighbours:
-        return 0.0
-    behind = 0
-    for neighbour in neighbours:
-        info = table.get(neighbour)
-        if info is not None and float((info[1] - centroid) @ normal) < -1e-4:
-            behind += 1
-    return behind / len(neighbours)
-
-
 def _tip_records(document: EditorDocument) -> list:
     """Geometric pin-TIP faces, each as (body, fid, area, centroid(3,),
-    normal(3,), dims(3,), behind) — `behind` is the protrusion score (see
-    _behind_fraction). BGA grid detection ignores it; the tip binner gates on
-    it so pockets and curved non-tips never seed a pin."""
-    from collections import defaultdict
-
-    by_body: dict = defaultdict(list)
-    for record in _pin_tip_faces(document):
-        by_body[record[0]].append(record)
+    normal(3,), dims(3,)) — the candidate set the hill detector and BGA grid
+    both draw from."""
     out = []
-    for body_index, records in by_body.items():
-        mesh = document.bodies[body_index].mesh
-        normals = _face_normals(mesh)
-        table = _face_table(mesh)
-        adjacency = document.face_smooth_adjacency(body_index, None)
-        for _b, fid, area, cen, dims in records:
-            normal = normals.get(fid)
-            if normal is None:
-                continue
-            centroid = np.asarray(cen, dtype=float)
-            normal = np.asarray(normal, dtype=float)
-            behind = _behind_fraction(
-                centroid, normal, adjacency.get(fid, ()), table)
-            out.append((body_index, fid, area, centroid, normal,
-                        np.asarray(dims, dtype=float), behind))
+    norms = {
+        bi: _face_normals(b.mesh)
+        for bi, b in enumerate(document.bodies) if b.mesh is not None
+    }
+    for body_index, fid, area, cen, dims in _pin_tip_faces(document):
+        normal = norms.get(body_index, {}).get(fid)
+        if normal is None:
+            continue
+        out.append((body_index, fid, area, np.asarray(cen, dtype=float),
+                    np.asarray(normal, dtype=float), np.asarray(dims, dtype=float)))
     return out
 
 
@@ -212,109 +171,131 @@ def _cluster_1d(values: np.ndarray, tol: float) -> list:
     return clusters
 
 
-def _row_regularity(points: np.ndarray) -> float:
-    """Coefficient of variation of the gaps along a row's dominant axis — ~0
-    for an evenly pitched row, large for a scatter. This is the user's
-    'uniform deviation in a coordinate' signature, used to keep only the
-    genuine tip rows."""
-    if len(points) < 3:
-        return 9.0
-    t = np.sort(points @ _pca_axis(points))
-    gaps = np.diff(t)
-    gaps = gaps[gaps > 1e-9]
-    if len(gaps) < 2 or gaps.mean() <= 0:
-        return 9.0
-    return float(gaps.std() / gaps.mean())
+def _local_extreme_hills(document: EditorDocument, records: list,
+                         radius: float, tol: float) -> list:
+    """Records that are LOCAL convex peaks ('hills'): the face sits at the
+    extreme of the NEARBY solid along its OWN normal, in any direction. This is
+    orientation-agnostic — sideways (QFP/USB-C), angled (board-edge) and
+    up-facing (header) tips all qualify, while fillets, pockets and interior
+    faces (something nearby out-protrudes them) drop out. Replaces the old
+    seat-axis end-cap bias that grabbed up-facing fillets and missed side tips."""
+    try:
+        from scipy.spatial import cKDTree
+    except Exception:  # noqa: BLE001 — no spatial lib: skip the hill gate
+        return records
+    points = np.concatenate(
+        [b.mesh.points for b in document.bodies if b.mesh is not None])
+    tree = cKDTree(points)
+    hills = []
+    for record in records:
+        centroid, normal = record[3], record[4]
+        near = tree.query_ball_point(centroid, radius)
+        if near and float(centroid @ normal) >= float(
+                (points[near] @ normal).max()) - tol:
+            hills.append(record)
+    return hills
 
 
-def _endcap_tip_rows(records: list, up: np.ndarray, depth_tol: float) -> list:
-    """Bin the END-CAP tip faces (normal within the `up` cone) into tip PLANES
-    by their height along `up`. Each plane is a row dict
-    {members, depth, count, cv}; end-cap gating drops the pins' side walls
-    (the curved inner contact faces) so only flat tips survive."""
+def _dominant_shape(records: list, diag: float) -> list:
+    """Keep the records of the dominant tip SHAPE(s): group by area+bbox
+    signature, keep groups holding >= 40% of the biggest group's count. Pins are
+    uniform copies of one (or two, for dual-ended) tip shape; one-off bumps that
+    survived the hill gate fall away here."""
+    from collections import defaultdict
+
+    ltol = diag * 0.004
+    groups: dict = defaultdict(list)
+    for record in records:
+        key = (round(record[2] / (ltol * ltol), 0),
+               tuple(np.round(record[5] / ltol).astype(int)))
+        groups[key].append(record)
+    if not groups:
+        return []
+    floor = max(3.0, 0.4 * max(len(g) for g in groups.values()))
+    return [r for g in groups.values() if len(g) >= floor for r in g]
+
+
+def _role_split(depths: np.ndarray, level: float) -> float | None:
+    """Depth (along up) that splits PCB tails (below) from mating contacts
+    (above) — the midpoint of a clear bimodal gap in the pin depths. None when
+    the part is single-ended (one depth band) so every pin stays primary."""
+    if len(depths) < 4:
+        return None
+    sorted_d = np.sort(depths)
+    gaps = np.diff(sorted_d)
+    positive = gaps[gaps > 1e-9]
+    if not len(positive):
+        return None
+    widest = int(np.argmax(gaps))
+    if (gaps[widest] > 3.0 * float(np.median(positive))
+            and gaps[widest] > 0.2 * float(sorted_d[-1] - sorted_d[0])):
+        return 0.5 * float(sorted_d[widest] + sorted_d[widest + 1])
+    return None
+
+
+def _spatial_clusters(cens: np.ndarray) -> list:
+    """Union-find clusters of points within 0.6x the nearest-neighbour pitch —
+    the hill faces of one pin tip merge into one cluster."""
+    dist = np.linalg.norm(cens[:, None] - cens[None], axis=2)
+    np.fill_diagonal(dist, np.inf)
+    pitch = float(np.median(dist.min(axis=1)))
+    parent = list(range(len(cens)))
+
+    def find(i: int) -> int:
+        while parent[i] != i:
+            parent[i] = parent[parent[i]]
+            i = parent[i]
+        return i
+
+    for i, j in np.argwhere((dist > 0.0) & (dist < 0.6 * pitch)):
+        a, b = find(int(i)), find(int(j))
+        if a != b:
+            parent[b] = a
+    from collections import defaultdict
+    groups: dict = defaultdict(list)
+    for i in range(len(cens)):
+        groups[find(i)].append(i)
+    return list(groups.values())
+
+
+def _hills_to_pins(records: list, up: np.ndarray, level: float) -> list[Pin]:
+    """One pin per spatial cluster of hill faces (the faces of one tip merge);
+    role by the seat-depth split (tail below / mouth above) when the depths are
+    clearly bimodal, else all primary."""
     cens = np.array([r[3] for r in records])
-    norms = np.array([r[4] for r in records])
-    depth = cens @ up
-    endcap = np.abs(norms @ up) >= _ENDCAP_COS
-    if int(endcap.sum()) < 3:
-        endcap = np.abs(norms @ up) >= 0.4    # relax for shallow/curved tips
-    idx = np.where(endcap)[0]
-    behind = np.array([r[6] for r in records])
-    rows = []
-    for cluster in _cluster_1d(depth[idx], depth_tol):
-        members = idx[np.asarray(cluster, dtype=int)]
-        if len(members) >= 3:
-            rows.append({
-                "members": members,
-                "depth": float(depth[members].mean()),
-                "count": int(len(members)),
-                "cv": _row_regularity(cens[members]),
-                "behind": float(behind[members].mean()),
-            })
-    return rows
-
-
-def _modal_pin_rows(rows: list) -> list:
-    """Rows whose cap count is ~N, the MODAL row count — the genuine
-    one-cap-per-pin tip rows. A true tip row has one cap per pin, so the tail
-    and mating rows share that count, while a near-seat band of side caps
-    over-counts (2-4x); filtering to the mode drops those bands."""
-    from collections import Counter
-
-    regular = [r for r in rows if r["cv"] < 0.35] or rows
-    pin_count = Counter(r["count"] for r in regular).most_common(1)[0][0]
-    return [
-        r for r in regular if abs(r["count"] - pin_count) <= 0.4 * pin_count
-    ] or regular
-
-
-def _pick_tail_and_mouth(rows: list, depth_tol: float) -> tuple:
-    """(tail row, mouth row|None): among the genuine pin rows — dropping any
-    POCKET row (mean protrusion near zero, a recess floor not a tip) — the
-    lowest is the PCB tail and the highest distinct one above it is the mating
-    tip, the two ends of the same pins."""
-    candidates = _modal_pin_rows(rows)
-    protruding = [r for r in candidates if r["behind"] >= _POCKET_BEHIND]
-    candidates = protruding or candidates
-    tail = min(candidates, key=lambda r: r["depth"])
-    upper = [r for r in candidates
-             if r["depth"] > tail["depth"] + depth_tol * 2.0]
-    mouth = max(upper, key=lambda r: r["depth"]) if upper else None
-    return tail, mouth
+    clusters = _spatial_clusters(cens)
+    centres = [cens[cl].mean(axis=0) for cl in clusters]
+    split = _role_split(np.array([c @ up for c in centres]), level)
+    pins: list[Pin] = []
+    for members, centre in zip(clusters, centres):
+        role = "mouth" if split is not None and centre @ up > split else "primary"
+        pins.append(Pin(number=0, centroid=[float(v) for v in centre],
+                        face_ids=[(int(records[i][0]), int(records[i][1]))
+                                  for i in members], role=role))
+    return pins
 
 
 def auto_detect_tip_pins(document: EditorDocument) -> list[Pin]:
-    """Detect pins from their TIP end-caps, orientation-independently.
+    """Detect pins from their TIP faces, ORIENTATION-AGNOSTICALLY.
 
-    A pin tip is the small END-CAP face at the pin's extreme along the seat
-    axis (`up`, from the background Z-Sit). Binning the end-caps by their
-    height along `up` yields the part's tip PLANES; each plane that holds a
-    uniformly-pitched row of caps is one tip per pin. The lowest such row is
-    the PCB tail (SMT/THR primary); the highest distinct row above it is the
-    mating tip (CON/HEAD mouth) — two ends of the same pins, so they share a
-    row axis and (via Join) a designator. End-cap gating is what skips a
-    contact's inner side walls (the curved faces) in favour of its flat tip."""
+    A pin tip is a small CONVEX PEAK ('hill') — the face at the extreme of the
+    nearby solid along its OWN normal — in WHATEVER direction the pin faces
+    (sideways QFP/USB-C leads, up headers, angled board-edge). This drops the
+    seat-axis end-cap bias that grabbed up-facing fillets and missed sideways
+    tips. Hills are winnowed to the dominant uniform tip shape(s) and merged
+    one-per-pin; roles split tail/mouth by seat depth."""
     records = _tip_records(document)
     if len(records) < 3:
         return []
-    up, _level = _seating_frame(document, records)
+    up, level = _seating_frame(document, records)
     bounds = document.bounds()
-    span = float(np.linalg.norm([
+    diag = float(np.linalg.norm([
         bounds[1] - bounds[0], bounds[3] - bounds[2], bounds[5] - bounds[4]]))
-    depth_tol = max(span * 0.02, 1e-6)
-    rows = _endcap_tip_rows(records, up, depth_tol)
-    if not rows:
+    hills = _local_extreme_hills(
+        document, records, diag * 0.05, max(diag * 0.0008, 0.003))
+    if len(hills) < 3:
         return []
-    tail, mouth = _pick_tail_and_mouth(rows, depth_tol)
-
-    pins: list[Pin] = []
-    for row, role in ([(tail, "primary")]
-                      + ([(mouth, "mouth")] if mouth is not None else [])):
-        for i in row["members"]:
-            body_index, face, _a, cen, _n, _d, _b = records[int(i)]
-            pins.append(Pin(number=0, centroid=[float(v) for v in cen],
-                            face_ids=[(int(body_index), int(face))], role=role))
-    return pins
+    return _hills_to_pins(_dominant_shape(hills, diag) or hills, up, level)
 
 
 def _is_filled_grid(points: np.ndarray, up: np.ndarray) -> bool:

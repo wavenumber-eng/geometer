@@ -3,7 +3,10 @@ Every tool records its executions as declarative JSON; this module re-applies
 them to a freshly loaded document without any GUI:
 
     step_editor.py --apply ops.json input.step
-"""
+
+The loop is a dispatch table: one handler per tool, and detect_pins fans out
+again to one handler per recorded action. Handlers share a small mutable
+_ReplayState (document, registry, the separate undo snapshot)."""
 
 from __future__ import annotations
 
@@ -35,312 +38,429 @@ def _rotation_z(angle_deg: float) -> np.ndarray:
     return matrix
 
 
-def replay(document: EditorDocument, journal: Journal) -> PinRegistry:
-    """Re-apply a recorded conditioning session. Geometry ops replay their
-    computed transforms; detection ops re-run from their recorded inputs;
-    assignment ops (names, functions, hitboxes, colours) re-apply their
-    recorded results."""
-    registry = PinRegistry()
+class _ReplayState:
+    """Mutable state threaded through the per-tool replay handlers."""
 
-    # A logo undo cancels its emboss entirely — pair each undo with the
-    # nearest preceding un-undone apply and skip both (cheaper than embossing
-    # and snapshotting solids).
+    def __init__(self, document: EditorDocument, registry: PinRegistry) -> None:
+        self.document = document
+        self.registry = registry
+        self.separate_snapshot = None
+
+    def nearest_pin(self, centroid):
+        pins = self.registry.pins
+        if not pins:
+            return None
+        points = np.array([pin.centroid for pin in pins])
+        return pins[int(np.argmin(
+            np.linalg.norm(points - np.asarray(centroid), axis=1)
+        ))]
+
+
+def _logo_undo_skips(journal: Journal) -> set[int]:
+    """A logo undo cancels its emboss entirely — pair each undo with the
+    nearest preceding un-undone apply and skip both (cheaper than embossing
+    and snapshotting solids)."""
     skip: set[int] = set()
-    pending_logo: list[int] = []
+    pending: list[int] = []
     for index, op in enumerate(journal.operations):
         if op.tool != "logo":
             continue
         if op.params.get("action") == "undo":
-            if pending_logo:
-                skip.update((pending_logo.pop(), index))
+            if pending:
+                skip.update((pending.pop(), index))
         else:
-            pending_logo.append(index)
+            pending.append(index)
+    return skip
 
-    def _nearest_pin(centroid):
-        if not registry.pins:
-            return None
-        points = np.array([pin.centroid for pin in registry.pins])
-        return registry.pins[int(np.argmin(
+
+# --------------------------------------------------------------- geometry ops
+
+def _replay_zsit(state: _ReplayState, op) -> None:
+    state.document.apply_trsf(np.asarray(op.result["matrix"]))
+
+
+def _replay_pin1(state: _ReplayState, op) -> None:
+    if op.params.get("action") == "reset":
+        state.document.apply_trsf(_rotation_z(-op.inputs.get("undone_deg", 0.0)))
+    else:
+        state.document.apply_trsf(_rotation_z(op.result["angle_deg"]))
+
+
+def _replay_front(state: _ReplayState, op) -> None:
+    """Redefine Front: every action (constraints/manual/reset) replays as the
+    recorded in-plane spin about Z."""
+    state.document.apply_trsf(_rotation_z(op.result.get("angle_deg", 0.0)))
+
+
+# ------------------------------------------------------- detect_pins actions
+
+def _detect_context_plane(state: _ReplayState, op) -> None:
+    found = detect_pins_by_section(
+        state.document, op.inputs["plane_point"], op.inputs["plane_normal"]
+    )
+    state.registry.set_pins(state.registry.pins + found)
+
+
+def _detect_seed_pin(state: _ReplayState, op) -> None:
+    role = op.params.get("role", "primary")
+    # Tip seeds (grow=False) and mouth seeds are single faces; older primary
+    # journals (no grow key) grew across smooth edges and must be reproduced.
+    if role == "mouth" or not op.params.get("grow", True):
+        region = {op.inputs["face"]}
+    else:
+        region = grow_smooth_region(
+            state.document, op.inputs["body"], op.inputs["face"],
+            smooth_angle_deg=op.params.get("smooth_angle_deg", 30.0),
+            area_factor=op.params.get("area_factor"),
+        )
+    mesh = state.document.bodies[op.inputs["body"]].mesh
+    centroid = mesh_region_centroid(mesh, sorted(region))
+    state.registry.set_pins(state.registry.pins + [Pin(
+        number=0, centroid=centroid,
+        face_ids=[(op.inputs["body"], f) for f in sorted(region)],
+        role=role,
+    )])
+
+
+def _detect_similar(state: _ReplayState, op) -> None:
+    from .pins import find_similar_regions
+
+    claimed = {
+        (body, face)
+        for pin in state.registry.pins
+        for body, face in pin.face_ids
+    }
+    matches = find_similar_regions(
+        state.document, op.inputs["body"], set(op.inputs["faces"]),
+        smooth_angle_deg=op.params.get("smooth_angle_deg", 30.0),
+        claimed=claimed,
+        area_tol=op.params.get("area_tol", 0.12),
+        dim_tol=op.params.get("dim_tol", 0.25),
+    )
+    role = op.params.get("role", "mouth")
+    found = []
+    for match in matches:
+        mesh = state.document.bodies[match[0][0]].mesh
+        centroid = mesh_region_centroid(mesh, sorted(face for _b, face in match))
+        if centroid is not None:
+            found.append(Pin(number=0, centroid=centroid,
+                             face_ids=match, role=role))
+    state.registry.set_pins(state.registry.pins + found)
+
+
+def _detect_join_mouth(state: _ReplayState, op) -> None:
+    for centroid, name in zip(op.result.get("centroids", []),
+                              op.result.get("names", [])):
+        pin = state.nearest_pin(centroid)
+        if pin is not None:
+            pin.name = name
+            pin.name_source = "joined"
+
+
+def _detect_renumber(state: _ReplayState, op) -> None:
+    primaries = [p for p in state.registry.pins if p.role != "mouth"]
+    mouths = [p for p in state.registry.pins if p.role == "mouth"]
+    order = order_pins(primaries, mode=op.params.get("ordering", "serpentine"))
+    state.registry.set_pins([primaries[i] for i in order] + mouths)
+    for pin, name in zip(state.registry.pins, op.result.get("names", [])):
+        pin.name = name
+
+
+def _detect_predict(state: _ReplayState, op) -> None:
+    names = op.result.get("names", [])
+    numbers = op.result.get("order", [])
+    by_number = {pin.number: pin for pin in state.registry.pins}
+    ordered = [by_number[n] for n in numbers if n in by_number]
+    if len(ordered) == len(state.registry.pins):
+        state.registry.set_pins(ordered)
+    for pin, name in zip(state.registry.pins, names):
+        pin.name = name
+
+
+def _detect_rename(state: _ReplayState, op) -> None:
+    pin = state.nearest_pin(op.inputs["centroid"])
+    if pin is not None:
+        pin.name = op.result.get("name", "")
+        pin.name_source = op.result.get("name_source", "")
+
+
+def _detect_delete(state: _ReplayState, op) -> None:
+    pin = state.nearest_pin(op.inputs["centroid"])
+    if pin is not None:
+        state.registry.set_pins([p for p in state.registry.pins if p is not pin])
+
+
+def _detect_set_order(state: _ReplayState, op) -> None:
+    remaining = list(state.registry.pins)
+    ordered = []
+    for centroid in op.result.get("centroids", []):
+        if not remaining:
+            break
+        points = np.array([p.centroid for p in remaining])
+        nearest = int(np.argmin(
             np.linalg.norm(points - np.asarray(centroid), axis=1)
-        ))]
+        ))
+        ordered.append(remaining.pop(nearest))
+    state.registry.set_pins(ordered + remaining)
 
-    # Separate is reversible in the GUI (snapshot of body table + pin links);
-    # replay mirrors that so undo ops restore instead of being ignored.
-    separate_snapshot = None
+
+def _detect_clear(state: _ReplayState, op) -> None:
+    state.registry.set_pins([])
+
+
+def _detect_bands(state: _ReplayState, op) -> None:
+    """Committed band detection (no explicit action key, just bands)."""
+    for band in op.inputs["bands"]:
+        b = Band(*band)
+        if len(state.document.bodies) > 1:
+            found = detect_pins_multibody(
+                state.document, b,
+                exclude_largest=op.params.get("exclude_largest", True),
+            )
+        else:
+            found = detect_pins_unibody(
+                state.document, 0, b,
+                smooth_angle_deg=op.params.get("smooth_angle_deg", 30.0),
+                flow=op.params.get("flow", "any-edge"),
+            )
+        state.registry.set_pins(state.registry.pins + found)
+    order = order_pins(
+        state.registry.pins, mode=op.params.get("ordering", "serpentine")
+    )
+    state.registry.reorder(order)
+
+
+_DETECT_ACTIONS = {
+    "context_plane": _detect_context_plane,
+    "seed_pin": _detect_seed_pin,
+    "detect_similar": _detect_similar,
+    "join_mouth": _detect_join_mouth,
+    "renumber": _detect_renumber,
+    "predict": _detect_predict,
+    "rename": _detect_rename,
+    "delete": _detect_delete,
+    "set_order": _detect_set_order,
+    "clear": _detect_clear,
+}
+
+
+def _replay_detect_pins(state: _ReplayState, op) -> None:
+    handler = _DETECT_ACTIONS.get(op.params.get("action"))
+    if handler is not None:
+        handler(state, op)
+    elif "bands" in op.inputs:
+        _detect_bands(state, op)
+
+
+# ------------------------------------------------------------------ separate
+
+def _apply_snapshot(document: EditorDocument, snapshot) -> None:
+    bodies, links = snapshot
+    document.bodies[:] = bodies
+    for pin, body_ids, face_ids in links:
+        pin.body_ids = body_ids
+        pin.face_ids = face_ids
+
+
+def _separate_restore(state: _ReplayState) -> None:
+    if state.separate_snapshot is not None:
+        _apply_snapshot(state.document, state.separate_snapshot)
+        state.separate_snapshot = None
+
+
+def _separate_take_snapshot(state: _ReplayState):
+    return (
+        list(state.document.bodies),
+        [(pin, list(pin.body_ids), list(pin.face_ids))
+         for pin in state.registry.pins],
+    )
+
+
+def _separate_regions(state: _ReplayState, op):
+    bundles = op.inputs.get("bundles")
+    if bundles:  # the session painted its regions by hand — split exactly those
+        return [
+            [tuple(key) for key in bundles[str(pin.number)]]
+            if str(pin.number) in bundles else None
+            for pin in state.registry.pins
+        ]
+    return grow_pin_regions(
+        state.document, state.registry.pins,
+        area_factor=op.params.get("area_factor", 4.0),
+    )
+
+
+def _separate_link_pins(state: _ReplayState, grown, region_bodies) -> None:
+    """Link pins to their new solids by region identity (mirrors the tool)."""
+    region_position: dict[int, int] = {}
+    position = 0
+    for pin_index, region in enumerate(grown):
+        if region:
+            region_position[pin_index] = position
+            position += 1
+    for pin_index, pin in enumerate(state.registry.pins):
+        position = region_position.get(pin_index)
+        if position is None:
+            continue
+        body_index = region_bodies[position]
+        if body_index is None:
+            continue  # did not separate — stays a face-region pin
+        pin.body_ids = [body_index]
+        pin.face_ids = []
+        suffix = "_HEAD" if pin.role == "mouth" else ""
+        state.document.bodies[body_index].name = (
+            pin.name or f"PIN_{pin.number}"
+        ) + suffix
+        state.document.bodies[body_index].role = "pin"
+
+
+def _replay_separate(state: _ReplayState, op) -> None:
+    if op.params.get("action") == "undo":
+        _separate_restore(state)
+        return
+    # Self-heal: the recorded body count is ground truth for the pre-apply
+    # state. A mismatch means an unjournaled restore happened between two
+    # applies — roll back to the snapshot before re-running.
+    before = op.result.get("bodies_before")
+    if (before is not None and before != len(state.document.bodies)
+            and state.separate_snapshot is not None):
+        _apply_snapshot(state.document, state.separate_snapshot)
+    state.separate_snapshot = _separate_take_snapshot(state)
+
+    from .pins import capture_pin_face_anchors, remap_pin_faces
+
+    face_anchors = capture_pin_face_anchors(state.document, state.registry.pins)
+    bounds = state.document.bounds()
+    remap_tol = float(np.linalg.norm([
+        bounds[1] - bounds[0], bounds[3] - bounds[2], bounds[5] - bounds[4],
+    ])) * 5.0e-3
+    grown = _separate_regions(state, op)
+    regions = [r for r in grown if r]
+    region_bodies = state.document.split_by_face_regions(regions)
+    _separate_link_pins(state, grown, region_bodies)
+    remap_pin_faces(state.document, face_anchors, remap_tol)
+
+
+# ----------------------------------------------------------- assignment ops
+
+def _replay_hitboxes(state: _ReplayState, op) -> None:
+    by_number = {pin.number: pin for pin in state.registry.pins}
+    for item in op.result.get("applied", []):
+        pin = by_number.get(item["pin"])
+        if pin is not None:
+            pin.hitbox = item["hitbox"]
+    if "hitbox" in op.result and "pin_number" in op.inputs:  # single assign
+        pin = by_number.get(op.inputs["pin_number"])
+        if pin is not None:
+            pin.hitbox = op.result["hitbox"]
+
+
+def _pf_set_multi(op, by_number) -> None:
+    for number in op.inputs.get("pin_numbers", []):
+        pin = by_number.get(number)
+        if pin is not None:
+            pin.function = op.result.get("function", "")
+
+
+def _pf_bulk(op, by_number) -> None:
+    from .tools.pin_functions import parse_function_assignments
+
+    for number, function in parse_function_assignments(
+        op.inputs.get("text", "")
+    ).items():
+        if number in by_number:
+            by_number[number].function = function
+
+
+def _replay_pin_functions(state: _ReplayState, op) -> None:
+    by_number = {pin.number: pin for pin in state.registry.pins}
+    action = op.params.get("action")
+    if action == "auto_inherit":
+        from .auto import auto_inherit_functions
+
+        auto_inherit_functions(state.registry)
+    elif action == "set_multi":
+        _pf_set_multi(op, by_number)
+    elif action == "bulk":
+        _pf_bulk(op, by_number)
+    elif "pin_number" in op.inputs:
+        pin = by_number.get(op.inputs["pin_number"])
+        if pin is not None:
+            pin.function = op.result.get("function", "")
+
+
+def _apply_color_key(document: EditorDocument, key, rgb) -> None:
+    if key is None:
+        return
+    if isinstance(key, list):
+        body_index, face_index = key
+        if 0 <= body_index < len(document.bodies):
+            mesh = document.bodies[body_index].mesh
+            if mesh is not None:
+                mesh.face_colors[face_index] = rgb
+    elif 0 <= int(key) < len(document.bodies):  # body-level colour
+        document.bodies[int(key)].color = rgb
+        if document.bodies[int(key)].mesh is not None:
+            document.bodies[int(key)].mesh.face_colors = {}
+
+
+def _replay_colors(state: _ReplayState, op) -> None:
+    color = op.result.get("color")
+    if not color:
+        return
+    from PySide6.QtGui import QColor
+
+    qcolor = QColor(color)
+    rgb = (qcolor.redF(), qcolor.greenF(), qcolor.blueF())
+    keys = op.inputs.get("keys") or [op.inputs.get("key")]
+    for key in keys:
+        _apply_color_key(state.document, key, rgb)
+
+
+def _replay_logo(state: _ReplayState, op) -> None:
+    if op.params.get("action") == "undo":
+        return
+    from .dxf_loader import emboss_logo
+
+    here = Path(__file__).resolve().parents[1]
+    emboss_logo(
+        state.document, op.inputs["body"], op.inputs["face"],
+        here / op.inputs.get("dxf", "WN3D.dxf"),
+        width_mm=op.params["width_mm"],
+        depth_mm=op.params["depth_mm"],
+        offset_uv=tuple(op.inputs.get("offset_uv", (0.0, 0.0))),
+        raised=op.params.get("raised", False),
+        logo_rgb=tuple(op.params["logo_rgb"]) if op.params.get("logo_rgb") else None,
+        rotation_deg=op.params.get("rotation_deg", 0.0),
+    )
+
+
+_TOOL_HANDLERS = {
+    "zsit": _replay_zsit,
+    "pin1": _replay_pin1,
+    "front": _replay_front,
+    "detect_pins": _replay_detect_pins,
+    "separate": _replay_separate,
+    "hitboxes": _replay_hitboxes,
+    "pin_functions": _replay_pin_functions,
+    "colors": _replay_colors,
+    "logo": _replay_logo,
+}
+
+
+def replay(document: EditorDocument, journal: Journal) -> PinRegistry:
+    """Re-apply a recorded conditioning session. Geometry ops replay their
+    computed transforms; detection ops re-run from their recorded inputs;
+    assignment ops (names, functions, hitboxes, colours) re-apply results."""
+    registry = PinRegistry()
+    skip = _logo_undo_skips(journal)
+    state = _ReplayState(document, registry)
     for op_index, op in enumerate(journal.operations):
         if op_index in skip:
             continue
-        tool, params, inputs, result = op.tool, op.params, op.inputs, op.result
-
-        if tool == "zsit":
-            document.apply_trsf(np.asarray(result["matrix"]))
-
-        elif tool == "pin1":
-            if params.get("action") == "reset":
-                document.apply_trsf(_rotation_z(-inputs.get("undone_deg", 0.0)))
-            else:
-                document.apply_trsf(_rotation_z(result["angle_deg"]))
-
-        elif tool == "detect_pins":
-            action = params.get("action")
-            if action == "context_plane":
-                found = detect_pins_by_section(
-                    document, inputs["plane_point"], inputs["plane_normal"]
-                )
-                registry.set_pins(registry.pins + found)
-            elif action == "seed_pin":
-                role = params.get("role", "primary")
-                if role == "mouth":
-                    # mouth seeding is normal face picking — no growth
-                    region = {inputs["face"]}
-                else:
-                    region = grow_smooth_region(
-                        document, inputs["body"], inputs["face"],
-                        smooth_angle_deg=params.get("smooth_angle_deg", 30.0),
-                    )
-                mesh = document.bodies[inputs["body"]].mesh
-                centroid = mesh_region_centroid(mesh, sorted(region))
-                registry.set_pins(registry.pins + [Pin(
-                    number=0, centroid=centroid,
-                    face_ids=[(inputs["body"], f) for f in sorted(region)],
-                    role=role,
-                )])
-            elif action == "detect_similar":
-                from .pins import find_similar_regions
-
-                claimed = {
-                    (body, face)
-                    for pin in registry.pins
-                    for body, face in pin.face_ids
-                }
-                matches = find_similar_regions(
-                    document, inputs["body"], set(inputs["faces"]),
-                    smooth_angle_deg=params.get("smooth_angle_deg", 30.0),
-                    claimed=claimed,
-                )
-                found = []
-                for match in matches:
-                    mesh = document.bodies[match[0][0]].mesh
-                    centroid = mesh_region_centroid(
-                        mesh, sorted(face for _body, face in match)
-                    )
-                    if centroid is not None:
-                        found.append(Pin(number=0, centroid=centroid,
-                                         face_ids=match, role="mouth"))
-                registry.set_pins(registry.pins + found)
-            elif action == "join_mouth":
-                for centroid, name in zip(result.get("centroids", []),
-                                          result.get("names", [])):
-                    pin = _nearest_pin(centroid)
-                    if pin is not None:
-                        pin.name = name
-                        pin.name_source = "joined"
-            elif action == "renumber":
-                primaries = [p for p in registry.pins if p.role != "mouth"]
-                mouths = [p for p in registry.pins if p.role == "mouth"]
-                order = order_pins(primaries, mode=params.get("ordering", "serpentine"))
-                registry.set_pins([primaries[i] for i in order] + mouths)
-                for pin, name in zip(registry.pins, result.get("names", [])):
-                    pin.name = name
-            elif action == "predict":
-                names = result.get("names", [])
-                numbers = result.get("order", [])
-                by_number = {pin.number: pin for pin in registry.pins}
-                ordered = [by_number[n] for n in numbers if n in by_number]
-                if len(ordered) == len(registry.pins):
-                    registry.set_pins(ordered)
-                for pin, name in zip(registry.pins, names):
-                    pin.name = name
-            elif action == "rename":
-                pin = _nearest_pin(inputs["centroid"])
-                if pin is not None:
-                    pin.name = result.get("name", "")
-                    pin.name_source = result.get("name_source", "")
-            elif action == "delete":
-                pin = _nearest_pin(inputs["centroid"])
-                if pin is not None:
-                    registry.set_pins([p for p in registry.pins if p is not pin])
-            elif action == "set_order":
-                remaining = list(registry.pins)
-                ordered = []
-                for centroid in result.get("centroids", []):
-                    if not remaining:
-                        break
-                    points = np.array([p.centroid for p in remaining])
-                    nearest = int(np.argmin(np.linalg.norm(
-                        points - np.asarray(centroid), axis=1
-                    )))
-                    ordered.append(remaining.pop(nearest))
-                registry.set_pins(ordered + remaining)
-            elif action == "clear":
-                registry.set_pins([])
-            elif "bands" in inputs:  # committed band detection
-                for band in inputs["bands"]:
-                    b = Band(*band)
-                    if len(document.bodies) > 1:
-                        found = detect_pins_multibody(
-                            document, b,
-                            exclude_largest=params.get("exclude_largest", True),
-                        )
-                    else:
-                        found = detect_pins_unibody(
-                            document, 0, b,
-                            smooth_angle_deg=params.get("smooth_angle_deg", 30.0),
-                            flow=params.get("flow", "any-edge"),
-                        )
-                    registry.set_pins(registry.pins + found)
-                order = order_pins(registry.pins, mode=params.get("ordering", "serpentine"))
-                registry.reorder(order)
-
-        elif tool == "separate":
-            if params.get("action") == "undo":
-                if separate_snapshot is not None:
-                    bodies, links = separate_snapshot
-                    document.bodies[:] = bodies
-                    for pin, body_ids, face_ids in links:
-                        pin.body_ids = body_ids
-                        pin.face_ids = face_ids
-                    separate_snapshot = None
-                continue
-            # Self-heal: the recorded body count is ground truth for the
-            # pre-apply state. A mismatch means an unjournaled restore
-            # happened between two applies — roll back to the snapshot.
-            before = result.get("bodies_before")
-            if (before is not None and before != len(document.bodies)
-                    and separate_snapshot is not None):
-                bodies, links = separate_snapshot
-                document.bodies[:] = bodies
-                for pin, body_ids, face_ids in links:
-                    pin.body_ids = body_ids
-                    pin.face_ids = face_ids
-            separate_snapshot = (
-                list(document.bodies),
-                [(pin, list(pin.body_ids), list(pin.face_ids))
-                 for pin in registry.pins],
-            )
-            from .pins import capture_pin_face_anchors, remap_pin_faces
-
-            face_anchors = capture_pin_face_anchors(document, registry.pins)
-            bounds = document.bounds()
-            remap_tol = float(np.linalg.norm([
-                bounds[1] - bounds[0], bounds[3] - bounds[2],
-                bounds[5] - bounds[4],
-            ])) * 5.0e-3
-            bundles = inputs.get("bundles")
-            if bundles:
-                # the session painted its regions by hand — split exactly those
-                grown = [
-                    [tuple(key) for key in bundles[str(pin.number)]]
-                    if str(pin.number) in bundles else None
-                    for pin in registry.pins
-                ]
-            else:
-                grown = grow_pin_regions(
-                    document, registry.pins,
-                    area_factor=params.get("area_factor", 4.0),
-                )
-            regions = [r for r in grown if r]
-            region_bodies = document.split_by_face_regions(regions)
-            # exact linking by region identity (mirrors the tool)
-            region_position: dict[int, int] = {}
-            position = 0
-            for pin_index, region in enumerate(grown):
-                if region:
-                    region_position[pin_index] = position
-                    position += 1
-            for pin_index, pin in enumerate(registry.pins):
-                position = region_position.get(pin_index)
-                if position is None:
-                    continue
-                body_index = region_bodies[position]
-                if body_index is None:
-                    continue  # did not separate — stays a face-region pin
-                pin.body_ids = [body_index]
-                pin.face_ids = []
-                suffix = "_HEAD" if pin.role == "mouth" else ""
-                document.bodies[body_index].name = (
-                    pin.name or f"PIN_{pin.number}"
-                ) + suffix
-                document.bodies[body_index].role = "pin"
-            remap_pin_faces(document, face_anchors, remap_tol)
-
-        elif tool == "hitboxes":
-            by_number = {pin.number: pin for pin in registry.pins}
-            for item in result.get("applied", []):
-                pin = by_number.get(item["pin"])
-                if pin is not None:
-                    pin.hitbox = item["hitbox"]
-            if "hitbox" in result and "pin_number" in inputs:  # single assign
-                pin = by_number.get(inputs["pin_number"])
-                if pin is not None:
-                    pin.hitbox = result["hitbox"]
-
-        elif tool == "pin_functions":
-            by_number = {pin.number: pin for pin in registry.pins}
-            if params.get("action") == "auto_inherit":
-                from .auto import auto_inherit_functions
-
-                auto_inherit_functions(registry)
-            elif params.get("action") == "set_multi":
-                for number in inputs.get("pin_numbers", []):
-                    pin = by_number.get(number)
-                    if pin is not None:
-                        pin.function = result.get("function", "")
-            elif params.get("action") == "bulk":
-                from .tools.pin_functions import parse_function_assignments
-
-                for number, function in parse_function_assignments(
-                    inputs.get("text", "")
-                ).items():
-                    if number in by_number:
-                        by_number[number].function = function
-            elif "pin_number" in inputs:
-                pin = by_number.get(inputs["pin_number"])
-                if pin is not None:
-                    pin.function = result.get("function", "")
-
-        elif tool == "colors":
-            color = result.get("color")
-            if not color:
-                continue
-            from PySide6.QtGui import QColor
-
-            qcolor = QColor(color)
-            rgb = (qcolor.redF(), qcolor.greenF(), qcolor.blueF())
-            keys = inputs.get("keys") or [inputs.get("key")]
-            for key in keys:
-                if key is None:
-                    continue
-                if isinstance(key, list):
-                    body_index, face_index = key
-                    if not (0 <= body_index < len(document.bodies)):
-                        continue  # body table diverged from the session
-                    mesh = document.bodies[body_index].mesh
-                    if mesh is not None:
-                        mesh.face_colors[face_index] = rgb
-                else:
-                    if not (0 <= int(key) < len(document.bodies)):
-                        continue
-                    document.bodies[int(key)].color = rgb
-                    if document.bodies[int(key)].mesh is not None:
-                        document.bodies[int(key)].mesh.face_colors = {}
-
-        elif tool == "logo":
-            if params.get("action") == "undo":
-                continue
-            from .dxf_loader import emboss_logo
-
-            here = Path(__file__).resolve().parents[1]
-            emboss_logo(
-                document, inputs["body"], inputs["face"],
-                here / inputs.get("dxf", "WN3D.dxf"),
-                width_mm=params["width_mm"],
-                depth_mm=params["depth_mm"],
-                offset_uv=tuple(inputs.get("offset_uv", (0.0, 0.0))),
-                raised=params.get("raised", False),
-                logo_rgb=tuple(params["logo_rgb"]) if params.get("logo_rgb") else None,
-                rotation_deg=params.get("rotation_deg", 0.0),
-            )
+        handler = _TOOL_HANDLERS.get(op.tool)
+        if handler is not None:
+            handler(state, op)
 
     from .pins import apply_pin_body_names
 

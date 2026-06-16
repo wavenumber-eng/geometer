@@ -99,8 +99,16 @@ class HitboxTool(ToolMode):
 
         action_row = QHBoxLayout()
         auto_button = QPushButton("Auto selected")
+        auto_button.setToolTip(
+            "Fit the chosen variant's hitbox to the selected pin's mesh "
+            "points (OBB/hull/prism/female box/cube) — staged, then Apply."
+        )
         auto_button.clicked.connect(self._auto_selected)
         all_button = QPushButton("Auto ALL pins")
+        all_button.setToolTip(
+            "Fit the chosen variant's hitbox to every pin's mesh points "
+            "at once — all staged, then Apply."
+        )
         all_button.clicked.connect(self._auto_all)
         clear_button = QPushButton("Clear hitbox")
         clear_button.clicked.connect(self._clear_selected)

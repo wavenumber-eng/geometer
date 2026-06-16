@@ -75,9 +75,16 @@ class TestChainIdentities:
 
 class TestNamingLaws:
     def test_ap242_output_naming(self, tmp_path):
-        # DESIGN_INTENT: wheel4506.step -> wheel4506_AP242_conditioned.step,
+        # DESIGN_INTENT: a raw source conditions to <base>_AP242_WNC1.step,
         # next to the one loaded in.
         src = tmp_path / "wheel4506.step"
         out = conditioned_path(src)
-        assert out.name == "wheel4506_AP242_conditioned.step"
+        assert out.name == "wheel4506_AP242_WNC1.step"
         assert out.parent == src.parent
+
+    def test_reconditioning_collapses_and_increments(self, tmp_path):
+        # Re-conditioning never stacks suffixes — the tag collapses and the
+        # version bumps. Legacy `_AP242_conditioned` counts as version 1.
+        assert conditioned_path(tmp_path / "X_AP242_WNC1.step").name == "X_AP242_WNC2.step"
+        assert conditioned_path(tmp_path / "X_AP242_WNC3.step").name == "X_AP242_WNC4.step"
+        assert conditioned_path(tmp_path / "X_AP242_conditioned.step").name == "X_AP242_WNC2.step"

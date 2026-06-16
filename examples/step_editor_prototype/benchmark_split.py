@@ -1,6 +1,6 @@
 """Split-quality benchmark: AUTO vs the user's hand-conditioned REF truth.
 
-For every REFERENCE_STEP_FILES/<base>_AP242_conditioned_REF.step it finds the
+For every unified reference (app/refs.py) with a committed hand journal it finds the
 source model (TEST_STEP_FILES/<base>.*), reads the hand truth from the REF's
 embedded metadata (pins, how many are whole split bodies, designators), runs
 the fully automatic conditioner on the source, and scores the splitter:
@@ -25,21 +25,6 @@ from pathlib import Path
 
 PROTO = Path(__file__).resolve().parent
 sys.path.insert(0, str(PROTO))
-
-REF_DIR = PROTO / "REFERENCE_STEP_FILES"
-SOURCE_DIRS = [PROTO / "TEST_STEP_FILES", PROTO.parents[1] / "tests" / "fixtures" / "step" / "embedded_models"]
-REF_SUFFIX = "_AP242_conditioned_REF"
-
-
-def find_source(base: str) -> Path | None:
-    for directory in SOURCE_DIRS:
-        if not directory.is_dir():
-            continue
-        for candidate in directory.iterdir():
-            if candidate.suffix.lower() in (".step", ".stp") and candidate.stem.lower() == base.lower():
-                return candidate
-    return None
-
 
 def hand_truth(ref_step: Path) -> dict:
     from app.export_ap242 import extract_metadata
@@ -124,16 +109,18 @@ def main() -> int:
                              "from detection quality")
     args = parser.parse_args()
 
+    from app import refs
+
+    # Split benchmarks = references that carry a committed hand journal in
+    # benchmarks/<base>_REF.json (the curated full sessions).
     cases = []
-    for ref in sorted(REF_DIR.glob(f"*{REF_SUFFIX}.step")):
-        base = ref.stem[: -len(REF_SUFFIX)]
-        if args.only and args.only.lower() not in base.lower():
+    for r in refs.all_references():
+        if args.only and args.only.lower() not in r.base.lower():
             continue
-        source = find_source(base)
-        ops = BENCH_DIR / f"{base}_REF.json"
-        if args.replay and not ops.exists():
+        ops = BENCH_DIR / f"{r.base}_REF.json"
+        if not ops.exists():
             continue
-        cases.append((base, source, ref, ops))
+        cases.append((r.base, r.source, r.conditioned, ops))
 
     if not cases:
         print("no REF cases found")

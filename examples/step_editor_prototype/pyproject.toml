@@ -26,4 +26,6 @@ wn-geometer = { path = "../..", editable = true }
 dev = [
     "mmh3>=5.2.1",
     "pytest>=9.0.3",
+    "radon>=6.0.1",
+    "scikit-learn>=1.9.0",
 ]

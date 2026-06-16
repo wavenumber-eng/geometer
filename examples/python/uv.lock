@@ -397,7 +397,11 @@ requires-dist = [
     { name = "pyvista" },
     { name = "pyvistaqt" },
     { name = "trimesh" },
+<<<<<<< Updated upstream
     { name = "wn-geometer", editable = "../../" },
+=======
+    { name = "wn-geometer", specifier = "==2026.6.4" },
+>>>>>>> Stashed changes
 ]
 
 [[package]]
@@ -1225,6 +1229,7 @@ wheels = [
 
 [[package]]
 name = "wn-geometer"
+<<<<<<< Updated upstream
 version = "2026.6.10"
 source = { editable = "../../" }
 
@@ -1240,4 +1245,12 @@ dev = [
     { name = "ruff", specifier = ">=0.8.0" },
     { name = "twine", specifier = ">=5.0.0" },
     { name = "wn-rack", marker = "python_full_version >= '3.11'", specifier = ">=1.1.0" },
+=======
+version = "2026.6.4"
+source = { registry = "https://pypi.org/simple" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/9c/f8/30392d32d4c6fa992355dbe7026b831421765b3df2e68f918eb76dcac7e6/wn_geometer-2026.6.4-py3-none-macosx_11_0_arm64.whl", hash = "sha256:592aa8676e6f5d4e4a5923b5a415e41ddaa71a159d44d08531dbb84ad260f681", size = 10634778, upload-time = "2026-06-05T00:37:22.693Z" },
+    { url = "https://files.pythonhosted.org/packages/29/66/16b918a4a9020c4400f06a8e31b2a4a05da50ce887fae384333bd432e503/wn_geometer-2026.6.4-py3-none-manylinux_2_39_x86_64.whl", hash = "sha256:1edbebccc99e7b6e86d9394470b14c503dbb285628faf4744d515ca48e4772ce", size = 13468204, upload-time = "2026-06-05T00:37:15.487Z" },
+    { url = "https://files.pythonhosted.org/packages/24/ef/26f7b28cad6932320ba6259a9245acc7e90effc30b9add736db6c682844d/wn_geometer-2026.6.4-py3-none-win_amd64.whl", hash = "sha256:5d02e1b7a1b3356e0807f5447ba8d7157e871672cbd8db5e7fcf80337098724e", size = 7287054, upload-time = "2026-06-05T00:37:08.43Z" },
+>>>>>>> Stashed changes
 ]

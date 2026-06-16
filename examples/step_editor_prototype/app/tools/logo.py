@@ -210,19 +210,24 @@ class LogoTool(ToolMode):
         if placement is None:
             self.status("Auto LOGO: no flat top face found — pick one manually")
             return
-        body_index, face_index, width = placement
+        body_index, face_index, width, rotation_deg, offset_uv = placement
         frame = document.face_plane(body_index, face_index)
         if frame is None:
             return
         self._target = (body_index, face_index)
         self._frame = frame
-        for spin in (self.offset_u, self.offset_v):
+        for spin, value in (
+            (self.offset_u, offset_uv[0]), (self.offset_v, offset_uv[1])
+        ):
             spin.blockSignals(True)
-            spin.setValue(0.0)
+            spin.setValue(value)
             spin.blockSignals(False)
         self.width_spin.blockSignals(True)
         self.width_spin.setValue(max(0.1, width))
         self.width_spin.blockSignals(False)
+        self.rotation_spin.blockSignals(True)
+        self.rotation_spin.setValue(rotation_deg)
+        self.rotation_spin.blockSignals(False)
         self.ctx.scene.highlight_face(body_index, face_index)
         body = document.bodies[body_index]
         self.target_label.setText(

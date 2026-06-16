@@ -257,6 +257,56 @@ class TestCurvedFaceLogoFrame:
         raise AssertionError("no planar face found")
 
 
+class TestFrontFaceAngle:
+    """Redefine Front: the two-constraint in-plane rotation — line → X axis,
+    front point → −Y half-plane."""
+
+    def _apply(self, angle, x, y):
+        import math
+        c, s = math.cos(angle), math.sin(angle)
+        return (x * c - y * s, x * s + y * c)
+
+    def test_line_along_y_front_on_x(self):
+        import math
+        from app.tools.front_face import compute_front_face_angle
+
+        a = compute_front_face_angle((0, 0, 0), (0, 1, 0), (1, 0, 0))
+        assert math.isclose(a, -math.pi / 2, abs_tol=1e-9)
+
+    def test_flip_chosen_by_front_point(self):
+        import math
+        from app.tools.front_face import compute_front_face_angle
+
+        # line already on X; front at +Y must flip 180° to drop into −Y
+        a = compute_front_face_angle((0, 0, 0), (1, 0, 0), (0, 1, 0))
+        assert math.isclose(abs(a), math.pi, abs_tol=1e-9)
+
+    def test_already_correct_is_zero(self):
+        from app.tools.front_face import compute_front_face_angle
+
+        a = compute_front_face_angle((0, 0, 0), (1, 0, 0), (0, -1, 0))
+        assert abs(a) < 1e-9
+
+    def test_constraints_hold_for_arbitrary_inputs(self):
+        import math
+        from app.tools.front_face import compute_front_face_angle
+
+        cases = [((0, 0), (3, 1), (-2, 4)), ((1, 1), (1, -2), (5, 5)),
+                 ((0, 0), (-1, -1), (1, -3)), ((2, 0), (2, 7), (0.5, 9))]
+        for p1, p2, fp in cases:
+            a = compute_front_face_angle((*p1, 0), (*p2, 0), (*fp, 0))
+            # line becomes parallel to X (rotated direction has ~0 Y)
+            d = (p2[0] - p1[0], p2[1] - p1[1])
+            assert abs(self._apply(a, *d)[1]) < 1e-9
+            # front point lands in −Y (or on the axis when degenerate)
+            assert self._apply(a, *fp)[1] <= 1e-9
+
+    def test_degenerate_line_returns_zero(self):
+        from app.tools.front_face import compute_front_face_angle
+
+        assert compute_front_face_angle((1, 1, 0), (1, 1, 0), (0, 5, 0)) == 0.0
+
+
 class TestPinOrdering:
     def _grid(self):
         # two rows of five, like a SOIC-10 footprint

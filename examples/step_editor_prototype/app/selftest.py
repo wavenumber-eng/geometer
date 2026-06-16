@@ -1090,7 +1090,58 @@ def selftest_altium_rt(fixture: Path | None = None) -> None:
             print("TEST_ALTIUM_PCB corpus not present — replace check skipped")
 
 
+def _flatten_cc(block):
+    """Yield every function/method/closure radon found, skipping the class
+    aggregate blocks (those would double-count their own methods)."""
+    if getattr(block, "letter", "F") != "C":
+        yield block
+    for inner in getattr(block, "methods", None) or []:
+        yield from _flatten_cc(inner)
+    for inner in getattr(block, "closures", None) or []:
+        yield from _flatten_cc(inner)
+
+
+CC_CAP = 10  # every function/method must stay strictly below this
+
+
+def selftest_cc(fixture: Path | None = None) -> None:
+    """Cyclomatic-complexity cap: no function/method in the editor may reach
+    CC_CAP. The functional selftests prove behaviour; this one keeps the code
+    factored so that behaviour stays legible and reviewable."""
+    from radon.complexity import cc_visit
+
+    proto = Path(__file__).resolve().parents[1]
+    skip = {".venv", "venv", ".deps", "__pycache__", "out", "build", "dist",
+            "TEST_STEP_FILES", "REFERENCE_STEP_FILES", "TEST_KICAD_MOD"}
+    offenders: list[tuple[int, str, str, int]] = []
+    scanned = 0
+    for py in sorted(proto.rglob("*.py")):
+        if any(part in skip for part in py.parts):
+            continue
+        scanned += 1
+        rel = str(py.relative_to(proto))
+        seen: set[tuple[str, int]] = set()  # radon lists methods flat AND nested
+        for block in cc_visit(py.read_text(encoding="utf-8")):
+            for item in _flatten_cc(block):
+                key = (item.name, item.lineno)
+                if key in seen:
+                    continue
+                seen.add(key)
+                if item.complexity >= CC_CAP:
+                    offenders.append((item.complexity, rel, item.name, item.lineno))
+    offenders.sort(reverse=True)
+    for cc, rel, name, line in offenders[:60]:
+        print(f"  CC {cc:>3}  {rel}:{line}  {name}")
+    print(f"scanned {scanned} files; cap = CC < {CC_CAP}")
+    _check(
+        not offenders,
+        f"{len(offenders)} function(s) at/above CC {CC_CAP}"
+        + (f" (worst: {offenders[0][2]} = CC {offenders[0][0]})" if offenders else ""),
+    )
+
+
 SELFTESTS = {
+    "cc": selftest_cc,
     "m0": selftest_m0,
     "auto": selftest_auto,
     "m5": selftest_m5,

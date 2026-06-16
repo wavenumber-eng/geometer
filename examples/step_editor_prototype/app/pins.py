@@ -153,31 +153,51 @@ class Band:
         return self.x_min <= x <= self.x_max and self.y_min <= y <= self.y_max
 
 
+def _degenerate_floor(volumes: list, largest_index: int) -> float:
+    """Volume below which a multibody solid is an artifact, not a pin — 10% of
+    the median real (non-package) body volume. A vendor multibody chip has one
+    solid per real pin (all similar size), plus the occasional much-smaller
+    sliver or top-surface feature that must not be counted (e.g. the AK5558VN
+    body 0, a thin marking plate ~4% of a lead's volume)."""
+    real = [v for i, v in enumerate(volumes)
+            if i != largest_index and v > 1e-12]
+    return 0.10 * float(np.median(real)) if real else 0.0
+
+
+def _body_is_pin(body, index, largest_index, volume, vol_floor, band) -> bool:
+    """A body is a pin: not the package, has real geometry above the
+    degenerate floor, and its XY bbox lies inside the band."""
+    if index == largest_index or body.mesh is None or not len(body.mesh.points):
+        return False
+    if volume <= vol_floor:
+        return False
+    xy = body.mesh.points[:, :2]
+    return (band.contains_xy(*xy.min(axis=0))
+            and band.contains_xy(*xy.max(axis=0)))
+
+
 def detect_pins_multibody(
     document: EditorDocument,
     band: Band,
     *,
     exclude_largest: bool = True,
 ) -> list[Pin]:
-    """Easy case: pins are separate solids. A body is a pin candidate when its
-    XY bounding box lies inside the band; the largest-volume body in the whole
-    document (the package) is excluded by default."""
+    """Easy case: pins are separate solids — one per real pin. A body is a pin
+    candidate when its XY bbox lies inside the band; the largest-volume body
+    (the package) is excluded by default, and zero-volume artifact bodies are
+    dropped so the body count equals the pin count."""
     from .document import shape_volume
 
+    volumes = [shape_volume(b.solid) or 0.0 for b in document.bodies]
     largest_index = -1
     if exclude_largest and len(document.bodies) > 1:
-        volumes = [shape_volume(b.solid) or 0.0 for b in document.bodies]
         largest_index = int(np.argmax(volumes))
+    vol_floor = _degenerate_floor(volumes, largest_index)
 
     pins: list[Pin] = []
     for index, body in enumerate(document.bodies):
-        if index == largest_index or body.mesh is None or len(body.mesh.points) == 0:
-            continue
-        xy = body.mesh.points[:, :2]
-        if (
-            band.contains_xy(*xy.min(axis=0))
-            and band.contains_xy(*xy.max(axis=0))
-        ):
+        if _body_is_pin(body, index, largest_index, volumes[index],
+                        vol_floor, band):
             centroid = mesh_region_centroid(body.mesh)
             if centroid is not None:
                 pins.append(Pin(number=0, centroid=centroid, body_ids=[index]))
@@ -334,20 +354,34 @@ def grow_smooth_region(
     *,
     smooth_angle_deg: float = 30.0,
     claimed: set | None = None,
+    area_factor: float | None = None,
 ) -> set[int]:
     """Manual pin seeding: from one clicked face, flow across smooth shared
     edges until every path hits a discontinuity (sharp dihedral) or a face
-    already claimed by another pin. Returns the face ids of the region."""
+    already claimed by another pin. Returns the face ids of the region.
+
+    When `area_factor` is set, the flow ALSO stops before crossing onto a face
+    larger than area_factor x the seed face. Dihedral gating alone can't catch
+    a contact that meets the housing tangent-continuously (no sharp edge) — on
+    such connectors a plain smooth grow floods the whole body; the area gate
+    keeps the seed to one contact, matching what Separate will carve."""
     adjacency = document.face_smooth_adjacency(body_index, smooth_angle_deg)
     blocked = claimed or set()
     region = {face_index}
     frontier = [face_index]
+    areas = limit = None
+    if area_factor is not None:
+        areas = mesh_face_areas(document.bodies[body_index].mesh)
+        limit = areas.get(face_index, 0.0) * area_factor
     while frontier:
         face = frontier.pop()
         for neighbor in adjacency.get(face, ()):
-            if neighbor not in region and neighbor not in blocked:
-                region.add(neighbor)
-                frontier.append(neighbor)
+            if neighbor in region or neighbor in blocked:
+                continue
+            if limit is not None and areas.get(neighbor, np.inf) > limit:
+                continue  # body-scale face — flow would flood here
+            region.add(neighbor)
+            frontier.append(neighbor)
     return region
 
 
@@ -764,12 +798,39 @@ def find_pin_cut(
     return None
 
 
+def _claim_primary_seeds(pins) -> dict:
+    """Primaries claim their seed faces first: a tail flows through the WHOLE
+    contact, swallowing any CON/HEAD seed faces on the way."""
+    claimed: dict[tuple[int, int], int] = {}
+    for pin_index, pin in enumerate(pins):
+        if pin.role != "mouth":
+            for key in pin.face_ids:
+                claimed[key] = pin_index
+    return claimed
+
+
+def _primary_body_ids(pins) -> set:
+    """Bodies already linked to an SMT/THR pin are whole contacts."""
+    return {
+        body_id for pin in pins if pin.role != "mouth" for body_id in pin.body_ids
+    }
+
+
+def _growable_count(pins, only) -> int:
+    return sum(
+        1
+        for i, p in enumerate(pins)
+        if not p.body_ids and p.face_ids and (only is None or i in only)
+    )
+
+
 def grow_pin_regions(
     document: EditorDocument,
     pins: list[Pin],
     *,
     area_factor: float = 4.0,
     only: set[int] | None = None,
+    progress=None,
 ) -> list[list[tuple[int, int]] | None]:
     """Grow each detected pin from its seed faces by edge flow: expand across
     shared edges for as long as the faces stay pin-scaled, stopping when the
@@ -780,19 +841,13 @@ def grow_pin_regions(
     `only` grows just those pin indices (every pin's SEEDS still claim
     territory, so flows stop where they would in a full run) — the factor
     sweep samples representative pins this way instead of growing all 291
-    pins of a DDR5 eight times over."""
-    # Primaries claim their seeds first and grow first: a tail flows through
-    # the WHOLE contact, swallowing any CON/HEAD seed faces on the way. A
-    # mouth pin whose seed ends up inside a primary's region is the same
-    # piece of metal — it stays a passive anchor (no extra cut) instead of
-    # carving an un-cappable slit island out of the contact.
-    claimed: dict[tuple[int, int], int] = {}
-    for pin_index, pin in enumerate(pins):
-        if pin.role == "mouth":
-            continue
-        for key in pin.face_ids:
-            claimed[key] = pin_index
+    pins of a DDR5 eight times over.
 
+    `progress(done, total)` is an optional plain callable (no Qt — keeps this
+    headless-safe) fired once per grown pin so the GUI can drive a loading
+    bar on big unibody connectors, where this is the tool-switch bottleneck."""
+    claimed = _claim_primary_seeds(pins)
+    primary_bodies = _primary_body_ids(pins)
     areas_cache: dict[int, dict[int, float]] = {}
     adjacency_cache: dict[int, dict] = {}
 
@@ -806,66 +861,71 @@ def grow_pin_regions(
             adjacency_cache[body_index] = document.face_smooth_adjacency(body_index, None)
         return adjacency_cache[body_index]
 
-    # Bodies already linked to an SMT/THR pin are whole contacts: a CON/HEAD
-    # pin whose faces sit on one is a metadata anchor on an already-separate
-    # solid — stay passive, never cut it up further.
-    primary_bodies = {
-        body_id
-        for pin in pins
-        if pin.role != "mouth"
-        for body_id in pin.body_ids
-    }
+    def mouth_is_passive(pin) -> bool:
+        # A CON/HEAD pin on an already-split contact, or swallowed by a tail's
+        # region, is the same metal — keep it a passive anchor (no extra cut).
+        if any(body_id in primary_bodies for body_id, _face in pin.face_ids):
+            return True
+        owners = {claimed.get(key) for key in pin.face_ids if key in claimed}
+        return any(
+            owner is not None and pins[owner].role != "mouth" for owner in owners
+        )
+
+    def grow_one(pin, pin_index, mouth_phase):
+        region = set(pin.face_ids)
+        by_body: dict[int, set[int]] = {}
+        for body_index, face_index in pin.face_ids:
+            by_body.setdefault(body_index, set()).add(face_index)
+        for body_index, seeds in by_body.items():
+            areas = body_areas(body_index)
+            adjacency = body_adjacency(body_index)
+            # CON/HEAD seeds are single small mouth faces; the region must
+            # reach the whole exposed beam or its boundary is a slit no cap
+            # can fill — give them 6x the tail headroom.
+            factor = area_factor * (6.0 if mouth_phase else 1.0)
+            limit = max(areas.get(face, 0.0) for face in seeds) * factor
+            frontier = list(seeds)
+            while frontier:
+                face = frontier.pop()
+                for neighbor in adjacency.get(face, ()):
+                    key = (body_index, neighbor)
+                    if key in claimed or areas.get(neighbor, np.inf) > limit:
+                        continue  # claimed, or reached the BODY — flow stops
+                    claimed[key] = pin_index
+                    region.add(key)
+                    frontier.append(neighbor)
+        return sorted(region)
+
+    def process_pin(pin, pin_index, mouth_phase):
+        """Grow this pin, or None when it should be skipped this phase."""
+        if (pin.role == "mouth") != mouth_phase:
+            return None
+        if only is not None and pin_index not in only:
+            return None
+        if pin.body_ids or not pin.face_ids:
+            return None  # already its own body (or nothing to grow)
+        if mouth_phase:
+            if mouth_is_passive(pin):
+                return None
+            for key in pin.face_ids:
+                claimed[key] = pin_index
+        return grow_one(pin, pin_index, mouth_phase)
+
+    total = _growable_count(pins, only)
+    done = 0
+    if progress is not None:
+        progress(0, total)
 
     grown: list[list[tuple[int, int]] | None] = [None] * len(pins)
     for mouth_phase in (False, True):
         for pin_index, pin in enumerate(pins):
-            if (pin.role == "mouth") != mouth_phase:
+            region = process_pin(pin, pin_index, mouth_phase)
+            if region is None:
                 continue
-            if only is not None and pin_index not in only:
-                continue
-            if pin.body_ids or not pin.face_ids:
-                continue  # already its own body (or nothing to grow)
-            if mouth_phase:
-                if any(
-                    body_id in primary_bodies
-                    for body_id, _face in pin.face_ids
-                ):
-                    continue  # anchor on an already-split contact
-                owners = {
-                    claimed.get(key) for key in pin.face_ids if key in claimed
-                }
-                if any(
-                    owner is not None and pins[owner].role != "mouth"
-                    for owner in owners
-                ):
-                    continue  # seed swallowed by a tail — same metal, passive
-                for key in pin.face_ids:
-                    claimed[key] = pin_index
-            region = set(pin.face_ids)
-            by_body: dict[int, set[int]] = {}
-            for body_index, face_index in pin.face_ids:
-                by_body.setdefault(body_index, set()).add(face_index)
-            for body_index, seeds in by_body.items():
-                areas = body_areas(body_index)
-                adjacency = body_adjacency(body_index)
-                # CON/HEAD seeds are single small mouth faces; the region
-                # must reach the whole exposed beam or its boundary is a
-                # slit no cap can fill — give them 6x the tail headroom.
-                factor = area_factor * (6.0 if mouth_phase else 1.0)
-                limit = max(areas.get(face, 0.0) for face in seeds) * factor
-                frontier = list(seeds)
-                while frontier:
-                    face = frontier.pop()
-                    for neighbor in adjacency.get(face, ()):
-                        key = (body_index, neighbor)
-                        if key in claimed:
-                            continue
-                        if areas.get(neighbor, np.inf) > limit:
-                            continue  # reached the BODY — flow stops here
-                        claimed[key] = pin_index
-                        region.add(key)
-                        frontier.append(neighbor)
-            grown[pin_index] = sorted(region)
+            grown[pin_index] = region
+            done += 1
+            if progress is not None:
+                progress(min(done, total), total)
     return grown
 
 
@@ -953,6 +1013,17 @@ def detect_pins_by_section(
 
 # ----------------------------------------------------------------- ordering
 
+def _path_length(centroids: np.ndarray, order: list[int]) -> float:
+    """Total walk length through pins in `order` — the serpentine that snakes
+    cleanly along the row/column is the SHORTEST; a variant that orders a
+    constant-X column by its (degenerate) X makes big jumps and scores worse.
+    Used to break ties when an anchor/hint under-constrains the variant."""
+    if len(order) < 2:
+        return 0.0
+    pts = centroids[order]
+    return float(np.linalg.norm(np.diff(pts, axis=0), axis=1).sum())
+
+
 def _serpentine_variant(
     centroids: np.ndarray, flip_x: bool, start_top: bool, axis: int = 1
 ) -> list[int]:
@@ -981,16 +1052,20 @@ def serpentine_order(
         return _serpentine_variant(centroids, False, False)
 
     hint = np.asarray(pin1_hint[:2], dtype=np.float64)
-    best, best_distance = None, np.inf
+    best, best_key = None, None
     for axis in (1, 0):
         for flip_x in (False, True):
             for start_top in (False, True):
                 order = _serpentine_variant(centroids, flip_x, start_top, axis)
                 if not order:
                     continue
-                distance = float(np.linalg.norm(centroids[order[0], :2] - hint))
-                if distance < best_distance:
-                    best, best_distance = order, distance
+                # anchor pin 1 at the hint first, then prefer the cleanest
+                # (shortest) snake — so a column is numbered monotonically
+                # along its varying axis, not scrambled by a constant one.
+                key = (round(float(np.linalg.norm(centroids[order[0], :2] - hint)), 3),
+                       _path_length(centroids, order))
+                if best_key is None or key < best_key:
+                    best, best_key = order, key
     return best or _serpentine_variant(centroids, False, False)
 
 
@@ -1156,6 +1231,7 @@ def predict_serpentine_order(pins: list[Pin], anchors: dict[int, int]) -> list[i
     """Find the serpentine variant whose numbering matches every manually
     numbered pin (pin index -> number). None if no variant fits."""
     centroids = np.array([pin.centroid for pin in pins], dtype=np.float64)
+    matching = []
     for axis in (1, 0):  # rows along Y (chips) OR columns along X (connectors)
         for flip_x in (False, True):
             for start_top in (False, True):
@@ -1164,8 +1240,11 @@ def predict_serpentine_order(pins: list[Pin], anchors: dict[int, int]) -> list[i
                     order.index(index) + 1 == number
                     for index, number in anchors.items()
                 ):
-                    return order
-    return None
+                    matching.append(order)
+    if not matching:
+        return None
+    # several variants can satisfy a single anchor — take the cleanest snake
+    return min(matching, key=lambda o: _path_length(centroids, o))
 
 
 def row_major_order(centroids: np.ndarray) -> list[int]:

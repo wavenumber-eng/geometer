@@ -40,7 +40,16 @@ from ..pins import (
 from ..scene import BandSelector
 from .base import ToolMode, make_apply_button
 
+# Area cutoff for SMT/THR seed growth — matches Separate's default factor so
+# the seed isolates one contact (not the whole housing) on connectors whose
+# contacts meet the body tangent-continuously. See grow_smooth_region.
+SEED_AREA_FACTOR = 4.0
 
+# Detect EXACT tolerances: tight area + bbox match (vs find_similar_regions'
+# loose 0.12/0.25 defaults) so it copies only the SAME tip shape, in any
+# orientation — the basis for hand-building a reference file.
+_EXACT_AREA_TOL = 0.06
+_EXACT_DIM_TOL = 0.08
 
 
 class DetectPinsTool(ToolMode):
@@ -92,18 +101,26 @@ class DetectPinsTool(ToolMode):
         )
         self.context_button.clicked.connect(self._run_context_plane)
         select_row.addWidget(self.context_button)
-        self.seed_button = QPushButton("SMT/THR Seed Face")
+        self.seed_button = QPushButton("SMT/THR Seed Tip")
         self.seed_button.setCheckable(True)
         self.seed_button.setToolTip(
-            "For parts the automatic detection can't solve: click a face on a "
-            "pin tip/pad and it grows across smooth edges until a "
-            "discontinuity — each click stages one pin."
+            "Click a pin TIP (the end face of an SMT/THR pad — every pin has\n"
+            "one, square/round/curved). Each click stages one pin; then press\n"
+            "Detect Exact to find the rest of the row automatically."
         )
         self.seed_button.setStyleSheet(
             "QPushButton:checked {background-color: #c89d00; color: #000000; font-weight: 700;}"
         )
         self.seed_button.toggled.connect(self._on_seed_toggled)
         select_row.addWidget(self.seed_button)
+        smt_similar_button = QPushButton("Detect Exact")
+        smt_similar_button.setToolTip(
+            "Find every face of the SAME SHAPE as the last SMT/THR tip, in any\n"
+            "orientation (exact area + bbox match) — the other pads — and stage\n"
+            "them. Use it to copy one hand-marked tip and seed a reference."
+        )
+        smt_similar_button.clicked.connect(lambda: self._detect_similar("primary"))
+        select_row.addWidget(smt_similar_button)
         layout.addLayout(select_row)
 
         self.exclude_check = QCheckBox("Exclude largest body (package)")
@@ -111,25 +128,24 @@ class DetectPinsTool(ToolMode):
         layout.addWidget(self.exclude_check)
 
         mouth_row = QHBoxLayout()
-        self.mouth_seed_button = QPushButton("CON/HEAD Seed Face")
+        self.mouth_seed_button = QPushButton("CON/HEAD Seed Tip")
         self.mouth_seed_button.setCheckable(True)
         self.mouth_seed_button.setToolTip(
-            "Second detector set for contacts that pop out inside the\n"
-            "connector mouth: normal face picking — each clicked face is\n"
-            "staged as a BLUE mouth pin, exactly the face you click."
+            "Click a CON/HEAD contact TIP up inside the connector mouth —\n"
+            "each clicked face is staged as a BLUE mouth pin, exactly the tip\n"
+            "you click. Then Detect Exact finds the other contacts."
         )
         self.mouth_seed_button.setStyleSheet(
             "QPushButton:checked {background-color: #2a6fd4; color: #ffffff; font-weight: 700;}"
         )
         self.mouth_seed_button.toggled.connect(self._on_mouth_seed_toggled)
         mouth_row.addWidget(self.mouth_seed_button)
-        similar_button = QPushButton("Detect Similar")
+        similar_button = QPushButton("Detect Exact")
         similar_button.setToolTip(
-            "Find every face region that looks like the last mouth seed\n"
-            "(same area and size) across the whole model — the other mouth\n"
-            "contacts — and stage them in blue."
+            "Find every face of the SAME SHAPE as the last CON/HEAD tip, in any\n"
+            "orientation (exact area + bbox match) — the other mouth contacts — in blue."
         )
-        similar_button.clicked.connect(self._detect_similar)
+        similar_button.clicked.connect(lambda: self._detect_similar("mouth"))
         mouth_row.addWidget(similar_button)
         join_button = QPushButton("Join to Pins")
         join_button.setToolTip(
@@ -316,18 +332,11 @@ class DetectPinsTool(ToolMode):
         if pick.face_index in claimed:
             self.status("Seed Pin: that face already belongs to a pin")
             return
-        if role == "mouth":
-            # normal face picking: the clicked face IS the mouth pin —
-            # no growth, the marker sits exactly where the user clicked
-            region = {pick.face_index}
-        else:
-            region = grow_smooth_region(
-                document,
-                pick.body_index,
-                pick.face_index,
-                smooth_angle_deg=float(self.angle_spin.value()),
-                claimed=claimed,
-            )
+        # Tip-based seeding: the clicked face IS the pin tip — every pin has
+        # one (square, round, or curved). No growth, so nothing can flood;
+        # Detect Exact finds the rest by matching tip area+shape, and the
+        # spine / Separate grows each tip into its full contact.
+        region = {pick.face_index}
         mesh = document.bodies[pick.body_index].mesh
         centroid = mesh_region_centroid(mesh, sorted(region))
         if centroid is None:
@@ -341,38 +350,38 @@ class DetectPinsTool(ToolMode):
         self.pending.append(pin)
         self.ctx.journal.record(
             tool=self.id,
-            params={"action": "seed_pin", "role": role,
-                    "smooth_angle_deg": float(self.angle_spin.value())},
+            params={"action": "seed_pin", "role": role, "grow": False},
             inputs={"body": pick.body_index, "face": pick.face_index,
                     "point": list(pick.world_point)},
             result={"faces": len(region), "centroid": list(centroid)},
         )
         self._refresh_pending()
-        if role == "mouth":
-            self.status(
-                f"Mouth Seed: staged the clicked face — {len(self.pending)} "
-                f"pending; keep clicking, then Detect Similar"
-            )
-        else:
-            self.status(
-                f"Seed Pin: grew {len(region)} face(s) from the click — "
-                f"{len(self.pending)} pending; keep clicking or press Apply"
-            )
+        kind = "CON/HEAD" if role == "mouth" else "SMT/THR"
+        self.status(
+            f"{kind} Seed: staged the pin tip — {len(self.pending)} pending; "
+            f"keep clicking tips or press Detect Exact to find the rest"
+        )
 
     # ----------------------------------------------------------- mouth pins
 
-    def _detect_similar(self) -> None:
-        """Stage a blue mouth pin for every region that looks like the last
-        mouth seed — the other contacts inside the mouth."""
+    def _detect_similar(self, role: str = "mouth") -> None:
+        """Stage a pin for every face region of the SAME SHAPE as the last
+        seeded tip of `role`, in any orientation (the match is on area + the
+        sorted bbox extents, both rotation/mirror invariant) — an EXACT shape
+        match, not a loose one, so it copies one hand-marked tip across the
+        whole part and the result can seed a reference file."""
         document = self.ctx.document
         if document is None:
             return
         registry = self.ctx.window.pins
-        mouths = [p for p in self.pending if p.role == "mouth"] or registry.mouths()
-        if not mouths:
-            self.status("Detect Similar: stage a Mouth Seed first (blue button)")
+        same = [p for p in self.pending if p.role == role] or [
+            p for p in registry.pins if p.role == role
+        ]
+        if not same:
+            kind = "CON/HEAD" if role == "mouth" else "SMT/THR"
+            self.status(f"Detect Exact: stage a {kind} tip first")
             return
-        template = mouths[-1]
+        template = same[-1]
         seed_body = template.face_ids[0][0]
         seed_region = {face for body, face in template.face_ids if body == seed_body}
         claimed = {
@@ -384,6 +393,7 @@ class DetectPinsTool(ToolMode):
             document, seed_body, seed_region,
             smooth_angle_deg=float(self.angle_spin.value()),
             claimed=claimed,
+            area_tol=_EXACT_AREA_TOL, dim_tol=_EXACT_DIM_TOL,
         )
         added = []
         for region in matches:
@@ -394,21 +404,22 @@ class DetectPinsTool(ToolMode):
             if centroid is None:
                 continue
             added.append(Pin(number=0, centroid=centroid,
-                             face_ids=region, role="mouth"))
+                             face_ids=region, role=role))
         self.pending.extend(added)
         self.ctx.journal.record(
             tool=self.id,
-            params={"action": "detect_similar",
-                    "smooth_angle_deg": float(self.angle_spin.value())},
-            inputs={"body": seed_body,
-                    "faces": sorted(seed_region)},
+            params={"action": "detect_similar", "role": role,
+                    "smooth_angle_deg": float(self.angle_spin.value()),
+                    "area_tol": _EXACT_AREA_TOL, "dim_tol": _EXACT_DIM_TOL},
+            inputs={"body": seed_body, "faces": sorted(seed_region)},
             result={"matches": len(added),
                     "centroids": [list(pin.centroid) for pin in added]},
         )
         self._refresh_pending()
+        kind = "CON/HEAD" if role == "mouth" else "SMT/THR"
         self.status(
-            f"Detect Similar: {len(added)} matching region(s) staged in blue — "
-            f"{len(self.pending)} pending; press Apply, then Join to Pins"
+            f"Detect Exact ({kind}): {len(added)} same-shape tip(s) staged — "
+            f"{len(self.pending)} pending; press Apply"
         )
 
     def _join_mouth_pins(self) -> str | None:
@@ -453,18 +464,68 @@ class DetectPinsTool(ToolMode):
         return outcome
 
     def run_auto(self) -> None:
-        """One press: context-plane detection with a multibody fallback —
-        the same staged ops, just chained."""
-        if self.ctx.document is None:
+        """One press: detect, APPLY, number the tail row, and Join the mouth
+        (mating) pins so each shares its tail's designator. Tip end-cap binning
+        for unibody connectors (SMT/THR tail + CON/HEAD mouth), whole-body pins
+        for multibody parts, context-plane section as the fallback. AUTO runs
+        the trained Z-Sit in the background to get the seat plane, so it works
+        on a naked, un-seated model in any orientation — the normal pipeline
+        seats first, but this stays robust when a user runs it standalone."""
+        document = self.ctx.document
+        if document is None:
             return
-        before = len(self.pending)
-        self._run_context_plane()
-        if len(self.pending) > before:
+        from ..auto import auto_detect_pins
+
+        self.band_button.setChecked(False)
+        found, how = auto_detect_pins(document)
+        if not found:
+            self.status("Auto Detect: nothing found — seed a pin tip manually")
             return
-        bounds = self.ctx.document.bounds()
-        self.detect_in_band(Band(
-            bounds[0] - 1, bounds[2] - 1, bounds[1] + 1, bounds[3] + 1
-        ))
+        staged = self._stage_found(found)
+        self._refresh_pending()
+        if staged:
+            self.apply()              # registry + renumber the primary tails
+            self._join_mouth_pins()   # mouths inherit their tail's designator
+        primaries = sum(1 for p in found if p.role != "mouth")
+        mouths = sum(1 for p in found if p.role == "mouth")
+        label = {"tips": "tip clusters", "multibody": "whole bodies",
+                 "bga": "BGA ball grid", "radial": "radial pin (one body)",
+                 "reference": "baked reference (exact)",
+                 "context-plane": "context-plane section"}.get(how, how)
+        self.status(
+            f"Auto Detect ({label}): {primaries} tail pin(s) (SMT/THR) + "
+            f"{mouths} mating (CON/HEAD), applied, numbered and joined"
+            + self._hint_note(document, primaries)
+        )
+
+    def _hint_note(self, document, primaries: int) -> str:
+        """Goal feedback from the filename's package hint: confirm the count or
+        flag a mismatch, so a wrong detection is caught against the part name."""
+        from ..package_hint import package_hint
+
+        name = document.path.name if getattr(document, "path", None) else ""
+        hint = package_hint(name)
+        if not hint or not hint.get("leads"):
+            return ""
+        leads = hint["leads"]
+        mark = "✓ matches" if primaries == leads else "⚠ name expects"
+        return f"  [{mark} {leads} {hint['archetype']} leads]"
+
+    def _stage_found(self, found) -> list:
+        """Stage the detected pins whose faces don't overlap an existing or
+        already-pending pin; returns the newly staged list."""
+        existing = {
+            key
+            for pin in (*self.ctx.window.pins.pins, *self.pending)
+            for key in pin.face_ids
+        }
+        staged = []
+        for pin in found:
+            if not any(key in existing for key in pin.face_ids):
+                staged.append(pin)
+                existing.update(pin.face_ids)
+        self.pending.extend(staged)
+        return staged
 
     # --------------------------------------------------------- context plane
 
@@ -930,16 +991,7 @@ class DetectPinsTool(ToolMode):
                 f"Pin {pin.number}{name}{mouth}  "
                 f"({pin.centroid[0]:+.2f}, {pin.centroid[1]:+.2f})  {kind}"
             )
-        points = [pin.centroid for pin in registry.pins]
-        labels = [pin.name or str(pin.number) for pin in registry.pins]
-        label_colors = [
-            "#1f9d3a" if pin.name_source == "anchor"  # green anchors,
-            else "#2a6fd4" if pin.role == "mouth"     # CON/HEAD included
-            else "#e07b00" if pin.name_source == "predicted"
-            else "#1a1a1a"
-            for pin in registry.pins
-        ]
-        self.ctx.scene.show_pin_labels(points, labels, label_colors)
+        self._draw_pin_callouts(registry)
         self.canvas.set_pins(
             [(pin.centroid[0], pin.centroid[1], pin.name or str(pin.number))
              for pin in registry.pins]
@@ -949,4 +1001,61 @@ class DetectPinsTool(ToolMode):
                 (self._last_band.x_min, self._last_band.y_min,
                  self._last_band.x_max, self._last_band.y_max)
             )
+
+    # Designation colours: orange THR/SMT tails, blue CON/HEAD mouths.
+    _PRIMARY_COLOR = "#e07b00"
+    _MOUTH_COLOR = "#2a6fd4"
+
+    def _pin_normal(self, document, pin) -> np.ndarray:
+        """Outward (area-weighted) normal of a pin's tip face(s) — the leader
+        pops straight OUT along this, so it exits at the face and never runs
+        through the body interior. +Z fallback for a degenerate face."""
+        acc = np.zeros(3)
+        for body_index, face_id in pin.face_ids:
+            if not 0 <= body_index < len(document.bodies):
+                continue
+            mesh = document.bodies[body_index].mesh
+            if mesh is None:
+                continue
+            tris = mesh.tris[mesh.tri_face_ids == face_id]
+            if len(tris):
+                corners = mesh.points[tris]
+                acc += np.cross(corners[:, 1] - corners[:, 0],
+                                corners[:, 2] - corners[:, 0]).sum(axis=0)
+        norm = float(np.linalg.norm(acc))
+        return acc / norm if norm > 1e-9 else np.array([0.0, 0.0, 1.0])
+
+    def _draw_pin_callouts(self, registry) -> None:
+        """Highlight every pin tip face (xray, on top) and draw a short leader
+        straight OUT along the face normal to an off-the-face designator label
+        — orange for THR/SMT tails, blue for CON/HEAD mouths — so leaders never
+        run inside the body and the faces stay readable."""
+        scene = self.ctx.scene
+        pins = registry.pins
+        document = self.ctx.document
+        if not pins or document is None:
+            scene.show_pin_faces({})
+            scene.show_pin_axes([], [])
+            scene.show_pin_labels([], [], [])
+            return
+        bounds = document.bounds()
+        margin = 0.14 * float(np.linalg.norm([
+            bounds[1] - bounds[0], bounds[3] - bounds[2], bounds[5] - bounds[4]]))
+        segments, seg_colors, label_pts, label_colors, labels = [], [], [], [], []
+        faces: dict[str, list] = {}
+        for pin in pins:
+            centroid = np.asarray(pin.centroid, dtype=float)
+            label = centroid + self._pin_normal(document, pin) * margin
+            color = (self._MOUTH_COLOR if pin.role == "mouth"
+                     else self._PRIMARY_COLOR)
+            segments.append([centroid, label])
+            seg_colors.append(color)
+            label_pts.append(label)
+            label_colors.append(
+                "#1f9d3a" if pin.name_source == "anchor" else color)
+            labels.append(pin.name or str(pin.number))
+            faces.setdefault(color, []).extend(pin.face_ids)
+        scene.show_pin_faces(faces)
+        scene.show_pin_axes(segments, seg_colors)
+        scene.show_pin_labels(label_pts, labels, label_colors)
 

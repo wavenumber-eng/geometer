@@ -1070,19 +1070,44 @@ def _line_order(centroids: np.ndarray, axis: int, pin1_hint) -> list[int]:
     return order
 
 
+def _is_ring(centroids: np.ndarray) -> bool:
+    """A QFN/QFP perimeter ring (pins on ~4 sides) vs an elongated 1-2 row part:
+    a ring has comparable spread on both in-plane axes."""
+    rel = centroids[:, :2] - centroids[:, :2].mean(axis=0)
+    singular = np.linalg.svd(rel, full_matrices=False)[1]
+    return len(singular) >= 2 and singular[1] > 0.45 * singular[0]
+
+
+def _ring_order(centroids: np.ndarray) -> list[int]:
+    """Walk a perimeter ring by angle around its centre — a continuous, unique
+    traversal (consecutive pins are spatially adjacent). Any centre pad(s) sit
+    near the centre and come last."""
+    rel = centroids[:, :2] - centroids[:, :2].mean(axis=0)
+    radius = np.linalg.norm(rel, axis=1)
+    rmax = max(float(radius.max()), 1e-9)
+    perimeter = [i for i in range(len(radius)) if radius[i] > 0.35 * rmax]
+    centre = [i for i in range(len(radius)) if radius[i] <= 0.35 * rmax]
+    perimeter.sort(key=lambda i: float(np.arctan2(rel[i, 1], rel[i, 0])))
+    return perimeter + centre
+
+
 def serpentine_order(
     centroids: np.ndarray,
     *,
     pin1_hint: tuple[float, float] | None = None,
 ) -> list[int]:
-    """Two-row serpentine numbering per the design intent's example: one row
-    ascending X, the opposite row descending X. A genuinely single (even
-    micro-staggered) row is numbered monotonically along its long axis. With a
-    pin-1 hint, the variant whose first pin lies nearest the hint wins."""
+    """Geometry-adaptive numbering that is always UNIQUE and a continuous
+    traversal (so a footprint can remap it later): a single (even
+    micro-staggered) row -> monotonic along its long axis; a QFN/QFP perimeter
+    ring -> an angular walk with any centre pad last; otherwise the two-row
+    serpentine (one row ascending X, the other descending), pin-1 hint picking
+    the start."""
     centroids = np.asarray(centroids, dtype=np.float64)
     line = _single_line_axis(centroids)
     if line is not None:
         return _line_order(centroids, line, pin1_hint)
+    if _is_ring(centroids):
+        return _ring_order(centroids)
     if pin1_hint is None:
         return _serpentine_variant(centroids, False, False)
     return _serpentine_with_hint(centroids, pin1_hint)
@@ -1277,6 +1302,9 @@ def _order_candidates(centroids: np.ndarray) -> list[list[int]]:
         straight = sorted(range(count), key=lambda i: centroids[i, axis])
         candidates.append(straight)
         candidates.append(straight[::-1])
+    ring = _ring_order(centroids)            # QFN/QFP perimeter walk (+ reverse)
+    candidates.append(ring)
+    candidates.append(ring[::-1])
     for axis in (1, 0):
         for flip_x in (False, True):
             for start_top in (False, True):

@@ -59,13 +59,22 @@ def _ground_parts(meta: dict | None) -> list:
 
 
 def _found_count(ground: list, detected: list, multibody: bool) -> int:
-    """How many ground pins a detected pin covers. On MULTIBODY parts match by
-    BODY (one solid per pin); on unibody match by FACE (pins share one body, so
-    only faces distinguish them) — avoids the face-vs-body granularity mismatch
-    that made an all-correct multibody read as 0."""
-    slot = 1 if multibody else 0   # 1=bodies, 0=faces
-    return sum(1 for g in ground
-               if any(g[slot] & d[slot] for d in detected))
+    """How many ground pins are covered by a DISTINCT detected pin (bipartite,
+    so found can never exceed the detected count). Match by FACE always; also by
+    BODY on multibody parts (a detected whole-body pin covers a face-marked one
+    on that solid) — but bipartite capping stops one body with several
+    face-pins from counting them all."""
+    used = [False] * len(detected)
+    found = 0
+    for g_faces, g_bodies in ground:
+        for index, (d_faces, d_bodies) in enumerate(detected):
+            if used[index]:
+                continue
+            if (g_faces & d_faces) or (multibody and (g_bodies & d_bodies)):
+                used[index] = True
+                found += 1
+                break
+    return found
 
 
 def promote() -> None:

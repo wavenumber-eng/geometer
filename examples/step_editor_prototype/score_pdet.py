@@ -45,6 +45,29 @@ def _pin_keys(meta: dict | None) -> list:
     return out
 
 
+def _pin_parts(faces, body_ids) -> tuple:
+    """(face-set, body-set) of a pin. Bodies include the faces' owning bodies,
+    so a face-marked pin and a whole-body pin on the same solid still match."""
+    faces = {tuple(f) for f in faces}
+    bodies = set(body_ids) | {f[0] for f in faces}
+    return faces, bodies
+
+
+def _ground_parts(meta: dict | None) -> list:
+    return [_pin_parts(p.get("face_ids", []), p.get("body_ids", []))
+            for net in (meta or {}).get("nets", []) for p in net.get("pins", [])]
+
+
+def _found_count(ground: list, detected: list, multibody: bool) -> int:
+    """How many ground pins a detected pin covers. On MULTIBODY parts match by
+    BODY (one solid per pin); on unibody match by FACE (pins share one body, so
+    only faces distinguish them) — avoids the face-vs-body granularity mismatch
+    that made an all-correct multibody read as 0."""
+    slot = 1 if multibody else 0   # 1=bodies, 0=faces
+    return sum(1 for g in ground
+               if any(g[slot] & d[slot] for d in detected))
+
+
 def promote() -> None:
     """Save every baked pin-bearing file as a <base>_REF_PDET.step reference."""
     made, seen = 0, set()
@@ -76,15 +99,11 @@ def audit() -> None:
         if source is None:
             rows.append((base, None, None, None, "NO SOURCE"))
             continue
-        ground = _pin_keys(extract_metadata(ref))
-        detected, how = auto_detect_pins(
-            EditorDocument.load(source), use_reference=False)
-        det_keys = [
-            frozenset({tuple(f) for f in p.face_ids}
-                      | {("B", b) for b in p.body_ids})
-            for p in detected
-        ]
-        found = sum(1 for g in ground if any(g & d for d in det_keys))
+        document = EditorDocument.load(source)
+        ground = _ground_parts(extract_metadata(ref))
+        detected, how = auto_detect_pins(document, use_reference=False)
+        det = [_pin_parts(p.face_ids, p.body_ids) for p in detected]
+        found = _found_count(ground, det, len(document.bodies) > 1)
         rows.append((base, len(ground), len(detected), found, how))
 
     print(f"\n{'part':42} {'truth':>5} {'auto':>5} {'found':>5}  method")

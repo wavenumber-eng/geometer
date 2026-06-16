@@ -20,8 +20,49 @@ from PySide6.QtWidgets import (
 
 from .base import ToolMode, make_apply_button
 
-ORIGIN_RULES = ("rect-center", "centroid", "first-pick")
+ORIGIN_RULES = ("rect-center", "centroid", "first-pick", "hull-center")
 _EPS = 1.0e-9
+
+
+def _hull_center_uv(uv) -> np.ndarray:
+    """Geometric centre of the 2D convex hull of `uv` (Nx2): the area
+    centroid of the hull polygon. Used by the 'hull-center' origin rule to
+    centre a model on its orthographic silhouette rather than on the picked
+    seat — parts whose body overhangs a small rear pad field have no useful
+    pick-centroid, but their full footprint does. Monotone-chain hull +
+    shoelace centroid, so it stays dependency-free and headless-safe."""
+    pts = np.asarray(uv, dtype=np.float64)
+    if len(pts) < 3:
+        return pts.mean(axis=0) if len(pts) else np.zeros(2)
+    order = np.lexsort((pts[:, 1], pts[:, 0]))
+    pts = pts[order]
+
+    def _half(points):
+        chain: list = []
+        for p in points:
+            while len(chain) >= 2:
+                a, b = chain[-2], chain[-1]
+                if (b[0] - a[0]) * (p[1] - a[1]) - (b[1] - a[1]) * (p[0] - a[0]) <= 0:
+                    chain.pop()
+                else:
+                    break
+            chain.append(p)
+        return chain
+
+    lower = _half(pts)
+    upper = _half(pts[::-1])
+    hull = np.asarray(lower[:-1] + upper[:-1], dtype=np.float64)
+    if len(hull) < 3:
+        return pts.mean(axis=0)
+    x, y = hull[:, 0], hull[:, 1]
+    x1, y1 = np.roll(x, -1), np.roll(y, -1)
+    cross = x * y1 - x1 * y
+    area = 0.5 * float(cross.sum())
+    if abs(area) < _EPS:  # collinear hull -> fall back to the vertex mean
+        return hull.mean(axis=0)
+    cx = float(((x + x1) * cross).sum()) / (6.0 * area)
+    cy = float(((y + y1) * cross).sum()) / (6.0 * area)
+    return np.array([cx, cy])
 
 
 def _fit_plane(points) -> tuple[np.ndarray, np.ndarray]:
@@ -68,12 +109,18 @@ def _in_plane_axis(points, normal) -> np.ndarray:
 
 
 def compute_zsit_frame(
-    plane_points, above, *, origin_rule: str = "rect-center", flip_z: bool = False
+    plane_points, above, *, origin_rule: str = "rect-center", flip_z: bool = False,
+    model_points=None,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """Return (origin, x_dir, y_dir, z_dir) of the picked seating frame.
     plane_points is 3 OR 4 picks — with 4, the best-fit plane through all of
     them is used and the rectangle bounds every pick. z points toward
-    `above` (flipped by flip_z)."""
+    `above` (flipped by flip_z).
+
+    `model_points` (Nx3, the whole model's mesh vertices) is required only for
+    origin_rule='hull-center', which sets the in-plane origin to the geometric
+    centre of the model's orthographic convex hull projected onto the plane —
+    so the model centres on its real footprint, not the picked seat."""
     pts = [np.asarray(p, dtype=np.float64) for p in plane_points]
     if len(pts) < 3:
         raise ValueError("need at least 3 plane picks")
@@ -90,6 +137,15 @@ def compute_zsit_frame(
                        for p in pts])
         center_uv = (uv.min(axis=0) + uv.max(axis=0)) * 0.5
         origin = centroid + center_uv[0] * x_axis + center_uv[1] * y_axis
+    elif origin_rule == "hull-center":
+        if model_points is None or len(model_points) < 3:
+            origin = centroid  # no geometry to hull — fall back to pick centroid
+        else:
+            mp = np.asarray(model_points, dtype=np.float64)
+            uv = np.column_stack([mp @ x_axis, mp @ y_axis])
+            cu, cv = _hull_center_uv(uv)
+            # reconstruct a point with that in-plane (u, v), kept on the plane
+            origin = cu * x_axis + cv * y_axis + float(centroid @ normal) * normal
     else:  # centroid
         origin = centroid
 
@@ -103,18 +159,83 @@ def compute_zsit_frame(
 
 
 def compute_zsit_matrix(
-    plane_points, above, *, origin_rule: str = "rect-center", flip_z: bool = False
+    plane_points, above, *, origin_rule: str = "rect-center", flip_z: bool = False,
+    model_points=None,
 ) -> np.ndarray:
     """4x4 transform taking current model coordinates into the user-defined
     frame: picked plane -> Z=0 with the origin on it, `above` side -> +Z."""
     origin, x_dir, y_dir, z_dir = compute_zsit_frame(
-        plane_points, above, origin_rule=origin_rule, flip_z=flip_z
+        plane_points, above, origin_rule=origin_rule, flip_z=flip_z,
+        model_points=model_points,
     )
     rotation = np.vstack([x_dir, y_dir, z_dir])  # frame axes as rows
     matrix = np.eye(4, dtype=np.float64)
     matrix[:3, :3] = rotation
     matrix[:3, 3] = -rotation @ origin
     return matrix
+
+
+def _level_groups(face_z, face_area, tol):
+    """Group flat-face levels (within tol), area-weighted level per group,
+    sorted bottom-up. Returns [(level, total_area, member indices)]."""
+    order = np.argsort(face_z)
+    groups = [[int(order[0])]]
+    for k in range(1, len(order)):
+        if face_z[order[k]] - face_z[order[k - 1]] <= tol:
+            groups[-1].append(int(order[k]))
+        else:
+            groups.append([int(order[k])])
+    info = []
+    for group in groups:
+        area = float(face_area[group].sum())
+        level = float((face_z[group] * face_area[group]).sum() / max(area, 1e-12))
+        info.append((level, area, group))
+    info.sort(key=lambda t: t[0])
+    return info
+
+
+def _lowest_substantial_level(face_z, face_area, face_center, tol, span,
+                              frac=0.3, gap_frac=0.12):
+    """Seat level. Walk the flat downward-face levels bottom-up and seat on the
+    first one that ISN'T a THR lead tip — a level is skipped only when it is
+    thin AND a long way (a lead's length) below the next level. So SMT pads
+    (thin but right under the body) stay the seat, while THR lead tips drop out
+    and the seat lands on the body-rest plane. Returns (count, area, level,
+    pad centers)."""
+    info = _level_groups(face_z, face_area, tol)
+    max_area = max(t[1] for t in info)
+    for i, (level, area, group) in enumerate(info):
+        thin = area < frac * max_area
+        far = i + 1 < len(info) and (info[i + 1][0] - level) > gap_frac * max(span, 1e-9)
+        if thin and far:
+            continue  # a long thin lead below the body — not the seat
+        return len(group), area, level, [face_center[j] for j in group]
+    level, area, group = info[0]
+    return len(group), area, level, [face_center[j] for j in group]
+
+
+def _learned_seat_up(document):
+    """The trained seat model's up vector (normalized), or None when no model
+    is trained yet — so compute_auto_zsit falls back to the deterministic rule."""
+    try:
+        from ..seat_model import predict_up
+        up = predict_up(document)
+    except Exception:  # noqa: BLE001 — model/sklearn absent -> deterministic
+        return None
+    if up is None:
+        return None
+    up = np.asarray(up, dtype=np.float64)
+    return up / float(np.linalg.norm(up))
+
+
+def _learned_seat_level(document, up):
+    """The trained level model's seat z (along up), or None — so the seat falls
+    back to the deterministic substantial-level rule."""
+    try:
+        from ..seat_model import predict_level
+        return predict_level(document, up)
+    except Exception:  # noqa: BLE001
+        return None
 
 
 def compute_auto_zsit(
@@ -167,66 +288,59 @@ def compute_auto_zsit(
             break
 
     def seat_at(up: np.ndarray):
-        """Best SUPPORT LEVEL when `up` is +Z: downward faces near the
-        bottom are clustered by height and the level holding the most
-        distinct faces wins. Anchoring at the absolute minimum would let
-        board-lock pegs (which hang BELOW the seating plane) hide the real
-        seat. Returns (count, area, level_z, pad faces) or None."""
-        z_all = points @ up
-        zmin = float(z_all.min())
-        height = float(z_all.max()) - zmin
-        band = zmin + max(0.25 * height, tol * 2.0)
+        """Seat when `up` is +Z: cluster downward flat faces by height and seat
+        on the LOWEST substantial level (see _lowest_substantial_level) — SMT
+        pads when they're the lowest face, the body-rest plane for THR (thin
+        lead tips below are skipped). Returns (count, area, level, pads)."""
         face_z, face_area, face_center = [], [], []
         for centers, normals, areas, body_index, face_ids in chunks:
             mask = normals @ up < -normal_cos
             if not mask.any():
                 continue
             cz = centers[mask] @ up
-            inband = cz <= band
-            if not inband.any():
-                continue
-            sub_centers = centers[mask][inband]
-            sub_areas = areas[mask][inband]
-            sub_faces = face_ids[mask][inband]
-            sub_z = cz[inband]
+            sub_centers = centers[mask]
+            sub_areas = areas[mask]
+            sub_faces = face_ids[mask]
             for face in np.unique(sub_faces):
                 sub = sub_faces == face
                 weight = sub_areas[sub]
                 total = max(float(weight.sum()), 1e-12)
-                face_z.append(float((sub_z[sub] * weight).sum() / total))
+                face_z.append(float((cz[sub] * weight).sum() / total))
                 face_area.append(total)
                 face_center.append(
                     (sub_centers[sub] * weight[:, None]).sum(axis=0) / total
                 )
         if not face_z:
             return None
-        face_z = np.asarray(face_z)
-        face_area = np.asarray(face_area)
-        best_level = None
-        for z0 in np.unique(np.round(face_z, 6)):
-            members = np.abs(face_z - z0) <= tol
-            key = (int(members.sum()), float(face_area[members].sum()))
-            if best_level is None or key > best_level[0]:
-                best_level = (key, float(z0), members)
-        (count, area), level, members = best_level
-        pads = [face_center[i] for i in np.where(members)[0]]
-        return count, area, level, pads
+        z = points @ up
+        return _lowest_substantial_level(
+            np.asarray(face_z), np.asarray(face_area), face_center, tol,
+            float(z.max() - z.min()),
+        )
 
-    best = None
-    for down in candidates:
-        up = -down / float(np.linalg.norm(down))
-        seat = seat_at(up)
-        if seat is None:
-            continue
-        count, area, _level, _pads = seat
-        if best is None or (count, area) > best[0]:
-            best = ((count, area), up)
-    if best is None or best[0][0] == 0:
-        return None
-    _score, up = best
+    up = _learned_seat_up(document)
+    if up is None or seat_at(up) is None:
+        # no trained model (or it gives no seat) -> deterministic face-count rule
+        best = None
+        for down in candidates:
+            cand = -down / float(np.linalg.norm(down))
+            seat = seat_at(cand)
+            if seat is None:
+                continue
+            count, area, _level, _pads = seat
+            if best is None or (count, area) > best[0]:
+                best = ((count, area), cand)
+        if best is None or best[0][0] == 0:
+            return None
+        up = best[1]
 
     seat = seat_at(up)
     count, _area, level, pads = seat
+    # The trained level ranker decides where z=0 goes (SMT pad / THR body-rest /
+    # BGA ball tip); fall back to the deterministic level when no model.
+    learned_level = _learned_seat_level(document, up)
+    if learned_level is not None:
+        level = learned_level
     pad_points = np.array(pads)
     helper = (
         np.array([1.0, 0.0, 0.0])
@@ -247,11 +361,11 @@ def compute_auto_zsit(
             x_axis /= float(np.linalg.norm(x_axis))
             y_axis = np.cross(up, x_axis)
 
-    # Origin: rect-center of the seat pads in the aligned frame (the same
-    # rule the manual tool defaults to) — centers the model on its seating
-    # field, robust to uneven pad counts per side.
-    uv = np.column_stack([pad_points @ x_axis, pad_points @ y_axis])
-    center_uv = (uv.min(axis=0) + uv.max(axis=0)) * 0.5
+    # Origin: centre of the whole model's FOOTPRINT (its XY bounding box in the
+    # seat plane), at the seat level — matches the user's "centre the part"
+    # convention better than the seat-pad centre (pads can sit to one side).
+    foot = np.column_stack([points @ x_axis, points @ y_axis])
+    center_uv = (foot.min(axis=0) + foot.max(axis=0)) * 0.5
     origin = (
         center_uv[0] * x_axis + center_uv[1] * y_axis + level * up
     )
@@ -341,6 +455,16 @@ class ZSitTool(ToolMode):
         rule_row.addWidget(QLabel("Origin"))
         self.origin_combo = QComboBox()
         self.origin_combo.addItems(ORIGIN_RULES)
+        self.origin_combo.setToolTip(
+            "Where X/Y=0 lands in the seating plane:\n"
+            "• rect-center — centre of the picks' bounding rectangle\n"
+            "• centroid — average of the picks\n"
+            "• first-pick — the first picked point\n"
+            "• hull-center — geometric centre of the model's orthographic\n"
+            "  silhouette (convex hull) projected onto this plane. Use it\n"
+            "  when the seat pads are off to one side and the body overhangs,\n"
+            "  so there's no good pick-based centre."
+        )
         rule_row.addWidget(self.origin_combo, 1)
         layout.addLayout(rule_row)
 
@@ -365,10 +489,20 @@ class ZSitTool(ToolMode):
 
         apply_row = QHBoxLayout()
         self.auto_button = QPushButton("Auto")
+        from ..seat_model import fidelity_summary
+
         self.auto_button.setToolTip(
-            "Find the seating orientation automatically: every candidate\n"
-            "'down' direction is scored by how many distinct faces rest\n"
-            "flat at the bottom (pads and feet win over a package top).\n"
+            "AUTO Z-Sit — learned seating, no clicks. Stages:\n"
+            "  1 · orientation — a RandomForest ranks candidate up-vectors "
+            "(which way is up)\n"
+            "  2 · seat level — a RandomForest ranks candidate planes "
+            "(where Z=0 sits)\n"
+            "  3 · centering — footprint centre at the seat level "
+            "(deterministic)\n"
+            "(falls back to a face-count rule when no model is trained)\n"
+            "\n"
+            f"Trained fidelity (leave-one-out): {fidelity_summary()}\n"
+            "\n"
             "The result is STAGED — press Apply to accept it, or just\n"
             "start picking points to do it manually instead."
         )
@@ -424,6 +558,19 @@ class ZSitTool(ToolMode):
             point = self._snap_to_vertex(pick.body_index, point)
         self.points.append(tuple(float(v) for v in point))
         self._refresh_preview()
+
+    def _model_points(self):
+        """All mesh vertices, for the hull-center origin rule. None when there
+        is no document/mesh yet."""
+        document = self.ctx.document
+        if document is None:
+            return None
+        arrays = [
+            b.mesh.points
+            for b in document.bodies
+            if b.mesh is not None and len(b.mesh.points)
+        ]
+        return np.concatenate(arrays) if arrays else None
 
     def _snap_to_vertex(self, body_index: int, point: np.ndarray) -> np.ndarray:
         mesh = self.ctx.document.bodies[body_index].mesh
@@ -536,10 +683,12 @@ class ZSitTool(ToolMode):
         diag = 1.0
         if len(self.points) >= needed + 1 and self.ctx.document is not None:
             try:
+                rule = self.origin_combo.currentText()
                 origin, x_dir, y_dir, z_dir = compute_zsit_frame(
                     self.points[:needed], self.points[needed],
-                    origin_rule=self.origin_combo.currentText(),
+                    origin_rule=rule,
                     flip_z=self.flip_check.isChecked(),
+                    model_points=self._model_points() if rule == "hull-center" else None,
                 )
             except ValueError as exc:
                 scene.show_arrows([], z_dir, scale=1.0, name="zsit-z-arrows")
@@ -570,6 +719,10 @@ class ZSitTool(ToolMode):
                 matrix = compute_zsit_matrix(
                     self.points[:needed], self.points[needed],
                     origin_rule=origin_rule, flip_z=flip_z,
+                    model_points=(
+                        self._model_points()
+                        if origin_rule == "hull-center" else None
+                    ),
                 )
             except ValueError as exc:
                 self.status(f"Z-Sit: {exc}")

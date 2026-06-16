@@ -236,6 +236,7 @@ class MainWindow(QMainWindow):
         self.mode_rect.tool_selected.connect(self.set_tool)
         self.mode_rect.next_clicked.connect(self.cycle_tool)
         self.current_tool_index = 0
+        self._switching = False
         self._apply_tool(0, animate=False)
 
         QShortcut(QKeySequence("T"), self, activated=self.cycle_tool)
@@ -258,12 +259,26 @@ class MainWindow(QMainWindow):
         self._switch_tool((self.current_tool_index + 1) % len(self.tools))
 
     def _switch_tool(self, index: int) -> None:
+        if self._switching:
+            return  # a heavy enter() is mid-flight; ignore re-entrant Tab
         if index == self.current_tool_index:
             self._apply_tool(index)
             return
         self.tools[self.current_tool_index].exit()
         self.current_tool_index = index
         self._apply_tool(index)
+
+    def _model_is_heavy(self) -> bool:
+        """A switch only lags on big models (face-adjacency, HLR, billboards).
+        Use mesh size as a cheap proxy so small parts switch flicker-free."""
+        if self.document is None:
+            return False
+        points = sum(
+            len(b.mesh.points)
+            for b in self.document.bodies
+            if b.mesh is not None
+        )
+        return points > 40000
 
     def _apply_tool(self, index: int, *, animate: bool = True) -> None:
         tool = self.tools[index]
@@ -273,7 +288,18 @@ class MainWindow(QMainWindow):
             tool.title, tool.accent, next_tool.title, next_tool.accent,
             animate=animate,
         )
-        tool.enter()
+        heavy = self._model_is_heavy()
+        self._switching = True
+        QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
+        if heavy:
+            self.progress(f"Entering {tool.title}…", 0, 0)
+        try:
+            tool.enter()
+        finally:
+            if heavy:
+                self.progress_done()
+            QApplication.restoreOverrideCursor()
+            self._switching = False
 
     def _route_pick(self, pick) -> None:
         self.tools[self.current_tool_index].on_pick(pick)

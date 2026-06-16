@@ -8,8 +8,8 @@ from .colors import ColorsTool
 from .detect_pins import DetectPinsTool
 from .hitboxes import HitboxTool
 from .inspect_tool import InspectTool
+from .front_face import FrontFaceTool
 from .logo import LogoTool
-from .pin1_quadrant import Pin1QuadrantTool
 from .pin_functions import PinFunctionsTool
 from .separate import SeparateUnibodyTool
 from .zsit import ZSitTool
@@ -17,7 +17,7 @@ from .zsit import ZSitTool
 TOOL_CLASSES: list[type[ToolMode]] = [
     InspectTool,
     ZSitTool,
-    Pin1QuadrantTool,
+    FrontFaceTool,
     DetectPinsTool,
     SeparateUnibodyTool,
     HitboxTool,

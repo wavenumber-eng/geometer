@@ -12,7 +12,14 @@ Tools avaliable in the editor:
 
 `Redefine Z-Sit plane`, USERS click 3 points to define a Z plane and then a 4th point to define the direction of the Z axis. This will reposition the whole model (even if it is an assembly) so that the coordinate system matches the users intent. The three points define a planar rectangle at which the XYZ origin is placed. The 4th point defines the direction of the Z vector. Essentially this will turn any model Z up.
 
-`Redefine Pin 1 Quadrant`, Users will click Pin 1 on the chip and this will swing around the whole model to the X Positive Y Positive directions.
+`Redefine Front` (replaces `Redefine Pin 1 Quadrant`), the Step-2 in-plane rotation tool. Z-Sit (Step 1) already stood the part Z-up, centred, and seated on Z=0; this tool fixes the remaining freedom — the rotation about +Z — so the part faces a canonical "front". The user supplies two constraints: (1) click a POINT that must end up in the −Y half-plane (the FRONT of the part), and (2) define a LINE that must become parallel to the X axis. With those two, the model rotates about its centre so the line lies along X and the front point drops into −Y (the line fixes the angle to within 180°; the −Y point picks which of the two flips). This deliberately decouples rotation from Z-Sit so the seat-orientation model never has to also get rotation right.
+
+Canonical front conventions (the ground truth the user defines with this tool, later learned by a per-package-type model):
+ - SISO / single-row packages: pins run L→R from −X to +X (pin 1 at −X, ascending toward +X).
+ - SOT packages: pins read L→R, with the pin rows on the −X and +X sides.
+ - QFN packages: the pin-1 indicator sits in the +X +Y quadrant (upper-right).
+ - Connectors, board-PARALLEL mating (the connector mates horizontally, parallel to the board — e.g. a card-edge or right-angle header): the CONNECTOR/mating pins are the front face (they point toward −Y).
+ - Connectors, board-PERPENDICULAR mating (the connector mates vertically, perpendicular to the board — e.g. a vertical socket): the SMT pins define the front face.
 
 `Detect Pins`, is where a USER drags a rectangle in orthographic mode over what they think are the pins of the chip. Then a system does edge flow until there is a discontinuity and then labels that enclosed shape as a PIN. Pin ordering is done via those pins geometric centers (based on their 3D geometry) relative to the origin. For instance pins 1 - 5 may range from X = -5 X = 5 and Y = -3, pins 6 - 10 may range from X = 5 X = -5 and Y = 3. Pins can be reordered in this tool mode. Caveats to be aware of, some 3D models already have Pins as separate bodies, if this is the case, then detecting pins will be super easy, if the model is a unibody, the system must be smart enough to detect pin shapes and distinguish them from the bodies of the chips. If Pin 1 Quadrant has been defined, then the user can easily define where pin 2 is and then the system should be able to propogate these numbers.
 

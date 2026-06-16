@@ -36,6 +36,11 @@ from .document import EditorDocument
 
 
 CONDITIONED_SUFFIX = "_AP242_conditioned"
+# A conditioned file carries a Wavenumber-conditioned version tag `_AP242_WNCn`.
+# Re-conditioning collapses the tag and increments n (rather than stacking
+# `_AP242_conditioned_AP242_conditioned…`); the legacy `_AP242_conditioned`
+# tag counts as version 1.
+_COND_TAG_RE = re.compile(r"^(?P<base>.*?)_AP242_(?:conditioned|WNC(?P<n>\d+))$")
 
 # OCCT's STEP parser rejects string literals somewhere past ~16k chars, so the
 # metadata blob is split across multiple DESCRIPTIVE_REPRESENTATION_ITEMs (all
@@ -66,7 +71,17 @@ class ExportReport:
 
 
 def conditioned_path(input_path: Path) -> Path:
-    return input_path.with_name(f"{input_path.stem}{CONDITIONED_SUFFIX}.step")
+    """Next conditioned name: `<base>_AP242_WNCn`. A raw source becomes WNC1;
+    an already-conditioned file (legacy `_conditioned` = v1, or `_WNCn`)
+    collapses its tag and bumps to the next version, so re-conditioning never
+    stacks duplicate suffixes."""
+    match = _COND_TAG_RE.match(input_path.stem)
+    if match:
+        base = match.group("base")
+        version = (int(match.group("n")) if match.group("n") else 1) + 1
+    else:
+        base, version = input_path.stem, 1
+    return input_path.with_name(f"{base}_AP242_WNC{version}.step")
 
 
 def export_ap242(

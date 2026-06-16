@@ -25,15 +25,18 @@ import numpy as np
 PROTO = Path(__file__).resolve().parents[1]
 REF_DIR = PROTO / "REFERENCE_STEP_FILES"
 SUFFIX = "_AP242_conditioned"
-# The reference folder serves the two ML tools. Each part's ground truth lives
-# in up to two files, distinguished by tag:
+# The reference folder serves the conditioning tools. Each part's ground truth
+# lives in up to three files, distinguished by tag:
 #   _REF_ZSIT  — the Z-Sit seating (Step 1). Holds the original/full journal.
 #   _REF_FDEF  — the Front DEFinition / in-plane rotation (Step 2).
+#   _REF_PDET  — the Pin DETection ground truth (Step 3, hand-marked pins) used
+#                to replay AUTO and to AUDIT geometric AUTO via score_pdet.
 # (Legacy `_AP242_conditioned`/`_AP242_WNCn` tags still parse, for transition.)
-# Both files of a base are combined into one Reference; the ZSIT file is the
+# Files of a base are combined into one Reference; the ZSIT file is the
 # representative (its metadata also carries nets/separate for the benchmarks).
 _REF_TAG_RE = re.compile(
-    r"^(?P<base>.*)_(?:REF_ZSIT|REF_FDEF|AP242_conditioned|AP242_WNC\d+)$")
+    r"^(?P<base>.*)_(?:REF_ZSIT|REF_FDEF|REF_PDET|AP242_conditioned"
+    r"|AP242_WNC\d+)$")
 
 
 def _base_of(stem: str) -> str | None:

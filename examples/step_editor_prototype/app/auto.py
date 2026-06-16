@@ -430,9 +430,11 @@ def context_plane_point(document: EditorDocument) -> list[float]:
 
 
 # Conditioning tags appended to a base part name. Stripping them recovers the
-# base, so a baked reference is matched to its raw source by name.
+# base, so a baked reference is matched to its raw source by name. _REF_PDET is
+# the pin-detection ground truth (hand-marked pins, for replay + auditing AUTO).
 _COND_TAG = re.compile(
-    r"_(?:AP242_conditioned|AP242_WNC\d+|REF_ZSIT|REF_FDEF|REF_PINS)$", re.I)
+    r"_(?:AP242_conditioned|AP242_WNC\d+|REF_ZSIT|REF_FDEF|REF_PDET|REF_PINS)$",
+    re.I)
 
 
 def _base_name(stem: str) -> str:
@@ -572,16 +574,55 @@ def detect_pins_from_reference(document: EditorDocument) -> list[Pin] | None:
     return pins or None
 
 
-def auto_detect_pins(document: EditorDocument) -> tuple[list[Pin], str]:
-    """Pick the best detector for the part:
-      - multibody parts (pins already separate solids) -> whole-body pins;
-      - unibody connectors -> TIP clustering (small same-shape faces at
-        uniform heights, classified SMT/THR vs CON/HEAD by height), which
-        feeds the spine/separate one clean seed per pin;
-      - fallback -> the context-plane section 0.01 mm above the seat."""
-    reference = detect_pins_from_reference(document)
-    if reference:
-        return reference, "reference"   # exact replay of a baked reference
+def _detect_multibody(document, section) -> tuple[list[Pin], str]:
+    """Multibody part: pins are separate solids — whole-body pins win when they
+    out-count the section, else the context-plane section is the fallback."""
+    bounds = document.bounds()
+    bodies = detect_pins_multibody(
+        document,
+        Band(bounds[0] - 1, bounds[2] - 1, bounds[1] + 1, bounds[3] + 1),
+        exclude_largest=True,
+    )
+    if bodies and len(bodies) >= len(section):
+        return bodies, "multibody"
+    if len(section) >= 2:
+        return section, "context-plane"
+    if bodies:
+        return bodies, "multibody"
+    return [], "none"
+
+
+def _detect_unibody(document, section) -> tuple[list[Pin], str]:
+    """Unibody part: a filled BGA ball grid is its own archetype (routed before
+    tip binning so the grid is not read as connector rows); otherwise tip-
+    binning, dropping phantom mouths on single-ended named packages; the
+    context-plane section is the fallback."""
+    bga = detect_bga_grid(document)
+    if bga is not None and len(bga) >= max(len(section), 9):
+        return bga, "bga"
+    tips = auto_detect_tip_pins(document)
+    if _single_ended_by_name(document):
+        tips = [pin for pin in tips if pin.role != "mouth"]
+    if len(tips) >= max(len(section), 2):
+        return tips, "tips"
+    if len(section) >= 2:
+        return section, "context-plane"
+    return (tips, "tips") if tips else ([], "none")
+
+
+def auto_detect_pins(
+    document: EditorDocument, *, use_reference: bool = True
+) -> tuple[list[Pin], str]:
+    """Pick the best detector for the part via an archetype decision tree:
+    reference -> radial -> multibody -> (BGA grid | tip-binning | section).
+
+    `use_reference=False` skips the baked-reference replay so the pure GEOMETRIC
+    detectors run — that's how score_pdet audits the algorithm against a
+    _REF_PDET ground truth (otherwise the reference just reproduces itself)."""
+    if use_reference:
+        reference = detect_pins_from_reference(document)
+        if reference:
+            return reference, "reference"   # exact replay of a baked reference
     radial = detect_radial_pin(document)
     if radial is not None:
         return radial, "radial"      # a turned round pin is one whole-body pin
@@ -589,38 +630,8 @@ def auto_detect_pins(document: EditorDocument) -> tuple[list[Pin], str]:
         document, context_plane_point(document), [0.0, 0.0, -1.0]
     )
     if len(document.bodies) > 1:
-        bounds = document.bounds()
-        bodies = detect_pins_multibody(
-            document,
-            Band(bounds[0] - 1, bounds[2] - 1, bounds[1] + 1, bounds[3] + 1),
-            exclude_largest=True,
-        )
-        if bodies and len(bodies) >= len(section):
-            return bodies, "multibody"
-        if len(section) >= 2:
-            return section, "context-plane"
-        if bodies:
-            return bodies, "multibody"
-        return [], "none"
-
-    # unibody: a BGA ball grid is its own archetype (filled 2-D array) — route
-    # it before tip binning so the grid never gets read as connector rows.
-    bga = detect_bga_grid(document)
-    if bga is not None and len(bga) >= max(len(section), 9):
-        return bga, "bga"
-
-    # otherwise tip clustering is the reliable, seed-light detector
-    tips = auto_detect_tip_pins(document)
-    if _single_ended_by_name(document):
-        # the filename names a chip/passive/BGA — it has no mating contacts, so
-        # a detected "mouth" row is a phantom (a second face-plane of the same
-        # leads). The name gives the detector the edge to drop it.
-        tips = [pin for pin in tips if pin.role != "mouth"]
-    if len(tips) >= max(len(section), 2):
-        return tips, "tips"
-    if len(section) >= 2:
-        return section, "context-plane"
-    return (tips, "tips") if tips else ([], "none")
+        return _detect_multibody(document, section)
+    return _detect_unibody(document, section)
 
 
 def auto_pin1_point(

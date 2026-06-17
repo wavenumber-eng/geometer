@@ -18,7 +18,13 @@ import numpy as np
 from OCP.Bnd import Bnd_Box
 from OCP.BRep import BRep_Tool
 from OCP.BRepAdaptor import BRepAdaptor_Curve, BRepAdaptor_Surface
-from OCP.BRepAlgoAPI import BRepAlgoAPI_Cut, BRepAlgoAPI_Fuse, BRepAlgoAPI_Splitter
+from OCP.BRepAlgoAPI import (
+    BRepAlgoAPI_Common,
+    BRepAlgoAPI_Cut,
+    BRepAlgoAPI_Fuse,
+    BRepAlgoAPI_Splitter,
+)
+from OCP.BRepPrimAPI import BRepPrimAPI_MakeBox, BRepPrimAPI_MakeHalfSpace
 from OCP.GeomAbs import GeomAbs_Plane
 from OCP.ShapeFix import ShapeFix_Shape
 from OCP.BRepBndLib import BRepBndLib
@@ -204,6 +210,22 @@ def shape_area(shape) -> float | None:
         return float(props.Mass())
     except Exception:
         return None
+
+
+def solid_centroid(shape) -> np.ndarray:
+    """Volume centre of mass; falls back to the bbox centre when the volume
+    integrator can't measure the shape. Used to decide which split piece sits
+    inside the cutting box."""
+    try:
+        props = GProp_GProps()
+        BRepGProp.VolumeProperties_s(shape, props)
+        if abs(props.Mass()) > 1e-12:
+            point = props.CentreOfMass()
+            return np.array([point.X(), point.Y(), point.Z()])
+    except Exception:
+        pass
+    xmin, xmax, ymin, ymax, zmin, zmax = shape_bounds([shape])
+    return np.array([(xmin + xmax) / 2, (ymin + ymax) / 2, (zmin + zmax) / 2])
 
 
 def _edge_face_table(solid) -> list[tuple[object, frozenset]]:
@@ -722,6 +744,31 @@ def _keep_meaningful_solids(solids, fallback):
     return compound
 
 
+def _fuzzy_boolean(operation, shape_a, shape_b, fuzzy: float):
+    """Run a BRepAlgoAPI boolean with a fuzzy tolerance so near-coincident /
+    coplanar faces are resolved instead of dropped."""
+    args = TopTools_ListOfShape()
+    args.Append(shape_a)
+    tools = TopTools_ListOfShape()
+    tools.Append(shape_b)
+    operation.SetArguments(args)
+    operation.SetTools(tools)
+    if fuzzy > 0.0:
+        operation.SetFuzzyValue(fuzzy)
+    operation.Build()
+    return operation.Shape()
+
+
+def _meaningful_solids(shape) -> list:
+    """The non-debris solids of a boolean result, as a list (one body each)."""
+    solids = list(_iter_solids(shape))
+    if not solids:
+        return []
+    volumes = [abs(shape_volume(s) or 0.0) for s in solids]
+    threshold = max(max(volumes) * 1.0e-5, 1.0e-9)
+    return [s for s, vol in zip(solids, volumes) if vol > threshold]
+
+
 def _logo_boolean_solid(body_solid, placed, raised):
     """Fuse (raised) or cut (engrave) the tool into the body; return the solid."""
     operation = BRepAlgoAPI_Fuse if raised else BRepAlgoAPI_Cut
@@ -1099,6 +1146,117 @@ class EditorDocument:
         self.remesh_all()
         return pin_side_indices
 
+    def _box_cut_tool(self, limits, normal, location, pad: float = 0.0):
+        """The boolean tool solid for a box-bounded cut: the limits box
+        (expanded outward by `pad` so its faces don't sit exactly on model
+        faces — coplanar faces then fall clearly INSIDE the pin), optionally
+        clipped to the +normal side of the plane through unit_normal*location."""
+        xlo, xhi, ylo, yhi, zlo, zhi = (float(v) for v in limits)
+        xlo -= pad; ylo -= pad; zlo -= pad
+        xhi += pad; yhi += pad; zhi += pad
+        tool = BRepPrimAPI_MakeBox(
+            gp_Pnt(xlo, ylo, zlo), xhi - xlo, yhi - ylo, zhi - zlo
+        ).Solid()
+        if normal is None or location is None:
+            return tool
+        unit = np.asarray(normal, dtype=float)
+        magnitude = float(np.linalg.norm(unit))
+        if magnitude <= 1e-9:
+            return tool
+        unit = unit / magnitude
+        point = unit * float(location)
+        big = max(xhi - xlo, yhi - ylo, zhi - zlo) * 10.0 + 1.0
+        plane = gp_Pln(gp_Pnt(*point), gp_Dir(*unit))
+        face = BRepBuilderAPI_MakeFace(plane, -big, big, -big, big).Face()
+        # MakeHalfSpace keeps material on the SAME side as the reference point
+        # (verified empirically), so put the reference on the +normal side.
+        half = BRepPrimAPI_MakeHalfSpace(face, gp_Pnt(*(point + unit * big))).Solid()
+        clipped = BRepAlgoAPI_Common(tool, half).Shape()
+        return clipped if list(_iter_solids(clipped)) else tool
+
+    def split_by_box(self, limits, normal=None, location=None) -> list[int]:
+        """Box-bounded boolean cut — the manual Cut Plane sub-mode. `limits` =
+        (xlo, xhi, ylo, yhi, zlo, zhi); an optional plane (`normal`/`location`)
+        clips the box to its +normal side. The carved piece = the part of a
+        solid INSIDE the box (on the +normal side); everything else stays the
+        package, untouched. Cuts straight THROUGH faces (unlike the face-region
+        sealer), so a pin whose junction with the body runs mid-face still
+        separates. Returns the indices, in the final body table, of the freshly
+        carved pieces (callers link pins to them)."""
+        xlo, xhi, ylo, yhi, zlo, zhi = (float(v) for v in limits)
+        if xhi <= xlo or yhi <= ylo or zhi <= zlo:
+            return []
+        bounds = self.bounds()
+        diag = float(np.linalg.norm([bounds[1] - bounds[0], bounds[3] - bounds[2],
+                                     bounds[5] - bounds[4]]))
+        fuzzy = max(diag * 1.0e-5, 1.0e-7)  # tolerate near-coincident faces
+        # The EXACT box (no outward pad): BRepAlgoAPI_Splitter divides the solid
+        # by the box's faces in ONE pass, duplicating the shared cut plane onto
+        # BOTH pieces. So a model face flush with a box wall ends up on whichever
+        # piece its material backs — outward-normal faces stay with the pin,
+        # inward-normal faces stay with the package — which is exactly the
+        # in/out/both rule, resolved by the kernel instead of by a heuristic pad.
+        tool = self._box_cut_tool(limits, normal, location, pad=0.0)
+        unit = None
+        if normal is not None and location is not None:
+            vec = np.asarray(normal, dtype=float)
+            magnitude = float(np.linalg.norm(vec))
+            if magnitude > 1e-9:
+                unit = vec / magnitude
+        margin = max(diag * 1.0e-4, 1.0e-6)  # tolerance for "centroid in box"
+        new_bodies: list[BodyRecord] = []
+        carved: list[int] = []
+        for body in self.bodies:
+            bxmin, bxmax, bymin, bymax, bzmin, bzmax = shape_bounds([body.solid])
+            disjoint = (bxmax < xlo or bxmin > xhi or bymax < ylo
+                        or bymin > yhi or bzmax < zlo or bzmin > zhi)
+            pieces = self._split_solid_by_tool(body.solid, tool, fuzzy) \
+                if not disjoint else []
+            pin_solids: list = []
+            rem_solids: list = []
+            for solid in pieces:
+                centre = solid_centroid(solid)
+                inside = (xlo - margin <= centre[0] <= xhi + margin
+                          and ylo - margin <= centre[1] <= yhi + margin
+                          and zlo - margin <= centre[2] <= zhi + margin)
+                if inside and unit is not None:
+                    inside = float(centre @ unit) >= float(location) - margin
+                (pin_solids if inside else rem_solids).append(solid)
+            if not pin_solids or not rem_solids:
+                new_bodies.append(body)  # box missed it, or no clean split
+                continue
+            package = _keep_meaningful_solids(rem_solids, body.solid)
+            new_bodies.append(BodyRecord(
+                solid=package, name=body.name, color=body.color,
+                original_color=body.original_color))
+            for solid in pin_solids:
+                carved.append(len(new_bodies))
+                new_bodies.append(BodyRecord(
+                    solid=solid, name=body.name, color=body.color,
+                    original_color=body.original_color))
+        self.bodies = new_bodies
+        self.remesh_all()
+        return carved
+
+    def _split_solid_by_tool(self, solid, tool, fuzzy: float) -> list:
+        """Split `solid` by `tool` with BRepAlgoAPI_Splitter (one boolean; the
+        shared cut faces are duplicated onto both resulting pieces). Returns the
+        meaningful solids of the result, or [] if it did not divide."""
+        splitter = BRepAlgoAPI_Splitter()
+        arguments = TopTools_ListOfShape()
+        arguments.Append(solid)
+        tools = TopTools_ListOfShape()
+        tools.Append(tool)
+        splitter.SetArguments(arguments)
+        splitter.SetTools(tools)
+        if fuzzy > 0.0:
+            splitter.SetFuzzyValue(fuzzy)
+        splitter.Build()
+        if not splitter.IsDone():
+            return []
+        solids = _meaningful_solids(splitter.Shape())
+        return solids if len(solids) >= 2 else []
+
     def split_by_face_regions(
         self, regions: list[list[tuple[int, int]]], cuts=None, progress=None
     ) -> list[int | None]:
@@ -1164,6 +1322,37 @@ class EditorDocument:
         mask = mesh.tri_face_ids == face_index
         origin = mesh.points[np.unique(mesh.tris[mask])].mean(axis=0)
         return {"origin": origin, "normal": n, "u": u, "v": v}
+
+    def nearest_linear_edge(self, body_index: int, point):
+        """The straight (line) edge of a body nearest a clicked point, returned
+        as (p1, p2) endpoints — lets a tool 'pick a line that exists on the
+        model'. None when the body has no linear edge."""
+        from OCP.BRepAdaptor import BRepAdaptor_Curve
+        from OCP.GeomAbs import GeomAbs_Line
+        from OCP.TopAbs import TopAbs_EDGE
+        from OCP.TopoDS import TopoDS
+
+        if not (0 <= body_index < len(self.bodies)):
+            return None
+        point = np.asarray(point, dtype=np.float64)
+        best, best_distance = None, None
+        explorer = TopExp_Explorer(self.bodies[body_index].solid, TopAbs_EDGE)
+        while explorer.More():
+            edge = TopoDS.Edge_s(explorer.Current())
+            explorer.Next()
+            curve = BRepAdaptor_Curve(edge)
+            if curve.GetType() != GeomAbs_Line:
+                continue
+            start = curve.Value(curve.FirstParameter())
+            end = curve.Value(curve.LastParameter())
+            a = np.array([start.X(), start.Y(), start.Z()])
+            b = np.array([end.X(), end.Y(), end.Z()])
+            ab = b - a
+            t = float(np.clip(np.dot(point - a, ab) / max(float(ab @ ab), 1e-12), 0.0, 1.0))
+            distance = float(np.linalg.norm(point - (a + t * ab)))
+            if best_distance is None or distance < best_distance:
+                best_distance, best = distance, (tuple(a), tuple(b))
+        return best
 
     def face_frame_at(self, body_index: int, face_index: int, point) -> dict | None:
         """Embossing frame at `point` on a face: the face's own plane when it

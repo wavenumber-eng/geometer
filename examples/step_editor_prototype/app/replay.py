@@ -314,6 +314,46 @@ def _separate_link_pins(state: _ReplayState, grown, region_bodies) -> None:
         state.document.bodies[body_index].role = "pin"
 
 
+def _separate_link_cut_pins(state: _ReplayState, carved, diag) -> None:
+    """Link each unclaimed pin to its carved piece — primary AND mouth (mirrors
+    SeparateUnibodyTool._link_cut_pins): identity by the carved body hosting the
+    pin's (already remapped) faces, with nearest-centroid proximity as fallback."""
+    carved_set = set(carved)
+    tol = 0.2 * diag + 1e-6
+    centroids = {}
+    for body_index in carved:
+        mesh = state.document.bodies[body_index].mesh
+        if mesh is not None and len(mesh.points):
+            centroids[body_index] = mesh.points.mean(axis=0)
+    used: set[int] = set()
+    for pin in state.registry.pins:
+        if pin.body_ids:
+            continue
+        best = None
+        if pin.face_ids:
+            counts: dict[int, int] = {}
+            for body_index, _face in pin.face_ids:
+                if body_index in carved_set and body_index not in used:
+                    counts[body_index] = counts.get(body_index, 0) + 1
+            if counts:
+                best = max(counts, key=counts.get)
+        if best is None:
+            pin_centroid = np.asarray(pin.centroid, dtype=float)
+            best_distance = tol
+            for body_index, centroid in centroids.items():
+                if body_index in used:
+                    continue
+                distance = float(np.linalg.norm(centroid - pin_centroid))
+                if distance < best_distance:
+                    best_distance, best = distance, body_index
+        if best is not None:
+            used.add(best)
+            pin.body_ids = [best]
+            pin.face_ids = []
+            state.document.bodies[best].name = pin.name or f"PIN_{pin.number}"
+            state.document.bodies[best].role = "pin"
+
+
 def _replay_separate(state: _ReplayState, op) -> None:
     if op.params.get("action") == "undo":
         _separate_restore(state)
@@ -330,10 +370,32 @@ def _replay_separate(state: _ReplayState, op) -> None:
     from .pins import capture_pin_face_anchors, remap_pin_faces
 
     face_anchors = capture_pin_face_anchors(state.document, state.registry.pins)
+    # Already-linked pins keep their BodyRecord identity through split_by_box's
+    # table rebuild; re-resolve their indices after the cuts (see _apply_cuts).
+    prelinked = [(pin, [state.document.bodies[i] for i in pin.body_ids
+                       if 0 <= i < len(state.document.bodies)])
+                 for pin in state.registry.pins if pin.body_ids]
     bounds = state.document.bounds()
-    remap_tol = float(np.linalg.norm([
+    diag = float(np.linalg.norm([
         bounds[1] - bounds[0], bounds[3] - bounds[2], bounds[5] - bounds[4],
-    ])) * 5.0e-3
+    ]))
+    remap_tol = diag * 5.0e-3
+    cuts = op.inputs.get("cuts")
+    if cuts:  # manual box-bounded cut separation
+        carved_objs: list = []
+        for cut in cuts:
+            pin_indices = state.document.split_by_box(
+                cut["limits"], cut.get("normal"), cut.get("location"))
+            carved_objs.extend(state.document.bodies[i] for i in pin_indices)
+        present = {id(body): index for index, body in enumerate(state.document.bodies)}
+        carved = [present[id(o)] for o in carved_objs if id(o) in present]
+        for pin, objs in prelinked:
+            new_ids = [present[id(o)] for o in objs if id(o) in present]
+            if new_ids:
+                pin.body_ids = new_ids
+        remap_pin_faces(state.document, face_anchors, remap_tol)
+        _separate_link_cut_pins(state, carved, diag)
+        return
     grown = _separate_regions(state, op)
     regions = [r for r in grown if r]
     region_bodies = state.document.split_by_face_regions(regions)

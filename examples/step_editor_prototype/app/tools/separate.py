@@ -12,11 +12,14 @@ import colorsys
 
 import numpy as np
 import pyvista as pv
+from PySide6.QtCore import Signal
 from PySide6.QtWidgets import (
     QComboBox,
     QDoubleSpinBox,
+    QGridLayout,
     QHBoxLayout,
     QLabel,
+    QLineEdit,
     QPushButton,
     QVBoxLayout,
     QWidget,
@@ -33,6 +36,26 @@ from ..pins import (
 from .base import ToolMode, make_apply_button
 
 
+class _AxisLineEdit(QLineEdit):
+    """A limit field that announces focus so the tool can light up the plane
+    whose bounds are being edited."""
+
+    focusedIn = Signal(str)
+    focusedOut = Signal()
+
+    def __init__(self, key: str, parent=None) -> None:
+        super().__init__(parent)
+        self._key = key
+
+    def focusInEvent(self, event) -> None:  # noqa: N802 (Qt override)
+        super().focusInEvent(event)
+        self.focusedIn.emit(self._key)
+
+    def focusOutEvent(self, event) -> None:  # noqa: N802 (Qt override)
+        super().focusOutEvent(event)
+        self.focusedOut.emit()
+
+
 def pastel(index: int) -> tuple[float, float, float]:
     """Golden-ratio pastel palette (the wn3d Bodies-view look)."""
     hue = (index * 0.61803398875) % 1.0
@@ -42,6 +65,11 @@ def pastel(index: int) -> tuple[float, float, float]:
 # CON/HEAD pins not yet joined to an SMT/THR tail (no designator to share a
 # colour with) paint in this neutral blue — the mouth-detector accent.
 UNJOINED_MOUTH_RGB = (0.35, 0.55, 0.95)
+
+# Pick-marker colours: axis picks use the X/Y/Z basis colours; the box-corner
+# pick uses two yellow points.
+AXIS_MARKER_COLORS = ("#e0524d", "#4dd158", "#5a86ff")  # X red, Y green, Z blue
+BOX_MARKER_COLOR = "#ffd23f"  # yellow
 
 
 def designator_pastels(pins) -> dict[str, tuple[float, float, float]]:
@@ -67,6 +95,16 @@ class SeparateUnibodyTool(ToolMode):
         # the preview shows EXACTLY these and Apply splits EXACTLY these
         self._manual: dict[int, set[tuple[int, int]]] | None = None
         self._bundle_pins: list[int] = []
+        # manual box-bounded cuts (the universal split fallback): banked
+        # [{"limits": [xlo,xhi,ylo,yhi,zlo,zhi], "normal": [..], "location": f}]
+        # sliced by the boolean cutter on Apply. Pastel-previewed live.
+        self._cuts: list[dict] = []
+        self._cut_actor_names: list[str] = []
+        self._axis_hl_names: list[str] = []  # focus-highlight plane actors
+        # per-axis vertex pick: (axis_index, [collected vertices]) while picking
+        self._axis_pick: tuple[int, list] | None = None
+        # box-corner pick: [collected vertex points] while picking two corners
+        self._box_pick: list | None = None
 
     # ------------------------------------------------------------------- UI
 
@@ -74,18 +112,43 @@ class SeparateUnibodyTool(ToolMode):
         widget = QWidget()
         layout = QVBoxLayout(widget)
         layout.setContentsMargins(8, 8, 8, 8)
-        layout.addWidget(QLabel(
-            "<b>Separate Unibody</b><br>"
-            "Each SMT/THR pin grows by edge flow from its seed faces until "
-            "the flow reaches the BODY; the preview shows the full pin shapes "
-            "in body colours. CON/HEAD (mouth) pins show in their net's "
-            "colour but are never cut. Apply splits the solid at the "
-            "pin/body junctions — every SMT/THR pin becomes its own body."
-        ))
+        header = QLabel(
+            "<b>Separate Unibody</b> — cut a single solid into one body per pin. "
+            "Two ways (toggle below):<br>"
+            "• <b>Body-Face Cutoff</b> — grows each pin from its seed faces by "
+            "edge flow (best for clean protrusions).<br>"
+            "• <b>Box Cut</b> — box a pin and slice it out with a boolean cut "
+            "(works when growth can't, e.g. mid-face junctions)."
+        )
+        header.setWordWrap(True)
+        layout.addWidget(header)
 
         self.info_label = QLabel("")
         self.info_label.setWordWrap(True)
         layout.addWidget(self.info_label)
+
+        # Sub-mode toggle (flathead vs phillips): Body-Face Cutoff <-> Box Cut.
+        self.cut_button = QPushButton("Box Cut mode")
+        self.cut_button.setCheckable(True)
+        self.cut_button.setToolTip(
+            "Switch this tool's application: OFF = Body-Face Cutoff (edge-flow\n"
+            "growth); ON = Box Cut (box a pin and carve that chunk out with a\n"
+            "boolean cut). The box cuts THROUGH faces, so pins whose junction\n"
+            "with the body runs mid-face still separate. Same tool, two ways to\n"
+            "drive it; the other mode's controls hide while active."
+        )
+        self.cut_button.setStyleSheet(
+            "QPushButton:checked {background-color: #5a3e9e; color: #ffffff; "
+            "font-weight: 700;}"
+        )
+        self.cut_button.toggled.connect(self._arm_cut)
+        layout.addWidget(self.cut_button)
+
+        # ===== Body-Face Cutoff sub-mode (hidden while Box Cut is active) =====
+        self.cutoff_group = QWidget()
+        cutoff_layout = QVBoxLayout(self.cutoff_group)
+        cutoff_layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(self.cutoff_group)
 
         factor_row = QHBoxLayout()
         factor_row.addWidget(QLabel("Body face cutoff"))
@@ -123,7 +186,7 @@ class SeparateUnibodyTool(ToolMode):
         )
         auto_button.clicked.connect(self.run_auto)
         factor_row.addWidget(auto_button)
-        layout.addLayout(factor_row)
+        cutoff_layout.addLayout(factor_row)
 
         paint_row = QHBoxLayout()
         self.paint_button = QPushButton("Paint Regions")
@@ -151,7 +214,88 @@ class SeparateUnibodyTool(ToolMode):
         )
         propagate_button.clicked.connect(self._propagate_bundle)
         paint_row.addWidget(propagate_button)
-        layout.addLayout(paint_row)
+        cutoff_layout.addLayout(paint_row)
+
+        # ===== Box Cut sub-mode (hidden until armed) =====
+        self.cut_group = QWidget()
+        cut_layout = QVBoxLayout(self.cut_group)
+        cut_layout.setContentsMargins(0, 0, 0, 0)
+        cut_guide = QLabel("Box a pin → Add Cut → Apply.")
+        cut_guide.setStyleSheet("color: #8a8f98;")
+        cut_layout.addWidget(cut_guide)
+
+        box_pick_button = QPushButton("⊙ Box from 2 points")
+        box_pick_button.setToolTip(
+            "Click two model vertices (opposite corners); their axis-aligned "
+            "box becomes the X/Y/Z limits. The box carves out that chunk as the pin."
+        )
+        box_pick_button.clicked.connect(self._arm_box_pick)
+        cut_layout.addWidget(box_pick_button)
+
+        grid = QGridLayout()
+        self._cut_fields: dict[str, QLineEdit] = {}
+
+        def _field(key: str, default: str = "") -> QLineEdit:
+            edit = _AxisLineEdit(key)
+            edit.setText(default)
+            edit.setMaximumWidth(70)
+            edit.editingFinished.connect(self._update_cut_preview)
+            edit.focusedIn.connect(self._highlight_axis_plane)
+            edit.focusedOut.connect(self._clear_axis_highlight)
+            self._cut_fields[key] = edit
+            return edit
+
+        def _pick_btn(axis: int) -> QPushButton:
+            button = QPushButton("⊙ 2 pts")
+            button.setMaximumWidth(64)
+            button.setToolTip(
+                "Click two model vertices; their coordinates set this axis's "
+                "min/max (clicks snap to the nearest vertex)."
+            )
+            button.clicked.connect(lambda: self._arm_axis_pick(axis))
+            return button
+
+        grid.addWidget(QLabel("X min/max"), 0, 0)
+        grid.addWidget(_field("xlo"), 0, 1)
+        grid.addWidget(_field("xhi"), 0, 2)
+        grid.addWidget(_pick_btn(0), 0, 3)
+        grid.addWidget(QLabel("Y min/max"), 1, 0)
+        grid.addWidget(_field("ylo"), 1, 1)
+        grid.addWidget(_field("yhi"), 1, 2)
+        grid.addWidget(_pick_btn(1), 1, 3)
+        grid.addWidget(QLabel("Z min/max"), 2, 0)
+        grid.addWidget(_field("zlo"), 2, 1)
+        grid.addWidget(_field("zhi"), 2, 2)
+        grid.addWidget(_pick_btn(2), 2, 3)
+        cut_layout.addLayout(grid)
+
+        cut_buttons = QHBoxLayout()
+        fit_button = QPushButton("Box = model")
+        fit_button.setToolTip("Reset the X/Y/Z limits to the whole model bounds.")
+        fit_button.clicked.connect(self._fit_box_to_model)
+        cut_buttons.addWidget(fit_button)
+        add_cut_button = QPushButton("Add Cut")
+        add_cut_button.setToolTip("Bank the current box as one cut (stack several to carve more pins).")
+        add_cut_button.clicked.connect(self._add_cut)
+        cut_buttons.addWidget(add_cut_button)
+        match_button = QPushButton("Find matching")
+        match_button.setToolTip(
+            "Detect the feature inside the current box and stage a matching box "
+            "cut on every identical feature in the model (rotation/mirror-"
+            "invariant). Review the pastel preview, then Apply."
+        )
+        match_button.clicked.connect(self._find_matching)
+        cut_buttons.addWidget(match_button)
+        clear_cut_button = QPushButton("Clear Cuts")
+        clear_cut_button.clicked.connect(self._clear_cuts)
+        cut_buttons.addWidget(clear_cut_button)
+        cut_layout.addLayout(cut_buttons)
+        self.cut_label = QLabel("")
+        self.cut_label.setWordWrap(True)
+        self.cut_label.setStyleSheet("color: #8a8f98;")
+        cut_layout.addWidget(self.cut_label)
+        layout.addWidget(self.cut_group)
+        self.cut_group.setVisible(False)
 
         preview_header = QLabel("SPLIT PREVIEW — each future body in its own colour")
         preview_header.setStyleSheet(
@@ -213,6 +357,16 @@ class SeparateUnibodyTool(ToolMode):
 
     def exit(self) -> None:
         self.ctx.scene.show_pin_spines([])
+        self.ctx.scene.set_hover_callback(None)
+        self._axis_pick = None
+        self._box_pick = None
+        self._clear_cut_visuals()
+        if self._actions_widget is not None:
+            self.cut_button.blockSignals(True)
+            self.cut_button.setChecked(False)
+            self.cut_button.blockSignals(False)
+            self.cut_group.setVisible(False)
+            self.cutoff_group.setVisible(True)
         if self.ctx.document is not None:
             if self._preview_painted:
                 self.ctx.scene.rebuild(self.ctx.document)  # restore real colours
@@ -224,8 +378,18 @@ class SeparateUnibodyTool(ToolMode):
         self._preview_painted = False
         self._grown = None
         self._manual = None
+        self._cuts = []
+        self._axis_pick = None
+        self._box_pick = None
+        self._clear_cut_visuals()
         if self._actions_widget is not None:
             self.paint_button.setChecked(False)
+            self.cut_button.blockSignals(True)  # don't trigger a scene repaint here
+            self.cut_button.setChecked(False)
+            self.cut_button.blockSignals(False)
+            self.cut_group.setVisible(False)
+            self.cutoff_group.setVisible(True)
+            self._update_cut_label()
             self._update_split_preview()
 
     # --------------------------------------------------------- paint regions
@@ -276,6 +440,12 @@ class SeparateUnibodyTool(ToolMode):
         )
 
     def on_pick(self, pick) -> None:
+        if self._actions_widget is not None and self.cut_button.isChecked():
+            if self._box_pick is not None:
+                self._pick_box_corner(pick)
+            elif self._axis_pick is not None:
+                self._pick_axis_vertex(pick)
+            return
         if (
             self._actions_widget is None
             or not self.paint_button.isChecked()
@@ -300,6 +470,301 @@ class SeparateUnibodyTool(ToolMode):
             f"{registry.pins[active].number}'s bundle "
             f"({len(self._manual[active])} faces)"
         )
+
+    def _arm_axis_pick(self, axis: int) -> None:
+        if not self.cut_button.isChecked():
+            self.status("Box Cut: enable Box Cut mode first")
+            return
+        self._axis_pick = (axis, [])
+        self._box_pick = None
+        self._show_axis_guide(axis)
+        self.status(
+            f"Box Cut: click two model vertices to set {'XYZ'[axis]} min/max "
+            "(snaps to the nearest vertex)"
+        )
+
+    def _show_axis_guide(self, axis: int) -> None:
+        """A bold, drawn-on-front coloured tube along the axis being picked
+        (X red / Y green / Z blue) so the active axis stands out — same
+        always-visible style as the 3D browser's reference axes."""
+        document = self.ctx.document
+        if document is None:
+            return
+        self._hide_axis_guide()
+        b = document.bounds()
+        center = [(b[0] + b[1]) / 2, (b[2] + b[3]) / 2, (b[4] + b[5]) / 2]
+        span = max(b[1] - b[0], b[3] - b[2], b[5] - b[4]) * 0.65 + 1e-3
+        start, end = list(center), list(center)
+        start[axis] = center[axis] - span
+        end[axis] = center[axis] + span
+        color = ((0.95, 0.25, 0.25), (0.30, 0.92, 0.35), (0.35, 0.55, 1.0))[axis]
+        actor = self.ctx.scene.plotter.add_mesh(
+            pv.Line(start, end), name="sep-axis-guide", color=color,
+            line_width=6, render_lines_as_tubes=True, pickable=False)
+        self.ctx.scene._push_on_top(actor)  # draw on front, through the solid
+        self.ctx.scene.plotter.render()
+
+    def _hide_axis_guide(self) -> None:
+        self.ctx.scene.plotter.remove_actor("sep-axis-guide", render=False)
+
+    def _highlight_axis_plane(self, key: str) -> None:
+        """Light up (alpha 0.5) the two box faces perpendicular to the axis
+        whose limit field just took focus — so the user sees which plane's
+        bounds they are editing."""
+        axis = {"xlo": 0, "xhi": 0, "ylo": 1, "yhi": 1, "zlo": 2, "zhi": 2}.get(key)
+        self._clear_axis_highlight()
+        if axis is None or not self.cut_button.isChecked():
+            return
+        live = self._read_cut_fields()
+        if live is None:
+            return
+        limits = live[0]
+        center = [(limits[0] + limits[1]) / 2, (limits[2] + limits[3]) / 2,
+                  (limits[4] + limits[5]) / 2]
+        sizes = [limits[1] - limits[0], limits[3] - limits[2], limits[5] - limits[4]]
+        others = [i for i in (0, 1, 2) if i != axis]
+        i_size = max(sizes[others[0]], 1e-3)
+        j_size = max(sizes[others[1]], 1e-3)
+        normal = [0.0, 0.0, 0.0]
+        normal[axis] = 1.0
+        plotter = self.ctx.scene.plotter
+        for index, value in enumerate((limits[axis * 2], limits[axis * 2 + 1])):
+            corner = list(center)
+            corner[axis] = value
+            name = f"sep-axis-hl-{index}"
+            plotter.add_mesh(
+                pv.Plane(center=corner, direction=normal, i_size=i_size, j_size=j_size),
+                name=name, color=AXIS_MARKER_COLORS[axis], opacity=0.5, pickable=False)
+            self._axis_hl_names.append(name)
+        plotter.render()
+
+    def _clear_axis_highlight(self) -> None:
+        plotter = self.ctx.scene.plotter
+        for name in self._axis_hl_names:
+            plotter.remove_actor(name, render=False)
+        self._axis_hl_names = []
+        plotter.render()
+
+    def _clear_cut_visuals(self) -> None:
+        """Remove every Box-Cut overlay: banked/live regions, the axis guide,
+        the focus-highlight planes, and pick markers/ghost."""
+        self._hide_axis_guide()
+        self._clear_axis_highlight()
+        self.ctx.scene.set_markers([], name="sep-pick")
+        self.ctx.scene.set_markers([], name="sep-pick-ghost")
+        self._erase_banked_cuts()
+
+    def _pick_axis_vertex(self, pick) -> None:
+        """Collect a vertex-snapped coordinate for the active axis; two picks
+        set that axis's min/max."""
+        document = self.ctx.document
+        if document is None or self._axis_pick is None:
+            return
+        axis, collected = self._axis_pick
+        vertex = self._snap_vertex(pick)
+        if vertex is None:
+            return
+        collected.append(np.asarray(vertex, dtype=float))
+        self.ctx.scene.set_markers(collected, name="sep-pick",
+                                   color=AXIS_MARKER_COLORS[axis],
+                                   point_size=18, on_top=True)
+        axis_name = "XYZ"[axis]
+        if len(collected) < 2:
+            self.status(
+                f"Box Cut: {axis_name}={float(vertex[axis]):.3f} — click the second vertex"
+            )
+            return
+        low, high = sorted(float(v[axis]) for v in collected)
+        self._cut_fields[("xlo", "ylo", "zlo")[axis]].setText(f"{low:.3f}")
+        self._cut_fields[("xhi", "yhi", "zhi")[axis]].setText(f"{high:.3f}")
+        self._axis_pick = None
+        self._hide_axis_guide()
+        self.ctx.scene.set_markers([], name="sep-pick")
+        self._update_cut_preview()
+        self.status(f"Box Cut: {axis_name} limits set to [{low:.3f}, {high:.3f}]")
+
+    def _snap_vertex(self, pick):
+        """The picked body's mesh vertex nearest the click, or None."""
+        document = self.ctx.document
+        if document is None:
+            return None
+        mesh = document.bodies[pick.body_index].mesh
+        if mesh is None or not len(mesh.points):
+            return None
+        world = np.asarray(pick.world_point, dtype=float)
+        return mesh.points[int(np.argmin(np.linalg.norm(mesh.points - world, axis=1)))]
+
+    def _arm_box_pick(self) -> None:
+        if not self.cut_button.isChecked():
+            self.status("Box Cut: enable Box Cut mode first")
+            return
+        self._box_pick = []
+        self._axis_pick = None
+        self._hide_axis_guide()
+        self.status("Box Cut: click two model vertices for the box's opposite corners")
+
+    def _pick_box_corner(self, pick) -> None:
+        """Two vertex-snapped corners → the whole axis-aligned limits box."""
+        if self._box_pick is None:
+            return
+        vertex = self._snap_vertex(pick)
+        if vertex is None:
+            return
+        self._box_pick.append(np.asarray(vertex, dtype=float))
+        self.ctx.scene.set_markers(self._box_pick, name="sep-pick",
+                                   color=BOX_MARKER_COLOR, point_size=18, on_top=True)
+        if len(self._box_pick) < 2:
+            self.status(
+                f"Box Cut: corner 1 at "
+                f"({vertex[0]:.2f}, {vertex[1]:.2f}, {vertex[2]:.2f}) — click the opposite corner"
+            )
+            return
+        low = np.minimum(self._box_pick[0], self._box_pick[1])
+        high = np.maximum(self._box_pick[0], self._box_pick[1])
+        current = self._read_cut_fields()
+        normal = current[1] if current else [1.0, 0.0, 0.0]
+        location = current[2] if current else 0.0
+        self._write_cut_fields(
+            [low[0], high[0], low[1], high[1], low[2], high[2]], normal, location)
+        self._box_pick = None
+        self.ctx.scene.set_markers([], name="sep-pick")
+        self._update_cut_preview()
+        self.status("Box Cut: box set from the two picked corners")
+
+    def _faces_in_box(self, limits, normal, location):
+        """(body, {face ids}) for the body with the most faces inside the box."""
+        document = self.ctx.document
+        best_body, best_faces = None, set()
+        for body_index, body in enumerate(document.bodies):
+            mesh = body.mesh
+            if mesh is None or not len(mesh.tris):
+                continue
+            mask = self._contained_mask(mesh, limits, normal, location)
+            faces = {int(f) for f in np.unique(mesh.tri_face_ids[mask])}
+            if len(faces) > len(best_faces):
+                best_body, best_faces = body_index, faces
+        return best_body, best_faces
+
+    def _box_face_set(self, mesh, limits):
+        """Faces of `mesh` whose triangles fall inside the axis-aligned box."""
+        mask = self._contained_mask(mesh, limits, None, None)
+        return {int(f) for f in np.unique(mesh.tri_face_ids[mask])}
+
+    @staticmethod
+    def _signature(face_set, areas):
+        """A box's feature signature: its face areas, largest first."""
+        return sorted((areas.get(f, 0.0) for f in face_set), reverse=True)
+
+    @staticmethod
+    def _signatures_match(seed_sig, other_sig, area_tol=0.2, min_frac=0.8):
+        """True when two boxes hold the SAME feature. Compares the face-area
+        lists as a TOLERANCE MULTISET (each face must find a close counterpart),
+        not positionally — a box edge catching one extra/fewer tiny face would
+        shift a sorted list and break a positional compare, but the same pin's
+        faces still pair up. A count guard stops a tiny stray matching a big
+        feature. This tells a real duplicate pin from a stray same-area face."""
+        if not seed_sig or not other_sig:
+            return False
+        longer = max(len(seed_sig), len(other_sig))
+        if abs(len(seed_sig) - len(other_sig)) > max(2, round(0.4 * longer)):
+            return False
+        small, big = sorted((seed_sig, other_sig), key=len)
+        pool = list(big)
+        matched = 0
+        for area in small:
+            cands = [(abs(area - b), i) for i, b in enumerate(pool)
+                     if abs(area - b) <= area_tol * max(area, 1e-9)]
+            if cands:
+                pool.pop(min(cands)[1])
+                matched += 1
+        return matched >= min_frac * len(small)
+
+    def _find_matching(self) -> None:
+        """Stamp the box on every OTHER occurrence of the boxed pin. A
+        representative face finds candidate locations cheaply; each candidate is
+        then VALIDATED by stamping the box there and requiring its contained
+        face-area signature to match the seed's — so repeated housing features
+        that merely share one face area don't get boxed (the over-detection)."""
+        from ..pins import find_similar_regions, mesh_face_areas
+
+        document = self.ctx.document
+        if document is None:
+            return
+        live = self._read_cut_fields()
+        if live is None:
+            self.status("Box Cut: set a box around one pin first, then Find matching")
+            return
+        limits = live[0]
+        seed_body, seed_faces = self._faces_in_box(limits, [0.0, 0.0, 0.0], 0.0)
+        if seed_body is None or not seed_faces:
+            self.status("Box Cut: nothing inside the box to match — box a pin first")
+            return
+        mesh = document.bodies[seed_body].mesh
+        areas = mesh_face_areas(mesh)
+        seed_sig = self._signature(seed_faces, areas)
+        seed_center = np.asarray(mesh_region_centroid(mesh, list(seed_faces)), dtype=float)
+        rep_face = max(seed_faces, key=lambda f: areas.get(f, 0.0))
+        rep_centroid = np.asarray(mesh_region_centroid(mesh, [rep_face]), dtype=float)
+        matches = find_similar_regions(
+            document, seed_body, {rep_face}, area_tol=0.12, dim_tol=0.18)
+        if not matches:
+            self.status(
+                "Box Cut: no identical features found — box ONE pin tightly and retry")
+            return
+        box_dims = np.array([limits[1] - limits[0], limits[3] - limits[2],
+                             limits[5] - limits[4]])
+        box_center = np.array([(limits[0] + limits[1]) / 2, (limits[2] + limits[3]) / 2,
+                               (limits[4] + limits[5]) / 2])
+        merge_tol = 0.5 * float(min(box_dims))
+        # find_similar returns several same-area faces PER pin (e.g. a pin's
+        # front + back face), so cluster the matched faces into pins first —
+        # otherwise per-face placement lands the box half-on a pin. Faces within
+        # ~one box span (per axis) are the same pin; pins sit a pitch apart.
+        rep_area = areas.get(rep_face, 0.0)
+        seed_big = [f for f in seed_faces
+                    if abs(areas.get(f, 0.0) - rep_area) <= 0.12 * max(rep_area, 1e-9)]
+        seed_pin_center = np.asarray(
+            mesh_region_centroid(mesh, seed_big or list(seed_faces)), dtype=float)
+        radius = box_dims * 1.1
+        clusters: list[dict] = []
+        for region in matches:
+            body_index, face_index = region[0]
+            if body_index != seed_body:
+                continue
+            centroid = np.asarray(mesh_region_centroid(mesh, [face_index]), dtype=float)
+            for cluster in clusters:
+                if np.all(np.abs(centroid - cluster["center"]) <= radius):
+                    cluster["pts"].append(centroid)
+                    cluster["center"] = np.mean(cluster["pts"], axis=0)
+                    break
+            else:
+                clusters.append({"pts": [centroid], "center": centroid})
+
+        self._cuts = [{"limits": list(limits), "normal": [0.0, 0.0, 0.0],
+                       "location": 0.0}]
+        centers = [box_center]
+        rejected = 0
+        for cluster in clusters:
+            delta = cluster["center"] - seed_pin_center      # box -> this pin
+            new_center = box_center + delta
+            if any(float(np.linalg.norm(new_center - c)) < merge_tol for c in centers):
+                continue  # the seed pin itself, or already boxed
+            shifted = [limits[0] + delta[0], limits[1] + delta[0],
+                       limits[2] + delta[1], limits[3] + delta[1],
+                       limits[4] + delta[2], limits[5] + delta[2]]
+            # validate: the box must hold the SAME feature signature as the seed
+            here_sig = self._signature(self._box_face_set(mesh, shifted), areas)
+            if not self._signatures_match(seed_sig, here_sig):
+                rejected += 1
+                continue
+            centers.append(new_center)
+            self._cuts.append({"limits": shifted, "normal": [0.0, 0.0, 0.0],
+                               "location": 0.0})
+        self._update_cut_preview()
+        note = f" ({rejected} stray match(es) filtered)" if rejected else ""
+        self.status(
+            f"Box Cut: {len(self._cuts)} pins staged — review the pastels, then Apply"
+            + note)
 
     def _adjacency_ring(self, document, active, bundle):
         """The faces one shared-edge ring out from `bundle`, minus the faces
@@ -336,6 +801,347 @@ class SeparateUnibodyTool(ToolMode):
         self.status(
             f"Paint Regions: +{len(added)} face(s) on pin "
             f"{registry.pins[active].number} ({len(bundle)} total)"
+        )
+
+    # -------------------------------------------- manual cut planes (box mode)
+
+    def _arm_cut(self, checked: bool) -> None:
+        """Switch sub-mode: Box Cut (box a pin, carve it out) <-> Body-Face
+        Cutoff. The other mode's controls hide; the model goes solid so the
+        pin and its vertices are easy to see/click."""
+        document = self.ctx.document
+        if document is None:
+            self.cut_button.setChecked(False)
+            return
+        self.cut_group.setVisible(checked)
+        self.cutoff_group.setVisible(not checked)
+        if not checked:
+            self._cuts = []
+            self._axis_pick = None
+            self._box_pick = None
+            self._clear_cut_visuals()
+            self.ctx.scene.set_hover_callback(None)
+            self.status("Box Cut mode: off")
+            self._regrow()  # back to the edge-flow growth preview
+            return
+        if self.paint_button.isChecked():
+            self.paint_button.setChecked(False)
+        if self._preview_painted:
+            self.ctx.scene.rebuild(document)
+            self._preview_painted = False
+        self.ctx.scene.set_model_opacity(1.0)  # solid: easy to see the pin
+        self.ctx.scene.set_hover_callback(self._on_cut_hover)
+        if self._read_cut_fields() is None:
+            self._fit_box_to_model()
+        else:
+            self._update_cut_preview()
+        self.status(
+            "Box Cut mode: box a pin (⊙ Box / ⊙ 2 pts / type), Add Cut, then Apply"
+        )
+
+    def _on_cut_hover(self, pick) -> None:
+        """Preview dot at the vertex a pick will snap to, coloured for the
+        active pick (yellow box-corner / X-red Y-green Z-blue axis)."""
+        scene = self.ctx.scene
+        armed = self._box_pick is not None or self._axis_pick is not None
+        if (pick is None or self.ctx.document is None
+                or not self.cut_button.isChecked() or not armed):
+            scene.set_markers([], name="sep-pick-ghost")
+            return
+        vertex = self._snap_vertex(pick)
+        if vertex is None:
+            scene.set_markers([], name="sep-pick-ghost")
+            return
+        color = (AXIS_MARKER_COLORS[self._axis_pick[0]] if self._axis_pick is not None
+                 else BOX_MARKER_COLOR)
+        scene.set_markers([tuple(float(v) for v in vertex)], name="sep-pick-ghost",
+                          color=color, point_size=16.0, opacity=0.5, on_top=True)
+
+    def _read_cut_fields(self):
+        """(limits, normal, location) from the X/Y/Z fields, or None if invalid.
+        Box Cut has no plane, so normal/location are always 'undefined' (a pure
+        box) — kept in the tuple for the shared preview/cut helpers."""
+        try:
+            field = self._cut_fields
+            limits = [float(field["xlo"].text()), float(field["xhi"].text()),
+                      float(field["ylo"].text()), float(field["yhi"].text()),
+                      float(field["zlo"].text()), float(field["zhi"].text())]
+        except (ValueError, KeyError):
+            return None
+        if limits[1] <= limits[0] or limits[3] <= limits[2] or limits[5] <= limits[4]:
+            return None
+        return limits, [0.0, 0.0, 0.0], 0.0
+
+    def _write_cut_fields(self, limits, normal=None, location=None) -> None:
+        field = self._cut_fields
+        for key, value in zip(("xlo", "xhi", "ylo", "yhi", "zlo", "zhi"), limits):
+            field[key].setText(f"{value:.3f}")
+
+    def _fit_box_to_model(self) -> None:
+        document = self.ctx.document
+        if document is None:
+            return
+        self._write_cut_fields(list(document.bounds()))
+        self._update_cut_preview()
+
+    def _contained_mask(self, mesh, limits, normal, location):
+        """Boolean mask over a mesh's triangles: centroid inside the box AND on
+        the +normal side (the part that becomes the carved body).
+
+        Cake-slice rule: a box cut closes BOTH shells, so a face that sits flush
+        on a box wall belongs to the carved pin only if its (outward) normal
+        points OUT of the box. A flush face whose normal points INTO the box is
+        the package remainder's stripped cap — its material is on the far side
+        of the wall, so it must not be classified as part of the pin."""
+        tri_pts = mesh.points[mesh.tris]
+        centroids = tri_pts.mean(axis=1)
+        xlo, xhi, ylo, yhi, zlo, zhi = limits
+        mask = ((centroids[:, 0] >= xlo) & (centroids[:, 0] <= xhi)
+                & (centroids[:, 1] >= ylo) & (centroids[:, 1] <= yhi)
+                & (centroids[:, 2] >= zlo) & (centroids[:, 2] <= zhi))
+        if normal is not None:
+            unit = np.asarray(normal, dtype=float)
+            magnitude = float(np.linalg.norm(unit))
+            if magnitude > 1e-9:
+                mask = mask & ((centroids @ (unit / magnitude)) >= float(location))
+
+        # Drop flush-but-inward-facing triangles (the package's stripped cap):
+        # on a box wall, but the outward normal points into the box.
+        face_n = np.cross(tri_pts[:, 1] - tri_pts[:, 0],
+                          tri_pts[:, 2] - tri_pts[:, 0])
+        face_n = face_n / np.maximum(np.linalg.norm(face_n, axis=1, keepdims=True), 1e-12)
+        span = np.array([max(xhi - xlo, 1e-9), max(yhi - ylo, 1e-9),
+                         max(zhi - zlo, 1e-9)])
+        flush = np.maximum(span * 0.03, 1e-4)  # "on the wall" tolerance per axis
+        hit = 0.5  # |normal . axis| above this => face is parallel to that wall
+        inward = (
+            ((np.abs(centroids[:, 0] - xlo) <= flush[0]) & (face_n[:, 0] >= hit))
+            | ((np.abs(centroids[:, 0] - xhi) <= flush[0]) & (face_n[:, 0] <= -hit))
+            | ((np.abs(centroids[:, 1] - ylo) <= flush[1]) & (face_n[:, 1] >= hit))
+            | ((np.abs(centroids[:, 1] - yhi) <= flush[1]) & (face_n[:, 1] <= -hit))
+            | ((np.abs(centroids[:, 2] - zlo) <= flush[2]) & (face_n[:, 2] >= hit))
+            | ((np.abs(centroids[:, 2] - zhi) <= flush[2]) & (face_n[:, 2] <= -hit))
+        )
+        return mask & ~inward
+
+    def _region_polydata(self, mesh, mask):
+        tris = mesh.tris[mask]
+        if not len(tris):
+            return None
+        faces = np.hstack(
+            [np.full((len(tris), 1), 3, dtype=np.int64), tris]
+        ).ravel()
+        return pv.PolyData(mesh.points, faces)
+
+    def _update_cut_preview(self) -> None:
+        """Pastel-preview every body the banked cuts produce, plus the live
+        (field/seeded) cut in red — Apply reproduces exactly this."""
+        if self._actions_widget is None or not self.cut_button.isChecked():
+            return
+        document = self.ctx.document
+        if document is None:
+            return
+        self._erase_banked_cuts()
+        # (cut, colour, name): banked cuts pastel, the live box red
+        overlays = [(cut, pastel(index), f"sep-cut-{index}")
+                    for index, cut in enumerate(self._cuts)]
+        live = self._read_cut_fields()
+        if live is not None:
+            overlays.append(({"limits": live[0], "normal": live[1],
+                              "location": live[2]}, (0.88, 0.30, 0.28), "sep-cut-live"))
+        plotter = self.ctx.scene.plotter
+        for cut, rgb, name in overlays:
+            box_name = f"{name}-box"
+            plotter.add_mesh(pv.Box(bounds=tuple(cut["limits"])), name=box_name,
+                             color=rgb, style="wireframe", line_width=3,
+                             pickable=False)
+            self._cut_actor_names.append(box_name)
+            # the contained region (what actually becomes the carved body)
+            for body_index, body in enumerate(document.bodies):
+                if body.mesh is None or not len(body.mesh.tris):
+                    continue
+                mask = self._contained_mask(
+                    body.mesh, cut["limits"], cut.get("normal"), cut.get("location"))
+                poly = self._region_polydata(body.mesh, mask)
+                if poly is None:
+                    continue
+                actor_name = f"{name}-{body_index}"
+                plotter.add_mesh(poly, name=actor_name, color=rgb, pickable=False)
+                self._cut_actor_names.append(actor_name)
+        plotter.render()
+        self._update_cut_label()
+        self._update_split_preview()
+
+    def _add_cut(self) -> None:
+        live = self._read_cut_fields()
+        if live is None:
+            self.status("Box Cut: set a valid X/Y/Z box first")
+            return
+        limits, normal, location = live
+        self._cuts.append({"limits": list(limits), "normal": list(normal),
+                           "location": float(location)})
+        self._update_cut_preview()
+        self.status(
+            f"Box Cut: banked cut #{len(self._cuts)} — keep adding, then Apply Separate"
+        )
+
+    def _clear_cuts(self) -> None:
+        self._cuts = []
+        self._update_cut_preview()
+        self.status("Box Cut: banked cuts cleared")
+
+    def _update_cut_label(self) -> None:
+        if self._actions_widget is None:
+            return
+        count = len(self._cuts)
+        if count:
+            self.cut_label.setText(
+                f"{count} banked box(es) (pastel) + live box (red). "
+                "Apply carves exactly the previewed bodies.")
+        elif self.cut_button.isChecked():
+            self.cut_label.setText("Box a pin (⊙ Box / ⊙ 2 pts / type), then Add Cut.")
+        else:
+            self.cut_label.setText("")
+
+    def _erase_banked_cuts(self) -> None:
+        plotter = self.ctx.scene.plotter
+        for name in self._cut_actor_names:
+            plotter.remove_actor(name, render=False)
+        self._cut_actor_names = []
+        plotter.render()
+
+    def _link_cut_pins(self, document, registry, carved, diag) -> int:
+        """Link each unclaimed pin to its carved piece — PRIMARY and MOUTH pins
+        alike (a connector's mating contacts are separated bodies too, and were
+        skipped before, which is why back-row CON pins never got a shell).
+
+        Identity first: remap_pin_faces has already re-pointed each pin's own
+        detected faces onto the new body table, and a pin's faces land on its
+        carved shell, so the carved body hosting the most of the pin's faces IS
+        its body. Proximity (nearest carved-piece centroid) is only the fallback
+        for pins whose faces didn't survive the cut."""
+        carved_set = set(carved)
+        tol = 0.2 * diag + 1e-6
+        centroids = {}
+        for body_index in carved:
+            mesh = document.bodies[body_index].mesh
+            if mesh is not None and len(mesh.points):
+                centroids[body_index] = mesh.points.mean(axis=0)
+        used: set[int] = set()
+        matched = 0
+        for pin in registry.pins:
+            if pin.body_ids:
+                continue
+            best = None
+            # identity: the carved body hosting the most of this pin's faces
+            if pin.face_ids:
+                counts: dict[int, int] = {}
+                for body_index, _face in pin.face_ids:
+                    if body_index in carved_set and body_index not in used:
+                        counts[body_index] = counts.get(body_index, 0) + 1
+                if counts:
+                    best = max(counts, key=counts.get)
+            # fallback: nearest unused carved piece by centroid
+            if best is None:
+                pin_centroid = np.asarray(pin.centroid, dtype=float)
+                best_distance = tol
+                for body_index, centroid in centroids.items():
+                    if body_index in used:
+                        continue
+                    distance = float(np.linalg.norm(centroid - pin_centroid))
+                    if distance < best_distance:
+                        best_distance, best = distance, body_index
+            if best is not None:
+                used.add(best)
+                pin.body_ids = [best]
+                pin.face_ids = []
+                body = document.bodies[best]
+                body.name = pin.name or f"PIN_{pin.number}"
+                body.role = "pin"
+                matched += 1
+        return matched
+
+    def _journal_cuts(self, document, before, cuts, matched, remapped) -> None:
+        self.ctx.journal.record(
+            tool=self.id,
+            params={"cut": True},
+            inputs={"cuts": cuts},
+            result={"bodies_before": before, "bodies_after": len(document.bodies),
+                    "pins_matched": matched, "face_pins_remapped": remapped},
+        )
+
+    def _apply_cuts(self) -> None:
+        """Carve every banked box-bounded cut with the boolean cutter, then
+        link each carved piece to the nearest pin."""
+        document = self.ctx.document
+        registry = self.ctx.window.pins
+        window = self.ctx.window
+        before = len(document.bodies)
+        self._undo_state = (
+            list(document.bodies),
+            [(pin, list(pin.body_ids), list(pin.face_ids)) for pin in registry.pins],
+        )
+        face_anchors = capture_pin_face_anchors(document, registry.pins)
+        # split_by_box REBUILDS + REORDERS the body table on every call, so a
+        # pin already linked in an earlier Apply has stale integer body_ids
+        # after a later cut displaces its body. Remember the actual BodyRecord
+        # OBJECTS now (unchanged bodies keep their identity through a split) and
+        # re-resolve those pins' indices once all cuts are done.
+        prelinked = [(pin, [document.bodies[i] for i in pin.body_ids
+                            if 0 <= i < len(document.bodies)])
+                     for pin in registry.pins if pin.body_ids]
+        b = document.bounds()
+        diag = float(np.linalg.norm([b[1] - b[0], b[3] - b[2], b[5] - b[4]]))
+        cuts = [{"limits": list(c["limits"]), "normal": list(c["normal"]),
+                 "location": float(c["location"])} for c in self._cuts]
+        try:
+            window.progress("Carving banked cuts", 0, 0)
+            # Capture each cut's carved PIN objects from split_by_box's own
+            # return (the pin-side pieces). An object-diff would be wrong: the
+            # package remainder is a fresh object after every cut and would be
+            # mistaken for a carved pin. Pins survive later (disjoint) cuts, so
+            # map the captured objects to their final indices at the end.
+            carved_objs: list = []
+            for cut in cuts:
+                pin_indices = document.split_by_box(
+                    cut["limits"], cut["normal"], cut["location"])
+                carved_objs.extend(document.bodies[i] for i in pin_indices)
+            present = {id(body): index for index, body in enumerate(document.bodies)}
+            carved = [present[id(o)] for o in carved_objs if id(o) in present]
+            # Re-resolve already-linked pins to their bodies' NEW indices.
+            for pin, objs in prelinked:
+                new_ids = [present[id(o)] for o in objs if id(o) in present]
+                if new_ids:
+                    pin.body_ids = new_ids
+            # Re-point each remaining pin's faces onto the new body table FIRST,
+            # so the linker can claim each pin by identity (the carved body its
+            # own faces landed on) before falling back to proximity.
+            remapped = remap_pin_faces(document, face_anchors, diag * 5.0e-3)
+            matched = self._link_cut_pins(document, registry, carved, diag)
+            self._journal_cuts(document, before, cuts, matched, remapped)
+            window.progress("Rendering bodies", 0, 0)
+            window.document_mutated()
+        finally:
+            window.progress_done()
+        self._cuts = []
+        self._clear_cut_visuals()
+        self._preview_painted = False
+        self._grown = None
+        self.undo_button.setEnabled(True)
+        # Stay in Box Cut mode (model solid, box/live region re-shown) so the
+        # user can cut again — one pass rarely gets every pin.
+        self.ctx.scene.set_model_opacity(1.0)
+        self._update_cut_preview()
+        self._update_split_preview()
+        self._update_cut_label()
+        self.info_label.setText(
+            f"Cut applied: {before} body(ies) -> {len(document.bodies)} "
+            f"({len(carved)} carved piece(s), {matched} linked to pins). "
+            "Cut again for more pins, or switch off Box Cut mode."
+        )
+        self.status(
+            f"Separate Unibody: carved into {len(document.bodies)} bodies "
+            "— cut again, or Undo"
         )
 
     def _manual_color_map(self, registry):
@@ -452,6 +1258,74 @@ class SeparateUnibodyTool(ToolMode):
         merged.cell_data["rgb"] = np.vstack(color_blocks)
         return merged
 
+    def _build_cut_preview_mesh(self, document):
+        """Per-triangle pastel preview. With cuts banked: each cut's region in
+        its pastel (+ the live cut red) on a slate model — the cut decomposition
+        to confirm before Apply. With NO cuts (e.g. just after Apply): each
+        BODY in its own pastel, so the already-separated bodies are all visible."""
+        cuts = list(self._cuts)
+        # the live (being-positioned) cut only matters while banking cuts; after
+        # Apply the fields still hold the last box, but we want the bodies shown.
+        live = self._read_cut_fields() if cuts else None
+        live_cut = ({"limits": live[0], "normal": live[1], "location": live[2]}
+                    if live is not None else None)
+        neutral = np.array([0.42, 0.44, 0.50])
+        point_blocks, tri_blocks, color_blocks, offset = [], [], [], 0
+        for body_index, body in enumerate(document.bodies):
+            mesh = body.mesh
+            if mesh is None or not len(mesh.tris):
+                continue
+            base = neutral if cuts else np.array(pastel(body_index))
+            colors = np.tile(base, (len(mesh.tris), 1))
+            for index, cut in enumerate(cuts):
+                mask = self._contained_mask(
+                    mesh, cut["limits"], cut.get("normal"), cut.get("location"))
+                colors[mask] = pastel(index)
+            if live_cut is not None:
+                mask = self._contained_mask(
+                    mesh, live_cut["limits"], live_cut["normal"], live_cut["location"])
+                colors[mask] = np.array([0.88, 0.30, 0.28])
+            point_blocks.append(mesh.points)
+            tri_blocks.append(mesh.tris + offset)
+            color_blocks.append(colors)
+            offset += len(mesh.points)
+        if not point_blocks:
+            return None
+        tris = np.vstack(tri_blocks)
+        cells = np.column_stack([np.full(len(tris), 3, dtype=np.int64), tris]).ravel()
+        merged = pv.PolyData(np.vstack(point_blocks), cells)
+        merged.cell_data["rgb"] = np.vstack(color_blocks)
+        return merged
+
+    def _render_split_bodies(self, plotter, document) -> None:
+        """Post-split bodies in the preview pane: pin bodies (role=pin) opaque
+        and drawn ON TOP, the package translucent — so pins buried inside a
+        connector housing (USB CON/HEAD contacts) still show through."""
+        bodies = document.bodies
+        has_pins = any(getattr(b, "role", "") == "pin" for b in bodies)
+        for index, body in enumerate(bodies):
+            mesh = body.mesh
+            if mesh is None or not len(mesh.tris):
+                continue
+            cells = np.column_stack(
+                [np.full(len(mesh.tris), 3, dtype=np.int64), mesh.tris]).ravel()
+            poly = pv.PolyData(mesh.points, cells)
+            is_pin = getattr(body, "role", "") == "pin"
+            if has_pins and not is_pin:        # the package: translucent backdrop
+                plotter.add_mesh(poly, color=(0.42, 0.44, 0.50), opacity=0.18,
+                                 smooth_shading=False, show_edges=False)
+                continue
+            actor = plotter.add_mesh(poly, color=pastel(index), opacity=1.0,
+                                     smooth_shading=False, show_edges=False)
+            if has_pins:                       # pin: pull on top so it's never hidden
+                try:
+                    mapper = actor.GetMapper()
+                    mapper.SetResolveCoincidentTopologyToPolygonOffset()
+                    mapper.SetRelativeCoincidentTopologyPolygonOffsetParameters(
+                        -66000.0, -66000.0)
+                except Exception:  # noqa: BLE001
+                    pass
+
     def _update_split_preview(self) -> None:
         """The little 3D pane in the actions panel: the POST-SPLIT picture —
         every future body its own solid pastel, package remainder slate."""
@@ -460,8 +1334,23 @@ class SeparateUnibodyTool(ToolMode):
             return
         plotter.clear()
         document = self.ctx.document
+        if document is None:
+            plotter.render()
+            return
+        if self._actions_widget is not None and self.cut_button.isChecked():
+            if self._cuts:
+                merged = self._build_cut_preview_mesh(document)
+                if merged is not None:
+                    plotter.add_mesh(merged, scalars="rgb", rgb=True,
+                                     smooth_shading=False, show_edges=False)
+            else:
+                self._render_split_bodies(plotter, document)
+            plotter.view_isometric()
+            plotter.reset_camera()
+            plotter.render()
+            return
         registry = self.ctx.window.pins
-        if document is None or not registry.pins:
+        if not registry.pins:
             plotter.render()
             return
         regions = self._preview_regions()
@@ -741,6 +1630,20 @@ class SeparateUnibodyTool(ToolMode):
         document = self.ctx.document
         registry = self.ctx.window.pins
         if document is None or not registry.pins:
+            return
+        # Either/or: in Box Cut mode, Apply is ALWAYS a cut, never the
+        # edge-flow growth split. Auto-bank the live cut if not Added yet.
+        if self._actions_widget is not None and self.cut_button.isChecked():
+            if not self._cuts:
+                live = self._read_cut_fields()
+                if live is not None:
+                    self._cuts.append({"limits": list(live[0]),
+                                       "normal": list(live[1]),
+                                       "location": float(live[2])})
+            if not self._cuts:
+                self.status("Box Cut: define a cut (click a face / type values) first")
+                return
+            self._apply_cuts()
             return
         regions, painted_bundles = self._regions_for_apply(registry)
         if not regions:

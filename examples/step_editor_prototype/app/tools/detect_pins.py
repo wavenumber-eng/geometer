@@ -7,6 +7,8 @@ Pin 1 Quadrant tool, and can be reordered manually."""
 from __future__ import annotations
 
 import numpy as np
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -71,37 +73,26 @@ class DetectPinsTool(ToolMode):
         layout = QVBoxLayout(widget)
         layout.setContentsMargins(8, 8, 8, 8)
         layout.addWidget(QLabel(
-            "<b>Detect Pins</b><br>"
-            "Left button clicks and orbits as usual. Press <b>Drag Select</b>, "
-            "then drag a see-through rectangle over the pins (top view). Each "
-            "drag stages the pins it finds — press Apply to add them."
+            "<b>Detect and Name Pins</b><br>"
+            "Seed a tip and Detect Exact (SMT/THR or CON/HEAD), or use Context "
+            "Plane / Auto. Click a pin's faces to select it; press Delete to "
+            "remove it. Then Apply."
         ))
 
-        select_row = QHBoxLayout()
-        auto_button = QPushButton("Auto")
-        auto_button.setToolTip(
-            "Stage pins automatically: context-plane slice 0.01 mm above\n"
-            "the seat, falling back to whole-model multibody detection.\n"
-            "Everything stages orange — review, Delete strays, Apply."
-        )
-        auto_button.clicked.connect(self.run_auto)
-        select_row.addWidget(auto_button)
-        self.band_button = QPushButton("Drag Select (band)")
-        self.band_button.setCheckable(True)
-        self.band_button.setStyleSheet(
-            "QPushButton:checked {background-color: #c89d00; color: #000000; font-weight: 700;}"
-        )
-        self.band_button.toggled.connect(self._arm_band)
-        select_row.addWidget(self.band_button)
-        self.context_button = QPushButton("Context Plane (Z+0.01)")
+        # ---- SMT / THR group ----
+        smt_label = QLabel("SMT / THR")
+        smt_label.setStyleSheet("font-weight: 700; color: #c89d00; padding-top: 4px;")
+        layout.addWidget(smt_label)
+        smt_row = QHBoxLayout()
+        self.context_button = QPushButton("Context Plane")
         self.context_button.setToolTip(
             "One click: slice the model 0.01 mm above the Z-sit seating plane "
             "(that work is already done) — every closed shape in the section "
             "is staged as a pin."
         )
         self.context_button.clicked.connect(self._run_context_plane)
-        select_row.addWidget(self.context_button)
-        self.seed_button = QPushButton("SMT/THR Seed Tip")
+        smt_row.addWidget(self.context_button)
+        self.seed_button = QPushButton("Seed Tip")
         self.seed_button.setCheckable(True)
         self.seed_button.setToolTip(
             "Click a pin TIP (the end face of an SMT/THR pad — every pin has\n"
@@ -112,7 +103,7 @@ class DetectPinsTool(ToolMode):
             "QPushButton:checked {background-color: #c89d00; color: #000000; font-weight: 700;}"
         )
         self.seed_button.toggled.connect(self._on_seed_toggled)
-        select_row.addWidget(self.seed_button)
+        smt_row.addWidget(self.seed_button)
         smt_similar_button = QPushButton("Detect Exact")
         smt_similar_button.setToolTip(
             "Find every face of the SAME SHAPE as the last SMT/THR tip, in any\n"
@@ -120,15 +111,27 @@ class DetectPinsTool(ToolMode):
             "them. Use it to copy one hand-marked tip and seed a reference."
         )
         smt_similar_button.clicked.connect(lambda: self._detect_similar("primary"))
-        select_row.addWidget(smt_similar_button)
-        layout.addLayout(select_row)
+        smt_row.addWidget(smt_similar_button)
+        layout.addLayout(smt_row)
 
         self.exclude_check = QCheckBox("Exclude largest body (package)")
         self.exclude_check.setChecked(True)
         layout.addWidget(self.exclude_check)
 
+        # ---- CON / HEAD group ----
+        con_label = QLabel("CON / HEAD")
+        con_label.setStyleSheet("font-weight: 700; color: #2a6fd4; padding-top: 4px;")
+        layout.addWidget(con_label)
         mouth_row = QHBoxLayout()
-        self.mouth_seed_button = QPushButton("CON/HEAD Seed Tip")
+        join_button = QPushButton("Join Pins")
+        join_button.setToolTip(
+            "Give each blue mouth pin the designator of the primary pin it\n"
+            "lines up with along the connector row — same designator = same\n"
+            "net, so their hitboxes link as one electrical node."
+        )
+        join_button.clicked.connect(self._join_mouth_pins)
+        mouth_row.addWidget(join_button)
+        self.mouth_seed_button = QPushButton("Seed Tip")
         self.mouth_seed_button.setCheckable(True)
         self.mouth_seed_button.setToolTip(
             "Click a CON/HEAD contact TIP up inside the connector mouth —\n"
@@ -147,14 +150,6 @@ class DetectPinsTool(ToolMode):
         )
         similar_button.clicked.connect(lambda: self._detect_similar("mouth"))
         mouth_row.addWidget(similar_button)
-        join_button = QPushButton("Join to Pins")
-        join_button.setToolTip(
-            "Give each blue mouth pin the designator of the primary pin it\n"
-            "lines up with along the connector row — same designator = same\n"
-            "net, so their hitboxes link as one electrical node."
-        )
-        join_button.clicked.connect(self._join_mouth_pins)
-        mouth_row.addWidget(join_button)
         layout.addLayout(mouth_row)
 
         flow_row = QHBoxLayout()
@@ -218,6 +213,16 @@ class DetectPinsTool(ToolMode):
         self.pending_label = QLabel("")
         self.pending_label.setStyleSheet("color: #c97a1a; font-weight: 600;")
         layout.addWidget(self.pending_label)
+
+        auto_button = QPushButton("Auto")
+        auto_button.setToolTip(
+            "Stage pins automatically: context-plane slice 0.01 mm above\n"
+            "the seat, falling back to whole-model multibody detection.\n"
+            "Everything stages orange — review, Delete strays, Apply."
+        )
+        auto_button.clicked.connect(self.run_auto)
+        layout.addWidget(auto_button)
+
         self.apply_button = make_apply_button("Apply Detected Pins")
         self.apply_button.setEnabled(False)
         self.apply_button.clicked.connect(self.apply)
@@ -226,6 +231,11 @@ class DetectPinsTool(ToolMode):
         self.pin_list = QListWidget()
         self.pin_list.currentRowChanged.connect(self._on_list_selection)
         layout.addWidget(self.pin_list, 2)
+        # DEL removes the selected pin (selecting a pin's faces in the 3D view
+        # focuses this list) — fires only when the list, not the name box, has
+        # focus, so typing in Name still edits text normally.
+        delete_shortcut = QShortcut(QKeySequence(Qt.Key_Delete), self.pin_list)
+        delete_shortcut.activated.connect(self._delete_selected)
 
         edit_row = QHBoxLayout()
         for label, handler in (
@@ -255,14 +265,12 @@ class DetectPinsTool(ToolMode):
         self.ctx.window.request_footprint(self._on_footprint)
         self._refresh_views()
         self.status(
-            "Detect Pins: press Drag Select then sweep over the pins; "
-            "plain clicks select pins for renaming"
+            "Detect Pins: seed a tip + Detect Exact, or Context Plane / Auto; "
+            "click a pin to select, Delete to remove"
         )
 
     def exit(self) -> None:
         self._disarm_band()
-        if self._actions_widget is not None:
-            self.band_button.setChecked(False)
         self.ctx.scene.show_pin_labels([], [])
         self.ctx.scene.set_markers([], name="pending-pins")
         self.ctx.scene.set_markers([], name="pending-mouth")
@@ -301,7 +309,6 @@ class DetectPinsTool(ToolMode):
     def _on_mouth_seed_toggled(self, checked: bool) -> None:
         if checked and self._actions_widget is not None:
             self.seed_button.setChecked(False)
-            self.band_button.setChecked(False)
             self.status(
                 "Mouth Seed: click a mating-contact face inside the mouth — "
                 "each click stages one blue mouth pin"
@@ -370,6 +377,12 @@ class DetectPinsTool(ToolMode):
         sorted bbox extents, both rotation/mirror invariant) — an EXACT shape
         match, not a loose one, so it copies one hand-marked tip across the
         whole part and the result can seed a reference file."""
+        # QOL: Detect Exact ends the seeding gesture — disarm the Seed Tip
+        # button for this role so plain clicks orbit again.
+        if self._actions_widget is not None:
+            seed_button = (self.mouth_seed_button if role == "mouth"
+                           else self.seed_button)
+            seed_button.setChecked(False)
         document = self.ctx.document
         if document is None:
             return
@@ -476,7 +489,6 @@ class DetectPinsTool(ToolMode):
             return
         from ..auto import auto_detect_pins
 
-        self.band_button.setChecked(False)
         found, how = auto_detect_pins(document)
         if not found:
             self.status("Auto Detect: nothing found — seed a pin tip manually")
@@ -535,7 +547,6 @@ class DetectPinsTool(ToolMode):
         document = self.ctx.document
         if document is None:
             return
-        self.band_button.setChecked(False)
         bounds = document.bounds()
         point = [(bounds[0] + bounds[1]) / 2.0, (bounds[2] + bounds[3]) / 2.0, 0.01]
         normal = [0.0, 0.0, -1.0]
@@ -604,9 +615,6 @@ class DetectPinsTool(ToolMode):
         band = Band(min(x0, x1), min(y0, y1), max(x0, x1), max(y0, y1))
         self._last_band = band
         self.detect_in_band(band)
-        # one band per arm: hand the left button back to orbit/click
-        if self._actions_widget is not None:
-            self.band_button.setChecked(False)
 
     def detect_in_band(self, band: Band) -> None:
         """Stage the pins found in the band; Apply commits them."""
@@ -776,12 +784,11 @@ class DetectPinsTool(ToolMode):
         if row < 0:
             return
         self.pin_list.setCurrentRow(row)
-        self.name_edit.setFocus()
-        self.name_edit.selectAll()
+        self.pin_list.setFocus()  # so DEL removes this pin (not edit the name box)
         pin = registry.pins[row]
         self.status(
             f"Detect Pins: pin {pin.number}{f' ({pin.name})' if pin.name else ''} "
-            f"selected — type a name and press Enter"
+            f"selected — press Delete to remove, or type in the Name box to rename"
         )
 
     def _autocapitalize(self, text: str) -> None:

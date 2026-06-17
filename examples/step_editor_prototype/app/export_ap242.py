@@ -99,6 +99,11 @@ def export_ap242(
     out_path = out_path or conditioned_path(document.path)
     stage(f"Writing {out_path.name}")
     write_step(document, out_path)
+    # Resolve each body -> its #MANIFOLD_SOLID_BREP/#CLOSED_SHELL now, while the
+    # geometry ids are final (metadata injection only appends entities).
+    model3d_payload = None
+    if pins is not None:
+        model3d_payload = _build_model3d_payload(document, pins, out_path, source_name)
     if pins is not None or journal is not None:
         from .metadata import build_metadata
 
@@ -120,16 +125,39 @@ def export_ap242(
             )
         if sidecar.exists():
             sidecar.unlink()
+    if model3d_payload is not None:
+        stage("Embedding model_3d_a0 (entity-linked) into the AP242")
+        inject_metadata(out_path, model3d_payload, tag="WN3D_MODEL_3D",
+                        description="wn3d 3d model (model_3d_a0)")
+        if extract_metadata(out_path, tag="WN3D_MODEL_3D") != model3d_payload:
+            raise RuntimeError("model_3d_a0 did not read back from the STEP")
     stage("Validating: re-reading the conditioned STEP")
     return _validate(document, out_path)
 
 
-def inject_metadata(step_path: Path, payload: dict) -> None:
-    """Embed the conditioning JSON as legal AP242 entities: a
+def _build_model3d_payload(document, pins, step_path, source_name):
+    """Resolve entity refs + build the model_3d_a0 payload. Best-effort: if the
+    data model package is unavailable, skip it (legacy block still ships)."""
+    try:
+        from .model3d_export import build_model_3d, resolve_entity_refs
+    except Exception:  # noqa: BLE001 — model_3d is additive; never block export
+        return None
+    refs = resolve_entity_refs(step_path, document)
+    return build_model_3d(document, pins, refs, source_name=source_name).to_json()
+
+
+def inject_metadata(
+    step_path: Path,
+    payload: dict,
+    tag: str = "WN3D_CONDITIONING",
+    description: str = "wn3d geometric pin metadata",
+) -> None:
+    """Embed a JSON payload as legal AP242 entities: a
     DESCRIPTIVE_REPRESENTATION_ITEM carrying the payload, wired through
     REPRESENTATION -> PROPERTY_DEFINITION_REPRESENTATION to the file's
     PRODUCT_DEFINITION — readable by any STEP parser, queryable from the 3D
-    file alone."""
+    file alone. `tag` names the block so several payloads can coexist (the
+    legacy WN3D_CONDITIONING block and the WN3D_MODEL_3D model_3d_a0 block)."""
     text = step_path.read_text(encoding="utf-8", errors="replace")
     ids = [int(match) for match in re.findall(r"#(\d+)\s*=", text)]
     next_id = (max(ids) if ids else 0) + 1
@@ -148,19 +176,19 @@ def inject_metadata(step_path: Path, payload: dict) -> None:
     for chunk in chunks:
         lines.append(
             f"#{next_id}=DESCRIPTIVE_REPRESENTATION_ITEM"
-            f"('WN3D_CONDITIONING','{chunk}');\n"
+            f"('{tag}','{chunk}');\n"
         )
         item_ids.append(next_id)
         next_id += 1
     refs = ",".join(f"#{i}" for i in item_ids)
     rep_id, prop_id, pdr_id = next_id, next_id + 1, next_id + 2
     lines.append(
-        f"#{rep_id}=REPRESENTATION('WN3D_CONDITIONING',({refs}),"
+        f"#{rep_id}=REPRESENTATION('{tag}',({refs}),"
         f"#{context.group(1)});\n"
     )
     lines.append(
-        f"#{prop_id}=PROPERTY_DEFINITION('WN3D_CONDITIONING',"
-        f"'wn3d geometric pin metadata',#{product.group(1)});\n"
+        f"#{prop_id}=PROPERTY_DEFINITION('{tag}',"
+        f"'{description}',#{product.group(1)});\n"
     )
     lines.append(f"#{pdr_id}=PROPERTY_DEFINITION_REPRESENTATION(#{prop_id},#{rep_id});\n")
     entities = "".join(lines)
@@ -265,11 +293,12 @@ def verify_metadata_text(text: str) -> dict:
     return report
 
 
-def extract_metadata(step_path: Path) -> dict | None:
-    """Read the embedded conditioning JSON back out of a STEP file."""
+def extract_metadata(step_path: Path, tag: str = "WN3D_CONDITIONING") -> dict | None:
+    """Read an embedded JSON block back out of a STEP file by its tag
+    (WN3D_CONDITIONING = legacy blob, WN3D_MODEL_3D = model_3d_a0)."""
     text = step_path.read_text(encoding="utf-8", errors="replace")
     parts = re.findall(
-        r"DESCRIPTIVE_REPRESENTATION_ITEM\('WN3D_CONDITIONING','((?:[^']|'')*)'\)",
+        rf"DESCRIPTIVE_REPRESENTATION_ITEM\('{tag}','((?:[^']|'')*)'\)",
         text,
     )
     if not parts:

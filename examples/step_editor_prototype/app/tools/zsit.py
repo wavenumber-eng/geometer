@@ -445,12 +445,16 @@ class ZSitTool(ToolMode):
         rule_row = QHBoxLayout()
         rule_row.addWidget(QLabel("Plane picks"))
         self.count_combo = QComboBox()
-        self.count_combo.addItems(["3 points", "4 points"])
+        self.count_combo.addItems(["3 points", "4 points", "candidate plane (pick a face)"])
         self.count_combo.setToolTip(
-            "4 points: best-fit plane through all four picks, rectangle "
-            "bounds them all — for parts where 3 picks can't frame the pads."
+            "How to define the seating plane:\n"
+            "• 3 points — three picks define the plane, a 4th picks +Z\n"
+            "• 4 points — best-fit plane through all four picks\n"
+            "• candidate plane — click ONE existing flat face on the model to "
+            "use as the seat; origin defaults to hull-center, +Z toward the body."
         )
-        self.count_combo.currentTextChanged.connect(lambda _t: self.reset_points())
+        self.count_combo.setCurrentText("candidate plane (pick a face)")
+        self.count_combo.currentTextChanged.connect(self._on_plane_mode_changed)
         rule_row.addWidget(self.count_combo)
         rule_row.addWidget(QLabel("Origin"))
         self.origin_combo = QComboBox()
@@ -545,8 +549,44 @@ class ZSitTool(ToolMode):
     def _plane_count(self) -> int:
         return 4 if self.count_combo.currentText().startswith("4") else 3
 
+    def _is_face_mode(self) -> bool:
+        return self.count_combo.currentText().startswith("candidate")
+
+    def _on_plane_mode_changed(self, _text: str) -> None:
+        if self._is_face_mode():
+            self.origin_combo.setCurrentText("hull-center")  # the sensible default
+        self.reset_points()
+
+    def _pick_candidate_plane(self, pick) -> None:
+        """Use a clicked flat face as the whole seating plane: its plane frame
+        becomes the 3 plane points and the model bulk centre the +Z point, so
+        the existing solver/journal/replay path handles it unchanged."""
+        document = self.ctx.document
+        frame = document.face_plane(pick.body_index, pick.face_index)
+        if frame is None:
+            self.status("Z-Sit: pick a flat (planar) face to use as the seat")
+            return
+        if self._auto is not None:
+            self._auto = None
+            self.ctx.scene.set_markers([], name="zsit-auto-pads")
+        origin = np.asarray(frame["origin"], dtype=np.float64)
+        u = np.asarray(frame["u"], dtype=np.float64)
+        v = np.asarray(frame["v"], dtype=np.float64)
+        model_points = self._model_points()
+        above = (model_points.mean(axis=0) if model_points is not None
+                 else origin + np.asarray(frame["normal"], dtype=np.float64))
+        self.points = [tuple(origin), tuple(origin + u), tuple(origin + v), tuple(above)]
+        self.origin_combo.setCurrentText("hull-center")
+        self._refresh_preview()
+        self.status("Z-Sit: seat plane set from the picked face — press Apply")
+
     def on_pick(self, pick) -> None:
-        if self.ctx.document is None or len(self.points) >= self._plane_count() + 1:
+        if self.ctx.document is None:
+            return
+        if self._is_face_mode():
+            self._pick_candidate_plane(pick)
+            return
+        if len(self.points) >= self._plane_count() + 1:
             return
         if self._auto is not None:
             # manual picking overrides the staged auto result silently —

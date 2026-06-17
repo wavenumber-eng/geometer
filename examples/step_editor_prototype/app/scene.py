@@ -461,6 +461,28 @@ class SceneManager:
                 pass
         self.plotter.render()
 
+    def show_segment(
+        self,
+        p1,
+        p2,
+        *,
+        name: str = "segment",
+        color: str = "#e8443a",
+        width: float = 6.0,
+        opacity: float = 1.0,
+    ) -> None:
+        """Draw a bold line segment (a highlighted edge), always on top. Pass
+        p1=None to clear it."""
+        self.remove_overlay(name)
+        if p1 is None or p2 is None:
+            self.plotter.render()
+            return
+        actor = self.plotter.add_mesh(
+            pv.Line(tuple(p1), tuple(p2)), color=color, line_width=width,
+            render_lines_as_tubes=True, opacity=opacity, pickable=False, name=name)
+        self._push_on_top(actor)
+        self.plotter.render()
+
     def show_quad(
         self,
         corners,

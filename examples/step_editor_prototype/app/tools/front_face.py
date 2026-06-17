@@ -72,9 +72,8 @@ class FrontFaceTool(ToolMode):
             "<b>Redefine Front</b><br>"
             "1. Click the <span style='color:#1f9d3a'><b>FRONT</b></span> point "
             "(green = Y) — it ends up in the −Y half-plane.<br>"
-            "2. Click two points for the "
-            "<span style='color:#e8443a'><b>LINE</b></span> (red = X) that "
-            "aligns to the X axis.<br>"
+            "2. Click an existing straight <span style='color:#e8443a'><b>EDGE</b></span> "
+            "(red = X) — that line aligns to the X axis.<br>"
             "Then Apply — the model spins about its centre so the line lies "
             "along X and the front faces −Y."
         ))
@@ -125,8 +124,8 @@ class FrontFaceTool(ToolMode):
     # ------------------------------------------------------------- lifecycle
 
     def enter(self) -> None:
-        self.status("Redefine Front: click the FRONT point (→ −Y), then the "
-                    "alignment line (2 clicks → X)")
+        self.status("Redefine Front: click the FRONT point (→ −Y), then a "
+                    "straight edge to align to X")
         self.ctx.scene.set_hover_callback(self._on_hover)
 
     def exit(self) -> None:
@@ -153,17 +152,22 @@ class FrontFaceTool(ToolMode):
         if pick is None or self.ctx.document is None or done:
             scene.set_markers([], name="front-ghost")
             return
-        point = self._snap_to_vertex(
-            pick.body_index, np.asarray(pick.world_point, dtype=float))
         placing_front = self._front_point is None
-        scene.set_markers(
-            [tuple(float(v) for v in point)],
-            name="front-ghost",
-            color=FRONT_COLOR if placing_front else LINE_COLOR,
-            point_size=18.0,
-            opacity=0.5,
-            on_top=placing_front,   # the front ghost rides above the body too
-        )
+        if placing_front:
+            point = self._snap_to_vertex(
+                pick.body_index, np.asarray(pick.world_point, dtype=float))
+            scene.set_markers(
+                [tuple(float(v) for v in point)], name="front-ghost",
+                color=FRONT_COLOR, point_size=18.0, opacity=0.5, on_top=True)
+            return
+        # placing the line: ghost the straight EDGE nearest the cursor as a line
+        edge = self.ctx.document.nearest_linear_edge(
+            pick.body_index, np.asarray(pick.world_point, dtype=float))
+        if edge is None:
+            scene.show_segment(None, None, name="front-ghost")
+        else:
+            scene.show_segment(edge[0], edge[1], name="front-ghost",
+                               color=LINE_COLOR, width=5.0, opacity=0.6)
 
     def clear_picks(self) -> None:
         self._front_point = None
@@ -198,16 +202,18 @@ class FrontFaceTool(ToolMode):
             self.ctx.scene.set_markers([point], color=FRONT_COLOR,
                                        point_size=20.0, name="front-point",
                                        on_top=True)
-            self.pick_label.setText("FRONT set. Now click the LINE start point.")
-            self.status("Redefine Front: now define the alignment line (2 clicks)")
+            self.pick_label.setText("FRONT set. Now click a straight EDGE for the line.")
+            self.status("Redefine Front: click an existing straight edge to align to X")
         elif len(self._line_pts) < 2:
-            self._line_pts.append(point)
-            self.ctx.scene.set_markers(list(self._line_pts), color=LINE_COLOR,
-                                       point_size=16.0, name="front-line")
-            if len(self._line_pts) == 1:
-                self.pick_label.setText("LINE start set. Click the LINE end point.")
-            else:
-                self._preview()
+            edge = self.ctx.document.nearest_linear_edge(
+                pick.body_index, np.asarray(pick.world_point, dtype=float))
+            if edge is None:
+                self.status("Redefine Front: no straight edge here — click on a straight edge")
+                return
+            self._line_pts = [edge[0], edge[1]]
+            self.ctx.scene.show_segment(edge[0], edge[1], name="front-line",
+                                        color=LINE_COLOR, width=7.0)
+            self._preview()
         else:
             self.clear_picks()
             self.on_pick(pick)   # extra click restarts

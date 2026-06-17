@@ -10,10 +10,15 @@ from .hitboxes import HitboxTool
 from .inspect_tool import InspectTool
 from .front_face import FrontFaceTool
 from .logo import LogoTool
-from .pin_functions import PinFunctionsTool
 from .separate import SeparateUnibodyTool
 from .zsit import ZSitTool
 
+# Assign Pin Functions/Names was removed from the UI: pin KIND (SMT/THR/CON/HEAD)
+# is autodetected, and a pin's MEANING is PCB-context-dependent (connectors,
+# programmable SOTs, FPGAs reassign pinouts), so the editor only needs to make
+# each pin UNIQUE and link nets on connectors — not bake in functions. The
+# pin_functions MODULE stays for parse_function_assignments (journal replay +
+# selftest m5).
 TOOL_CLASSES: list[type[ToolMode]] = [
     InspectTool,
     ZSitTool,
@@ -21,7 +26,6 @@ TOOL_CLASSES: list[type[ToolMode]] = [
     DetectPinsTool,
     SeparateUnibodyTool,
     HitboxTool,
-    PinFunctionsTool,
     ColorsTool,
     LogoTool,
 ]

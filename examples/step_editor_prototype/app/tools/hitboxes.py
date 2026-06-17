@@ -73,6 +73,10 @@ class HitboxTool(ToolMode):
         variant_row.addWidget(QLabel("Variant"))
         self.variant_combo = QComboBox()
         self.variant_combo.addItems(VARIANTS)
+        # Default to convex hull: once pins are separated into their own shells,
+        # Auto ALL wraps each whole shell in a tight hull (the right hitbox for
+        # arbitrary pin shapes, incl. buried/curved connector contacts).
+        self.variant_combo.setCurrentText("convex hull")
         variant_row.addWidget(self.variant_combo, 1)
         layout.addLayout(variant_row)
 

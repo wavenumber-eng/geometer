@@ -14,6 +14,7 @@ durable record belongs here, in ADRs, and in requirements.
 - [WASM interfaces](wasm.md)
 - [CLI interfaces](cli.md)
 - [Dependency cache](dependency-cache.md)
+- [STEP topology annotation research](step-topology-annotation-research.md)
 
 ## Format Docs
 

@@ -4,6 +4,20 @@ All notable changes to geometer are documented here.
 
 ## [Unreleased]
 
+## [2026.6.23] - 2026-06-23
+
+### Fixed
+
+- Built Linux wheels on Ubuntu 22.04 so the bundled native executable remains
+  compatible with GLIBC 2.35 systems such as common WSL Ubuntu 22.04 installs.
+- Scoped native OCCT dependency caches by Linux glibc baseline so Ubuntu 24.04
+  binary artifacts cannot be restored into Ubuntu 22.04 release jobs.
+
+### Changed
+
+- Updated the release identity to `v2026-06-23`,
+  `wn-geometer==2026.6.23`, and C ABI generation `20260623`.
+
 ## [2026.6.10] - 2026-06-10
 
 ### Added

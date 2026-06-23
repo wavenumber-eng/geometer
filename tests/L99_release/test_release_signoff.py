@@ -101,3 +101,14 @@ def test_lizard_complexity_passes() -> None:
 
 def test_code_hygiene_passes() -> None:
     run_checked([sys.executable, "scripts/check_code_hygiene.py"])
+
+
+def test_linux_wheel_builds_use_glibc_235_baseline() -> None:
+    for workflow_name in ("ci.yml", "release.yml", "occt-deps.yml"):
+        workflow = (ROOT / ".github" / "workflows" / workflow_name).read_text(encoding="utf-8")
+        assert "os: ubuntu-22.04\n            platform: linux-x64" in workflow
+        assert "os: ubuntu-22.04-arm\n            platform: linux-arm64" in workflow
+        assert "occt-${{ matrix.os }}-${{ runner.arch }}" in workflow
+
+    build_occt = (ROOT / "scripts" / "build_occt.py").read_text(encoding="utf-8")
+    assert '"linux_glibc_baseline": resolved_linux_glibc' in build_occt

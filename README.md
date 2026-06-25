@@ -32,9 +32,10 @@ uv run python scripts/validate_python_package.py
 Native artifacts are copied to `dist/native/<platform>/`. Root-level
 `dist/geometer*` artifacts are intentionally not produced.
 
-OCCT is generated dependency state under `.deps/`. When R2 cache credentials
-are configured, build scripts can restore verified prebuilt OCCT archives before
-falling back to source builds.
+OCCT is generated dependency state under `.deps/`. Build scripts first try
+verified public prebuilt OCCT archives from
+`https://artifacts.wavenumber.net` before falling back to source builds. R2
+credentials are only needed for producer uploads or private fallback testing.
 
 Build WASM artifacts:
 

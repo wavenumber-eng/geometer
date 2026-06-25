@@ -21,7 +21,7 @@ Options considered:
 `scripts/build_wasm.py` manages the full WASM toolchain:
 
 1. Clones emsdk into `.deps/emsdk/` and installs a pinned Emscripten version.
-2. Restores prebuilt OCCT WASM static libraries from the optional R2 dependency
+2. Restores prebuilt OCCT WASM static libraries from the public dependency
    cache, or cross-compiles OCCT to `.deps/occt-wasm-install/`.
 3. Cross-compiles Geometer against the WASM OCCT build.
 4. Copies the Node CLI and browser C ABI WASM outputs to grouped

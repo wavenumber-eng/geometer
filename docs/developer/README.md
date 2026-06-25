@@ -69,11 +69,11 @@ OCCT as generated dependency state and finds it with
 `find_package(OpenCASCADE)`.
 
 Geometer can optionally restore prebuilt OCCT install trees from the Wavenumber
-R2 dependency cache. This is a speed optimization only: restored archives are
+public artifact cache. This is a speed optimization only: restored archives are
 validated by manifest and SHA-256, still land under `.deps/`, and source builds
-remain the fallback when the cache is not configured.
+remain the fallback when the cache misses.
 
-For read-only developer machine setup, see
+For dependency cache setup, see
 [r2-dependency-cache.md](r2-dependency-cache.md).
 
 Pinned dependency versions live in scripts:
@@ -186,28 +186,29 @@ If OCCT is missing, top-level CMake automatically invokes:
 python scripts\build_occt.py
 ```
 
-That script uses vendored RapidJSON, checks the optional R2 binary dependency
-cache, and otherwise clones OCCT, builds OCCT as static libraries, and installs
-it into `.deps/native/<platform>/occt-install/`. The first uncached source build
-is slow. Later configures reuse that platform-specific `.deps/` state and should
-be fast.
+That script uses vendored RapidJSON, checks the public binary dependency cache,
+and otherwise clones OCCT, builds OCCT as static libraries, and installs it into
+`.deps/native/<platform>/occt-install/`. The first uncached source build is
+slow. Later configures reuse that platform-specific `.deps/` state and should be
+fast.
 
-To enable R2 cache restore locally, copy `.env.example` to `.env` and set:
+Normal local and CI builds use public HTTPS reads from:
 
 ```env
-R2_BUCKET=wn-build-deps
-R2_ENDPOINT_URL=https://<account_id>.r2.cloudflarestorage.com
-R2_ACCESS_KEY_ID=...
-R2_SECRET_ACCESS_KEY=...
-AWS_DEFAULT_REGION=auto
 GEOMETER_OCCT_BINARY=auto
+GEOMETER_OCCT_CACHE_PUBLIC_BASE_URL=https://artifacts.wavenumber.net
 ```
 
 `GEOMETER_OCCT_BINARY` accepts:
 
-- `auto` - use R2 when configured and fall back to source.
-- `off` - ignore R2 and build from source.
-- `only` - require an R2 cache hit and fail otherwise.
+- `auto` - use public cache, then any configured signed R2 fallback, then
+  source.
+- `off` - ignore binary caches and build from source.
+- `only` - require a binary cache hit and fail otherwise.
+
+R2 credentials are only needed for producer uploads or explicit private fallback
+testing. Copy `.env.example` to `.env` for those cases and fill the `R2_*`
+values locally.
 
 Root `.env` is for local development only and must not be present when running
 release signoff or `wn-dev-std check`. Move it to an ignored local location, or
@@ -365,7 +366,10 @@ python scripts\build_wasm.py --print-occt-binary-cache-key
 ```
 
 The trusted GitHub workflow `.github/workflows/occt-deps.yml` publishes OCCT
-archives to R2. Normal CI and release workflows only consume the cache.
+archives to R2. Normal CI and release workflows consume the public artifact
+cache and do not need R2 secrets. When the printed keys are missing from
+`https://artifacts.wavenumber.net/deps/v1/geometer/occt/`, run the `OCCT
+Dependency Cache` workflow with `target=all` to publish the current generation.
 
 The public Python package uses the executable backend only. Keep ctypes/native
 loading experiments out of the normal wheel and application path unless a future

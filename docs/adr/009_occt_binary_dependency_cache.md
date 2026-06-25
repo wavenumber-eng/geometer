@@ -19,20 +19,22 @@ We need a more predictable second-tier cache for CI and developer machines.
 ## Decision
 
 Geometer may restore OCCT install trees from immutable binary archives stored in
-the Wavenumber Cloudflare R2 dependency cache. The archives are treated as
-generated dependency state, not as source and not as committed repository
-artifacts.
+the Wavenumber Cloudflare R2 dependency cache and served through
+`https://artifacts.wavenumber.net`. The archives are treated as generated
+dependency state, not as source and not as committed repository artifacts.
 
-The R2 bucket is a Wavenumber-wide dependency cache. OCCT is the first Geometer
-dependency using it, but object layout must allow multiple projects,
-dependencies, versions, target kinds, and platforms.
+The R2 bucket is a Wavenumber-wide dependency cache. The public artifact
+hostname is the default read path for normal CI and developer machines. OCCT is
+the first Geometer dependency using it, but object layout must allow multiple
+projects, dependencies, versions, target kinds, and platforms.
 
 The cache consumer path is:
 
 1. Reuse an existing local `.deps/` install tree.
 2. Restore GitHub Actions cache when running in CI.
-3. Download a verified R2 OCCT binary archive when credentials are configured.
-4. Build OCCT from source as the fallback unless binary-only mode is requested.
+3. Download a verified public OCCT binary archive from `artifacts.wavenumber.net`.
+4. Optionally try a signed R2 fallback when credentials are configured.
+5. Build OCCT from source as the fallback unless binary-only mode is requested.
 
 The producer path is a separate trusted workflow:
 
@@ -43,11 +45,11 @@ The producer path is a separate trusted workflow:
 - writes `manifest.json` and `occt-install.zip.sha256`
 - uploads immutable objects to R2
 
-Normal CI and release workflows consume the cache but do not publish dependency
-artifacts.
+Normal CI and release workflows consume the public cache but do not receive R2
+credentials and do not publish dependency artifacts.
 
-Developer machines should use read-only R2 credentials. Upload-capable
-credentials are reserved for trusted producer workflows.
+Developer machines do not need R2 credentials for normal cache restore.
+Upload-capable credentials are reserved for trusted producer workflows.
 
 ## Cache Layout
 
@@ -91,20 +93,27 @@ existing dependency silently.
 
 ## Configuration
 
-Local and CI consumers use these environment variables:
+Local and CI consumers use these public-read environment variables:
+
+- `GEOMETER_OCCT_CACHE_PUBLIC_BASE_URL`, default
+  `https://artifacts.wavenumber.net`
+- `GEOMETER_OCCT_PUBLIC_CACHE=off` or `GEOMETER_OCCT_CACHE_PUBLIC=off` to
+  disable public cache reads
+- `GEOMETER_OCCT_CACHE_PREFIX`, default `deps/v1/geometer/occt`
+
+Signed R2 fallback and producer uploads use these environment variables:
 
 - `R2_BUCKET` or `GEOMETER_OCCT_CACHE_BUCKET`
 - `R2_ENDPOINT_URL` or `GEOMETER_OCCT_CACHE_ENDPOINT_URL`
 - `R2_ACCESS_KEY_ID` or `GEOMETER_OCCT_CACHE_ACCESS_KEY_ID`
 - `R2_SECRET_ACCESS_KEY` or `GEOMETER_OCCT_CACHE_SECRET_ACCESS_KEY`
 - `AWS_DEFAULT_REGION` or `GEOMETER_OCCT_CACHE_REGION`, default `auto`
-- `GEOMETER_OCCT_CACHE_PREFIX`, default `deps/v1/geometer/occt`
 
 Cache mode is controlled with `GEOMETER_OCCT_BINARY`:
 
-- `auto`: try R2 when configured and fall back to source
-- `off`: ignore R2 and build from source
-- `only`: require an R2 hit
+- `auto`: try public cache, then signed R2 when configured, then source
+- `off`: ignore binary caches and build from source
+- `only`: require a binary cache hit
 
 ## Consequences
 

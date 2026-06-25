@@ -21,11 +21,14 @@ SCHEMA = "wavenumber.dependency_cache_manifest.a1"
 LEGACY_SCHEMA = "geometry.occt_binary_cache_manifest.a0"
 DEFAULT_PREFIX = "deps/v1/geometer/occt"
 LEGACY_DEFAULT_PREFIX = "geometer/occt"
+DEFAULT_PUBLIC_BASE_URL = "https://artifacts.wavenumber.net"
 DEFAULT_REGION = "auto"
 ARCHIVE_NAME = "occt-install.zip"
 MANIFEST_NAME = "manifest.json"
 SHA256_NAME = "occt-install.zip.sha256"
 VALID_MODES = {"auto", "off", "only"}
+PUBLIC_CACHE_DISABLE_VALUES = {"0", "false", "no", "off"}
+DOWNLOAD_USER_AGENT = "wn-geometer-cache/1.0"
 
 
 class CacheReadError(RuntimeError):
@@ -39,6 +42,12 @@ class CacheConfig:
     access_key_id: str
     secret_access_key: str
     region: str
+    prefix: str
+
+
+@dataclasses.dataclass(frozen=True)
+class PublicCacheConfig:
+    base_url: str
     prefix: str
 
 
@@ -116,6 +125,23 @@ def config_from_env() -> CacheConfig | None:
     )
 
 
+def public_config_from_env() -> PublicCacheConfig | None:
+    enabled = os.environ.get("GEOMETER_OCCT_PUBLIC_CACHE") or os.environ.get("GEOMETER_OCCT_CACHE_PUBLIC")
+    if enabled and enabled.strip().lower() in PUBLIC_CACHE_DISABLE_VALUES:
+        return None
+
+    base_url = (
+        _env_value(
+            "GEOMETER_OCCT_CACHE_PUBLIC_BASE_URL",
+            "GEOMETER_OCCT_PUBLIC_BASE_URL",
+            "WN_ARTIFACTS_BASE_URL",
+        )
+        or DEFAULT_PUBLIC_BASE_URL
+    )
+    prefix = (_env_value("GEOMETER_OCCT_CACHE_PREFIX") or DEFAULT_PREFIX).strip("/")
+    return PublicCacheConfig(base_url=base_url.rstrip("/"), prefix=prefix)
+
+
 def recipe_hash(paths: list[Path], extra: dict[str, str]) -> str:
     digest = hashlib.sha256()
     digest.update(b"geometer-occt-cache-recipe-a0\n")
@@ -173,8 +199,15 @@ def restore_prebuilt_install(profile: OcctCacheProfile, install_dir: Path, *, mo
         print("OCCT binary cache disabled; building from source.")
         return False
 
-    config = config_from_env()
-    if config is None:
+    configs: list[PublicCacheConfig | CacheConfig] = []
+    public_config = public_config_from_env()
+    if public_config is not None:
+        configs.append(public_config)
+    r2_config = config_from_env()
+    if r2_config is not None:
+        configs.append(r2_config)
+
+    if not configs:
         message = "OCCT binary cache is not configured; building from source."
         if selected_mode == "only":
             raise RuntimeError(message)
@@ -182,32 +215,45 @@ def restore_prebuilt_install(profile: OcctCacheProfile, install_dir: Path, *, mo
         return False
 
     prefix = ""
+    selected_config: PublicCacheConfig | CacheConfig | None = None
     manifest_bytes = None
-    for candidate_prefix in object_prefix_candidates(config, profile):
-        print(f"Checking OCCT binary cache: s3://{config.bucket}/{candidate_prefix}/{MANIFEST_NAME}")
-        try:
-            manifest_bytes = _r2_get_object(config, f"{candidate_prefix}/{MANIFEST_NAME}")
-        except CacheReadError as exc:
-            message = f"OCCT binary cache read failed for {profile.cache_key}: {exc}"
-            if selected_mode == "only":
-                raise RuntimeError(message) from exc
-            print(f"{message}; building from source.")
-            return False
+    read_errors: list[str] = []
+    for config in configs:
+        for candidate_prefix in object_prefix_candidates(config, profile):
+            manifest_key = f"{candidate_prefix}/{MANIFEST_NAME}"
+            print(f"Checking OCCT binary cache: {_cache_location(config, manifest_key)}")
+            try:
+                candidate_manifest = _get_cache_object(config, manifest_key)
+            except CacheReadError as exc:
+                read_errors.append(f"{_cache_kind(config)}: {exc}")
+                break
+            if candidate_manifest is not None:
+                prefix = candidate_prefix
+                selected_config = config
+                manifest_bytes = candidate_manifest
+                break
         if manifest_bytes is not None:
-            prefix = candidate_prefix
             break
+
     if manifest_bytes is None:
         message = f"OCCT binary cache miss for {profile.cache_key}"
+        if read_errors:
+            message = f"OCCT binary cache read failed for {profile.cache_key}: {'; '.join(read_errors)}"
         if selected_mode == "only":
             raise RuntimeError(message)
         print(f"{message}; building from source.")
         return False
 
+    assert selected_config is not None
     manifest = json.loads(manifest_bytes.decode("utf-8"))
     validate_manifest(manifest, profile)
-    archive_bytes = _r2_get_object(config, f"{prefix}/{ARCHIVE_NAME}")
+    archive_key = f"{prefix}/{ARCHIVE_NAME}"
+    archive_bytes = _get_cache_object(selected_config, archive_key)
     if archive_bytes is None:
-        raise RuntimeError(f"OCCT binary cache manifest exists but archive is missing: {prefix}/{ARCHIVE_NAME}")
+        raise RuntimeError(
+            "OCCT binary cache manifest exists but archive is missing: "
+            f"{_cache_location(selected_config, archive_key)}"
+        )
 
     archive_sha256 = hashlib.sha256(archive_bytes).hexdigest()
     if archive_sha256 != manifest["archive"]["sha256"]:
@@ -351,11 +397,11 @@ def validate_manifest(manifest: dict[str, Any], profile: OcctCacheProfile) -> No
             raise RuntimeError("OCCT binary cache manifest dependency version mismatch.")
 
 
-def object_prefix(config: CacheConfig, profile: OcctCacheProfile) -> str:
+def object_prefix(config: CacheConfig | PublicCacheConfig, profile: OcctCacheProfile) -> str:
     return posixpath.join(config.prefix, profile.occt_tag, profile.kind, profile.platform_tag, profile.cache_key)
 
 
-def object_prefix_candidates(config: CacheConfig, profile: OcctCacheProfile) -> list[str]:
+def object_prefix_candidates(config: CacheConfig | PublicCacheConfig, profile: OcctCacheProfile) -> list[str]:
     candidates = [
         object_prefix(config, profile),
         posixpath.join(config.prefix, profile.kind, profile.platform_tag, profile.cache_key),
@@ -400,6 +446,41 @@ def _slug(value: str) -> str:
         else:
             slug.append("-")
     return "".join(slug).strip("-") or "none"
+
+
+def _cache_kind(config: CacheConfig | PublicCacheConfig) -> str:
+    return "public" if isinstance(config, PublicCacheConfig) else "r2"
+
+
+def _cache_location(config: CacheConfig | PublicCacheConfig, key: str) -> str:
+    if isinstance(config, PublicCacheConfig):
+        return _public_object_url(config, key)
+    return f"s3://{config.bucket}/{key}"
+
+
+def _get_cache_object(config: CacheConfig | PublicCacheConfig, key: str) -> bytes | None:
+    if isinstance(config, PublicCacheConfig):
+        return _public_get_object(config, key)
+    return _r2_get_object(config, key)
+
+
+def _public_object_url(config: PublicCacheConfig, key: str) -> str:
+    quoted_key = urllib.parse.quote(key.lstrip("/"), safe="/-_.~")
+    return f"{config.base_url}/{quoted_key}"
+
+
+def _public_get_object(config: PublicCacheConfig, key: str) -> bytes | None:
+    url = _public_object_url(config, key)
+    request = urllib.request.Request(url, headers={"User-Agent": DOWNLOAD_USER_AGENT})
+    try:
+        with urllib.request.urlopen(request, timeout=120) as response:
+            return response.read()
+    except urllib.error.HTTPError as exc:
+        if exc.code == 404:
+            return None
+        raise CacheReadError(f"GET {url} returned HTTP {exc.code}") from exc
+    except urllib.error.URLError as exc:
+        raise CacheReadError(f"GET {url} failed: {exc.reason}") from exc
 
 
 def _r2_get_object(config: CacheConfig, key: str) -> bytes | None:

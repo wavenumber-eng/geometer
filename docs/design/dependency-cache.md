@@ -1,15 +1,16 @@
 # Dependency Cache
 
-Geometer may restore generated dependency install trees from the Wavenumber R2
-dependency cache. The cache is not a source dependency and is not a release
+Geometer may restore generated dependency install trees from the Wavenumber
+artifact cache. The cache is not a source dependency and is not a release
 artifact. It is a verified shortcut for rebuilding large dependencies such as
 OCCT.
 
 ## Scope
 
-The R2 bucket is intended to serve all Wavenumber projects. Project separation is
-handled by object prefixes. Separate buckets are reserved for cases where access
-policy requires hard isolation.
+The public artifact hostname is `https://artifacts.wavenumber.net`. It is backed
+by the Wavenumber R2 bucket, which is intended to serve all Wavenumber projects.
+Project separation is handled by object prefixes. Separate buckets are reserved
+for cases where access policy requires hard isolation.
 
 ## Object Layout
 
@@ -73,9 +74,10 @@ only for existing OCCT cache compatibility.
 
 ## Access
 
-Developer machines should use read-only credentials. Trusted producer workflows
-may use upload-capable credentials. Consumers must validate `manifest.json` and
-archive SHA-256 before extracting an archive into `.deps/`.
+Developer machines and normal CI workflows use public HTTPS reads. Trusted
+producer workflows may use upload-capable R2 credentials. Consumers must
+validate `manifest.json` and archive SHA-256 before extracting an archive into
+`.deps/`.
 
 ## Local State
 

@@ -82,12 +82,6 @@ jobs:
           restore-keys: |
             occt-${{ matrix.os }}-${{ runner.arch }}-${{ matrix.compiler }}-${{ steps.dependency_versions.outputs.occt_tag }}-
       - name: Build and test native code
-        env:
-          R2_BUCKET: ${{ vars.R2_BUCKET || secrets.R2_BUCKET }}
-          R2_ENDPOINT_URL: ${{ secrets.R2_ENDPOINT_URL || vars.R2_ENDPOINT_URL }}
-          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: auto
         run: uv run --group dev python scripts/validate_native.py
       - name: Test Python package
         run: uv run --group dev python scripts/validate_python_package.py

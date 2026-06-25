@@ -112,3 +112,18 @@ def test_linux_wheel_builds_use_glibc_235_baseline() -> None:
 
     build_occt = (ROOT / "scripts" / "build_occt.py").read_text(encoding="utf-8")
     assert '"linux_glibc_baseline": resolved_linux_glibc' in build_occt
+
+
+def test_normal_builds_use_public_dependency_cache_without_r2_secrets() -> None:
+    cache_script = (ROOT / "scripts" / "occt_binary_cache.py").read_text(encoding="utf-8")
+    assert 'DEFAULT_PUBLIC_BASE_URL = "https://artifacts.wavenumber.net"' in cache_script
+
+    consumer_workflows = ("ci.yml", "release.yml", "wasm.yml", "macos-wheel.yml")
+    for workflow_name in consumer_workflows:
+        workflow = (ROOT / ".github" / "workflows" / workflow_name).read_text(encoding="utf-8")
+        assert "R2_ACCESS_KEY_ID" not in workflow
+        assert "R2_SECRET_ACCESS_KEY" not in workflow
+
+    producer_workflow = (ROOT / ".github" / "workflows" / "occt-deps.yml").read_text(encoding="utf-8")
+    assert "R2_ACCESS_KEY_ID" in producer_workflow
+    assert "R2_SECRET_ACCESS_KEY" in producer_workflow

@@ -85,6 +85,10 @@ R2_SECRET_ACCESS_KEY=<secret-access-key>
 AWS_DEFAULT_REGION=auto
 ```
 
+Use the account-level R2 S3 endpoint for `R2_ENDPOINT_URL`; do not include the
+bucket name in the URL path. The build scripts defensively strip a trailing
+`/wn-build-deps` segment, but producer secrets should still be kept canonical.
+
 Root `.env` is a local convenience only. Move or remove it before release
 signoff because the Wavenumber standards check requires no root `.env` file to
 be present.
@@ -150,3 +154,6 @@ python scripts/build_wasm.py --occt-only
   testing cache access.
 - If testing signed R2 fallback, confirm `GEOMETER_OCCT_PUBLIC_CACHE=off` before
   assuming the signed credentials are being exercised.
+- If producer uploads appear under
+  `https://artifacts.wavenumber.net/wn-build-deps/deps/...`, remove the bucket
+  path from the configured R2 endpoint and rerun the producer workflow.

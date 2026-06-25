@@ -117,7 +117,7 @@ def config_from_env() -> CacheConfig | None:
     prefix = (_env_value("GEOMETER_OCCT_CACHE_PREFIX") or DEFAULT_PREFIX).strip("/")
     return CacheConfig(
         bucket=bucket,
-        endpoint_url=endpoint_url.rstrip("/"),
+        endpoint_url=_normalize_r2_endpoint_url(endpoint_url, bucket),
         access_key_id=access_key_id,
         secret_access_key=secret_access_key,
         region=region,
@@ -481,6 +481,15 @@ def _public_get_object(config: PublicCacheConfig, key: str) -> bytes | None:
         raise CacheReadError(f"GET {url} returned HTTP {exc.code}") from exc
     except urllib.error.URLError as exc:
         raise CacheReadError(f"GET {url} failed: {exc.reason}") from exc
+
+
+def _normalize_r2_endpoint_url(endpoint_url: str, bucket: str) -> str:
+    parsed = urllib.parse.urlparse(endpoint_url.rstrip("/"))
+    path_parts = [part for part in parsed.path.split("/") if part]
+    if path_parts and path_parts[-1] == bucket:
+        path_parts = path_parts[:-1]
+    normalized_path = "/" + "/".join(path_parts) if path_parts else ""
+    return urllib.parse.urlunparse((parsed.scheme, parsed.netloc, normalized_path, "", "", ""))
 
 
 def _r2_get_object(config: CacheConfig, key: str) -> bytes | None:

@@ -109,6 +109,9 @@ Signed R2 fallback and producer uploads use these environment variables:
 - `R2_SECRET_ACCESS_KEY` or `GEOMETER_OCCT_CACHE_SECRET_ACCESS_KEY`
 - `AWS_DEFAULT_REGION` or `GEOMETER_OCCT_CACHE_REGION`, default `auto`
 
+The R2 endpoint should be the account-level S3 API endpoint. It should not
+include the bucket name in the URL path.
+
 Cache mode is controlled with `GEOMETER_OCCT_BINARY`:
 
 - `auto`: try public cache, then signed R2 when configured, then source

@@ -85,6 +85,19 @@ def test_public_config_can_be_disabled(monkeypatch: MonkeyPatch) -> None:
     assert occt_binary_cache.public_config_from_env() is None
 
 
+def test_signed_r2_config_strips_bucket_path_from_endpoint(monkeypatch: MonkeyPatch) -> None:
+    clear_cache_env(monkeypatch)
+    monkeypatch.setenv("R2_BUCKET", "wn-build-deps")
+    monkeypatch.setenv("R2_ENDPOINT_URL", "https://example.r2.cloudflarestorage.com/wn-build-deps/")
+    monkeypatch.setenv("R2_ACCESS_KEY_ID", "key")
+    monkeypatch.setenv("R2_SECRET_ACCESS_KEY", "secret")
+
+    config = occt_binary_cache.config_from_env()
+
+    assert config is not None
+    assert config.endpoint_url == "https://example.r2.cloudflarestorage.com"
+
+
 def test_package_extract_and_manifest_round_trip(tmp_path: Path) -> None:
     install_dir = tmp_path / "occt-install"
     make_install_tree(install_dir)

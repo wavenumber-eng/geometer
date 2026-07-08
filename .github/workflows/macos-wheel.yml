@@ -32,12 +32,6 @@ jobs:
           restore-keys: |
             occt-${{ runner.os }}-${{ runner.arch }}-apple-clang-${{ steps.dependency_versions.outputs.occt_tag }}-
       - name: Validate native build
-        env:
-          R2_BUCKET: ${{ vars.R2_BUCKET || secrets.R2_BUCKET }}
-          R2_ENDPOINT_URL: ${{ secrets.R2_ENDPOINT_URL || vars.R2_ENDPOINT_URL }}
-          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: auto
         run: uv run python scripts/validate_native.py
       - name: Validate Python package
         run: uv run python scripts/validate_python_package.py --skip-native-validation

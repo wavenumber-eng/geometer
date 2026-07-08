@@ -69,11 +69,11 @@ OCCT as generated dependency state and finds it with
 `find_package(OpenCASCADE)`.
 
 Geometer can optionally restore prebuilt OCCT install trees from the Wavenumber
-R2 dependency cache. This is a speed optimization only: restored archives are
+public artifact cache. This is a speed optimization only: restored archives are
 validated by manifest and SHA-256, still land under `.deps/`, and source builds
-remain the fallback when the cache is not configured.
+remain the fallback when the cache misses.
 
-For read-only developer machine setup, see
+For dependency cache setup, see
 [r2-dependency-cache.md](r2-dependency-cache.md).
 
 Pinned dependency versions live in scripts:
@@ -186,28 +186,29 @@ If OCCT is missing, top-level CMake automatically invokes:
 python scripts\build_occt.py
 ```
 
-That script uses vendored RapidJSON, checks the optional R2 binary dependency
-cache, and otherwise clones OCCT, builds OCCT as static libraries, and installs
-it into `.deps/native/<platform>/occt-install/`. The first uncached source build
-is slow. Later configures reuse that platform-specific `.deps/` state and should
-be fast.
+That script uses vendored RapidJSON, checks the public binary dependency cache,
+and otherwise clones OCCT, builds OCCT as static libraries, and installs it into
+`.deps/native/<platform>/occt-install/`. The first uncached source build is
+slow. Later configures reuse that platform-specific `.deps/` state and should be
+fast.
 
-To enable R2 cache restore locally, copy `.env.example` to `.env` and set:
+Normal local and CI builds use public HTTPS reads from:
 
 ```env
-R2_BUCKET=wn-build-deps
-R2_ENDPOINT_URL=https://<account_id>.r2.cloudflarestorage.com
-R2_ACCESS_KEY_ID=...
-R2_SECRET_ACCESS_KEY=...
-AWS_DEFAULT_REGION=auto
 GEOMETER_OCCT_BINARY=auto
+GEOMETER_OCCT_CACHE_PUBLIC_BASE_URL=https://artifacts.wavenumber.net
 ```
 
 `GEOMETER_OCCT_BINARY` accepts:
 
-- `auto` - use R2 when configured and fall back to source.
-- `off` - ignore R2 and build from source.
-- `only` - require an R2 cache hit and fail otherwise.
+- `auto` - use public cache, then any configured signed R2 fallback, then
+  source.
+- `off` - ignore binary caches and build from source.
+- `only` - require a binary cache hit and fail otherwise.
+
+R2 credentials are only needed for producer uploads or explicit private fallback
+testing. Copy `.env.example` to `.env` for those cases and fill the `R2_*`
+values locally.
 
 Root `.env` is for local development only and must not be present when running
 release signoff or `wn-dev-std check`. Move it to an ignored local location, or
@@ -289,7 +290,7 @@ Before uploading, verify both the filename and the bundled executable:
 
 ```bash
 otool -l dist/native/macos-arm64/geometer | rg -A5 'LC_BUILD_VERSION|LC_VERSION_MIN_MACOSX'
-python -m twine check out/wheelhouse/macos-arm64/wn_geometer-2026.6.10-py3-none-macosx_11_0_arm64.whl
+python -m twine check out/wheelhouse/macos-arm64/wn_geometer-2026.6.23-py3-none-macosx_11_0_arm64.whl
 ```
 
 The Mach-O `minos` value must not be newer than the wheel platform tag. Do not
@@ -304,36 +305,38 @@ supported floor (`macosx_11_0_arm64`) and test that wheel on the current
 the wheel install or native smoke test fails on the new hosted runner, or if a
 new SDK/toolchain raises the Mach-O `minos` above the published wheel tag.
 
-For WSL/Linux release wheels, repair the built `linux_x86_64` wheel before PyPI
-upload:
+For WSL/Linux release wheels, build on the Ubuntu 22.04 release runners. The
+expected Linux x64 wheel tag is `manylinux_2_35_x86_64`; the Linux ARM64 tag is
+`manylinux_2_35_aarch64`. Do not retag a wheel to a lower glibc baseline
+without rebuilding the bundled native executable and OCCT dependency tree on
+that baseline.
 
 ```bash
 uvx --from auditwheel --with patchelf auditwheel show out/wheelhouse/linux-x64/wn_geometer-*.whl
-uvx --from auditwheel --with patchelf auditwheel repair --plat manylinux_2_39_x86_64 --wheel-dir out/wheelhouse/linux-x64/repaired out/wheelhouse/linux-x64/wn_geometer-2026.6.10-py3-none-linux_x86_64.whl
 ```
 
-The exact manylinux tag is determined by `auditwheel show`; rebuild in an older
-manylinux image if a wider glibc compatibility tag is required.
+`auditwheel show` should not report a newer glibc floor than the wheel filename
+tag.
 
 PyPI upload commands:
 
 ```powershell
 # Preflight metadata.
-python -m twine check out\wheelhouse\windows-x64\wn_geometer-2026.6.10-py3-none-win_amd64.whl out\wheelhouse\linux-x64\repaired\wn_geometer-2026.6.10-py3-none-manylinux_2_39_x86_64.whl out\wheelhouse\macos-arm64\wn_geometer-2026.6.10-py3-none-macosx_11_0_arm64.whl
+python -m twine check out\wheelhouse\windows-x64\wn_geometer-2026.6.23-py3-none-win_amd64.whl out\wheelhouse\linux-x64\wn_geometer-2026.6.23-py3-none-manylinux_2_35_x86_64.whl out\wheelhouse\macos-arm64\wn_geometer-2026.6.23-py3-none-macosx_11_0_arm64.whl
 
 # Optional dry-run project on TestPyPI.
-python -m twine upload --repository testpypi out\wheelhouse\windows-x64\wn_geometer-2026.6.10-py3-none-win_amd64.whl out\wheelhouse\linux-x64\repaired\wn_geometer-2026.6.10-py3-none-manylinux_2_39_x86_64.whl out\wheelhouse\macos-arm64\wn_geometer-2026.6.10-py3-none-macosx_11_0_arm64.whl
+python -m twine upload --repository testpypi out\wheelhouse\windows-x64\wn_geometer-2026.6.23-py3-none-win_amd64.whl out\wheelhouse\linux-x64\wn_geometer-2026.6.23-py3-none-manylinux_2_35_x86_64.whl out\wheelhouse\macos-arm64\wn_geometer-2026.6.23-py3-none-macosx_11_0_arm64.whl
 
 # Public PyPI release.
-python -m twine upload --repository pypi out\wheelhouse\windows-x64\wn_geometer-2026.6.10-py3-none-win_amd64.whl out\wheelhouse\linux-x64\repaired\wn_geometer-2026.6.10-py3-none-manylinux_2_39_x86_64.whl out\wheelhouse\macos-arm64\wn_geometer-2026.6.10-py3-none-macosx_11_0_arm64.whl
+python -m twine upload --repository pypi out\wheelhouse\windows-x64\wn_geometer-2026.6.23-py3-none-win_amd64.whl out\wheelhouse\linux-x64\wn_geometer-2026.6.23-py3-none-manylinux_2_35_x86_64.whl out\wheelhouse\macos-arm64\wn_geometer-2026.6.23-py3-none-macosx_11_0_arm64.whl
 ```
 
 For token-based upload, set `TWINE_USERNAME=__token__` and put the PyPI or
 TestPyPI API token in `TWINE_PASSWORD`, or use an equivalent `.pypirc`/keyring
 setup. Do not write upload tokens into the repository.
 
-The current release target is `wn-geometer==2026.6.10`; callers install
-`wn-geometer==2026.6.10` and import `geometer`.
+The current release target is `wn-geometer==2026.6.23`; callers install
+`wn-geometer==2026.6.23` and import `geometer`.
 
 For local token setup, copy `.env.example` to `.env`, fill the token values,
 and keep `.env` out of version control.
@@ -363,7 +366,10 @@ python scripts\build_wasm.py --print-occt-binary-cache-key
 ```
 
 The trusted GitHub workflow `.github/workflows/occt-deps.yml` publishes OCCT
-archives to R2. Normal CI and release workflows only consume the cache.
+archives to R2. Normal CI and release workflows consume the public artifact
+cache and do not need R2 secrets. When the printed keys are missing from
+`https://artifacts.wavenumber.net/deps/v1/geometer/occt/`, run the `OCCT
+Dependency Cache` workflow with `target=all` to publish the current generation.
 
 The public Python package uses the executable backend only. Keep ctypes/native
 loading experiments out of the normal wheel and application path unless a future
@@ -409,13 +415,13 @@ The full browser target also exports `geometer_version_string` and
 `geometer_abi_version`. Downstream browser consumers should check those before
 depending on a specific ABI. Earlier pre-date ABI integers tracked planar batch,
 diagnostic, and triangulation additions; current releases use the ADR 006
-date-based ABI generation, for example `20260610`.
+date-based ABI generation, for example `20260623`.
 
 ## Versioning
 
 Geometer follows [ADR 006](../geometer/adr/geometer-adr-006-date-based-versioning-policy.md).
-The current release identity is `v2026-06-10`; the CMake/PyPI package version
-is `2026.6.10`; the C ABI generation is `20260610`.
+The current release identity is `v2026-06-23`; the CMake/PyPI package version
+is `2026.6.23`; the C ABI generation is `20260623`.
 
 The root `CMakeLists.txt` declares `GEOMETER_RELEASE_DATE`,
 `GEOMETER_RELEASE_VERSION`, and `GEOMETER_ABI_VERSION`. The root

@@ -40,7 +40,7 @@ OCCT is restored or built as standalone generated dependency state via
 
 If OCCT is not found at configure time, CMake automatically invokes
 `build_occt.py`. That script may restore a verified binary dependency archive
-from the optional R2 cache before falling back to cloning, configuring,
+from the public artifact cache before falling back to cloning, configuring,
 building, and installing OCCT from source. This makes the first
 `cmake --preset default` self-bootstrapping with no separate manual step
 required.
@@ -55,7 +55,7 @@ configurations.
 
 ## Dependency Sources
 
-- **OCCT** (V8_0_0): restored from a verified binary cache when configured, or
+- **OCCT** (V8_0_0): restored from a verified binary cache when available, or
   cloned shallow from GitHub and built as static libraries.
 - **RapidJSON** (v1.1.0, header-only): vendored under
   `third_party/rapidjson`, required by OCCT's `RWGltf_CafWriter` for glTF/GLB

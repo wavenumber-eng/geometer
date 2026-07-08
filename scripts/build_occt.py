@@ -166,6 +166,7 @@ def occt_cache_profile(
     resolved_macos_target = None
     if platform_name.startswith("macos-"):
         resolved_macos_target = macos_deployment_target(macos_deployment_target_value)
+    resolved_linux_glibc = linux_glibc_baseline(platform_name)
     recipe = occt_binary_cache.recipe_hash(
         [
             Path(__file__),
@@ -181,6 +182,7 @@ def occt_cache_profile(
             "config": config,
             "library_type": library_type,
             "macos_deployment_target": resolved_macos_target or "",
+            "linux_glibc_baseline": resolved_linux_glibc,
             "rapidjson_patch": RAPIDJSON_PATCH_SENTINEL,
         },
     )
@@ -194,6 +196,16 @@ def occt_cache_profile(
         recipe_hash=recipe,
         macos_deployment_target=resolved_macos_target,
     )
+
+
+def linux_glibc_baseline(platform_name: str) -> str:
+    if not platform_name.startswith("linux-"):
+        return ""
+    libc_name, libc_version = platform.libc_ver()
+    if libc_name != "glibc" or not libc_version:
+        return f"{libc_name or 'unknown'}-{libc_version or 'unknown'}"
+    major, minor = libc_version.replace("_", ".").split(".")[:2]
+    return f"glibc-{major}.{minor}"
 
 
 def configure_occt(

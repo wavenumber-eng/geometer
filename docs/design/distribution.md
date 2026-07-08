@@ -33,6 +33,6 @@ Do not commit local generated build state:
 - `build/`
 - `build-wasm/`
 
-OCCT binary dependency archives may be stored in the Wavenumber R2 build
-dependency cache, but they remain generated dependency state. They are restored
+OCCT binary dependency archives may be stored in the Wavenumber R2-backed public
+artifact cache, but they remain generated dependency state. They are restored
 under `.deps/` and are not committed to `dist/`.

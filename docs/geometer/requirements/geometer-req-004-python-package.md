@@ -1,3 +1,12 @@
++++
+type = "requirement"
+id = "geometer-req-004"
+domain = "geometer"
+status = "draft"
+title = "REQ-004: Python Package"
+created = "2026-07-07"
++++
+
 # REQ-004: Python Package
 
 ## Summary

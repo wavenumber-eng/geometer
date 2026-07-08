@@ -1,0 +1,38 @@
+[domain_governance]
+# Every tracked file under these roots must be claimed by a file group.
+owned_roots = ["src", "python", "examples"]
+ignore = ["examples/step_editor_prototype/.venv/**"]
+
+[[domains]]
+id = "geometer"
+title = "Geometer Core"
+status = "active"
+purpose = "Native OCCT-based STEP/planar geometry engine: C++ core, CLI, C ABI, and the CMake/emsdk build surfaces."
+html = "docs/domains/geometer.html"
+
+[[domains]]
+id = "python"
+title = "Python Package"
+status = "active"
+purpose = "The wn-geometer Python package: ctypes bindings over the C ABI, model input APIs, and packaging."
+html = "docs/domains/python.html"
+
+[[domains]]
+id = "examples"
+title = "Examples and Prototypes"
+status = "active"
+purpose = "Example scripts and the WN3D STEP conditioning editor prototype built on the geometer engine."
+html = "docs/domains/examples.html"
+
+[[file_groups]]
+primary_domain = "geometer"
+paths = ["src/*"]
+
+[[file_groups]]
+primary_domain = "python"
+paths = ["python/*"]
+
+[[file_groups]]
+primary_domain = "examples"
+supporting_domains = ["python"]
+paths = ["examples/*"]

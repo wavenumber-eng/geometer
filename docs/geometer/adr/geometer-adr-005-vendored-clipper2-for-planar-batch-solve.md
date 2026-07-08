@@ -1,3 +1,12 @@
++++
+type = "adr"
+id = "geometer-adr-005"
+domain = "geometer"
+status = "accepted"
+title = "ADR 005: Vendored Clipper2 For Planar Batch Solve"
+created = "2026-07-07"
++++
+
 # ADR 005: Vendored Clipper2 For Planar Batch Solve
 
 ## Status

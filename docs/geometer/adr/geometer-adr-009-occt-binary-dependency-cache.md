@@ -1,3 +1,12 @@
++++
+type = "adr"
+id = "geometer-adr-009"
+domain = "geometer"
+status = "accepted"
+title = "ADR-009: OCCT Binary Dependency Cache In R2"
+created = "2026-07-07"
++++
+
 # ADR-009: OCCT Binary Dependency Cache In R2
 
 ## Status

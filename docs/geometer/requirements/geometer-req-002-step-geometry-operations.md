@@ -1,3 +1,12 @@
++++
+type = "requirement"
+id = "geometer-req-002"
+domain = "geometer"
+status = "draft"
+title = "REQ-002: STEP Geometry Operations"
+created = "2026-07-07"
++++
+
 # REQ-002: STEP Geometry Operations
 
 ## Summary

@@ -1,3 +1,12 @@
++++
+type = "requirement"
+id = "geometer-req-006"
+domain = "geometer"
+status = "draft"
+title = "REQ-006: Release Quality Gates"
+created = "2026-07-07"
++++
+
 # REQ-006: Release Quality Gates
 
 ## Summary

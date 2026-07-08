@@ -1,3 +1,12 @@
++++
+type = "requirement"
+id = "geometer-req-007"
+domain = "geometer"
+status = "draft"
+title = "REQ-007: Development Standards Baseline"
+created = "2026-07-07"
++++
+
 # REQ-007: Development Standards Baseline
 
 ## Summary

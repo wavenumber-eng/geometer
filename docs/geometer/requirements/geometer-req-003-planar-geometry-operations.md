@@ -1,3 +1,12 @@
++++
+type = "requirement"
+id = "geometer-req-003"
+domain = "geometer"
+status = "draft"
+title = "REQ-003: Planar Geometry Operations"
+created = "2026-07-07"
++++
+
 # REQ-003: Planar Geometry Operations
 
 ## Summary

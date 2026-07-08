@@ -1,3 +1,12 @@
++++
+type = "adr"
+id = "geometer-adr-007"
+domain = "geometer"
+status = "accepted"
+title = "ADR 007: Generic Model Input API Names"
+created = "2026-07-07"
++++
+
 # ADR 007: Generic Model Input API Names
 
 ## Status

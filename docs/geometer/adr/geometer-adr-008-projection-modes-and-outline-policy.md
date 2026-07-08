@@ -1,3 +1,12 @@
++++
+type = "adr"
+id = "geometer-adr-008"
+domain = "geometer"
+status = "accepted"
+title = "ADR 008: Projection Modes And Outline Policy"
+created = "2026-07-07"
++++
+
 # ADR 008: Projection Modes And Outline Policy
 
 ## Status

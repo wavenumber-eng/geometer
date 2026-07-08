@@ -1,3 +1,12 @@
++++
+type = "requirement"
+id = "geometer-req-001"
+domain = "geometer"
+status = "draft"
+title = "REQ-001: Native CLI And Library"
+created = "2026-07-07"
++++
+
 # REQ-001: Native CLI And Library
 
 ## Summary

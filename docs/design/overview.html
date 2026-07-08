@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Geometer design overview</title></head>
+<body data-doc-status="accepted">
+<h1>Geometer Design Overview</h1>
+<p>
+Geometer is a native OCCT-based geometry engine with a thin C ABI, a Python
+package (wn-geometer) built on that ABI, and WASM builds of the same core for
+browser use. Design detail lives in the Markdown documents in this folder:
+</p>
+<ul>
+  <li>step-geometry.md — STEP model loading, bounds, meshing, HLR projection</li>
+  <li>planar-geometry.md — planar boolean/offset solving (vendored Clipper2)</li>
+  <li>c-abi.md — the stable C ABI exposed by libgeometer</li>
+  <li>python-package.md — ctypes bindings and the public Python surface</li>
+  <li>wasm.md — emsdk builds and browser/node interfaces</li>
+  <li>cli.md — the geometer command-line tools</li>
+  <li>binary-formats.md and json-formats.md — interchange formats</li>
+  <li>dependency-cache.md and distribution.md — OCCT binary cache and dist policy</li>
+  <li>interface-policy.md — naming and compatibility policy for public surfaces</li>
+</ul>
+<p>
+Decisions with lasting consequences are recorded as ADRs under
+docs/geometer/adr; requirements live under docs/geometer/requirements.
+</p>
+</body>
+</html>

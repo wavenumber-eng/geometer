@@ -1,3 +1,12 @@
++++
+type = "adr"
+id = "geometer-adr-001"
+domain = "geometer"
+status = "accepted"
+title = "ADR-001: OCCT built as standalone project, auto-triggered by CMake"
+created = "2026-07-07"
++++
+
 # ADR-001: OCCT built as standalone project, auto-triggered by CMake
 
 ## Status

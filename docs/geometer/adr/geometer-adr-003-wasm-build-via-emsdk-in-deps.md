@@ -1,3 +1,12 @@
++++
+type = "adr"
+id = "geometer-adr-003"
+domain = "geometer"
+status = "accepted"
+title = "ADR-003: WASM build via emsdk managed in .deps"
+created = "2026-07-07"
++++
+
 # ADR-003: WASM build via emsdk managed in .deps
 
 ## Status

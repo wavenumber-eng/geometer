@@ -1,3 +1,12 @@
++++
+type = "requirement"
+id = "geometer-req-005"
+domain = "geometer"
+status = "draft"
+title = "REQ-005: WASM Browser Interfaces"
+created = "2026-07-07"
++++
+
 # REQ-005: WASM Browser Interfaces
 
 ## Summary

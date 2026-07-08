@@ -729,6 +729,8 @@ def _keep_meaningful_solids(solids, fallback):
     from OCP.BRep import BRep_Builder
     from OCP.TopoDS import TopoDS_Compound
 
+    if len(solids) == 1:
+        return solids[0]  # nothing to weigh against; skip the volume integral
     volumes = [abs(shape_volume(s) or 0.0) for s in solids]
     threshold = max(max(volumes) * 1.0e-5, 1.0e-9)
     keep = [s for s, vol in zip(solids, volumes) if vol > threshold]
@@ -757,6 +759,38 @@ def _fuzzy_boolean(operation, shape_a, shape_b, fuzzy: float):
         operation.SetFuzzyValue(fuzzy)
     operation.Build()
     return operation.Shape()
+
+
+def _collect_boxes(cuts) -> list:
+    """The valid (non-degenerate) limit boxes of a list of cut dicts."""
+    boxes = [tuple(float(v) for v in c["limits"]) for c in cuts]
+    return [b for b in boxes if b[1] > b[0] and b[3] > b[2] and b[5] > b[4]]
+
+
+def _boxes_union(boxes) -> tuple:
+    """Axis-aligned bounding box (xmin,xmax,ymin,ymax,zmin,zmax) of all boxes."""
+    return (min(b[0] for b in boxes), max(b[1] for b in boxes),
+            min(b[2] for b in boxes), max(b[3] for b in boxes),
+            min(b[4] for b in boxes), max(b[5] for b in boxes))
+
+
+def _bbox_disjoint(bb, box) -> bool:
+    """True when bounding box `bb` does not overlap `box` (both as
+    xmin,xmax,ymin,ymax,zmin,zmax) — nothing to carve there."""
+    return (bb[1] < box[0] or bb[0] > box[1] or bb[3] < box[2]
+            or bb[2] > box[3] or bb[5] < box[4] or bb[4] > box[5])
+
+
+def _bbox_in_any_box(sb, boxes, margin) -> bool:
+    """True when bounding box `sb` (xmin,xmax,ymin,ymax,zmin,zmax) fits wholly
+    inside any of the cut `boxes` (± margin) — i.e. the piece is a carved pin,
+    not the package that pokes past a wall."""
+    for xlo, xhi, ylo, yhi, zlo, zhi in boxes:
+        if (sb[0] >= xlo - margin and sb[1] <= xhi + margin
+                and sb[2] >= ylo - margin and sb[3] <= yhi + margin
+                and sb[4] >= zlo - margin and sb[5] <= zhi + margin):
+            return True
+    return False
 
 
 def _meaningful_solids(shape) -> list:
@@ -1174,7 +1208,8 @@ class EditorDocument:
         clipped = BRepAlgoAPI_Common(tool, half).Shape()
         return clipped if list(_iter_solids(clipped)) else tool
 
-    def split_by_box(self, limits, normal=None, location=None) -> list[int]:
+    def split_by_box(self, limits, normal=None, location=None,
+                     remesh: bool = True) -> list[int]:
         """Box-bounded boolean cut — the manual Cut Plane sub-mode. `limits` =
         (xlo, xhi, ylo, yhi, zlo, zhi); an optional plane (`normal`/`location`)
         clips the box to its +normal side. The carved piece = the part of a
@@ -1182,7 +1217,13 @@ class EditorDocument:
         package, untouched. Cuts straight THROUGH faces (unlike the face-region
         sealer), so a pin whose junction with the body runs mid-face still
         separates. Returns the indices, in the final body table, of the freshly
-        carved pieces (callers link pins to them)."""
+        carved pieces (callers link pins to them).
+
+        The cut works purely on solids; meshes are only needed downstream. Pass
+        `remesh=False` to skip the (expensive) re-tessellation when carving many
+        boxes in a row — the caller MUST then call `remesh_all()` once before
+        any mesh consumer (preview, pin re-linking) runs. Remeshing per call
+        is O(bodies²) over a batch; deferring it makes the batch O(bodies)."""
         xlo, xhi, ylo, yhi, zlo, zhi = (float(v) for v in limits)
         if xhi <= xlo or yhi <= ylo or zhi <= zlo:
             return []
@@ -1215,11 +1256,20 @@ class EditorDocument:
             pin_solids: list = []
             rem_solids: list = []
             for solid in pieces:
-                centre = solid_centroid(solid)
-                inside = (xlo - margin <= centre[0] <= xhi + margin
-                          and ylo - margin <= centre[1] <= yhi + margin
-                          and zlo - margin <= centre[2] <= zhi + margin)
+                # The splitter divides pieces EXACTLY along the box walls, so an
+                # inside piece's whole bounding box lies within the box (± fuzzy
+                # margin) and an outside piece pokes past a wall. A bbox test is
+                # equivalent to the old volume-centroid test here but ~10x
+                # cheaper — the centroid integral on the big package piece was
+                # the batch's quadratic-feeling cost. The exact mass centroid is
+                # only needed for the optional plane clip (box-cut mode never
+                # sets one), so compute it lazily for that case alone.
+                sxmin, sxmax, symin, symax, szmin, szmax = shape_bounds([solid])
+                inside = (sxmin >= xlo - margin and sxmax <= xhi + margin
+                          and symin >= ylo - margin and symax <= yhi + margin
+                          and szmin >= zlo - margin and szmax <= zhi + margin)
                 if inside and unit is not None:
+                    centre = solid_centroid(solid)
                     inside = float(centre @ unit) >= float(location) - margin
                 (pin_solids if inside else rem_solids).append(solid)
             if not pin_solids or not rem_solids:
@@ -1235,8 +1285,82 @@ class EditorDocument:
                     solid=solid, name=body.name, color=body.color,
                     original_color=body.original_color))
         self.bodies = new_bodies
-        self.remesh_all()
+        if remesh:
+            self.remesh_all()
         return carved
+
+    def split_by_boxes(self, cuts, remesh: bool = True) -> list[int]:
+        """Carve MANY pure-box cuts in ONE boolean per body — the batch form of
+        split_by_box. `cuts` is a list of {"limits": (xlo..zhi)} dicts (no plane
+        clip). Carving the boxes one at a time re-splits the whole (growing)
+        package on every cut, which is O(cuts²) in the package's face count and
+        is what made a 288-pin connector hang for minutes; imprinting all box
+        tools in a single Splitter.Build divides each solid once — O(cuts).
+        Returns the carved-piece indices in the new body table, like
+        split_by_box. Pass remesh=False to defer re-tessellation to the caller."""
+        boxes = _collect_boxes(cuts)
+        if not boxes:
+            return []
+        bounds = self.bounds()
+        diag = float(np.linalg.norm([bounds[1] - bounds[0], bounds[3] - bounds[2],
+                                     bounds[5] - bounds[4]]))
+        fuzzy = max(diag * 1.0e-5, 1.0e-7)
+        margin = max(diag * 1.0e-4, 1.0e-6)
+        tools = [self._box_cut_tool(b, None, None, pad=0.0) for b in boxes]
+        union = _boxes_union(boxes)
+        new_bodies: list[BodyRecord] = []
+        carved: list[int] = []
+        for body in self.bodies:
+            pieces = [] if _bbox_disjoint(shape_bounds([body.solid]), union) \
+                else self._split_solid_by_tools(body.solid, tools, fuzzy)
+            if len(pieces) < 2:
+                new_bodies.append(body)  # box missed it, or no clean split
+                continue
+            self._emit_box_pieces(body, pieces, boxes, margin, new_bodies, carved)
+        self.bodies = new_bodies
+        if remesh:
+            self.remesh_all()
+        return carved
+
+    def _emit_box_pieces(self, body, pieces, boxes, margin, new_bodies, carved):
+        """Classify a split body's pieces (a piece whose whole bbox sits inside
+        some box is a carved pin; the rest is package), then append the package
+        and each pin to `new_bodies`, recording pin indices in `carved`."""
+        pin_solids, rem_solids = [], []
+        for solid in pieces:
+            sb = shape_bounds([solid])
+            (pin_solids if _bbox_in_any_box(sb, boxes, margin)
+             else rem_solids).append(solid)
+        if not pin_solids or not rem_solids:
+            new_bodies.append(body)  # nothing cleanly carved
+            return
+        package = _keep_meaningful_solids(rem_solids, body.solid)
+        new_bodies.append(BodyRecord(
+            solid=package, name=body.name, color=body.color,
+            original_color=body.original_color))
+        for solid in pin_solids:
+            carved.append(len(new_bodies))
+            new_bodies.append(BodyRecord(
+                solid=solid, name=body.name, color=body.color,
+                original_color=body.original_color))
+
+    def _split_solid_by_tools(self, solid, tools, fuzzy: float) -> list:
+        """Split `solid` by SEVERAL tools in one Splitter.Build. Returns the
+        meaningful solids of the result, or [] if it did not divide."""
+        splitter = BRepAlgoAPI_Splitter()
+        arguments = TopTools_ListOfShape()
+        arguments.Append(solid)
+        tool_list = TopTools_ListOfShape()
+        for tool in tools:
+            tool_list.Append(tool)
+        splitter.SetArguments(arguments)
+        splitter.SetTools(tool_list)
+        if fuzzy > 0.0:
+            splitter.SetFuzzyValue(fuzzy)
+        splitter.Build()
+        if not splitter.IsDone():
+            return []
+        return _meaningful_solids(splitter.Shape())
 
     def _split_solid_by_tool(self, solid, tool, fuzzy: float) -> list:
         """Split `solid` by `tool` with BRepAlgoAPI_Splitter (one boolean; the

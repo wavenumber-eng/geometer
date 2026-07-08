@@ -42,6 +42,17 @@ CONDITIONED_SUFFIX = "_AP242_conditioned"
 # tag counts as version 1.
 _COND_TAG_RE = re.compile(r"^(?P<base>.*?)_AP242_(?:conditioned|WNC(?P<n>\d+))$")
 
+# OCCT writes face colours as OVER_RIDING_STYLED_ITEM when the owning solid
+# also carries a style. Several non-OCCT importers (SolidWorks, Altium) ignore
+# the overriding form entirely, so the exported file looks uncoloured there.
+# Plain STYLED_ITEM is what SolidWorks itself writes and every reader
+# (including OCCT) resolves it identically, so the writer flattens the
+# overrides in place after the STEP is on disk.
+_OVERRIDING_STYLE_RE = re.compile(
+    r"OVER_RIDING_STYLED_ITEM\s*\(\s*'[^']*'\s*,\s*"
+    r"(\((?:\s|#|\d|,)*\))\s*,\s*(#\d+)\s*,\s*#\d+\s*\)"
+)
+
 # OCCT's STEP parser rejects string literals somewhere past ~16k chars, so the
 # metadata blob is split across multiple DESCRIPTIVE_REPRESENTATION_ITEMs (all
 # referenced by one REPRESENTATION, concatenated in file order on read).
@@ -367,6 +378,16 @@ def write_step(document: EditorDocument, out_path: Path) -> None:
     status = writer.Write(str(out_path))
     if status != IFSelect_RetDone:
         raise RuntimeError(f"STEP write failed for {out_path}")
+    _flatten_styled_overrides(out_path)
+
+
+def _flatten_styled_overrides(step_path: Path) -> None:
+    """Rewrite OVER_RIDING_STYLED_ITEM entities as plain STYLED_ITEM so face
+    colours survive import into non-OCCT viewers (see _OVERRIDING_STYLE_RE)."""
+    text = step_path.read_text(encoding="utf-8", errors="replace")
+    fixed, count = _OVERRIDING_STYLE_RE.subn(r"STYLED_ITEM('color',\1,\2)", text)
+    if count:
+        step_path.write_text(fixed, encoding="utf-8")
 
 
 def document_step_bytes(document: EditorDocument) -> bytes:

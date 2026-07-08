@@ -1101,11 +1101,26 @@ class SeparateUnibodyTool(ToolMode):
             # package remainder is a fresh object after every cut and would be
             # mistaken for a carved pin. Pins survive later (disjoint) cuts, so
             # map the captured objects to their final indices at the end.
+            window.progress("Carving banked cuts", 0, 0)
+            # Pure boxes (no plane clip — Box Cut never sets one) carve in ONE
+            # multi-tool boolean per body instead of one growing re-split per
+            # cut: O(cuts) vs the O(cuts²) that hung 288-pin connectors. Remesh
+            # is deferred to a single pass after carving (per-cut remesh was a
+            # second O(cuts²) term). A clipped cut, if one ever appears, falls
+            # back to the sequential path.
+            pure_boxes = all(
+                float(np.linalg.norm(c.get("normal") or [0.0, 0.0, 0.0])) <= 1e-9
+                for c in cuts)
             carved_objs: list = []
-            for cut in cuts:
-                pin_indices = document.split_by_box(
-                    cut["limits"], cut["normal"], cut["location"])
-                carved_objs.extend(document.bodies[i] for i in pin_indices)
+            if pure_boxes:
+                pin_indices = document.split_by_boxes(cuts, remesh=False)
+                carved_objs = [document.bodies[i] for i in pin_indices]
+            else:
+                for cut in cuts:
+                    pin_indices = document.split_by_box(
+                        cut["limits"], cut["normal"], cut["location"], remesh=False)
+                    carved_objs.extend(document.bodies[i] for i in pin_indices)
+            document.remesh_all(progress=window.progress)
             present = {id(body): index for index, body in enumerate(document.bodies)}
             carved = [present[id(o)] for o in carved_objs if id(o) in present]
             # Re-resolve already-linked pins to their bodies' NEW indices.

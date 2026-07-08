@@ -382,11 +382,21 @@ def _replay_separate(state: _ReplayState, op) -> None:
     remap_tol = diag * 5.0e-3
     cuts = op.inputs.get("cuts")
     if cuts:  # manual box-bounded cut separation
+        # Batch pure boxes into one multi-tool boolean per body (O(cuts) vs the
+        # O(cuts²) sequential re-split), remeshing once — mirrors _apply_cuts.
+        pure_boxes = all(
+            float(np.linalg.norm(c.get("normal") or [0.0, 0.0, 0.0])) <= 1e-9
+            for c in cuts)
         carved_objs: list = []
-        for cut in cuts:
-            pin_indices = state.document.split_by_box(
-                cut["limits"], cut.get("normal"), cut.get("location"))
-            carved_objs.extend(state.document.bodies[i] for i in pin_indices)
+        if pure_boxes:
+            pin_indices = state.document.split_by_boxes(cuts, remesh=False)
+            carved_objs = [state.document.bodies[i] for i in pin_indices]
+        else:
+            for cut in cuts:
+                pin_indices = state.document.split_by_box(
+                    cut["limits"], cut.get("normal"), cut.get("location"), remesh=False)
+                carved_objs.extend(state.document.bodies[i] for i in pin_indices)
+        state.document.remesh_all()
         present = {id(body): index for index, body in enumerate(state.document.bodies)}
         carved = [present[id(o)] for o in carved_objs if id(o) in present]
         for pin, objs in prelinked:

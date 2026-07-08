@@ -4,12 +4,14 @@ Layout follows DESIGN_INTENT.md."""
 
 from __future__ import annotations
 
+import os
+import shutil
 from pathlib import Path
 
 import geometer
 import numpy as np
 from PySide6.QtCore import QObject, QRunnable, QSettings, Qt, QThreadPool, Signal
-from PySide6.QtGui import QKeySequence, QPixmap, QShortcut
+from PySide6.QtGui import QAction, QDragEnterEvent, QDropEvent, QKeySequence, QPixmap, QShortcut
 from PySide6.QtWidgets import (
     QApplication,
     QDialog,
@@ -20,6 +22,7 @@ from PySide6.QtWidgets import (
     QListWidget,
     QListWidgetItem,
     QMainWindow,
+    QMenu,
     QMessageBox,
     QProgressBar,
     QPushButton,
@@ -141,11 +144,20 @@ class MainWindow(QMainWindow):
         open_button.clicked.connect(self.open_step_dialog)
         save_button = QPushButton("Write AP242")
         save_button.setToolTip(
-            "Write <name>_AP242_conditioned.step next to the input (Ctrl+S).\n"
-            "When a .kicad_mod/.PcbLib is open, also bakes the conditioned "
-            "model into <part>_conditioned.<ext>"
+            "WRITE NEW: write <name>_AP242_WNCn.step next to the input (Ctrl+S).\n"
+            "REPLACE: overwrite the opened STEP in place, keeping a .bak "
+            "(Ctrl+Shift+S).\n"
+            "When a .kicad_mod/.PcbLib is open, WRITE NEW also bakes the "
+            "conditioned model into <part>_conditioned.<ext>"
         )
-        save_button.clicked.connect(self.write_ap242)
+        save_menu = QMenu(save_button)
+        write_new_action = QAction("WRITE NEW  (<name>_AP242_WNCn.step)", save_menu)
+        write_new_action.triggered.connect(self.write_ap242)
+        save_menu.addAction(write_new_action)
+        replace_action = QAction("REPLACE  (overwrite original, keep .bak)", save_menu)
+        replace_action.triggered.connect(self.write_ap242_replace)
+        save_menu.addAction(replace_action)
+        save_button.setMenu(save_menu)
         top_layout.addWidget(open_button)
         top_layout.addWidget(save_button)
 
@@ -242,7 +254,16 @@ class MainWindow(QMainWindow):
         QShortcut(QKeySequence("T"), self, activated=self.cycle_tool)
         tab_shortcut = QShortcut(QKeySequence(Qt.Key.Key_Tab), self, activated=self.cycle_tool)
         tab_shortcut.setContext(Qt.ShortcutContext.ApplicationShortcut)
+        back_shortcut = QShortcut(QKeySequence("Ctrl+Tab"), self, activated=self.cycle_tool_back)
+        back_shortcut.setContext(Qt.ShortcutContext.ApplicationShortcut)
         QShortcut(QKeySequence("Ctrl+S"), self, activated=self.write_ap242)
+        QShortcut(QKeySequence("Ctrl+Shift+S"), self, activated=self.write_ap242_replace)
+
+        # Drop a STEP/.stp (or .kicad_mod/.PcbLib container) anywhere on the
+        # window to open it. The VTK interactor must not claim drops or they
+        # never reach the main window.
+        self.setAcceptDrops(True)
+        self.plotter.interactor.setAcceptDrops(False)
 
         if step_path is not None:
             self.load_any(step_path)
@@ -257,6 +278,9 @@ class MainWindow(QMainWindow):
 
     def cycle_tool(self) -> None:
         self._switch_tool((self.current_tool_index + 1) % len(self.tools))
+
+    def cycle_tool_back(self) -> None:
+        self._switch_tool((self.current_tool_index - 1) % len(self.tools))
 
     def _switch_tool(self, index: int) -> None:
         if self._switching:
@@ -334,6 +358,31 @@ class MainWindow(QMainWindow):
             self._load_vendor(path)
         else:
             self.load_step(path)
+
+    # ------------------------------------------------------------- drag&drop
+
+    def _dropped_model_path(self, event) -> Path | None:
+        mime = event.mimeData()
+        if not mime.hasUrls():
+            return None
+        for url in mime.urls():
+            path = Path(url.toLocalFile())
+            if path.is_file() and (
+                path.suffix.lower() in {".step", ".stp"} or is_vendor_file(path)
+            ):
+                return path
+        return None
+
+    def dragEnterEvent(self, event: QDragEnterEvent) -> None:
+        if self._dropped_model_path(event) is not None:
+            event.acceptProposedAction()
+
+    def dropEvent(self, event: QDropEvent) -> None:
+        path = self._dropped_model_path(event)
+        if path is None:
+            return
+        event.acceptProposedAction()
+        self.load_any(path)
 
     def _load_vendor(self, path: Path) -> None:
         import tempfile
@@ -499,6 +548,59 @@ class MainWindow(QMainWindow):
         except Exception as exc:
             self.show_status(f"Export failed: {exc}")
             QMessageBox.critical(self, "Export failed", str(exc))
+        finally:
+            self.progress_done()
+            QApplication.restoreOverrideCursor()
+
+    def write_ap242_replace(self) -> None:
+        """REPLACE mode: condition into a temp file next to the original, and
+        only after the export validates swap it over the opened STEP. The
+        previous file is kept as <name>.bak."""
+        if self.document is None:
+            self.show_status("Nothing to write — open a STEP file first.")
+            return
+        if self.vendor is not None:
+            QMessageBox.information(
+                self, "Replace original",
+                "REPLACE works on plain STEP opens. Container opens "
+                "(.kicad_mod/.PcbLib) still export a conditioned copy via "
+                "WRITE NEW.")
+            return
+        target = self.document.path
+        backup = target.with_name(target.name + ".bak")
+        answer = QMessageBox.question(
+            self, "Replace original",
+            f"Replace {target.name} with the conditioned AP242?\n"
+            f"The current file is kept as {backup.name}.",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No)
+        if answer != QMessageBox.StandardButton.Yes:
+            return
+        tmp_path = target.with_name(f"{target.stem}_AP242_replace_tmp.step")
+        self.show_status(f"Writing {target.name} in place ...")
+        QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
+        try:
+            report = export_ap242(
+                self.document, tmp_path, pins=self.pins, journal=self.journal,
+                progress=self.progress,
+            )
+            if not report.ok:
+                tmp_path.unlink(missing_ok=True)
+                self.show_status(f"{report.summary()} | {target.name} NOT replaced")
+                QMessageBox.warning(
+                    self, "Export validation",
+                    f"{report.summary()}\n{target.name} was NOT replaced.")
+                return
+            shutil.copy2(target, backup)
+            os.replace(tmp_path, target)
+            self.show_status(
+                f"Replaced {target.name} (backup: {backup.name}) | "
+                "embedded metadata verified")
+        except Exception as exc:
+            tmp_path.unlink(missing_ok=True)
+            tmp_path.with_suffix(".metadata.json").unlink(missing_ok=True)
+            self.show_status(f"Replace failed: {exc}")
+            QMessageBox.critical(self, "Replace failed", str(exc))
         finally:
             self.progress_done()
             QApplication.restoreOverrideCursor()

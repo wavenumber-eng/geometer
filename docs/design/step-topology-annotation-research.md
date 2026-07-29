@@ -3,6 +3,7 @@
 Status: pre-design research plan  
 Date: 2026-06-22  
 Scope: Geometer STEP/AP242, OCCT/XCAF/BRepGraph, browser annotation handoff
+Tracking: wavenumber-eng/geometer#15
 
 ## Purpose
 
@@ -154,6 +155,160 @@ Candidate topology-linked AP242 constructs:
 For a single-face terminal, a simple `SHAPE_ASPECT` is enough. Use
 `COMPOSITE_SHAPE_ASPECT` only for groups with at least two component
 relationships.
+
+## OCCT AP242 Carrier Findings 2026-07-28
+
+The current Geometer checkout is already on the latest local `main` and pins
+OCCT to `V8_0_0` / `8.0.0` in `scripts/dependency_versions.py`.
+
+Current Geometer STEP paths:
+
+- `step_to_glb.cpp` reads through `STEPCAFControl_Reader` into an XCAF
+  `TDocStd_Document`, enables colors, names, and layers, works from
+  `XCAFDoc_ShapeTool::GetFreeShapes`, and writes GLB with `RWGltf_CafWriter`.
+- `hlr_projection.cpp` and `model_bounds.cpp` read through
+  `STEPControl_Reader`, call `TransferRoots()`, then `OneShape()`. That path is
+  intentionally flattened and should not be used for annotation import because
+  it discards XCAF labels, product structure, and STEP metadata context.
+- `planar_step.cpp` writes generated shapes through `STEPCAFControl_Writer`
+  with names and colors only. It currently uses the default writer parameters;
+  OCCT defaults `DESTEP_Parameters::WriteSchema` to `AP214IS`. Annotation tests
+  that use AP242 entities should set `WriteSchema = AP242DIS` explicitly.
+
+OCCT 8.0 exposes direct AP242 wrappers for the relationship shape we need:
+
+- `StepAP242_GeometricItemSpecificUsage`
+- `StepAP242_ItemIdentifiedRepresentationUsage`
+- `StepAP242_ItemIdentifiedRepresentationUsageDefinition`
+- `StepRepr_ShapeAspect`
+- `StepRepr_PropertyDefinition`
+- `StepRepr_PropertyDefinitionRepresentation`
+- `StepRepr_DescriptiveRepresentationItem`
+
+The read/write module for `GEOMETRIC_ITEM_SPECIFIC_USAGE` writes exactly:
+
+```text
+GEOMETRIC_ITEM_SPECIFIC_USAGE(name, description, definition, used_representation, identified_item)
+```
+
+That makes two legal carrier strategies worth testing:
+
+1. **Minimal relationship payload.** Put compact WN JSON directly in
+   `GEOMETRIC_ITEM_SPECIFIC_USAGE.description`; set `definition` to a
+   `SHAPE_ASPECT`; set `identified_item` to the targeted representation item.
+   This is the clearest "JSON belongs to this topology link" carrier, but it
+   requires Geometer to walk AP242 entities directly on import.
+2. **Property payload plus topology link.** Put the WN JSON in a
+   `PROPERTY_DEFINITION` / `PROPERTY_DEFINITION_REPRESENTATION` using a
+   `DESCRIPTIVE_REPRESENTATION_ITEM`; make the property characterize the same
+   `SHAPE_ASPECT`; use `GEOMETRIC_ITEM_SPECIFIC_USAGE` to link that
+   `SHAPE_ASPECT` to the face/body representation item. This is more verbose,
+   but it aligns with OCCT's existing metadata reader.
+
+The second strategy is the stronger first proof because OCCT's
+`STEPCAFControl_Reader::ReadMetadata` already walks `PROPERTY_DEFINITION`
+entities, follows `SHAPE_ASPECT` sharings through
+`StepAP242_ItemIdentifiedRepresentationUsage`, resolves identified
+representation items through the transfer process, and fills
+`TDataStd_NamedData` on shape labels. The caveat is that face-level metadata
+only becomes convenient if OCCT has a binder and/or label path for the selected
+subshape. Geometer should still directly inspect AP242 entities so it can
+recover annotations even when high-level `NamedData` attachment is incomplete.
+
+OCCT's own AP242 D&GT writer contains the useful internal pattern in
+`STEPCAFControl_Writer::writeShapeAspect`:
+
+- get the `XSControl_WorkSession`;
+- get the STEP model, transfer writer, finder process, and graph;
+- call `FindEntities(aFP, theShape, aLoc, aSeqRI)` to find STEP
+  representation items for the selected `TopoDS_Shape`;
+- find the owning `ProductDefinitionShape` and
+  `ShapeDefinitionRepresentation`;
+- create a `StepRepr_ShapeAspect`;
+- create a `StepAP242_GeometricItemSpecificUsage`;
+- add the shape aspect and usage with `StepData_StepModel::AddWithRefs`.
+
+That method is not public API, but it is a concrete implementation template for
+a Geometer experimental writer. `STEPCAFControl_Writer` exposes
+`ChangeWriter().WS()`, so the experiment can transfer the XCAF document, access
+the work session/model, add WN AP242 entities, and then call `Write()`. The
+first attempt should use OCCT model entities, not Part 21 text injection.
+
+For import diagnostics, OCCT also exposes transfer mapping hooks:
+
+- `STEPControl_Reader::StepModel()` gives the loaded STEP model.
+- `STEPControl_Reader::WS()` gives the work session.
+- `XSControl_TransferReader::ShapeResult(entity)` maps STEP entity to shape.
+- `XSControl_TransferReader::EntityFromShapeResult(shape, mode)` can try to map
+  a `TopoDS_Shape` back to a source STEP entity.
+- `Transfer_TransientProcess::Find(entity)` can be used to resolve binders for
+  representation items.
+
+These mappings are not yet proven for every face. A normal
+`ADVANCED_BREP_SHAPE_REPRESENTATION` directly contains solids or mapped items;
+faces are usually nested under the BRep. AP242's validity rule allows indirect
+representation usage, and OCCT's helper searches through transfer binders, but
+the spike must prove which of `MANIFOLD_SOLID_BREP`, `CLOSED_SHELL`, and
+`ADVANCED_FACE` can be targeted and recovered on real package models.
+
+Reliability risks:
+
+- STEP entity numbers such as `#423` are only file-local references.
+- Arbitrary CAD applications may strip AP242 metadata, rewrite topology, split
+  faces, or preserve embedded STEP bytes without understanding the metadata.
+- Raw OCCT BRep does not automatically carry STEP AP242 metadata; Geometer must
+  read STEP metadata and bind it to its own topology ids before downstream BRep,
+  GLB, or browser handoff.
+- `RWGltf_CafWriter` is useful for render transport, but custom glTF `extras`
+  should be treated as a projection or sidecar task unless proven through OCCT.
+
+## Import/Write Spike Split
+
+The work has two independent sides.
+
+### Bring In
+
+Add an experimental native diagnostic that reads a STEP file with
+`STEPCAFControl_Reader`, enables metadata/product metadata, keeps the
+`Reader().WS()` context, and emits a topology/annotation inspection JSON.
+
+The diagnostic should report:
+
+- STEP header/schema and source hash.
+- XCAF free shapes, assemblies/components, names, colors, layers, and
+  `TDataStd_NamedData` discovered by the normal reader.
+- solids/faces from `TopoDS` traversal with provisional Geometer ids and simple
+  fingerprints.
+- all `StepAP242_GeometricItemSpecificUsage` entities, including name,
+  description, definition case, used representation, identified item entity
+  type, STEP model number, and whether the identified item resolves to a shape.
+- all WN-looking `PROPERTY_DEFINITION` payloads and whether they attach to a
+  label through the existing OCCT metadata path.
+
+### Add / Write
+
+Add a minimal AP242 round-trip test before any browser UX:
+
+1. Create or load a simple package STEP shape.
+2. Transfer with `STEPCAFControl_Writer` using `DESTEP_Parameters` configured
+   for AP242.
+3. Add one product/body-level `TDataStd_NamedData` JSON value and verify OCCT's
+   built-in metadata writer/reader round-trips it.
+4. Select one solid or face.
+5. Use the `writeShapeAspect` pattern to create:
+   - one `SHAPE_ASPECT` named with a WN annotation id;
+   - one `PROPERTY_DEFINITION` / representation containing compact WN JSON;
+   - one `GEOMETRIC_ITEM_SPECIFIC_USAGE` linking that shape aspect to the
+     selected representation item.
+6. Write AP242, reload with OCCT, and prove:
+   - the JSON payload is present;
+   - the topology link is present;
+   - the link resolves back to the selected `TopoDS` solid/face or to a
+     documented fallback.
+
+The passing result is not "all CAD tools preserve it." The passing result is
+"Geometer can write an AP242 file, reload it through OCCT, and reconstruct WN
+annotation id -> terminal metadata -> target topology."
 
 ## Browser Render Handoff
 

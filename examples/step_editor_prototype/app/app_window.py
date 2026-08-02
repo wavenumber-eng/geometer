@@ -1,0 +1,728 @@
+"""Main window: logo upper-left, tool-mode rectangle upper-middle, 3D view
+left, per-tool actions in a right split panel, model info below the actions.
+Layout follows DESIGN_INTENT.md."""
+
+from __future__ import annotations
+
+import os
+import shutil
+from pathlib import Path
+
+import geometer
+import numpy as np
+from PySide6.QtCore import QObject, QRunnable, QSettings, Qt, QThreadPool, Signal
+from PySide6.QtGui import QAction, QDragEnterEvent, QDropEvent, QKeySequence, QPixmap, QShortcut
+from PySide6.QtWidgets import (
+    QApplication,
+    QDialog,
+    QDialogButtonBox,
+    QFileDialog,
+    QHBoxLayout,
+    QLabel,
+    QListWidget,
+    QListWidgetItem,
+    QMainWindow,
+    QMenu,
+    QMessageBox,
+    QProgressBar,
+    QPushButton,
+    QSizePolicy,
+    QSplitter,
+    QStackedWidget,
+    QStatusBar,
+    QVBoxLayout,
+    QWidget,
+)
+from pyvistaqt import QtInteractor
+
+from .document import EditorDocument
+from .export_ap242 import conditioned_path, document_step_bytes, export_ap242
+from .vendor_files import VendorContainer, bake_conditioned, is_vendor_file, open_vendor_file
+from .journal import Journal
+from .mode_rect import ModeRect
+from .pins import PinRegistry
+from .style import ACCENT_HOVER, BORDER, CONSOLE_BG, TEXT_MUTED, TEXT_PRIMARY, WINDOW_BG
+from .scene import SceneManager
+from .tools import TOOL_CLASSES
+from .tools.base import ToolContext
+
+
+HERE = Path(__file__).resolve().parent.parent
+# White version generated from WN3D_LOGO.png for the dark theme.
+LOGO_CANDIDATES = [HERE / "wn3d_logo_white.png", HERE / "WN3D_LOGO.png", HERE / "wn3d_logo.png"]
+LOGO_PATH = next((p for p in LOGO_CANDIDATES if p.is_file()), LOGO_CANDIDATES[0])
+DEFAULT_OPEN_DIR = HERE / "TEST_STEP_FILES"
+CAMERA_BUTTONS = ["iso", "top", "bottom", "front", "back", "left", "right"]
+
+
+class _FootprintSignals(QObject):
+    finished = Signal(object, int)  # HlrProjectionResult | None, revision
+
+
+class _FootprintTask(QRunnable):
+    """Top-view HLR projection on a worker thread. Safe off the main thread:
+    geometer drives its own subprocess — no OCP, no VTK involved."""
+
+    def __init__(self, step_bytes: bytes, revision: int, signals: _FootprintSignals) -> None:
+        super().__init__()
+        self.step_bytes = step_bytes
+        self.revision = revision
+        self.signals = signals
+
+    def run(self) -> None:
+        try:
+            result = geometer.project_step_hlr(
+                self.step_bytes,
+                views=[geometer.ProjectionView.top()],
+                options=geometer.HlrOptions.visible_detail(),
+            )
+        except Exception:
+            result = None
+        self.signals.finished.emit(result, self.revision)
+
+
+class MainWindow(QMainWindow):
+    def __init__(self, step_path: Path | None) -> None:
+        super().__init__()
+        self.setWindowTitle("Wavenumber 3D STEP Editor")
+        self.resize(1280, 800)
+
+        self.document: EditorDocument | None = None
+        self.vendor: VendorContainer | None = None
+        self._vendor_workdir = None  # TemporaryDirectory kept alive with the container
+        self.journal = Journal()
+        self.model_bounds: geometer.ModelBoundsResult | None = None
+        self.pin1_hint: tuple[float, float, float] | None = None
+        self.context_plane: tuple[list, list] | None = None  # (point, normal)
+        self.pins = PinRegistry()
+        self._doc_revision = 0
+        self._footprint_cache = None
+        self._footprint_cache_rev = -1
+        self._footprint_inflight_rev: int | None = None
+        self._footprint_callbacks: list = []
+        self._footprint_signals = _FootprintSignals()
+        self._footprint_signals.finished.connect(self._on_footprint_done)
+
+        self.plotter = QtInteractor(self)
+        self.plotter.interactor.setMinimumSize(480, 360)
+        self.scene = SceneManager(self.plotter)
+        self.scene.on_pick = self._route_pick
+        self.scene.on_miss = self._route_miss
+
+        # --- top bar: logo | mode rect | open/save -------------------------
+        top_bar = QWidget()
+        top_layout = QHBoxLayout(top_bar)
+        top_layout.setContentsMargins(8, 6, 8, 2)
+        logo_label = QLabel()
+        if LOGO_PATH.is_file():
+            pixmap = QPixmap(str(LOGO_PATH))
+            logo_label.setPixmap(
+                pixmap.scaledToHeight(40, Qt.TransformationMode.SmoothTransformation)
+            )
+        else:
+            logo_label.setText("<b>WN3D</b>")
+        top_layout.addWidget(logo_label)
+        title_label = QLabel("Wavenumber 3D STEP Editor")
+        title_label.setStyleSheet(
+            f"font-weight: 700; font-size: 15px; padding-left: 6px; color: {TEXT_PRIMARY};"
+        )
+        top_layout.addWidget(title_label)
+        top_layout.addStretch(1)
+
+        self.mode_rect = ModeRect()
+        top_layout.addWidget(self.mode_rect, 0, Qt.AlignmentFlag.AlignHCenter)
+        self.model_label = QLabel("no model")
+        self.model_label.setStyleSheet(
+            f"font-weight: 600; color: {ACCENT_HOVER}; padding-left: 10px;"
+        )
+        top_layout.addWidget(self.model_label)
+        top_layout.addStretch(1)
+
+        open_button = QPushButton("Open Model")
+        open_button.setToolTip("Open a STEP file, a KiCad footprint (.kicad_mod), "
+                               "or an Altium library (.PcbLib) with an embedded model")
+        open_button.clicked.connect(self.open_step_dialog)
+        save_button = QPushButton("Write AP242")
+        save_button.setToolTip(
+            "WRITE NEW: write <name>_AP242_WNCn.step next to the input (Ctrl+S).\n"
+            "REPLACE: overwrite the opened STEP in place, keeping a .bak "
+            "(Ctrl+Shift+S).\n"
+            "When a .kicad_mod/.PcbLib is open, WRITE NEW also bakes the "
+            "conditioned model into <part>_conditioned.<ext>"
+        )
+        save_menu = QMenu(save_button)
+        write_new_action = QAction("WRITE NEW  (<name>_AP242_WNCn.step)", save_menu)
+        write_new_action.triggered.connect(self.write_ap242)
+        save_menu.addAction(write_new_action)
+        replace_action = QAction("REPLACE  (overwrite original, keep .bak)", save_menu)
+        replace_action.triggered.connect(self.write_ap242_replace)
+        save_menu.addAction(replace_action)
+        save_button.setMenu(save_menu)
+        top_layout.addWidget(open_button)
+        top_layout.addWidget(save_button)
+
+        # --- camera row -----------------------------------------------------
+        camera_bar = QWidget()
+        camera_layout = QHBoxLayout(camera_bar)
+        camera_layout.setContentsMargins(8, 0, 8, 2)
+        camera_layout.setSpacing(4)
+        camera_layout.addWidget(QLabel("Camera"))
+        for view_id in CAMERA_BUTTONS:
+            button = QPushButton(view_id.upper() if view_id == "iso" else view_id.title())
+            button.setMaximumWidth(82)
+            button.clicked.connect(lambda _checked=False, v=view_id: self.snap_camera(v))
+            camera_layout.addWidget(button)
+        camera_layout.addStretch(1)
+        version = geometer.version()
+        version_label = QLabel(f"Geometer {version.string} | ABI {version.abi}")
+        version_label.setStyleSheet(f"color: {TEXT_MUTED};")
+        camera_layout.addWidget(version_label)
+
+        # --- right panel: actions stack + info -----------------------------
+        self.actions_stack = QStackedWidget()
+        self.info_label = QLabel("No file loaded.")
+        self.info_label.setWordWrap(True)
+        self.info_label.setAlignment(Qt.AlignmentFlag.AlignTop)
+        self.info_label.setStyleSheet(
+            f"background: {CONSOLE_BG}; color: {TEXT_PRIMARY}; "
+            f"border-top: 1px solid {BORDER}; padding: 8px;"
+        )
+        self.info_label.setMinimumHeight(84)
+        self.info_label.setMaximumHeight(112)
+
+        right_panel = QWidget()
+        right_layout = QVBoxLayout(right_panel)
+        right_layout.setContentsMargins(0, 0, 0, 0)
+        actions_header = QLabel("  TOOL ACTIONS")
+        actions_header.setStyleSheet(
+            f"font-weight: 700; padding: 4px; background: {WINDOW_BG}; "
+            f"color: {TEXT_MUTED}; border-bottom: 1px solid {BORDER};"
+        )
+        right_layout.addWidget(actions_header)
+        right_layout.addWidget(self.actions_stack, 1)
+        info_header = QLabel("  MODEL INFO")
+        info_header.setStyleSheet(
+            f"font-weight: 700; padding: 4px; background: {WINDOW_BG}; "
+            f"color: {TEXT_MUTED}; border-bottom: 1px solid {BORDER};"
+        )
+        right_layout.addWidget(info_header)
+        right_layout.addWidget(self.info_label, 0)
+
+        right_panel.setMinimumWidth(280)
+        splitter = QSplitter(Qt.Orientation.Horizontal)
+        splitter.addWidget(self.plotter.interactor)
+        splitter.addWidget(right_panel)
+        splitter.setStretchFactor(0, 2)
+        splitter.setStretchFactor(1, 1)
+        splitter.setCollapsible(0, False)
+        self._splitter = splitter
+        self._splitter_initialized = False
+
+        central = QWidget()
+        layout = QVBoxLayout(central)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(2)
+        layout.addWidget(top_bar)
+        layout.addWidget(camera_bar)
+        layout.addWidget(splitter, 1)
+        self.setCentralWidget(central)
+        self.setStatusBar(QStatusBar())
+        self.progress_bar = QProgressBar()
+        self.progress_bar.setMaximumWidth(240)
+        self.progress_bar.setMaximumHeight(14)
+        self.progress_bar.setStyleSheet(
+            f"QProgressBar {{border: 1px solid {BORDER}; background: {CONSOLE_BG};"
+            f" color: {TEXT_PRIMARY}; text-align: center; font-size: 9px;}}"
+            "QProgressBar::chunk {background-color: #1f9d3a;}"
+        )
+        self.progress_bar.setVisible(False)
+        self.statusBar().addPermanentWidget(self.progress_bar)
+
+        # --- tools ----------------------------------------------------------
+        context = ToolContext(document=None, scene=self.scene, journal=self.journal, window=self)
+        self.tools = [cls(context) for cls in TOOL_CLASSES]
+        self._tool_context = context
+        for tool in self.tools:
+            self.actions_stack.addWidget(tool.actions_widget())
+        self.mode_rect.set_tools([(tool.id, tool.title) for tool in self.tools])
+        self.mode_rect.tool_selected.connect(self.set_tool)
+        self.mode_rect.next_clicked.connect(self.cycle_tool)
+        self.current_tool_index = 0
+        self._switching = False
+        self._apply_tool(0, animate=False)
+
+        QShortcut(QKeySequence("T"), self, activated=self.cycle_tool)
+        tab_shortcut = QShortcut(QKeySequence(Qt.Key.Key_Tab), self, activated=self.cycle_tool)
+        tab_shortcut.setContext(Qt.ShortcutContext.ApplicationShortcut)
+        back_shortcut = QShortcut(QKeySequence("Ctrl+Tab"), self, activated=self.cycle_tool_back)
+        back_shortcut.setContext(Qt.ShortcutContext.ApplicationShortcut)
+        QShortcut(QKeySequence("Ctrl+S"), self, activated=self.write_ap242)
+        QShortcut(QKeySequence("Ctrl+Shift+S"), self, activated=self.write_ap242_replace)
+
+        # Drop a STEP/.stp (or .kicad_mod/.PcbLib container) anywhere on the
+        # window to open it. The VTK interactor must not claim drops or they
+        # never reach the main window.
+        self.setAcceptDrops(True)
+        self.plotter.interactor.setAcceptDrops(False)
+
+        if step_path is not None:
+            self.load_any(step_path)
+
+    # ------------------------------------------------------------------ tools
+
+    def set_tool(self, tool_id: str) -> None:
+        for index, tool in enumerate(self.tools):
+            if tool.id == tool_id:
+                self._switch_tool(index)
+                return
+
+    def cycle_tool(self) -> None:
+        self._switch_tool((self.current_tool_index + 1) % len(self.tools))
+
+    def cycle_tool_back(self) -> None:
+        self._switch_tool((self.current_tool_index - 1) % len(self.tools))
+
+    def _switch_tool(self, index: int) -> None:
+        if self._switching:
+            return  # a heavy enter() is mid-flight; ignore re-entrant Tab
+        if index == self.current_tool_index:
+            self._apply_tool(index)
+            return
+        self.tools[self.current_tool_index].exit()
+        self.current_tool_index = index
+        self._apply_tool(index)
+
+    def _model_is_heavy(self) -> bool:
+        """A switch only lags on big models (face-adjacency, HLR, billboards).
+        Use mesh size as a cheap proxy so small parts switch flicker-free."""
+        if self.document is None:
+            return False
+        points = sum(
+            len(b.mesh.points)
+            for b in self.document.bodies
+            if b.mesh is not None
+        )
+        return points > 40000
+
+    def _apply_tool(self, index: int, *, animate: bool = True) -> None:
+        tool = self.tools[index]
+        next_tool = self.tools[(index + 1) % len(self.tools)]
+        self.actions_stack.setCurrentIndex(index)
+        self.mode_rect.set_current(
+            tool.title, tool.accent, next_tool.title, next_tool.accent,
+            animate=animate,
+        )
+        heavy = self._model_is_heavy()
+        self._switching = True
+        QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
+        if heavy:
+            self.progress(f"Entering {tool.title}…", 0, 0)
+        try:
+            tool.enter()
+        finally:
+            if heavy:
+                self.progress_done()
+            QApplication.restoreOverrideCursor()
+            self._switching = False
+
+    def _route_pick(self, pick) -> None:
+        self.tools[self.current_tool_index].on_pick(pick)
+
+    def _route_miss(self) -> None:
+        tool = self.tools[self.current_tool_index]
+        if hasattr(tool, "on_miss"):
+            tool.on_miss()
+
+    # ------------------------------------------------------------------- load
+
+    def open_step_dialog(self) -> None:
+        file_name, _filter = QFileDialog.getOpenFileName(
+            self,
+            "Open Model",
+            self._open_dir(),
+            "3D model files (*.step *.stp *.kicad_mod *.PcbLib);;"
+            "STEP files (*.step *.stp);;"
+            "KiCad footprints (*.kicad_mod);;"
+            "Altium PCB libraries (*.PcbLib);;"
+            "All files (*.*)",
+        )
+        if file_name:
+            path = Path(file_name)
+            QSettings("Wavenumber", "StepEditor").setValue("open_dir", str(path.parent))
+            self.load_any(path)
+
+    def load_any(self, path: Path) -> None:
+        """Route by file type: vendor containers extract first, STEP loads
+        directly. Loading a plain STEP drops any active container."""
+        if is_vendor_file(path):
+            self._load_vendor(path)
+        else:
+            self.load_step(path)
+
+    # ------------------------------------------------------------- drag&drop
+
+    def _dropped_model_path(self, event) -> Path | None:
+        mime = event.mimeData()
+        if not mime.hasUrls():
+            return None
+        for url in mime.urls():
+            path = Path(url.toLocalFile())
+            if path.is_file() and (
+                path.suffix.lower() in {".step", ".stp"} or is_vendor_file(path)
+            ):
+                return path
+        return None
+
+    def dragEnterEvent(self, event: QDragEnterEvent) -> None:
+        if self._dropped_model_path(event) is not None:
+            event.acceptProposedAction()
+
+    def dropEvent(self, event: QDropEvent) -> None:
+        path = self._dropped_model_path(event)
+        if path is None:
+            return
+        event.acceptProposedAction()
+        self.load_any(path)
+
+    def _load_vendor(self, path: Path) -> None:
+        import tempfile
+
+        self.show_status(f"Opening {path.name} ...")
+        workdir = tempfile.TemporaryDirectory(prefix="step_editor_vendor_")
+        container = None
+        try:
+            QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
+            try:
+                container = open_vendor_file(
+                    Path(path), Path(workdir.name),
+                    choose_footprint=self._choose_footprint,
+                )
+            finally:
+                QApplication.restoreOverrideCursor()
+        except Exception as exc:
+            workdir.cleanup()
+            self.show_status(f"Open failed: {exc}")
+            QMessageBox.critical(self, "Open failed", str(exc))
+            return
+        if container is None:  # user cancelled the footprint chooser
+            workdir.cleanup()
+            self.show_status("Open cancelled.")
+            return
+        self.load_step(container.step_path, vendor=container, vendor_workdir=workdir)
+        if self.document is not None:
+            self.model_label.setText(f"{path.name} :: {container.part_name}")
+            self.model_label.setToolTip(
+                f"{path}\nembedded model: {container.model_name}\n"
+                f"Write AP242 also bakes {container.conditioned_container_path().name}"
+            )
+            self.show_status(
+                f"Opened {container.part_name!r} from {path.name} "
+                f"({container.model_name}) — export bakes a conditioned "
+                f"{container.conditioned_container_path().suffix} next to it"
+            )
+
+    def _choose_footprint(self, rows: list[dict]) -> str | None:
+        """Library-split picker for multi-footprint PcbLibs: choose the one
+        part to split out and condition."""
+        QApplication.restoreOverrideCursor()  # dialog needs a normal cursor
+        try:
+            dialog = QDialog(self)
+            dialog.setWindowTitle("Choose footprint to condition")
+            layout = QVBoxLayout(dialog)
+            label = QLabel(
+                f"This library holds {len(rows)} footprints with embedded STEP "
+                "models.\nThe chosen part is split into its own single-part "
+                "library; only that part is conditioned."
+            )
+            label.setWordWrap(True)
+            layout.addWidget(label)
+            listing = QListWidget()
+            for row in rows:
+                model = next(m for m in row["models"] if m["kind"] == "step")
+                item = QListWidgetItem(
+                    f"{row['footprint']}  —  {model['name']} "
+                    f"({model['bytes'] / 1e6:.1f} MB)"
+                )
+                item.setData(Qt.ItemDataRole.UserRole, row["footprint"])
+                listing.addItem(item)
+            listing.setCurrentRow(0)
+            listing.itemDoubleClicked.connect(lambda _item: dialog.accept())
+            layout.addWidget(listing)
+            buttons = QDialogButtonBox(
+                QDialogButtonBox.StandardButton.Ok
+                | QDialogButtonBox.StandardButton.Cancel
+            )
+            buttons.accepted.connect(dialog.accept)
+            buttons.rejected.connect(dialog.reject)
+            layout.addWidget(buttons)
+            dialog.resize(560, 420)
+            if dialog.exec() != QDialog.DialogCode.Accepted:
+                return None
+            current = listing.currentItem()
+            return current.data(Qt.ItemDataRole.UserRole) if current else None
+        finally:
+            QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
+
+    def _open_dir(self) -> str:
+        """Last folder the user opened from; defaults to TEST_STEP_FILES."""
+        saved = QSettings("Wavenumber", "StepEditor").value("open_dir")
+        for candidate in (saved, DEFAULT_OPEN_DIR, HERE):
+            if candidate and Path(candidate).is_dir():
+                return str(candidate)
+        return str(HERE)
+
+    def load_step(self, path: Path, vendor: VendorContainer | None = None,
+                  vendor_workdir=None) -> None:
+        if self._vendor_workdir is not None and self._vendor_workdir is not vendor_workdir:
+            try:
+                self._vendor_workdir.cleanup()
+            except Exception:
+                pass
+        self.vendor = vendor
+        self._vendor_workdir = vendor_workdir
+        self.show_status(f"Loading {path.name} ...")
+        QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
+        try:
+            self.document = EditorDocument.load(path)
+            self._doc_revision += 1
+            self._tool_context.document = self.document
+            self.model_label.setText(path.name)
+            self.model_label.setToolTip(str(path))
+            self.pins.clear()
+            self.pin1_hint = None
+            self.context_plane = None
+            self.journal = Journal()
+            self._tool_context.journal = self.journal
+            try:
+                self.model_bounds = geometer.model_bounds(path)
+            except Exception:
+                self.model_bounds = None
+            self.scene.rebuild(self.document)
+            self.snap_camera("iso")
+            self._refresh_info()
+            for tool in self.tools:
+                tool.on_document_changed()
+            self.show_status(
+                f"Loaded {path.name}: {len(self.document.bodies)} bodies, "
+                f"{self.document.info().face_count} faces"
+            )
+        except Exception as exc:
+            self.document = None
+            self._tool_context.document = None
+            self.model_label.setText("no model")
+            self.model_label.setToolTip("")
+            self.show_status(f"Load failed: {exc}")
+            QMessageBox.critical(self, "Load failed", str(exc))
+        finally:
+            QApplication.restoreOverrideCursor()
+
+    # ------------------------------------------------------------------ save
+
+    def write_ap242(self) -> None:
+        if self.document is None:
+            self.show_status("Nothing to write — open a STEP file first.")
+            return
+        # Container opens load a temp extraction; route outputs next to the
+        # container the user actually opened, named after the part.
+        if self.vendor is not None:
+            out_path = self.vendor.conditioned_step_path()
+        else:
+            out_path = conditioned_path(self.document.path)
+        self.show_status(f"Writing {out_path.name} ...")
+        QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
+        try:
+            report = export_ap242(
+                self.document, out_path, pins=self.pins, journal=self.journal,
+                progress=self.progress,
+                source_name=self.vendor.source.name if self.vendor else None,
+            )
+            status = f"{report.summary()} | embedded metadata verified"
+            if not report.ok:
+                QMessageBox.warning(self, "Export validation", report.summary())
+            elif self.vendor is not None:
+                self.progress("Baking conditioned model into "
+                              f"{self.vendor.conditioned_container_path().name}", 0, 0)
+                baked = bake_conditioned(self.vendor, out_path)
+                status += f" | baked {baked.name}"
+            self.show_status(status)
+        except Exception as exc:
+            self.show_status(f"Export failed: {exc}")
+            QMessageBox.critical(self, "Export failed", str(exc))
+        finally:
+            self.progress_done()
+            QApplication.restoreOverrideCursor()
+
+    def write_ap242_replace(self) -> None:
+        """REPLACE mode: condition into a temp file next to the original, and
+        only after the export validates swap it over the opened STEP. The
+        previous file is kept as <name>.bak."""
+        if self.document is None:
+            self.show_status("Nothing to write — open a STEP file first.")
+            return
+        if self.vendor is not None:
+            QMessageBox.information(
+                self, "Replace original",
+                "REPLACE works on plain STEP opens. Container opens "
+                "(.kicad_mod/.PcbLib) still export a conditioned copy via "
+                "WRITE NEW.")
+            return
+        target = self.document.path
+        backup = target.with_name(target.name + ".bak")
+        answer = QMessageBox.question(
+            self, "Replace original",
+            f"Replace {target.name} with the conditioned AP242?\n"
+            f"The current file is kept as {backup.name}.",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No)
+        if answer != QMessageBox.StandardButton.Yes:
+            return
+        tmp_path = target.with_name(f"{target.stem}_AP242_replace_tmp.step")
+        self.show_status(f"Writing {target.name} in place ...")
+        QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
+        try:
+            report = export_ap242(
+                self.document, tmp_path, pins=self.pins, journal=self.journal,
+                progress=self.progress,
+            )
+            if not report.ok:
+                tmp_path.unlink(missing_ok=True)
+                self.show_status(f"{report.summary()} | {target.name} NOT replaced")
+                QMessageBox.warning(
+                    self, "Export validation",
+                    f"{report.summary()}\n{target.name} was NOT replaced.")
+                return
+            shutil.copy2(target, backup)
+            os.replace(tmp_path, target)
+            self.show_status(
+                f"Replaced {target.name} (backup: {backup.name}) | "
+                "embedded metadata verified")
+        except Exception as exc:
+            tmp_path.unlink(missing_ok=True)
+            tmp_path.with_suffix(".metadata.json").unlink(missing_ok=True)
+            self.show_status(f"Replace failed: {exc}")
+            QMessageBox.critical(self, "Replace failed", str(exc))
+        finally:
+            self.progress_done()
+            QApplication.restoreOverrideCursor()
+
+    # ------------------------------------------------------------------ misc
+
+    def snap_camera(self, view_id: str) -> None:
+        bounds = self.document.bounds() if self.document else (-1, 1, -1, 1, -1, 1)
+        size = self.plotter.interactor.size()
+        aspect = max(float(size.width()) / max(float(size.height()), 1.0), 0.01)
+        self.scene.snap_camera(view_id, bounds, aspect)
+
+    def showEvent(self, event) -> None:
+        super().showEvent(event)
+        if not self._splitter_initialized:
+            self._splitter_initialized = True
+            # 3D edit view gets 2/3 of the width, the tool panel 1/3.
+            width = max(self._splitter.width(), 1)
+            self._splitter.setSizes([(width * 2) // 3, width // 3])
+
+    def show_status(self, message: str) -> None:
+        self.statusBar().showMessage(message)
+
+    def progress(self, label: str, value: int, maximum: int) -> None:
+        """Long main-thread operations report here; the green bar repaints
+        between steps so the app never looks hung. maximum=0 shows a busy
+        indicator."""
+        self.progress_bar.setVisible(True)
+        self.progress_bar.setMaximum(maximum)
+        self.progress_bar.setValue(value)
+        self.progress_bar.setFormat(f"{label}  %p%" if maximum else label)
+        self.show_status(label)
+        QApplication.processEvents()
+
+    def progress_done(self) -> None:
+        self.progress_bar.setVisible(False)
+        QApplication.processEvents()
+
+    def document_mutated(self) -> None:
+        """A tool changed the B-rep: re-render and refresh dependent state,
+        keeping the current camera."""
+        if self.document is None:
+            return
+        self._doc_revision += 1
+        self.scene.rebuild(self.document)
+        self._refresh_info()
+        for index, tool in enumerate(self.tools):
+            if index != self.current_tool_index:
+                tool.on_document_changed()
+
+    # ------------------------------------------------------- footprint cache
+
+    def request_footprint(self, callback) -> None:
+        """Deliver the top-view HLR projection of the current geometry to
+        `callback`, from cache when fresh, else computed on a worker thread.
+        Tool switching must never block on this."""
+        if self.document is None:
+            return
+        if self._footprint_cache_rev == self._doc_revision and self._footprint_cache is not None:
+            callback(self._footprint_cache)
+            return
+        self._footprint_callbacks.append(callback)
+        if self._footprint_inflight_rev == self._doc_revision:
+            return
+        self._footprint_inflight_rev = self._doc_revision
+        try:
+            step_bytes = document_step_bytes(self.document)  # OCP: main thread only
+        except Exception as exc:
+            self._footprint_inflight_rev = None
+            self._footprint_callbacks.clear()
+            self.show_status(f"footprint: STEP snapshot failed ({exc})")
+            return
+        QThreadPool.globalInstance().start(
+            _FootprintTask(step_bytes, self._doc_revision, self._footprint_signals)
+        )
+
+    def _on_footprint_done(self, result, revision: int) -> None:
+        self._footprint_inflight_rev = None
+        callbacks = self._footprint_callbacks
+        self._footprint_callbacks = []
+        if revision != self._doc_revision:
+            # Stale: the document changed while projecting — re-request.
+            for callback in callbacks:
+                self.request_footprint(callback)
+            return
+        self._footprint_cache = result
+        self._footprint_cache_rev = revision
+        if result is not None:
+            for callback in callbacks:
+                callback(result)
+
+    def _refresh_info(self) -> None:
+        if self.document is None:
+            self.info_label.setText("No file loaded.")
+            return
+        info = self.document.info()
+        units = (self.model_bounds.units if self.model_bounds else None) or "mm"
+        xmin, xmax, ymin, ymax, zmin, zmax = info.bounds
+        pairs = [
+            ("file", info.path.name),
+            ("size", f"{xmax - xmin:.2f} x {ymax - ymin:.2f} x {zmax - zmin:.2f} {units}"),
+            ("schema", info.schema),
+            ("z", f"[{zmin:.3f}, {zmax:.3f}]"),
+            ("bodies", str(info.body_count)),
+            ("faces", str(info.face_count)),
+            ("edges", str(info.edge_count)),
+            ("verts", str(info.vertex_count)),
+            ("output",
+             self.vendor.conditioned_container_path().name
+             if self.vendor else conditioned_path(info.path).name),
+            ("pins", str(len(self.pins.pins))),
+        ]
+        cells = []
+        for index in range(0, 10, 2):
+            left = pairs[index]
+            right = pairs[index + 1]
+            cells.append(
+                f"<tr><td><b>{left[0]}</b></td><td>{left[1]}</td>"
+                f"<td><b>{right[0]}</b></td><td>{right[1]}</td></tr>"
+            )
+        self.info_label.setText(
+            "<table cellspacing='0' cellpadding='2' style='font-size: 11px;'>"
+            + "".join(cells)
+            + "</table>"
+        )

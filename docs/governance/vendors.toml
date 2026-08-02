@@ -1,0 +1,35 @@
+[[vendors]]
+id = "third-party-source-index"
+kind = "source"
+name = "Geometer third-party source index"
+upstream_url = "https://github.com/wavenumber-eng/geometer/tree/main/third_party"
+version = "repository-tracked"
+license = "project documentation"
+owner = "geometer-maintainers"
+update_command = "update third_party/README.md whenever vendored dependencies change"
+paths = ["third_party/README.md"]
+consumers = ["docs/governance/vendors.toml", "CMakeLists.txt"]
+
+[[vendors]]
+id = "rapidjson"
+kind = "source"
+name = "RapidJSON"
+upstream_url = "https://github.com/Tencent/rapidjson"
+version = "1.1.0 with one local const-assignment compatibility patch"
+license = "MIT"
+owner = "geometer-maintainers"
+update_command = "manual vendor refresh from the upstream RapidJSON release; reapply the document.h patch per third_party/rapidjson/README.geometer.md"
+paths = ["third_party/rapidjson/*"]
+consumers = ["CMakeLists.txt", "OCCT RWGltf_CafWriter GLB export", "native-build", "wasm-build"]
+
+[[vendors]]
+id = "clipper2"
+kind = "source"
+name = "Clipper2"
+upstream_url = "https://github.com/AngusJohnson/Clipper2"
+version = "2.0.1"
+license = "BSL-1.0"
+owner = "geometer-maintainers"
+update_command = "manual vendor refresh from the upstream Clipper2 release; see third_party/clipper2/README.geometer.md"
+paths = ["third_party/clipper2/*"]
+consumers = ["CMakeLists.txt", "src/planar", "native-build", "wasm-build"]

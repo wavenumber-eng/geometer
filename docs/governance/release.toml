@@ -1,0 +1,23 @@
+[[channels]]
+id = "public-pypi"
+kind = "pypi"
+status = "active"
+owner = "geometer-maintainers"
+process_doc = "docs/releases/README.md"
+build_doc = "docs/build.md"
+
+[[channels]]
+id = "committed-dist"
+kind = "native_bundle"
+status = "active"
+owner = "geometer-maintainers"
+process_doc = "dist/README.md"
+build_doc = "docs/build.md"
+
+[[channels]]
+id = "wasm-dist"
+kind = "wasm_bundle"
+status = "active"
+owner = "geometer-maintainers"
+process_doc = "dist/README.md"
+build_doc = "docs/build.md"

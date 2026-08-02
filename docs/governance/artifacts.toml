@@ -1,0 +1,26 @@
+[[artifacts]]
+id = "native-dist-binaries"
+kind = "runtime_binary"
+tracked = "committed to git under the grouped dist layout"
+produced_by = "cmake --preset release builds refreshed by the CI dist jobs"
+included_in_release = "yes: consumed by wn-geometer and sibling workspace tools"
+retention = "latest build per platform; replaced on each dist refresh"
+paths = ["dist/native/*"]
+
+[[artifacts]]
+id = "wasm-dist-bundles"
+kind = "runtime_wasm"
+tracked = "committed to git under the grouped dist layout"
+produced_by = "emsdk WASM builds refreshed by the WASM workflow"
+included_in_release = "yes: browser/node bundles and demo pages"
+retention = "latest build per target; replaced on each WASM refresh"
+paths = ["dist/wasm/*"]
+
+[[artifacts]]
+id = "dist-index"
+kind = "public_reference_asset"
+tracked = "committed to git"
+produced_by = "hand-maintained dist layout documentation"
+included_in_release = "yes: documents the dist consumption contract"
+retention = "kept current with the dist layout"
+paths = ["dist/README.md", "dist/.gitkeep"]

@@ -16,6 +16,10 @@ implementation-backed baseline and promotion state are:
 - [current interface inventory](current-interface-inventory.md); and
 - [`promotion-manifest.toml`](promotion-manifest.toml).
 
+Named downstream compatibility snapshots live under `compatibility/`. The
+current Viz snapshot is
+[`viz-2026.6.10.toml`](compatibility/viz-2026.6.10.toml).
+
 The manifest does not make an inventoried contract authoritative. A contract
 becomes TypeSpec-authoritative only after its status and required evidence are
 promoted under ADR-010. Generated JSON Schemas and contract references will

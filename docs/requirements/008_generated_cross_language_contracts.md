@@ -50,4 +50,11 @@ TypeScript, and Python consumers.
 14. Require an independent design review of the generic C ABI and executable
     IPC A0 specifications before implementing those transports, plus an
     independent implementation review before program closure.
-
+15. Preserve the frozen Viz 2026.6.10 browser/WASM compatibility snapshot until
+    Viz explicitly migrates to the generated TypeScript client and supplies
+    replacement integration evidence. Existing factory names, runtime helpers,
+    required C ABI symbols, and packed format versions must remain usable.
+16. Generate committed, deterministic HTML contract reference pages using the
+    same Wavenumber stylesheet, fonts, watermark, page idioms, and offline
+    relative-link behavior as `appz/data_models`. Vendor reviewed assets in
+    Geometer; do not require a sibling checkout during generation or viewing.

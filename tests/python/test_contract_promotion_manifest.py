@@ -35,6 +35,10 @@ def test_manifest_sources_and_identities_are_complete() -> None:
     assert (ROOT / transports["generic_c_abi_spec"]).is_file()
     assert (ROOT / transports["executable_ipc_spec"]).is_file()
     assert (ROOT / transports["transport_adr"]).is_file()
+    documentation = manifest["documentation"]
+    assert documentation["runtime_sibling_dependency"] is False
+    assert (ROOT / documentation["design"]).is_file()
+    assert len(documentation["style_source_sha256"]) == 64
 
     contracts = manifest["contracts"]
     contract_ids = [item["id"] for item in contracts]
@@ -55,6 +59,12 @@ def test_manifest_sources_and_identities_are_complete() -> None:
         if "worker" in demo:
             assert (ROOT / demo["worker"]).is_file()
         assert demo["owning_operation"] in operation_ids
+
+    consumers = manifest["consumers"]
+    consumer_ids = [item["id"] for item in consumers]
+    _unique(consumer_ids, "consumer id")
+    assert consumer_ids == ["appz.viz"]
+    assert all((ROOT / item["snapshot"]).is_file() for item in consumers)
 
 
 def test_c_abi_manifest_matches_header_exactly() -> None:
@@ -98,3 +108,37 @@ def test_cli_compatibility_names_are_still_dispatched() -> None:
     }
     for name in names:
         assert f'"{name}"' in cli
+
+
+def test_viz_2026_6_10_compatibility_snapshot_is_preserved() -> None:
+    manifest = _manifest()
+    snapshot_path = ROOT / manifest["consumers"][0]["snapshot"]
+    with snapshot_path.open("rb") as stream:
+        snapshot = tomllib.load(stream)
+
+    assert snapshot["consumer"] == "appz/viz"
+    assert snapshot["geometer_release"] == "2026.6.10"
+    assert snapshot["migration"]["target_package"] == manifest["packages"]["typescript"]
+
+    required_symbols = set(snapshot["wasm"]["required_c_abi_symbols"])
+    assert required_symbols <= set(manifest["c_abi"]["symbols"])
+
+    cmake = (ROOT / "src" / "cpp" / "lib" / "CMakeLists.txt").read_text(encoding="utf-8")
+    for factory in snapshot["artifacts"]["factory_names"]:
+        assert f"-sEXPORT_NAME={factory}" in cmake
+
+    runtime_lists = re.findall(r'-sEXPORTED_RUNTIME_METHODS=\[(.*?)\]"', cmake)
+    assert len(runtime_lists) == 2
+    runtime_methods = [
+        {item.strip("'") for item in value.split(",")} for value in runtime_lists
+    ]
+    required_methods = set(snapshot["wasm"]["required_runtime_methods"])
+    assert all(required_methods <= methods for methods in runtime_methods)
+
+    versions = {item["id"]: item["version"] for item in manifest["binary_formats"]}
+    assert snapshot["packed_formats"] == {
+        "planar_batch_version": versions["geometry.planar_batch.packet"],
+        "planar_triangulate_version": versions["geometry.planar_triangulate.packet"],
+        "clipper2_boolean_version": versions["geometry.clipper2_boolean.packet"],
+        "clipper2_inflate_open_version": versions["geometry.clipper2_inflate_open.packet"],
+    }

@@ -28,6 +28,13 @@ executable_ipc_spec = "docs/design/executable-ipc-a0.md"
 transport_adr = "docs/adr/011_generic_operation_transports.md"
 implementation_allowed = false
 
+[documentation]
+generated_html_root = "docs/generated/contracts"
+design = "docs/design/generated-contract-reference.md"
+style_source = "appz/data_models/docs/core/design/styles.css"
+style_source_sha256 = "b0452e403db12c3fca581866b0953dbca45d751bcc83c137f0da16674859d151"
+runtime_sibling_dependency = false
+
 [c_abi]
 generation = 20260623
 source = "src/cpp/lib/geometer/c_api.h"
@@ -315,6 +322,13 @@ source = "examples/wasm/embedded_model_viewer.html"
 worker = "examples/wasm/hlr_projection_worker.js"
 owning_operation = "geometry.model_hlr_projection.a0"
 status = "handwritten_javascript"
+
+[[consumers]]
+id = "appz.viz"
+status = "legacy_compatibility_required"
+snapshot = "docs/contracts/compatibility/viz-2026.6.10.toml"
+upgrade_target = "@wavenumber/geometer"
+upgrade_language = "typescript"
 
 [[demos]]
 id = "planar_ring_solver"

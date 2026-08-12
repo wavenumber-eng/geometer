@@ -91,7 +91,8 @@ approved compatibility disposition and migration evidence.
 
 The production projection set is:
 
-- JSON Schema and generated contract reference documentation;
+- JSON Schema and generated HTML contract reference documentation using the
+  shared Wavenumber visual system;
 - C++17 wire DTOs and strict codecs;
 - TypeScript types, strict codecs, and browser/Web Worker WASM client helpers;
 - Rust types, strict codecs, and executable-pipe client helpers; and
@@ -109,6 +110,13 @@ with generated declarations and explicit exports for the high-level client,
 contracts/codecs, direct WASM transport, and Web Worker transport. Standalone
 browser demo output may be bundled from that source, but is not a second package
 authority.
+
+`appz/viz` is a named compatibility consumer. Its vendored Geometer 2026.6.10
+browser artifacts, factories, runtime helpers, per-operation C ABI symbols, and
+packed planar formats remain supported while Viz is JavaScript-based. Its
+planned TypeScript upgrade targets `@wavenumber/geometer`; compatibility does
+not transfer until Viz passes its own integration suite on the generated client
+and the promotion manifest records a replacement snapshot.
 
 The Rust client crate identity is `geometer-client`. Its first supported client
 is asynchronous and uses Tokio for process and pipe I/O. Generated wire models
@@ -138,7 +146,9 @@ Promotion is operation-by-operation. Each operation must:
 6. migrate its maintained examples and demos to the generated TypeScript
    client;
 7. update docs of record, guides, compatibility notes, and release notes; and
-8. remove displaced handwritten structural authority or retain it only as a
+8. pass named downstream compatibility snapshots, including Viz while its
+   legacy lane remains active; and
+9. remove displaced handwritten structural authority or retain it only as a
    named compatibility adapter.
 
 `model_bounds` is the first vertical pilot. Inventorying another operation does
@@ -154,6 +164,9 @@ not promote it or require its full TypeSpec graph in the pilot.
   retaining its documented executable backend and compatibility surface.
 - TypeSpec and generator tooling become build-time development dependencies,
   but never Geometer runtime dependencies.
+- Generated HTML is a deterministic review projection. Geometer vendors the
+  approved Wavenumber stylesheet/assets and never reads them from a sibling
+  checkout during normal generation.
 - Contract work carries an explicit conformance, documentation, compatibility,
   and release burden before promotion.
 - Packed binary formats and transport ABIs continue to require focused design

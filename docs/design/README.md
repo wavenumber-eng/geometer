@@ -13,6 +13,7 @@ durable record belongs here, in ADRs, and in requirements.
 - [Contract semantics](contract-semantics.md)
 - [Generic operation C ABI](generic-operation-c-abi.md)
 - [Executable IPC A0](executable-ipc-a0.md)
+- [Generated contract reference](generated-contract-reference.md)
 - [Python package interface](python-package.md)
 - [WASM interfaces](wasm.md)
 - [CLI interfaces](cli.md)

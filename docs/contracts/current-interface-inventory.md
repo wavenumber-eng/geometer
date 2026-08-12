@@ -129,3 +129,16 @@ these byte-layout authorities.
 The model-bounds pilot must add a small TypeScript example because no current
 maintained demo exercises that operation.
 
+## Named downstream compatibility consumer
+
+`C:/eli/wn-hw/appz/viz` currently pins `wn-geometer==2026.6.10` and vendors the
+Geometer 2026.6.10 full and planar browser artifacts. Its JavaScript directly
+uses the Emscripten factories, runtime/memory helpers, STEP-to-GLB byte call,
+planar batch solve, triangulation, Clipper2 byte calls, version/ABI checks, and
+Geometer free functions. It also encodes the current packed planar formats.
+
+The frozen requirements are recorded in
+`compatibility/viz-2026.6.10.toml`. They remain a release compatibility lane
+until Viz's planned TypeScript upgrade adopts `@wavenumber/geometer` and
+provides a replacement snapshot. Additive generated interfaces must not remove
+or rename the legacy lane during that migration.

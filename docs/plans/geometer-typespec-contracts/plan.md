@@ -34,10 +34,16 @@ status = "pending"
 depends_on = ["typespec-foundation"]
 
 [[steps]]
+id = "generated-html-reference"
+title = "Generate the styled HTML contract reference and verify it offline"
+status = "pending"
+depends_on = ["pilot-contracts"]
+
+[[steps]]
 id = "cpp-server"
 title = "Generate C++ contract code and integrate the native operation server"
 status = "pending"
-depends_on = ["pilot-contracts"]
+depends_on = ["generated-html-reference"]
 
 [[steps]]
 id = "typescript-wasm"
@@ -70,16 +76,22 @@ status = "pending"
 depends_on = ["operation-promotion"]
 
 [[steps]]
+id = "viz-compatibility"
+title = "Prove Viz 2026.6.10 compatibility and publish its TypeScript migration path"
+status = "pending"
+depends_on = ["operation-promotion"]
+
+[[steps]]
 id = "design-doc-intent-audit"
 title = "Update and audit docs of record, guides, generated references, and compatibility notes"
 status = "pending"
-depends_on = ["typescript-demo-closure"]
+depends_on = ["typescript-demo-closure", "viz-compatibility"]
 
 [[steps]]
 id = "test-runtime-impact-audit"
 title = "Audit new test runtime, packaging, and release impact"
 status = "pending"
-depends_on = ["typescript-demo-closure"]
+depends_on = ["typescript-demo-closure", "viz-compatibility"]
 
 [[steps]]
 id = "external-review"
@@ -123,6 +135,11 @@ title = "All generated artifacts are deterministic, complete, and clean under ch
 status = "pending"
 
 [[exit_criteria]]
+id = "generated-html-reference"
+title = "Generated HTML contract references use the vendored Wavenumber visual system and pass freshness, link, and offline browser checks"
+status = "pending"
+
+[[exit_criteria]]
 id = "cross-language-conformance"
 title = "C++, TypeScript, Rust, and Python pass the same governed request, response, and diagnostic vectors"
 status = "pending"
@@ -150,6 +167,11 @@ status = "pending"
 [[exit_criteria]]
 id = "compatibility"
 title = "Existing public surfaces pass compatibility tests or have an approved versioned replacement with migration notes"
+status = "pending"
+
+[[exit_criteria]]
+id = "viz-compatibility"
+title = "Viz 2026.6.10 remains compatible or has completed its generated TypeScript client migration with replacement evidence"
 status = "pending"
 
 [[exit_criteria]]
@@ -185,11 +207,13 @@ status = "pending"
 
 # TypeSpec Contract Authority And Generated Clients
 
-## Draft Status
+## Active Status
 
-This plan is pending architecture approval. It records the proposed work and
-does not yet authorize contract changes, generated-code promotion, removal of
-compatibility readers, or a release-version change.
+This plan is active under ADR-010. Authority and inventory are complete. The
+generic C ABI and IPC A0 design packet is awaiting its required independent
+review, so transport implementation remains disabled. No operation is promoted
+and no compatibility reader or published interface may be removed merely
+because the plan is active.
 
 Generated Python is intentional mandatory scope based on project-owner
 direction that public Python should use generated contract code while
@@ -218,7 +242,7 @@ browser WASM, native executable IPC, and language clients.
 
 The required production projections are:
 
-- generated JSON Schemas and contract documentation;
+- generated JSON Schemas and styled HTML contract documentation;
 - generated C++ value types and structural codecs used by Geometer itself;
 - generated TypeScript types, strict codecs, and a browser/Web Worker WASM
   reference client;
@@ -272,10 +296,11 @@ existing focused public C++ value APIs. A generated nested JSON shape must not
 silently replace a public semantic value such as `ModelBoundsResult`; changing
 those public C++ values requires its own compatibility decision.
 
-## Resolved Draft Design Choices
+## Resolved Design Choices
 
-These are proposed decisions incorporated in the draft. Activating the plan
-requires their approval in the authority and transport ADRs.
+These decisions are incorporated in the active plan. ADR-010 accepts the
+authority decisions. ADR-011 and the concrete transport specifications remain
+at their independent review gate.
 
 ### Generic Browser And Native Operation ABI
 
@@ -505,6 +530,14 @@ design review.
   identities, duplicate identities, or unconsumed governed declarations.
 - Add generate and `--check` commands plus a stale/unexpected generated-file
   gate.
+- Generate committed HTML indexes and per-contract/per-operation references
+  under `docs/generated/contracts/` from the normalized catalog.
+- Vendor the reviewed `appz/data_models` Wavenumber stylesheet, Berkeley Mono
+  assets, and watermark into Geometer with recorded source digests. Generated
+  pages use the same page structure and relative offline links without reading
+  the sibling checkout.
+- Test deterministic HTML, complete navigation, source/schema links, generated
+  authority warnings, and desktop/narrow browser rendering.
 - Integrate generation checks with existing CMake, Rack, and L99 policy without
   forcing Node at Geometer runtime.
 
@@ -562,6 +595,10 @@ design review.
 - Package the generated contracts and client for normal TypeScript projects;
   finalize the package name and module formats in the authority slice.
 - Prove use from a clean external TypeScript package and browser smoke test.
+- Publish a Viz migration guide mapping its current factories, manifest
+  capabilities, direct memory calls, STEP-to-GLB worker, and packed planar
+  helpers to `@wavenumber/geometer`. Do not require Viz to migrate before the
+  generated client is ready.
 - Add a small model-bounds TypeScript browser example as the pilot consumer of
   the generic operation ABI and generated high-level client.
 - Establish the pinned, deterministic TypeScript build used by later demo
@@ -637,8 +674,9 @@ For each operation:
 6. regenerate any affected standalone `dist/wasm/demos` artifact and verify it
    remains self-contained;
 7. switch production dispatch and clients to the generated contract;
-8. delete displaced handwritten structural parsing and serialization; and
-9. mark the operation promoted in the manifest with digest-checked evidence.
+8. replay named downstream compatibility snapshots affected by the operation;
+9. delete displaced handwritten structural parsing and serialization; and
+10. mark the operation promoted in the manifest with digest-checked evidence.
 
 Suggested order after `model_bounds`:
 
@@ -662,6 +700,15 @@ implemented through generated contract models and explicit compatibility
 adapters or a separately versioned replacement, never two ungoverned
 authorities.
 
+Viz is a named downstream compatibility consumer. Until its TypeScript upgrade
+lands, Geometer must keep the frozen 2026.6.10 full/planar factory names,
+Emscripten runtime helpers, required per-operation C ABI exports, ownership
+functions, vendor-manifest capability meanings, and packed planar versions
+working. Geometer-side snapshot tests run on every affected change; final exit
+also requires an integration run using a candidate Geometer artifact in a
+temporary Viz test workspace. Viz migrates later to `@wavenumber/geometer`
+without forcing legacy pointer code into the generated client.
+
 ## Documentation And Compatibility Closure
 
 Documentation is part of the shipped interface and is required for each
@@ -677,6 +724,8 @@ For each promoted operation:
   `docs/developer/README.md` and any focused toolchain guide;
 - regenerate contract schemas, catalogs, API references, and package
   documentation from their authored sources;
+- regenerate the styled HTML contract site and verify its vendored stylesheet,
+  font/logo assets, navigation, generated markers, and offline links;
 - update the applicable TypeScript/WASM, Rust/executable, Python, and native
   consumer guides and runnable examples;
 - record the compatibility result for existing symbols, commands, Python
@@ -699,6 +748,8 @@ Each promoted operation requires:
 
 - TypeSpec compile with warnings as errors;
 - generated catalog/schema/document freshness;
+- generated HTML deterministic-output, complete-navigation, relative-link,
+  shared-style digest, and offline desktop/narrow browser checks;
 - exact root and operation inventory checks;
 - strict positive and adversarial JSON vectors with manifest-declared lanes and
   comparison oracles;
@@ -724,7 +775,11 @@ Each promoted operation requires:
 - `scripts/validate_native.py`, `scripts/validate_python_package.py`, CTest,
   Rack, WASM validations, and `tests/L99_release`; and
 - regenerated committed `dist/` artifacts whenever the shipped interfaces or
-  runtime change.
+  runtime change;
+- the frozen Viz compatibility snapshot on every C ABI, Emscripten export,
+  packed planar format, WASM artifact, or ownership change; and
+- a candidate-artifact Viz vendoring and targeted browser/integration smoke
+  before final compatibility signoff.
 
 Final plan exit additionally requires TypeScript compilation and browser smoke
 for every maintained demo in the frozen inventory.
@@ -738,6 +793,9 @@ Rack strata rather than hiding inside a general release test.
 - Adding Altium, board, visualizer, or other application policy to Geometer.
 - Making `appz/data_models` or `alexandria` a Geometer runtime or build
   dependency.
+- Making `appz/viz` a Geometer build dependency; Viz compatibility is verified
+  from a frozen in-repository snapshot plus an explicit downstream integration
+  run.
 - Reimplementing geometry algorithms in generated code.
 - Encoding large model and result blobs as base64 JSON.
 - Replacing efficient packed planar transport solely to make it resemble JSON.
@@ -747,7 +805,12 @@ Rack strata rather than hiding inside a general release test.
   consumer requires them.
 - Treating generated types alone as proof of strict wire conformance.
 
-## Decisions Required Before Activation
+## Accepted Direction And Remaining Decisions
+
+ADR-010 accepts the authority boundary and required projections. ADR-011 and
+its transport specifications are at the independent review gate. Package,
+generator, compatibility, and packed-layout choices below must be resolved no
+later than their owning implementation slice.
 
 1. Approve TypeSpec plus the normalized catalog as structural authority for
    individually promoted Geometer contracts.
@@ -778,6 +841,10 @@ Rack strata rather than hiding inside a general release test.
     generic operation ABI.
 15. Decide whether the packed binary layout generator belongs in this plan or a
    subsequent plan after logical planar models and clients are established.
+16. Preserve the accepted Viz 2026.6.10 compatibility snapshot and replace it
+    only after its TypeScript client migration passes.
+17. Use the accepted digest-tracked Wavenumber documentation stylesheet, font
+    assets, and watermark for generated Geometer HTML references.
 
 ## Completion And Plan Hygiene
 

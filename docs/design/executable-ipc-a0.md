@@ -58,9 +58,10 @@ frames require `attachment_count == 0` and `attachment_bytes == 0`.
 Every frame has a nonempty strict generated JSON object. `hello`, `welcome`,
 `request`, `response`, `cancel`, `cancelled`, `cancel_rejected`, and
 `protocol_error` use their corresponding generated DTO. `shutdown` has an
-optional human reason; `shutdown_ack` reports whether the active request
-completed during the grace period. Unknown fields, duplicate keys, malformed
-UTF-8, and trailing JSON bytes are rejected under the common contract rules.
+optional human reason. `shutdown_ack` contains `status: "complete"`,
+`activeRequestCompleted: bool`, and `rejectedQueuedRequestCount: u32`.
+Unknown fields, duplicate keys, malformed UTF-8, and trailing JSON bytes are
+rejected under the common contract rules.
 
 ## Attachment section
 
@@ -115,8 +116,11 @@ exits nonzero.
 ## Requests and responses
 
 A request id is an unsigned 64-bit nonzero value selected by the client. It
-must not already be outstanding. Reuse is allowed only after its terminal
-response or cancellation has been received.
+must not already be outstanding. A normal `response`, a shutdown-rejection
+`response`, or `cancelled` is terminal. Reuse is allowed only after the client
+has received that terminal frame. `cancel_rejected` is not terminal for an
+active request. The draining state accepts no new request, so an id made
+terminal during shutdown cannot in practice be reused on that connection.
 
 The request JSON is a generated generic envelope containing the operation
 identity and its operation-specific request DTO. Raw attachment sections are
@@ -236,15 +240,55 @@ operations.
 ## Shutdown
 
 After `shutdown`, valid stdin EOF, or parent-requested graceful termination, the
-server:
+server records one monotonic deadline 30 seconds after the shutdown trigger and
+atomically enters `draining`. Under the same request-state lock it removes
+every queued request in FIFO acceptance order and marks it terminal. Each
+removed request produces an ordinary generated `response` frame with
+`ok: false`, no attachments, and exactly one transport diagnostic:
 
-1. stops accepting operation requests;
-2. emits terminal shutdown diagnostics for queued requests;
-3. lets the active request finish for a default 30-second grace period;
-4. emits its terminal response and `shutdown_ack`, then flushes and exits zero;
-   or
-5. if grace expires, logs the condition and terminates the process nonzero,
-   closing the pipe so clients fail all outstanding work.
+- code `geometer.transport.server_shutting_down`;
+- category `transport`;
+- `retryable: true`;
+- the request id and operation identity; and
+- no JSON Pointer path.
+
+This outcome is a shutdown rejection, not cancellation; no `cancelled` or
+`cancel_rejected` frame is emitted for it. The writer receives these response
+frames in FIFO acceptance order. A queued id becomes terminal in server state
+at removal, and becomes reusable by the client only when that response is
+received. Because the connection is draining, any attempted reuse is still a
+wrong-state protocol error.
+
+The active request is allowed to finish, and its ordinary terminal response is
+submitted after all queued shutdown-rejection responses. `shutdown_ack` is
+submitted last. Successful graceful shutdown requires the writer to finish and
+flush, in this order, every queued rejection response, the active response when
+one exists, and `shutdown_ack` no later than the single deadline. Only then does
+the process close stdout and exit zero.
+
+Active completion and entry into `draining` use the request-state lock. If
+completion wins, its complete response is submitted before the shutdown
+transition and therefore precedes the queued rejection responses. If shutdown
+wins, the request is marked draining-active and its response follows all queued
+rejections as stated above. Complete frames already submitted to the writer
+before either transition retain their existing FIFO positions. In every case
+`shutdown_ack` follows every terminal request frame accepted by that
+connection.
+
+The 30-second deadline covers geometry execution, producer submission into the
+bounded writer queue, every partial stdout write, and every flush. Geometry
+completion alone does not satisfy the grace period. A client that stops reading
+stdout therefore cannot keep the process alive indefinitely.
+
+Deadline expiry and successful final-ack flush use one synchronized terminal
+state transition. The success transition wins only if the complete
+`shutdown_ack` flush finishes and acquires that state at or before the monotonic
+deadline. Otherwise expiry wins: the server logs only to stderr and forcibly
+terminates nonzero without attempting another protocol frame. A blocked writer
+must be interruptible by this forced-termination path. Any partially written
+frame and every frame not received before pipe closure are failed by the client
+as unexpected process termination; no request id from that connection may be
+reused on a replacement connection merely by assuming delivery.
 
 An explicit forced child termination is a client escalation, not an A0 control
 frame. The Rust client first attempts graceful shutdown and exposes a separate

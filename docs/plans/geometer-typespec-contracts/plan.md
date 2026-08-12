@@ -88,10 +88,22 @@ status = "pending"
 depends_on = ["geom-contract-alignment"]
 
 [[steps]]
+id = "analytic-synthetic-correctness"
+title = "Establish the analytic Boolean synthetic correctness and mutation program"
+status = "pending"
+depends_on = ["analytic-planar-boolean-design"]
+
+[[steps]]
+id = "occt-8-0-1-qualification"
+title = "Qualify OCCT V8_0_1 against V8_0_0 on native, WASM, and existing regressions"
+status = "pending"
+depends_on = ["analytic-synthetic-correctness"]
+
+[[steps]]
 id = "analytic-planar-boolean-promotion"
 title = "Promote analytic planar Boolean batch and ship its focused additive release"
 status = "pending"
-depends_on = ["analytic-planar-boolean-design"]
+depends_on = ["occt-8-0-1-qualification"]
 
 [[steps]]
 id = "remaining-operation-promotion"
@@ -211,7 +223,17 @@ status = "pending"
 
 [[exit_criteria]]
 id = "analytic-planar-boolean"
-title = "The analytic planar Boolean operation preserves exact topology and passes native, WASM, IPC, TypeScript, Python, and MATZ integration gates"
+title = "The analytic planar Boolean operation preserves exact topology and passes native, WASM, IPC, TypeScript, Rust, Python, and MATZ integration gates"
+status = "pending"
+
+[[exit_criteria]]
+id = "analytic-synthetic-correctness"
+title = "Closed-form, invariant, metamorphic, degeneracy, exhaustive, property, lineage, cross-runtime, and mutation suites protect the analytic mathematics"
+status = "pending"
+
+[[exit_criteria]]
+id = "occt-8-0-1-qualification"
+title = "OCCT V8_0_1 is accepted with complete native/WASM evidence or V8_0_0 retention has a governed rejecting fixture and decision"
 status = "pending"
 
 [[exit_criteria]]
@@ -700,6 +722,57 @@ its behavioral requirements, while Geometer independently accepts the solver,
 determinism, diagnostics, bounds, and transport design. No consumer review can
 waive Geometer's genericity or release gates.
 
+### 3C. Analytic Synthetic Correctness And OCCT Qualification
+
+- Build a closed-form corpus for line/arc rings, rectangles, disks, annuli,
+  capsules, swept paths, nested holes/islands, tangency, coincidence, complete
+  subtraction, and disconnected results. Expected topology and normalized
+  analytic geometry must come from mathematics independent of OCCT output.
+- Check structural invariants for shared endpoints, replayable arc
+  endpoint/radius/direction/branch data, winding, containment, Euler
+  characteristic, absence of dangling/self-intersecting topology, and
+  independently certified analytic area/perimeter of the published normalized
+  replay geometry.
+- Add metamorphic transformations for same-stage operand permutation, geometry
+  projection under id renaming, integer translation, exact 90-degree rotation,
+  reflection with direction/winding recanonicalization, valid integer scaling,
+  identity/self operations, and standalone-versus-mixed-batch equivalence.
+  Stage splitting compares geometry only when mathematically equivalent and
+  may legitimately change lineage. Scaling applies only while the transformed
+  case remains valid under the fixed 1-nm/error rules.
+- Sweep parameters below, at, and above tangency, coincidence, half-grid ties,
+  normalization collisions, vanishing notches/holes, collinearity, 0/180/360
+  degree arc boundaries, and permitted swept-area self-overlap. Each case has
+  an exact result or exact fail-closed diagnostic, never a tolerance-based
+  disposition.
+- Exhaustively enumerate a bounded small integer domain and run larger
+  reproducibly seeded property tests. Every failure records its seed and is
+  minimized into a committed regression vector.
+- Test lineage independently: absorbed/coincident positives, partial and
+  complete later removal, surviving and overwritten subtraction, refill, and
+  many-to-many operand/result associations.
+- Use closed-form solutions, the selected exact algebraic predicates, and
+  independently implemented certified line/arc area formulas as authoritative
+  oracles. Secondary geometry engines and dense raster/sampling comparisons are
+  differential warnings only.
+- Run critical mutation sentinels that reverse arcs, change tie policy,
+  normalize between stages, omit lineage, change operand order, corrupt
+  hierarchy, or mishandle tangency, and require the suite to detect each.
+- Pull requests run the closed-form corpus, minimized regressions,
+  deterministic seed subset, and critical mutations. Nightly runs bounded
+  exhaustive enumeration, larger seeds, and differential warnings. Release
+  runs all frozen vectors through C++, native/WASM, IPC, TypeScript, Rust, and
+  Python with separate semantic, diagnostic, and canonical-byte assertions.
+- Compare id-renamed cases with a geometry-only projection or an explicit
+  renaming map because provenance bytes and digests may change. Empty-operation
+  properties use the governed zero-operand-stage semantics.
+- Qualify exact upstream OCCT tags `V8_0_0` and `V8_0_1` side-by-side before
+  production solver work or golden freeze. Include bounded timeout regressions
+  for fixed Boolean hangs plus all existing STEP, HLR, GLB, planar, CLI,
+  Python, native, and WASM suites. Retest the local Emscripten install-rule
+  patch. Accept and cache V8_0_1 only with reviewed evidence; otherwise retain
+  V8_0_0 with the rejecting fixture. Never substitute upstream master.
+
 ### 4. Generated C++ And Native Server Boundary
 
 - Generate C++17 value types and strict structural codecs from the normalized
@@ -817,10 +890,11 @@ For each operation:
 
 The first new capability after the complete `model_bounds` infrastructure pilot
 is `geometry.analytic_planar_boolean_batch.a0`. Its promotion must prove the
-separately governed packed format, generated TypeScript and Python consumption,
-native/browser canonical parity, executable IPC behavior, and the frozen MATZ
-fixtures. It may then ship in a focused additive tagged Geometer release without
-waiting for legacy HLR, GLB, or sampled planar contracts and demos to migrate.
+separately governed packed format, generated TypeScript, Rust, and Python
+consumption, native/browser canonical parity, executable IPC behavior, and the
+frozen MATZ fixtures. It may then ship in a focused additive tagged Geometer
+release without waiting for legacy HLR, GLB, or sampled planar contracts and
+demos to migrate.
 The existing sampled planar solver, triangulation, and Clipper2 APIs remain
 supported and unchanged.
 
@@ -830,8 +904,8 @@ The Geometer/MATZ release handshake is:
    normalization, provenance, and diagnostics.
 2. MATZ reviews that proposal against its frozen requirements and supplies
    representative fixtures; it does not dictate the wire schema.
-3. Geometer proves canonical native/WASM parity and generated TypeScript and
-   Python consumption, plus executable IPC behavior.
+3. Geometer proves canonical native/WASM parity and generated TypeScript, Rust,
+   and Python consumption, plus executable IPC behavior.
 4. Geometer publishes an additive tagged release after the focused native,
    WASM, package, documentation, Rack, and L99 gates pass.
 5. MATZ pins the tagged release, replaces its solved-copper Boolean replay with

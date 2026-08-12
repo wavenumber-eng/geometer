@@ -47,7 +47,6 @@ warning = 2
 [enum.diagnostic_scope]
 underlying = "u8"
 job = 1
-relationship_query = 2
 
 [enum.reference_kind]
 underlying = "u32_high_half"
@@ -71,12 +70,13 @@ capsule_left_line = 32
 capsule_end_cap = 33
 capsule_right_line = 34
 capsule_start_cap = 35
-swept_left_offset = 48
-swept_outer_offset_arc = 49
-swept_end_cap = 50
-swept_inner_offset_arc = 51
-swept_right_offset = 52
+swept_left_offset_line = 48
+swept_left_offset_arc = 49
+swept_right_offset_line = 50
+swept_right_offset_arc = 51
+swept_round_join = 52
 swept_start_cap = 53
+swept_end_cap = 54
 
 [enum.operand_event]
 underlying = "u16"
@@ -177,6 +177,10 @@ operand_outcome_events = 111
 relationship_results = 112
 relationship_region_pairs = 113
 
+[required_table_kinds]
+request = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
+result = [101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113]
+
 [record_size.request]
 jobs = 24
 stages = 32
@@ -199,7 +203,7 @@ result_vertices = 32
 directed_fragments = 48
 result_rings = 32
 fragment_references = 4
-result_regions = 32
+result_regions = 24
 ring_region_references = 8
 source_sets = 8
 source_references = 32
@@ -217,6 +221,39 @@ normalization_topology_collapse = 65544
 nonanalytic_result = 65545
 solver_failed = 65546
 resource_limit_exceeded = 65547
+
+[operation_diagnostic_identity]
+invalid_topology = "geometer.operation.analytic_planar_boolean.invalid_topology"
+invalid_arc = "geometer.operation.analytic_planar_boolean.invalid_arc"
+unsupported_geometry = "geometer.operation.analytic_planar_boolean.unsupported_geometry"
+normalization_ambiguous_tie = "geometer.operation.analytic_planar_boolean.normalization_ambiguous_tie"
+normalization_error_exceeded = "geometer.operation.analytic_planar_boolean.normalization_error_exceeded"
+normalization_topology_collapse = "geometer.operation.analytic_planar_boolean.normalization_topology_collapse"
+nonanalytic_result = "geometer.operation.analytic_planar_boolean.nonanalytic_result"
+solver_failed = "geometer.operation.analytic_planar_boolean.solver_failed"
+resource_limit_exceeded = "geometer.operation.analytic_planar_boolean.resource_limit_exceeded"
+
+[source_reference_mapping.authored_segment_curve]
+primary_id = "authored_segment_id"
+secondary_id = "authored_curve_id"
+allowed_roles = [1, 2]
+
+[source_reference_mapping.compact_feature_role]
+primary_id = "compact_feature_id"
+secondary_id = "boundary_occurrence_key"
+allowed_roles = [16, 17, 32, 33, 34, 35, 48, 49, 50, 51, 52, 53, 54]
+
+[source_reference_mapping.subtractive_operand_effect]
+primary_id = "stage_id"
+secondary_id = "zero"
+allowed_roles = [0]
+
+[boundary_occurrence_key]
+whole_feature = 0
+offset_encoding = "high_u32=centerline_segment_ordinal_1_based;low_u32=0"
+join_encoding = "high_u32=incoming_segment_ordinal_1_based;low_u32=outgoing_segment_ordinal_1_based"
+start_cap_encoding = "high_u32=1;low_u32=0"
+end_cap_encoding = "high_u32=centerline_vertex_count;low_u32=0"
 
 [contract_diagnostic]
 invalid_packet = "geometer.contract.analytic_planar_boolean_packet.invalid_packet"
@@ -262,6 +299,20 @@ job_local_coordinate_span_nm = 1000000000000
 job_local_radius_width_nm = 1000000000000
 certified_interval_initial_bits = 256
 certified_interval_max_bits = 4096
+analytic_boundary_occurrences_per_job = 131072
+examined_curve_pairs_per_job = 8388608
+exact_intersections_per_job = 1048576
+arrangement_vertices_per_job = 1048576
+arrangement_half_edges_per_job = 2097152
+arrangement_faces_per_job = 1048576
+algebraic_scalars_per_job = 4194304
+algebraic_polynomial_degree = 64
+algebraic_coefficient_bits = 16384
+algebraic_storage_bytes_per_job = 268435456
+provenance_references_per_job = 8388608
+exact_predicate_calls_per_job = 100000000
+interval_refinement_steps_per_job = 100000000
+solver_working_memory_bytes_per_job = 1073741824
 vertex_squared_error_nm2_numerator = 1
 vertex_squared_error_nm2_denominator = 2
 radius_error_nm_numerator = 1

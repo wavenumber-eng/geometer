@@ -31,6 +31,10 @@ The reviewer should explicitly determine whether:
   writes, broken pipes, and fatal versus correlated errors are unambiguous;
 - queue-only cancellation and graceful/forced shutdown have one outcome for
   every race; and
+- queued requests receive the specified terminal shutdown-rejection response,
+  diagnostic, ordering, and request-id transition; the single grace deadline
+  covers execution, bounded-queue submission, writes, and flush under a
+  synchronized completion-versus-expiry decision; and
 - the specifications preserve every frozen Viz and existing CLI/C ABI surface.
 
 The review should separately label blocking findings, nonblocking follow-ups,

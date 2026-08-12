@@ -101,10 +101,17 @@ by ascending table kind:
 | 24 | 8 | `u64` | record count |
 
 For every fixed table, `record count * record bytes == table byte length` with
-overflow-safe arithmetic. A required kind appears exactly once. Unknown kinds
-are rejected in generation 1. Ranges may not overlap the header, directory, or
-another table. Tables are packed in directory order with only the minimum
-zero-filled alignment between them.
+overflow-safe arithmetic. A request directory contains exactly kinds 1 through
+13 and a result directory contains exactly kinds 101 through 113, each exactly
+once, even when its record count is zero. Consequently both A0 directory entry
+counts are exactly 13. Unknown, missing, or duplicate kinds are rejected.
+
+Zero-count tables have byte length zero and use the current minimum-aligned
+payload cursor as their offset; they do not advance it. Nonempty ranges may not
+overlap the header, directory, or another nonempty table. Tables are packed in
+directory order with only the minimum zero-filled alignment between them. This
+rule gives an empty/minimal logical model one unique directory and offset
+encoding.
 
 Indices are zero-based `u32` indices into the named table. `(first, count)` is
 valid only when `first + count` does not overflow and is within the target
@@ -151,6 +158,8 @@ Jobs sort by job id in the packet. Stage ranges retain authored stage order.
 | 24 | `u64` | reserved, zero |
 
 Operands within a stage sort by operand id.
+A stage range may be empty; this encodes the governed zero-operand no-op
+semantics. A job may contain zero stages and then succeeds with an empty result.
 
 ### Operand record, 24 bytes
 
@@ -260,7 +269,7 @@ query id.
 | 104 | directed fragments | 48 |
 | 105 | result rings | 32 |
 | 106 | fragment references | 4 |
-| 107 | result regions | 32 |
+| 107 | result regions | 24 |
 | 108 | ring/region references | 8 |
 | 109 | source sets | 8 |
 | 110 | source references | 32 |
@@ -295,7 +304,7 @@ zero-length result-region range.
 | ---: | --- | --- |
 | 0 | `u32` | governed diagnostic code |
 | 4 | `u8` | severity: `1` error, `2` warning |
-| 5 | `u8` | scope: `1` job, `2` query |
+| 5 | `u8` | scope: exactly `1` job |
 | 6 | `u16` | trusted-id presence flags |
 | 8 | `u64` | job id or zero |
 | 16 | `u64` | stage id or zero |
@@ -336,8 +345,10 @@ center is derived and is not serialized. Full circles use the governed two-half
 arc decomposition. Source curve identity is carried through source references,
 not a competing normalized result-curve table.
 
-An empty source set has index zero; nonempty source-set indices are one-based so
-zero remains the empty sentinel.
+Every source-set field is a handle rather than a raw zero-based table index:
+zero denotes the empty set and nonzero value `n` addresses source-set table
+record `n - 1`. The table contains nonempty sets only. This convention applies
+uniformly to vertices, fragments, regions, and operand events.
 
 ### Result-ring record, 32 bytes
 
@@ -345,12 +356,32 @@ zero remains the empty sentinel.
 parent ring index `u32` or `UINT32_MAX`, depth `u32`, flags `u32` (bit 0 hole),
 and reserved `u32`. Fragment-reference records are `u32` fragment indices.
 
-### Result-region record, 32 bytes
+The ring hierarchy is the sole containment authority. A root has parent
+`UINT32_MAX` and depth zero. Every other ring names exactly one parent whose
+depth is one less. Parent links are acyclic, and the parent must be the
+geometrically smallest ring that strictly contains the child without crossing
+it. The hole flag is set exactly for odd depth. Even-depth rings are CCW and
+odd-depth rings are CW.
 
-`result region id u64`, outer ring index `u32`, first child/hole reference
-`u32`, reference count `u32`, positive contributor source-set index `u32`, flags
-`u32`, and reserved `u32`. Ring/region references are `u64`: high 32 bits are
-kind (`1` ring, `2` child region) and low 32 bits are the table index.
+### Result-region record, 24 bytes
+
+| Offset | Type | Field |
+| ---: | --- | --- |
+| 0 | `u64` | generated result-region id |
+| 8 | `u32` | outer ring index |
+| 12 | `u32` | positive contributor source-set index |
+| 16 | `u32` | flags, zero in A0 |
+| 20 | `u32` | reserved, zero |
+
+Every even-depth ring is named as the outer ring of exactly one result region;
+no odd-depth ring is named by a result region. Thus an island nested inside a
+hole is a separate connected result region while retaining its ring parent.
+The former child/hole range is deliberately absent, so no second hierarchy can
+disagree with the ring parent/depth authority.
+
+Ring/region-reference records remain only for operand outcome references. They
+are `u64`: high 32 bits are kind (`1` ring, `2` result region) and low 32 bits
+are the table index.
 
 ### Source-set and source-reference records
 
@@ -368,11 +399,28 @@ A 32-byte source reference is:
 | 2 | `u16` | canonical feature/boundary role |
 | 4 | `u32` | flags, zero in A0 |
 | 8 | `u64` | operand id |
-| 16 | `u64` | authored segment/curve/feature id |
-| 24 | `u64` | secondary authored id or zero |
+| 16 | `u64` | primary id governed by source kind |
+| 24 | `u64` | secondary id governed by source kind |
 
-Kinds distinguish authored curve/segment, compact feature role, and subtractive
-operand effect. References sort by their full tuple.
+The mapping is exhaustive:
+
+| Source kind | Primary id | Secondary id | Role |
+| --- | --- | --- | --- |
+| authored segment/curve | authored segment id | authored curve id | `authored_line` or `authored_circular_arc` |
+| compact feature boundary | compact feature id | boundary-occurrence key below | one compatible compact role |
+| subtractive operand effect | stage id | zero | `none` |
+
+For disks, annuli, and capsules, the compact role uniquely identifies the
+boundary and the occurrence key is zero. Swept offset occurrences use the
+one-based centerline segment ordinal in the high 32 bits and zero in the low
+32 bits. A round join uses the incoming one-based segment ordinal in the high
+half and outgoing ordinal in the low half. Start and end caps use respectively
+vertex ordinal 1 and the final centerline vertex ordinal in the high half, with
+zero low halves. Swept roles distinguish left/right line offsets, left/right
+circular-arc offsets, round joins, and start/end caps. Splitting one occurrence
+at intersections repeats the same source reference on every surviving
+fragment. Any source-kind/id/role combination outside the catalog mapping is a
+contract error. References sort by their full tuple.
 
 ### Operand-outcome-event record, 48 bytes
 
@@ -401,15 +449,15 @@ identities and duplicated in the governed numeric catalog:
 
 | Code | Generated identity |
 | ---: | --- |
-| `0x00010003` | `geometry.analytic_planar_boolean.invalid_topology` |
-| `0x00010004` | `geometry.analytic_planar_boolean.invalid_arc` |
-| `0x00010005` | `geometry.analytic_planar_boolean.unsupported_geometry` |
-| `0x00010006` | `geometry.analytic_planar_boolean.normalization_ambiguous_tie` |
-| `0x00010007` | `geometry.analytic_planar_boolean.normalization_error_exceeded` |
-| `0x00010008` | `geometry.analytic_planar_boolean.normalization_topology_collapse` |
-| `0x00010009` | `geometry.analytic_planar_boolean.nonanalytic_result` |
-| `0x0001000a` | `geometry.analytic_planar_boolean.solver_failed` |
-| `0x0001000b` | `geometry.analytic_planar_boolean.resource_limit_exceeded` |
+| `0x00010003` | `geometer.operation.analytic_planar_boolean.invalid_topology` |
+| `0x00010004` | `geometer.operation.analytic_planar_boolean.invalid_arc` |
+| `0x00010005` | `geometer.operation.analytic_planar_boolean.unsupported_geometry` |
+| `0x00010006` | `geometer.operation.analytic_planar_boolean.normalization_ambiguous_tie` |
+| `0x00010007` | `geometer.operation.analytic_planar_boolean.normalization_error_exceeded` |
+| `0x00010008` | `geometer.operation.analytic_planar_boolean.normalization_topology_collapse` |
+| `0x00010009` | `geometer.operation.analytic_planar_boolean.nonanalytic_result` |
+| `0x0001000a` | `geometer.operation.analytic_planar_boolean.solver_failed` |
+| `0x0001000b` | `geometer.operation.analytic_planar_boolean.resource_limit_exceeded` |
 
 Contract diagnostics for packet/id/reference defects use the governed
 `geometer.contract.analytic_planar_boolean_packet.*` identities in the response
@@ -430,13 +478,47 @@ Canonical request packets:
 - reject unused records and unreferenced ids.
 
 Canonical result packets follow the ordering rules in the logical design.
+The complete directed-fragment key includes direction between kind and
+major-arc branch; every other canonical key likewise contains every semantic
+field before generated ids are assigned.
+
+The total result-table keys are:
+
+- job results: caller job id;
+- diagnostics: `(job id, severity, code, presence flags, stage id, operand id,
+  geometry/source id, path token, detail token)`;
+- vertices: the complete logical vertex key from the design;
+- fragments: `(start vertex key, end vertex key, kind, direction, majorArc,
+  radius, complete positive source-set tuple, complete subtraction source-set
+  tuple)`;
+- rings: `(depth, canonical rotated directed-fragment-key sequence, parent
+  ring key)` after winding normalization;
+- result regions: `(outer ring key, complete positive-contributor source-set
+  tuple)`;
+- source references: their complete `(kind, role, flags, operand id, primary
+  id, secondary id)` tuple;
+- source sets: their complete sorted source-reference tuple sequence;
+- operand events: `(operand id, event code, complete sorted result-reference
+  tuple, complete source-set tuple)`;
+- relationship pairs: `(left result-region id, right result-region id,
+  dimension, equality, leftContainsRight, rightContainsLeft)`; and
+- relationship results: query id, with each owned pair range already sorted by
+  the preceding key.
+
+Fragment-reference and ring/region-reference tables retain the canonical owner
+sequence. Generated result ids are assigned only after these semantic sort
+keys have been sorted. If two records have identical complete semantic keys,
+they must be interned where the model permits one record or retained in their
+governed owner range where multiplicity is semantic; allocator/traversal order
+is never a tiebreaker.
 Tables contain no telemetry. A canonical job-result digest is SHA-256 over a
 standalone result packet with zero relationship results and exactly one
 job-result record. Its closure and rebasing are normative:
 
 1. begin with the job's diagnostic, result-region, and operand-event ranges;
-2. follow regions to outer/child/hole rings and contributor source sets;
-3. follow rings to fragment references and fragments;
+2. follow regions to their outer rings and contributor source sets, then
+   repeatedly include every ring whose parent is already included;
+3. follow all included rings to fragment references and fragments;
 4. follow fragments to endpoint vertices and both source sets;
 5. follow vertices to intersection source sets;
 6. follow source sets to source references;
@@ -469,15 +551,34 @@ Additional A0 maxima are:
 | Records in any one table | `UINT32_MAX` and packet-size limited |
 | Job-local coordinate span per axis | `1,000,000,000,000 nm` |
 | Job-local positive radius or width | `1,000,000,000,000 nm` |
+| Analytic boundary occurrences per job | 131,072 |
+| Curve pairs examined after conservative pruning per job | 8,388,608 |
+| Exact intersections per job | 1,048,576 |
+| Arrangement vertices per job | 1,048,576 |
+| Arrangement half-edges per job | 2,097,152 |
+| Arrangement faces per job | 1,048,576 |
+| Live real-algebraic scalars per job | 4,194,304 |
+| Defining-polynomial degree | 64 |
+| Bits in any algebraic polynomial coefficient | 16,384 |
+| Algebraic integer/coefficient storage per job | 256 MiB |
+| Provenance source references per job | 8,388,608 |
+| Exact predicate calls per job | 100,000,000 |
+| Total interval-refinement steps per job | 100,000,000 |
+| Solver working memory per job | 1 GiB |
 
 Implementations advertise smaller effective limits when required by available
 memory. Every multiplication, addition, alignment, index/range, signed-origin
 subtraction, and native-size conversion is checked before allocation. The
 decoder validates the full structural graph before invoking OCCT.
+The authoritative arrangement charges each counter before performing the work
+or allocation that would exceed it. Hitting any solver counter is the stable
+job-local `resource_limit_exceeded` outcome. Native and WASM use the same hard
+counts; an advertised effective limit may only be smaller, and clients target
+the minimum negotiated capability when cross-runtime parity is required.
 
 ## Generated Codec Tests
 
-Before freeze, C++, TypeScript, and Python codecs must share vectors for:
+Before freeze, C++, TypeScript, Rust, and Python codecs must share vectors for:
 
 - empty/minimal packets and every record kind;
 - exact uint64 maximum handling and JavaScript `bigint` enforcement;

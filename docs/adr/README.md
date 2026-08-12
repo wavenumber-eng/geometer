@@ -14,3 +14,4 @@ and should not be treated as docs of record after a change ships.
 - [ADR 009: OCCT Binary Dependency Cache In R2](009_occt_binary_dependency_cache.md)
 - [ADR 010: TypeSpec Contract Authority And Promotion](010_typespec_contract_authority_and_promotion.md)
 - [ADR 011: Generic Operation Transports](011_generic_operation_transports.md)
+- [ADR 012: Exact Arrangement For Analytic Planar Booleans](012_exact_analytic_planar_boolean_arrangement.md)

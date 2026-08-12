@@ -2,8 +2,10 @@ snapshot_version = 1
 snapshot_status = "requirements_input"
 captured_date = "2026-08-12"
 consumer = "appz/data_models/pcb/matz"
-source_repository = "wavenumber-eng/wn-hw"
-source_component = "appz/data_models"
+source_repository = "wavenumber-eng/appz"
+source_component = "data_models"
+source_branch = "pcb-matz-viz-data-models"
+source_revision_publication = "pending_origin_push"
 source_revision = "fabbf70e1970adb7fa74f3be64c4ef45e2b89154"
 runtime_sibling_dependency = false
 

@@ -2,14 +2,19 @@
 
 ## Status
 
-Proposed for joint Geometer/MATZ review. This document does not authorize
-transport implementation or freeze generated code. The generic operation C ABI
-and executable IPC remain gated by their independent review.
+MATZ has accepted the consumer/provider design input. Independent technical
+review remains open. This document does not authorize transport or production
+solver implementation and does not freeze generated code. The generic
+operation C ABI and executable IPC remain gated by their separate independent
+review.
+
+The proposed solver decision is recorded in
+[ADR-012](../adr/012_exact_analytic_planar_boolean_arrangement.md).
 
 The stable operation identity is
 `geometry.analytic_planar_boolean_batch.a0`. Friendly generated methods are
 `analyticPlanarBooleanBatch` in TypeScript and
-`analytic_planar_boolean_batch` in Python.
+`analytic_planar_boolean_batch` in Python and Rust.
 
 ## Authority And Scope
 
@@ -56,11 +61,14 @@ The nonproduction CTest spike
 - OCCT modification/generation history alone does not retain absorbed-positive
   material lineage.
 
-The same test passes natively and under Emscripten/Node. Its current five-line
-canonical feasibility signature, including the twelve exact case-2
-endpoint/radius/direction/branch fragments, is byte-identical with SHA-256
+The same test passes natively and under Emscripten/Node. After decoding stdout
+as UTF-8, normalizing CRLF to LF, and removing exactly one final LF, its current
+five-line canonical feasibility signature, including the twelve exact case-2
+endpoint/radius/direction/branch fragments, has SHA-256
 `c21b03c1b42a6cb3212cec5b3051987f645e21062eddecc82d3e3b0e0fd6dfc7`.
-This is feasibility evidence, not the eventual packet golden.
+Raw console bytes are not compared because Windows text mode emits CRLF. The
+canonical-byte construction and digest must be tested directly. This is
+feasibility evidence, not the eventual packet golden.
 
 The case-2 success oracle is the following lexicographically sorted fragment
 list. `A:radius:direction:branch:start:end` uses integer nanometers:
@@ -124,8 +132,13 @@ AnalyticPlanarBooleanStage
 
 The accumulator begins empty. Stages execute in request order. Operands within
 one stage are a mathematical set and are canonicalized by operand id before
-kernel submission. Difference from an empty accumulator is a successful
-no-effect stage. Complete subtraction is a successful empty result.
+solver submission. Let `R(S) = closure(interior(S))` in the Euclidean plane.
+For the current regularized closed material `A` and the union `U` of all closed
+operand sets in a stage, union computes `R(A union U)` and difference computes
+`R(A set-minus U)`. Boundary-only remnants and zero-area components are not
+material. A zero-operand union or difference is a successful no-op. Difference
+from an empty accumulator is a successful no-effect stage. Complete
+subtraction is a successful empty result.
 
 ### Geometry
 
@@ -196,9 +209,26 @@ lowered boundary ring. Result provenance may refer to a compact feature plus a
 canonical boundary role. Authored ring/path segments retain their caller ids.
 
 Input planar regions must be individually valid and non-self-intersecting.
-Outer/hole containment may be normalized, but an ambiguous or invalid topology
-fails the job. Input winding is accepted in either direction; canonical result
-winding is fixed below.
+Each ring has at least two analytic fragments and encloses positive area; every
+hole is strictly inside its outer ring, hole interiors are pairwise disjoint,
+and hole boundaries neither touch nor cross another ring. Nested islands are
+represented as separate operands rather than nested holes in one authored
+region. A planar-region operand denotes the regularized closed outer set minus
+the union of its hole interiors. Any ambiguous or invalid containment fails the
+job. Input winding is accepted in either direction; canonical result winding
+is fixed below. Disk radius is positive. An annulus requires
+`0 < innerRadius < outerRadius`.
+
+Capsule endpoints must be distinct and width must be positive; its set is the
+segment Minkowski-summed with a closed disk of radius `width / 2`. A swept path
+must contain at least one nonzero segment, may not retrace or self-intersect,
+and consecutive segments may not reverse through an exact 180-degree cusp.
+Every circular centerline segment must have radius strictly greater than half
+the sweep width so both analytic offsets remain positive-radius curves. The
+regularized swept area is the Minkowski sum of the accepted centerline with a
+closed disk of radius `width / 2`; overlap between nonadjacent parts of that
+swept area is allowed and is resolved by the exact arrangement. Inputs outside
+these A0 rules fail the isolated job with `invalid_topology` or `invalid_arc`.
 
 ### Relationship Queries
 
@@ -223,9 +253,26 @@ area/topology oracle; its output is never authoritative.
 Each job uses a deterministic integer-nm local origin near its bounds before
 conversion to OCCT millimeters. This limits double magnitude without changing
 wire identities. Each stage submits its operands in canonical id order as one
-Boolean set operation, regularizes same-domain output, and rejects non-line or
-non-circle topology candidates. OCCT selects candidate topology; it is not the
-authority for canonical coordinates or rounding.
+Boolean set operation and rejects non-line or non-circle OCCT candidates.
+
+The authoritative topology is nevertheless an independently enumerated exact
+arrangement. Geometer enumerates every authored or derived line/circle boundary
+occurrence, uses conservative exact or outward-rounded bounds only to discard
+provably disjoint pairs, evaluates every remaining pair with exact predicates,
+splits every curve at the complete exact intersection set, constructs the full
+half-edge arrangement, and classifies every face against prior material and all
+current-stage operands. An acceleration structure may change pair visitation
+order but may not omit a pair unless disjointness is certified exactly.
+
+OCCT may propose adjacency, same-domain grouping, and a traversal seed. It may
+not create or suppress an authoritative vertex, half-edge, face, component, or
+classification. Before a stage commits, a bidirectional audit maps every OCCT
+candidate boundary occurrence to the exact arrangement and every exact
+material boundary occurrence back to an OCCT candidate. Missing, extra, or
+incompatibly oriented topology fails the job with `solver_failed`; no tolerant
+repair becomes canonical. The exact arrangement remains complete even when
+the audit fails, so the failure is deterministic and does not accept an OCCT
+omission.
 
 Material lineage cannot be reconstructed from OCCT boundary history alone.
 The implementation maintains stage-aware arrangement cells internally:
@@ -247,12 +294,11 @@ incidence classification. Intersection vertices list all authored segments or
 compact features whose curves form that vertex. An absorbed or coincident
 positive remains material lineage even when it owns no surviving boundary.
 
-Across ordered stages, the accumulator retains certified exact real-algebraic
-line/circle/intersection geometry and lineage. OCCT receives a local binary64
-projection only to select candidate topology; every retained candidate is
-reclassified against the exact algebraic arrangement before the next stage.
-The governed nm-grid normalization occurs once, after the final stage. Snapping
-an intermediate stage is forbidden because it could change whether a later
+Across ordered stages, the accumulator retains the authoritative exact
+real-algebraic arrangement and lineage. OCCT receives a local binary64
+projection only for its independently audited candidate topology. The governed
+nm-grid normalization occurs once, after the final stage. Snapping an
+intermediate stage is forbidden because it could change whether a later
 operand touches, crosses, or removes material.
 
 The final published arrangement uses canonical integer-nm
@@ -268,21 +314,42 @@ cannot be relaxed per request.
 
 1. Authored coordinates, centers, squared distances, radii, and line
    coefficients begin as exact integers. Rational constructions remain exact
-   reduced rationals. Supported intersections and endpoint/radius-derived
-   centers are represented by immutable real-algebraic expression DAGs over
-   exact integers using `+`, `-`, `*`, `/`, and square root. Nested expressions
-   remain algebraic across stages. Trigonometric functions and OCCT binary64
-   coordinates are not canonical inputs.
+   reduced rationals. Every nonrational scalar uses the selected portable
+   real-algebraic representation: a primitive square-free defining polynomial
+   in `Z[x]`, a dyadic rational isolating interval containing exactly one of
+   that polynomial's real roots, and a signed-subresultant Thom encoding that
+   identifies the root. A defining polynomial need not be irreducible.
+   Coefficients and rational numerators/denominators use arbitrary-precision
+   signed integers. Trigonometric functions and OCCT binary64 coordinates are
+   not canonical inputs.
 2. Line-line, line-circle, and circle-circle candidates are reconstructed from
    their exact source or previous-stage algebraic endpoint/radius equations.
-   Exact algebraic sign predicates select the candidate consistent with the
-   OCCT topology and source incidence. Unsupported/nonclassifiable candidates
-   fail closed.
-3. Each algebraic scalar is enclosed by outward-rounded binary intervals. The
+   Arithmetic constructs defining polynomials with exact resultants, removes
+   repeated factors by polynomial GCD, and identifies the intended result root
+   using operand isolating intervals and exact subresultant signs. Square root
+   selects the certified nonnegative root of `y^2 - x`. Exact equality uses
+   polynomial GCD plus common-root isolation; exact order/sign refines disjoint
+   isolating intervals and, when they overlap, decides equality or the sign of
+   the exact algebraic difference with the same resultant/subresultant
+   procedure. Identically zero expressions and exact half-grid equality are
+   therefore decidable rather than delegated to interval convergence.
+3. The integer backend is `boost::multiprecision::cpp_int`; polynomial,
+   resultant, signed-subresultant, GCD, square-free, and root-isolation code is
+   Geometer-owned deterministic C++17 shared by native and Emscripten. A
+   focused native/WASM feasibility target must prove this backend and the
+   governed limits before production solver implementation. There is no
+   binary64, OCCT, platform `long double`, or tolerance fallback.
+   If constructing or deciding a value would exceed the governed polynomial
+   degree, coefficient-bit, storage, predicate-work, or memory limit, the job
+   terminates with `resource_limit_exceeded` before an approximate decision is
+   used. Thus every admitted predicate has a total exact result and every
+   non-admitted predicate has one stable fail-closed result.
+4. Each algebraic scalar is additionally enclosed by outward-rounded binary
+   intervals for acceleration. The
    initial precision is 256 bits and doubles through 512, 1024, 2048, and 4096
    bits. Every primitive operation rounds its lower bound toward negative
    infinity and upper bound toward positive infinity.
-4. Nearest-nanometer, ties-away-from-zero rounding is certified only when the
+5. Nearest-nanometer, ties-away-from-zero rounding is certified only when the
    complete interval lies inside one integer's open half-nm Voronoi cell. If an
    interval contains a half-nm boundary, an exact algebraic comparison against
    that half integer determines equality or side. Exact equality selects the
@@ -290,16 +357,16 @@ cannot be relaxed per request.
    certified at 4096 bits, the job fails with
    `normalization_ambiguous_tie`. This precision schedule and result are part
    of A0, not an implementation tolerance.
-5. A normalized vertex must have squared displacement no greater than
+6. A normalized vertex must have squared displacement no greater than
    `0.5 nm^2` from the kernel vertex (maximum Euclidean displacement
    `sqrt(0.5) nm`).
-6. A circular result fragment is reconstructed exactly from its normalized
+7. A circular result fragment is reconstructed exactly from its normalized
    endpoints, normalized integer radius, direction, and major branch. The
    radius may move no more than `0.5 nm`, and the exact replay arc must have
    certified Hausdorff displacement no greater than `1.25 nm` from the
    pre-normalized analytic candidate over the fragment domain. No separately
    normalized center is serialized.
-7. Distinct required vertices may not share one representative. A fragment may
+8. Distinct required vertices may not share one representative. A fragment may
    not collapse, cyclic order may not invert, containment may not change, and a
    line/arc fragment may not become incoherent.
 
@@ -341,7 +408,6 @@ DirectedFragment
 ResultRegion
   generated resultRegionId
   outer ring
-  hole/child containment
   positive contributor source set
 ```
 
@@ -352,12 +418,18 @@ Canonicalization is independent of OCCT traversal and allocation:
 
 - vertices sort by `(x, y, incident analytic signature, complete intersection
   source-set tuple sequence)`;
-- fragments are local analytic records and sort by exact endpoint pair, kind,
-  radius/branch, and complete source-set content;
+- fragments are local analytic records and sort by `(start vertex key, end
+  vertex key, kind, direction, majorArc, radius, coincident-positive source-set
+  tuple, surviving-subtraction source-set tuple)`; line records use direction
+  `not_applicable`, `majorArc = false`, and radius zero;
 - an outer ring is CCW and a hole ring is CW;
 - each ring rotates to the lexicographically least vertex/outgoing-fragment
   key;
 - containment children sort by their canonical ring key;
+- ring parent/depth is the sole containment authority: parent links are
+  acyclic, name the smallest strict containing ring, and hole parity equals
+  odd depth; every even-depth ring is the outer ring of exactly one result
+  region and odd-depth rings belong to none;
 - maximal interior-connected area components become distinct result regions,
   so point-tangent areas are separate regions sharing a vertex;
 - shared-edge unions remove the internal seam;
@@ -402,6 +474,38 @@ Outcome events include:
 These are not forced into one enum. A source may have several simultaneous
 events. A0 does not serialize contributor-coverage subregions.
 
+Their truth conditions are exact and use positive-area arrangement cells;
+boundary-only contact does not count as material effect:
+
+- `contributes_final_material` exists for a union operand iff at least one
+  final present cell carries that operand's positive lineage. Its references
+  are exactly the result regions containing such cells.
+- `redundant_or_absorbed_coverage` exists iff a union operand covered positive
+  area at its stage but some or all of that area was already covered by the
+  pre-stage accumulator or another operand in the same unordered stage. It may
+  coexist with `contributes_final_material`.
+- `partially_removed_later` exists iff an operand contributed positive-area
+  material immediately after its union stage and later differences remove some
+  but not all of its lineage-bearing area before the final result.
+- `completely_removed_later` exists iff such material existed immediately
+  after insertion and none of its lineage remains in final material. It is
+  mutually exclusive with `contributes_final_material` and
+  `partially_removed_later`.
+- `subtraction_effect_survives` exists iff a difference operand removes
+  positive area and at least one final boundary fragment still separates that
+  removed set from material. Its references are exactly those fragments'
+  rings and result regions.
+- `subtraction_effect_overwritten_later` exists iff positive area removed by a
+  difference operand is restored by a later union. It may coexist with a
+  surviving effect when only part of the removed area is restored.
+- `no_effect` exists iff the operand changes neither the regularized material
+  set nor any positive/subtractive lineage or history cell. It is exclusive
+  with every other event.
+
+Same-stage union operands are evaluated symmetrically against the pre-stage
+accumulator and the complete same-stage union, so no authored operand order can
+change these predicates.
+
 ## Relationship Result
 
 For each selected successful job pair, Geometer returns:
@@ -412,6 +516,17 @@ For each selected successful job pair, Geometer returns:
   dimension;
 - symmetric equality; and
 - directional containment where applicable.
+
+For closed regularized result-region sets `L` and `R`, dimension is `area` iff
+`interior(L intersection R)` is nonempty; otherwise `curve` iff their
+intersection contains a nonzero-length line or circular-arc interval;
+otherwise `point` iff the intersection is nonempty; otherwise `disjoint`.
+Boundary contact is therefore reported as `point` or `curve`, never area.
+`equality` means exact set equality. `leftContainsRight` means `R` is a subset
+of `L`, and `rightContainsLeft` is the converse; these flags are non-strict, so
+equality sets both. Proper containment is derived as containment without
+equality and is not separately encoded. Containment and equality include
+boundaries and are decided by the exact arrangement, not sampling.
 
 An empty successful job is `disjoint` from every job and yields no concrete
 pairs. A query depending on a failed job is
@@ -440,19 +555,26 @@ The scope matrix is normative:
 | missing/cross-space reference | `geometer.contract.analytic_planar_boolean_packet.invalid_reference`, batch rejected | `GeometerContractError` |
 | valid isolated job with invalid topology/arc/capability/normalization/solver/resource outcome | operation diagnostic in failed job result | returned failed job result |
 | relationship depending on failed job | `skipped_dependency_failed` relationship status | returned relationship result |
+| relationship evaluation for otherwise successful jobs cannot complete within exact solver/resource rules | outer `geometer.operation.analytic_planar_boolean.solver_failed` or `.resource_limit_exceeded`; whole invocation fails and no result attachment is returned | operation exception |
+
+A0 has no query-scoped diagnostic record. Query ids and references are
+validated with the request packet before job isolation. Dependency failure has
+the dedicated relationship status above; any other relationship-computation
+failure is an outer operation failure, so the result packet's diagnostic table
+contains job-scoped records only.
 
 Operation diagnostic identities are namespaced strings in generated APIs and
 compact governed integers in a structurally valid result packet:
 
-- `geometry.analytic_planar_boolean.invalid_topology`
-- `geometry.analytic_planar_boolean.invalid_arc`
-- `geometry.analytic_planar_boolean.unsupported_geometry`
-- `geometry.analytic_planar_boolean.normalization_ambiguous_tie`
-- `geometry.analytic_planar_boolean.normalization_error_exceeded`
-- `geometry.analytic_planar_boolean.normalization_topology_collapse`
-- `geometry.analytic_planar_boolean.nonanalytic_result`
-- `geometry.analytic_planar_boolean.solver_failed`
-- `geometry.analytic_planar_boolean.resource_limit_exceeded`
+- `geometer.operation.analytic_planar_boolean.invalid_topology`
+- `geometer.operation.analytic_planar_boolean.invalid_arc`
+- `geometer.operation.analytic_planar_boolean.unsupported_geometry`
+- `geometer.operation.analytic_planar_boolean.normalization_ambiguous_tie`
+- `geometer.operation.analytic_planar_boolean.normalization_error_exceeded`
+- `geometer.operation.analytic_planar_boolean.normalization_topology_collapse`
+- `geometer.operation.analytic_planar_boolean.nonanalytic_result`
+- `geometer.operation.analytic_planar_boolean.solver_failed`
+- `geometer.operation.analytic_planar_boolean.resource_limit_exceeded`
 
 Diagnostics carry trustworthy job/stage/operand/geometry ids and a generated
 logical path when available. Unknown or untrusted ids are omitted rather than
@@ -487,9 +609,16 @@ on the geometry hot path. Public convenience adapters may map existing values
 into these generated types but cannot remain an independent structural
 authority.
 
-Both generated suites must prove fixed uint64 round trips, strict validation,
+All generated suites must prove fixed uint64 round trips, strict validation,
 portable fixture encoding/decoding, job-local failures, canonical job-result
 digests, attachment ownership, and capability errors.
+
+Rust exposes the same logical model and a friendly
+`analytic_planar_boolean_batch` method through the persistent executable
+client. Identity newtypes wrap `u64` and reject zero. Its packed codec writes
+directly to byte buffers and shares every strict, malformed, canonical-byte,
+diagnostic, and capability vector with C++, TypeScript, and Python. Rust is a
+required production projection, not a follow-up.
 
 ## Browser Packaging
 
@@ -506,6 +635,14 @@ Correctness takes precedence. The initial real-board design target is at most
 5 seconds and 1 GiB peak working memory per all-copper batch on the recorded
 reference machine; the stretch target is 1 second and 512 MiB.
 
+The A0 qualification reference is a single serialized worker in a Release
+build on Windows 11 Pro build 26200, AMD Ryzen 9 9950X (16 physical/32 logical
+cores), and 66,125,668,352 bytes installed RAM. Native compiler, browser,
+Emscripten, OCCT tag, Geometer revision, fixture digest, power mode, warmup
+count, repeat count, median, and peak-memory measurement method are recorded
+with every accepted benchmark. A different machine may supply comparative
+telemetry but cannot silently replace this release target.
+
 Wall time, peak memory, operand/input-segment/result-region/result-segment
 counts, and normalization-failure count are noncanonical telemetry. They are
 reported outside canonical job-result bytes.
@@ -521,8 +658,26 @@ Before design freeze:
   structural expectations; and
 - raw-byte goldens must be generated only after the packet layout freezes.
 
+### OCCT 8.0.1 Qualification
+
+Production solver work and conformance-golden freeze require a side-by-side
+qualification of exact upstream tags `V8_0_0` and `V8_0_1`; upstream master is
+not eligible. The qualification runs the feasibility corpus, the governed
+synthetic-correctness program, bounded timeout regressions for fixed Boolean
+hangs, and all existing STEP, HLR, GLB, planar, CLI, Python, native, and WASM
+suites. It compares topology, diagnostics, canonical signature/bytes,
+provenance expectations, runtime, memory, and native/WASM parity.
+
+The Emscripten install-rule patch in `scripts/build_wasm.py` remains required
+and is explicitly retested. Native and WASM dependency-cache profiles are
+rebuilt and published only after acceptance. If 8.0.1 passes, Geometer pins the
+exact `V8_0_1` tag and reviews any feasibility-signature rebaseline before
+goldens. If it fails, Geometer retains 8.0.0 and commits the rejecting
+regression fixture and decision. Either outcome leaves the exact arrangement
+authoritative and OCCT candidate topology independently audited.
+
 Before release, Geometer must pass native/full-browser/executable parity,
-generated TypeScript/Python consumption, malformed/resource tests,
+generated TypeScript/Rust/Python consumption, malformed/resource tests,
 documentation generation, native/WASM/package/Rack/L99 gates, and candidate
 MATZ integration. MATZ switches production only after pinning the additive
 tagged release and passing its real-board suite.

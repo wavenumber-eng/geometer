@@ -24,6 +24,14 @@ def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def _canonical_feasibility_stdout(raw: bytes) -> bytes:
+    text = raw.decode("utf-8", errors="strict").replace("\r\n", "\n")
+    assert "\r" not in text
+    assert text.endswith("\n")
+    assert not text.endswith("\n\n")
+    return text[:-1].encode("utf-8")
+
+
 def test_manifest_sources_and_identities_are_complete() -> None:
     manifest = _manifest()
     assert manifest["manifest_version"] == 1
@@ -345,6 +353,10 @@ def test_data_models_geom_a0_requirements_snapshot_is_frozen() -> None:
 
     assert snapshot["snapshot_status"] == "requirements_input"
     assert snapshot["consumer"] == "appz/data_models/pcb/matz"
+    assert snapshot["source_repository"] == "wavenumber-eng/appz"
+    assert snapshot["source_component"] == "data_models"
+    assert snapshot["source_branch"] == "pcb-matz-viz-data-models"
+    assert snapshot["source_revision_publication"] == "pending_origin_push"
     assert snapshot["source_revision"] == "fabbf70e1970adb7fa74f3be64c4ef45e2b89154"
     assert snapshot["runtime_sibling_dependency"] is False
     assert snapshot["geom_contract"]["schema_identity"] == (
@@ -430,6 +442,7 @@ def test_data_models_geom_a0_requirements_snapshot_is_frozen() -> None:
 def test_analytic_planar_boolean_numeric_catalog_is_closed() -> None:
     manifest = _manifest()
     candidate = manifest["candidate_operations"][0]
+    assert (ROOT / candidate["solver_adr"]).is_file()
     with (ROOT / candidate["numeric_catalog"]).open("rb") as stream:
         catalog = tomllib.load(stream)
 
@@ -470,8 +483,36 @@ def test_analytic_planar_boolean_numeric_catalog_is_closed() -> None:
     }
     assert catalog["record_size"]["request"]["operands"] == 24
     assert catalog["record_size"]["result"]["directed_fragments"] == 48
+    assert catalog["record_size"]["result"]["result_regions"] == 24
     assert catalog["record_size"]["result"]["source_sets"] == 8
     assert catalog["record_size"]["result"]["operand_outcome_events"] == 48
+    assert catalog["required_table_kinds"] == {
+        "request": list(range(1, 14)),
+        "result": list(range(101, 114)),
+    }
+    assert catalog["enum"]["diagnostic_scope"] == {
+        "underlying": "u8",
+        "job": 1,
+    }
+    assert catalog["enum"]["source_role"] == {
+        "underlying": "u16",
+        "none": 0,
+        "authored_line": 1,
+        "authored_circular_arc": 2,
+        "primitive_outer_circle": 16,
+        "primitive_inner_circle": 17,
+        "capsule_left_line": 32,
+        "capsule_end_cap": 33,
+        "capsule_right_line": 34,
+        "capsule_start_cap": 35,
+        "swept_left_offset_line": 48,
+        "swept_left_offset_arc": 49,
+        "swept_right_offset_line": 50,
+        "swept_right_offset_arc": 51,
+        "swept_round_join": 52,
+        "swept_start_cap": 53,
+        "swept_end_cap": 54,
+    }
 
     for flag_set in catalog["flags"].values():
         allowed_mask = flag_set["allowed_mask"]
@@ -482,6 +523,11 @@ def test_analytic_planar_boolean_numeric_catalog_is_closed() -> None:
 
     operation_codes = catalog["operation_diagnostic"]
     _unique(list(operation_codes.values()), "analytic Boolean operation diagnostic")
+    assert set(catalog["operation_diagnostic_identity"]) == set(operation_codes)
+    assert all(
+        identity.startswith("geometer.operation.analytic_planar_boolean.")
+        for identity in catalog["operation_diagnostic_identity"].values()
+    )
     assert "invalid_id" not in operation_codes
     assert "invalid_reference" not in operation_codes
     assert catalog["contract_diagnostic"]["invalid_id"].startswith(
@@ -490,9 +536,60 @@ def test_analytic_planar_boolean_numeric_catalog_is_closed() -> None:
     assert catalog["contract_diagnostic"]["invalid_reference"].startswith(
         "geometer.contract."
     )
+    assert catalog["source_reference_mapping"] == {
+        "authored_segment_curve": {
+            "primary_id": "authored_segment_id",
+            "secondary_id": "authored_curve_id",
+            "allowed_roles": [1, 2],
+        },
+        "compact_feature_role": {
+            "primary_id": "compact_feature_id",
+            "secondary_id": "boundary_occurrence_key",
+            "allowed_roles": [16, 17, 32, 33, 34, 35, 48, 49, 50, 51, 52, 53, 54],
+        },
+        "subtractive_operand_effect": {
+            "primary_id": "stage_id",
+            "secondary_id": "zero",
+            "allowed_roles": [0],
+        },
+    }
+
+    solver_limits = catalog["limit"]
+    for name in (
+        "examined_curve_pairs_per_job",
+        "exact_intersections_per_job",
+        "arrangement_half_edges_per_job",
+        "algebraic_polynomial_degree",
+        "algebraic_coefficient_bits",
+        "algebraic_storage_bytes_per_job",
+        "provenance_references_per_job",
+        "exact_predicate_calls_per_job",
+        "solver_working_memory_bytes_per_job",
+    ):
+        assert solver_limits[name] > 0
 
     packet_spec = (ROOT / candidate["packet_spec"]).read_text(encoding="utf-8")
     for magic in (catalog["request_magic"], catalog["result_magic"]):
         assert magic in packet_spec
     assert "normalized curves" not in packet_spec
     assert "content key" not in packet_spec
+    assert "geometry.analytic_planar_boolean.invalid_topology" not in packet_spec
+    assert "geometer.operation.analytic_planar_boolean.invalid_topology" in packet_spec
+
+
+def test_analytic_planar_boolean_feasibility_signature_has_canonical_bytes() -> None:
+    fixture = (
+        ROOT
+        / "tests"
+        / "fixtures"
+        / "analytic_planar_boolean"
+        / "feasibility_signature_a0.txt"
+    ).read_bytes()
+    canonical = _canonical_feasibility_stdout(fixture)
+    assert canonical.count(b"\n") == 4
+    assert hashlib.sha256(canonical).hexdigest() == (
+        "c21b03c1b42a6cb3212cec5b3051987f645e21062eddecc82d3e3b0e0fd6dfc7"
+    )
+    assert _canonical_feasibility_stdout(
+        canonical.replace(b"\n", b"\r\n") + b"\r\n"
+    ) == canonical

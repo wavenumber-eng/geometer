@@ -374,6 +374,12 @@ cannot be relaxed per request.
    focused native/WASM feasibility target must prove this backend and the
    governed limits before production solver implementation. There is no
    binary64, OCCT, platform `long double`, or tolerance fallback.
+   Before that target is complete, the exact expression DAG must freeze its
+   node catalog, child order, integer/algebraic payload representation,
+   structural interning rules, and canonical byte encoding. Native and
+   Emscripten conformance vectors must produce identical bytes, including
+   algebraically equal constructions reached through different traversal
+   orders.
    If constructing or deciding a value would exceed the governed polynomial
    degree, coefficient-bit, storage, predicate-work, or memory limit, the job
    terminates with `resource_limit_exceeded` before an approximate decision is

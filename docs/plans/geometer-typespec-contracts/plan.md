@@ -18,13 +18,13 @@ depends_on = ["authority-and-inventory"]
 [[steps]]
 id = "transport-design-review"
 title = "Obtain independent review of the generic C ABI and IPC A0 design"
-status = "active"
+status = "done"
 depends_on = ["contract-semantics-and-transport"]
 
 [[steps]]
 id = "typespec-foundation"
 title = "Establish the TypeSpec source, normalized catalog, schemas, and generation gates"
-status = "pending"
+status = "active"
 depends_on = ["transport-design-review"]
 
 [[steps]]
@@ -164,7 +164,7 @@ status = "pending"
 [[exit_criteria]]
 id = "transport-design-review"
 title = "Independent review approves the generic C ABI and IPC A0 specifications before implementation"
-status = "pending"
+status = "met"
 
 [[exit_criteria]]
 id = "conformance-oracles"
@@ -766,6 +766,16 @@ waive Geometer's genericity or release gates.
 - Compare id-renamed cases with a geometry-only projection or an explicit
   renaming map because provenance bytes and digests may change. Empty-operation
   properties use the governed zero-operand-stage semantics.
+- Freeze the canonical exact expression-DAG node set, child ordering,
+  integer/algebraic payload encoding, structural interning, and byte encoding
+  before exact-backend implementation can satisfy its feasibility gate. Assert
+  byte-identical expression keys natively and under Emscripten.
+- Include canonical provenance vectors whose interned source sets overlap,
+  including `{A, B}` and `{A, C}`, and prove that source-reference-index
+  indirection produces unique bytes and round-trips every set.
+- Include deterministic IPC shutdown vectors for every
+  `activeRequestCompleted` case: no active request, completion winning before
+  draining, and an active-at-transition request completing during grace.
 - Qualify exact upstream OCCT tags `V8_0_0` and `V8_0_1` side-by-side before
   production solver work or golden freeze. Include bounded timeout regressions
   for fixed Boolean hangs plus all existing STEP, HLR, GLB, planar, CLI,

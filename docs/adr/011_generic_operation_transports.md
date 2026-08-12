@@ -2,9 +2,11 @@
 
 ## Status
 
-Proposed. The design packet requires independent review before implementation.
-Work is tracked by
-[GitHub issue #18](https://github.com/wavenumber-eng/geometer/issues/18).
+Accepted. Independent review approved the generic transport packet at review
+head `b86a065c5926c35f1eee23a9ba1cef890689c7d7` on 2026-08-12, covering
+normative remediation revision `529c768e559b4c88874264748d4186e775c8a4dd`.
+Work is tracked by [GitHub issue
+#18](https://github.com/wavenumber-eng/geometer/issues/18).
 
 ## Context
 
@@ -73,10 +75,11 @@ mode before the handshake.
 
 ### Review gate
 
-No generic transport implementation may begin until an independent reviewer
-approves this ADR and its two specifications or all blocking findings are
-resolved in a new reviewed revision. ADR-011 becomes Accepted only after that
-review.
+The independent review gate was satisfied on 2026-08-12 with no blocking
+findings. The promotion manifest records the reviewed revision, review head,
+reviewer identity, date, and artifact digests. Any later normative change to
+this ADR or either transport specification returns the gate to pending before
+implementation continues.
 
 ## Consequences
 

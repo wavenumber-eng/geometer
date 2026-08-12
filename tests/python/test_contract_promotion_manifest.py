@@ -89,6 +89,7 @@ def test_manifest_sources_and_identities_are_complete() -> None:
 
     adr = (ROOT / transports["transport_adr"]).read_text(encoding="utf-8")
     assert re.fullmatch(r"[0-9a-f]{40}", design_review["requested_revision"])
+    assert re.fullmatch(r"[0-9a-f]{40}", design_review["review_head"])
     assert design_review["status"] in {"pending", "approved"}
     if design_review["status"] == "pending":
         assert transports["implementation_allowed"] is False
@@ -101,6 +102,12 @@ def test_manifest_sources_and_identities_are_complete() -> None:
         assert design_review["reviewer"] != "none"
         assert re.fullmatch(r"\d{4}-\d{2}-\d{2}", design_review["review_date"])
         assert design_review["reviewed_revision"] == design_review["requested_revision"]
+        assert design_review["review_head"] == (
+            "b86a065c5926c35f1eee23a9ba1cef890689c7d7"
+        )
+        assert design_review["reviewed_adr_sha256"] == (
+            "d4905bda88727fadeb221a3b6c5bfb392f5e062bb6033b0cded29f59fb492de0"
+        )
         assert "## Status\n\nAccepted." in adr
     documentation = manifest["documentation"]
     assert documentation["runtime_sibling_dependency"] is False
@@ -356,7 +363,7 @@ def test_data_models_geom_a0_requirements_snapshot_is_frozen() -> None:
     assert snapshot["source_repository"] == "wavenumber-eng/appz"
     assert snapshot["source_component"] == "data_models"
     assert snapshot["source_branch"] == "pcb-matz-viz-data-models"
-    assert snapshot["source_revision_publication"] == "pending_origin_push"
+    assert snapshot["source_revision_publication"] == "published_origin_branch"
     assert snapshot["source_revision"] == "fabbf70e1970adb7fa74f3be64c4ef45e2b89154"
     assert snapshot["runtime_sibling_dependency"] is False
     assert snapshot["geom_contract"]["schema_identity"] == (

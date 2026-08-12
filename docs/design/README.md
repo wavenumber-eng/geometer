@@ -11,6 +11,7 @@ durable record belongs here, in ADRs, and in requirements.
 - [Planar geometry interfaces](planar-geometry.md)
 - [C ABI](c-abi.md)
 - [Contract semantics](contract-semantics.md)
+- [TypeSpec toolchain and normalized catalog](typespec-toolchain.md)
 - [Generic operation C ABI](generic-operation-c-abi.md)
 - [Executable IPC A0](executable-ipc-a0.md)
 - [Transport design review packet](transport-design-review.md)

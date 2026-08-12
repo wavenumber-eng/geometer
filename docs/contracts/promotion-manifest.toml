@@ -20,6 +20,24 @@ python_distribution = "wn-geometer"
 python_import = "geometer"
 python_generated_visibility = "internal_compatible_boundary"
 
+[toolchain]
+status = "planned"
+design = "docs/design/typespec-toolchain.md"
+runtime_dependency = false
+node_major = 24
+package_manager = "npm@11.16.0"
+typespec_compiler = "1.14.0"
+typespec_json_schema = "1.14.0"
+typescript = "5.9.3"
+biome = "2.5.7"
+source_root = "src/tsp/geometer"
+emitter_root = "src/ts/wn-geometer-contract-emitter"
+catalog_schema = "contracts/geometer/catalog-schema.a0.json"
+catalog = "contracts/geometer/generated/wn_geometer_contract_catalog.a0.json"
+schema_root = "contracts/geometer/generated/schema"
+catalog_identity = "wn.geometer.contract_catalog"
+catalog_generation = "a0"
+
 [transports]
 generic_c_abi = "proposed"
 generic_c_abi_spec = "docs/design/generic-operation-c-abi.md"

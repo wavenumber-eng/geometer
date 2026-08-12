@@ -35,6 +35,34 @@ def test_manifest_sources_and_identities_are_complete() -> None:
         "rust",
         "python",
     ]
+    toolchain = manifest["toolchain"]
+    assert toolchain == {
+        "status": "planned",
+        "design": "docs/design/typespec-toolchain.md",
+        "runtime_dependency": False,
+        "node_major": 24,
+        "package_manager": "npm@11.16.0",
+        "typespec_compiler": "1.14.0",
+        "typespec_json_schema": "1.14.0",
+        "typescript": "5.9.3",
+        "biome": "2.5.7",
+        "source_root": "src/tsp/geometer",
+        "emitter_root": "src/ts/wn-geometer-contract-emitter",
+        "catalog_schema": "contracts/geometer/catalog-schema.a0.json",
+        "catalog": "contracts/geometer/generated/wn_geometer_contract_catalog.a0.json",
+        "schema_root": "contracts/geometer/generated/schema",
+        "catalog_identity": "wn.geometer.contract_catalog",
+        "catalog_generation": "a0",
+    }
+    assert (ROOT / toolchain["design"]).is_file()
+    for planned_path in (
+        "source_root",
+        "emitter_root",
+        "catalog_schema",
+        "catalog",
+        "schema_root",
+    ):
+        assert not (ROOT / toolchain[planned_path]).exists()
     transports = manifest["transports"]
     assert (ROOT / transports["generic_c_abi_spec"]).is_file()
     assert (ROOT / transports["executable_ipc_spec"]).is_file()

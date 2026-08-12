@@ -12,13 +12,13 @@ status = "done"
 [[steps]]
 id = "contract-semantics-and-transport"
 title = "Ratify generic ABI, option presence, IPC execution, diagnostics, and conformance rules"
-status = "active"
+status = "done"
 depends_on = ["authority-and-inventory"]
 
 [[steps]]
 id = "transport-design-review"
 title = "Obtain independent review of the generic C ABI and IPC A0 design"
-status = "pending"
+status = "active"
 depends_on = ["contract-semantics-and-transport"]
 
 [[steps]]

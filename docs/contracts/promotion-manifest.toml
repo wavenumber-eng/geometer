@@ -20,6 +20,14 @@ python_distribution = "wn-geometer"
 python_import = "geometer"
 python_generated_visibility = "internal_compatible_boundary"
 
+[transports]
+generic_c_abi = "proposed"
+generic_c_abi_spec = "docs/design/generic-operation-c-abi.md"
+executable_ipc = "proposed_a0"
+executable_ipc_spec = "docs/design/executable-ipc-a0.md"
+transport_adr = "docs/adr/011_generic_operation_transports.md"
+implementation_allowed = false
+
 [c_abi]
 generation = 20260623
 source = "src/cpp/lib/geometer/c_api.h"

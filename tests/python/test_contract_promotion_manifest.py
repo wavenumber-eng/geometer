@@ -30,6 +30,11 @@ def test_manifest_sources_and_identities_are_complete() -> None:
         "rust",
         "python",
     ]
+    transports = manifest["transports"]
+    assert transports["implementation_allowed"] is False
+    assert (ROOT / transports["generic_c_abi_spec"]).is_file()
+    assert (ROOT / transports["executable_ipc_spec"]).is_file()
+    assert (ROOT / transports["transport_adr"]).is_file()
 
     contracts = manifest["contracts"]
     contract_ids = [item["id"] for item in contracts]
@@ -93,4 +98,3 @@ def test_cli_compatibility_names_are_still_dispatched() -> None:
     }
     for name in names:
         assert f'"{name}"' in cli
-

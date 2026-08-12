@@ -1,5 +1,10 @@
 # CLI Interfaces
 
+The current implemented CLI is documented below. The proposed persistent
+`serve --stdio` mode is governed separately by
+[Executable IPC A0](executable-ipc-a0.md) and remains unimplemented until
+ADR-011 completes independent design review.
+
 Native CLI:
 
 ```powershell

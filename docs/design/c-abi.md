@@ -1,5 +1,10 @@
 # C ABI
 
+The current implemented per-operation ABI is documented below. The additive
+generic operation ABI is specified in
+[Generic Operation C ABI](generic-operation-c-abi.md) and remains unimplemented
+until ADR-011 completes independent design review.
+
 Defined in `src/cpp/lib/geometer/c_api.h`.
 
 ```c

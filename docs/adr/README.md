@@ -12,3 +12,4 @@ and should not be treated as docs of record after a change ships.
 - [ADR 007: Generic Model Input API Names](007_generic_model_input_api_names.md)
 - [ADR 008: Projection Modes And Outline Policy](008_projection_modes_and_outline_policy.md)
 - [ADR 009: OCCT Binary Dependency Cache In R2](009_occt_binary_dependency_cache.md)
+- [ADR 010: TypeSpec Contract Authority And Promotion](010_typespec_contract_authority_and_promotion.md)

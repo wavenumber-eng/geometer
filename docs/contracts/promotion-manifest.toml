@@ -1,0 +1,315 @@
+manifest_version = 1
+baseline_date = "2026-08-12"
+tracking_issue = "https://github.com/wavenumber-eng/geometer/issues/18"
+authority_adr = "docs/adr/010_typespec_contract_authority_and_promotion.md"
+
+[policy]
+target_structural_authority = "typespec_normalized_catalog"
+behavioral_authority = "focused_cpp_geometry_implementation"
+canonical_objects_closed_by_default = true
+required_projections = ["json_schema", "cpp", "typescript", "rust", "python"]
+required_transports = ["native", "browser_wasm", "exe_ipc"]
+promotion_requires_all_evidence = true
+
+[packages]
+typescript = "@wavenumber/geometer"
+typescript_module_format = "esm"
+rust = "geometer-client"
+rust_async_runtime = "tokio"
+python_distribution = "wn-geometer"
+python_import = "geometer"
+python_generated_visibility = "internal_compatible_boundary"
+
+[c_abi]
+generation = 20260623
+source = "src/cpp/lib/geometer/c_api.h"
+symbols = [
+  "geometer_step_hlr_projection_json",
+  "geometer_step_hlr_projection_json_bytes",
+  "geometer_step_to_glb",
+  "geometer_step_to_glb_bytes",
+  "geometer_planar_batch_solve",
+  "geometer_planar_batch_solve_bytes",
+  "geometer_planar_batch_solve_json",
+  "geometer_planar_batch_solve_json_bytes",
+  "geometer_planar_triangulate",
+  "geometer_planar_triangulate_bytes",
+  "geometer_clipper2_boolean",
+  "geometer_clipper2_boolean_bytes",
+  "geometer_clipper2_inflate_open",
+  "geometer_clipper2_inflate_open_bytes",
+  "geometer_version_string",
+  "geometer_version_major",
+  "geometer_version_minor",
+  "geometer_version_patch",
+  "geometer_abi_version",
+  "geometer_free_string",
+  "geometer_free_bytes",
+]
+
+[wasm.full_browser]
+source = "src/cpp/lib/CMakeLists.txt"
+exports = [
+  "_malloc",
+  "_free",
+  "_geometer_version_string",
+  "_geometer_version_major",
+  "_geometer_version_minor",
+  "_geometer_version_patch",
+  "_geometer_abi_version",
+  "_geometer_step_hlr_projection_json",
+  "_geometer_step_hlr_projection_json_bytes",
+  "_geometer_step_to_glb",
+  "_geometer_step_to_glb_bytes",
+  "_geometer_planar_batch_solve",
+  "_geometer_planar_batch_solve_bytes",
+  "_geometer_planar_batch_solve_json",
+  "_geometer_planar_batch_solve_json_bytes",
+  "_geometer_planar_triangulate",
+  "_geometer_planar_triangulate_bytes",
+  "_geometer_clipper2_boolean",
+  "_geometer_clipper2_boolean_bytes",
+  "_geometer_clipper2_inflate_open",
+  "_geometer_clipper2_inflate_open_bytes",
+  "_geometer_free_string",
+  "_geometer_free_bytes",
+]
+
+[wasm.planar_browser]
+source = "src/cpp/lib/CMakeLists.txt"
+exports = [
+  "_malloc",
+  "_free",
+  "_geometer_version_string",
+  "_geometer_version_major",
+  "_geometer_version_minor",
+  "_geometer_version_patch",
+  "_geometer_abi_version",
+  "_geometer_planar_batch_solve",
+  "_geometer_planar_batch_solve_bytes",
+  "_geometer_planar_batch_solve_json",
+  "_geometer_planar_batch_solve_json_bytes",
+  "_geometer_planar_triangulate",
+  "_geometer_planar_triangulate_bytes",
+  "_geometer_clipper2_boolean",
+  "_geometer_clipper2_boolean_bytes",
+  "_geometer_clipper2_inflate_open",
+  "_geometer_clipper2_inflate_open_bytes",
+  "_geometer_free_string",
+  "_geometer_free_bytes",
+]
+
+[[contracts]]
+id = "geometry.common.diagnostic.a0"
+kind = "shared"
+status = "inventory_only"
+current_authority = "none"
+source = "src/cpp/lib/geometer/status.h"
+pilot_required = true
+compatibility = "Map local integer statuses through adapters; do not promote numeric codes."
+
+[[contracts]]
+id = "geometry.model_bounds.options.a0"
+kind = "option_patch"
+status = "pilot_candidate"
+current_authority = "handwritten_cpp"
+source = "src/cpp/lib/model_bounds_options_json.cpp"
+pilot_required = true
+compatibility = "Retain model_format and modelTransform as input aliases outside the canonical DTO."
+
+[[contracts]]
+id = "geometry.model_bounds.a0"
+kind = "result"
+status = "pilot_candidate"
+current_authority = "handwritten_cpp"
+source = "src/cpp/lib/model_bounds.cpp"
+pilot_required = true
+compatibility = "Preserve the current JSON shape and exclude timings from deterministic semantic comparison."
+
+[[contracts]]
+id = "geometry.projection.options.b0"
+kind = "option_patch"
+status = "inventory_only"
+current_authority = "handwritten_cpp"
+source = "src/cpp/lib/projection_options_json.cpp"
+pilot_required = false
+compatibility = "Retain documented snake/camel aliases and legacy include toggles in an adapter."
+
+[[contracts]]
+id = "geometry.projection.b0"
+kind = "result"
+status = "inventory_only"
+current_authority = "handwritten_cpp"
+source = "src/cpp/lib/projection.cpp"
+pilot_required = false
+compatibility = "Preserve current result fields; timing fields are nondeterministic."
+
+[[contracts]]
+id = "geometry.step_to_glb.options.a0"
+kind = "option_patch"
+status = "inventory_only"
+current_authority = "handwritten_cpp"
+source = "src/cpp/lib/step_to_glb_options_json.cpp"
+pilot_required = false
+compatibility = "Retain documented deflection and angular aliases in an adapter."
+
+[[contracts]]
+id = "geometry.planar_step.request.a0"
+kind = "request"
+status = "inventory_only"
+current_authority = "handwritten_cpp"
+source = "src/cpp/lib/planar_step.cpp"
+pilot_required = false
+compatibility = "Retain unit suffixes, transitional contour input, and fuse aliases in an adapter."
+
+[[contracts]]
+id = "geometry.planar_batch_solve.a0"
+kind = "result"
+status = "inventory_only"
+current_authority = "handwritten_cpp"
+source = "src/cpp/lib/planar_solve.cpp"
+pilot_required = false
+compatibility = "Preserve Python outer/outline normalization until separately retired."
+
+[[contracts]]
+id = "geometer.batch.request.a0"
+kind = "request"
+status = "inventory_only"
+current_authority = "handwritten_cli"
+source = "src/cpp/cli/main.cpp"
+pilot_required = false
+compatibility = "Preserve file-based run, layered patches, STEP operation aliases, and step_path."
+
+[[contracts]]
+id = "geometer.batch.response.a0"
+kind = "result"
+status = "inventory_only"
+current_authority = "handwritten_cli"
+source = "src/cpp/cli/main.cpp"
+pilot_required = false
+compatibility = "Preserve current job result fields; elapsed_ms is nondeterministic."
+
+[[binary_formats]]
+id = "geometry.planar_batch.packet"
+status = "separately_governed"
+source = "src/cpp/lib/planar_solve.cpp"
+request_magic = "GMPBRQ01"
+response_magic = "GMPBRS01"
+version = 2
+
+[[binary_formats]]
+id = "geometry.planar_triangulate.packet"
+status = "separately_governed"
+source = "src/cpp/lib/planar_triangulate.cpp"
+request_magic = "GMTRRQ01"
+response_magic = "GMTRRS01"
+version = 1
+
+[[binary_formats]]
+id = "geometry.clipper2_boolean.packet"
+status = "separately_governed"
+source = "src/cpp/lib/clipper2_bytes.cpp"
+request_magic = "GMC2BQ01"
+response_magic = "GMC2BS01"
+version = 1
+
+[[binary_formats]]
+id = "geometry.clipper2_inflate_open.packet"
+status = "separately_governed"
+source = "src/cpp/lib/clipper2_bytes.cpp"
+request_magic = "GMC2IQ01"
+response_magic = "GMC2IS01"
+version = 1
+
+[[operations]]
+id = "geometry.model_bounds.a0"
+status = "pilot_candidate"
+request_contract = "geometry.model_bounds.options.a0"
+result_contract = "geometry.model_bounds.a0"
+input_attachments = ["model"]
+output_attachments = []
+cli_names = ["model_bounds_json"]
+compatibility_cli_names = []
+
+[[operations]]
+id = "geometry.model_hlr_projection.a0"
+status = "inventory_only"
+request_contract = "geometry.projection.options.b0"
+result_contract = "geometry.projection.b0"
+input_attachments = ["model"]
+output_attachments = []
+cli_names = ["model_hlr_projection_json", "model_hlr_projection_svg"]
+compatibility_cli_names = ["step_hlr_projection_json", "step_hlr_projection_svg"]
+
+[[operations]]
+id = "geometry.model_to_glb.a0"
+status = "inventory_only"
+request_contract = "geometry.step_to_glb.options.a0"
+result_contract = "none"
+input_attachments = ["model"]
+output_attachments = ["glb"]
+cli_names = ["model_to_glb"]
+compatibility_cli_names = ["step_to_glb"]
+
+[[operations]]
+id = "geometry.planar_step.a0"
+status = "inventory_only"
+request_contract = "geometry.planar_step.request.a0"
+result_contract = "none"
+input_attachments = []
+output_attachments = ["step"]
+cli_names = ["planar_step"]
+compatibility_cli_names = []
+
+[[operations]]
+id = "geometry.planar_batch_solve.a0"
+status = "inventory_only"
+request_contract = "geometry.planar_batch.packet"
+result_contract = "geometry.planar_batch_solve.a0"
+input_attachments = ["planar_batch_request"]
+output_attachments = ["planar_batch_response"]
+cli_names = []
+compatibility_cli_names = []
+
+[[operations]]
+id = "geometry.planar_triangulate.a0"
+status = "inventory_only"
+request_contract = "geometry.planar_triangulate.packet"
+result_contract = "geometry.planar_triangulate.packet"
+input_attachments = ["triangulate_request"]
+output_attachments = ["triangulate_response"]
+cli_names = []
+compatibility_cli_names = []
+
+[[operations]]
+id = "geometry.clipper2_boolean.a0"
+status = "inventory_only"
+request_contract = "geometry.clipper2_boolean.packet"
+result_contract = "geometry.clipper2_boolean.packet"
+input_attachments = ["boolean_request"]
+output_attachments = ["boolean_response"]
+cli_names = []
+compatibility_cli_names = []
+
+[[operations]]
+id = "geometry.clipper2_inflate_open.a0"
+status = "inventory_only"
+request_contract = "geometry.clipper2_inflate_open.packet"
+result_contract = "geometry.clipper2_inflate_open.packet"
+input_attachments = ["inflate_request"]
+output_attachments = ["inflate_response"]
+cli_names = []
+compatibility_cli_names = []
+
+[[demos]]
+id = "embedded_model_viewer"
+source = "examples/wasm/embedded_model_viewer.html"
+worker = "examples/wasm/hlr_projection_worker.js"
+owning_operation = "geometry.model_hlr_projection.a0"
+status = "handwritten_javascript"
+
+[[demos]]
+id = "planar_ring_solver"
+source = "examples/wasm/planar_ring_solver_demo.html"
+owning_operation = "geometry.planar_batch_solve.a0"
+status = "handwritten_javascript"

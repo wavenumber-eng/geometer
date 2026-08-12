@@ -8,6 +8,7 @@ concerns = ["python", "package", "scripts"]
 objectives = [
     "Verify executable-backed Python helpers and package behavior.",
     "Verify build-script helper logic that is practical to test without native rebuilds.",
+    "Verify the contract promotion manifest remains aligned with implemented interfaces.",
 ]
 
 [[subtests]]
@@ -29,4 +30,11 @@ id = "PY_003"
 file = "test_occt_binary_cache.py"
 name = "OCCT Binary Cache Helper"
 description = "Checks OCCT binary cache keys, manifests, archives, and unconfigured-cache fallback."
+test_case_type = "unit"
+
+[[subtests]]
+id = "PY_004"
+file = "test_contract_promotion_manifest.py"
+name = "Contract Promotion Manifest"
+description = "Checks contract inventory sources, C ABI/WASM exports, packet identities, and compatibility dispatch names."
 test_case_type = "unit"

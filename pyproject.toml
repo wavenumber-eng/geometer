@@ -51,6 +51,7 @@ where = ["python"]
 geometer = ["native/*", "native/*/*"]
 
 [tool.wn_dev_std]
+standard_version = "2026.8.11"
 profile = "python-native-wasm"
 distribution = "pypi"
 languages = ["python", "cpp", "wasm"]

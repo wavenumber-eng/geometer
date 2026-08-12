@@ -55,6 +55,8 @@ TypeScript, and Python consumers.
     replacement integration evidence. Existing factory names, runtime helpers,
     required C ABI symbols, and packed format versions must remain usable.
 16. Generate committed, deterministic HTML contract reference pages using the
-    same Wavenumber stylesheet, fonts, watermark, page idioms, and offline
-    relative-link behavior as `appz/data_models`. Vendor reviewed assets in
-    Geometer; do not require a sibling checkout during generation or viewing.
+    Wavenumber stylesheet, watermark, page idioms, an approved redistributable
+    font, and offline relative-link behavior established from
+    `appz/data_models`. Vendor reviewed assets and their required license
+    evidence in Geometer; do not require a sibling checkout during generation
+    or viewing.

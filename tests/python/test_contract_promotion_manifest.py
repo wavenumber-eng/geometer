@@ -36,10 +36,33 @@ def test_manifest_sources_and_identities_are_complete() -> None:
         "python",
     ]
     transports = manifest["transports"]
-    assert transports["implementation_allowed"] is False
     assert (ROOT / transports["generic_c_abi_spec"]).is_file()
     assert (ROOT / transports["executable_ipc_spec"]).is_file()
     assert (ROOT / transports["transport_adr"]).is_file()
+    design_review = transports["design_review"]
+    review_sources = {
+        "packet_sha256": design_review["packet"],
+        "adr_sha256": transports["transport_adr"],
+        "generic_c_abi_sha256": transports["generic_c_abi_spec"],
+        "executable_ipc_sha256": transports["executable_ipc_spec"],
+    }
+    for digest_key, source in review_sources.items():
+        assert _sha256(ROOT / source) == design_review[digest_key]
+
+    adr = (ROOT / transports["transport_adr"]).read_text(encoding="utf-8")
+    assert design_review["status"] in {"pending", "approved"}
+    if design_review["status"] == "pending":
+        assert transports["implementation_allowed"] is False
+        assert design_review["reviewer"] == "none"
+        assert design_review["review_date"] == "none"
+        assert design_review["reviewed_revision"] == "none"
+        assert "Proposed." in adr
+    else:
+        assert transports["implementation_allowed"] is True
+        assert design_review["reviewer"] != "none"
+        assert re.fullmatch(r"\d{4}-\d{2}-\d{2}", design_review["review_date"])
+        assert re.fullmatch(r"[0-9a-f]{40}", design_review["reviewed_revision"])
+        assert "## Status\n\nAccepted." in adr
     documentation = manifest["documentation"]
     assert documentation["runtime_sibling_dependency"] is False
     assert (ROOT / documentation["design"]).is_file()

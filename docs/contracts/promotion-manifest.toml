@@ -28,6 +28,17 @@ executable_ipc_spec = "docs/design/executable-ipc-a0.md"
 transport_adr = "docs/adr/011_generic_operation_transports.md"
 implementation_allowed = false
 
+[transports.design_review]
+status = "pending"
+packet = "docs/design/transport-design-review.md"
+packet_sha256 = "1af50532b135b3d4219fd0715e34fd0f5867ec1fa3d6ec5bce734905236913a4"
+adr_sha256 = "d4905bda88727fadeb221a3b6c5bfb392f5e062bb6033b0cded29f59fb492de0"
+generic_c_abi_sha256 = "1b9d02d310110530cb62c82125613865a90bcb2f9da49397ae61dbc61abcd861"
+executable_ipc_sha256 = "b0864b839611e9dd777d6eb850e42c7b0d5aa3b71b823917fdb04156a3de29ef"
+reviewer = "none"
+review_date = "none"
+reviewed_revision = "none"
+
 [documentation]
 generated_html_root = "docs/generated/contracts"
 design = "docs/design/generated-contract-reference.md"

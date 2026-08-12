@@ -36,9 +36,12 @@ The exact A0 specifications are:
 - [Generic Operation C ABI](../design/generic-operation-c-abi.md); and
 - [Executable IPC A0](../design/executable-ipc-a0.md).
 
-Both carry a generated JSON request or response envelope plus named raw byte
-attachments. Neither base64-encodes attachments. Operation identity and allowed
-attachments come from the normalized catalog.
+Both carry generated JSON values plus named raw byte attachments. The C ABI
+passes operation identity as a separate argument and accepts the
+operation-specific request DTO directly. IPC wraps that same request DTO with
+operation and correlation metadata in frame JSON. Both return the same generic
+operation-outcome shape. Neither base64-encodes attachments. Operation identity
+and allowed attachments come from the normalized catalog.
 
 ### Execution policy
 
@@ -53,9 +56,9 @@ original operation continues. Client timeout is local and does not imply
 cancellation. A client may terminate the child as an explicit escalation, which
 fails all outstanding requests.
 
-The C ABI call is synchronous. It makes no new guarantee that independent
-calls may overlap safely. A host that invokes it concurrently is responsible
-for serialization until a later concurrency decision says otherwise.
+The C ABI call is synchronous and is not specified as reentrant or thread-safe.
+A host or generated adapter serializes catalog and execute calls until a later
+concurrency decision says otherwise.
 
 ### Compatibility
 
@@ -89,4 +92,3 @@ review.
   later evidenced protocol generation or capability.
 - The transport implementations require adversarial limits, framing, race,
   shutdown, broken-pipe, and ownership tests in addition to operation tests.
-

@@ -319,9 +319,9 @@ New generated clients will use an additive generic operation/attachment C ABI,
 not a new handwritten C symbol for every operation. The ABI will accept:
 
 - a stable operation identity;
-- one generated JSON request envelope;
+- one generated operation-specific JSON request DTO;
 - a counted array of named byte attachments; and
-- explicit output holders for one generated JSON response envelope and a
+- explicit output holders for one generated generic operation outcome and a
   counted array of named byte attachments.
 
 The ABI design must define fixed-width fields, struct sizes or generations,
@@ -331,9 +331,9 @@ operation identities and attachment declarations. Existing per-operation C ABI
 symbols remain compatible adapters until separately retired.
 
 `model_bounds` will be the first operation on this ABI. Its model bytes are an
-input attachment and its structured bounds are the response envelope. The full
-browser WASM target must export the generic entry point before the pilot can
-claim a browser round trip.
+input attachment and its structured bounds are the successful result inside the
+generic operation outcome. The full browser WASM target must export the generic
+entry point before the pilot can claim a browser round trip.
 
 ### Presence, Defaults, And Layered Options
 

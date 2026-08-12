@@ -394,23 +394,28 @@ def test_data_models_geom_a0_requirements_snapshot_is_frozen() -> None:
     assert snapshot["solver_feasibility"] == {
         "initial_candidate": "occt",
         "clipper2_role": "sampled_non_authoritative_oracle_only",
-        "status": "prototype_required",
+        "status": "prototype_complete_joint_reviewed",
     }
     assert snapshot["adoption"]["production_switch_requires_tagged_release"] is True
 
     fixture_input = snapshot["portable_fixture_input"]
     assert fixture_input == {
-        "status": "reviewed_feasibility_input",
-        "source_revision": "67a0c93e458d9885a6d5bb21a766ec5243ed1471",
+        "status": "joint_reviewed_design_input",
+        "source_revision": "4c688e46729015d21dc140dbe274e396e3717c18",
         "source_path": "tests/fixtures/pcb_materialization/geometer_analytic_planar_boolean_observations_a0.json",
-        "sha256": "3c4837541105723e29e1ed26a2af56c31a893524b967c55eaaa027e0d0ca5a0a",
+        "sha256": "10a97f0eed4a4f6852917c4fb6abd35854142bf5d148b8320c60a44f765414c4",
         "portable_case_count": 10,
         "real_board_case_count": 2,
         "case_2_oracle": "success",
         "case_2_oracle_evidence": "native_wasm_occt_feasibility_signature",
+        "case_2_geometer_design_revision": (
+            "182f5f2163e4085200adec779f98b6d3cc7c0e13"
+        ),
         "case_2_oracle_signature_sha256": (
             "c21b03c1b42a6cb3212cec5b3051987f645e21062eddecc82d3e3b0e0fd6dfc7"
         ),
+        "case_2_canonical_fragment_count": 12,
+        "normalization_policy": "certified_once_after_final_stage",
         "normalization_collapse_case": "job_local_failure",
         "normal_build_sibling_dependency": False,
     }

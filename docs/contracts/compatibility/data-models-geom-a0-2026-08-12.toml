@@ -1,0 +1,99 @@
+snapshot_version = 1
+snapshot_status = "requirements_input"
+captured_date = "2026-08-12"
+consumer = "appz/data_models/pcb/matz"
+source_repository = "wavenumber-eng/wn-hw"
+source_component = "appz/data_models"
+source_revision = "fabbf70e1970adb7fa74f3be64c4ef45e2b89154"
+runtime_sibling_dependency = false
+
+[geom_contract]
+schema_identity = "urn:wavenumber:schema:geom_a0"
+schema_title = "Geom a0 Shared Geometry Payload"
+generation = "a0"
+status = "compatibility_input"
+promoted_geometer_authority = "planned_typespec"
+mapping_report = "planned"
+
+reusable_type_identities = [
+  "geom.path_segment2d",
+  "geom.path2d",
+  "geom.ring2d",
+  "geom.planar_region",
+  "geom.swept_path2d",
+  "geom.disk2d",
+  "geom.annulus2d",
+  "geom.capsule2d",
+]
+
+behavioral_invariants = [
+  "ordered_union_and_difference",
+  "deterministic_native_wasm_parity",
+  "governed_nanometer_grid_normalization",
+  "curve_provenance",
+  "structured_fail_closed_diagnostics",
+  "packed_batch_performance",
+  "no_polygonized_authoritative_output",
+]
+
+[[source_files]]
+role = "geom_schema"
+path = "contracts/geom/geom_a0.schema.json"
+sha256 = "acd688d81c5445445c6ee3f324000009e3976b4bbaa19895d6f2d52fc0d0ef3b"
+
+[[source_files]]
+role = "accepted_adr"
+id = "geom-adr-0003"
+path = "docs/geom/adr/geom-adr-0003-topology-first-ring-path-geometry-contract.md"
+sha256 = "8ccf5623941dc2ed21a58268021acf88bc5d90bedabb93ada31d6bb5a93e2482"
+
+[[source_files]]
+role = "accepted_adr"
+id = "geom-adr-0004"
+path = "docs/geom/adr/geom-adr-0004-analytic-circle-disk-annulus-geometry-contract.md"
+sha256 = "95d6e23a8a5fd63ee8f17a14b65a44eac2cb8f02d980d00a0bf26720b97e5fb9"
+
+[[source_files]]
+role = "accepted_adr"
+id = "geom-adr-0005"
+path = "docs/geom/adr/geom-adr-0005-topology-preservation-and-late-flattening-policy.md"
+sha256 = "b6c39d4485abffcab8d110365e17fe0510596aaf26b492f3d2b850aa4392e05b"
+
+[[source_files]]
+role = "consumer_requirements"
+path = "docs/pcb/plans/auxiliary/matz-geometer-analytic-planar-boolean-requirements-2026-08-12.md"
+sha256 = "cfc06ccd6fe9ddef7a590a02984f58235d260f4303de71cfea00bf8b654a44ec"
+
+[operation_candidate]
+id = "geometry.analytic_planar_boolean_batch.a0"
+status = "design_required"
+request_contract = "unfrozen"
+result_contract = "unfrozen"
+packed_format = "separately_governed_unfrozen"
+transport = "generic_named_attachments"
+operation_specific_c_abi_symbol = false
+authoritative_output = "analytic_line_and_circular_arc_topology"
+friendly_typescript_method = "analyticPlanarBooleanBatch"
+friendly_python_method = "analytic_planar_boolean_batch"
+
+[solver_feasibility]
+initial_candidate = "occt"
+clipper2_role = "sampled_non_authoritative_oracle_only"
+status = "prototype_required"
+
+[adoption]
+fixture_owner = "appz/data_models/pcb/matz"
+fixture_status = "required"
+candidate_artifact_testing = true
+production_switch_requires_tagged_release = true
+existing_sampled_apis_retained = true
+released_integration_snapshot = "required_after_pin"
+
+release_handshake = [
+  "geometer_proposes_contract_and_behavior",
+  "matz_reviews_and_supplies_fixtures",
+  "geometer_proves_native_wasm_ipc_typescript_python",
+  "geometer_publishes_additive_tagged_release",
+  "matz_pins_release_and_migrates",
+  "matz_solved_copper_gate_passes",
+]

@@ -70,22 +70,46 @@ status = "pending"
 depends_on = ["cpp-server"]
 
 [[steps]]
-id = "operation-promotion"
-title = "Promote operations incrementally and retire displaced handwritten contract code"
+id = "model-bounds-promotion"
+title = "Promote model bounds as the first complete generated-contract vertical"
 status = "pending"
 depends_on = ["typescript-wasm", "rust-exe-ipc", "python-public-contracts"]
+
+[[steps]]
+id = "geom-contract-alignment"
+title = "Freeze the Geom a0 compatibility input and propose Geometer-owned reusable planar contracts"
+status = "pending"
+depends_on = ["model-bounds-promotion"]
+
+[[steps]]
+id = "analytic-planar-boolean-design"
+title = "Design and prototype the analytic planar Boolean contract, solver, and packed format"
+status = "pending"
+depends_on = ["geom-contract-alignment"]
+
+[[steps]]
+id = "analytic-planar-boolean-promotion"
+title = "Promote analytic planar Boolean batch and ship its focused additive release"
+status = "pending"
+depends_on = ["analytic-planar-boolean-design"]
+
+[[steps]]
+id = "remaining-operation-promotion"
+title = "Promote the remaining inventoried operations and retire displaced handwritten contract code"
+status = "pending"
+depends_on = ["analytic-planar-boolean-promotion"]
 
 [[steps]]
 id = "typescript-demo-closure"
 title = "Verify every maintained browser demo migrated with its owning operation"
 status = "pending"
-depends_on = ["operation-promotion"]
+depends_on = ["remaining-operation-promotion"]
 
 [[steps]]
 id = "viz-compatibility"
 title = "Prove Viz 2026.6.10 compatibility and publish its TypeScript migration path"
 status = "pending"
-depends_on = ["operation-promotion"]
+depends_on = ["remaining-operation-promotion"]
 
 [[steps]]
 id = "design-doc-intent-audit"
@@ -186,6 +210,16 @@ title = "Viz 2026.6.10 remains compatible or has completed its generated TypeScr
 status = "pending"
 
 [[exit_criteria]]
+id = "analytic-planar-boolean"
+title = "The analytic planar Boolean operation preserves exact topology and passes native, WASM, IPC, TypeScript, Python, and MATZ integration gates"
+status = "pending"
+
+[[exit_criteria]]
+id = "matz-compatibility"
+title = "MATZ has reviewed the released contract, supplied representative fixtures, pinned the tagged Geometer release, and passed solved-copper integration"
+status = "pending"
+
+[[exit_criteria]]
 id = "documentation-closure"
 title = "ADRs, requirements, design docs, guides, generated references, compatibility notes, and release notes are current"
 status = "pending"
@@ -232,6 +266,11 @@ maintaining compatibility. It is not merely a consequence of review feedback.
 Every operation promotion therefore requires its Python projection and public
 compatibility evidence. Removing that requirement would be a material plan
 scope change requiring explicit approval.
+
+The plan also accepts analytic planar Boolean batch as the first additive
+capability after the `model_bounds` infrastructure pilot. The MATZ packet is a
+frozen consumer-requirements input; Geometer still owns and reviews the generic
+contract, solver, packed format, and release shape.
 
 The plan adopts lessons from the ALX TypeSpec work in
 `C:/eli/wn-hw/appz/data_models`, while keeping Geometer generic and independently
@@ -498,6 +537,11 @@ promotion claim:
 - all packed byte formats, including planar batch, triangulation, boolean, and
   inflate-open requests and responses.
 
+The manifest also records
+`geometry.analytic_planar_boolean_batch.a0` as a design candidate requested by
+a named downstream consumer. A candidate is not an implemented operation, a
+frozen request/result schema, or a claim that its attachment layout exists.
+
 The inventory must identify canonical fields separately from current aliases
 such as camelCase spellings, STEP-specific operation names, and transitional
 planar contour forms. Compatibility behavior remains active until its owning
@@ -581,6 +625,80 @@ design review.
   before selecting any compatibility cutover.
 - Give every vector a manifest-declared assertion lane, comparison policy,
   nondeterministic-field projection, and numeric tolerance where applicable.
+
+### 3A. Geom A0 Contract Alignment
+
+- Treat the MATZ requirements packet as consumer input, not as a prescribed
+  Geometer API or wire schema. Geometer owns the final generic operation,
+  TypeSpec shapes, packed attachment layout, normalization rules, provenance,
+  diagnostics, and implementation.
+- Freeze the reviewed `geom_a0` schema, accepted Geom ADRs 0003 through 0005,
+  and MATZ requirements packet in an in-repository compatibility snapshot with
+  their source revision and SHA-256 digests at
+  `docs/contracts/compatibility/data-models-geom-a0-2026-08-12.toml`. Geometer
+  generation, builds, and tests must not read the sibling checkout.
+- Compare the Geom topology-first vocabulary for points, line/circular-arc
+  paths and rings, planar regions, disks, annuli, capsules, and swept paths
+  against the smallest reusable Geometer TypeSpec vocabulary. Record explicit
+  compatible mappings, deliberate differences, unit ownership, validation
+  rules, and migration implications before freezing Geometer's shapes.
+- Make the promoted Geometer TypeSpec types the structural authority for the
+  operation. `data_models` may migrate to a released generated projection or
+  maintain an explicit adapter afterward; it does not remain a second
+  structural authority inside Geometer.
+- Keep PCB features, copper semantics, layer policy, source-tool policy, and
+  MATZ materialization behavior outside Geometer.
+
+Approval gate: Geometer publishes a proposed logical shape and mapping report;
+MATZ confirms that it can represent its required inputs and authoritative
+analytic outputs and supplies representative fixtures. Approval freezes the
+Geometer proposal, not the original consumer packet.
+
+### 3B. Analytic Planar Boolean Design And Feasibility
+
+- Use the stable operation identity
+  `geometry.analytic_planar_boolean_batch.a0`. Generated clients expose friendly
+  language names such as `analyticPlanarBooleanBatch` and
+  `analytic_planar_boolean_batch` without leaking the wire suffix into every
+  public helper name.
+- Specify an ordered batch of union and difference stages, including normative
+  add-subtract-add behavior, analytic line/circular-arc topology, holes and
+  islands, deterministic winding and ordering, normalization to the governed
+  coordinate grid, a maximum permitted normalization error, and fail-closed
+  topology diagnostics.
+- Preserve surviving analytic curve fragments, intersections, topology, and
+  source provenance. Define provenance multiplicity for coincident or merged
+  geometry and stable opaque identifiers for jobs, stages, regions, rings, and
+  source segments.
+- Govern the logical TypeSpec request/result separately from a versioned packed
+  binary attachment format. Specify magic, generation, endianness, numeric
+  bounds, record counts, offsets, allocation limits, malformed-input behavior,
+  and deterministic canonical bytes. Raw packets travel as named attachments
+  through the generic operation C ABI and executable IPC; do not add a dedicated
+  `geometer_analytic_planar_boolean_batch_bytes` symbol.
+- Prototype an analytic solver path before committing to production structure.
+  Start with an OCCT feasibility spike covering line/arc intersections,
+  ordered Boolean stages, holes/islands, arc preservation, normalization, and
+  provenance recovery. Clipper2 may serve as a sampled area/topology oracle,
+  but its polygonized output cannot be authoritative. Record an ADR-level
+  solver decision or stop the promotion if the spike cannot meet the invariants.
+- Decide whether the existing planar-only browser artifact will export the
+  generic operation ABI or whether this operation requires the full browser
+  artifact. If that choice changes the digest-locked generic transport packet,
+  reopen its independent design-review gate before implementation.
+- Define assertion lanes for exact canonical bytes, structural topology,
+  toleranced geometry where expressly allowed, diagnostics, transport framing,
+  and native/WASM semantic parity. Include fixtures for line-only and arc-heavy
+  shapes, disks, annuli, capsules, swept paths, nested holes/islands, tangent and
+  coincident boundaries, normalization collisions, malformed batches,
+  add-subtract-add ordering, provenance multiplicity, and large-board stress.
+- Set measurable batch latency, memory, and payload limits from representative
+  MATZ fixtures without embedding MATZ policy in the library.
+
+Design gate: MATZ reviews the proposed contract and packet description against
+its behavioral requirements, while Geometer independently accepts the solver,
+determinism, diagnostics, bounds, and transport design. No consumer review can
+waive Geometer's genericity or release gates.
 
 ### 4. Generated C++ And Native Server Boundary
 
@@ -676,7 +794,7 @@ design review.
 - Keep the executable as the supported backend unless a separate ADR changes
   that decision.
 
-### 8. Incremental Operation Promotion
+### 8. Model-Bounds Pilot, Analytic Boolean, And Remaining Promotions
 
 Promote one thin vertical operation first. `model_bounds` is the preferred
 pilot because it exercises model bytes, options, a structured result, errors,
@@ -697,7 +815,32 @@ For each operation:
 9. delete displaced handwritten structural parsing and serialization; and
 10. mark the operation promoted in the manifest with digest-checked evidence.
 
-Suggested order after `model_bounds`:
+The first new capability after the complete `model_bounds` infrastructure pilot
+is `geometry.analytic_planar_boolean_batch.a0`. Its promotion must prove the
+separately governed packed format, generated TypeScript and Python consumption,
+native/browser canonical parity, executable IPC behavior, and the frozen MATZ
+fixtures. It may then ship in a focused additive tagged Geometer release without
+waiting for legacy HLR, GLB, or sampled planar contracts and demos to migrate.
+The existing sampled planar solver, triangulation, and Clipper2 APIs remain
+supported and unchanged.
+
+The Geometer/MATZ release handshake is:
+
+1. Geometer proposes the TypeSpec operation, analytic topology, packed format,
+   normalization, provenance, and diagnostics.
+2. MATZ reviews that proposal against its frozen requirements and supplies
+   representative fixtures; it does not dictate the wire schema.
+3. Geometer proves canonical native/WASM parity and generated TypeScript and
+   Python consumption, plus executable IPC behavior.
+4. Geometer publishes an additive tagged release after the focused native,
+   WASM, package, documentation, Rack, and L99 gates pass.
+5. MATZ pins the tagged release, replaces its solved-copper Boolean replay with
+   the generated client, and records a released compatibility snapshot.
+6. MATZ's solved-copper promotion remains blocked until that released
+   integration passes. Candidate artifacts may be used for pre-release tests,
+   but not for its production/default switch.
+
+Suggested order after the focused analytic Boolean release:
 
 1. HLR projection;
 2. STEP-to-GLB;
@@ -727,6 +870,11 @@ working. Geometer-side snapshot tests run on every affected change; final exit
 also requires an integration run using a candidate Geometer artifact in a
 temporary Viz test workspace. Viz migrates later to `@wavenumber/geometer`
 without forcing legacy pointer code into the generated client.
+
+MATZ is a named requirements and adoption consumer for analytic planar Boolean,
+not a Geometer build dependency. Geometer protects the frozen Geom/MATZ input
+snapshot during design, then replaces it with a released-integration snapshot
+only after MATZ pins and passes the tagged release.
 
 ## Documentation And Compatibility Closure
 
@@ -798,7 +946,13 @@ Each promoted operation requires:
 - the frozen Viz compatibility snapshot on every C ABI, Emscripten export,
   packed planar format, WASM artifact, or ownership change; and
 - a candidate-artifact Viz vendoring and targeted browser/integration smoke
-  before final compatibility signoff.
+  before final compatibility signoff;
+- analytic planar Boolean exact-topology, ordered-stage, winding, provenance,
+  normalization-error, fail-closed diagnostic, and canonical-byte vectors on
+  native, full or planar browser WASM as selected, and executable IPC; and
+- candidate-artifact MATZ integration followed by a tagged-release pin and
+  solved-copper integration gate before the MATZ compatibility snapshot is
+  marked released.
 
 Final plan exit additionally requires TypeScript compilation and browser smoke
 for every maintained demo in the frozen inventory.
@@ -815,6 +969,9 @@ Rack strata rather than hiding inside a general release test.
 - Making `appz/viz` a Geometer build dependency; Viz compatibility is verified
   from a frozen in-repository snapshot plus an explicit downstream integration
   run.
+- Making `appz/data_models` or MATZ a Geometer build dependency, copying PCB
+  policy into Geometer, or treating the MATZ requirements packet as a frozen
+  request/result wire schema.
 - Reimplementing geometry algorithms in generated code.
 - Encoding large model and result blobs as base64 JSON.
 - Replacing efficient packed planar transport solely to make it resemble JSON.
@@ -858,13 +1015,24 @@ later than their owning implementation slice.
    demo inventory.
 14. Approve `model_bounds` as the first vertical promotion pilot using the
     generic operation ABI.
-15. Decide whether the packed binary layout generator belongs in this plan or a
-   subsequent plan after logical planar models and clients are established.
+15. Keep packed layouts separately governed from TypeSpec logical models. This
+    plan includes the analytic planar Boolean packet specification and may add
+    deterministic layout generation only after its design proves that generated
+    output preserves the independently reviewed binary contract.
 16. Preserve the accepted Viz 2026.6.10 compatibility snapshot and replace it
     only after its TypeScript client migration passes.
 17. Use the accepted digest-tracked Wavenumber documentation stylesheet,
     OFL-1.1 Cousine font assets, and watermark for generated Geometer HTML
     references. Do not vendor the internally licensed Berkeley Mono binaries.
+18. Accept `geometry.analytic_planar_boolean_batch.a0` as the first new
+    operation after the model-bounds infrastructure pilot, with authoritative
+    line/circular-arc topology and no early polygonization.
+19. Treat the frozen Geom A0 and MATZ packet as compatibility and requirements
+    inputs. Geometer owns the final generic TypeSpec and packet shape; MATZ
+    reviews it, provides fixtures, and migrates only after an additive tagged
+    release.
+20. Carry analytic request/result packets through named generic attachments;
+    do not add an operation-specific C ABI bytes symbol.
 
 ## Completion And Plan Hygiene
 

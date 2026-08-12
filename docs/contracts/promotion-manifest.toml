@@ -400,6 +400,18 @@ output_attachments = ["inflate_response"]
 cli_names = []
 compatibility_cli_names = []
 
+[[candidate_operations]]
+id = "geometry.analytic_planar_boolean_batch.a0"
+status = "design_required"
+named_consumer = "appz.data_models.pcb.matz"
+compatibility_snapshot = "docs/contracts/compatibility/data-models-geom-a0-2026-08-12.toml"
+request_contract = "unfrozen"
+result_contract = "unfrozen"
+packed_format = "separately_governed_unfrozen"
+transport = "generic_named_attachments"
+operation_specific_c_abi_symbol = false
+replaces_existing_operation = false
+
 [[demos]]
 id = "embedded_model_viewer"
 source = "examples/wasm/embedded_model_viewer.html"
@@ -413,6 +425,13 @@ status = "legacy_compatibility_required"
 snapshot = "docs/contracts/compatibility/viz-2026.6.10.toml"
 upgrade_target = "@wavenumber/geometer"
 upgrade_language = "typescript"
+
+[[consumers]]
+id = "appz.data_models.pcb.matz"
+status = "requirements_alignment"
+snapshot = "docs/contracts/compatibility/data-models-geom-a0-2026-08-12.toml"
+upgrade_target = "@wavenumber/geometer"
+upgrade_language = "typescript_python"
 
 [[demos]]
 id = "planar_ring_solver"

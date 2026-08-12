@@ -160,6 +160,20 @@ def test_manifest_sources_and_identities_are_complete() -> None:
         "geometry.model_bounds.a0"
     }
 
+    candidates = manifest["candidate_operations"]
+    candidate_ids = [item["id"] for item in candidates]
+    _unique(candidate_ids, "candidate operation id")
+    assert not set(candidate_ids) & set(operation_ids)
+    assert candidate_ids == ["geometry.analytic_planar_boolean_batch.a0"]
+    candidate = candidates[0]
+    assert candidate["status"] == "design_required"
+    assert candidate["request_contract"] == "unfrozen"
+    assert candidate["result_contract"] == "unfrozen"
+    assert candidate["transport"] == "generic_named_attachments"
+    assert candidate["operation_specific_c_abi_symbol"] is False
+    assert candidate["replaces_existing_operation"] is False
+    assert (ROOT / candidate["compatibility_snapshot"]).is_file()
+
     for demo in manifest["demos"]:
         assert (ROOT / demo["source"]).is_file()
         if "worker" in demo:
@@ -169,7 +183,7 @@ def test_manifest_sources_and_identities_are_complete() -> None:
     consumers = manifest["consumers"]
     consumer_ids = [item["id"] for item in consumers]
     _unique(consumer_ids, "consumer id")
-    assert consumer_ids == ["appz.viz"]
+    assert consumer_ids == ["appz.viz", "appz.data_models.pcb.matz"]
     assert all((ROOT / item["snapshot"]).is_file() for item in consumers)
 
 
@@ -218,7 +232,8 @@ def test_cli_compatibility_names_are_still_dispatched() -> None:
 
 def test_viz_2026_6_10_compatibility_snapshot_is_preserved() -> None:
     manifest = _manifest()
-    snapshot_path = ROOT / manifest["consumers"][0]["snapshot"]
+    viz = next(item for item in manifest["consumers"] if item["id"] == "appz.viz")
+    snapshot_path = ROOT / viz["snapshot"]
     with snapshot_path.open("rb") as stream:
         snapshot = tomllib.load(stream)
 
@@ -310,3 +325,76 @@ def test_viz_2026_6_10_compatibility_snapshot_is_preserved() -> None:
         "clipper2_boolean_version": versions["geometry.clipper2_boolean.packet"],
         "clipper2_inflate_open_version": versions["geometry.clipper2_inflate_open.packet"],
     }
+
+
+def test_data_models_geom_a0_requirements_snapshot_is_frozen() -> None:
+    manifest = _manifest()
+    matz = next(
+        item
+        for item in manifest["consumers"]
+        if item["id"] == "appz.data_models.pcb.matz"
+    )
+    snapshot_path = ROOT / matz["snapshot"]
+    with snapshot_path.open("rb") as stream:
+        snapshot = tomllib.load(stream)
+
+    assert snapshot["snapshot_status"] == "requirements_input"
+    assert snapshot["consumer"] == "appz/data_models/pcb/matz"
+    assert snapshot["source_revision"] == "fabbf70e1970adb7fa74f3be64c4ef45e2b89154"
+    assert snapshot["runtime_sibling_dependency"] is False
+    assert snapshot["geom_contract"]["schema_identity"] == (
+        "urn:wavenumber:schema:geom_a0"
+    )
+
+    source_files = snapshot["source_files"]
+    source_paths = [item["path"] for item in source_files]
+    _unique(source_paths, "Geom A0 snapshot source path")
+    assert source_paths == [
+        "contracts/geom/geom_a0.schema.json",
+        "docs/geom/adr/geom-adr-0003-topology-first-ring-path-geometry-contract.md",
+        "docs/geom/adr/geom-adr-0004-analytic-circle-disk-annulus-geometry-contract.md",
+        "docs/geom/adr/geom-adr-0005-topology-preservation-and-late-flattening-policy.md",
+        "docs/pcb/plans/auxiliary/matz-geometer-analytic-planar-boolean-requirements-2026-08-12.md",
+    ]
+    assert {item["path"]: item["sha256"] for item in source_files} == {
+        "contracts/geom/geom_a0.schema.json": (
+            "acd688d81c5445445c6ee3f324000009e3976b4bbaa19895d6f2d52fc0d0ef3b"
+        ),
+        "docs/geom/adr/geom-adr-0003-topology-first-ring-path-geometry-contract.md": (
+            "8ccf5623941dc2ed21a58268021acf88bc5d90bedabb93ada31d6bb5a93e2482"
+        ),
+        "docs/geom/adr/geom-adr-0004-analytic-circle-disk-annulus-geometry-contract.md": (
+            "95d6e23a8a5fd63ee8f17a14b65a44eac2cb8f02d980d00a0bf26720b97e5fb9"
+        ),
+        "docs/geom/adr/geom-adr-0005-topology-preservation-and-late-flattening-policy.md": (
+            "b6c39d4485abffcab8d110365e17fe0510596aaf26b492f3d2b850aa4392e05b"
+        ),
+        "docs/pcb/plans/auxiliary/matz-geometer-analytic-planar-boolean-requirements-2026-08-12.md": (
+            "cfc06ccd6fe9ddef7a590a02984f58235d260f4303de71cfea00bf8b654a44ec"
+        ),
+    }
+    assert {item["id"] for item in source_files if item["role"] == "accepted_adr"} == {
+        "geom-adr-0003",
+        "geom-adr-0004",
+        "geom-adr-0005",
+    }
+
+    operation = snapshot["operation_candidate"]
+    candidate = manifest["candidate_operations"][0]
+    assert operation["id"] == candidate["id"]
+    assert operation["request_contract"] == "unfrozen"
+    assert operation["result_contract"] == "unfrozen"
+    assert operation["transport"] == "generic_named_attachments"
+    assert operation["operation_specific_c_abi_symbol"] is False
+    assert snapshot["solver_feasibility"] == {
+        "initial_candidate": "occt",
+        "clipper2_role": "sampled_non_authoritative_oracle_only",
+        "status": "prototype_required",
+    }
+    assert snapshot["adoption"]["production_switch_requires_tagged_release"] is True
+
+    plan = (
+        ROOT / "docs" / "plans" / "geometer-typespec-contracts" / "plan.md"
+    ).read_text(encoding="utf-8")
+    assert operation["id"] in plan
+    assert matz["snapshot"] in plan or snapshot_path.name in plan

@@ -42,6 +42,8 @@ def test_manifest_sources_and_identities_are_complete() -> None:
         "runtime_dependency": False,
         "node_major": 24,
         "package_manager": "npm@11.16.0",
+        "npm_provision_command": "npm install --global npm@11.16.0",
+        "npm_version_check_command": "npm --version",
         "typespec_compiler": "1.14.0",
         "typespec_json_schema": "1.14.0",
         "typescript": "5.9.3",
@@ -78,6 +80,7 @@ def test_manifest_sources_and_identities_are_complete() -> None:
         assert _sha256(ROOT / source) == design_review[digest_key]
 
     adr = (ROOT / transports["transport_adr"]).read_text(encoding="utf-8")
+    assert re.fullmatch(r"[0-9a-f]{40}", design_review["requested_revision"])
     assert design_review["status"] in {"pending", "approved"}
     if design_review["status"] == "pending":
         assert transports["implementation_allowed"] is False
@@ -89,7 +92,7 @@ def test_manifest_sources_and_identities_are_complete() -> None:
         assert transports["implementation_allowed"] is True
         assert design_review["reviewer"] != "none"
         assert re.fullmatch(r"\d{4}-\d{2}-\d{2}", design_review["review_date"])
-        assert re.fullmatch(r"[0-9a-f]{40}", design_review["reviewed_revision"])
+        assert design_review["reviewed_revision"] == design_review["requested_revision"]
         assert "## Status\n\nAccepted." in adr
     documentation = manifest["documentation"]
     assert documentation["runtime_sibling_dependency"] is False

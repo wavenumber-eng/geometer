@@ -26,6 +26,8 @@ design = "docs/design/typespec-toolchain.md"
 runtime_dependency = false
 node_major = 24
 package_manager = "npm@11.16.0"
+npm_provision_command = "npm install --global npm@11.16.0"
+npm_version_check_command = "npm --version"
 typespec_compiler = "1.14.0"
 typespec_json_schema = "1.14.0"
 typescript = "5.9.3"
@@ -48,6 +50,7 @@ implementation_allowed = false
 
 [transports.design_review]
 status = "pending"
+requested_revision = "df29f0256aa4c3effd791bfba053f852cd5f57c6"
 packet = "docs/design/transport-design-review.md"
 packet_sha256 = "1af50532b135b3d4219fd0715e34fd0f5867ec1fa3d6ec5bce734905236913a4"
 adr_sha256 = "d4905bda88727fadeb221a3b6c5bfb392f5e062bb6033b0cded29f59fb492de0"

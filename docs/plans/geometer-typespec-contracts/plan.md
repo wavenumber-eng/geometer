@@ -245,6 +245,12 @@ durable program tracker. Implementation commits and pull requests must reference
 it. Any accepted work that remains when the main implementation closes must be
 moved to a linked follow-up issue before issue #18 is closed.
 
+wn-dev-std plan logs are the active work, handoff, and review-request record.
+Issue comments are historical context and are not authoritative review packets.
+A transport approval must cite the exact requested revision and digests from
+the current `transport-design-review` log and promotion manifest, regardless of
+an earlier issue comment.
+
 ## Goal
 
 Establish one authored definition for Geometer operation contracts and use it

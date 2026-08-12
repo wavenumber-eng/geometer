@@ -47,6 +47,22 @@ not native, WASM, executable, Rust-client, or Python-package runtime
 dependencies. `@typespec/http` is not part of the foundation because Geometer's
 governed transports are C ABI and framed stdio rather than HTTP.
 
+The `packageManager` declaration documents the pin but does not provision npm.
+After `actions/setup-node@v6` installs Node 24, CI explicitly runs:
+
+```text
+npm install --global npm@11.16.0
+npm --version
+npm ci
+```
+
+The version command must produce exactly `11.16.0`; CI fails before restore or
+generation otherwise. Developer and release instructions use the same
+provision/check sequence. The generated foundation adds a
+`check:node-toolchain` script, and every contract generate/check/signoff command
+runs it before invoking TypeSpec. This prevents a compatible-looking
+`packageManager` field from silently allowing a different npm executable.
+
 Version upgrades are deliberate lockfile changes validated by regeneration and
 all affected conformance gates. Geometer may adopt newer versions than this
 baseline later, but must never float them during generation.
@@ -154,6 +170,8 @@ record intent but do not erase wire presence or eagerly populate patch DTOs.
 The supported commands will be:
 
 ```powershell
+npm install --global npm@11.16.0
+if ((npm --version).Trim() -ne "11.16.0") { throw "npm version mismatch" }
 npm ci
 npm run generate:contracts
 npm run check:contracts

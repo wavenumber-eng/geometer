@@ -26,6 +26,32 @@ vendored_names = [
 ]
 factory_names = ["createGeometerModule", "createGeometerPlanarModule"]
 
+[[artifact_mappings]]
+target = "full_browser"
+kind = "javascript"
+source = "dist/wasm/browser/geometer.js"
+vendored = "geometer-browser.js"
+factory = "createGeometerModule"
+
+[[artifact_mappings]]
+target = "full_browser"
+kind = "wasm"
+source = "dist/wasm/browser/geometer.wasm"
+vendored = "geometer-browser.wasm"
+
+[[artifact_mappings]]
+target = "planar_browser"
+kind = "javascript"
+source = "dist/wasm/planar-browser/geometer-planar-browser.js"
+vendored = "geometer-planar-browser.js"
+factory = "createGeometerPlanarModule"
+
+[[artifact_mappings]]
+target = "planar_browser"
+kind = "wasm"
+source = "dist/wasm/planar-browser/geometer-planar-browser.wasm"
+vendored = "geometer-planar-browser.wasm"
+
 [wasm]
 required_runtime_methods = [
   "ccall",

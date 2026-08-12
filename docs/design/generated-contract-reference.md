@@ -31,13 +31,21 @@ the `appz` workspace revision
 | Asset | Source SHA-256 |
 | --- | --- |
 | `styles.css` | `b0452e403db12c3fca581866b0953dbca45d751bcc83c137f0da16674859d151` |
-| Berkeley Mono regular | `16e05cba507907e4a5156c6199b0c7b8752dc22ea2c43e81a4f2e61a393a2a62` |
-| Berkeley Mono bold | `7d180b17f42dcbce0d63808fca7a7a3e3fd8bfdcce56560b629012c482438041` |
-| Wavenumber light watermark | `87e16b5b2453ad1f9263d92953d5741a30780db02eeea0d59d61f10967c4537b` |
+| `BerkeleyMono-Regular.woff2` | `16e05cba507907e4a5156c6199b0c7b8752dc22ea2c43e81a4f2e61a393a2a62` |
+| `BerkeleyMono-Bold.woff2` | `7d180b17f42dcbce0d63808fca7a7a3e3fd8bfdcce56560b629012c482438041` |
+| `wn_logo_w_text__for_light.svg` | `87e16b5b2453ad1f9263d92953d5741a30780db02eeea0d59d61f10967c4537b` |
 
 A deliberate style refresh records the upstream workspace revision and new
 digests. Normal contract generation never silently refreshes presentation
 assets.
+
+The machine-readable asset lock is the `documentation.assets` table in
+`docs/contracts/promotion-manifest.toml`. Each entry records its upstream
+source, repository destination, SHA-256 digest, and lifecycle status. A
+`planned` asset has not been vendored yet. Generated-HTML implementation must
+copy it, verify the digest, and change its status to `vendored`; tests then
+require the destination to exist and match exactly. This makes all four assets,
+not only the stylesheet, part of the generated-reference completion gate.
 
 ## Site structure
 

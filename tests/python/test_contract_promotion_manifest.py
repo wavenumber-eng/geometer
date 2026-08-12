@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import re
 import tomllib
 from pathlib import Path
@@ -17,6 +18,10 @@ def _manifest() -> dict[str, Any]:
 
 def _unique(values: list[str], label: str) -> None:
     assert len(values) == len(set(values)), f"duplicate {label}: {values}"
+
+
+def _sha256(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 def test_manifest_sources_and_identities_are_complete() -> None:
@@ -38,7 +43,30 @@ def test_manifest_sources_and_identities_are_complete() -> None:
     documentation = manifest["documentation"]
     assert documentation["runtime_sibling_dependency"] is False
     assert (ROOT / documentation["design"]).is_file()
-    assert len(documentation["style_source_sha256"]) == 64
+    assert re.fullmatch(r"[0-9a-f]{40}", documentation["source_revision"])
+
+    assets = documentation["assets"]
+    asset_ids = [item["id"] for item in assets]
+    _unique(asset_ids, "documentation asset id")
+    assert asset_ids == [
+        "stylesheet",
+        "berkeley_mono_regular",
+        "berkeley_mono_bold",
+        "wavenumber_light_watermark",
+    ]
+    design = (ROOT / documentation["design"]).read_text(encoding="utf-8")
+    assert documentation["source_revision"] in design
+    for asset in assets:
+        assert re.fullmatch(r"[0-9a-f]{64}", asset["sha256"])
+        assert asset["source"] in design or Path(asset["source"]).name in design
+        assert asset["sha256"] in design
+        assert asset["status"] in {"planned", "vendored"}
+        destination = ROOT / asset["destination"]
+        if asset["status"] == "vendored":
+            assert destination.is_file()
+            assert _sha256(destination) == asset["sha256"]
+        else:
+            assert not destination.exists()
 
     contracts = manifest["contracts"]
     contract_ids = [item["id"] for item in contracts]
@@ -120,12 +148,57 @@ def test_viz_2026_6_10_compatibility_snapshot_is_preserved() -> None:
     assert snapshot["geometer_release"] == "2026.6.10"
     assert snapshot["migration"]["target_package"] == manifest["packages"]["typescript"]
 
+    expected_artifact_pairs = {
+        "dist/wasm/browser/geometer.js": "geometer-browser.js",
+        "dist/wasm/browser/geometer.wasm": "geometer-browser.wasm",
+        "dist/wasm/planar-browser/geometer-planar-browser.js": (
+            "geometer-planar-browser.js"
+        ),
+        "dist/wasm/planar-browser/geometer-planar-browser.wasm": (
+            "geometer-planar-browser.wasm"
+        ),
+    }
+    assert dict(
+        zip(
+            snapshot["artifacts"]["source_paths"],
+            snapshot["artifacts"]["vendored_names"],
+            strict=True,
+        )
+    ) == expected_artifact_pairs
+
+    mappings = snapshot["artifact_mappings"]
+    assert {item["source"]: item["vendored"] for item in mappings} == (
+        expected_artifact_pairs
+    )
+    assert {(item["target"], item["kind"]) for item in mappings} == {
+        ("full_browser", "javascript"),
+        ("full_browser", "wasm"),
+        ("planar_browser", "javascript"),
+        ("planar_browser", "wasm"),
+    }
+    for item in mappings:
+        artifact = ROOT / item["source"]
+        assert artifact.is_file()
+        assert artifact.stat().st_size > 0
+
     required_symbols = set(snapshot["wasm"]["required_c_abi_symbols"])
     assert required_symbols <= set(manifest["c_abi"]["symbols"])
 
     cmake = (ROOT / "src" / "cpp" / "lib" / "CMakeLists.txt").read_text(encoding="utf-8")
     for factory in snapshot["artifacts"]["factory_names"]:
         assert f"-sEXPORT_NAME={factory}" in cmake
+
+    javascript_mappings = [item for item in mappings if item["kind"] == "javascript"]
+    assert [item["factory"] for item in javascript_mappings] == snapshot["artifacts"][
+        "factory_names"
+    ]
+    required_memory_views = snapshot["wasm"]["required_memory_views"]
+    assert required_memory_views == ["HEAPU8", "HEAPU32"]
+    for item in javascript_mappings:
+        loader = (ROOT / item["source"]).read_text(encoding="utf-8")
+        assert item["factory"] in loader
+        for view in required_memory_views:
+            assert view in loader
 
     runtime_lists = re.findall(r'-sEXPORTED_RUNTIME_METHODS=\[(.*?)\]"', cmake)
     assert len(runtime_lists) == 2
@@ -134,6 +207,23 @@ def test_viz_2026_6_10_compatibility_snapshot_is_preserved() -> None:
     ]
     required_methods = set(snapshot["wasm"]["required_runtime_methods"])
     assert all(required_methods <= methods for methods in runtime_methods)
+
+    assert snapshot["wasm"]["manifest_schema"] == "wn.viz.vendor.geometer.browser.a0"
+    capabilities = snapshot["wasm"]["manifest_capabilities"]
+    _unique(capabilities, "Viz manifest capability")
+    expected_capabilities = ["version"] + [
+        symbol.removeprefix("geometer_")
+        for symbol in snapshot["wasm"]["required_c_abi_symbols"]
+        if symbol
+        not in {
+            "geometer_version_string",
+            "geometer_abi_version",
+            "geometer_free_string",
+            "geometer_free_bytes",
+        }
+    ]
+    assert capabilities == expected_capabilities
+    assert {"geometer_version_string", "geometer_abi_version"} <= required_symbols
 
     versions = {item["id"]: item["version"] for item in manifest["binary_formats"]}
     assert snapshot["packed_formats"] == {

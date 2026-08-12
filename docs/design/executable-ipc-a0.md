@@ -60,6 +60,14 @@ Every frame has a nonempty strict generated JSON object. `hello`, `welcome`,
 `protocol_error` use their corresponding generated DTO. `shutdown` has an
 optional human reason. `shutdown_ack` contains `status: "complete"`,
 `activeRequestCompleted: bool`, and `rejectedQueuedRequestCount: u32`.
+`activeRequestCompleted` is true exactly when one request was in the active
+executing state at the atomic transition into `draining` and that request's
+ordinary terminal response was subsequently written and flushed before this
+acknowledgment. It is false when no request was active at that transition,
+including when a request's completion won the lock immediately beforehand.
+Thus an active request that finishes during the grace period produces true;
+successful acknowledgment cannot encode an active-at-transition request that
+did not complete.
 Unknown fields, duplicate keys, malformed UTF-8, and trailing JSON bytes are
 rejected under the common contract rules.
 

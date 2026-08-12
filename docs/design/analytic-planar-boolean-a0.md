@@ -264,6 +264,41 @@ half-edge arrangement, and classifies every face against prior material and all
 current-stage operands. An acceleration structure may change pair visitation
 order but may not omit a pair unless disjointness is certified exactly.
 
+Coincident carriers use an exact same-domain overlay rather than a finite
+intersection set. Two line carriers are same-domain exactly when their
+homogeneous line equations are projectively equal under the exact algebraic
+predicate system; two circle carriers are same-domain exactly when their exact
+centers and radii are equal. Each group uses the lexicographically least
+complete source-expression key as its carrier key. That key is the canonical
+source-reference tuple followed by the exact canonical expression-DAG bytes
+for the carrier equation, closed-domain endpoints, and authored orientation; it
+contains no OCCT identity or allocation order. A line group chooses the exact
+tangent direction whose first nonzero component is positive. A circle group
+chooses CCW as its positive direction and uses its exact leftmost point as the
+cyclic ordering seam.
+
+For every same-domain group, Geometer collects every boundary-occurrence
+endpoint (and the circle seam when a covered domain is cyclic), deduplicates
+points by exact equality, and splits every occurrence at all collected points
+that lie in its closed domain. Line points sort by exact projection on the
+canonical tangent. Circle points sort CCW from the seam by exact half-plane and
+cross-product predicates; no angle or trigonometric approximation participates.
+The open interval between each consecutive point pair is one atomic carrier
+interval. Its occurrence membership is the complete set of source occurrences
+whose domains contain that interval, and each membership records whether the
+occurrence agrees with or opposes the canonical carrier orientation.
+
+Face classification, rather than signed-multiplicity cancellation alone,
+decides whether an atomic interval survives and in which direction. All
+memberships are retained while that decision is made: equal and opposite
+occurrences may cancel a topological seam without losing lineage, while a
+surviving interval accumulates the unique canonical source references of every
+coincident positive or subtractive occurrence that owns its corresponding
+side transition. Partial overlaps therefore split at both occurrences'
+endpoints; identical operands, coincident disks, and shared line/arc edges have
+the same result independent of visitation order. Endpoint provenance is the
+union of all incident memberships after exact source-reference deduplication.
+
 OCCT may propose adjacency, same-domain grouping, and a traversal seed. It may
 not create or suppress an authoritative vertex, half-edge, face, component, or
 classification. Before a stage commits, a bidirectional audit maps every OCCT
@@ -353,10 +388,12 @@ cannot be relaxed per request.
    complete interval lies inside one integer's open half-nm Voronoi cell. If an
    interval contains a half-nm boundary, an exact algebraic comparison against
    that half integer determines equality or side. Exact equality selects the
-   integer away from zero. If neither a unique cell nor exact tie/side can be
-   certified at 4096 bits, the job fails with
-   `normalization_ambiguous_tie`. This precision schedule and result are part
-   of A0, not an implementation tolerance.
+   integer away from zero. Interval refinement stops as soon as it certifies a
+   cell; reaching 4096 bits without doing so invokes the total exact comparison
+   from rule 2. That comparison yields side or equality, unless a governed
+   algebraic/predicate resource bound is exceeded, in which case the only
+   fail-closed outcome is `resource_limit_exceeded`. There is no separate
+   ambiguous-tie outcome in A0.
 6. A normalized vertex must have squared displacement no greater than
    `0.5 nm^2` from the kernel vertex (maximum Euclidean displacement
    `sqrt(0.5) nm`).
@@ -417,7 +454,12 @@ result spaces and are meaningful only within that result packet.
 Canonicalization is independent of OCCT traversal and allocation:
 
 - vertices sort by `(x, y, incident analytic signature, complete intersection
-  source-set tuple sequence)`;
+  source-set tuple sequence)`. The incident analytic signature is the
+  lexicographically sorted sequence of
+  `(incidenceSide, otherEndpointX, otherEndpointY, kind, direction, majorArc,
+  radius)` for every semantically interned retained fragment touching the
+  vertex, where `incidenceSide` is `0` for fragment start and `1` for fragment
+  end. It contains no generated id or source-set handle;
 - fragments are local analytic records and sort by `(start vertex key, end
   vertex key, kind, direction, majorArc, radius, coincident-positive source-set
   tuple, surviving-subtraction source-set tuple)`; line records use direction
@@ -506,6 +548,20 @@ Same-stage union operands are evaluated symmetrically against the pre-stage
 accumulator and the complete same-stage union, so no authored operand order can
 change these predicates.
 
+Same-stage difference operands are likewise evaluated symmetrically, never as
+a sequential subtraction. For operand `D`, its attributed removed set is
+`R(interior(pre-stage material) intersection interior(D))`, independent of
+every other operand in that stage. A positive-area cell covered by several
+same-stage subtractors records every such operand, so coincident and partially
+overlapping subtractors each receive removal/history credit for their own
+attributed set. A surviving boundary fragment names every credited subtractor
+whose attributed removed set lies on its removed side and whose pre-stage
+material lies on its retained side. Each operand's
+`subtraction_effect_survives`, `subtraction_effect_overwritten_later`, and
+`no_effect` predicates are evaluated from that independent attributed set and
+the later-stage history. Consequently operand-id sorting is canonical encoding
+only and cannot change difference lineage.
+
 ## Relationship Result
 
 For each selected successful job pair, Geometer returns:
@@ -569,7 +625,6 @@ compact governed integers in a structurally valid result packet:
 - `geometer.operation.analytic_planar_boolean.invalid_topology`
 - `geometer.operation.analytic_planar_boolean.invalid_arc`
 - `geometer.operation.analytic_planar_boolean.unsupported_geometry`
-- `geometer.operation.analytic_planar_boolean.normalization_ambiguous_tie`
 - `geometer.operation.analytic_planar_boolean.normalization_error_exceeded`
 - `geometer.operation.analytic_planar_boolean.normalization_topology_collapse`
 - `geometer.operation.analytic_planar_boolean.nonanalytic_result`

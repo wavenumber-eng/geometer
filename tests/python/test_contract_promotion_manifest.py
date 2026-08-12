@@ -480,15 +480,17 @@ def test_analytic_planar_boolean_numeric_catalog_is_closed() -> None:
         "operand_outcome_events": 111,
         "relationship_results": 112,
         "relationship_region_pairs": 113,
+        "source_reference_indices": 114,
     }
     assert catalog["record_size"]["request"]["operands"] == 24
     assert catalog["record_size"]["result"]["directed_fragments"] == 48
     assert catalog["record_size"]["result"]["result_regions"] == 24
     assert catalog["record_size"]["result"]["source_sets"] == 8
+    assert catalog["record_size"]["result"]["source_reference_indices"] == 4
     assert catalog["record_size"]["result"]["operand_outcome_events"] == 48
     assert catalog["required_table_kinds"] == {
         "request": list(range(1, 14)),
-        "result": list(range(101, 114)),
+        "result": list(range(101, 115)),
     }
     assert catalog["enum"]["diagnostic_scope"] == {
         "underlying": "u8",
@@ -530,6 +532,10 @@ def test_analytic_planar_boolean_numeric_catalog_is_closed() -> None:
     )
     assert "invalid_id" not in operation_codes
     assert "invalid_reference" not in operation_codes
+    assert "normalization_ambiguous_tie" not in operation_codes
+    assert catalog["reserved"]["operation_diagnostic"] == {
+        "normalization_ambiguous_tie": 65542,
+    }
     assert catalog["contract_diagnostic"]["invalid_id"].startswith(
         "geometer.contract."
     )
@@ -563,6 +569,7 @@ def test_analytic_planar_boolean_numeric_catalog_is_closed() -> None:
         "algebraic_coefficient_bits",
         "algebraic_storage_bytes_per_job",
         "provenance_references_per_job",
+        "source_reference_index_memberships_per_job",
         "exact_predicate_calls_per_job",
         "solver_working_memory_bytes_per_job",
     ):

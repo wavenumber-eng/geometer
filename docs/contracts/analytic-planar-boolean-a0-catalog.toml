@@ -176,10 +176,11 @@ source_references = 110
 operand_outcome_events = 111
 relationship_results = 112
 relationship_region_pairs = 113
+source_reference_indices = 114
 
 [required_table_kinds]
 request = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
-result = [101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113]
+result = [101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114]
 
 [record_size.request]
 jobs = 24
@@ -210,23 +211,25 @@ source_references = 32
 operand_outcome_events = 48
 relationship_results = 32
 relationship_region_pairs = 32
+source_reference_indices = 4
 
 [operation_diagnostic]
 invalid_topology = 65539
 invalid_arc = 65540
 unsupported_geometry = 65541
-normalization_ambiguous_tie = 65542
 normalization_error_exceeded = 65543
 normalization_topology_collapse = 65544
 nonanalytic_result = 65545
 solver_failed = 65546
 resource_limit_exceeded = 65547
 
+[reserved.operation_diagnostic]
+normalization_ambiguous_tie = 65542
+
 [operation_diagnostic_identity]
 invalid_topology = "geometer.operation.analytic_planar_boolean.invalid_topology"
 invalid_arc = "geometer.operation.analytic_planar_boolean.invalid_arc"
 unsupported_geometry = "geometer.operation.analytic_planar_boolean.unsupported_geometry"
-normalization_ambiguous_tie = "geometer.operation.analytic_planar_boolean.normalization_ambiguous_tie"
 normalization_error_exceeded = "geometer.operation.analytic_planar_boolean.normalization_error_exceeded"
 normalization_topology_collapse = "geometer.operation.analytic_planar_boolean.normalization_topology_collapse"
 nonanalytic_result = "geometer.operation.analytic_planar_boolean.nonanalytic_result"
@@ -310,6 +313,7 @@ algebraic_polynomial_degree = 64
 algebraic_coefficient_bits = 16384
 algebraic_storage_bytes_per_job = 268435456
 provenance_references_per_job = 8388608
+source_reference_index_memberships_per_job = 8388608
 exact_predicate_calls_per_job = 100000000
 interval_refinement_steps_per_job = 100000000
 solver_working_memory_bytes_per_job = 1073741824

@@ -34,7 +34,9 @@ The reviewer should explicitly determine whether:
 - queued requests receive the specified terminal shutdown-rejection response,
   diagnostic, ordering, and request-id transition; the single grace deadline
   covers execution, bounded-queue submission, writes, and flush under a
-  synchronized completion-versus-expiry decision; and
+  synchronized completion-versus-expiry decision; `activeRequestCompleted` is
+  derived solely from whether a request was active at the atomic draining
+  transition and subsequently flushed its terminal response; and
 - the specifications preserve every frozen Viz and existing CLI/C ABI surface.
 
 The review should separately label blocking findings, nonblocking follow-ups,

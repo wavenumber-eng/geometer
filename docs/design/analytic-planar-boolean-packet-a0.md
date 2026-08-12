@@ -102,9 +102,10 @@ by ascending table kind:
 
 For every fixed table, `record count * record bytes == table byte length` with
 overflow-safe arithmetic. A request directory contains exactly kinds 1 through
-13 and a result directory contains exactly kinds 101 through 113, each exactly
-once, even when its record count is zero. Consequently both A0 directory entry
-counts are exactly 13. Unknown, missing, or duplicate kinds are rejected.
+13 and a result directory contains exactly kinds 101 through 114, each exactly
+once, even when its record count is zero. Consequently the A0 request directory
+has exactly 13 entries and the result directory has exactly 14. Unknown,
+missing, or duplicate kinds are rejected.
 
 Zero-count tables have byte length zero and use the current minimum-aligned
 payload cursor as their offset; they do not advance it. Nonempty ranges may not
@@ -145,6 +146,9 @@ record count. An empty range uses `first == 0` and `count == 0`.
 | 16 | `u64` | reserved, zero |
 
 Jobs sort by job id in the packet. Stage ranges retain authored stage order.
+The job stage ranges are pairwise disjoint and, in job-table order, form a
+gapless complete partition of the stage table. Every stage has exactly one job
+owner; no unowned stage record is permitted.
 
 ### Stage record, 32 bytes
 
@@ -160,6 +164,9 @@ Jobs sort by job id in the packet. Stage ranges retain authored stage order.
 Operands within a stage sort by operand id.
 A stage range may be empty; this encodes the governed zero-operand no-op
 semantics. A job may contain zero stages and then succeeds with an empty result.
+The stage operand ranges are pairwise disjoint and, in stage-table order, form
+a gapless complete partition of the operand table. Every operand has exactly
+one stage owner; no unowned operand record is permitted.
 
 ### Operand record, 24 bytes
 
@@ -189,6 +196,11 @@ the sole authority for its region/feature id.
 
 Each ring-reference record is one `u32` ring-table index. Hole references are
 unique and may not name the outer ring.
+Planar-region hole-reference ranges are pairwise disjoint and form a gapless
+complete partition of the ring-reference table. Across all planar-region outer
+indices, hole references, and swept-path indices, every ring-table record has
+exactly one owner and is referenced exactly once. A ring cannot be both a
+region ring and a swept path.
 
 ### Ring record, 32 bytes
 
@@ -204,6 +216,10 @@ unique and may not name the outer ring.
 
 Closed rings require equal vertex/segment counts. Open paths require exactly
 one more vertex than segment. Ranges are owned and non-overlapping.
+Taken in ring-table order, the vertex ranges form a gapless complete partition
+of the authored-vertex table and the segment ranges form a gapless complete
+partition of the authored-segment table. Every authored vertex and segment has
+exactly one ring/path owner.
 
 ### Authored-vertex record, 24 bytes
 
@@ -276,6 +292,7 @@ query id.
 | 111 | operand outcome events | 48 |
 | 112 | relationship results | 32 |
 | 113 | relationship region pairs | 32 |
+| 114 | source-reference indices | 4 |
 
 All generated result ids are deterministic nonzero one-based `u64` ordinals in
 their own result spaces after canonical sorting.
@@ -319,7 +336,7 @@ A0 carries no arbitrary strings in the hot packet.
 
 ### Result-vertex record, 32 bytes
 
-`result vertex id u64`, `x i64`, `y i64`, `intersection source-set index u32`,
+`result vertex id u64`, `x i64`, `y i64`, `intersection source-set handle u32`,
 and `flags u32`.
 
 ### Directed-fragment record, 48 bytes
@@ -334,8 +351,8 @@ and `flags u32`.
 | 18 | `u8` | major arc boolean |
 | 19 | 5 bytes | reserved, zero |
 | 24 | `u64` | radius nanometers, zero for line |
-| 32 | `u32` | coincident positive source-set index |
-| 36 | `u32` | surviving subtraction source-set index |
+| 32 | `u32` | coincident positive source-set handle |
+| 36 | `u32` | surviving subtraction source-set handle |
 | 40 | `u64` | reserved, zero |
 
 Every fragment is an independently replayable analytic record. Its endpoints
@@ -369,7 +386,7 @@ odd-depth rings are CW.
 | ---: | --- | --- |
 | 0 | `u64` | generated result-region id |
 | 8 | `u32` | outer ring index |
-| 12 | `u32` | positive contributor source-set index |
+| 12 | `u32` | positive contributor source-set handle |
 | 16 | `u32` | flags, zero in A0 |
 | 20 | `u32` | reserved, zero |
 
@@ -383,13 +400,23 @@ Ring/region-reference records remain only for operand outcome references. They
 are `u64`: high 32 bits are kind (`1` ring, `2` result region) and low 32 bits
 are the table index.
 
-### Source-set and source-reference records
+### Source-set, source-reference, and source-reference-index records
 
-A source-set record is: first source-reference index `u32` and count `u32`.
-Sets sort lexicographically by their complete canonical source-reference tuple
-sequence and are interned only after full equality comparison. An implementation
-may use a private hash, but no hash is serialized or participates in canonical
-ordering.
+A source-set record is: first source-reference-index-table index `u32` and
+count `u32`. Each source-reference-index record is one `u32` zero-based index
+into the source-reference table. The index range for a set lists its members in
+strictly increasing source-reference tuple order. The source-reference-index
+ranges owned by source sets are pairwise disjoint and, in source-set order,
+form a gapless complete partition of the source-reference-index table. Empty
+sets have no source-set record and use handle zero as defined above.
+
+The source-reference table contains each referenced canonical source-reference
+tuple exactly once and sorts globally by that tuple. Sets sort
+lexicographically by their complete member tuple sequence and are interned only
+after full equality comparison. The indirection permits overlapping sets such
+as `{A, B}` and `{A, C}` without duplicating `A` or imposing incompatible
+contiguous ranges. An implementation may use a private hash, but no hash is
+serialized or participates in canonical ordering.
 
 A 32-byte source reference is:
 
@@ -425,7 +452,7 @@ contract error. References sort by their full tuple.
 ### Operand-outcome-event record, 48 bytes
 
 `operand id u64`, event code `u16`, flags `u16`, first result-reference `u32`,
-result-reference count `u32`, source-set index `u32`, two reserved `u32`
+result-reference count `u32`, source-set handle `u32`, two reserved `u32`
 fields, and two reserved `u64` fields. Result references use the
 ring/region-reference table.
 Several records may exist for one operand and sort by operand/event/reference
@@ -437,6 +464,11 @@ key.
 aggregate dimension `u8` (`0` disjoint, `1` point, `2` curve, `3` area), flags
 `u16`, first pair index `u32`, pair count `u32`, reserved `u32`, and reserved
 `u64`.
+
+For `skipped_dependency_failed`, aggregate dimension is exactly `disjoint`
+(`0`), flags are zero, and the pair range is exactly `first pair index = 0`,
+`pair count = 0`. All reserved fields remain zero. A successful disjoint query
+uses those same aggregate/range values and is distinguished only by status.
 
 A 32-byte relationship pair is: left result-region id `u64`, right
 result-region id `u64`, dimension `u8`, equality `u8`, left-contains-right
@@ -452,12 +484,15 @@ identities and duplicated in the governed numeric catalog:
 | `0x00010003` | `geometer.operation.analytic_planar_boolean.invalid_topology` |
 | `0x00010004` | `geometer.operation.analytic_planar_boolean.invalid_arc` |
 | `0x00010005` | `geometer.operation.analytic_planar_boolean.unsupported_geometry` |
-| `0x00010006` | `geometer.operation.analytic_planar_boolean.normalization_ambiguous_tie` |
 | `0x00010007` | `geometer.operation.analytic_planar_boolean.normalization_error_exceeded` |
 | `0x00010008` | `geometer.operation.analytic_planar_boolean.normalization_topology_collapse` |
 | `0x00010009` | `geometer.operation.analytic_planar_boolean.nonanalytic_result` |
 | `0x0001000a` | `geometer.operation.analytic_planar_boolean.solver_failed` |
 | `0x0001000b` | `geometer.operation.analytic_planar_boolean.resource_limit_exceeded` |
+
+Code `0x00010006`, formerly proposed for an ambiguous normalization tie, is
+reserved in A0 and must not be emitted or accepted as a known diagnostic. Exact
+comparison now resolves side/tie or produces `resource_limit_exceeded`.
 
 Contract diagnostics for packet/id/reference defects use the governed
 `geometer.contract.analytic_planar_boolean_packet.*` identities in the response
@@ -498,6 +533,8 @@ The total result-table keys are:
 - source references: their complete `(kind, role, flags, operand id, primary
   id, secondary id)` tuple;
 - source sets: their complete sorted source-reference tuple sequence;
+- source-reference indices: the referenced source-reference tuple sequence in
+  their owning source-set order;
 - operand events: `(operand id, event code, complete sorted result-reference
   tuple, complete source-set tuple)`;
 - relationship pairs: `(left result-region id, right result-region id,
@@ -521,7 +558,7 @@ job-result record. Its closure and rebasing are normative:
 3. follow all included rings to fragment references and fragments;
 4. follow fragments to endpoint vertices and both source sets;
 5. follow vertices to intersection source sets;
-6. follow source sets to source references;
+6. follow source sets through source-reference indices to source references;
 7. follow operand events to every ring/region reference and source set; and
 8. reject any record reached from two job closures unless it is immutable
    source content deliberately duplicated into each standalone subpacket.
@@ -562,6 +599,7 @@ Additional A0 maxima are:
 | Bits in any algebraic polynomial coefficient | 16,384 |
 | Algebraic integer/coefficient storage per job | 256 MiB |
 | Provenance source references per job | 8,388,608 |
+| Source-reference-index memberships per job | 8,388,608 |
 | Exact predicate calls per job | 100,000,000 |
 | Total interval-refinement steps per job | 100,000,000 |
 | Solver working memory per job | 1 GiB |

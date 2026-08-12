@@ -50,12 +50,12 @@ implementation_allowed = false
 
 [transports.design_review]
 status = "pending"
-requested_revision = "df29f0256aa4c3effd791bfba053f852cd5f57c6"
+requested_revision = "86f98fb106854e316f12dffe6cc6366406ce3ed2"
 packet = "docs/design/transport-design-review.md"
-packet_sha256 = "1af50532b135b3d4219fd0715e34fd0f5867ec1fa3d6ec5bce734905236913a4"
+packet_sha256 = "7cb6e43423402f8969314ededfd258bf01234a79cd9d13bf50a39e2246eafddb"
 adr_sha256 = "d4905bda88727fadeb221a3b6c5bfb392f5e062bb6033b0cded29f59fb492de0"
 generic_c_abi_sha256 = "1b9d02d310110530cb62c82125613865a90bcb2f9da49397ae61dbc61abcd861"
-executable_ipc_sha256 = "b0864b839611e9dd777d6eb850e42c7b0d5aa3b71b823917fdb04156a3de29ef"
+executable_ipc_sha256 = "65001cbad0614d8f7c545fcab139ae0f3432b8a706f25d976460b06cb4b0ceba"
 reviewer = "none"
 review_date = "none"
 reviewed_revision = "none"

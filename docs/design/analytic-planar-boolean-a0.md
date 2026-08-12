@@ -56,10 +56,34 @@ The nonproduction CTest spike
 - OCCT modification/generation history alone does not retain absorbed-positive
   material lineage.
 
-The same test passes natively and under Emscripten/Node. Its current four-line
-canonical feasibility signature is byte-identical with SHA-256
-`87db47536893aa98464d81be69cd4e2dd89370cfd05f8ad825d18d19021c3de4`.
+The same test passes natively and under Emscripten/Node. Its current five-line
+canonical feasibility signature, including the twelve exact case-2
+endpoint/radius/direction/branch fragments, is byte-identical with SHA-256
+`c21b03c1b42a6cb3212cec5b3051987f645e21062eddecc82d3e3b0e0fd6dfc7`.
 This is feasibility evidence, not the eventual packet golden.
+
+The case-2 success oracle is the following lexicographically sorted fragment
+list. `A:radius:direction:branch:start:end` uses integer nanometers:
+
+```text
+A:2600000:cw:minor:4213333,2299527:5560500,451485
+A:2600000:cw:minor:643600,1098807:2080000,2431789
+A:3200000:cw:minor:-3007016,1094464:540000,3154108
+A:3200000:cw:minor:2080000,2431789:3007016,1094464
+A:4000000:ccw:minor:540000,3154108:-625231,1690473
+A:4000000:ccw:minor:6939231,694593:2673333,3986639
+A:4800000:ccw:minor:2673333,3986639:-4510525,1641697
+A:4800000:ccw:minor:4510525,1641697:4213333,2299527
+A:700000:ccw:minor:-625231,1690473:643600,1098807
+A:700000:ccw:minor:5560500,451485:6939231,694593
+A:800000:ccw:minor:-4510525,1641697:-3007016,1094464
+A:800000:ccw:minor:3007016,1094464:4510525,1641697
+```
+
+The committed feasibility test asserts this list on both targets. The packet
+implementation must later add ring order, provenance/source-set indices,
+generated ids, and the standalone job-result digest without changing these
+normalized analytic fragments.
 
 ## Logical Request
 
@@ -223,11 +247,19 @@ incidence classification. Intersection vertices list all authored segments or
 compact features whose curves form that vertex. An absorbed or coincident
 positive remains material lineage even when it owns no surviving boundary.
 
-At every stage boundary, the accumulator is rebuilt from canonical integer-nm
-endpoint-authoritative fragments before the next stage. Lines use their exact
-shared topology endpoints. Circular arcs use exact shared topology endpoints,
-an integer-nm radius, direction, and major-arc branch; the circle center is
-derived and is not stored as a competing result fact.
+Across ordered stages, the accumulator retains certified exact real-algebraic
+line/circle/intersection geometry and lineage. OCCT receives a local binary64
+projection only to select candidate topology; every retained candidate is
+reclassified against the exact algebraic arrangement before the next stage.
+The governed nm-grid normalization occurs once, after the final stage. Snapping
+an intermediate stage is forbidden because it could change whether a later
+operand touches, crosses, or removes material.
+
+The final published arrangement uses canonical integer-nm
+endpoint-authoritative fragments. Lines use their exact shared topology
+endpoints. Circular arcs use exact shared topology endpoints, an integer-nm
+radius, direction, and major-arc branch; the circle center is derived and is
+not stored as a competing result fact.
 
 ## Certified Normalization
 
@@ -272,10 +304,13 @@ cannot be relaxed per request.
    line/arc fragment may not become incoherent.
 
 Full result circles are decomposed into exactly two half arcs. After the center
-and radius have certified integer-nm representatives, their shared vertices are
-`(center.x - radius, center.y)` and `(center.x + radius, center.y)`. Outer
-circles traverse both halves CCW; hole circles traverse both halves CW. This is
-an exact endpoint/radius replay form, not tessellation.
+and radius have certified integer-nm representatives, the ring starts at the
+lexicographically least split vertex `L = (center.x - radius, center.y)`; the
+other split vertex is `R = (center.x + radius, center.y)`. An outer circle emits
+`L -> R` CCW through the lower half, then `R -> L` CCW through the upper half.
+A hole emits `L -> R` CW through the upper half, then `R -> L` CW through the
+lower half. Both fragments set `majorArc = false`. This is an exact
+endpoint/radius replay form, not tessellation.
 
 Any violation fails the isolated job with a stable normalization diagnostic.
 The MATZ 1.25/1.4 nm notch is the normative topology-collapse failure. The

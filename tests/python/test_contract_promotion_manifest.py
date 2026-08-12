@@ -409,7 +409,7 @@ def test_data_models_geom_a0_requirements_snapshot_is_frozen() -> None:
         "case_2_oracle": "success",
         "case_2_oracle_evidence": "native_wasm_occt_feasibility_signature",
         "case_2_oracle_signature_sha256": (
-            "87db47536893aa98464d81be69cd4e2dd89370cfd05f8ad825d18d19021c3de4"
+            "c21b03c1b42a6cb3212cec5b3051987f645e21062eddecc82d3e3b0e0fd6dfc7"
         ),
         "normalization_collapse_case": "job_local_failure",
         "normal_build_sibling_dependency": False,

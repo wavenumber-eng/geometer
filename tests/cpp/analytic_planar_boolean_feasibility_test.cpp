@@ -9,6 +9,7 @@
 #include <GeomAbs_CurveType.hxx>
 #include <NCollection_IndexedMap.hxx>
 #include <ShapeUpgrade_UnifySameDomain.hxx>
+#include <TopAbs_Orientation.hxx>
 #include <TopAbs_ShapeEnum.hxx>
 #include <TopExp.hxx>
 #include <TopExp_Explorer.hxx>
@@ -227,6 +228,65 @@ std::vector<std::string> canonical_boundary_signature(const TopoDS_Shape& shape)
     return result;
 }
 
+std::vector<std::string> endpoint_fragment_signature(const TopoDS_Shape& shape)
+{
+    std::vector<std::string> result;
+    for (TopExp_Explorer explorer(shape, TopAbs_EDGE); explorer.More(); explorer.Next())
+    {
+        const TopoDS_Edge edge = TopoDS::Edge(explorer.Current());
+        const TopoDS_Vertex first_vertex = TopExp::FirstVertex(edge, true);
+        const TopoDS_Vertex last_vertex = TopExp::LastVertex(edge, true);
+        require(!first_vertex.IsNull() && !last_vertex.IsNull(),
+                "case-2 feasibility fragment unexpectedly has no endpoint");
+        const gp_Pnt first = BRep_Tool::Pnt(first_vertex);
+        const gp_Pnt last = BRep_Tool::Pnt(last_vertex);
+        const BRepAdaptor_Curve curve(edge);
+
+        std::ostringstream signature;
+        if (curve.GetType() == GeomAbs_Line)
+        {
+            signature << "L:";
+        }
+        else
+        {
+            require(curve.GetType() == GeomAbs_Circle,
+                    "case-2 endpoint signature encountered unsupported curve");
+            const gp_Circ circle = curve.Circle();
+            const bool forward = edge.Orientation() == TopAbs_FORWARD;
+            const bool axis_positive = circle.Axis().Direction().Z() > 0.0;
+            const bool ccw = forward == axis_positive;
+            const double span = std::abs(curve.LastParameter() - curve.FirstParameter());
+            const bool major_arc = span > kPi + 1.0e-12;
+            signature << "A:" << normalize_nm(circle.Radius()) << ':' << (ccw ? "ccw" : "cw") << ':'
+                      << (major_arc ? "major" : "minor") << ':';
+        }
+        signature << normalize_nm(first.X()) << ',' << normalize_nm(first.Y()) << ':'
+                  << normalize_nm(last.X()) << ',' << normalize_nm(last.Y());
+        result.push_back(signature.str());
+    }
+    std::sort(result.begin(), result.end());
+    return result;
+}
+
+const std::vector<std::string>& expected_matz_endpoint_fragments()
+{
+    static const std::vector<std::string> expected = {
+        "A:2600000:cw:minor:4213333,2299527:5560500,451485",
+        "A:2600000:cw:minor:643600,1098807:2080000,2431789",
+        "A:3200000:cw:minor:-3007016,1094464:540000,3154108",
+        "A:3200000:cw:minor:2080000,2431789:3007016,1094464",
+        "A:4000000:ccw:minor:540000,3154108:-625231,1690473",
+        "A:4000000:ccw:minor:6939231,694593:2673333,3986639",
+        "A:4800000:ccw:minor:2673333,3986639:-4510525,1641697",
+        "A:4800000:ccw:minor:4510525,1641697:4213333,2299527",
+        "A:700000:ccw:minor:-625231,1690473:643600,1098807",
+        "A:700000:ccw:minor:5560500,451485:6939231,694593",
+        "A:800000:ccw:minor:-4510525,1641697:-3007016,1094464",
+        "A:800000:ccw:minor:3007016,1094464:4510525,1641697",
+    };
+    return expected;
+}
+
 void require_only_line_and_circle(const TopoDS_Shape& shape)
 {
     for (TopExp_Explorer explorer(shape, TopAbs_EDGE); explorer.More(); explorer.Next())
@@ -317,6 +377,8 @@ void test_analytic_extraction_and_order_independence()
             "MATZ arbitrary-angle arc fixture should succeed");
     require_only_line_and_circle(matz_arc_union);
     require_safe_vertex_normalization(matz_arc_union);
+    require(endpoint_fragment_signature(matz_arc_union) == expected_matz_endpoint_fragments(),
+            "MATZ arbitrary-angle endpoint/radius fragment oracle changed");
 }
 
 void test_normalization_collapse_probe()
@@ -390,8 +452,13 @@ std::string parity_signature()
         output << '|' << item;
     }
     output << "\nmatz_arc";
-    for (const std::string& item :
-         canonical_boundary_signature(fuse(matz_arc_a.shape, matz_arc_b.shape)))
+    const TopoDS_Shape matz_arc_union = fuse(matz_arc_a.shape, matz_arc_b.shape);
+    for (const std::string& item : canonical_boundary_signature(matz_arc_union))
+    {
+        output << '|' << item;
+    }
+    output << "\nmatz_endpoint_fragments";
+    for (const std::string& item : endpoint_fragment_signature(matz_arc_union))
     {
         output << '|' << item;
     }

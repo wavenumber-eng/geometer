@@ -34,10 +34,16 @@ status = "pending"
 depends_on = ["typespec-foundation"]
 
 [[steps]]
+id = "documentation-asset-licensing"
+title = "Record font redistribution authority or select and license an open-font substitute"
+status = "done"
+depends_on = ["authority-and-inventory"]
+
+[[steps]]
 id = "generated-html-reference"
 title = "Generate the styled HTML contract reference and verify it offline"
 status = "pending"
-depends_on = ["pilot-contracts"]
+depends_on = ["pilot-contracts", "documentation-asset-licensing"]
 
 [[steps]]
 id = "cpp-server"
@@ -135,8 +141,13 @@ title = "All generated artifacts are deterministic, complete, and clean under ch
 status = "pending"
 
 [[exit_criteria]]
+id = "documentation-asset-licensing"
+title = "Every vendored font has repository-safe redistribution authority and committed license evidence"
+status = "pending"
+
+[[exit_criteria]]
 id = "generated-html-reference"
-title = "Generated HTML contract references use the vendored Wavenumber visual system and pass freshness, link, and offline browser checks"
+title = "Generated HTML contract references use the approved vendored Wavenumber visual system and pass freshness, link, and offline browser checks"
 status = "pending"
 
 [[exit_criteria]]
@@ -532,8 +543,10 @@ design review.
   gate.
 - Generate committed HTML indexes and per-contract/per-operation references
   under `docs/generated/contracts/` from the normalized catalog.
-- Vendor the reviewed `appz/data_models` Wavenumber stylesheet, Berkeley Mono
-  assets, and watermark into Geometer with recorded source digests. Generated
+- Vendor the reviewed `appz/data_models` Wavenumber stylesheet and watermark
+  into Geometer with recorded source digests. Use the selected OFL-1.1 Cousine
+  font instead of the internally licensed Berkeley Mono files; lock its source,
+  license, and digests, and vendor the license alongside the font. Generated
   pages use the same page structure and relative offline links without reading
   the sibling checkout.
 - Test deterministic HTML, complete navigation, source/schema links, generated
@@ -843,8 +856,9 @@ later than their owning implementation slice.
    subsequent plan after logical planar models and clients are established.
 16. Preserve the accepted Viz 2026.6.10 compatibility snapshot and replace it
     only after its TypeScript client migration passes.
-17. Use the accepted digest-tracked Wavenumber documentation stylesheet, font
-    assets, and watermark for generated Geometer HTML references.
+17. Use the accepted digest-tracked Wavenumber documentation stylesheet,
+    OFL-1.1 Cousine font assets, and watermark for generated Geometer HTML
+    references. Do not vendor the internally licensed Berkeley Mono binaries.
 
 ## Completion And Plan Hygiene
 

@@ -44,19 +44,29 @@ def test_manifest_sources_and_identities_are_complete() -> None:
     assert documentation["runtime_sibling_dependency"] is False
     assert (ROOT / documentation["design"]).is_file()
     assert re.fullmatch(r"[0-9a-f]{40}", documentation["source_revision"])
+    font_redistribution = documentation["font_redistribution"]
+    assert font_redistribution["completion_gate"] is True
+    assert font_redistribution["status"] == "approved_open_license"
+    assert font_redistribution["selected_font"] == "Cousine"
+    assert font_redistribution["license_spdx"] == "OFL-1.1"
+    assert re.fullmatch(r"[0-9a-f]{40}", font_redistribution["source_revision"])
+    assert font_redistribution["license_url"].startswith("https://")
 
     assets = documentation["assets"]
     asset_ids = [item["id"] for item in assets]
     _unique(asset_ids, "documentation asset id")
     assert asset_ids == [
         "stylesheet",
-        "berkeley_mono_regular",
-        "berkeley_mono_bold",
+        "cousine_regular",
+        "cousine_bold",
+        "cousine_license",
         "wavenumber_light_watermark",
     ]
     design = (ROOT / documentation["design"]).read_text(encoding="utf-8")
     assert documentation["source_revision"] in design
+    license_asset = next(item for item in assets if item["role"] == "license")
     for asset in assets:
+        assert asset["role"] in {"stylesheet", "font", "license", "watermark"}
         assert re.fullmatch(r"[0-9a-f]{64}", asset["sha256"])
         assert asset["source"] in design or Path(asset["source"]).name in design
         assert asset["sha256"] in design
@@ -67,6 +77,20 @@ def test_manifest_sources_and_identities_are_complete() -> None:
             assert _sha256(destination) == asset["sha256"]
         else:
             assert not destination.exists()
+
+        if asset["role"] == "font":
+            assert font_redistribution["source_revision"] in asset["source"]
+            assert asset["redistribution_status"] == "approved_open_license"
+            assert asset["license_evidence"] == (
+                "docs/design/assets/fonts/Cousine/OFL.txt"
+            )
+            assert asset["status"] == license_asset["status"]
+            if asset["status"] == "vendored":
+                assert font_redistribution["status"] == "approved_open_license"
+                assert (ROOT / asset["license_evidence"]).is_file()
+        elif asset["role"] == "license":
+            assert font_redistribution["source_revision"] in asset["source"]
+            assert asset["source"].endswith("/OFL.txt")
 
     contracts = manifest["contracts"]
     contract_ids = [item["id"] for item in contracts]

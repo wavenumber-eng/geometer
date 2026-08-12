@@ -16,7 +16,7 @@ The generated site uses the same Wavenumber presentation system as
 `C:/eli/wn-hw/appz/data_models`:
 
 - shared square-corner layout and Wavenumber color variables;
-- Berkeley Mono with the same fallback stack;
+- Cousine with a conventional monospace fallback stack;
 - dark headers and section summaries;
 - table, panel, tag, callout, code, navigation, and responsive rules;
 - the light-background Wavenumber watermark; and
@@ -31,8 +31,9 @@ the `appz` workspace revision
 | Asset | Source SHA-256 |
 | --- | --- |
 | `styles.css` | `b0452e403db12c3fca581866b0953dbca45d751bcc83c137f0da16674859d151` |
-| `BerkeleyMono-Regular.woff2` | `16e05cba507907e4a5156c6199b0c7b8752dc22ea2c43e81a4f2e61a393a2a62` |
-| `BerkeleyMono-Bold.woff2` | `7d180b17f42dcbce0d63808fca7a7a3e3fd8bfdcce56560b629012c482438041` |
+| `Cousine-Regular.ttf` | `1da22250675fc4c42fcf3a9736c44bc0570516105331443b663fd5cfbd1412fe` |
+| `Cousine-Bold.ttf` | `17c8a7245156d2253531c9e529474937b09d9f641c5ae7695c5e33f22822eef4` |
+| Cousine `OFL.txt` | `b81c4d4dc0a9f72c9155e78187316e016e2012a8102468804173dc61468b906d` |
 | `wn_logo_w_text__for_light.svg` | `87e16b5b2453ad1f9263d92953d5741a30780db02eeea0d59d61f10967c4537b` |
 
 A deliberate style refresh records the upstream workspace revision and new
@@ -44,8 +45,20 @@ The machine-readable asset lock is the `documentation.assets` table in
 source, repository destination, SHA-256 digest, and lifecycle status. A
 `planned` asset has not been vendored yet. Generated-HTML implementation must
 copy it, verify the digest, and change its status to `vendored`; tests then
-require the destination to exist and match exactly. This makes all four assets,
-not only the stylesheet, part of the generated-reference completion gate.
+require the destination to exist and match exactly. This makes the entire asset
+set, not only the stylesheet, part of the generated-reference completion gate.
+
+Font redistribution is a separate prerequisite. Although Wavenumber purchased
+Berkeley Mono for internal use, Geometer does not treat that purchase as public
+redistribution authority and will not commit those font binaries. The public
+reference instead uses [Cousine](https://fonts.google.com/specimen/Cousine),
+pinned to Google Fonts revision
+`038b637da7b3fd956a4ed93ffc607c3d5e4ce172` under the
+[SIL Open Font License 1.1](https://github.com/google/fonts/blob/038b637da7b3fd956a4ed93ffc607c3d5e4ce172/ofl/cousine/OFL.txt).
+The regular, bold, and license files remain `planned` until generated-reference
+implementation vendors all three together. A font can transition to `vendored`
+only when its `redistribution_status` is `approved_open_license` and its
+`license_evidence` names the committed OFL file.
 
 ## Site structure
 

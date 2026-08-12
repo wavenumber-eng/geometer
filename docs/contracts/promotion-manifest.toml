@@ -34,29 +34,54 @@ design = "docs/design/generated-contract-reference.md"
 source_revision = "27548a16e23a8bc225fc81c047bbef8c325fb4ae"
 runtime_sibling_dependency = false
 
+[documentation.font_redistribution]
+completion_gate = true
+status = "approved_open_license"
+selected_font = "Cousine"
+license_spdx = "OFL-1.1"
+source_revision = "038b637da7b3fd956a4ed93ffc607c3d5e4ce172"
+license_url = "https://github.com/google/fonts/blob/038b637da7b3fd956a4ed93ffc607c3d5e4ce172/ofl/cousine/OFL.txt"
+resolution = "Use Cousine from Google Fonts; vendor its OFL license with the font files. Do not distribute the internally licensed Berkeley Mono files from this public repository."
+
 [[documentation.assets]]
 id = "stylesheet"
+role = "stylesheet"
 source = "appz/data_models/docs/core/design/styles.css"
 destination = "docs/design/styles.css"
 sha256 = "b0452e403db12c3fca581866b0953dbca45d751bcc83c137f0da16674859d151"
 status = "planned"
 
 [[documentation.assets]]
-id = "berkeley_mono_regular"
-source = "appz/data_models/docs/core/design/assets/fonts/BerkeleyMono/BerkeleyMono-Regular.woff2"
-destination = "docs/design/assets/fonts/BerkeleyMono/BerkeleyMono-Regular.woff2"
-sha256 = "16e05cba507907e4a5156c6199b0c7b8752dc22ea2c43e81a4f2e61a393a2a62"
+id = "cousine_regular"
+role = "font"
+source = "https://raw.githubusercontent.com/google/fonts/038b637da7b3fd956a4ed93ffc607c3d5e4ce172/ofl/cousine/Cousine-Regular.ttf"
+destination = "docs/design/assets/fonts/Cousine/Cousine-Regular.ttf"
+sha256 = "1da22250675fc4c42fcf3a9736c44bc0570516105331443b663fd5cfbd1412fe"
 status = "planned"
+redistribution_status = "approved_open_license"
+license_evidence = "docs/design/assets/fonts/Cousine/OFL.txt"
 
 [[documentation.assets]]
-id = "berkeley_mono_bold"
-source = "appz/data_models/docs/core/design/assets/fonts/BerkeleyMono/BerkeleyMono-Bold.woff2"
-destination = "docs/design/assets/fonts/BerkeleyMono/BerkeleyMono-Bold.woff2"
-sha256 = "7d180b17f42dcbce0d63808fca7a7a3e3fd8bfdcce56560b629012c482438041"
+id = "cousine_bold"
+role = "font"
+source = "https://raw.githubusercontent.com/google/fonts/038b637da7b3fd956a4ed93ffc607c3d5e4ce172/ofl/cousine/Cousine-Bold.ttf"
+destination = "docs/design/assets/fonts/Cousine/Cousine-Bold.ttf"
+sha256 = "17c8a7245156d2253531c9e529474937b09d9f641c5ae7695c5e33f22822eef4"
+status = "planned"
+redistribution_status = "approved_open_license"
+license_evidence = "docs/design/assets/fonts/Cousine/OFL.txt"
+
+[[documentation.assets]]
+id = "cousine_license"
+role = "license"
+source = "https://raw.githubusercontent.com/google/fonts/038b637da7b3fd956a4ed93ffc607c3d5e4ce172/ofl/cousine/OFL.txt"
+destination = "docs/design/assets/fonts/Cousine/OFL.txt"
+sha256 = "b81c4d4dc0a9f72c9155e78187316e016e2012a8102468804173dc61468b906d"
 status = "planned"
 
 [[documentation.assets]]
 id = "wavenumber_light_watermark"
+role = "watermark"
 source = "appz/data_models/docs/core/design/assets/wn_logo_w_text__for_light.svg"
 destination = "docs/design/assets/wn_logo_w_text__for_light.svg"
 sha256 = "87e16b5b2453ad1f9263d92953d5741a30780db02eeea0d59d61f10967c4537b"

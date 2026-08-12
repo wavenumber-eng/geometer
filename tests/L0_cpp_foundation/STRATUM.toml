@@ -1,6 +1,6 @@
 name = "C++ Foundation"
 order = 0
-description = "Verify OCCT links and basic geometry operations work."
+description = "Verify OCCT links, basic geometry operations, and analytic planar Boolean feasibility."
 enabled = true
 runner = "ctest"
 concerns = ["build", "occt"]

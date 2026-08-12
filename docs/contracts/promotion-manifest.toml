@@ -405,12 +405,16 @@ id = "geometry.analytic_planar_boolean_batch.a0"
 status = "design_required"
 named_consumer = "appz.data_models.pcb.matz"
 compatibility_snapshot = "docs/contracts/compatibility/data-models-geom-a0-2026-08-12.toml"
+design = "docs/design/analytic-planar-boolean-a0.md"
+packet_spec = "docs/design/analytic-planar-boolean-packet-a0.md"
+feasibility_test = "tests/cpp/analytic_planar_boolean_feasibility_test.cpp"
 request_contract = "unfrozen"
 result_contract = "unfrozen"
 packed_format = "separately_governed_unfrozen"
 transport = "generic_named_attachments"
 operation_specific_c_abi_symbol = false
 replaces_existing_operation = false
+browser_target = "full_browser"
 
 [[demos]]
 id = "embedded_model_viewer"

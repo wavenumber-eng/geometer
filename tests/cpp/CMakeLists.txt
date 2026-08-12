@@ -25,6 +25,17 @@ target_link_libraries(geometer_planar_step_test PRIVATE geometer_lib)
 
 add_test(NAME geometer_planar_step_test COMMAND geometer_planar_step_test)
 
+add_executable(geometer_analytic_planar_boolean_feasibility_test
+    analytic_planar_boolean_feasibility_test.cpp
+)
+
+target_link_libraries(geometer_analytic_planar_boolean_feasibility_test PRIVATE geometer_lib)
+
+add_test(
+    NAME geometer_analytic_planar_boolean_feasibility_test
+    COMMAND geometer_analytic_planar_boolean_feasibility_test
+)
+
 add_executable(geometer_model_bounds_test
     model_bounds_test.cpp
 )
@@ -73,6 +84,7 @@ if(WIN32 AND OpenCASCADE_BINARY_DIR)
     set_tests_properties(
         geometer_planar_solve_test
         geometer_planar_step_test
+        geometer_analytic_planar_boolean_feasibility_test
         geometer_model_bounds_test
         geometer_projection_options_json_test
         geometer_projection_model_transform_test

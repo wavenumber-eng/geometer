@@ -16,6 +16,8 @@ durable record belongs here, in ADRs, and in requirements.
 - [Executable IPC A0](executable-ipc-a0.md)
 - [Transport design review packet](transport-design-review.md)
 - [Generated contract reference](generated-contract-reference.md)
+- [Analytic planar Boolean A0](analytic-planar-boolean-a0.md)
+- [Analytic planar Boolean packet A0](analytic-planar-boolean-packet-a0.md)
 - [Python package interface](python-package.md)
 - [WASM interfaces](wasm.md)
 - [CLI interfaces](cli.md)

@@ -172,7 +172,11 @@ def test_manifest_sources_and_identities_are_complete() -> None:
     assert candidate["transport"] == "generic_named_attachments"
     assert candidate["operation_specific_c_abi_symbol"] is False
     assert candidate["replaces_existing_operation"] is False
+    assert candidate["browser_target"] == "full_browser"
     assert (ROOT / candidate["compatibility_snapshot"]).is_file()
+    assert (ROOT / candidate["design"]).is_file()
+    assert (ROOT / candidate["packet_spec"]).is_file()
+    assert (ROOT / candidate["feasibility_test"]).is_file()
 
     for demo in manifest["demos"]:
         assert (ROOT / demo["source"]).is_file()
@@ -392,6 +396,23 @@ def test_data_models_geom_a0_requirements_snapshot_is_frozen() -> None:
         "status": "prototype_required",
     }
     assert snapshot["adoption"]["production_switch_requires_tagged_release"] is True
+
+    fixture_input = snapshot["portable_fixture_input"]
+    assert fixture_input == {
+        "status": "reviewed_feasibility_input",
+        "source_revision": "67a0c93e458d9885a6d5bb21a766ec5243ed1471",
+        "source_path": "tests/fixtures/pcb_materialization/geometer_analytic_planar_boolean_observations_a0.json",
+        "sha256": "3c4837541105723e29e1ed26a2af56c31a893524b967c55eaaa027e0d0ca5a0a",
+        "portable_case_count": 10,
+        "real_board_case_count": 2,
+        "case_2_oracle": "success",
+        "case_2_oracle_evidence": "native_wasm_occt_feasibility_signature",
+        "case_2_oracle_signature_sha256": (
+            "87db47536893aa98464d81be69cd4e2dd89370cfd05f8ad825d18d19021c3de4"
+        ),
+        "normalization_collapse_case": "job_local_failure",
+        "normal_build_sibling_dependency": False,
+    }
 
     plan = (
         ROOT / "docs" / "plans" / "geometer-typespec-contracts" / "plan.md"

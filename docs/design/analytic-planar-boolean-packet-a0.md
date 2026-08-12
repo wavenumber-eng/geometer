@@ -7,6 +7,12 @@ the logical models in [Analytic Planar Boolean A0 Design](analytic-planar-boolea
 It is not generated merely by choosing a TypeSpec emitter. Once accepted, any
 incompatible change requires a new packet generation and magic.
 
+Every numeric enum, flag, role, status, event, diagnostic, and path token is
+assigned in the machine-readable governed catalog
+`docs/contracts/analytic-planar-boolean-a0-catalog.toml`. This document names
+the fields and the catalog supplies their exact wire values; drift tests require
+the two to remain aligned.
+
 The packet travels through named attachments on the generic operation C ABI and
 executable IPC. No operation-specific C symbol is added.
 
@@ -48,8 +54,8 @@ the canonical result attachment or its digest.
 - Booleans are `u8` with only `0` and `1` accepted.
 - There are no pointers, platform-sized integers, floating-point values,
   strings, or NUL-terminated fields in A0 packets.
-- Coordinates and lengths are integer nanometers. Compact authored angles are
-  signed integer microdegrees.
+- Coordinates and lengths are integer nanometers. A0 packets contain no angle
+  or trigonometric fields.
 - Every packet offset is relative to byte zero of that packet.
 - Every table offset and byte length is a multiple of eight. Padding bytes and
   reserved fields must be zero.
@@ -110,7 +116,7 @@ record count. An empty range uses `first == 0` and `count == 0`.
 | ---: | --- | ---: |
 | 1 | jobs | 24 |
 | 2 | stages | 32 |
-| 3 | operands | 32 |
+| 3 | operands | 24 |
 | 4 | planar regions | 32 |
 | 5 | ring references | 4 |
 | 6 | rings | 32 |
@@ -146,7 +152,7 @@ Jobs sort by job id in the packet. Stage ranges retain authored stage order.
 
 Operands within a stage sort by operand id.
 
-### Operand record, 32 bytes
+### Operand record, 24 bytes
 
 | Offset | Type | Field |
 | ---: | --- | --- |
@@ -154,12 +160,12 @@ Operands within a stage sort by operand id.
 | 8 | `u16` | geometry kind |
 | 10 | `u16` | flags, zero in A0 |
 | 12 | `u32` | geometry-table index |
-| 16 | `u64` | compact feature id, or zero for planar region |
-| 24 | `u64` | reserved, zero |
+| 16 | `u64` | reserved, zero |
 
 Geometry kinds are `1` planar region, `2` disk, `3` annulus, `4` capsule, and
 `5` swept path. The geometry-table index addresses the table implied by the
-kind. The referenced geometry record may be owned by only one operand.
+kind. The referenced geometry record may be owned by only one operand and is
+the sole authority for its region/feature id.
 
 ### Planar-region record, 32 bytes
 
@@ -251,17 +257,16 @@ query id.
 | 101 | job results | 48 |
 | 102 | diagnostics | 56 |
 | 103 | result vertices | 32 |
-| 104 | normalized curves | 40 |
-| 105 | directed fragments | 48 |
-| 106 | result rings | 32 |
-| 107 | fragment references | 4 |
-| 108 | result regions | 32 |
-| 109 | ring/region references | 8 |
-| 110 | source sets | 16 |
-| 111 | source references | 32 |
-| 112 | operand outcome events | 48 |
-| 113 | relationship results | 32 |
-| 114 | relationship region pairs | 32 |
+| 104 | directed fragments | 48 |
+| 105 | result rings | 32 |
+| 106 | fragment references | 4 |
+| 107 | result regions | 32 |
+| 108 | ring/region references | 8 |
+| 109 | source sets | 8 |
+| 110 | source references | 32 |
+| 111 | operand outcome events | 48 |
+| 112 | relationship results | 32 |
+| 113 | relationship region pairs | 32 |
 
 All generated result ids are deterministic nonzero one-based `u64` ordinals in
 their own result spaces after canonical sorting.
@@ -308,34 +313,28 @@ A0 carries no arbitrary strings in the hot packet.
 `result vertex id u64`, `x i64`, `y i64`, `intersection source-set index u32`,
 and `flags u32`.
 
-### Normalized-curve record, 40 bytes
-
-| Offset | Type | Field |
-| ---: | --- | --- |
-| 0 | `u64` | generated curve id |
-| 8 | `u8` | kind: `1` line, `2` circle |
-| 9 | 7 bytes | reserved, zero |
-| 16 | `i64` | circle center x, zero for line |
-| 24 | `i64` | circle center y, zero for line |
-| 32 | `u64` | circle radius, zero for line |
-
-Lines are defined by fragment endpoints rather than duplicate coefficients.
-
 ### Directed-fragment record, 48 bytes
 
 | Offset | Type | Field |
 | ---: | --- | --- |
 | 0 | `u64` | generated fragment id |
-| 8 | `u32` | normalized curve index |
-| 12 | `u32` | start vertex index |
-| 16 | `u32` | end vertex index |
-| 20 | `u8` | direction: `0` line, `1` CCW, `2` CW |
-| 21 | `u8` | major arc boolean |
-| 22 | 2 bytes | reserved, zero |
-| 24 | `u32` | coincident positive source-set index |
-| 28 | `u32` | surviving subtraction source-set index |
-| 32 | `u64` | reserved, zero |
+| 8 | `u32` | start vertex index |
+| 12 | `u32` | end vertex index |
+| 16 | `u8` | kind: line or circular arc |
+| 17 | `u8` | direction: line, CCW, or CW |
+| 18 | `u8` | major arc boolean |
+| 19 | 5 bytes | reserved, zero |
+| 24 | `u64` | radius nanometers, zero for line |
+| 32 | `u32` | coincident positive source-set index |
+| 36 | `u32` | surviving subtraction source-set index |
 | 40 | `u64` | reserved, zero |
+
+Every fragment is an independently replayable analytic record. Its endpoints
+are the exact shared result vertices. A line is the exact segment between them.
+A circular arc is the endpoint/radius/direction/major-branch solution; its
+center is derived and is not serialized. Full circles use the governed two-half
+arc decomposition. Source curve identity is carried through source references,
+not a competing normalized result-curve table.
 
 An empty source set has index zero; nonempty source-set indices are one-based so
 zero remains the empty sentinel.
@@ -355,8 +354,11 @@ kind (`1` ring, `2` child region) and low 32 bits are the table index.
 
 ### Source-set and source-reference records
 
-A source-set record is: first source-reference index `u32`, count `u32`, and a
-canonical 64-bit content key used only for ordering/collision-checked lookup.
+A source-set record is: first source-reference index `u32` and count `u32`.
+Sets sort lexicographically by their complete canonical source-reference tuple
+sequence and are interned only after full equality comparison. An implementation
+may use a private hash, but no hash is serialized or participates in canonical
+ordering.
 
 A 32-byte source reference is:
 
@@ -370,10 +372,9 @@ A 32-byte source reference is:
 | 24 | `u64` | secondary authored id or zero |
 
 Kinds distinguish authored curve/segment, compact feature role, and subtractive
-operand effect. References sort by their full tuple. Content keys never replace
-full equality checks.
+operand effect. References sort by their full tuple.
 
-### Operand-outcome-event record, 40 bytes
+### Operand-outcome-event record, 48 bytes
 
 `operand id u64`, event code `u16`, flags `u16`, first result-reference `u32`,
 result-reference count `u32`, source-set index `u32`, two reserved `u32`
@@ -395,13 +396,11 @@ result-region id `u64`, dimension `u8`, equality `u8`, left-contains-right
 
 ## Diagnostic Codes
 
-The packet uses these proposed `u32` assignments, mapped exactly to generated
-string identities:
+The packet uses these `u32` assignments, mapped exactly to generated string
+identities and duplicated in the governed numeric catalog:
 
 | Code | Generated identity |
 | ---: | --- |
-| `0x00010001` | `geometry.analytic_planar_boolean.invalid_id` |
-| `0x00010002` | `geometry.analytic_planar_boolean.invalid_reference` |
 | `0x00010003` | `geometry.analytic_planar_boolean.invalid_topology` |
 | `0x00010004` | `geometry.analytic_planar_boolean.invalid_arc` |
 | `0x00010005` | `geometry.analytic_planar_boolean.unsupported_geometry` |
@@ -412,9 +411,11 @@ string identities:
 | `0x0001000a` | `geometry.analytic_planar_boolean.solver_failed` |
 | `0x0001000b` | `geometry.analytic_planar_boolean.resource_limit_exceeded` |
 
-Packet framing/table failures occur before trustworthy job isolation and use
-the generic invocation/attachment failure response rather than a partial result
-packet.
+Contract diagnostics for packet/id/reference defects use the governed
+`geometer.contract.analytic_planar_boolean_packet.*` identities in the response
+JSON and reject the batch without a result attachment. They are not entries in
+the result-packet operation diagnostic table. Raw foreign-memory/framing
+failures retain the generic transport behavior.
 
 ## Canonical Encoding
 
@@ -430,8 +431,26 @@ Canonical request packets:
 
 Canonical result packets follow the ordering rules in the logical design.
 Tables contain no telemetry. A canonical job-result digest is SHA-256 over a
-standalone canonical subpacket made from that job's owned result records with
-indices rebased to zero; enclosing batch layout and queries cannot affect it.
+standalone result packet with zero relationship results and exactly one
+job-result record. Its closure and rebasing are normative:
+
+1. begin with the job's diagnostic, result-region, and operand-event ranges;
+2. follow regions to outer/child/hole rings and contributor source sets;
+3. follow rings to fragment references and fragments;
+4. follow fragments to endpoint vertices and both source sets;
+5. follow vertices to intersection source sets;
+6. follow source sets to source references;
+7. follow operand events to every ring/region reference and source set; and
+8. reject any record reached from two job closures unless it is immutable
+   source content deliberately duplicated into each standalone subpacket.
+
+For each table, selected records sort by the normal complete canonical key,
+receive dense local indices from zero, and every reference is rewritten to the
+new local index. Generated nonzero ids are recomputed as one-based local
+ordinals. Directory entries and offsets are regenerated with minimum alignment.
+No original batch index, offset, unused record, query, padding choice, or
+telemetry survives. Enclosing batch layout and queries therefore cannot affect
+the digest.
 
 ## Limits
 

@@ -106,10 +106,11 @@ no-effect stage. Complete subtraction is a successful empty result.
 ### Geometry
 
 Every coordinate is a signed integer nanometer. Positive lengths are unsigned
-integer nanometers. Compact arc-sweep helper input uses signed integer
-microdegrees; normalized ring/path arcs use endpoints plus an analytic circle
-and explicit direction/major-arc branch so no redundant floating angle is
-required.
+integer nanometers. A0 wire arcs use topology endpoints plus an integer center
+and explicit direction/major-arc branch; the contract carries no angle or
+trigonometric field. Consumer fixture shorthand may describe a source sweep in
+microdegrees, but the imported conformance vector freezes its expanded integer
+vertices/center/branch before packet encoding.
 
 ```text
 PointNm
@@ -139,8 +140,10 @@ CircularArcDescriptor
   majorArc: bool
 ```
 
-A topology-indexed arc may not be a full circle and its endpoints, center, and
-branch must be coherent. Full circles use compact disk/annulus features.
+A topology-indexed authored arc may not be a full circle. The exact integer
+squared distances from its center to both topology endpoints must be equal and
+nonzero; direction and major-arc branch select the unique authored arc. Full
+circles use compact disk/annulus features.
 
 The operand union is:
 
@@ -197,7 +200,8 @@ Each job uses a deterministic integer-nm local origin near its bounds before
 conversion to OCCT millimeters. This limits double magnitude without changing
 wire identities. Each stage submits its operands in canonical id order as one
 Boolean set operation, regularizes same-domain output, and rejects non-line or
-non-circle authoritative boundaries.
+non-circle topology candidates. OCCT selects candidate topology; it is not the
+authority for canonical coordinates or rounding.
 
 Material lineage cannot be reconstructed from OCCT boundary history alone.
 The implementation maintains stage-aware arrangement cells internally:
@@ -219,27 +223,59 @@ incidence classification. Intersection vertices list all authored segments or
 compact features whose curves form that vertex. An absorbed or coincident
 positive remains material lineage even when it owns no surviving boundary.
 
-## Normalization
+At every stage boundary, the accumulator is rebuilt from canonical integer-nm
+endpoint-authoritative fragments before the next stage. Lines use their exact
+shared topology endpoints. Circular arcs use exact shared topology endpoints,
+an integer-nm radius, direction, and major-arc branch; the circle center is
+derived and is not stored as a competing result fact.
+
+## Certified Normalization
 
 The governed grid is one nanometer. Normalization is part of the operation and
 cannot be relaxed per request.
 
-1. Source integer quantities and exact rational derived quantities are retained
-   as such until kernel conversion where practical.
-2. A kernel scalar is rounded to the nearest integer nanometer; exact ties are
-   rounded away from zero.
-3. A kernel value indistinguishably close to a half-nm tie without an exact
-   source/rational derivation fails with `normalization_ambiguous_tie` rather
-   than choosing a platform-dependent side.
-4. A normalized vertex must have squared displacement no greater than
+1. Authored coordinates, centers, squared distances, radii, and line
+   coefficients begin as exact integers. Rational constructions remain exact
+   reduced rationals. Supported intersections and endpoint/radius-derived
+   centers are represented by immutable real-algebraic expression DAGs over
+   exact integers using `+`, `-`, `*`, `/`, and square root. Nested expressions
+   remain algebraic across stages. Trigonometric functions and OCCT binary64
+   coordinates are not canonical inputs.
+2. Line-line, line-circle, and circle-circle candidates are reconstructed from
+   their exact source or previous-stage algebraic endpoint/radius equations.
+   Exact algebraic sign predicates select the candidate consistent with the
+   OCCT topology and source incidence. Unsupported/nonclassifiable candidates
+   fail closed.
+3. Each algebraic scalar is enclosed by outward-rounded binary intervals. The
+   initial precision is 256 bits and doubles through 512, 1024, 2048, and 4096
+   bits. Every primitive operation rounds its lower bound toward negative
+   infinity and upper bound toward positive infinity.
+4. Nearest-nanometer, ties-away-from-zero rounding is certified only when the
+   complete interval lies inside one integer's open half-nm Voronoi cell. If an
+   interval contains a half-nm boundary, an exact algebraic comparison against
+   that half integer determines equality or side. Exact equality selects the
+   integer away from zero. If neither a unique cell nor exact tie/side can be
+   certified at 4096 bits, the job fails with
+   `normalization_ambiguous_tie`. This precision schedule and result are part
+   of A0, not an implementation tolerance.
+5. A normalized vertex must have squared displacement no greater than
    `0.5 nm^2` from the kernel vertex (maximum Euclidean displacement
    `sqrt(0.5) nm`).
-5. A normalized derived circle center or radius may move no more than `0.5 nm`.
-   A normalized arc endpoint must remain within `1.25 nm` of its normalized
-   analytic circle. These are separate point, curve, and coherence bounds.
-6. Distinct required vertices may not share one representative. A fragment may
+6. A circular result fragment is reconstructed exactly from its normalized
+   endpoints, normalized integer radius, direction, and major branch. The
+   radius may move no more than `0.5 nm`, and the exact replay arc must have
+   certified Hausdorff displacement no greater than `1.25 nm` from the
+   pre-normalized analytic candidate over the fragment domain. No separately
+   normalized center is serialized.
+7. Distinct required vertices may not share one representative. A fragment may
    not collapse, cyclic order may not invert, containment may not change, and a
-   line/circle fragment may not become incoherent.
+   line/arc fragment may not become incoherent.
+
+Full result circles are decomposed into exactly two half arcs. After the center
+and radius have certified integer-nm representatives, their shared vertices are
+`(center.x - radius, center.y)` and `(center.x + radius, center.y)`. Outer
+circles traverse both halves CCW; hole circles traverse both halves CW. This is
+an exact endpoint/radius replay form, not tessellation.
 
 Any violation fails the isolated job with a stable normalization diagnostic.
 The MATZ 1.25/1.4 nm notch is the normative topology-collapse failure. The
@@ -255,20 +291,15 @@ AnalyticPlanarBooleanJobResult
   jobId
   status: success
   vertices
-  curves
   directedFragments
   rings
   resultRegions
   sourceSets
   operandOutcomes
 
-NormalizedCurve
-  line | circle(centerNm, radiusNm)
-
 DirectedFragment
-  curve reference
   start/end vertex references
-  direction and major-arc branch for circles
+  line, or circular arc with radius, direction, and major-arc branch
   coincident positive source set
   surviving subtractive-effect source set
 
@@ -284,8 +315,10 @@ result spaces and are meaningful only within that result packet.
 
 Canonicalization is independent of OCCT traversal and allocation:
 
-- vertices sort by `(x, y, incident analytic signature, source-set key)`;
-- lines sort by canonical endpoints; circles sort by center/radius;
+- vertices sort by `(x, y, incident analytic signature, complete intersection
+  source-set tuple sequence)`;
+- fragments are local analytic records and sort by exact endpoint pair, kind,
+  radius/branch, and complete source-set content;
 - an outer ring is CCW and a hole ring is CW;
 - each ring rotates to the lexicographically least vertex/outgoing-fragment
   key;
@@ -294,8 +327,9 @@ Canonicalization is independent of OCCT traversal and allocation:
   so point-tangent areas are separate regions sharing a vertex;
 - shared-edge unions remove the internal seam;
 - result regions sort by outer-ring key;
-- source sets contain unique sorted source references and are interned by
-  content; and
+- source sets contain unique sorted source references, sort lexicographically
+  by the complete reference tuple sequence, and are interned by full content;
+  an optional internal hash never affects ids or bytes; and
 - diagnostics, operand events, and relationship pairs sort by governed keys.
 
 Canonical job-result records exclude enclosing batch offsets/indices,
@@ -351,17 +385,30 @@ policy.
 
 ## Failure Boundary And Diagnostics
 
-Malformed generic framing, unsupported protocol/packet generation, bad
-attachment references, impossible table bounds/counts/offsets, duplicate ids,
-or ambiguous job indexing reject the batch. Once jobs are structurally
-isolated, geometry, capability, solver, resource, and normalization failures are
-job-local; independent jobs continue.
+Malformed generic framing and foreign-memory descriptor failures retain the
+generic transport behavior. A well-formed invocation with unsupported packet
+generation, bad attachment metadata, impossible packet table
+bounds/counts/offsets, duplicate ids, missing/cross-space references, or
+ambiguous job indexing produces a typed contract diagnostic and rejects the
+whole batch before geometry. Generated clients surface that typed rejection as
+`GeometerContractError`; no partial result attachment exists. Once jobs are
+structurally isolated, geometry, capability, solver, resource, and
+normalization failures are job-local; independent jobs continue.
+
+The scope matrix is normative:
+
+| Failure | Wire category/scope | Generated client |
+| --- | --- | --- |
+| generic framing, pointer/descriptor, transport allocation | `geometer.transport.*`, no typed operation result when the transport cannot construct one | transport/invocation exception |
+| packet magic/generation/table/limit defect | `geometer.contract.analytic_planar_boolean_packet.*`, batch rejected | `GeometerContractError` |
+| duplicate/out-of-range id | `geometer.contract.analytic_planar_boolean_packet.invalid_id`, batch rejected | `GeometerContractError` |
+| missing/cross-space reference | `geometer.contract.analytic_planar_boolean_packet.invalid_reference`, batch rejected | `GeometerContractError` |
+| valid isolated job with invalid topology/arc/capability/normalization/solver/resource outcome | operation diagnostic in failed job result | returned failed job result |
+| relationship depending on failed job | `skipped_dependency_failed` relationship status | returned relationship result |
 
 Operation diagnostic identities are namespaced strings in generated APIs and
-compact governed integers in the packet:
+compact governed integers in a structurally valid result packet:
 
-- `geometry.analytic_planar_boolean.invalid_id`
-- `geometry.analytic_planar_boolean.invalid_reference`
 - `geometry.analytic_planar_boolean.invalid_topology`
 - `geometry.analytic_planar_boolean.invalid_arc`
 - `geometry.analytic_planar_boolean.unsupported_geometry`

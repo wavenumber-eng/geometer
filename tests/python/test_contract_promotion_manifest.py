@@ -176,6 +176,7 @@ def test_manifest_sources_and_identities_are_complete() -> None:
     assert (ROOT / candidate["compatibility_snapshot"]).is_file()
     assert (ROOT / candidate["design"]).is_file()
     assert (ROOT / candidate["packet_spec"]).is_file()
+    assert (ROOT / candidate["numeric_catalog"]).is_file()
     assert (ROOT / candidate["feasibility_test"]).is_file()
 
     for demo in manifest["demos"]:
@@ -419,3 +420,74 @@ def test_data_models_geom_a0_requirements_snapshot_is_frozen() -> None:
     ).read_text(encoding="utf-8")
     assert operation["id"] in plan
     assert matz["snapshot"] in plan or snapshot_path.name in plan
+
+
+def test_analytic_planar_boolean_numeric_catalog_is_closed() -> None:
+    manifest = _manifest()
+    candidate = manifest["candidate_operations"][0]
+    with (ROOT / candidate["numeric_catalog"]).open("rb") as stream:
+        catalog = tomllib.load(stream)
+
+    assert catalog["catalog_version"] == 1
+    assert catalog["operation_identity"] == candidate["id"]
+    assert catalog["request_magic"] == "GMABRQ01"
+    assert catalog["result_magic"] == "GMABRS01"
+
+    assert catalog["table_kind"]["request"] == {
+        "jobs": 1,
+        "stages": 2,
+        "operands": 3,
+        "planar_regions": 4,
+        "ring_references": 5,
+        "rings": 6,
+        "authored_vertices": 7,
+        "authored_segments": 8,
+        "disks": 9,
+        "annuli": 10,
+        "capsules": 11,
+        "swept_paths": 12,
+        "relationship_queries": 13,
+    }
+    assert catalog["table_kind"]["result"] == {
+        "job_results": 101,
+        "diagnostics": 102,
+        "result_vertices": 103,
+        "directed_fragments": 104,
+        "result_rings": 105,
+        "fragment_references": 106,
+        "result_regions": 107,
+        "ring_region_references": 108,
+        "source_sets": 109,
+        "source_references": 110,
+        "operand_outcome_events": 111,
+        "relationship_results": 112,
+        "relationship_region_pairs": 113,
+    }
+    assert catalog["record_size"]["request"]["operands"] == 24
+    assert catalog["record_size"]["result"]["directed_fragments"] == 48
+    assert catalog["record_size"]["result"]["source_sets"] == 8
+    assert catalog["record_size"]["result"]["operand_outcome_events"] == 48
+
+    for flag_set in catalog["flags"].values():
+        allowed_mask = flag_set["allowed_mask"]
+        for name, value in flag_set.items():
+            if name not in {"underlying", "allowed_mask"}:
+                assert value != 0, name
+                assert value & ~allowed_mask == 0, name
+
+    operation_codes = catalog["operation_diagnostic"]
+    _unique(list(operation_codes.values()), "analytic Boolean operation diagnostic")
+    assert "invalid_id" not in operation_codes
+    assert "invalid_reference" not in operation_codes
+    assert catalog["contract_diagnostic"]["invalid_id"].startswith(
+        "geometer.contract."
+    )
+    assert catalog["contract_diagnostic"]["invalid_reference"].startswith(
+        "geometer.contract."
+    )
+
+    packet_spec = (ROOT / candidate["packet_spec"]).read_text(encoding="utf-8")
+    for magic in (catalog["request_magic"], catalog["result_magic"]):
+        assert magic in packet_spec
+    assert "normalized curves" not in packet_spec
+    assert "content key" not in packet_spec

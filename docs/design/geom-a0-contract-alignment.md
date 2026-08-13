@@ -44,15 +44,66 @@ the broader Geom domain.
 | --- | --- | --- |
 | `coordinate2d` and `coordinate2d_pair` | `PointNm { x: int64, y: int64 }` | Object and tuple inputs both map to one logical point. Geom integers inherit a unit from their owner and have no JSON-level 64-bit bound; this operation requires integer nanometers in the signed 64-bit range. |
 | `geom.path_segment2d(kind=line)` | authored line segment | Endpoints remain topology-owned. Geometer additionally requires nonzero packet-local segment and curve IDs. Geom metadata is not carried. |
-| center-form or radius-form `geom.path_segment2d(kind=arc)` | `CircularArcDescriptor { center, direction, majorArc }` | An adapter resolves the Geom radius/sweep form to a unique center and branch before encoding. The center form derives the branch from its endpoints and direction. Geometer then validates exact equal nonzero squared radii. Ambiguous, incoherent, or full-circle authored arcs fail; compact disk/annulus operands represent full circles. |
+| center-form or radius-form `geom.path_segment2d(kind=arc)` | `CircularArcDescriptor { center, direction, majorArc }` | The center form maps `clockwise` to direction and derives the major branch exactly from the two radius vectors. The radius form is accepted only under the frozen Geom minor-or-semicircle policy described below. Geometer validates exact equal nonzero squared radii. Ambiguous, incoherent, or full-circle authored arcs fail; compact disk/annulus operands represent full circles. |
 | `geom.path2d` (`points`, `segs`) | `PlanarPath` (`pathId`, vertices, segments) | Segment/point indexing is compatible and the adapter supplies packet-local IDs. Geometer A0 accepts only line/circular-arc segments, requires at least one nonzero segment, and applies the swept-path restrictions when used as a centerline. |
 | `geom.ring2d` (`points`, `segs`) | `PlanarRing` (`ringId`, vertices, segments) | Closure by cyclic topology is compatible. Geometer permits the two-half-arc decomposition required for canonical full-circle results, while the frozen Geom schema has `minItems: 3`. A downstream Geom adapter must either support the released Geometer form or split each half arc analytically; it must not polygonize it. Input winding may be either direction; Geometer canonicalizes result outer rings counterclockwise and holes clockwise. |
 | ADR name `geom.planar_region`; frozen schema `geom.region` with UUIDv7 `id` | authored planar-region operand plus canonical result-region/ring hierarchy | Outer-plus-holes input is compatible. The frozen naming discrepancy is retained as consumer history, not copied. Geometer IDs are nonzero packet-local uint64 lifting tokens, not stable application UUIDs. Nested positive islands are separate regions; result containment is owned solely by the result ring hierarchy. |
 | `geom.disk2d` | disk operand | Center/radius maps directly after unit/range validation. Radius must be positive. |
 | `geom.annulus2d` | annulus operand | Center and edge radii map directly, but Geometer requires `0 < innerRadius < outerRadius`; a zero inner radius is a disk. |
-| `geom.capsule2d` (center, local-X length, width, optional owning transform) | capsule operand (start, end, width) | The adapter applies any accepted owning transform and resolves the major-axis endpoints. Geometer requires distinct endpoints and positive width but does not adopt scene-graph transform ownership or the Geom canonicalization rule `length > width`. |
+| `geom.capsule2d` (center, local-X total length, width, optional owning transform) | capsule operand (start, end, width) | Frozen Geom length is tip-to-tip, so the untransformed centerline distance is exactly `length - width`, not `length`. The deterministic transform and integer-representability rules are specified below. Geometer requires distinct endpoints and positive width but does not adopt scene-graph transform ownership. |
 | ADR name `geom.swept_path2d`; frozen schema `geom.sweep2d` | swept-path operand (centerline, width) | The path and width map after ID lifting. Operation A0 supports round caps and joins only; `butt`, `square`, `miter`, and `bevel` are rejected as unsupported rather than silently lowered. The frozen naming discrepancy is not copied. |
 | no equivalent | ordered jobs/stages, operand outcomes, relationship queries, result fragments, source sets, diagnostics, standalone result digest | These are Geometer operation semantics. They do not belong in the reusable source-shape vocabulary and are not projected back into Geom metadata. |
+
+### Radius-form arc adapter
+
+For adjacent, distinct topology endpoints `P0` and `P1`, positive radius `r`,
+and Geom sweep `cw` or `ccw`, the adapter applies the frozen Geom recommendation
+as an authoritative compatibility rule: radius-form arcs map only to a directed
+minor arc or semicircle, never a major arc. It performs these steps with exact
+integer/rational predicates:
+
+1. require `|P1 - P0|^2 <= 4 r^2`;
+2. select the unique circle center for which the requested directed sweep lies
+   in `(0, 180 degrees]` (the diameter case has one center);
+3. require that center to have exact integer-nanometer coordinates in the
+   signed 64-bit range; and
+4. encode that center and direction with `majorArc = false`.
+
+If there is no unique center, if the selected center is non-integral or out of
+range, or if the endpoints coincide, the adapter rejects the arc. It does not
+round a center or choose between two solutions by iteration order. Callers
+needing a major arc must use the Geom center form, whose center and direction
+determine the branch exactly; a directed sweep greater than 180 degrees maps
+to `majorArc = true`, and a semicircle maps to `false` by convention.
+
+### Capsule adapter
+
+For a frozen Geom capsule with center `C = (cx, cy)`, total tip-to-tip length
+`L`, and width `W`, first require `L > W > 0`. Its local-X centerline endpoints
+are exactly:
+
+```text
+P0 = (cx - (L - W) / 2, cy)
+P1 = (cx + (L - W) / 2, cy)
+```
+
+An absent owning transform is the identity. A present affine transform is
+accepted only when its finite, nonsingular linear part is provably a
+similarity: `A^T A = s^2 I` for one positive uniform scale magnitude `s`.
+Translation, rotation, and reflection are allowed. Shear, anisotropic scale,
+singular transforms, and any transform whose similarity cannot be proved in
+the adapter's governed numeric representation are rejected because they do not
+preserve a circular capsule.
+
+The adapter applies the transform to `P0` and `P1` and scales the width to
+`W' = s W`. It accepts the result only if both transformed endpoints are exact
+integer-nanometer points in the signed 64-bit range and `W'` is an exact
+positive integer nanometer in the unsigned 64-bit range. Thus odd `L - W`, an
+arbitrary rotation, a fractional uniform scale, or translation is allowed only
+when the final endpoint and width values remain exact integers; no intermediate
+or final value is rounded. The encoded Geometer capsule is `(P0', P1', W')`.
+`L == W` maps to a disk rather than a zero-centerline capsule. `L < W` and all
+unrepresentable or overflowing cases fail closed.
 
 ## Units And Numeric Ownership
 

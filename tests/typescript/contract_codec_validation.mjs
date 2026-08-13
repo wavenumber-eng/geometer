@@ -8,6 +8,7 @@ import {
   decodeModelBoundsResultA0Json,
   decodeOperationOutcomeA0Json,
   encodeModelBoundsOptionsA0Json,
+  encodeOperationOutcomeA0Json,
 } from "../../dist/npm/geometer/generated/index.js";
 
 const root = resolve(fileURLToPath(new URL("../..", import.meta.url)));
@@ -65,5 +66,27 @@ try {
   // Expected.
 }
 if (invalidUnicodeAccepted) throw new Error("Encoder accepted an unpaired surrogate.");
+
+for (const [label, encode] of [
+  ["fixed tuple", () => encodeModelBoundsOptionsA0Json({ model_transform: new Array(16) })],
+  [
+    "variable array",
+    () =>
+      encodeOperationOutcomeA0Json({
+        operation: "geometry.model_bounds.a0",
+        ok: false,
+        diagnostics: new Array(1),
+      }),
+  ],
+]) {
+  let sparseArrayAccepted = false;
+  try {
+    encode();
+    sparseArrayAccepted = true;
+  } catch {
+    // Expected: every array index, including a hole, is validated.
+  }
+  if (sparseArrayAccepted) throw new Error(`Encoder accepted a sparse ${label}.`);
+}
 
 console.log(JSON.stringify({ vectors: manifest.vectors.length, generatedCodecs: 4 }));

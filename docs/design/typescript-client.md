@@ -56,10 +56,13 @@ patch. It returns `ModelBoundsResultA0` on success and throws
 transport integration, and operation-by-operation promotion; applications
 should prefer the typed method for a promoted operation.
 
-The client verifies the runtime operation catalog against generated input
-attachment declarations. A module with an unsupported generic ABI, descriptor
-layout, missing operation, or mismatched attachment declaration fails with an
-actionable `GeometerWasmTransportError` before geometry execution.
+The client verifies each promoted runtime operation against its generated
+request/result identities and exact input/output attachment inventory,
+including ordering, requiredness, media types, and byte limits. A module with
+an unsupported generic ABI, descriptor layout, missing operation, or mismatched
+declaration fails with an actionable `GeometerWasmTransportError` before
+geometry execution. Zero-length byte views and zero-entry descriptor arrays
+cross the ABI as the required null-pointer/zero-size pair.
 
 ## Package exports and build
 
@@ -89,11 +92,22 @@ HTML loads the full-browser Emscripten artifact, while the TypeScript source
 imports only the high-level package. The committed JavaScript build is
 `dist/wasm/demos/model_bounds_demo.js`.
 
+The interactive Three.js scene uses the prepared GLB produced from the same
+SOT-23 fixture only as a display companion. The yellow volume, wireframe,
+dimension lines, labels, and inspector values are derived from the
+authoritative STEP/OCCT result. The example normalizes the meter-scaled GLB
+display mesh into the millimeter STEP frame without changing contract data.
+Its stylesheet is an explicitly identified projection of the Viz 3D visual
+system, with repository-vendored Cousine replacing the internal Berkeley Mono
+font and the governed Wavenumber logo retained as a low-opacity watermark.
+
 Verification includes:
 
 - generated-source and package-artifact freshness;
 - Biome formatting/lint and strict TypeScript compilation;
 - all governed TypeScript codec vectors;
+- sparse fixed-tuple and variable-array rejection plus null-view ABI
+  marshalling regressions;
 - a packed/install/typecheck clean consumer;
 - a real SOT-23 browser WASM `model_bounds` round trip through the high-level
   client; and

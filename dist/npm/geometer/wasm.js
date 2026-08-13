@@ -79,7 +79,7 @@ function executeOperation(module, catalog, operation, requestJson, attachments) 
         const operationPointer = allocate(module, operationBytes, allocations);
         const requestPointer = allocate(module, requestBytes, allocations);
         const descriptorSize = catalog.attachment_descriptor.wasm32.size;
-        const descriptorPointer = allocateSize(module, descriptorSize * attachments.length, allocations);
+        const descriptorPointer = allocateViewSize(module, descriptorSize * attachments.length, allocations);
         const offsets = catalog.attachment_descriptor.wasm32.offsets;
         attachments.forEach((attachment, index) => {
             const name = encodeText(attachment.name);
@@ -220,29 +220,46 @@ function validateRuntimeCatalog(value) {
         const actual = value.operations.find((operation) => operation.identity === identity);
         if (!actual)
             throw new GeometerWasmTransportError(0, `WASM module is missing ${identity}.`);
-        for (const expectedAttachment of expected.inputAttachments) {
-            const actualAttachment = actual.input_attachments.find((attachment) => attachment.name === expectedAttachment.name);
-            if (!actualAttachment ||
-                actualAttachment.max_bytes !== expectedAttachment.max_bytes ||
-                JSON.stringify(actualAttachment.media_types) !==
-                    JSON.stringify(expectedAttachment.media_types)) {
-                throw new GeometerWasmTransportError(0, `WASM module attachment declaration for ${identity}/${expectedAttachment.name} is incompatible.`);
-            }
+        if (actual.request_contract !== expected.requestContract ||
+            actual.result_contract !== expected.resultContract) {
+            throw new GeometerWasmTransportError(0, `WASM module contract declaration for ${identity} is incompatible.`);
+        }
+        if (!sameAttachmentDeclarations(actual.input_attachments, expected.inputAttachments) ||
+            !sameAttachmentDeclarations(actual.output_attachments, expected.outputAttachments)) {
+            throw new GeometerWasmTransportError(0, `WASM module attachment inventory for ${identity} is incompatible.`);
         }
     }
 }
 function isRuntimeOperation(value) {
     if (!isRecord(value) ||
         typeof value.identity !== "string" ||
-        !Array.isArray(value.input_attachments)) {
+        typeof value.request_contract !== "string" ||
+        typeof value.result_contract !== "string" ||
+        !Array.isArray(value.input_attachments) ||
+        !Array.isArray(value.output_attachments)) {
         return false;
     }
-    return value.input_attachments.every((attachment) => isRecord(attachment) &&
-        typeof attachment.name === "string" &&
-        typeof attachment.required === "boolean" &&
-        Number.isSafeInteger(attachment.max_bytes) &&
-        Array.isArray(attachment.media_types) &&
-        attachment.media_types.every((mediaType) => typeof mediaType === "string"));
+    return (value.input_attachments.every(isRuntimeAttachment) &&
+        value.output_attachments.every(isRuntimeAttachment));
+}
+function isRuntimeAttachment(value) {
+    return (isRecord(value) &&
+        typeof value.name === "string" &&
+        typeof value.required === "boolean" &&
+        Number.isSafeInteger(value.max_bytes) &&
+        Array.isArray(value.media_types) &&
+        value.media_types.every((mediaType) => typeof mediaType === "string"));
+}
+function sameAttachmentDeclarations(actual, expected) {
+    return (actual.length === expected.length &&
+        actual.every((attachment, index) => {
+            const expectedAttachment = expected[index];
+            return (expectedAttachment !== undefined &&
+                attachment.name === expectedAttachment.name &&
+                attachment.required === expectedAttachment.required &&
+                attachment.max_bytes === expectedAttachment.max_bytes &&
+                JSON.stringify(attachment.media_types) === JSON.stringify(expectedAttachment.media_types));
+        }));
 }
 function isRecord(value) {
     return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -292,13 +309,16 @@ function assertModuleSurface(module) {
     }
 }
 function allocate(module, bytes, allocations) {
-    const pointer = allocateSize(module, Math.max(bytes.byteLength, 1), allocations);
-    if (bytes.byteLength)
+    const pointer = allocateViewSize(module, bytes.byteLength, allocations);
+    if (pointer)
         module.HEAPU8.set(bytes, pointer);
     return pointer;
 }
+function allocateViewSize(module, size, allocations) {
+    return size === 0 ? 0 : allocateSize(module, size, allocations);
+}
 function allocateSize(module, size, allocations) {
-    const pointer = module._malloc(Math.max(size, 1));
+    const pointer = module._malloc(size);
     if (!pointer)
         throw new GeometerWasmTransportError(1003, `Unable to allocate ${size} WASM bytes.`);
     allocations.push(pointer);

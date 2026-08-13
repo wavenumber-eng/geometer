@@ -4,8 +4,17 @@
 
 `model_bounds_demo.html` is the first TypeScript/generated-contract example.
 It loads a STEP fixture through `@wavenumber/geometer/wasm`, computes bounds
-through the generic ABI, and visualizes the resulting vectors and axis extents.
-The TypeScript source contains no pointer or Emscripten heap management.
+through the generic ABI, and renders the authoritative result as a translucent
+volume, wireframe, dimension lines, and an inspector around an interactive
+Three.js model. The prepared GLB for the same fixture is a display companion;
+the box and every reported number come from the STEP/OCCT result. The
+TypeScript source contains no pointer or Emscripten heap management.
+
+The page projects the Viz 3D visual language into a focused demo stylesheet,
+uses the repository-vendored Cousine font and Wavenumber watermark, and pins
+the same Three.js 0.161.0 browser import used by the existing embedded-model
+viewer. Serving the page requires network access to that pinned Three.js CDN
+module.
 
 Build the package and example, serve the repository root, then open it:
 

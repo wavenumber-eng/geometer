@@ -198,8 +198,8 @@ function canonicalizeArray(
   if (constraints.max_items !== undefined && value.length > constraints.max_items) {
     fail("geometer.contract.array_size", path, "Array is longer than its maximum.");
   }
-  return value.map((item, index) =>
-    canonicalize(item, element, declarations, childPath(path, String(index)), {}),
+  return Array.from({ length: value.length }, (_, index) =>
+    canonicalize(value[index], element, declarations, childPath(path, String(index)), {}),
   );
 }
 

@@ -72,7 +72,7 @@ depends_on = ["cpp-server"]
 [[steps]]
 id = "model-bounds-promotion"
 title = "Promote model bounds as the first complete generated-contract vertical"
-status = "pending"
+status = "done"
 depends_on = ["typescript-wasm", "rust-exe-ipc", "python-public-contracts"]
 
 [[steps]]
@@ -144,22 +144,22 @@ depends_on = ["design-doc-intent-audit", "test-runtime-impact-audit"]
 [[exit_criteria]]
 id = "authority"
 title = "The accepted ADR and promotion manifest identify one structural authority per promoted contract"
-status = "pending"
+status = "met"
 
 [[exit_criteria]]
 id = "generic-operation-abi"
 title = "The additive generic operation and attachment C ABI serves the model bounds pilot in native and browser WASM"
-status = "pending"
+status = "met"
 
 [[exit_criteria]]
 id = "presence-and-defaults"
 title = "Wire presence, option patches, normalized options, and encoder default omission have distinct tested semantics"
-status = "pending"
+status = "met"
 
 [[exit_criteria]]
 id = "ipc-execution-policy"
 title = "The stdio protocol enforces serialized execution, queue-only cancellation, bounded framing, and safe shutdown"
-status = "pending"
+status = "met"
 
 [[exit_criteria]]
 id = "transport-design-review"
@@ -169,12 +169,12 @@ status = "met"
 [[exit_criteria]]
 id = "conformance-oracles"
 title = "Every vector declares an assertion lane and exact, structural, or toleranced comparison policy"
-status = "pending"
+status = "met"
 
 [[exit_criteria]]
 id = "deterministic-generation"
 title = "All generated artifacts are deterministic, complete, and clean under check mode"
-status = "pending"
+status = "met"
 
 [[exit_criteria]]
 id = "documentation-asset-licensing"
@@ -184,12 +184,12 @@ status = "met"
 [[exit_criteria]]
 id = "generated-html-reference"
 title = "Generated HTML contract references use the approved vendored Wavenumber visual system and pass freshness, link, and offline browser checks"
-status = "pending"
+status = "met"
 
 [[exit_criteria]]
 id = "cross-language-conformance"
 title = "C++, TypeScript, Rust, and Python pass the same governed request, response, and diagnostic vectors"
-status = "pending"
+status = "met"
 
 [[exit_criteria]]
 id = "typescript-wasm"
@@ -281,8 +281,9 @@ of the generic C ABI and IPC A0 design packet are complete; ADR-011 is Accepted
 and transport implementation is allowed. The TypeSpec/catalog foundation is
 implemented. The pilot contracts, generated HTML reference, generated C++
 projection, and approved generic C ABI/model-bounds server slice are complete.
-No operation is promoted and no compatibility reader or published interface
-may be removed merely because the plan is active.
+`geometry.model_bounds.a0` is the first promoted operation. Its TypeSpec and
+normalized-catalog structure is authoritative; focused geometry behavior and
+all documented compatibility adapters remain in place.
 
 The deterministic styled HTML reference and its offline resource/navigation
 tests now include real-Chrome desktop and emulated 390 px verification. That

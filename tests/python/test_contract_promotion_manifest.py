@@ -194,7 +194,8 @@ def test_manifest_sources_and_identities_are_complete() -> None:
     assert package_json["type"] == "module"
 
     evidence = manifest["promotion_evidence"]["model_bounds"]
-    assert evidence["status"] == "remediated_ready_for_independent_review"
+    assert evidence["status"] == "accepted_promoted"
+    assert evidence["independent_review"] == "accepted"
     assert re.fullmatch(r"[0-9a-f]{40}", evidence["candidate_revision"])
     assert evidence["hosted_workflow_run"] == 31741067434
     assert evidence["hosted_native_conclusion"] == "success"
@@ -224,12 +225,27 @@ def test_manifest_sources_and_identities_are_complete() -> None:
     _unique(contract_ids, "contract id")
     assert "geometry.model_bounds.options.a0" in contract_ids
     assert "geometry.model_bounds.a0" in contract_ids
+    promoted_contracts = {item["id"] for item in contracts if item["status"] == "promoted"}
+    assert promoted_contracts == {
+        "geometry.common.diagnostic.a0",
+        "geometry.model_bounds.options.a0",
+        "geometry.model_bounds.a0",
+        "geometer.operation.outcome.a0",
+    }
+    assert all(
+        item["current_authority"] == "typespec_normalized_catalog"
+        for item in contracts
+        if item["status"] == "promoted"
+    )
     assert all((ROOT / item["source"]).is_file() for item in contracts if item["source"] != "none")
 
     operations = manifest["operations"]
     operation_ids = [item["id"] for item in operations]
     _unique(operation_ids, "operation id")
-    assert {item["id"] for item in operations if item["status"] == "pilot_candidate"} == {"geometry.model_bounds.a0"}
+    assert {item["id"] for item in operations if item["status"] == "pilot_candidate"} == set()
+    assert {item["id"] for item in operations if item["status"] == "promoted"} == {
+        "geometry.model_bounds.a0"
+    }
 
     candidates = manifest["candidate_operations"]
     candidate_ids = [item["id"] for item in candidates]

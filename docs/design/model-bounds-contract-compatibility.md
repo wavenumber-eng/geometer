@@ -4,11 +4,11 @@
 
 This is the required difference report and promotion evidence index for the generated
 canonical `geometry.model_bounds.options.a0` / `geometry.model_bounds.a0`
-contracts and the retained compatibility implementation. The complete vertical
-is ready for independent promotion review; authority remains unchanged until
-that review is accepted and the promotion manifest records the decision.
+contracts and the retained compatibility implementation. Independent review
+accepted the complete vertical, and the promotion manifest now records
+TypeSpec plus the normalized catalog as its structural authority.
 
-The proposed authority is authored TypeSpec lowered through the normalized
+The structural authority is authored TypeSpec lowered through the normalized
 catalog. Generated C++ DTOs/codecs and the generic operation registry use that
 strict structure. Generated TypeScript, Rust, and Python projections consume
 the same catalog. Existing parsing in
@@ -95,9 +95,10 @@ evidence.
 
 Independent review rejected the first promotion packet because it lacked these
 operation-level vectors. The remediated corpus now has local and exact-commit
-hosted evidence and is ready for re-review. Until acceptance is recorded, the
-manifest continues to label the contracts and operation as pilot candidates
-and no authority cutover is claimed.
+hosted evidence. Focused re-review accepted it in packet
+`reviewer-019ffcd8-e5bb-7531-934f-b9e50e73d2b2ab7`; the manifest labels the
+diagnostic, model-bounds request/result, operation outcome, and operation as
+promoted. Compatibility readers and focused geometry APIs remain supported.
 
 The generic result boundary also validates response-side JSON and attachment
 limits even though `model_bounds` currently emits no output attachment. This is

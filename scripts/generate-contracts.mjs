@@ -130,12 +130,12 @@ async function validateGeneratedState(manifest, catalog) {
   assertEqual(catalogContracts, expectedContracts, "pilot contract identities");
 
   const expectedOperations = manifest.operations
-    .filter((operation) => operation.status === "pilot_candidate")
+    .filter((operation) => ["pilot_candidate", "promoted"].includes(operation.status))
     .sort((left, right) => left.id.localeCompare(right.id));
   assertEqual(
     catalog.operations.map((operation) => operation.identity).sort(),
     expectedOperations.map((operation) => operation.id),
-    "pilot operation identities",
+    "generated operation identities",
   );
   for (const expected of expectedOperations) {
     const actual = catalog.operations.find((operation) => operation.identity === expected.id);

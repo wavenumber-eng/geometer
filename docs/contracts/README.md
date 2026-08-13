@@ -22,5 +22,6 @@ current Viz snapshot is
 
 The manifest does not make an inventoried contract authoritative. A contract
 becomes TypeSpec-authoritative only after its status and required evidence are
-promoted under ADR-010. Generated JSON Schemas and contract references will
-live under this tree as individual public wire contracts are promoted.
+promoted under ADR-010. Generated JSON Schemas and contract references live
+under this tree. `geometry.model_bounds.a0` is the first promoted operation;
+its manifest entry links the accepted cross-language and hosted evidence.

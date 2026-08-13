@@ -20,6 +20,17 @@ python_distribution = "wn-geometer"
 python_import = "geometer"
 python_generated_visibility = "internal_compatible_boundary"
 
+[typescript_projection]
+status = "implemented_model_bounds_pilot"
+design = "docs/design/typescript-client.md"
+source_root = "src/ts/geometer"
+generated_root = "src/ts/geometer/generated"
+package_root = "dist/npm/geometer"
+example_source = "examples/wasm/model_bounds_demo.ts"
+example_page = "examples/wasm/model_bounds_demo.html"
+example_artifact = "dist/wasm/demos/model_bounds_demo.js"
+runtime_dependency = false
+
 [toolchain]
 status = "implemented"
 design = "docs/design/typespec-toolchain.md"
@@ -83,9 +94,9 @@ role = "stylesheet"
 source = "appz/data_models/docs/core/design/styles.css"
 destination = "docs/design/styles.css"
 source_sha256 = "b0452e403db12c3fca581866b0953dbca45d751bcc83c137f0da16674859d151"
-sha256 = "dc15be39d5efe892ddb58396af984e20559a3b527bf3116f86dc7e5a16eebcdb"
+sha256 = "39b9b7fd997a1707e9743ebcff6a21200e1d35ad6f629c8a5799d56192ab019d"
 status = "vendored"
-adaptation = "Replace internally licensed Berkeley Mono declarations with OFL-1.1 Cousine; preserve the reviewed layout and component rules."
+adaptation = "Replace internally licensed Berkeley Mono declarations with OFL-1.1 Cousine; preserve the reviewed layout and component rules; add narrow generated-code wrapping verified in a real browser."
 
 [[documentation.assets]]
 id = "cousine_regular"
@@ -448,6 +459,13 @@ transport = "generic_named_attachments"
 operation_specific_c_abi_symbol = false
 replaces_existing_operation = false
 browser_target = "full_browser"
+
+[[demos]]
+id = "model_bounds"
+source = "examples/wasm/model_bounds_demo.html"
+entrypoint = "examples/wasm/model_bounds_demo.ts"
+owning_operation = "geometry.model_bounds.a0"
+status = "generated_typescript_client"
 
 [[demos]]
 id = "embedded_model_viewer"

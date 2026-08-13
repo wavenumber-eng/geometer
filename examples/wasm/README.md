@@ -1,5 +1,24 @@
 # WASM Examples
 
+## Generated Model Bounds Client
+
+`model_bounds_demo.html` is the first TypeScript/generated-contract example.
+It loads a STEP fixture through `@wavenumber/geometer/wasm`, computes bounds
+through the generic ABI, and visualizes the resulting vectors and axis extents.
+The TypeScript source contains no pointer or Emscripten heap management.
+
+Build the package and example, serve the repository root, then open it:
+
+```powershell
+npm run generate:contracts
+python -m http.server 8123 --bind 127.0.0.1
+```
+
+`http://127.0.0.1:8123/examples/wasm/model_bounds_demo.html`
+
+HLR and planar examples remain on their existing JavaScript surfaces until
+their respective operation contracts are promoted.
+
 ## Embedded Model Viewer
 
 `embedded_model_viewer.html` is the browser reference for the high-level

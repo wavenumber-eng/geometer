@@ -58,8 +58,9 @@ vendoring note.
 for distributable binaries. CMake and WASM builds copy final outputs there.
 Those outputs are committed when publishing changes so another project can clone
 and use Geometer without a local native/WASM rebuild. Canonical native artifacts
-live under `dist/native/<platform>/` and canonical WASM artifacts live under
-`dist/wasm/<target>/`. Root-level `dist/geometer*` artifacts are intentionally
+live under `dist/native/<platform>/`, canonical WASM artifacts live under
+`dist/wasm/<target>/`, and the generated ESM package lives under
+`dist/npm/geometer/`. Root-level `dist/geometer*` artifacts are intentionally
 not produced.
 
 OCCT is not vendored into the repository and is not added with CMake
@@ -483,6 +484,16 @@ python -m http.server 8123 --bind 127.0.0.1
 The viewer loads the GLB for the 3D pane and sends the matching STEP bytes to
 the browser WASM HLR API for the projection pane.
 
+The generated TypeScript model-bounds example uses the packaged high-level
+client and the same full-browser WASM artifact:
+
+```powershell
+npm run generate:contracts
+python -m http.server 8123 --bind 127.0.0.1
+```
+
+`http://127.0.0.1:8123/examples/wasm/model_bounds_demo.html`
+
 The HLR timing page runs the same browser worker projection path across the
 fixture set and reports STEP fetch-to-bytes timing separately from HLR timing:
 
@@ -503,6 +514,14 @@ the retained STEP-to-GLB export, and the packed planar export:
 node tests\wasm\operation_contract_validation.js
 node tests\wasm\step_to_glb_bytes_validation.js
 node tests\wasm\planar_batch_solve_bytes_validation.js
+```
+
+Validate generated TypeScript codecs, a clean packed consumer, and the
+high-level WASM client:
+
+```powershell
+npm run check:typescript
+uv run pytest tests\typescript -q
 ```
 
 To benchmark the browser C ABI planar batch solver against a packed request:

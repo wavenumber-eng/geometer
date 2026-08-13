@@ -16,6 +16,8 @@ Persist these when publishing interface changes:
 - Planar-only browser WASM C ABI optimization:
   `dist/wasm/planar-browser/geometer-planar-browser.js` and
   `dist/wasm/planar-browser/geometer-planar-browser.wasm`.
+- Generated TypeScript ESM package: `dist/npm/geometer/` with explicit root,
+  contracts, and WASM-client exports.
 
 Native platform directory names use:
 
@@ -25,7 +27,7 @@ Native platform directory names use:
 - `macos-arm64`
 
 Root-level build artifacts are intentionally not produced. Source-checkout
-consumers must use grouped native and WASM paths.
+consumers must use grouped native, npm, and WASM paths.
 
 Do not commit local generated build state:
 

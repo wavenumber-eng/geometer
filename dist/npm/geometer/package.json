@@ -1,0 +1,28 @@
+{
+  "name": "@wavenumber/geometer",
+  "version": "2026.6.23",
+  "description": "Generated Geometer contracts and high-level browser WASM client",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "import": "./index.js"
+    },
+    "./contracts": {
+      "types": "./generated/index.d.ts",
+      "import": "./generated/index.js"
+    },
+    "./wasm": {
+      "types": "./wasm.d.ts",
+      "import": "./wasm.js"
+    }
+  },
+  "files": [
+    "*.d.ts",
+    "*.js",
+    "generated",
+    "README.md"
+  ]
+}

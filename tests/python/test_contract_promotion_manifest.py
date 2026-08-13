@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import re
 import tomllib
 from pathlib import Path
@@ -168,6 +169,24 @@ def test_manifest_sources_and_identities_are_complete() -> None:
         assert "## Status\n\nAccepted." in adr
     _assert_documentation_manifest(manifest)
 
+    typescript = manifest["typescript_projection"]
+    assert typescript["status"] == "implemented_model_bounds_pilot"
+    assert typescript["runtime_dependency"] is False
+    for key in (
+        "design",
+        "source_root",
+        "generated_root",
+        "package_root",
+        "example_source",
+        "example_page",
+        "example_artifact",
+    ):
+        assert (ROOT / typescript[key]).exists(), key
+    package_json = json.loads((ROOT / typescript["package_root"] / "package.json").read_text(encoding="utf-8"))
+    assert package_json["name"] == manifest["packages"]["typescript"]
+    assert manifest["packages"]["typescript_module_format"] == "esm"
+    assert package_json["type"] == "module"
+
     contracts = manifest["contracts"]
     contract_ids = [item["id"] for item in contracts]
     _unique(contract_ids, "contract id")
@@ -203,6 +222,8 @@ def test_manifest_sources_and_identities_are_complete() -> None:
         assert (ROOT / demo["source"]).is_file()
         if "worker" in demo:
             assert (ROOT / demo["worker"]).is_file()
+        if "entrypoint" in demo:
+            assert (ROOT / demo["entrypoint"]).is_file()
         assert demo["owning_operation"] in operation_ids
 
     consumers = manifest["consumers"]

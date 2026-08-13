@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "exactOptionalPropertyTypes": true,
+    "lib": ["ES2022", "DOM"],
+    "module": "ES2022",
+    "moduleResolution": "Bundler",
+    "noEmitOnError": true,
+    "noUncheckedIndexedAccess": true,
+    "outDir": "../../dist/wasm/demos",
+    "paths": {
+      "@wavenumber/geometer": ["../../dist/npm/geometer/index.d.ts"],
+      "@wavenumber/geometer/wasm": ["../../dist/npm/geometer/wasm.d.ts"]
+    },
+    "rootDir": ".",
+    "strict": true,
+    "target": "ES2022",
+    "verbatimModuleSyntax": true
+  },
+  "include": ["model_bounds_demo.ts"]
+}

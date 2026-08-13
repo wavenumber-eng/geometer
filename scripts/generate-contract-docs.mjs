@@ -145,6 +145,7 @@ function renderIndex(catalog, contracts, operations, contractPages, operationPag
   <a href="../../design/typespec-toolchain.md">TypeSpec toolchain</a>
   <a href="../../design/contract-semantics.md">Contract semantics</a>
   <a href="../../design/generic-operation-c-abi.md">Generic C ABI</a>
+  <a href="../../design/typescript-client.md">TypeScript client</a>
   <a href="../../design/executable-ipc-a0.md">Executable IPC A0</a>
 </nav>
 <aside class="callout"><strong>Generated reference.</strong> Authored TypeSpec owns promoted structure; this site is a deterministic navigation and review artifact.</aside>
@@ -231,17 +232,21 @@ function renderOperationPage(operation, lifecycle, contractPages, digest) {
         `<tr><td>${direction}</td><td><code>${escapeHtml(attachment.name)}</code></td><td>${attachment.required ? "required" : "optional"}</td><td>${attachment.media_types.map((item) => `<code>${escapeHtml(item)}</code>`).join("<br>")}</td><td>${attachment.max_bytes.toLocaleString("en-US")}</td></tr>`,
     )
     .join("\n");
+  const exampleSection =
+    operation.identity === "geometry.model_bounds.a0"
+      ? '<section><h2>TypeScript example</h2><div class="panel"><p><a href="../../../../examples/wasm/model_bounds_demo.html">Run the generated model-bounds browser client</a></p><p>The TypeScript source uses <code>@wavenumber/geometer/wasm</code> and contains no direct pointer management.</p></div></section>'
+      : "";
   return htmlDocument({
     title: `${operation.identity} operation — Geometer`,
     depth: 1,
     digest,
     bodyAttributes: `data-page-kind="operation" data-operation-identity="${escapeAttribute(operation.identity)}" data-promotion-status="${escapeAttribute(lifecycle.status)}"`,
     content: `<header><p class="page-type">Operation</p><h1><code>${escapeHtml(operation.identity)}</code></h1><p class="lede">${escapeHtml(operation.doc)}</p></header>
-<nav class="nav" aria-label="Operation navigation"><a href="../index.html">All contracts</a><a href="../${escapeAttribute(contractPages[operation.request_contract])}">Request contract</a><a href="../${escapeAttribute(contractPages[operation.result_contract])}">Result contract</a><a href="../../../design/generic-operation-c-abi.md">Generic C ABI</a><a href="../../../design/executable-ipc-a0.md">Executable IPC A0</a></nav>
+<nav class="nav" aria-label="Operation navigation"><a href="../index.html">All contracts</a><a href="../${escapeAttribute(contractPages[operation.request_contract])}">Request contract</a><a href="../${escapeAttribute(contractPages[operation.result_contract])}">Result contract</a><a href="../../../design/generic-operation-c-abi.md">Generic C ABI</a><a href="../../../design/typescript-client.md">TypeScript client</a><a href="../../../design/executable-ipc-a0.md">Executable IPC A0</a></nav>
 <aside class="callout"><strong>Additive generic operation.</strong> Raw model bytes travel as named attachments; JSON contains only the typed request and result structures.</aside>
 <section><h2>Registry</h2><table><tbody><tr><th>Operation identity</th><td><code>${escapeHtml(operation.identity)}</code></td></tr><tr><th>Lifecycle</th><td><span class="status">${escapeHtml(lifecycle.status)}</span></td></tr><tr><th>Request</th><td><code>${escapeHtml(operation.request_contract)}</code></td></tr><tr><th>Result</th><td><code>${escapeHtml(operation.result_contract)}</code></td></tr></tbody></table></section>
 <section><h2>Attachments <span class="tag">${operation.input_attachments.length + operation.output_attachments.length}</span></h2><table><thead><tr><th>Direction</th><th>Name</th><th>Presence</th><th>Media types</th><th>Maximum bytes</th></tr></thead><tbody>${attachmentRows}</tbody></table></section>
-<section><h2>Supported transport design</h2><div class="grid"><article class="panel"><h3>Native and browser/WASM</h3><p>Additive generic C ABI with explicit ownership and attachment arrays.</p></article><article class="panel"><h3>Executable IPC</h3><p>Binary-safe framed stdio A0 with generated JSON envelopes and raw attachments.</p></article></div></section>`,
+<section><h2>Supported transport design</h2><div class="grid"><article class="panel"><h3>Native and browser/WASM</h3><p>Additive generic C ABI with explicit ownership and attachment arrays.</p></article><article class="panel"><h3>Executable IPC</h3><p>Binary-safe framed stdio A0 with generated JSON envelopes and raw attachments.</p></article></div></section>${exampleSection}`,
   });
 }
 

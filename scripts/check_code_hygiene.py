@@ -18,7 +18,7 @@ SCAN_ROOTS = [
     ROOT / "examples" / "wasm",
 ]
 
-CODE_SUFFIXES = {".py", ".cpp", ".h", ".hpp", ".js", ".html"}
+CODE_SUFFIXES = {".py", ".cpp", ".h", ".hpp", ".js", ".mjs", ".ts", ".html"}
 SKIP_PARTS = {
     ".git",
     ".deps",
@@ -40,7 +40,7 @@ MAX_PY_FUNCTION_COMPLEXITY = 25
 MAX_PY_CLASS_COMPLEXITY = 35
 
 ALLOWED_DIST_ROOT_FILES = {".gitkeep", "README.md"}
-ALLOWED_DIST_ROOT_DIRS = {"native", "wasm"}
+ALLOWED_DIST_ROOT_DIRS = {"native", "npm", "wasm"}
 
 
 @dataclass(slots=True)

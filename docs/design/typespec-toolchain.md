@@ -9,8 +9,9 @@ and the promotion manifest owns lifecycle/evidence state.
 
 ADR-011 is Accepted and its independent transport review is recorded in the
 promotion manifest. The TypeSpec/catalog foundation described here is
-implemented. This foundation does not itself implement the generic C ABI or
-executable IPC server; those remain separately tested implementation slices.
+implemented. The generic C ABI, generated C++ projection, and model-bounds
+TypeScript/browser WASM projection are now separately implemented and tested
+slices. Executable IPC, Rust, and Python projections remain later slices.
 
 ## ALX baseline and Geometer differences
 
@@ -90,8 +91,9 @@ baseline later, but must never float them during generation.
 The foundation slice created the toolchain, authored TypeSpec root, catalog
 schema, normalized catalog, and JSON Schemas. The generated HTML reference now
 consumes that catalog and joins lifecycle state from the promotion manifest.
-Language projections remain later owning plan steps; the catalog records their
-output roots so generators cannot invent competing layouts.
+The C++ and TypeScript projections are implemented. Rust and Python remain
+later owning plan steps; the catalog records every output root so generators
+cannot invent competing layouts.
 
 ## Namespace and identities
 
@@ -190,6 +192,10 @@ The same generator emits the runtime operation/capability catalog and its
 output-attachment declaration lookup; these are not maintained as handwritten
 operation lists. Generated string encoders reject invalid UTF-8 before calling
 RapidJSON, including operation diagnostics populated from native error text.
+The command also emits generated TypeScript DTOs, strict codecs, typed
+operation metadata, the compiled ESM package under `dist/npm/geometer/`, and
+the compiled model-bounds TypeScript example. Each projection has byte-for-byte
+check mode.
 
 `check:contracts` performs the same generation without modifying the worktree
 and fails on stale, missing, unexpected, unlinked, or externally dependent

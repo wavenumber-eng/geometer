@@ -439,6 +439,18 @@ header .status {
     padding: 14px 16px;
   }
 
+  .generated-model-doc section,
+  .generated-model-doc details,
+  .generated-model-doc .grid,
+  .generated-model-doc .panel {
+    min-width: 0;
+  }
+
+  .generated-model-doc code,
+  .generated-model-doc .nav a {
+    overflow-wrap: anywhere;
+  }
+
   h2 {
     display: block;
   }

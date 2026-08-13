@@ -30,7 +30,7 @@ depends_on = ["transport-design-review"]
 [[steps]]
 id = "pilot-contracts"
 title = "Model pilot primitives, diagnostics, model bounds, and conformance vectors"
-status = "active"
+status = "done"
 depends_on = ["typespec-foundation"]
 
 [[steps]]
@@ -42,19 +42,19 @@ depends_on = ["authority-and-inventory"]
 [[steps]]
 id = "generated-html-reference"
 title = "Generate the styled HTML contract reference and verify it offline"
-status = "pending"
+status = "done"
 depends_on = ["pilot-contracts", "documentation-asset-licensing"]
 
 [[steps]]
 id = "cpp-server"
 title = "Generate C++ contract code and integrate the native operation server"
-status = "pending"
+status = "done"
 depends_on = ["generated-html-reference"]
 
 [[steps]]
 id = "typescript-wasm"
 title = "Generate the TypeScript contracts and browser/WASM reference client"
-status = "pending"
+status = "active"
 depends_on = ["cpp-server"]
 
 [[steps]]
@@ -279,14 +279,21 @@ status = "pending"
 This plan is active under ADR-010. Authority, inventory, and independent review
 of the generic C ABI and IPC A0 design packet are complete; ADR-011 is Accepted
 and transport implementation is allowed. The TypeSpec/catalog foundation is
-implemented and the pilot-contract/conformance slice is active. No operation is
-promoted and no compatibility reader or published interface may be removed
-merely because the plan is active.
+implemented. The pilot contracts, generated HTML reference, generated C++
+projection, and approved generic C ABI/model-bounds server slice are complete.
+No operation is promoted and no compatibility reader or published interface
+may be removed merely because the plan is active.
 
 The deterministic styled HTML reference and its offline resource/navigation
-tests are implemented ahead of pilot promotion. Interactive desktop and narrow
-browser smoke remains open, so the `generated-html-reference` step and exit
-criterion are not yet complete.
+tests now include real-Chrome desktop and emulated 390 px verification. That
+browser pass found and closed a narrow generated-identifier overflow, with the
+revised stylesheet digest recorded in the promotion manifest.
+
+The TypeScript/WASM slice is active. Generated DTOs, strict codecs, typed
+operation metadata, the deterministic `@wavenumber/geometer` ESM artifact, a
+direct high-level WASM client, a clean packed consumer, and the model-bounds
+TypeScript browser example are implemented. Explicit Web Worker client helpers
+and the Viz migration guide remain before this slice is complete.
 
 Generated Python is intentional mandatory scope based on project-owner
 direction that public Python should use generated contract code while

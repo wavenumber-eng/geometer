@@ -4,9 +4,9 @@
 
 Deterministic generation, complete navigation, relative-link validation,
 offline resource validation, catalog coverage, responsive CSS rules, metadata,
-and vendored-asset digest checks are implemented. Interactive browser smoke at
-desktop and narrow viewport sizes remains an explicit review item; static tests
-do not substitute for that visual evidence.
+and vendored-asset digest checks are implemented. Real-Chrome smoke passes at
+desktop and an emulated 390 px viewport. That pass caught and closed a narrow
+generated-identifier overflow that static resource tests did not expose.
 
 ## Purpose and authority
 
@@ -38,14 +38,17 @@ the `appz` workspace revision
 
 | Asset | Vendored SHA-256 |
 | --- | --- |
-| `styles.css` | `dc15be39d5efe892ddb58396af984e20559a3b527bf3116f86dc7e5a16eebcdb` |
+| `styles.css` | `39b9b7fd997a1707e9743ebcff6a21200e1d35ad6f629c8a5799d56192ab019d` |
 | `Cousine-Regular.ttf` | `1da22250675fc4c42fcf3a9736c44bc0570516105331443b663fd5cfbd1412fe` |
 | `Cousine-Bold.ttf` | `17c8a7245156d2253531c9e529474937b09d9f641c5ae7695c5e33f22822eef4` |
 | Cousine `OFL.txt` | `b81c4d4dc0a9f72c9155e78187316e016e2012a8102468804173dc61468b906d` |
 | `wn_logo_w_text__for_light.svg` | `87e16b5b2453ad1f9263d92953d5741a30780db02eeea0d59d61f10967c4537b` |
 
 The stylesheet preserves the reviewed upstream layout and component rules but
-replaces its Berkeley Mono declarations with the vendored OFL Cousine files.
+replaces its Berkeley Mono declarations with the vendored OFL Cousine files
+and adds narrow-viewport wrapping for generated identifiers. The wrapping rule
+was added after real-browser smoke exposed horizontal overflow that static
+resource checks could not detect.
 The manifest records the unchanged upstream stylesheet digest
 `b0452e403db12c3fca581866b0953dbca45d751bcc83c137f0da16674859d151`
 and the adapted vendored digest above. A deliberate style refresh records the

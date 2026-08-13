@@ -3,7 +3,10 @@
   "files": {
     "includes": [
       "scripts/*.mjs",
-      "src/ts/wn-geometer-contract-emitter/**/*.js"
+      "src/ts/wn-geometer-contract-emitter/**/*.js",
+      "src/ts/geometer/**/*.ts",
+      "tests/typescript/*.mjs",
+      "examples/wasm/*.ts"
     ]
   },
   "formatter": {

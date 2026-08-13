@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Geometer · Generated model bounds client</title>
+    <style>
+      :root { color-scheme: dark; font-family: Cousine, ui-monospace, monospace; background: #071319; color: #e8f6f4; }
+      * { box-sizing: border-box; }
+      body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: radial-gradient(circle at 80% 10%, #123d43, transparent 36%), #071319; }
+      main { width: min(940px, calc(100% - 32px)); border: 1px solid #3d7777; background: #0a1c23e8; box-shadow: 0 24px 90px #0009; }
+      header { padding: 26px 28px; display: flex; gap: 24px; justify-content: space-between; align-items: end; border-bottom: 1px solid #31535b; }
+      h1 { margin: 5px 0 0; font-size: clamp(22px, 4vw, 42px); letter-spacing: -0.05em; }
+      .eyebrow { color: #61d8c2; text-transform: uppercase; font-size: 12px; letter-spacing: .15em; }
+      button { border: 0; padding: 12px 16px; background: #f3c969; color: #142125; font: inherit; font-weight: 700; cursor: pointer; }
+      button:disabled { opacity: .5; cursor: progress; }
+      #status { margin: 0; padding: 13px 28px; min-height: 44px; border-bottom: 1px solid #31535b; color: #b9d4d4; }
+      .content { display: grid; grid-template-columns: 1.15fr .85fr; }
+      .vectors { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: #31535b; }
+      .vector { background: #0a1c23; padding: 22px; min-height: 122px; }
+      .vector span { display: block; color: #7faaa9; font-size: 11px; text-transform: uppercase; letter-spacing: .12em; }
+      .vector strong { display: block; margin-top: 18px; color: #f1f7f5; font-size: clamp(13px, 2vw, 18px); }
+      .axes { padding: 24px 28px; display: grid; align-content: center; gap: 22px; background: #0d262d; }
+      .axis-label { display: flex; justify-content: space-between; margin-bottom: 7px; color: #b9d4d4; font-size: 12px; }
+      .track { height: 13px; background: #061218; overflow: hidden; }
+      .bar { width: calc(var(--axis-scale, 0) * 100%); height: 100%; transform-origin: left; animation: reveal .8s cubic-bezier(.2,.8,.2,1); }
+      #bar-x { background: #f36f64; } #bar-y { background: #61d8c2; } #bar-z { background: #f3c969; }
+      #timing { margin-top: 8px; color: #7faaa9; font-size: 12px; }
+      [data-state="loading"] .bar { width: 8%; animation: pulse .7s ease-in-out infinite alternate; }
+      [data-state="error"] { outline: 2px solid #f36f64; }
+      @keyframes reveal { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+      @keyframes pulse { to { width: 65%; opacity: .5; } }
+      @media (max-width: 700px) { header { align-items: stretch; flex-direction: column; } .content { grid-template-columns: 1fr; } .vectors { grid-template-columns: 1fr; } }
+    </style>
+    <script src="/dist/wasm/browser/geometer.js"></script>
+    <script type="importmap">
+      { "imports": { "@wavenumber/geometer": "/dist/npm/geometer/index.js", "@wavenumber/geometer/wasm": "/dist/npm/geometer/wasm.js" } }
+    </script>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div><div class="eyebrow">TypeSpec → TypeScript → WASM</div><h1>Model bounds, without pointer code.</h1></div>
+        <button id="run-bounds" type="button">Run generated client</button>
+      </header>
+      <p id="status" role="status">Preparing browser geometry…</p>
+      <section id="bounds-results" class="content" data-state="loading" aria-label="Computed model bounds">
+        <div class="vectors">
+          <div class="vector"><span>Minimum · mm</span><strong id="value-min">—</strong></div>
+          <div class="vector"><span>Maximum · mm</span><strong id="value-max">—</strong></div>
+          <div class="vector"><span>Size · mm</span><strong id="value-size">—</strong></div>
+          <div class="vector"><span>Center · mm</span><strong id="value-center">—</strong></div>
+        </div>
+        <div class="axes">
+          <div><div class="axis-label"><span>X extent</span><strong id="axis-x">—</strong></div><div class="track"><div id="bar-x" class="bar"></div></div></div>
+          <div><div class="axis-label"><span>Y extent</span><strong id="axis-y">—</strong></div><div class="track"><div id="bar-y" class="bar"></div></div></div>
+          <div><div class="axis-label"><span>Z extent</span><strong id="axis-z">—</strong></div><div class="track"><div id="bar-z" class="bar"></div></div></div>
+          <div id="timing">—</div>
+        </div>
+      </section>
+    </main>
+    <script type="module" src="/dist/wasm/demos/model_bounds_demo.js"></script>
+  </body>
+</html>

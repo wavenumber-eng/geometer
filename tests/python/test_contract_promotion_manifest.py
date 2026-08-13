@@ -93,6 +93,11 @@ def _canonical_feasibility_stdout(raw: bytes) -> bytes:
     return text[:-1].encode("utf-8")
 
 
+def _assert_nonzero_uint64(value: Any, label: str) -> None:
+    assert isinstance(value, int) and not isinstance(value, bool), label
+    assert 0 < value <= 0xFFFF_FFFF_FFFF_FFFF, label
+
+
 def _collect_explicit_source_ids(value: Any, spaces: dict[str, list[int]]) -> None:
     key_to_space = {
         "ring_id": "ring",
@@ -106,7 +111,7 @@ def _collect_explicit_source_ids(value: Any, spaces: dict[str, list[int]]) -> No
     if isinstance(value, dict):
         for key, child in value.items():
             if key in key_to_space:
-                assert isinstance(child, int) and not isinstance(child, bool), key
+                _assert_nonzero_uint64(child, key)
                 spaces[key_to_space[key]].append(child)
             else:
                 assert not key.endswith("_id"), f"unclassified source-topology id: {key}"
@@ -615,14 +620,15 @@ def test_vendored_matz_analytic_boolean_observations_are_structurally_closed() -
         all_jobs.extend(jobs)
         all_queries.extend(case.get("relationship_queries", []))
         for job in jobs:
-            assert 0 < job["job_id"] <= 0xFFFF_FFFF_FFFF_FFFF
+            _assert_nonzero_uint64(job["job_id"], "job id")
             for stage in job["stages"]:
+                _assert_nonzero_uint64(stage["stage_id"], "stage id")
                 stage_ids.append(stage["stage_id"])
                 stage_operations.add(stage["operation"])
                 assert stage["operation"] in {"union", "difference"}
                 for operand in stage["operands"]:
+                    _assert_nonzero_uint64(operand["operand_id"], "operand id")
                     operand_ids.append(operand["operand_id"])
-                    assert 0 < operand["operand_id"] <= 0xFFFF_FFFF_FFFF_FFFF
                     geometry_kinds.add(operand["geometry"]["kind"])
                     if "source_topology" in operand:
                         _collect_explicit_source_ids(operand["source_topology"], source_ids)
@@ -633,7 +639,8 @@ def test_vendored_matz_analytic_boolean_observations_are_structurally_closed() -
     _unique(operand_ids, "portable operand id")
     for label, values in source_ids.items():
         _unique(values, f"portable authored {label} id")
-        assert all(0 < value <= 0xFFFF_FFFF_FFFF_FFFF for value in values), label
+        for value in values:
+            _assert_nonzero_uint64(value, f"authored {label} id")
     assert {label: len(values) for label, values in source_ids.items()} == {
         "ring": 12,
         "path": 1,
@@ -642,7 +649,6 @@ def test_vendored_matz_analytic_boolean_observations_are_structurally_closed() -
         "feature": 0,
         "vertex": 0,
     }
-    assert all(0 < stage_id <= 0xFFFF_FFFF_FFFF_FFFF for stage_id in stage_ids)
     assert stage_operations == {"union", "difference"}
     assert geometry_kinds == {
         "rectangle",
@@ -657,6 +663,10 @@ def test_vendored_matz_analytic_boolean_observations_are_structurally_closed() -
     query_ids = [query["query_id"] for query in all_queries]
     _unique(query_ids, "portable relationship query id")
     known_job_ids = set(job_ids)
+    for query in all_queries:
+        _assert_nonzero_uint64(query["query_id"], "relationship query id")
+        _assert_nonzero_uint64(query["left_job_id"], "relationship left job reference")
+        _assert_nonzero_uint64(query["right_job_id"], "relationship right job reference")
     assert all(
         query[side] in known_job_ids
         for query in all_queries

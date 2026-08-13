@@ -71,9 +71,12 @@ excludes only the two timing leaves, compares strings and topology exactly, and
 compares geometry with an absolute `1e-9` and relative `1e-12` tolerance. The
 same expected projection is replayed through the native generic C ABI, direct
 browser WASM client, persistent executable IPC Rust client, and compatible
-Python boundary. The diagnostic vector matches code, category, path presence,
-and retryability exactly through the native C ABI, WASM, and executable IPC;
-only human message prose is excluded.
+Python boundary. The source hash is not excluded: each runtime independently
+recomputes its exact FNV-1a value from the raw attachment bytes. This keeps the
+oracle correct even when a text STEP fixture has platform-specific checkout
+newlines. The diagnostic vector matches code, category, path presence, and
+retryability exactly through the native C ABI, WASM, and executable IPC; only
+human message prose is excluded.
 
 Native C++ tests additionally prove compatibility separation,
 local-versus-typed C ABI failures, catalog discovery, attachment ownership,

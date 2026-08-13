@@ -151,13 +151,18 @@ async fn governed_operation_vectors_match_executable_ipc() {
             .await
             .unwrap();
         let mut attachments = Vec::new();
+        let mut source_hash = None;
         for attachment in vector.attachments {
+            let data = tokio::fs::read(root.join(attachment.repository_file))
+                .await
+                .unwrap();
+            if attachment.name == "model" {
+                source_hash = Some(fnv1a64(&data));
+            }
             attachments.push(ipc::Attachment {
                 name: attachment.name,
                 media_type: attachment.media_type,
-                data: tokio::fs::read(root.join(attachment.repository_file))
-                    .await
-                    .unwrap(),
+                data,
             });
         }
         let response = client
@@ -175,6 +180,13 @@ async fn governed_operation_vectors_match_executable_ipc() {
                     vector.id
                 );
                 let contracts::OperationResultValueA0::ModelBounds(result) = success.result;
+                assert_eq!(vector.computed_fields.len(), 1, "{}", vector.id);
+                let computed = &vector.computed_fields[0];
+                assert_eq!(computed.path, "/result/source/hash", "{}", vector.id);
+                assert_eq!(computed.oracle, "fnv1a64_attachment", "{}", vector.id);
+                assert_eq!(computed.attachment, "model", "{}", vector.id);
+                assert_eq!(computed.comparison, "exact", "{}", vector.id);
+                assert_eq!(result.source.hash, source_hash.unwrap(), "{}", vector.id);
                 let mut actual = serde_json::to_value(result).unwrap();
                 let mut expected: Value = serde_json::from_slice(
                     &tokio::fs::read(
@@ -184,6 +196,14 @@ async fn governed_operation_vectors_match_executable_ipc() {
                     .unwrap(),
                 )
                 .unwrap();
+                assert_eq!(
+                    expected.pointer("/source/hash").unwrap(),
+                    "computed:fnv1a64:model",
+                    "{}",
+                    vector.id
+                );
+                *expected.pointer_mut("/source/hash").unwrap() =
+                    actual.pointer("/source/hash").unwrap().clone();
                 actual.as_object_mut().unwrap().remove("timings");
                 expected.as_object_mut().unwrap().remove("timings");
                 assert_json_close(&actual, &expected, vector.tolerance.as_ref().unwrap(), "");
@@ -412,6 +432,7 @@ struct OperationVector {
     expected_result_file: Option<String>,
     expected_diagnostic: Option<ExpectedDiagnostic>,
     excluded_fields: Vec<String>,
+    computed_fields: Vec<ComputedField>,
     tolerance: Option<Tolerance>,
     runtimes: Vec<String>,
 }
@@ -428,6 +449,14 @@ struct ExpectedDiagnostic {
     code: String,
     path: String,
     retryable: bool,
+}
+
+#[derive(Deserialize)]
+struct ComputedField {
+    path: String,
+    oracle: String,
+    attachment: String,
+    comparison: String,
 }
 
 #[derive(Deserialize)]
@@ -470,6 +499,15 @@ fn assert_json_close(actual: &Value, expected: &Value, tolerance: &Tolerance, pa
         }
         _ => assert_eq!(actual, expected, "exact mismatch at {path}"),
     }
+}
+
+fn fnv1a64(data: &[u8]) -> String {
+    let mut hash = 14_695_981_039_346_656_037_u64;
+    for value in data {
+        hash ^= u64::from(*value);
+        hash = hash.wrapping_mul(1_099_511_628_211);
+    }
+    format!("fnv1a64:{hash:016x}")
 }
 
 fn repository_root() -> PathBuf {

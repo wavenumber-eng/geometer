@@ -47,14 +47,29 @@ function requireClose(actual, expected, tolerance, path) {
   }
 }
 
-function compareModelBoundsProjection(actual, expected, tolerance) {
+function fnv1a64(data) {
+  let hash = 0xcbf29ce484222325n;
+  for (const value of data) {
+    hash ^= BigInt(value);
+    hash = BigInt.asUintN(64, hash * 0x100000001b3n);
+  }
+  return `fnv1a64:${hash.toString(16).padStart(16, "0")}`;
+}
+
+function compareModelBoundsProjection(actual, expected, tolerance, computedFields, modelBytes) {
   for (const field of ["schema", "units"]) {
     if (actual[field] !== expected[field]) throw new Error(`/${field}: exact value mismatch.`);
   }
-  for (const field of ["format", "hash"]) {
-    if (actual.source[field] !== expected.source[field]) {
-      throw new Error(`/source/${field}: exact value mismatch.`);
-    }
+  if (actual.source.format !== expected.source.format) {
+    throw new Error("/source/format: exact value mismatch.");
+  }
+  if (
+    computedFields.length !== 1 ||
+    computedFields[0].path !== "/result/source/hash" ||
+    expected.source.hash !== "computed:fnv1a64:model" ||
+    actual.source.hash !== fnv1a64(modelBytes)
+  ) {
+    throw new Error("/source/hash: raw attachment FNV-1a oracle mismatch.");
   }
   for (const field of ["min", "max", "size", "center"]) {
     for (const [index, value] of actual.bounds[field].entries()) {
@@ -81,7 +96,13 @@ for (const vector of operationManifest.operation_vectors) {
     const expected = JSON.parse(
       await readFile(join(vectorRoot, vector.expected_result_file), "utf8"),
     );
-    compareModelBoundsProjection(response.outcome.result, expected, vector.tolerance);
+    compareModelBoundsProjection(
+      response.outcome.result,
+      expected,
+      vector.tolerance,
+      vector.computed_fields,
+      model,
+    );
   } else {
     if (response.outcome.ok)
       throw new Error(`${vector.id}: WASM operation unexpectedly succeeded.`);

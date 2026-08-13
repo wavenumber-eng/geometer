@@ -32,6 +32,14 @@ def _assert_json_close(actual: object, expected: object, tolerance: dict[str, fl
         assert actual == expected
 
 
+def _fnv1a64(data: bytes) -> str:
+    value = 14_695_981_039_346_656_037
+    for byte in data:
+        value ^= byte
+        value = (value * 1_099_511_628_211) & 0xFFFF_FFFF_FFFF_FFFF
+    return f"fnv1a64:{value:016x}"
+
+
 def test_executable_path_finds_dist_cli() -> None:
     assert geometer.executable_path().name in {"geometer", "geometer.exe"}
 
@@ -146,13 +154,25 @@ def test_model_bounds_matches_governed_operation_projection() -> None:
     vector = vectors[0]
     request = json.loads((vector_root / vector["request_file"]).read_text(encoding="utf-8"))
     assert request == {}
-    result = geometer.model_bounds(ROOT / vector["attachments"][0]["repository_file"])
+    model_path = ROOT / vector["attachments"][0]["repository_file"]
+    result = geometer.model_bounds(model_path)
     actual = dict(result.data)
     expected = json.loads((vector_root / vector["expected_result_file"]).read_text(encoding="utf-8"))
     assert vector["excluded_fields"] == [
         "/result/timings/model_read_ms",
         "/result/timings/bounds_ms",
     ]
+    assert vector["computed_fields"] == [
+        {
+            "path": "/result/source/hash",
+            "oracle": "fnv1a64_attachment",
+            "attachment": "model",
+            "comparison": "exact",
+        }
+    ]
+    assert actual["source"]["hash"] == _fnv1a64(model_path.read_bytes())
+    assert expected["source"]["hash"] == "computed:fnv1a64:model"
+    expected["source"]["hash"] = actual["source"]["hash"]
     actual.pop("timings")
     expected.pop("timings")
     _assert_json_close(actual, expected, vector["tolerance"])

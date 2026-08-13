@@ -21,8 +21,10 @@ The operation corpus adds:
 - `operation_semantic`: a real STEP attachment executed through the native C
   ABI, browser WASM, executable IPC, and compatible Python boundary. All
   deterministic fields share one expected projection; only timing leaves are
-  excluded, and every numeric geometry value declares absolute and relative
-  tolerance; and
+  excluded, every numeric geometry value declares absolute and relative
+  tolerance, and the source hash is recomputed exactly from the raw attachment
+  bytes so platform checkout newline policy cannot masquerade as geometry
+  drift; and
 - `diagnostic`: a structurally valid but non-affine transform whose governed
   code, category, path presence, and retryability match exactly through the
   native C ABI, browser WASM, and executable IPC. Human message prose remains

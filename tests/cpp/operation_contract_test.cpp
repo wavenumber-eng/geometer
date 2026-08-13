@@ -73,6 +73,19 @@ std::vector<unsigned char> decode_hex(const std::vector<unsigned char>& text)
     return decoded;
 }
 
+std::string fnv1a64(const std::vector<unsigned char>& data)
+{
+    std::uint64_t hash = UINT64_C(14695981039346656037);
+    for (const unsigned char value : data)
+    {
+        hash ^= value;
+        hash *= UINT64_C(1099511628211);
+    }
+    char text[32]{};
+    std::snprintf(text, sizeof(text), "fnv1a64:%016llx", static_cast<unsigned long long>(hash));
+    return text;
+}
+
 bool decode_contract_vector(const std::string& identity, const std::vector<unsigned char>& data,
                             geometer::contracts::ModelBoundsOptionsA0* options)
 {
@@ -194,11 +207,19 @@ void generated_cpp_replays_governed_operation_vectors()
             expected.Parse(reinterpret_cast<const char*>(expected_bytes.data()),
                            expected_bytes.size());
             require(!expected.HasParseError(), "expected operation result should be valid JSON");
+            const auto& attachment = vector["attachments"][0];
+            const std::vector<unsigned char> model =
+                read_bytes(std::string(GEOMETER_TEST_SOURCE_DIR) + "/" +
+                           attachment["repository_file"].GetString());
+            require(vector["computed_fields"].Size() == 1U &&
+                        std::string(expected["source"]["hash"].GetString()) ==
+                            "computed:fnv1a64:model" &&
+                        actual->source.hash == fnv1a64(model),
+                    "native source hash should exactly match the raw attachment bytes");
             require(actual->schema == expected["schema"].GetString() &&
                         actual->units == expected["units"].GetString() &&
                         actual->source.format == geometer::contracts::ModelFormat::step &&
-                        std::string(expected["source"]["format"].GetString()) == "step" &&
-                        actual->source.hash == expected["source"]["hash"].GetString(),
+                        std::string(expected["source"]["format"].GetString()) == "step",
                     "native exact result projection should match");
             require(vector["excluded_fields"].Size() == 2U &&
                         std::isfinite(actual->timings.model_read_ms) &&

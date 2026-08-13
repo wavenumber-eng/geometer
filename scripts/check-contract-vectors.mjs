@@ -192,19 +192,29 @@ function validateManifest(value) {
     if (!["success", "failure"].includes(vector.expected)) {
       throw new Error(`${vector.id}: operation expectation must be success or failure.`);
     }
-    if (!Array.isArray(vector.excluded_fields) || !Array.isArray(vector.runtimes)) {
+    if (
+      !Array.isArray(vector.excluded_fields) ||
+      !Array.isArray(vector.computed_fields) ||
+      !Array.isArray(vector.runtimes)
+    ) {
       throw new Error(`${vector.id}: projections and runtimes must be explicit.`);
     }
     if (!vector.request_file.startsWith("cases/") || vector.request_file.includes("..")) {
       throw new Error(`${vector.id}: invalid request case path.`);
     }
     if (vector.expected === "success") {
+      const computedHash = vector.computed_fields.find(
+        (field) => field.path === "/result/source/hash",
+      );
       if (
         vector.comparison !== "structural_numeric_tolerance" ||
         !(vector.tolerance?.absolute > 0) ||
         !(vector.tolerance?.relative > 0) ||
         !vector.expected_result_file?.startsWith("cases/") ||
-        vector.expected_result_file.includes("..")
+        vector.expected_result_file.includes("..") ||
+        computedHash?.oracle !== "fnv1a64_attachment" ||
+        computedHash.attachment !== "model" ||
+        computedHash.comparison !== "exact"
       ) {
         throw new Error(`${vector.id}: success vector lacks governed tolerance/result metadata.`);
       }

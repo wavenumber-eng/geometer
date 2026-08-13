@@ -247,6 +247,14 @@
       "expected_result_file": "cases/operation-model-bounds-identity-result.json",
       "comparison": "structural_numeric_tolerance",
       "excluded_fields": ["/result/timings/model_read_ms", "/result/timings/bounds_ms"],
+      "computed_fields": [
+        {
+          "path": "/result/source/hash",
+          "oracle": "fnv1a64_attachment",
+          "attachment": "model",
+          "comparison": "exact"
+        }
+      ],
       "tolerance": { "absolute": 1e-9, "relative": 1e-12 },
       "equivalence_group": "model_bounds.sot23.identity",
       "runtimes": ["native_c_abi", "browser_wasm", "executable_ipc", "python_compat"]
@@ -273,6 +281,7 @@
       },
       "comparison": "exact",
       "excluded_fields": ["/diagnostics/0/message"],
+      "computed_fields": [],
       "tolerance": null,
       "runtimes": ["native_c_abi", "browser_wasm", "executable_ipc"]
     }

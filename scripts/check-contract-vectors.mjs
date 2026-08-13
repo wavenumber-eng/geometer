@@ -26,6 +26,7 @@ async function main() {
   const schemas = new Map();
   const ajv = new Ajv2020({ allErrors: true, strict: true });
   ajv.addKeyword({ keyword: "x-wn-default-intent", schemaType: "string" });
+  const schemaDocuments = [];
   for (const root of catalog.roots) {
     const filename = `${root.name.slice(root.name.lastIndexOf(".") + 1)}.json`;
     const schemaPath = join(
@@ -36,10 +37,14 @@ async function main() {
       "schema",
       filename,
     );
-    schemas.set(
-      root.contract_identity,
-      ajv.compile(JSON.parse(await readFile(schemaPath, "utf8"))),
-    );
+    const document = JSON.parse(await readFile(schemaPath, "utf8"));
+    schemaDocuments.push([root.contract_identity, document]);
+    ajv.addSchema(document);
+  }
+  for (const [identity, document] of schemaDocuments) {
+    const validate = ajv.getSchema(document.$id);
+    if (!validate) throw new Error(`Could not compile generated schema ${document.$id}.`);
+    schemas.set(identity, validate);
   }
 
   const referencedFiles = new Set();

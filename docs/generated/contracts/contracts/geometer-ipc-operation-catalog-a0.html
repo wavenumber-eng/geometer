@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="12f521239c1a714c3dbb27478ee3980ebcf07a91c4fcae239de4a4d811c03190">
+  <title>geometer.ipc.operation_catalog.a0 — Geometer</title>
+  <link rel="stylesheet" href="../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="12f521239c1a714c3dbb27478ee3980ebcf07a91c4fcae239de4a4d811c03190" data-page-kind="contract" data-contract-identity="geometer.ipc.operation_catalog.a0" data-promotion-status="pilot_candidate">
+<main>
+<header>
+  <p class="page-type">Contract root</p>
+  <h1><code>geometer.ipc.operation_catalog.a0</code></h1>
+  <p class="lede">Exact operation catalog embedded into the welcome frame.</p>
+</header>
+<nav class="nav" aria-label="Contract navigation"><a href="../index.html">All contracts</a><a href="../../../../contracts/geometer/generated/schema/IpcOperationCatalogA0.json">JSON Schema</a><a href="../../../../src/tsp/geometer/main.tsp">TypeSpec entry point</a><a href="../../../design/contract-semantics.md">Compatibility policy</a></nav>
+<aside class="callout"><strong>Generated, not authored.</strong> Edit TypeSpec and regenerate. Lifecycle evidence remains in the promotion manifest.</aside>
+
+<section><h2>Identity</h2><table><tbody>
+<tr><th>Contract</th><td><code>geometer.ipc.operation_catalog.a0</code></td></tr>
+<tr><th>Schema</th><td><code>urn:wavenumber:schema:geometer:geometer.ipc.operation_catalog:a0</code></td></tr>
+<tr><th>Declaration</th><td><code>Wavenumber.Geometer.Contracts.IpcA0.IpcOperationCatalogA0</code></td></tr>
+<tr><th>Lifecycle</th><td><span class="status">pilot_candidate</span></td></tr>
+<tr><th>Current authority</th><td><code>typespec_candidate</code></td></tr>
+</tbody></table></section>
+<section class="model-section"><h2>Declarations <span class="tag">9</span></h2><details open id="declaration-wavenumber-geometer-contracts-ipca0-ipcoperationcataloga0"><summary><h2><code>IpcOperationCatalogA0</code> <span class="tag">model</span></h2></summary><p>Exact operation catalog embedded into the welcome frame.</p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>catalog</code></td><td>required</td><td><code>&quot;wn.geometer.operation_catalog.a0&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>generic_abi</code></td><td>required</td><td><code>&quot;a0&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>release_version</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=1</code> <code>max_length=32</code></td><td></td></tr>
+<tr><td><code>c_abi_generation</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>operations</code></td><td>required</td><td><code>IpcOperationDeclarationA0[]</code></td><td>—</td><td><code>min_items=1</code></td><td></td></tr>
+<tr><td><code>attachment_descriptor</code></td><td>required</td><td><code>IpcAttachmentDescriptorA0</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>limits</code></td><td>required</td><td><code>IpcGenericAbiLimitsA0</code></td><td>—</td><td>none</td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-ipca0-ipcattachmentdeclarationa0"><summary><h2><code>IpcAttachmentDeclarationA0</code> <span class="tag">model</span></h2></summary><p>Named raw-attachment declaration in the negotiated operation catalog.</p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>name</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=1</code> <code>max_length=128</code></td><td></td></tr>
+<tr><td><code>required</code></td><td>required</td><td><code>boolean</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>media_types</code></td><td>required</td><td><code>string[]</code></td><td>—</td><td><code>min_items=1</code> <code>max_items=16</code></td><td></td></tr>
+<tr><td><code>max_bytes</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>max_value=268435456</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-ipca0-ipcattachmentdescriptora0"><summary><h2><code>IpcAttachmentDescriptorA0</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>wasm32</code></td><td>required</td><td><code>IpcAttachmentLayoutWasm32A0</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>pointer64</code></td><td>required</td><td><code>IpcAttachmentLayoutPointer64A0</code></td><td>—</td><td>none</td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-ipca0-ipcattachmentlayoutpointer64a0"><summary><h2><code>IpcAttachmentLayoutPointer64A0</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>size</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>min_value=56</code> <code>max_value=56</code></td><td></td></tr>
+<tr><td><code>offsets</code></td><td>required</td><td><code>IpcAttachmentOffsetsPointer64A0</code></td><td>—</td><td>none</td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-ipca0-ipcattachmentlayoutwasm32a0"><summary><h2><code>IpcAttachmentLayoutWasm32A0</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>size</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>min_value=36</code> <code>max_value=36</code></td><td></td></tr>
+<tr><td><code>offsets</code></td><td>required</td><td><code>IpcAttachmentOffsetsWasm32A0</code></td><td>—</td><td>none</td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-ipca0-ipcattachmentoffsetspointer64a0"><summary><h2><code>IpcAttachmentOffsetsPointer64A0</code> <span class="tag">model</span></h2></summary><p>64-bit attachment-descriptor member offsets.</p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>struct_size</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>max_value=0</code></td><td></td></tr>
+<tr><td><code>flags</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>min_value=4</code> <code>max_value=4</code></td><td></td></tr>
+<tr><td><code>name</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>min_value=8</code> <code>max_value=8</code></td><td></td></tr>
+<tr><td><code>name_size</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>min_value=16</code> <code>max_value=16</code></td><td></td></tr>
+<tr><td><code>media_type</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>min_value=24</code> <code>max_value=24</code></td><td></td></tr>
+<tr><td><code>media_type_size</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>min_value=32</code> <code>max_value=32</code></td><td></td></tr>
+<tr><td><code>data</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>min_value=40</code> <code>max_value=40</code></td><td></td></tr>
+<tr><td><code>data_size</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>min_value=48</code> <code>max_value=48</code></td><td></td></tr>
+<tr><td><code>reserved0</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>min_value=52</code> <code>max_value=52</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-ipca0-ipcattachmentoffsetswasm32a0"><summary><h2><code>IpcAttachmentOffsetsWasm32A0</code> <span class="tag">model</span></h2></summary><p>wasm32 attachment-descriptor member offsets.</p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>struct_size</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>max_value=0</code></td><td></td></tr>
+<tr><td><code>flags</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>min_value=4</code> <code>max_value=4</code></td><td></td></tr>
+<tr><td><code>name</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>min_value=8</code> <code>max_value=8</code></td><td></td></tr>
+<tr><td><code>name_size</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>min_value=12</code> <code>max_value=12</code></td><td></td></tr>
+<tr><td><code>media_type</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>min_value=16</code> <code>max_value=16</code></td><td></td></tr>
+<tr><td><code>media_type_size</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>min_value=20</code> <code>max_value=20</code></td><td></td></tr>
+<tr><td><code>data</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>min_value=24</code> <code>max_value=24</code></td><td></td></tr>
+<tr><td><code>data_size</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>min_value=28</code> <code>max_value=28</code></td><td></td></tr>
+<tr><td><code>reserved0</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>min_value=32</code> <code>max_value=32</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-ipca0-ipcgenericabilimitsa0"><summary><h2><code>IpcGenericAbiLimitsA0</code> <span class="tag">model</span></h2></summary><p>Bounds shared by the generic C ABI operation catalog.</p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>operation_id_bytes</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>max_value=128</code></td><td></td></tr>
+<tr><td><code>request_json_bytes</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>max_value=8388608</code></td><td></td></tr>
+<tr><td><code>response_json_bytes</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>max_value=8388608</code></td><td></td></tr>
+<tr><td><code>attachment_count</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>max_value=16</code></td><td></td></tr>
+<tr><td><code>attachment_name_bytes</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>max_value=128</code></td><td></td></tr>
+<tr><td><code>attachment_media_type_bytes</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>max_value=128</code></td><td></td></tr>
+<tr><td><code>attachment_bytes</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>max_value=268435456</code></td><td></td></tr>
+<tr><td><code>aggregate_attachment_bytes_native</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>max_value=536870912</code></td><td></td></tr>
+<tr><td><code>aggregate_attachment_bytes_wasm</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>max_value=268435456</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-ipca0-ipcoperationdeclarationa0"><summary><h2><code>IpcOperationDeclarationA0</code> <span class="tag">model</span></h2></summary><p>One operation exposed by the negotiated generic transport.</p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>identity</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=1</code> <code>max_length=128</code></td><td></td></tr>
+<tr><td><code>request_contract</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=1</code> <code>max_length=128</code></td><td></td></tr>
+<tr><td><code>result_contract</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=1</code> <code>max_length=128</code></td><td></td></tr>
+<tr><td><code>input_attachments</code></td><td>required</td><td><code>IpcAttachmentDeclarationA0[]</code></td><td>—</td><td><code>max_items=16</code></td><td></td></tr>
+<tr><td><code>output_attachments</code></td><td>required</td><td><code>IpcAttachmentDeclarationA0[]</code></td><td>—</td><td><code>max_items=16</code></td><td></td></tr></tbody></table></details></section>
+</main>
+</body>
+</html>

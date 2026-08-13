@@ -114,6 +114,18 @@ def test_code_hygiene_excludes_generated_rack_results() -> None:
     )
 
 
+def test_code_hygiene_exempts_only_generated_contract_sources_from_line_limit() -> None:
+    run_checked(
+        [
+            sys.executable,
+            "-c",
+            "from pathlib import Path; from scripts import check_code_hygiene as hygiene; "
+            "assert hygiene.is_line_length_exempt(Path('src/cpp/lib/geometer/generated/contracts/contracts_json.cpp')); "
+            "assert not hygiene.is_line_length_exempt(Path('src/cpp/lib/ipc_a0_server.cpp'))",
+        ]
+    )
+
+
 def test_linux_wheel_builds_use_glibc_235_baseline() -> None:
     for workflow_name in ("ci.yml", "release.yml", "occt-deps.yml"):
         workflow = (ROOT / ".github" / "workflows" / workflow_name).read_text(encoding="utf-8")

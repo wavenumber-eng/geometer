@@ -289,6 +289,8 @@ fn native_executable(root: &Path) -> PathBuf {
         "windows-x64"
     } else if cfg!(target_os = "macos") && cfg!(target_arch = "aarch64") {
         "macos-arm64"
+    } else if cfg!(target_os = "linux") && cfg!(target_arch = "aarch64") {
+        "linux-arm64"
     } else {
         "linux-x64"
     };

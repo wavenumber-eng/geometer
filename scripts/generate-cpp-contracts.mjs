@@ -59,6 +59,7 @@ function generateHeader() {
     "#pragma once",
     "",
     "#include <cstddef>",
+    "#include <cstdint>",
     "#include <optional>",
     "#include <string>",
     "#include <variant>",
@@ -206,6 +207,16 @@ function generateSource() {
     '    if (!value.IsBool()) return fail(error, "geometer.contract.type_mismatch", path, "Expected a boolean."); *out = value.GetBool(); return true;',
     "}",
     "",
+    "bool decode_uint32(const rapidjson::Value& value, std::uint32_t* out, const std::string& path, ContractError* error, std::uint64_t maximum)",
+    "{",
+    '    if (!value.IsUint64() || value.GetUint64() > maximum || value.GetUint64() > std::numeric_limits<std::uint32_t>::max()) return fail(error, "geometer.contract.number_range", path, "Expected an unsigned 32-bit integer within its contract bounds."); *out = static_cast<std::uint32_t>(value.GetUint64()); return true;',
+    "}",
+    "",
+    "bool decode_uint64(const rapidjson::Value& value, std::uint64_t* out, const std::string& path, ContractError* error, std::uint64_t maximum)",
+    "{",
+    '    if (!value.IsUint64() || value.GetUint64() > maximum) return fail(error, "geometer.contract.number_range", path, "Expected an unsigned 64-bit integer within its contract bounds."); *out = value.GetUint64(); return true;',
+    "}",
+    "",
     "bool decode_double(const rapidjson::Value& value, double* out, const std::string& path, ContractError* error, double minimum, double maximum)",
     "{",
     '    if (!value.IsNumber() || !std::isfinite(value.GetDouble())) return fail(error, "geometer.contract.type_mismatch", path, "Expected a finite number.");',
@@ -234,6 +245,16 @@ function generateSource() {
     '    if (!std::isfinite(value) || value < minimum || value > maximum) return fail(error, "geometer.contract.number_range", "", "Number is outside its contract bounds."); writer.Double(value); return true;',
     "}",
     "",
+    "bool write_uint32(rapidjson::Writer<rapidjson::StringBuffer>& writer, std::uint32_t value, ContractError* error, std::uint64_t maximum)",
+    "{",
+    '    if (value > maximum) return fail(error, "geometer.contract.number_range", "", "Unsigned integer exceeds its contract bounds."); writer.Uint(value); return true;',
+    "}",
+    "",
+    "bool write_uint64(rapidjson::Writer<rapidjson::StringBuffer>& writer, std::uint64_t value, ContractError* error, std::uint64_t maximum)",
+    "{",
+    '    if (value > maximum) return fail(error, "geometer.contract.number_range", "", "Unsigned integer exceeds its contract bounds."); writer.Uint64(value); return true;',
+    "}",
+    "",
     "bool write_string(rapidjson::Writer<rapidjson::StringBuffer>& writer, const std::string& value, ContractError* error, std::size_t minimum, std::size_t maximum)",
     "{",
     '    if (value.size() < minimum || value.size() > maximum) return fail(error, "geometer.contract.string_length", "", "String length is outside its contract bounds.");',
@@ -249,6 +270,16 @@ function generateSource() {
     "bool write_literal_boolean(rapidjson::Writer<rapidjson::StringBuffer>& writer, bool value, ContractError* error, bool expected)",
     "{",
     '    if (value != expected) return fail(error, "geometer.contract.literal_mismatch", "", "Boolean literal does not match."); writer.Bool(expected); return true;',
+    "}",
+    "",
+    "bool decode_string_item(const rapidjson::Value& value, std::string* out, const std::string& path, ContractError* error)",
+    "{",
+    "    return decode_string(value, out, path, error, 0U, std::numeric_limits<std::size_t>::max());",
+    "}",
+    "",
+    "bool write_string_item(rapidjson::Writer<rapidjson::StringBuffer>& writer, const std::string& value, ContractError* error)",
+    "{",
+    "    return write_string(writer, value, error, 0U, std::numeric_limits<std::size_t>::max());",
     "}",
     "",
     "template <typename T>",
@@ -553,14 +584,23 @@ function decodeCall(type, value, out, path, error, constraints = {}) {
     if (type.name === "string")
       return `decode_string(${value}, ${out}, ${path}, ${error}, ${sizeConstant(constraints.min_length, "0U")}, ${sizeConstant(constraints.max_length)})`;
     if (type.name === "boolean") return `decode_boolean(${value}, ${out}, ${path}, ${error})`;
+    if (type.name === "uint32")
+      return `decode_uint32(${value}, ${out}, ${path}, ${error}, ${integerMaximum(constraints, "std::numeric_limits<std::uint32_t>::max()")})`;
+    if (type.name === "uint64")
+      return `decode_uint64(${value}, ${out}, ${path}, ${error}, ${integerMaximum(constraints, "std::numeric_limits<std::uint64_t>::max()")})`;
     if (type.name === "float64")
       return `decode_double(${value}, ${out}, ${path}, ${error}, ${constraints.min_value ?? "-std::numeric_limits<double>::infinity()"}, ${constraints.max_value ?? "std::numeric_limits<double>::infinity()"})`;
   }
   if (type.kind === "literal")
     return `decode_literal_${type.value_type}(${value}, ${out}, ${path}, ${error}, ${JSON.stringify(type.value)})`;
   if (type.kind === "array") {
-    if (type.element.kind !== "reference") unsupported(type);
-    return `decode_array(${value}, ${out}, ${path}, ${error}, ${sizeConstant(constraints.min_items, "0U")}, ${sizeConstant(constraints.max_items)}, decode_${shortName(type.element.target)})`;
+    const decoder =
+      type.element.kind === "reference"
+        ? `decode_${shortName(type.element.target)}`
+        : type.element.kind === "primitive" && type.element.name === "string"
+          ? "decode_string_item"
+          : unsupported(type);
+    return `decode_array(${value}, ${out}, ${path}, ${error}, ${sizeConstant(constraints.min_items, "0U")}, ${sizeConstant(constraints.max_items)}, ${decoder})`;
   }
   throw new Error(`Unsupported decode type ${JSON.stringify(type)}`);
 }
@@ -572,14 +612,23 @@ function writeCall(type, value, error, constraints = {}) {
     if (type.name === "string")
       return `write_string(writer, ${value}, ${error}, ${sizeConstant(constraints.min_length, "0U")}, ${sizeConstant(constraints.max_length)})`;
     if (type.name === "boolean") return `(writer.Bool(${value}), true)`;
+    if (type.name === "uint32")
+      return `write_uint32(writer, ${value}, ${error}, ${integerMaximum(constraints, "std::numeric_limits<std::uint32_t>::max()")})`;
+    if (type.name === "uint64")
+      return `write_uint64(writer, ${value}, ${error}, ${integerMaximum(constraints, "std::numeric_limits<std::uint64_t>::max()")})`;
     if (type.name === "float64")
       return `write_double(writer, ${value}, ${error}, ${constraints.min_value ?? "-std::numeric_limits<double>::infinity()"}, ${constraints.max_value ?? "std::numeric_limits<double>::infinity()"})`;
   }
   if (type.kind === "literal")
     return `write_literal_${type.value_type}(writer, ${value}, ${error}, ${JSON.stringify(type.value)})`;
   if (type.kind === "array") {
-    if (type.element.kind !== "reference") unsupported(type);
-    return `write_array(writer, ${value}, ${error}, ${sizeConstant(constraints.min_items, "0U")}, ${sizeConstant(constraints.max_items)}, write_${shortName(type.element.target)})`;
+    const writer =
+      type.element.kind === "reference"
+        ? `write_${shortName(type.element.target)}`
+        : type.element.kind === "primitive" && type.element.name === "string"
+          ? "write_string_item"
+          : unsupported(type);
+    return `write_array(writer, ${value}, ${error}, ${sizeConstant(constraints.min_items, "0U")}, ${sizeConstant(constraints.max_items)}, ${writer})`;
   }
   throw new Error(`Unsupported write type ${JSON.stringify(type)}`);
 }
@@ -588,7 +637,13 @@ function cppType(type) {
   if (type.kind === "reference") return shortName(type.target);
   if (type.kind === "primitive")
     return (
-      { string: "std::string", boolean: "bool", float64: "double" }[type.name] ?? unsupported(type)
+      {
+        string: "std::string",
+        boolean: "bool",
+        float64: "double",
+        uint32: "std::uint32_t",
+        uint64: "std::uint64_t",
+      }[type.name] ?? unsupported(type)
     );
   if (type.kind === "literal")
     return (
@@ -623,6 +678,9 @@ function formatCpp(content, filename) {
 }
 function sizeConstant(value, fallback = "std::numeric_limits<std::size_t>::max()") {
   return value === undefined ? fallback : `${value}U`;
+}
+function integerMaximum(constraints, fallback) {
+  return constraints.max_value === undefined ? fallback : `${constraints.max_value}ULL`;
 }
 function unsupported(value) {
   throw new Error(`Unsupported C++ catalog type ${JSON.stringify(value)}`);

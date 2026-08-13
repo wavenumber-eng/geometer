@@ -32,7 +32,7 @@ const char* operation_catalog_json()
 
 const char* normalized_contract_catalog_sha256()
 {
-    return "9691a8249841870e01f5c090ed08a12772d60b402c090352a0978267cae2c670";
+    return "12f521239c1a714c3dbb27478ee3980ebcf07a91c4fcae239de4a4d811c03190";
 }
 
 bool operation_output_attachment_declared(const std::string& operation_id,

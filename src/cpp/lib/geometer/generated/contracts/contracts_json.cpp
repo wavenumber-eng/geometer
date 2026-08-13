@@ -23,15 +23,86 @@ bool decode_DiagnosticA0(const rapidjson::Value&, DiagnosticA0*, const std::stri
                          ContractError*);
 bool write_DiagnosticA0(rapidjson::Writer<rapidjson::StringBuffer>&, const DiagnosticA0&,
                         ContractError*);
-bool decode_Matrix4x4(const rapidjson::Value&, Matrix4x4*, const std::string&, ContractError*);
-bool write_Matrix4x4(rapidjson::Writer<rapidjson::StringBuffer>&, const Matrix4x4&, ContractError*);
+bool decode_IpcAttachmentDeclarationA0(const rapidjson::Value&, IpcAttachmentDeclarationA0*,
+                                       const std::string&, ContractError*);
+bool write_IpcAttachmentDeclarationA0(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                      const IpcAttachmentDeclarationA0&, ContractError*);
+bool decode_IpcAttachmentOffsetsWasm32A0(const rapidjson::Value&, IpcAttachmentOffsetsWasm32A0*,
+                                         const std::string&, ContractError*);
+bool write_IpcAttachmentOffsetsWasm32A0(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                        const IpcAttachmentOffsetsWasm32A0&, ContractError*);
+bool decode_IpcAttachmentLayoutWasm32A0(const rapidjson::Value&, IpcAttachmentLayoutWasm32A0*,
+                                        const std::string&, ContractError*);
+bool write_IpcAttachmentLayoutWasm32A0(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                       const IpcAttachmentLayoutWasm32A0&, ContractError*);
+bool decode_IpcAttachmentOffsetsPointer64A0(const rapidjson::Value&,
+                                            IpcAttachmentOffsetsPointer64A0*, const std::string&,
+                                            ContractError*);
+bool write_IpcAttachmentOffsetsPointer64A0(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                           const IpcAttachmentOffsetsPointer64A0&, ContractError*);
+bool decode_IpcAttachmentLayoutPointer64A0(const rapidjson::Value&, IpcAttachmentLayoutPointer64A0*,
+                                           const std::string&, ContractError*);
+bool write_IpcAttachmentLayoutPointer64A0(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                          const IpcAttachmentLayoutPointer64A0&, ContractError*);
+bool decode_IpcAttachmentDescriptorA0(const rapidjson::Value&, IpcAttachmentDescriptorA0*,
+                                      const std::string&, ContractError*);
+bool write_IpcAttachmentDescriptorA0(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                     const IpcAttachmentDescriptorA0&, ContractError*);
+bool decode_IpcCancelledA0(const rapidjson::Value&, IpcCancelledA0*, const std::string&,
+                           ContractError*);
+bool write_IpcCancelledA0(rapidjson::Writer<rapidjson::StringBuffer>&, const IpcCancelledA0&,
+                          ContractError*);
+bool decode_IpcCancelRejectedA0(const rapidjson::Value&, IpcCancelRejectedA0*, const std::string&,
+                                ContractError*);
+bool write_IpcCancelRejectedA0(rapidjson::Writer<rapidjson::StringBuffer>&,
+                               const IpcCancelRejectedA0&, ContractError*);
+bool decode_IpcEffectiveLimitsA0(const rapidjson::Value&, IpcEffectiveLimitsA0*, const std::string&,
+                                 ContractError*);
+bool write_IpcEffectiveLimitsA0(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                const IpcEffectiveLimitsA0&, ContractError*);
+bool decode_IpcGenericAbiLimitsA0(const rapidjson::Value&, IpcGenericAbiLimitsA0*,
+                                  const std::string&, ContractError*);
+bool write_IpcGenericAbiLimitsA0(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                 const IpcGenericAbiLimitsA0&, ContractError*);
+bool decode_IpcHelloA0(const rapidjson::Value&, IpcHelloA0*, const std::string&, ContractError*);
+bool write_IpcHelloA0(rapidjson::Writer<rapidjson::StringBuffer>&, const IpcHelloA0&,
+                      ContractError*);
+bool decode_IpcOperationDeclarationA0(const rapidjson::Value&, IpcOperationDeclarationA0*,
+                                      const std::string&, ContractError*);
+bool write_IpcOperationDeclarationA0(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                     const IpcOperationDeclarationA0&, ContractError*);
+bool decode_IpcOperationCatalogA0(const rapidjson::Value&, IpcOperationCatalogA0*,
+                                  const std::string&, ContractError*);
+bool write_IpcOperationCatalogA0(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                 const IpcOperationCatalogA0&, ContractError*);
+bool decode_IpcProtocolErrorA0(const rapidjson::Value&, IpcProtocolErrorA0*, const std::string&,
+                               ContractError*);
+bool write_IpcProtocolErrorA0(rapidjson::Writer<rapidjson::StringBuffer>&,
+                              const IpcProtocolErrorA0&, ContractError*);
+bool decode_IpcReasonA0(const rapidjson::Value&, IpcReasonA0*, const std::string&, ContractError*);
+bool write_IpcReasonA0(rapidjson::Writer<rapidjson::StringBuffer>&, const IpcReasonA0&,
+                       ContractError*);
 bool decode_ModelFormat(const rapidjson::Value&, ModelFormat*, const std::string&, ContractError*);
 bool write_ModelFormat(rapidjson::Writer<rapidjson::StringBuffer>&, const ModelFormat&,
                        ContractError*);
+bool decode_Matrix4x4(const rapidjson::Value&, Matrix4x4*, const std::string&, ContractError*);
+bool write_Matrix4x4(rapidjson::Writer<rapidjson::StringBuffer>&, const Matrix4x4&, ContractError*);
 bool decode_ModelBoundsOptionsA0(const rapidjson::Value&, ModelBoundsOptionsA0*, const std::string&,
                                  ContractError*);
 bool write_ModelBoundsOptionsA0(rapidjson::Writer<rapidjson::StringBuffer>&,
                                 const ModelBoundsOptionsA0&, ContractError*);
+bool decode_IpcRequestA0(const rapidjson::Value&, IpcRequestA0*, const std::string&,
+                         ContractError*);
+bool write_IpcRequestA0(rapidjson::Writer<rapidjson::StringBuffer>&, const IpcRequestA0&,
+                        ContractError*);
+bool decode_IpcShutdownAckA0(const rapidjson::Value&, IpcShutdownAckA0*, const std::string&,
+                             ContractError*);
+bool write_IpcShutdownAckA0(rapidjson::Writer<rapidjson::StringBuffer>&, const IpcShutdownAckA0&,
+                            ContractError*);
+bool decode_IpcWelcomeA0(const rapidjson::Value&, IpcWelcomeA0*, const std::string&,
+                         ContractError*);
+bool write_IpcWelcomeA0(rapidjson::Writer<rapidjson::StringBuffer>&, const IpcWelcomeA0&,
+                        ContractError*);
 bool decode_ModelBoundsSource(const rapidjson::Value&, ModelBoundsSource*, const std::string&,
                               ContractError*);
 bool write_ModelBoundsSource(rapidjson::Writer<rapidjson::StringBuffer>&, const ModelBoundsSource&,
@@ -194,6 +265,27 @@ bool decode_boolean(const rapidjson::Value& value, bool* out, const std::string&
     return true;
 }
 
+bool decode_uint32(const rapidjson::Value& value, std::uint32_t* out, const std::string& path,
+                   ContractError* error, std::uint64_t maximum)
+{
+    if (!value.IsUint64() || value.GetUint64() > maximum ||
+        value.GetUint64() > std::numeric_limits<std::uint32_t>::max())
+        return fail(error, "geometer.contract.number_range", path,
+                    "Expected an unsigned 32-bit integer within its contract bounds.");
+    *out = static_cast<std::uint32_t>(value.GetUint64());
+    return true;
+}
+
+bool decode_uint64(const rapidjson::Value& value, std::uint64_t* out, const std::string& path,
+                   ContractError* error, std::uint64_t maximum)
+{
+    if (!value.IsUint64() || value.GetUint64() > maximum)
+        return fail(error, "geometer.contract.number_range", path,
+                    "Expected an unsigned 64-bit integer within its contract bounds.");
+    *out = value.GetUint64();
+    return true;
+}
+
 bool decode_double(const rapidjson::Value& value, double* out, const std::string& path,
                    ContractError* error, double minimum, double maximum)
 {
@@ -259,6 +351,26 @@ bool write_double(rapidjson::Writer<rapidjson::StringBuffer>& writer, double val
     return true;
 }
 
+bool write_uint32(rapidjson::Writer<rapidjson::StringBuffer>& writer, std::uint32_t value,
+                  ContractError* error, std::uint64_t maximum)
+{
+    if (value > maximum)
+        return fail(error, "geometer.contract.number_range", "",
+                    "Unsigned integer exceeds its contract bounds.");
+    writer.Uint(value);
+    return true;
+}
+
+bool write_uint64(rapidjson::Writer<rapidjson::StringBuffer>& writer, std::uint64_t value,
+                  ContractError* error, std::uint64_t maximum)
+{
+    if (value > maximum)
+        return fail(error, "geometer.contract.number_range", "",
+                    "Unsigned integer exceeds its contract bounds.");
+    writer.Uint64(value);
+    return true;
+}
+
 bool write_string(rapidjson::Writer<rapidjson::StringBuffer>& writer, const std::string& value,
                   ContractError* error, std::size_t minimum, std::size_t maximum)
 {
@@ -289,6 +401,18 @@ bool write_literal_boolean(rapidjson::Writer<rapidjson::StringBuffer>& writer, b
                     "Boolean literal does not match.");
     writer.Bool(expected);
     return true;
+}
+
+bool decode_string_item(const rapidjson::Value& value, std::string* out, const std::string& path,
+                        ContractError* error)
+{
+    return decode_string(value, out, path, error, 0U, std::numeric_limits<std::size_t>::max());
+}
+
+bool write_string_item(rapidjson::Writer<rapidjson::StringBuffer>& writer, const std::string& value,
+                       ContractError* error)
+{
+    return write_string(writer, value, error, 0U, std::numeric_limits<std::size_t>::max());
 }
 
 template <typename T>
@@ -474,6 +598,1167 @@ bool write_DiagnosticA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
     return true;
 }
 
+bool decode_IpcAttachmentDeclarationA0(const rapidjson::Value& value,
+                                       IpcAttachmentDeclarationA0* out, const std::string& path,
+                                       ContractError* error)
+{
+    static const char* const names[] = {"name", "required", "media_types", "max_bytes"};
+    if (!validate_object(value, names, 4U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("name");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "name"),
+                        "Required field is missing.");
+        if (!decode_string(member->value, &out->name, child_path(path, "name"), error, 1U, 128U))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("required");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "required"),
+                        "Required field is missing.");
+        if (!decode_boolean(member->value, &out->required, child_path(path, "required"), error))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("media_types");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "media_types"),
+                        "Required field is missing.");
+        if (!decode_array(member->value, &out->media_types, child_path(path, "media_types"), error,
+                          1U, 16U, decode_string_item))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("max_bytes");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "max_bytes"),
+                        "Required field is missing.");
+        if (!decode_uint32(member->value, &out->max_bytes, child_path(path, "max_bytes"), error,
+                           268435456ULL))
+            return false;
+    }
+    return true;
+}
+
+bool write_IpcAttachmentDeclarationA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                      const IpcAttachmentDeclarationA0& value, ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("name");
+    if (!write_string(writer, value.name, error, 1U, 128U))
+        return false;
+    writer.Key("required");
+    if (!(writer.Bool(value.required), true))
+        return false;
+    writer.Key("media_types");
+    if (!write_array(writer, value.media_types, error, 1U, 16U, write_string_item))
+        return false;
+    writer.Key("max_bytes");
+    if (!write_uint32(writer, value.max_bytes, error, 268435456ULL))
+        return false;
+    writer.EndObject();
+    return true;
+}
+
+bool decode_IpcAttachmentOffsetsWasm32A0(const rapidjson::Value& value,
+                                         IpcAttachmentOffsetsWasm32A0* out, const std::string& path,
+                                         ContractError* error)
+{
+    static const char* const names[] = {"struct_size", "flags",      "name",
+                                        "name_size",   "media_type", "media_type_size",
+                                        "data",        "data_size",  "reserved0"};
+    if (!validate_object(value, names, 9U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("struct_size");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "struct_size"),
+                        "Required field is missing.");
+        if (!decode_uint32(member->value, &out->struct_size, child_path(path, "struct_size"), error,
+                           0ULL))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("flags");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "flags"),
+                        "Required field is missing.");
+        if (!decode_uint32(member->value, &out->flags, child_path(path, "flags"), error, 4ULL))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("name");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "name"),
+                        "Required field is missing.");
+        if (!decode_uint32(member->value, &out->name, child_path(path, "name"), error, 8ULL))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("name_size");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "name_size"),
+                        "Required field is missing.");
+        if (!decode_uint32(member->value, &out->name_size, child_path(path, "name_size"), error,
+                           12ULL))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("media_type");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "media_type"),
+                        "Required field is missing.");
+        if (!decode_uint32(member->value, &out->media_type, child_path(path, "media_type"), error,
+                           16ULL))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("media_type_size");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "media_type_size"), "Required field is missing.");
+        if (!decode_uint32(member->value, &out->media_type_size,
+                           child_path(path, "media_type_size"), error, 20ULL))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("data");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "data"),
+                        "Required field is missing.");
+        if (!decode_uint32(member->value, &out->data, child_path(path, "data"), error, 24ULL))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("data_size");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "data_size"),
+                        "Required field is missing.");
+        if (!decode_uint32(member->value, &out->data_size, child_path(path, "data_size"), error,
+                           28ULL))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("reserved0");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "reserved0"),
+                        "Required field is missing.");
+        if (!decode_uint32(member->value, &out->reserved0, child_path(path, "reserved0"), error,
+                           32ULL))
+            return false;
+    }
+    return true;
+}
+
+bool write_IpcAttachmentOffsetsWasm32A0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                        const IpcAttachmentOffsetsWasm32A0& value,
+                                        ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("struct_size");
+    if (!write_uint32(writer, value.struct_size, error, 0ULL))
+        return false;
+    writer.Key("flags");
+    if (!write_uint32(writer, value.flags, error, 4ULL))
+        return false;
+    writer.Key("name");
+    if (!write_uint32(writer, value.name, error, 8ULL))
+        return false;
+    writer.Key("name_size");
+    if (!write_uint32(writer, value.name_size, error, 12ULL))
+        return false;
+    writer.Key("media_type");
+    if (!write_uint32(writer, value.media_type, error, 16ULL))
+        return false;
+    writer.Key("media_type_size");
+    if (!write_uint32(writer, value.media_type_size, error, 20ULL))
+        return false;
+    writer.Key("data");
+    if (!write_uint32(writer, value.data, error, 24ULL))
+        return false;
+    writer.Key("data_size");
+    if (!write_uint32(writer, value.data_size, error, 28ULL))
+        return false;
+    writer.Key("reserved0");
+    if (!write_uint32(writer, value.reserved0, error, 32ULL))
+        return false;
+    writer.EndObject();
+    return true;
+}
+
+bool decode_IpcAttachmentLayoutWasm32A0(const rapidjson::Value& value,
+                                        IpcAttachmentLayoutWasm32A0* out, const std::string& path,
+                                        ContractError* error)
+{
+    static const char* const names[] = {"size", "offsets"};
+    if (!validate_object(value, names, 2U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("size");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "size"),
+                        "Required field is missing.");
+        if (!decode_uint32(member->value, &out->size, child_path(path, "size"), error, 36ULL))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("offsets");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "offsets"),
+                        "Required field is missing.");
+        if (!decode_IpcAttachmentOffsetsWasm32A0(member->value, &out->offsets,
+                                                 child_path(path, "offsets"), error))
+            return false;
+    }
+    return true;
+}
+
+bool write_IpcAttachmentLayoutWasm32A0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                       const IpcAttachmentLayoutWasm32A0& value,
+                                       ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("size");
+    if (!write_uint32(writer, value.size, error, 36ULL))
+        return false;
+    writer.Key("offsets");
+    if (!write_IpcAttachmentOffsetsWasm32A0(writer, value.offsets, error))
+        return false;
+    writer.EndObject();
+    return true;
+}
+
+bool decode_IpcAttachmentOffsetsPointer64A0(const rapidjson::Value& value,
+                                            IpcAttachmentOffsetsPointer64A0* out,
+                                            const std::string& path, ContractError* error)
+{
+    static const char* const names[] = {"struct_size", "flags",      "name",
+                                        "name_size",   "media_type", "media_type_size",
+                                        "data",        "data_size",  "reserved0"};
+    if (!validate_object(value, names, 9U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("struct_size");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "struct_size"),
+                        "Required field is missing.");
+        if (!decode_uint32(member->value, &out->struct_size, child_path(path, "struct_size"), error,
+                           0ULL))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("flags");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "flags"),
+                        "Required field is missing.");
+        if (!decode_uint32(member->value, &out->flags, child_path(path, "flags"), error, 4ULL))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("name");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "name"),
+                        "Required field is missing.");
+        if (!decode_uint32(member->value, &out->name, child_path(path, "name"), error, 8ULL))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("name_size");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "name_size"),
+                        "Required field is missing.");
+        if (!decode_uint32(member->value, &out->name_size, child_path(path, "name_size"), error,
+                           16ULL))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("media_type");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "media_type"),
+                        "Required field is missing.");
+        if (!decode_uint32(member->value, &out->media_type, child_path(path, "media_type"), error,
+                           24ULL))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("media_type_size");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "media_type_size"), "Required field is missing.");
+        if (!decode_uint32(member->value, &out->media_type_size,
+                           child_path(path, "media_type_size"), error, 32ULL))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("data");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "data"),
+                        "Required field is missing.");
+        if (!decode_uint32(member->value, &out->data, child_path(path, "data"), error, 40ULL))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("data_size");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "data_size"),
+                        "Required field is missing.");
+        if (!decode_uint32(member->value, &out->data_size, child_path(path, "data_size"), error,
+                           48ULL))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("reserved0");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "reserved0"),
+                        "Required field is missing.");
+        if (!decode_uint32(member->value, &out->reserved0, child_path(path, "reserved0"), error,
+                           52ULL))
+            return false;
+    }
+    return true;
+}
+
+bool write_IpcAttachmentOffsetsPointer64A0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                           const IpcAttachmentOffsetsPointer64A0& value,
+                                           ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("struct_size");
+    if (!write_uint32(writer, value.struct_size, error, 0ULL))
+        return false;
+    writer.Key("flags");
+    if (!write_uint32(writer, value.flags, error, 4ULL))
+        return false;
+    writer.Key("name");
+    if (!write_uint32(writer, value.name, error, 8ULL))
+        return false;
+    writer.Key("name_size");
+    if (!write_uint32(writer, value.name_size, error, 16ULL))
+        return false;
+    writer.Key("media_type");
+    if (!write_uint32(writer, value.media_type, error, 24ULL))
+        return false;
+    writer.Key("media_type_size");
+    if (!write_uint32(writer, value.media_type_size, error, 32ULL))
+        return false;
+    writer.Key("data");
+    if (!write_uint32(writer, value.data, error, 40ULL))
+        return false;
+    writer.Key("data_size");
+    if (!write_uint32(writer, value.data_size, error, 48ULL))
+        return false;
+    writer.Key("reserved0");
+    if (!write_uint32(writer, value.reserved0, error, 52ULL))
+        return false;
+    writer.EndObject();
+    return true;
+}
+
+bool decode_IpcAttachmentLayoutPointer64A0(const rapidjson::Value& value,
+                                           IpcAttachmentLayoutPointer64A0* out,
+                                           const std::string& path, ContractError* error)
+{
+    static const char* const names[] = {"size", "offsets"};
+    if (!validate_object(value, names, 2U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("size");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "size"),
+                        "Required field is missing.");
+        if (!decode_uint32(member->value, &out->size, child_path(path, "size"), error, 56ULL))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("offsets");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "offsets"),
+                        "Required field is missing.");
+        if (!decode_IpcAttachmentOffsetsPointer64A0(member->value, &out->offsets,
+                                                    child_path(path, "offsets"), error))
+            return false;
+    }
+    return true;
+}
+
+bool write_IpcAttachmentLayoutPointer64A0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                          const IpcAttachmentLayoutPointer64A0& value,
+                                          ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("size");
+    if (!write_uint32(writer, value.size, error, 56ULL))
+        return false;
+    writer.Key("offsets");
+    if (!write_IpcAttachmentOffsetsPointer64A0(writer, value.offsets, error))
+        return false;
+    writer.EndObject();
+    return true;
+}
+
+bool decode_IpcAttachmentDescriptorA0(const rapidjson::Value& value, IpcAttachmentDescriptorA0* out,
+                                      const std::string& path, ContractError* error)
+{
+    static const char* const names[] = {"wasm32", "pointer64"};
+    if (!validate_object(value, names, 2U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("wasm32");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "wasm32"),
+                        "Required field is missing.");
+        if (!decode_IpcAttachmentLayoutWasm32A0(member->value, &out->wasm32,
+                                                child_path(path, "wasm32"), error))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("pointer64");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "pointer64"),
+                        "Required field is missing.");
+        if (!decode_IpcAttachmentLayoutPointer64A0(member->value, &out->pointer64,
+                                                   child_path(path, "pointer64"), error))
+            return false;
+    }
+    return true;
+}
+
+bool write_IpcAttachmentDescriptorA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                     const IpcAttachmentDescriptorA0& value, ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("wasm32");
+    if (!write_IpcAttachmentLayoutWasm32A0(writer, value.wasm32, error))
+        return false;
+    writer.Key("pointer64");
+    if (!write_IpcAttachmentLayoutPointer64A0(writer, value.pointer64, error))
+        return false;
+    writer.EndObject();
+    return true;
+}
+
+bool decode_IpcCancelledA0(const rapidjson::Value& value, IpcCancelledA0* out,
+                           const std::string& path, ContractError* error)
+{
+    static const char* const names[] = {"status"};
+    if (!validate_object(value, names, 1U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("status");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "status"),
+                        "Required field is missing.");
+        if (!decode_literal_string(member->value, &out->status, child_path(path, "status"), error,
+                                   "cancelled"))
+            return false;
+    }
+    return true;
+}
+
+bool write_IpcCancelledA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                          const IpcCancelledA0& value, ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("status");
+    if (!write_literal_string(writer, value.status, error, "cancelled"))
+        return false;
+    writer.EndObject();
+    return true;
+}
+
+bool decode_IpcCancelRejectedA0(const rapidjson::Value& value, IpcCancelRejectedA0* out,
+                                const std::string& path, ContractError* error)
+{
+    static const char* const names[] = {"status", "diagnostic"};
+    if (!validate_object(value, names, 2U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("status");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "status"),
+                        "Required field is missing.");
+        if (!decode_literal_string(member->value, &out->status, child_path(path, "status"), error,
+                                   "rejected"))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("diagnostic");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "diagnostic"),
+                        "Required field is missing.");
+        if (!decode_DiagnosticA0(member->value, &out->diagnostic, child_path(path, "diagnostic"),
+                                 error))
+            return false;
+    }
+    return true;
+}
+
+bool write_IpcCancelRejectedA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                               const IpcCancelRejectedA0& value, ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("status");
+    if (!write_literal_string(writer, value.status, error, "rejected"))
+        return false;
+    writer.Key("diagnostic");
+    if (!write_DiagnosticA0(writer, value.diagnostic, error))
+        return false;
+    writer.EndObject();
+    return true;
+}
+
+bool decode_IpcEffectiveLimitsA0(const rapidjson::Value& value, IpcEffectiveLimitsA0* out,
+                                 const std::string& path, ContractError* error)
+{
+    static const char* const names[] = {"json_bytes",
+                                        "attachment_count",
+                                        "attachment_name_bytes",
+                                        "attachment_media_type_bytes",
+                                        "attachment_bytes",
+                                        "frame_bytes",
+                                        "queued_requests",
+                                        "queued_bytes",
+                                        "resident_request_bytes",
+                                        "pending_writer_bytes"};
+    if (!validate_object(value, names, 10U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("json_bytes");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "json_bytes"),
+                        "Required field is missing.");
+        if (!decode_uint32(member->value, &out->json_bytes, child_path(path, "json_bytes"), error,
+                           8388608ULL))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("attachment_count");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "attachment_count"), "Required field is missing.");
+        if (!decode_uint32(member->value, &out->attachment_count,
+                           child_path(path, "attachment_count"), error, 16ULL))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("attachment_name_bytes");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "attachment_name_bytes"), "Required field is missing.");
+        if (!decode_uint32(member->value, &out->attachment_name_bytes,
+                           child_path(path, "attachment_name_bytes"), error, 128ULL))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("attachment_media_type_bytes");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "attachment_media_type_bytes"),
+                        "Required field is missing.");
+        if (!decode_uint32(member->value, &out->attachment_media_type_bytes,
+                           child_path(path, "attachment_media_type_bytes"), error, 128ULL))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("attachment_bytes");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "attachment_bytes"), "Required field is missing.");
+        if (!decode_uint32(member->value, &out->attachment_bytes,
+                           child_path(path, "attachment_bytes"), error, 268435456ULL))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("frame_bytes");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "frame_bytes"),
+                        "Required field is missing.");
+        if (!decode_uint32(member->value, &out->frame_bytes, child_path(path, "frame_bytes"), error,
+                           536870912ULL))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("queued_requests");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "queued_requests"), "Required field is missing.");
+        if (!decode_uint32(member->value, &out->queued_requests,
+                           child_path(path, "queued_requests"), error, 8ULL))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("queued_bytes");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "queued_bytes"),
+                        "Required field is missing.");
+        if (!decode_uint32(member->value, &out->queued_bytes, child_path(path, "queued_bytes"),
+                           error, 536870912ULL))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("resident_request_bytes");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "resident_request_bytes"), "Required field is missing.");
+        if (!decode_uint32(member->value, &out->resident_request_bytes,
+                           child_path(path, "resident_request_bytes"), error, 536870912ULL))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("pending_writer_bytes");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "pending_writer_bytes"), "Required field is missing.");
+        if (!decode_uint32(member->value, &out->pending_writer_bytes,
+                           child_path(path, "pending_writer_bytes"), error, 536870912ULL))
+            return false;
+    }
+    return true;
+}
+
+bool write_IpcEffectiveLimitsA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                const IpcEffectiveLimitsA0& value, ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("json_bytes");
+    if (!write_uint32(writer, value.json_bytes, error, 8388608ULL))
+        return false;
+    writer.Key("attachment_count");
+    if (!write_uint32(writer, value.attachment_count, error, 16ULL))
+        return false;
+    writer.Key("attachment_name_bytes");
+    if (!write_uint32(writer, value.attachment_name_bytes, error, 128ULL))
+        return false;
+    writer.Key("attachment_media_type_bytes");
+    if (!write_uint32(writer, value.attachment_media_type_bytes, error, 128ULL))
+        return false;
+    writer.Key("attachment_bytes");
+    if (!write_uint32(writer, value.attachment_bytes, error, 268435456ULL))
+        return false;
+    writer.Key("frame_bytes");
+    if (!write_uint32(writer, value.frame_bytes, error, 536870912ULL))
+        return false;
+    writer.Key("queued_requests");
+    if (!write_uint32(writer, value.queued_requests, error, 8ULL))
+        return false;
+    writer.Key("queued_bytes");
+    if (!write_uint32(writer, value.queued_bytes, error, 536870912ULL))
+        return false;
+    writer.Key("resident_request_bytes");
+    if (!write_uint32(writer, value.resident_request_bytes, error, 536870912ULL))
+        return false;
+    writer.Key("pending_writer_bytes");
+    if (!write_uint32(writer, value.pending_writer_bytes, error, 536870912ULL))
+        return false;
+    writer.EndObject();
+    return true;
+}
+
+bool decode_IpcGenericAbiLimitsA0(const rapidjson::Value& value, IpcGenericAbiLimitsA0* out,
+                                  const std::string& path, ContractError* error)
+{
+    static const char* const names[] = {"operation_id_bytes",
+                                        "request_json_bytes",
+                                        "response_json_bytes",
+                                        "attachment_count",
+                                        "attachment_name_bytes",
+                                        "attachment_media_type_bytes",
+                                        "attachment_bytes",
+                                        "aggregate_attachment_bytes_native",
+                                        "aggregate_attachment_bytes_wasm"};
+    if (!validate_object(value, names, 9U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("operation_id_bytes");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "operation_id_bytes"), "Required field is missing.");
+        if (!decode_uint32(member->value, &out->operation_id_bytes,
+                           child_path(path, "operation_id_bytes"), error, 128ULL))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("request_json_bytes");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "request_json_bytes"), "Required field is missing.");
+        if (!decode_uint32(member->value, &out->request_json_bytes,
+                           child_path(path, "request_json_bytes"), error, 8388608ULL))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("response_json_bytes");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "response_json_bytes"), "Required field is missing.");
+        if (!decode_uint32(member->value, &out->response_json_bytes,
+                           child_path(path, "response_json_bytes"), error, 8388608ULL))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("attachment_count");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "attachment_count"), "Required field is missing.");
+        if (!decode_uint32(member->value, &out->attachment_count,
+                           child_path(path, "attachment_count"), error, 16ULL))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("attachment_name_bytes");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "attachment_name_bytes"), "Required field is missing.");
+        if (!decode_uint32(member->value, &out->attachment_name_bytes,
+                           child_path(path, "attachment_name_bytes"), error, 128ULL))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("attachment_media_type_bytes");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "attachment_media_type_bytes"),
+                        "Required field is missing.");
+        if (!decode_uint32(member->value, &out->attachment_media_type_bytes,
+                           child_path(path, "attachment_media_type_bytes"), error, 128ULL))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("attachment_bytes");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "attachment_bytes"), "Required field is missing.");
+        if (!decode_uint32(member->value, &out->attachment_bytes,
+                           child_path(path, "attachment_bytes"), error, 268435456ULL))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("aggregate_attachment_bytes_native");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "aggregate_attachment_bytes_native"),
+                        "Required field is missing.");
+        if (!decode_uint32(member->value, &out->aggregate_attachment_bytes_native,
+                           child_path(path, "aggregate_attachment_bytes_native"), error,
+                           536870912ULL))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("aggregate_attachment_bytes_wasm");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "aggregate_attachment_bytes_wasm"),
+                        "Required field is missing.");
+        if (!decode_uint32(member->value, &out->aggregate_attachment_bytes_wasm,
+                           child_path(path, "aggregate_attachment_bytes_wasm"), error,
+                           268435456ULL))
+            return false;
+    }
+    return true;
+}
+
+bool write_IpcGenericAbiLimitsA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                 const IpcGenericAbiLimitsA0& value, ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("operation_id_bytes");
+    if (!write_uint32(writer, value.operation_id_bytes, error, 128ULL))
+        return false;
+    writer.Key("request_json_bytes");
+    if (!write_uint32(writer, value.request_json_bytes, error, 8388608ULL))
+        return false;
+    writer.Key("response_json_bytes");
+    if (!write_uint32(writer, value.response_json_bytes, error, 8388608ULL))
+        return false;
+    writer.Key("attachment_count");
+    if (!write_uint32(writer, value.attachment_count, error, 16ULL))
+        return false;
+    writer.Key("attachment_name_bytes");
+    if (!write_uint32(writer, value.attachment_name_bytes, error, 128ULL))
+        return false;
+    writer.Key("attachment_media_type_bytes");
+    if (!write_uint32(writer, value.attachment_media_type_bytes, error, 128ULL))
+        return false;
+    writer.Key("attachment_bytes");
+    if (!write_uint32(writer, value.attachment_bytes, error, 268435456ULL))
+        return false;
+    writer.Key("aggregate_attachment_bytes_native");
+    if (!write_uint32(writer, value.aggregate_attachment_bytes_native, error, 536870912ULL))
+        return false;
+    writer.Key("aggregate_attachment_bytes_wasm");
+    if (!write_uint32(writer, value.aggregate_attachment_bytes_wasm, error, 268435456ULL))
+        return false;
+    writer.EndObject();
+    return true;
+}
+
+bool decode_IpcHelloA0(const rapidjson::Value& value, IpcHelloA0* out, const std::string& path,
+                       ContractError* error)
+{
+    static const char* const names[] = {"client_name", "client_version", "protocols",
+                                        "capabilities"};
+    if (!validate_object(value, names, 4U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("client_name");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "client_name"),
+                        "Required field is missing.");
+        if (!decode_string(member->value, &out->client_name, child_path(path, "client_name"), error,
+                           1U, 128U))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("client_version");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "client_version"), "Required field is missing.");
+        if (!decode_string(member->value, &out->client_version, child_path(path, "client_version"),
+                           error, 1U, 128U))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("protocols");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "protocols"),
+                        "Required field is missing.");
+        if (!decode_array(member->value, &out->protocols, child_path(path, "protocols"), error, 1U,
+                          16U, decode_string_item))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("capabilities");
+        if (member != value.MemberEnd())
+        {
+            std::vector<std::string> decoded{};
+            if (!decode_array(member->value, &decoded, child_path(path, "capabilities"), error, 0U,
+                              64U, decode_string_item))
+                return false;
+            out->capabilities = std::move(decoded);
+        }
+        else
+            out->capabilities.reset();
+    }
+    return true;
+}
+
+bool write_IpcHelloA0(rapidjson::Writer<rapidjson::StringBuffer>& writer, const IpcHelloA0& value,
+                      ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("client_name");
+    if (!write_string(writer, value.client_name, error, 1U, 128U))
+        return false;
+    writer.Key("client_version");
+    if (!write_string(writer, value.client_version, error, 1U, 128U))
+        return false;
+    writer.Key("protocols");
+    if (!write_array(writer, value.protocols, error, 1U, 16U, write_string_item))
+        return false;
+    if (value.capabilities.has_value())
+    {
+        writer.Key("capabilities");
+        if (!write_array(writer, *value.capabilities, error, 0U, 64U, write_string_item))
+            return false;
+    }
+    writer.EndObject();
+    return true;
+}
+
+bool decode_IpcOperationDeclarationA0(const rapidjson::Value& value, IpcOperationDeclarationA0* out,
+                                      const std::string& path, ContractError* error)
+{
+    static const char* const names[] = {"identity", "request_contract", "result_contract",
+                                        "input_attachments", "output_attachments"};
+    if (!validate_object(value, names, 5U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("identity");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "identity"),
+                        "Required field is missing.");
+        if (!decode_string(member->value, &out->identity, child_path(path, "identity"), error, 1U,
+                           128U))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("request_contract");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "request_contract"), "Required field is missing.");
+        if (!decode_string(member->value, &out->request_contract,
+                           child_path(path, "request_contract"), error, 1U, 128U))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("result_contract");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "result_contract"), "Required field is missing.");
+        if (!decode_string(member->value, &out->result_contract,
+                           child_path(path, "result_contract"), error, 1U, 128U))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("input_attachments");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "input_attachments"), "Required field is missing.");
+        if (!decode_array(member->value, &out->input_attachments,
+                          child_path(path, "input_attachments"), error, 0U, 16U,
+                          decode_IpcAttachmentDeclarationA0))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("output_attachments");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "output_attachments"), "Required field is missing.");
+        if (!decode_array(member->value, &out->output_attachments,
+                          child_path(path, "output_attachments"), error, 0U, 16U,
+                          decode_IpcAttachmentDeclarationA0))
+            return false;
+    }
+    return true;
+}
+
+bool write_IpcOperationDeclarationA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                     const IpcOperationDeclarationA0& value, ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("identity");
+    if (!write_string(writer, value.identity, error, 1U, 128U))
+        return false;
+    writer.Key("request_contract");
+    if (!write_string(writer, value.request_contract, error, 1U, 128U))
+        return false;
+    writer.Key("result_contract");
+    if (!write_string(writer, value.result_contract, error, 1U, 128U))
+        return false;
+    writer.Key("input_attachments");
+    if (!write_array(writer, value.input_attachments, error, 0U, 16U,
+                     write_IpcAttachmentDeclarationA0))
+        return false;
+    writer.Key("output_attachments");
+    if (!write_array(writer, value.output_attachments, error, 0U, 16U,
+                     write_IpcAttachmentDeclarationA0))
+        return false;
+    writer.EndObject();
+    return true;
+}
+
+bool decode_IpcOperationCatalogA0(const rapidjson::Value& value, IpcOperationCatalogA0* out,
+                                  const std::string& path, ContractError* error)
+{
+    static const char* const names[] = {
+        "catalog",    "generic_abi",           "release_version", "c_abi_generation",
+        "operations", "attachment_descriptor", "limits"};
+    if (!validate_object(value, names, 7U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("catalog");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "catalog"),
+                        "Required field is missing.");
+        if (!decode_literal_string(member->value, &out->catalog, child_path(path, "catalog"), error,
+                                   "wn.geometer.operation_catalog.a0"))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("generic_abi");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "generic_abi"),
+                        "Required field is missing.");
+        if (!decode_literal_string(member->value, &out->generic_abi,
+                                   child_path(path, "generic_abi"), error, "a0"))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("release_version");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "release_version"), "Required field is missing.");
+        if (!decode_string(member->value, &out->release_version,
+                           child_path(path, "release_version"), error, 1U, 32U))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("c_abi_generation");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "c_abi_generation"), "Required field is missing.");
+        if (!decode_uint32(member->value, &out->c_abi_generation,
+                           child_path(path, "c_abi_generation"), error,
+                           std::numeric_limits<std::uint32_t>::max()))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("operations");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "operations"),
+                        "Required field is missing.");
+        if (!decode_array(member->value, &out->operations, child_path(path, "operations"), error,
+                          1U, std::numeric_limits<std::size_t>::max(),
+                          decode_IpcOperationDeclarationA0))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("attachment_descriptor");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "attachment_descriptor"), "Required field is missing.");
+        if (!decode_IpcAttachmentDescriptorA0(member->value, &out->attachment_descriptor,
+                                              child_path(path, "attachment_descriptor"), error))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("limits");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "limits"),
+                        "Required field is missing.");
+        if (!decode_IpcGenericAbiLimitsA0(member->value, &out->limits, child_path(path, "limits"),
+                                          error))
+            return false;
+    }
+    return true;
+}
+
+bool write_IpcOperationCatalogA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                 const IpcOperationCatalogA0& value, ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("catalog");
+    if (!write_literal_string(writer, value.catalog, error, "wn.geometer.operation_catalog.a0"))
+        return false;
+    writer.Key("generic_abi");
+    if (!write_literal_string(writer, value.generic_abi, error, "a0"))
+        return false;
+    writer.Key("release_version");
+    if (!write_string(writer, value.release_version, error, 1U, 32U))
+        return false;
+    writer.Key("c_abi_generation");
+    if (!write_uint32(writer, value.c_abi_generation, error,
+                      std::numeric_limits<std::uint32_t>::max()))
+        return false;
+    writer.Key("operations");
+    if (!write_array(writer, value.operations, error, 1U, std::numeric_limits<std::size_t>::max(),
+                     write_IpcOperationDeclarationA0))
+        return false;
+    writer.Key("attachment_descriptor");
+    if (!write_IpcAttachmentDescriptorA0(writer, value.attachment_descriptor, error))
+        return false;
+    writer.Key("limits");
+    if (!write_IpcGenericAbiLimitsA0(writer, value.limits, error))
+        return false;
+    writer.EndObject();
+    return true;
+}
+
+bool decode_IpcProtocolErrorA0(const rapidjson::Value& value, IpcProtocolErrorA0* out,
+                               const std::string& path, ContractError* error)
+{
+    static const char* const names[] = {"status", "diagnostic"};
+    if (!validate_object(value, names, 2U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("status");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "status"),
+                        "Required field is missing.");
+        if (!decode_literal_string(member->value, &out->status, child_path(path, "status"), error,
+                                   "protocol_error"))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("diagnostic");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "diagnostic"),
+                        "Required field is missing.");
+        if (!decode_DiagnosticA0(member->value, &out->diagnostic, child_path(path, "diagnostic"),
+                                 error))
+            return false;
+    }
+    return true;
+}
+
+bool write_IpcProtocolErrorA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                              const IpcProtocolErrorA0& value, ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("status");
+    if (!write_literal_string(writer, value.status, error, "protocol_error"))
+        return false;
+    writer.Key("diagnostic");
+    if (!write_DiagnosticA0(writer, value.diagnostic, error))
+        return false;
+    writer.EndObject();
+    return true;
+}
+
+bool decode_IpcReasonA0(const rapidjson::Value& value, IpcReasonA0* out, const std::string& path,
+                        ContractError* error)
+{
+    static const char* const names[] = {"reason"};
+    if (!validate_object(value, names, 1U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("reason");
+        if (member != value.MemberEnd())
+        {
+            std::string decoded{};
+            if (!decode_string(member->value, &decoded, child_path(path, "reason"), error, 0U,
+                               1024U))
+                return false;
+            out->reason = std::move(decoded);
+        }
+        else
+            out->reason.reset();
+    }
+    return true;
+}
+
+bool write_IpcReasonA0(rapidjson::Writer<rapidjson::StringBuffer>& writer, const IpcReasonA0& value,
+                       ContractError* error)
+{
+    writer.StartObject();
+    if (value.reason.has_value())
+    {
+        writer.Key("reason");
+        if (!write_string(writer, *value.reason, error, 0U, 1024U))
+            return false;
+    }
+    writer.EndObject();
+    return true;
+}
+
+bool decode_ModelFormat(const rapidjson::Value& value, ModelFormat* out, const std::string& path,
+                        ContractError* error)
+{
+    if (!value.IsString())
+        return fail(error, "geometer.contract.type_mismatch", path, "Expected a string enum.");
+    const std::string text(value.GetString(), value.GetStringLength());
+    if (text == "step")
+    {
+        *out = ModelFormat::step;
+        return true;
+    }
+    return fail(error, "geometer.contract.enum_mismatch", path, "Unknown enum value.");
+}
+
+bool write_ModelFormat(rapidjson::Writer<rapidjson::StringBuffer>& writer, const ModelFormat& value,
+                       ContractError* error)
+{
+    switch (value)
+    {
+    case ModelFormat::step:
+        writer.String("step");
+        return true;
+    }
+    return fail(error, "geometer.contract.enum_mismatch", "", "Unknown enum value.");
+}
+
 bool decode_Matrix4x4(const rapidjson::Value& value, Matrix4x4* out, const std::string& path,
                       ContractError* error)
 {
@@ -507,32 +1792,6 @@ bool write_Matrix4x4(rapidjson::Writer<rapidjson::StringBuffer>& writer, const M
             return false;
     writer.EndArray();
     return true;
-}
-
-bool decode_ModelFormat(const rapidjson::Value& value, ModelFormat* out, const std::string& path,
-                        ContractError* error)
-{
-    if (!value.IsString())
-        return fail(error, "geometer.contract.type_mismatch", path, "Expected a string enum.");
-    const std::string text(value.GetString(), value.GetStringLength());
-    if (text == "step")
-    {
-        *out = ModelFormat::step;
-        return true;
-    }
-    return fail(error, "geometer.contract.enum_mismatch", path, "Unknown enum value.");
-}
-
-bool write_ModelFormat(rapidjson::Writer<rapidjson::StringBuffer>& writer, const ModelFormat& value,
-                       ContractError* error)
-{
-    switch (value)
-    {
-    case ModelFormat::step:
-        writer.String("step");
-        return true;
-    }
-    return fail(error, "geometer.contract.enum_mismatch", "", "Unknown enum value.");
 }
 
 bool decode_ModelBoundsOptionsA0(const rapidjson::Value& value, ModelBoundsOptionsA0* out,
@@ -585,6 +1844,208 @@ bool write_ModelBoundsOptionsA0(rapidjson::Writer<rapidjson::StringBuffer>& writ
         if (!write_Matrix4x4(writer, *value.model_transform, error))
             return false;
     }
+    writer.EndObject();
+    return true;
+}
+
+bool decode_IpcRequestA0(const rapidjson::Value& value, IpcRequestA0* out, const std::string& path,
+                         ContractError* error)
+{
+    static const char* const names[] = {"operation", "request"};
+    if (!validate_object(value, names, 2U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("operation");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "operation"),
+                        "Required field is missing.");
+        if (!decode_string(member->value, &out->operation, child_path(path, "operation"), error, 1U,
+                           128U))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("request");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "request"),
+                        "Required field is missing.");
+        if (!decode_ModelBoundsOptionsA0(member->value, &out->request, child_path(path, "request"),
+                                         error))
+            return false;
+    }
+    return true;
+}
+
+bool write_IpcRequestA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                        const IpcRequestA0& value, ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("operation");
+    if (!write_string(writer, value.operation, error, 1U, 128U))
+        return false;
+    writer.Key("request");
+    if (!write_ModelBoundsOptionsA0(writer, value.request, error))
+        return false;
+    writer.EndObject();
+    return true;
+}
+
+bool decode_IpcShutdownAckA0(const rapidjson::Value& value, IpcShutdownAckA0* out,
+                             const std::string& path, ContractError* error)
+{
+    static const char* const names[] = {"status", "activeRequestCompleted",
+                                        "rejectedQueuedRequestCount"};
+    if (!validate_object(value, names, 3U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("status");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "status"),
+                        "Required field is missing.");
+        if (!decode_literal_string(member->value, &out->status, child_path(path, "status"), error,
+                                   "complete"))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("activeRequestCompleted");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "activeRequestCompleted"), "Required field is missing.");
+        if (!decode_boolean(member->value, &out->activeRequestCompleted,
+                            child_path(path, "activeRequestCompleted"), error))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("rejectedQueuedRequestCount");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "rejectedQueuedRequestCount"),
+                        "Required field is missing.");
+        if (!decode_uint32(member->value, &out->rejectedQueuedRequestCount,
+                           child_path(path, "rejectedQueuedRequestCount"), error,
+                           std::numeric_limits<std::uint32_t>::max()))
+            return false;
+    }
+    return true;
+}
+
+bool write_IpcShutdownAckA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                            const IpcShutdownAckA0& value, ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("status");
+    if (!write_literal_string(writer, value.status, error, "complete"))
+        return false;
+    writer.Key("activeRequestCompleted");
+    if (!(writer.Bool(value.activeRequestCompleted), true))
+        return false;
+    writer.Key("rejectedQueuedRequestCount");
+    if (!write_uint32(writer, value.rejectedQueuedRequestCount, error,
+                      std::numeric_limits<std::uint32_t>::max()))
+        return false;
+    writer.EndObject();
+    return true;
+}
+
+bool decode_IpcWelcomeA0(const rapidjson::Value& value, IpcWelcomeA0* out, const std::string& path,
+                         ContractError* error)
+{
+    static const char* const names[] = {"release_version", "c_abi_generation",  "ipc",
+                                        "catalog_sha256",  "operation_catalog", "limits",
+                                        "capabilities"};
+    if (!validate_object(value, names, 7U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("release_version");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "release_version"), "Required field is missing.");
+        if (!decode_string(member->value, &out->release_version,
+                           child_path(path, "release_version"), error, 1U, 32U))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("c_abi_generation");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "c_abi_generation"), "Required field is missing.");
+        if (!decode_uint32(member->value, &out->c_abi_generation,
+                           child_path(path, "c_abi_generation"), error,
+                           std::numeric_limits<std::uint32_t>::max()))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("ipc");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "ipc"),
+                        "Required field is missing.");
+        if (!decode_literal_string(member->value, &out->ipc, child_path(path, "ipc"), error, "a0"))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("catalog_sha256");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "catalog_sha256"), "Required field is missing.");
+        if (!decode_string(member->value, &out->catalog_sha256, child_path(path, "catalog_sha256"),
+                           error, 64U, 64U))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("operation_catalog");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "operation_catalog"), "Required field is missing.");
+        if (!decode_IpcOperationCatalogA0(member->value, &out->operation_catalog,
+                                          child_path(path, "operation_catalog"), error))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("limits");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "limits"),
+                        "Required field is missing.");
+        if (!decode_IpcEffectiveLimitsA0(member->value, &out->limits, child_path(path, "limits"),
+                                         error))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("capabilities");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "capabilities"),
+                        "Required field is missing.");
+        if (!decode_array(member->value, &out->capabilities, child_path(path, "capabilities"),
+                          error, 0U, 64U, decode_string_item))
+            return false;
+    }
+    return true;
+}
+
+bool write_IpcWelcomeA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                        const IpcWelcomeA0& value, ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("release_version");
+    if (!write_string(writer, value.release_version, error, 1U, 32U))
+        return false;
+    writer.Key("c_abi_generation");
+    if (!write_uint32(writer, value.c_abi_generation, error,
+                      std::numeric_limits<std::uint32_t>::max()))
+        return false;
+    writer.Key("ipc");
+    if (!write_literal_string(writer, value.ipc, error, "a0"))
+        return false;
+    writer.Key("catalog_sha256");
+    if (!write_string(writer, value.catalog_sha256, error, 64U, 64U))
+        return false;
+    writer.Key("operation_catalog");
+    if (!write_IpcOperationCatalogA0(writer, value.operation_catalog, error))
+        return false;
+    writer.Key("limits");
+    if (!write_IpcEffectiveLimitsA0(writer, value.limits, error))
+        return false;
+    writer.Key("capabilities");
+    if (!write_array(writer, value.capabilities, error, 0U, 64U, write_string_item))
+        return false;
     writer.EndObject();
     return true;
 }
@@ -1080,6 +2541,195 @@ bool decode_json(const unsigned char* data, std::size_t size, DiagnosticA0* valu
 bool encode_json(const DiagnosticA0& value, std::string* json, ContractError* error)
 {
     return encode_root<DiagnosticA0>(value, write_DiagnosticA0, json, error);
+}
+
+bool decode_json(const unsigned char* data, std::size_t size, IpcCancelledA0* value,
+                 ContractError* error)
+{
+    if (value == nullptr)
+        return fail(error, "geometer.contract.invalid_argument", "",
+                    "Output value pointer is null.");
+    rapidjson::Document document;
+    if (!parse_document(data, size, &document, error))
+        return false;
+    IpcCancelledA0 decoded{};
+    if (!decode_IpcCancelledA0(document, &decoded, "", error))
+        return false;
+    *value = std::move(decoded);
+    return true;
+}
+
+bool encode_json(const IpcCancelledA0& value, std::string* json, ContractError* error)
+{
+    return encode_root<IpcCancelledA0>(value, write_IpcCancelledA0, json, error);
+}
+
+bool decode_json(const unsigned char* data, std::size_t size, IpcCancelRejectedA0* value,
+                 ContractError* error)
+{
+    if (value == nullptr)
+        return fail(error, "geometer.contract.invalid_argument", "",
+                    "Output value pointer is null.");
+    rapidjson::Document document;
+    if (!parse_document(data, size, &document, error))
+        return false;
+    IpcCancelRejectedA0 decoded{};
+    if (!decode_IpcCancelRejectedA0(document, &decoded, "", error))
+        return false;
+    *value = std::move(decoded);
+    return true;
+}
+
+bool encode_json(const IpcCancelRejectedA0& value, std::string* json, ContractError* error)
+{
+    return encode_root<IpcCancelRejectedA0>(value, write_IpcCancelRejectedA0, json, error);
+}
+
+bool decode_json(const unsigned char* data, std::size_t size, IpcHelloA0* value,
+                 ContractError* error)
+{
+    if (value == nullptr)
+        return fail(error, "geometer.contract.invalid_argument", "",
+                    "Output value pointer is null.");
+    rapidjson::Document document;
+    if (!parse_document(data, size, &document, error))
+        return false;
+    IpcHelloA0 decoded{};
+    if (!decode_IpcHelloA0(document, &decoded, "", error))
+        return false;
+    *value = std::move(decoded);
+    return true;
+}
+
+bool encode_json(const IpcHelloA0& value, std::string* json, ContractError* error)
+{
+    return encode_root<IpcHelloA0>(value, write_IpcHelloA0, json, error);
+}
+
+bool decode_json(const unsigned char* data, std::size_t size, IpcOperationCatalogA0* value,
+                 ContractError* error)
+{
+    if (value == nullptr)
+        return fail(error, "geometer.contract.invalid_argument", "",
+                    "Output value pointer is null.");
+    rapidjson::Document document;
+    if (!parse_document(data, size, &document, error))
+        return false;
+    IpcOperationCatalogA0 decoded{};
+    if (!decode_IpcOperationCatalogA0(document, &decoded, "", error))
+        return false;
+    *value = std::move(decoded);
+    return true;
+}
+
+bool encode_json(const IpcOperationCatalogA0& value, std::string* json, ContractError* error)
+{
+    return encode_root<IpcOperationCatalogA0>(value, write_IpcOperationCatalogA0, json, error);
+}
+
+bool decode_json(const unsigned char* data, std::size_t size, IpcProtocolErrorA0* value,
+                 ContractError* error)
+{
+    if (value == nullptr)
+        return fail(error, "geometer.contract.invalid_argument", "",
+                    "Output value pointer is null.");
+    rapidjson::Document document;
+    if (!parse_document(data, size, &document, error))
+        return false;
+    IpcProtocolErrorA0 decoded{};
+    if (!decode_IpcProtocolErrorA0(document, &decoded, "", error))
+        return false;
+    *value = std::move(decoded);
+    return true;
+}
+
+bool encode_json(const IpcProtocolErrorA0& value, std::string* json, ContractError* error)
+{
+    return encode_root<IpcProtocolErrorA0>(value, write_IpcProtocolErrorA0, json, error);
+}
+
+bool decode_json(const unsigned char* data, std::size_t size, IpcReasonA0* value,
+                 ContractError* error)
+{
+    if (value == nullptr)
+        return fail(error, "geometer.contract.invalid_argument", "",
+                    "Output value pointer is null.");
+    rapidjson::Document document;
+    if (!parse_document(data, size, &document, error))
+        return false;
+    IpcReasonA0 decoded{};
+    if (!decode_IpcReasonA0(document, &decoded, "", error))
+        return false;
+    *value = std::move(decoded);
+    return true;
+}
+
+bool encode_json(const IpcReasonA0& value, std::string* json, ContractError* error)
+{
+    return encode_root<IpcReasonA0>(value, write_IpcReasonA0, json, error);
+}
+
+bool decode_json(const unsigned char* data, std::size_t size, IpcRequestA0* value,
+                 ContractError* error)
+{
+    if (value == nullptr)
+        return fail(error, "geometer.contract.invalid_argument", "",
+                    "Output value pointer is null.");
+    rapidjson::Document document;
+    if (!parse_document(data, size, &document, error))
+        return false;
+    IpcRequestA0 decoded{};
+    if (!decode_IpcRequestA0(document, &decoded, "", error))
+        return false;
+    *value = std::move(decoded);
+    return true;
+}
+
+bool encode_json(const IpcRequestA0& value, std::string* json, ContractError* error)
+{
+    return encode_root<IpcRequestA0>(value, write_IpcRequestA0, json, error);
+}
+
+bool decode_json(const unsigned char* data, std::size_t size, IpcShutdownAckA0* value,
+                 ContractError* error)
+{
+    if (value == nullptr)
+        return fail(error, "geometer.contract.invalid_argument", "",
+                    "Output value pointer is null.");
+    rapidjson::Document document;
+    if (!parse_document(data, size, &document, error))
+        return false;
+    IpcShutdownAckA0 decoded{};
+    if (!decode_IpcShutdownAckA0(document, &decoded, "", error))
+        return false;
+    *value = std::move(decoded);
+    return true;
+}
+
+bool encode_json(const IpcShutdownAckA0& value, std::string* json, ContractError* error)
+{
+    return encode_root<IpcShutdownAckA0>(value, write_IpcShutdownAckA0, json, error);
+}
+
+bool decode_json(const unsigned char* data, std::size_t size, IpcWelcomeA0* value,
+                 ContractError* error)
+{
+    if (value == nullptr)
+        return fail(error, "geometer.contract.invalid_argument", "",
+                    "Output value pointer is null.");
+    rapidjson::Document document;
+    if (!parse_document(data, size, &document, error))
+        return false;
+    IpcWelcomeA0 decoded{};
+    if (!decode_IpcWelcomeA0(document, &decoded, "", error))
+        return false;
+    *value = std::move(decoded);
+    return true;
+}
+
+bool encode_json(const IpcWelcomeA0& value, std::string* json, ContractError* error)
+{
+    return encode_root<IpcWelcomeA0>(value, write_IpcWelcomeA0, json, error);
 }
 
 bool decode_json(const unsigned char* data, std::size_t size, ModelBoundsOptionsA0* value,

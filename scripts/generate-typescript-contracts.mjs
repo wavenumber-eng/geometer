@@ -185,7 +185,13 @@ function typeDescriptor(type) {
 function tsType(type) {
   if (type.kind === "reference") return shortName(type.target);
   if (type.kind === "primitive") {
-    const mapped = { string: "string", boolean: "boolean", float64: "number" }[type.name];
+    const mapped = {
+      string: "string",
+      boolean: "boolean",
+      float64: "number",
+      uint32: "number",
+      uint64: "number",
+    }[type.name];
     if (!mapped) unsupported(type);
     return mapped;
   }

@@ -38,7 +38,7 @@ viz_migration_guide = "docs/design/viz-typescript-migration.md"
 runtime_dependency = false
 
 [rust_projection]
-status = "implemented_model_bounds_ipc_pilot_pending_control_codegen"
+status = "implemented_model_bounds_ipc_pilot_pending_multiplatform_review"
 design = "docs/design/rust-client.md"
 crate = "geometer-client"
 source_root = "src/rust/geometer-client"
@@ -284,6 +284,87 @@ current_authority = "typespec_candidate"
 source = "src/tsp/geometer/operation-outcome-a0.tsp"
 pilot_required = true
 compatibility = "Shared additive envelope for the generic C ABI and executable IPC; it does not replace legacy per-operation return shapes."
+
+[[contracts]]
+id = "geometer.ipc.hello.a0"
+kind = "transport_envelope"
+status = "pilot_candidate"
+current_authority = "typespec_candidate"
+source = "src/tsp/geometer/ipc-a0.tsp"
+pilot_required = true
+compatibility = "Additive executable IPC A0 control; no file-oriented CLI behavior changes."
+
+[[contracts]]
+id = "geometer.ipc.reason.a0"
+kind = "transport_envelope"
+status = "pilot_candidate"
+current_authority = "typespec_candidate"
+source = "src/tsp/geometer/ipc-a0.tsp"
+pilot_required = true
+compatibility = "Shared optional reason object for cancel and shutdown controls."
+
+[[contracts]]
+id = "geometer.ipc.request.a0"
+kind = "transport_envelope"
+status = "pilot_candidate"
+current_authority = "typespec_candidate"
+source = "src/tsp/geometer/ipc-a0.tsp"
+pilot_required = true
+compatibility = "Additive executable IPC request envelope; operation payloads retain their own identities."
+
+[[contracts]]
+id = "geometer.ipc.operation_catalog.a0"
+kind = "transport_envelope"
+status = "pilot_candidate"
+current_authority = "typespec_candidate"
+source = "src/tsp/geometer/ipc-a0.tsp"
+pilot_required = true
+compatibility = "Structural projection of the already additive generic-operation catalog."
+
+[[contracts]]
+id = "geometer.ipc.welcome.a0"
+kind = "transport_envelope"
+status = "pilot_candidate"
+current_authority = "typespec_candidate"
+source = "src/tsp/geometer/ipc-a0.tsp"
+pilot_required = true
+compatibility = "Additive executable IPC A0 handshake response."
+
+[[contracts]]
+id = "geometer.ipc.cancelled.a0"
+kind = "transport_envelope"
+status = "pilot_candidate"
+current_authority = "typespec_candidate"
+source = "src/tsp/geometer/ipc-a0.tsp"
+pilot_required = true
+compatibility = "Additive executable IPC A0 queue-cancellation response."
+
+[[contracts]]
+id = "geometer.ipc.cancel_rejected.a0"
+kind = "transport_envelope"
+status = "pilot_candidate"
+current_authority = "typespec_candidate"
+source = "src/tsp/geometer/ipc-a0.tsp"
+pilot_required = true
+compatibility = "Additive executable IPC A0 nonterminal cancellation response."
+
+[[contracts]]
+id = "geometer.ipc.protocol_error.a0"
+kind = "transport_envelope"
+status = "pilot_candidate"
+current_authority = "typespec_candidate"
+source = "src/tsp/geometer/ipc-a0.tsp"
+pilot_required = true
+compatibility = "Additive executable IPC A0 fatal diagnostic response."
+
+[[contracts]]
+id = "geometer.ipc.shutdown_ack.a0"
+kind = "transport_envelope"
+status = "pilot_candidate"
+current_authority = "typespec_candidate"
+source = "src/tsp/geometer/ipc-a0.tsp"
+pilot_required = true
+compatibility = "Additive executable IPC A0 graceful-shutdown acknowledgment."
 
 [[contracts]]
 id = "geometry.projection.options.b0"

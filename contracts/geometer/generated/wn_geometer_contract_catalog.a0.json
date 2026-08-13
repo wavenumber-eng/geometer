@@ -17,6 +17,69 @@
       "option_patch": false
     },
     {
+      "name": "Wavenumber.Geometer.Contracts.IpcA0.IpcCancelledA0",
+      "contract_identity": "geometer.ipc.cancelled.a0",
+      "schema_id": "urn:wavenumber:schema:geometer:geometer.ipc.cancelled:a0",
+      "declaration_kind": "model",
+      "option_patch": false
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.IpcA0.IpcCancelRejectedA0",
+      "contract_identity": "geometer.ipc.cancel_rejected.a0",
+      "schema_id": "urn:wavenumber:schema:geometer:geometer.ipc.cancel_rejected:a0",
+      "declaration_kind": "model",
+      "option_patch": false
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.IpcA0.IpcHelloA0",
+      "contract_identity": "geometer.ipc.hello.a0",
+      "schema_id": "urn:wavenumber:schema:geometer:geometer.ipc.hello:a0",
+      "declaration_kind": "model",
+      "option_patch": false
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.IpcA0.IpcOperationCatalogA0",
+      "contract_identity": "geometer.ipc.operation_catalog.a0",
+      "schema_id": "urn:wavenumber:schema:geometer:geometer.ipc.operation_catalog:a0",
+      "declaration_kind": "model",
+      "option_patch": false
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.IpcA0.IpcProtocolErrorA0",
+      "contract_identity": "geometer.ipc.protocol_error.a0",
+      "schema_id": "urn:wavenumber:schema:geometer:geometer.ipc.protocol_error:a0",
+      "declaration_kind": "model",
+      "option_patch": false
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.IpcA0.IpcReasonA0",
+      "contract_identity": "geometer.ipc.reason.a0",
+      "schema_id": "urn:wavenumber:schema:geometer:geometer.ipc.reason:a0",
+      "declaration_kind": "model",
+      "option_patch": false
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.IpcA0.IpcRequestA0",
+      "contract_identity": "geometer.ipc.request.a0",
+      "schema_id": "urn:wavenumber:schema:geometer:geometer.ipc.request:a0",
+      "declaration_kind": "model",
+      "option_patch": false
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.IpcA0.IpcShutdownAckA0",
+      "contract_identity": "geometer.ipc.shutdown_ack.a0",
+      "schema_id": "urn:wavenumber:schema:geometer:geometer.ipc.shutdown_ack:a0",
+      "declaration_kind": "model",
+      "option_patch": false
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.IpcA0.IpcWelcomeA0",
+      "contract_identity": "geometer.ipc.welcome.a0",
+      "schema_id": "urn:wavenumber:schema:geometer:geometer.ipc.welcome:a0",
+      "declaration_kind": "model",
+      "option_patch": false
+    },
+    {
       "name": "Wavenumber.Geometer.Contracts.ModelBoundsA0.ModelBoundsOptionsA0",
       "contract_identity": "geometry.model_bounds.options.a0",
       "schema_id": "urn:wavenumber:schema:geometer:geometry.model_bounds.options:a0",
@@ -151,6 +214,1287 @@
           "name": "operation",
           "value": "operation",
           "doc": ""
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.IpcA0.IpcAttachmentDeclarationA0",
+      "kind": "model",
+      "doc": "Named raw-attachment declaration in the negotiated operation catalog.",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "name",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 1,
+            "max_length": 128
+          }
+        },
+        {
+          "name": "required",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "boolean"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "media_types",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "primitive",
+              "name": "string"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "min_items": 1,
+            "max_items": 16
+          }
+        },
+        {
+          "name": "max_bytes",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "max_value": 268435456
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.IpcA0.IpcAttachmentDescriptorA0",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "wasm32",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.IpcA0.IpcAttachmentLayoutWasm32A0"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "pointer64",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.IpcA0.IpcAttachmentLayoutPointer64A0"
+          },
+          "annotations": {},
+          "constraints": {}
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.IpcA0.IpcAttachmentLayoutPointer64A0",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "size",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_value": 56,
+            "max_value": 56
+          }
+        },
+        {
+          "name": "offsets",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.IpcA0.IpcAttachmentOffsetsPointer64A0"
+          },
+          "annotations": {},
+          "constraints": {}
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.IpcA0.IpcAttachmentLayoutWasm32A0",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "size",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_value": 36,
+            "max_value": 36
+          }
+        },
+        {
+          "name": "offsets",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.IpcA0.IpcAttachmentOffsetsWasm32A0"
+          },
+          "annotations": {},
+          "constraints": {}
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.IpcA0.IpcAttachmentOffsetsPointer64A0",
+      "kind": "model",
+      "doc": "64-bit attachment-descriptor member offsets.",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "struct_size",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "max_value": 0
+          }
+        },
+        {
+          "name": "flags",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_value": 4,
+            "max_value": 4
+          }
+        },
+        {
+          "name": "name",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_value": 8,
+            "max_value": 8
+          }
+        },
+        {
+          "name": "name_size",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_value": 16,
+            "max_value": 16
+          }
+        },
+        {
+          "name": "media_type",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_value": 24,
+            "max_value": 24
+          }
+        },
+        {
+          "name": "media_type_size",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_value": 32,
+            "max_value": 32
+          }
+        },
+        {
+          "name": "data",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_value": 40,
+            "max_value": 40
+          }
+        },
+        {
+          "name": "data_size",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_value": 48,
+            "max_value": 48
+          }
+        },
+        {
+          "name": "reserved0",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_value": 52,
+            "max_value": 52
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.IpcA0.IpcAttachmentOffsetsWasm32A0",
+      "kind": "model",
+      "doc": "wasm32 attachment-descriptor member offsets.",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "struct_size",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "max_value": 0
+          }
+        },
+        {
+          "name": "flags",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_value": 4,
+            "max_value": 4
+          }
+        },
+        {
+          "name": "name",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_value": 8,
+            "max_value": 8
+          }
+        },
+        {
+          "name": "name_size",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_value": 12,
+            "max_value": 12
+          }
+        },
+        {
+          "name": "media_type",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_value": 16,
+            "max_value": 16
+          }
+        },
+        {
+          "name": "media_type_size",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_value": 20,
+            "max_value": 20
+          }
+        },
+        {
+          "name": "data",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_value": 24,
+            "max_value": 24
+          }
+        },
+        {
+          "name": "data_size",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_value": 28,
+            "max_value": 28
+          }
+        },
+        {
+          "name": "reserved0",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_value": 32,
+            "max_value": 32
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.IpcA0.IpcCancelledA0",
+      "kind": "model",
+      "doc": "Successful queue-only cancellation outcome.",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "status",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "cancelled"
+          },
+          "annotations": {},
+          "constraints": {}
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.IpcA0.IpcCancelRejectedA0",
+      "kind": "model",
+      "doc": "Nonterminal cancellation rejection for an active or unknown request.",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "status",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "rejected"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "diagnostic",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.Common.DiagnosticA0"
+          },
+          "annotations": {},
+          "constraints": {}
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.IpcA0.IpcEffectiveLimitsA0",
+      "kind": "model",
+      "doc": "Effective executable IPC A0 limits selected by the server.",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "json_bytes",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "max_value": 8388608
+          }
+        },
+        {
+          "name": "attachment_count",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "max_value": 16
+          }
+        },
+        {
+          "name": "attachment_name_bytes",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "max_value": 128
+          }
+        },
+        {
+          "name": "attachment_media_type_bytes",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "max_value": 128
+          }
+        },
+        {
+          "name": "attachment_bytes",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "max_value": 268435456
+          }
+        },
+        {
+          "name": "frame_bytes",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "max_value": 536870912
+          }
+        },
+        {
+          "name": "queued_requests",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "max_value": 8
+          }
+        },
+        {
+          "name": "queued_bytes",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "max_value": 536870912
+          }
+        },
+        {
+          "name": "resident_request_bytes",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "max_value": 536870912
+          }
+        },
+        {
+          "name": "pending_writer_bytes",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "max_value": 536870912
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.IpcA0.IpcGenericAbiLimitsA0",
+      "kind": "model",
+      "doc": "Bounds shared by the generic C ABI operation catalog.",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "operation_id_bytes",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "max_value": 128
+          }
+        },
+        {
+          "name": "request_json_bytes",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "max_value": 8388608
+          }
+        },
+        {
+          "name": "response_json_bytes",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "max_value": 8388608
+          }
+        },
+        {
+          "name": "attachment_count",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "max_value": 16
+          }
+        },
+        {
+          "name": "attachment_name_bytes",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "max_value": 128
+          }
+        },
+        {
+          "name": "attachment_media_type_bytes",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "max_value": 128
+          }
+        },
+        {
+          "name": "attachment_bytes",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "max_value": 268435456
+          }
+        },
+        {
+          "name": "aggregate_attachment_bytes_native",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "max_value": 536870912
+          }
+        },
+        {
+          "name": "aggregate_attachment_bytes_wasm",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "max_value": 268435456
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.IpcA0.IpcHelloA0",
+      "kind": "model",
+      "doc": "Client handshake for executable IPC A0.",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "client_name",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 1,
+            "max_length": 128
+          }
+        },
+        {
+          "name": "client_version",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 1,
+            "max_length": 128
+          }
+        },
+        {
+          "name": "protocols",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "primitive",
+              "name": "string"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "min_items": 1,
+            "max_items": 16
+          }
+        },
+        {
+          "name": "capabilities",
+          "optional": true,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "primitive",
+              "name": "string"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "max_items": 64
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.IpcA0.IpcOperationCatalogA0",
+      "kind": "model",
+      "doc": "Exact operation catalog embedded into the welcome frame.",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "catalog",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "wn.geometer.operation_catalog.a0"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "generic_abi",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "a0"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "release_version",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 1,
+            "max_length": 32
+          }
+        },
+        {
+          "name": "c_abi_generation",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "operations",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "reference",
+              "target": "Wavenumber.Geometer.Contracts.IpcA0.IpcOperationDeclarationA0"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "min_items": 1
+          }
+        },
+        {
+          "name": "attachment_descriptor",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.IpcA0.IpcAttachmentDescriptorA0"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "limits",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.IpcA0.IpcGenericAbiLimitsA0"
+          },
+          "annotations": {},
+          "constraints": {}
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.IpcA0.IpcOperationDeclarationA0",
+      "kind": "model",
+      "doc": "One operation exposed by the negotiated generic transport.",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "identity",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 1,
+            "max_length": 128
+          }
+        },
+        {
+          "name": "request_contract",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 1,
+            "max_length": 128
+          }
+        },
+        {
+          "name": "result_contract",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 1,
+            "max_length": 128
+          }
+        },
+        {
+          "name": "input_attachments",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "reference",
+              "target": "Wavenumber.Geometer.Contracts.IpcA0.IpcAttachmentDeclarationA0"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "max_items": 16
+          }
+        },
+        {
+          "name": "output_attachments",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "reference",
+              "target": "Wavenumber.Geometer.Contracts.IpcA0.IpcAttachmentDeclarationA0"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "max_items": 16
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.IpcA0.IpcProtocolErrorA0",
+      "kind": "model",
+      "doc": "Fatal connection-level protocol diagnostic.",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "status",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "protocol_error"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "diagnostic",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.Common.DiagnosticA0"
+          },
+          "annotations": {},
+          "constraints": {}
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.IpcA0.IpcReasonA0",
+      "kind": "model",
+      "doc": "Optional human-readable reason used by cancel and shutdown controls.",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "reason",
+          "optional": true,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "max_length": 1024
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.IpcA0.IpcRequestA0",
+      "kind": "model",
+      "doc": "Strict generic request envelope for executable IPC A0.",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "operation",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 1,
+            "max_length": 128
+          }
+        },
+        {
+          "name": "request",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.ModelBoundsA0.ModelBoundsOptionsA0"
+          },
+          "annotations": {},
+          "constraints": {}
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.IpcA0.IpcShutdownAckA0",
+      "kind": "model",
+      "doc": "Final acknowledgment after every accepted request is terminal and flushed.",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "status",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "complete"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "activeRequestCompleted",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "boolean"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "rejectedQueuedRequestCount",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {}
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.IpcA0.IpcWelcomeA0",
+      "kind": "model",
+      "doc": "Server handshake selecting executable IPC A0 and its effective limits.",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "release_version",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 1,
+            "max_length": 32
+          }
+        },
+        {
+          "name": "c_abi_generation",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "ipc",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "a0"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "catalog_sha256",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 64,
+            "max_length": 64
+          }
+        },
+        {
+          "name": "operation_catalog",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.IpcA0.IpcOperationCatalogA0"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "limits",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.IpcA0.IpcEffectiveLimitsA0"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "capabilities",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "primitive",
+              "name": "string"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "max_items": 64
+          }
         }
       ]
     },

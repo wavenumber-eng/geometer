@@ -90,6 +90,30 @@ void generated_encoder_rejects_invalid_utf8()
             "invalid UTF-8 should have a stable generated diagnostic code");
 }
 
+void generated_ipc_control_codecs_are_strict()
+{
+    const std::string hello_json =
+        R"({"client_name":"cpp-test","client_version":"a0","protocols":["a0"]})";
+    geometer::contracts::IpcHelloA0 hello;
+    geometer::contracts::ContractError error;
+    require(
+        geometer::contracts::decode_json(reinterpret_cast<const unsigned char*>(hello_json.data()),
+                                         hello_json.size(), &hello, &error),
+        "generated IPC hello should decode: " + error.message);
+    require(hello.protocols.size() == 1U && hello.protocols.front() == "a0",
+            "generated IPC hello should retain the selected protocol");
+
+    const std::string fractional_count =
+        R"({"status":"complete","activeRequestCompleted":false,"rejectedQueuedRequestCount":1.5})";
+    geometer::contracts::IpcShutdownAckA0 acknowledgment;
+    require(!geometer::contracts::decode_json(
+                reinterpret_cast<const unsigned char*>(fractional_count.data()),
+                fractional_count.size(), &acknowledgment, &error),
+            "generated uint32 controls should reject fractional values");
+    require(error.code == "geometer.contract.number_range",
+            "invalid generated uint32 values should have a stable diagnostic code");
+}
+
 void response_limits_fail_closed_before_accessor_narrowing()
 {
     std::vector<geometer::OperationOutputAttachment> too_many(17U);
@@ -272,6 +296,7 @@ int main()
     {
         generated_options_codec_preserves_presence_and_is_strict();
         generated_encoder_rejects_invalid_utf8();
+        generated_ipc_control_codecs_are_strict();
         response_limits_fail_closed_before_accessor_narrowing();
         generic_c_abi_catalog_and_typed_failures();
         generic_c_abi_executes_model_bounds();

@@ -170,13 +170,21 @@ function generateObject(item) {
   const name = shortName(item.name);
   const fields = item.properties
     .map((property) => {
-      const attributes = property.optional
-        ? '    #[serde(default, deserialize_with = "deserialize_optional_non_null", skip_serializing_if = "Option::is_none")]\n'
-        : "";
+      const fieldName = snakeCase(property.name);
+      const serdeOptions = [];
+      if (fieldName !== property.name)
+        serdeOptions.push(`rename = ${JSON.stringify(property.name)}`);
+      if (property.optional)
+        serdeOptions.push(
+          "default",
+          'deserialize_with = "deserialize_optional_non_null"',
+          'skip_serializing_if = "Option::is_none"',
+        );
+      const attributes = serdeOptions.length ? `    #[serde(${serdeOptions.join(", ")})]\n` : "";
       const type = property.optional
         ? `Option<${rustType(property.type)}>`
         : rustType(property.type);
-      return `${attributes}    pub ${property.name}: ${type},`;
+      return `${attributes}    pub ${fieldName}: ${type},`;
     })
     .join("\n");
   const checks = item.properties.flatMap((property) => validationLines(property));
@@ -195,7 +203,7 @@ ${checks.length ? checks.map((line) => `        ${line}`).join("\n") : "        
 }
 
 function validationLines(property) {
-  const access = `self.${property.name}`;
+  const access = `self.${snakeCase(property.name)}`;
   const path = `child_path(path, ${JSON.stringify(property.name)})`;
   const body = validateValue(property.type, "value", "field_path", property.constraints ?? {});
   const literal = property.type.kind === "literal";
@@ -242,6 +250,16 @@ function validateValue(type, value, path, constraints) {
       `if !${value}.is_finite() { return Err(invalid(&${path}, "number must be finite")); }`,
     );
   }
+  if (type.kind === "primitive" && ["uint32", "uint64"].includes(type.name)) {
+    if (constraints.min_value !== undefined)
+      lines.push(
+        `if *${value} < ${constraints.min_value} { return Err(invalid(&${path}, "number is below its minimum")); }`,
+      );
+    if (constraints.max_value !== undefined)
+      lines.push(
+        `if *${value} > ${constraints.max_value} { return Err(invalid(&${path}, "number exceeds its maximum")); }`,
+      );
+  }
   if (type.kind === "primitive" && type.name === "string") {
     if (constraints.min_length !== undefined)
       lines.push(
@@ -270,11 +288,11 @@ function validateValue(type, value, path, constraints) {
         `for (index, item) in ${value}.iter().enumerate() { item.validate_at(&child_path(&${path}, &index.to_string()))?; }`,
       );
   }
-  if (constraints.min_value !== undefined)
+  if (type.kind === "primitive" && type.name === "float64" && constraints.min_value !== undefined)
     lines.push(
       `if *${value} < ${constraints.min_value}_f64 { return Err(invalid(&${path}, "number is below its minimum")); }`,
     );
-  if (constraints.max_value !== undefined)
+  if (type.kind === "primitive" && type.name === "float64" && constraints.max_value !== undefined)
     lines.push(
       `if *${value} > ${constraints.max_value}_f64 { return Err(invalid(&${path}, "number exceeds its maximum")); }`,
     );
@@ -300,7 +318,13 @@ pub fn encode_${snake}_json(value: &${name}) -> Result<Vec<u8>, ContractError> {
 function rustType(type) {
   if (type.kind === "reference") return shortName(type.target);
   if (type.kind === "primitive") {
-    const mapped = { string: "String", boolean: "bool", float64: "f64" }[type.name];
+    const mapped = {
+      string: "String",
+      boolean: "bool",
+      float64: "f64",
+      uint32: "u32",
+      uint64: "u64",
+    }[type.name];
     if (mapped) return mapped;
   }
   if (type.kind === "literal") {

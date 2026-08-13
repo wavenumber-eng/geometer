@@ -7,8 +7,6 @@
 #include "geometer/version.h"
 
 #include <rapidjson/document.h>
-#include <rapidjson/stringbuffer.h>
-#include <rapidjson/writer.h>
 
 #include <algorithm>
 #include <atomic>
@@ -24,7 +22,6 @@
 #include <string>
 #include <thread>
 #include <unordered_map>
-#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -44,7 +41,6 @@ constexpr std::size_t kMaxPendingWriterBytes = 512U * 1024U * 1024U;
 constexpr auto kShutdownGrace = std::chrono::seconds(30);
 
 using JsonDocument = rapidjson::Document;
-using JsonWriter = rapidjson::Writer<rapidjson::StringBuffer>;
 
 struct OutgoingFrame
 {
@@ -196,52 +192,17 @@ bool parse_json(const std::string& json, JsonDocument* document, std::string* er
     return true;
 }
 
-bool validate_members(const JsonDocument& document, const std::unordered_set<std::string>& allowed,
-                      const std::unordered_set<std::string>& required, std::string* error)
-{
-    std::unordered_set<std::string> found;
-    for (auto member = document.MemberBegin(); member != document.MemberEnd(); ++member)
-    {
-        const std::string name(member->name.GetString(), member->name.GetStringLength());
-        if (!allowed.count(name))
-        {
-            *error = "JSON object contains an unknown field.";
-            return false;
-        }
-        if (!found.insert(name).second)
-        {
-            *error = "JSON object contains a duplicate field.";
-            return false;
-        }
-    }
-    for (const auto& name : required)
-    {
-        if (!found.count(name))
-        {
-            *error = "JSON object is missing a required field.";
-            return false;
-        }
-    }
-    return true;
-}
-
-std::string json_stringify(const rapidjson::Value& value)
-{
-    rapidjson::StringBuffer buffer;
-    JsonWriter writer(buffer);
-    value.Accept(writer);
-    return {buffer.GetString(), buffer.GetSize()};
-}
-
 bool valid_reason_object(const std::string& json, std::string* error)
 {
-    JsonDocument document;
-    if (!parse_json(json, &document, error) || !validate_members(document, {"reason"}, {}, error))
+    contracts::IpcReasonA0 reason;
+    contracts::ContractError contract_error;
+    if (!contracts::decode_json(reinterpret_cast<const unsigned char*>(json.data()), json.size(),
+                                &reason, &contract_error))
     {
+        *error = contract_error.message;
         return false;
     }
-    const auto reason = document.FindMember("reason");
-    return reason == document.MemberEnd() || reason->value.IsString();
+    return true;
 }
 
 bool parse_hello(const Frame& frame, std::string* error)
@@ -251,51 +212,16 @@ bool parse_hello(const Frame& frame, std::string* error)
         *error = "The first IPC frame must be an attachment-free hello with request id zero.";
         return false;
     }
-    JsonDocument document;
-    if (!parse_json(frame.json, &document, error) ||
-        !validate_members(document, {"client_name", "client_version", "protocols", "capabilities"},
-                          {"client_name", "client_version", "protocols"}, error))
+    contracts::IpcHelloA0 hello;
+    contracts::ContractError contract_error;
+    if (!contracts::decode_json(reinterpret_cast<const unsigned char*>(frame.json.data()),
+                                frame.json.size(), &hello, &contract_error))
     {
+        *error = contract_error.message;
         return false;
     }
-    const auto name = document.FindMember("client_name");
-    const auto version = document.FindMember("client_version");
-    const auto protocols = document.FindMember("protocols");
-    if (!name->value.IsString() || name->value.GetStringLength() == 0 ||
-        !version->value.IsString() || version->value.GetStringLength() == 0 ||
-        !protocols->value.IsArray())
-    {
-        *error = "IPC hello fields have invalid types or empty identities.";
-        return false;
-    }
-    bool supports_a0 = false;
-    for (const auto& protocol : protocols->value.GetArray())
-    {
-        if (!protocol.IsString())
-        {
-            *error = "IPC hello protocols must be strings.";
-            return false;
-        }
-        supports_a0 =
-            supports_a0 || std::string(protocol.GetString(), protocol.GetStringLength()) == "a0";
-    }
-    const auto capabilities = document.FindMember("capabilities");
-    if (capabilities != document.MemberEnd())
-    {
-        if (!capabilities->value.IsArray())
-        {
-            *error = "IPC hello capabilities must be an array of strings.";
-            return false;
-        }
-        for (const auto& capability : capabilities->value.GetArray())
-        {
-            if (!capability.IsString())
-            {
-                *error = "IPC hello capabilities must be an array of strings.";
-                return false;
-            }
-        }
-    }
+    const bool supports_a0 =
+        std::find(hello.protocols.begin(), hello.protocols.end(), "a0") != hello.protocols.end();
     if (!supports_a0)
     {
         *error = "IPC hello has no protocol identity in common with this server.";
@@ -306,57 +232,38 @@ bool parse_hello(const Frame& frame, std::string* error)
 
 std::string welcome_json()
 {
-    JsonDocument catalog;
-    catalog.Parse(operation_catalog_json());
-    rapidjson::StringBuffer buffer;
-    JsonWriter writer(buffer);
-    writer.StartObject();
-    writer.Key("release_version");
-    writer.String(version_string());
-    writer.Key("c_abi_generation");
-    writer.Uint(static_cast<unsigned int>(abi_version()));
-    writer.Key("ipc");
-    writer.String("a0");
-    writer.Key("catalog_sha256");
-    writer.String(normalized_contract_catalog_sha256());
-    writer.Key("operation_catalog");
-    catalog.Accept(writer);
-    writer.Key("limits");
-    writer.StartObject();
-    writer.Key("json_bytes");
-    writer.Uint64(kMaxJsonBytes);
-    writer.Key("attachment_count");
-    writer.Uint64(kMaxAttachmentCount);
-    writer.Key("attachment_name_bytes");
-    writer.Uint64(kMaxAttachmentTextBytes);
-    writer.Key("attachment_media_type_bytes");
-    writer.Uint64(kMaxAttachmentTextBytes);
-    writer.Key("attachment_bytes");
-    writer.Uint64(kMaxAttachmentBytes);
-    writer.Key("frame_bytes");
-    writer.Uint64(kMaxFrameBytes);
-    writer.Key("queued_requests");
-    writer.Uint64(kMaxQueuedRequests);
-    writer.Key("queued_bytes");
-    writer.Uint64(kMaxResidentBytes);
-    writer.Key("resident_request_bytes");
-    writer.Uint64(kMaxResidentBytes);
-    writer.Key("pending_writer_bytes");
-    writer.Uint64(kMaxPendingWriterBytes);
-    writer.EndObject();
-    writer.Key("capabilities");
-    writer.StartArray();
-    writer.String("serialized_execution");
-    writer.String("queue_only_cancellation");
-    writer.String("raw_attachments");
-    writer.EndArray();
-    writer.EndObject();
-    return {buffer.GetString(), buffer.GetSize()};
+    contracts::ContractError error;
+    contracts::IpcOperationCatalogA0 catalog;
+    const std::string catalog_json = operation_catalog_json();
+    if (!contracts::decode_json(reinterpret_cast<const unsigned char*>(catalog_json.data()),
+                                catalog_json.size(), &catalog, &error))
+    {
+        std::fprintf(stderr, "Generated IPC operation catalog is invalid: %s\n",
+                     error.message.c_str());
+        std::_Exit(2);
+    }
+    contracts::IpcWelcomeA0 welcome;
+    welcome.release_version = version_string();
+    welcome.c_abi_generation = static_cast<std::uint32_t>(abi_version());
+    welcome.operation_catalog = std::move(catalog);
+    welcome.catalog_sha256 = normalized_contract_catalog_sha256();
+    welcome.limits = {kMaxJsonBytes,           kMaxAttachmentCount, kMaxAttachmentTextBytes,
+                      kMaxAttachmentTextBytes, kMaxAttachmentBytes, kMaxFrameBytes,
+                      kMaxQueuedRequests,      kMaxResidentBytes,   kMaxResidentBytes,
+                      kMaxPendingWriterBytes};
+    welcome.capabilities = {"serialized_execution", "queue_only_cancellation", "raw_attachments"};
+    std::string json;
+    if (!contracts::encode_json(welcome, &json, &error))
+    {
+        std::fprintf(stderr, "Generated IPC welcome encoding failed: %s\n", error.message.c_str());
+        std::_Exit(2);
+    }
+    return json;
 }
 
 contracts::DiagnosticA0 make_diagnostic(const char* code, bool retryable,
                                         const std::string& message, const std::string& operation,
-                                        std::uint64_t id)
+                                        std::uint64_t id, const std::string& path = {})
 {
     contracts::DiagnosticA0 diagnostic;
     diagnostic.code = code;
@@ -368,15 +275,19 @@ contracts::DiagnosticA0 make_diagnostic(const char* code, bool retryable,
         diagnostic.operation = operation;
     }
     diagnostic.request_id = std::to_string(id);
+    if (!path.empty())
+    {
+        diagnostic.path = path;
+    }
     return diagnostic;
 }
 
 Frame operation_failure(std::uint64_t id, const std::string& operation, const char* code,
-                        bool retryable, const std::string& message)
+                        bool retryable, const std::string& message, const std::string& path = {})
 {
     contracts::OperationFailureA0 failure;
     failure.operation = operation;
-    failure.diagnostics.push_back(make_diagnostic(code, retryable, message, operation, id));
+    failure.diagnostics.push_back(make_diagnostic(code, retryable, message, operation, id, path));
     contracts::OperationOutcomeA0 outcome = std::move(failure);
     Frame frame;
     frame.kind = FrameKind::response;
@@ -391,39 +302,24 @@ Frame operation_failure(std::uint64_t id, const std::string& operation, const ch
     return frame;
 }
 
-std::string control_diagnostic_json(const char* status, const char* code,
-                                    const std::string& message, std::uint64_t id)
+template <typename T> std::string encode_control(const T& value)
 {
-    rapidjson::StringBuffer buffer;
-    JsonWriter writer(buffer);
-    writer.StartObject();
-    writer.Key("status");
-    writer.String(status);
-    writer.Key("diagnostic");
-    writer.StartObject();
-    writer.Key("code");
-    writer.String(code);
-    writer.Key("category");
-    writer.String("transport");
-    writer.Key("message");
-    writer.String(message.c_str(), static_cast<rapidjson::SizeType>(message.size()));
-    writer.Key("retryable");
-    writer.Bool(false);
-    writer.Key("request_id");
-    const std::string request_id = std::to_string(id);
-    writer.String(request_id.c_str(), static_cast<rapidjson::SizeType>(request_id.size()));
-    writer.EndObject();
-    writer.EndObject();
-    return {buffer.GetString(), buffer.GetSize()};
+    contracts::ContractError error;
+    std::string json;
+    if (!contracts::encode_json(value, &json, &error))
+    {
+        std::fprintf(stderr, "Generated IPC control encoding failed: %s\n", error.message.c_str());
+        std::_Exit(2);
+    }
+    return json;
 }
 
 Frame protocol_error(std::uint64_t id, const std::string& message)
 {
-    return {
-        FrameKind::protocol_error,
-        id,
-        control_diagnostic_json("protocol_error", "geometer.transport.protocol_error", message, id),
-        {}};
+    contracts::IpcProtocolErrorA0 control;
+    control.diagnostic =
+        make_diagnostic("geometer.transport.protocol_error", false, message, "", id);
+    return {FrameKind::protocol_error, id, encode_control(control), {}};
 }
 
 std::function<void()> terminal_callback(const std::shared_ptr<SharedState>& shared,
@@ -443,26 +339,34 @@ bool submit_terminal(const std::shared_ptr<SharedState>& shared, Frame frame)
     return shared->writer.submit({std::move(frame), terminal_callback(shared, id)});
 }
 
-bool parse_request(Frame* frame, QueuedRequest* request, std::string* error)
+bool parse_request(Frame* frame, QueuedRequest* request, std::string* diagnostic_code,
+                   std::string* diagnostic_path, std::string* error)
 {
-    JsonDocument document;
-    if (!parse_json(frame->json, &document, error) ||
-        !validate_members(document, {"operation", "request"}, {"operation", "request"}, error))
+    contracts::IpcRequestA0 envelope;
+    contracts::ContractError contract_error;
+    if (!contracts::decode_json(reinterpret_cast<const unsigned char*>(frame->json.data()),
+                                frame->json.size(), &envelope, &contract_error))
     {
+        *diagnostic_code = contract_error.code;
+        *diagnostic_path = contract_error.path;
+        *error = contract_error.message;
         return false;
     }
-    const auto operation = document.FindMember("operation");
-    const auto body = document.FindMember("request");
-    if (!operation->value.IsString() || operation->value.GetStringLength() == 0 ||
-        operation->value.GetStringLength() > 128U || !body->value.IsObject())
+    if (envelope.operation != "geometry.model_bounds.a0")
     {
-        *error = "IPC request envelope has an invalid operation or request field.";
-        return false;
+        request->request_json = "{}";
+    }
+    else
+    {
+        if (!contracts::encode_json(envelope.request, &request->request_json, &contract_error))
+        {
+            *error = contract_error.message;
+            return false;
+        }
     }
     request->id = frame->request_id;
     request->resident_bytes = encoded_size(*frame);
-    request->operation.assign(operation->value.GetString(), operation->value.GetStringLength());
-    request->request_json = json_stringify(body->value);
+    request->operation = std::move(envelope.operation);
     request->attachments = std::move(frame->attachments);
     return true;
 }
@@ -515,17 +419,10 @@ Frame execute_request(const QueuedRequest& request)
 
 Frame shutdown_ack(bool active_request_completed, std::uint32_t rejected_queued_request_count)
 {
-    rapidjson::StringBuffer buffer;
-    JsonWriter writer(buffer);
-    writer.StartObject();
-    writer.Key("status");
-    writer.String("complete");
-    writer.Key("activeRequestCompleted");
-    writer.Bool(active_request_completed);
-    writer.Key("rejectedQueuedRequestCount");
-    writer.Uint(rejected_queued_request_count);
-    writer.EndObject();
-    return {FrameKind::shutdown_ack, 0, {buffer.GetString(), buffer.GetSize()}, {}};
+    contracts::IpcShutdownAckA0 control;
+    control.activeRequestCompleted = active_request_completed;
+    control.rejectedQueuedRequestCount = rejected_queued_request_count;
+    return {FrameKind::shutdown_ack, 0, encode_control(control), {}};
 }
 
 void worker_loop(const std::shared_ptr<SharedState>& shared)
@@ -688,8 +585,10 @@ bool handle_request(const std::shared_ptr<SharedState>& shared, Frame frame,
     }
 
     QueuedRequest request;
+    std::string diagnostic_code = "geometer.contract.invalid_request_envelope";
+    std::string diagnostic_path;
     std::string request_error;
-    if (!parse_request(&frame, &request, &request_error))
+    if (!parse_request(&frame, &request, &diagnostic_code, &diagnostic_path, &request_error))
     {
         std::string operation = "geometer.transport.invalid_request";
         JsonDocument document;
@@ -701,9 +600,9 @@ bool handle_request(const std::shared_ptr<SharedState>& shared, Frame frame,
                 operation.assign(member->value.GetString(), member->value.GetStringLength());
             }
         }
-        submit_terminal(shared, operation_failure(frame.request_id, operation,
-                                                  "geometer.contract.invalid_request_envelope",
-                                                  false, request_error));
+        submit_terminal(shared,
+                        operation_failure(frame.request_id, operation, diagnostic_code.c_str(),
+                                          false, request_error, diagnostic_path));
         return true;
     }
 
@@ -771,22 +670,21 @@ bool handle_cancel(const std::shared_ptr<SharedState>& shared, const Frame& fram
             std::lock_guard lock(shared->mutex);
             shared->resident_bytes -= resident_bytes;
         }
-        Frame response{FrameKind::cancelled, frame.request_id, "{\"status\":\"cancelled\"}", {}};
+        contracts::IpcCancelledA0 control;
+        Frame response{FrameKind::cancelled, frame.request_id, encode_control(control), {}};
         submit_terminal(shared, std::move(response));
     }
     else
     {
         const bool active = known && state == RequestState::active;
-        Frame response{FrameKind::cancel_rejected,
-                       frame.request_id,
-                       control_diagnostic_json("rejected",
-                                               active ? "geometer.transport.not_cancellable"
-                                                      : "geometer.transport.unknown_request",
-                                               active
-                                                   ? "The request is already executing."
-                                                   : "The request is unknown or already terminal.",
-                                               frame.request_id),
-                       {}};
+        contracts::IpcCancelRejectedA0 control;
+        control.diagnostic = make_diagnostic(active ? "geometer.transport.not_cancellable"
+                                                    : "geometer.transport.unknown_request",
+                                             false,
+                                             active ? "The request is already executing."
+                                                    : "The request is unknown or already terminal.",
+                                             "", frame.request_id);
+        Frame response{FrameKind::cancel_rejected, frame.request_id, encode_control(control), {}};
         shared->writer.submit({std::move(response), {}});
     }
     return true;

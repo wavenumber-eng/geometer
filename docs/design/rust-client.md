@@ -12,10 +12,13 @@ The executable implementation preserves every file-oriented CLI command. Its
 stdin and stdout are switched to binary mode on Windows; stdout is reserved for
 complete A0 frames and stderr is captured separately by the client.
 
-The broader plan step remains open until the transport-control DTOs are also
-generated from TypeSpec and the fatal framing, broken-pipe, forced-deadline,
-unexpected-exit, and multi-platform artifact matrices are complete. The
-implemented pilot is additive and reviewable; it is not yet a release claim.
+The TypeSpec source now owns the strict hello, welcome, request, reason,
+cancelled, cancel-rejected, protocol-error, shutdown-ack, and embedded
+operation-catalog shapes. Generated C++ and Rust codecs are used by both ends
+of the live connection. The broader plan step remains open for independent
+review and hosted Windows, Linux x64, Linux ARM64, and macOS ARM64 evidence.
+The implemented pilot is additive and reviewable; it is not yet a release
+claim.
 
 The crate carries a local `wn-dev-std` 2026.8.12 Rust profile. Its stable
 toolchain components, denied Rust/Clippy lints, declared Cargo signoff commands,
@@ -26,7 +29,7 @@ Rack stratum.
 
 `scripts/generate-rust-contracts.mjs` reads the same normalized catalog as the
 C++ and TypeScript generators and writes
-`src/rust/geometer-client/src/generated`. Generated structs use
+`src/rust/geometer-client/src/generated`. Generated operation and IPC structs use
 `deny_unknown_fields`; direct deserialization rejects duplicate keys and
 trailing data; validation rejects non-finite/range-invalid numbers and contract
 literals. Optional fields use a presence-aware deserializer so an absent value
@@ -86,3 +89,9 @@ request recovery, unknown and queued cancellation, local timeout behavior,
 duplicate-attachment correlation, wrong-direction fatal handling,
 close/request race resolution, repeated real STEP work through one child,
 graceful shutdown, and compilation from a clean packaged-crate consumer.
+The failure-path matrix additionally covers incompatible negotiation,
+oversized fixed headers before payload reads, broken stdout, and explicit
+forced termination with pending requests. The latter closed a reader/terminator
+race that could otherwise leave a pending call unresolved. Native and release
+CI run these live Rust tests on every supported native platform after building
+that platform's executable.

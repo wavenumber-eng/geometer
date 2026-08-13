@@ -2,6 +2,7 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 #include <optional>
 #include <string>
 #include <variant>
@@ -35,17 +36,170 @@ struct DiagnosticA0
     std::optional<std::string> request_id{};
 };
 
-using Matrix4x4 = std::vector<double>;
+struct IpcAttachmentDeclarationA0
+{
+    std::string name{};
+    bool required{};
+    std::vector<std::string> media_types{};
+    std::uint32_t max_bytes{};
+};
+
+struct IpcAttachmentOffsetsWasm32A0
+{
+    std::uint32_t struct_size{};
+    std::uint32_t flags{};
+    std::uint32_t name{};
+    std::uint32_t name_size{};
+    std::uint32_t media_type{};
+    std::uint32_t media_type_size{};
+    std::uint32_t data{};
+    std::uint32_t data_size{};
+    std::uint32_t reserved0{};
+};
+
+struct IpcAttachmentLayoutWasm32A0
+{
+    std::uint32_t size{};
+    IpcAttachmentOffsetsWasm32A0 offsets{};
+};
+
+struct IpcAttachmentOffsetsPointer64A0
+{
+    std::uint32_t struct_size{};
+    std::uint32_t flags{};
+    std::uint32_t name{};
+    std::uint32_t name_size{};
+    std::uint32_t media_type{};
+    std::uint32_t media_type_size{};
+    std::uint32_t data{};
+    std::uint32_t data_size{};
+    std::uint32_t reserved0{};
+};
+
+struct IpcAttachmentLayoutPointer64A0
+{
+    std::uint32_t size{};
+    IpcAttachmentOffsetsPointer64A0 offsets{};
+};
+
+struct IpcAttachmentDescriptorA0
+{
+    IpcAttachmentLayoutWasm32A0 wasm32{};
+    IpcAttachmentLayoutPointer64A0 pointer64{};
+};
+
+struct IpcCancelledA0
+{
+    std::string status = "cancelled";
+};
+
+struct IpcCancelRejectedA0
+{
+    std::string status = "rejected";
+    DiagnosticA0 diagnostic{};
+};
+
+struct IpcEffectiveLimitsA0
+{
+    std::uint32_t json_bytes{};
+    std::uint32_t attachment_count{};
+    std::uint32_t attachment_name_bytes{};
+    std::uint32_t attachment_media_type_bytes{};
+    std::uint32_t attachment_bytes{};
+    std::uint32_t frame_bytes{};
+    std::uint32_t queued_requests{};
+    std::uint32_t queued_bytes{};
+    std::uint32_t resident_request_bytes{};
+    std::uint32_t pending_writer_bytes{};
+};
+
+struct IpcGenericAbiLimitsA0
+{
+    std::uint32_t operation_id_bytes{};
+    std::uint32_t request_json_bytes{};
+    std::uint32_t response_json_bytes{};
+    std::uint32_t attachment_count{};
+    std::uint32_t attachment_name_bytes{};
+    std::uint32_t attachment_media_type_bytes{};
+    std::uint32_t attachment_bytes{};
+    std::uint32_t aggregate_attachment_bytes_native{};
+    std::uint32_t aggregate_attachment_bytes_wasm{};
+};
+
+struct IpcHelloA0
+{
+    std::string client_name{};
+    std::string client_version{};
+    std::vector<std::string> protocols{};
+    std::optional<std::vector<std::string>> capabilities{};
+};
+
+struct IpcOperationDeclarationA0
+{
+    std::string identity{};
+    std::string request_contract{};
+    std::string result_contract{};
+    std::vector<IpcAttachmentDeclarationA0> input_attachments{};
+    std::vector<IpcAttachmentDeclarationA0> output_attachments{};
+};
+
+struct IpcOperationCatalogA0
+{
+    std::string catalog = "wn.geometer.operation_catalog.a0";
+    std::string generic_abi = "a0";
+    std::string release_version{};
+    std::uint32_t c_abi_generation{};
+    std::vector<IpcOperationDeclarationA0> operations{};
+    IpcAttachmentDescriptorA0 attachment_descriptor{};
+    IpcGenericAbiLimitsA0 limits{};
+};
+
+struct IpcProtocolErrorA0
+{
+    std::string status = "protocol_error";
+    DiagnosticA0 diagnostic{};
+};
+
+struct IpcReasonA0
+{
+    std::optional<std::string> reason{};
+};
 
 enum class ModelFormat
 {
     step,
 };
 
+using Matrix4x4 = std::vector<double>;
+
 struct ModelBoundsOptionsA0
 {
     std::optional<ModelFormat> format{};
     std::optional<Matrix4x4> model_transform{};
+};
+
+struct IpcRequestA0
+{
+    std::string operation{};
+    ModelBoundsOptionsA0 request{};
+};
+
+struct IpcShutdownAckA0
+{
+    std::string status = "complete";
+    bool activeRequestCompleted{};
+    std::uint32_t rejectedQueuedRequestCount{};
+};
+
+struct IpcWelcomeA0
+{
+    std::string release_version{};
+    std::uint32_t c_abi_generation{};
+    std::string ipc = "a0";
+    std::string catalog_sha256{};
+    IpcOperationCatalogA0 operation_catalog{};
+    IpcEffectiveLimitsA0 limits{};
+    std::vector<std::string> capabilities{};
 };
 
 struct ModelBoundsSource
@@ -100,6 +254,45 @@ using OperationOutcomeA0 = std::variant<OperationSuccessA0, OperationFailureA0>;
 bool decode_json(const unsigned char* data, std::size_t size, DiagnosticA0* value,
                  ContractError* error = nullptr);
 bool encode_json(const DiagnosticA0& value, std::string* json, ContractError* error = nullptr);
+
+bool decode_json(const unsigned char* data, std::size_t size, IpcCancelledA0* value,
+                 ContractError* error = nullptr);
+bool encode_json(const IpcCancelledA0& value, std::string* json, ContractError* error = nullptr);
+
+bool decode_json(const unsigned char* data, std::size_t size, IpcCancelRejectedA0* value,
+                 ContractError* error = nullptr);
+bool encode_json(const IpcCancelRejectedA0& value, std::string* json,
+                 ContractError* error = nullptr);
+
+bool decode_json(const unsigned char* data, std::size_t size, IpcHelloA0* value,
+                 ContractError* error = nullptr);
+bool encode_json(const IpcHelloA0& value, std::string* json, ContractError* error = nullptr);
+
+bool decode_json(const unsigned char* data, std::size_t size, IpcOperationCatalogA0* value,
+                 ContractError* error = nullptr);
+bool encode_json(const IpcOperationCatalogA0& value, std::string* json,
+                 ContractError* error = nullptr);
+
+bool decode_json(const unsigned char* data, std::size_t size, IpcProtocolErrorA0* value,
+                 ContractError* error = nullptr);
+bool encode_json(const IpcProtocolErrorA0& value, std::string* json,
+                 ContractError* error = nullptr);
+
+bool decode_json(const unsigned char* data, std::size_t size, IpcReasonA0* value,
+                 ContractError* error = nullptr);
+bool encode_json(const IpcReasonA0& value, std::string* json, ContractError* error = nullptr);
+
+bool decode_json(const unsigned char* data, std::size_t size, IpcRequestA0* value,
+                 ContractError* error = nullptr);
+bool encode_json(const IpcRequestA0& value, std::string* json, ContractError* error = nullptr);
+
+bool decode_json(const unsigned char* data, std::size_t size, IpcShutdownAckA0* value,
+                 ContractError* error = nullptr);
+bool encode_json(const IpcShutdownAckA0& value, std::string* json, ContractError* error = nullptr);
+
+bool decode_json(const unsigned char* data, std::size_t size, IpcWelcomeA0* value,
+                 ContractError* error = nullptr);
+bool encode_json(const IpcWelcomeA0& value, std::string* json, ContractError* error = nullptr);
 
 bool decode_json(const unsigned char* data, std::size_t size, ModelBoundsOptionsA0* value,
                  ContractError* error = nullptr);

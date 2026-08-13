@@ -60,6 +60,19 @@ function canonicalize(value, type, declarations, path, constraints) {
         }
         return value;
     }
+    if (type.name === "uint32" || type.name === "uint64") {
+        const typeMaximum = type.name === "uint32" ? 0xffff_ffff : Number.MAX_SAFE_INTEGER;
+        if (!Number.isSafeInteger(value) || value < 0 || value > typeMaximum) {
+            fail("geometer.contract.number_range", path, `Expected an exactly representable ${type.name} integer.`);
+        }
+        if (constraints.min_value !== undefined && value < constraints.min_value) {
+            fail("geometer.contract.number_range", path, "Number is below its minimum.");
+        }
+        if (constraints.max_value !== undefined && value > constraints.max_value) {
+            fail("geometer.contract.number_range", path, "Number is above its maximum.");
+        }
+        return value;
+    }
     fail("geometer.contract.unsupported_type", path, `Unsupported primitive ${type.name}.`);
 }
 function canonicalizeDeclaration(value, declaration, declarations, path, constraints) {

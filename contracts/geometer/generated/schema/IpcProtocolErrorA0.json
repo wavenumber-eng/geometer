@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:wavenumber:schema:geometer:geometer.ipc.protocol_error:a0",
+  "type": "object",
+  "properties": {
+    "status": {
+      "type": "string",
+      "const": "protocol_error"
+    },
+    "diagnostic": {
+      "$ref": "urn:wavenumber:schema:geometer:geometry.common.diagnostic:a0"
+    }
+  },
+  "required": [
+    "status",
+    "diagnostic"
+  ],
+  "unevaluatedProperties": {
+    "not": {}
+  },
+  "description": "Fatal connection-level protocol diagnostic."
+}

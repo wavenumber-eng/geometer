@@ -4,10 +4,13 @@ import { fileURLToPath } from "node:url";
 
 import {
   decodeDiagnosticA0Json,
+  decodeIpcHelloA0Json,
+  decodeIpcShutdownAckA0Json,
   decodeModelBoundsOptionsA0Json,
   decodeModelBoundsResultA0Json,
   decodeOperationOutcomeA0Json,
   encodeModelBoundsOptionsA0Json,
+  encodeIpcReasonA0Json,
   encodeOperationOutcomeA0Json,
 } from "../../dist/wasm/npm/geometer/generated/index.js";
 
@@ -66,6 +69,29 @@ try {
   // Expected.
 }
 if (invalidUnicodeAccepted) throw new Error("Encoder accepted an unpaired surrogate.");
+
+const hello = decodeIpcHelloA0Json(
+  '{"client_name":"typescript-test","client_version":"a0","protocols":["a0"]}',
+);
+if (hello.protocols[0] !== "a0" || encodeIpcReasonA0Json({}) !== "{}") {
+  throw new Error("Generated IPC control codecs did not preserve their canonical shapes.");
+}
+for (const count of [-1, 1.5, 4_294_967_296]) {
+  let invalidCountAccepted = false;
+  try {
+    decodeIpcShutdownAckA0Json(
+      JSON.stringify({
+        status: "complete",
+        activeRequestCompleted: false,
+        rejectedQueuedRequestCount: count,
+      }),
+    );
+    invalidCountAccepted = true;
+  } catch {
+    // Expected: generated uint32 fields require exact nonnegative integers.
+  }
+  if (invalidCountAccepted) throw new Error(`Generated uint32 codec accepted ${count}.`);
+}
 
 for (const [label, encode] of [
   ["fixed tuple", () => encodeModelBoundsOptionsA0Json({ model_transform: new Array(16) })],

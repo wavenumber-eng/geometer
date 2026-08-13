@@ -5,7 +5,7 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::time::Duration;
 
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use serde_json::Value;
 use serde_json::value::RawValue;
 use tokio::io::AsyncReadExt;
@@ -13,39 +13,17 @@ use tokio::process::{Child, ChildStdin, Command};
 use tokio::sync::{Mutex, oneshot};
 
 use crate::generated::contracts::{
-    self, ModelBoundsOptionsA0, ModelBoundsResultA0, OperationOutcomeA0, OperationResultValueA0,
+    self, DiagnosticCategory, IpcCancelRejectedA0, IpcCancelledA0, IpcHelloA0, IpcReasonA0,
+    IpcWelcomeA0, ModelBoundsOptionsA0, ModelBoundsResultA0, OperationOutcomeA0,
+    OperationResultValueA0,
 };
 use crate::ipc::{self, Attachment, Frame, FrameKind};
 use crate::{IPC_IDENTITY, NORMALIZED_CATALOG_SHA256};
 
 const STDERR_CAPTURE_LIMIT: usize = 1024 * 1024;
 
-#[derive(Clone, Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct Welcome {
-    pub release_version: String,
-    pub c_abi_generation: u32,
-    pub ipc: String,
-    pub catalog_sha256: String,
-    pub operation_catalog: Value,
-    pub limits: EffectiveLimits,
-    pub capabilities: Vec<String>,
-}
-
-#[derive(Clone, Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct EffectiveLimits {
-    pub json_bytes: u64,
-    pub attachment_count: u64,
-    pub attachment_name_bytes: u64,
-    pub attachment_media_type_bytes: u64,
-    pub attachment_bytes: u64,
-    pub frame_bytes: u64,
-    pub queued_requests: u64,
-    pub queued_bytes: u64,
-    pub resident_request_bytes: u64,
-    pub pending_writer_bytes: u64,
-}
+/// Generated executable IPC A0 welcome contract retained under the pilot facade name.
+pub type Welcome = IpcWelcomeA0;
 
 #[derive(Debug, thiserror::Error)]
 pub enum GeometerClientError {
@@ -119,7 +97,7 @@ struct Inner {
 #[derive(Clone)]
 pub struct GeometerClient {
     inner: Arc<Inner>,
-    welcome: Arc<Welcome>,
+    welcome: Arc<IpcWelcomeA0>,
 }
 
 pub struct OperationCall {
@@ -198,56 +176,9 @@ fn decode_operation_response(
 }
 
 #[derive(Serialize)]
-struct Hello<'a> {
-    client_name: &'a str,
-    client_version: &'a str,
-    protocols: [&'a str; 1],
-    capabilities: [&'a str; 1],
-}
-
-#[derive(Serialize)]
 struct RequestEnvelope<'a> {
     operation: &'a str,
     request: &'a RawValue,
-}
-
-#[derive(Serialize)]
-struct Reason<'a> {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    reason: Option<&'a str>,
-}
-
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-struct CancelledControl {
-    status: String,
-}
-
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-struct ControlDiagnostic {
-    code: String,
-    category: String,
-    message: String,
-    retryable: bool,
-    request_id: String,
-}
-
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-struct RejectedControl {
-    status: String,
-    diagnostic: ControlDiagnostic,
-}
-
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-struct ShutdownAckControl {
-    status: String,
-    #[serde(rename = "activeRequestCompleted")]
-    active_request_completed: bool,
-    #[serde(rename = "rejectedQueuedRequestCount")]
-    rejected_queued_request_count: u32,
 }
 
 impl GeometerClient {
@@ -274,13 +205,12 @@ impl GeometerClient {
         let mut stderr = child.stderr.take().ok_or_else(|| {
             GeometerClientError::Process("child stderr is unavailable".to_owned())
         })?;
-        let hello = serde_json::to_vec(&Hello {
-            client_name,
-            client_version,
-            protocols: [IPC_IDENTITY],
-            capabilities: ["raw_attachments"],
-        })
-        .map_err(|error| GeometerClientError::Protocol(error.to_string()))?;
+        let hello = contracts::encode_ipc_hello_a0_json(&IpcHelloA0 {
+            client_name: client_name.to_owned(),
+            client_version: client_version.to_owned(),
+            protocols: vec![IPC_IDENTITY.to_owned()],
+            capabilities: Some(vec!["raw_attachments".to_owned()]),
+        })?;
         ipc::write_frame(
             &mut stdin,
             &Frame {
@@ -302,12 +232,7 @@ impl GeometerClient {
                 "server did not return a valid welcome frame".to_owned(),
             ));
         }
-        let mut deserializer = serde_json::Deserializer::from_slice(&welcome_frame.json);
-        let welcome = Welcome::deserialize(&mut deserializer)
-            .map_err(|error| GeometerClientError::Protocol(error.to_string()))?;
-        deserializer
-            .end()
-            .map_err(|error| GeometerClientError::Protocol(error.to_string()))?;
+        let welcome = contracts::decode_ipc_welcome_a0_json(&welcome_frame.json)?;
         validate_welcome(&welcome)?;
         let inner = Arc::new(Inner {
             stdin: Mutex::new(Some(stdin)),
@@ -353,7 +278,7 @@ impl GeometerClient {
         Self::spawn(path, client_name, client_version).await
     }
 
-    pub fn welcome(&self) -> &Welcome {
+    pub fn welcome(&self) -> &IpcWelcomeA0 {
         &self.welcome
     }
 
@@ -498,8 +423,7 @@ impl GeometerClient {
         let frame = Frame {
             kind: FrameKind::Cancel,
             request_id,
-            json: serde_json::to_vec(&Reason { reason })
-                .map_err(|error| GeometerClientError::Protocol(error.to_string()))?,
+            json: encode_reason(reason)?,
             attachments: Vec::new(),
         };
         if let Err(error) = ipc::write_frame(stdin, &frame).await {
@@ -527,7 +451,7 @@ impl GeometerClient {
         let shutdown_frame = Frame {
             kind: FrameKind::Shutdown,
             request_id: 0,
-            json: b"{}".to_vec(),
+            json: encode_reason(None)?,
             attachments: Vec::new(),
         };
         if let Err(error) = ipc::write_frame(stdin, &shutdown_frame).await {
@@ -588,7 +512,8 @@ async fn reader_task(inner: Arc<Inner>, mut stdout: tokio::process::ChildStdout)
             Ok(Some(frame)) => frame,
             Ok(None) => {
                 if inner.closing.load(Ordering::SeqCst) {
-                    inner.closed.store(true, Ordering::SeqCst);
+                    finish_connection(&inner, "Geometer stdout closed during shutdown", false)
+                        .await;
                     return;
                 }
                 fail_connection(&inner, "Geometer stdout closed unexpectedly").await;
@@ -643,10 +568,10 @@ async fn handle_response(inner: &Arc<Inner>, frame: Frame) -> Result<(), String>
 }
 
 async fn handle_cancelled(inner: &Arc<Inner>, frame: Frame) -> Result<(), String> {
-    let control = decode_control::<CancelledControl>(&frame.json);
+    let control = contracts::decode_ipc_cancelled_a0_json(&frame.json);
     if !frame.attachments.is_empty()
         || frame.request_id == 0
-        || !matches!(control, Ok(CancelledControl { ref status }) if status == "cancelled")
+        || !matches!(control, Ok(IpcCancelledA0 { ref status }) if status == "cancelled")
     {
         return Err("invalid cancelled control frame".to_owned());
     }
@@ -672,7 +597,7 @@ async fn handle_cancelled(inner: &Arc<Inner>, frame: Frame) -> Result<(), String
 }
 
 async fn handle_cancel_rejected(inner: &Arc<Inner>, frame: Frame) -> Result<(), String> {
-    let control = decode_control::<RejectedControl>(&frame.json)
+    let control = contracts::decode_ipc_cancel_rejected_a0_json(&frame.json)
         .map_err(|_| "invalid cancel_rejected JSON body".to_owned())?;
     if !valid_rejected_control(&control, frame.request_id) {
         return Err("invalid cancel_rejected JSON body".to_owned());
@@ -687,16 +612,17 @@ async fn handle_cancel_rejected(inner: &Arc<Inner>, frame: Frame) -> Result<(), 
     Ok(())
 }
 
-fn valid_rejected_control(control: &RejectedControl, request_id: u64) -> bool {
+fn valid_rejected_control(control: &IpcCancelRejectedA0, request_id: u64) -> bool {
+    let expected_request_id = request_id.to_string();
     control.status == "rejected"
-        && control.diagnostic.category == "transport"
+        && control.diagnostic.category == DiagnosticCategory::Transport
         && matches!(
             control.diagnostic.code.as_str(),
             "geometer.transport.not_cancellable" | "geometer.transport.unknown_request"
         )
         && !control.diagnostic.message.is_empty()
         && !control.diagnostic.retryable
-        && control.diagnostic.request_id == request_id.to_string()
+        && control.diagnostic.request_id.as_deref() == Some(expected_request_id.as_str())
 }
 
 async fn handle_shutdown_ack(inner: &Arc<Inner>, frame: Frame) -> Result<(), String> {
@@ -707,7 +633,7 @@ async fn handle_shutdown_ack(inner: &Arc<Inner>, frame: Frame) -> Result<(), Str
     {
         return Err("shutdown_ack arrived before all requests were terminal".to_owned());
     }
-    let control = decode_control::<ShutdownAckControl>(&frame.json)
+    let control = contracts::decode_ipc_shutdown_ack_a0_json(&frame.json)
         .map_err(|_| "invalid shutdown_ack JSON body".to_owned())?;
     if control.status != "complete" {
         return Err("invalid shutdown_ack JSON body".to_owned());
@@ -727,11 +653,11 @@ async fn handle_shutdown_ack(inner: &Arc<Inner>, frame: Frame) -> Result<(), Str
 }
 
 fn protocol_error_message(frame: &Frame) -> String {
-    let Ok(control) = decode_control::<RejectedControl>(&frame.json) else {
+    let Ok(control) = contracts::decode_ipc_protocol_error_a0_json(&frame.json) else {
         return "invalid protocol_error JSON body".to_owned();
     };
     if control.status != "protocol_error"
-        || control.diagnostic.category != "transport"
+        || control.diagnostic.category != DiagnosticCategory::Transport
         || control.diagnostic.code != "geometer.transport.protocol_error"
     {
         return "invalid protocol_error JSON body".to_owned();
@@ -739,14 +665,11 @@ fn protocol_error_message(frame: &Frame) -> String {
     format!("server protocol error: {}", control.diagnostic.message)
 }
 
-fn decode_control<T: for<'de> Deserialize<'de>>(data: &[u8]) -> Result<T, serde_json::Error> {
-    let mut deserializer = serde_json::Deserializer::from_slice(data);
-    let value = T::deserialize(&mut deserializer)?;
-    deserializer.end()?;
-    Ok(value)
+async fn fail_connection(inner: &Arc<Inner>, message: &str) {
+    finish_connection(inner, message, true).await;
 }
 
-async fn fail_connection(inner: &Arc<Inner>, message: &str) {
+async fn finish_connection(inner: &Arc<Inner>, message: &str, kill_child: bool) {
     if inner.closed.swap(true, Ordering::SeqCst) {
         return;
     }
@@ -761,7 +684,9 @@ async fn fail_connection(inner: &Arc<Inner>, message: &str) {
     if let Some(shutdown) = inner.shutdown.lock().await.take() {
         let _ = shutdown.send(Err(message.to_owned()));
     }
-    let _ = inner.child.lock().await.start_kill();
+    if kill_child {
+        let _ = inner.child.lock().await.start_kill();
+    }
 }
 
 fn outcome_operation(outcome: &OperationOutcomeA0) -> String {
@@ -771,7 +696,7 @@ fn outcome_operation(outcome: &OperationOutcomeA0) -> String {
     }
 }
 
-fn validate_welcome(welcome: &Welcome) -> Result<(), GeometerClientError> {
+fn validate_welcome(welcome: &IpcWelcomeA0) -> Result<(), GeometerClientError> {
     if welcome.ipc != IPC_IDENTITY || welcome.catalog_sha256 != NORMALIZED_CATALOG_SHA256 {
         return Err(GeometerClientError::Protocol(
             "welcome selected an unsupported IPC or contract catalog".to_owned(),
@@ -782,7 +707,10 @@ fn validate_welcome(welcome: &Welcome) -> Result<(), GeometerClientError> {
             "welcome advertises an effective limit above the A0 maximum".to_owned(),
         ));
     }
-    if welcome.operation_catalog != expected_operation_catalog(welcome) {
+    if serde_json::to_value(&welcome.operation_catalog)
+        .map_err(|error| GeometerClientError::Protocol(error.to_string()))?
+        != expected_operation_catalog(welcome)
+    {
         return Err(GeometerClientError::Protocol(
             "welcome operation catalog differs from the generated model-bounds catalog".to_owned(),
         ));
@@ -801,24 +729,24 @@ fn validate_welcome(welcome: &Welcome) -> Result<(), GeometerClientError> {
     Ok(())
 }
 
-fn valid_effective_limits(limits: &EffectiveLimits) -> bool {
+fn valid_effective_limits(limits: &contracts::IpcEffectiveLimitsA0) -> bool {
     let bounded = [
-        (limits.json_bytes, ipc::MAX_JSON_BYTES as u64),
-        (limits.attachment_count, ipc::MAX_ATTACHMENT_COUNT as u64),
+        (limits.json_bytes, ipc::MAX_JSON_BYTES as u32),
+        (limits.attachment_count, ipc::MAX_ATTACHMENT_COUNT as u32),
         (
             limits.attachment_name_bytes,
-            ipc::MAX_ATTACHMENT_TEXT_BYTES as u64,
+            ipc::MAX_ATTACHMENT_TEXT_BYTES as u32,
         ),
         (
             limits.attachment_media_type_bytes,
-            ipc::MAX_ATTACHMENT_TEXT_BYTES as u64,
+            ipc::MAX_ATTACHMENT_TEXT_BYTES as u32,
         ),
-        (limits.attachment_bytes, ipc::MAX_ATTACHMENT_BYTES as u64),
-        (limits.frame_bytes, ipc::MAX_FRAME_BYTES as u64),
+        (limits.attachment_bytes, ipc::MAX_ATTACHMENT_BYTES as u32),
+        (limits.frame_bytes, ipc::MAX_FRAME_BYTES as u32),
         (limits.queued_requests, 8),
-        (limits.queued_bytes, ipc::MAX_FRAME_BYTES as u64),
-        (limits.resident_request_bytes, ipc::MAX_FRAME_BYTES as u64),
-        (limits.pending_writer_bytes, ipc::MAX_FRAME_BYTES as u64),
+        (limits.queued_bytes, ipc::MAX_FRAME_BYTES as u32),
+        (limits.resident_request_bytes, ipc::MAX_FRAME_BYTES as u32),
+        (limits.pending_writer_bytes, ipc::MAX_FRAME_BYTES as u32),
     ];
     bounded
         .iter()
@@ -827,7 +755,7 @@ fn valid_effective_limits(limits: &EffectiveLimits) -> bool {
 
 fn validate_effective_request(
     frame: &Frame,
-    limits: &EffectiveLimits,
+    limits: &contracts::IpcEffectiveLimitsA0,
 ) -> Result<(), GeometerClientError> {
     let invalid = frame.json.len() > limits.json_bytes as usize
         || frame.attachments.len() > limits.attachment_count as usize
@@ -845,7 +773,13 @@ fn validate_effective_request(
     Ok(())
 }
 
-fn expected_operation_catalog(welcome: &Welcome) -> Value {
+fn encode_reason(reason: Option<&str>) -> Result<Vec<u8>, GeometerClientError> {
+    Ok(contracts::encode_ipc_reason_a0_json(&IpcReasonA0 {
+        reason: reason.map(str::to_owned),
+    })?)
+}
+
+fn expected_operation_catalog(welcome: &IpcWelcomeA0) -> Value {
     serde_json::json!({
         "catalog": "wn.geometer.operation_catalog.a0",
         "generic_abi": "a0",

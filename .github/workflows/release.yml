@@ -104,6 +104,10 @@ jobs:
       - name: Build and test native code
         run: uv run --group dev python scripts/validate_native.py
 
+      - name: Test generated Rust executable client
+        working-directory: src/rust/geometer-client
+        run: cargo test --locked
+
       - name: Test Python package
         run: uv run --group dev python scripts/validate_python_package.py
 

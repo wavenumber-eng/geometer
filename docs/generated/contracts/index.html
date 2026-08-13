@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="wn.geometer.contract_docs:a0">
-  <meta name="wn-catalog-sha256" content="9691a8249841870e01f5c090ed08a12772d60b402c090352a0978267cae2c670">
+  <meta name="wn-catalog-sha256" content="12f521239c1a714c3dbb27478ee3980ebcf07a91c4fcae239de4a4d811c03190">
   <title>Geometer Contract Reference</title>
   <link rel="stylesheet" href="../../design/styles.css">
 </head>
-<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="9691a8249841870e01f5c090ed08a12772d60b402c090352a0978267cae2c670" data-page-kind="index">
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="12f521239c1a714c3dbb27478ee3980ebcf07a91c4fcae239de4a4d811c03190" data-page-kind="index">
 <main>
 <header>
   <p class="page-type">Generated contract reference</p>
@@ -24,11 +24,56 @@
 </nav>
 <aside class="callout"><strong>Generated reference.</strong> Authored TypeSpec owns promoted structure; this site is a deterministic navigation and review artifact.</aside>
 <section>
-  <h2>Contract roots <span class="tag">4</span></h2>
+  <h2>Contract roots <span class="tag">13</span></h2>
   <div class="grid"><article class="panel">
   <h3><a href="contracts/geometry-common-diagnostic-a0.html"><code>geometry.common.diagnostic.a0</code></a></h3>
   <p>A strict cross-transport diagnostic; message text is informative rather than identity.</p>
   <p><span class="tag">model</span> <span class="status">inventory_only</span></p>
+</article>
+<article class="panel">
+  <h3><a href="contracts/geometer-ipc-cancelled-a0.html"><code>geometer.ipc.cancelled.a0</code></a></h3>
+  <p>Successful queue-only cancellation outcome.</p>
+  <p><span class="tag">model</span> <span class="status">pilot_candidate</span></p>
+</article>
+<article class="panel">
+  <h3><a href="contracts/geometer-ipc-cancel-rejected-a0.html"><code>geometer.ipc.cancel_rejected.a0</code></a></h3>
+  <p>Nonterminal cancellation rejection for an active or unknown request.</p>
+  <p><span class="tag">model</span> <span class="status">pilot_candidate</span></p>
+</article>
+<article class="panel">
+  <h3><a href="contracts/geometer-ipc-hello-a0.html"><code>geometer.ipc.hello.a0</code></a></h3>
+  <p>Client handshake for executable IPC A0.</p>
+  <p><span class="tag">model</span> <span class="status">pilot_candidate</span></p>
+</article>
+<article class="panel">
+  <h3><a href="contracts/geometer-ipc-operation-catalog-a0.html"><code>geometer.ipc.operation_catalog.a0</code></a></h3>
+  <p>Exact operation catalog embedded into the welcome frame.</p>
+  <p><span class="tag">model</span> <span class="status">pilot_candidate</span></p>
+</article>
+<article class="panel">
+  <h3><a href="contracts/geometer-ipc-protocol-error-a0.html"><code>geometer.ipc.protocol_error.a0</code></a></h3>
+  <p>Fatal connection-level protocol diagnostic.</p>
+  <p><span class="tag">model</span> <span class="status">pilot_candidate</span></p>
+</article>
+<article class="panel">
+  <h3><a href="contracts/geometer-ipc-reason-a0.html"><code>geometer.ipc.reason.a0</code></a></h3>
+  <p>Optional human-readable reason used by cancel and shutdown controls.</p>
+  <p><span class="tag">model</span> <span class="status">pilot_candidate</span></p>
+</article>
+<article class="panel">
+  <h3><a href="contracts/geometer-ipc-request-a0.html"><code>geometer.ipc.request.a0</code></a></h3>
+  <p>Strict generic request envelope for executable IPC A0.</p>
+  <p><span class="tag">model</span> <span class="status">pilot_candidate</span></p>
+</article>
+<article class="panel">
+  <h3><a href="contracts/geometer-ipc-shutdown-ack-a0.html"><code>geometer.ipc.shutdown_ack.a0</code></a></h3>
+  <p>Final acknowledgment after every accepted request is terminal and flushed.</p>
+  <p><span class="tag">model</span> <span class="status">pilot_candidate</span></p>
+</article>
+<article class="panel">
+  <h3><a href="contracts/geometer-ipc-welcome-a0.html"><code>geometer.ipc.welcome.a0</code></a></h3>
+  <p>Server handshake selecting executable IPC A0 and its effective limits.</p>
+  <p><span class="tag">model</span> <span class="status">pilot_candidate</span></p>
 </article>
 <article class="panel">
   <h3><a href="contracts/geometry-model-bounds-options-a0.html"><code>geometry.model_bounds.options.a0</code></a></h3>
@@ -52,7 +97,7 @@
 </section>
 <section>
   <h2>Generated inputs</h2>
-  <div class="panel"><p>Catalog <code>wn.geometer.contract_catalog:a0</code></p><p>SHA-256 <code>9691a8249841870e01f5c090ed08a12772d60b402c090352a0978267cae2c670</code></p><p><a href="../../../contracts/geometer/generated/wn_geometer_contract_catalog.a0.json">Normalized catalog JSON</a></p></div>
+  <div class="panel"><p>Catalog <code>wn.geometer.contract_catalog:a0</code></p><p>SHA-256 <code>12f521239c1a714c3dbb27478ee3980ebcf07a91c4fcae239de4a4d811c03190</code></p><p><a href="../../../contracts/geometer/generated/wn_geometer_contract_catalog.a0.json">Normalized catalog JSON</a></p></div>
 </section>
 </main>
 </body>

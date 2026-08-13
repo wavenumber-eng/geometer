@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:wavenumber:schema:geometer:geometer.ipc.request:a0",
+  "type": "object",
+  "properties": {
+    "operation": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "request": {
+      "$ref": "urn:wavenumber:schema:geometer:geometry.model_bounds.options:a0"
+    }
+  },
+  "required": [
+    "operation",
+    "request"
+  ],
+  "unevaluatedProperties": {
+    "not": {}
+  },
+  "description": "Strict generic request envelope for executable IPC A0."
+}

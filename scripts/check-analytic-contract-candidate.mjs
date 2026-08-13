@@ -171,7 +171,7 @@ try {
       "stage_id?",
       "operand_id?",
       "geometry_id?",
-      "path?",
+      "path_identity?",
     ],
     OperandOutcomeEvent: ["operand_id", "kind", "result_ring_ids", "result_region_ids", "sources"],
     PlanarPath: ["path_id", "vertices", "segments"],
@@ -355,6 +355,7 @@ try {
       "DiagnosticSeverity",
       "IntersectionDimension",
       "JobDiagnosticCode",
+      "JobDiagnosticPath",
       "OperandOutcomeKind",
       "RelationshipStatus",
       "SourceKind",
@@ -466,29 +467,28 @@ try {
     relationship_right_job_id: 26,
   };
   assertEqual(numericCatalog.path_token, expectedPathTokens, "diagnostic path-token mapping");
+  const expectedPathIdentities = Object.keys(expectedPathTokens).filter((name) => name !== "none");
+  assertEnumValues(declarationByName, "JobDiagnosticPath", expectedPathIdentities);
+  const pathIdentityDeclaration = declarationByName.get("JobDiagnosticPath");
   assertEqual(
-    Object.keys(numericCatalog.path_token_logical_pattern),
-    Object.keys(expectedPathTokens),
-    "diagnostic path-pattern coverage",
+    Object.fromEntries(
+      pathIdentityDeclaration.members.map((member) => [member.name, member.value]),
+    ),
+    Object.fromEntries(expectedPathIdentities.map((name) => [name, name])),
+    "diagnostic path-token identity projection",
   );
-  assertEqual(numericCatalog.path_token_logical_pattern.none, "", "absent path projection");
-  for (const [name, pattern] of Object.entries(numericCatalog.path_token_logical_pattern)) {
-    if (name !== "none" && !pattern.startsWith("/")) {
-      throw new Error(`${name} must project to an RFC 6901 absolute pointer pattern.`);
-    }
-  }
 
-  const diagnosticPath = modelProperty(declarationByName, "JobDiagnostic", "path");
-  assertEqual(diagnosticPath.optional, true, "logical diagnostic path optionality");
+  const diagnosticPath = modelProperty(declarationByName, "JobDiagnostic", "path_identity");
+  assertEqual(diagnosticPath.optional, true, "logical diagnostic path-identity optionality");
   assertEqual(
-    diagnosticPath.type,
-    { kind: "primitive", name: "string" },
-    "logical diagnostic path type",
+    shortName(diagnosticPath.type.target),
+    "JobDiagnosticPath",
+    "logical diagnostic path-identity type",
   );
   assertEqual(
     diagnosticPath.annotations["x-wn-packed-field"],
     "path_token",
-    "logical diagnostic path packed projection",
+    "logical diagnostic path-identity packed projection",
   );
   for (const resultName of ["SuccessfulJobResult", "FailedJobResult"]) {
     const digest = modelProperty(declarationByName, resultName, "digest_sha256");

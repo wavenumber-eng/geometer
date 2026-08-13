@@ -830,14 +830,8 @@ def test_analytic_planar_boolean_numeric_catalog_is_closed() -> None:
             "allowed_roles": [0],
         },
     }
-    assert set(catalog["path_token_logical_pattern"]) == set(catalog["path_token"])
     assert catalog["path_token"]["none"] == 0
-    assert catalog["path_token_logical_pattern"]["none"] == ""
-    assert all(
-        pattern.startswith("/")
-        for name, pattern in catalog["path_token_logical_pattern"].items()
-        if name != "none"
-    )
+    assert sorted(catalog["path_token"].values()) == list(range(27))
 
     solver_limits = catalog["limit"]
     for name in (

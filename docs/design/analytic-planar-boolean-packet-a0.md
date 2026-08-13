@@ -331,13 +331,11 @@ zero-length result-region range.
 | 44 | `u32` | detail token, zero in A0 |
 | 48 | `u64` | reserved, zero |
 
-Path tokens are generated catalog integers mapped to documented logical paths;
-A0 carries no arbitrary strings in the hot packet.
-The exhaustive mapping is the numeric catalog's
-`path_token_logical_pattern` table. Packed decoders expand the selected pattern
-with the record's trusted request indexes into the optional RFC 6901 logical
-`path`; packed encoders accept only a unique canonical inverse mapping. Token
-zero maps to an absent path.
+Path tokens are generated catalog integers mapped one-to-one to the same-named
+logical `JobDiagnosticPath` identity; A0 carries no arbitrary strings in the
+hot packet. Token zero maps to an absent identity. Decoding requires no original
+request or array indexes. RFC 6901 paths remain available on batch-rejecting
+outer contract diagnostics, not on these standalone job-result records.
 
 ### Result-vertex record, 32 bytes
 

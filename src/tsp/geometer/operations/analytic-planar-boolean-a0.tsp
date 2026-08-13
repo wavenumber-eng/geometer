@@ -48,6 +48,36 @@ enum DiagnosticSeverity {
   warning: "warning",
 }
 
+/** Standalone logical identities projected one-to-one from nonzero packed path tokens. */
+enum JobDiagnosticPath {
+  request_jobs: "request_jobs",
+  job_id: "job_id",
+  job_stages: "job_stages",
+  stage_id: "stage_id",
+  stage_operation: "stage_operation",
+  stage_operands: "stage_operands",
+  operand_id: "operand_id",
+  operand_geometry: "operand_geometry",
+  region_outer: "region_outer",
+  region_holes: "region_holes",
+  ring_vertices: "ring_vertices",
+  ring_segments: "ring_segments",
+  path_vertices: "path_vertices",
+  path_segments: "path_segments",
+  segment_curve: "segment_curve",
+  disk_radius: "disk_radius",
+  annulus_inner_radius: "annulus_inner_radius",
+  annulus_outer_radius: "annulus_outer_radius",
+  capsule_start: "capsule_start",
+  capsule_end: "capsule_end",
+  capsule_width: "capsule_width",
+  swept_path_centerline: "swept_path_centerline",
+  swept_path_width: "swept_path_width",
+  relationship_queries: "relationship_queries",
+  relationship_left_job_id: "relationship_left_job_id",
+  relationship_right_job_id: "relationship_right_job_id",
+}
+
 enum OperandOutcomeKind {
   contributes_final_material: "contributes_final_material",
   redundant_or_absorbed_coverage: "redundant_or_absorbed_coverage",
@@ -322,9 +352,9 @@ model JobDiagnostic {
   operand_id?: OperandId;
   @minValue(1)
   geometry_id?: uint64;
-  /** RFC 6901 pointer into the logical request when a trusted location exists. */
+  /** Governed standalone location identity; token zero projects to absence. */
   @extension("x-wn-packed-field", "path_token")
-  path?: string;
+  path_identity?: JobDiagnosticPath;
 }
 
 model SuccessfulJobResult {

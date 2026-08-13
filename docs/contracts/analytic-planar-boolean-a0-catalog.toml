@@ -293,35 +293,6 @@ relationship_queries = 24
 relationship_left_job_id = 25
 relationship_right_job_id = 26
 
-[path_token_logical_pattern]
-none = ""
-request_jobs = "/jobs"
-job_id = "/jobs/{job_index}/job_id"
-job_stages = "/jobs/{job_index}/stages"
-stage_id = "/jobs/{job_index}/stages/{stage_index}/stage_id"
-stage_operation = "/jobs/{job_index}/stages/{stage_index}/operation"
-stage_operands = "/jobs/{job_index}/stages/{stage_index}/operands"
-operand_id = "/jobs/{job_index}/stages/{stage_index}/operands/{operand_index}/operand_id"
-operand_geometry = "/jobs/{job_index}/stages/{stage_index}/operands/{operand_index}"
-region_outer = "/jobs/{job_index}/stages/{stage_index}/operands/{operand_index}/outer"
-region_holes = "/jobs/{job_index}/stages/{stage_index}/operands/{operand_index}/holes"
-ring_vertices = "/jobs/{job_index}/stages/{stage_index}/operands/{operand_index}/{ring_field}/vertices"
-ring_segments = "/jobs/{job_index}/stages/{stage_index}/operands/{operand_index}/{ring_field}/segments"
-path_vertices = "/jobs/{job_index}/stages/{stage_index}/operands/{operand_index}/centerline/vertices"
-path_segments = "/jobs/{job_index}/stages/{stage_index}/operands/{operand_index}/centerline/segments"
-segment_curve = "/jobs/{job_index}/stages/{stage_index}/operands/{operand_index}/{path_or_ring_field}/segments/{segment_index}"
-disk_radius = "/jobs/{job_index}/stages/{stage_index}/operands/{operand_index}/radius_nm"
-annulus_inner_radius = "/jobs/{job_index}/stages/{stage_index}/operands/{operand_index}/inner_radius_nm"
-annulus_outer_radius = "/jobs/{job_index}/stages/{stage_index}/operands/{operand_index}/outer_radius_nm"
-capsule_start = "/jobs/{job_index}/stages/{stage_index}/operands/{operand_index}/start"
-capsule_end = "/jobs/{job_index}/stages/{stage_index}/operands/{operand_index}/end"
-capsule_width = "/jobs/{job_index}/stages/{stage_index}/operands/{operand_index}/width_nm"
-swept_path_centerline = "/jobs/{job_index}/stages/{stage_index}/operands/{operand_index}/centerline"
-swept_path_width = "/jobs/{job_index}/stages/{stage_index}/operands/{operand_index}/width_nm"
-relationship_queries = "/relationship_queries"
-relationship_left_job_id = "/relationship_queries/{query_index}/left_job_id"
-relationship_right_job_id = "/relationship_queries/{query_index}/right_job_id"
-
 [limit]
 jobs = 65535
 stages_per_batch = 1048576

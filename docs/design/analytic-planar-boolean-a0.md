@@ -657,19 +657,20 @@ compact governed integers in a structurally valid result packet:
 - `geometer.operation.analytic_planar_boolean.solver_failed`
 - `geometer.operation.analytic_planar_boolean.resource_limit_exceeded`
 
-Diagnostics carry trustworthy job/stage/operand/geometry ids and a generated
-logical path when available. Unknown or untrusted ids are omitted rather than
-guessed.
+Diagnostics carry trustworthy job/stage/operand/geometry ids and an optional
+governed logical path identity. Unknown or untrusted ids are omitted rather
+than guessed.
 
-The logical `path` is an optional RFC 6901 pointer into the request. The packed
-diagnostic record carries only its governed `path_token`. The numeric catalog's
-`path_token_logical_pattern` table is the exhaustive projection: brace-delimited
-placeholders are replaced with decimal array indexes (and `ring_field` or
-`path_or_ring_field` with the actual escaped property path). Token zero maps to
-an absent logical path; a nonzero token is valid only when the decoded pointer
-matches its catalog pattern. Logical encoders perform the inverse match and
-reject absent, ambiguous, or noncanonical mappings rather than inventing a
-token. JSON Pointer escaping follows RFC 6901.
+The logical `pathIdentity` is the symbolic name of the packed `path_token` from
+the numeric catalog. Token zero maps to absence; every nonzero token maps
+one-to-one to the same-named `JobDiagnosticPath` enum member. This standalone
+projection never depends on the original request, request array indexes, or an
+ID-to-index lookup, so a persisted result packet always decodes identically.
+Generated convenience code may combine the identity, trusted ids, and an
+available request to present a navigable location, but that presentation is not
+part of the canonical result DTO or bytes. Batch-rejecting outer contract
+diagnostics continue to use `DiagnosticA0.path` as an RFC 6901 pointer because
+they are produced while validating the request document.
 
 ## Generated Clients
 

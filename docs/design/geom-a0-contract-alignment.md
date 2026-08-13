@@ -2,11 +2,13 @@
 
 ## Status
 
-Proposed for the `geom-contract-alignment` approval gate. This report compares
+Accepted for the `geom-contract-alignment` gate at commit `433bad5` by reviewer
+packet `reviewer-019ffce8-ac66-76c0-877d-3fcb5c1aa6c5`. This report compares
 the digest-locked `appz/data_models` Geom A0 consumer vocabulary with the
 Geometer-owned logical model proposed for
 `geometry.analytic_planar_boolean_batch.a0`. It is a compatibility and adapter
-report, not shared runtime authority and not a promotion decision.
+report, not shared runtime authority and not a promotion decision. The
+operation, packet, solver, and release remain unfrozen.
 
 The frozen inputs, source revision, and SHA-256 digests are recorded in
 [`data-models-geom-a0-2026-08-12.toml`](../contracts/compatibility/data-models-geom-a0-2026-08-12.toml).

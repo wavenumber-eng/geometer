@@ -78,13 +78,13 @@ depends_on = ["typescript-wasm", "rust-exe-ipc", "python-public-contracts"]
 [[steps]]
 id = "geom-contract-alignment"
 title = "Freeze the Geom a0 compatibility input and propose Geometer-owned reusable planar contracts"
-status = "pending"
+status = "done"
 depends_on = ["model-bounds-promotion"]
 
 [[steps]]
 id = "analytic-planar-boolean-design"
 title = "Design and prototype the analytic planar Boolean contract, solver, and packed format"
-status = "pending"
+status = "active"
 depends_on = ["geom-contract-alignment"]
 
 [[steps]]

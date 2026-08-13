@@ -431,7 +431,11 @@ def test_data_models_geom_a0_requirements_snapshot_is_frozen() -> None:
     assert snapshot["runtime_sibling_dependency"] is False
     assert snapshot["geom_contract"]["schema_identity"] == ("urn:wavenumber:schema:geom_a0")
     geom_contract = snapshot["geom_contract"]
-    assert geom_contract["mapping_status"] == "proposed"
+    assert geom_contract["mapping_status"] == "accepted"
+    assert geom_contract["mapping_review_commit"] == "433bad5"
+    assert geom_contract["mapping_review_packet"] == (
+        "reviewer-019ffce8-ac66-76c0-877d-3fcb5c1aa6c5"
+    )
     assert geom_contract["consumer_confirmation"] == (
         "joint_semantic_and_fixture_review_complete_no_known_blocker"
     )
@@ -453,6 +457,7 @@ def test_data_models_geom_a0_requirements_snapshot_is_frozen() -> None:
         "fail closed",
         "PCB source semantics",
         "tagged Geometer release",
+        geom_contract["mapping_review_packet"],
     ):
         assert required_boundary in mapping_text
 

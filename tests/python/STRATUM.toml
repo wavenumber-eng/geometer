@@ -37,7 +37,7 @@ test_case_type = "unit"
 id = "PY_004"
 file = "test_contract_promotion_manifest.py"
 name = "Contract Promotion Manifest"
-description = "Checks contract inventory, C ABI/WASM exports, packet identities, named downstream compatibility inputs, and dispatch aliases."
+description = "Checks contract inventory, C ABI/WASM exports, packet identities, vendored downstream design inputs, and dispatch aliases."
 test_case_type = "unit"
 
 [[subtests]]

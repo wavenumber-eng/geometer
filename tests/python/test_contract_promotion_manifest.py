@@ -17,7 +17,7 @@ def _manifest() -> dict[str, Any]:
         return tomllib.load(stream)
 
 
-def _unique(values: list[str], label: str) -> None:
+def _unique(values: list[Any], label: str) -> None:
     assert len(values) == len(set(values)), f"duplicate {label}: {values}"
 
 
@@ -265,6 +265,7 @@ def test_manifest_sources_and_identities_are_complete() -> None:
     assert (ROOT / candidate["packet_spec"]).is_file()
     assert (ROOT / candidate["numeric_catalog"]).is_file()
     assert (ROOT / candidate["feasibility_test"]).is_file()
+    assert (ROOT / candidate["portable_fixture"]).is_file()
 
     for demo in manifest["demos"]:
         assert (ROOT / demo["source"]).is_file()
@@ -512,6 +513,8 @@ def test_data_models_geom_a0_requirements_snapshot_is_frozen() -> None:
         "source_revision": "4c688e46729015d21dc140dbe274e396e3717c18",
         "source_path": "tests/fixtures/pcb_materialization/geometer_analytic_planar_boolean_observations_a0.json",
         "sha256": "10a97f0eed4a4f6852917c4fb6abd35854142bf5d148b8320c60a44f765414c4",
+        "vendored_path": "tests/fixtures/analytic_planar_boolean/matz_observations_a0.json",
+        "vendored_sha256": "10a97f0eed4a4f6852917c4fb6abd35854142bf5d148b8320c60a44f765414c4",
         "portable_case_count": 10,
         "real_board_case_count": 2,
         "case_2_oracle": "success",
@@ -523,10 +526,124 @@ def test_data_models_geom_a0_requirements_snapshot_is_frozen() -> None:
         "normalization_collapse_case": "job_local_failure",
         "normal_build_sibling_dependency": False,
     }
+    vendored_fixture = ROOT / fixture_input["vendored_path"]
+    assert candidate["portable_fixture"] == fixture_input["vendored_path"]
+    assert _sha256(vendored_fixture) == fixture_input["vendored_sha256"] == fixture_input["sha256"]
 
     plan = (ROOT / "docs" / "plans" / "geometer-typespec-contracts" / "plan.md").read_text(encoding="utf-8")
     assert operation["id"] in plan
     assert matz["snapshot"] in plan or snapshot_path.name in plan
+
+
+def test_vendored_matz_analytic_boolean_observations_are_structurally_closed() -> None:
+    manifest = _manifest()
+    candidate = manifest["candidate_operations"][0]
+    fixture = json.loads((ROOT / candidate["portable_fixture"]).read_text(encoding="utf-8"))
+
+    assert fixture["type"] == "matz.geometer.analytic_planar_boolean_observation_manifest"
+    assert fixture["version"] == "a0"
+    assert fixture["capability"] == candidate["id"]
+    assert fixture["status"] == "consumer_observations_pre_typespec"
+    assert fixture["coordinate_unit"] == "nm"
+    assert fixture["angle_unit"] == "microdegree"
+    assert fixture["id_policy"] == {
+        "storage": "nonzero_uint64",
+        "scope": "per_declared_id_space_per_batch",
+        "typescript": "bigint_or_BigUint64Array_never_number",
+        "stable_identity": False,
+    }
+    assert fixture["batch_failure_policy"] == {
+        "untrusted_frame": "reject_batch",
+        "isolated_geometry_or_normalization_failure": "fail_job_continue_batch",
+        "dependent_relationship_query": "skipped_dependency_failed",
+    }
+
+    cases = fixture["portable_cases"]
+    assert len(cases) == 10
+    assert [item["fixture_id"] for item in cases] == [
+        "line_add_subtract_add",
+        "intersecting_arbitrary_angle_arcs",
+        "analytic_primitive_family",
+        "nested_holes_and_islands",
+        "tangent_coincident_overlap_matrix",
+        "normalization_collision",
+        "many_to_many_disconnected_results",
+        "conductive_domain_contact_queries",
+        "successful_requested_empty",
+        "mixed_batch_equivalence",
+    ]
+
+    all_jobs: list[dict[str, Any]] = []
+    all_queries: list[dict[str, Any]] = []
+    geometry_kinds: set[str] = set()
+    stage_operations: set[str] = set()
+    for case in cases:
+        jobs = case.get("jobs", [case] if "job_id" in case else [])
+        all_jobs.extend(jobs)
+        all_queries.extend(case.get("relationship_queries", []))
+        for job in jobs:
+            assert 0 < job["job_id"] <= 0xFFFF_FFFF_FFFF_FFFF
+            stage_ids = [stage["stage_id"] for stage in job["stages"]]
+            _unique(stage_ids, f"stage id in job {job['job_id']}")
+            assert all(0 < stage_id <= 0xFFFF_FFFF_FFFF_FFFF for stage_id in stage_ids)
+            operand_ids: list[int] = []
+            for stage in job["stages"]:
+                stage_operations.add(stage["operation"])
+                assert stage["operation"] in {"union", "difference"}
+                for operand in stage["operands"]:
+                    operand_ids.append(operand["operand_id"])
+                    assert 0 < operand["operand_id"] <= 0xFFFF_FFFF_FFFF_FFFF
+                    geometry_kinds.add(operand["geometry"]["kind"])
+            _unique(operand_ids, f"operand id in job {job['job_id']}")
+
+    job_ids = [job["job_id"] for job in all_jobs]
+    _unique(job_ids, "portable job id")
+    assert stage_operations == {"union", "difference"}
+    assert geometry_kinds == {
+        "rectangle",
+        "region",
+        "disk",
+        "annulus",
+        "capsule",
+        "arc_sweep",
+        "line_arc_swept_path",
+    }
+
+    query_ids = [query["query_id"] for query in all_queries]
+    _unique(query_ids, "portable relationship query id")
+    known_job_ids = set(job_ids)
+    assert all(
+        query[side] in known_job_ids
+        for query in all_queries
+        for side in ("left_job_id", "right_job_id")
+    )
+
+    arc_case = next(item for item in cases if item["fixture_id"] == "intersecting_arbitrary_angle_arcs")
+    arc_expected = arc_case["expected"]
+    assert len(arc_expected["canonical_fragments"]) == 12
+    assert arc_expected["native_wasm_feasibility_signature_sha256"] == (
+        "c21b03c1b42a6cb3212cec5b3051987f645e21062eddecc82d3e3b0e0fd6dfc7"
+    )
+    signature = (ROOT / "tests/fixtures/analytic_planar_boolean/feasibility_signature_a0.txt").read_text(
+        encoding="utf-8"
+    )
+    assert "matz_endpoint_fragments|" + "|".join(arc_expected["canonical_fragments"]) in signature
+
+    real_board_cases = fixture["real_board_cases"]
+    assert len(real_board_cases) == 2
+    assert [item["fixture_id"] for item in real_board_cases] == [
+        "rt_super_c1_pwr4",
+        "loz_old_man_curved_copper",
+    ]
+    for item in real_board_cases:
+        assert re.fullmatch(r"[0-9a-f]{64}", item["source_sha256"])
+        assert item["source_bytes"] > 0
+        assert set(item["applicable_geometry_preflight"]["forbidden_count"].values()) == {0}
+
+    budget = fixture["performance_budget"]
+    assert budget["correctness_precedence"] is True
+    assert budget["design_target_wall_seconds"] == 5
+    assert budget["design_target_peak_bytes"] == 1_073_741_824
 
 
 def test_analytic_planar_boolean_numeric_catalog_is_closed() -> None:

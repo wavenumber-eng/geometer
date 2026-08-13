@@ -1,0 +1,343 @@
+{
+  "type": "matz.geometer.analytic_planar_boolean_observation_manifest",
+  "version": "a0",
+  "capability": "geometry.analytic_planar_boolean_batch.a0",
+  "status": "consumer_observations_pre_typespec",
+  "coordinate_unit": "nm",
+  "angle_unit": "microdegree",
+  "id_policy": {
+    "storage": "nonzero_uint64",
+    "scope": "per_declared_id_space_per_batch",
+    "typescript": "bigint_or_BigUint64Array_never_number",
+    "stable_identity": false
+  },
+  "authored_source_identity_policy": {
+    "purpose": "fixed logical provenance observations, not proposed TypeSpec or wire fields",
+    "explicit_source_topology_precedence": true,
+    "compact_operand_expansion": {
+      "ring_id": "1000000000000 + operand_id * 32 + one_based_ring_ordinal",
+      "path_id": "2000000000000 + operand_id * 32 + one_based_path_ordinal",
+      "segment_id": "3000000000000 + operand_id * 64 + one_based_segment_ordinal",
+      "curve_id": "4000000000000 + operand_id * 64 + one_based_segment_ordinal",
+      "feature_id": "5000000000000 + operand_id * 32 + one_based_feature_ordinal",
+      "vertex_id": "6000000000000 + operand_id * 64 + one_based_authored_vertex_ordinal"
+    },
+    "compact_shape_expansion": {
+      "rectangle": "one authored outer ring with four authored vertex and line segment/curve identities",
+      "region": "one authored identity per supplied ring, supplied vertex, and supplied line/arc segment",
+      "disk": "one authored primitive-circle feature identity",
+      "annulus": "authored outer-circle and inner-circle feature identities",
+      "capsule": "one authored compact-capsule feature identity",
+      "arc_sweep": "one authored swept-arc feature identity unless explicit logical boundary provenance is supplied",
+      "line_arc_swept_path": "one authored path plus authored centerline vertex and segment/curve identities; offset boundaries are derived features unless explicitly identified"
+    },
+    "wire_neutrality": [
+      "authored planar-region ring and segment identities must survive generated-client roundtrip",
+      "compact primitive identities may become operand-relative canonical feature references rather than serialized lowered boundary rings",
+      "compact primitive and compact arc-sweep helpers do not synthesize authored vertex identities",
+      "explicit source_topology entries describe logical provenance observations and do not require callers to serialize solver-derived boundary topology",
+      "the future Geometer TypeSpec and packet specification own the final authored-versus-derived representation"
+    ]
+  },
+  "batch_failure_policy": {
+    "untrusted_frame": "reject_batch",
+    "isolated_geometry_or_normalization_failure": "fail_job_continue_batch",
+    "dependent_relationship_query": "skipped_dependency_failed"
+  },
+  "portable_cases": [
+    {
+      "fixture_id": "line_add_subtract_add",
+      "job_id": 1,
+      "stages": [
+        {
+          "stage_id": 101,
+          "operation": "union",
+          "operands": [
+            {"operand_id": 1001, "geometry": {"kind": "rectangle", "min": [0, 0], "max": [10000000, 4000000]}}
+          ]
+        },
+        {
+          "stage_id": 102,
+          "operation": "difference",
+          "operands": [
+            {"operand_id": 1002, "geometry": {"kind": "rectangle", "min": [4000000, -1000000], "max": [6000000, 5000000]}}
+          ]
+        },
+        {
+          "stage_id": 103,
+          "operation": "union",
+          "operands": [
+            {"operand_id": 1003, "geometry": {"kind": "rectangle", "min": [3500000, 1500000], "max": [6500000, 2500000]}}
+          ]
+        }
+      ],
+      "expected": {
+        "status": "success",
+        "connected_result_count": 1,
+        "hole_count": 0,
+        "observations": [
+          "late union crosses and partially refills the earlier subtraction",
+          "result positive contributors are operands 1001 and 1003",
+          "operand 1002 has both surviving and overwritten subtraction-effect events",
+          "all final boundaries are analytic lines"
+        ]
+      }
+    },
+    {
+      "fixture_id": "intersecting_arbitrary_angle_arcs",
+      "job_id": 2,
+      "stages": [
+        {
+          "stage_id": 201,
+          "operation": "union",
+          "operands": [
+            {
+              "operand_id": 2001,
+              "geometry": {"kind": "arc_sweep", "center": [0, 0], "radius": 4000000, "start_angle": 20000000, "sweep_angle": 140000000, "width": 1600000, "cap": "round"},
+              "source_topology": {"ring_id": 2101, "segments": [{"segment_id": 21101, "curve_id": 21201, "role": "outer_arc"}, {"segment_id": 21102, "curve_id": 21202, "role": "end_cap"}, {"segment_id": 21103, "curve_id": 21203, "role": "inner_arc"}, {"segment_id": 21104, "curve_id": 21204, "role": "start_cap"}]}
+            },
+            {
+              "operand_id": 2002,
+              "geometry": {"kind": "arc_sweep", "center": [3000000, 0], "radius": 3300000, "start_angle": 155000000, "sweep_angle": -145000000, "width": 1400000, "cap": "round"},
+              "source_topology": {"ring_id": 2201, "segments": [{"segment_id": 22101, "curve_id": 22201, "role": "outer_arc"}, {"segment_id": 22102, "curve_id": 22202, "role": "end_cap"}, {"segment_id": 22103, "curve_id": 22203, "role": "inner_arc"}, {"segment_id": 22104, "curve_id": 22204, "role": "start_cap"}]}
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "status": "success",
+        "geometer_design_revision": "182f5f2163e4085200adec779f98b6d3cc7c0e13",
+        "native_wasm_feasibility_signature_sha256": "c21b03c1b42a6cb3212cec5b3051987f645e21062eddecc82d3e3b0e0fd6dfc7",
+        "canonical_fragment_format": "A:radius_nm:direction:branch:start_nm:end_nm",
+        "canonical_fragments": [
+          "A:2600000:cw:minor:4213333,2299527:5560500,451485",
+          "A:2600000:cw:minor:643600,1098807:2080000,2431789",
+          "A:3200000:cw:minor:-3007016,1094464:540000,3154108",
+          "A:3200000:cw:minor:2080000,2431789:3007016,1094464",
+          "A:4000000:ccw:minor:540000,3154108:-625231,1690473",
+          "A:4000000:ccw:minor:6939231,694593:2673333,3986639",
+          "A:4800000:ccw:minor:2673333,3986639:-4510525,1641697",
+          "A:4800000:ccw:minor:4510525,1641697:4213333,2299527",
+          "A:700000:ccw:minor:-625231,1690473:643600,1098807",
+          "A:700000:ccw:minor:5560500,451485:6939231,694593",
+          "A:800000:ccw:minor:-4510525,1641697:-3007016,1094464",
+          "A:800000:ccw:minor:3007016,1094464:4510525,1641697"
+        ],
+        "observations": [
+          "output contains the twelve exact endpoint-authoritative circular-arc fragments above and no sampled chords",
+          "new intersection vertices identify source segments from operands 2001 and 2002",
+          "minor/major direction follows the signed authored sweeps",
+          "the governed certified algebraic policy normalizes once after the final stage",
+          "the eventual packet golden adds ring/source/lineage ids and a job digest without changing these fragments"
+        ]
+      }
+    },
+    {
+      "fixture_id": "analytic_primitive_family",
+      "job_id": 3,
+      "stages": [
+        {
+          "stage_id": 301,
+          "operation": "union",
+          "operands": [
+            {"operand_id": 3001, "geometry": {"kind": "disk", "center": [0, 0], "radius": 1500000}, "source_topology": {"ring_id": 3101, "segments": [{"segment_id": 31101, "curve_id": 31201, "role": "primitive_outer_circle"}]}},
+            {"operand_id": 3002, "geometry": {"kind": "annulus", "center": [5000000, 0], "outer_radius": 1800000, "inner_radius": 900000}, "source_topology": {"rings": [{"ring_id": 3201, "segments": [{"segment_id": 32101, "curve_id": 32201, "role": "primitive_outer_circle"}]}, {"ring_id": 3202, "segments": [{"segment_id": 32102, "curve_id": 32202, "role": "primitive_inner_circle"}]}]}},
+            {"operand_id": 3003, "geometry": {"kind": "capsule", "start": [8000000, -1000000], "end": [12000000, 1000000], "width": 1800000}, "source_topology": {"ring_id": 3301, "segments": [{"segment_id": 33101, "curve_id": 33201, "role": "left_line"}, {"segment_id": 33102, "curve_id": 33202, "role": "end_cap"}, {"segment_id": 33103, "curve_id": 33203, "role": "right_line"}, {"segment_id": 33104, "curve_id": 33204, "role": "start_cap"}]}},
+            {"operand_id": 3004, "geometry": {"kind": "line_arc_swept_path", "width": 1200000, "cap": "round", "segments": [{"kind": "line", "start": [14000000, 0], "end": [17000000, 0]}, {"kind": "arc", "start": [17000000, 0], "end": [19000000, 2000000], "center": [17000000, 2000000], "sweep_angle": 90000000}]}, "source_topology": {"path_id": 3401, "path_segments": [{"segment_id": 34101, "curve_id": 34201, "role": "centerline_line"}, {"segment_id": 34102, "curve_id": 34202, "role": "centerline_arc"}], "boundary_ring_id": 3402, "boundary_segments": [{"segment_id": 34103, "curve_id": 34203, "role": "left_offset_line"}, {"segment_id": 34104, "curve_id": 34204, "role": "outer_offset_arc"}, {"segment_id": 34105, "curve_id": 34205, "role": "end_cap"}, {"segment_id": 34106, "curve_id": 34206, "role": "inner_offset_arc"}, {"segment_id": 34107, "curve_id": 34207, "role": "right_offset_line"}, {"segment_id": 34108, "curve_id": 34208, "role": "start_cap"}]} }
+          ]
+        },
+        {
+          "stage_id": 302,
+          "operation": "difference",
+          "operands": [
+            {"operand_id": 3005, "geometry": {"kind": "disk", "center": [0, 0], "radius": 500000}},
+            {"operand_id": 3006, "geometry": {"kind": "capsule", "start": [9500000, -500000], "end": [10500000, 500000], "width": 600000}}
+          ]
+        }
+      ],
+      "expected": {
+        "status": "success",
+        "observations": [
+          "circular and slotted removals are explicit holes where contained",
+          "all circular boundaries and swept caps remain analytic",
+          "no output segment is a sampled approximation"
+        ]
+      }
+    },
+    {
+      "fixture_id": "nested_holes_and_islands",
+      "job_id": 4,
+      "stages": [
+        {"stage_id": 401, "operation": "union", "operands": [{"operand_id": 4001, "geometry": {"kind": "disk", "center": [0, 0], "radius": 5000000}}]},
+        {"stage_id": 402, "operation": "difference", "operands": [{"operand_id": 4002, "geometry": {"kind": "disk", "center": [0, 0], "radius": 3500000}}]},
+        {"stage_id": 403, "operation": "union", "operands": [{"operand_id": 4003, "geometry": {"kind": "disk", "center": [0, 0], "radius": 2200000}}]},
+        {"stage_id": 404, "operation": "difference", "operands": [{"operand_id": 4004, "geometry": {"kind": "disk", "center": [0, 0], "radius": 700000}}]}
+      ],
+      "expected": {
+        "status": "success",
+        "connected_result_count": 2,
+        "ring_depths": [0, 1, 2, 3],
+        "observations": [
+          "containment alternates outer, hole, island, hole",
+          "outer rings are CCW and hole rings are CW",
+          "canonical containment and ring ordering are deterministic"
+        ]
+      }
+    },
+    {
+      "fixture_id": "tangent_coincident_overlap_matrix",
+      "jobs": [
+        {"job_id": 51, "stages": [{"stage_id": 5101, "operation": "union", "operands": [{"operand_id": 51001, "geometry": {"kind": "disk", "center": [0, 0], "radius": 1000000}, "source_topology": {"ring_id": 51101, "segments": [{"segment_id": 511001, "curve_id": 512001, "role": "primitive_outer_circle"}]}}, {"operand_id": 51002, "geometry": {"kind": "disk", "center": [2000000, 0], "radius": 1000000}, "source_topology": {"ring_id": 51102, "segments": [{"segment_id": 511002, "curve_id": 512002, "role": "primitive_outer_circle"}]}}]}]},
+        {"job_id": 52, "stages": [{"stage_id": 5201, "operation": "union", "operands": [{"operand_id": 52001, "geometry": {"kind": "rectangle", "min": [0, 0], "max": [2000000, 1000000]}}, {"operand_id": 52002, "geometry": {"kind": "rectangle", "min": [2000000, 0], "max": [4000000, 1000000]}}]}]},
+        {"job_id": 53, "stages": [{"stage_id": 5301, "operation": "union", "operands": [{"operand_id": 53001, "geometry": {"kind": "disk", "center": [0, 0], "radius": 2000000}, "source_topology": {"ring_id": 53101, "segments": [{"segment_id": 531001, "curve_id": 532001, "role": "primitive_outer_circle"}]}}, {"operand_id": 53002, "geometry": {"kind": "disk", "center": [0, 0], "radius": 2000000}, "source_topology": {"ring_id": 53102, "segments": [{"segment_id": 531002, "curve_id": 532002, "role": "primitive_outer_circle"}]}}, {"operand_id": 53003, "geometry": {"kind": "disk", "center": [1500000, 0], "radius": 2000000}, "source_topology": {"ring_id": 53103, "segments": [{"segment_id": 531003, "curve_id": 532003, "role": "primitive_outer_circle"}]}}]}]}
+      ],
+      "expected": {
+        "status": "success",
+        "observations": [
+          "job 51 has two regularized-area result regions sharing one canonical vertex, not one self-touching ring",
+          "job 51 maps operand 51001 only to its result and operand 51002 only to the other result",
+          "job 52 has one result and one outer ring with contributors 52001 and 52002; their shared input edge is internal and absent from the final boundary",
+          "job 53 has one result with contributors 53001, 53002, and 53003",
+          "every surviving fragment on the duplicate job-53 circle reports coincident curve sources 532001 and 532002 where applicable"
+        ]
+      }
+    },
+    {
+      "fixture_id": "normalization_collision",
+      "job_id": 6,
+      "stages": [
+        {"stage_id": 601, "operation": "union", "operands": [{"operand_id": 6001, "geometry": {"kind": "rectangle", "min": [-10, 0], "max": [20, 10]}}]},
+        {"stage_id": 602, "operation": "difference", "operands": [{"operand_id": 6002, "geometry": {"kind": "region", "outer": [[0, -1], [5, 3], [7, 4]]}}]}
+      ],
+      "expected": {
+        "status": "failure",
+        "failure_scope": "job",
+        "diagnostic_class": "normalization_topology_collapse",
+        "observations": [
+          "subtract edges intersect y=0 at x=1.25 nm and x=1.4 nm",
+          "nearest integer-nm representatives collide and collapse a required notch mouth",
+          "job fails instead of merging the two required vertices"
+        ]
+      }
+    },
+    {
+      "fixture_id": "many_to_many_disconnected_results",
+      "job_id": 7,
+      "stages": [
+        {"stage_id": 701, "operation": "union", "operands": [
+          {"operand_id": 7001, "geometry": {"kind": "rectangle", "min": [0, 0], "max": [20000000, 10000000]}},
+          {"operand_id": 7002, "geometry": {"kind": "disk", "center": [5000000, 5000000], "radius": 1000000}},
+          {"operand_id": 7003, "geometry": {"kind": "disk", "center": [5000000, 5000000], "radius": 1000000}},
+          {"operand_id": 7004, "geometry": {"kind": "capsule", "start": [-1000000, 5000000], "end": [21000000, 5000000], "width": 1000000}}
+        ]},
+        {"stage_id": 702, "operation": "difference", "operands": [{"operand_id": 7005, "geometry": {"kind": "rectangle", "min": [9000000, -1000000], "max": [11000000, 11000000]}}]}
+      ],
+      "expected": {
+        "status": "success",
+        "connected_result_count": 2,
+        "observations": [
+          "left result contributors are 7001, 7002, 7003, and 7004",
+          "right result contributors are 7001 and 7004 only",
+          "operand 7004 maps to both results",
+          "absorbed duplicate pads 7002 and 7003 never map to the unrelated right result",
+          "subtraction 7005 owns surviving split boundaries on both results"
+        ]
+      }
+    },
+    {
+      "fixture_id": "conductive_domain_contact_queries",
+      "jobs": [
+        {"job_id": 81, "label": "named_A", "stages": [{"stage_id": 8101, "operation": "union", "operands": [{"operand_id": 81001, "geometry": {"kind": "rectangle", "min": [0, 0], "max": [10000000, 10000000]}}]}]},
+        {"job_id": 82, "label": "named_B_area", "stages": [{"stage_id": 8201, "operation": "union", "operands": [{"operand_id": 82001, "geometry": {"kind": "rectangle", "min": [9000000, 2000000], "max": [12000000, 8000000]}}]}]},
+        {"job_id": 83, "label": "named_C_curve", "stages": [{"stage_id": 8301, "operation": "union", "operands": [{"operand_id": 83001, "geometry": {"kind": "rectangle", "min": [10000000, 2000000], "max": [12000000, 8000000]}}]}]},
+        {"job_id": 84, "label": "named_D_point", "stages": [{"stage_id": 8401, "operation": "union", "operands": [{"operand_id": 84001, "geometry": {"kind": "rectangle", "min": [10000000, 10000000], "max": [12000000, 12000000]}}]}]},
+        {"job_id": 85, "label": "netless_contact", "stages": [{"stage_id": 8501, "operation": "union", "operands": [{"operand_id": 85001, "geometry": {"kind": "disk", "center": [11000000, 5000000], "radius": 1000000}}]}]},
+        {"job_id": 86, "label": "netless_disjoint", "stages": [{"stage_id": 8601, "operation": "union", "operands": [{"operand_id": 86001, "geometry": {"kind": "disk", "center": [20000000, 5000000], "radius": 1000000}}]}]}
+      ],
+      "relationship_queries": [
+        {"query_id": 8001, "left_job_id": 81, "right_job_id": 82, "expected_dimension": "area", "matz_disposition": "reject_cross_domain_short"},
+        {"query_id": 8002, "left_job_id": 81, "right_job_id": 83, "expected_dimension": "curve", "matz_disposition": "reject_cross_domain_short"},
+        {"query_id": 8003, "left_job_id": 81, "right_job_id": 84, "expected_dimension": "point", "matz_disposition": "reject_cross_domain_short"},
+        {"query_id": 8004, "left_job_id": 83, "right_job_id": 85, "expected_dimension": "area", "matz_disposition": "reject_named_netless_ambiguity"},
+        {"query_id": 8005, "left_job_id": 81, "right_job_id": 86, "expected_dimension": "disjoint", "matz_disposition": "allow"}
+      ],
+      "expected": {
+        "status": "success",
+        "observations": [
+          "Geometer returns only generic dimensions and concrete result-region pairs",
+          "MATZ alone applies the recorded domain disposition",
+          "no all-pairs query is implied"
+        ]
+      }
+    },
+    {
+      "fixture_id": "successful_requested_empty",
+      "job_id": 9,
+      "stages": [
+        {"stage_id": 901, "operation": "union", "operands": [{"operand_id": 9001, "geometry": {"kind": "disk", "center": [0, 0], "radius": 1000000}}]},
+        {"stage_id": 902, "operation": "difference", "operands": [{"operand_id": 9002, "geometry": {"kind": "disk", "center": [0, 0], "radius": 2000000}}]}
+      ],
+      "expected": {
+        "status": "success",
+        "connected_result_count": 0,
+        "observations": [
+          "empty success is distinct from job failure",
+          "operand 9001 is completely removed later",
+          "operand 9002 has a subtraction effect with no surviving boundary"
+        ]
+      }
+    },
+    {
+      "fixture_id": "mixed_batch_equivalence",
+      "batch_members": ["line_add_subtract_add", "normalization_collision", "successful_requested_empty"],
+      "relationship_queries": [
+        {"query_id": 10001, "left_job_id": 1, "right_job_id": 9, "expected_status": "success", "expected_dimension": "disjoint", "expected_result_pair_count": 0},
+        {"query_id": 10002, "left_job_id": 1, "right_job_id": 6, "expected_status": "skipped_dependency_failed"}
+      ],
+      "expected": {
+        "status": "batch_accepted",
+        "job_statuses": {"1": "success", "6": "failure", "9": "success"},
+        "observations": [
+          "jobs 1 and 9 have byte-identical canonical job-result records and digests when run alone or in this batch after excluding enclosing packet offsets, table indices, relationship results, and noncanonical telemetry",
+          "job 6 has the same stable diagnostic when run alone or in this batch",
+          "query 10002 is skipped because job 6 failed"
+        ]
+      }
+    }
+  ],
+  "real_board_cases": [
+    {
+      "fixture_id": "rt_super_c1_pwr4",
+      "source_path": "viz/tests/cases/projects/rt_super_c1/RT_SUPER_C1.PCBdoc",
+      "source_sha256": "90545409b6ce16e0b636fce3176c90b73be301d03f0a9e32c4ab21a42ad14aca",
+      "source_bytes": 4601856,
+      "applicable_geometry_preflight": {"allowed": ["line", "circular_arc", "disk", "annulus", "capsule", "constant_width_line_arc_swept_path"], "forbidden_count": {"ellipse": 0, "elliptical_arc": 0, "bezier": 0, "spline": 0}},
+      "required_observations": [
+        "PWR4 preserves VDD-CORE, I3C0-PUR, RST-EXT, and +5vUSB",
+        "absorbed pads, pours, tracks, vias, circular drills, and routed cuts retain correct connected-result associations",
+        "no downstream Boolean or containment solve is required"
+      ]
+    },
+    {
+      "fixture_id": "loz_old_man_curved_copper",
+      "source_path": "viz/tests/cases/projects/loz-old-man/SB0037A.PcbDoc",
+      "source_sha256": "377d5a05ed24137ea603d11c663d52ae48849b378534b346010936b826eb2375",
+      "source_bytes": 12796928,
+      "applicable_geometry_preflight": {"allowed": ["line", "circular_arc", "disk", "annulus", "capsule", "constant_width_line_arc_swept_path"], "forbidden_count": {"ellipse": 0, "elliptical_arc": 0, "bezier": 0, "spline": 0}},
+      "required_observations": [
+        "curved copper and realized TTF/logo topology retain analytic holes",
+        "bottom-solder text ! -1235 -535 retains all knockout holes",
+        "no downstream Boolean or containment solve is required"
+      ]
+    }
+  ],
+  "performance_budget": {
+    "scope": "all_copper_batch_per_real_board",
+    "correctness_precedence": true,
+    "design_target_wall_seconds": 5,
+    "design_target_peak_bytes": 1073741824,
+    "stretch_wall_seconds": 1,
+    "stretch_peak_bytes": 536870912,
+    "required_telemetry": ["wall_time", "peak_memory", "operand_count", "input_segment_count", "result_region_count", "result_segment_count", "normalization_failure_count"]
+  }
+}

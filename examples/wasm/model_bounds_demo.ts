@@ -1,10 +1,8 @@
-import type { EmscriptenGeometerFactory, ModelBoundsResultA0 } from "@wavenumber/geometer";
-import { createGeometerWasmClient } from "@wavenumber/geometer/wasm";
+import type { ModelBoundsResultA0 } from "@wavenumber/geometer";
+import { createGeometerWorkerClient, type GeometerWorkerClient } from "@wavenumber/geometer/worker";
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
-
-declare const createGeometerModule: EmscriptenGeometerFactory;
 
 const fixture = {
   displayModel: "/tests/fixtures/glb/embedded_models/SOT-23.glb",
@@ -59,13 +57,12 @@ let boundsResult: ModelBoundsResultA0 | undefined;
 let cameraHome: { position: THREE.Vector3; target: THREE.Vector3 } | undefined;
 
 const wasmBinaryPromise = fetchBytes("/dist/wasm/browser/geometer.wasm", "geometer.wasm").then(
-  (bytes) => bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength),
+  copyToArrayBuffer,
 );
 const stepModelPromise = fetchBytes(fixture.stepModel, "SOT-23 STEP fixture");
 const displayModelPromise = loadDisplayModel();
-const clientPromise = wasmBinaryPromise.then((wasmBinary) =>
-  createGeometerWasmClient(createGeometerModule, { wasmBinary }),
-);
+const clientPromise = createWorkerClient();
+let activeClient: GeometerWorkerClient | undefined;
 
 new ResizeObserver(resizeRenderer).observe(viewport);
 runButton.addEventListener("click", () => void run());
@@ -81,6 +78,7 @@ rotateToggle.addEventListener("change", () => {
   controls.autoRotate =
     rotateToggle.checked && !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 });
+window.addEventListener("pagehide", () => activeClient?.terminate(), { once: true });
 
 resizeRenderer();
 renderer.setAnimationLoop(renderFrame);
@@ -98,9 +96,10 @@ async function run(): Promise<void> {
       stepModelPromise,
       displayModelPromise,
     ]);
+    activeClient = client;
     installDisplayModel(displayModel);
     loadingDetail.textContent = "Executing geometry.model_bounds.a0";
-    status.textContent = `Computing through ${client.capabilities.genericAbi.toUpperCase()} generic ABI…`;
+    status.textContent = `Computing in a Worker through ${client.capabilities.genericAbi.toUpperCase()} generic ABI…`;
     const result = await client.modelBounds({ model });
     renderBounds(result);
     runtimeLabel.textContent = `Ready · ${client.capabilities.releaseVersion}`;
@@ -116,6 +115,47 @@ async function run(): Promise<void> {
   } finally {
     runButton.disabled = false;
   }
+}
+
+async function createWorkerClient(): Promise<GeometerWorkerClient> {
+  const wasmBinary = await wasmBinaryPromise;
+  const worker = new Worker("/dist/wasm/demos/model_bounds_worker.js", {
+    name: "geometer-model-bounds-a0",
+  });
+  try {
+    await waitForWorkerBootstrap(worker);
+    return await createGeometerWorkerClient(worker, { wasmBinary });
+  } catch (error) {
+    worker.terminate();
+    throw error;
+  }
+}
+
+function waitForWorkerBootstrap(worker: Worker): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const timeout = window.setTimeout(() => {
+      cleanup();
+      reject(new Error("Geometer Worker bootstrap timed out."));
+    }, 15_000);
+    const onMessage = (event: MessageEvent<unknown>) => {
+      if (!isRecord(event.data) || event.data.protocol !== "wn.geometer.worker_bootstrap.a0")
+        return;
+      cleanup();
+      if (event.data.kind === "ready") resolve();
+      else reject(new Error(String(event.data.message || "Geometer Worker bootstrap failed.")));
+    };
+    const onError = (event: ErrorEvent) => {
+      cleanup();
+      reject(new Error(event.message || "Geometer Worker bootstrap failed."));
+    };
+    const cleanup = () => {
+      window.clearTimeout(timeout);
+      worker.removeEventListener("message", onMessage);
+      worker.removeEventListener("error", onError);
+    };
+    worker.addEventListener("message", onMessage);
+    worker.addEventListener("error", onError);
+  });
 }
 
 function renderBounds(result: ModelBoundsResultA0): void {
@@ -388,6 +428,16 @@ async function fetchBytes(url: string, label: string): Promise<Uint8Array> {
 
 function formatVector(vector: readonly number[]): string {
   return vector.map((value) => value.toFixed(3)).join("  ");
+}
+
+function copyToArrayBuffer(bytes: Uint8Array): ArrayBuffer {
+  const copy = new Uint8Array(bytes.byteLength);
+  copy.set(bytes);
+  return copy.buffer;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function requireElement<T extends HTMLElement>(id: string): T {

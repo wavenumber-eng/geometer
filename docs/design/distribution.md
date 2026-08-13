@@ -17,7 +17,7 @@ Persist these when publishing interface changes:
   `dist/wasm/planar-browser/geometer-planar-browser.js` and
   `dist/wasm/planar-browser/geometer-planar-browser.wasm`.
 - Generated TypeScript ESM package: `dist/npm/geometer/` with explicit root,
-  contracts, and WASM-client exports.
+  contracts, direct WASM, Worker-client, and Worker-host exports.
 
 Native platform directory names use:
 

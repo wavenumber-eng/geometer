@@ -18,6 +18,7 @@ durable record belongs here, in ADRs, and in requirements.
 - [Transport design review packet](transport-design-review.md)
 - [Generated contract reference](generated-contract-reference.md)
 - [TypeScript contracts and browser WASM client](typescript-client.md)
+- [Viz TypeScript migration](viz-typescript-migration.md)
 - [Browse generated contracts](../generated/contracts/index.html)
 - [Analytic planar Boolean A0](analytic-planar-boolean-a0.md)
 - [Analytic planar Boolean packet A0](analytic-planar-boolean-packet-a0.md)

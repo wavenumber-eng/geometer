@@ -3,14 +3,13 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="data:," />
     <title>Geometer · STEP model bounds</title>
     <link rel="stylesheet" href="/examples/wasm/model_bounds_demo.css" />
-    <script src="/dist/wasm/browser/geometer.js"></script>
     <script type="importmap">
       {
         "imports": {
-          "@wavenumber/geometer": "/dist/npm/geometer/index.js",
-          "@wavenumber/geometer/wasm": "/dist/npm/geometer/wasm.js",
+          "@wavenumber/geometer/worker": "/dist/npm/geometer/worker.js",
           "three": "https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js",
           "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/"
         }
@@ -25,7 +24,7 @@
           <span class="product-context">CONTRACT LAB / MODEL BOUNDS A0</span>
         </div>
         <div class="pipeline" aria-label="Execution path">
-          <span>STEP</span><i aria-hidden="true"></i><span>TypeScript</span><i aria-hidden="true"></i><span>WASM</span>
+          <span>STEP</span><i aria-hidden="true"></i><span>TypeScript</span><i aria-hidden="true"></i><span>Worker / WASM</span>
         </div>
         <div class="runtime-state"><span class="state-light" aria-hidden="true"></span><span id="runtime-label">Starting kernel</span></div>
       </header>

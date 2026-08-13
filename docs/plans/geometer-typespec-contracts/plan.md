@@ -54,7 +54,7 @@ depends_on = ["generated-html-reference"]
 [[steps]]
 id = "typescript-wasm"
 title = "Generate the TypeScript contracts and browser/WASM reference client"
-status = "active"
+status = "done"
 depends_on = ["cpp-server"]
 
 [[steps]]
@@ -194,7 +194,7 @@ status = "pending"
 [[exit_criteria]]
 id = "typescript-wasm"
 title = "A packaged TypeScript consumer completes supported operations through browser WASM without direct pointer management"
-status = "pending"
+status = "met"
 
 [[exit_criteria]]
 id = "typescript-demos"
@@ -289,11 +289,13 @@ tests now include real-Chrome desktop and emulated 390 px verification. That
 browser pass found and closed a narrow generated-identifier overflow, with the
 revised stylesheet digest recorded in the promotion manifest.
 
-The TypeScript/WASM slice is active. Generated DTOs, strict codecs, typed
-operation metadata, the deterministic `@wavenumber/geometer` ESM artifact, a
-direct high-level WASM client, a clean packed consumer, and the model-bounds
-TypeScript browser example are implemented. Explicit Web Worker client helpers
-and the Viz migration guide remain before this slice is complete.
+The TypeScript/WASM slice is complete for the model-bounds pilot. Generated
+DTOs, strict codecs, typed operation metadata, the deterministic
+`@wavenumber/geometer` ESM artifact, direct and correlated Worker clients, a
+clean packed consumer, a real Worker/WASM test, the model-bounds TypeScript
+browser example, and the Viz operation-by-operation migration guide are
+implemented. Other browser demos migrate only when their owning operations are
+promoted.
 
 Generated Python is intentional mandatory scope based on project-owner
 direction that public Python should use generated contract code while

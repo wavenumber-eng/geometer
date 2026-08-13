@@ -21,14 +21,20 @@ python_import = "geometer"
 python_generated_visibility = "internal_compatible_boundary"
 
 [typescript_projection]
-status = "implemented_model_bounds_pilot"
+status = "implemented_model_bounds_worker_pilot"
 design = "docs/design/typescript-client.md"
 source_root = "src/ts/geometer"
 generated_root = "src/ts/geometer/generated"
 package_root = "dist/npm/geometer"
+worker_client_source = "src/ts/geometer/worker.ts"
+worker_host_source = "src/ts/geometer/worker-host.ts"
+worker_protocol = "wn.geometer.wasm_worker.a0"
 example_source = "examples/wasm/model_bounds_demo.ts"
+example_worker_source = "examples/wasm/model_bounds_worker.ts"
 example_page = "examples/wasm/model_bounds_demo.html"
 example_artifact = "dist/wasm/demos/model_bounds_demo.js"
+example_worker_artifact = "dist/wasm/demos/model_bounds_worker.js"
+viz_migration_guide = "docs/design/viz-typescript-migration.md"
 runtime_dependency = false
 
 [toolchain]

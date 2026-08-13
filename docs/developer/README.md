@@ -485,7 +485,8 @@ The viewer loads the GLB for the 3D pane and sends the matching STEP bytes to
 the browser WASM HLR API for the projection pane.
 
 The generated TypeScript model-bounds example uses the packaged high-level
-client and the same full-browser WASM artifact:
+Worker client and the same full-browser WASM artifact. It keeps synchronous
+OCCT execution off the window event loop:
 
 ```powershell
 npm run generate:contracts
@@ -516,8 +517,8 @@ node tests\wasm\step_to_glb_bytes_validation.js
 node tests\wasm\planar_batch_solve_bytes_validation.js
 ```
 
-Validate generated TypeScript codecs, a clean packed consumer, and the
-high-level WASM client:
+Validate generated TypeScript codecs, a clean packed consumer, and the direct
+plus real Worker-thread high-level WASM clients:
 
 ```powershell
 npm run check:typescript

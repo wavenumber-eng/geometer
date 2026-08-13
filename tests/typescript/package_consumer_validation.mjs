@@ -29,7 +29,7 @@ try {
   );
   await writeFile(
     join(workspace, "consumer.ts"),
-    `import { encodeModelBoundsOptionsA0Json } from "@wavenumber/geometer/contracts";\nimport { createGeometerWasmClient } from "@wavenumber/geometer/wasm";\nimport type { EmscriptenGeometerFactory, ModelBoundsResultA0 } from "@wavenumber/geometer";\nexport const encoded: string = encodeModelBoundsOptionsA0Json({ format: "step" });\nexport async function run(factory: EmscriptenGeometerFactory, bytes: Uint8Array): Promise<ModelBoundsResultA0> {\n  return (await createGeometerWasmClient(factory)).modelBounds({ model: bytes });\n}\n`,
+    `import { encodeModelBoundsOptionsA0Json } from "@wavenumber/geometer/contracts";\nimport { createGeometerWasmClient } from "@wavenumber/geometer/wasm";\nimport { createGeometerWorkerClient } from "@wavenumber/geometer/worker";\nimport { startGeometerWorkerHost } from "@wavenumber/geometer/worker-host";\nimport type { EmscriptenGeometerFactory, ModelBoundsResultA0 } from "@wavenumber/geometer";\nexport const encoded: string = encodeModelBoundsOptionsA0Json({ format: "step" });\nexport async function run(factory: EmscriptenGeometerFactory, bytes: Uint8Array): Promise<ModelBoundsResultA0> {\n  return (await createGeometerWasmClient(factory)).modelBounds({ model: bytes });\n}\nexport async function runWorker(worker: Worker, wasmBinary: ArrayBuffer, bytes: Uint8Array): Promise<ModelBoundsResultA0> {\n  return (await createGeometerWorkerClient(worker, { wasmBinary })).modelBounds({ model: bytes });\n}\nexport const host = startGeometerWorkerHost;\n`,
   );
   run(
     process.execPath,

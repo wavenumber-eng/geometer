@@ -58,9 +58,9 @@ npm run generate:contracts
 npm run check:contracts
 ```
 
-The package artifact is `dist/npm/geometer/`. The current repository artifact
-is a release input; it is not a claim that the package has been published to
-npm.
+The package artifact is `dist/npm/geometer/`. It exposes direct and dedicated
+Worker WASM clients; the current repository artifact is a release input, not a
+claim that the package has been published to npm.
 
 ## Python Package
 
@@ -154,7 +154,8 @@ geometer run request.json response.json
 - `examples/wasm/embedded_model_viewer.html` - browser viewer using prepared GLB
   fixtures and the WASM HLR worker.
 - `examples/wasm/model_bounds_demo.html` - TypeScript/generated-client pilot
-  that computes and visualizes STEP model bounds through browser WASM.
+  that computes STEP model bounds in a dedicated Worker and visualizes them
+  through browser WASM and Three.js.
 - `dist/wasm/demos/hlr_demo.html` and
   `dist/wasm/demos/planar_ring_solver_demo.html` - one-file standalone browser
   demos for release review.

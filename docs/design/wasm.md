@@ -112,6 +112,24 @@ const result = await client.modelBounds({ model: stepBytes });
 console.log(result.bounds.size);
 ```
 
+Window applications should keep synchronous OCCT work off the UI event loop:
+
+```ts
+import { createGeometerWorkerClient } from "@wavenumber/geometer/worker";
+
+const worker = new Worker("./geometer-worker.js");
+const client = await createGeometerWorkerClient(worker, {
+  wasmBinary: await fetch("/dist/wasm/browser/geometer.wasm").then((value) =>
+    value.arrayBuffer(),
+  ),
+});
+const result = await client.modelBounds({ model: stepBytes });
+```
+
+The Worker entry loads the classic `geometer.js` factory and installs
+`startGeometerWorkerHost` from `@wavenumber/geometer/worker-host`. See the
+TypeScript client design for transfer, serialization, and lifecycle rules.
+
 See [TypeScript contracts and browser WASM client](typescript-client.md) for
 the package, codec, capability, and compatibility rules. The runnable pilot is
 `examples/wasm/model_bounds_demo.html`.
@@ -141,4 +159,6 @@ module.ccall(
 );
 ```
 
-The browser-worker example lives at `examples/wasm/hlr_projection_worker.js`.
+The legacy HLR browser-worker example lives at
+`examples/wasm/hlr_projection_worker.js` until HLR is promoted. The generated
+model-bounds Worker entry is `examples/wasm/model_bounds_worker.ts`.

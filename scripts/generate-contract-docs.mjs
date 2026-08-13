@@ -234,7 +234,7 @@ function renderOperationPage(operation, lifecycle, contractPages, digest) {
     .join("\n");
   const exampleSection =
     operation.identity === "geometry.model_bounds.a0"
-      ? '<section><h2>TypeScript example</h2><div class="panel"><p><a href="../../../../examples/wasm/model_bounds_demo.html">Run the generated model-bounds browser client</a></p><p>The TypeScript source uses <code>@wavenumber/geometer/wasm</code> and contains no direct pointer management.</p></div></section>'
+      ? '<section><h2>TypeScript example</h2><div class="panel"><p><a href="../../../../examples/wasm/model_bounds_demo.html">Run the generated model-bounds browser client</a></p><p>The window and dedicated Worker sources use <code>@wavenumber/geometer/worker</code> and <code>@wavenumber/geometer/worker-host</code>; application code contains no direct pointer management.</p></div></section>'
       : "";
   return htmlDocument({
     title: `${operation.identity} operation — Geometer`,

@@ -170,16 +170,22 @@ def test_manifest_sources_and_identities_are_complete() -> None:
     _assert_documentation_manifest(manifest)
 
     typescript = manifest["typescript_projection"]
-    assert typescript["status"] == "implemented_model_bounds_pilot"
+    assert typescript["status"] == "implemented_model_bounds_worker_pilot"
+    assert typescript["worker_protocol"] == "wn.geometer.wasm_worker.a0"
     assert typescript["runtime_dependency"] is False
     for key in (
         "design",
         "source_root",
         "generated_root",
         "package_root",
+        "worker_client_source",
+        "worker_host_source",
         "example_source",
+        "example_worker_source",
         "example_page",
         "example_artifact",
+        "example_worker_artifact",
+        "viz_migration_guide",
     ):
         assert (ROOT / typescript[key]).exists(), key
     package_json = json.loads((ROOT / typescript["package_root"] / "package.json").read_text(encoding="utf-8"))

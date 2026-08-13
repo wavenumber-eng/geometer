@@ -1,6 +1,6 @@
 name = "TypeScript Contracts And WASM Client"
 order = 5
-description = "Verify generated TypeScript codecs, packaged consumption, and the high-level browser WASM client."
+description = "Verify generated TypeScript codecs, packaged consumption, and direct plus Worker browser WASM clients."
 enabled = true
 runner = "pytest"
 concerns = ["typescript", "contracts", "wasm", "package"]
@@ -9,11 +9,12 @@ objectives = [
     "Replay governed contract vectors through generated strict TypeScript codecs.",
     "Install and typecheck the ESM package from a clean temporary consumer.",
     "Execute model bounds through the high-level generated client without direct pointer management.",
+    "Execute correlated model bounds through a real Worker thread with transferable attachments and lifecycle checks.",
 ]
 
 [[subtests]]
 id = "TS_001"
 file = "test_typescript_validations.py"
 name = "Generated TypeScript Package"
-description = "Runs codec, clean-consumer, and real WASM client validation."
+description = "Runs codec, clean-consumer, direct WASM, and real Worker/WASM client validation."
 test_case_type = "integration"

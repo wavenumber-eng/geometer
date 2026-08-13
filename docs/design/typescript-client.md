@@ -73,6 +73,8 @@ The ESM package has explicit exports:
 | `@wavenumber/geometer` | Generated contracts plus high-level client |
 | `@wavenumber/geometer/contracts` | Generated DTOs, codecs, and operation metadata |
 | `@wavenumber/geometer/wasm` | Direct browser/Web Worker WASM transport adapter |
+| `@wavenumber/geometer/worker` | Correlated main-thread client for a dedicated Worker |
+| `@wavenumber/geometer/worker-host` | Worker-side host around the direct WASM adapter |
 
 `scripts/build-typescript-package.mjs` compiles with TypeScript 5.9.3 and
 strict, exact-optional-property, and unchecked-index settings. It validates and
@@ -85,12 +87,44 @@ The Emscripten factory and `.wasm` remain separately distributed under
 configuration such as `wasmBinary` or `locateFile`; the npm package does not
 embed a second copy of the geometry kernel.
 
+## Dedicated Worker client
+
+`createGeometerWorkerClient()` exposes the same typed `modelBounds()` operation
+without running synchronous OCCT work on the window event loop. The A0 Worker
+protocol is package-local and has the identity
+`wn.geometer.wasm_worker.a0`. Initialization transfers an owned copy of the
+WASM bytes and returns the same capability catalog negotiated by the direct
+adapter. Requests use monotonically increasing correlation identifiers and raw
+attachment `ArrayBuffer` values rather than base64.
+
+The main-thread client preserves caller-owned input arrays: it copies each
+input into an owned buffer and transfers that buffer to the Worker. The host
+serializes operation execution within one WASM instance and transfers owned
+output attachment buffers back. It strictly re-encodes and decodes the
+generated operation outcome across the message boundary. Typed operation
+diagnostics, local C ABI transport errors, malformed messages, Worker errors,
+and message-deserialization failures remain distinct.
+
+`close()` immediately rejects new calls, queues a graceful shutdown after
+preceding requests, and then terminates the Worker. Concurrent `close()` calls
+share that shutdown. `terminate()` is immediate and rejects every outstanding
+request. Neither method claims cooperative cancellation inside a synchronous
+OCCT operation. Application-level pools, caching, progress reporting, retry,
+and scheduling remain consumer policy.
+
+The current Emscripten loader is a classic Worker script. A Worker entry first
+loads that factory with `importScripts`, then imports and installs
+`@wavenumber/geometer/worker-host`. The maintained TypeScript entry is
+`examples/wasm/model_bounds_worker.ts`; its committed build is
+`dist/wasm/demos/model_bounds_worker.js`.
+
 ## Pilot example and verification
 
 `examples/wasm/model_bounds_demo.ts` is the maintained model-bounds pilot. Its
-HTML loads the full-browser Emscripten artifact, while the TypeScript source
-imports only the high-level package. The committed JavaScript build is
-`dist/wasm/demos/model_bounds_demo.js`.
+HTML creates the dedicated Worker, while the TypeScript window and Worker
+sources import only high-level package entry points. The committed JavaScript
+builds are `dist/wasm/demos/model_bounds_demo.js` and
+`dist/wasm/demos/model_bounds_worker.js`.
 
 The interactive Three.js scene uses the prepared GLB produced from the same
 SOT-23 fixture only as a display companion. The yellow volume, wireframe,
@@ -110,10 +144,15 @@ Verification includes:
   marshalling regressions;
 - a packed/install/typecheck clean consumer;
 - a real SOT-23 browser WASM `model_bounds` round trip through the high-level
-  client; and
+  direct client;
+- correlated SOT-23 round trips through a real Worker thread, including
+  transferable ownership, governed/local errors, graceful close, and
+  post-close rejection; and
 - desktop and narrow real-browser smoke of the generated documentation and
   model-bounds example.
 
 HLR and planar demos remain on their existing JavaScript interfaces until
 those operations are individually promoted. Viz remains frozen at its recorded
 2026.6.10 compatibility snapshot until its separate TypeScript migration passes.
+The concrete operation-by-operation adoption path is documented in
+[Viz TypeScript migration](viz-typescript-migration.md).

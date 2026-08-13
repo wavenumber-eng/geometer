@@ -7,9 +7,9 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const output = join(root, "dist", "wasm", "demos", "model_bounds_demo.js");
+const outputRoot = join(root, "dist", "wasm", "demos");
 const stagingRoot = join(root, "dist", "wasm", `.typescript-demo-stage-${process.pid}`);
-const stagedOutput = join(stagingRoot, "model_bounds_demo.js");
+const outputs = ["model_bounds_demo.js", "model_bounds_worker.js"];
 const checkOnly = process.argv.slice(2).includes("--check");
 
 if (process.argv.slice(2).some((argument) => argument !== "--check")) {
@@ -37,21 +37,34 @@ try {
       `TypeScript example compilation failed.\n${result.stdout}${result.stderr}`.trimEnd(),
     );
   }
-  if (!existsSync(stagedOutput))
-    throw new Error("TypeScript example did not emit model_bounds_demo.js.");
-  const staged = await readFile(stagedOutput);
-  if (staged.toString("utf8").includes("\r"))
-    throw new Error("TypeScript example is not LF-normalized.");
+  for (const filename of outputs) {
+    const stagedOutput = join(stagingRoot, filename);
+    if (!existsSync(stagedOutput)) throw new Error(`TypeScript example did not emit ${filename}.`);
+    if ((await readFile(stagedOutput, "utf8")).includes("\r"))
+      throw new Error(`TypeScript example ${filename} is not LF-normalized.`);
+  }
   if (checkOnly) {
-    if (!existsSync(output) || staged.compare(await readFile(output)) !== 0) {
-      throw new Error("TypeScript model-bounds example is stale. Run npm run generate:contracts.");
+    for (const filename of outputs) {
+      const output = join(outputRoot, filename);
+      const stagedOutput = join(stagingRoot, filename);
+      if (
+        !existsSync(output) ||
+        (await readFile(stagedOutput)).compare(await readFile(output)) !== 0
+      ) {
+        throw new Error(
+          `TypeScript model-bounds example ${filename} is stale. Run npm run generate:contracts.`,
+        );
+      }
     }
-    process.stdout.write("TypeScript model-bounds example is current.\n");
+    process.stdout.write("TypeScript model-bounds examples are current.\n");
   } else {
-    await mkdir(dirname(output), { recursive: true });
-    await rm(output, { force: true });
-    await rename(stagedOutput, output);
-    process.stdout.write("Built TypeScript model-bounds browser example.\n");
+    await mkdir(outputRoot, { recursive: true });
+    for (const filename of outputs) {
+      const output = join(outputRoot, filename);
+      await rm(output, { force: true });
+      await rename(join(stagingRoot, filename), output);
+    }
+    process.stdout.write("Built TypeScript model-bounds browser examples.\n");
   }
 } finally {
   await rm(stagingRoot, { recursive: true, force: true });

@@ -72,12 +72,21 @@ endif()
 
 add_test(NAME geometer_exact_resultant_test COMMAND geometer_exact_resultant_test)
 
+add_executable(geometer_exact_factorization_test exact_factorization_test.cpp)
+if(EMSCRIPTEN)
+    target_link_libraries(geometer_exact_factorization_test PRIVATE geometer_exact_feasibility)
+else()
+    target_link_libraries(geometer_exact_factorization_test PRIVATE geometer_lib)
+endif()
+add_test(NAME geometer_exact_factorization_test COMMAND geometer_exact_factorization_test)
+
 if(EMSCRIPTEN)
     set_target_properties(
         geometer_analytic_planar_boolean_feasibility_test
         geometer_exact_rational_test
         geometer_exact_polynomial_test
         geometer_exact_resultant_test
+        geometer_exact_factorization_test
         PROPERTIES SUFFIX ".cjs"
     )
     target_compile_options(geometer_exact_rational_test PRIVATE -fexceptions)
@@ -86,6 +95,8 @@ if(EMSCRIPTEN)
     target_link_options(geometer_exact_polynomial_test PRIVATE -fexceptions)
     target_compile_options(geometer_exact_resultant_test PRIVATE -fexceptions)
     target_link_options(geometer_exact_resultant_test PRIVATE -fexceptions)
+    target_compile_options(geometer_exact_factorization_test PRIVATE -fexceptions)
+    target_link_options(geometer_exact_factorization_test PRIVATE -fexceptions)
 endif()
 
 add_executable(geometer_model_bounds_test

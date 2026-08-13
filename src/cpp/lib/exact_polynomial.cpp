@@ -820,4 +820,47 @@ RootIsolationResult isolate_real_roots(Budget& budget, const Polynomial& polynom
     }
 }
 
+RootIntervalCountResult count_real_roots_in_dyadic_interval(Budget& budget,
+                                                            const Polynomial& polynomial,
+                                                            const BigInt& lower_k,
+                                                            const BigInt& upper_k,
+                                                            std::uint32_t precision)
+{
+    if (polynomial.degree() == 0 || precision > 4096 || lower_k >= upper_k)
+        return {Error::invalid_argument, 0, 0};
+    try
+    {
+        const std::uint64_t work = root_work_bound(polynomial, precision);
+        const std::uint64_t storage = root_storage_bound(polynomial, precision);
+        StorageReservation reservation(budget, storage);
+        if (!reservation.acquired() || !budget.consume_work(work) ||
+            !budget.consume_interval_refinement())
+            return {Error::resource_limit_exceeded, 0, 0};
+        std::vector<FractionPolynomial> sturm;
+        if (!make_sturm_sequence(polynomial, sturm))
+            return {Error::invalid_argument, 0, 0};
+        const BigInt denominator = BigInt(1) << precision;
+        EvaluationContext context{budget};
+        std::uint32_t below = 0;
+        std::uint32_t above = 0;
+        const EvaluationStatus lower_status =
+            roots_less_than(context, sturm, Fraction(lower_k, denominator), below);
+        if (lower_status == EvaluationStatus::resource_limit)
+            return {Error::resource_limit_exceeded, 0, 0};
+        if (lower_status != EvaluationStatus::ok)
+            return {Error::invalid_argument, 0, 0};
+        const EvaluationStatus upper_status =
+            roots_less_than(context, sturm, Fraction(upper_k, denominator), above);
+        if (upper_status == EvaluationStatus::resource_limit)
+            return {Error::resource_limit_exceeded, 0, 0};
+        if (upper_status != EvaluationStatus::ok)
+            return {Error::invalid_argument, 0, 0};
+        return {Error::none, above - below, below};
+    }
+    catch (const std::exception&)
+    {
+        return {Error::resource_limit_exceeded, 0, 0};
+    }
+}
+
 } // namespace geometer::exact

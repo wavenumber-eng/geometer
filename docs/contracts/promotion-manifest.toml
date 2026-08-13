@@ -126,13 +126,15 @@ generated_dependency_root = ".deps/boost_1_92_0"
 production_solver_allowed = false
 design_review_revision = "a8c9604de280e2a67018e1106fd1b430b34fcf50"
 design_review_packet = "reviewer-019ffd1f-3c67-7001-87a5-200b6cda10d8"
-implemented_surface = "budgeted_rational_polynomial_root_thom_and_square_free_resultant_candidate_feasibility"
+implemented_surface = "budgeted_rational_polynomial_root_thom_resultant_factor_and_root_selection_feasibility"
 rational_source = "src/cpp/lib/exact_rational.cpp"
 polynomial_source = "src/cpp/lib/exact_polynomial.cpp"
 resultant_source = "src/cpp/lib/exact_resultant.cpp"
+factorization_source = "src/cpp/lib/exact_factorization.cpp"
 rational_test = "tests/cpp/exact_rational_test.cpp"
 polynomial_test = "tests/cpp/exact_polynomial_test.cpp"
 resultant_test = "tests/cpp/exact_resultant_test.cpp"
+factorization_test = "tests/cpp/exact_factorization_test.cpp"
 
 [transports]
 generic_c_abi = "implemented_a0"

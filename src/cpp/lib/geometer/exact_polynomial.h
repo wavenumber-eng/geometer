@@ -67,6 +67,13 @@ struct RootIsolationResult
     std::optional<IsolatedRootSet> value;
 };
 
+struct RootIntervalCountResult
+{
+    Error error = Error::none;
+    std::uint32_t count = 0;
+    std::uint32_t first_ordinal = 0;
+};
+
 [[nodiscard]] PolynomialResult make_primitive_polynomial(Budget& budget,
                                                          const std::vector<BigInt>& coefficients);
 
@@ -75,5 +82,10 @@ struct RootIsolationResult
 
 [[nodiscard]] RootIsolationResult isolate_real_roots(Budget& budget, const Polynomial& polynomial,
                                                      std::uint32_t maximum_precision = 4096);
+
+[[nodiscard]] RootIntervalCountResult
+count_real_roots_in_dyadic_interval(Budget& budget, const Polynomial& polynomial,
+                                    const BigInt& lower_k, const BigInt& upper_k,
+                                    std::uint32_t precision);
 
 } // namespace geometer::exact

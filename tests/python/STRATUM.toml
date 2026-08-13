@@ -46,3 +46,10 @@ file = "test_generated_contracts.py"
 name = "Generated Python Contracts"
 description = "Checks generated Python freshness, governed-vector replay, strict JSON, and presence-aware model-bounds codecs."
 test_case_type = "unit"
+
+[[subtests]]
+id = "PY_006"
+file = "test_build_boost.py"
+name = "Boost Restore Provenance"
+description = "Checks pinned Boost readiness requires the exact provenance sentinel, version header, and archive digest."
+test_case_type = "unit"

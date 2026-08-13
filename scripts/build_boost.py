@@ -43,7 +43,12 @@ def _is_ready() -> bool:
     if not version_header.is_file() or not SENTINEL_PATH.is_file():
         return False
     try:
-        return json.loads(SENTINEL_PATH.read_text(encoding="utf-8")) == _expected_sentinel()
+        version_text = version_header.read_text(encoding="utf-8")
+        return (
+            json.loads(SENTINEL_PATH.read_text(encoding="utf-8")) == _expected_sentinel()
+            and "#define BOOST_VERSION 109200" in version_text
+            and '#define BOOST_LIB_VERSION "1_92"' in version_text
+        )
     except (OSError, json.JSONDecodeError):
         return False
 
@@ -98,12 +103,30 @@ def restore() -> None:
     print(f"Restored Boost {dependency_versions.BOOST_VERSION} at {BOOST_DIR}")
 
 
+def verify() -> None:
+    if not _is_ready():
+        raise RuntimeError(
+            f"Boost {dependency_versions.BOOST_VERSION} is not ready at {BOOST_DIR}; "
+            "run scripts/build_boost.py to restore the verified source tree."
+        )
+    if (
+        not ARCHIVE_PATH.is_file()
+        or _sha256(ARCHIVE_PATH) != dependency_versions.BOOST_ARCHIVE_SHA256
+    ):
+        raise RuntimeError(f"Boost archive cache is missing or invalid: {ARCHIVE_PATH}")
+    print(f"Verified Boost {dependency_versions.BOOST_VERSION} at {BOOST_DIR}")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--print-source-dir", action="store_true")
+    parser.add_argument("--verify", action="store_true")
     args = parser.parse_args()
     if args.print_source_dir:
         print(BOOST_DIR)
+        return
+    if args.verify:
+        verify()
         return
     restore()
 

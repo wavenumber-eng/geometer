@@ -246,6 +246,17 @@ comparison, addition/subtraction, shift, or one limb-pair multiply/divide step;
 polynomial bookkeeping without limb arithmetic charges one unit per coefficient
 slot examined. The maximum is governed by the analytic numeric catalog.
 
+`owned_bytes` is deterministic logical storage rather than allocator-reported
+resident memory. A retained rational charge includes its value/container slot,
+both retained bigint magnitudes, and a conservative multiple covering every
+normalization temporary that may coexist. An encoded scalar owns a separate
+charge for its result wrapper, allocation slack, and complete byte payload until
+that result is destroyed. Allocator metadata and unrelated solver working memory
+remain subject to the independent process working-memory ceiling. Public scalar
+construction and encoding APIs catch allocation and checked-estimate failures
+and return the same typed `resource_limit_exceeded` result; exceptions do not
+cross that boundary.
+
 Every public operation runs in a transaction-local arena. Before each bigint,
 rational, polynomial, resultant, GCD, square-free, factorization, root-count,
 isolation, or sign phase, it computes a checked conservative upper bound from

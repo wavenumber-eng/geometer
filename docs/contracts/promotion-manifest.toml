@@ -111,7 +111,7 @@ catalog_generation = "a0"
 [analytic_exact_backend]
 status = "design_accepted_implementation_in_progress"
 design = "docs/design/exact-real-algebraic-a0.md"
-design_sha256 = "c42213c7fea9bdd12d8fbd316689ee5b9ff1566f71060414f50d37c427c63330"
+design_sha256 = "62772ca4a870ce22d5614a9588ea3eb14ac27949fbe6cc3830078e40bf1a1d47"
 conformance_identity = "geometry.exact_real_algebraic.feasibility.a0"
 magic = "GEXPA001"
 generation = 1
@@ -124,7 +124,7 @@ generated_dependency_root = ".deps/boost_1_92_0"
 production_solver_allowed = false
 design_review_revision = "a8c9604de280e2a67018e1106fd1b430b34fcf50"
 design_review_packet = "reviewer-019ffd1f-3c67-7001-87a5-200b6cda10d8"
-implemented_surface = "canonical_integer_and_rational_value_foundation"
+implemented_surface = "budgeted_canonical_integer_and_rational_value_foundation"
 
 [transports]
 generic_c_abi = "implemented_a0"

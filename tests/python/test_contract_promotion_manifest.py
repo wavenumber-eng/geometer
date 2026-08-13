@@ -197,6 +197,10 @@ def test_manifest_sources_and_identities_are_complete() -> None:
         assert "## Status\n\nAccepted." in adr
     _assert_documentation_manifest(manifest)
 
+
+def test_manifest_promoted_and_candidate_surfaces_are_complete() -> None:
+    manifest = _manifest()
+    toolchain = manifest["toolchain"]
     typescript = manifest["typescript_projection"]
     assert typescript["status"] == "implemented_model_bounds_worker_pilot"
     assert typescript["worker_protocol"] == "wn.geometer.wasm_worker.a0"
@@ -349,7 +353,7 @@ def test_exact_algebraic_backend_design_gate_is_closed() -> None:
     assert backend == {
         "status": "design_accepted_implementation_in_progress",
         "design": "docs/design/exact-real-algebraic-a0.md",
-        "design_sha256": "c42213c7fea9bdd12d8fbd316689ee5b9ff1566f71060414f50d37c427c63330",
+        "design_sha256": "62772ca4a870ce22d5614a9588ea3eb14ac27949fbe6cc3830078e40bf1a1d47",
         "conformance_identity": "geometry.exact_real_algebraic.feasibility.a0",
         "magic": "GEXPA001",
         "generation": 1,
@@ -362,7 +366,7 @@ def test_exact_algebraic_backend_design_gate_is_closed() -> None:
         "production_solver_allowed": False,
         "design_review_revision": "a8c9604de280e2a67018e1106fd1b430b34fcf50",
         "design_review_packet": "reviewer-019ffd1f-3c67-7001-87a5-200b6cda10d8",
-        "implemented_surface": "canonical_integer_and_rational_value_foundation",
+        "implemented_surface": "budgeted_canonical_integer_and_rational_value_foundation",
     }
     assert (ROOT / backend["design"]).is_file()
     assert _sha256(ROOT / backend["design"]) == backend["design_sha256"]

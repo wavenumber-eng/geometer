@@ -35,13 +35,23 @@ std::string hexadecimal(const std::vector<std::uint8_t>& bytes)
 
 void test_integer_encoding()
 {
-    require(hexadecimal(geometer::exact::encode_canonical_integer(0)) == "0000000000000000",
+    geometer::exact::Budget budget({10'000, 10'000});
+    auto zero = geometer::exact::encode_canonical_integer(budget, 0);
+    auto positive = geometer::exact::encode_canonical_integer(budget, 1);
+    auto negative = geometer::exact::encode_canonical_integer(budget, -256);
+    require(zero.error == geometer::exact::Error::none && zero.value.has_value(),
+            "zero integer encoding failed");
+    require(positive.error == geometer::exact::Error::none && positive.value.has_value(),
+            "positive integer encoding failed");
+    require(negative.error == geometer::exact::Error::none && negative.value.has_value(),
+            "negative integer encoding failed");
+    require(hexadecimal(zero.value->bytes()) == "0000000000000000",
             "zero integer encoding changed");
-    require(hexadecimal(geometer::exact::encode_canonical_integer(1)) == "010000000100000001000000",
+    require(hexadecimal(positive.value->bytes()) == "010000000100000001000000",
             "positive integer encoding changed");
-    require(hexadecimal(geometer::exact::encode_canonical_integer(-256)) ==
-                "020000000200000001000000",
+    require(hexadecimal(negative.value->bytes()) == "020000000200000001000000",
             "negative integer encoding changed");
+    require(budget.usage().owned_bytes > 0, "live encodings must own charged storage");
 }
 
 void test_rational_normalization_and_interning()
@@ -83,7 +93,7 @@ void test_invalid_and_late_budget_failure()
     require(invalid_budget.usage().work_units == 0 && invalid_budget.usage().owned_bytes == 0,
             "structural rejection must not consume arithmetic budget");
 
-    geometer::exact::Budget budget({10, 100});
+    geometer::exact::Budget budget({10, 1000});
     geometer::exact::RationalArena arena(budget);
     const auto failed = arena.intern(1, 2);
     require(failed.error == geometer::exact::Error::resource_limit_exceeded,
@@ -106,9 +116,34 @@ void test_rational_encoding()
     const auto result = arena.intern(-2, 3);
     require(result.error == geometer::exact::Error::none && result.id.has_value(),
             "-2/3 setup failed");
-    require(hexadecimal(geometer::exact::encode_canonical_rational(arena.at(*result.id))) ==
+    auto encoded = geometer::exact::encode_canonical_rational(budget, arena.at(*result.id));
+    require(encoded.error == geometer::exact::Error::none && encoded.value.has_value(),
+            "canonical rational encoding failed");
+    require(hexadecimal(encoded.value->bytes()) ==
                 "0100000020000000020000000100000002000000010000000100000003000000",
             "canonical rational scalar encoding changed");
+}
+
+void test_encoding_budget_failures_are_typed_and_rollback_storage()
+{
+    const BigInt large_value = (BigInt(1) << 4096) - 1;
+
+    geometer::exact::Budget storage_budget({100'000, 32});
+    const auto storage_failure =
+        geometer::exact::encode_canonical_integer(storage_budget, large_value);
+    require(storage_failure.error == geometer::exact::Error::resource_limit_exceeded &&
+                !storage_failure.value.has_value(),
+            "encoding storage exhaustion must return a typed failure");
+    require(storage_budget.usage().owned_bytes == 0 && storage_budget.usage().work_units == 0,
+            "encoding storage preflight failure must not consume or retain resources");
+
+    geometer::exact::Budget work_budget({1, 10'000});
+    const auto work_failure = geometer::exact::encode_canonical_integer(work_budget, large_value);
+    require(work_failure.error == geometer::exact::Error::resource_limit_exceeded &&
+                !work_failure.value.has_value(),
+            "encoding work exhaustion must return a typed failure");
+    require(work_budget.usage().owned_bytes == 0 && work_budget.usage().work_units == 0,
+            "unstarted encoding work must release its storage reservation");
 }
 
 } // namespace
@@ -119,5 +154,6 @@ int main()
     test_rational_normalization_and_interning();
     test_invalid_and_late_budget_failure();
     test_rational_encoding();
+    test_encoding_budget_failures_are_typed_and_rollback_storage();
     return 0;
 }

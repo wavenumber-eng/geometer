@@ -68,6 +68,30 @@ struct InternResult
     std::optional<std::size_t> id;
 };
 
+class EncodedBytes
+{
+  public:
+    EncodedBytes(Budget& budget, std::uint64_t charged_bytes, std::vector<std::uint8_t> bytes);
+    ~EncodedBytes();
+    EncodedBytes(EncodedBytes&& other) noexcept;
+    EncodedBytes& operator=(EncodedBytes&& other) noexcept;
+    EncodedBytes(const EncodedBytes&) = delete;
+    EncodedBytes& operator=(const EncodedBytes&) = delete;
+
+    [[nodiscard]] const std::vector<std::uint8_t>& bytes() const;
+
+  private:
+    Budget* budget_ = nullptr;
+    std::uint64_t charged_bytes_ = 0;
+    std::vector<std::uint8_t> bytes_;
+};
+
+struct EncodeResult
+{
+    Error error = Error::none;
+    std::optional<EncodedBytes> value;
+};
+
 class RationalArena
 {
   public:
@@ -87,7 +111,7 @@ class RationalArena
     std::uint64_t owned_bytes_ = 0;
 };
 
-[[nodiscard]] std::vector<std::uint8_t> encode_canonical_integer(const BigInt& value);
-[[nodiscard]] std::vector<std::uint8_t> encode_canonical_rational(const Rational& value);
+[[nodiscard]] EncodeResult encode_canonical_integer(Budget& budget, const BigInt& value);
+[[nodiscard]] EncodeResult encode_canonical_rational(Budget& budget, const Rational& value);
 
 } // namespace geometer::exact

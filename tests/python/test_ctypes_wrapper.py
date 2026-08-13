@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import struct
 from pathlib import Path
 
@@ -9,6 +10,26 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
 SOT23_STEP = ROOT / "tests" / "fixtures" / "step" / "embedded_models" / "SOT-23.STEP"
+
+
+def _assert_json_close(actual: object, expected: object, tolerance: dict[str, float]) -> None:
+    if isinstance(expected, dict):
+        assert isinstance(actual, dict) and actual.keys() == expected.keys()
+        for key, value in expected.items():
+            _assert_json_close(actual[key], value, tolerance)
+    elif isinstance(expected, list):
+        assert isinstance(actual, list) and len(actual) == len(expected)
+        for actual_item, expected_item in zip(actual, expected, strict=True):
+            _assert_json_close(actual_item, expected_item, tolerance)
+    elif isinstance(expected, (int, float)) and not isinstance(expected, bool):
+        assert isinstance(actual, (int, float))
+        assert actual == pytest.approx(
+            expected,
+            abs=tolerance["absolute"],
+            rel=tolerance["relative"],
+        )
+    else:
+        assert actual == expected
 
 
 def test_executable_path_finds_dist_cli() -> None:
@@ -115,6 +136,26 @@ def test_model_bounds_generated_boundary_preserves_legacy_mapping_inputs() -> No
     assert result.bounds["min"][0] - base.bounds["min"][0] == pytest.approx(1.0)
     assert result.bounds["min"][1] - base.bounds["min"][1] == pytest.approx(2.0)
     assert result.bounds["min"][2] - base.bounds["min"][2] == pytest.approx(3.0)
+
+
+def test_model_bounds_matches_governed_operation_projection() -> None:
+    vector_root = ROOT / "tests" / "contracts" / "vectors"
+    manifest = json.loads((vector_root / "manifest.json").read_text(encoding="utf-8"))
+    vectors = [vector for vector in manifest["operation_vectors"] if "python_compat" in vector["runtimes"]]
+    assert len(vectors) == 1
+    vector = vectors[0]
+    request = json.loads((vector_root / vector["request_file"]).read_text(encoding="utf-8"))
+    assert request == {}
+    result = geometer.model_bounds(ROOT / vector["attachments"][0]["repository_file"])
+    actual = dict(result.data)
+    expected = json.loads((vector_root / vector["expected_result_file"]).read_text(encoding="utf-8"))
+    assert vector["excluded_fields"] == [
+        "/result/timings/model_read_ms",
+        "/result/timings/bounds_ms",
+    ]
+    actual.pop("timings")
+    expected.pop("timings")
+    _assert_json_close(actual, expected, vector["tolerance"])
 
 
 def test_step_to_glb_returns_glb_bytes() -> None:

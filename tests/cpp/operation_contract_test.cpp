@@ -2,7 +2,9 @@
 #include "geometer/generated/contracts/contracts.h"
 #include "geometer/operation_transport.h"
 
+#include <algorithm>
 #include <cctype>
+#include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <fstream>
@@ -15,6 +17,8 @@
 
 namespace
 {
+
+std::string result_json(const GeometerOperationResult* result);
 
 void require(bool condition, const std::string& message)
 {
@@ -93,6 +97,142 @@ bool decode_contract_vector(const std::string& identity, const std::vector<unsig
         return geometer::contracts::decode_json(data.data(), data.size(), &value, &error);
     }
     throw std::runtime_error("unhandled contract vector identity: " + identity);
+}
+
+std::string execute_model_bounds_vector(const rapidjson::Value& vector)
+{
+    const std::string root = std::string(GEOMETER_TEST_SOURCE_DIR) + "/";
+    const std::string operation = vector["operation"].GetString();
+    const std::vector<unsigned char> request =
+        read_bytes(root + "tests/contracts/vectors/" + vector["request_file"].GetString());
+    const auto& attachment_value = vector["attachments"][0];
+    const std::string name = attachment_value["name"].GetString();
+    const std::string media_type = attachment_value["media_type"].GetString();
+    const std::vector<unsigned char> model =
+        read_bytes(root + attachment_value["repository_file"].GetString());
+
+    GeometerAttachmentView attachment{};
+    attachment.struct_size = sizeof(GeometerAttachmentView);
+    attachment.name = name.data();
+    attachment.name_size = static_cast<uint32_t>(name.size());
+    attachment.media_type = media_type.data();
+    attachment.media_type_size = static_cast<uint32_t>(media_type.size());
+    attachment.data = model.data();
+    attachment.data_size = static_cast<uint32_t>(model.size());
+
+    GeometerOperationResult* result = nullptr;
+    char* error = nullptr;
+    const int code = geometer_operation_execute(
+        operation.data(), static_cast<uint32_t>(operation.size()), request.data(),
+        static_cast<uint32_t>(request.size()), &attachment, 1U, &result, &error);
+    require(code == GEOMETER_OPERATION_ABI_OK && result != nullptr && error == nullptr,
+            "governed operation vector should produce a typed outcome");
+    const std::string json = result_json(result);
+    geometer_operation_result_free(result);
+    return json;
+}
+
+void require_close(double actual, double expected, double absolute_tolerance,
+                   double relative_tolerance, const std::string& path)
+{
+    const double allowed =
+        absolute_tolerance + relative_tolerance * std::max(std::abs(actual), std::abs(expected));
+    require(std::abs(actual - expected) <= allowed, "numeric mismatch at " + path);
+}
+
+void require_vector_close(const std::vector<double>& actual, const rapidjson::Value& expected,
+                          double absolute_tolerance, double relative_tolerance,
+                          const std::string& path)
+{
+    require(actual.size() == expected.Size(), "array size mismatch at " + path);
+    for (rapidjson::SizeType index = 0; index < expected.Size(); ++index)
+    {
+        require_close(actual[index], expected[index].GetDouble(), absolute_tolerance,
+                      relative_tolerance, path + "/" + std::to_string(index));
+    }
+}
+
+void generated_cpp_replays_governed_operation_vectors()
+{
+    const std::string vector_root =
+        std::string(GEOMETER_TEST_SOURCE_DIR) + "/tests/contracts/vectors/";
+    const std::vector<unsigned char> manifest_bytes = read_bytes(vector_root + "manifest.json");
+    rapidjson::Document manifest;
+    manifest.Parse(reinterpret_cast<const char*>(manifest_bytes.data()), manifest_bytes.size());
+    require(!manifest.HasParseError() && manifest["operation_vectors"].Size() == 2U,
+            "C++ must replay every governed operation vector");
+
+    for (const auto& vector : manifest["operation_vectors"].GetArray())
+    {
+        bool native_declared = false;
+        for (const auto& runtime : vector["runtimes"].GetArray())
+        {
+            native_declared = native_declared || std::string(runtime.GetString()) == "native_c_abi";
+        }
+        require(native_declared, "operation vector must declare the native C ABI runtime");
+
+        const std::string json = execute_model_bounds_vector(vector);
+        geometer::contracts::OperationOutcomeA0 outcome;
+        geometer::contracts::ContractError error;
+        require(
+            geometer::contracts::decode_json(reinterpret_cast<const unsigned char*>(json.data()),
+                                             json.size(), &outcome, &error),
+            "native operation outcome should decode: " + error.message);
+        if (std::string(vector["expected"].GetString()) == "success")
+        {
+            const auto* success = std::get_if<geometer::contracts::OperationSuccessA0>(&outcome);
+            require(success != nullptr, "governed native result should succeed");
+            require(success->operation == vector["operation"].GetString(),
+                    "governed native success operation should match");
+            const auto* actual =
+                std::get_if<geometer::contracts::ModelBoundsResultA0>(&success->result);
+            require(actual != nullptr, "governed native result should be model_bounds");
+
+            const std::vector<unsigned char> expected_bytes =
+                read_bytes(vector_root + vector["expected_result_file"].GetString());
+            rapidjson::Document expected;
+            expected.Parse(reinterpret_cast<const char*>(expected_bytes.data()),
+                           expected_bytes.size());
+            require(!expected.HasParseError(), "expected operation result should be valid JSON");
+            require(actual->schema == expected["schema"].GetString() &&
+                        actual->units == expected["units"].GetString() &&
+                        actual->source.format == geometer::contracts::ModelFormat::step &&
+                        std::string(expected["source"]["format"].GetString()) == "step" &&
+                        actual->source.hash == expected["source"]["hash"].GetString(),
+                    "native exact result projection should match");
+            require(vector["excluded_fields"].Size() == 2U &&
+                        std::isfinite(actual->timings.model_read_ms) &&
+                        actual->timings.model_read_ms >= 0.0 &&
+                        std::isfinite(actual->timings.bounds_ms) &&
+                        actual->timings.bounds_ms >= 0.0,
+                    "excluded native timings should remain valid");
+            const double absolute = vector["tolerance"]["absolute"].GetDouble();
+            const double relative = vector["tolerance"]["relative"].GetDouble();
+            require_vector_close(actual->bounds.min, expected["bounds"]["min"], absolute, relative,
+                                 "/result/bounds/min");
+            require_vector_close(actual->bounds.max, expected["bounds"]["max"], absolute, relative,
+                                 "/result/bounds/max");
+            require_vector_close(actual->bounds.size, expected["bounds"]["size"], absolute,
+                                 relative, "/result/bounds/size");
+            require_vector_close(actual->bounds.center, expected["bounds"]["center"], absolute,
+                                 relative, "/result/bounds/center");
+        }
+        else
+        {
+            const auto* failure = std::get_if<geometer::contracts::OperationFailureA0>(&outcome);
+            require(failure != nullptr && failure->diagnostics.size() == 1U,
+                    "governed native diagnostic should fail once");
+            require(failure->operation == vector["operation"].GetString(),
+                    "governed native failure operation should match");
+            const auto& actual = failure->diagnostics.front();
+            const auto& expected = vector["expected_diagnostic"];
+            require(actual.code == expected["code"].GetString() &&
+                        actual.category == geometer::contracts::DiagnosticCategory::operation &&
+                        actual.retryable == expected["retryable"].GetBool() &&
+                        !actual.path.has_value(),
+                    "governed native diagnostic fields should match");
+        }
+    }
 }
 
 void generated_cpp_replays_all_governed_contract_vectors()
@@ -404,6 +544,7 @@ int main()
     {
         generated_options_codec_preserves_presence_and_is_strict();
         generated_cpp_replays_all_governed_contract_vectors();
+        generated_cpp_replays_governed_operation_vectors();
         generated_encoder_rejects_invalid_utf8();
         generated_ipc_control_codecs_are_strict();
         response_limits_fail_closed_before_accessor_narrowing();

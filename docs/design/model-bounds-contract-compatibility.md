@@ -64,11 +64,21 @@ attributes, executable discovery, aliases, and legacy mapping inputs.
 The raw pilot vectors under `tests/contracts/vectors/` freeze strict parsing,
 closed-schema behavior, absent-versus-present option fields, and success/failure
 operation outcomes. C++, TypeScript, Rust, and Python each replay all 20
-manifest entries, including raw invalid UTF-8 and presence projections. Native
-C++ tests additionally prove compatibility separation, local-versus-typed C
-ABI failures, catalog discovery, attachment ownership, operation failures, and
-a live STEP round trip. Browser tests execute the same operation through the
-generated direct and Worker clients. Rust tests execute repeated and
+structural manifest entries, including raw invalid UTF-8 and presence
+projections. Two additional manifest-declared operation vectors now govern a
+real SOT-23 result and a non-affine transform rejection. The success vector
+excludes only the two timing leaves, compares strings and topology exactly, and
+compares geometry with an absolute `1e-9` and relative `1e-12` tolerance. The
+same expected projection is replayed through the native generic C ABI, direct
+browser WASM client, persistent executable IPC Rust client, and compatible
+Python boundary. The diagnostic vector matches code, category, path presence,
+and retryability exactly through the native C ABI, WASM, and executable IPC;
+only human message prose is excluded.
+
+Native C++ tests additionally prove compatibility separation,
+local-versus-typed C ABI failures, catalog discovery, attachment ownership,
+operation failures, and a live STEP round trip. Browser Worker tests remain a
+separate correlation/lifecycle proof. Rust tests execute repeated and
 concurrent correlated calls over one persistent native child, while Python
 clean-wheel tests execute the compatible public boundary.
 
@@ -80,10 +90,11 @@ active-plan hygiene sentinel. The promotion manifest digest-locks the catalog,
 vector manifest, and full-browser JavaScript/WASM artifacts used by this
 evidence.
 
-The only remaining model-bounds gate is independent acceptance of the
-promotion packet. Until that acceptance is recorded, the manifest continues
-to label the contracts and operation as pilot candidates and no authority
-cutover is claimed.
+Independent review rejected the first promotion packet because it lacked these
+operation-level vectors. The remediated corpus must pass local and exact-commit
+hosted evidence before returning to review. Until that acceptance is recorded,
+the manifest continues to label the contracts and operation as pilot
+candidates and no authority cutover is claimed.
 
 The generic result boundary also validates response-side JSON and attachment
 limits even though `model_bounds` currently emits no output attachment. This is

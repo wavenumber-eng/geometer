@@ -7,6 +7,8 @@ use geometer_client::ipc::{self, Frame, FrameKind};
 use geometer_client::{
     GeometerClient, GeometerClientError, ModelBoundsRequest, NORMALIZED_CATALOG_SHA256,
 };
+use serde::Deserialize;
+use serde_json::Value;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::process::Command;
 
@@ -120,6 +122,88 @@ async fn persistent_client_runs_model_bounds_twice_and_closes_cleanly() {
         .unwrap();
     assert_eq!(first.source.hash, second.source.hash);
     assert_eq!(first.bounds, second.bounds);
+    client.close().await.unwrap();
+}
+
+#[tokio::test]
+async fn governed_operation_vectors_match_executable_ipc() {
+    let root = repository_root();
+    let vector_root = root.join("tests/contracts/vectors");
+    let manifest: OperationManifest = serde_json::from_slice(
+        &tokio::fs::read(vector_root.join("manifest.json"))
+            .await
+            .unwrap(),
+    )
+    .unwrap();
+    assert_eq!(manifest.operation_vectors.len(), 2);
+    let client = GeometerClient::spawn(native_executable(&root), "operation-vector-test", "a0")
+        .await
+        .unwrap();
+    for vector in manifest.operation_vectors {
+        if !vector
+            .runtimes
+            .iter()
+            .any(|value| value == "executable_ipc")
+        {
+            continue;
+        }
+        let request = tokio::fs::read(vector_root.join(&vector.request_file))
+            .await
+            .unwrap();
+        let mut attachments = Vec::new();
+        for attachment in vector.attachments {
+            attachments.push(ipc::Attachment {
+                name: attachment.name,
+                media_type: attachment.media_type,
+                data: tokio::fs::read(root.join(attachment.repository_file))
+                    .await
+                    .unwrap(),
+            });
+        }
+        let response = client
+            .execute(&vector.operation, &request, attachments)
+            .await
+            .unwrap();
+        assert!(response.attachments.is_empty(), "{}", vector.id);
+        match response.outcome {
+            contracts::OperationOutcomeA0::Success(success) => {
+                assert_eq!(vector.expected, "success", "{}", vector.id);
+                assert_eq!(
+                    vector.excluded_fields,
+                    ["/result/timings/model_read_ms", "/result/timings/bounds_ms"],
+                    "{}",
+                    vector.id
+                );
+                let contracts::OperationResultValueA0::ModelBounds(result) = success.result;
+                let mut actual = serde_json::to_value(result).unwrap();
+                let mut expected: Value = serde_json::from_slice(
+                    &tokio::fs::read(
+                        vector_root.join(vector.expected_result_file.as_ref().unwrap()),
+                    )
+                    .await
+                    .unwrap(),
+                )
+                .unwrap();
+                actual.as_object_mut().unwrap().remove("timings");
+                expected.as_object_mut().unwrap().remove("timings");
+                assert_json_close(&actual, &expected, vector.tolerance.as_ref().unwrap(), "");
+            }
+            contracts::OperationOutcomeA0::Failure(failure) => {
+                assert_eq!(vector.expected, "failure", "{}", vector.id);
+                assert_eq!(failure.diagnostics.len(), 1, "{}", vector.id);
+                let actual = &failure.diagnostics[0];
+                let expected = vector.expected_diagnostic.as_ref().unwrap();
+                assert_eq!(actual.code, expected.code, "{}", vector.id);
+                assert_eq!(actual.category, contracts::DiagnosticCategory::Operation);
+                assert_eq!(actual.retryable, expected.retryable, "{}", vector.id);
+                assert!(
+                    actual.path.is_none() && expected.path == "absent",
+                    "{}",
+                    vector.id
+                );
+            }
+        }
+    }
     client.close().await.unwrap();
 }
 
@@ -310,6 +394,81 @@ fn model_attachment(data: Vec<u8>) -> ipc::Attachment {
         name: "model".to_owned(),
         media_type: "application/step".to_owned(),
         data,
+    }
+}
+
+#[derive(Deserialize)]
+struct OperationManifest {
+    operation_vectors: Vec<OperationVector>,
+}
+
+#[derive(Deserialize)]
+struct OperationVector {
+    id: String,
+    operation: String,
+    request_file: String,
+    attachments: Vec<VectorAttachment>,
+    expected: String,
+    expected_result_file: Option<String>,
+    expected_diagnostic: Option<ExpectedDiagnostic>,
+    excluded_fields: Vec<String>,
+    tolerance: Option<Tolerance>,
+    runtimes: Vec<String>,
+}
+
+#[derive(Deserialize)]
+struct VectorAttachment {
+    name: String,
+    media_type: String,
+    repository_file: String,
+}
+
+#[derive(Deserialize)]
+struct ExpectedDiagnostic {
+    code: String,
+    path: String,
+    retryable: bool,
+}
+
+#[derive(Deserialize)]
+struct Tolerance {
+    absolute: f64,
+    relative: f64,
+}
+
+fn assert_json_close(actual: &Value, expected: &Value, tolerance: &Tolerance, path: &str) {
+    match (actual, expected) {
+        (Value::Number(actual), Value::Number(expected)) => {
+            let actual = actual.as_f64().unwrap();
+            let expected = expected.as_f64().unwrap();
+            let allowed =
+                tolerance.absolute + tolerance.relative * f64::max(actual.abs(), expected.abs());
+            assert!(
+                (actual - expected).abs() <= allowed,
+                "numeric mismatch at {path}: {actual} != {expected}"
+            );
+        }
+        (Value::Array(actual), Value::Array(expected)) => {
+            assert_eq!(
+                actual.len(),
+                expected.len(),
+                "array length mismatch at {path}"
+            );
+            for (index, (actual, expected)) in actual.iter().zip(expected).enumerate() {
+                assert_json_close(actual, expected, tolerance, &format!("{path}/{index}"));
+            }
+        }
+        (Value::Object(actual), Value::Object(expected)) => {
+            assert_eq!(
+                actual.len(),
+                expected.len(),
+                "object size mismatch at {path}"
+            );
+            for (key, expected) in expected {
+                assert_json_close(&actual[key], expected, tolerance, &format!("{path}/{key}"));
+            }
+        }
+        _ => assert_eq!(actual, expected, "exact mismatch at {path}"),
     }
 }
 

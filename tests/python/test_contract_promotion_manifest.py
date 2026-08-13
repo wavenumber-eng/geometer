@@ -194,7 +194,7 @@ def test_manifest_sources_and_identities_are_complete() -> None:
     assert package_json["type"] == "module"
 
     evidence = manifest["promotion_evidence"]["model_bounds"]
-    assert evidence["status"] == "ready_for_independent_review"
+    assert evidence["status"] == "review_changes_requested_remediation_in_progress"
     assert re.fullmatch(r"[0-9a-f]{40}", evidence["candidate_revision"])
     assert evidence["hosted_workflow_run"] == 31738634104
     assert evidence["hosted_native_conclusion"] == "success"
@@ -206,7 +206,9 @@ def test_manifest_sources_and_identities_are_complete() -> None:
     ]
     assert len(evidence["hosted_native_jobs"]) == 4
     assert evidence["standards_expected_failure"] == "active_temporary_plan_only"
-    assert evidence["governed_vector_count"] == 20
+    assert evidence["governed_vector_count"] == 22
+    assert evidence["structural_vector_count"] == 20
+    assert evidence["operation_vector_count"] == 2
     for key, path in (
         ("catalog_sha256", toolchain["catalog"]),
         ("vector_manifest_sha256", "tests/contracts/vectors/manifest.json"),

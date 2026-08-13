@@ -13,6 +13,7 @@ const root = resolve(fileURLToPath(new URL("../..", import.meta.url)));
 const require = createRequire(import.meta.url);
 const loadGeneratedModule = require("../wasm/load_generated_module.cjs");
 const browserDist = join(root, "dist", "wasm", "browser");
+const vectorRoot = join(root, "tests", "contracts", "vectors");
 const factory = loadGeneratedModule(join(browserDist, "geometer.js"));
 const module = await factory({
   wasmBinary: await readFile(join(browserDist, "geometer.wasm")),
@@ -37,6 +38,65 @@ const client = await createGeometerWasmClient(module);
 const model = await readFile(
   join(root, "tests", "fixtures", "step", "embedded_models", "SOT-23.STEP"),
 );
+
+function requireClose(actual, expected, tolerance, path) {
+  const allowed =
+    tolerance.absolute + tolerance.relative * Math.max(Math.abs(actual), Math.abs(expected));
+  if (Math.abs(actual - expected) > allowed) {
+    throw new Error(`${path}: expected ${expected}, received ${actual}, tolerance ${allowed}.`);
+  }
+}
+
+function compareModelBoundsProjection(actual, expected, tolerance) {
+  for (const field of ["schema", "units"]) {
+    if (actual[field] !== expected[field]) throw new Error(`/${field}: exact value mismatch.`);
+  }
+  for (const field of ["format", "hash"]) {
+    if (actual.source[field] !== expected.source[field]) {
+      throw new Error(`/source/${field}: exact value mismatch.`);
+    }
+  }
+  for (const field of ["min", "max", "size", "center"]) {
+    for (const [index, value] of actual.bounds[field].entries()) {
+      requireClose(value, expected.bounds[field][index], tolerance, `/bounds/${field}/${index}`);
+    }
+  }
+  if (!Object.values(actual.timings).every((value) => Number.isFinite(value) && value >= 0)) {
+    throw new Error("Excluded timing fields must still be valid nonnegative numbers.");
+  }
+}
+
+const operationManifest = JSON.parse(await readFile(join(vectorRoot, "manifest.json"), "utf8"));
+if (operationManifest.operation_vectors.length !== 2) {
+  throw new Error("WASM must replay every governed operation vector.");
+}
+for (const vector of operationManifest.operation_vectors) {
+  if (!vector.runtimes.includes("browser_wasm")) continue;
+  const request = await readFile(join(vectorRoot, vector.request_file), "utf8");
+  const response = client.execute(vector.operation, request, [
+    { name: "model", mediaType: "application/step", data: model },
+  ]);
+  if (vector.expected === "success") {
+    if (!response.outcome.ok) throw new Error(`${vector.id}: WASM operation unexpectedly failed.`);
+    const expected = JSON.parse(
+      await readFile(join(vectorRoot, vector.expected_result_file), "utf8"),
+    );
+    compareModelBoundsProjection(response.outcome.result, expected, vector.tolerance);
+  } else {
+    if (response.outcome.ok)
+      throw new Error(`${vector.id}: WASM operation unexpectedly succeeded.`);
+    const [diagnostic] = response.outcome.diagnostics;
+    const expected = vector.expected_diagnostic;
+    if (
+      diagnostic.code !== expected.code ||
+      diagnostic.category !== expected.category ||
+      diagnostic.retryable !== expected.retryable ||
+      Object.hasOwn(diagnostic, "path") !== (expected.path !== "absent")
+    ) {
+      throw new Error(`${vector.id}: WASM governed diagnostic mismatch.`);
+    }
+  }
+}
 const result = await client.modelBounds({ model });
 if (result.schema !== "geometry.model_bounds.a0" || result.units !== "mm") {
   throw new Error(`Unexpected model_bounds result ${JSON.stringify(result)}.`);

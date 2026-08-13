@@ -228,5 +228,53 @@
       "excluded_fields": [],
       "tolerance": null
     }
+  ],
+  "operation_vectors": [
+    {
+      "id": "operation.model-bounds.sot23.identity",
+      "operation": "geometry.model_bounds.a0",
+      "request_file": "cases/operation-model-bounds-identity-request.json",
+      "attachments": [
+        {
+          "name": "model",
+          "media_type": "application/step",
+          "repository_file": "tests/fixtures/step/embedded_models/SOT-23.STEP"
+        }
+      ],
+      "lane": "operation_semantic",
+      "oracle": "shared_expected_projection",
+      "expected": "success",
+      "expected_result_file": "cases/operation-model-bounds-identity-result.json",
+      "comparison": "structural_numeric_tolerance",
+      "excluded_fields": ["/result/timings/model_read_ms", "/result/timings/bounds_ms"],
+      "tolerance": { "absolute": 1e-9, "relative": 1e-12 },
+      "equivalence_group": "model_bounds.sot23.identity",
+      "runtimes": ["native_c_abi", "browser_wasm", "executable_ipc", "python_compat"]
+    },
+    {
+      "id": "diagnostic.model-bounds.non-affine-transform",
+      "operation": "geometry.model_bounds.a0",
+      "request_file": "cases/operation-model-bounds-non-affine-request.json",
+      "attachments": [
+        {
+          "name": "model",
+          "media_type": "application/step",
+          "repository_file": "tests/fixtures/step/embedded_models/SOT-23.STEP"
+        }
+      ],
+      "lane": "diagnostic",
+      "oracle": "governed_diagnostic_fields",
+      "expected": "failure",
+      "expected_diagnostic": {
+        "code": "geometer.operation.model_bounds.execution_failed",
+        "category": "operation",
+        "path": "absent",
+        "retryable": false
+      },
+      "comparison": "exact",
+      "excluded_fields": ["/diagnostics/0/message"],
+      "tolerance": null,
+      "runtimes": ["native_c_abi", "browser_wasm", "executable_ipc"]
+    }
   ]
 }

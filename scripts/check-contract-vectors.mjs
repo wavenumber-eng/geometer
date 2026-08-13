@@ -92,9 +92,53 @@ async function main() {
     throw new Error(`${vector.id}: unsupported lane/oracle ${vector.lane}/${vector.oracle}`);
   }
 
+  for (const vector of manifest.operation_vectors) {
+    const operation = catalog.operations.find(
+      (candidate) => candidate.identity === vector.operation,
+    );
+    if (!operation) throw new Error(`${vector.id}: unknown operation ${vector.operation}.`);
+    const requestPath = join(vectorRoot, vector.request_file);
+    if (!existsSync(requestPath)) throw new Error(`${vector.id}: missing ${vector.request_file}`);
+    referencedFiles.add(vector.request_file);
+    const request = parseStrictJson(await readFile(requestPath));
+    const validateRequest = schemas.get(operation.request_contract);
+    if (!validateRequest?.(request)) {
+      throw new Error(
+        `${vector.id}: request does not match ${operation.request_contract}: ${ajv.errorsText(validateRequest?.errors)}`,
+      );
+    }
+    for (const attachment of vector.attachments) {
+      const attachmentPath = join(repositoryRoot, attachment.repository_file);
+      if (!existsSync(attachmentPath)) {
+        throw new Error(`${vector.id}: missing attachment ${attachment.repository_file}`);
+      }
+      const declaration = operation.input_attachments.find(
+        (candidate) => candidate.name === attachment.name,
+      );
+      if (!declaration?.media_types.includes(attachment.media_type)) {
+        throw new Error(`${vector.id}: attachment does not match the operation catalog.`);
+      }
+    }
+    if (vector.expected === "success") {
+      const expectedPath = join(vectorRoot, vector.expected_result_file);
+      if (!existsSync(expectedPath)) {
+        throw new Error(`${vector.id}: missing ${vector.expected_result_file}`);
+      }
+      referencedFiles.add(vector.expected_result_file);
+      const expected = parseStrictJson(await readFile(expectedPath));
+      const validateResult = schemas.get(operation.result_contract);
+      if (!validateResult?.(expected)) {
+        throw new Error(
+          `${vector.id}: expected result does not match ${operation.result_contract}: ${ajv.errorsText(validateResult?.errors)}`,
+        );
+      }
+    }
+  }
+
   const caseFiles = (await listFiles(join(vectorRoot, "cases"))).map((path) => `cases/${path}`);
   assertEqual([...referencedFiles].sort(), caseFiles.sort(), "vector case inventory");
-  process.stdout.write(`Validated ${manifest.vectors.length} governed contract vectors.\n`);
+  const total = manifest.vectors.length + manifest.operation_vectors.length;
+  process.stdout.write(`Validated ${total} governed contract vectors.\n`);
 }
 
 function decodeHexVector(storedBytes, id) {
@@ -111,6 +155,9 @@ function validateManifest(value) {
   }
   if (!Array.isArray(value.vectors) || value.vectors.length === 0) {
     throw new Error("Contract-vector manifest must contain vectors.");
+  }
+  if (!Array.isArray(value.operation_vectors) || value.operation_vectors.length === 0) {
+    throw new Error("Contract-vector manifest must contain operation vectors.");
   }
   const ids = new Set();
   for (const vector of value.vectors) {
@@ -132,6 +179,41 @@ function validateManifest(value) {
     }
     if (!vector.file.startsWith("cases/") || vector.file.includes("..")) {
       throw new Error(`${vector.id}: invalid repository-relative case path.`);
+    }
+  }
+  for (const vector of value.operation_vectors) {
+    if (!vector.id || ids.has(vector.id)) {
+      throw new Error(`Missing or duplicate vector id ${String(vector.id)}.`);
+    }
+    ids.add(vector.id);
+    if (!["operation_semantic", "diagnostic"].includes(vector.lane)) {
+      throw new Error(`${vector.id}: unsupported operation assertion lane ${vector.lane}.`);
+    }
+    if (!["success", "failure"].includes(vector.expected)) {
+      throw new Error(`${vector.id}: operation expectation must be success or failure.`);
+    }
+    if (!Array.isArray(vector.excluded_fields) || !Array.isArray(vector.runtimes)) {
+      throw new Error(`${vector.id}: projections and runtimes must be explicit.`);
+    }
+    if (!vector.request_file.startsWith("cases/") || vector.request_file.includes("..")) {
+      throw new Error(`${vector.id}: invalid request case path.`);
+    }
+    if (vector.expected === "success") {
+      if (
+        vector.comparison !== "structural_numeric_tolerance" ||
+        !(vector.tolerance?.absolute > 0) ||
+        !(vector.tolerance?.relative > 0) ||
+        !vector.expected_result_file?.startsWith("cases/") ||
+        vector.expected_result_file.includes("..")
+      ) {
+        throw new Error(`${vector.id}: success vector lacks governed tolerance/result metadata.`);
+      }
+    } else if (
+      vector.comparison !== "exact" ||
+      vector.tolerance !== null ||
+      typeof vector.expected_diagnostic?.code !== "string"
+    ) {
+      throw new Error(`${vector.id}: failure vector lacks exact diagnostic metadata.`);
     }
   }
 }

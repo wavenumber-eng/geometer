@@ -23,7 +23,7 @@ test_case_type = "unit"
 id = "PY_002"
 file = "test_ctypes_wrapper.py"
 name = "Python API Wrapper"
-description = "Checks public Python API wrapper behavior."
+description = "Checks public Python API wrapper behavior and governed model-bounds projection equivalence."
 test_case_type = "unit"
 
 [[subtests]]

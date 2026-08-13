@@ -91,9 +91,10 @@ baseline later, but must never float them during generation.
 The foundation slice created the toolchain, authored TypeSpec root, catalog
 schema, normalized catalog, and JSON Schemas. The generated HTML reference now
 consumes that catalog and joins lifecycle state from the promotion manifest.
-The C++ and TypeScript projections are implemented. Rust and Python remain
-later owning plan steps; the catalog records every output root so generators
-cannot invent competing layouts.
+The C++, TypeScript, Rust, and Python structural projections are implemented.
+Rust and Python retain their separate transport/public-compatibility promotion
+gates; the catalog records every output root so generators cannot invent
+competing layouts.
 
 ## Namespace and identities
 

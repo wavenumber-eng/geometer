@@ -96,6 +96,27 @@ def test_model_bounds_returns_transformed_bounds() -> None:
     assert result.bounds["min"][2] - base.bounds["min"][2] == pytest.approx(3.0)
 
 
+def test_model_bounds_generated_boundary_preserves_legacy_mapping_inputs() -> None:
+    base = geometer.model_bounds(SOT23_STEP)
+    result = geometer.model_bounds(
+        SOT23_STEP,
+        options={
+            "model_format": "STEP",
+            "modelTransform": [
+                [1.0, 0.0, 0.0, 1.0],
+                [0.0, 1.0, 0.0, 2.0],
+                [0.0, 0.0, 1.0, 3.0],
+                [0.0, 0.0, 0.0, 1.0],
+            ],
+            "legacy_unknown_field": "ignored",
+        },
+    )
+
+    assert result.bounds["min"][0] - base.bounds["min"][0] == pytest.approx(1.0)
+    assert result.bounds["min"][1] - base.bounds["min"][1] == pytest.approx(2.0)
+    assert result.bounds["min"][2] - base.bounds["min"][2] == pytest.approx(3.0)
+
+
 def test_step_to_glb_returns_glb_bytes() -> None:
     glb = geometer.step_to_glb(SOT23_STEP)
 

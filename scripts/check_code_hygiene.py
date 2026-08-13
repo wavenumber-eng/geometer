@@ -42,6 +42,7 @@ MAX_PY_FUNCTION_COMPLEXITY = 25
 MAX_PY_CLASS_COMPLEXITY = 35
 
 LINE_LENGTH_EXEMPT_ROOTS = {
+    ROOT / "python" / "geometer" / "_generated",
     ROOT / "src" / "cpp" / "lib" / "geometer" / "generated",
     ROOT / "src" / "rust" / "geometer-client" / "src" / "generated",
     ROOT / "src" / "ts" / "geometer" / "generated",

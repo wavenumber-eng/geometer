@@ -22,6 +22,7 @@ import os
 from pathlib import Path
 
 import geometer
+from geometer._generated.contracts.codecs import decode_model_bounds_options_a0_json
 
 step = Path(os.environ["GEOMETER_VALIDATION_STEP"])
 out_dir = Path(os.environ["GEOMETER_VALIDATION_OUT"])
@@ -33,6 +34,12 @@ if package_dir not in exe.parents:
     raise RuntimeError(f"expected bundled package executable under {package_dir}, got {exe}")
 
 version = geometer.version()
+generated_options = decode_model_bounds_options_a0_json(b'{"format":"step"}')
+if generated_options.format.value != "step":
+    raise RuntimeError("generated contract internals were not installed correctly")
+bounds = geometer.model_bounds(step)
+if bounds.schema != "geometry.model_bounds.a0" or not bounds.source_hash:
+    raise RuntimeError("generated model-bounds boundary did not return a validated result")
 projection = geometer.project_step_hlr(
     step,
     views=[geometer.ProjectionView.top()],
@@ -96,6 +103,7 @@ print(json.dumps({
     "executable": str(exe),
     "detail_edges": detail_count,
     "outline_edges": outline_count,
+    "model_bounds_hash": bounds.source_hash,
     "glb_bytes": len(glb),
     "planar_step_bytes": len(planar_step),
     "svg": str(svg_path),

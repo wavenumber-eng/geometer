@@ -1,0 +1,1 @@
+"""Internal generated contract projections."""

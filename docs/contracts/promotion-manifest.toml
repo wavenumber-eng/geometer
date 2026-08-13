@@ -49,6 +49,18 @@ ipc_identity = "a0"
 live_operation = "geometry.model_bounds.a0"
 runtime_dependency = false
 
+[python_projection]
+status = "implemented_model_bounds_compatible_boundary_pending_review"
+design = "docs/design/python-package.md"
+distribution = "wn-geometer"
+import = "geometer"
+generated_root = "python/geometer/_generated/contracts"
+runtime = "python/geometer/_contract_runtime.py"
+generator = "scripts/generate-python-contracts.mjs"
+visibility = "internal_compatible_boundary"
+live_operation = "geometry.model_bounds.a0"
+runtime_dependency = false
+
 [toolchain]
 status = "implemented"
 design = "docs/design/typespec-toolchain.md"

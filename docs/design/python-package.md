@@ -75,6 +75,27 @@ looks for the Geometer CLI in this order:
 - source checkout `dist/native/<platform>`;
 - `PATH`.
 
+## Generated contract boundary
+
+The package contains generated dependency-free dataclasses, enums, and strict
+JSON codecs under `geometer._generated.contracts`. They are internal structural
+authority, not a new public import surface. The generator reads the normalized
+TypeSpec catalog and is part of the ordinary freshness gate.
+
+`model_bounds` is the first operation integrated through this boundary. The
+public compatibility adapter continues to accept `model_format`,
+`modelTransform`, uppercase `STEP`, nested 4-by-4 transforms, and ignored
+mapping members, then normalizes them to the closed generated request. The
+generated codec validates the canonical request before the executable call and
+validates its result before the existing public `ModelBoundsResult` convenience
+wrapper is constructed. Public names, signatures, return attributes,
+executable discovery, and all other CLI-backed operations remain unchanged.
+
+The runtime uses only the Python standard library. This adds no wheel runtime
+dependency and supports the package's existing Python 3.10 floor. Generated
+source is included by normal setuptools package discovery; clean wheel tests
+prove internal imports and a live public model-bounds round trip.
+
 Published wheels are platform wheels because they bundle the native executable.
 Linux wheels must be repaired/tagged with `auditwheel` before PyPI upload; the
 wheel contents install under `platlib`, not `purelib`, so auditwheel can inspect

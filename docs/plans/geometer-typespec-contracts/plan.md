@@ -321,6 +321,15 @@ Every operation promotion therefore requires its Python projection and public
 compatibility evidence. Removing that requirement would be a material plan
 scope change requiring explicit approval.
 
+The generated Python implementation is review-ready. It emits dependency-free
+internal dataclasses, enums, and strict codecs for the complete normalized
+catalog, replays the governed vectors, and validates the `model_bounds`
+request/result boundary behind the unchanged public convenience wrapper. The
+compatibility adapter retains documented aliases, uppercase format input,
+nested matrices, and ignored legacy mapping members. The
+`python-public-contracts` step remains pending until independent review accepts
+the slice; clean-wheel import and live-operation validation pass on Windows.
+
 The plan also accepts analytic planar Boolean batch as the first additive
 capability after the `model_bounds` infrastructure pilot. The MATZ packet is a
 frozen consumer-requirements input; Geometer still owns and reviews the generic

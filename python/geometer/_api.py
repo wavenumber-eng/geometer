@@ -19,6 +19,12 @@ from ._cli import run_batch as cli_run_batch
 from ._cli import step_to_glb as cli_step_to_glb
 from ._cli import version as cli_version
 from ._paths import executable_path as _executable_path
+from ._contract_runtime import contract_to_json_value
+from ._generated.contracts.codecs import (
+    decode_model_bounds_options_a0_json,
+    decode_model_bounds_result_a0_json,
+    encode_model_bounds_options_a0_json,
+)
 from ._types import (
     HlrOptions,
     HlrProjectionResult,
@@ -138,9 +144,13 @@ def model_bounds_json(
         model_transform=model_transform,
         options=options,
     )
-    options_json = encode_json_options(payload)
+    options_json = encode_model_bounds_options_a0_json(
+        decode_model_bounds_options_a0_json(encode_json_options(payload) or b"{}")
+    )
     _ensure_exe_backend()
-    return cli_model_bounds_json(model, options_json)
+    text = cli_model_bounds_json(model, options_json)
+    decode_model_bounds_result_a0_json(text)
+    return text
 
 
 def model_bounds(
@@ -156,7 +166,11 @@ def model_bounds(
         model_transform=model_transform,
         options=options,
     )
-    return ModelBoundsResult(json.loads(text))
+    generated = decode_model_bounds_result_a0_json(text)
+    data = contract_to_json_value(generated)
+    if not isinstance(data, dict):
+        raise RuntimeError("generated model-bounds result did not project to an object")
+    return ModelBoundsResult(data)
 
 
 def model_to_glb(

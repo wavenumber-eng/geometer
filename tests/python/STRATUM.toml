@@ -7,6 +7,7 @@ concerns = ["python", "package", "scripts"]
 
 objectives = [
     "Verify executable-backed Python helpers and package behavior.",
+    "Replay governed contracts through generated dependency-free Python models and strict codecs.",
     "Verify build-script helper logic that is practical to test without native rebuilds.",
     "Verify the contract promotion manifest remains aligned with implemented interfaces.",
 ]
@@ -37,4 +38,11 @@ id = "PY_004"
 file = "test_contract_promotion_manifest.py"
 name = "Contract Promotion Manifest"
 description = "Checks contract inventory, C ABI/WASM exports, packet identities, named downstream compatibility inputs, and dispatch aliases."
+test_case_type = "unit"
+
+[[subtests]]
+id = "PY_005"
+file = "test_generated_contracts.py"
+name = "Generated Python Contracts"
+description = "Checks generated Python freshness, governed-vector replay, strict JSON, and presence-aware model-bounds codecs."
 test_case_type = "unit"

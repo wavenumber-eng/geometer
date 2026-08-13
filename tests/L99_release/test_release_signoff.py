@@ -121,6 +121,7 @@ def test_code_hygiene_exempts_only_generated_contract_sources_from_line_limit() 
             "-c",
             "from pathlib import Path; from scripts import check_code_hygiene as hygiene; "
             "assert hygiene.is_line_length_exempt(Path('src/cpp/lib/geometer/generated/contracts/contracts_json.cpp')); "
+            "assert hygiene.is_line_length_exempt(Path('python/geometer/_generated/contracts/codecs.py')); "
             "assert not hygiene.is_line_length_exempt(Path('src/cpp/lib/ipc_a0_server.cpp'))",
         ]
     )

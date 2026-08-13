@@ -344,10 +344,17 @@ def build_model_options_payload(
     else:
         raise TypeError("options must be a mapping or None")
 
-    payload["format"] = normalize_model_format(str(payload.get("format", format)))
+    alias_format = payload.pop("model_format", None)
+    selected_format = payload.get("format", alias_format if alias_format is not None else format)
+    payload["format"] = normalize_model_format(str(selected_format))
+    alias_transform = payload.pop("modelTransform", None)
+    if "model_transform" not in payload and alias_transform is not None:
+        payload["model_transform"] = _flat_matrix4_json_value(alias_transform)
     if model_transform is not None:
-        payload["model_transform"] = _matrix4_json_value(model_transform)
-    return payload
+        payload["model_transform"] = _flat_matrix4_json_value(model_transform)
+    elif "model_transform" in payload:
+        payload["model_transform"] = _flat_matrix4_json_value(payload["model_transform"])
+    return {key: payload[key] for key in ("format", "model_transform") if key in payload}
 
 
 def encode_json_options(payload: Mapping[str, Any] | None) -> bytes | None:
@@ -442,6 +449,13 @@ def _matrix4_json_value(matrix: Matrix4) -> list[Any]:
             rows.append([float(item) for item in row_values])
         return rows
     raise ValueError("model_transform must be a flat 16-value sequence or a 4x4 sequence")
+
+
+def _flat_matrix4_json_value(matrix: Matrix4) -> list[float]:
+    value = _matrix4_json_value(matrix)
+    if len(value) == 16:
+        return [float(item) for item in value]
+    return [float(item) for row in value for item in row]
 
 
 def _vec3(values: Sequence[float], label: str) -> tuple[float, float, float]:

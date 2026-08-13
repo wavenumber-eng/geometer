@@ -2,16 +2,20 @@
 
 ## Status and purpose
 
-This is the required nonblocking difference report between the generated
+This is the required difference report and promotion evidence index for the generated
 canonical `geometry.model_bounds.options.a0` / `geometry.model_bounds.a0`
-contracts and the current handwritten implementation. It records adapter work
-before cutover; it does not promote the contracts or remove accepted inputs.
+contracts and the retained compatibility implementation. The complete vertical
+is ready for independent promotion review; authority remains unchanged until
+that review is accepted and the promotion manifest records the decision.
 
-TypeSpec owns the candidate canonical structure. The generated C++ DTO/codec
-and generic operation registry now use that strict structure. Existing parsing
-behavior in `src/cpp/lib/model_bounds_options_json.cpp`, CLI layering, retained
-per-operation C ABI functions, and the public Python wrapper remain active
-until their individual migration gates pass.
+The proposed authority is authored TypeSpec lowered through the normalized
+catalog. Generated C++ DTOs/codecs and the generic operation registry use that
+strict structure. Generated TypeScript, Rust, and Python projections consume
+the same catalog. Existing parsing in
+`src/cpp/lib/model_bounds_options_json.cpp`, CLI layering, retained
+per-operation C ABI functions, and public Python convenience types remain as
+explicit compatibility adapters; promotion does not remove those inputs or
+surfaces.
 
 ## Option-input differences
 
@@ -49,21 +53,37 @@ serialization vectors.
 
 The existing focused public C++ `ModelBoundsResult` and public Python
 `ModelBoundsResult` convenience surface are not replaced by this structural
-candidate. The generic registry maps the generated C++ request DTO into the
+contract. The generic registry maps the generated C++ request DTO into the
 focused C++ value API and maps the focused result back to the generated wire
-DTO. A later Python slice must use the same boundary while proving existing
-call signatures and attributes.
+DTO. The Python package validates its canonical request/result boundary with
+generated codecs while preserving the established call signatures,
+attributes, executable discovery, aliases, and legacy mapping inputs.
 
-## Evidence and remaining gate
+## Promotion evidence and remaining gate
 
 The raw pilot vectors under `tests/contracts/vectors/` freeze strict parsing,
 closed-schema behavior, absent-versus-present option fields, and success/failure
-operation outcomes. Native C++ tests prove generated decoding, compatibility
-separation, local-versus-typed C ABI failures, catalog discovery, attachment
-ownership, and a live STEP `model_bounds` round trip. Later pilot work must add
-complete generated C++ vector replay, TypeScript/Rust/Python replay,
-non-affine-transform operation vectors, tolerant result vectors, and live
-WASM/IPC round trips before promotion.
+operation outcomes. C++, TypeScript, Rust, and Python each replay all 20
+manifest entries, including raw invalid UTF-8 and presence projections. Native
+C++ tests additionally prove compatibility separation, local-versus-typed C
+ABI failures, catalog discovery, attachment ownership, operation failures, and
+a live STEP round trip. Browser tests execute the same operation through the
+generated direct and Worker clients. Rust tests execute repeated and
+concurrent correlated calls over one persistent native child, while Python
+clean-wheel tests execute the compatible public boundary.
+
+Exact candidate revision
+`03cefcfefbd6cd848eebac4f94d02929d8176d3c` passed the Windows x64, Linux x64,
+Linux ARM64, and macOS ARM64 native/Rust/Python/wheel jobs in hosted workflow
+run `31738634104`. Its standards job passed every check except the intentional
+active-plan hygiene sentinel. The promotion manifest digest-locks the catalog,
+vector manifest, and full-browser JavaScript/WASM artifacts used by this
+evidence.
+
+The only remaining model-bounds gate is independent acceptance of the
+promotion packet. Until that acceptance is recorded, the manifest continues
+to label the contracts and operation as pilot candidates and no authority
+cutover is claimed.
 
 The generic result boundary also validates response-side JSON and attachment
 limits even though `model_bounds` currently emits no output attachment. This is

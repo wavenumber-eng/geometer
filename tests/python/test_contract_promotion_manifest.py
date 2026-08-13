@@ -193,6 +193,28 @@ def test_manifest_sources_and_identities_are_complete() -> None:
     assert manifest["packages"]["typescript_module_format"] == "esm"
     assert package_json["type"] == "module"
 
+    evidence = manifest["promotion_evidence"]["model_bounds"]
+    assert evidence["status"] == "ready_for_independent_review"
+    assert re.fullmatch(r"[0-9a-f]{40}", evidence["candidate_revision"])
+    assert evidence["hosted_workflow_run"] == 31738634104
+    assert evidence["hosted_native_conclusion"] == "success"
+    assert evidence["hosted_platforms"] == [
+        "windows-x64",
+        "macos-arm64",
+        "linux-x64",
+        "linux-arm64",
+    ]
+    assert len(evidence["hosted_native_jobs"]) == 4
+    assert evidence["standards_expected_failure"] == "active_temporary_plan_only"
+    assert evidence["governed_vector_count"] == 20
+    for key, path in (
+        ("catalog_sha256", toolchain["catalog"]),
+        ("vector_manifest_sha256", "tests/contracts/vectors/manifest.json"),
+        ("browser_js_sha256", "dist/wasm/browser/geometer.js"),
+        ("browser_wasm_sha256", "dist/wasm/browser/geometer.wasm"),
+    ):
+        assert _sha256(ROOT / path) == evidence[key]
+
     contracts = manifest["contracts"]
     contract_ids = [item["id"] for item in contracts]
     _unique(contract_ids, "contract id")

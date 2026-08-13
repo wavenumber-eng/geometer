@@ -179,7 +179,7 @@ status = "pending"
 [[exit_criteria]]
 id = "documentation-asset-licensing"
 title = "Every vendored font has repository-safe redistribution authority and committed license evidence"
-status = "pending"
+status = "met"
 
 [[exit_criteria]]
 id = "generated-html-reference"
@@ -282,6 +282,11 @@ and transport implementation is allowed. The TypeSpec/catalog foundation is
 implemented and the pilot-contract/conformance slice is active. No operation is
 promoted and no compatibility reader or published interface may be removed
 merely because the plan is active.
+
+The deterministic styled HTML reference and its offline resource/navigation
+tests are implemented ahead of pilot promotion. Interactive desktop and narrow
+browser smoke remains open, so the `generated-html-reference` step and exit
+criterion are not yet complete.
 
 Generated Python is intentional mandatory scope based on project-owner
 direction that public Python should use generated contract code while

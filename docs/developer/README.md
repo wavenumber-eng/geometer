@@ -94,8 +94,9 @@ if ((npm --version).Trim() -ne "11.16.0") { throw "npm version mismatch" }
 npm ci
 ```
 
-Regenerate the committed normalized catalog and JSON Schemas after editing
-`src/tsp/geometer/`, then run the deterministic freshness check:
+Regenerate the committed normalized catalog, JSON Schemas, and styled HTML
+reference after editing `src/tsp/geometer/`, then run the deterministic
+freshness check:
 
 ```powershell
 npm run generate:contracts
@@ -104,8 +105,10 @@ npm run check:contracts
 
 The check compiles with warnings as errors, validates the normalized catalog,
 cross-checks pilot roots and operations against the promotion manifest,
-rejects stale, missing, or unexpected generated files, and replays the governed
-raw contract vectors under `tests/contracts/vectors/`. See
+rejects stale, missing, unexpected, unlinked, or externally dependent generated
+files, verifies vendored documentation assets, and replays the governed raw
+contract vectors under `tests/contracts/vectors/`. Use `npm run generate:docs`
+or `npm run check:docs` for a focused documentation-only pass. See
 [../design/typespec-toolchain.md](../design/typespec-toolchain.md) for authority,
 supported constructs, identities, and output paths.
 

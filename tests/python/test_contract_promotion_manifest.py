@@ -134,6 +134,7 @@ def test_manifest_sources_and_identities_are_complete() -> None:
     design = (ROOT / documentation["design"]).read_text(encoding="utf-8")
     assert documentation["source_revision"] in design
     license_asset = next(item for item in assets if item["role"] == "license")
+    assert {item["status"] for item in assets} == {"vendored"}
     for asset in assets:
         assert asset["role"] in {"stylesheet", "font", "license", "watermark"}
         assert re.fullmatch(r"[0-9a-f]{64}", asset["sha256"])
@@ -160,6 +161,15 @@ def test_manifest_sources_and_identities_are_complete() -> None:
         elif asset["role"] == "license":
             assert font_redistribution["source_revision"] in asset["source"]
             assert asset["source"].endswith("/OFL.txt")
+
+    stylesheet = next(item for item in assets if item["role"] == "stylesheet")
+    assert stylesheet["source_sha256"] == (
+        "b0452e403db12c3fca581866b0953dbca45d751bcc83c137f0da16674859d151"
+    )
+    assert "Cousine" in stylesheet["adaptation"]
+    stylesheet_text = (ROOT / stylesheet["destination"]).read_text(encoding="utf-8")
+    assert 'font-family: "Cousine"' in stylesheet_text
+    assert "Berkeley Mono" not in stylesheet_text
 
     contracts = manifest["contracts"]
     contract_ids = [item["id"] for item in contracts]

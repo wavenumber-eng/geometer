@@ -27,4 +27,5 @@
 *.lib binary
 *.png binary
 *.so binary
+*.ttf binary
 *.wasm binary

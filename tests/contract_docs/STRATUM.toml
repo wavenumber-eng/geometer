@@ -1,0 +1,19 @@
+name = "Generated Contract Docs"
+order = 3
+description = "Verify deterministic, complete, styled, and offline contract references."
+enabled = true
+runner = "pytest"
+concerns = ["contracts", "documentation", "offline"]
+
+objectives = [
+    "Reject stale, missing, or unexpected generated contract pages.",
+    "Verify every relative page, schema, source, stylesheet, font, and watermark link.",
+    "Protect generated-authority markers, catalog identity, and responsive local styling.",
+]
+
+[[subtests]]
+id = "DOC_001"
+file = "test_generated_contract_docs.py"
+name = "Generated Contract Reference"
+description = "Checks deterministic generation and the complete offline resource graph."
+test_case_type = "contract"

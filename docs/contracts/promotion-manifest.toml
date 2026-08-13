@@ -82,8 +82,10 @@ id = "stylesheet"
 role = "stylesheet"
 source = "appz/data_models/docs/core/design/styles.css"
 destination = "docs/design/styles.css"
-sha256 = "b0452e403db12c3fca581866b0953dbca45d751bcc83c137f0da16674859d151"
-status = "planned"
+source_sha256 = "b0452e403db12c3fca581866b0953dbca45d751bcc83c137f0da16674859d151"
+sha256 = "dc15be39d5efe892ddb58396af984e20559a3b527bf3116f86dc7e5a16eebcdb"
+status = "vendored"
+adaptation = "Replace internally licensed Berkeley Mono declarations with OFL-1.1 Cousine; preserve the reviewed layout and component rules."
 
 [[documentation.assets]]
 id = "cousine_regular"
@@ -91,7 +93,7 @@ role = "font"
 source = "https://raw.githubusercontent.com/google/fonts/038b637da7b3fd956a4ed93ffc607c3d5e4ce172/ofl/cousine/Cousine-Regular.ttf"
 destination = "docs/design/assets/fonts/Cousine/Cousine-Regular.ttf"
 sha256 = "1da22250675fc4c42fcf3a9736c44bc0570516105331443b663fd5cfbd1412fe"
-status = "planned"
+status = "vendored"
 redistribution_status = "approved_open_license"
 license_evidence = "docs/design/assets/fonts/Cousine/OFL.txt"
 
@@ -101,7 +103,7 @@ role = "font"
 source = "https://raw.githubusercontent.com/google/fonts/038b637da7b3fd956a4ed93ffc607c3d5e4ce172/ofl/cousine/Cousine-Bold.ttf"
 destination = "docs/design/assets/fonts/Cousine/Cousine-Bold.ttf"
 sha256 = "17c8a7245156d2253531c9e529474937b09d9f641c5ae7695c5e33f22822eef4"
-status = "planned"
+status = "vendored"
 redistribution_status = "approved_open_license"
 license_evidence = "docs/design/assets/fonts/Cousine/OFL.txt"
 
@@ -111,7 +113,7 @@ role = "license"
 source = "https://raw.githubusercontent.com/google/fonts/038b637da7b3fd956a4ed93ffc607c3d5e4ce172/ofl/cousine/OFL.txt"
 destination = "docs/design/assets/fonts/Cousine/OFL.txt"
 sha256 = "b81c4d4dc0a9f72c9155e78187316e016e2012a8102468804173dc61468b906d"
-status = "planned"
+status = "vendored"
 
 [[documentation.assets]]
 id = "wavenumber_light_watermark"
@@ -119,7 +121,7 @@ role = "watermark"
 source = "appz/data_models/docs/core/design/assets/wn_logo_w_text__for_light.svg"
 destination = "docs/design/assets/wn_logo_w_text__for_light.svg"
 sha256 = "87e16b5b2453ad1f9263d92953d5741a30780db02eeea0d59d61f10967c4537b"
-status = "planned"
+status = "vendored"
 
 [c_abi]
 generation = 20260623

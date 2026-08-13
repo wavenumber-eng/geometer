@@ -84,13 +84,13 @@ depends_on = ["model-bounds-promotion"]
 [[steps]]
 id = "analytic-planar-boolean-design"
 title = "Design and prototype the analytic planar Boolean contract, solver, and packed format"
-status = "active"
+status = "done"
 depends_on = ["geom-contract-alignment"]
 
 [[steps]]
 id = "analytic-synthetic-correctness"
 title = "Establish the analytic Boolean synthetic correctness and mutation program"
-status = "pending"
+status = "active"
 depends_on = ["analytic-planar-boolean-design"]
 
 [[steps]]

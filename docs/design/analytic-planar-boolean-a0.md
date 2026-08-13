@@ -2,11 +2,12 @@
 
 ## Status
 
-MATZ has accepted the consumer/provider design input. Independent technical
-review remains open. This document does not authorize transport or production
-solver implementation and does not freeze generated code. The generic
-operation C ABI and executable IPC remain gated by their separate independent
-review.
+MATZ has accepted the consumer/provider design input. A separately compiled
+TypeSpec candidate now covers the logical request/result and explicit packed
+request/result projections; it is not imported by the promoted-contract
+entrypoint. Independent review of that candidate remains open. This document
+does not authorize production solver implementation, packet goldens, generated
+production projections, or release.
 
 The proposed solver decision is recorded in
 [ADR-012](../adr/012_exact_analytic_planar_boolean_arrangement.md).
@@ -98,6 +99,12 @@ normalized analytic fragments.
 TypeSpec governs the logical request even though the hot wire projection is a
 packed attachment. The normalized catalog must expose both the semantic model
 and its attachment projection so generated clients do not build JSON geometry.
+The candidate entrypoint is `src/tsp/geometer/analytic-candidate.tsp`; it emits
+the logical request/result identities and marks both operation projections as
+`packed_attachment` using format
+`geometry.analytic_planar_boolean.packet.a0`. The production TypeSpec
+entrypoint remains unchanged until this candidate and the packet freeze are
+accepted.
 
 ### Identities
 

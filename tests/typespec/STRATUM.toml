@@ -1,6 +1,6 @@
 name = "TypeSpec Contracts"
 order = 2
-description = "Verify the normalized catalog, JSON Schemas, and generated C++ projection are valid and current."
+description = "Verify the promoted normalized catalog and isolated analytic candidate are valid and current."
 enabled = true
 runner = "pytest"
 concerns = ["typespec", "contracts", "generation"]
@@ -11,6 +11,7 @@ objectives = [
     "Reject stale, missing, or unexpected generated contract artifacts.",
     "Reject stale or unsupported generated C++17 DTO and strict-codec output.",
     "Replay governed raw JSON, generated-schema, and presence vectors.",
+    "Compile and validate the isolated analytic logical contract and packed-projection candidate.",
 ]
 
 [[subtests]]

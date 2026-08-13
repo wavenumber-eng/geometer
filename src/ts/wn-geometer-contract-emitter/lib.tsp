@@ -29,4 +29,16 @@ extern dec outputAttachment(
   mediaTypes: valueof string,
   maxBytes: valueof uint64
 );
+
+extern dec requestPackedProjection(
+  target: Operation,
+  attachmentName: valueof string,
+  format: valueof string
+);
+
+extern dec resultPackedProjection(
+  target: Operation,
+  attachmentName: valueof string,
+  format: valueof string
+);
 }

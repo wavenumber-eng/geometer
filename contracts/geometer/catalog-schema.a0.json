@@ -316,7 +316,19 @@
         "result_contract": { "$ref": "#/definitions/stableIdentity" },
         "input_attachments": { "type": "array", "items": { "$ref": "#/definitions/attachment" } },
         "output_attachments": { "type": "array", "items": { "$ref": "#/definitions/attachment" } },
+        "request_projection": { "$ref": "#/definitions/packedProjection" },
+        "result_projection": { "$ref": "#/definitions/packedProjection" },
         "doc": { "type": "string" }
+      }
+    },
+    "packedProjection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "attachment_name", "format"],
+      "properties": {
+        "kind": { "const": "packed_attachment" },
+        "attachment_name": { "$ref": "#/definitions/nonemptyString" },
+        "format": { "$ref": "#/definitions/stableIdentity" }
       }
     }
   }

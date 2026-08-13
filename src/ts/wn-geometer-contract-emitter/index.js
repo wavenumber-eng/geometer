@@ -32,6 +32,8 @@ const OPTION_PATCH = Symbol.for("wavenumber.geometer.optionPatch");
 const OPERATION_IDENTITY = Symbol.for("wavenumber.geometer.operationIdentity");
 const INPUT_ATTACHMENTS = Symbol.for("wavenumber.geometer.inputAttachments");
 const OUTPUT_ATTACHMENTS = Symbol.for("wavenumber.geometer.outputAttachments");
+const REQUEST_PACKED_PROJECTION = Symbol.for("wavenumber.geometer.requestPackedProjection");
+const RESULT_PACKED_PROJECTION = Symbol.for("wavenumber.geometer.resultPackedProjection");
 
 export function $contractIdentity(context, target, identity) {
   setUnique(context.program, CONTRACT_IDENTITY, target, identity, "contract identity");
@@ -61,6 +63,28 @@ export function $outputAttachment(context, target, name, required, mediaTypes, m
     media_types: parseMediaTypes(mediaTypes),
     max_bytes: numericValue(maxBytes),
   });
+}
+
+export function $requestPackedProjection(context, target, attachmentName, format) {
+  setPackedProjection(
+    context.program,
+    REQUEST_PACKED_PROJECTION,
+    target,
+    attachmentName,
+    format,
+    "request",
+  );
+}
+
+export function $resultPackedProjection(context, target, attachmentName, format) {
+  setPackedProjection(
+    context.program,
+    RESULT_PACKED_PROJECTION,
+    target,
+    attachmentName,
+    format,
+    "result",
+  );
 }
 
 export async function $onEmit(context) {
@@ -166,15 +190,44 @@ function operationRecord(program, operation, identity) {
   }
   const request = requiredContractReference(program, parameters[0].type, operation, "request");
   const result = requiredContractReference(program, operation.returnType, operation, "result");
+  const inputAttachments = attachmentRecords(program, INPUT_ATTACHMENTS, operation);
+  const outputAttachments = attachmentRecords(program, OUTPUT_ATTACHMENTS, operation);
+  const requestProjection = packedProjectionRecord(
+    program,
+    REQUEST_PACKED_PROJECTION,
+    operation,
+    inputAttachments,
+    "request",
+  );
+  const resultProjection = packedProjectionRecord(
+    program,
+    RESULT_PACKED_PROJECTION,
+    operation,
+    outputAttachments,
+    "result",
+  );
   return {
     name: qualifiedName(operation),
     identity,
     request_contract: request,
     result_contract: result,
-    input_attachments: attachmentRecords(program, INPUT_ATTACHMENTS, operation),
-    output_attachments: attachmentRecords(program, OUTPUT_ATTACHMENTS, operation),
+    input_attachments: inputAttachments,
+    output_attachments: outputAttachments,
+    ...(requestProjection ? { request_projection: requestProjection } : {}),
+    ...(resultProjection ? { result_projection: resultProjection } : {}),
     doc: getDoc(program, operation) ?? "",
   };
+}
+
+function packedProjectionRecord(program, key, operation, attachments, role) {
+  const projection = getState(program, key, operation);
+  if (!projection) return null;
+  if (!attachments.some((attachment) => attachment.name === projection.attachment_name)) {
+    throw new Error(
+      `Operation ${qualifiedName(operation)} ${role} packed projection names undeclared attachment ${projection.attachment_name}.`,
+    );
+  }
+  return projection;
 }
 
 function requiredContractReference(program, type, operation, role) {
@@ -424,6 +477,19 @@ function addAttachment(program, key, target, attachment) {
     throw new Error(`${qualifiedName(target)} has duplicate attachment ${attachment.name}.`);
   }
   state.set(target, [...existing, attachment]);
+}
+
+function setPackedProjection(program, key, target, attachmentName, format, role) {
+  if (!attachmentName.trim() || !format.trim()) {
+    throw new Error(`${role} packed projection attachment name and format must be nonempty.`);
+  }
+  setUnique(
+    program,
+    key,
+    target,
+    { kind: "packed_attachment", attachment_name: attachmentName, format },
+    `${role} packed projection`,
+  );
 }
 
 function getState(program, key, target) {

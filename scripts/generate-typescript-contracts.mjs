@@ -134,6 +134,10 @@ function generateOperations() {
     lines.push(`    resultContract: ${JSON.stringify(operation.result_contract)},`);
     lines.push(`    inputAttachments: ${JSON.stringify(operation.input_attachments)},`);
     lines.push(`    outputAttachments: ${JSON.stringify(operation.output_attachments)},`);
+    if (operation.request_projection)
+      lines.push(`    requestProjection: ${JSON.stringify(operation.request_projection)},`);
+    if (operation.result_projection)
+      lines.push(`    resultProjection: ${JSON.stringify(operation.result_projection)},`);
     lines.push(`    documentation: ${JSON.stringify(operation.doc)},`);
     lines.push("  },");
   }

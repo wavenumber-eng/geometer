@@ -346,6 +346,8 @@ function generateOperationCatalogSource() {
       result_contract: operation.result_contract,
       input_attachments: operation.input_attachments,
       output_attachments: operation.output_attachments,
+      ...(operation.request_projection ? { request_projection: operation.request_projection } : {}),
+      ...(operation.result_projection ? { result_projection: operation.result_projection } : {}),
     })),
     attachment_descriptor: {
       wasm32: {

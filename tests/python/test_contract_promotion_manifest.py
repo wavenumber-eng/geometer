@@ -281,7 +281,7 @@ def test_manifest_sources_and_identities_are_complete() -> None:
     assert not set(candidate_ids) & set(operation_ids)
     assert candidate_ids == ["geometry.analytic_planar_boolean_batch.a0"]
     candidate = candidates[0]
-    assert candidate["status"] == "design_required"
+    assert candidate["status"] == "typespec_candidate"
     assert candidate["request_contract"] == "unfrozen"
     assert candidate["result_contract"] == "unfrozen"
     assert candidate["transport"] == "generic_named_attachments"
@@ -294,6 +294,13 @@ def test_manifest_sources_and_identities_are_complete() -> None:
     assert (ROOT / candidate["numeric_catalog"]).is_file()
     assert (ROOT / candidate["feasibility_test"]).is_file()
     assert (ROOT / candidate["portable_fixture"]).is_file()
+    for key in (
+        "candidate_typespec_entrypoint",
+        "candidate_typespec_source",
+        "candidate_operation_source",
+        "candidate_check",
+    ):
+        assert (ROOT / candidate[key]).is_file()
 
     for demo in manifest["demos"]:
         assert (ROOT / demo["source"]).is_file()

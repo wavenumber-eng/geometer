@@ -42,6 +42,20 @@ class StorageReservation
     bool acquired_;
 };
 
+std::uint64_t checked_add(std::uint64_t left, std::uint64_t right)
+{
+    if (right > std::numeric_limits<std::uint64_t>::max() - left)
+        throw std::overflow_error("exact factorization budget estimate overflow");
+    return left + right;
+}
+
+std::uint64_t checked_multiply(std::uint64_t left, std::uint64_t right)
+{
+    if (left != 0 && right > std::numeric_limits<std::uint64_t>::max() / left)
+        throw std::overflow_error("exact factorization budget estimate overflow");
+    return left * right;
+}
+
 BigInt absolute(BigInt value)
 {
     return value < 0 ? -value : value;
@@ -78,9 +92,9 @@ std::uint64_t bit_length(const BigInt& value)
         ++high;
         limb >>= 1;
     }
-    return static_cast<std::uint64_t>(backend.size() - 1) *
-               sizeof(boost::multiprecision::limb_type) * 8 +
-           high;
+    return checked_add(checked_multiply(static_cast<std::uint64_t>(backend.size() - 1),
+                                        sizeof(boost::multiprecision::limb_type) * 8),
+                       high);
 }
 
 BigInt evaluate(const IntegerPolynomial& polynomial, std::int64_t point)
@@ -235,8 +249,13 @@ struct Enumeration
             }
             point_bits = std::max(point_bits, bits);
         }
-        const std::uint64_t limbs = (value_bits + order * point_bits + 31) / 32;
-        if (!budget.consume_work(order * order * order * limbs * limbs * 16))
+        const std::uint64_t bits =
+            checked_add(checked_add(value_bits, checked_multiply(order, point_bits)), 31);
+        const std::uint64_t limbs = bits / 32;
+        const std::uint64_t order_cubed = checked_multiply(checked_multiply(order, order), order);
+        const std::uint64_t work =
+            checked_multiply(16, checked_multiply(order_cubed, checked_multiply(limbs, limbs)));
+        if (!budget.consume_work(work))
         {
             exhausted = true;
             return false;
@@ -269,8 +288,11 @@ SearchStatus find_factor(Budget& budget, const IntegerPolynomial& polynomial,
             std::uint64_t coefficient_bits = 1;
             for (const BigInt& coefficient : polynomial)
                 coefficient_bits = std::max(coefficient_bits, bit_length(coefficient));
-            const std::uint64_t limbs = (coefficient_bits + cursor + 31) / 32;
-            if (!budget.consume_work(static_cast<std::uint64_t>(degree + 1) * limbs * limbs * 16))
+            const std::uint64_t limbs = checked_add(checked_add(coefficient_bits, cursor), 31) / 32;
+            const std::uint64_t work =
+                checked_multiply(16, checked_multiply(static_cast<std::uint64_t>(degree + 1),
+                                                      checked_multiply(limbs, limbs)));
+            if (!budget.consume_work(work))
                 return SearchStatus::resource_limit;
             const BigInt value = evaluate(polynomial, point);
             if (value == 0)
@@ -312,7 +334,7 @@ FactorizationResult factor_primitive_polynomial(Budget& budget, const Polynomial
         return {Error::invalid_argument, std::nullopt};
     try
     {
-        StorageReservation reservation(budget, 192 * 1024 * 1024);
+        StorageReservation reservation(budget, checked_multiply(192, checked_multiply(1024, 1024)));
         if (!reservation.acquired())
             return {Error::resource_limit_exceeded, std::nullopt};
         std::vector<IntegerPolynomial> pending = {polynomial.coefficients()};
@@ -366,17 +388,17 @@ FactorRootSelectionResult select_unique_factor_root(Budget& budget,
         const RootIntervalCountResult count = count_real_roots_in_dyadic_interval(
             budget, factors.factors()[index], lower_k, upper_k, precision);
         if (count.error != Error::none)
-            return {count.error, std::nullopt, 0};
+            return {FactorRootSelectionStatus::error, count.error, std::nullopt, 0};
         if (count.count == 0)
             continue;
         if (count.count != 1 || selected_factor.has_value())
-            return {Error::resource_limit_exceeded, std::nullopt, 0};
+            return {FactorRootSelectionStatus::needs_refinement, Error::none, std::nullopt, 0};
         selected_factor = index;
         selected_ordinal = count.first_ordinal;
     }
     if (!selected_factor.has_value())
-        return {Error::invalid_argument, std::nullopt, 0};
-    return {Error::none, selected_factor, selected_ordinal};
+        return {FactorRootSelectionStatus::error, Error::invalid_argument, std::nullopt, 0};
+    return {FactorRootSelectionStatus::selected, Error::none, selected_factor, selected_ordinal};
 }
 
 } // namespace geometer::exact

@@ -25,8 +25,16 @@ struct FactorizationResult
     std::optional<PolynomialFactorSet> value;
 };
 
+enum class FactorRootSelectionStatus
+{
+    selected,
+    needs_refinement,
+    error,
+};
+
 struct FactorRootSelectionResult
 {
+    FactorRootSelectionStatus status = FactorRootSelectionStatus::error;
     Error error = Error::none;
     std::optional<std::size_t> factor_index;
     std::uint32_t root_ordinal = 0;

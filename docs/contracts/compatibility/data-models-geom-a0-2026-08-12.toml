@@ -15,7 +15,10 @@ schema_title = "Geom a0 Shared Geometry Payload"
 generation = "a0"
 status = "compatibility_input"
 promoted_geometer_authority = "planned_typespec"
-mapping_report = "planned"
+mapping_status = "proposed"
+mapping_report = "docs/design/geom-a0-contract-alignment.md"
+mapping_report_sha256 = "2d05c90bee03d1b0305ad0ab4a6930bb40d643f315631d31799f44be8b201c30"
+consumer_confirmation = "joint_semantic_and_fixture_review_complete_no_known_blocker"
 
 reusable_type_identities = [
   "geom.path_segment2d",

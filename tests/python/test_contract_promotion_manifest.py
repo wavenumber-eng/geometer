@@ -430,6 +430,26 @@ def test_data_models_geom_a0_requirements_snapshot_is_frozen() -> None:
     assert snapshot["source_revision"] == "fabbf70e1970adb7fa74f3be64c4ef45e2b89154"
     assert snapshot["runtime_sibling_dependency"] is False
     assert snapshot["geom_contract"]["schema_identity"] == ("urn:wavenumber:schema:geom_a0")
+    geom_contract = snapshot["geom_contract"]
+    assert geom_contract["mapping_status"] == "proposed"
+    assert geom_contract["consumer_confirmation"] == (
+        "joint_semantic_and_fixture_review_complete_no_known_blocker"
+    )
+    mapping_report = ROOT / geom_contract["mapping_report"]
+    assert mapping_report.is_file()
+    assert _sha256(mapping_report) == geom_contract["mapping_report_sha256"]
+    mapping_text = mapping_report.read_text(encoding="utf-8")
+    for required_boundary in (
+        "PointNm",
+        "packet-local uint64",
+        "two-half-arc",
+        "round caps and joins only",
+        "one-nanometer grid",
+        "fail closed",
+        "PCB source semantics",
+        "tagged Geometer release",
+    ):
+        assert required_boundary in mapping_text
 
     source_files = snapshot["source_files"]
     source_paths = [item["path"] for item in source_files]

@@ -21,6 +21,7 @@ durable record belongs here, in ADRs, and in requirements.
 - [Rust contracts and executable IPC client](rust-client.md)
 - [Viz TypeScript migration](viz-typescript-migration.md)
 - [Browse generated contracts](../generated/contracts/index.html)
+- [Geom A0 contract alignment](geom-a0-contract-alignment.md)
 - [Analytic planar Boolean A0](analytic-planar-boolean-a0.md)
 - [Analytic planar Boolean packet A0](analytic-planar-boolean-packet-a0.md)
 - [Python package interface](python-package.md)

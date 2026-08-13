@@ -9,7 +9,7 @@ import {
   decodeOperationOutcomeA0Json,
   encodeModelBoundsOptionsA0Json,
   encodeOperationOutcomeA0Json,
-} from "../../dist/npm/geometer/generated/index.js";
+} from "../../dist/wasm/npm/geometer/generated/index.js";
 
 const root = resolve(fileURLToPath(new URL("../..", import.meta.url)));
 const vectorRoot = join(root, "tests", "contracts", "vectors");

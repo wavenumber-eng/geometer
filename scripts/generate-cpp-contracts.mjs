@@ -1,13 +1,16 @@
 // @ts-check
 
 import { spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const catalogPath = join(root, "contracts/geometer/generated/wn_geometer_contract_catalog.a0.json");
-const catalog = JSON.parse(await readFile(catalogPath, "utf8"));
+const catalogText = await readFile(catalogPath, "utf8");
+const catalog = JSON.parse(catalogText);
+const catalogSha256 = createHash("sha256").update(catalogText).digest("hex");
 const output = join(root, catalog.output_roots.cpp);
 const checkOnly = process.argv.includes("--check");
 if (process.argv.some((value, index) => index > 1 && value !== "--check")) {
@@ -385,6 +388,11 @@ function generateOperationCatalogSource() {
     `                                       version_string() + ${JSON.stringify(beforeAbi)} +`,
     `                                       std::to_string(abi_version()) + ${JSON.stringify(afterAbi)};`,
     "    return catalog.c_str();",
+    "}",
+    "",
+    "const char* normalized_contract_catalog_sha256()",
+    "{",
+    `    return ${JSON.stringify(catalogSha256)};`,
     "}",
     "",
     "bool operation_output_attachment_declared(const std::string& operation_id,",

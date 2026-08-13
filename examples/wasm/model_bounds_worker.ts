@@ -7,7 +7,7 @@ const workerScope =
 
 importScripts("/dist/wasm/browser/geometer.js");
 
-void import("/dist/npm/geometer/worker-host.js")
+void import("/dist/wasm/npm/geometer/worker-host.js")
   .then(({ startGeometerWorkerHost }) => {
     startGeometerWorkerHost(createGeometerModule, workerScope);
     globalThis.postMessage({

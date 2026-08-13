@@ -33,3 +33,6 @@
 
 # Preserve the upstream OFL text byte-for-byte, including its authored spacing.
 docs/design/assets/fonts/Cousine/OFL.txt whitespace=-blank-at-eol
+
+# Emscripten's generated modular loader retains an indented blank template line.
+dist/wasm/browser/geometer.js whitespace=-blank-at-eol

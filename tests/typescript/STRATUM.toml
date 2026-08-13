@@ -10,7 +10,7 @@ objectives = [
     "Install and typecheck the ESM package from a clean temporary consumer.",
     "Execute model bounds through the high-level generated client without direct pointer management.",
     "Execute correlated model bounds through a real Worker thread with transferable attachments and lifecycle checks.",
-    "Fail closed on unknown and duplicate Worker correlations and reject every request on immediate termination.",
+    "Fail closed on unknown/duplicate Worker correlations and wrong response kinds, and reject every request on immediate termination.",
 ]
 
 [[subtests]]

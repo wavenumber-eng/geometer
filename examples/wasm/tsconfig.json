@@ -8,11 +8,11 @@
     "noUncheckedIndexedAccess": true,
     "outDir": "../../dist/wasm/demos",
     "paths": {
-      "@wavenumber/geometer": ["../../dist/npm/geometer/index.d.ts"],
-      "@wavenumber/geometer/wasm": ["../../dist/npm/geometer/wasm.d.ts"],
-      "@wavenumber/geometer/worker": ["../../dist/npm/geometer/worker.d.ts"],
-      "@wavenumber/geometer/worker-host": ["../../dist/npm/geometer/worker-host.d.ts"],
-      "/dist/npm/geometer/worker-host.js": ["../../dist/npm/geometer/worker-host.d.ts"]
+      "@wavenumber/geometer": ["../../dist/wasm/npm/geometer/index.d.ts"],
+      "@wavenumber/geometer/wasm": ["../../dist/wasm/npm/geometer/wasm.d.ts"],
+      "@wavenumber/geometer/worker": ["../../dist/wasm/npm/geometer/worker.d.ts"],
+      "@wavenumber/geometer/worker-host": ["../../dist/wasm/npm/geometer/worker-host.d.ts"],
+      "/dist/wasm/npm/geometer/worker-host.js": ["../../dist/wasm/npm/geometer/worker-host.d.ts"]
     },
     "rootDir": ".",
     "strict": true,

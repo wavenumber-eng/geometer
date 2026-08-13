@@ -60,6 +60,14 @@ target_compile_definitions(geometer_operation_contract_test PRIVATE
 
 add_test(NAME geometer_operation_contract_test COMMAND geometer_operation_contract_test)
 
+add_executable(geometer_ipc_a0_frame_test
+    ipc_a0_frame_test.cpp
+)
+
+target_link_libraries(geometer_ipc_a0_frame_test PRIVATE geometer_lib)
+
+add_test(NAME geometer_ipc_a0_frame_test COMMAND geometer_ipc_a0_frame_test)
+
 add_executable(geometer_projection_options_json_test
     projection_options_json_test.cpp
 )
@@ -99,6 +107,7 @@ if(WIN32 AND OpenCASCADE_BINARY_DIR)
         geometer_analytic_planar_boolean_feasibility_test
         geometer_model_bounds_test
         geometer_operation_contract_test
+        geometer_ipc_a0_frame_test
         geometer_projection_options_json_test
         geometer_projection_model_transform_test
         geometer_projection_outline_test

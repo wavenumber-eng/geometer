@@ -58,7 +58,7 @@ npm run generate:contracts
 npm run check:contracts
 ```
 
-The package artifact is `dist/npm/geometer/`. It exposes direct and dedicated
+The package artifact is `dist/wasm/npm/geometer/`. It exposes direct and dedicated
 Worker WASM clients; the current repository artifact is a release input, not a
 claim that the package has been published to npm.
 

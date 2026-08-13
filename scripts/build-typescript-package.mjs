@@ -8,9 +8,9 @@ import { fileURLToPath } from "node:url";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const source = join(root, "src", "ts", "geometer");
-const output = join(root, "dist", "npm", "geometer");
-const staging = join(root, "dist", "npm", `.geometer-stage-${process.pid}`);
-const backup = join(root, "dist", "npm", `.geometer-backup-${process.pid}`);
+const output = join(root, "dist", "wasm", "npm", "geometer");
+const staging = join(root, "dist", "wasm", "npm", `.geometer-stage-${process.pid}`);
+const backup = join(root, "dist", "wasm", "npm", `.geometer-backup-${process.pid}`);
 const checkOnly = process.argv.slice(2).includes("--check");
 
 if (process.argv.slice(2).some((argument) => argument !== "--check")) {
@@ -36,7 +36,7 @@ try {
     process.stdout.write("TypeScript package artifact is current.\n");
   } else {
     await installPackage();
-    process.stdout.write("Built dist/npm/geometer.\n");
+    process.stdout.write("Built dist/wasm/npm/geometer.\n");
   }
 } finally {
   await rm(staging, { recursive: true, force: true });

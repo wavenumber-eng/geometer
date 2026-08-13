@@ -3,7 +3,7 @@ import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parentPort } from "node:worker_threads";
 
-import { startGeometerWorkerHost } from "../../dist/npm/geometer/worker-host.js";
+import { startGeometerWorkerHost } from "../../dist/wasm/npm/geometer/worker-host.js";
 
 if (!parentPort) throw new Error("Geometer worker test requires a parent port.");
 

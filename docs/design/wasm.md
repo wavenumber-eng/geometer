@@ -94,7 +94,7 @@ Existing full-browser and planar-only symbols are unchanged.
 
 ## Generated TypeScript client
 
-Promoted operations use the ESM package under `dist/npm/geometer/`. Normal
+Promoted operations use the ESM package under `dist/wasm/npm/geometer/`. Normal
 consumers should use `@wavenumber/geometer/wasm`; it negotiates the generated
 operation catalog and owns allocation, copying, descriptor layout, pointer-out
 handling, decoding, and freeing. Direct calls to the generic C ABI remain a

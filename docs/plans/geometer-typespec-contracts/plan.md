@@ -297,6 +297,18 @@ browser example, and the Viz operation-by-operation migration guide are
 implemented. Other browser demos migrate only when their owning operations are
 promoted.
 
+The first Rust/executable IPC implementation slice is live. The generated
+`geometer-client` operation contracts replay all governed vectors, and its
+Tokio client negotiates A0, sends raw attachments, correlates concurrent calls,
+supports queue cancellation/local timeout/graceful or forced shutdown, captures
+stderr, and completes repeated real `model_bounds` work through one persistent
+native child. The C++ server implements binary framing, fixed-header allocation
+gates, serialized OCCT execution, bounded queues/resident input/writer output,
+queue-only cancellation, and ordered shutdown. The `rust-exe-ipc` step remains
+pending until transport-control DTOs move from the pilot adapter into generated
+TypeSpec authority and the remaining fatal/broken-pipe/deadline/unexpected-exit
+and multi-platform matrices pass.
+
 Generated Python is intentional mandatory scope based on project-owner
 direction that public Python should use generated contract code while
 maintaining compatibility. It is not merely a consequence of review feedback.

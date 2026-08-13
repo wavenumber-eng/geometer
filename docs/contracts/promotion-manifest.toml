@@ -25,7 +25,7 @@ status = "implemented_model_bounds_worker_pilot"
 design = "docs/design/typescript-client.md"
 source_root = "src/ts/geometer"
 generated_root = "src/ts/geometer/generated"
-package_root = "dist/npm/geometer"
+package_root = "dist/wasm/npm/geometer"
 worker_client_source = "src/ts/geometer/worker.ts"
 worker_host_source = "src/ts/geometer/worker-host.ts"
 worker_protocol = "wn.geometer.wasm_worker.a0"
@@ -35,6 +35,18 @@ example_page = "examples/wasm/model_bounds_demo.html"
 example_artifact = "dist/wasm/demos/model_bounds_demo.js"
 example_worker_artifact = "dist/wasm/demos/model_bounds_worker.js"
 viz_migration_guide = "docs/design/viz-typescript-migration.md"
+runtime_dependency = false
+
+[rust_projection]
+status = "implemented_model_bounds_ipc_pilot_pending_control_codegen"
+design = "docs/design/rust-client.md"
+crate = "geometer-client"
+source_root = "src/rust/geometer-client"
+generated_root = "src/rust/geometer-client/src/generated"
+generator = "scripts/generate-rust-contracts.mjs"
+async_runtime = "tokio"
+ipc_identity = "a0"
+live_operation = "geometry.model_bounds.a0"
 runtime_dependency = false
 
 [toolchain]
@@ -60,7 +72,7 @@ catalog_generation = "a0"
 [transports]
 generic_c_abi = "implemented_a0"
 generic_c_abi_spec = "docs/design/generic-operation-c-abi.md"
-executable_ipc = "proposed_a0"
+executable_ipc = "implemented_model_bounds_pilot_a0"
 executable_ipc_spec = "docs/design/executable-ipc-a0.md"
 transport_adr = "docs/adr/011_generic_operation_transports.md"
 implementation_allowed = true

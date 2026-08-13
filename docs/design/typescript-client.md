@@ -9,7 +9,7 @@ C++ or replace the separately distributed Emscripten JavaScript and WASM
 artifacts.
 
 The package identity is `@wavenumber/geometer`, its module format is ESM, and
-the repository-built package artifact is `dist/npm/geometer/`. Package version
+the repository-built package artifact is `dist/wasm/npm/geometer/`. Package version
 `2026.6.23` follows the current Geometer release. Publication remains a release
 action; a local artifact is not evidence that an npm release has occurred.
 
@@ -78,7 +78,7 @@ The ESM package has explicit exports:
 
 `scripts/build-typescript-package.mjs` compiles with TypeScript 5.9.3 and
 strict, exact-optional-property, and unchecked-index settings. It validates and
-atomically writes `dist/npm/geometer/`; check mode compares every artifact byte.
+atomically writes `dist/wasm/npm/geometer/`; check mode compares every artifact byte.
 `npm pack` plus a clean temporary consumer proves the package exports and
 declarations work outside repository path aliases.
 
@@ -104,7 +104,8 @@ output attachment buffers back. It strictly re-encodes and decodes the
 generated operation outcome across the message boundary. Typed operation
 diagnostics, local C ABI transport errors, malformed messages, Worker errors,
 and message-deserialization failures remain distinct. A structurally valid
-response with an unknown or already-completed correlation identifier is
+response with an unknown or already-completed correlation identifier, or a
+non-error response kind that does not match the correlated request kind, is
 protocol corruption: the client terminates the connection and rejects every
 outstanding request.
 
@@ -151,8 +152,9 @@ Verification includes:
 - correlated SOT-23 round trips through a real Worker thread, including
   transferable ownership, governed/local errors, graceful close, and
   post-close rejection; and
-- deterministic protocol regressions for unknown and duplicate correlations
-  plus immediate termination of multiple outstanding requests; and
+- deterministic protocol regressions for unknown and duplicate correlations,
+  mismatched response kinds, and immediate termination of multiple outstanding
+  requests; and
 - desktop and narrow real-browser smoke of the generated documentation and
   model-bounds example.
 

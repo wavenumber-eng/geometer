@@ -1,9 +1,9 @@
-import { encodeOperationOutcomeA0Json } from "../../dist/npm/geometer/generated/index.js";
+import { encodeOperationOutcomeA0Json } from "../../dist/wasm/npm/geometer/generated/index.js";
 import {
   createGeometerWorkerClient,
   GEOMETER_WASM_WORKER_PROTOCOL,
   GeometerWorkerError,
-} from "../../dist/npm/geometer/worker.js";
+} from "../../dist/wasm/npm/geometer/worker.js";
 
 const capabilities = Object.freeze({
   cAbiGeneration: 20260623,
@@ -138,6 +138,26 @@ async function waitFor(predicate, label) {
   const { client, worker } = await createManualClient();
   const first = client.execute("geometry.model_bounds.a0", "{}", []);
   const second = client.execute("geometry.model_bounds.a0", "{}", []);
+  await waitFor(() => worker.messages.length === 3, "wrong-kind requests");
+  worker.respond({
+    capabilities,
+    kind: "ready",
+    protocol: GEOMETER_WASM_WORKER_PROTOCOL,
+    requestId: worker.messages[1].requestId,
+  });
+  const errors = await Promise.all([
+    expectPromptWorkerRejection(first, "wrong-kind request"),
+    expectPromptWorkerRejection(second, "wrong-kind sibling request"),
+  ]);
+  if (!errors[0].message.includes("expected operation_result") || !worker.terminated) {
+    throw new Error("Wrong response kind did not terminate the Worker connection.");
+  }
+}
+
+{
+  const { client, worker } = await createManualClient();
+  const first = client.execute("geometry.model_bounds.a0", "{}", []);
+  const second = client.execute("geometry.model_bounds.a0", "{}", []);
   await waitFor(() => worker.messages.length === 3, "termination requests");
   client.terminate();
   await Promise.all([
@@ -148,5 +168,10 @@ async function waitFor(predicate, label) {
 }
 
 console.log(
-  JSON.stringify({ duplicateId: "rejected", immediateTermination: 2, unknownId: "rejected" }),
+  JSON.stringify({
+    duplicateId: "rejected",
+    immediateTermination: 2,
+    unknownId: "rejected",
+    wrongKind: "rejected",
+  }),
 );

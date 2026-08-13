@@ -1,9 +1,8 @@
 # CLI Interfaces
 
-The current implemented CLI is documented below. The proposed persistent
-`serve --stdio` mode is governed separately by
-[Executable IPC A0](executable-ipc-a0.md) and remains unimplemented until
-ADR-011 completes independent design review.
+The current implemented CLI is documented below. The additive persistent
+`serve --stdio` mode follows [Executable IPC A0](executable-ipc-a0.md); normal
+file-oriented commands remain unchanged.
 
 Native CLI:
 
@@ -20,7 +19,14 @@ Native CLI:
 .\dist\native\windows-x64\geometer.exe init-request request.json --step input.step --operation step_hlr_projection_json --output output.json
 .\dist\native\windows-x64\geometer.exe run request.json response.json
 .\dist\native\windows-x64\geometer.exe planar-batch-solve request.bin response.bin --warmup 1 --repeat 5 --metrics metrics.json
+.\dist\native\windows-x64\geometer.exe serve --stdio
 ```
+
+`serve --stdio` is a machine protocol endpoint, not an interactive command.
+stdin and stdout contain only binary `GMIPCA01` frames, while diagnostics and
+logs use stderr. Use the generated Rust client rather than writing framed bytes
+in application code. The initial live operation is
+`geometry.model_bounds.a0` with a raw STEP attachment.
 
 Root-level `dist/geometer(.exe)` artifacts are no longer produced. Source
 checkout consumers should use `dist/native/<platform>/geometer(.exe)`.

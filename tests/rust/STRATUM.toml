@@ -1,0 +1,22 @@
+name = "Rust Contracts And Executable IPC Client"
+order = 6
+description = "Verify generated Rust codecs, A0 framing, and the persistent geometer executable client."
+enabled = true
+runner = "pytest"
+concerns = ["rust", "contracts", "ipc", "package"]
+
+objectives = [
+    "Replay all governed contract vectors through generated strict Rust codecs.",
+    "Match the governed exact shutdown frame bytes.",
+    "Negotiate A0 and execute repeated model-bounds work through one persistent native process.",
+    "Exercise nonfatal unknown cancellation, local timeout cancellation, and graceful shutdown.",
+    "Compile the packaged crate from a clean external Rust consumer.",
+    "Enforce the wn-dev-std 2026.8.12 Rust toolchain, lint, command-surface, and Tree-sitter source-shape policy.",
+]
+
+[[subtests]]
+id = "RUST_001"
+file = "test_rust_validations.py"
+name = "Generated Rust And Executable IPC"
+description = "Runs format, lint, contract-vector, framing, live-process, and clean-consumer checks."
+test_case_type = "integration"

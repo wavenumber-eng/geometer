@@ -35,3 +35,6 @@ tests/rack_results/
 
 # Node
 node_modules/
+
+# Rust
+target/

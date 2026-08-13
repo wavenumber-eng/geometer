@@ -204,6 +204,7 @@ type RequestBody =
   | Omit<Extract<GeometerWorkerRequestMessage, { kind: "shutdown" }>, "protocol" | "requestId">;
 
 interface PendingRequest {
+  readonly expectedKind: "closed" | "operation_result" | "ready";
   readonly reject: (error: Error) => void;
   readonly resolve: (response: GeometerWorkerResponseMessage) => void;
 }
@@ -239,7 +240,11 @@ class WorkerConnection {
       requestId,
     } as GeometerWorkerRequestMessage;
     return new Promise((resolve, reject) => {
-      this.pending.set(requestId, { reject, resolve });
+      this.pending.set(requestId, {
+        expectedKind: expectedResponseKind(body.kind),
+        reject,
+        resolve,
+      });
       try {
         this.worker.postMessage(message, [...transfer]);
       } catch (error) {
@@ -294,6 +299,14 @@ class WorkerConnection {
       );
       return;
     }
+    if (response.kind !== "error" && response.kind !== pending.expectedKind) {
+      this.terminate(
+        new GeometerWorkerError(
+          `Geometer Worker returned ${response.kind} for ${response.requestId}; expected ${pending.expectedKind}.`,
+        ),
+      );
+      return;
+    }
     this.pending.delete(response.requestId);
     if (response.kind === "error") pending.reject(deserializeError(response.error));
     else pending.resolve(response);
@@ -308,6 +321,14 @@ class WorkerConnection {
   private readonly handleMessageError = (): void => {
     this.terminate(new GeometerWorkerError("Geometer Worker message deserialization failed."));
   };
+}
+
+function expectedResponseKind(
+  requestKind: RequestBody["kind"],
+): "closed" | "operation_result" | "ready" {
+  if (requestKind === "initialize") return "ready";
+  if (requestKind === "execute") return "operation_result";
+  return "closed";
 }
 
 function isWorkerResponse(value: unknown): value is GeometerWorkerResponseMessage {

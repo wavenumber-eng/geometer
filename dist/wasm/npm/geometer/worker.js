@@ -114,7 +114,11 @@ class WorkerConnection {
             requestId,
         };
         return new Promise((resolve, reject) => {
-            this.pending.set(requestId, { reject, resolve });
+            this.pending.set(requestId, {
+                expectedKind: expectedResponseKind(body.kind),
+                reject,
+                resolve,
+            });
             try {
                 this.worker.postMessage(message, [...transfer]);
             }
@@ -167,6 +171,10 @@ class WorkerConnection {
             this.terminate(new GeometerWorkerError(`Geometer Worker returned unknown or completed request ID ${response.requestId}.`));
             return;
         }
+        if (response.kind !== "error" && response.kind !== pending.expectedKind) {
+            this.terminate(new GeometerWorkerError(`Geometer Worker returned ${response.kind} for ${response.requestId}; expected ${pending.expectedKind}.`));
+            return;
+        }
         this.pending.delete(response.requestId);
         if (response.kind === "error")
             pending.reject(deserializeError(response.error));
@@ -179,6 +187,13 @@ class WorkerConnection {
     handleMessageError = () => {
         this.terminate(new GeometerWorkerError("Geometer Worker message deserialization failed."));
     };
+}
+function expectedResponseKind(requestKind) {
+    if (requestKind === "initialize")
+        return "ready";
+    if (requestKind === "execute")
+        return "operation_result";
+    return "closed";
 }
 function isWorkerResponse(value) {
     if (!isRecord(value) || value.protocol !== GEOMETER_WASM_WORKER_PROTOCOL)

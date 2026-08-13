@@ -1,0 +1,27 @@
+[[subtests]]
+id = "rust-format"
+command = "cargo fmt --all -- --check"
+
+[[subtests]]
+id = "rust-check"
+command = "cargo check --locked"
+
+[[subtests]]
+id = "rust-clippy"
+command = "cargo clippy --locked -- -D warnings"
+
+[[subtests]]
+id = "rust-test"
+command = "cargo test --locked"
+
+[[subtests]]
+id = "rust-doc-test"
+command = "cargo test --doc --locked"
+
+[[subtests]]
+id = "rustdoc"
+command = "RUSTDOCFLAGS=\"-D warnings\" cargo doc --locked"
+
+[[subtests]]
+id = "rust-structural-hygiene"
+command = "dev-std audit . --scope language"

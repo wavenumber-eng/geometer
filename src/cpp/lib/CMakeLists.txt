@@ -25,6 +25,13 @@ set(GEOMETER_LIB_SOURCES
     ${CMAKE_SOURCE_DIR}/third_party/clipper2/src/clipper.triangulation.cpp
 )
 
+if(NOT EMSCRIPTEN)
+    list(APPEND GEOMETER_LIB_SOURCES
+        ipc_a0_frame.cpp
+        ipc_a0_server.cpp
+    )
+endif()
+
 add_library(geometer_lib STATIC ${GEOMETER_LIB_SOURCES})
 set_target_properties(geometer_lib PROPERTIES OUTPUT_NAME geometer)
 

@@ -31,6 +31,7 @@ struct OperationExecution
 };
 
 const char* operation_catalog_json();
+const char* normalized_contract_catalog_sha256();
 bool operation_output_attachment_declared(const std::string& operation_id,
                                           const std::string& attachment_name,
                                           const std::string& media_type);

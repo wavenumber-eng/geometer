@@ -60,7 +60,7 @@ Those outputs are committed when publishing changes so another project can clone
 and use Geometer without a local native/WASM rebuild. Canonical native artifacts
 live under `dist/native/<platform>/`, canonical WASM artifacts live under
 `dist/wasm/<target>/`, and the generated ESM package lives under
-`dist/npm/geometer/`. Root-level `dist/geometer*` artifacts are intentionally
+`dist/wasm/npm/geometer/`. Root-level `dist/geometer*` artifacts are intentionally
 not produced.
 
 OCCT is not vendored into the repository and is not added with CMake
@@ -523,6 +523,17 @@ plus real Worker-thread high-level WASM clients:
 ```powershell
 npm run check:typescript
 uv run pytest tests\typescript -q
+```
+
+Validate generated Rust codecs, formatting/lints, exact A0 framing, a clean
+crate consumer, and live persistent native-process model bounds:
+
+```powershell
+node scripts\generate-rust-contracts.mjs --check
+cargo fmt --manifest-path src\rust\geometer-client\Cargo.toml --all -- --check
+cargo clippy --manifest-path src\rust\geometer-client\Cargo.toml --all-targets --locked -- -D warnings
+wn-dev-std audit src\rust\geometer-client --scope language
+uv run pytest tests\rust -q
 ```
 
 To benchmark the browser C ABI planar batch solver against a packed request:

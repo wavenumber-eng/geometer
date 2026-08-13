@@ -193,7 +193,7 @@ output-attachment declaration lookup; these are not maintained as handwritten
 operation lists. Generated string encoders reject invalid UTF-8 before calling
 RapidJSON, including operation diagnostics populated from native error text.
 The command also emits generated TypeScript DTOs, strict codecs, typed
-operation metadata, the compiled ESM package under `dist/npm/geometer/`, and
+operation metadata, the compiled ESM package under `dist/wasm/npm/geometer/`, and
 the compiled model-bounds TypeScript example. Each projection has byte-for-byte
 check mode.
 

@@ -11,7 +11,13 @@ const npmCli = join(dirname(process.execPath), "node_modules", "npm", "bin", "np
 try {
   run(
     process.execPath,
-    [npmCli, "pack", join(root, "dist", "npm", "geometer"), "--pack-destination", workspace],
+    [
+      npmCli,
+      "pack",
+      join(root, "dist", "wasm", "npm", "geometer"),
+      "--pack-destination",
+      workspace,
+    ],
     root,
   );
   const archive = (await import("node:fs/promises")).readdir(workspace).then(async (items) => {

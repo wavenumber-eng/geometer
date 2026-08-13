@@ -3,8 +3,8 @@ import { Worker } from "node:worker_threads";
 import {
   GeometerOperationError,
   GeometerWasmTransportError,
-} from "../../dist/npm/geometer/wasm.js";
-import { createGeometerWorkerClient, GeometerWorkerError } from "../../dist/npm/geometer/worker.js";
+} from "../../dist/wasm/npm/geometer/wasm.js";
+import { createGeometerWorkerClient, GeometerWorkerError } from "../../dist/wasm/npm/geometer/worker.js";
 
 class BrowserWorkerAdapter {
   constructor(worker) {

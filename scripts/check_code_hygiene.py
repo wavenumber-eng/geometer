@@ -31,6 +31,7 @@ SKIP_PARTS = {
     "dist",
     "out",
     "rack_results",
+    "target",
     "third_party",
 }
 

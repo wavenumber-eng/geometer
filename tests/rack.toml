@@ -4,5 +4,5 @@ version = "0.1"
 description = "Geometer test suite"
 
 [strata]
-order = ["L0_cpp_foundation", "python", "typespec", "contract_docs", "wasm", "typescript", "L1_cpp_pipeline", "L2_cli_integration", "L99_release"]
-default_enabled = ["L0_cpp_foundation", "python", "typespec", "contract_docs", "wasm", "typescript"]
+order = ["L0_cpp_foundation", "python", "typespec", "contract_docs", "wasm", "typescript", "rust", "L1_cpp_pipeline", "L2_cli_integration", "L99_release"]
+default_enabled = ["L0_cpp_foundation", "python", "typespec", "contract_docs", "wasm", "typescript", "rust"]

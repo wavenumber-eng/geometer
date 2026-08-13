@@ -51,10 +51,10 @@ where = ["python"]
 geometer = ["native/*", "native/*/*"]
 
 [tool.wn_dev_std]
-standard_version = "2026.8.11"
+standard_version = "2026.8.12"
 profile = "python-native-wasm"
 distribution = "pypi"
-languages = ["python", "cpp", "wasm"]
+languages = ["python", "cpp", "wasm", "typescript", "rust"]
 strict = true
 artifact_policy = "committed-grouped-dist"
 

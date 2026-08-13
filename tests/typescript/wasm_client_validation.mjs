@@ -7,7 +7,7 @@ import {
   createGeometerWasmClient,
   GeometerOperationError,
   GeometerWasmTransportError,
-} from "../../dist/npm/geometer/wasm.js";
+} from "../../dist/wasm/npm/geometer/wasm.js";
 
 const root = resolve(fileURLToPath(new URL("../..", import.meta.url)));
 const require = createRequire(import.meta.url);

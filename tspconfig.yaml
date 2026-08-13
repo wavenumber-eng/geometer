@@ -1,0 +1,13 @@
+emit:
+  - "@typespec/json-schema"
+  - "@wavenumber/wn-geometer-contract-emitter"
+
+options:
+  "@typespec/json-schema":
+    emitter-output-dir: "{output-dir}/schema"
+    file-type: json
+    seal-object-schemas: true
+  "@wavenumber/wn-geometer-contract-emitter":
+    emitter-output-dir: "{output-dir}"
+
+warn-as-error: true

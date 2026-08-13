@@ -1,0 +1,120 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:wavenumber:schema:geometer:geometry.model_bounds:a0",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "type": "string",
+      "const": "geometry.model_bounds.a0"
+    },
+    "units": {
+      "type": "string",
+      "const": "mm"
+    },
+    "source": {
+      "$ref": "#/$defs/ModelBoundsSource"
+    },
+    "bounds": {
+      "$ref": "#/$defs/ModelBoundsValues"
+    },
+    "timings": {
+      "$ref": "#/$defs/ModelBoundsTimings"
+    }
+  },
+  "required": [
+    "schema",
+    "units",
+    "source",
+    "bounds",
+    "timings"
+  ],
+  "unevaluatedProperties": {
+    "not": {}
+  },
+  "description": "Successful model-bounds result matching the compatible public JSON shape.",
+  "$defs": {
+    "ModelBoundsSource": {
+      "type": "object",
+      "properties": {
+        "format": {
+          "$ref": "#/$defs/ModelFormat"
+        },
+        "hash": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "format",
+        "hash"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      },
+      "description": "Source identity included in a successful model-bounds result."
+    },
+    "ModelBoundsValues": {
+      "type": "object",
+      "properties": {
+        "min": {
+          "$ref": "#/$defs/Vector3"
+        },
+        "max": {
+          "$ref": "#/$defs/Vector3"
+        },
+        "size": {
+          "$ref": "#/$defs/Vector3"
+        },
+        "center": {
+          "$ref": "#/$defs/Vector3"
+        }
+      },
+      "required": [
+        "min",
+        "max",
+        "size",
+        "center"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      },
+      "description": "Axis-aligned bounds in millimeters."
+    },
+    "ModelBoundsTimings": {
+      "type": "object",
+      "properties": {
+        "model_read_ms": {
+          "type": "number",
+          "minimum": 0
+        },
+        "bounds_ms": {
+          "type": "number",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "model_read_ms",
+        "bounds_ms"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      },
+      "description": "Nondeterministic timings excluded only by explicit conformance projection."
+    },
+    "ModelFormat": {
+      "type": "string",
+      "enum": [
+        "step"
+      ],
+      "description": "Canonical model source format. Compatibility readers may additionally accept STEP."
+    },
+    "Vector3": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "minItems": 3,
+      "maxItems": 3,
+      "description": "Exactly three finite millimeter coordinates."
+    }
+  }
+}

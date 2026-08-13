@@ -7,9 +7,10 @@ foundation. ADR-010 remains the authority decision: authored TypeSpec owns the
 structure of individually promoted contracts, while C++ owns geometry behavior
 and the promotion manifest owns lifecycle/evidence state.
 
-This foundation is prepared while ADR-011 awaits independent transport review.
-It does not implement or authorize the generic C ABI or executable IPC server.
-The toolchain remains `planned` until that gate opens.
+ADR-011 is Accepted and its independent transport review is recorded in the
+promotion manifest. The TypeSpec/catalog foundation described here is
+implemented. This foundation does not itself implement the generic C ABI or
+executable IPC server; those remain separately tested implementation slices.
 
 ## ALX baseline and Geometer differences
 
@@ -167,7 +168,7 @@ record intent but do not erase wire presence or eagerly populate patch DTOs.
 
 ## Deterministic generation and checks
 
-The supported commands will be:
+The supported commands are:
 
 ```powershell
 npm install --global npm@11.16.0

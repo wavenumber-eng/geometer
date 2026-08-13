@@ -1,0 +1,454 @@
+{
+  "catalog_identity": "wn.geometer.contract_catalog",
+  "generation": "a0",
+  "output_roots": {
+    "cpp": "src/cpp/lib/geometer/generated/contracts",
+    "typescript": "src/ts/geometer/generated",
+    "rust": "src/rust/geometer-client/src/generated",
+    "python": "python/geometer/_generated/contracts",
+    "html": "docs/generated/contracts"
+  },
+  "roots": [
+    {
+      "name": "Wavenumber.Geometer.Contracts.Common.DiagnosticA0",
+      "contract_identity": "geometry.common.diagnostic.a0",
+      "schema_id": "urn:wavenumber:schema:geometer:geometry.common.diagnostic:a0",
+      "declaration_kind": "model",
+      "option_patch": false
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.ModelBoundsA0.ModelBoundsOptionsA0",
+      "contract_identity": "geometry.model_bounds.options.a0",
+      "schema_id": "urn:wavenumber:schema:geometer:geometry.model_bounds.options:a0",
+      "declaration_kind": "model",
+      "option_patch": true
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.ModelBoundsA0.ModelBoundsResultA0",
+      "contract_identity": "geometry.model_bounds.a0",
+      "schema_id": "urn:wavenumber:schema:geometer:geometry.model_bounds:a0",
+      "declaration_kind": "model",
+      "option_patch": false
+    }
+  ],
+  "declarations": [
+    {
+      "name": "Wavenumber.Geometer.Contracts.Common.DiagnosticA0",
+      "kind": "model",
+      "doc": "A strict cross-transport diagnostic; message text is informative rather than identity.",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "code",
+          "optional": false,
+          "doc": "Stable namespaced diagnostic identity.",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 1
+          }
+        },
+        {
+          "name": "category",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.Common.DiagnosticCategory"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "message",
+          "optional": false,
+          "doc": "Human-readable non-normative detail.",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "retryable",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "boolean"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "path",
+          "optional": true,
+          "doc": "RFC 6901 JSON Pointer when a document location is meaningful.",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "operation",
+          "optional": true,
+          "doc": "Stable operation identity when the diagnostic is operation-scoped.",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "request_id",
+          "optional": true,
+          "doc": "Transport correlation identifier when available.",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {}
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.Common.DiagnosticCategory",
+      "kind": "enum",
+      "doc": "Stable diagnostic category with distinct transport, contract, and operation domains.",
+      "annotations": {},
+      "constraints": {},
+      "members": [
+        {
+          "name": "transport",
+          "value": "transport",
+          "doc": ""
+        },
+        {
+          "name": "contract",
+          "value": "contract",
+          "doc": ""
+        },
+        {
+          "name": "operation",
+          "value": "operation",
+          "doc": ""
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.ModelBoundsA0.Matrix4x4",
+      "kind": "model",
+      "doc": "Row-major affine 4x4 matrix. Semantic validation requires final row [0,0,0,1].",
+      "annotations": {},
+      "constraints": {
+        "min_items": 16,
+        "max_items": 16
+      },
+      "model_kind": "array",
+      "base": null,
+      "index_value": {
+        "kind": "primitive",
+        "name": "float64"
+      },
+      "properties": []
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.ModelBoundsA0.ModelBoundsOptionsA0",
+      "kind": "model",
+      "doc": "Presence-preserving patch applied over focused C++ defaults.",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "format",
+          "optional": true,
+          "doc": "Absent preserves the inherited value; canonical default intent is step.",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.ModelBoundsA0.ModelFormat"
+          },
+          "annotations": {},
+          "constraints": {},
+          "default": "step"
+        },
+        {
+          "name": "model_transform",
+          "optional": true,
+          "doc": "Absent preserves the inherited transform; canonical default intent is identity.",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.ModelBoundsA0.Matrix4x4"
+          },
+          "annotations": {
+            "x-wn-default-intent": "identity_4x4"
+          },
+          "constraints": {}
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.ModelBoundsA0.ModelBoundsResultA0",
+      "kind": "model",
+      "doc": "Successful model-bounds result matching the compatible public JSON shape.",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "schema",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "geometry.model_bounds.a0"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "units",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "mm"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "source",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.ModelBoundsA0.ModelBoundsSource"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "bounds",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.ModelBoundsA0.ModelBoundsValues"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "timings",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.ModelBoundsA0.ModelBoundsTimings"
+          },
+          "annotations": {},
+          "constraints": {}
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.ModelBoundsA0.ModelBoundsSource",
+      "kind": "model",
+      "doc": "Source identity included in a successful model-bounds result.",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "format",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.ModelBoundsA0.ModelFormat"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "hash",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {}
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.ModelBoundsA0.ModelBoundsTimings",
+      "kind": "model",
+      "doc": "Nondeterministic timings excluded only by explicit conformance projection.",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "model_read_ms",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "float64"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_value": 0
+          }
+        },
+        {
+          "name": "bounds_ms",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "float64"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_value": 0
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.ModelBoundsA0.ModelBoundsValues",
+      "kind": "model",
+      "doc": "Axis-aligned bounds in millimeters.",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "min",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.ModelBoundsA0.Vector3"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "max",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.ModelBoundsA0.Vector3"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "size",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.ModelBoundsA0.Vector3"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "center",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.ModelBoundsA0.Vector3"
+          },
+          "annotations": {},
+          "constraints": {}
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.ModelBoundsA0.ModelFormat",
+      "kind": "enum",
+      "doc": "Canonical model source format. Compatibility readers may additionally accept STEP.",
+      "annotations": {},
+      "constraints": {},
+      "members": [
+        {
+          "name": "step",
+          "value": "step",
+          "doc": ""
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.ModelBoundsA0.Vector3",
+      "kind": "model",
+      "doc": "Exactly three finite millimeter coordinates.",
+      "annotations": {},
+      "constraints": {
+        "min_items": 3,
+        "max_items": 3
+      },
+      "model_kind": "array",
+      "base": null,
+      "index_value": {
+        "kind": "primitive",
+        "name": "float64"
+      },
+      "properties": []
+    }
+  ],
+  "operations": [
+    {
+      "name": "Wavenumber.Geometer.Contracts.Operations.modelBounds",
+      "identity": "geometry.model_bounds.a0",
+      "request_contract": "geometry.model_bounds.options.a0",
+      "result_contract": "geometry.model_bounds.a0",
+      "input_attachments": [
+        {
+          "name": "model",
+          "required": true,
+          "media_types": [
+            "application/step",
+            "model/step"
+          ],
+          "max_bytes": 268435456
+        }
+      ],
+      "output_attachments": [],
+      "doc": "Compute axis-aligned model bounds from the required raw model attachment."
+    }
+  ]
+}

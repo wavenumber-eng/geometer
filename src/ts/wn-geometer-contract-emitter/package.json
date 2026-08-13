@@ -1,0 +1,12 @@
+{
+  "name": "@wavenumber/wn-geometer-contract-emitter",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "main": "./index.js",
+  "tspMain": "./lib.tsp",
+  "peerDependencies": {
+    "@typespec/compiler": "1.14.0",
+    "@typespec/json-schema": "1.14.0"
+  }
+}

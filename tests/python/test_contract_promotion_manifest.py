@@ -45,7 +45,7 @@ def test_manifest_sources_and_identities_are_complete() -> None:
     ]
     toolchain = manifest["toolchain"]
     assert toolchain == {
-        "status": "planned",
+        "status": "implemented",
         "design": "docs/design/typespec-toolchain.md",
         "runtime_dependency": False,
         "node_major": 24,
@@ -65,14 +65,14 @@ def test_manifest_sources_and_identities_are_complete() -> None:
         "catalog_generation": "a0",
     }
     assert (ROOT / toolchain["design"]).is_file()
-    for planned_path in (
+    for implemented_path in (
         "source_root",
         "emitter_root",
         "catalog_schema",
         "catalog",
         "schema_root",
     ):
-        assert not (ROOT / toolchain[planned_path]).exists()
+        assert (ROOT / toolchain[implemented_path]).exists()
     transports = manifest["transports"]
     assert (ROOT / transports["generic_c_abi_spec"]).is_file()
     assert (ROOT / transports["executable_ipc_spec"]).is_file()

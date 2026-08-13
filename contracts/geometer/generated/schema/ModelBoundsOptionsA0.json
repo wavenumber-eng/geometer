@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:wavenumber:schema:geometer:geometry.model_bounds.options:a0",
+  "type": "object",
+  "properties": {
+    "format": {
+      "$ref": "#/$defs/ModelFormat",
+      "default": "step",
+      "description": "Absent preserves the inherited value; canonical default intent is step."
+    },
+    "model_transform": {
+      "$ref": "#/$defs/Matrix4x4",
+      "description": "Absent preserves the inherited transform; canonical default intent is identity.",
+      "x-wn-default-intent": "identity_4x4"
+    }
+  },
+  "unevaluatedProperties": {
+    "not": {}
+  },
+  "description": "Presence-preserving patch applied over focused C++ defaults.",
+  "$defs": {
+    "ModelFormat": {
+      "type": "string",
+      "enum": [
+        "step"
+      ],
+      "description": "Canonical model source format. Compatibility readers may additionally accept STEP."
+    },
+    "Matrix4x4": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "minItems": 16,
+      "maxItems": 16,
+      "description": "Row-major affine 4x4 matrix. Semantic validation requires final row [0,0,0,1]."
+    }
+  }
+}

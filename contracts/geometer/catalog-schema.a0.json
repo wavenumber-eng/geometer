@@ -1,0 +1,323 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:wavenumber:schema:geometer:contract-catalog:a0",
+  "title": "Geometer normalized contract catalog A0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "catalog_identity",
+    "generation",
+    "output_roots",
+    "roots",
+    "declarations",
+    "operations"
+  ],
+  "properties": {
+    "catalog_identity": { "const": "wn.geometer.contract_catalog" },
+    "generation": { "const": "a0" },
+    "output_roots": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["cpp", "typescript", "rust", "python", "html"],
+      "properties": {
+        "cpp": { "$ref": "#/definitions/repositoryPath" },
+        "typescript": { "$ref": "#/definitions/repositoryPath" },
+        "rust": { "$ref": "#/definitions/repositoryPath" },
+        "python": { "$ref": "#/definitions/repositoryPath" },
+        "html": { "$ref": "#/definitions/repositoryPath" }
+      }
+    },
+    "roots": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/root" }
+    },
+    "declarations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "oneOf": [
+          { "$ref": "#/definitions/modelDeclaration" },
+          { "$ref": "#/definitions/scalarDeclaration" },
+          { "$ref": "#/definitions/enumDeclaration" },
+          { "$ref": "#/definitions/unionDeclaration" }
+        ]
+      }
+    },
+    "operations": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/operation" }
+    }
+  },
+  "definitions": {
+    "nonemptyString": { "type": "string", "minLength": 1 },
+    "qualifiedName": {
+      "type": "string",
+      "pattern": "^Wavenumber\\.Geometer\\.Contracts(?:\\.[A-Za-z_][A-Za-z0-9_]*)+$"
+    },
+    "stableIdentity": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*(?:\\.[a-z][a-z0-9_]*)+\\.[ab][0-9]+$"
+    },
+    "repositoryPath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?![A-Za-z]:)(?![/\\\\])(?!.*\\.\\.(?:[/\\\\]|$)).+$"
+    },
+    "jsonValue": {
+      "oneOf": [
+        { "type": "null" },
+        { "type": "boolean" },
+        { "type": "number" },
+        { "type": "string" },
+        { "type": "array", "items": { "$ref": "#/definitions/jsonValue" } },
+        {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/definitions/jsonValue" }
+        }
+      ]
+    },
+    "annotations": {
+      "type": "object",
+      "propertyNames": { "pattern": "^x-wn-[a-z0-9-]+$" },
+      "additionalProperties": { "$ref": "#/definitions/jsonValue" }
+    },
+    "constraints": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "pattern": { "type": "string" },
+        "min_length": { "type": "integer", "minimum": 0 },
+        "max_length": { "type": "integer", "minimum": 0 },
+        "min_items": { "type": "integer", "minimum": 0 },
+        "max_items": { "type": "integer", "minimum": 0 },
+        "min_value": { "type": "number" },
+        "max_value": { "type": "number" },
+        "unique_items": { "type": "boolean" }
+      }
+    },
+    "typeExpression": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "target"],
+          "properties": {
+            "kind": { "const": "reference" },
+            "target": { "$ref": "#/definitions/qualifiedName" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "name"],
+          "properties": {
+            "kind": { "const": "primitive" },
+            "name": { "$ref": "#/definitions/nonemptyString" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "element"],
+          "properties": {
+            "kind": { "const": "array" },
+            "element": { "$ref": "#/definitions/typeExpression" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "value"],
+          "properties": {
+            "kind": { "const": "record" },
+            "value": { "$ref": "#/definitions/typeExpression" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "value_type", "value"],
+          "properties": {
+            "kind": { "const": "literal" },
+            "value_type": { "enum": ["string", "number", "boolean", "null"] },
+            "value": { "$ref": "#/definitions/jsonValue" }
+          }
+        }
+      ]
+    },
+    "root": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "contract_identity", "schema_id", "declaration_kind", "option_patch"],
+      "properties": {
+        "name": { "$ref": "#/definitions/qualifiedName" },
+        "contract_identity": { "$ref": "#/definitions/stableIdentity" },
+        "schema_id": {
+          "type": "string",
+          "pattern": "^urn:wavenumber:schema:geometer:[a-z0-9_.]+:[ab][0-9]+$"
+        },
+        "declaration_kind": { "enum": ["model", "scalar", "enum", "union"] },
+        "option_patch": { "type": "boolean" }
+      }
+    },
+    "declarationCommon": {
+      "type": "object",
+      "required": ["name", "kind", "doc", "annotations", "constraints"],
+      "properties": {
+        "name": { "$ref": "#/definitions/qualifiedName" },
+        "kind": { "enum": ["model", "scalar", "enum", "union"] },
+        "doc": { "type": "string" },
+        "annotations": { "$ref": "#/definitions/annotations" },
+        "constraints": { "$ref": "#/definitions/constraints" }
+      }
+    },
+    "property": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "optional", "doc", "type", "annotations", "constraints"],
+      "properties": {
+        "name": { "$ref": "#/definitions/nonemptyString" },
+        "optional": { "type": "boolean" },
+        "doc": { "type": "string" },
+        "type": { "$ref": "#/definitions/typeExpression" },
+        "annotations": { "$ref": "#/definitions/annotations" },
+        "constraints": { "$ref": "#/definitions/constraints" },
+        "default": { "$ref": "#/definitions/jsonValue" }
+      }
+    },
+    "modelDeclaration": {
+      "allOf": [
+        { "$ref": "#/definitions/declarationCommon" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["name", "kind", "doc", "annotations", "constraints", "model_kind", "base", "index_value", "properties"],
+          "properties": {
+            "name": { "$ref": "#/definitions/qualifiedName" },
+            "kind": { "const": "model" },
+            "doc": { "type": "string" },
+            "annotations": { "$ref": "#/definitions/annotations" },
+            "constraints": { "$ref": "#/definitions/constraints" },
+            "model_kind": { "enum": ["object", "array", "record"] },
+            "base": { "oneOf": [{ "$ref": "#/definitions/typeExpression" }, { "type": "null" }] },
+            "index_value": { "oneOf": [{ "$ref": "#/definitions/typeExpression" }, { "type": "null" }] },
+            "properties": { "type": "array", "items": { "$ref": "#/definitions/property" } }
+          }
+        }
+      ]
+    },
+    "scalarDeclaration": {
+      "allOf": [
+        { "$ref": "#/definitions/declarationCommon" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["name", "kind", "doc", "annotations", "constraints", "base"],
+          "properties": {
+            "name": { "$ref": "#/definitions/qualifiedName" },
+            "kind": { "const": "scalar" },
+            "doc": { "type": "string" },
+            "annotations": { "$ref": "#/definitions/annotations" },
+            "constraints": { "$ref": "#/definitions/constraints" },
+            "base": { "oneOf": [{ "$ref": "#/definitions/typeExpression" }, { "type": "null" }] }
+          }
+        }
+      ]
+    },
+    "enumDeclaration": {
+      "allOf": [
+        { "$ref": "#/definitions/declarationCommon" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["name", "kind", "doc", "annotations", "constraints", "members"],
+          "properties": {
+            "name": { "$ref": "#/definitions/qualifiedName" },
+            "kind": { "const": "enum" },
+            "doc": { "type": "string" },
+            "annotations": { "$ref": "#/definitions/annotations" },
+            "constraints": { "$ref": "#/definitions/constraints" },
+            "members": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["name", "value", "doc"],
+                "properties": {
+                  "name": { "$ref": "#/definitions/nonemptyString" },
+                  "value": { "oneOf": [{ "type": "string" }, { "type": "number" }] },
+                  "doc": { "type": "string" }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "unionDeclaration": {
+      "allOf": [
+        { "$ref": "#/definitions/declarationCommon" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["name", "kind", "doc", "annotations", "constraints", "variants"],
+          "properties": {
+            "name": { "$ref": "#/definitions/qualifiedName" },
+            "kind": { "const": "union" },
+            "doc": { "type": "string" },
+            "annotations": { "$ref": "#/definitions/annotations" },
+            "constraints": { "$ref": "#/definitions/constraints" },
+            "composition": { "const": "one_of" },
+            "variants": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["name", "type", "doc", "annotations"],
+                "properties": {
+                  "name": { "$ref": "#/definitions/nonemptyString" },
+                  "type": { "$ref": "#/definitions/typeExpression" },
+                  "doc": { "type": "string" },
+                  "annotations": { "$ref": "#/definitions/annotations" }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "attachment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "required", "media_types", "max_bytes"],
+      "properties": {
+        "name": { "$ref": "#/definitions/nonemptyString" },
+        "required": { "type": "boolean" },
+        "media_types": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^[^/\\s]+/[^/\\s]+$" }
+        },
+        "max_bytes": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "operation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "identity", "request_contract", "result_contract", "input_attachments", "output_attachments", "doc"],
+      "properties": {
+        "name": { "$ref": "#/definitions/qualifiedName" },
+        "identity": { "$ref": "#/definitions/stableIdentity" },
+        "request_contract": { "$ref": "#/definitions/stableIdentity" },
+        "result_contract": { "$ref": "#/definitions/stableIdentity" },
+        "input_attachments": { "type": "array", "items": { "$ref": "#/definitions/attachment" } },
+        "output_attachments": { "type": "array", "items": { "$ref": "#/definitions/attachment" } },
+        "doc": { "type": "string" }
+      }
+    }
+  }
+}

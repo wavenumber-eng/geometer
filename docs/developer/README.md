@@ -82,6 +82,32 @@ Pinned dependency versions live in scripts:
 - RapidJSON: `third_party/rapidjson/`
 - Clipper2: `third_party/clipper2/`
 
+## TypeSpec Contract Toolchain
+
+Contract generation uses Node 24 and exact npm 11.16.0 as build/test tools;
+neither is a Geometer runtime dependency. Provision and restore the pinned
+toolchain from the repository root:
+
+```powershell
+npm install --global npm@11.16.0
+if ((npm --version).Trim() -ne "11.16.0") { throw "npm version mismatch" }
+npm ci
+```
+
+Regenerate the committed normalized catalog and JSON Schemas after editing
+`src/tsp/geometer/`, then run the deterministic freshness check:
+
+```powershell
+npm run generate:contracts
+npm run check:contracts
+```
+
+The check compiles with warnings as errors, validates the normalized catalog,
+cross-checks pilot roots and operations against the promotion manifest, and
+rejects stale, missing, or unexpected generated files. See
+[../design/typespec-toolchain.md](../design/typespec-toolchain.md) for authority,
+supported constructs, identities, and output paths.
+
 ## Workspace Copy Setup
 
 For agent workspaces or downstream monorepo workspaces, prefer copying an

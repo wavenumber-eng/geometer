@@ -21,6 +21,16 @@ jobs:
       - uses: astral-sh/setup-uv@v8.2.0
       - name: Set up Python
         run: uv python install 3.12
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+      - name: Verify generated contracts
+        run: |
+          npm install --global npm@11.16.0
+          test "$(npm --version)" = "11.16.0"
+          npm ci
+          npm run check:contracts
       - name: Verify tag matches package version
         shell: bash
         run: uv run python scripts/ci_release_metadata.py check-tag "${GITHUB_REF_NAME}"

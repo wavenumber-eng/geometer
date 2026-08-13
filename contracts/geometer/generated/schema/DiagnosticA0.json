@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:wavenumber:schema:geometer:geometry.common.diagnostic:a0",
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Stable namespaced diagnostic identity."
+    },
+    "category": {
+      "$ref": "#/$defs/DiagnosticCategory"
+    },
+    "message": {
+      "type": "string",
+      "description": "Human-readable non-normative detail."
+    },
+    "retryable": {
+      "type": "boolean"
+    },
+    "path": {
+      "type": "string",
+      "description": "RFC 6901 JSON Pointer when a document location is meaningful."
+    },
+    "operation": {
+      "type": "string",
+      "description": "Stable operation identity when the diagnostic is operation-scoped."
+    },
+    "request_id": {
+      "type": "string",
+      "description": "Transport correlation identifier when available."
+    }
+  },
+  "required": [
+    "code",
+    "category",
+    "message",
+    "retryable"
+  ],
+  "unevaluatedProperties": {
+    "not": {}
+  },
+  "description": "A strict cross-transport diagnostic; message text is informative rather than identity.",
+  "$defs": {
+    "DiagnosticCategory": {
+      "type": "string",
+      "enum": [
+        "transport",
+        "contract",
+        "operation"
+      ],
+      "description": "Stable diagnostic category with distinct transport, contract, and operation domains."
+    }
+  }
+}

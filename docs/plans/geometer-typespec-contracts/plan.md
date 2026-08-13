@@ -24,13 +24,13 @@ depends_on = ["contract-semantics-and-transport"]
 [[steps]]
 id = "typespec-foundation"
 title = "Establish the TypeSpec source, normalized catalog, schemas, and generation gates"
-status = "active"
+status = "done"
 depends_on = ["transport-design-review"]
 
 [[steps]]
 id = "pilot-contracts"
 title = "Model pilot primitives, diagnostics, model bounds, and conformance vectors"
-status = "pending"
+status = "active"
 depends_on = ["typespec-foundation"]
 
 [[steps]]
@@ -276,11 +276,12 @@ status = "pending"
 
 ## Active Status
 
-This plan is active under ADR-010. Authority and inventory are complete. The
-generic C ABI and IPC A0 design packet is awaiting its required independent
-review, so transport implementation remains disabled. No operation is promoted
-and no compatibility reader or published interface may be removed merely
-because the plan is active.
+This plan is active under ADR-010. Authority, inventory, and independent review
+of the generic C ABI and IPC A0 design packet are complete; ADR-011 is Accepted
+and transport implementation is allowed. The TypeSpec/catalog foundation is
+implemented and the pilot-contract/conformance slice is active. No operation is
+promoted and no compatibility reader or published interface may be removed
+merely because the plan is active.
 
 Generated Python is intentional mandatory scope based on project-owner
 direction that public Python should use generated contract code while
@@ -377,8 +378,8 @@ those public C++ values requires its own compatibility decision.
 ## Resolved Design Choices
 
 These decisions are incorporated in the active plan. ADR-010 accepts the
-authority decisions. ADR-011 and the concrete transport specifications remain
-at their independent review gate.
+authority decisions. ADR-011 and the concrete transport specifications passed
+their independent review gate at the revision recorded in the manifest.
 
 ### Generic Browser And Native Operation ABI
 
@@ -1068,7 +1069,7 @@ Rack strata rather than hiding inside a general release test.
 ## Accepted Direction And Remaining Decisions
 
 ADR-010 accepts the authority boundary and required projections. ADR-011 and
-its transport specifications are at the independent review gate. Package,
+its transport specifications have passed the independent review gate. Package,
 generator, compatibility, and packed-layout choices below must be resolved no
 later than their owning implementation slice.
 

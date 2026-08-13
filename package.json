@@ -1,0 +1,20 @@
+{
+  "name": "@wavenumber/geometer-contract-toolchain",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "packageManager": "npm@11.16.0",
+  "scripts": {
+    "check:node-toolchain": "node scripts/check-node-toolchain.mjs",
+    "generate:contracts": "npm run check:node-toolchain && node scripts/generate-contracts.mjs",
+    "check:contracts": "npm run check:node-toolchain && biome check src/ts/wn-geometer-contract-emitter scripts/check-node-toolchain.mjs scripts/generate-contracts.mjs && node scripts/generate-contracts.mjs --check"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.7",
+    "@typespec/compiler": "1.14.0",
+    "@typespec/json-schema": "1.14.0",
+    "@wavenumber/wn-geometer-contract-emitter": "file:src/ts/wn-geometer-contract-emitter",
+    "ajv": "8.20.0",
+    "typescript": "5.9.3"
+  }
+}

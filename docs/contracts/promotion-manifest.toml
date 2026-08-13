@@ -21,7 +21,7 @@ python_import = "geometer"
 python_generated_visibility = "internal_compatible_boundary"
 
 [toolchain]
-status = "planned"
+status = "implemented"
 design = "docs/design/typespec-toolchain.md"
 runtime_dependency = false
 node_major = 24

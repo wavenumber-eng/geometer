@@ -344,6 +344,25 @@ def test_c_abi_manifest_matches_header_exactly() -> None:
     assert declared == c_abi["symbols"]
 
 
+def test_exact_algebraic_backend_design_gate_is_closed() -> None:
+    backend = _manifest()["analytic_exact_backend"]
+    assert backend == {
+        "status": "design_review_pending",
+        "design": "docs/design/exact-real-algebraic-a0.md",
+        "conformance_identity": "geometry.exact_real_algebraic.feasibility.a0",
+        "magic": "GEXPA001",
+        "generation": 1,
+        "implementation_allowed": False,
+        "boost_version": "1.92.0",
+        "boost_archive_url": "https://archives.boost.io/release/1.92.0/source/boost_1_92_0.tar.gz",
+        "boost_archive_sha256": "c4a3b310ddd2472416e091067166b0713be97c63f38c212c484ada022fd296ce",
+        "boost_upstream_commit": "afdfa32505af73e3d208144b3f623f0096cb62b6",
+        "generated_dependency_root": ".deps/boost_1_92_0",
+        "production_solver_allowed": False,
+    }
+    assert (ROOT / backend["design"]).is_file()
+
+
 def test_wasm_export_inventory_matches_cmake_exactly() -> None:
     manifest = _manifest()
     cmake = (ROOT / "src" / "cpp" / "lib" / "CMakeLists.txt").read_text(encoding="utf-8")

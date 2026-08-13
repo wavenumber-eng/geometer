@@ -24,6 +24,7 @@ durable record belongs here, in ADRs, and in requirements.
 - [Geom A0 contract alignment](geom-a0-contract-alignment.md)
 - [Analytic planar Boolean A0](analytic-planar-boolean-a0.md)
 - [Analytic planar Boolean packet A0](analytic-planar-boolean-packet-a0.md)
+- [Exact real-algebraic backend A0](exact-real-algebraic-a0.md)
 - [Python package interface](python-package.md)
 - [WASM interfaces](wasm.md)
 - [CLI interfaces](cli.md)

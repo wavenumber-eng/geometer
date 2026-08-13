@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import pytest
 
@@ -13,7 +13,7 @@ from geometer._generated.contracts.codecs import (
     decode_model_bounds_result_a0_json,
     encode_model_bounds_options_a0_json,
 )
-from geometer._generated.contracts.models import ModelFormat
+from geometer._generated.contracts.models import Matrix4x4, ModelBoundsOptionsA0, ModelFormat
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -61,6 +61,22 @@ def test_generated_python_model_bounds_codecs_are_strict_and_presence_aware() ->
     with pytest.raises(ContractError) as nonstandard_number:
         decode_model_bounds_options_a0_json(b'{"model_transform":[NaN]}')
     assert nonstandard_number.value.code == "geometer.contract.invalid_json"
+
+    enormous = 10**400
+    enormous_matrix = [enormous, *([0] * 15)]
+    with pytest.raises(ContractError) as decode_overflow:
+        decode_model_bounds_options_a0_json(
+            json.dumps({"model_transform": enormous_matrix}, separators=(",", ":")).encode("ascii")
+        )
+    assert decode_overflow.value.code == "geometer.contract.number_range"
+    assert decode_overflow.value.path == "/model_transform/0"
+
+    with pytest.raises(ContractError) as encode_overflow:
+        encode_model_bounds_options_a0_json(
+            ModelBoundsOptionsA0(format=None, model_transform=cast(Matrix4x4, tuple(enormous_matrix)))
+        )
+    assert encode_overflow.value.code == "geometer.contract.number_range"
+    assert encode_overflow.value.path == "/model_transform/0"
 
     with pytest.raises(ContractError) as unknown:
         decode_model_bounds_result_a0_json((VECTOR_ROOT / "cases" / "result-unknown-field.json").read_bytes())

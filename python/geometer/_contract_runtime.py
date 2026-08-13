@@ -226,9 +226,14 @@ def _decode_primitive(value: Any, name: str, constraints: Mapping[str, Any], pat
             _fail("geometer.contract.number_range", path, f"Expected an unsigned {name[4:]}-bit integer.")
         return value
     if name == "float64":
-        if type(value) not in {int, float} or not math.isfinite(float(value)):
+        if type(value) not in {int, float}:
             _fail("geometer.contract.type_mismatch", path, "Expected a finite number.")
-        number = float(value)
+        try:
+            number = float(value)
+        except OverflowError:
+            _fail("geometer.contract.number_range", path, "Number is outside the float64 range.")
+        if not math.isfinite(number):
+            _fail("geometer.contract.number_range", path, "Number is outside the finite float64 range.")
         if number < constraints.get("min_value", -math.inf) or number > constraints.get("max_value", math.inf):
             _fail("geometer.contract.number_range", path, "Number is outside its contract bounds.")
         return number

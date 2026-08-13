@@ -209,6 +209,8 @@ def test_manifest_sources_and_identities_are_complete() -> None:
     assert evidence["governed_vector_count"] == 22
     assert evidence["structural_vector_count"] == 20
     assert evidence["operation_vector_count"] == 2
+    assert evidence["local_ctest_count"] == 10
+    assert evidence["local_rack_passed"] == 66
     for key, path in (
         ("catalog_sha256", toolchain["catalog"]),
         ("vector_manifest_sha256", "tests/contracts/vectors/manifest.json"),

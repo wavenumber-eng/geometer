@@ -93,6 +93,29 @@ def _canonical_feasibility_stdout(raw: bytes) -> bytes:
     return text[:-1].encode("utf-8")
 
 
+def _collect_explicit_source_ids(value: Any, spaces: dict[str, list[int]]) -> None:
+    key_to_space = {
+        "ring_id": "ring",
+        "boundary_ring_id": "ring",
+        "path_id": "path",
+        "segment_id": "segment",
+        "curve_id": "curve",
+        "feature_id": "feature",
+        "vertex_id": "vertex",
+    }
+    if isinstance(value, dict):
+        for key, child in value.items():
+            if key in key_to_space:
+                assert isinstance(child, int) and not isinstance(child, bool), key
+                spaces[key_to_space[key]].append(child)
+            else:
+                assert not key.endswith("_id"), f"unclassified source-topology id: {key}"
+                _collect_explicit_source_ids(child, spaces)
+    elif isinstance(value, list):
+        for child in value:
+            _collect_explicit_source_ids(child, spaces)
+
+
 def test_manifest_sources_and_identities_are_complete() -> None:
     manifest = _manifest()
     assert manifest["manifest_version"] == 1
@@ -575,6 +598,16 @@ def test_vendored_matz_analytic_boolean_observations_are_structurally_closed() -
 
     all_jobs: list[dict[str, Any]] = []
     all_queries: list[dict[str, Any]] = []
+    stage_ids: list[int] = []
+    operand_ids: list[int] = []
+    source_ids: dict[str, list[int]] = {
+        "ring": [],
+        "path": [],
+        "segment": [],
+        "curve": [],
+        "feature": [],
+        "vertex": [],
+    }
     geometry_kinds: set[str] = set()
     stage_operations: set[str] = set()
     for case in cases:
@@ -583,21 +616,33 @@ def test_vendored_matz_analytic_boolean_observations_are_structurally_closed() -
         all_queries.extend(case.get("relationship_queries", []))
         for job in jobs:
             assert 0 < job["job_id"] <= 0xFFFF_FFFF_FFFF_FFFF
-            stage_ids = [stage["stage_id"] for stage in job["stages"]]
-            _unique(stage_ids, f"stage id in job {job['job_id']}")
-            assert all(0 < stage_id <= 0xFFFF_FFFF_FFFF_FFFF for stage_id in stage_ids)
-            operand_ids: list[int] = []
             for stage in job["stages"]:
+                stage_ids.append(stage["stage_id"])
                 stage_operations.add(stage["operation"])
                 assert stage["operation"] in {"union", "difference"}
                 for operand in stage["operands"]:
                     operand_ids.append(operand["operand_id"])
                     assert 0 < operand["operand_id"] <= 0xFFFF_FFFF_FFFF_FFFF
                     geometry_kinds.add(operand["geometry"]["kind"])
-            _unique(operand_ids, f"operand id in job {job['job_id']}")
+                    if "source_topology" in operand:
+                        _collect_explicit_source_ids(operand["source_topology"], source_ids)
 
     job_ids = [job["job_id"] for job in all_jobs]
     _unique(job_ids, "portable job id")
+    _unique(stage_ids, "portable stage id")
+    _unique(operand_ids, "portable operand id")
+    for label, values in source_ids.items():
+        _unique(values, f"portable authored {label} id")
+        assert all(0 < value <= 0xFFFF_FFFF_FFFF_FFFF for value in values), label
+    assert {label: len(values) for label, values in source_ids.items()} == {
+        "ring": 12,
+        "path": 1,
+        "segment": 28,
+        "curve": 28,
+        "feature": 0,
+        "vertex": 0,
+    }
+    assert all(0 < stage_id <= 0xFFFF_FFFF_FFFF_FFFF for stage_id in stage_ids)
     assert stage_operations == {"union", "difference"}
     assert geometry_kinds == {
         "rectangle",

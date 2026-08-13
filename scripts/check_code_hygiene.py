@@ -30,6 +30,7 @@ SKIP_PARTS = {
     "build-wasm",
     "dist",
     "out",
+    "rack_results",
     "third_party",
 }
 

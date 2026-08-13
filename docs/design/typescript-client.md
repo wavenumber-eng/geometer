@@ -103,7 +103,10 @@ serializes operation execution within one WASM instance and transfers owned
 output attachment buffers back. It strictly re-encodes and decodes the
 generated operation outcome across the message boundary. Typed operation
 diagnostics, local C ABI transport errors, malformed messages, Worker errors,
-and message-deserialization failures remain distinct.
+and message-deserialization failures remain distinct. A structurally valid
+response with an unknown or already-completed correlation identifier is
+protocol corruption: the client terminates the connection and rejects every
+outstanding request.
 
 `close()` immediately rejects new calls, queues a graceful shutdown after
 preceding requests, and then terminates the Worker. Concurrent `close()` calls
@@ -148,6 +151,8 @@ Verification includes:
 - correlated SOT-23 round trips through a real Worker thread, including
   transferable ownership, governed/local errors, graceful close, and
   post-close rejection; and
+- deterministic protocol regressions for unknown and duplicate correlations
+  plus immediate termination of multiple outstanding requests; and
 - desktop and narrow real-browser smoke of the generated documentation and
   model-bounds example.
 

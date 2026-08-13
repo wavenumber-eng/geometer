@@ -163,8 +163,10 @@ class WorkerConnection {
         }
         const response = event.data;
         const pending = this.pending.get(response.requestId);
-        if (!pending)
+        if (!pending) {
+            this.terminate(new GeometerWorkerError(`Geometer Worker returned unknown or completed request ID ${response.requestId}.`));
             return;
+        }
         this.pending.delete(response.requestId);
         if (response.kind === "error")
             pending.reject(deserializeError(response.error));

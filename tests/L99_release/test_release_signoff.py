@@ -103,6 +103,17 @@ def test_code_hygiene_passes() -> None:
     run_checked([sys.executable, "scripts/check_code_hygiene.py"])
 
 
+def test_code_hygiene_excludes_generated_rack_results() -> None:
+    run_checked(
+        [
+            sys.executable,
+            "-c",
+            "from pathlib import Path; from scripts import check_code_hygiene as hygiene; "
+            "assert hygiene.should_skip(Path('tests/rack_results/report.html').resolve())",
+        ]
+    )
+
+
 def test_linux_wheel_builds_use_glibc_235_baseline() -> None:
     for workflow_name in ("ci.yml", "release.yml", "occt-deps.yml"):
         workflow = (ROOT / ".github" / "workflows" / workflow_name).read_text(encoding="utf-8")

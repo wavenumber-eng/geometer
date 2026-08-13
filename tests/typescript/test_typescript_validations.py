@@ -18,6 +18,7 @@ NODE = shutil.which("node")
         "package_consumer_validation.mjs",
         "wasm_client_validation.mjs",
         "worker_client_validation.mjs",
+        "worker_protocol_validation.mjs",
     ],
 )
 def test_generated_typescript_package(script: str) -> None:

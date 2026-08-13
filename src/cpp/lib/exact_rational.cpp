@@ -208,6 +208,26 @@ bool Budget::consume_work(std::uint64_t units)
     return true;
 }
 
+bool Budget::consume_exact_predicate(std::uint64_t calls)
+{
+    if (calls > limits_.exact_predicate_calls - usage_.exact_predicate_calls)
+    {
+        return false;
+    }
+    usage_.exact_predicate_calls += calls;
+    return true;
+}
+
+bool Budget::consume_interval_refinement(std::uint64_t steps)
+{
+    if (steps > limits_.interval_refinement_steps - usage_.interval_refinement_steps)
+    {
+        return false;
+    }
+    usage_.interval_refinement_steps += steps;
+    return true;
+}
+
 bool Budget::acquire_storage(std::uint64_t bytes)
 {
     if (bytes > limits_.owned_bytes - usage_.owned_bytes)

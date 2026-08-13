@@ -23,12 +23,16 @@ struct BudgetLimits
 {
     std::uint64_t work_units = 1'000'000'000;
     std::uint64_t owned_bytes = 268'435'456;
+    std::uint64_t exact_predicate_calls = 100'000'000;
+    std::uint64_t interval_refinement_steps = 100'000'000;
 };
 
 struct BudgetUsage
 {
     std::uint64_t work_units = 0;
     std::uint64_t owned_bytes = 0;
+    std::uint64_t exact_predicate_calls = 0;
+    std::uint64_t interval_refinement_steps = 0;
 };
 
 class Budget
@@ -37,6 +41,8 @@ class Budget
     explicit Budget(BudgetLimits limits);
 
     [[nodiscard]] bool consume_work(std::uint64_t units);
+    [[nodiscard]] bool consume_exact_predicate(std::uint64_t calls = 1);
+    [[nodiscard]] bool consume_interval_refinement(std::uint64_t steps = 1);
     [[nodiscard]] bool acquire_storage(std::uint64_t bytes);
     void release_storage(std::uint64_t bytes);
 

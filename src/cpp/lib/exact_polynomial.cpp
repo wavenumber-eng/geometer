@@ -233,20 +233,32 @@ bool make_sturm_sequence(const Polynomial& polynomial, std::vector<FractionPolyn
     return false;
 }
 
-void make_distinct_root_sequence(FractionPolynomial polynomial,
-                                 std::vector<FractionPolynomial>& sequence)
+FractionPolynomial polynomial_gcd(FractionPolynomial left, FractionPolynomial right)
 {
-    FractionPolynomial left = polynomial;
-    FractionPolynomial right = derivative(polynomial);
     while (!right.empty())
     {
         FractionPolynomial next = remainder(left, right);
         left = std::move(right);
         right = std::move(next);
     }
-    if (left.size() > 1)
+    if (!left.empty())
     {
-        polynomial = exact_quotient(std::move(polynomial), left);
+        const Fraction leading = left.back();
+        for (Fraction& coefficient : left)
+        {
+            coefficient /= leading;
+        }
+    }
+    return left;
+}
+
+void make_distinct_root_sequence(FractionPolynomial polynomial,
+                                 std::vector<FractionPolynomial>& sequence)
+{
+    const FractionPolynomial common = polynomial_gcd(polynomial, derivative(polynomial));
+    if (common.size() > 1)
+    {
+        polynomial = exact_quotient(std::move(polynomial), common);
     }
     append_sturm_tail(polynomial, derivative(polynomial), sequence);
 }
@@ -256,14 +268,25 @@ int sign(const Fraction& value)
     return value == 0 ? 0 : (value > 0 ? 1 : -1);
 }
 
-int sign_at(const FractionPolynomial& polynomial, const Fraction& point)
+struct EvaluationContext
 {
+    Budget& budget;
+};
+
+bool sign_at(EvaluationContext& context, const FractionPolynomial& polynomial,
+             const Fraction& point, int& result)
+{
+    if (!context.budget.consume_exact_predicate())
+    {
+        return false;
+    }
     Fraction value = 0;
     for (auto coefficient = polynomial.rbegin(); coefficient != polynomial.rend(); ++coefficient)
     {
         value = value * point + *coefficient;
     }
-    return sign(value);
+    result = sign(value);
+    return true;
 }
 
 std::uint32_t variations(const std::vector<int>& signs)
@@ -284,23 +307,36 @@ std::uint32_t variations(const std::vector<int>& signs)
     return count;
 }
 
-std::uint32_t variations_at(const std::vector<FractionPolynomial>& sequence, const Fraction& point)
+bool variations_at(EvaluationContext& context, const std::vector<FractionPolynomial>& sequence,
+                   const Fraction& point, std::uint32_t& result)
 {
     std::vector<int> signs;
     signs.reserve(sequence.size());
     for (const FractionPolynomial& polynomial : sequence)
     {
-        signs.push_back(sign_at(polynomial, point));
+        int value = 0;
+        if (!sign_at(context, polynomial, point, value))
+        {
+            return false;
+        }
+        signs.push_back(value);
     }
-    return variations(signs);
+    result = variations(signs);
+    return true;
 }
 
-std::uint32_t variations_at_infinity(const std::vector<FractionPolynomial>& sequence, bool positive)
+bool variations_at_infinity(EvaluationContext& context,
+                            const std::vector<FractionPolynomial>& sequence, bool positive,
+                            std::uint32_t& result)
 {
     std::vector<int> signs;
     signs.reserve(sequence.size());
     for (const FractionPolynomial& polynomial : sequence)
     {
+        if (!context.budget.consume_exact_predicate())
+        {
+            return false;
+        }
         int value = sign(polynomial.back());
         if (!positive && (polynomial.size() - 1) % 2 != 0)
         {
@@ -308,18 +344,39 @@ std::uint32_t variations_at_infinity(const std::vector<FractionPolynomial>& sequ
         }
         signs.push_back(value);
     }
-    return variations(signs);
+    result = variations(signs);
+    return true;
 }
 
-bool roots_less_than(const std::vector<FractionPolynomial>& sequence, const Fraction& point,
-                     std::uint32_t& count)
+enum class EvaluationStatus
 {
-    if (sign_at(sequence.front(), point) == 0)
+    ok,
+    endpoint_root,
+    resource_limit,
+};
+
+EvaluationStatus roots_less_than(EvaluationContext& context,
+                                 const std::vector<FractionPolynomial>& sequence,
+                                 const Fraction& point, std::uint32_t& count)
+{
+    int polynomial_sign = 0;
+    if (!sign_at(context, sequence.front(), point, polynomial_sign))
     {
-        return false;
+        return EvaluationStatus::resource_limit;
     }
-    count = variations_at_infinity(sequence, false) - variations_at(sequence, point);
-    return true;
+    if (polynomial_sign == 0)
+    {
+        return EvaluationStatus::endpoint_root;
+    }
+    std::uint32_t negative_infinity = 0;
+    std::uint32_t point_variations = 0;
+    if (!variations_at_infinity(context, sequence, false, negative_infinity) ||
+        !variations_at(context, sequence, point, point_variations))
+    {
+        return EvaluationStatus::resource_limit;
+    }
+    count = negative_infinity - point_variations;
+    return EvaluationStatus::ok;
 }
 
 BigInt root_bound(const Polynomial& polynomial)
@@ -338,9 +395,10 @@ BigInt root_bound(const Polynomial& polynomial)
     return quotient + 1;
 }
 
-bool cell_for_ordinal(const std::vector<FractionPolynomial>& sequence, const BigInt& bound,
-                      std::uint32_t precision, std::uint32_t ordinal, BigInt& cell,
-                      std::uint32_t& cell_roots)
+EvaluationStatus cell_for_ordinal(EvaluationContext& context,
+                                  const std::vector<FractionPolynomial>& sequence,
+                                  const BigInt& bound, std::uint32_t precision,
+                                  std::uint32_t ordinal, BigInt& cell, std::uint32_t& cell_roots)
 {
     const BigInt denominator = BigInt(1) << precision;
     BigInt low = -bound * denominator;
@@ -349,36 +407,56 @@ bool cell_for_ordinal(const std::vector<FractionPolynomial>& sequence, const Big
     {
         const BigInt middle = (low + high) / 2;
         std::uint32_t count = 0;
-        if (!roots_less_than(sequence, Fraction(middle, denominator), count))
+        const EvaluationStatus status =
+            roots_less_than(context, sequence, Fraction(middle, denominator), count);
+        if (status != EvaluationStatus::ok)
         {
-            return false;
+            return status;
         }
         (count <= ordinal ? low : high) = middle;
     }
     std::uint32_t below = 0;
     std::uint32_t above = 0;
-    if (!roots_less_than(sequence, Fraction(low, denominator), below) ||
-        !roots_less_than(sequence, Fraction(high, denominator), above))
+    const EvaluationStatus below_status =
+        roots_less_than(context, sequence, Fraction(low, denominator), below);
+    if (below_status != EvaluationStatus::ok)
     {
-        return false;
+        return below_status;
+    }
+    const EvaluationStatus above_status =
+        roots_less_than(context, sequence, Fraction(high, denominator), above);
+    if (above_status != EvaluationStatus::ok)
+    {
+        return above_status;
     }
     cell = low;
     cell_roots = above - below;
-    return true;
+    return EvaluationStatus::ok;
 }
 
-std::optional<std::vector<std::int8_t>> thom_signs(const std::vector<FractionPolynomial>& sequence,
-                                                   const BigInt& bound, std::uint32_t ordinal,
-                                                   std::uint32_t initial_precision,
-                                                   std::uint32_t maximum_precision)
+struct ThomResult
+{
+    EvaluationStatus status = EvaluationStatus::ok;
+    std::optional<std::vector<std::int8_t>> signs;
+};
+
+ThomResult thom_signs(EvaluationContext& context, const std::vector<FractionPolynomial>& sequence,
+                      const BigInt& bound, std::uint32_t ordinal, std::uint32_t initial_precision,
+                      std::uint32_t maximum_precision)
 {
     for (std::uint32_t precision = initial_precision; precision <= maximum_precision; ++precision)
     {
+        if (!context.budget.consume_interval_refinement())
+        {
+            return {EvaluationStatus::resource_limit, std::nullopt};
+        }
         BigInt cell;
         std::uint32_t cell_roots = 0;
-        if (!cell_for_ordinal(sequence, bound, precision, ordinal, cell, cell_roots))
+        const EvaluationStatus cell_status =
+            cell_for_ordinal(context, sequence, bound, precision, ordinal, cell, cell_roots);
+        if (cell_status != EvaluationStatus::ok)
         {
-            return std::nullopt;
+            return {cell_status, std::nullopt};
         }
         const BigInt denominator = BigInt(1) << precision;
         const Fraction lower(cell, denominator);
@@ -389,12 +467,41 @@ std::optional<std::vector<std::int8_t>> thom_signs(const std::vector<FractionPol
         for (std::size_t order = 1; order < sequence.front().size(); ++order)
         {
             current = derivative(current);
-            const int lower_sign = sign_at(current, lower);
-            const int upper_sign = sign_at(current, upper);
+            const FractionPolynomial common = polynomial_gcd(sequence.front(), current);
+            if (common.size() > 1)
+            {
+                std::vector<FractionPolynomial> common_sturm;
+                append_sturm_tail(common, derivative(common), common_sturm);
+                std::uint32_t lower_variations = 0;
+                std::uint32_t upper_variations = 0;
+                if (!variations_at(context, common_sturm, lower, lower_variations) ||
+                    !variations_at(context, common_sturm, upper, upper_variations))
+                {
+                    return {EvaluationStatus::resource_limit, std::nullopt};
+                }
+                if (lower_variations - upper_variations == 1)
+                {
+                    result.push_back(0);
+                    continue;
+                }
+            }
+            int lower_sign = 0;
+            int upper_sign = 0;
+            if (!sign_at(context, current, lower, lower_sign) ||
+                !sign_at(context, current, upper, upper_sign))
+            {
+                return {EvaluationStatus::resource_limit, std::nullopt};
+            }
             std::vector<FractionPolynomial> derivative_sturm;
             make_distinct_root_sequence(current, derivative_sturm);
-            const std::uint32_t derivative_roots =
-                variations_at(derivative_sturm, lower) - variations_at(derivative_sturm, upper);
+            std::uint32_t lower_variations = 0;
+            std::uint32_t upper_variations = 0;
+            if (!variations_at(context, derivative_sturm, lower, lower_variations) ||
+                !variations_at(context, derivative_sturm, upper, upper_variations))
+            {
+                return {EvaluationStatus::resource_limit, std::nullopt};
+            }
+            const std::uint32_t derivative_roots = lower_variations - upper_variations;
             if (lower_sign == 0 || upper_sign == 0 || lower_sign != upper_sign ||
                 derivative_roots != 0)
             {
@@ -405,10 +512,10 @@ std::optional<std::vector<std::int8_t>> thom_signs(const std::vector<FractionPol
         }
         if (resolved)
         {
-            return result;
+            return {EvaluationStatus::ok, std::move(result)};
         }
     }
-    return std::nullopt;
+    return {EvaluationStatus::resource_limit, std::nullopt};
 }
 
 std::uint64_t root_work_bound(const Polynomial& polynomial, std::uint32_t precision)
@@ -604,8 +711,15 @@ RootIsolationResult isolate_real_roots(Budget& budget, const Polynomial& polynom
         {
             return {Error::invalid_argument, std::nullopt};
         }
-        const std::uint32_t root_count =
-            variations_at_infinity(sturm, false) - variations_at_infinity(sturm, true);
+        EvaluationContext context{budget};
+        std::uint32_t negative_infinity = 0;
+        std::uint32_t positive_infinity = 0;
+        if (!variations_at_infinity(context, sturm, false, negative_infinity) ||
+            !variations_at_infinity(context, sturm, true, positive_infinity))
+        {
+            return {Error::resource_limit_exceeded, std::nullopt};
+        }
+        const std::uint32_t root_count = negative_infinity - positive_infinity;
         const BigInt bound = root_bound(polynomial);
         std::vector<IsolatedRoot> roots(root_count);
         std::vector<bool> isolated(root_count, false);
@@ -619,20 +733,34 @@ RootIsolationResult isolate_real_roots(Budget& budget, const Polynomial& polynom
                 {
                     continue;
                 }
+                if (!budget.consume_interval_refinement())
+                {
+                    return {Error::resource_limit_exceeded, std::nullopt};
+                }
                 BigInt cell;
                 std::uint32_t cell_roots = 0;
-                if (!cell_for_ordinal(sturm, bound, precision, ordinal, cell, cell_roots))
+                const EvaluationStatus cell_status =
+                    cell_for_ordinal(context, sturm, bound, precision, ordinal, cell, cell_roots);
+                if (cell_status == EvaluationStatus::resource_limit)
+                {
+                    return {Error::resource_limit_exceeded, std::nullopt};
+                }
+                if (cell_status != EvaluationStatus::ok)
                 {
                     return {Error::invalid_argument, std::nullopt};
                 }
                 if (cell_roots == 1)
                 {
-                    auto signs = thom_signs(sturm, bound, ordinal, precision, maximum_precision);
-                    if (!signs.has_value())
+                    ThomResult signs =
+                        thom_signs(context, sturm, bound, ordinal, precision, maximum_precision);
+                    if (signs.status != EvaluationStatus::ok || !signs.signs.has_value())
                     {
-                        return {Error::resource_limit_exceeded, std::nullopt};
+                        return {signs.status == EvaluationStatus::endpoint_root
+                                    ? Error::invalid_argument
+                                    : Error::resource_limit_exceeded,
+                                std::nullopt};
                     }
-                    roots[ordinal] = {ordinal, precision, std::move(cell), std::move(*signs)};
+                    roots[ordinal] = {ordinal, precision, std::move(cell), std::move(*signs.signs)};
                     isolated[ordinal] = true;
                     --remaining;
                 }

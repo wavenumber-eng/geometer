@@ -74,6 +74,32 @@ void test_canonical_precision_transition()
             "smallest adjacent dyadic cells must be selected deterministically");
 }
 
+void test_reducible_square_free_thom_zero_signs()
+{
+    geometer::exact::Budget budget({1'000'000'000, 100'000'000});
+    auto polynomial =
+        geometer::exact::make_primitive_polynomial(budget, std::vector<BigInt>({20, 0, -12, 0, 1}));
+    require(polynomial.error == geometer::exact::Error::none && polynomial.value.has_value(),
+            "reducible square-free polynomial setup failed");
+    auto isolated = geometer::exact::isolate_real_roots(budget, *polynomial.value, 16);
+    require(isolated.error == geometer::exact::Error::none && isolated.value.has_value(),
+            "reducible square-free polynomial isolation failed: " +
+                std::to_string(static_cast<int>(isolated.error)) +
+                " work=" + std::to_string(budget.usage().work_units) +
+                " storage=" + std::to_string(budget.usage().owned_bytes) +
+                " predicates=" + std::to_string(budget.usage().exact_predicate_calls) +
+                " refinements=" + std::to_string(budget.usage().interval_refinement_steps));
+    const auto& roots = isolated.value->roots();
+    require(roots.size() == 4, "reducible square-free polynomial must have four real roots");
+    require(roots[1].thom_signs == std::vector<std::int8_t>({1, 0, -1, 1}),
+            "negative sqrt(2) must carry an exact zero second-derivative Thom sign");
+    require(roots[2].thom_signs == std::vector<std::int8_t>({-1, 0, 1, 1}),
+            "positive sqrt(2) must carry an exact zero second-derivative Thom sign");
+    require(budget.usage().exact_predicate_calls > 0 &&
+                budget.usage().interval_refinement_steps > 0,
+            "successful root isolation must consume governed predicate and refinement budgets");
+}
+
 void test_empty_real_root_set_is_successful()
 {
     geometer::exact::Budget budget({10'000'000, 10'000'000});
@@ -132,6 +158,56 @@ void test_fail_closed_polynomial_and_root_limits()
             "root preflight failure must not leak temporary storage");
 }
 
+void test_predicate_and_refinement_limits_are_monotonic()
+{
+    geometer::exact::Budget predicate_budget({10'000'000, 10'000'000, 10, 100});
+    auto predicate_polynomial = geometer::exact::make_primitive_polynomial(
+        predicate_budget, std::vector<BigInt>({-2, 0, 1}));
+    require(predicate_polynomial.error == geometer::exact::Error::none &&
+                predicate_polynomial.value.has_value(),
+            "predicate-limit polynomial setup failed");
+    const std::uint64_t predicate_storage = predicate_budget.usage().owned_bytes;
+    auto predicate_failure =
+        geometer::exact::isolate_real_roots(predicate_budget, *predicate_polynomial.value, 16);
+    require(predicate_failure.error == geometer::exact::Error::resource_limit_exceeded &&
+                predicate_budget.usage().exact_predicate_calls == 10 &&
+                predicate_budget.usage().owned_bytes == predicate_storage,
+            "predicate exhaustion must be typed, bounded, and release temporary storage");
+    const std::uint64_t predicate_work = predicate_budget.usage().work_units;
+    const std::uint64_t predicate_refinements = predicate_budget.usage().interval_refinement_steps;
+    auto predicate_retry =
+        geometer::exact::isolate_real_roots(predicate_budget, *predicate_polynomial.value, 16);
+    require(predicate_retry.error == geometer::exact::Error::resource_limit_exceeded &&
+                predicate_budget.usage().work_units >= predicate_work &&
+                predicate_budget.usage().exact_predicate_calls == 10 &&
+                predicate_budget.usage().interval_refinement_steps == predicate_refinements &&
+                predicate_budget.usage().owned_bytes == predicate_storage,
+            "predicate exhaustion retry must not reset counters or leak temporary storage");
+
+    geometer::exact::Budget refinement_budget({10'000'000, 10'000'000, 100'000, 1});
+    auto refinement_polynomial = geometer::exact::make_primitive_polynomial(
+        refinement_budget, std::vector<BigInt>({-2, 0, 1}));
+    require(refinement_polynomial.error == geometer::exact::Error::none &&
+                refinement_polynomial.value.has_value(),
+            "refinement-limit polynomial setup failed");
+    const std::uint64_t refinement_storage = refinement_budget.usage().owned_bytes;
+    auto refinement_failure =
+        geometer::exact::isolate_real_roots(refinement_budget, *refinement_polynomial.value, 16);
+    require(refinement_failure.error == geometer::exact::Error::resource_limit_exceeded &&
+                refinement_budget.usage().interval_refinement_steps == 1 &&
+                refinement_budget.usage().exact_predicate_calls > 0 &&
+                refinement_budget.usage().owned_bytes == refinement_storage,
+            "refinement exhaustion must be typed, bounded, and release temporary storage");
+    const std::uint64_t refinement_predicates = refinement_budget.usage().exact_predicate_calls;
+    auto refinement_retry =
+        geometer::exact::isolate_real_roots(refinement_budget, *refinement_polynomial.value, 16);
+    require(refinement_retry.error == geometer::exact::Error::resource_limit_exceeded &&
+                refinement_budget.usage().interval_refinement_steps == 1 &&
+                refinement_budget.usage().exact_predicate_calls >= refinement_predicates &&
+                refinement_budget.usage().owned_bytes == refinement_storage,
+            "refinement exhaustion retry must preserve monotonic counters and storage ownership");
+}
+
 } // namespace
 
 int main()
@@ -139,7 +215,9 @@ int main()
     test_primitive_normalization();
     test_sqrt_two_roots_and_thom_signs();
     test_canonical_precision_transition();
+    test_reducible_square_free_thom_zero_signs();
     test_empty_real_root_set_is_successful();
     test_fail_closed_polynomial_and_root_limits();
+    test_predicate_and_refinement_limits_are_monotonic();
     return 0;
 }

@@ -50,7 +50,9 @@ An integer is encoded as sign plus minimal unsigned magnitude:
 
 A rational is `(numerator, denominator)` with a positive denominator,
 `gcd(abs(numerator), denominator) == 1`, and zero represented only as `0/1`.
-Normalization occurs before charging or interning the value.
+Normalization occurs inside a charged transaction before interning the value;
+no GCD, allocation, or sign rewrite is performed before its conservative work
+and storage reservations succeed.
 
 ## Canonical Polynomial And Root Identity
 
@@ -76,9 +78,18 @@ For an irrational root, the canonical interval is the unique adjacent dyadic
 pair `k / 2^p` and `(k + 1) / 2^p` at the smallest nonnegative precision `p`
 for which the open interval contains the selected root and no other root of the
 minimal polynomial. Irrational roots cannot equal an endpoint. `k` is a signed
-canonical integer and `p` is a `u32`. The stored Thom signs are each exactly
-`-1`, `0`, or `1` and must agree with exact polynomial evaluation over the
-isolating interval.
+canonical integer and `p` is a `u32`. Candidate precisions are examined in
+increasing order from zero through the governed 4096-bit ceiling, charging an
+interval-refinement step before each examination. If no adjacent interval is
+canonical by `p == 4096`, value construction fails with
+`resource_limit_exceeded`; it does not serialize a wider or nonminimal
+interval.
+
+The stored Thom signs are each exactly `-1`, `0`, or `1`. Each derivative sign
+is evaluated at the selected algebraic root using exact signed-remainder/
+subresultant sign determination tied to the minimal polynomial, root ordinal,
+and isolating interval. Merely evaluating an interval enclosure is invalid
+because that interval may contain a root of the derivative.
 
 The value key is the canonical scalar encoding described below. Interval and
 Thom data are redundant validation evidence, not alternative identities.
@@ -107,10 +118,33 @@ expression through different allocation or traversal orders therefore produces
 the same DAG, while algebraically equal but structurally different expressions
 still converge on the same value key after exact evaluation.
 
+The value key byte string is exactly the canonical scalar-value record. Byte
+strings compare lexicographically as unsigned octets; if one is a complete
+prefix of the other, the shorter sorts first. The construction-key byte string
+is `kind u8`, `child_count u32`, then for every ordered child its `key_bytes
+u32` and construction-key bytes, followed by `value_bytes u32` and the value
+key. Integer fields in keys are little-endian. This encoding, rather than a
+platform string comparator or hash, is the total comparison used by every sort.
+
+Normalization is closed:
+
+- sums/products flatten all same-kind descendants before rational folding;
+- an empty sum becomes rational zero and an empty product becomes rational one;
+- a product containing zero becomes rational zero;
+- after folding and identity removal, zero children use the preceding identity,
+  one child is returned directly, and two or more children form a node;
+- whenever exact evaluation of any operation yields a rational value, the
+  construction collapses to the unique rational node for that value; and
+- square root of a rational perfect square therefore becomes rational, while
+  square root of zero is the rational-zero node.
+
 Serialization includes only nodes reachable from the ordered root list. Nodes
 sort first by dependency depth and then by their complete construction key;
 indices are assigned after sorting, so every child index is less than its
-parent. The caller-provided root order is semantic and is preserved.
+parent. The caller-provided root order is semantic and is preserved. A decoder
+starts from every root, computes the complete reachable set, and rejects the
+artifact unless that set equals the encoded node set exactly; unreachable or
+duplicate nodes are noncanonical even if every local record is otherwise valid.
 
 ## Conformance Encoding
 
@@ -204,10 +238,33 @@ internal API and never enters the analytic arrangement.
 
 The backend receives an explicit budget object. It charges before allocation or
 work for live scalar count, coefficient bytes, polynomial degree, coefficient
-bit length, predicate calls, interval-refinement steps, and total owned bytes.
-The maxima come from the frozen analytic numeric catalog. Tests also run with
-smaller injected budgets to prove that each boundary fails before mutation and
-with the same identity natively and under Emscripten.
+bit length, algebraic work units, predicate calls, interval-refinement steps,
+and total owned bytes. One algebraic work unit is one 32-bit limb read, write,
+comparison, addition/subtraction, shift, or one limb-pair multiply/divide step;
+polynomial bookkeeping without limb arithmetic charges one unit per coefficient
+slot examined. The maximum is governed by the analytic numeric catalog.
+
+Every public operation runs in a transaction-local arena. Before each bigint,
+rational, polynomial, resultant, GCD, square-free, factorization, root-count,
+isolation, or sign phase, it computes a checked conservative upper bound from
+input degrees, coefficient bit lengths, and limb counts; it reserves the bound
+against work and owned-byte budgets before the phase begins. Multi-phase and
+iterative algorithms may reserve one deterministic phase/iteration at a time,
+but must charge before that phase and publish no node, value, cache entry, or
+budget mutation until the entire public operation commits. Factorization
+charges every candidate generation, modular image, lift, recombination subset,
+and exact divisibility check before performing it. If a bound cannot be
+represented, a reservation fails, or the next deterministic phase would exceed
+the budget, the transaction is discarded and returns
+`resource_limit_exceeded`.
+
+This rule applies to normalization itself: rational GCD/sign reduction,
+polynomial content and primitive normalization, square-free decomposition,
+irreducible factor selection, canonical interval search, and Thom signs are all
+charged work. No implementation may perform speculative `cpp_int` allocation
+outside the transaction and account for it afterward. Tests also run with
+smaller injected budgets to prove that each boundary fails before observable
+mutation and with the same identity natively and under Emscripten.
 
 ## Feasibility Vectors
 

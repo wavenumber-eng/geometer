@@ -313,6 +313,7 @@ algebraic_scalars_per_job = 4194304
 algebraic_polynomial_degree = 64
 algebraic_coefficient_bits = 16384
 algebraic_storage_bytes_per_job = 268435456
+algebraic_work_units_per_job = 1000000000
 provenance_references_per_job = 8388608
 source_reference_index_memberships_per_job = 8388608
 exact_predicate_calls_per_job = 100000000

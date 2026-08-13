@@ -879,6 +879,7 @@ def test_analytic_planar_boolean_numeric_catalog_is_closed() -> None:
         "algebraic_polynomial_degree",
         "algebraic_coefficient_bits",
         "algebraic_storage_bytes_per_job",
+        "algebraic_work_units_per_job",
         "provenance_references_per_job",
         "source_reference_index_memberships_per_job",
         "exact_predicate_calls_per_job",

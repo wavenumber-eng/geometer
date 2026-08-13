@@ -609,6 +609,7 @@ Additional A0 maxima are:
 | Defining-polynomial degree | 64 |
 | Bits in any algebraic polynomial coefficient | 16,384 |
 | Algebraic integer/coefficient storage per job | 256 MiB |
+| Algebraic work units per job | 1,000,000,000 |
 | Provenance source references per job | 8,388,608 |
 | Source-reference-index memberships per job | 8,388,608 |
 | Exact predicate calls per job | 100,000,000 |

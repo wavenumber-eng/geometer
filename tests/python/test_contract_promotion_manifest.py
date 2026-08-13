@@ -872,6 +872,7 @@ def test_analytic_planar_boolean_numeric_catalog_is_closed() -> None:
     assert sorted(catalog["path_token"].values()) == list(range(27))
 
     solver_limits = catalog["limit"]
+    assert solver_limits["algebraic_work_units_per_job"] == 1_000_000_000
     for name in (
         "examined_curve_pairs_per_job",
         "exact_intersections_per_job",
@@ -888,6 +889,7 @@ def test_analytic_planar_boolean_numeric_catalog_is_closed() -> None:
         assert solver_limits[name] > 0
 
     packet_spec = (ROOT / candidate["packet_spec"]).read_text(encoding="utf-8")
+    assert "| Algebraic work units per job | 1,000,000,000 |" in packet_spec
     for magic in (catalog["request_magic"], catalog["result_magic"]):
         assert magic in packet_spec
     assert "normalized curves" not in packet_spec

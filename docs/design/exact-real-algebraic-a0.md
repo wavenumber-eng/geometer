@@ -250,13 +250,23 @@ isolation, or sign phase, it computes a checked conservative upper bound from
 input degrees, coefficient bit lengths, and limb counts; it reserves the bound
 against work and owned-byte budgets before the phase begins. Multi-phase and
 iterative algorithms may reserve one deterministic phase/iteration at a time,
-but must charge before that phase and publish no node, value, cache entry, or
-budget mutation until the entire public operation commits. Factorization
+but must charge before that phase. Factorization
 charges every candidate generation, modular image, lift, recombination subset,
 and exact divisibility check before performing it. If a bound cannot be
 represented, a reservation fails, or the next deterministic phase would exceed
 the budget, the transaction is discarded and returns
 `resource_limit_exceeded`.
+
+Semantic state and work consumption have different rollback rules. Nodes,
+values, cache entries, live-scalar ownership, and live/storage-byte reservations
+remain transaction-local and are published only on complete success; they are
+released on failure. Algebraic work-unit, exact-predicate, and interval-
+refinement reservations become monotonically consumed when their reserved
+phase begins, even if that phase or any later phase fails. Unstarted reservations
+consume nothing. A retry uses the remaining counters and cannot reclaim work
+already performed. An implementation may instead reserve the conservative
+bound for the whole public operation before doing any work, but it may not roll
+back executed-work counters.
 
 This rule applies to normalization itself: rational GCD/sign reduction,
 polynomial content and primitive normalization, square-free decomposition,
@@ -264,7 +274,10 @@ irreducible factor selection, canonical interval search, and Thom signs are all
 charged work. No implementation may perform speculative `cpp_int` allocation
 outside the transaction and account for it afterward. Tests also run with
 smaller injected budgets to prove that each boundary fails before observable
-mutation and with the same identity natively and under Emscripten.
+semantic mutation and with the same identity natively and under Emscripten.
+One vector must complete at least one charged phase, fail a later reservation,
+verify semantic rollback and monotonic work consumption separately, then retry
+against the reduced remaining budget.
 
 ## Feasibility Vectors
 

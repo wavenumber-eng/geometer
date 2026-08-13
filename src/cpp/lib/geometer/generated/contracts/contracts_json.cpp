@@ -77,11 +77,56 @@ bool fail(ContractError* error, const char* code, const std::string& path,
     return false;
 }
 
-std::string child_path(const std::string& parent, const char* name)
+bool valid_utf8(const char* data, std::size_t size)
+{
+    const auto* bytes = reinterpret_cast<const unsigned char*>(data);
+    std::size_t index = 0;
+    while (index < size)
+    {
+        const unsigned char first = bytes[index++];
+        if (first <= 0x7fU)
+            continue;
+        unsigned int remaining = 0;
+        unsigned int code_point = 0;
+        if (first >= 0xc2U && first <= 0xdfU)
+        {
+            remaining = 1;
+            code_point = first & 0x1fU;
+        }
+        else if (first >= 0xe0U && first <= 0xefU)
+        {
+            remaining = 2;
+            code_point = first & 0x0fU;
+        }
+        else if (first >= 0xf0U && first <= 0xf4U)
+        {
+            remaining = 3;
+            code_point = first & 0x07U;
+        }
+        else
+            return false;
+        if (index + remaining > size)
+            return false;
+        for (unsigned int offset = 0; offset < remaining; ++offset)
+        {
+            const unsigned char next = bytes[index++];
+            if ((next & 0xc0U) != 0x80U)
+                return false;
+            code_point = (code_point << 6U) | (next & 0x3fU);
+        }
+        if ((remaining == 2 && code_point < 0x800U) || (remaining == 3 && code_point < 0x10000U) ||
+            code_point > 0x10ffffU || (code_point >= 0xd800U && code_point <= 0xdfffU))
+            return false;
+    }
+    return true;
+}
+
+std::string child_path(const std::string& parent, const char* name, std::size_t size)
 {
     std::string escaped;
-    for (const char c : std::string(name))
+    for (std::size_t index = 0; index < size; ++index)
     {
+        const char c = name[index];
         if (c == '~')
             escaped += "~0";
         else if (c == '/')
@@ -90,6 +135,11 @@ std::string child_path(const std::string& parent, const char* name)
             escaped += c;
     }
     return parent + "/" + escaped;
+}
+
+std::string child_path(const std::string& parent, const char* name)
+{
+    return child_path(parent, name, std::strlen(name));
 }
 
 bool validate_object(const rapidjson::Value& value, const char* const* names, std::size_t count,
@@ -109,13 +159,15 @@ bool validate_object(const rapidjson::Value& value, const char* const* names, st
                 known = true;
         if (!known)
             return fail(error, "geometer.contract.unknown_field",
-                        child_path(path, it->name.GetString()), "Unknown field.");
+                        child_path(path, it->name.GetString(), it->name.GetStringLength()),
+                        "Unknown field.");
         for (auto jt = value.MemberBegin(); jt != it; ++jt)
             if (jt->name.GetStringLength() == it->name.GetStringLength() &&
                 std::memcmp(jt->name.GetString(), it->name.GetString(),
                             it->name.GetStringLength()) == 0)
                 return fail(error, "geometer.contract.duplicate_field",
-                            child_path(path, it->name.GetString()), "Duplicate field.");
+                            child_path(path, it->name.GetString(), it->name.GetStringLength()),
+                            "Duplicate field.");
     }
     return true;
 }
@@ -213,6 +265,8 @@ bool write_string(rapidjson::Writer<rapidjson::StringBuffer>& writer, const std:
     if (value.size() < minimum || value.size() > maximum)
         return fail(error, "geometer.contract.string_length", "",
                     "String length is outside its contract bounds.");
+    if (!valid_utf8(value.data(), value.size()))
+        return fail(error, "geometer.contract.invalid_utf8", "", "String is not valid UTF-8.");
     writer.String(value.data(), static_cast<rapidjson::SizeType>(value.size()));
     return true;
 }

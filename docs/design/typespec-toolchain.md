@@ -186,6 +186,10 @@ the governed catalog and schemas. It then generates the C++17 wire DTOs and
 strict RapidJSON codecs plus the offline HTML reference. C++ generation uses
 the repository clang-format policy and fails if an admitted catalog construct
 has no lossless C++ mapping.
+The same generator emits the runtime operation/capability catalog and its
+output-attachment declaration lookup; these are not maintained as handwritten
+operation lists. Generated string encoders reject invalid UTF-8 before calling
+RapidJSON, including operation diagnostics populated from native error text.
 
 `check:contracts` performs the same generation without modifying the worktree
 and fails on stale, missing, unexpected, unlinked, or externally dependent

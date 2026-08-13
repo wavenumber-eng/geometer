@@ -64,3 +64,8 @@ ownership, and a live STEP `model_bounds` round trip. Later pilot work must add
 complete generated C++ vector replay, TypeScript/Rust/Python replay,
 non-affine-transform operation vectors, tolerant result vectors, and live
 WASM/IPC round trips before promotion.
+
+The generic result boundary also validates response-side JSON and attachment
+limits even though `model_bounds` currently emits no output attachment. This is
+deliberate preparation for later packed-result operations, not a change to the
+model-bounds result shape.

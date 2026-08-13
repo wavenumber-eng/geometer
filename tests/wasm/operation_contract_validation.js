@@ -46,6 +46,13 @@ async function main() {
   if (catalog.attachment_descriptor.wasm32.size !== 36) {
     throw new Error("Unexpected wasm32 attachment descriptor size.");
   }
+  if (
+    catalog.limits.response_json_bytes !== 8 * 1024 * 1024 ||
+    catalog.limits.attachment_count !== 16 ||
+    catalog.limits.aggregate_attachment_bytes_wasm !== 256 * 1024 * 1024
+  ) {
+    throw new Error("Unexpected generic ABI response limits in the generated catalog.");
+  }
 
   const operation = "geometry.model_bounds.a0";
   const request = "{}";

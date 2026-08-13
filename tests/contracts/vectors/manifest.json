@@ -36,6 +36,17 @@
       "tolerance": null
     },
     {
+      "id": "strict.invalid-utf8.reject",
+      "contract_identity": "geometry.model_bounds.options.a0",
+      "file": "cases/options-invalid-utf8.hex",
+      "lane": "strict_json",
+      "oracle": "strict_parser_hex",
+      "expected": "reject",
+      "comparison": "exact",
+      "excluded_fields": [],
+      "tolerance": null
+    },
+    {
       "id": "strict.empty-options.accept",
       "contract_identity": "geometry.model_bounds.options.a0",
       "file": "cases/options-empty.json",

@@ -177,3 +177,9 @@ output attachments. Accessor pointers are borrowed until
 required `model` attachment with media type `application/step` or `model/step`.
 The catalog reports the release/C ABI generations, descriptor layouts, limits,
 and operation attachment declarations so clients do not hard-code them.
+Its runtime C++ implementation is generated from the same normalized operation
+catalog as the DTOs and schemas. Before a result handle becomes visible, the
+transport validates the generated JSON against the 8 MiB response limit and
+validates output attachment count, unique/nonempty names, media types,
+declarations, UTF-8, individual sizes, and native/WASM aggregate sizes. This
+keeps every accessor conversion to `uint32_t` inside a proven range.

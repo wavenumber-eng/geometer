@@ -1,11 +1,13 @@
 #include "geometer/c_api.h"
 #include "geometer/generated/contracts/contracts.h"
+#include "geometer/operation_transport.h"
 
 #include <cstdio>
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
 #include <iterator>
+#include <rapidjson/document.h>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -62,6 +64,61 @@ void generated_options_codec_preserves_presence_and_is_strict()
         "trailing JSON data should be rejected");
     require(error.code == "geometer.contract.invalid_json",
             "trailing JSON should have a stable diagnostic code");
+
+    const std::string embedded_nul_key = "{\"bad\\u0000/name~\":1}";
+    require(!geometer::contracts::decode_json(
+                reinterpret_cast<const unsigned char*>(embedded_nul_key.data()),
+                embedded_nul_key.size(), &options, &error),
+            "unknown key containing an embedded NUL should be rejected");
+    const std::string expected_path("/bad\0~1name~0", 13U);
+    require(error.path == expected_path,
+            "generated JSON pointer should preserve NUL and escape slash/tilde");
+}
+
+void generated_encoder_rejects_invalid_utf8()
+{
+    geometer::contracts::DiagnosticA0 diagnostic;
+    diagnostic.code = "geometer.contract.test";
+    diagnostic.category = geometer::contracts::DiagnosticCategory::contract;
+    diagnostic.message.assign("invalid\xc3\x28", 9U);
+    diagnostic.retryable = false;
+    std::string json;
+    geometer::contracts::ContractError error;
+    require(!geometer::contracts::encode_json(diagnostic, &json, &error),
+            "generated encoder should reject invalid UTF-8");
+    require(error.code == "geometer.contract.invalid_utf8",
+            "invalid UTF-8 should have a stable generated diagnostic code");
+}
+
+void response_limits_fail_closed_before_accessor_narrowing()
+{
+    std::vector<geometer::OperationOutputAttachment> too_many(17U);
+    std::string message;
+    require(geometer::validate_operation_response("geometry.model_bounds.a0", "{}", too_many,
+                                                  &message) ==
+                geometer::OperationResponseValidationStatus::limit_exceeded,
+            "more than 16 output attachments should exceed the response limit");
+
+    std::vector<geometer::OperationOutputAttachment> empty_name(1U);
+    empty_name[0].media_type = "application/octet-stream";
+    require(geometer::validate_operation_response("geometry.model_bounds.a0", "{}", empty_name,
+                                                  &message) ==
+                geometer::OperationResponseValidationStatus::invalid,
+            "empty output attachment names should fail response validation");
+
+    std::vector<geometer::OperationOutputAttachment> undeclared(1U);
+    undeclared[0].name = "unexpected";
+    undeclared[0].media_type = "application/octet-stream";
+    require(geometer::validate_operation_response("geometry.model_bounds.a0", "{}", undeclared,
+                                                  &message) ==
+                geometer::OperationResponseValidationStatus::invalid,
+            "undeclared output attachments should fail response validation");
+
+    const std::string oversized_json(8U * 1024U * 1024U + 1U, 'x');
+    require(geometer::validate_operation_response("geometry.model_bounds.a0", oversized_json, {},
+                                                  &message) ==
+                geometer::OperationResponseValidationStatus::limit_exceeded,
+            "response JSON over 8 MiB should fail before accessor exposure");
 }
 
 std::string result_json(const GeometerOperationResult* result)
@@ -84,6 +141,16 @@ void generic_c_abi_catalog_and_typed_failures()
             "catalog should advertise model_bounds");
     require(catalog_text.find("\"wasm32\":{\"size\":36") != std::string::npos,
             "catalog should publish the wasm32 attachment layout");
+    rapidjson::Document catalog_document;
+    catalog_document.Parse(catalog_text.data(), catalog_text.size());
+    require(!catalog_document.HasParseError() && catalog_document.IsObject(),
+            "generated runtime catalog should be valid JSON");
+    require(catalog_document["operations"].Size() == 1U,
+            "runtime catalog should contain every generated operation exactly once");
+    require(catalog_document["limits"]["response_json_bytes"].GetUint() == 8388608U,
+            "runtime catalog should publish the response JSON limit");
+    require(catalog_document["limits"]["attachment_count"].GetUint() == 16U,
+            "runtime catalog should publish the attachment count limit");
     geometer_free_string(catalog);
 
     const std::string request = "{}";
@@ -96,6 +163,23 @@ void generic_c_abi_catalog_and_typed_failures()
     require(result_json(result).find("geometer.contract.unsupported_operation") !=
                 std::string::npos,
             "unknown operation should carry its governed diagnostic");
+    geometer_operation_result_free(result);
+
+    const std::string unexpected_name = "bad/name~";
+    GeometerAttachmentView unexpected{};
+    unexpected.struct_size = sizeof(GeometerAttachmentView);
+    unexpected.name = unexpected_name.data();
+    unexpected.name_size = static_cast<uint32_t>(unexpected_name.size());
+    unexpected.media_type = "application/octet-stream";
+    unexpected.media_type_size = 24U;
+    result = nullptr;
+    code = geometer_operation_execute(
+        "geometry.model_bounds.a0", 24U, reinterpret_cast<const unsigned char*>(request.data()),
+        static_cast<uint32_t>(request.size()), &unexpected, 1U, &result, &error);
+    require(code == GEOMETER_OPERATION_ABI_OK && result != nullptr,
+            "undeclared attachment should be a typed outcome");
+    require(result_json(result).find("/attachments/bad~1name~0") != std::string::npos,
+            "attachment diagnostic paths should RFC 6901 escape dynamic names");
     geometer_operation_result_free(result);
 
     result = nullptr;
@@ -130,6 +214,17 @@ void generic_c_abi_catalog_and_typed_failures()
     code = geometer_operation_execute(nullptr, 1U, nullptr, 0U, nullptr, 0U, &result, &error);
     require(code == GEOMETER_OPERATION_ABI_INVALID_ARGUMENT && result == nullptr,
             "foreign pointer failure should be local and initialize result");
+    geometer_free_string(error);
+
+    GeometerAttachmentView empty_text{};
+    empty_text.struct_size = sizeof(GeometerAttachmentView);
+    result = nullptr;
+    error = nullptr;
+    code = geometer_operation_execute(
+        "geometry.model_bounds.a0", 24U, reinterpret_cast<const unsigned char*>(request.data()),
+        static_cast<uint32_t>(request.size()), &empty_text, 1U, &result, &error);
+    require(code == GEOMETER_OPERATION_ABI_INVALID_ARGUMENT && result == nullptr,
+            "empty attachment names and media types should be rejected locally");
     geometer_free_string(error);
 }
 
@@ -176,6 +271,8 @@ int main()
     try
     {
         generated_options_codec_preserves_presence_and_is_strict();
+        generated_encoder_rejects_invalid_utf8();
+        response_limits_fail_closed_before_accessor_narrowing();
         generic_c_abi_catalog_and_typed_failures();
         generic_c_abi_executes_model_bounds();
     }

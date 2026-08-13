@@ -31,6 +31,9 @@ struct OperationExecution
 };
 
 const char* operation_catalog_json();
+bool operation_output_attachment_declared(const std::string& operation_id,
+                                          const std::string& attachment_name,
+                                          const std::string& media_type);
 
 void execute_operation(const std::string& operation_id, const unsigned char* request_json,
                        std::size_t request_json_size,

@@ -9,7 +9,8 @@ comparison policy, excluded nondeterministic fields, and numeric tolerance.
 The initial pilot covers:
 
 - `strict_json`: UTF-8 decoding, duplicate-key rejection, and trailing-data
-  rejection;
+  rejection. A `.hex` case with `strict_parser_hex` represents exact invalid
+  raw bytes without committing an editor-hostile non-UTF-8 source file;
 - `schema`: Draft 2020-12 validation against the generated closed-object
   schemas; and
 - `semantic`: presence projections that keep absent option-patch fields

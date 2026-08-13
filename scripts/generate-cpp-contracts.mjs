@@ -25,9 +25,11 @@ for (const declaration of catalog.declarations) {
 const ordered = topologicalOrder(catalog.declarations);
 const header = formatCpp(generateHeader(), "contracts.h");
 const source = formatCpp(generateSource(), "contracts_json.cpp");
+const operationCatalogSource = formatCpp(generateOperationCatalogSource(), "operation_catalog.cpp");
 await mkdir(output, { recursive: true });
 await emit("contracts.h", header);
 await emit("contracts_json.cpp", source);
+await emit("operation_catalog.cpp", operationCatalogSource);
 process.stdout.write(
   checkOnly
     ? "Generated C++ contracts are current.\n"
@@ -147,11 +149,33 @@ function generateSource() {
     "    return false;",
     "}",
     "",
-    "std::string child_path(const std::string& parent, const char* name)",
+    "bool valid_utf8(const char* data, std::size_t size)",
+    "{",
+    "    const auto* bytes = reinterpret_cast<const unsigned char*>(data); std::size_t index = 0;",
+    "    while (index < size) {",
+    "        const unsigned char first = bytes[index++]; if (first <= 0x7fU) continue;",
+    "        unsigned int remaining = 0; unsigned int code_point = 0;",
+    "        if (first >= 0xc2U && first <= 0xdfU) { remaining = 1; code_point = first & 0x1fU; }",
+    "        else if (first >= 0xe0U && first <= 0xefU) { remaining = 2; code_point = first & 0x0fU; }",
+    "        else if (first >= 0xf0U && first <= 0xf4U) { remaining = 3; code_point = first & 0x07U; }",
+    "        else return false;",
+    "        if (index + remaining > size) return false;",
+    "        for (unsigned int offset = 0; offset < remaining; ++offset) { const unsigned char next = bytes[index++]; if ((next & 0xc0U) != 0x80U) return false; code_point = (code_point << 6U) | (next & 0x3fU); }",
+    "        if ((remaining == 2 && code_point < 0x800U) || (remaining == 3 && code_point < 0x10000U) || code_point > 0x10ffffU || (code_point >= 0xd800U && code_point <= 0xdfffU)) return false;",
+    "    }",
+    "    return true;",
+    "}",
+    "",
+    "std::string child_path(const std::string& parent, const char* name, std::size_t size)",
     "{",
     "    std::string escaped;",
-    "    for (const char c : std::string(name)) { if (c == '~') escaped += \"~0\"; else if (c == '/') escaped += \"~1\"; else escaped += c; }",
+    "    for (std::size_t index = 0; index < size; ++index) { const char c = name[index]; if (c == '~') escaped += \"~0\"; else if (c == '/') escaped += \"~1\"; else escaped += c; }",
     '    return parent + "/" + escaped;',
+    "}",
+    "",
+    "std::string child_path(const std::string& parent, const char* name)",
+    "{",
+    "    return child_path(parent, name, std::strlen(name));",
     "}",
     "",
     "bool validate_object(const rapidjson::Value& value, const char* const* names, std::size_t count, const std::string& path, ContractError* error)",
@@ -160,9 +184,9 @@ function generateSource() {
     "    for (auto it = value.MemberBegin(); it != value.MemberEnd(); ++it) {",
     '        if (!it->name.IsString()) return fail(error, "geometer.contract.invalid_member", path, "Object member name is invalid.");',
     "        bool known = false; for (std::size_t i = 0; i < count; ++i) if (it->name.GetStringLength() == std::strlen(names[i]) && std::memcmp(it->name.GetString(), names[i], it->name.GetStringLength()) == 0) known = true;",
-    '        if (!known) return fail(error, "geometer.contract.unknown_field", child_path(path, it->name.GetString()), "Unknown field.");',
+    '        if (!known) return fail(error, "geometer.contract.unknown_field", child_path(path, it->name.GetString(), it->name.GetStringLength()), "Unknown field.");',
     "        for (auto jt = value.MemberBegin(); jt != it; ++jt) if (jt->name.GetStringLength() == it->name.GetStringLength() && std::memcmp(jt->name.GetString(), it->name.GetString(), it->name.GetStringLength()) == 0)",
-    '            return fail(error, "geometer.contract.duplicate_field", child_path(path, it->name.GetString()), "Duplicate field.");',
+    '            return fail(error, "geometer.contract.duplicate_field", child_path(path, it->name.GetString(), it->name.GetStringLength()), "Duplicate field.");',
     "    }",
     "    return true;",
     "}",
@@ -209,7 +233,9 @@ function generateSource() {
     "",
     "bool write_string(rapidjson::Writer<rapidjson::StringBuffer>& writer, const std::string& value, ContractError* error, std::size_t minimum, std::size_t maximum)",
     "{",
-    '    if (value.size() < minimum || value.size() > maximum) return fail(error, "geometer.contract.string_length", "", "String length is outside its contract bounds."); writer.String(value.data(), static_cast<rapidjson::SizeType>(value.size())); return true;',
+    '    if (value.size() < minimum || value.size() > maximum) return fail(error, "geometer.contract.string_length", "", "String length is outside its contract bounds.");',
+    '    if (!valid_utf8(value.data(), value.size())) return fail(error, "geometer.contract.invalid_utf8", "", "String is not valid UTF-8.");',
+    "    writer.String(value.data(), static_cast<rapidjson::SizeType>(value.size())); return true;",
     "}",
     "",
     "bool write_literal_string(rapidjson::Writer<rapidjson::StringBuffer>& writer, const std::string& value, ContractError* error, const char* expected)",
@@ -272,6 +298,108 @@ function generateSource() {
   }
   lines.push("} // namespace geometer::contracts");
   return lines.join("\n");
+}
+
+function generateOperationCatalogSource() {
+  const runtimeCatalog = {
+    catalog: "wn.geometer.operation_catalog.a0",
+    generic_abi: "a0",
+    release_version: "__WN_RELEASE_VERSION__",
+    c_abi_generation: "__WN_C_ABI_GENERATION__",
+    operations: catalog.operations.map((operation) => ({
+      identity: operation.identity,
+      request_contract: operation.request_contract,
+      result_contract: operation.result_contract,
+      input_attachments: operation.input_attachments,
+      output_attachments: operation.output_attachments,
+    })),
+    attachment_descriptor: {
+      wasm32: {
+        size: 36,
+        offsets: {
+          struct_size: 0,
+          flags: 4,
+          name: 8,
+          name_size: 12,
+          media_type: 16,
+          media_type_size: 20,
+          data: 24,
+          data_size: 28,
+          reserved0: 32,
+        },
+      },
+      pointer64: {
+        size: 56,
+        offsets: {
+          struct_size: 0,
+          flags: 4,
+          name: 8,
+          name_size: 16,
+          media_type: 24,
+          media_type_size: 32,
+          data: 40,
+          data_size: 48,
+          reserved0: 52,
+        },
+      },
+    },
+    limits: {
+      operation_id_bytes: 128,
+      request_json_bytes: 8 * 1024 * 1024,
+      response_json_bytes: 8 * 1024 * 1024,
+      attachment_count: 16,
+      attachment_name_bytes: 128,
+      attachment_media_type_bytes: 128,
+      attachment_bytes: 256 * 1024 * 1024,
+      aggregate_attachment_bytes_native: 512 * 1024 * 1024,
+      aggregate_attachment_bytes_wasm: 256 * 1024 * 1024,
+    },
+  };
+  const serialized = JSON.stringify(runtimeCatalog);
+  const [beforeRelease, afterReleaseMarker] = serialized.split("__WN_RELEASE_VERSION__");
+  const [beforeAbi, afterAbi] = afterReleaseMarker.split('"__WN_C_ABI_GENERATION__"');
+  if (afterAbi === undefined) throw new Error("Could not place runtime catalog version markers.");
+  const attachmentChecks = [];
+  for (const operation of catalog.operations) {
+    for (const attachment of operation.output_attachments) {
+      for (const mediaType of attachment.media_types) {
+        attachmentChecks.push(
+          `    if (operation_id == ${JSON.stringify(operation.identity)} && attachment_name == ${JSON.stringify(attachment.name)} && media_type == ${JSON.stringify(mediaType)}) return true;`,
+        );
+      }
+    }
+  }
+  return [
+    "// Generated from wn_geometer_contract_catalog.a0.json. Do not edit.",
+    '#include "geometer/operation_registry.h"',
+    '#include "geometer/version.h"',
+    "",
+    "#include <string>",
+    "",
+    "namespace geometer",
+    "{",
+    "",
+    "const char* operation_catalog_json()",
+    "{",
+    `    static const std::string catalog = std::string(${JSON.stringify(beforeRelease)}) +`,
+    `                                       version_string() + ${JSON.stringify(beforeAbi)} +`,
+    `                                       std::to_string(abi_version()) + ${JSON.stringify(afterAbi)};`,
+    "    return catalog.c_str();",
+    "}",
+    "",
+    "bool operation_output_attachment_declared(const std::string& operation_id,",
+    "                                          const std::string& attachment_name,",
+    "                                          const std::string& media_type)",
+    "{",
+    ...attachmentChecks,
+    "    (void)operation_id;",
+    "    (void)attachment_name;",
+    "    (void)media_type;",
+    "    return false;",
+    "}",
+    "",
+    "} // namespace geometer",
+  ].join("\n");
 }
 
 function decoder(item) {

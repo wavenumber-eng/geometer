@@ -2,10 +2,10 @@
 
 #include "geometer/generated/contracts/contracts.h"
 #include "geometer/operation_registry.h"
+#include "geometer/operation_transport.h"
 
 #include <cstdlib>
 #include <cstring>
-#include <limits>
 #include <memory>
 #include <new>
 #include <string>
@@ -188,6 +188,7 @@ extern "C" int geometer_operation_execute(const char* operation_id, uint32_t ope
             const auto& attachment = attachments[index];
             if (attachment.struct_size != sizeof(GeometerAttachmentView) ||
                 attachment.flags != 0U || attachment.reserved0 != 0U ||
+                attachment.name_size == 0U || attachment.media_type_size == 0U ||
                 !pointer_matches_size(attachment.name, attachment.name_size) ||
                 !pointer_matches_size(attachment.media_type, attachment.media_type_size) ||
                 !pointer_matches_size(attachment.data, attachment.data_size))
@@ -219,10 +220,18 @@ extern "C" int geometer_operation_execute(const char* operation_id, uint32_t ope
             return local_failure(GEOMETER_OPERATION_ABI_INTERNAL, error,
                                  "Could not encode the governed operation outcome.");
         }
-        if (owned->json.size() > std::numeric_limits<uint32_t>::max())
+        std::string response_error;
+        const auto response_status = geometer::validate_operation_response(
+            std::string(operation_id, operation_id_size), owned->json, execution.attachments,
+            &response_error);
+        if (response_status == geometer::OperationResponseValidationStatus::limit_exceeded)
         {
             return local_failure(GEOMETER_OPERATION_ABI_LIMIT_EXCEEDED, error,
-                                 "The operation result JSON exceeds the ABI size range.");
+                                 response_error.c_str());
+        }
+        if (response_status == geometer::OperationResponseValidationStatus::invalid)
+        {
+            return local_failure(GEOMETER_OPERATION_ABI_INTERNAL, error, response_error.c_str());
         }
         owned->attachments = std::move(execution.attachments);
         *result = owned.release();

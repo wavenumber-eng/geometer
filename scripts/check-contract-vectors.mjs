@@ -49,7 +49,9 @@ async function main() {
       throw new Error(`${vector.id}: missing ${vector.file}`);
     }
     referencedFiles.add(vector.file);
-    const bytes = await readFile(vectorPath);
+    const storedBytes = await readFile(vectorPath);
+    const bytes =
+      vector.oracle === "strict_parser_hex" ? decodeHexVector(storedBytes, vector.id) : storedBytes;
     let value;
     let parseError = null;
     try {
@@ -88,6 +90,14 @@ async function main() {
   const caseFiles = (await listFiles(join(vectorRoot, "cases"))).map((path) => `cases/${path}`);
   assertEqual([...referencedFiles].sort(), caseFiles.sort(), "vector case inventory");
   process.stdout.write(`Validated ${manifest.vectors.length} governed contract vectors.\n`);
+}
+
+function decodeHexVector(storedBytes, id) {
+  const text = storedBytes.toString("ascii").trim();
+  if (!/^(?:[0-9a-f]{2})+$/u.test(text)) {
+    throw new Error(`${id}: invalid lowercase even-length hex fixture`);
+  }
+  return Buffer.from(text, "hex");
 }
 
 function validateManifest(value) {

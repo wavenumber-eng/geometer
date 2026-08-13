@@ -7,6 +7,7 @@ set(GEOMETER_LIB_SOURCES
     model_bounds_options_json.cpp
     operation_c_api.cpp
     operation_registry.cpp
+    operation_transport.cpp
     planar_contours.cpp
     planar_solve.cpp
     planar_step.cpp
@@ -17,6 +18,7 @@ set(GEOMETER_LIB_SOURCES
     step_to_glb_options_json.cpp
     version.cpp
     geometer/generated/contracts/contracts_json.cpp
+    geometer/generated/contracts/operation_catalog.cpp
     ${CMAKE_SOURCE_DIR}/third_party/clipper2/src/clipper.engine.cpp
     ${CMAKE_SOURCE_DIR}/third_party/clipper2/src/clipper.offset.cpp
     ${CMAKE_SOURCE_DIR}/third_party/clipper2/src/clipper.rectclip.cpp

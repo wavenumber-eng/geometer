@@ -1,7 +1,6 @@
 #include "geometer/operation_registry.h"
 
 #include "geometer/model_bounds.h"
-#include "geometer/version.h"
 
 #include <algorithm>
 #include <array>
@@ -68,6 +67,28 @@ bool valid_utf8(const std::string& value)
     return true;
 }
 
+std::string json_pointer_token(const std::string& value)
+{
+    std::string escaped;
+    escaped.reserve(value.size());
+    for (const char character : value)
+    {
+        if (character == '~')
+        {
+            escaped += "~0";
+        }
+        else if (character == '/')
+        {
+            escaped += "~1";
+        }
+        else
+        {
+            escaped += character;
+        }
+    }
+    return escaped;
+}
+
 contracts::DiagnosticA0 diagnostic(std::string code, contracts::DiagnosticCategory category,
                                    std::string message, const std::string& operation,
                                    std::string path = {})
@@ -109,7 +130,7 @@ find_model_attachment(const std::string& operation,
                  diagnostic("geometer.contract.undeclared_attachment",
                             contracts::DiagnosticCategory::contract,
                             "The operation does not declare this attachment.", operation,
-                            "/attachments/" + attachment.name));
+                            "/attachments/" + json_pointer_token(attachment.name)));
             return nullptr;
         }
         if (model != nullptr)
@@ -153,16 +174,6 @@ find_model_attachment(const std::string& operation,
 }
 
 } // namespace
-
-const char* operation_catalog_json()
-{
-    static const std::string catalog =
-        std::string(
-            R"({"catalog":"wn.geometer.operation_catalog.a0","generic_abi":"a0","release_version":")") +
-        version_string() + R"(","c_abi_generation":)" + std::to_string(abi_version()) +
-        R"(,"operations":[{"identity":"geometry.model_bounds.a0","request_contract":"geometry.model_bounds.options.a0","result_contract":"geometry.model_bounds.a0","input_attachments":[{"name":"model","required":true,"media_types":["application/step","model/step"],"max_bytes":268435456}],"output_attachments":[]}],"attachment_descriptor":{"wasm32":{"size":36,"offsets":{"struct_size":0,"flags":4,"name":8,"name_size":12,"media_type":16,"media_type_size":20,"data":24,"data_size":28,"reserved0":32}},"pointer64":{"size":56,"offsets":{"struct_size":0,"flags":4,"name":8,"name_size":16,"media_type":24,"media_type_size":32,"data":40,"data_size":48,"reserved0":52}}},"limits":{"operation_id_bytes":128,"request_json_bytes":8388608,"attachment_count":16,"attachment_name_bytes":128,"attachment_media_type_bytes":128,"attachment_bytes":268435456,"aggregate_attachment_bytes_native":536870912,"aggregate_attachment_bytes_wasm":268435456}})";
-    return catalog.c_str();
-}
 
 void execute_operation(const std::string& operation_id, const unsigned char* request_json,
                        std::size_t request_json_size,

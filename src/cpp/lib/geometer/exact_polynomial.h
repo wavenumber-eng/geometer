@@ -70,6 +70,9 @@ struct RootIsolationResult
 [[nodiscard]] PolynomialResult make_primitive_polynomial(Budget& budget,
                                                          const std::vector<BigInt>& coefficients);
 
+[[nodiscard]] PolynomialResult make_square_free_polynomial(Budget& budget,
+                                                           const Polynomial& polynomial);
+
 [[nodiscard]] RootIsolationResult isolate_real_roots(Budget& budget, const Polynomial& polynomial,
                                                      std::uint32_t maximum_precision = 4096);
 

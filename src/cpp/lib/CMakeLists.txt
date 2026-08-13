@@ -29,10 +29,11 @@ set(GEOMETER_LIB_SOURCES
 set(GEOMETER_EXACT_SOURCES
     exact_polynomial.cpp
     exact_rational.cpp
+    exact_resultant.cpp
 )
 
 if(NOT EMSCRIPTEN)
-    list(APPEND GEOMETER_LIB_SOURCES exact_polynomial.cpp)
+    list(APPEND GEOMETER_LIB_SOURCES exact_polynomial.cpp exact_resultant.cpp)
 endif()
 
 if(NOT EMSCRIPTEN)

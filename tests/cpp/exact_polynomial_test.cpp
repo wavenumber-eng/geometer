@@ -113,6 +113,19 @@ void test_empty_real_root_set_is_successful()
             "a polynomial without real roots must return successful empty isolation");
 }
 
+void test_square_free_normalization()
+{
+    geometer::exact::Budget budget({10'000'000, 10'000'000});
+    auto repeated =
+        geometer::exact::make_primitive_polynomial(budget, std::vector<BigInt>({0, 0, 1}));
+    require(repeated.error == geometer::exact::Error::none && repeated.value.has_value(),
+            "square-free normalization setup failed");
+    auto normalized = geometer::exact::make_square_free_polynomial(budget, *repeated.value);
+    require(normalized.error == geometer::exact::Error::none && normalized.value.has_value() &&
+                normalized.value->coefficients() == std::vector<BigInt>({0, 1}),
+            "square-free normalization must remove repeated polynomial factors");
+}
+
 void test_fail_closed_polynomial_and_root_limits()
 {
     geometer::exact::Budget invalid_budget({1000, 1000});
@@ -217,6 +230,7 @@ int main()
     test_canonical_precision_transition();
     test_reducible_square_free_thom_zero_signs();
     test_empty_real_root_set_is_successful();
+    test_square_free_normalization();
     test_fail_closed_polynomial_and_root_limits();
     test_predicate_and_refinement_limits_are_monotonic();
     return 0;

@@ -690,6 +690,47 @@ PolynomialResult make_primitive_polynomial(Budget& budget, const std::vector<Big
     }
 }
 
+PolynomialResult make_square_free_polynomial(Budget& budget, const Polynomial& polynomial)
+{
+    try
+    {
+        const std::uint64_t work = root_work_bound(polynomial, 0);
+        const std::uint64_t storage = root_storage_bound(polynomial, 0);
+        StorageReservation reservation(budget, storage);
+        if (!reservation.acquired() || !budget.consume_work(work))
+        {
+            return {Error::resource_limit_exceeded, std::nullopt};
+        }
+        FractionPolynomial source;
+        source.reserve(polynomial.coefficients().size());
+        for (const BigInt& coefficient : polynomial.coefficients())
+        {
+            source.emplace_back(coefficient);
+        }
+        const FractionPolynomial common = polynomial_gcd(source, derivative(source));
+        const FractionPolynomial square_free =
+            common.size() > 1 ? exact_quotient(std::move(source), common) : std::move(source);
+        BigInt common_denominator = 1;
+        for (const Fraction& coefficient : square_free)
+        {
+            const BigInt divisor = integer_gcd(common_denominator, coefficient.denominator());
+            common_denominator *= coefficient.denominator() / divisor;
+        }
+        std::vector<BigInt> coefficients;
+        coefficients.reserve(square_free.size());
+        for (const Fraction& coefficient : square_free)
+        {
+            coefficients.push_back(coefficient.numerator() *
+                                   (common_denominator / coefficient.denominator()));
+        }
+        return make_primitive_polynomial(budget, coefficients);
+    }
+    catch (const std::exception&)
+    {
+        return {Error::resource_limit_exceeded, std::nullopt};
+    }
+}
+
 RootIsolationResult isolate_real_roots(Budget& budget, const Polynomial& polynomial,
                                        std::uint32_t maximum_precision)
 {

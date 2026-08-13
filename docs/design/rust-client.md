@@ -15,8 +15,9 @@ complete A0 frames and stderr is captured separately by the client.
 The TypeSpec source now owns the strict hello, welcome, request, reason,
 cancelled, cancel-rejected, protocol-error, shutdown-ack, and embedded
 operation-catalog shapes. Generated C++ and Rust codecs are used by both ends
-of the live connection. The broader plan step remains open for independent
-review and hosted Windows, Linux x64, Linux ARM64, and macOS ARM64 evidence.
+of the live connection, including the production request envelope. The broader
+plan step remains open for independent review and hosted Windows, Linux x64,
+Linux ARM64, and macOS ARM64 evidence.
 The implemented pilot is additive and reviewable; it is not yet a release
 claim.
 
@@ -90,8 +91,11 @@ duplicate-attachment correlation, wrong-direction fatal handling,
 close/request race resolution, repeated real STEP work through one child,
 graceful shutdown, and compilation from a clean packaged-crate consumer.
 The failure-path matrix additionally covers incompatible negotiation,
-oversized fixed headers before payload reads, broken stdout, and explicit
-forced termination with pending requests. The latter closed a reader/terminator
-race that could otherwise leave a pending call unresolved. Native and release
-CI run these live Rust tests on every supported native platform after building
-that platform's executable.
+oversized fixed headers before payload reads, broken stdout, explicit forced
+termination with pending requests, the server shutdown deadline, and an
+independently unexpected child exit. The forced-termination case closed a
+reader/terminator race that could otherwise leave a pending call unresolved.
+The deadline and unexpected-exit cases use non-distributed native test servers
+with deterministic timing/failure injection; the production server retains its
+governed 30-second deadline. Native and release CI run these live Rust tests on
+every supported native platform after building that platform's executable.

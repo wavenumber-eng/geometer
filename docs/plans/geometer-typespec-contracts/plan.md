@@ -306,8 +306,10 @@ native child. The C++ server implements binary framing, fixed-header allocation
 gates, serialized OCCT execution, bounded queues/resident input/writer output,
 queue-only cancellation, and ordered shutdown. TypeSpec now owns the strict IPC
 control, request, welcome, and operation-catalog DTOs used by the generated C++
-and Rust codecs. Fatal negotiation/header, broken-stdout, forced-termination,
-and pending-call resolution regressions pass on Windows. The `rust-exe-ipc`
+and Rust codecs, including the Rust production request path. Fatal
+negotiation/header, broken-stdout, forced-termination, server-deadline,
+unexpected-child-exit, and pending-call resolution regressions pass on Windows.
+The `rust-exe-ipc`
 step remains pending until independent review accepts this slice and the hosted
 Windows, Linux x64, Linux ARM64, and macOS ARM64 matrix supplies current-commit
 evidence.

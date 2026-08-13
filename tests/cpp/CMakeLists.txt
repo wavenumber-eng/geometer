@@ -68,6 +68,18 @@ target_link_libraries(geometer_ipc_a0_frame_test PRIVATE geometer_lib)
 
 add_test(NAME geometer_ipc_a0_frame_test COMMAND geometer_ipc_a0_frame_test)
 
+add_executable(geometer_ipc_a0_deadline_test_server
+    ipc_a0_deadline_test_server.cpp
+)
+
+target_link_libraries(geometer_ipc_a0_deadline_test_server PRIVATE geometer_lib)
+
+add_executable(geometer_ipc_a0_unexpected_exit_test_server
+    ipc_a0_unexpected_exit_test_server.cpp
+)
+
+target_link_libraries(geometer_ipc_a0_unexpected_exit_test_server PRIVATE geometer_lib)
+
 add_executable(geometer_projection_options_json_test
     projection_options_json_test.cpp
 )

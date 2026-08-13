@@ -55,14 +55,16 @@ async fn persistent_client_runs_model_bounds_twice_and_closes_cleanly() {
             .unwrap()
     );
     let malformed = client
-        .execute(
+        .start_execute(
             "geometry.model_bounds.a0",
             br#"{"unknown":true}"#,
             Vec::new(),
         )
-        .await
-        .unwrap();
-    assert_failure_code(malformed.outcome, "geometer.contract.unknown_field");
+        .await;
+    let Err(malformed) = malformed else {
+        panic!("generated request envelope accepted an unknown request field");
+    };
+    assert!(matches!(malformed, GeometerClientError::Contract(_)));
     let options =
         contracts::encode_model_bounds_options_a0_json(&contracts::ModelBoundsOptionsA0 {
             format: None,
@@ -309,13 +311,6 @@ fn model_attachment(data: Vec<u8>) -> ipc::Attachment {
         media_type: "application/step".to_owned(),
         data,
     }
-}
-
-fn assert_failure_code(outcome: contracts::OperationOutcomeA0, code: &str) {
-    let contracts::OperationOutcomeA0::Failure(failure) = outcome else {
-        panic!("operation unexpectedly succeeded");
-    };
-    assert_eq!(failure.diagnostics[0].code, code);
 }
 
 fn repository_root() -> PathBuf {

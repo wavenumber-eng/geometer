@@ -38,7 +38,6 @@ namespace
 constexpr std::size_t kMaxQueuedRequests = 8U;
 constexpr std::size_t kMaxResidentBytes = 512U * 1024U * 1024U;
 constexpr std::size_t kMaxPendingWriterBytes = 512U * 1024U * 1024U;
-constexpr auto kShutdownGrace = std::chrono::seconds(30);
 
 using JsonDocument = rapidjson::Document;
 
@@ -164,7 +163,11 @@ struct QueuedRequest
 
 struct SharedState
 {
-    explicit SharedState(std::FILE* stream) : writer(stream) {}
+    SharedState(std::FILE* stream, const testing::ServerOptions& options)
+        : shutdown_grace(options.shutdown_grace), execution_delay(options.execution_delay),
+          exit_when_request_active(options.exit_when_request_active), writer(stream)
+    {
+    }
 
     std::mutex mutex;
     std::condition_variable condition;
@@ -178,6 +181,9 @@ struct SharedState
     bool active_at_shutdown = false;
     std::uint32_t rejected_at_shutdown = 0;
     std::atomic<bool> terminal_complete{false};
+    std::chrono::milliseconds shutdown_grace;
+    std::chrono::milliseconds execution_delay;
+    bool exit_when_request_active = false;
     FrameWriter writer;
 };
 
@@ -453,6 +459,19 @@ void worker_loop(const std::shared_ptr<SharedState>& shared)
             shared->requests[request.id] = RequestState::active;
         }
 
+        if (shared->exit_when_request_active)
+        {
+            std::fprintf(stderr, "Geometer IPC test server exiting with an active request.\n");
+            std::fflush(stderr);
+            std::_Exit(73);
+        }
+        if (shared->execution_delay.count() > 0)
+        {
+            std::fprintf(stderr, "Geometer IPC test server delaying an active request.\n");
+            std::fflush(stderr);
+            std::this_thread::sleep_for(shared->execution_delay);
+        }
+
         Frame response = execute_request(request);
         const std::size_t resident_bytes = request.resident_bytes;
         std::string().swap(request.request_json);
@@ -506,7 +525,7 @@ void start_deadline(const std::shared_ptr<SharedState>& shared,
             std::this_thread::sleep_until(deadline);
             if (!shared->terminal_complete.load())
             {
-                std::fprintf(stderr, "Geometer IPC shutdown exceeded the 30 second A0 deadline.\n");
+                std::fprintf(stderr, "Geometer IPC shutdown exceeded its A0 deadline.\n");
                 std::fflush(stderr);
                 std::_Exit(124);
             }
@@ -528,7 +547,7 @@ void begin_shutdown(const std::shared_ptr<SharedState>& shared)
             return;
         }
         shared->draining = true;
-        deadline = std::chrono::steady_clock::now() + kShutdownGrace;
+        deadline = std::chrono::steady_clock::now() + shared->shutdown_grace;
         shared->active_at_shutdown = shared->active_id != 0;
         while (!shared->queue.empty())
         {
@@ -706,9 +725,7 @@ int fail_connection(const std::shared_ptr<SharedState>& shared, std::uint64_t id
     return 2;
 }
 
-} // namespace
-
-int serve_stdio()
+int serve_stdio_impl(const testing::ServerOptions& options)
 {
 #ifdef _WIN32
     if (_setmode(_fileno(stdin), _O_BINARY) == -1 || _setmode(_fileno(stdout), _O_BINARY) == -1)
@@ -734,7 +751,7 @@ int serve_stdio()
         return 2;
     }
 
-    const auto shared = std::make_shared<SharedState>(stdout);
+    const auto shared = std::make_shared<SharedState>(stdout, options);
     std::thread worker(worker_loop, shared);
     int result = 0;
     for (;;)
@@ -799,5 +816,22 @@ int serve_stdio()
     shared->terminal_complete.store(true);
     return result;
 }
+
+} // namespace
+
+int serve_stdio()
+{
+    return serve_stdio_impl({});
+}
+
+namespace testing
+{
+
+int serve_stdio(const ServerOptions& options)
+{
+    return serve_stdio_impl(options);
+}
+
+} // namespace testing
 
 } // namespace geometer::ipc_a0

@@ -2,6 +2,7 @@ use std::path::{Path, PathBuf};
 use std::process::Stdio;
 use std::time::Duration;
 
+use geometer_client::contracts;
 use geometer_client::ipc::{self, Frame, FrameKind};
 use geometer_client::{GeometerClient, GeometerClientError, ModelBoundsRequest};
 use tokio::io::AsyncWriteExt;
@@ -35,6 +36,36 @@ async fn oversized_fixed_header_is_fatal_without_payload_read() {
     let error = read_required(&mut stdout).await;
     assert_eq!(error.kind, FrameKind::ProtocolError);
     assert!(!wait_bounded(&mut child).await.success());
+}
+
+#[tokio::test]
+async fn raw_invalid_request_remains_a_correlated_operation_failure() {
+    let (mut child, mut stdin, mut stdout) = spawn_raw().await;
+    handshake(&mut stdin, &mut stdout).await;
+    write_control(
+        &mut stdin,
+        FrameKind::Request,
+        7,
+        br#"{"operation":"geometry.model_bounds.a0","request":{"unknown":true}}"#,
+    )
+    .await;
+    let response = read_required(&mut stdout).await;
+    assert_eq!(response.kind, FrameKind::Response);
+    assert_eq!(response.request_id, 7);
+    let outcome = contracts::decode_operation_outcome_a0_json(&response.json).unwrap();
+    let contracts::OperationOutcomeA0::Failure(failure) = outcome else {
+        panic!("invalid raw request unexpectedly succeeded");
+    };
+    assert_eq!(
+        failure.diagnostics[0].code,
+        "geometer.contract.unknown_field"
+    );
+    write_control(&mut stdin, FrameKind::Shutdown, 0, b"{}").await;
+    assert_eq!(
+        read_required(&mut stdout).await.kind,
+        FrameKind::ShutdownAck
+    );
+    assert!(wait_bounded(&mut child).await.success());
 }
 
 #[tokio::test]
@@ -88,6 +119,68 @@ async fn forced_client_termination_fails_pending_work() {
             .await,
         Err(GeometerClientError::Closed)
     ));
+}
+
+#[tokio::test]
+async fn shutdown_deadline_forces_exit_and_resolves_pending_work() {
+    let root = repository_root();
+    let model = test_model(&root).await;
+    let server = test_server_executable(&root, "geometer_ipc_a0_deadline_test_server");
+    let client = GeometerClient::spawn(server, "deadline-test", "a0")
+        .await
+        .unwrap();
+    let call = client
+        .start_execute(
+            "geometry.model_bounds.a0",
+            b"{}",
+            vec![model_attachment(model)],
+        )
+        .await
+        .unwrap();
+    wait_for_stderr(&client, "delaying an active request").await;
+    let close = tokio::time::timeout(Duration::from_secs(5), client.close())
+        .await
+        .expect("deadline test server did not terminate");
+    assert!(matches!(
+        close,
+        Err(GeometerClientError::Process(_) | GeometerClientError::Protocol(_))
+    ));
+    assert!(matches!(
+        call.wait().await,
+        Err(GeometerClientError::Process(_))
+    ));
+    wait_for_stderr(&client, "shutdown exceeded its A0 deadline").await;
+}
+
+#[tokio::test]
+async fn unexpected_child_exit_resolves_pending_work_and_closes_client() {
+    let root = repository_root();
+    let model = test_model(&root).await;
+    let server = test_server_executable(&root, "geometer_ipc_a0_unexpected_exit_test_server");
+    let client = GeometerClient::spawn(server, "unexpected-exit-test", "a0")
+        .await
+        .unwrap();
+    let call = client
+        .start_execute(
+            "geometry.model_bounds.a0",
+            b"{}",
+            vec![model_attachment(model)],
+        )
+        .await
+        .unwrap();
+    assert!(matches!(
+        tokio::time::timeout(Duration::from_secs(5), call.wait())
+            .await
+            .expect("unexpected child exit did not resolve the pending call"),
+        Err(GeometerClientError::Process(_))
+    ));
+    assert!(matches!(
+        client
+            .model_bounds(ModelBoundsRequest::step(Vec::new()))
+            .await,
+        Err(GeometerClientError::Closed)
+    ));
+    wait_for_stderr(&client, "exiting with an active request").await;
 }
 
 async fn spawn_raw() -> (Child, ChildStdin, ChildStdout) {
@@ -145,7 +238,27 @@ async fn wait_bounded(child: &mut Child) -> std::process::ExitStatus {
 }
 
 fn native_executable(root: &Path) -> PathBuf {
-    let platform = if cfg!(windows) {
+    root.join("dist/native")
+        .join(platform_name())
+        .join(executable_name("geometer"))
+}
+
+fn test_server_executable(root: &Path, name: &str) -> PathBuf {
+    let relative = Path::new("tests/cpp").join(executable_name(name));
+    for build_root in [
+        root.join(format!("build-native-{}", platform_name())),
+        root.join("build"),
+    ] {
+        let candidate = build_root.join(&relative);
+        if candidate.is_file() {
+            return candidate;
+        }
+    }
+    panic!("missing native IPC test server {name}");
+}
+
+fn platform_name() -> &'static str {
+    if cfg!(windows) {
         "windows-x64"
     } else if cfg!(target_os = "macos") && cfg!(target_arch = "aarch64") {
         "macos-arm64"
@@ -153,14 +266,42 @@ fn native_executable(root: &Path) -> PathBuf {
         "linux-arm64"
     } else {
         "linux-x64"
-    };
-    root.join("dist/native")
-        .join(platform)
-        .join(if cfg!(windows) {
-            "geometer.exe"
-        } else {
-            "geometer"
-        })
+    }
+}
+
+fn executable_name(name: &str) -> String {
+    if cfg!(windows) {
+        format!("{name}.exe")
+    } else {
+        name.to_owned()
+    }
+}
+
+fn model_attachment(data: Vec<u8>) -> ipc::Attachment {
+    ipc::Attachment {
+        name: "model".to_owned(),
+        media_type: "application/step".to_owned(),
+        data,
+    }
+}
+
+async fn test_model(root: &Path) -> Vec<u8> {
+    tokio::fs::read(root.join("tests/fixtures/step/embedded_models/SOT-23.STEP"))
+        .await
+        .unwrap()
+}
+
+async fn wait_for_stderr(client: &GeometerClient, expected: &str) {
+    tokio::time::timeout(Duration::from_secs(5), async {
+        loop {
+            if client.stderr_text().await.contains(expected) {
+                return;
+            }
+            tokio::time::sleep(Duration::from_millis(10)).await;
+        }
+    })
+    .await
+    .unwrap_or_else(|_| panic!("stderr did not contain {expected:?}"));
 }
 
 fn repository_root() -> PathBuf {

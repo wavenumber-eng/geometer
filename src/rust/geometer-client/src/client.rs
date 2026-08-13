@@ -5,16 +5,14 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::time::Duration;
 
-use serde::Serialize;
 use serde_json::Value;
-use serde_json::value::RawValue;
 use tokio::io::AsyncReadExt;
 use tokio::process::{Child, ChildStdin, Command};
 use tokio::sync::{Mutex, oneshot};
 
 use crate::generated::contracts::{
     self, DiagnosticCategory, IpcCancelRejectedA0, IpcCancelledA0, IpcHelloA0, IpcReasonA0,
-    IpcWelcomeA0, ModelBoundsOptionsA0, ModelBoundsResultA0, OperationOutcomeA0,
+    IpcRequestA0, IpcWelcomeA0, ModelBoundsOptionsA0, ModelBoundsResultA0, OperationOutcomeA0,
     OperationResultValueA0,
 };
 use crate::ipc::{self, Attachment, Frame, FrameKind};
@@ -175,12 +173,6 @@ fn decode_operation_response(
     })
 }
 
-#[derive(Serialize)]
-struct RequestEnvelope<'a> {
-    operation: &'a str,
-    request: &'a RawValue,
-}
-
 impl GeometerClient {
     pub async fn spawn(
         executable: impl AsRef<Path>,
@@ -292,15 +284,11 @@ impl GeometerClient {
         request_json: &[u8],
         attachments: Vec<Attachment>,
     ) -> Result<OperationCall, GeometerClientError> {
-        let request_text = std::str::from_utf8(request_json)
-            .map_err(|error| GeometerClientError::Protocol(error.to_string()))?;
-        let request_value: Box<RawValue> = serde_json::from_str(request_text)
-            .map_err(|error| GeometerClientError::Protocol(error.to_string()))?;
-        let json = serde_json::to_vec(&RequestEnvelope {
-            operation,
-            request: &request_value,
-        })
-        .map_err(|error| GeometerClientError::Protocol(error.to_string()))?;
+        let request = contracts::decode_model_bounds_options_a0_json(request_json)?;
+        let json = contracts::encode_ipc_request_a0_json(&IpcRequestA0 {
+            operation: operation.to_owned(),
+            request,
+        })?;
         let request_id = self.next_request_id()?;
         let (sender, receiver) = oneshot::channel();
         let frame = Frame {

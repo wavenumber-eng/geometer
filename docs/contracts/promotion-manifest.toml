@@ -38,7 +38,7 @@ viz_migration_guide = "docs/design/viz-typescript-migration.md"
 runtime_dependency = false
 
 [rust_projection]
-status = "implemented_model_bounds_ipc_pilot_pending_multiplatform_review"
+status = "implemented_model_bounds_ipc_pilot"
 design = "docs/design/rust-client.md"
 crate = "geometer-client"
 source_root = "src/rust/geometer-client"
@@ -50,7 +50,7 @@ live_operation = "geometry.model_bounds.a0"
 runtime_dependency = false
 
 [python_projection]
-status = "implemented_model_bounds_compatible_boundary_pending_review"
+status = "implemented_model_bounds_compatible_boundary"
 design = "docs/design/python-package.md"
 distribution = "wn-geometer"
 import = "geometer"

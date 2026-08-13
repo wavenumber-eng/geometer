@@ -60,13 +60,13 @@ depends_on = ["cpp-server"]
 [[steps]]
 id = "rust-exe-ipc"
 title = "Generate the Rust contracts and geometer executable pipe client"
-status = "pending"
+status = "done"
 depends_on = ["cpp-server"]
 
 [[steps]]
 id = "python-public-contracts"
 title = "Integrate generated contracts behind the compatible public Python API"
-status = "pending"
+status = "done"
 depends_on = ["cpp-server"]
 
 [[steps]]
@@ -204,12 +204,12 @@ status = "pending"
 [[exit_criteria]]
 id = "rust-exe-ipc"
 title = "A packaged Rust consumer completes supported operations through a persistent geometer executable pipe"
-status = "pending"
+status = "met"
 
 [[exit_criteria]]
 id = "python-generated-contracts"
 title = "The compatible public Python API uses generated contract models and strict codecs at its executable boundary"
-status = "pending"
+status = "met"
 
 [[exit_criteria]]
 id = "compatibility"
@@ -297,7 +297,7 @@ browser example, and the Viz operation-by-operation migration guide are
 implemented. Other browser demos migrate only when their owning operations are
 promoted.
 
-The Rust/executable IPC implementation is review-ready. The generated
+The Rust/executable IPC implementation is complete. The generated
 `geometer-client` operation contracts replay all governed vectors, and its
 Tokio client negotiates A0, sends raw attachments, correlates concurrent calls,
 supports queue cancellation/local timeout/graceful or forced shutdown, captures
@@ -308,11 +308,11 @@ queue-only cancellation, and ordered shutdown. TypeSpec now owns the strict IPC
 control, request, welcome, and operation-catalog DTOs used by the generated C++
 and Rust codecs, including the Rust production request path. Fatal
 negotiation/header, broken-stdout, forced-termination, server-deadline,
-unexpected-child-exit, and pending-call resolution regressions pass on Windows.
-The `rust-exe-ipc`
-step remains pending until independent review accepts this slice and the hosted
-Windows, Linux x64, Linux ARM64, and macOS ARM64 matrix supplies current-commit
-evidence.
+unexpected-child-exit, and pending-call resolution regressions pass. Independent
+review accepted the remediated implementation, and hosted run `31737746936`
+passed its Windows x64, Linux x64, Linux ARM64, and macOS ARM64 native/Rust
+matrix jobs at exact implementation commit
+`ccc4bd95bb8fd45b2456b0844836b1baedfd4175`.
 
 Generated Python is intentional mandatory scope based on project-owner
 direction that public Python should use generated contract code while
@@ -321,14 +321,15 @@ Every operation promotion therefore requires its Python projection and public
 compatibility evidence. Removing that requirement would be a material plan
 scope change requiring explicit approval.
 
-The generated Python implementation is review-ready. It emits dependency-free
+The generated Python implementation is complete. It emits dependency-free
 internal dataclasses, enums, and strict codecs for the complete normalized
 catalog, replays the governed vectors, and validates the `model_bounds`
 request/result boundary behind the unchanged public convenience wrapper. The
 compatibility adapter retains documented aliases, uppercase format input,
 nested matrices, and ignored legacy mapping members. The
-`python-public-contracts` step remains pending until independent review accepts
-the slice; clean-wheel import and live-operation validation pass on Windows.
+`python-public-contracts` step is complete. Independent review accepted the strict
+generated boundary and its overflow remediation; clean-wheel import and
+live-operation validation pass on Windows.
 
 The plan also accepts analytic planar Boolean batch as the first additive
 capability after the `model_bounds` infrastructure pilot. The MATZ packet is a

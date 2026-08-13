@@ -2,6 +2,7 @@
 #include "geometer/generated/contracts/contracts.h"
 #include "geometer/operation_transport.h"
 
+#include <cctype>
 #include <cstdio>
 #include <cstdlib>
 #include <fstream>
@@ -28,6 +29,113 @@ std::vector<unsigned char> read_bytes(const std::string& path)
     std::ifstream input(path, std::ios::binary);
     require(static_cast<bool>(input), "failed opening fixture: " + path);
     return {std::istreambuf_iterator<char>(input), std::istreambuf_iterator<char>()};
+}
+
+unsigned char hex_value(char value)
+{
+    if (value >= '0' && value <= '9')
+    {
+        return static_cast<unsigned char>(value - '0');
+    }
+    if (value >= 'a' && value <= 'f')
+    {
+        return static_cast<unsigned char>(value - 'a' + 10);
+    }
+    if (value >= 'A' && value <= 'F')
+    {
+        return static_cast<unsigned char>(value - 'A' + 10);
+    }
+    throw std::runtime_error("invalid hexadecimal contract vector");
+}
+
+std::vector<unsigned char> decode_hex(const std::vector<unsigned char>& text)
+{
+    std::string compact;
+    for (const unsigned char value : text)
+    {
+        if (!std::isspace(value))
+        {
+            compact.push_back(static_cast<char>(value));
+        }
+    }
+    require(compact.size() % 2U == 0U, "hexadecimal contract vector has odd length");
+    std::vector<unsigned char> decoded;
+    decoded.reserve(compact.size() / 2U);
+    for (std::size_t index = 0; index < compact.size(); index += 2U)
+    {
+        decoded.push_back(static_cast<unsigned char>((hex_value(compact[index]) << 4U) |
+                                                     hex_value(compact[index + 1U])));
+    }
+    return decoded;
+}
+
+bool decode_contract_vector(const std::string& identity, const std::vector<unsigned char>& data,
+                            geometer::contracts::ModelBoundsOptionsA0* options)
+{
+    geometer::contracts::ContractError error;
+    if (identity == "geometry.common.diagnostic.a0")
+    {
+        geometer::contracts::DiagnosticA0 value;
+        return geometer::contracts::decode_json(data.data(), data.size(), &value, &error);
+    }
+    if (identity == "geometry.model_bounds.options.a0")
+    {
+        return geometer::contracts::decode_json(data.data(), data.size(), options, &error);
+    }
+    if (identity == "geometry.model_bounds.a0")
+    {
+        geometer::contracts::ModelBoundsResultA0 value;
+        return geometer::contracts::decode_json(data.data(), data.size(), &value, &error);
+    }
+    if (identity == "geometer.operation.outcome.a0")
+    {
+        geometer::contracts::OperationOutcomeA0 value;
+        return geometer::contracts::decode_json(data.data(), data.size(), &value, &error);
+    }
+    throw std::runtime_error("unhandled contract vector identity: " + identity);
+}
+
+void generated_cpp_replays_all_governed_contract_vectors()
+{
+    const std::string root = std::string(GEOMETER_TEST_SOURCE_DIR) + "/tests/contracts/vectors/";
+    const std::vector<unsigned char> manifest_bytes = read_bytes(root + "manifest.json");
+    rapidjson::Document manifest;
+    manifest.Parse(reinterpret_cast<const char*>(manifest_bytes.data()), manifest_bytes.size());
+    require(!manifest.HasParseError() && manifest.IsObject(),
+            "contract vector manifest should be valid JSON");
+    require(manifest.HasMember("vectors") && manifest["vectors"].IsArray(),
+            "contract vector manifest should contain an array");
+    require(manifest["vectors"].Size() == 20U, "C++ must replay every governed contract vector");
+
+    for (const auto& vector : manifest["vectors"].GetArray())
+    {
+        const std::string id = vector["id"].GetString();
+        const std::string identity = vector["contract_identity"].GetString();
+        const std::string relative_path = vector["file"].GetString();
+        std::vector<unsigned char> data = read_bytes(root + relative_path);
+        if (relative_path.size() >= 4U &&
+            relative_path.compare(relative_path.size() - 4U, 4U, ".hex") == 0)
+        {
+            data = decode_hex(data);
+        }
+
+        geometer::contracts::ModelBoundsOptionsA0 options;
+        const bool accepted = decode_contract_vector(identity, data, &options);
+        require(accepted == (std::string(vector["expected"].GetString()) == "accept"),
+                "unexpected C++ contract vector result: " + id);
+
+        if (accepted && vector.HasMember("expected_value"))
+        {
+            const auto& expected = vector["expected_value"];
+            const bool format_present = std::string(expected["format"].GetString()) == "present";
+            const bool transform_present =
+                std::string(expected["model_transform"].GetString()) == "present";
+            require(options.format.has_value() == format_present,
+                    "unexpected C++ format presence: " + id);
+            require(options.model_transform.has_value() == transform_present,
+                    "unexpected C++ model_transform presence: " + id);
+        }
+    }
 }
 
 void generated_options_codec_preserves_presence_and_is_strict()
@@ -295,6 +403,7 @@ int main()
     try
     {
         generated_options_codec_preserves_presence_and_is_strict();
+        generated_cpp_replays_all_governed_contract_vectors();
         generated_encoder_rejects_invalid_utf8();
         generated_ipc_control_codecs_are_strict();
         response_limits_fail_closed_before_accessor_narrowing();

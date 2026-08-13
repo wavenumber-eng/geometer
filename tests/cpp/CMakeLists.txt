@@ -40,9 +40,38 @@ add_executable(geometer_exact_rational_test
     exact_rational_test.cpp
 )
 
-target_link_libraries(geometer_exact_rational_test PRIVATE geometer_lib)
+if(EMSCRIPTEN)
+    target_link_libraries(geometer_exact_rational_test PRIVATE geometer_exact_feasibility)
+else()
+    target_link_libraries(geometer_exact_rational_test PRIVATE geometer_lib)
+endif()
 
 add_test(NAME geometer_exact_rational_test COMMAND geometer_exact_rational_test)
+
+add_executable(geometer_exact_polynomial_test
+    exact_polynomial_test.cpp
+)
+
+if(EMSCRIPTEN)
+    target_link_libraries(geometer_exact_polynomial_test PRIVATE geometer_exact_feasibility)
+else()
+    target_link_libraries(geometer_exact_polynomial_test PRIVATE geometer_lib)
+endif()
+
+add_test(NAME geometer_exact_polynomial_test COMMAND geometer_exact_polynomial_test)
+
+if(EMSCRIPTEN)
+    set_target_properties(
+        geometer_analytic_planar_boolean_feasibility_test
+        geometer_exact_rational_test
+        geometer_exact_polynomial_test
+        PROPERTIES SUFFIX ".cjs"
+    )
+    target_compile_options(geometer_exact_rational_test PRIVATE -fexceptions)
+    target_link_options(geometer_exact_rational_test PRIVATE -fexceptions)
+    target_compile_options(geometer_exact_polynomial_test PRIVATE -fexceptions)
+    target_link_options(geometer_exact_polynomial_test PRIVATE -fexceptions)
+endif()
 
 add_executable(geometer_model_bounds_test
     model_bounds_test.cpp
@@ -68,25 +97,27 @@ target_compile_definitions(geometer_operation_contract_test PRIVATE
 
 add_test(NAME geometer_operation_contract_test COMMAND geometer_operation_contract_test)
 
-add_executable(geometer_ipc_a0_frame_test
-    ipc_a0_frame_test.cpp
-)
+if(NOT EMSCRIPTEN)
+    add_executable(geometer_ipc_a0_frame_test
+        ipc_a0_frame_test.cpp
+    )
 
-target_link_libraries(geometer_ipc_a0_frame_test PRIVATE geometer_lib)
+    target_link_libraries(geometer_ipc_a0_frame_test PRIVATE geometer_lib)
 
-add_test(NAME geometer_ipc_a0_frame_test COMMAND geometer_ipc_a0_frame_test)
+    add_test(NAME geometer_ipc_a0_frame_test COMMAND geometer_ipc_a0_frame_test)
 
-add_executable(geometer_ipc_a0_deadline_test_server
-    ipc_a0_deadline_test_server.cpp
-)
+    add_executable(geometer_ipc_a0_deadline_test_server
+        ipc_a0_deadline_test_server.cpp
+    )
 
-target_link_libraries(geometer_ipc_a0_deadline_test_server PRIVATE geometer_lib)
+    target_link_libraries(geometer_ipc_a0_deadline_test_server PRIVATE geometer_lib)
 
-add_executable(geometer_ipc_a0_unexpected_exit_test_server
-    ipc_a0_unexpected_exit_test_server.cpp
-)
+    add_executable(geometer_ipc_a0_unexpected_exit_test_server
+        ipc_a0_unexpected_exit_test_server.cpp
+    )
 
-target_link_libraries(geometer_ipc_a0_unexpected_exit_test_server PRIVATE geometer_lib)
+    target_link_libraries(geometer_ipc_a0_unexpected_exit_test_server PRIVATE geometer_lib)
+endif()
 
 add_executable(geometer_projection_options_json_test
     projection_options_json_test.cpp
@@ -126,6 +157,7 @@ if(WIN32 AND OpenCASCADE_BINARY_DIR)
         geometer_planar_step_test
         geometer_analytic_planar_boolean_feasibility_test
         geometer_exact_rational_test
+        geometer_exact_polynomial_test
         geometer_model_bounds_test
         geometer_operation_contract_test
         geometer_ipc_a0_frame_test

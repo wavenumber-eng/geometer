@@ -26,6 +26,15 @@ set(GEOMETER_LIB_SOURCES
     ${CMAKE_SOURCE_DIR}/third_party/clipper2/src/clipper.triangulation.cpp
 )
 
+set(GEOMETER_EXACT_SOURCES
+    exact_polynomial.cpp
+    exact_rational.cpp
+)
+
+if(NOT EMSCRIPTEN)
+    list(APPEND GEOMETER_LIB_SOURCES exact_polynomial.cpp)
+endif()
+
 if(NOT EMSCRIPTEN)
     list(APPEND GEOMETER_LIB_SOURCES
         ipc_a0_frame.cpp
@@ -116,6 +125,15 @@ function(configure_geometer_native_target target_name)
 endfunction()
 
 configure_geometer_native_target(geometer_lib)
+
+if(EMSCRIPTEN)
+    add_library(geometer_exact_feasibility STATIC ${GEOMETER_EXACT_SOURCES})
+    target_include_directories(geometer_exact_feasibility PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        ${GEOMETER_BOOST_ROOT}
+    )
+    target_compile_options(geometer_exact_feasibility PUBLIC -fexceptions)
+endif()
 
 if(NOT EMSCRIPTEN)
     add_library(geometer_shared SHARED ${GEOMETER_LIB_SOURCES})

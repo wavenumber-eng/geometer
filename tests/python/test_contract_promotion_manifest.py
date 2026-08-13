@@ -244,6 +244,12 @@ def test_manifest_promoted_and_candidate_surfaces_are_complete() -> None:
     assert evidence["operation_vector_count"] == 2
     assert evidence["local_ctest_count"] == 10
     assert evidence["local_rack_passed"] == 66
+    assert evidence["historical_reviewed_browser_js_sha256"] == (
+        "5c9f0594465cdb5732911777e2ca38cc2814c1ef9cb52b7672022df6a50bf937"
+    )
+    assert evidence["browser_js_lock_remediation"] == (
+        "historical_worktree_bytes_unretained_relocked_to_committed_distributable"
+    )
     for key, path in (
         ("catalog_sha256", toolchain["catalog"]),
         ("vector_manifest_sha256", "tests/contracts/vectors/manifest.json"),
@@ -366,10 +372,16 @@ def test_exact_algebraic_backend_design_gate_is_closed() -> None:
         "production_solver_allowed": False,
         "design_review_revision": "a8c9604de280e2a67018e1106fd1b430b34fcf50",
         "design_review_packet": "reviewer-019ffd1f-3c67-7001-87a5-200b6cda10d8",
-        "implemented_surface": "budgeted_canonical_integer_and_rational_value_foundation",
+        "implemented_surface": "budgeted_rational_primitive_polynomial_and_sturm_root_feasibility",
+        "rational_source": "src/cpp/lib/exact_rational.cpp",
+        "polynomial_source": "src/cpp/lib/exact_polynomial.cpp",
+        "rational_test": "tests/cpp/exact_rational_test.cpp",
+        "polynomial_test": "tests/cpp/exact_polynomial_test.cpp",
     }
     assert (ROOT / backend["design"]).is_file()
     assert _sha256(ROOT / backend["design"]) == backend["design_sha256"]
+    for key in ("rational_source", "polynomial_source", "rational_test", "polynomial_test"):
+        assert (ROOT / backend[key]).is_file()
 
 
 def test_wasm_export_inventory_matches_cmake_exactly() -> None:

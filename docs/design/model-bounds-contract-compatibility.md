@@ -85,19 +85,19 @@ separate correlation/lifecycle proof. Rust tests execute repeated and
 concurrent correlated calls over one persistent native child, while Python
 clean-wheel tests execute the compatible public boundary.
 
-Exact candidate revision
-`03cefcfefbd6cd848eebac4f94d02929d8176d3c` passed the Windows x64, Linux x64,
+Exact remediated candidate revision
+`e035bcd348cf0d8aa3db1812d907c19a36690ea0` passed the Windows x64, Linux x64,
 Linux ARM64, and macOS ARM64 native/Rust/Python/wheel jobs in hosted workflow
-run `31738634104`. Its standards job passed every check except the intentional
+run `31741067434`. Its standards job passed every check except the intentional
 active-plan hygiene sentinel. The promotion manifest digest-locks the catalog,
 vector manifest, and full-browser JavaScript/WASM artifacts used by this
 evidence.
 
 Independent review rejected the first promotion packet because it lacked these
-operation-level vectors. The remediated corpus must pass local and exact-commit
-hosted evidence before returning to review. Until that acceptance is recorded,
-the manifest continues to label the contracts and operation as pilot
-candidates and no authority cutover is claimed.
+operation-level vectors. The remediated corpus now has local and exact-commit
+hosted evidence and is ready for re-review. Until acceptance is recorded, the
+manifest continues to label the contracts and operation as pilot candidates
+and no authority cutover is claimed.
 
 The generic result boundary also validates response-side JSON and attachment
 limits even though `model_bounds` currently emits no output attachment. This is

@@ -194,9 +194,9 @@ def test_manifest_sources_and_identities_are_complete() -> None:
     assert package_json["type"] == "module"
 
     evidence = manifest["promotion_evidence"]["model_bounds"]
-    assert evidence["status"] == "review_changes_requested_remediation_in_progress"
+    assert evidence["status"] == "remediated_ready_for_independent_review"
     assert re.fullmatch(r"[0-9a-f]{40}", evidence["candidate_revision"])
-    assert evidence["hosted_workflow_run"] == 31738634104
+    assert evidence["hosted_workflow_run"] == 31741067434
     assert evidence["hosted_native_conclusion"] == "success"
     assert evidence["hosted_platforms"] == [
         "windows-x64",

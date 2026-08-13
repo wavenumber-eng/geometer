@@ -2,10 +2,13 @@
 
 ## Status
 
-Proposed for joint review. This separately governed binary projection carries
-the logical models in [Analytic Planar Boolean A0 Design](analytic-planar-boolean-a0.md).
-It is not generated merely by choosing a TypeSpec emitter. Once accepted, any
-incompatible change requires a new packet generation and magic.
+Accepted and frozen as packet generation A0 for implementation. This
+separately governed binary projection carries the logical models in
+[Analytic Planar Boolean A0 Design](analytic-planar-boolean-a0.md). It is not
+generated merely by choosing a TypeSpec emitter. Any incompatible change now
+requires a new packet generation and magic. Raw-byte goldens and production
+codecs remain post-freeze implementation work rather than evidence already
+claimed by this status.
 
 Every numeric enum, flag, role, status, event, diagnostic, and path token is
 assigned in the machine-readable governed catalog

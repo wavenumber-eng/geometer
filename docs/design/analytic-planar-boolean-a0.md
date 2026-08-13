@@ -2,14 +2,18 @@
 
 ## Status
 
-MATZ has accepted the consumer/provider design input. A separately compiled
-TypeSpec candidate now covers the logical request/result and explicit packed
-request/result projections; it is not imported by the promoted-contract
-entrypoint. Independent review of that candidate remains open. This document
-does not authorize production solver implementation, packet goldens, generated
-production projections, or release.
+Accepted and frozen for A0 implementation planning. MATZ accepted the
+consumer/provider design input, and independent review approved the analytic
+architecture at normative revision
+`529c768e559b4c88874264748d4186e775c8a4dd`. The separately compiled TypeSpec
+candidate and its logical/packed reconciliation were accepted at
+`f4b6a9b87bf16f57ef29dae22150b16f2a742b64`; it remains isolated from the
+promoted-contract entrypoint until production promotion.
 
-The proposed solver decision is recorded in
+This freeze authorizes raw packet goldens, exact-backend feasibility, synthetic
+correctness, and OCCT qualification. It does not authorize production solver
+promotion, generated production projections, or release before those later
+gates pass. The accepted solver decision is recorded in
 [ADR-012](../adr/012_exact_analytic_planar_boolean_arrangement.md).
 
 The stable operation identity is
@@ -749,6 +753,14 @@ Before design freeze:
 - portable logical fixtures must be imported into Geometer with digests and
   structural expectations; and
 - raw-byte goldens must be generated only after the packet layout freezes.
+
+These conditions are met. The vendored MATZ manifest records the
+arbitrary-angle case as successful with the reviewed twelve-fragment native/
+WASM feasibility signature; the consumer/provider and independent architecture
+reviews are recorded in the compatibility snapshot and plan log; the isolated
+TypeSpec API shapes received focused independent review; and the ten portable
+plus two real-board observation cases are digest-locked in this repository.
+Raw-byte goldens deliberately remain the first post-freeze codec artifact.
 
 ### OCCT 8.0.1 Qualification
 

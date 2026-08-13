@@ -281,9 +281,11 @@ def test_manifest_sources_and_identities_are_complete() -> None:
     assert not set(candidate_ids) & set(operation_ids)
     assert candidate_ids == ["geometry.analytic_planar_boolean_batch.a0"]
     candidate = candidates[0]
-    assert candidate["status"] == "typespec_candidate"
-    assert candidate["request_contract"] == "unfrozen"
-    assert candidate["result_contract"] == "unfrozen"
+    assert candidate["status"] == "design_frozen"
+    assert candidate["request_contract"] == "typespec_candidate_frozen_a0"
+    assert candidate["result_contract"] == "typespec_candidate_frozen_a0"
+    assert candidate["packed_format"] == "separately_governed_frozen_a0"
+    assert candidate["implementation_gate"] == "exact_backend_feasibility_and_occt_qualification_pending"
     assert candidate["transport"] == "generic_named_attachments"
     assert candidate["operation_specific_c_abi_symbol"] is False
     assert candidate["replaces_existing_operation"] is False
@@ -294,6 +296,22 @@ def test_manifest_sources_and_identities_are_complete() -> None:
     assert (ROOT / candidate["numeric_catalog"]).is_file()
     assert (ROOT / candidate["feasibility_test"]).is_file()
     assert (ROOT / candidate["portable_fixture"]).is_file()
+    assert (ROOT / candidate["independent_design_review_log"]).is_file()
+    assert candidate["independent_design_review_revision"] == "529c768e559b4c88874264748d4186e775c8a4dd"
+    assert candidate["independent_design_review_head"] == "b86a065c5926c35f1eee23a9ba1cef890689c7d7"
+    assert candidate["typespec_projection_review_revision"] == "f4b6a9b87bf16f57ef29dae22150b16f2a742b64"
+    assert candidate["typespec_projection_review_packet"] == "reviewer-019ffd0d-fa76-74b6-ac3e-c1c2642ba0de"
+    for path_key in (
+        "design",
+        "packet_spec",
+        "numeric_catalog",
+        "solver_adr",
+        "candidate_typespec_entrypoint",
+        "candidate_typespec_source",
+        "candidate_operation_source",
+        "candidate_check",
+    ):
+        assert _sha256(ROOT / candidate[path_key]) == candidate[f"{path_key}_sha256"]
     for key in (
         "candidate_typespec_entrypoint",
         "candidate_typespec_source",
@@ -716,6 +734,7 @@ def test_analytic_planar_boolean_numeric_catalog_is_closed() -> None:
         catalog = tomllib.load(stream)
 
     assert catalog["catalog_version"] == 1
+    assert catalog["status"] == "frozen_a0"
     assert catalog["operation_identity"] == candidate["id"]
     assert catalog["request_magic"] == "GMABRQ01"
     assert catalog["result_magic"] == "GMABRS01"

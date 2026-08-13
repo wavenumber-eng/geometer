@@ -2,8 +2,12 @@
 
 ## Status
 
-Proposed. Independent technical review must approve the decision before the
-production solver or packet goldens freeze.
+Accepted. Independent technical review approved the analytic design at head
+`b86a065c5926c35f1eee23a9ba1cef890689c7d7`, covering normative remediation
+revision `529c768e559b4c88874264748d4186e775c8a4dd`. Focused review later accepted
+the isolated TypeSpec and packed-projection reconciliation at
+`f4b6a9b87bf16f57ef29dae22150b16f2a742b64`. Exact-backend feasibility and
+OCCT qualification remain mandatory before production solver promotion.
 
 ## Context
 

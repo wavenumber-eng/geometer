@@ -1,5 +1,6 @@
 catalog_version = 1
 catalog_identity = "geometry.analytic_planar_boolean.catalog.a0"
+status = "frozen_a0"
 operation_identity = "geometry.analytic_planar_boolean_batch.a0"
 packet_generation = 1
 request_magic = "GMABRQ01"

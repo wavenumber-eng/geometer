@@ -25,8 +25,21 @@ if(GEOMETER_BOOST_ROOT STREQUAL "${CMAKE_SOURCE_DIR}/.deps/boost_1_92_0")
     if(NOT _boost_restore_result EQUAL 0)
         message(FATAL_ERROR "Failed to restore pinned Boost headers with scripts/build_boost.py")
     endif()
+    execute_process(
+        COMMAND ${Python3_EXECUTABLE} "${CMAKE_SOURCE_DIR}/scripts/build_boost.py" --verify
+        RESULT_VARIABLE _boost_verify_result
+        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    )
+    if(NOT _boost_verify_result EQUAL 0)
+        message(FATAL_ERROR "Pinned Boost source/archive verification failed")
+    endif()
 elseif(NOT EXISTS "${GEOMETER_BOOST_ROOT}/boost/multiprecision/cpp_int.hpp")
     message(FATAL_ERROR "GEOMETER_BOOST_ROOT does not contain boost/multiprecision/cpp_int.hpp")
+endif()
+file(STRINGS "${GEOMETER_BOOST_ROOT}/boost/version.hpp" _geometer_boost_version
+    REGEX "^#define BOOST_VERSION [0-9]+$" LIMIT_COUNT 1)
+if(NOT _geometer_boost_version STREQUAL "#define BOOST_VERSION 109200")
+    message(FATAL_ERROR "GEOMETER_BOOST_ROOT must contain pinned Boost 1.92.0 headers")
 endif()
 
 if(WIN32)

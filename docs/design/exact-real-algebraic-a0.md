@@ -257,6 +257,14 @@ construction and encoding APIs catch allocation and checked-estimate failures
 and return the same typed `resource_limit_exceeded` result; exceptions do not
 cross that boundary.
 
+Canonical arena insertion is its own charged phase. Before lookup or container
+growth begins, a linear implementation reserves a deterministic upper bound for
+reading every retained bigint limb, comparing the candidate against every
+retained value, visiting every arena slot, and relocating every slot that may be
+moved by growth. A canonical indexed implementation must instead charge key
+construction plus every lookup, collision, and equality step. This work remains
+consumed if lookup, growth, or a later phase fails.
+
 Every public operation runs in a transaction-local arena. Before each bigint,
 rational, polynomial, resultant, GCD, square-free, factorization, root-count,
 isolation, or sign phase, it computes a checked conservative upper bound from

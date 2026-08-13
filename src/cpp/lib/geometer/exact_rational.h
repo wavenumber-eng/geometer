@@ -109,6 +109,7 @@ class RationalArena
     Budget& budget_;
     std::vector<Rational> values_;
     std::uint64_t owned_bytes_ = 0;
+    std::uint64_t retained_limb_count_ = 0;
 };
 
 [[nodiscard]] EncodeResult encode_canonical_integer(Budget& budget, const BigInt& value);

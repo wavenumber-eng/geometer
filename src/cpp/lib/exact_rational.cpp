@@ -118,6 +118,17 @@ std::uint64_t gcd_work(const BigInt& numerator, const BigInt& denominator)
     return checked_multiply(checked_multiply(width, width), width);
 }
 
+std::uint64_t interning_work(std::uint64_t value_count, std::uint64_t retained_limb_count,
+                             const BigInt& numerator, const BigInt& denominator)
+{
+    const std::uint64_t candidate_limbs =
+        checked_add(limb_count(numerator), limb_count(denominator));
+    const std::uint64_t equality_work =
+        checked_multiply(value_count, checked_add(candidate_limbs, 2));
+    const std::uint64_t container_work = checked_add(value_count, 1);
+    return checked_add(checked_add(retained_limb_count, equality_work), container_work);
+}
+
 std::uint64_t storage_bound(const BigInt& numerator, const BigInt& denominator)
 {
     const std::uint64_t limbs =
@@ -298,11 +309,14 @@ InternResult RationalArena::intern(const BigInt& numerator, const BigInt& denomi
     std::uint64_t storage = 0;
     std::uint64_t first_phase_work = 0;
     std::uint64_t second_phase_work = 0;
+    std::uint64_t third_phase_work = 0;
     try
     {
         storage = storage_bound(numerator, denominator);
         first_phase_work = copy_work(numerator, denominator);
         second_phase_work = gcd_work(numerator, denominator);
+        third_phase_work = interning_work(static_cast<std::uint64_t>(values_.size()),
+                                          retained_limb_count_, numerator, denominator);
     }
     catch (const std::overflow_error&)
     {
@@ -341,6 +355,16 @@ InternResult RationalArena::intern(const BigInt& numerator, const BigInt& denomi
             normalized_denominator = 1;
         }
 
+        const std::uint64_t normalized_limbs =
+            checked_add(limb_count(normalized_numerator), limb_count(normalized_denominator));
+        const std::uint64_t new_retained_limb_count =
+            checked_add(retained_limb_count_, normalized_limbs);
+        const std::uint64_t new_owned_bytes = checked_add(owned_bytes_, storage);
+        if (!budget_.consume_work(third_phase_work))
+        {
+            return {Error::resource_limit_exceeded, std::nullopt};
+        }
+
         const auto existing = std::find_if(
             values_.begin(), values_.end(), [&](const Rational& value)
             { return same_value(value, normalized_numerator, normalized_denominator); });
@@ -349,10 +373,10 @@ InternResult RationalArena::intern(const BigInt& numerator, const BigInt& denomi
             return {Error::none, static_cast<std::size_t>(existing - values_.begin())};
         }
 
-        const std::uint64_t new_owned_bytes = checked_add(owned_bytes_, storage);
         values_.push_back(
             Rational(std::move(normalized_numerator), std::move(normalized_denominator)));
         owned_bytes_ = new_owned_bytes;
+        retained_limb_count_ = new_retained_limb_count;
         storage_reservation.commit();
         return {Error::none, values_.size() - 1};
     }

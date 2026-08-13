@@ -146,6 +146,42 @@ void test_encoding_budget_failures_are_typed_and_rollback_storage()
             "unstarted encoding work must release its storage reservation");
 }
 
+void test_interning_work_is_charged_and_late_failure_is_repeatable()
+{
+    geometer::exact::Budget multi_budget({10'000, 10'000});
+    geometer::exact::RationalArena multi_arena(multi_budget);
+    const auto first = multi_arena.intern(1, 2);
+    const std::uint64_t first_work = multi_budget.usage().work_units;
+    const auto second = multi_arena.intern(1, 3);
+    const std::uint64_t second_delta = multi_budget.usage().work_units - first_work;
+    const auto third = multi_arena.intern(1, 4);
+    const std::uint64_t third_delta = multi_budget.usage().work_units - first_work - second_delta;
+    require(first.error == geometer::exact::Error::none &&
+                second.error == geometer::exact::Error::none &&
+                third.error == geometer::exact::Error::none,
+            "multi-entry arena setup failed");
+    require(second_delta > first_work && third_delta > second_delta,
+            "interning work must grow with retained arena values");
+    const auto duplicate = multi_arena.intern(2, 4);
+    require(duplicate.error == geometer::exact::Error::none && duplicate.id == first.id &&
+                multi_arena.size() == 3,
+            "charged multi-entry lookup must preserve canonical interning");
+
+    geometer::exact::Budget late_budget({74, 10'000});
+    geometer::exact::RationalArena late_arena(late_budget);
+    require(late_arena.intern(1, 2).error == geometer::exact::Error::none,
+            "late-phase budget setup failed");
+    require(late_budget.usage().work_units == 34, "first arena insertion charge changed");
+    const auto late_failure = late_arena.intern(1, 3);
+    require(late_failure.error == geometer::exact::Error::resource_limit_exceeded &&
+                late_arena.size() == 1 && late_budget.usage().work_units == 67,
+            "interning-phase failure must preserve arena state and completed work");
+    const auto retry = late_arena.intern(1, 3);
+    require(retry.error == geometer::exact::Error::resource_limit_exceeded &&
+                late_arena.size() == 1 && late_budget.usage().work_units == 73,
+            "retry must observe work consumed before the prior interning-phase failure");
+}
+
 } // namespace
 
 int main()
@@ -155,5 +191,6 @@ int main()
     test_invalid_and_late_budget_failure();
     test_rational_encoding();
     test_encoding_budget_failures_are_typed_and_rollback_storage();
+    test_interning_work_is_charged_and_late_failure_is_repeatable();
     return 0;
 }

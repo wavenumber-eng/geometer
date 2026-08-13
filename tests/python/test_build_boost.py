@@ -60,8 +60,12 @@ def test_ready_tree_requires_exact_sentinel_and_version(
 
 
 def test_verify_rejects_missing_archive(monkeypatch: MonkeyPatch, tmp_path: Path) -> None:
-    sentinel, _ = configure_paths(monkeypatch, tmp_path)
+    sentinel, archive = configure_paths(monkeypatch, tmp_path)
     write_ready_tree(sentinel)
 
+    with pytest.raises(RuntimeError, match="archive cache is missing or invalid"):
+        build_boost.verify()
+
+    archive.write_bytes(b"tampered archive")
     with pytest.raises(RuntimeError, match="archive cache is missing or invalid"):
         build_boost.verify()

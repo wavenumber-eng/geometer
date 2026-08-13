@@ -111,7 +111,7 @@ catalog_generation = "a0"
 [analytic_exact_backend]
 status = "design_accepted_implementation_in_progress"
 design = "docs/design/exact-real-algebraic-a0.md"
-design_sha256 = "62772ca4a870ce22d5614a9588ea3eb14ac27949fbe6cc3830078e40bf1a1d47"
+design_sha256 = "39576b283f162c87503f18f2c2bec23a83e394ec9b042449550e8b8ab59823bb"
 conformance_identity = "geometry.exact_real_algebraic.feasibility.a0"
 magic = "GEXPA001"
 generation = 1

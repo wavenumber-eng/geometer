@@ -103,8 +103,9 @@ npm run check:contracts
 ```
 
 The check compiles with warnings as errors, validates the normalized catalog,
-cross-checks pilot roots and operations against the promotion manifest, and
-rejects stale, missing, or unexpected generated files. See
+cross-checks pilot roots and operations against the promotion manifest,
+rejects stale, missing, or unexpected generated files, and replays the governed
+raw contract vectors under `tests/contracts/vectors/`. See
 [../design/typespec-toolchain.md](../design/typespec-toolchain.md) for authority,
 supported constructs, identities, and output paths.
 

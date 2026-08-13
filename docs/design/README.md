@@ -12,6 +12,7 @@ durable record belongs here, in ADRs, and in requirements.
 - [C ABI](c-abi.md)
 - [Contract semantics](contract-semantics.md)
 - [TypeSpec toolchain and normalized catalog](typespec-toolchain.md)
+- [Model-bounds contract compatibility](model-bounds-contract-compatibility.md)
 - [Generic operation C ABI](generic-operation-c-abi.md)
 - [Executable IPC A0](executable-ipc-a0.md)
 - [Transport design review packet](transport-design-review.md)

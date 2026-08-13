@@ -7,7 +7,8 @@
   "scripts": {
     "check:node-toolchain": "node scripts/check-node-toolchain.mjs",
     "generate:contracts": "npm run check:node-toolchain && node scripts/generate-contracts.mjs",
-    "check:contracts": "npm run check:node-toolchain && biome check src/ts/wn-geometer-contract-emitter scripts/check-node-toolchain.mjs scripts/generate-contracts.mjs && node scripts/generate-contracts.mjs --check"
+    "check:contract-vectors": "node scripts/check-contract-vectors.mjs",
+    "check:contracts": "npm run check:node-toolchain && biome check src/ts/wn-geometer-contract-emitter scripts && node scripts/generate-contracts.mjs --check && npm run check:contract-vectors"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.7",

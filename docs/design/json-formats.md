@@ -23,7 +23,9 @@ Required top-level fields:
 - `source`: object containing `format` and `hash`.
 - `bounds`: object containing `min`, `max`, `size`, and `center` XYZ arrays.
 
-Optional timing fields are emitted when available:
+The current model-bounds writer always emits these nondeterministic timing
+fields; semantic conformance excludes them only through an explicit vector
+projection:
 
 - `model_read_ms`
 - `bounds_ms`

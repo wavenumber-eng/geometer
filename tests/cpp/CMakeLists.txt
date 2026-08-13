@@ -36,6 +36,14 @@ add_test(
     COMMAND geometer_analytic_planar_boolean_feasibility_test
 )
 
+add_executable(geometer_exact_rational_test
+    exact_rational_test.cpp
+)
+
+target_link_libraries(geometer_exact_rational_test PRIVATE geometer_lib)
+
+add_test(NAME geometer_exact_rational_test COMMAND geometer_exact_rational_test)
+
 add_executable(geometer_model_bounds_test
     model_bounds_test.cpp
 )
@@ -117,6 +125,7 @@ if(WIN32 AND OpenCASCADE_BINARY_DIR)
         geometer_planar_solve_test
         geometer_planar_step_test
         geometer_analytic_planar_boolean_feasibility_test
+        geometer_exact_rational_test
         geometer_model_bounds_test
         geometer_operation_contract_test
         geometer_ipc_a0_frame_test

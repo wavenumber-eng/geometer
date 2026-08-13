@@ -80,8 +80,20 @@ For dependency cache setup, see
 Pinned dependency versions live in scripts:
 
 - OCCT and emsdk: `scripts/dependency_versions.py`
+- Boost.Multiprecision: `scripts/dependency_versions.py` and `scripts/build_boost.py`
 - RapidJSON: `third_party/rapidjson/`
 - Clipper2: `third_party/clipper2/`
+
+The exact real-algebraic feasibility backend uses the pinned header-only Boost
+source tree under `.deps/boost_1_92_0/`. CMake restores it automatically after
+verifying the official archive SHA-256, or it can be prepared explicitly:
+
+```powershell
+python scripts\build_boost.py
+```
+
+The archive cache and extracted headers are generated `.deps/` state and must
+not be committed.
 
 ## TypeSpec Contract Toolchain
 

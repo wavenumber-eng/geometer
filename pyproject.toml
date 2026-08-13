@@ -58,6 +58,9 @@ languages = ["python", "cpp", "wasm", "typescript", "rust"]
 strict = true
 artifact_policy = "committed-grouped-dist"
 
+[tool.wn_dev_std.documentation.plans]
+ignore = [".deps"]
+
 [tool.uv]
 package = true
 

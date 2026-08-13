@@ -13,6 +13,20 @@ project(geometer VERSION ${GEOMETER_RELEASE_VERSION} LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+set(GEOMETER_BOOST_ROOT "${CMAKE_SOURCE_DIR}/.deps/boost_1_92_0"
+    CACHE PATH "Pinned header-only Boost source root")
+if(NOT EXISTS "${GEOMETER_BOOST_ROOT}/boost/multiprecision/cpp_int.hpp")
+    find_package(Python3 REQUIRED COMPONENTS Interpreter)
+    execute_process(
+        COMMAND ${Python3_EXECUTABLE} "${CMAKE_SOURCE_DIR}/scripts/build_boost.py"
+        RESULT_VARIABLE _boost_restore_result
+        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    )
+    if(NOT _boost_restore_result EQUAL 0)
+        message(FATAL_ERROR "Failed to restore pinned Boost headers with scripts/build_boost.py")
+    endif()
+endif()
+
 if(WIN32)
     set(_geometer_dist_os "windows")
 elseif(APPLE)

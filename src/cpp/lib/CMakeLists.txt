@@ -1,6 +1,7 @@
 set(GEOMETER_LIB_SOURCES
     c_api.cpp
     clipper2_bytes.cpp
+    exact_rational.cpp
     hlr_projection.cpp
     mesh_shadow_outline.cpp
     model_bounds.cpp
@@ -91,6 +92,7 @@ function(configure_geometer_native_target target_name)
         ${OpenCASCADE_INCLUDE_DIR}
         ${CMAKE_SOURCE_DIR}/third_party/rapidjson/include
         ${CMAKE_SOURCE_DIR}/third_party/clipper2/include
+        ${GEOMETER_BOOST_ROOT}
     )
 
     if(UNIX AND NOT APPLE AND NOT EMSCRIPTEN AND GEOMETER_OCCT_LIBRARY_TYPE STREQUAL "Static")

@@ -109,18 +109,22 @@ catalog_identity = "wn.geometer.contract_catalog"
 catalog_generation = "a0"
 
 [analytic_exact_backend]
-status = "design_review_pending"
+status = "design_accepted_implementation_in_progress"
 design = "docs/design/exact-real-algebraic-a0.md"
+design_sha256 = "c42213c7fea9bdd12d8fbd316689ee5b9ff1566f71060414f50d37c427c63330"
 conformance_identity = "geometry.exact_real_algebraic.feasibility.a0"
 magic = "GEXPA001"
 generation = 1
-implementation_allowed = false
+implementation_allowed = true
 boost_version = "1.92.0"
 boost_archive_url = "https://archives.boost.io/release/1.92.0/source/boost_1_92_0.tar.gz"
 boost_archive_sha256 = "c4a3b310ddd2472416e091067166b0713be97c63f38c212c484ada022fd296ce"
 boost_upstream_commit = "afdfa32505af73e3d208144b3f623f0096cb62b6"
 generated_dependency_root = ".deps/boost_1_92_0"
 production_solver_allowed = false
+design_review_revision = "a8c9604de280e2a67018e1106fd1b430b34fcf50"
+design_review_packet = "reviewer-019ffd1f-3c67-7001-87a5-200b6cda10d8"
+implemented_surface = "canonical_integer_and_rational_value_foundation"
 
 [transports]
 generic_c_abi = "implemented_a0"

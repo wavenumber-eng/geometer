@@ -2,7 +2,9 @@
 
 ## Status
 
-Proposed for focused review before implementation. This document freezes the
+Accepted for feasibility implementation at revision
+`a8c9604de280e2a67018e1106fd1b430b34fcf50` in reviewer packet
+`reviewer-019ffd1f-3c67-7001-87a5-200b6cda10d8`. This document freezes the
 portable value identity, construction DAG, conformance encoding, and resource
 boundary required by ADR-012. It does not promote the analytic planar Boolean
 operation or define bytes inside its public request/result packet.

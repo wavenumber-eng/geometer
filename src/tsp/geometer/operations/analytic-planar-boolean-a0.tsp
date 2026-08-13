@@ -72,7 +72,7 @@ enum IntersectionDimension {
 
 enum SourceKind {
   authored_segment_curve: "authored_segment_curve",
-  compact_feature_boundary: "compact_feature_boundary",
+  compact_feature_role: "compact_feature_role",
   subtractive_operand_effect: "subtractive_operand_effect",
 }
 
@@ -322,13 +322,15 @@ model JobDiagnostic {
   operand_id?: OperandId;
   @minValue(1)
   geometry_id?: uint64;
-  @maxValue(26)
-  path_token: uint32;
+  /** RFC 6901 pointer into the logical request when a trusted location exists. */
+  @extension("x-wn-packed-field", "path_token")
+  path?: string;
 }
 
 model SuccessfulJobResult {
   job_id: JobId;
   status: "success";
+  diagnostics: JobDiagnostic[];
   @maxItems(1048576)
   vertices: ResultVertex[];
   @maxItems(2097152)
@@ -339,6 +341,8 @@ model SuccessfulJobResult {
   result_regions: ResultRegion[];
   @maxItems(4194304)
   operand_outcomes: OperandOutcomeEvent[];
+  /** Derived from the canonical standalone job-result packet; not an encoded record field. */
+  @extension("x-wn-derived-field", "standalone_job_result_sha256")
   @pattern("^[0-9a-f]{64}$")
   digest_sha256: string;
 }
@@ -348,6 +352,8 @@ model FailedJobResult {
   status: "failure";
   @minItems(1)
   diagnostics: JobDiagnostic[];
+  /** Derived from the canonical standalone job-result packet; not an encoded record field. */
+  @extension("x-wn-derived-field", "standalone_job_result_sha256")
   @pattern("^[0-9a-f]{64}$")
   digest_sha256: string;
 }

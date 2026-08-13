@@ -333,6 +333,11 @@ zero-length result-region range.
 
 Path tokens are generated catalog integers mapped to documented logical paths;
 A0 carries no arbitrary strings in the hot packet.
+The exhaustive mapping is the numeric catalog's
+`path_token_logical_pattern` table. Packed decoders expand the selected pattern
+with the record's trusted request indexes into the optional RFC 6901 logical
+`path`; packed encoders accept only a unique canonical inverse mapping. Token
+zero maps to an absent path.
 
 ### Result-vertex record, 32 bytes
 
@@ -434,7 +439,7 @@ The mapping is exhaustive:
 | Source kind | Primary id | Secondary id | Role |
 | --- | --- | --- | --- |
 | authored segment/curve | authored segment id | authored curve id | `authored_line` or `authored_circular_arc` |
-| compact feature boundary | compact feature id | boundary-occurrence key below | one compatible compact role |
+| compact feature role | compact feature id | boundary-occurrence key below | one compatible compact role |
 | subtractive operand effect | stage id | zero | `none` |
 
 For disks, annuli, and capsules, the compact role uniquely identifies the
@@ -570,6 +575,11 @@ ordinals. Directory entries and offsets are regenerated with minimum alignment.
 No original batch index, offset, unused record, query, padding choice, or
 telemetry survives. Enclosing batch layout and queries therefore cannot affect
 the digest.
+
+The digest is a deterministic derived field of each logical successful or
+failed job result. It is not present in the 48-byte job-result record or any
+other result table. Decoders compute it from the standalone bytes above;
+encoders verify a supplied lowercase hexadecimal digest against those bytes.
 
 ## Limits
 

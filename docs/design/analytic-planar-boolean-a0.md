@@ -442,12 +442,14 @@ A successful job returns an analytic planar arrangement:
 AnalyticPlanarBooleanJobResult
   jobId
   status: success
+  diagnostics
   vertices
   directedFragments
   rings
   resultRegions
-  sourceSets
+  inline source-set values (interned by the packed projection)
   operandOutcomes
+  digestSha256 (derived from the canonical standalone job-result packet)
 
 DirectedFragment
   start/end vertex references
@@ -498,6 +500,17 @@ Canonical job-result records exclude enclosing batch offsets/indices,
 relationship results, wall time, peak memory, and other telemetry. The same job
 therefore has identical canonical record bytes/digest alone or in a mixed
 batch.
+
+The logical `digestSha256` field is required on successful and failed job
+results, but it is not stored in the 48-byte packed job-result record. A
+decoder constructs the canonical standalone job-result packet using the closure
+and rebasing algorithm in the packet specification, computes SHA-256 over those
+bytes, and exposes the lowercase hexadecimal digest as this deterministic
+derived field. Encoders verify a supplied logical digest against the same bytes
+and never serialize it as an independent value. Logical source-set values are
+inline at their use sites; the packed projector interns their complete content
+into the source-set and source-reference tables without changing their logical
+meaning.
 
 ## Provenance And Outcomes
 
@@ -647,6 +660,16 @@ compact governed integers in a structurally valid result packet:
 Diagnostics carry trustworthy job/stage/operand/geometry ids and a generated
 logical path when available. Unknown or untrusted ids are omitted rather than
 guessed.
+
+The logical `path` is an optional RFC 6901 pointer into the request. The packed
+diagnostic record carries only its governed `path_token`. The numeric catalog's
+`path_token_logical_pattern` table is the exhaustive projection: brace-delimited
+placeholders are replaced with decimal array indexes (and `ring_field` or
+`path_or_ring_field` with the actual escaped property path). Token zero maps to
+an absent logical path; a nonzero token is valid only when the decoded pointer
+matches its catalog pattern. Logical encoders perform the inverse match and
+reject absent, ambiguous, or noncanonical mappings rather than inventing a
+token. JSON Pointer escaping follows RFC 6901.
 
 ## Generated Clients
 

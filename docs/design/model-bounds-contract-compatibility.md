@@ -7,9 +7,11 @@ canonical `geometry.model_bounds.options.a0` / `geometry.model_bounds.a0`
 contracts and the current handwritten implementation. It records adapter work
 before cutover; it does not promote the contracts or remove accepted inputs.
 
-TypeSpec owns the candidate canonical structure. Existing parsing behavior in
-`src/cpp/lib/model_bounds_options_json.cpp`, CLI layering, and the public Python
-wrapper remains active until the model-bounds promotion gate passes.
+TypeSpec owns the candidate canonical structure. The generated C++ DTO/codec
+and generic operation registry now use that strict structure. Existing parsing
+behavior in `src/cpp/lib/model_bounds_options_json.cpp`, CLI layering, retained
+per-operation C ABI functions, and the public Python wrapper remain active
+until their individual migration gates pass.
 
 ## Option-input differences
 
@@ -47,13 +49,18 @@ serialization vectors.
 
 The existing focused public C++ `ModelBoundsResult` and public Python
 `ModelBoundsResult` convenience surface are not replaced by this structural
-candidate. Later generated C++ and Python slices must map through compatibility
-adapters and prove existing call signatures and attributes.
+candidate. The generic registry maps the generated C++ request DTO into the
+focused C++ value API and maps the focused result back to the generated wire
+DTO. A later Python slice must use the same boundary while proving existing
+call signatures and attributes.
 
 ## Evidence and remaining gate
 
 The raw pilot vectors under `tests/contracts/vectors/` freeze strict parsing,
-closed-schema behavior, and absent-versus-present option fields. Later pilot
-work must add generated C++/TypeScript/Rust/Python replay, path-specific
-diagnostics, non-affine transform operation vectors, tolerant result vectors,
-and live native/WASM/IPC round trips before promotion.
+closed-schema behavior, absent-versus-present option fields, and success/failure
+operation outcomes. Native C++ tests prove generated decoding, compatibility
+separation, local-versus-typed C ABI failures, catalog discovery, attachment
+ownership, and a live STEP `model_bounds` round trip. Later pilot work must add
+complete generated C++ vector replay, TypeScript/Rust/Python replay,
+non-affine-transform operation vectors, tolerant result vectors, and live
+WASM/IPC round trips before promotion.

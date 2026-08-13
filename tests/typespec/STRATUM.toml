@@ -1,6 +1,6 @@
 name = "TypeSpec Contracts"
 order = 2
-description = "Verify the normalized catalog and generated JSON Schemas are valid and current."
+description = "Verify the normalized catalog, JSON Schemas, and generated C++ projection are valid and current."
 enabled = true
 runner = "pytest"
 concerns = ["typespec", "contracts", "generation"]
@@ -9,6 +9,7 @@ objectives = [
     "Compile authored Geometer TypeSpec with the pinned toolchain.",
     "Validate exact pilot contract and operation agreement with the promotion manifest.",
     "Reject stale, missing, or unexpected generated contract artifacts.",
+    "Reject stale or unsupported generated C++17 DTO and strict-codec output.",
     "Replay governed raw JSON, generated-schema, and presence vectors.",
 ]
 

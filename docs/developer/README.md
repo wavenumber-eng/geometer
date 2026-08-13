@@ -496,10 +496,13 @@ After a native CMake build:
 ctest --test-dir build -C Release --output-on-failure
 ```
 
-After a WASM build, validate the browser STEP-byte-to-GLB-byte export:
+After a WASM build, validate the generic operation ABI/model-bounds round trip,
+the retained STEP-to-GLB export, and the packed planar export:
 
 ```powershell
+node tests\wasm\operation_contract_validation.js
 node tests\wasm\step_to_glb_bytes_validation.js
+node tests\wasm\planar_batch_solve_bytes_validation.js
 ```
 
 To benchmark the browser C ABI planar batch solver against a packed request:

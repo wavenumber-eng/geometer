@@ -1,0 +1,525 @@
+// @ts-check
+
+import { spawnSync } from "node:child_process";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const catalogPath = join(root, "contracts/geometer/generated/wn_geometer_contract_catalog.a0.json");
+const catalog = JSON.parse(await readFile(catalogPath, "utf8"));
+const output = join(root, catalog.output_roots.cpp);
+const checkOnly = process.argv.includes("--check");
+if (process.argv.some((value, index) => index > 1 && value !== "--check")) {
+  throw new Error("Usage: node scripts/generate-cpp-contracts.mjs [--check]");
+}
+
+const declarations = new Map(catalog.declarations.map((item) => [item.name, item]));
+const shortNames = new Map();
+for (const declaration of catalog.declarations) {
+  const name = shortName(declaration.name);
+  if (shortNames.has(name)) throw new Error(`Duplicate C++ declaration name ${name}.`);
+  shortNames.set(name, declaration.name);
+}
+
+const ordered = topologicalOrder(catalog.declarations);
+const header = formatCpp(generateHeader(), "contracts.h");
+const source = formatCpp(generateSource(), "contracts_json.cpp");
+await mkdir(output, { recursive: true });
+await emit("contracts.h", header);
+await emit("contracts_json.cpp", source);
+process.stdout.write(
+  checkOnly
+    ? "Generated C++ contracts are current.\n"
+    : "Generated C++ contract DTOs and codecs.\n",
+);
+
+async function emit(name, content) {
+  const path = join(output, name);
+  const normalized = `${content.trimEnd()}\n`;
+  if (checkOnly) {
+    let existing = "";
+    try {
+      existing = await readFile(path, "utf8");
+    } catch {}
+    if (existing !== normalized) throw new Error(`Generated C++ contract file is stale: ${path}`);
+  } else {
+    await writeFile(path, normalized, "utf8");
+  }
+}
+
+function generateHeader() {
+  const lines = [
+    "// Generated from wn_geometer_contract_catalog.a0.json. Do not edit.",
+    "#pragma once",
+    "",
+    "#include <cstddef>",
+    "#include <optional>",
+    "#include <string>",
+    "#include <variant>",
+    "#include <vector>",
+    "",
+    "namespace geometer::contracts",
+    "{",
+    "",
+    "struct ContractError",
+    "{",
+    "    std::string code;",
+    "    std::string path;",
+    "    std::string message;",
+    "};",
+    "",
+  ];
+  for (const declaration of ordered) lines.push(...headerDeclaration(declaration), "");
+  for (const rootRecord of catalog.roots) {
+    const type = shortName(rootRecord.name);
+    lines.push(
+      `bool decode_json(const unsigned char* data, std::size_t size, ${type}* value,`,
+      "                 ContractError* error = nullptr);",
+      `bool encode_json(const ${type}& value, std::string* json, ContractError* error = nullptr);`,
+      "",
+    );
+  }
+  lines.push("} // namespace geometer::contracts");
+  return lines.join("\n");
+}
+
+function headerDeclaration(item) {
+  const name = shortName(item.name);
+  if (item.kind === "enum") {
+    return [
+      `enum class ${name}`,
+      "{",
+      ...item.members.map((member) => `    ${member.name},`),
+      "};",
+    ];
+  }
+  if (item.kind === "union") {
+    return [
+      `using ${name} = std::variant<${item.variants.map((variant) => cppType(variant.type)).join(", ")}>;`,
+    ];
+  }
+  if (item.kind !== "model") throw new Error(`Unsupported declaration kind ${item.kind}.`);
+  if (item.model_kind === "array")
+    return [`using ${name} = std::vector<${cppType(item.index_value)}>;`];
+  if (item.model_kind !== "object") throw new Error(`Unsupported model kind ${item.model_kind}.`);
+  return [
+    `struct ${name}`,
+    "{",
+    ...item.properties.map((property) => {
+      const type = cppType(property.type);
+      const wrapped = property.optional ? `std::optional<${type}>` : type;
+      return `    ${wrapped} ${property.name}${property.optional ? "{}" : valueInitializer(property.type)};`;
+    }),
+    "};",
+  ];
+}
+
+function generateSource() {
+  const lines = [
+    "// Generated from wn_geometer_contract_catalog.a0.json. Do not edit.",
+    '#include "geometer/generated/contracts/contracts.h"',
+    "",
+    "#include <cmath>",
+    "#include <cstring>",
+    "#include <limits>",
+    "#include <rapidjson/document.h>",
+    "#include <rapidjson/error/en.h>",
+    "#include <rapidjson/stringbuffer.h>",
+    "#include <rapidjson/writer.h>",
+    "#include <type_traits>",
+    "",
+    "namespace geometer::contracts",
+    "{",
+    "namespace",
+    "{",
+    "",
+    ...ordered.flatMap((item) => [
+      `bool decode_${shortName(item.name)}(const rapidjson::Value&, ${shortName(item.name)}*, const std::string&, ContractError*);`,
+      `bool write_${shortName(item.name)}(rapidjson::Writer<rapidjson::StringBuffer>&, const ${shortName(item.name)}&, ContractError*);`,
+    ]),
+    "",
+    "constexpr std::size_t kMaxJsonBytes = 8U * 1024U * 1024U;",
+    "",
+    "bool fail(ContractError* error, const char* code, const std::string& path, const std::string& message)",
+    "{",
+    "    if (error != nullptr) *error = {code, path, message};",
+    "    return false;",
+    "}",
+    "",
+    "std::string child_path(const std::string& parent, const char* name)",
+    "{",
+    "    std::string escaped;",
+    "    for (const char c : std::string(name)) { if (c == '~') escaped += \"~0\"; else if (c == '/') escaped += \"~1\"; else escaped += c; }",
+    '    return parent + "/" + escaped;',
+    "}",
+    "",
+    "bool validate_object(const rapidjson::Value& value, const char* const* names, std::size_t count, const std::string& path, ContractError* error)",
+    "{",
+    '    if (!value.IsObject()) return fail(error, "geometer.contract.type_mismatch", path, "Expected an object.");',
+    "    for (auto it = value.MemberBegin(); it != value.MemberEnd(); ++it) {",
+    '        if (!it->name.IsString()) return fail(error, "geometer.contract.invalid_member", path, "Object member name is invalid.");',
+    "        bool known = false; for (std::size_t i = 0; i < count; ++i) if (it->name.GetStringLength() == std::strlen(names[i]) && std::memcmp(it->name.GetString(), names[i], it->name.GetStringLength()) == 0) known = true;",
+    '        if (!known) return fail(error, "geometer.contract.unknown_field", child_path(path, it->name.GetString()), "Unknown field.");',
+    "        for (auto jt = value.MemberBegin(); jt != it; ++jt) if (jt->name.GetStringLength() == it->name.GetStringLength() && std::memcmp(jt->name.GetString(), it->name.GetString(), it->name.GetStringLength()) == 0)",
+    '            return fail(error, "geometer.contract.duplicate_field", child_path(path, it->name.GetString()), "Duplicate field.");',
+    "    }",
+    "    return true;",
+    "}",
+    "",
+    "bool decode_string(const rapidjson::Value& value, std::string* out, const std::string& path, ContractError* error, std::size_t minimum, std::size_t maximum)",
+    "{",
+    '    if (!value.IsString()) return fail(error, "geometer.contract.type_mismatch", path, "Expected a string.");',
+    '    const std::size_t size = value.GetStringLength(); if (size < minimum || size > maximum) return fail(error, "geometer.contract.string_length", path, "String length is outside its contract bounds.");',
+    "    out->assign(value.GetString(), size); return true;",
+    "}",
+    "",
+    "bool decode_boolean(const rapidjson::Value& value, bool* out, const std::string& path, ContractError* error)",
+    "{",
+    '    if (!value.IsBool()) return fail(error, "geometer.contract.type_mismatch", path, "Expected a boolean."); *out = value.GetBool(); return true;',
+    "}",
+    "",
+    "bool decode_double(const rapidjson::Value& value, double* out, const std::string& path, ContractError* error, double minimum, double maximum)",
+    "{",
+    '    if (!value.IsNumber() || !std::isfinite(value.GetDouble())) return fail(error, "geometer.contract.type_mismatch", path, "Expected a finite number.");',
+    '    const double number = value.GetDouble(); if (number < minimum || number > maximum) return fail(error, "geometer.contract.number_range", path, "Number is outside its contract bounds."); *out = number; return true;',
+    "}",
+    "",
+    "bool decode_literal_string(const rapidjson::Value& value, std::string* out, const std::string& path, ContractError* error, const char* expected)",
+    "{",
+    '    if (!value.IsString() || value.GetStringLength() != std::strlen(expected) || std::memcmp(value.GetString(), expected, value.GetStringLength()) != 0) return fail(error, "geometer.contract.literal_mismatch", path, "String literal does not match."); *out = expected; return true;',
+    "}",
+    "",
+    "bool decode_literal_boolean(const rapidjson::Value& value, bool* out, const std::string& path, ContractError* error, bool expected)",
+    "{",
+    '    if (!value.IsBool() || value.GetBool() != expected) return fail(error, "geometer.contract.literal_mismatch", path, "Boolean literal does not match."); *out = expected; return true;',
+    "}",
+    "",
+    "template <typename T>",
+    "bool decode_array(const rapidjson::Value& value, std::vector<T>* out, const std::string& path, ContractError* error, std::size_t minimum, std::size_t maximum, bool (*decode_item)(const rapidjson::Value&, T*, const std::string&, ContractError*))",
+    "{",
+    '    if (!value.IsArray() || value.Size() < minimum || value.Size() > maximum) return fail(error, "geometer.contract.array_size", path, "Array length is outside its contract bounds.");',
+    '    out->clear(); out->reserve(value.Size()); for (rapidjson::SizeType i = 0; i < value.Size(); ++i) { T item{}; if (!decode_item(value[i], &item, path + "/" + std::to_string(i), error)) return false; out->push_back(std::move(item)); } return true;',
+    "}",
+    "",
+    "bool write_double(rapidjson::Writer<rapidjson::StringBuffer>& writer, double value, ContractError* error, double minimum, double maximum)",
+    "{",
+    '    if (!std::isfinite(value) || value < minimum || value > maximum) return fail(error, "geometer.contract.number_range", "", "Number is outside its contract bounds."); writer.Double(value); return true;',
+    "}",
+    "",
+    "bool write_string(rapidjson::Writer<rapidjson::StringBuffer>& writer, const std::string& value, ContractError* error, std::size_t minimum, std::size_t maximum)",
+    "{",
+    '    if (value.size() < minimum || value.size() > maximum) return fail(error, "geometer.contract.string_length", "", "String length is outside its contract bounds."); writer.String(value.data(), static_cast<rapidjson::SizeType>(value.size())); return true;',
+    "}",
+    "",
+    "bool write_literal_string(rapidjson::Writer<rapidjson::StringBuffer>& writer, const std::string& value, ContractError* error, const char* expected)",
+    "{",
+    '    if (value != expected) return fail(error, "geometer.contract.literal_mismatch", "", "String literal does not match."); writer.String(expected); return true;',
+    "}",
+    "",
+    "bool write_literal_boolean(rapidjson::Writer<rapidjson::StringBuffer>& writer, bool value, ContractError* error, bool expected)",
+    "{",
+    '    if (value != expected) return fail(error, "geometer.contract.literal_mismatch", "", "Boolean literal does not match."); writer.Bool(expected); return true;',
+    "}",
+    "",
+    "template <typename T>",
+    "bool write_array(rapidjson::Writer<rapidjson::StringBuffer>& writer, const std::vector<T>& value, ContractError* error, std::size_t minimum, std::size_t maximum, bool (*write_item)(rapidjson::Writer<rapidjson::StringBuffer>&, const T&, ContractError*))",
+    "{",
+    '    if (value.size() < minimum || value.size() > maximum) return fail(error, "geometer.contract.array_size", "", "Array length is outside its contract bounds."); writer.StartArray(); for (const auto& item : value) if (!write_item(writer, item, error)) return false; writer.EndArray(); return true;',
+    "}",
+    "",
+  ];
+  for (const item of ordered) lines.push(...decoder(item), "", ...writer(item), "");
+  lines.push(
+    "bool parse_document(const unsigned char* data, std::size_t size, rapidjson::Document* document, ContractError* error)",
+    "{",
+    '    if (document == nullptr || (data == nullptr && size != 0)) return fail(error, "geometer.contract.invalid_argument", "", "Invalid JSON buffer.");',
+    '    if (size > kMaxJsonBytes) return fail(error, "geometer.contract.limit_exceeded", "", "JSON exceeds the 8 MiB contract limit.");',
+    "    document->Parse<rapidjson::kParseValidateEncodingFlag>(reinterpret_cast<const char*>(data), size);",
+    '    if (document->HasParseError()) return fail(error, "geometer.contract.invalid_json", "", rapidjson::GetParseError_En(document->GetParseError()));',
+    "    return true;",
+    "}",
+    "",
+    "template <typename T>",
+    "bool encode_root(const T& value, bool (*write)(rapidjson::Writer<rapidjson::StringBuffer>&, const T&, ContractError*), std::string* json, ContractError* error)",
+    "{",
+    '    if (json == nullptr) return fail(error, "geometer.contract.invalid_argument", "", "Output JSON pointer is null.");',
+    "    rapidjson::StringBuffer buffer; rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);",
+    "    if (!write(writer, value, error)) return false;",
+    "    json->assign(buffer.GetString(), buffer.GetSize()); return true;",
+    "}",
+    "",
+    "} // namespace",
+    "",
+  );
+  for (const rootRecord of catalog.roots) {
+    const type = shortName(rootRecord.name);
+    lines.push(
+      `bool decode_json(const unsigned char* data, std::size_t size, ${type}* value, ContractError* error)`,
+      "{",
+      '    if (value == nullptr) return fail(error, "geometer.contract.invalid_argument", "", "Output value pointer is null.");',
+      "    rapidjson::Document document; if (!parse_document(data, size, &document, error)) return false;",
+      `    ${type} decoded{}; if (!decode_${type}(document, &decoded, "", error)) return false;`,
+      "    *value = std::move(decoded); return true;",
+      "}",
+      "",
+      `bool encode_json(const ${type}& value, std::string* json, ContractError* error)`,
+      "{",
+      `    return encode_root<${type}>(value, write_${type}, json, error);`,
+      "}",
+      "",
+    );
+  }
+  lines.push("} // namespace geometer::contracts");
+  return lines.join("\n");
+}
+
+function decoder(item) {
+  const name = shortName(item.name);
+  if (item.kind === "enum") {
+    const checks = item.members.map(
+      (member) =>
+        `    if (text == ${JSON.stringify(String(member.value))}) { *out = ${name}::${member.name}; return true; }`,
+    );
+    return [
+      `bool decode_${name}(const rapidjson::Value& value, ${name}* out, const std::string& path, ContractError* error)`,
+      "{",
+      '    if (!value.IsString()) return fail(error, "geometer.contract.type_mismatch", path, "Expected a string enum.");',
+      "    const std::string text(value.GetString(), value.GetStringLength());",
+      ...checks,
+      '    return fail(error, "geometer.contract.enum_mismatch", path, "Unknown enum value.");',
+      "}",
+    ];
+  }
+  if (item.kind === "union") {
+    const body = [];
+    item.variants.forEach((variant, index) => {
+      const type = cppType(variant.type);
+      body.push(
+        `    { ${type} candidate{}; ContractError ignored; if (${decodeCall(variant.type, "value", "&candidate", "path", "&ignored")}) { ++matches; selected = ${name}(std::in_place_index<${index}>, std::move(candidate)); } }`,
+      );
+    });
+    return [
+      `bool decode_${name}(const rapidjson::Value& value, ${name}* out, const std::string& path, ContractError* error)`,
+      "{",
+      `    int matches = 0; ${name} selected{};`,
+      ...body,
+      '    if (matches != 1) return fail(error, "geometer.contract.union_mismatch", path, "Expected exactly one union variant.");',
+      "    *out = std::move(selected); return true;",
+      "}",
+    ];
+  }
+  if (item.kind !== "model") throw new Error(`Unsupported ${item.kind}`);
+  if (item.model_kind === "array") {
+    return [
+      `bool decode_${name}(const rapidjson::Value& value, ${name}* out, const std::string& path, ContractError* error)`,
+      "{",
+      `    if (!value.IsArray() || value.Size() < ${item.constraints.min_items ?? 0}U${item.constraints.max_items !== undefined ? ` || value.Size() > ${item.constraints.max_items}U` : ""}) return fail(error, "geometer.contract.array_size", path, "Array length is outside its contract bounds.");`,
+      "    out->clear(); out->reserve(value.Size());",
+      `    for (rapidjson::SizeType i = 0; i < value.Size(); ++i) { ${cppType(item.index_value)} item_value{}; if (!${decodeCall(item.index_value, "value[i]", "&item_value", 'path + "/" + std::to_string(i)', "error")}) return false; out->push_back(std::move(item_value)); }`,
+      "    return true;",
+      "}",
+    ];
+  }
+  const names = item.properties.map((property) => JSON.stringify(property.name)).join(", ");
+  const body = [
+    `    static const char* const names[] = {${names}};`,
+    `    if (!validate_object(value, names, ${item.properties.length}U, path, error)) return false;`,
+  ];
+  for (const property of item.properties) {
+    body.push(`    { const auto member = value.FindMember(${JSON.stringify(property.name)});`);
+    if (property.optional) {
+      const type = cppType(property.type);
+      body.push(
+        `      if (member != value.MemberEnd()) { ${type} decoded{}; if (!${decodeCall(property.type, "member->value", "&decoded", `child_path(path, ${JSON.stringify(property.name)})`, "error", property.constraints)}) return false; out->${property.name} = std::move(decoded); } else out->${property.name}.reset();`,
+      );
+    } else {
+      body.push(
+        `      if (member == value.MemberEnd()) return fail(error, "geometer.contract.missing_field", child_path(path, ${JSON.stringify(property.name)}), "Required field is missing.");`,
+      );
+      body.push(
+        `      if (!${decodeCall(property.type, "member->value", `&out->${property.name}`, `child_path(path, ${JSON.stringify(property.name)})`, "error", property.constraints)}) return false;`,
+      );
+    }
+    body.push("    }");
+  }
+  return [
+    `bool decode_${name}(const rapidjson::Value& value, ${name}* out, const std::string& path, ContractError* error)`,
+    "{",
+    ...body,
+    "    return true;",
+    "}",
+  ];
+}
+
+function writer(item) {
+  const name = shortName(item.name);
+  const signature = `bool write_${name}(rapidjson::Writer<rapidjson::StringBuffer>& writer, const ${name}& value, ContractError* error)`;
+  if (item.kind === "enum") {
+    return [
+      signature,
+      "{",
+      "    switch (value) {",
+      ...item.members.map(
+        (member) =>
+          `    case ${name}::${member.name}: writer.String(${JSON.stringify(String(member.value))}); return true;`,
+      ),
+      "    }",
+      '    return fail(error, "geometer.contract.enum_mismatch", "", "Unknown enum value.");',
+      "}",
+    ];
+  }
+  if (item.kind === "union") {
+    const cases = item.variants.map(
+      (variant, index) =>
+        `    case ${index}: return ${writeCall(variant.type, `std::get<${index}>(value)`, "error")};`,
+    );
+    return [
+      signature,
+      "{",
+      "    switch (value.index()) {",
+      ...cases,
+      '    default: return fail(error, "geometer.contract.union_mismatch", "", "Unknown union variant.");',
+      "    }",
+      "}",
+    ];
+  }
+  if (item.kind !== "model") throw new Error(`Unsupported ${item.kind}`);
+  if (item.model_kind === "array")
+    return [
+      signature,
+      "{",
+      `    if (value.size() < ${item.constraints.min_items ?? 0}U${item.constraints.max_items !== undefined ? ` || value.size() > ${item.constraints.max_items}U` : ""}) return fail(error, "geometer.contract.array_size", "", "Array length is outside its contract bounds.");`,
+      "    writer.StartArray();",
+      `    for (const auto& item_value : value) if (!${writeCall(item.index_value, "item_value", "error")}) return false;`,
+      "    writer.EndArray(); return true;",
+      "}",
+    ];
+  const body = ["    writer.StartObject();"];
+  for (const property of item.properties) {
+    if (property.optional)
+      body.push(
+        `    if (value.${property.name}.has_value()) { writer.Key(${JSON.stringify(property.name)}); if (!${writeCall(property.type, `*value.${property.name}`, "error", property.constraints)}) return false; }`,
+      );
+    else
+      body.push(
+        `    writer.Key(${JSON.stringify(property.name)}); if (!${writeCall(property.type, `value.${property.name}`, "error", property.constraints)}) return false;`,
+      );
+  }
+  body.push("    writer.EndObject(); return true;");
+  return [signature, "{", ...body, "}"];
+}
+
+function decodeCall(type, value, out, path, error, constraints = {}) {
+  if (type.kind === "reference")
+    return `decode_${shortName(type.target)}(${value}, ${out}, ${path}, ${error})`;
+  if (type.kind === "primitive") {
+    if (type.name === "string")
+      return `decode_string(${value}, ${out}, ${path}, ${error}, ${sizeConstant(constraints.min_length, "0U")}, ${sizeConstant(constraints.max_length)})`;
+    if (type.name === "boolean") return `decode_boolean(${value}, ${out}, ${path}, ${error})`;
+    if (type.name === "float64")
+      return `decode_double(${value}, ${out}, ${path}, ${error}, ${constraints.min_value ?? "-std::numeric_limits<double>::infinity()"}, ${constraints.max_value ?? "std::numeric_limits<double>::infinity()"})`;
+  }
+  if (type.kind === "literal")
+    return `decode_literal_${type.value_type}(${value}, ${out}, ${path}, ${error}, ${JSON.stringify(type.value)})`;
+  if (type.kind === "array") {
+    if (type.element.kind !== "reference") unsupported(type);
+    return `decode_array(${value}, ${out}, ${path}, ${error}, ${sizeConstant(constraints.min_items, "0U")}, ${sizeConstant(constraints.max_items)}, decode_${shortName(type.element.target)})`;
+  }
+  throw new Error(`Unsupported decode type ${JSON.stringify(type)}`);
+}
+
+function writeCall(type, value, error, constraints = {}) {
+  if (type.kind === "reference")
+    return `write_${shortName(type.target)}(writer, ${value}, ${error})`;
+  if (type.kind === "primitive") {
+    if (type.name === "string")
+      return `write_string(writer, ${value}, ${error}, ${sizeConstant(constraints.min_length, "0U")}, ${sizeConstant(constraints.max_length)})`;
+    if (type.name === "boolean") return `(writer.Bool(${value}), true)`;
+    if (type.name === "float64")
+      return `write_double(writer, ${value}, ${error}, ${constraints.min_value ?? "-std::numeric_limits<double>::infinity()"}, ${constraints.max_value ?? "std::numeric_limits<double>::infinity()"})`;
+  }
+  if (type.kind === "literal")
+    return `write_literal_${type.value_type}(writer, ${value}, ${error}, ${JSON.stringify(type.value)})`;
+  if (type.kind === "array") {
+    if (type.element.kind !== "reference") unsupported(type);
+    return `write_array(writer, ${value}, ${error}, ${sizeConstant(constraints.min_items, "0U")}, ${sizeConstant(constraints.max_items)}, write_${shortName(type.element.target)})`;
+  }
+  throw new Error(`Unsupported write type ${JSON.stringify(type)}`);
+}
+
+function cppType(type) {
+  if (type.kind === "reference") return shortName(type.target);
+  if (type.kind === "primitive")
+    return (
+      { string: "std::string", boolean: "bool", float64: "double" }[type.name] ?? unsupported(type)
+    );
+  if (type.kind === "literal")
+    return (
+      { string: "std::string", boolean: "bool", number: "double" }[type.value_type] ??
+      unsupported(type)
+    );
+  if (type.kind === "array") return `std::vector<${cppType(type.element)}>`;
+  return unsupported(type);
+}
+
+function valueInitializer(type) {
+  if (type.kind !== "literal") return "{}";
+  if (type.value_type === "string") return ` = ${JSON.stringify(type.value)}`;
+  return ` = ${String(type.value)}`;
+}
+
+function shortName(name) {
+  return name.slice(name.lastIndexOf(".") + 1);
+}
+function formatCpp(content, filename) {
+  const result = spawnSync("clang-format", ["--style=file", `--assume-filename=${filename}`], {
+    cwd: root,
+    encoding: "utf8",
+    input: content,
+  });
+  if (result.error)
+    throw new Error(
+      `clang-format is required for C++ contract generation: ${result.error.message}`,
+    );
+  if (result.status !== 0) throw new Error(`clang-format failed: ${result.stderr}`);
+  return result.stdout;
+}
+function sizeConstant(value, fallback = "std::numeric_limits<std::size_t>::max()") {
+  return value === undefined ? fallback : `${value}U`;
+}
+function unsupported(value) {
+  throw new Error(`Unsupported C++ catalog type ${JSON.stringify(value)}`);
+}
+
+function topologicalOrder(items) {
+  const result = [],
+    visiting = new Set(),
+    visited = new Set();
+  function visit(item) {
+    if (visited.has(item.name)) return;
+    if (visiting.has(item.name)) throw new Error(`Cyclic DTO dependency at ${item.name}.`);
+    visiting.add(item.name);
+    for (const dependency of dependencies(item))
+      if (declarations.has(dependency)) visit(declarations.get(dependency));
+    visiting.delete(item.name);
+    visited.add(item.name);
+    result.push(item);
+  }
+  for (const item of items) visit(item);
+  return result;
+}
+
+function dependencies(item) {
+  const found = new Set();
+  const scan = (type) => {
+    if (!type) return;
+    if (type.kind === "reference") found.add(type.target);
+    if (type.kind === "array") scan(type.element);
+  };
+  scan(item.base);
+  scan(item.index_value);
+  for (const property of item.properties ?? []) scan(property.type);
+  for (const variant of item.variants ?? []) scan(variant.type);
+  return found;
+}

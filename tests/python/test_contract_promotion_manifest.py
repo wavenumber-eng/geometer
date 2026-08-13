@@ -20,6 +20,66 @@ def _unique(values: list[str], label: str) -> None:
     assert len(values) == len(set(values)), f"duplicate {label}: {values}"
 
 
+def _assert_documentation_manifest(manifest: dict[str, Any]) -> None:
+    documentation = manifest["documentation"]
+    assert documentation["runtime_sibling_dependency"] is False
+    assert (ROOT / documentation["design"]).is_file()
+    assert re.fullmatch(r"[0-9a-f]{40}", documentation["source_revision"])
+    font_redistribution = documentation["font_redistribution"]
+    assert font_redistribution["completion_gate"] is True
+    assert font_redistribution["status"] == "approved_open_license"
+    assert font_redistribution["selected_font"] == "Cousine"
+    assert font_redistribution["license_spdx"] == "OFL-1.1"
+    assert re.fullmatch(r"[0-9a-f]{40}", font_redistribution["source_revision"])
+    assert font_redistribution["license_url"].startswith("https://")
+
+    assets = documentation["assets"]
+    asset_ids = [item["id"] for item in assets]
+    _unique(asset_ids, "documentation asset id")
+    assert asset_ids == [
+        "stylesheet",
+        "cousine_regular",
+        "cousine_bold",
+        "cousine_license",
+        "wavenumber_light_watermark",
+    ]
+    design = (ROOT / documentation["design"]).read_text(encoding="utf-8")
+    assert documentation["source_revision"] in design
+    license_asset = next(item for item in assets if item["role"] == "license")
+    assert {item["status"] for item in assets} == {"vendored"}
+    for asset in assets:
+        assert asset["role"] in {"stylesheet", "font", "license", "watermark"}
+        assert re.fullmatch(r"[0-9a-f]{64}", asset["sha256"])
+        assert asset["source"] in design or Path(asset["source"]).name in design
+        assert asset["sha256"] in design
+        assert asset["status"] in {"planned", "vendored"}
+        destination = ROOT / asset["destination"]
+        if asset["status"] == "vendored":
+            assert destination.is_file()
+            assert _sha256(destination) == asset["sha256"]
+        else:
+            assert not destination.exists()
+
+        if asset["role"] == "font":
+            assert font_redistribution["source_revision"] in asset["source"]
+            assert asset["redistribution_status"] == "approved_open_license"
+            assert asset["license_evidence"] == "docs/design/assets/fonts/Cousine/OFL.txt"
+            assert asset["status"] == license_asset["status"]
+            if asset["status"] == "vendored":
+                assert font_redistribution["status"] == "approved_open_license"
+                assert (ROOT / asset["license_evidence"]).is_file()
+        elif asset["role"] == "license":
+            assert font_redistribution["source_revision"] in asset["source"]
+            assert asset["source"].endswith("/OFL.txt")
+
+    stylesheet = next(item for item in assets if item["role"] == "stylesheet")
+    assert stylesheet["source_sha256"] == ("b0452e403db12c3fca581866b0953dbca45d751bcc83c137f0da16674859d151")
+    assert "Cousine" in stylesheet["adaptation"]
+    stylesheet_text = (ROOT / stylesheet["destination"]).read_text(encoding="utf-8")
+    assert 'font-family: "Cousine"' in stylesheet_text
+    assert "Berkeley Mono" not in stylesheet_text
+
+
 def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
@@ -86,7 +146,6 @@ def test_manifest_sources_and_identities_are_complete() -> None:
     }
     for digest_key, source in review_sources.items():
         assert _sha256(ROOT / source) == design_review[digest_key]
-
     adr = (ROOT / transports["transport_adr"]).read_text(encoding="utf-8")
     assert re.fullmatch(r"[0-9a-f]{40}", design_review["requested_revision"])
     assert re.fullmatch(r"[0-9a-f]{40}", design_review["review_head"])
@@ -102,74 +161,12 @@ def test_manifest_sources_and_identities_are_complete() -> None:
         assert design_review["reviewer"] != "none"
         assert re.fullmatch(r"\d{4}-\d{2}-\d{2}", design_review["review_date"])
         assert design_review["reviewed_revision"] == design_review["requested_revision"]
-        assert design_review["review_head"] == (
-            "b86a065c5926c35f1eee23a9ba1cef890689c7d7"
-        )
+        assert design_review["review_head"] == ("b86a065c5926c35f1eee23a9ba1cef890689c7d7")
         assert design_review["reviewed_adr_sha256"] == (
             "d4905bda88727fadeb221a3b6c5bfb392f5e062bb6033b0cded29f59fb492de0"
         )
         assert "## Status\n\nAccepted." in adr
-    documentation = manifest["documentation"]
-    assert documentation["runtime_sibling_dependency"] is False
-    assert (ROOT / documentation["design"]).is_file()
-    assert re.fullmatch(r"[0-9a-f]{40}", documentation["source_revision"])
-    font_redistribution = documentation["font_redistribution"]
-    assert font_redistribution["completion_gate"] is True
-    assert font_redistribution["status"] == "approved_open_license"
-    assert font_redistribution["selected_font"] == "Cousine"
-    assert font_redistribution["license_spdx"] == "OFL-1.1"
-    assert re.fullmatch(r"[0-9a-f]{40}", font_redistribution["source_revision"])
-    assert font_redistribution["license_url"].startswith("https://")
-
-    assets = documentation["assets"]
-    asset_ids = [item["id"] for item in assets]
-    _unique(asset_ids, "documentation asset id")
-    assert asset_ids == [
-        "stylesheet",
-        "cousine_regular",
-        "cousine_bold",
-        "cousine_license",
-        "wavenumber_light_watermark",
-    ]
-    design = (ROOT / documentation["design"]).read_text(encoding="utf-8")
-    assert documentation["source_revision"] in design
-    license_asset = next(item for item in assets if item["role"] == "license")
-    assert {item["status"] for item in assets} == {"vendored"}
-    for asset in assets:
-        assert asset["role"] in {"stylesheet", "font", "license", "watermark"}
-        assert re.fullmatch(r"[0-9a-f]{64}", asset["sha256"])
-        assert asset["source"] in design or Path(asset["source"]).name in design
-        assert asset["sha256"] in design
-        assert asset["status"] in {"planned", "vendored"}
-        destination = ROOT / asset["destination"]
-        if asset["status"] == "vendored":
-            assert destination.is_file()
-            assert _sha256(destination) == asset["sha256"]
-        else:
-            assert not destination.exists()
-
-        if asset["role"] == "font":
-            assert font_redistribution["source_revision"] in asset["source"]
-            assert asset["redistribution_status"] == "approved_open_license"
-            assert asset["license_evidence"] == (
-                "docs/design/assets/fonts/Cousine/OFL.txt"
-            )
-            assert asset["status"] == license_asset["status"]
-            if asset["status"] == "vendored":
-                assert font_redistribution["status"] == "approved_open_license"
-                assert (ROOT / asset["license_evidence"]).is_file()
-        elif asset["role"] == "license":
-            assert font_redistribution["source_revision"] in asset["source"]
-            assert asset["source"].endswith("/OFL.txt")
-
-    stylesheet = next(item for item in assets if item["role"] == "stylesheet")
-    assert stylesheet["source_sha256"] == (
-        "b0452e403db12c3fca581866b0953dbca45d751bcc83c137f0da16674859d151"
-    )
-    assert "Cousine" in stylesheet["adaptation"]
-    stylesheet_text = (ROOT / stylesheet["destination"]).read_text(encoding="utf-8")
-    assert 'font-family: "Cousine"' in stylesheet_text
-    assert "Berkeley Mono" not in stylesheet_text
+    _assert_documentation_manifest(manifest)
 
     contracts = manifest["contracts"]
     contract_ids = [item["id"] for item in contracts]
@@ -181,9 +178,7 @@ def test_manifest_sources_and_identities_are_complete() -> None:
     operations = manifest["operations"]
     operation_ids = [item["id"] for item in operations]
     _unique(operation_ids, "operation id")
-    assert {item["id"] for item in operations if item["status"] == "pilot_candidate"} == {
-        "geometry.model_bounds.a0"
-    }
+    assert {item["id"] for item in operations if item["status"] == "pilot_candidate"} == {"geometry.model_bounds.a0"}
 
     candidates = manifest["candidate_operations"]
     candidate_ids = [item["id"] for item in candidates]
@@ -274,25 +269,22 @@ def test_viz_2026_6_10_compatibility_snapshot_is_preserved() -> None:
     expected_artifact_pairs = {
         "dist/wasm/browser/geometer.js": "geometer-browser.js",
         "dist/wasm/browser/geometer.wasm": "geometer-browser.wasm",
-        "dist/wasm/planar-browser/geometer-planar-browser.js": (
-            "geometer-planar-browser.js"
-        ),
-        "dist/wasm/planar-browser/geometer-planar-browser.wasm": (
-            "geometer-planar-browser.wasm"
-        ),
+        "dist/wasm/planar-browser/geometer-planar-browser.js": ("geometer-planar-browser.js"),
+        "dist/wasm/planar-browser/geometer-planar-browser.wasm": ("geometer-planar-browser.wasm"),
     }
-    assert dict(
-        zip(
-            snapshot["artifacts"]["source_paths"],
-            snapshot["artifacts"]["vendored_names"],
-            strict=True,
+    assert (
+        dict(
+            zip(
+                snapshot["artifacts"]["source_paths"],
+                snapshot["artifacts"]["vendored_names"],
+                strict=True,
+            )
         )
-    ) == expected_artifact_pairs
+        == expected_artifact_pairs
+    )
 
     mappings = snapshot["artifact_mappings"]
-    assert {item["source"]: item["vendored"] for item in mappings} == (
-        expected_artifact_pairs
-    )
+    assert {item["source"]: item["vendored"] for item in mappings} == (expected_artifact_pairs)
     assert {(item["target"], item["kind"]) for item in mappings} == {
         ("full_browser", "javascript"),
         ("full_browser", "wasm"),
@@ -312,9 +304,7 @@ def test_viz_2026_6_10_compatibility_snapshot_is_preserved() -> None:
         assert f"-sEXPORT_NAME={factory}" in cmake
 
     javascript_mappings = [item for item in mappings if item["kind"] == "javascript"]
-    assert [item["factory"] for item in javascript_mappings] == snapshot["artifacts"][
-        "factory_names"
-    ]
+    assert [item["factory"] for item in javascript_mappings] == snapshot["artifacts"]["factory_names"]
     required_memory_views = snapshot["wasm"]["required_memory_views"]
     assert required_memory_views == ["HEAPU8", "HEAPU32"]
     for item in javascript_mappings:
@@ -325,9 +315,7 @@ def test_viz_2026_6_10_compatibility_snapshot_is_preserved() -> None:
 
     runtime_lists = re.findall(r'-sEXPORTED_RUNTIME_METHODS=\[(.*?)\]"', cmake)
     assert len(runtime_lists) == 2
-    runtime_methods = [
-        {item.strip("'") for item in value.split(",")} for value in runtime_lists
-    ]
+    runtime_methods = [{item.strip("'") for item in value.split(",")} for value in runtime_lists]
     required_methods = set(snapshot["wasm"]["required_runtime_methods"])
     assert all(required_methods <= methods for methods in runtime_methods)
 
@@ -359,11 +347,7 @@ def test_viz_2026_6_10_compatibility_snapshot_is_preserved() -> None:
 
 def test_data_models_geom_a0_requirements_snapshot_is_frozen() -> None:
     manifest = _manifest()
-    matz = next(
-        item
-        for item in manifest["consumers"]
-        if item["id"] == "appz.data_models.pcb.matz"
-    )
+    matz = next(item for item in manifest["consumers"] if item["id"] == "appz.data_models.pcb.matz")
     snapshot_path = ROOT / matz["snapshot"]
     with snapshot_path.open("rb") as stream:
         snapshot = tomllib.load(stream)
@@ -376,9 +360,7 @@ def test_data_models_geom_a0_requirements_snapshot_is_frozen() -> None:
     assert snapshot["source_revision_publication"] == "published_origin_branch"
     assert snapshot["source_revision"] == "fabbf70e1970adb7fa74f3be64c4ef45e2b89154"
     assert snapshot["runtime_sibling_dependency"] is False
-    assert snapshot["geom_contract"]["schema_identity"] == (
-        "urn:wavenumber:schema:geom_a0"
-    )
+    assert snapshot["geom_contract"]["schema_identity"] == ("urn:wavenumber:schema:geom_a0")
 
     source_files = snapshot["source_files"]
     source_paths = [item["path"] for item in source_files]
@@ -391,9 +373,7 @@ def test_data_models_geom_a0_requirements_snapshot_is_frozen() -> None:
         "docs/pcb/plans/auxiliary/matz-geometer-analytic-planar-boolean-requirements-2026-08-12.md",
     ]
     assert {item["path"]: item["sha256"] for item in source_files} == {
-        "contracts/geom/geom_a0.schema.json": (
-            "acd688d81c5445445c6ee3f324000009e3976b4bbaa19895d6f2d52fc0d0ef3b"
-        ),
+        "contracts/geom/geom_a0.schema.json": ("acd688d81c5445445c6ee3f324000009e3976b4bbaa19895d6f2d52fc0d0ef3b"),
         "docs/geom/adr/geom-adr-0003-topology-first-ring-path-geometry-contract.md": (
             "8ccf5623941dc2ed21a58268021acf88bc5d90bedabb93ada31d6bb5a93e2482"
         ),
@@ -437,21 +417,15 @@ def test_data_models_geom_a0_requirements_snapshot_is_frozen() -> None:
         "real_board_case_count": 2,
         "case_2_oracle": "success",
         "case_2_oracle_evidence": "native_wasm_occt_feasibility_signature",
-        "case_2_geometer_design_revision": (
-            "182f5f2163e4085200adec779f98b6d3cc7c0e13"
-        ),
-        "case_2_oracle_signature_sha256": (
-            "c21b03c1b42a6cb3212cec5b3051987f645e21062eddecc82d3e3b0e0fd6dfc7"
-        ),
+        "case_2_geometer_design_revision": ("182f5f2163e4085200adec779f98b6d3cc7c0e13"),
+        "case_2_oracle_signature_sha256": ("c21b03c1b42a6cb3212cec5b3051987f645e21062eddecc82d3e3b0e0fd6dfc7"),
         "case_2_canonical_fragment_count": 12,
         "normalization_policy": "certified_once_after_final_stage",
         "normalization_collapse_case": "job_local_failure",
         "normal_build_sibling_dependency": False,
     }
 
-    plan = (
-        ROOT / "docs" / "plans" / "geometer-typespec-contracts" / "plan.md"
-    ).read_text(encoding="utf-8")
+    plan = (ROOT / "docs" / "plans" / "geometer-typespec-contracts" / "plan.md").read_text(encoding="utf-8")
     assert operation["id"] in plan
     assert matz["snapshot"] in plan or snapshot_path.name in plan
 
@@ -553,12 +527,8 @@ def test_analytic_planar_boolean_numeric_catalog_is_closed() -> None:
     assert catalog["reserved"]["operation_diagnostic"] == {
         "normalization_ambiguous_tie": 65542,
     }
-    assert catalog["contract_diagnostic"]["invalid_id"].startswith(
-        "geometer.contract."
-    )
-    assert catalog["contract_diagnostic"]["invalid_reference"].startswith(
-        "geometer.contract."
-    )
+    assert catalog["contract_diagnostic"]["invalid_id"].startswith("geometer.contract.")
+    assert catalog["contract_diagnostic"]["invalid_reference"].startswith("geometer.contract.")
     assert catalog["source_reference_mapping"] == {
         "authored_segment_curve": {
             "primary_id": "authored_segment_id",
@@ -602,18 +572,8 @@ def test_analytic_planar_boolean_numeric_catalog_is_closed() -> None:
 
 
 def test_analytic_planar_boolean_feasibility_signature_has_canonical_bytes() -> None:
-    fixture = (
-        ROOT
-        / "tests"
-        / "fixtures"
-        / "analytic_planar_boolean"
-        / "feasibility_signature_a0.txt"
-    ).read_bytes()
+    fixture = (ROOT / "tests" / "fixtures" / "analytic_planar_boolean" / "feasibility_signature_a0.txt").read_bytes()
     canonical = _canonical_feasibility_stdout(fixture)
     assert canonical.count(b"\n") == 4
-    assert hashlib.sha256(canonical).hexdigest() == (
-        "c21b03c1b42a6cb3212cec5b3051987f645e21062eddecc82d3e3b0e0fd6dfc7"
-    )
-    assert _canonical_feasibility_stdout(
-        canonical.replace(b"\n", b"\r\n") + b"\r\n"
-    ) == canonical
+    assert hashlib.sha256(canonical).hexdigest() == ("c21b03c1b42a6cb3212cec5b3051987f645e21062eddecc82d3e3b0e0fd6dfc7")
+    assert _canonical_feasibility_stdout(canonical.replace(b"\n", b"\r\n") + b"\r\n") == canonical

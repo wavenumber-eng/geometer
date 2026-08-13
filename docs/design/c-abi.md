@@ -1,9 +1,10 @@
 # C ABI
 
-The current implemented per-operation ABI is documented below. The additive
-generic operation ABI is specified in
-[Generic Operation C ABI](generic-operation-c-abi.md) and remains unimplemented
-until ADR-011 completes independent design review.
+The retained per-operation ABI and the additive generic operation ABI are both
+implemented. The generic ABI is the generated-client path for newly promoted
+operations; the existing symbols remain available for compatibility. Its
+normative ownership, layout, limit, and failure rules are specified in
+[Generic Operation C ABI](generic-operation-c-abi.md).
 
 Defined in `src/cpp/lib/geometer/c_api.h`.
 
@@ -25,6 +26,57 @@ typedef struct GeometerByteResult {
     size_t size;
     char* error;
 } GeometerByteResult;
+
+typedef struct GeometerAttachmentView {
+    uint32_t struct_size;
+    uint32_t flags;
+    const char* name;
+    uint32_t name_size;
+    const char* media_type;
+    uint32_t media_type_size;
+    const unsigned char* data;
+    uint32_t data_size;
+    uint32_t reserved0;
+} GeometerAttachmentView;
+
+typedef struct GeometerOperationResult GeometerOperationResult;
+
+int geometer_operation_catalog_json(char** value, char** error);
+
+int geometer_operation_execute(
+    const char* operation_id,
+    uint32_t operation_id_size,
+    const unsigned char* request_json,
+    uint32_t request_json_size,
+    const GeometerAttachmentView* attachments,
+    uint32_t attachment_count,
+    GeometerOperationResult** result,
+    char** error
+);
+
+const unsigned char* geometer_operation_result_json_data(
+    const GeometerOperationResult* result
+);
+uint32_t geometer_operation_result_json_size(const GeometerOperationResult* result);
+uint32_t geometer_operation_result_attachment_count(
+    const GeometerOperationResult* result
+);
+const char* geometer_operation_result_attachment_name(
+    const GeometerOperationResult* result,
+    uint32_t index,
+    uint32_t* size
+);
+const char* geometer_operation_result_attachment_media_type(
+    const GeometerOperationResult* result,
+    uint32_t index,
+    uint32_t* size
+);
+const unsigned char* geometer_operation_result_attachment_data(
+    const GeometerOperationResult* result,
+    uint32_t index,
+    uint32_t* size
+);
+void geometer_operation_result_free(GeometerOperationResult* result);
 
 GeometerStringResult geometer_step_hlr_projection_json(
     GeometerBuffer step_data,
@@ -117,3 +169,11 @@ are heap-allocated and owned by the caller. Release them with
 `geometer_free_string`. Returned GLB and planar byte buffers are heap-allocated
 and owned by the caller. Release them with `geometer_free_bytes`. The version
 string is static storage and does not use either free function.
+
+The generic result owns generated `geometer.operation.outcome.a0` JSON and any
+output attachments. Accessor pointers are borrowed until
+`geometer_operation_result_free`. The initial operation catalog contains
+`geometry.model_bounds.a0`; it accepts strict generated options JSON and a
+required `model` attachment with media type `application/step` or `model/step`.
+The catalog reports the release/C ABI generations, descriptor layouts, limits,
+and operation attachment declarations so clients do not hard-code them.

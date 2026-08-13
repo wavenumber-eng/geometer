@@ -29,6 +29,13 @@
       "schema_id": "urn:wavenumber:schema:geometer:geometry.model_bounds:a0",
       "declaration_kind": "model",
       "option_patch": false
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.OperationOutcomeA0.OperationOutcomeA0",
+      "contract_identity": "geometer.operation.outcome.a0",
+      "schema_id": "urn:wavenumber:schema:geometer:geometer.operation.outcome:a0",
+      "declaration_kind": "union",
+      "option_patch": false
     }
   ],
   "declarations": [
@@ -428,6 +435,156 @@
         "name": "float64"
       },
       "properties": []
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.OperationOutcomeA0.OperationFailureA0",
+      "kind": "model",
+      "doc": "A rejected or failed operation with governed diagnostics.",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "operation",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 1,
+            "max_length": 128
+          }
+        },
+        {
+          "name": "ok",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "boolean",
+            "value": false
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "diagnostics",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "reference",
+              "target": "Wavenumber.Geometer.Contracts.Common.DiagnosticA0"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "min_items": 1
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.OperationOutcomeA0.OperationOutcomeA0",
+      "kind": "union",
+      "doc": "Transport-neutral typed outcome shared by the generic C ABI and executable IPC.",
+      "annotations": {},
+      "constraints": {},
+      "composition": "one_of",
+      "variants": [
+        {
+          "name": "success",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.OperationOutcomeA0.OperationSuccessA0"
+          },
+          "doc": "",
+          "annotations": {}
+        },
+        {
+          "name": "failure",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.OperationOutcomeA0.OperationFailureA0"
+          },
+          "doc": "",
+          "annotations": {}
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.OperationOutcomeA0.OperationResultValueA0",
+      "kind": "union",
+      "doc": "Results currently available through the generic operation transport.",
+      "annotations": {},
+      "constraints": {},
+      "composition": "one_of",
+      "variants": [
+        {
+          "name": "model_bounds",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.ModelBoundsA0.ModelBoundsResultA0"
+          },
+          "doc": "",
+          "annotations": {}
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.OperationOutcomeA0.OperationSuccessA0",
+      "kind": "model",
+      "doc": "A completed operation with its operation-specific result.",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "operation",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 1,
+            "max_length": 128
+          }
+        },
+        {
+          "name": "ok",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "boolean",
+            "value": true
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "result",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.OperationOutcomeA0.OperationResultValueA0"
+          },
+          "annotations": {},
+          "constraints": {}
+        }
+      ]
     }
   ],
   "operations": [

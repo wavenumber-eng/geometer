@@ -5,6 +5,8 @@ set(GEOMETER_LIB_SOURCES
     mesh_shadow_outline.cpp
     model_bounds.cpp
     model_bounds_options_json.cpp
+    operation_c_api.cpp
+    operation_registry.cpp
     planar_contours.cpp
     planar_solve.cpp
     planar_step.cpp
@@ -14,6 +16,7 @@ set(GEOMETER_LIB_SOURCES
     step_to_glb.cpp
     step_to_glb_options_json.cpp
     version.cpp
+    geometer/generated/contracts/contracts_json.cpp
     ${CMAKE_SOURCE_DIR}/third_party/clipper2/src/clipper.engine.cpp
     ${CMAKE_SOURCE_DIR}/third_party/clipper2/src/clipper.offset.cpp
     ${CMAKE_SOURCE_DIR}/third_party/clipper2/src/clipper.rectclip.cpp
@@ -125,7 +128,7 @@ if(EMSCRIPTEN)
         -sMODULARIZE=1
         -sEXPORT_NAME=createGeometerModule
         -sNO_EXIT_RUNTIME=1
-        "-sEXPORTED_FUNCTIONS=['_malloc','_free','_geometer_version_string','_geometer_version_major','_geometer_version_minor','_geometer_version_patch','_geometer_abi_version','_geometer_step_hlr_projection_json','_geometer_step_hlr_projection_json_bytes','_geometer_step_to_glb','_geometer_step_to_glb_bytes','_geometer_planar_batch_solve','_geometer_planar_batch_solve_bytes','_geometer_planar_batch_solve_json','_geometer_planar_batch_solve_json_bytes','_geometer_planar_triangulate','_geometer_planar_triangulate_bytes','_geometer_clipper2_boolean','_geometer_clipper2_boolean_bytes','_geometer_clipper2_inflate_open','_geometer_clipper2_inflate_open_bytes','_geometer_free_string','_geometer_free_bytes']"
+        "-sEXPORTED_FUNCTIONS=['_malloc','_free','_geometer_version_string','_geometer_version_major','_geometer_version_minor','_geometer_version_patch','_geometer_abi_version','_geometer_step_hlr_projection_json','_geometer_step_hlr_projection_json_bytes','_geometer_step_to_glb','_geometer_step_to_glb_bytes','_geometer_planar_batch_solve','_geometer_planar_batch_solve_bytes','_geometer_planar_batch_solve_json','_geometer_planar_batch_solve_json_bytes','_geometer_planar_triangulate','_geometer_planar_triangulate_bytes','_geometer_clipper2_boolean','_geometer_clipper2_boolean_bytes','_geometer_clipper2_inflate_open','_geometer_clipper2_inflate_open_bytes','_geometer_operation_catalog_json','_geometer_operation_execute','_geometer_operation_result_json_data','_geometer_operation_result_json_size','_geometer_operation_result_attachment_count','_geometer_operation_result_attachment_name','_geometer_operation_result_attachment_media_type','_geometer_operation_result_attachment_data','_geometer_operation_result_free','_geometer_free_string','_geometer_free_bytes']"
         "-sEXPORTED_RUNTIME_METHODS=['ccall','cwrap','UTF8ToString','stringToUTF8','lengthBytesUTF8','getValue']"
     )
     set_target_properties(geometer_browser PROPERTIES

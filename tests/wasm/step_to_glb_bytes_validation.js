@@ -1,9 +1,10 @@
 const fs = require("fs");
 const path = require("path");
+const loadGeneratedModule = require("./load_generated_module.cjs");
 
 const root = path.resolve(__dirname, "..", "..");
 const browserDist = path.join(root, "dist", "wasm", "browser");
-const createGeometerModule = require(path.join(browserDist, "geometer.js"));
+const createGeometerModule = loadGeneratedModule(path.join(browserDist, "geometer.js"));
 
 function writeString(module, text) {
   const size = module.lengthBytesUTF8(text) + 1;

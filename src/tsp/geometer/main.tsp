@@ -3,3 +3,4 @@ import "@wavenumber/wn-geometer-contract-emitter";
 import "./common.tsp";
 import "./operations/model-bounds-a0.tsp";
 import "./operations/model-bounds-operation-a0.tsp";
+import "./operation-outcome-a0.tsp";

@@ -3,11 +3,12 @@
   "generation": "a0",
   "catalog_identity": "wn.geometer.contract_catalog",
   "catalog_generation": "a0",
-  "catalog_sha256": "201f5b6c7161f0f2f313709acf9e596abba4f57b251533ec5c2d862ebeda860d",
+  "catalog_sha256": "9691a8249841870e01f5c090ed08a12772d60b402c090352a0978267cae2c670",
   "contracts": {
     "geometry.common.diagnostic.a0": "contracts/geometry-common-diagnostic-a0.html",
     "geometry.model_bounds.options.a0": "contracts/geometry-model-bounds-options-a0.html",
-    "geometry.model_bounds.a0": "contracts/geometry-model-bounds-a0.html"
+    "geometry.model_bounds.a0": "contracts/geometry-model-bounds-a0.html",
+    "geometer.operation.outcome.a0": "contracts/geometer-operation-outcome-a0.html"
   },
   "operations": {
     "geometry.model_bounds.a0": "operations/geometry-model-bounds-a0.html"

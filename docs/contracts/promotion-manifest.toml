@@ -41,7 +41,7 @@ catalog_identity = "wn.geometer.contract_catalog"
 catalog_generation = "a0"
 
 [transports]
-generic_c_abi = "proposed"
+generic_c_abi = "implemented_a0"
 generic_c_abi_spec = "docs/design/generic-operation-c-abi.md"
 executable_ipc = "proposed_a0"
 executable_ipc_spec = "docs/design/executable-ipc-a0.md"
@@ -127,6 +127,15 @@ status = "vendored"
 generation = 20260623
 source = "src/cpp/lib/geometer/c_api.h"
 symbols = [
+  "geometer_operation_catalog_json",
+  "geometer_operation_execute",
+  "geometer_operation_result_json_data",
+  "geometer_operation_result_json_size",
+  "geometer_operation_result_attachment_count",
+  "geometer_operation_result_attachment_name",
+  "geometer_operation_result_attachment_media_type",
+  "geometer_operation_result_attachment_data",
+  "geometer_operation_result_free",
   "geometer_step_hlr_projection_json",
   "geometer_step_hlr_projection_json_bytes",
   "geometer_step_to_glb",
@@ -174,6 +183,15 @@ exports = [
   "_geometer_clipper2_boolean_bytes",
   "_geometer_clipper2_inflate_open",
   "_geometer_clipper2_inflate_open_bytes",
+  "_geometer_operation_catalog_json",
+  "_geometer_operation_execute",
+  "_geometer_operation_result_json_data",
+  "_geometer_operation_result_json_size",
+  "_geometer_operation_result_attachment_count",
+  "_geometer_operation_result_attachment_name",
+  "_geometer_operation_result_attachment_media_type",
+  "_geometer_operation_result_attachment_data",
+  "_geometer_operation_result_free",
   "_geometer_free_string",
   "_geometer_free_bytes",
 ]
@@ -228,6 +246,15 @@ current_authority = "handwritten_cpp"
 source = "src/cpp/lib/model_bounds.cpp"
 pilot_required = true
 compatibility = "Preserve the current JSON shape and exclude timings from deterministic semantic comparison."
+
+[[contracts]]
+id = "geometer.operation.outcome.a0"
+kind = "transport_envelope"
+status = "pilot_candidate"
+current_authority = "typespec_candidate"
+source = "src/tsp/geometer/operation-outcome-a0.tsp"
+pilot_required = true
+compatibility = "Shared additive envelope for the generic C ABI and executable IPC; it does not replace legacy per-operation return shapes."
 
 [[contracts]]
 id = "geometry.projection.options.b0"

@@ -1,9 +1,10 @@
 const fs = require("fs");
 const path = require("path");
+const loadGeneratedModule = require("./load_generated_module.cjs");
 
 const root = path.resolve(__dirname, "..", "..");
 const browserDist = path.join(root, "dist", "wasm", "browser");
-const createGeometerModule = require(path.join(browserDist, "geometer.js"));
+const createGeometerModule = loadGeneratedModule(path.join(browserDist, "geometer.js"));
 
 const requestMagic = Buffer.from("GMPBRQ01", "ascii");
 const responseMagic = Buffer.from("GMPBRS01", "ascii");

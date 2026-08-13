@@ -48,6 +48,18 @@ target_compile_definitions(geometer_model_bounds_test PRIVATE
 
 add_test(NAME geometer_model_bounds_test COMMAND geometer_model_bounds_test)
 
+add_executable(geometer_operation_contract_test
+    operation_contract_test.cpp
+)
+
+target_link_libraries(geometer_operation_contract_test PRIVATE geometer_lib)
+
+target_compile_definitions(geometer_operation_contract_test PRIVATE
+    GEOMETER_TEST_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
+)
+
+add_test(NAME geometer_operation_contract_test COMMAND geometer_operation_contract_test)
+
 add_executable(geometer_projection_options_json_test
     projection_options_json_test.cpp
 )
@@ -86,6 +98,7 @@ if(WIN32 AND OpenCASCADE_BINARY_DIR)
         geometer_planar_step_test
         geometer_analytic_planar_boolean_feasibility_test
         geometer_model_bounds_test
+        geometer_operation_contract_test
         geometer_projection_options_json_test
         geometer_projection_model_transform_test
         geometer_projection_outline_test

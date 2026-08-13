@@ -47,6 +47,15 @@ The full browser target exports:
 - `_geometer_clipper2_boolean_bytes`
 - `_geometer_clipper2_inflate_open`
 - `_geometer_clipper2_inflate_open_bytes`
+- `_geometer_operation_catalog_json`
+- `_geometer_operation_execute`
+- `_geometer_operation_result_json_data`
+- `_geometer_operation_result_json_size`
+- `_geometer_operation_result_attachment_count`
+- `_geometer_operation_result_attachment_name`
+- `_geometer_operation_result_attachment_media_type`
+- `_geometer_operation_result_attachment_data`
+- `_geometer_operation_result_free`
 - `_geometer_free_string`
 - `_geometer_free_bytes`
 
@@ -79,6 +88,9 @@ Use this target for browser workers that only need packed planar geometry
 operations and should not pay the full OCCT/STEP WASM size, startup, and
 worker-memory cost. The full browser target also exports these planar APIs, so
 the planar-only target is an optimization, not a separate semantic API.
+The generic operation ABI is intentionally exported only by the full browser
+target because the pilot `model_bounds` operation requires OCCT STEP support.
+Existing full-browser and planar-only symbols are unchanged.
 
 Minimal browser-worker shape:
 

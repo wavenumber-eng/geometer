@@ -1,0 +1,19 @@
+name = "WASM Contract Transports"
+order = 4
+description = "Verify full-browser generic operation and retained WASM interfaces against committed artifacts."
+enabled = true
+runner = "pytest"
+concerns = ["wasm", "contracts", "compatibility"]
+
+objectives = [
+    "Execute model bounds through the generated outcome and generic attachment C ABI on wasm32.",
+    "Verify the operation catalog reports the governed wasm32 descriptor layout.",
+    "Retain STEP-to-GLB and packed planar WASM compatibility round trips.",
+]
+
+[[subtests]]
+id = "WASM_001"
+file = "test_wasm_validations.py"
+name = "Browser WASM Contract Validation"
+description = "Runs Node-hosted smoke tests against the committed full-browser WASM artifact."
+test_case_type = "integration"

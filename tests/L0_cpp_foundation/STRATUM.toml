@@ -14,5 +14,5 @@ objectives = [
 id = "L0_001"
 file = "test_native_ctest.py"
 name = "Native CTest Foundation"
-description = "Runs every registered native CTest with failure output enabled."
+description = "Validates canonical build discovery and runs every registered native CTest with failure output enabled."
 test_case_type = "integration"

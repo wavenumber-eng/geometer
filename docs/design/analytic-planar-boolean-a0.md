@@ -859,6 +859,24 @@ start-equals-end encoding fail closed. Full circles remain represented by
 multiple analytic fragments. Native and Emscripten executions must reproduce
 the complete classification signature byte for byte.
 
+### Exact Boolean Identities
+
+The pull-request lane evaluates the regularized identity cases through the
+exact arrangement, ordered-stage selection, result-region, provenance,
+operand-outcome, and final normalization pipeline. Two coincident rectangles
+with distinct coverage and operand identities prove that `union(A, A)`
+publishes the same normalized analytic geometry as `A` while retaining both
+contributors in result-region lineage and symmetric contributor/absorbed
+outcome events. `difference(A, A)` must succeed with an empty normalized result
+and record that the original positive operand was completely removed; its
+subtractor must not be mislabeled `no_effect`.
+
+A zero-operand union stage and a zero-operand difference stage are each run
+after the baseline union. Both must preserve normalized geometry, per-face
+positive/subtractive lineage, and all operand outcome events exactly. Native
+and Emscripten executions reproduce one governed identity signature byte for
+byte.
+
 ### OCCT 8.0.1 Qualification
 
 Production solver work and conformance-golden freeze require a side-by-side

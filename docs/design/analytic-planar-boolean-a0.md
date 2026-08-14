@@ -866,6 +866,18 @@ start-equals-end encoding fail closed. Full circles remain represented by
 multiple analytic fragments. Native and Emscripten executions must reproduce
 the complete classification signature byte for byte.
 
+The final-result normalization lane separately sweeps vanishing holes in both
+axes and a boundary-connected notch immediately around a positive half-grid
+tie. Feature boundaries at `1.49 nm` and exactly `1.5 nm` retain distinct
+ties-away representatives and must preserve the independently expected hole or
+notch topology. Boundaries at exactly `1.5 nm` and `1.51 nm` share a required
+representative and must return `normalization_topology_collapse` without
+exposing a partial result. Notch inputs are atomically split at their
+outer-boundary intersections before the arrangement is constructed.
+Successful canonical geometry and failed outcome identities form one
+digest-locked signature that is identical under native and Emscripten
+execution.
+
 ### Exact Boolean Identities
 
 The pull-request lane evaluates the regularized identity cases through the

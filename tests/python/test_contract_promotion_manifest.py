@@ -18,6 +18,18 @@ _RECTANGLE_ENUMERATION_GATE: dict[str, Any] = {
     "rectangle_enumeration_sha256": "db0ebca47a53585d7d52312b128a1c77fd345c282481b5415b061401cd5deb74",
 }
 
+_NORMALIZATION_COLLAPSE_GATE: dict[str, Any] = {
+    "normalization_collapse_cases": [
+        "hole_x_below_tie",
+        "hole_x_above_tie",
+        "hole_y_below_tie",
+        "hole_y_above_tie",
+        "notch_below_tie",
+        "notch_above_tie",
+    ],
+    "normalization_collapse_sha256": "761350eccf99d53336aa8c99903b62cc5906eab29ebdd2b0b3a1c3bd17654ede",
+}
+
 
 def _manifest() -> dict[str, Any]:
     with MANIFEST_PATH.open("rb") as stream:
@@ -536,6 +548,7 @@ def test_exact_algebraic_backend_design_gate_is_closed() -> None:
             "difference_empty",
         ],
         "boolean_identity_sha256": "bf0c289c99026044bfcb6b8d990fbc33306ec61a50763cab1158d312f656027e",
+        **_NORMALIZATION_COLLAPSE_GATE,
         **_RECTANGLE_ENUMERATION_GATE,
     }
     assert (ROOT / backend["design"]).is_file()

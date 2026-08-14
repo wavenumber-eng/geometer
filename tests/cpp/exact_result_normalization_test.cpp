@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <cstdlib>
 #include <iostream>
+#include <set>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -305,12 +306,185 @@ std::string signature(const ExactNormalizedBooleanResult& result)
     return out.str();
 }
 
+void append_notch_fixture(ConstructionArena& arena, const ExactPoint& x0_bottom,
+                          const ExactPoint& x1_bottom, const ExactPoint& x0_intersection,
+                          const ExactPoint& x1_intersection, const ExactPoint& x0_top,
+                          const ExactPoint& x1_top, std::vector<ExactAtomicCurve>& curves,
+                          std::vector<ExactCoverageOccurrence>& coverages)
+{
+    const ExactPoint outer_bottom_left = point(arena, 0, 1, 0, 1);
+    const ExactPoint outer_bottom_right = point(arena, 10, 1, 0, 1);
+    const ExactPoint outer_top_left = point(arena, 0, 1, 10, 1);
+    const ExactPoint outer_top_right = point(arena, 10, 1, 10, 1);
+    append_atomic_line(outer_bottom_left, outer_bottom_right, {{100, 10}}, true, curves, coverages);
+    append_atomic_line(outer_bottom_right, outer_top_right, {{101, 10}}, true, curves, coverages);
+    append_atomic_line(outer_top_left, x0_intersection, {{102, 10}}, false, curves, coverages);
+    append_atomic_line(x0_intersection, x1_intersection, {{103, 10}}, false, curves, coverages);
+    append_atomic_line(x1_intersection, outer_top_right, {{104, 10}}, false, curves, coverages);
+    append_atomic_line(outer_bottom_left, outer_top_left, {{105, 10}}, false, curves, coverages);
+
+    append_atomic_line(x0_bottom, x1_bottom, {{200, 20}}, true, curves, coverages);
+    append_atomic_line(x1_bottom, x1_intersection, {{201, 20}}, true, curves, coverages);
+    append_atomic_line(x1_intersection, x1_top, {{202, 20}}, true, curves, coverages);
+    append_atomic_line(x0_top, x1_top, {{203, 20}}, false, curves, coverages);
+    append_atomic_line(x0_bottom, x0_intersection, {{204, 20}}, false, curves, coverages);
+    append_atomic_line(x0_intersection, x0_top, {{205, 20}}, false, curves, coverages);
+}
+
+using IntegerPoint = std::pair<std::int64_t, std::int64_t>;
+using IntegerEdge = std::pair<IntegerPoint, IntegerPoint>;
+
+void require_feature_geometry(const std::string& name, const ExactNormalizedBooleanResult& result,
+                              std::int64_t x0, std::int64_t x1, std::int64_t y0, std::int64_t y1,
+                              bool boundary_notch)
+{
+    std::set<IntegerEdge> expected_edges{
+        {{0, 0}, {10, 0}},
+        {{10, 0}, {10, 10}},
+        {{0, 10}, {0, 0}},
+    };
+    if (boundary_notch)
+    {
+        expected_edges.insert({{10, 10}, {x1, 10}});
+        expected_edges.insert({{x1, 10}, {x1, y0}});
+        expected_edges.insert({{x1, y0}, {x0, y0}});
+        expected_edges.insert({{x0, y0}, {x0, 10}});
+        expected_edges.insert({{x0, 10}, {0, 10}});
+    }
+    else
+    {
+        expected_edges.insert({{10, 10}, {0, 10}});
+        expected_edges.insert({{x0, y0}, {x0, y1}});
+        expected_edges.insert({{x0, y1}, {x1, y1}});
+        expected_edges.insert({{x1, y1}, {x1, y0}});
+        expected_edges.insert({{x1, y0}, {x0, y0}});
+    }
+    std::set<IntegerEdge> actual_edges;
+    std::set<IntegerPoint> actual_vertices;
+    for (const ExactNormalizedResultVertex& vertex : result.vertices())
+        actual_vertices.insert({vertex.x_nm, vertex.y_nm});
+    for (const ExactNormalizedResultFragment& fragment : result.fragments())
+    {
+        require(fragment.kind == ExactAtomicCurveKind::line && fragment.radius_nm == 0,
+                name + " produced a non-line normalized boundary");
+        const ExactNormalizedResultVertex& start = result.vertices()[fragment.start_vertex];
+        const ExactNormalizedResultVertex& end = result.vertices()[fragment.end_vertex];
+        actual_edges.insert({{start.x_nm, start.y_nm}, {end.x_nm, end.y_nm}});
+    }
+    std::set<IntegerPoint> expected_vertices;
+    for (const IntegerEdge& edge : expected_edges)
+    {
+        expected_vertices.insert(edge.first);
+        expected_vertices.insert(edge.second);
+    }
+    require(actual_edges == expected_edges && actual_vertices == expected_vertices &&
+                result.fragments().size() == expected_edges.size() &&
+                result.vertices().size() == expected_vertices.size(),
+            name + " disagrees with the independent normalized boundary oracle");
+    require(result.regions().size() == 1 && result.rings().front().counterclockwise &&
+                (boundary_notch ||
+                 (result.rings().size() == 2 && !result.rings()[1].counterclockwise &&
+                  result.rings()[1].parent_ring == 0 && result.rings()[1].depth == 1)),
+            name + " disagrees with the independent containment/winding oracle");
+}
+
+std::string run_vanishing_feature_case(const std::string& name, std::int64_t x0_numerator,
+                                       std::int64_t x0_denominator, std::int64_t x1_numerator,
+                                       std::int64_t x1_denominator, std::int64_t y0_numerator,
+                                       std::int64_t y0_denominator, std::int64_t y1_numerator,
+                                       std::int64_t y1_denominator,
+                                       ExactResultNormalizationError expected_error,
+                                       std::size_t expected_rings, std::int64_t expected_x0,
+                                       std::int64_t expected_x1, std::int64_t expected_y0,
+                                       std::int64_t expected_y1, bool boundary_notch = false)
+{
+    Budget budget({2'000'000'000, 268'435'456});
+    ConstructionArena arena(budget);
+    std::vector<ExactAtomicCurve> curves;
+    std::vector<ExactCoverageOccurrence> coverages;
+    const ExactPoint x0_bottom =
+        point(arena, x0_numerator, x0_denominator, y0_numerator, y0_denominator);
+    const ExactPoint x1_bottom =
+        point(arena, x1_numerator, x1_denominator, y0_numerator, y0_denominator);
+    const ExactPoint x0_top =
+        point(arena, x0_numerator, x0_denominator, y1_numerator, y1_denominator);
+    const ExactPoint x1_top =
+        point(arena, x1_numerator, x1_denominator, y1_numerator, y1_denominator);
+    if (boundary_notch)
+        append_notch_fixture(
+            arena, x0_bottom, x1_bottom, point(arena, x0_numerator, x0_denominator, 10, 1),
+            point(arena, x1_numerator, x1_denominator, 10, 1), x0_top, x1_top, curves, coverages);
+    else
+    {
+        append_rectangle(arena, point(arena, 0, 1, 0, 1), point(arena, 10, 1, 0, 1),
+                         point(arena, 10, 1, 10, 1), point(arena, 0, 1, 10, 1), 100, curves,
+                         coverages);
+        append_rectangle(arena, x0_bottom, x1_bottom, x1_top, x0_top, 200, curves, coverages, 20);
+    }
+    const std::vector<ExactBooleanStage> stages{
+        {1, ExactBooleanStageOperation::union_, {{10, 1000}}},
+        {2, ExactBooleanStageOperation::difference, {{20, 2000}}},
+    };
+    Pipeline pipeline;
+    pipeline.arrangement = build_exact_arrangement(arena, curves, coverages);
+    require(pipeline.arrangement.error == Error::none && pipeline.arrangement.value,
+            name + " arrangement failed");
+    pipeline.selection =
+        evaluate_exact_boolean_stages(arena.budget(), *pipeline.arrangement.value, stages);
+    require(pipeline.selection.error == Error::none && pipeline.selection.value,
+            name + " selection failed");
+    pipeline.regions = build_exact_boolean_regions(arena.budget(), *pipeline.arrangement.value,
+                                                   *pipeline.selection.value);
+    require(pipeline.regions.error == Error::none && pipeline.regions.value,
+            name + " regions failed");
+    ExactNormalizedBooleanResultResult result = normalize_exact_boolean_result(
+        arena, *pipeline.arrangement.value, *pipeline.selection.value, *pipeline.regions.value);
+    require(result.error == expected_error, name + " returned the wrong normalization outcome");
+    std::ostringstream out;
+    out << name << ':' << static_cast<unsigned>(result.error);
+    if (expected_error == ExactResultNormalizationError::none)
+    {
+        require(result.value && result.value->rings().size() == expected_rings,
+                name + " changed its successful normalized topology");
+        require_feature_geometry(name, *result.value, expected_x0, expected_x1, expected_y0,
+                                 expected_y1, boundary_notch);
+        out << ':' << signature(*result.value);
+    }
+    else
+        require(!result.value, name + " exposed a partial result after fail-closed normalization");
+    out << ';';
+    return out.str();
+}
+
+std::string require_vanishing_feature_sweep()
+{
+    std::string signature;
+    signature += run_vanishing_feature_case("hole_x_below_tie", 149, 100, 3, 2, 2, 1, 8, 1,
+                                            ExactResultNormalizationError::none, 2, 1, 2, 2, 8);
+    signature += run_vanishing_feature_case(
+        "hole_x_above_tie", 3, 2, 151, 100, 2, 1, 8, 1,
+        ExactResultNormalizationError::normalization_topology_collapse, 0, 0, 0, 0, 0);
+    signature += run_vanishing_feature_case("hole_y_below_tie", 2, 1, 8, 1, 149, 100, 3, 2,
+                                            ExactResultNormalizationError::none, 2, 2, 8, 1, 2);
+    signature += run_vanishing_feature_case(
+        "hole_y_above_tie", 2, 1, 8, 1, 3, 2, 151, 100,
+        ExactResultNormalizationError::normalization_topology_collapse, 0, 0, 0, 0, 0);
+    signature +=
+        run_vanishing_feature_case("notch_below_tie", 149, 100, 3, 2, 8, 1, 12, 1,
+                                   ExactResultNormalizationError::none, 1, 1, 2, 8, 12, true);
+    signature += run_vanishing_feature_case(
+        "notch_above_tie", 3, 2, 151, 100, 8, 1, 12, 1,
+        ExactResultNormalizationError::normalization_topology_collapse, 0, 0, 0, 0, 0, true);
+    return signature;
+}
+
 } // namespace
 
 int main()
 {
     require_arc_distance_predicates();
     require_between_stage_normalization_sentinel();
+    const std::string vanishing_feature_signature = require_vanishing_feature_sweep();
 
     Budget empty_budget({2'000'000'000, 268'435'456});
     ConstructionArena empty_arena(empty_budget);
@@ -453,5 +627,6 @@ int main()
               << signature(*normalized_circle.value) << '|' << signature(*moved_arc_result.value)
               << '\n';
     std::cout << "EXACT_RESULT_NORMALIZATION_MUTATIONS=between_stage_normalization\n";
+    std::cout << "EXACT_RESULT_NORMALIZATION_COLLAPSE=" << vanishing_feature_signature << '\n';
     return 0;
 }

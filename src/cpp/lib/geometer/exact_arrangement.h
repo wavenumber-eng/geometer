@@ -23,6 +23,13 @@ struct ExactCurveMembership
     bool agrees_with_carrier = true;
 };
 
+struct ExactCoverageOccurrence
+{
+    std::uint64_t occurrence_id = 0;
+    std::uint64_t coverage_id = 0;
+    bool material_on_left_of_occurrence = true;
+};
+
 struct ExactAtomicCurve
 {
     ExactAtomicCurveKind kind = ExactAtomicCurveKind::line;
@@ -61,6 +68,26 @@ struct ExactArrangementHalfEdge
     std::uint32_t previous = 0;
     std::uint32_t edge = 0;
     bool forward = true;
+    std::uint32_t cycle = 0;
+    std::uint32_t face = 0;
+};
+
+struct ExactArrangementCycle
+{
+    std::uint32_t half_edge_begin = 0;
+    std::uint32_t half_edge_count = 0;
+    std::uint32_t component = 0;
+    std::uint32_t face = 0;
+    bool counterclockwise = true;
+};
+
+struct ExactArrangementFace
+{
+    std::uint32_t boundary_cycle_begin = 0;
+    std::uint32_t boundary_cycle_count = 0;
+    std::uint32_t coverage_begin = 0;
+    std::uint32_t coverage_count = 0;
+    bool unbounded = false;
 };
 
 struct ExactArrangementResult;
@@ -79,17 +106,27 @@ class ExactArrangement
     [[nodiscard]] const std::vector<ExactArrangementHalfEdge>& half_edges() const;
     [[nodiscard]] const std::vector<std::uint32_t>& outgoing_half_edges() const;
     [[nodiscard]] const std::vector<ExactCurveMembership>& memberships() const;
+    [[nodiscard]] const std::vector<ExactArrangementCycle>& cycles() const;
+    [[nodiscard]] const std::vector<std::uint32_t>& cycle_half_edges() const;
+    [[nodiscard]] const std::vector<ExactArrangementFace>& faces() const;
+    [[nodiscard]] const std::vector<std::uint32_t>& face_boundary_cycles() const;
+    [[nodiscard]] const std::vector<std::uint64_t>& face_coverages() const;
 
   private:
     friend struct ExactArrangementResult;
     friend ExactArrangementResult build_exact_arrangement(ConstructionArena&,
                                                           const std::vector<ExactAtomicCurve>&);
-    ExactArrangement(Budget& budget, std::uint64_t charged_bytes,
-                     std::vector<ExactArrangementVertex> vertices,
-                     std::vector<ExactArrangementEdge> edges,
-                     std::vector<ExactArrangementHalfEdge> half_edges,
-                     std::vector<std::uint32_t> outgoing_half_edges,
-                     std::vector<ExactCurveMembership> memberships) noexcept;
+    friend ExactArrangementResult
+    build_exact_arrangement(ConstructionArena&, const std::vector<ExactAtomicCurve>&,
+                            const std::vector<ExactCoverageOccurrence>&);
+    ExactArrangement(
+        Budget& budget, std::uint64_t charged_bytes, std::vector<ExactArrangementVertex> vertices,
+        std::vector<ExactArrangementEdge> edges, std::vector<ExactArrangementHalfEdge> half_edges,
+        std::vector<std::uint32_t> outgoing_half_edges,
+        std::vector<ExactCurveMembership> memberships, std::vector<ExactArrangementCycle> cycles,
+        std::vector<std::uint32_t> cycle_half_edges, std::vector<ExactArrangementFace> faces,
+        std::vector<std::uint32_t> face_boundary_cycles,
+        std::vector<std::uint64_t> face_coverages) noexcept;
 
     void release();
 
@@ -100,6 +137,11 @@ class ExactArrangement
     std::vector<ExactArrangementHalfEdge> half_edges_;
     std::vector<std::uint32_t> outgoing_half_edges_;
     std::vector<ExactCurveMembership> memberships_;
+    std::vector<ExactArrangementCycle> cycles_;
+    std::vector<std::uint32_t> cycle_half_edges_;
+    std::vector<ExactArrangementFace> faces_;
+    std::vector<std::uint32_t> face_boundary_cycles_;
+    std::vector<std::uint64_t> face_coverages_;
 };
 
 struct ExactArrangementResult
@@ -110,5 +152,9 @@ struct ExactArrangementResult
 
 [[nodiscard]] ExactArrangementResult
 build_exact_arrangement(ConstructionArena& arena, const std::vector<ExactAtomicCurve>& curves);
+
+[[nodiscard]] ExactArrangementResult
+build_exact_arrangement(ConstructionArena& arena, const std::vector<ExactAtomicCurve>& curves,
+                        const std::vector<ExactCoverageOccurrence>& coverages);
 
 } // namespace geometer::exact

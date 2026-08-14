@@ -181,79 +181,9 @@ ExactArrangementResult failure(Error error)
 
 } // namespace
 
-ExactArrangement::ExactArrangement(Budget& budget, std::uint64_t charged_bytes,
-                                   std::vector<ExactArrangementVertex> vertices,
-                                   std::vector<ExactArrangementEdge> edges,
-                                   std::vector<ExactArrangementHalfEdge> half_edges,
-                                   std::vector<std::uint32_t> outgoing_half_edges,
-                                   std::vector<ExactCurveMembership> memberships) noexcept
-    : budget_(&budget), charged_bytes_(charged_bytes), vertices_(std::move(vertices)),
-      edges_(std::move(edges)), half_edges_(std::move(half_edges)),
-      outgoing_half_edges_(std::move(outgoing_half_edges)), memberships_(std::move(memberships))
-{
-}
-
-ExactArrangement::~ExactArrangement()
-{
-    release();
-}
-
-ExactArrangement::ExactArrangement(ExactArrangement&& other) noexcept
-    : budget_(std::exchange(other.budget_, nullptr)),
-      charged_bytes_(std::exchange(other.charged_bytes_, 0)), vertices_(std::move(other.vertices_)),
-      edges_(std::move(other.edges_)), half_edges_(std::move(other.half_edges_)),
-      outgoing_half_edges_(std::move(other.outgoing_half_edges_)),
-      memberships_(std::move(other.memberships_))
-{
-}
-
-ExactArrangement& ExactArrangement::operator=(ExactArrangement&& other) noexcept
-{
-    if (this != &other)
-    {
-        release();
-        budget_ = std::exchange(other.budget_, nullptr);
-        charged_bytes_ = std::exchange(other.charged_bytes_, 0);
-        vertices_ = std::move(other.vertices_);
-        edges_ = std::move(other.edges_);
-        half_edges_ = std::move(other.half_edges_);
-        outgoing_half_edges_ = std::move(other.outgoing_half_edges_);
-        memberships_ = std::move(other.memberships_);
-    }
-    return *this;
-}
-
-void ExactArrangement::release()
-{
-    if (budget_ != nullptr)
-        budget_->release_storage(charged_bytes_);
-    budget_ = nullptr;
-    charged_bytes_ = 0;
-}
-
-const std::vector<ExactArrangementVertex>& ExactArrangement::vertices() const
-{
-    return vertices_;
-}
-const std::vector<ExactArrangementEdge>& ExactArrangement::edges() const
-{
-    return edges_;
-}
-const std::vector<ExactArrangementHalfEdge>& ExactArrangement::half_edges() const
-{
-    return half_edges_;
-}
-const std::vector<std::uint32_t>& ExactArrangement::outgoing_half_edges() const
-{
-    return outgoing_half_edges_;
-}
-const std::vector<ExactCurveMembership>& ExactArrangement::memberships() const
-{
-    return memberships_;
-}
-
-ExactArrangementResult build_exact_arrangement(ConstructionArena& arena,
-                                               const std::vector<ExactAtomicCurve>& curves)
+ExactArrangementResult
+build_exact_arrangement(ConstructionArena& arena, const std::vector<ExactAtomicCurve>& curves,
+                        const std::vector<ExactCoverageOccurrence>& coverages)
 {
     try
     {
@@ -269,13 +199,24 @@ ExactArrangementResult build_exact_arrangement(ConstructionArena& arena,
             membership_count = checked_add(membership_count, curve.memberships.size());
         if (membership_count > kMaximumMemberships)
             return failure(Error::resource_limit_exceeded);
-        const std::uint64_t charge =
-            checked_add(4096, checked_add(checked_multiply(curve_count, 1024),
-                                          checked_multiply(membership_count, 32)));
-        if (!arena.budget().consume_work(
-                checked_add(checked_multiply(curve_pairs, 16),
-                            checked_add(256, checked_add(checked_multiply(curve_count, 128),
-                                                         checked_multiply(membership_count, 16))))))
+        if (coverages.size() > kMaximumMemberships)
+            return failure(Error::resource_limit_exceeded);
+        const std::uint64_t maximum_face_coverages = std::min(
+            kMaximumMemberships, checked_multiply(coverages.size(), checked_add(curve_count, 1)));
+        const std::uint64_t charge = checked_add(
+            4096,
+            checked_add(checked_multiply(curve_count, 1024),
+                        checked_add(checked_multiply(membership_count, 32),
+                                    checked_add(checked_multiply(coverages.size(), 32),
+                                                checked_multiply(maximum_face_coverages, 8)))));
+        if (!arena.budget().consume_work(checked_add(
+                checked_multiply(curve_pairs, 16),
+                checked_add(
+                    256, checked_add(checked_multiply(curve_count, 128),
+                                     checked_add(checked_multiply(membership_count, 16),
+                                                 checked_add(checked_multiply(coverages.size(), 32),
+                                                             checked_multiply(
+                                                                 maximum_face_coverages, 8))))))))
             return failure(Error::resource_limit_exceeded);
         StorageReservation reservation(arena.budget(), charge);
         if (!reservation.acquired())
@@ -455,15 +396,38 @@ ExactArrangementResult build_exact_arrangement(ConstructionArena& arena,
                 return failure(Error::invalid_argument);
         }
 
+        std::vector<ExactArrangementCycle> cycles;
+        std::vector<std::uint32_t> cycle_half_edges;
+        std::vector<ExactArrangementFace> faces;
+        std::vector<std::uint32_t> face_boundary_cycles;
+        if (const Error error = arrangement_detail::build_face_topology(
+                arena, vertices, edges, half_edges, cycles, cycle_half_edges, faces,
+                face_boundary_cycles);
+            error != Error::none)
+            return failure(error);
+        std::vector<std::uint64_t> face_coverages;
+        if (const Error error = arrangement_detail::classify_face_coverages(
+                coverages, edges, memberships, half_edges, faces, face_coverages);
+            error != Error::none)
+            return failure(error);
+
         const std::uint64_t transferred = reservation.transfer();
-        return {Error::none, ExactArrangement(arena.budget(), transferred, std::move(vertices),
-                                              std::move(edges), std::move(half_edges),
-                                              std::move(outgoing), std::move(memberships))};
+        return {Error::none,
+                ExactArrangement(arena.budget(), transferred, std::move(vertices), std::move(edges),
+                                 std::move(half_edges), std::move(outgoing), std::move(memberships),
+                                 std::move(cycles), std::move(cycle_half_edges), std::move(faces),
+                                 std::move(face_boundary_cycles), std::move(face_coverages))};
     }
     catch (const std::exception&)
     {
         return failure(Error::resource_limit_exceeded);
     }
+}
+
+ExactArrangementResult build_exact_arrangement(ConstructionArena& arena,
+                                               const std::vector<ExactAtomicCurve>& curves)
+{
+    return build_exact_arrangement(arena, curves, {});
 }
 
 } // namespace geometer::exact

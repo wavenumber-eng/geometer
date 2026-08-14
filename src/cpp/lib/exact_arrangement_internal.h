@@ -38,5 +38,28 @@ struct EdgeDraft
                                         const std::vector<ExactArrangementVertex>& vertices,
                                         const std::vector<ExactArrangementEdge>& edges,
                                         const std::vector<ExactArrangementHalfEdge>& half_edges);
+[[nodiscard]] Ordering
+compare_cycle_germs_at_minimum(ConstructionArena& arena, std::uint32_t outgoing_half_edge,
+                               std::uint32_t reverse_incoming_half_edge,
+                               const std::vector<ExactArrangementVertex>& vertices,
+                               const std::vector<ExactArrangementEdge>& edges,
+                               const std::vector<ExactArrangementHalfEdge>& half_edges);
+
+[[nodiscard]] Error build_face_topology(ConstructionArena& arena,
+                                        const std::vector<ExactArrangementVertex>& vertices,
+                                        const std::vector<ExactArrangementEdge>& edges,
+                                        std::vector<ExactArrangementHalfEdge>& half_edges,
+                                        std::vector<ExactArrangementCycle>& cycles,
+                                        std::vector<std::uint32_t>& cycle_half_edges,
+                                        std::vector<ExactArrangementFace>& faces,
+                                        std::vector<std::uint32_t>& face_boundary_cycles);
+
+[[nodiscard]] Error
+classify_face_coverages(const std::vector<ExactCoverageOccurrence>& coverage_occurrences,
+                        const std::vector<ExactArrangementEdge>& edges,
+                        const std::vector<ExactCurveMembership>& memberships,
+                        const std::vector<ExactArrangementHalfEdge>& half_edges,
+                        std::vector<ExactArrangementFace>& faces,
+                        std::vector<std::uint64_t>& face_coverages);
 
 } // namespace geometer::exact::arrangement_detail

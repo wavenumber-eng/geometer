@@ -243,4 +243,51 @@ Ordering compare_outgoing(ConstructionArena& arena, std::uint32_t left_half_edge
     }
 }
 
+Ordering compare_cycle_germs_at_minimum(ConstructionArena& arena, std::uint32_t outgoing_half_edge,
+                                        std::uint32_t reverse_incoming_half_edge,
+                                        const std::vector<ExactArrangementVertex>& vertices,
+                                        const std::vector<ExactArrangementEdge>& edges,
+                                        const std::vector<ExactArrangementHalfEdge>& half_edges)
+{
+    try
+    {
+        ConstructionArenaTransaction transaction(arena);
+        ConstructionBuilder builder(arena);
+        const Tangent outgoing =
+            outgoing_tangent(builder, outgoing_half_edge, vertices, edges, half_edges);
+        const Tangent incoming =
+            outgoing_tangent(builder, reverse_incoming_half_edge, vertices, edges, half_edges);
+        const std::int8_t outgoing_x = builder.sign(outgoing.direction.x);
+        const std::int8_t incoming_x = builder.sign(incoming.direction.x);
+        const std::int8_t outgoing_y = builder.sign(outgoing.direction.y);
+        const std::int8_t incoming_y = builder.sign(incoming.direction.y);
+        if (!builder.good())
+            return failure(builder.error());
+        if (outgoing_x < 0 || incoming_x < 0)
+            return failure(Error::invalid_argument);
+        const std::int8_t outgoing_half = outgoing_y < 0 ? 0 : 1;
+        const std::int8_t incoming_half = incoming_y < 0 ? 0 : 1;
+        if (outgoing_half != incoming_half)
+            return {Error::none, outgoing_half < incoming_half ? -1 : 1};
+        const std::int8_t orientation =
+            builder.sign(cross(builder, outgoing.direction, incoming.direction));
+        if (!builder.good())
+            return failure(builder.error());
+        if (orientation != 0)
+            return {Error::none, orientation > 0 ? -1 : 1};
+        const std::int8_t direction =
+            builder.sign(dot(builder, outgoing.direction, incoming.direction));
+        if (!builder.good() || direction <= 0)
+            return failure(builder.good() ? Error::invalid_argument : builder.error());
+        const std::int8_t curvature = compare_curvature(builder, outgoing, incoming);
+        if (!builder.good())
+            return failure(builder.error());
+        return {Error::none, curvature};
+    }
+    catch (const std::exception&)
+    {
+        return failure(Error::resource_limit_exceeded);
+    }
+}
+
 } // namespace geometer::exact::arrangement_detail

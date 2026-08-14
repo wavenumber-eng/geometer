@@ -46,7 +46,7 @@ configurations.
 
 ## Dependency Sources
 
-- **OCCT** (V8_0_0): restored from a verified binary cache when available, or
+- **OCCT** (V8_0_1): restored from a verified binary cache when available, or
   cloned shallow from GitHub and built as static libraries.
 - **RapidJSON** (v1.1.0, header-only): vendored under
   `third_party/rapidjson`, required by OCCT's `RWGltf_CafWriter` for glTF/GLB

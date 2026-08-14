@@ -4,6 +4,11 @@ All notable changes to geometer are documented here.
 
 ## [Unreleased]
 
+### Changed
+
+- Updated the pinned OCCT dependency to `V8_0_1` after exact-tag native,
+  WASM, browser, generated-client, and cross-tag qualification.
+
 ## [2026.6.23] - 2026-06-23
 
 ### Fixed

@@ -1047,6 +1047,16 @@ timings and the generated STEP header timestamp; all remaining governed output
 projections compare exactly. Browser artifact sizes/digests and repeated
 STEP-to-GLB heap observations are retained for review.
 
+The complete comparison at Geometer revision
+`64d598e1d41523f5b940ccdbc7130c1b3fc94526` passed and received independent
+acceptance in review packet
+`reviewer-01a00241-a037-752d-ad0b-820e8412a786`. No governed semantic or byte
+difference was found, the repeated browser heap remained flat at 64 MiB, and
+the exact feasibility signature remained unchanged. This selects the exact
+`V8_0_1` production dependency pin. Cache publication and restore verification
+remain part of the pin-integration gate; production operation dispatch remains
+disabled.
+
 Before release, Geometer must pass native/full-browser/executable parity,
 generated TypeScript/Rust/Python consumption, malformed/resource tests,
 documentation generation, native/WASM/package/Rack/L99 gates, and candidate

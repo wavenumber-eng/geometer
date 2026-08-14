@@ -68,3 +68,21 @@ Do not publish new dependency-cache profiles or change the production pin until
 both tag reports and the existing STEP, HLR, GLB, planar, CLI, Python, browser,
 package, runtime, and memory evidence receive independent review. If V8_0_1 is
 rejected, retain V8_0_0 and commit the minimized rejecting fixture and decision.
+
+## Accepted 8.0.1 Decision
+
+The complete comparison at Geometer revision
+`64d598e1d41523f5b940ccdbc7130c1b3fc94526` was independently accepted in
+review packet `reviewer-01a00241-a037-752d-ad0b-820e8412a786`. The reviewed
+baseline, candidate, and comparison report SHA-256 values are respectively:
+
+- `a658e6ab6699a18d58eb175c704e08af287a1b7baa9274425d23504d6e4eef3d`
+- `badd9db71e52ba0ed751e36241ae0bd52fff6e387a85ba3f49a6f9acb10671de`
+- `931f1cd56a85e59c2924ba034a21339531430c6541f122c07a18a32241e92a7c`
+
+The comparison found no governed semantic or byte difference. V8_0_1 adds
+1,157,984 bytes to the Windows native OCCT install, 1,115,658 bytes to the
+WASM OCCT install, 54,784 bytes to the native executable, and 23,267 bytes to
+the browser WASM artifact. This evidence authorizes the exact `V8_0_1` pin and
+new immutable cache profiles; it does not authorize production analytic
+solver dispatch.

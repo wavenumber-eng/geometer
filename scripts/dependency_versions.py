@@ -6,8 +6,8 @@ from pathlib import Path
 
 
 OCCT_REPO = "https://github.com/Open-Cascade-SAS/OCCT.git"
-OCCT_TAG = "V8_0_0"
-OCCT_VERSION = "8.0.0"
+OCCT_TAG = "V8_0_1"
+OCCT_VERSION = "8.0.1"
 EMSDK_REPO = "https://github.com/emscripten-core/emsdk.git"
 EMSDK_VERSION = "3.1.56"
 BOOST_VERSION = "1.92.0"

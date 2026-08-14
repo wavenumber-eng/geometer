@@ -61,6 +61,10 @@ artifact_policy = "committed-grouped-dist"
 [tool.wn_dev_std.documentation.plans]
 ignore = [".deps"]
 
+[tool.wn_dev_std.tests]
+roots = ["tests"]
+signoff_strata = ["L99_release"]
+
 [tool.uv]
 package = true
 

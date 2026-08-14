@@ -3,7 +3,7 @@ order = 99
 description = "Final release gate: Ruff, Pyright, uv lock, clang-format, Lizard, code hygiene, and stale artifact checks. Required before tagging."
 enabled = true
 runner = "pytest"
-concerns = ["release", "lint", "format", "hygiene"]
+concerns = ["release", "signoff", "lint", "format", "hygiene"]
 
 objectives = [
     "Require Python lint to pass through Ruff.",

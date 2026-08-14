@@ -8,147 +8,8 @@
 namespace geometer::exact
 {
 
-class ConstructionTransaction
-{
-  public:
-    explicit ConstructionTransaction(ConstructionArena& arena)
-        : arena_(arena), checkpoint_(arena.nodes_.size())
-    {
-    }
-
-    ~ConstructionTransaction()
-    {
-        if (!committed_)
-            arena_.rollback(checkpoint_);
-    }
-
-    void commit()
-    {
-        committed_ = true;
-    }
-
-  private:
-    ConstructionArena& arena_;
-    std::size_t checkpoint_ = 0;
-    bool committed_ = false;
-};
-
 namespace
 {
-
-class Builder
-{
-  public:
-    explicit Builder(ConstructionArena& arena) : arena_(arena) {}
-
-    [[nodiscard]] ConstructionNodeId rational(const BigInt& numerator,
-                                              const BigInt& denominator = 1)
-    {
-        if (!good())
-            return 0;
-        return take(arena_.make_rational(numerator, denominator));
-    }
-
-    [[nodiscard]] ConstructionNodeId sum(ConstructionNodeId left, ConstructionNodeId right)
-    {
-        if (!good())
-            return 0;
-        return take(arena_.make_sum(left, right));
-    }
-
-    [[nodiscard]] ConstructionNodeId product(ConstructionNodeId left, ConstructionNodeId right)
-    {
-        if (!good())
-            return 0;
-        return take(arena_.make_product(left, right));
-    }
-
-    [[nodiscard]] ConstructionNodeId negate(ConstructionNodeId value)
-    {
-        const ConstructionNodeId negative_one = rational(-1);
-        return product(negative_one, value);
-    }
-
-    [[nodiscard]] ConstructionNodeId subtract(ConstructionNodeId left, ConstructionNodeId right)
-    {
-        const ConstructionNodeId negative_right = negate(right);
-        return sum(left, negative_right);
-    }
-
-    [[nodiscard]] ConstructionNodeId square(ConstructionNodeId value)
-    {
-        return product(value, value);
-    }
-
-    [[nodiscard]] ConstructionNodeId divide(ConstructionNodeId numerator,
-                                            ConstructionNodeId denominator)
-    {
-        if (!good())
-            return 0;
-        const ConstructionNodeId reciprocal = take(arena_.make_reciprocal(denominator));
-        return product(numerator, reciprocal);
-    }
-
-    [[nodiscard]] ConstructionNodeId square_root(ConstructionNodeId value)
-    {
-        if (!good())
-            return 0;
-        return take(arena_.make_nonnegative_square_root(value));
-    }
-
-    [[nodiscard]] std::int8_t sign(ConstructionNodeId value)
-    {
-        if (!good())
-            return 0;
-        ComparisonResult result = sign_of_canonical_real(arena_.budget(), arena_.at(value).value());
-        if (result.error != Error::none || !result.ordering)
-        {
-            error_ = result.error == Error::none ? Error::invalid_argument : result.error;
-            return 0;
-        }
-        return *result.ordering;
-    }
-
-    [[nodiscard]] std::int8_t compare(ConstructionNodeId left, ConstructionNodeId right)
-    {
-        if (!good())
-            return 0;
-        ComparisonResult result = compare_canonical_reals(arena_.budget(), arena_.at(left).value(),
-                                                          arena_.at(right).value());
-        if (result.error != Error::none || !result.ordering)
-        {
-            error_ = result.error == Error::none ? Error::invalid_argument : result.error;
-            return 0;
-        }
-        return *result.ordering;
-    }
-
-    [[nodiscard]] bool good() const
-    {
-        return error_ == Error::none;
-    }
-
-    [[nodiscard]] Error error() const
-    {
-        return error_;
-    }
-
-  private:
-    [[nodiscard]] ConstructionNodeId take(ConstructionResult result)
-    {
-        if (!good())
-            return 0;
-        if (result.error != Error::none || !result.node)
-        {
-            error_ = result.error == Error::none ? Error::invalid_argument : result.error;
-            return 0;
-        }
-        return *result.node;
-    }
-
-    ConstructionArena& arena_;
-    Error error_ = Error::none;
-};
 
 bool valid_point(const ConstructionArena& arena, const ExactPoint& point)
 {
@@ -166,7 +27,7 @@ ExactIntersectionResult relation(IntersectionRelation value)
     return {Error::none, value, 0, {}};
 }
 
-bool order_points(Builder& builder, ExactPoint& first, ExactPoint& second)
+bool order_points(ConstructionBuilder& builder, ExactPoint& first, ExactPoint& second)
 {
     const std::int8_t x_order = builder.compare(first.x, second.x);
     if (!builder.good())
@@ -186,7 +47,7 @@ bool order_points(Builder& builder, ExactPoint& first, ExactPoint& second)
     return true;
 }
 
-ConstructionNodeId dot(Builder& builder, ConstructionNodeId ax, ConstructionNodeId ay,
+ConstructionNodeId dot(ConstructionBuilder& builder, ConstructionNodeId ax, ConstructionNodeId ay,
                        ConstructionNodeId bx, ConstructionNodeId by)
 {
     const ConstructionNodeId x_product = builder.product(ax, bx);
@@ -194,7 +55,7 @@ ConstructionNodeId dot(Builder& builder, ConstructionNodeId ax, ConstructionNode
     return builder.sum(x_product, y_product);
 }
 
-ConstructionNodeId cross(Builder& builder, ConstructionNodeId ax, ConstructionNodeId ay,
+ConstructionNodeId cross(ConstructionBuilder& builder, ConstructionNodeId ax, ConstructionNodeId ay,
                          ConstructionNodeId bx, ConstructionNodeId by)
 {
     const ConstructionNodeId first = builder.product(ax, by);
@@ -213,8 +74,8 @@ ExactIntersectionResult intersect_lines_impl(ConstructionArena& arena, const Exa
     if (!valid_point(arena, left.first) || !valid_point(arena, left.second) ||
         !valid_point(arena, right.first) || !valid_point(arena, right.second))
         return failure(Error::invalid_argument);
-    ConstructionTransaction transaction(arena);
-    Builder builder(arena);
+    ConstructionArenaTransaction transaction(arena);
+    ConstructionBuilder builder(arena);
     const ConstructionNodeId left_dx = builder.subtract(left.second.x, left.first.x);
     const ConstructionNodeId left_dy = builder.subtract(left.second.y, left.first.y);
     const ConstructionNodeId right_dx = builder.subtract(right.second.x, right.first.x);
@@ -263,8 +124,8 @@ ExactIntersectionResult intersect_line_circle_impl(ConstructionArena& arena, con
         !valid_point(arena, circle.center) ||
         static_cast<std::size_t>(circle.radius) >= arena.size())
         return failure(Error::invalid_argument);
-    ConstructionTransaction transaction(arena);
-    Builder builder(arena);
+    ConstructionArenaTransaction transaction(arena);
+    ConstructionBuilder builder(arena);
     const ConstructionNodeId dx = builder.subtract(line.second.x, line.first.x);
     const ConstructionNodeId dy = builder.subtract(line.second.y, line.first.y);
     const ConstructionNodeId fx = builder.subtract(line.first.x, circle.center.x);
@@ -331,8 +192,8 @@ ExactIntersectionResult intersect_circles_impl(ConstructionArena& arena, const E
         static_cast<std::size_t>(left.radius) >= arena.size() ||
         static_cast<std::size_t>(right.radius) >= arena.size())
         return failure(Error::invalid_argument);
-    ConstructionTransaction transaction(arena);
-    Builder builder(arena);
+    ConstructionArenaTransaction transaction(arena);
+    ConstructionBuilder builder(arena);
     if (builder.sign(left.radius) <= 0 || builder.sign(right.radius) <= 0)
         return builder.good() ? failure(Error::invalid_argument) : failure(builder.error());
     const ConstructionNodeId dx = builder.subtract(right.center.x, left.center.x);

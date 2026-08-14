@@ -29,6 +29,8 @@ set(GEOMETER_LIB_SOURCES
 set(GEOMETER_EXACT_SOURCES
     exact_artifact.cpp
     exact_construction.cpp
+    exact_construction_builder.cpp
+    exact_curve_domain.cpp
     exact_expression.cpp
     exact_factorization.cpp
     exact_geometry.cpp
@@ -41,7 +43,7 @@ set(GEOMETER_EXACT_SOURCES
 )
 
 if(NOT EMSCRIPTEN)
-    list(APPEND GEOMETER_LIB_SOURCES exact_artifact.cpp exact_construction.cpp exact_expression.cpp exact_factorization.cpp exact_geometry.cpp exact_normalization.cpp exact_polynomial.cpp exact_resultant.cpp exact_value.cpp exact_value_codec.cpp)
+    list(APPEND GEOMETER_LIB_SOURCES exact_artifact.cpp exact_construction.cpp exact_construction_builder.cpp exact_curve_domain.cpp exact_expression.cpp exact_factorization.cpp exact_geometry.cpp exact_normalization.cpp exact_polynomial.cpp exact_resultant.cpp exact_value.cpp exact_value_codec.cpp)
 endif()
 
 if(NOT EMSCRIPTEN)

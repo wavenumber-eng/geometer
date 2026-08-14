@@ -372,7 +372,7 @@ def test_exact_algebraic_backend_design_gate_is_closed() -> None:
         "production_solver_allowed": False,
         "design_review_revision": "a8c9604de280e2a67018e1106fd1b430b34fcf50",
         "design_review_packet": "reviewer-019ffd1f-3c67-7001-87a5-200b6cda10d8",
-        "implemented_surface": "budgeted_exact_analytic_intersections_and_nm_normalization_feasibility",
+        "implemented_surface": "budgeted_exact_intersections_nm_normalization_and_curve_domain_feasibility",
         "rational_source": "src/cpp/lib/exact_rational.cpp",
         "polynomial_source": "src/cpp/lib/exact_polynomial.cpp",
         "resultant_source": "src/cpp/lib/exact_resultant.cpp",
@@ -381,9 +381,11 @@ def test_exact_algebraic_backend_design_gate_is_closed() -> None:
         "value_codec_source": "src/cpp/lib/exact_value_codec.cpp",
         "expression_source": "src/cpp/lib/exact_expression.cpp",
         "construction_source": "src/cpp/lib/exact_construction.cpp",
+        "construction_builder_source": "src/cpp/lib/exact_construction_builder.cpp",
         "artifact_source": "src/cpp/lib/exact_artifact.cpp",
         "geometry_source": "src/cpp/lib/exact_geometry.cpp",
         "normalization_source": "src/cpp/lib/exact_normalization.cpp",
+        "curve_domain_source": "src/cpp/lib/exact_curve_domain.cpp",
         "rational_test": "tests/cpp/exact_rational_test.cpp",
         "polynomial_test": "tests/cpp/exact_polynomial_test.cpp",
         "resultant_test": "tests/cpp/exact_resultant_test.cpp",
@@ -398,6 +400,10 @@ def test_exact_algebraic_backend_design_gate_is_closed() -> None:
         "geometry_vector_artifact_bytes": 1248,
         "geometry_vector_artifact_sha256": "0af1965a293c1b7a90ec633d35ee98f2d53098350e86e922e8c18751ea15a5e0",
         "geometry_vector_success_work_units": 41482728,
+        "curve_domain_test": "tests/cpp/exact_curve_domain_test.cpp",
+        "curve_domain_parity_validator": "scripts/validate_exact_curve_domain_parity.py",
+        "curve_domain_vector_sha256": "56a531c6731e01d518f85bfdb046becc44d42a52dd81c0e1aab1f1aab917fcd8",
+        "curve_domain_vector_success_work_units": 710842,
     }
     assert (ROOT / backend["design"]).is_file()
     assert _sha256(ROOT / backend["design"]) == backend["design_sha256"]
@@ -406,9 +412,11 @@ def test_exact_algebraic_backend_design_gate_is_closed() -> None:
         "polynomial_source",
         "expression_source",
         "construction_source",
+        "construction_builder_source",
         "artifact_source",
         "geometry_source",
         "normalization_source",
+        "curve_domain_source",
         "rational_test",
         "polynomial_test",
         "expression_test",
@@ -416,6 +424,8 @@ def test_exact_algebraic_backend_design_gate_is_closed() -> None:
         "artifact_test",
         "geometry_test",
         "geometry_parity_validator",
+        "curve_domain_test",
+        "curve_domain_parity_validator",
     ):
         assert (ROOT / backend[key]).is_file()
 

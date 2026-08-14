@@ -1,6 +1,0 @@
-name = "CLI Integration"
-order = 2
-description = "End-to-end CLI invocation tests."
-enabled = false
-runner = "subprocess"
-concerns = ["cli"]

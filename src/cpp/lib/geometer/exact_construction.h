@@ -80,7 +80,7 @@ class ConstructionArena
     [[nodiscard]] ConstructionResult make_nonnegative_square_root(ConstructionNodeId child);
 
   private:
-    friend class ConstructionTransaction;
+    friend class ConstructionArenaTransaction;
     [[nodiscard]] ConstructionResult
     make_associative(ConstructionKind kind, const std::vector<ConstructionNodeId>& input_children);
     [[nodiscard]] ConstructionResult make_binary(ConstructionKind kind, ConstructionNodeId left,
@@ -94,6 +94,49 @@ class ConstructionArena
     Budget& budget_;
     std::vector<ConstructionNode> nodes_;
     std::uint64_t arena_storage_bytes_ = 0;
+};
+
+class ConstructionArenaTransaction
+{
+  public:
+    explicit ConstructionArenaTransaction(ConstructionArena& arena);
+    ~ConstructionArenaTransaction();
+    ConstructionArenaTransaction(const ConstructionArenaTransaction&) = delete;
+    ConstructionArenaTransaction& operator=(const ConstructionArenaTransaction&) = delete;
+
+    void commit();
+
+  private:
+    ConstructionArena& arena_;
+    std::size_t checkpoint_ = 0;
+    bool committed_ = false;
+};
+
+class ConstructionBuilder
+{
+  public:
+    explicit ConstructionBuilder(ConstructionArena& arena);
+
+    [[nodiscard]] ConstructionNodeId rational(const BigInt& numerator,
+                                              const BigInt& denominator = 1);
+    [[nodiscard]] ConstructionNodeId sum(ConstructionNodeId left, ConstructionNodeId right);
+    [[nodiscard]] ConstructionNodeId product(ConstructionNodeId left, ConstructionNodeId right);
+    [[nodiscard]] ConstructionNodeId negate(ConstructionNodeId value);
+    [[nodiscard]] ConstructionNodeId subtract(ConstructionNodeId left, ConstructionNodeId right);
+    [[nodiscard]] ConstructionNodeId square(ConstructionNodeId value);
+    [[nodiscard]] ConstructionNodeId divide(ConstructionNodeId numerator,
+                                            ConstructionNodeId denominator);
+    [[nodiscard]] ConstructionNodeId square_root(ConstructionNodeId value);
+    [[nodiscard]] std::int8_t sign(ConstructionNodeId value);
+    [[nodiscard]] std::int8_t compare(ConstructionNodeId left, ConstructionNodeId right);
+    [[nodiscard]] bool good() const;
+    [[nodiscard]] Error error() const;
+
+  private:
+    [[nodiscard]] ConstructionNodeId take(ConstructionResult result);
+
+    ConstructionArena& arena_;
+    Error error_ = Error::none;
 };
 
 } // namespace geometer::exact

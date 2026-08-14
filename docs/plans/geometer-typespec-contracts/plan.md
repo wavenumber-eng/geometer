@@ -101,21 +101,33 @@ depends_on = ["analytic-synthetic-correctness"]
 
 [[steps]]
 id = "analytic-planar-boolean-promotion"
-title = "Promote analytic planar Boolean batch and ship its focused additive release"
+title = "Promote analytic planar Boolean batch through every production client"
 status = "pending"
 depends_on = ["occt-8-0-1-qualification"]
+
+[[steps]]
+id = "analytic-planar-boolean-demo-release"
+title = "Publish the interactive analytic Boolean demo and ship its focused additive release"
+status = "pending"
+depends_on = ["analytic-planar-boolean-promotion"]
 
 [[steps]]
 id = "remaining-operation-promotion"
 title = "Promote the remaining inventoried operations and retire displaced handwritten contract code"
 status = "pending"
-depends_on = ["analytic-planar-boolean-promotion"]
+depends_on = ["analytic-planar-boolean-demo-release"]
 
 [[steps]]
 id = "typescript-demo-closure"
 title = "Verify every maintained browser demo migrated with its owning operation"
 status = "pending"
 depends_on = ["remaining-operation-promotion"]
+
+[[steps]]
+id = "hosted-demo-publication"
+title = "Publish the reviewed model bounds, HLR, STEP/GLB, and analytic Boolean static demos"
+status = "pending"
+depends_on = ["typescript-demo-closure"]
 
 [[steps]]
 id = "viz-compatibility"
@@ -127,13 +139,13 @@ depends_on = ["remaining-operation-promotion"]
 id = "design-doc-intent-audit"
 title = "Update and audit docs of record, guides, generated references, and compatibility notes"
 status = "pending"
-depends_on = ["typescript-demo-closure", "viz-compatibility"]
+depends_on = ["hosted-demo-publication", "viz-compatibility"]
 
 [[steps]]
 id = "test-runtime-impact-audit"
 title = "Audit new test runtime, packaging, and release impact"
 status = "pending"
-depends_on = ["typescript-demo-closure", "viz-compatibility"]
+depends_on = ["hosted-demo-publication", "viz-compatibility"]
 
 [[steps]]
 id = "external-review"
@@ -227,6 +239,11 @@ title = "The analytic planar Boolean operation preserves exact topology and pass
 status = "pending"
 
 [[exit_criteria]]
+id = "analytic-planar-boolean-demo"
+title = "A polished static browser demo proves analytic Boolean stages, exact lines and arcs, topology, lineage, and generated TypeScript Worker/WASM integration"
+status = "pending"
+
+[[exit_criteria]]
 id = "analytic-synthetic-correctness"
 title = "Closed-form, invariant, metamorphic, degeneracy, exhaustive, property, lineage, cross-runtime, and mutation suites protect the analytic mathematics"
 status = "pending"
@@ -239,6 +256,11 @@ status = "pending"
 [[exit_criteria]]
 id = "matz-compatibility"
 title = "MATZ has reviewed the released contract, supplied representative fixtures, pinned the tagged Geometer release, and passed solved-copper integration"
+status = "pending"
+
+[[exit_criteria]]
+id = "hosted-demo-publication"
+title = "Reviewed public static deployments exist for model bounds, HLR, STEP/GLB, and analytic Boolean demos using only generated clients and public-safe assets"
 status = "pending"
 
 [[exit_criteria]]
@@ -565,6 +587,16 @@ generated client. Existing HLR and planar demos are not gates for that pilot;
 they migrate when their respective operation contracts are promoted. Final
 plan exit still requires every maintained browser demo to use the generated
 interfaces.
+
+The maintained model-bounds, HLR, STEP/GLB, and analytic Boolean demonstrations
+are also public release surfaces. Each must produce a deterministic,
+self-contained static site directory that runs locally without a service
+backend and can be deployed unchanged to Cloudflare Pages. The shared
+publication design, URLs, release/preview policy, cache and security headers,
+and final presentation receive independent review when the owning demos are
+ready. Public bundles may use only redistribution-safe fonts, fixtures, and
+visual assets; internal Berkeley Mono assets and private consumer data are
+forbidden.
 
 Rust native consumers should receive generated Serde-compatible models and a
 client that can spawn or connect to `geometer`, negotiate protocol
@@ -947,9 +979,23 @@ The first new capability after the complete `model_bounds` infrastructure pilot
 is `geometry.analytic_planar_boolean_batch.a0`. Its promotion must prove the
 separately governed packed format, generated TypeScript, Rust, and Python
 consumption, native/browser canonical parity, executable IPC behavior, and the
-frozen MATZ fixtures. It may then ship in a focused additive tagged Geometer
-release without waiting for legacy HLR, GLB, or sampled planar contracts and
-demos to migrate.
+frozen MATZ fixtures. Its focused additive release must also include a polished
+interactive browser demo built from the generated TypeScript Worker/WASM
+client. The demo uses curated governed fixtures to explain ordered stages,
+exact line/arc output, components and holes, source incidence, material
+lineage, canonical results, and structured failures. It must not contain a
+second solver, sampled authoritative output, direct C ABI pointer marshalling,
+or MATZ/PCB policy. It may then ship without waiting for legacy HLR, GLB, or
+sampled planar contracts and demos to migrate.
+
+The analytic demo's exact static output is committed under the grouped WASM
+demo distribution, passes local offline and desktop/narrow browser smoke, and
+is deployed as a preview before release signoff. The reviewed production
+deployment targets Cloudflare Pages from that prebuilt directory with no Pages
+Functions or other server-side behavior. A static `_headers` policy governs
+content security, MIME hardening, referrer/permissions behavior, and immutable
+hashed assets while keeping the entry HTML revalidatable. The release record
+captures the deployed URL and the digest of the deployed directory.
 The existing sampled planar solver, triangulation, and Clipper2 APIs remain
 supported and unchanged.
 
@@ -1055,6 +1101,12 @@ Each promoted operation requires:
 - TypeScript compilation and browser smoke for the examples and demos
   applicable to the operation being promoted, plus a check that their source
   does not reproduce C ABI pointer marshalling;
+- deterministic static-demo directory generation, offline local serving,
+  desktop/narrow browser smoke, public-asset license checks, and an exact
+  directory digest;
+- Cloudflare Pages preview verification for the analytic focused release and
+  reviewed production publication evidence, including the static `_headers`
+  policy and proof that no Pages Functions or private assets are present;
 - Rust format, lint, unit/conformance tests, crate-consumer compile, and live
   executable-pipe smoke;
 - Python generation freshness, strict codec vectors, public API compatibility
@@ -1084,7 +1136,8 @@ Each promoted operation requires:
   marked released.
 
 Final plan exit additionally requires TypeScript compilation and browser smoke
-for every maintained demo in the frozen inventory.
+for every maintained demo in the frozen inventory, plus reviewed public static
+deployments for the model-bounds, HLR, STEP/GLB, and analytic Boolean demos.
 
 New Python tests must be registered in `tests/python/STRATUM.toml`. New
 TypeSpec, TypeScript, Rust, IPC, and cross-language suites must receive explicit

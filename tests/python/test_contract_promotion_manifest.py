@@ -372,7 +372,7 @@ def test_exact_algebraic_backend_design_gate_is_closed() -> None:
         "production_solver_allowed": False,
         "design_review_revision": "a8c9604de280e2a67018e1106fd1b430b34fcf50",
         "design_review_packet": "reviewer-019ffd1f-3c67-7001-87a5-200b6cda10d8",
-        "implemented_surface": "budgeted_exact_intersections_nm_normalization_curve_domain_half_edge_face_classification_stage_lineage_result_region_provenance_operand_outcome_certified_arc_result_normalization_canonical_source_set_result_packet_layout_typed_record_graph_semantic_canonical_projection_standalone_closure_digest_and_decoder_enforcement_feasibility",
+        "implemented_surface": "budgeted_exact_intersections_nm_normalization_curve_domain_half_edge_face_classification_stage_lineage_result_region_provenance_operand_outcome_certified_arc_result_normalization_canonical_source_set_result_packet_layout_typed_record_graph_semantic_canonical_projection_standalone_closure_digest_decoder_enforcement_exact_topology_replay_and_mutation_sentinels_feasibility",
         "arc_distance_source": "src/cpp/lib/exact_arc_distance.cpp",
         "result_normalization_source": "src/cpp/lib/exact_result_normalization.cpp",
         "source_sets_source": "src/cpp/lib/exact_source_sets.cpp",
@@ -473,9 +473,24 @@ def test_exact_algebraic_backend_design_gate_is_closed() -> None:
         "result_packet_standalone_vector_sha256": "a934acefb39e7b397516b4ba948e3ded16f2d30c989a43271ee90883191f4f63",
         "result_packet_failed_standalone_vector_bytes": 616,
         "result_packet_failed_standalone_vector_sha256": "87f193938f0c1d60d8d196eb256adf0fa423f56175be63a61f0ef6cc8bebd46e",
+        "result_packet_topology_source": "src/cpp/lib/analytic_result_packet_topology.cpp",
+        "result_packet_topology_test": "tests/cpp/analytic_result_packet_topology_test.cpp",
+        "result_packet_topology_parity_validator": "scripts/validate_analytic_mutation_sentinels_parity.py",
+        "mutation_sentinels": [
+            "reversed_line",
+            "reversed_arc",
+            "non_containing_parent",
+            "point_tangent_merge",
+            "omitted_lineage",
+            "ties_to_even",
+        ],
     }
     assert (ROOT / backend["design"]).is_file()
     assert _sha256(ROOT / backend["design"]) == backend["design_sha256"]
+
+
+def test_exact_algebraic_backend_paths_exist() -> None:
+    backend = _manifest()["analytic_exact_backend"]
     for key in (
         "rational_source",
         "polynomial_source",
@@ -493,6 +508,7 @@ def test_exact_algebraic_backend_design_gate_is_closed() -> None:
         "result_packet_canonical_source",
         "result_packet_standalone_source",
         "result_packet_sha256_source",
+        "result_packet_topology_source",
         "boolean_outcomes_source",
         "result_normalization_source",
         "boolean_provenance_source",
@@ -531,6 +547,8 @@ def test_exact_algebraic_backend_design_gate_is_closed() -> None:
         "result_packet_layout_parity_validator",
         "result_packet_records_test",
         "result_packet_records_parity_validator",
+        "result_packet_topology_test",
+        "result_packet_topology_parity_validator",
     ):
         assert (ROOT / backend[key]).is_file()
 

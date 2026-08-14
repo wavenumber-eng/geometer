@@ -762,6 +762,33 @@ TypeSpec API shapes received focused independent review; and the ten portable
 plus two real-board observation cases are digest-locked in this repository.
 Raw-byte goldens deliberately remain the first post-freeze codec artifact.
 
+### Exact Result Replay And Mutation Sentinels
+
+Solver output has a second, independent topology oracle before production
+promotion. It reconstructs each job's normalized directed line/arc fragments,
+including the unique circle center selected by endpoint, radius, direction, and
+major-branch data, then runs that published geometry through the exact
+arrangement, union-stage, and result-region pipeline. Reconstructed rings are
+matched to claimed rings by their complete fragment-occurrence sets. Ring
+winding, smallest strict parent containment, depth, connected result regions,
+and outer-ring ownership must agree exactly. Jobs are replayed independently so
+overlapping geometry in different batch jobs cannot interact.
+
+This semantic replay is deliberately separate from the allocation-bounded raw
+packet decoder. The production solver must pass it before its packet is exposed;
+foreign bytes still receive full structural and canonical validation without
+silently invoking a geometry operation in a codec.
+
+The pull-request mutation lane currently proves that the oracle rejects
+structurally valid reversed line winding, reversed circular-arc winding, a hole
+assigned to a non-containing root, and a false point-tangent hierarchy merge.
+Canonical packet bytes separately detect removal of an otherwise geometrically
+invisible contributor, and the exact normalization oracle detects a
+ties-to-even substitution. Native and Emscripten must report the identical
+governed sentinel inventory. These sentinels are an implemented subset of the
+larger synthetic-correctness program, not completion of its closed-form,
+degeneracy, exhaustive, property, or between-stage-normalization lanes.
+
 ### OCCT 8.0.1 Qualification
 
 Production solver work and conformance-golden freeze require a side-by-side

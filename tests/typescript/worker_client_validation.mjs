@@ -1,4 +1,5 @@
 import { readFile } from "node:fs/promises";
+import { resolve } from "node:path";
 import { Worker } from "node:worker_threads";
 import {
   GeometerOperationError,
@@ -40,9 +41,10 @@ class BrowserWorkerAdapter {
 
 const nodeWorker = new Worker(new URL("./geometer_worker_entry.mjs", import.meta.url));
 const worker = new BrowserWorkerAdapter(nodeWorker);
-const wasmBinary = new Uint8Array(
-  await readFile(new URL("../../dist/wasm/browser/geometer.wasm", import.meta.url)),
-);
+const wasmBinaryPath = process.env.GEOMETER_WASM_BROWSER_DIST
+  ? resolve(process.env.GEOMETER_WASM_BROWSER_DIST, "geometer.wasm")
+  : new URL("../../dist/wasm/browser/geometer.wasm", import.meta.url);
+const wasmBinary = new Uint8Array(await readFile(wasmBinaryPath));
 const model = new Uint8Array(
   await readFile(new URL("../fixtures/step/embedded_models/SOT-23.STEP", import.meta.url)),
 );

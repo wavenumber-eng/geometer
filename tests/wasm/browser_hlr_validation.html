@@ -6,7 +6,6 @@
 </head>
 <body>
   <pre id="result">RUNNING</pre>
-  <script src="/dist/wasm/browser/geometer.js"></script>
   <script>
     const result = document.getElementById("result");
 
@@ -20,9 +19,21 @@
       document.title = text.startsWith("PASS") ? "PASS" : "FAIL";
     }
 
+    function loadScript(source) {
+      return new Promise((resolve, reject) => {
+        const script = document.createElement("script");
+        script.src = source;
+        script.onload = resolve;
+        script.onerror = () => reject(new Error(`Failed loading ${source}`));
+        document.head.appendChild(script);
+      });
+    }
+
     async function run() {
+      const browserDist = queryParam("browserDist", "/dist/wasm/browser").replace(/\/$/, "");
+      await loadScript(`${browserDist}/geometer.js`);
       const module = await createGeometerModule({
-        locateFile: (path) => path.endsWith(".wasm") ? `/dist/wasm/browser/${path}` : path,
+        locateFile: (path) => path.endsWith(".wasm") ? `${browserDist}/${path}` : path,
       });
       const version = module.ccall("geometer_version_string", "string", [], []);
       const abi = module.ccall("geometer_abi_version", "number", [], []);
@@ -104,7 +115,7 @@
         throw new Error("Projection JSON had no outline geometry.");
       }
 
-      write(`PASS version=${version} abi=${abi} schema=${projection.schema} detail=${detailCount} outline=${outlineCount}`);
+      write(`PASS version=${version} abi=${abi} schema=${projection.schema} detail=${detailCount} outline=${outlineCount} ua=${navigator.userAgent}`);
     }
 
     run().catch((error) => {

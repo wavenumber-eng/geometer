@@ -10,7 +10,10 @@ if (!parentPort) throw new Error("Geometer worker test requires a parent port.")
 const root = resolve(fileURLToPath(new URL("../..", import.meta.url)));
 const require = createRequire(import.meta.url);
 const loadGeneratedModule = require("../wasm/load_generated_module.cjs");
-const factory = loadGeneratedModule(join(root, "dist", "wasm", "browser", "geometer.js"));
+const browserDist = process.env.GEOMETER_WASM_BROWSER_DIST
+  ? resolve(process.env.GEOMETER_WASM_BROWSER_DIST)
+  : join(root, "dist", "wasm", "browser");
+const factory = loadGeneratedModule(join(browserDist, "geometer.js"));
 const listeners = new Set();
 
 parentPort.on("message", (data) => {

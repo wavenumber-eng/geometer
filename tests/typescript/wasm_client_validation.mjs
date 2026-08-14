@@ -12,7 +12,9 @@ import {
 const root = resolve(fileURLToPath(new URL("../..", import.meta.url)));
 const require = createRequire(import.meta.url);
 const loadGeneratedModule = require("../wasm/load_generated_module.cjs");
-const browserDist = join(root, "dist", "wasm", "browser");
+const browserDist = process.env.GEOMETER_WASM_BROWSER_DIST
+  ? resolve(process.env.GEOMETER_WASM_BROWSER_DIST)
+  : join(root, "dist", "wasm", "browser");
 const vectorRoot = join(root, "tests", "contracts", "vectors");
 const factory = loadGeneratedModule(join(browserDist, "geometer.js"));
 const module = await factory({

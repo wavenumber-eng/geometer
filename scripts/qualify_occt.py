@@ -190,6 +190,35 @@ def tree_size(root: Path) -> int:
     return sum(path.stat().st_size for path in root.rglob("*") if path.is_file())
 
 
+def file_evidence(path: Path) -> dict[str, Any]:
+    data = path.read_bytes()
+    return {
+        "path": path.relative_to(ROOT).as_posix(),
+        "bytes": len(data),
+        "sha256": hashlib.sha256(data).hexdigest(),
+    }
+
+
+def tree_digest(root: Path) -> str:
+    digest = hashlib.sha256()
+    for path in sorted(item for item in root.rglob("*") if item.is_file()):
+        digest.update(path.relative_to(root).as_posix().encode("utf-8"))
+        digest.update(b"\0")
+        digest.update(hashlib.sha256(path.read_bytes()).digest())
+    return digest.hexdigest()
+
+
+def last_json_object(output: str) -> dict[str, Any]:
+    for line in reversed(output.splitlines()):
+        try:
+            value = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(value, dict):
+            return value
+    raise RuntimeError("command output did not contain a JSON object")
+
+
 def prepare_native(
     run: QualificationRun,
     tag: str,
@@ -197,6 +226,7 @@ def prepare_native(
     output_root: Path,
     binary_cache: str,
     prepare_only: bool,
+    validate_consumers: bool,
 ) -> dict[str, Any]:
     native_env = native_environment()
     target_platform = platform_tag()
@@ -264,6 +294,34 @@ def prepare_native(
             "feasibility_sha256": hashlib.sha256(feasibility.encode("utf-8")).hexdigest(),
         }
     )
+    if validate_consumers:
+        validation_out = output_root / "native-validation"
+        run.run(
+            "validate-native-consumers",
+            [
+                sys.executable,
+                ROOT / "scripts/validate_native.py",
+                "--build-dir",
+                build_root,
+                "--dist-root",
+                dist_root,
+                "--occt-dir",
+                cmake_config_dir(install_root),
+                "--validation-out",
+                validation_out,
+                "--skip-ctest",
+            ],
+            env=native_env,
+        )
+        native_executable = dist_root / "native" / target_platform / (
+            "geometer.exe" if sys.platform == "win32" else "geometer"
+        )
+        evidence["consumer_validation"] = {
+            "cli_python_glb_planar": "passed",
+            "executable": file_evidence(native_executable),
+            "output_bytes": tree_size(validation_out),
+            "output_sha256": tree_digest(validation_out),
+        }
     return evidence
 
 
@@ -274,6 +332,7 @@ def prepare_wasm(
     output_root: Path,
     binary_cache: str,
     prepare_only: bool,
+    validate_consumers: bool,
 ) -> dict[str, Any]:
     run.run(
         "prepare-wasm-occt",
@@ -340,6 +399,43 @@ def prepare_wasm(
             "feasibility_sha256": hashlib.sha256(feasibility.encode("utf-8")).hexdigest(),
         }
     )
+    if validate_consumers:
+        browser_dist = dist_root / "wasm/browser"
+        consumer_env = wasm_env.copy()
+        consumer_env["GEOMETER_WASM_BROWSER_DIST"] = str(browser_dist)
+        run.run(
+            "validate-browser-wasm-consumers",
+            [sys.executable, "-m", "pytest", "tests/wasm", "-q"],
+            env=consumer_env,
+        )
+        run.run(
+            "validate-typescript-package-worker",
+            [sys.executable, "-m", "pytest", "tests/typescript", "-q"],
+            env=consumer_env,
+        )
+        full_browser_output = run.run(
+            "validate-full-browser-hlr",
+            [
+                sys.executable,
+                ROOT / "scripts/validate_browser_wasm.py",
+                "--browser-dist",
+                browser_dist,
+            ],
+            env=consumer_env,
+        )
+        runtime_output = run.run(
+            "measure-wasm-step-glb-memory",
+            ["node", ROOT / "tests/wasm/step_to_glb_bytes_validation.js"],
+            env=consumer_env,
+        )
+        evidence["consumer_validation"] = {
+            "browser_wasm": "passed",
+            "typescript_package_worker": "passed",
+            "full_browser_hlr": last_json_object(full_browser_output),
+            "browser_js": file_evidence(browser_dist / "geometer.js"),
+            "browser_wasm_artifact": file_evidence(browser_dist / "geometer.wasm"),
+            "step_glb_runtime_memory": last_json_object(runtime_output),
+        }
     return evidence
 
 
@@ -377,6 +473,7 @@ def main() -> int:
     )
     parser.add_argument("--prepare-only", action="store_true")
     parser.add_argument("--skip-parity", action="store_true")
+    parser.add_argument("--skip-consumers", action="store_true")
     parser.add_argument("--timeout-seconds", type=int, default=7200)
     args = parser.parse_args()
 
@@ -396,11 +493,23 @@ def main() -> int:
     try:
         if args.lane in {"native", "all"}:
             evidence["lanes"]["native"] = prepare_native(
-                run, args.tag, state_root, output_root, args.binary_cache, args.prepare_only
+                run,
+                args.tag,
+                state_root,
+                output_root,
+                args.binary_cache,
+                args.prepare_only,
+                not args.skip_consumers,
             )
         if args.lane in {"wasm", "all"}:
             evidence["lanes"]["wasm"] = prepare_wasm(
-                run, args.tag, state_root, output_root, args.binary_cache, args.prepare_only
+                run,
+                args.tag,
+                state_root,
+                output_root,
+                args.binary_cache,
+                args.prepare_only,
+                not args.skip_consumers,
             )
         source_root = state_root / "occt-src"
         evidence["occt_revision"] = git_output("rev-parse", "HEAD", cwd=source_root)

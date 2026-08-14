@@ -40,12 +40,29 @@ For a complete lane, the harness:
 4. rebuilds and runs the registered native and WASM CTests with bounded test
    timeouts;
 5. compares the OCCT feasibility output byte for byte across native/WASM; and
-6. runs every governed exact/synthetic native-WASM parity validator.
+6. runs every governed exact/synthetic native-WASM parity validator;
+7. runs the isolated native CLI, Python, HLR, GLB, SVG, and planar validation;
+8. runs the WASM compatibility and TypeScript package/direct/Worker suites
+   against the tag-specific browser artifacts;
+9. executes the tag-specific HLR bundle in installed Chrome/Chromium; and
+10. records browser JS/WASM digests plus repeated STEP-to-GLB heap behavior.
+
+After both complete reports exist, compare their governed outputs:
+
+```powershell
+uv run python scripts/compare_occt_qualification.py
+```
+
+The comparison requires exact native GLB, SVG, and request bytes; exact HLR
+JSON after excluding runtime timings; exact planar STEP after excluding only
+the generated header timestamp; and identical repeated WASM STEP-to-GLB bytes
+and heap observations. It writes `out/occt-qualification/comparison.json`.
 
 The JSON report records exact Geometer and OCCT revisions, install sizes,
-per-command wall time, log paths and digests, and feasibility digests. Keep raw
-logs under `out/`; commit only the reviewed summary evidence required by the
-active plan.
+per-command wall time, log paths and digests, feasibility digests, isolated
+consumer outputs, artifact sizes/digests, full-browser results, and runtime
+memory observations. Keep raw logs under `out/`; commit only the reviewed
+summary evidence required by the active plan.
 
 Do not publish new dependency-cache profiles or change the production pin until
 both tag reports and the existing STEP, HLR, GLB, planar, CLI, Python, browser,

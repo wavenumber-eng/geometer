@@ -3,7 +3,9 @@ const path = require("path");
 const loadGeneratedModule = require("./load_generated_module.cjs");
 
 const root = path.resolve(__dirname, "..", "..");
-const browserDist = path.join(root, "dist", "wasm", "browser");
+const browserDist = process.env.GEOMETER_WASM_BROWSER_DIST
+  ? path.resolve(process.env.GEOMETER_WASM_BROWSER_DIST)
+  : path.join(root, "dist", "wasm", "browser");
 const createGeometerModule = loadGeneratedModule(path.join(browserDist, "geometer.js"));
 
 function allocateBytes(module, bytes) {

@@ -29,8 +29,8 @@ test_case_type = "unit"
 [[subtests]]
 id = "PY_003"
 file = "test_occt_binary_cache.py"
-name = "OCCT Binary Cache Helper"
-description = "Checks OCCT binary cache keys, manifests, archives, and unconfigured-cache fallback."
+name = "OCCT Dependency And Qualification Helpers"
+description = "Checks OCCT cache keys, manifests, archives, exact-tag isolation, comparison normalization, and consumer artifact routing."
 test_case_type = "unit"
 
 [[subtests]]

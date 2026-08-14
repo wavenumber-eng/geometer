@@ -1038,6 +1038,15 @@ goldens. If it fails, Geometer retains 8.0.0 and commits the rejecting
 regression fixture and decision. Either outcome leaves the exact arrangement
 authoritative and OCCT candidate topology independently audited.
 
+The governed harness uses tag-specific dependency, build, distribution, and
+validation roots. In addition to CTest and exact/synthetic parity, it exercises
+the native CLI and Python wrapper, STEP/HLR/GLB/SVG/planar outputs, retained
+WASM interfaces, generated TypeScript package and Worker clients, and a real
+Chrome/Chromium HLR load. Cross-tag comparison excludes only measured HLR
+timings and the generated STEP header timestamp; all remaining governed output
+projections compare exactly. Browser artifact sizes/digests and repeated
+STEP-to-GLB heap observations are retained for review.
+
 Before release, Geometer must pass native/full-browser/executable parity,
 generated TypeScript/Rust/Python consumption, malformed/resource tests,
 documentation generation, native/WASM/package/Rack/L99 gates, and candidate

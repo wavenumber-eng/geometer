@@ -19,6 +19,15 @@ occt_binary_cache: Any = importlib.util.module_from_spec(SPEC)
 sys.modules[SPEC.name] = occt_binary_cache
 SPEC.loader.exec_module(occt_binary_cache)
 
+COMPARE_SPEC = importlib.util.spec_from_file_location(
+    "compare_occt_qualification", ROOT / "scripts" / "compare_occt_qualification.py"
+)
+if COMPARE_SPEC is None or COMPARE_SPEC.loader is None:
+    raise RuntimeError("Could not load scripts/compare_occt_qualification.py")
+compare_occt_qualification: Any = importlib.util.module_from_spec(COMPARE_SPEC)
+sys.modules[COMPARE_SPEC.name] = compare_occt_qualification
+COMPARE_SPEC.loader.exec_module(compare_occt_qualification)
+
 
 def make_install_tree(root: Path) -> None:
     cmake_dir = root / "lib" / "cmake" / "opencascade"
@@ -125,6 +134,69 @@ def test_qualification_dist_root_is_isolated_from_committed_artifacts() -> None:
     assert 'set(GEOMETER_DIST_ROOT "${CMAKE_SOURCE_DIR}/dist"' in source
     assert '"${GEOMETER_DIST_ROOT}/native/${GEOMETER_NATIVE_DIST_PLATFORM}"' in source
     assert '"${GEOMETER_DIST_ROOT}/wasm/browser"' in source
+
+
+def test_qualification_comparison_normalizes_only_runtime_fields(tmp_path: Path) -> None:
+    first_projection = tmp_path / "first.json"
+    second_projection = tmp_path / "second.json"
+    first_projection.write_text(
+        '{"schema":"geometry.projection.b0","views":[{"id":"top"}],"timings":{"hlr_ms":1}}',
+        encoding="utf-8",
+    )
+    second_projection.write_text(
+        '{"timings":{"hlr_ms":99},"views":[{"id":"top"}],"schema":"geometry.projection.b0"}',
+        encoding="utf-8",
+    )
+    assert compare_occt_qualification.normalized_projection(
+        first_projection
+    ) == compare_occt_qualification.normalized_projection(second_projection)
+    second_projection.write_text(
+        '{"schema":"geometry.projection.b0","views":[{"id":"front"}],"timings":{"hlr_ms":1}}',
+        encoding="utf-8",
+    )
+    assert compare_occt_qualification.normalized_projection(
+        first_projection
+    ) != compare_occt_qualification.normalized_projection(second_projection)
+
+    first_step = tmp_path / "first.step"
+    second_step = tmp_path / "second.step"
+    first_step.write_text(
+        "FILE_NAME('Open CASCADE Shape Model','2026-08-14T01:02:03',('Author'));\n#1=POINT();\n",
+        encoding="utf-8",
+    )
+    second_step.write_text(
+        "FILE_NAME('Open CASCADE Shape Model','2026-08-15T04:05:06',('Author'));\n#1=POINT();\n",
+        encoding="utf-8",
+    )
+    assert compare_occt_qualification.normalized_step(
+        first_step
+    ) == compare_occt_qualification.normalized_step(second_step)
+    second_step.write_text(
+        "FILE_NAME('Open CASCADE Shape Model','2026-08-15T04:05:06',('Author'));\n#1=LINE();\n",
+        encoding="utf-8",
+    )
+    assert compare_occt_qualification.normalized_step(
+        first_step
+    ) != compare_occt_qualification.normalized_step(second_step)
+
+
+def test_consumer_validators_accept_isolated_qualification_artifacts() -> None:
+    validate_native = (ROOT / "scripts/validate_native.py").read_text(encoding="utf-8")
+    assert 'parser.add_argument("--dist-root"' in validate_native
+    assert 'parser.add_argument("--occt-dir"' in validate_native
+    assert 'parser.add_argument("--validation-out"' in validate_native
+
+    for path in (
+        "tests/wasm/operation_contract_validation.js",
+        "tests/wasm/step_to_glb_bytes_validation.js",
+        "tests/wasm/planar_batch_solve_bytes_validation.js",
+        "tests/typescript/wasm_client_validation.mjs",
+        "tests/typescript/worker_client_validation.mjs",
+        "tests/typescript/geometer_worker_entry.mjs",
+    ):
+        assert "GEOMETER_WASM_BROWSER_DIST" in (ROOT / path).read_text(encoding="utf-8")
+    browser_html = (ROOT / "tests/wasm/browser_hlr_validation.html").read_text(encoding="utf-8")
+    assert 'queryParam("browserDist", "/dist/wasm/browser")' in browser_html
 
 
 def test_public_config_defaults_to_artifacts_domain(monkeypatch: MonkeyPatch) -> None:

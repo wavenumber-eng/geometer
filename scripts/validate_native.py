@@ -20,6 +20,9 @@ def main() -> int:
     tag = platform_tag()
     parser = argparse.ArgumentParser(description="Validate the Geometer native build for this platform.")
     parser.add_argument("--build-dir", type=Path, default=ROOT / f"build-native-{tag}")
+    parser.add_argument("--dist-root", type=Path, default=ROOT / "dist")
+    parser.add_argument("--occt-dir", type=Path, default=None)
+    parser.add_argument("--validation-out", type=Path, default=None)
     parser.add_argument("--config", default="Release")
     parser.add_argument("--step", type=Path, default=DEFAULT_STEP)
     parser.add_argument("--skip-ctest", action="store_true")
@@ -33,22 +36,37 @@ def main() -> int:
         raise FileNotFoundError(step_path)
 
     build_dir = args.build_dir.resolve()
+    dist_root = args.dist_root.resolve()
+    occt_dir = args.occt_dir.resolve() if args.occt_dir is not None else None
+    validation_out = (
+        args.validation_out.resolve()
+        if args.validation_out is not None
+        else ROOT / "out" / "native-validation" / tag
+    )
     env = native_build_env()
-    run(cmake_configure_command(build_dir, build_examples=not args.skip_examples), env=env)
+    run(
+        cmake_configure_command(
+            build_dir,
+            build_examples=not args.skip_examples,
+            dist_root=dist_root,
+            occt_dir=occt_dir,
+        ),
+        env=env,
+    )
     run(["cmake", "--build", str(build_dir), "--config", args.config], env=env)
 
-    exe = ROOT / "dist" / "native" / tag / executable_name()
+    exe = dist_root / "native" / tag / executable_name()
     if not exe.exists():
         raise FileNotFoundError(f"Expected native executable was not produced: {exe}")
     if not args.skip_examples:
-        preview_exe = ROOT / "dist" / "native" / tag / preview_executable_name()
+        preview_exe = dist_root / "native" / tag / preview_executable_name()
         if not preview_exe.exists():
             raise FileNotFoundError(f"Expected native preview executable was not produced: {preview_exe}")
 
     run([str(exe), "--version"])
     if sys.platform == "darwin":
         validate_macos_executable_target(exe, macos_deployment_target())
-    validate_cli_outputs(exe, step_path, tag)
+    validate_cli_outputs(exe, step_path, validation_out)
 
     if sys.platform.startswith("linux") and not args.skip_ldd:
         validate_linux_dependencies(exe)
@@ -63,8 +81,7 @@ def main() -> int:
     return 0
 
 
-def validate_cli_outputs(exe: Path, step_path: Path, tag: str) -> None:
-    out_dir = ROOT / "out" / "native-validation" / tag
+def validate_cli_outputs(exe: Path, step_path: Path, out_dir: Path) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
 
     projection_path = out_dir / "SOT-23.projection.json"
@@ -300,9 +317,18 @@ def find_vsdevcmd() -> Path | None:
     return None
 
 
-def cmake_configure_command(build_dir: Path, *, build_examples: bool) -> list[str]:
+def cmake_configure_command(
+    build_dir: Path,
+    *,
+    build_examples: bool,
+    dist_root: Path,
+    occt_dir: Path | None,
+) -> list[str]:
     command = ["cmake", "--preset", "default", "-B", str(build_dir)]
     command.append(f"-DGEOMETER_BUILD_EXAMPLES={'ON' if build_examples else 'OFF'}")
+    command.append(f"-DGEOMETER_DIST_ROOT={dist_root}")
+    if occt_dir is not None:
+        command.append(f"-DOpenCASCADE_DIR={occt_dir}")
     if sys.platform == "darwin":
         command.append(f"-DCMAKE_OSX_DEPLOYMENT_TARGET={macos_deployment_target()}")
     return command

@@ -372,9 +372,10 @@ def test_exact_algebraic_backend_design_gate_is_closed() -> None:
         "production_solver_allowed": False,
         "design_review_revision": "a8c9604de280e2a67018e1106fd1b430b34fcf50",
         "design_review_packet": "reviewer-019ffd1f-3c67-7001-87a5-200b6cda10d8",
-        "implemented_surface": "budgeted_exact_intersections_nm_normalization_curve_domain_half_edge_face_classification_stage_lineage_result_region_provenance_operand_outcome_and_certified_arc_result_normalization_feasibility",
+        "implemented_surface": "budgeted_exact_intersections_nm_normalization_curve_domain_half_edge_face_classification_stage_lineage_result_region_provenance_operand_outcome_certified_arc_result_normalization_and_canonical_source_set_feasibility",
         "arc_distance_source": "src/cpp/lib/exact_arc_distance.cpp",
         "result_normalization_source": "src/cpp/lib/exact_result_normalization.cpp",
+        "source_sets_source": "src/cpp/lib/exact_source_sets.cpp",
         "boolean_outcomes_source": "src/cpp/lib/exact_boolean_outcomes.cpp",
         "boolean_provenance_source": "src/cpp/lib/exact_boolean_provenance.cpp",
         "boolean_regions_source": "src/cpp/lib/exact_boolean_regions.cpp",
@@ -444,6 +445,11 @@ def test_exact_algebraic_backend_design_gate_is_closed() -> None:
         "result_normalization_test": "tests/cpp/exact_result_normalization_test.cpp",
         "result_normalization_parity_validator": "scripts/validate_exact_result_normalization_parity.py",
         "result_normalization_vector_sha256": "db3be0a6e7bfc88bde2435bc603569d9dac18d8d320a32e2d0e48a8e00e469ea",
+        "source_sets_test": "tests/cpp/exact_source_sets_test.cpp",
+        "source_sets_parity_validator": "scripts/validate_exact_source_sets_parity.py",
+        "source_sets_vector_sha256": "dc19f5249a91d159f0ed1dff4ff78617315c157050f1df09fe47d834986daffc",
+        "source_sets_vector_success_work_units": 5760,
+        "source_sets_vector_storage_bytes": 6272,
     }
     assert (ROOT / backend["design"]).is_file()
     assert _sha256(ROOT / backend["design"]) == backend["design_sha256"]
@@ -458,6 +464,7 @@ def test_exact_algebraic_backend_design_gate_is_closed() -> None:
         "normalization_source",
         "curve_domain_source",
         "arc_distance_source",
+        "source_sets_source",
         "boolean_outcomes_source",
         "result_normalization_source",
         "boolean_provenance_source",
@@ -490,6 +497,8 @@ def test_exact_algebraic_backend_design_gate_is_closed() -> None:
         "boolean_outcomes_parity_validator",
         "result_normalization_test",
         "result_normalization_parity_validator",
+        "source_sets_test",
+        "source_sets_parity_validator",
     ):
         assert (ROOT / backend[key]).is_file()
 

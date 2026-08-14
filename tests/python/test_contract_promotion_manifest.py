@@ -372,7 +372,8 @@ def test_exact_algebraic_backend_design_gate_is_closed() -> None:
         "production_solver_allowed": False,
         "design_review_revision": "a8c9604de280e2a67018e1106fd1b430b34fcf50",
         "design_review_packet": "reviewer-019ffd1f-3c67-7001-87a5-200b6cda10d8",
-        "implemented_surface": "budgeted_exact_intersections_nm_normalization_curve_domain_half_edge_and_face_classification_feasibility",
+        "implemented_surface": "budgeted_exact_intersections_nm_normalization_curve_domain_half_edge_face_classification_and_stage_lineage_feasibility",
+        "boolean_stages_source": "src/cpp/lib/exact_boolean_stages.cpp",
         "rational_source": "src/cpp/lib/exact_rational.cpp",
         "polynomial_source": "src/cpp/lib/exact_polynomial.cpp",
         "resultant_source": "src/cpp/lib/exact_resultant.cpp",
@@ -415,6 +416,11 @@ def test_exact_algebraic_backend_design_gate_is_closed() -> None:
         "arrangement_vector_sha256": "b134a245f7d3daa6d4f8e03db1871ec8e99565a500e87ba4c452090951046c23",
         "arrangement_vector_success_work_units": 3051260,
         "arrangement_vector_storage_bytes": 8608,
+        "boolean_stages_test": "tests/cpp/exact_boolean_stages_test.cpp",
+        "boolean_stages_parity_validator": "scripts/validate_exact_boolean_stages_parity.py",
+        "boolean_stages_vector_sha256": "2fb0a89e6226f01bddde8cdb920ec3e2c22f9f3f09b3681fe0f884d64c33a8a5",
+        "boolean_stages_vector_success_work_units": 416,
+        "boolean_stages_vector_storage_bytes": 4560,
     }
     assert (ROOT / backend["design"]).is_file()
     assert _sha256(ROOT / backend["design"]) == backend["design_sha256"]
@@ -428,6 +434,7 @@ def test_exact_algebraic_backend_design_gate_is_closed() -> None:
         "geometry_source",
         "normalization_source",
         "curve_domain_source",
+        "boolean_stages_source",
         "arrangement_source",
         "arrangement_classification_source",
         "arrangement_faces_source",
@@ -445,6 +452,8 @@ def test_exact_algebraic_backend_design_gate_is_closed() -> None:
         "curve_domain_parity_validator",
         "arrangement_test",
         "arrangement_parity_validator",
+        "boolean_stages_test",
+        "boolean_stages_parity_validator",
     ):
         assert (ROOT / backend[key]).is_file()
 

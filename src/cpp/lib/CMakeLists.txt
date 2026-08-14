@@ -27,6 +27,7 @@ set(GEOMETER_LIB_SOURCES
 )
 
 set(GEOMETER_EXACT_SOURCES
+    exact_expression.cpp
     exact_factorization.cpp
     exact_polynomial.cpp
     exact_rational.cpp
@@ -36,7 +37,7 @@ set(GEOMETER_EXACT_SOURCES
 )
 
 if(NOT EMSCRIPTEN)
-    list(APPEND GEOMETER_LIB_SOURCES exact_factorization.cpp exact_polynomial.cpp exact_resultant.cpp exact_value.cpp exact_value_codec.cpp)
+    list(APPEND GEOMETER_LIB_SOURCES exact_expression.cpp exact_factorization.cpp exact_polynomial.cpp exact_resultant.cpp exact_value.cpp exact_value_codec.cpp)
 endif()
 
 if(NOT EMSCRIPTEN)

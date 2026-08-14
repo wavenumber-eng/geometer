@@ -334,6 +334,40 @@ ResultantBudget transform_budget(const Polynomial& polynomial, std::uint64_t out
         checked_add(1024, checked_multiply(slots, checked_add(32, checked_multiply(limbs, 8))))};
 }
 
+ResultantBudget rational_transform_budget(const Polynomial& polynomial, const BigInt& numerator,
+                                          const BigInt& denominator, bool translation)
+{
+    const std::uint64_t degree = static_cast<std::uint64_t>(polynomial.degree());
+    if (degree > 64)
+        throw std::overflow_error("rational transform degree exceeds exact backend limit");
+    std::uint64_t input_bits = 1;
+    for (const BigInt& coefficient : polynomial.coefficients())
+        input_bits = std::max(input_bits, bit_length(coefficient));
+    const std::uint64_t rational_bits = std::max(bit_length(numerator), bit_length(denominator));
+    // Each output term contains one input coefficient and at most degree
+    // powers drawn from the rational numerator/denominator. Translation also
+    // carries a binomial coefficient and a sum of at most degree+1 terms.
+    std::uint64_t coefficient_bits =
+        checked_add(input_bits, checked_multiply(degree, checked_add(rational_bits, 1)));
+    coefficient_bits = checked_add(coefficient_bits, translation ? checked_add(degree, 8) : 2);
+    if (coefficient_bits > 16'384)
+        throw std::overflow_error("rational transform coefficient estimate exceeds limit");
+    const std::uint64_t coefficient_limbs = checked_add(coefficient_bits, 31) / 32;
+    const std::uint64_t slots = checked_add(degree, 1);
+    const std::uint64_t arithmetic_steps =
+        translation ? checked_multiply(slots, slots) : checked_multiply(2, slots);
+    const std::uint64_t work =
+        checked_multiply(32, checked_multiply(arithmetic_steps,
+                                              checked_multiply(checked_add(coefficient_limbs, 1),
+                                                               checked_add(coefficient_limbs, 1))));
+    const std::uint64_t live_slots =
+        checked_multiply(translation ? 16 : 10, checked_add(slots, arithmetic_steps));
+    const std::uint64_t storage = checked_add(
+        4096,
+        checked_multiply(live_slots, checked_add(32, checked_multiply(coefficient_limbs, 8))));
+    return {work, storage};
+}
+
 PolynomialResult normalize_candidate(Budget& budget, const IntegerPolynomial& coefficients)
 {
     auto primitive = make_primitive_polynomial(budget, coefficients);
@@ -427,6 +461,73 @@ PolynomialResult make_square_root_polynomial(Budget& budget, const Polynomial& p
         {
             coefficients[index * 2] = polynomial.coefficients()[index];
         }
+        return normalize_candidate(budget, coefficients);
+    }
+    catch (const std::exception&)
+    {
+        return {Error::resource_limit_exceeded, std::nullopt};
+    }
+}
+
+PolynomialResult make_translated_polynomial(Budget& budget, const Polynomial& polynomial,
+                                            const BigInt& numerator, const BigInt& denominator)
+{
+    if (denominator <= 0)
+        return {Error::invalid_argument, std::nullopt};
+    try
+    {
+        const ResultantBudget phase =
+            rational_transform_budget(polynomial, numerator, denominator, true);
+        StorageReservation reservation(budget, phase.storage);
+        if (!reservation.acquired() || !budget.consume_work(phase.work))
+            return {Error::resource_limit_exceeded, std::nullopt};
+        const std::size_t degree = polynomial.degree();
+        std::vector<BigInt> numerator_powers(degree + 1, 1);
+        std::vector<BigInt> denominator_powers(degree + 1, 1);
+        for (std::size_t index = 1; index <= degree; ++index)
+        {
+            numerator_powers[index] = numerator_powers[index - 1] * (-numerator);
+            denominator_powers[index] = denominator_powers[index - 1] * denominator;
+        }
+        std::vector<BigInt> coefficients(degree + 1, 0);
+        for (std::size_t source = 0; source <= degree; ++source)
+            for (std::size_t output = 0; output <= source; ++output)
+                coefficients[output] += polynomial.coefficients()[source] *
+                                        binomial(source, output) *
+                                        numerator_powers[source - output] *
+                                        denominator_powers[degree - source + output];
+        return normalize_candidate(budget, coefficients);
+    }
+    catch (const std::exception&)
+    {
+        return {Error::resource_limit_exceeded, std::nullopt};
+    }
+}
+
+PolynomialResult make_scaled_polynomial(Budget& budget, const Polynomial& polynomial,
+                                        const BigInt& numerator, const BigInt& denominator)
+{
+    if (denominator <= 0 || numerator == 0)
+        return {Error::invalid_argument, std::nullopt};
+    try
+    {
+        const ResultantBudget phase =
+            rational_transform_budget(polynomial, numerator, denominator, false);
+        StorageReservation reservation(budget, phase.storage);
+        if (!reservation.acquired() || !budget.consume_work(phase.work))
+            return {Error::resource_limit_exceeded, std::nullopt};
+        const std::size_t degree = polynomial.degree();
+        std::vector<BigInt> numerator_powers(degree + 1, 1);
+        std::vector<BigInt> denominator_powers(degree + 1, 1);
+        for (std::size_t index = 1; index <= degree; ++index)
+        {
+            numerator_powers[index] = numerator_powers[index - 1] * numerator;
+            denominator_powers[index] = denominator_powers[index - 1] * denominator;
+        }
+        std::vector<BigInt> coefficients(degree + 1, 0);
+        for (std::size_t index = 0; index <= degree; ++index)
+            coefficients[index] = polynomial.coefficients()[index] * denominator_powers[index] *
+                                  numerator_powers[degree - index];
         return normalize_candidate(budget, coefficients);
     }
     catch (const std::exception&)

@@ -21,4 +21,13 @@ enum class ResultantOperation
 [[nodiscard]] PolynomialResult make_square_root_polynomial(Budget& budget,
                                                            const Polynomial& polynomial);
 
+[[nodiscard]] PolynomialResult make_translated_polynomial(Budget& budget,
+                                                          const Polynomial& polynomial,
+                                                          const BigInt& numerator,
+                                                          const BigInt& denominator);
+
+[[nodiscard]] PolynomialResult make_scaled_polynomial(Budget& budget, const Polynomial& polynomial,
+                                                      const BigInt& numerator,
+                                                      const BigInt& denominator);
+
 } // namespace geometer::exact

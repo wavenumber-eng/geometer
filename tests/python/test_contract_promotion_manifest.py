@@ -372,23 +372,32 @@ def test_exact_algebraic_backend_design_gate_is_closed() -> None:
         "production_solver_allowed": False,
         "design_review_revision": "a8c9604de280e2a67018e1106fd1b430b34fcf50",
         "design_review_packet": "reviewer-019ffd1f-3c67-7001-87a5-200b6cda10d8",
-        "implemented_surface": "budgeted_canonical_value_comparison_and_strict_scalar_codec_feasibility",
+        "implemented_surface": "budgeted_canonical_expression_arithmetic_and_strict_scalar_codec_feasibility",
         "rational_source": "src/cpp/lib/exact_rational.cpp",
         "polynomial_source": "src/cpp/lib/exact_polynomial.cpp",
         "resultant_source": "src/cpp/lib/exact_resultant.cpp",
         "factorization_source": "src/cpp/lib/exact_factorization.cpp",
         "value_source": "src/cpp/lib/exact_value.cpp",
         "value_codec_source": "src/cpp/lib/exact_value_codec.cpp",
+        "expression_source": "src/cpp/lib/exact_expression.cpp",
         "rational_test": "tests/cpp/exact_rational_test.cpp",
         "polynomial_test": "tests/cpp/exact_polynomial_test.cpp",
         "resultant_test": "tests/cpp/exact_resultant_test.cpp",
         "factorization_test": "tests/cpp/exact_factorization_test.cpp",
         "value_test": "tests/cpp/exact_value_test.cpp",
         "value_codec_test": "tests/cpp/exact_value_codec_test.cpp",
+        "expression_test": "tests/cpp/exact_expression_test.cpp",
     }
     assert (ROOT / backend["design"]).is_file()
     assert _sha256(ROOT / backend["design"]) == backend["design_sha256"]
-    for key in ("rational_source", "polynomial_source", "rational_test", "polynomial_test"):
+    for key in (
+        "rational_source",
+        "polynomial_source",
+        "expression_source",
+        "rational_test",
+        "polynomial_test",
+        "expression_test",
+    ):
         assert (ROOT / backend[key]).is_file()
 
 

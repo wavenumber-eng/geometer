@@ -440,13 +440,16 @@ struct ThomResult
     std::optional<std::vector<std::int8_t>> signs;
 };
 
+std::uint64_t root_work_bound(const Polynomial& polynomial, std::uint32_t precision);
+
 ThomResult thom_signs(EvaluationContext& context, const std::vector<FractionPolynomial>& sequence,
-                      const BigInt& bound, std::uint32_t ordinal, std::uint32_t initial_precision,
-                      std::uint32_t maximum_precision)
+                      const Polynomial& polynomial, const BigInt& bound, std::uint32_t ordinal,
+                      std::uint32_t initial_precision, std::uint32_t maximum_precision)
 {
     for (std::uint32_t precision = initial_precision; precision <= maximum_precision; ++precision)
     {
-        if (!context.budget.consume_interval_refinement())
+        if (!context.budget.consume_work(root_work_bound(polynomial, precision)) ||
+            !context.budget.consume_interval_refinement())
         {
             return {EvaluationStatus::resource_limit, std::nullopt};
         }
@@ -740,10 +743,9 @@ RootIsolationResult isolate_real_roots(Budget& budget, const Polynomial& polynom
     }
     try
     {
-        const std::uint64_t work = root_work_bound(polynomial, maximum_precision);
         const std::uint64_t storage = root_storage_bound(polynomial, maximum_precision);
         StorageReservation reservation(budget, storage);
-        if (!reservation.acquired() || !budget.consume_work(work))
+        if (!reservation.acquired() || !budget.consume_work(root_work_bound(polynomial, 0)))
         {
             return {Error::resource_limit_exceeded, std::nullopt};
         }
@@ -768,6 +770,8 @@ RootIsolationResult isolate_real_roots(Budget& budget, const Polynomial& polynom
         for (std::uint32_t precision = 0; precision <= maximum_precision && remaining > 0;
              ++precision)
         {
+            if (precision != 0 && !budget.consume_work(root_work_bound(polynomial, precision)))
+                return {Error::resource_limit_exceeded, std::nullopt};
             for (std::uint32_t ordinal = 0; ordinal < root_count; ++ordinal)
             {
                 if (isolated[ordinal])
@@ -792,8 +796,8 @@ RootIsolationResult isolate_real_roots(Budget& budget, const Polynomial& polynom
                 }
                 if (cell_roots == 1)
                 {
-                    ThomResult signs =
-                        thom_signs(context, sturm, bound, ordinal, precision, maximum_precision);
+                    ThomResult signs = thom_signs(context, sturm, polynomial, bound, ordinal,
+                                                  precision, maximum_precision);
                     if (signs.status != EvaluationStatus::ok || !signs.signs.has_value())
                     {
                         return {signs.status == EvaluationStatus::endpoint_root

@@ -372,7 +372,7 @@ def test_exact_algebraic_backend_design_gate_is_closed() -> None:
         "production_solver_allowed": False,
         "design_review_revision": "a8c9604de280e2a67018e1106fd1b430b34fcf50",
         "design_review_packet": "reviewer-019ffd1f-3c67-7001-87a5-200b6cda10d8",
-        "implemented_surface": "budgeted_exact_intersections_nm_normalization_curve_domain_half_edge_face_classification_stage_lineage_result_region_provenance_operand_outcome_certified_arc_result_normalization_canonical_source_set_and_result_packet_layout_feasibility",
+        "implemented_surface": "budgeted_exact_intersections_nm_normalization_curve_domain_half_edge_face_classification_stage_lineage_result_region_provenance_operand_outcome_certified_arc_result_normalization_canonical_source_set_result_packet_layout_and_typed_record_graph_feasibility",
         "arc_distance_source": "src/cpp/lib/exact_arc_distance.cpp",
         "result_normalization_source": "src/cpp/lib/exact_result_normalization.cpp",
         "source_sets_source": "src/cpp/lib/exact_source_sets.cpp",
@@ -457,6 +457,11 @@ def test_exact_algebraic_backend_design_gate_is_closed() -> None:
         "result_packet_empty_sha256": "6098488722c00c2959df6e16d1381cbdcacf79c5bd4d8b9ae2cebdd5a0de8638",
         "result_packet_layout_vector_bytes": 924,
         "result_packet_layout_vector_sha256": "4bce719a8da4fe334ea1bc758a7d726a77deec90976aab62b81e205e4a3f493c",
+        "result_packet_records_source": "src/cpp/lib/analytic_result_packet_records.cpp",
+        "result_packet_records_test": "tests/cpp/analytic_result_packet_records_test.cpp",
+        "result_packet_records_parity_validator": "scripts/validate_analytic_result_packet_records_parity.py",
+        "result_packet_record_vector_bytes": 1220,
+        "result_packet_record_vector_sha256": "37fe2c16c59d2f39d7900300883b80cc1412f343774bef81b6a9d8aea69df93f",
     }
     assert (ROOT / backend["design"]).is_file()
     assert _sha256(ROOT / backend["design"]) == backend["design_sha256"]
@@ -473,6 +478,7 @@ def test_exact_algebraic_backend_design_gate_is_closed() -> None:
         "arc_distance_source",
         "source_sets_source",
         "result_packet_layout_source",
+        "result_packet_records_source",
         "boolean_outcomes_source",
         "result_normalization_source",
         "boolean_provenance_source",
@@ -509,6 +515,8 @@ def test_exact_algebraic_backend_design_gate_is_closed() -> None:
         "source_sets_parity_validator",
         "result_packet_layout_test",
         "result_packet_layout_parity_validator",
+        "result_packet_records_test",
+        "result_packet_records_parity_validator",
     ):
         assert (ROOT / backend[key]).is_file()
 

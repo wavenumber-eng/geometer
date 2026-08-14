@@ -1,5 +1,6 @@
 set(GEOMETER_LIB_SOURCES
     analytic_result_packet_layout.cpp
+    analytic_result_packet_records.cpp
     c_api.cpp
     clipper2_bytes.cpp
     exact_rational.cpp
@@ -29,6 +30,7 @@ set(GEOMETER_LIB_SOURCES
 
 set(GEOMETER_EXACT_SOURCES
     analytic_result_packet_layout.cpp
+    analytic_result_packet_records.cpp
     exact_arc_distance.cpp
     exact_boolean_outcomes.cpp
     exact_boolean_provenance.cpp

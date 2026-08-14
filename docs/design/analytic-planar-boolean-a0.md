@@ -834,9 +834,29 @@ renaming requires byte-for-byte-equivalent geometry/topology fields and the
 explicit mapped source tuple.
 
 This is evidence for the closed-form and initial metamorphic lanes, not
-completion of general-arc certified integration, tangency/coincidence sweeps,
-identity/self-operation properties, exhaustive or seeded property testing,
-broader lineage scenarios, or production cross-transport execution.
+completion of general-arc certified integration, identity/self-operation
+properties, exhaustive or seeded property testing, broader lineage scenarios,
+or production cross-transport execution.
+
+### Exact Degeneracy Boundaries
+
+The pull-request lane governs an OCCT-independent exact parameter sweep around
+the first high-risk boundaries. Unit circles are classified immediately below,
+at, and above external tangency; radius-two and radius-one circles receive the
+same treatment at internal tangency. Concentric radii immediately below, equal
+to, and above one prove that exact coincidence is not tolerance-based.
+Near-collinear rational line carriers likewise distinguish a shared-point
+intersection, exact coincidence, and the opposite shared-point perturbation.
+
+The normalization sweep covers both signs around one-half nm and the interval
+around three-halves nm, including exact ties, and requires the governed
+ties-away-from-zero result. Rational Pythagorean endpoints on a radius-101
+circle exercise counterclockwise arcs immediately below and above 180 degrees,
+with the exact semicircle between them. Their minor/major flags must be
+coherent; flipped flags and a single-arc start-equals-end encoding fail closed.
+Full circles remain represented by multiple analytic fragments. Native and
+Emscripten executions must reproduce the complete classification signature
+byte for byte.
 
 ### OCCT 8.0.1 Qualification
 

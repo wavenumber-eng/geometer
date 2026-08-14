@@ -110,6 +110,13 @@ void insert_unique(std::vector<ExactSourceReference>& values, const ExactSourceR
         values.insert(position, value);
 }
 
+void insert_unique_id(std::vector<std::uint64_t>& values, std::uint64_t value)
+{
+    const auto position = std::lower_bound(values.begin(), values.end(), value);
+    if (position == values.end() || *position != value)
+        values.insert(position, value);
+}
+
 bool role_is_authored(ExactSourceRole role)
 {
     return role == ExactSourceRole::authored_line || role == ExactSourceRole::authored_circular_arc;
@@ -254,6 +261,8 @@ bool face_contains_source(const ExactBooleanSelection& selection, std::uint32_t 
 
 bool selection_ranges_valid(const ExactBooleanSelection& selection)
 {
+    std::uint64_t positive_cursor = 0;
+    std::uint64_t subtraction_cursor = 0;
     for (const ExactSelectedFace& face : selection.faces())
     {
         const std::uint64_t positive_end =
@@ -261,7 +270,9 @@ bool selection_ranges_valid(const ExactBooleanSelection& selection)
         const std::uint64_t subtraction_end =
             static_cast<std::uint64_t>(face.subtraction_source_begin) +
             face.subtraction_source_count;
-        if (positive_end > selection.positive_sources().size() ||
+        if (face.positive_source_begin != positive_cursor ||
+            face.subtraction_source_begin != subtraction_cursor ||
+            positive_end > selection.positive_sources().size() ||
             subtraction_end > selection.subtraction_sources().size())
             return false;
         const auto positive = selection.positive_sources().begin() + face.positive_source_begin;
@@ -274,8 +285,127 @@ bool selection_ranges_valid(const ExactBooleanSelection& selection)
             std::adjacent_find(subtraction, subtraction + face.subtraction_source_count) !=
                 subtraction + face.subtraction_source_count)
             return false;
+        positive_cursor = positive_end;
+        subtraction_cursor = subtraction_end;
+    }
+    return positive_cursor == selection.positive_sources().size() &&
+           subtraction_cursor == selection.subtraction_sources().size();
+}
+
+bool face_contains_coverage(const ExactArrangement& arrangement, std::uint32_t face,
+                            std::uint64_t coverage_id)
+{
+    const ExactArrangementFace& value = arrangement.faces()[face];
+    const auto begin = arrangement.face_coverages().begin() + value.coverage_begin;
+    return std::binary_search(begin, begin + value.coverage_count, coverage_id);
+}
+
+bool selection_matches_stages(const ExactArrangement& arrangement,
+                              const ExactBooleanSelection& selection,
+                              const std::vector<ExactBooleanStage>& stages)
+{
+    for (std::uint32_t face_id = 0; face_id < selection.faces().size(); ++face_id)
+    {
+        const ExactArrangementFace& arrangement_face = arrangement.faces()[face_id];
+        const std::uint64_t coverage_end =
+            static_cast<std::uint64_t>(arrangement_face.coverage_begin) +
+            arrangement_face.coverage_count;
+        if (coverage_end > arrangement.face_coverages().size())
+            return false;
+        const auto face_coverages =
+            arrangement.face_coverages().begin() + arrangement_face.coverage_begin;
+        if (!std::is_sorted(face_coverages, face_coverages + arrangement_face.coverage_count) ||
+            std::adjacent_find(face_coverages, face_coverages + arrangement_face.coverage_count) !=
+                face_coverages + arrangement_face.coverage_count)
+            return false;
+        bool material = false;
+        std::vector<std::uint64_t> positive;
+        std::vector<std::uint64_t> subtraction;
+        for (const ExactBooleanStage& stage : stages)
+        {
+            std::vector<std::uint64_t> covered;
+            for (const ExactBooleanOperand& operand : stage.operands)
+                if (face_contains_coverage(arrangement, face_id, operand.coverage_id))
+                    insert_unique_id(covered, operand.source_id);
+            if (covered.empty())
+                continue;
+            if (stage.operation == ExactBooleanStageOperation::union_)
+            {
+                material = true;
+                for (const std::uint64_t source : covered)
+                    insert_unique_id(positive, source);
+            }
+            else if (material)
+            {
+                for (const std::uint64_t source : covered)
+                    insert_unique_id(subtraction, source);
+                material = false;
+                positive.clear();
+            }
+        }
+        const ExactSelectedFace& actual = selection.faces()[face_id];
+        const auto actual_positive =
+            selection.positive_sources().begin() + actual.positive_source_begin;
+        const auto actual_subtraction =
+            selection.subtraction_sources().begin() + actual.subtraction_source_begin;
+        if (actual.material != material || actual.positive_source_count != positive.size() ||
+            actual.subtraction_source_count != subtraction.size() ||
+            !std::equal(positive.begin(), positive.end(), actual_positive) ||
+            !std::equal(subtraction.begin(), subtraction.end(), actual_subtraction))
+            return false;
     }
     return true;
+}
+
+Error collect_retained_boundary(const ExactArrangement& arrangement,
+                                const ExactBooleanSelection& selection,
+                                const ExactBooleanRegions& regions,
+                                std::vector<bool>& retained_half_edges,
+                                std::vector<bool>& retained_vertices)
+{
+    std::uint64_t ring_cursor = 0;
+    for (const ExactResultRing& ring : regions.rings())
+    {
+        const std::uint64_t end =
+            static_cast<std::uint64_t>(ring.half_edge_begin) + ring.half_edge_count;
+        if (ring.half_edge_begin != ring_cursor || end > regions.ring_half_edges().size() ||
+            ring.half_edge_count == 0)
+            return Error::invalid_argument;
+        for (std::uint32_t index = 0; index < ring.half_edge_count; ++index)
+        {
+            const std::uint32_t half_edge = regions.ring_half_edges()[ring.half_edge_begin + index];
+            if (half_edge >= retained_half_edges.size() || retained_half_edges[half_edge])
+                return Error::invalid_argument;
+            retained_half_edges[half_edge] = true;
+        }
+        ring_cursor = end;
+    }
+    if (ring_cursor != regions.ring_half_edges().size())
+        return Error::invalid_argument;
+
+    for (std::uint32_t id = 0; id < arrangement.half_edges().size(); ++id)
+    {
+        const ExactArrangementHalfEdge& half_edge = arrangement.half_edges()[id];
+        if (half_edge.twin >= arrangement.half_edges().size() ||
+            half_edge.edge >= arrangement.edges().size() ||
+            half_edge.origin_vertex >= arrangement.vertices().size() ||
+            half_edge.face >= arrangement.faces().size())
+            return Error::invalid_argument;
+        const ExactArrangementHalfEdge& twin = arrangement.half_edges()[half_edge.twin];
+        if (twin.origin_vertex >= arrangement.vertices().size() ||
+            twin.face >= arrangement.faces().size())
+            return Error::invalid_argument;
+        const bool expected =
+            selection.faces()[half_edge.face].material && !selection.faces()[twin.face].material;
+        if (retained_half_edges[id] != expected)
+            return Error::invalid_argument;
+        if (expected)
+        {
+            retained_vertices[half_edge.origin_vertex] = true;
+            retained_vertices[twin.origin_vertex] = true;
+        }
+    }
+    return Error::none;
 }
 
 Error collect_input_counts(const ExactArrangement& arrangement,
@@ -419,18 +549,22 @@ ExactBooleanProvenanceResult build_exact_boolean_provenance(
                                             checked_add(checked_multiply(membership_count, 8),
                                                         checked_multiply(maximum_sources, 32)))))));
         const std::uint64_t work = checked_add(
-            256,
-            checked_add(
-                checked_multiply(stages.size(), 16),
-                checked_add(
-                    checked_multiply(counts.operands, 32),
-                    checked_add(
-                        checked_multiply(half_edge_count, 16),
-                        checked_add(
-                            checked_multiply(vertex_count, 16),
-                            checked_add(checked_multiply(membership_count, 8),
-                                        checked_add(checked_multiply(occurrence_count, 32),
-                                                    checked_multiply(maximum_sources, 4))))))));
+            256, checked_add(
+                     checked_multiply(stages.size(), 16),
+                     checked_add(
+                         checked_multiply(counts.operands, 32),
+                         checked_add(
+                             checked_multiply(half_edge_count, 16),
+                             checked_add(
+                                 checked_multiply(vertex_count, 16),
+                                 checked_add(
+                                     checked_multiply(membership_count, 8),
+                                     checked_add(checked_multiply(occurrence_count, 32),
+                                                 checked_add(checked_multiply(maximum_sources, 4),
+                                                             checked_multiply(
+                                                                 checked_multiply(face_count,
+                                                                                  counts.operands),
+                                                                 4)))))))));
         if (!budget.consume_work(work))
             return failure(Error::resource_limit_exceeded);
         StorageReservation reservation(budget, charge);
@@ -442,6 +576,8 @@ ExactBooleanProvenanceResult build_exact_boolean_provenance(
         if (const Error error = normalize_operands(stages, by_coverage, by_operand);
             error != Error::none)
             return failure(error);
+        if (!selection_matches_stages(arrangement, selection, stages))
+            return failure(Error::invalid_argument);
 
         std::vector<ExactOccurrenceSource> occurrences = input_occurrences;
         std::sort(occurrences.begin(), occurrences.end(),
@@ -487,31 +623,10 @@ ExactBooleanProvenanceResult build_exact_boolean_provenance(
 
         std::vector<bool> retained_half_edges(half_edge_count);
         std::vector<bool> retained_vertices(vertex_count);
-        for (const ExactResultRing& ring : regions.rings())
-        {
-            const std::uint64_t end =
-                static_cast<std::uint64_t>(ring.half_edge_begin) + ring.half_edge_count;
-            if (end > regions.ring_half_edges().size() || ring.half_edge_count == 0)
-                return failure(Error::invalid_argument);
-            for (std::uint32_t index = 0; index < ring.half_edge_count; ++index)
-            {
-                const std::uint32_t half_edge =
-                    regions.ring_half_edges()[ring.half_edge_begin + index];
-                if (half_edge >= half_edge_count || retained_half_edges[half_edge])
-                    return failure(Error::invalid_argument);
-                const ExactArrangementHalfEdge& value = arrangement.half_edges()[half_edge];
-                if (value.twin >= half_edge_count || value.edge >= arrangement.edges().size() ||
-                    value.origin_vertex >= vertex_count || value.face >= face_count ||
-                    arrangement.half_edges()[value.twin].origin_vertex >= vertex_count ||
-                    arrangement.half_edges()[value.twin].face >= face_count ||
-                    !selection.faces()[value.face].material ||
-                    selection.faces()[arrangement.half_edges()[value.twin].face].material)
-                    return failure(Error::invalid_argument);
-                retained_half_edges[half_edge] = true;
-                retained_vertices[value.origin_vertex] = true;
-                retained_vertices[arrangement.half_edges()[value.twin].origin_vertex] = true;
-            }
-        }
+        if (const Error error = collect_retained_boundary(arrangement, selection, regions,
+                                                          retained_half_edges, retained_vertices);
+            error != Error::none)
+            return failure(error);
 
         std::vector<ExactBoundaryFragmentProvenance> fragments;
         std::vector<ExactResultVertexProvenance> vertices;

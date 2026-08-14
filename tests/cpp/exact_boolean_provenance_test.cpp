@@ -195,6 +195,36 @@ int main()
             "coincident outer vertices must retain both operands' incident curves");
     const std::string canonical = signature(*provenance_result.value);
 
+    auto empty_stages = stages;
+    for (ExactBooleanStage& stage : empty_stages)
+        stage.operation = ExactBooleanStageOperation::difference;
+    Budget empty_selection_budget({2'000'000'000, 268'435'456});
+    ExactBooleanSelectionResult empty_selection = evaluate_exact_boolean_stages(
+        empty_selection_budget, *arrangement_result.value, empty_stages);
+    require(empty_selection.error == Error::none && empty_selection.value,
+            "empty mismatch selection fixture failed");
+    Budget empty_region_budget({2'000'000'000, 268'435'456});
+    ExactBooleanRegionsResult empty_regions = build_exact_boolean_regions(
+        empty_region_budget, *arrangement_result.value, *empty_selection.value);
+    require(empty_regions.error == Error::none && empty_regions.value &&
+                empty_regions.value->rings().empty(),
+            "empty mismatch region fixture failed");
+    Budget mismatched_region_budget({2'000'000'000, 268'435'456});
+    ExactBooleanProvenanceResult mismatched_region = build_exact_boolean_provenance(
+        mismatched_region_budget, *arrangement_result.value, *selection_result.value,
+        *empty_regions.value, stages, sources);
+    require(mismatched_region.error == Error::invalid_argument && !mismatched_region.value,
+            "regions from another valid selection must fail closed");
+
+    auto relabeled_stages = stages;
+    relabeled_stages.front().operation = ExactBooleanStageOperation::difference;
+    Budget relabeled_stage_budget({2'000'000'000, 268'435'456});
+    ExactBooleanProvenanceResult relabeled_stage = build_exact_boolean_provenance(
+        relabeled_stage_budget, *arrangement_result.value, *selection_result.value,
+        *region_result.value, relabeled_stages, sources);
+    require(relabeled_stage.error == Error::invalid_argument && !relabeled_stage.value,
+            "selection lineage inconsistent with stage semantics must fail closed");
+
     auto permuted_sources = sources;
     std::reverse(permuted_sources.begin(), permuted_sources.end());
     Budget permuted_budget({2'000'000'000, 268'435'456});

@@ -431,7 +431,7 @@ def test_exact_algebraic_backend_design_gate_is_closed() -> None:
         "boolean_provenance_test": "tests/cpp/exact_boolean_provenance_test.cpp",
         "boolean_provenance_parity_validator": "scripts/validate_exact_boolean_provenance_parity.py",
         "boolean_provenance_vector_sha256": "3e996f29bfeca09f584dc6412670302d92edbd4f3282bc921829b23dd79108e5",
-        "boolean_provenance_vector_success_work_units": 4144,
+        "boolean_provenance_vector_success_work_units": 4208,
         "boolean_provenance_vector_storage_bytes": 26528,
     }
     assert (ROOT / backend["design"]).is_file()

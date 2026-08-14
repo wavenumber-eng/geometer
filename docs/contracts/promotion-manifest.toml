@@ -126,7 +126,8 @@ generated_dependency_root = ".deps/boost_1_92_0"
 production_solver_allowed = false
 design_review_revision = "a8c9604de280e2a67018e1106fd1b430b34fcf50"
 design_review_packet = "reviewer-019ffd1f-3c67-7001-87a5-200b6cda10d8"
-implemented_surface = "budgeted_exact_intersections_nm_normalization_curve_domain_half_edge_face_classification_and_stage_lineage_feasibility"
+implemented_surface = "budgeted_exact_intersections_nm_normalization_curve_domain_half_edge_face_classification_stage_lineage_and_result_region_feasibility"
+boolean_regions_source = "src/cpp/lib/exact_boolean_regions.cpp"
 boolean_stages_source = "src/cpp/lib/exact_boolean_stages.cpp"
 rational_source = "src/cpp/lib/exact_rational.cpp"
 polynomial_source = "src/cpp/lib/exact_polynomial.cpp"
@@ -175,6 +176,11 @@ boolean_stages_parity_validator = "scripts/validate_exact_boolean_stages_parity.
 boolean_stages_vector_sha256 = "2fb0a89e6226f01bddde8cdb920ec3e2c22f9f3f09b3681fe0f884d64c33a8a5"
 boolean_stages_vector_success_work_units = 416
 boolean_stages_vector_storage_bytes = 4560
+boolean_regions_test = "tests/cpp/exact_boolean_regions_test.cpp"
+boolean_regions_parity_validator = "scripts/validate_exact_boolean_regions_parity.py"
+boolean_regions_vector_sha256 = "b33cc58943c8346a8bc54232fbe7cc4a55ca35d10f9e4038be9be3e88cbacc2f"
+boolean_regions_vector_success_work_units = 904
+boolean_regions_vector_storage_bytes = 5760
 
 [transports]
 generic_c_abi = "implemented_a0"

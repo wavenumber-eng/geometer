@@ -352,7 +352,7 @@ build_exact_arrangement(ConstructionArena& arena, const std::vector<ExactAtomicC
         std::uint32_t outgoing_total = 0;
         for (ExactArrangementVertex& vertex : vertices)
         {
-            if (vertex.outgoing_count < 2 || vertex.outgoing_count % 2 != 0)
+            if (vertex.outgoing_count < 2)
                 return failure(Error::invalid_argument);
             vertex.outgoing_begin = outgoing_total;
             if (vertex.outgoing_count > std::numeric_limits<std::uint32_t>::max() - outgoing_total)

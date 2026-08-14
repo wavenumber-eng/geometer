@@ -808,12 +808,13 @@ degeneracy, exhaustive, property, or between-stage-normalization lanes.
 ### Closed-Form Analytic Invariants
 
 The pull-request lane also includes an OCCT-independent closed-form oracle for
-controlled normalized result packets. Its initial corpus covers an
-axis-aligned rectangle, a disk, concentric annulus, line-and-semicircle
-capsule, and nested rectangular outer/hole/island topology. The oracle first
-requires exact topology replay, then integrates each directed line or circular
-semicircle independently using Green's theorem. It retains area and perimeter
-as exact rational-plus-pi coefficients rather than comparing floating-point
+controlled normalized result packets. Its corpus covers an axis-aligned
+rectangle, a disk, concentric annulus, line-and-semicircle capsule, nested
+rectangular outer/hole/island topology, and an L-shaped constant-width swept
+path with a controlled quarter-circle join. The oracle first requires exact
+topology replay, then integrates each directed line or circular arc
+independently using Green's theorem. It retains area and perimeter as exact
+rational-plus-pi coefficients rather than comparing floating-point
 approximations. Component, hole, and Euler-characteristic expectations are
 part of the same governed signature, and native and Emscripten must reproduce
 that signature byte for byte.
@@ -824,11 +825,14 @@ cost for simple concentric disks while preserving the generic ray oracle for
 mixed line/arc cycles. Diameter-defined packet arcs canonicalize their proven
 zero center offset to rational zero before arrangement replay.
 
-This first oracle intentionally accepts only axis-aligned lines and exact
-semicircles, for which the independent formulas are small and auditable. It is
-also replayed through integer translation, exact 90-degree rotation, reflection
-with winding recanonicalization, positive integer scaling, and source-ID
-renaming. The mixed line/arc capsule and nested outer/hole/island fixture must
+This oracle intentionally accepts only axis-aligned lines and exact
+semicircles or quarter circles, for which the independent formulas are small
+and auditable. Quarter-circle centers are derived as doubled rational
+coordinates from endpoints, radius, direction, and branch, avoiding integer
+division or a duplicated implementation center. It is also replayed through
+integer translation, exact 90-degree rotation, reflection with winding
+recanonicalization, positive integer scaling, and source-ID renaming. The
+mixed line/arc capsule, swept path, and nested outer/hole/island fixture must
 retain exact topology and the appropriately transformed rational-plus-pi
 measure. Each transformed packet has a governed canonical SHA-256, with an
 identical aggregate signature under native and Emscripten execution.
@@ -840,10 +844,9 @@ direction remains unchanged after the two orientation reversals. Source-ID
 renaming requires byte-for-byte-equivalent geometry/topology fields and the
 explicit mapped source tuple.
 
-This is evidence for the closed-form and initial metamorphic lanes, not
-completion of general-arc certified integration, identity/self-operation
-properties, exhaustive or seeded property testing, broader lineage scenarios,
-or production cross-transport execution.
+This is evidence for the closed-form and controlled-angle metamorphic lanes,
+not completion of arbitrary-angle certified integration or production
+cross-transport execution.
 
 ### Exact Degeneracy Boundaries
 

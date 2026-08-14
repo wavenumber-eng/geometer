@@ -4,6 +4,7 @@
 #include <boost/multiprecision/cpp_int.hpp>
 
 #include <algorithm>
+#include <array>
 #include <cstdlib>
 #include <iostream>
 #include <limits>
@@ -72,12 +73,12 @@ void add_line(AnalyticResultPacketRecords& records, std::uint32_t start, std::ui
     records.fragment_references.push_back(index);
 }
 
-void add_half_arc(AnalyticResultPacketRecords& records, std::uint32_t start, std::uint32_t end,
-                  std::uint8_t direction, std::uint64_t radius)
+void add_arc(AnalyticResultPacketRecords& records, std::uint32_t start, std::uint32_t end,
+             std::uint8_t direction, std::uint64_t radius, bool major = false)
 {
     const std::uint32_t index = static_cast<std::uint32_t>(records.fragments.size());
     records.fragments.push_back(
-        {static_cast<std::uint64_t>(index) + 1, start, end, 2, direction, false, radius, 1, 0});
+        {static_cast<std::uint64_t>(index) + 1, start, end, 2, direction, major, radius, 1, 0});
     records.fragment_references.push_back(index);
 }
 
@@ -131,8 +132,8 @@ AnalyticResultPacketRecords circle()
     add_source(records, ExactSourceRole::authored_circular_arc);
     const auto left = add_vertex(records, -10, 0);
     const auto right = add_vertex(records, 10, 0);
-    add_half_arc(records, left, right, 1, 10);
-    add_half_arc(records, right, left, 1, 10);
+    add_arc(records, left, right, 1, 10);
+    add_arc(records, right, left, 1, 10);
     add_ring(records, 0, 2, kNone, 0);
     finish(records, {0});
     return records;
@@ -144,13 +145,13 @@ AnalyticResultPacketRecords annulus()
     add_source(records, ExactSourceRole::authored_circular_arc);
     const auto outer_left = add_vertex(records, -10, 0);
     const auto outer_right = add_vertex(records, 10, 0);
-    add_half_arc(records, outer_left, outer_right, 1, 10);
-    add_half_arc(records, outer_right, outer_left, 1, 10);
+    add_arc(records, outer_left, outer_right, 1, 10);
+    add_arc(records, outer_right, outer_left, 1, 10);
     add_ring(records, 0, 2, kNone, 0);
     const auto inner_left = add_vertex(records, -4, 0);
     const auto inner_right = add_vertex(records, 4, 0);
-    add_half_arc(records, inner_left, inner_right, 2, 4);
-    add_half_arc(records, inner_right, inner_left, 2, 4);
+    add_arc(records, inner_left, inner_right, 2, 4);
+    add_arc(records, inner_right, inner_left, 2, 4);
     add_ring(records, 2, 2, 0, 1);
     finish(records, {0});
     return records;
@@ -165,9 +166,9 @@ AnalyticResultPacketRecords capsule()
     const auto left_bottom = add_vertex(records, 0, -5);
     const auto right_bottom = add_vertex(records, 20, -5);
     add_line(records, right_top, left_top);
-    add_half_arc(records, left_top, left_bottom, 1, 5);
+    add_arc(records, left_top, left_bottom, 1, 5);
     add_line(records, left_bottom, right_bottom);
-    add_half_arc(records, right_bottom, right_top, 1, 5);
+    add_arc(records, right_bottom, right_top, 1, 5);
     add_ring(records, 0, 4, kNone, 0);
     finish(records, {0});
     return records;
@@ -181,6 +182,29 @@ AnalyticResultPacketRecords nested_island()
     add_box_ring(records, 4, 16, true, 0, 1);
     add_box_ring(records, 8, 12, false, 1, 2);
     finish(records, {0, 2});
+    return records;
+}
+
+AnalyticResultPacketRecords swept_l_path()
+{
+    AnalyticResultPacketRecords records;
+    add_source(records, ExactSourceRole::authored_circular_arc);
+    const auto start_bottom = add_vertex(records, 0, -2);
+    const auto outer_bottom = add_vertex(records, 10, -2);
+    const auto outer_right = add_vertex(records, 12, 0);
+    const auto end_right = add_vertex(records, 12, 10);
+    const auto end_left = add_vertex(records, 8, 10);
+    const auto inner_corner = add_vertex(records, 8, 2);
+    const auto start_top = add_vertex(records, 0, 2);
+    add_line(records, start_bottom, outer_bottom);
+    add_arc(records, outer_bottom, outer_right, 1, 2);
+    add_line(records, outer_right, end_right);
+    add_arc(records, end_right, end_left, 1, 2);
+    add_line(records, end_left, inner_corner);
+    add_line(records, inner_corner, start_top);
+    add_arc(records, start_top, start_bottom, 1, 2);
+    add_ring(records, 0, 7, kNone, 0);
+    finish(records, {0});
     return records;
 }
 
@@ -218,13 +242,37 @@ SymbolicMeasure measure(const AnalyticResultPacketRecords& records)
             const BigInt dx = x2 - x1;
             const BigInt dy = y2 - y1;
             const BigInt radius = fragment.radius_nm;
-            require(fragment.kind == 2 && !fragment.major_arc &&
-                        dx * dx + dy * dy == 4 * radius * radius,
-                    "closed-form arc oracle requires exact semicircle fixtures");
+            require(fragment.kind == 2, "closed-form oracle encountered an unsupported fragment");
             const BigInt direction = fragment.direction == 1 ? 1 : -1;
-            output.area_four_rational += (x1 + x2) * dy - (y1 + y2) * dx;
-            output.area_four_pi += direction * 2 * radius * radius;
-            output.perimeter_two_pi += 2 * radius;
+            const BigInt chord_squared = dx * dx + dy * dy;
+            if (chord_squared == 4 * radius * radius)
+            {
+                require(!fragment.major_arc,
+                        "closed-form semicircle oracle rejects an ambiguous major branch");
+                output.area_four_rational += (x1 + x2) * dy - (y1 + y2) * dx;
+                output.area_four_pi += direction * 2 * radius * radius;
+                output.perimeter_two_pi += 2 * radius;
+                continue;
+            }
+            require(chord_squared == 2 * radius * radius,
+                    "closed-form arc oracle requires exact quarter-circle fixtures");
+            const std::array<std::pair<BigInt, BigInt>, 2> doubled_centers{
+                std::pair<BigInt, BigInt>{x1 + x2 - dy, y1 + y2 + dx},
+                {x1 + x2 + dy, y1 + y2 - dx}};
+            const auto has_requested_minor_direction = [&](const auto& doubled_center)
+            {
+                const BigInt cross =
+                    (2 * x1 - doubled_center.first) * (2 * y2 - doubled_center.second) -
+                    (2 * y1 - doubled_center.second) * (2 * x2 - doubled_center.first);
+                return (cross > 0) == (direction > 0);
+            };
+            const bool choose_first =
+                has_requested_minor_direction(doubled_centers[0]) != fragment.major_arc;
+            const auto& doubled_center = doubled_centers[choose_first ? 0 : 1];
+            const BigInt quarter_count = fragment.major_arc ? 3 : 1;
+            output.area_four_rational += doubled_center.first * dy - doubled_center.second * dx;
+            output.area_four_pi += direction * quarter_count * radius * radius;
+            output.perimeter_two_pi += quarter_count * radius;
         }
     }
     return output;
@@ -525,52 +573,74 @@ void check_metamorphic_corpus(std::vector<std::string>& signatures)
 {
     const auto capsule_value = capsule();
     const auto island_value = nested_island();
+    const auto swept_value = swept_l_path();
     const SymbolicMeasure capsule_measure{800, 100, 80, 20, 1, 0};
     const SymbolicMeasure island_measure{1088, 0, 288, 0, 2, 1};
+    const SymbolicMeasure swept_measure{304, 20, 72, 10, 1, 0};
     const auto translated_capsule = translated(capsule_value, 13, -17);
     const auto translated_island = translated(island_value, 13, -17);
+    const auto translated_swept = translated(swept_value, 13, -17);
     require_translation_relation(capsule_value, translated_capsule, 13, -17);
     require_translation_relation(island_value, translated_island, 13, -17);
+    require_translation_relation(swept_value, translated_swept, 13, -17);
     check_metamorphic("translation_capsule", capsule_value, translated_capsule, capsule_measure,
                       signatures);
     check_metamorphic("translation_nested_island", island_value, translated_island, island_measure,
                       signatures);
+    check_metamorphic("translation_swept_l_path", swept_value, translated_swept, swept_measure,
+                      signatures);
 
     const auto rotated_capsule = rotated_90(capsule_value);
     const auto rotated_island = rotated_90(island_value);
+    const auto rotated_swept = rotated_90(swept_value);
     require_rotation_relation(capsule_value, rotated_capsule);
     require_rotation_relation(island_value, rotated_island);
+    require_rotation_relation(swept_value, rotated_swept);
     check_metamorphic("rotation_90_capsule", capsule_value, rotated_capsule, capsule_measure,
                       signatures);
     check_metamorphic("rotation_90_nested_island", island_value, rotated_island, island_measure,
                       signatures);
+    check_metamorphic("rotation_90_swept_l_path", swept_value, rotated_swept, swept_measure,
+                      signatures);
 
     const auto reflected_capsule = reflected_x(capsule_value);
     const auto reflected_island = reflected_x(island_value);
+    const auto reflected_swept = reflected_x(swept_value);
     require_reflection_relation(capsule_value, reflected_capsule);
     require_reflection_relation(island_value, reflected_island);
+    require_reflection_relation(swept_value, reflected_swept);
     check_metamorphic("reflection_capsule", capsule_value, reflected_capsule, capsule_measure,
                       signatures);
     check_metamorphic("reflection_nested_island", island_value, reflected_island, island_measure,
                       signatures);
+    check_metamorphic("reflection_swept_l_path", swept_value, reflected_swept, swept_measure,
+                      signatures);
 
     const auto scaled_capsule = scaled(capsule_value, 3);
     const auto scaled_island = scaled(island_value, 3);
+    const auto scaled_swept = scaled(swept_value, 3);
     require_scaling_relation(capsule_value, scaled_capsule, 3);
     require_scaling_relation(island_value, scaled_island, 3);
+    require_scaling_relation(swept_value, scaled_swept, 3);
     check_metamorphic("integer_scaling_capsule", capsule_value, scaled_capsule,
                       scaled_measure(capsule_measure, 3), signatures);
     check_metamorphic("integer_scaling_nested_island", island_value, scaled_island,
                       scaled_measure(island_measure, 3), signatures);
+    check_metamorphic("integer_scaling_swept_l_path", swept_value, scaled_swept,
+                      scaled_measure(swept_measure, 3), signatures);
 
     const auto renamed_capsule = renamed_sources(capsule_value);
     const auto renamed_island = renamed_sources(island_value);
+    const auto renamed_swept = renamed_sources(swept_value);
     require_source_renaming_relation(capsule_value, renamed_capsule);
     require_source_renaming_relation(island_value, renamed_island);
+    require_source_renaming_relation(swept_value, renamed_swept);
     check_metamorphic("source_id_renaming_capsule", capsule_value, renamed_capsule, capsule_measure,
                       signatures);
     check_metamorphic("source_id_renaming_nested_island", island_value, renamed_island,
                       island_measure, signatures);
+    check_metamorphic("source_id_renaming_swept_l_path", swept_value, renamed_swept, swept_measure,
+                      signatures);
 }
 
 std::string signature(const SymbolicMeasure& value)
@@ -604,6 +674,7 @@ int main()
     check("annulus", annulus(), {0, 336, 0, 56, 1, 1}, signatures);
     check("capsule", capsule(), {800, 100, 80, 20, 1, 0}, signatures);
     check("nested_island", nested_island(), {1088, 0, 288, 0, 2, 1}, signatures);
+    check("swept_l_path", swept_l_path(), {304, 20, 72, 10, 1, 0}, signatures);
     std::cout << "ANALYTIC_CLOSED_FORM_INVARIANTS=";
     for (std::size_t index = 0; index < signatures.size(); ++index)
         std::cout << (index == 0 ? "" : "|") << signatures[index];

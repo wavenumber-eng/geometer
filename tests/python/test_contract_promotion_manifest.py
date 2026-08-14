@@ -96,7 +96,37 @@ _LINEAGE_MATRIX_GATE: dict[str, Any] = {
     ),
 }
 
+_CLOSED_FORM_GATE: dict[str, Any] = {
+    "closed_form_invariants_test": "tests/cpp/analytic_closed_form_invariants_test.cpp",
+    "closed_form_invariants_parity_validator": (
+        "scripts/validate_analytic_closed_form_invariants_parity.py"
+    ),
+    "closed_form_invariants": [
+        "rectangle",
+        "circle",
+        "annulus",
+        "capsule",
+        "nested_island",
+        "swept_l_path",
+    ],
+    "closed_form_arc_classes": ["semicircle", "quarter_circle"],
+    "closed_form_invariants_sha256": (
+        "0f9ec222d05e077277e2356e4a4f1b247946d0a6b7f9e2d6b2f11d0113bf33f6"
+    ),
+    "metamorphic_invariants": [
+        "translation",
+        "rotation_90",
+        "reflection",
+        "integer_scaling",
+        "source_id_renaming",
+    ],
+    "metamorphic_invariants_sha256": (
+        "0907fe0bcc8b6d14989dceefa3cd8029405a09a493d91ea7434180b856ab80ea"
+    ),
+}
+
 _SYNTHETIC_CORRECTNESS_GATE: dict[str, Any] = {
+    **_CLOSED_FORM_GATE,
     **_BOOLEAN_METAMORPHIC_GATE,
     **_LINEAGE_MATRIX_GATE,
     **_NORMALIZATION_COLLAPSE_GATE,
@@ -465,7 +495,7 @@ def test_exact_algebraic_backend_design_gate_is_closed() -> None:
         "production_solver_allowed": False,
         "design_review_revision": "a8c9604de280e2a67018e1106fd1b430b34fcf50",
         "design_review_packet": "reviewer-019ffd1f-3c67-7001-87a5-200b6cda10d8",
-        "implemented_surface": "budgeted_exact_intersections_nm_normalization_curve_domain_half_edge_face_classification_stage_lineage_result_region_provenance_operand_outcome_certified_arc_result_normalization_canonical_source_set_result_packet_layout_typed_record_graph_semantic_canonical_projection_standalone_closure_digest_decoder_enforcement_exact_topology_replay_mutation_sentinels_closed_form_invariants_degeneracy_sweeps_boolean_identities_metamorphic_relations_bounded_enumeration_seeded_property_many_to_many_lineage_and_monthly_extended_seed_feasibility",
+        "implemented_surface": "budgeted_exact_intersections_nm_normalization_curve_domain_half_edge_face_classification_stage_lineage_result_region_provenance_operand_outcome_certified_arc_result_normalization_canonical_source_set_result_packet_layout_typed_record_graph_semantic_canonical_projection_standalone_closure_digest_decoder_enforcement_exact_topology_replay_mutation_sentinels_closed_form_invariants_degeneracy_sweeps_boolean_identities_metamorphic_relations_bounded_enumeration_seeded_property_many_to_many_lineage_monthly_extended_seed_and_quarter_arc_swept_path_feasibility",
         "arc_distance_source": "src/cpp/lib/exact_arc_distance.cpp",
         "result_normalization_source": "src/cpp/lib/exact_result_normalization.cpp",
         "source_sets_source": "src/cpp/lib/exact_source_sets.cpp",
@@ -582,24 +612,6 @@ def test_exact_algebraic_backend_design_gate_is_closed() -> None:
             "deep_hierarchy_bound",
             "many_empty_jobs",
         ],
-        "closed_form_invariants_test": "tests/cpp/analytic_closed_form_invariants_test.cpp",
-        "closed_form_invariants_parity_validator": "scripts/validate_analytic_closed_form_invariants_parity.py",
-        "closed_form_invariants": [
-            "rectangle",
-            "circle",
-            "annulus",
-            "capsule",
-            "nested_island",
-        ],
-        "closed_form_invariants_sha256": "5d48ef70718a4728b72a7f70be72915f7623cacfbcb50ef945293ab2130273c7",
-        "metamorphic_invariants": [
-            "translation",
-            "rotation_90",
-            "reflection",
-            "integer_scaling",
-            "source_id_renaming",
-        ],
-        "metamorphic_invariants_sha256": "2f53db616f2795dd754f827d199a8ff1cdc2eb641d8e0a9f2dc96d4ef908f2ca",
         "degeneracy_sweep_test": "tests/cpp/exact_degeneracy_sweep_test.cpp",
         "degeneracy_sweep_parity_validator": "scripts/validate_exact_degeneracy_sweep_parity.py",
         "degeneracy_sweep_cases": [

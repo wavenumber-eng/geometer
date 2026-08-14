@@ -474,11 +474,14 @@ Several records may exist for one operand and sort by operand/event/reference
 key.
 
 `subtraction_effect_survives` normally references every final ring/result
-boundary attributable to that still-unfilled removal. When an operand removes
-the complete accumulator and no final material boundary exists, the event is
-still required and its result-reference range is empty. An effectful operand
-is never represented by omission or `no_effect` merely because complete
-subtraction left no boundary.
+boundary attributable to that still-unfilled removal. When still-unfilled
+attributed removal has no final material boundary, the event is still required
+and its result-reference range is empty. This includes complete subtraction
+and a disconnected removed component left empty after another component was
+refilled; in the latter case it coexists with
+`subtraction_effect_overwritten_later`. An effectful operand is never
+represented by omission or `no_effect` merely because its remaining removal
+has no attributable boundary.
 
 ### Relationship-result record, 32 bytes
 

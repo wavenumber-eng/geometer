@@ -440,6 +440,7 @@ def test_exact_algebraic_backend_design_gate_is_closed() -> None:
         "boolean_outcomes_test": "tests/cpp/exact_boolean_outcomes_test.cpp",
         "boolean_outcomes_parity_validator": "scripts/validate_exact_boolean_outcomes_parity.py",
         "boolean_outcomes_vector_sha256": "e8cfe16cf62b1f074537415eb9a8ddfe2d9d7d6bdebb70abe152d8b3d82744af",
+        "boolean_outcomes_coexistence_sha256": "08684e05441cfc3af24d33f26747a34b913ee8a7d85b2a92abf2dbb4f637564f",
         "boolean_outcomes_vector_success_work_units": 1600,
         "boolean_outcomes_vector_storage_bytes": 11584,
         "result_normalization_test": "tests/cpp/exact_result_normalization_test.cpp",
@@ -1121,7 +1122,9 @@ def test_analytic_planar_boolean_numeric_catalog_is_closed() -> None:
     assert catalog["operand_event_semantics"]["subtraction_effect_survives"] == {
         "required_for_unfilled_attributed_removal": True,
         "result_references": "all_attributed_final_boundary_ring_region_references",
-        "empty_result_reference_case": "complete_subtraction_without_final_material_boundary",
+        "empty_result_reference_case": (
+            "unfilled_attributed_removal_without_final_material_boundary"
+        ),
     }
     assert catalog["path_token"]["none"] == 0
     assert sorted(catalog["path_token"].values()) == list(range(27))

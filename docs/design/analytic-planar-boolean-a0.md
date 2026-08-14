@@ -568,8 +568,12 @@ boundary-only contact does not count as material effect:
 - `subtraction_effect_survives` exists iff a difference operand removes
   positive area that remains unfilled in the final result. Its references are
   exactly the final boundary fragments that separate its attributed removed
-  set from material. Complete subtraction leaves no final material boundary,
-  so this event has an empty reference range rather than being omitted.
+  set from material. Still-unfilled removal can have no attributable final
+  boundary after complete subtraction or when only another disconnected
+  removed component was refilled. In either case this event has an empty
+  reference range rather than being omitted. It may coexist with
+  `subtraction_effect_overwritten_later` when only part of the attributed
+  removed area was restored.
 - `subtraction_effect_overwritten_later` exists iff positive area removed by a
   difference operand is restored by a later union. It may coexist with a
   surviving effect when only part of the removed area is restored.

@@ -173,6 +173,58 @@ std::string run_scenario(const ExactArrangement& arrangement,
     return signature(*outcomes.value);
 }
 
+std::string run_disconnected_partial_refill()
+{
+    Budget geometry_budget({2'000'000'000, 268'435'456});
+    ConstructionArena arena(geometry_budget);
+    std::vector<ExactAtomicCurve> curves;
+    std::vector<ExactCoverageOccurrence> coverages;
+    std::vector<ExactOccurrenceSource> sources;
+    append_box(arena, 0, 4, 100, 10, 1000, curves, coverages, sources);
+    append_box(arena, 10, 14, 200, 20, 2000, curves, coverages, sources);
+    append_box(arena, 0, 4, 300, 30, 3000, curves, coverages, sources);
+    append_box(arena, 10, 14, 400, 30, 3000, curves, coverages, sources);
+    append_box(arena, 0, 4, 500, 40, 4000, curves, coverages, sources);
+    ExactArrangementResult arrangement = build_exact_arrangement(arena, curves, coverages);
+    require(arrangement.error == Error::none && arrangement.value,
+            "disconnected partial-refill arrangement failed");
+    const std::vector<ExactBooleanStage> stages{
+        {10, ExactBooleanStageOperation::union_, {{10, 1000}, {20, 2000}}},
+        {20, ExactBooleanStageOperation::difference, {{30, 3000}}},
+        {30, ExactBooleanStageOperation::union_, {{40, 4000}}},
+    };
+    Budget selection_budget({2'000'000'000, 268'435'456});
+    ExactBooleanSelectionResult selection =
+        evaluate_exact_boolean_stages(selection_budget, *arrangement.value, stages);
+    require(selection.error == Error::none && selection.value,
+            "disconnected partial-refill selection failed");
+    Budget region_budget({2'000'000'000, 268'435'456});
+    ExactBooleanRegionsResult regions =
+        build_exact_boolean_regions(region_budget, *arrangement.value, *selection.value);
+    require(regions.error == Error::none && regions.value,
+            "disconnected partial-refill regions failed");
+    Budget provenance_budget({2'000'000'000, 268'435'456});
+    ExactBooleanProvenanceResult provenance = build_exact_boolean_provenance(
+        provenance_budget, *arrangement.value, *selection.value, *regions.value, stages, sources);
+    require(provenance.error == Error::none && provenance.value,
+            "disconnected partial-refill provenance failed");
+    Budget outcome_budget({2'000'000'000, 268'435'456});
+    ExactBooleanOutcomesResult outcomes =
+        build_exact_boolean_outcomes(outcome_budget, *arrangement.value, *selection.value,
+                                     *regions.value, *provenance.value, stages, sources);
+    require(outcomes.error == Error::none && outcomes.value,
+            "disconnected partial-refill outcomes failed");
+
+    std::ostringstream compact;
+    for (const ExactOperandOutcomeEvent& event : outcomes.value->events())
+        if (event.operand_id == 3000)
+            compact << static_cast<unsigned>(event.kind) << ':' << event.ring_reference_count << ':'
+                    << event.region_reference_count << ';';
+    require(compact.str() == "5:0:0;6:0:0;",
+            "partial refill must retain zero-reference surviving and overwritten events");
+    return compact.str();
+}
+
 } // namespace
 
 int main()
@@ -270,6 +322,7 @@ int main()
     };
     const std::string no_effect = run_scenario(*arrangement.value, sources, no_effect_stages, 3000,
                                                ExactOperandOutcomeKind::no_effect);
+    const std::string coexistence = run_disconnected_partial_refill();
 
     const RepeatedSourceRun sparse_sources = run_repeated_source_box(1, 268'435'456);
     const RepeatedSourceRun dense_sources = run_repeated_source_box(17, 268'435'456);
@@ -309,5 +362,6 @@ int main()
               << no_effect << '\n';
     std::cout << "EXACT_BOOLEAN_OUTCOMES_WORK=" << usage.work_units << '\n';
     std::cout << "EXACT_BOOLEAN_OUTCOMES_STORAGE=" << usage.owned_bytes << '\n';
+    std::cout << "EXACT_BOOLEAN_OUTCOMES_COEXISTENCE=" << coexistence << '\n';
     return 0;
 }

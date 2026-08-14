@@ -158,6 +158,7 @@ struct OperandState
     bool removed_later = false;
     bool final_lineage = false;
     bool attributed_removal = false;
+    bool unfilled_removal = false;
     bool overwritten = false;
     std::vector<std::uint32_t> rings;
     std::vector<std::uint32_t> regions;
@@ -360,6 +361,7 @@ Error simulate_faces(const ExactArrangement& arrangement, const ExactBooleanSele
         const bool positive_area = !face.unbounded;
         std::vector<std::uint64_t> positive;
         std::vector<std::uint64_t> removal_history;
+        std::vector<std::uint64_t> active_removals;
         for (const ExactBooleanStage& stage : stages)
         {
             std::vector<std::uint64_t> covered;
@@ -371,13 +373,15 @@ Error simulate_faces(const ExactArrangement& arrangement, const ExactBooleanSele
             if (stage.operation == ExactBooleanStageOperation::union_)
             {
                 if (!material && positive_area)
-                    for (const std::uint64_t source : removal_history)
+                    for (const std::uint64_t source : active_removals)
                     {
                         OperandState* state = find_by_id(states, source);
                         if (state == nullptr)
                             return Error::invalid_argument;
                         state->overwritten = true;
                     }
+                if (!material)
+                    active_removals.clear();
                 for (const std::uint64_t source : covered)
                 {
                     OperandState* state = find_by_id(states, source);
@@ -395,6 +399,8 @@ Error simulate_faces(const ExactArrangement& arrangement, const ExactBooleanSele
             else
             {
                 if (material && positive_area)
+                {
+                    active_removals.clear();
                     for (const std::uint64_t source : covered)
                     {
                         OperandState* state = find_by_id(states, source);
@@ -402,7 +408,9 @@ Error simulate_faces(const ExactArrangement& arrangement, const ExactBooleanSele
                             return Error::invalid_argument;
                         state->attributed_removal = true;
                         insert_id(removal_history, source);
+                        insert_id(active_removals, source);
                     }
+                }
                 if (material)
                 {
                     if (positive_area)
@@ -437,8 +445,13 @@ Error simulate_faces(const ExactArrangement& arrangement, const ExactBooleanSele
                         selection.subtraction_sources().begin() + actual.subtraction_source_begin))
             return Error::invalid_argument;
         if (positive_area)
+        {
             for (const std::uint64_t source : positive)
                 find_by_id(states, source)->final_lineage = true;
+            if (!material)
+                for (const std::uint64_t source : active_removals)
+                    find_by_id(states, source)->unfilled_removal = true;
+        }
         positive_cursor = positive_end;
         subtraction_cursor = subtraction_end;
     }
@@ -930,9 +943,7 @@ ExactBooleanOutcomesResult build_exact_boolean_outcomes(
             }
             else
             {
-                // Complete subtraction has no remaining material boundary to reference. Its
-                // unfilled attributed removal is still an observable surviving effect.
-                if (state.attributed_removal && (!state.rings.empty() || !state.overwritten))
+                if (state.unfilled_removal)
                     add_event(events, ring_references, region_references, state,
                               ExactOperandOutcomeKind::subtraction_effect_survives, true, true);
                 if (state.overwritten)

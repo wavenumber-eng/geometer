@@ -12,6 +12,7 @@ MANIFEST = ROOT / "docs" / "contracts" / "promotion-manifest.toml"
 VECTOR_PREFIX = "EXACT_BOOLEAN_OUTCOMES_VECTOR="
 WORK_PREFIX = "EXACT_BOOLEAN_OUTCOMES_WORK="
 STORAGE_PREFIX = "EXACT_BOOLEAN_OUTCOMES_STORAGE="
+COEXISTENCE_PREFIX = "EXACT_BOOLEAN_OUTCOMES_COEXISTENCE="
 
 
 def _discover_native() -> Path:
@@ -61,13 +62,16 @@ def main() -> int:
     wasm_fields = _run(["node", str(wasm)])
     if native_fields != wasm_fields:
         raise RuntimeError("native and Emscripten exact Boolean outcome outputs differ")
-    required = (VECTOR_PREFIX, WORK_PREFIX, STORAGE_PREFIX)
+    required = (VECTOR_PREFIX, WORK_PREFIX, STORAGE_PREFIX, COEXISTENCE_PREFIX)
     if any(field not in native_fields for field in required):
         raise RuntimeError("exact Boolean outcomes test omitted a governed output field")
 
     digest = hashlib.sha256(native_fields[VECTOR_PREFIX].encode("ascii")).hexdigest()
     work = int(native_fields[WORK_PREFIX])
     storage = int(native_fields[STORAGE_PREFIX])
+    coexistence_digest = hashlib.sha256(
+        native_fields[COEXISTENCE_PREFIX].encode("ascii")
+    ).hexdigest()
     expected = tomllib.loads(MANIFEST.read_text(encoding="utf-8"))["analytic_exact_backend"]
     if digest != expected["boolean_outcomes_vector_sha256"]:
         raise RuntimeError("exact Boolean outcomes vector SHA-256 differs from the manifest")
@@ -75,7 +79,12 @@ def main() -> int:
         raise RuntimeError("exact Boolean outcomes work boundary differs from the manifest")
     if storage != expected["boolean_outcomes_vector_storage_bytes"]:
         raise RuntimeError("exact Boolean outcomes storage boundary differs from the manifest")
-    print(f"exact Boolean outcomes parity: sha256={digest} work={work} storage={storage}")
+    if coexistence_digest != expected["boolean_outcomes_coexistence_sha256"]:
+        raise RuntimeError("exact Boolean outcome coexistence SHA-256 differs from the manifest")
+    print(
+        f"exact Boolean outcomes parity: sha256={digest} "
+        f"coexistence_sha256={coexistence_digest} work={work} storage={storage}"
+    )
     return 0
 
 

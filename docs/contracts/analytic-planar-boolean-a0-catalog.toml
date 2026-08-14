@@ -92,7 +92,7 @@ no_effect = 7
 [operand_event_semantics.subtraction_effect_survives]
 required_for_unfilled_attributed_removal = true
 result_references = "all_attributed_final_boundary_ring_region_references"
-empty_result_reference_case = "complete_subtraction_without_final_material_boundary"
+empty_result_reference_case = "unfilled_attributed_removal_without_final_material_boundary"
 
 [enum.relationship_status]
 underlying = "u8"

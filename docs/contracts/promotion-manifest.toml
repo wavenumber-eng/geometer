@@ -236,6 +236,8 @@ closed_form_invariants_test = "tests/cpp/analytic_closed_form_invariants_test.cp
 closed_form_invariants_parity_validator = "scripts/validate_analytic_closed_form_invariants_parity.py"
 closed_form_invariants = ["rectangle", "circle", "annulus", "capsule", "nested_island"]
 closed_form_invariants_sha256 = "5d48ef70718a4728b72a7f70be72915f7623cacfbcb50ef945293ab2130273c7"
+metamorphic_invariants = ["translation", "rotation_90", "reflection", "integer_scaling", "source_id_renaming"]
+metamorphic_invariants_sha256 = "2f53db616f2795dd754f827d199a8ff1cdc2eb641d8e0a9f2dc96d4ef908f2ca"
 
 [transports]
 generic_c_abi = "implemented_a0"
@@ -721,7 +723,7 @@ status = "design_frozen"
 named_consumer = "appz.data_models.pcb.matz"
 compatibility_snapshot = "docs/contracts/compatibility/data-models-geom-a0-2026-08-12.toml"
 design = "docs/design/analytic-planar-boolean-a0.md"
-design_sha256 = "2e19a224b791d4e7d3d041e84280a356d288ef72f959d100f0091c920b3cc20d"
+design_sha256 = "496368de24774281354e72d70140a6cff2dff6b09a9d8aef4a0fa4fc84dde8cf"
 packet_spec = "docs/design/analytic-planar-boolean-packet-a0.md"
 packet_spec_sha256 = "83e97d3636a93a8358777f459e4dbee70cfd88c6d16b28b683c2f8a538eb7727"
 numeric_catalog = "docs/contracts/analytic-planar-boolean-a0-catalog.toml"

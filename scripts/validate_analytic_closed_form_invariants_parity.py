@@ -10,6 +10,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "docs" / "contracts" / "promotion-manifest.toml"
 PREFIX = "ANALYTIC_CLOSED_FORM_INVARIANTS="
+METAMORPHIC_PREFIX = "ANALYTIC_METAMORPHIC_INVARIANTS="
 
 
 def _discover_native() -> Path:
@@ -27,14 +28,20 @@ def _discover_native() -> Path:
     raise FileNotFoundError("build the native analytic closed-form test first")
 
 
-def _signature(command: list[str]) -> str:
+def _signatures(command: list[str]) -> tuple[str, str]:
     completed = subprocess.run(
         command, cwd=ROOT, check=True, capture_output=True, text=True
     )
+    closed_form: str | None = None
+    metamorphic: str | None = None
     for line in completed.stdout.splitlines():
         if line.startswith(PREFIX):
-            return line.removeprefix(PREFIX)
-    raise RuntimeError("analytic closed-form test omitted its invariant signature")
+            closed_form = line.removeprefix(PREFIX)
+        elif line.startswith(METAMORPHIC_PREFIX):
+            metamorphic = line.removeprefix(METAMORPHIC_PREFIX)
+    if closed_form is None or metamorphic is None:
+        raise RuntimeError("analytic invariant test omitted a governed signature")
+    return closed_form, metamorphic
 
 
 def main() -> int:
@@ -54,17 +61,21 @@ def main() -> int:
     wasm = args.wasm.resolve()
     if not wasm.is_file():
         raise FileNotFoundError("build the Emscripten analytic closed-form test first")
-    native_signature = _signature([str(native)])
-    wasm_signature = _signature(["node", str(wasm)])
-    if native_signature != wasm_signature:
-        raise RuntimeError("native and Emscripten closed-form invariant signatures differ")
-    digest = hashlib.sha256(native_signature.encode("utf-8")).hexdigest()
-    expected = tomllib.loads(MANIFEST.read_text(encoding="utf-8"))["analytic_exact_backend"][
-        "closed_form_invariants_sha256"
-    ]
-    if digest != expected:
-        raise RuntimeError(f"closed-form invariant digest changed: {digest} != {expected}")
-    print(f"analytic closed-form invariant parity: sha256={digest}")
+    native_closed_form, native_metamorphic = _signatures([str(native)])
+    wasm_closed_form, wasm_metamorphic = _signatures(["node", str(wasm)])
+    if native_closed_form != wasm_closed_form or native_metamorphic != wasm_metamorphic:
+        raise RuntimeError("native and Emscripten analytic invariant signatures differ")
+    digest = hashlib.sha256(native_closed_form.encode("utf-8")).hexdigest()
+    metamorphic_digest = hashlib.sha256(native_metamorphic.encode("utf-8")).hexdigest()
+    expected = tomllib.loads(MANIFEST.read_text(encoding="utf-8"))["analytic_exact_backend"]
+    if digest != expected["closed_form_invariants_sha256"]:
+        raise RuntimeError("closed-form invariant digest changed")
+    if metamorphic_digest != expected["metamorphic_invariants_sha256"]:
+        raise RuntimeError("metamorphic invariant digest changed")
+    print(
+        f"analytic invariant parity: closed_form_sha256={digest} "
+        f"metamorphic_sha256={metamorphic_digest}"
+    )
     return 0
 
 

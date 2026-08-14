@@ -498,6 +498,14 @@ def test_exact_algebraic_backend_design_gate_is_closed() -> None:
             "nested_island",
         ],
         "closed_form_invariants_sha256": "5d48ef70718a4728b72a7f70be72915f7623cacfbcb50ef945293ab2130273c7",
+        "metamorphic_invariants": [
+            "translation",
+            "rotation_90",
+            "reflection",
+            "integer_scaling",
+            "source_id_renaming",
+        ],
+        "metamorphic_invariants_sha256": "2f53db616f2795dd754f827d199a8ff1cdc2eb641d8e0a9f2dc96d4ef908f2ca",
     }
     assert (ROOT / backend["design"]).is_file()
     assert _sha256(ROOT / backend["design"]) == backend["design_sha256"]

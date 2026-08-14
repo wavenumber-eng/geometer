@@ -819,10 +819,17 @@ zero center offset to rational zero before arrangement replay.
 
 This first oracle intentionally accepts only axis-aligned lines and exact
 semicircles, for which the independent formulas are small and auditable. It is
-evidence for the closed-form lane, not completion of general-arc certified
-integration, tangency/coincidence sweeps, metamorphic properties, exhaustive or
-seeded property testing, lineage scenarios, or production cross-transport
-execution.
+also replayed through integer translation, exact 90-degree rotation, reflection
+with winding recanonicalization, positive integer scaling, and source-ID
+renaming. The mixed line/arc capsule and nested outer/hole/island fixture must
+retain exact topology and the appropriately transformed rational-plus-pi
+measure. Each transformed packet has a governed canonical SHA-256, with an
+identical aggregate signature under native and Emscripten execution.
+
+This is evidence for the closed-form and initial metamorphic lanes, not
+completion of general-arc certified integration, tangency/coincidence sweeps,
+identity/self-operation properties, exhaustive or seeded property testing,
+broader lineage scenarios, or production cross-transport execution.
 
 ### OCCT 8.0.1 Qualification
 

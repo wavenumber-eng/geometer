@@ -1,7 +1,9 @@
 #include "geometer/analytic_result_packet_topology.h"
+#include "geometer/sha256.h"
 
 #include <boost/multiprecision/cpp_int.hpp>
 
+#include <algorithm>
 #include <cstdlib>
 #include <iostream>
 #include <limits>
@@ -228,6 +230,128 @@ SymbolicMeasure measure(const AnalyticResultPacketRecords& records)
     return output;
 }
 
+AnalyticResultPacketRecords translated(AnalyticResultPacketRecords records, std::int64_t dx,
+                                       std::int64_t dy)
+{
+    for (auto& vertex : records.vertices)
+    {
+        vertex.x_nm += dx;
+        vertex.y_nm += dy;
+    }
+    return records;
+}
+
+AnalyticResultPacketRecords rotated_90(AnalyticResultPacketRecords records)
+{
+    for (auto& vertex : records.vertices)
+    {
+        const std::int64_t x = vertex.x_nm;
+        vertex.x_nm = -vertex.y_nm;
+        vertex.y_nm = x;
+    }
+    return records;
+}
+
+AnalyticResultPacketRecords reflected_x(AnalyticResultPacketRecords records)
+{
+    for (auto& vertex : records.vertices)
+        vertex.x_nm = -vertex.x_nm;
+    for (const auto& ring : records.rings)
+    {
+        auto begin = records.fragment_references.begin() + ring.fragment_reference_begin;
+        auto end = begin + ring.fragment_reference_count;
+        std::reverse(begin, end);
+        for (auto reference = begin; reference != end; ++reference)
+        {
+            auto& fragment = records.fragments[*reference];
+            std::swap(fragment.start_vertex, fragment.end_vertex);
+        }
+    }
+    return records;
+}
+
+AnalyticResultPacketRecords scaled(AnalyticResultPacketRecords records, std::int64_t factor)
+{
+    for (auto& vertex : records.vertices)
+    {
+        vertex.x_nm *= factor;
+        vertex.y_nm *= factor;
+    }
+    for (auto& fragment : records.fragments)
+        fragment.radius_nm *= static_cast<std::uint64_t>(factor);
+    return records;
+}
+
+AnalyticResultPacketRecords renamed_sources(AnalyticResultPacketRecords records)
+{
+    for (auto& source : records.source_references)
+    {
+        source.operand_id += 100;
+        source.primary_id += 1'000;
+        source.secondary_id += 10'000;
+    }
+    return records;
+}
+
+SymbolicMeasure scaled_measure(SymbolicMeasure value, std::int64_t factor)
+{
+    const BigInt area_factor = BigInt(factor) * factor;
+    value.area_four_rational *= area_factor;
+    value.area_four_pi *= area_factor;
+    value.perimeter_two_rational *= factor;
+    value.perimeter_two_pi *= factor;
+    return value;
+}
+
+std::string packet_digest(const AnalyticResultPacketRecords& records)
+{
+    const auto encoded = encode_analytic_result_packet_records(records);
+    require(encoded.error == AnalyticResultPacketLayoutError::none && encoded.value,
+            "metamorphic result packet failed canonical encoding");
+    return sha256_hex(encoded.value->data(), encoded.value->size());
+}
+
+void check_metamorphic(const std::string& name, const AnalyticResultPacketRecords& base,
+                       const AnalyticResultPacketRecords& transformed,
+                       const SymbolicMeasure& expected, std::vector<std::string>& signatures)
+{
+    require(validate_analytic_result_packet_topology(transformed) ==
+                AnalyticResultPacketLayoutError::none,
+            name + " failed exact topology replay");
+    require(measure(transformed) == expected, name + " changed its governed analytic measure");
+    const std::string digest = packet_digest(transformed);
+    require(digest != packet_digest(base), name + " did not alter canonical packet identity");
+    signatures.push_back(name + '=' + digest);
+}
+
+void check_metamorphic_corpus(std::vector<std::string>& signatures)
+{
+    const auto capsule_value = capsule();
+    const auto island_value = nested_island();
+    const SymbolicMeasure capsule_measure{800, 100, 80, 20, 1, 0};
+    const SymbolicMeasure island_measure{1088, 0, 288, 0, 2, 1};
+    check_metamorphic("translation_capsule", capsule_value, translated(capsule_value, 13, -17),
+                      capsule_measure, signatures);
+    check_metamorphic("translation_nested_island", island_value, translated(island_value, 13, -17),
+                      island_measure, signatures);
+    check_metamorphic("rotation_90_capsule", capsule_value, rotated_90(capsule_value),
+                      capsule_measure, signatures);
+    check_metamorphic("rotation_90_nested_island", island_value, rotated_90(island_value),
+                      island_measure, signatures);
+    check_metamorphic("reflection_capsule", capsule_value, reflected_x(capsule_value),
+                      capsule_measure, signatures);
+    check_metamorphic("reflection_nested_island", island_value, reflected_x(island_value),
+                      island_measure, signatures);
+    check_metamorphic("integer_scaling_capsule", capsule_value, scaled(capsule_value, 3),
+                      scaled_measure(capsule_measure, 3), signatures);
+    check_metamorphic("integer_scaling_nested_island", island_value, scaled(island_value, 3),
+                      scaled_measure(island_measure, 3), signatures);
+    check_metamorphic("source_id_renaming_capsule", capsule_value, renamed_sources(capsule_value),
+                      capsule_measure, signatures);
+    check_metamorphic("source_id_renaming_nested_island", island_value,
+                      renamed_sources(island_value), island_measure, signatures);
+}
+
 std::string signature(const SymbolicMeasure& value)
 {
     std::ostringstream out;
@@ -260,6 +384,12 @@ int main()
     check("capsule", capsule(), {800, 100, 80, 20, 1, 0}, signatures);
     check("nested_island", nested_island(), {1088, 0, 288, 0, 2, 1}, signatures);
     std::cout << "ANALYTIC_CLOSED_FORM_INVARIANTS=";
+    for (std::size_t index = 0; index < signatures.size(); ++index)
+        std::cout << (index == 0 ? "" : "|") << signatures[index];
+    std::cout << '\n';
+    signatures.clear();
+    check_metamorphic_corpus(signatures);
+    std::cout << "ANALYTIC_METAMORPHIC_INVARIANTS=";
     for (std::size_t index = 0; index < signatures.size(); ++index)
         std::cout << (index == 0 ? "" : "|") << signatures[index];
     std::cout << '\n';

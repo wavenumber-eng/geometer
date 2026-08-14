@@ -209,11 +209,15 @@ int main()
     require(difference_self.geometry == "vfrg" && difference_self.region_sources.empty(),
             "difference(A, A) must be a successful empty result");
     require(has_event(difference_self, 1000, ExactOperandOutcomeKind::completely_removed_later) &&
-                !has_event(difference_self, 2000, ExactOperandOutcomeKind::no_effect),
+                has_event(difference_self, 2000,
+                          ExactOperandOutcomeKind::subtraction_effect_survives) &&
+                difference_self.outcomes == "1000:4:0:0;2000:5:0:0;",
             "difference(A, A) lineage changed");
 
-    std::cout << "EXACT_BOOLEAN_IDENTITIES=union_self:geometry_equal,contributors_1000_2000|"
-                 "difference_self:empty,positive_1000_completely_removed,subtractor_2000_effectful|"
-                 "union_empty:equal|difference_empty:equal\n";
+    std::cout << "EXACT_BOOLEAN_IDENTITIES=union_self:geometry_equal,region_sources_1000_2000,"
+                 "outcomes="
+              << union_self.outcomes
+              << "|difference_self:empty,outcomes=" << difference_self.outcomes
+              << "|union_empty:equal|difference_empty:equal\n";
     return 0;
 }

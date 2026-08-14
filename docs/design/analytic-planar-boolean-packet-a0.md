@@ -473,6 +473,13 @@ ring/region-reference table.
 Several records may exist for one operand and sort by operand/event/reference
 key.
 
+`subtraction_effect_survives` normally references every final ring/result
+boundary attributable to that still-unfilled removal. When an operand removes
+the complete accumulator and no final material boundary exists, the event is
+still required and its result-reference range is empty. An effectful operand
+is never represented by omission or `no_effect` merely because complete
+subtraction left no boundary.
+
 ### Relationship-result record, 32 bytes
 
 `query id u64`, status `u8` (`0` success, `1` skipped dependency failed),

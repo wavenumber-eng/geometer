@@ -527,7 +527,7 @@ def test_exact_algebraic_backend_design_gate_is_closed() -> None:
             "union_empty",
             "difference_empty",
         ],
-        "boolean_identity_sha256": "345a2d39c16756db33bdfc36814cc4a68c54ad0189234f2e99da87b8d0d367fc",
+        "boolean_identity_sha256": "bf0c289c99026044bfcb6b8d990fbc33306ec61a50763cab1158d312f656027e",
     }
     assert (ROOT / backend["design"]).is_file()
     assert _sha256(ROOT / backend["design"]) == backend["design_sha256"]
@@ -1117,6 +1117,11 @@ def test_analytic_planar_boolean_numeric_catalog_is_closed() -> None:
             "secondary_id": "zero",
             "allowed_roles": [0],
         },
+    }
+    assert catalog["operand_event_semantics"]["subtraction_effect_survives"] == {
+        "required_for_unfilled_attributed_removal": True,
+        "result_references": "all_attributed_final_boundary_ring_region_references",
+        "empty_result_reference_case": "complete_subtraction_without_final_material_boundary",
     }
     assert catalog["path_token"]["none"] == 0
     assert sorted(catalog["path_token"].values()) == list(range(27))

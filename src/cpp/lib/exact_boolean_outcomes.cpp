@@ -930,7 +930,9 @@ ExactBooleanOutcomesResult build_exact_boolean_outcomes(
             }
             else
             {
-                if (state.attributed_removal && !state.rings.empty())
+                // Complete subtraction has no remaining material boundary to reference. Its
+                // unfilled attributed removal is still an observable surviving effect.
+                if (state.attributed_removal && (!state.rings.empty() || !state.overwritten))
                     add_event(events, ring_references, region_references, state,
                               ExactOperandOutcomeKind::subtraction_effect_survives, true, true);
                 if (state.overwritten)

@@ -539,7 +539,9 @@ Outcome events include:
 - `redundant_or_absorbed_coverage`;
 - `partially_removed_later`;
 - `completely_removed_later`;
-- `subtraction_effect_survives` with boundary/result references;
+- `subtraction_effect_survives` with every surviving boundary/result reference,
+  or an empty reference range for unfilled complete subtraction with no final
+  material boundary;
 - `subtraction_effect_overwritten_later`; and
 - `no_effect`.
 
@@ -564,9 +566,10 @@ boundary-only contact does not count as material effect:
   mutually exclusive with `contributes_final_material` and
   `partially_removed_later`.
 - `subtraction_effect_survives` exists iff a difference operand removes
-  positive area and at least one final boundary fragment still separates that
-  removed set from material. Its references are exactly those fragments'
-  rings and result regions.
+  positive area that remains unfilled in the final result. Its references are
+  exactly the final boundary fragments that separate its attributed removed
+  set from material. Complete subtraction leaves no final material boundary,
+  so this event has an empty reference range rather than being omitted.
 - `subtraction_effect_overwritten_later` exists iff positive area removed by a
   difference operand is restored by a later union. It may coexist with a
   surviving effect when only part of the removed area is restored.
@@ -867,9 +870,10 @@ operand-outcome, and final normalization pipeline. Two coincident rectangles
 with distinct coverage and operand identities prove that `union(A, A)`
 publishes the same normalized analytic geometry as `A` while retaining both
 contributors in result-region lineage and symmetric contributor/absorbed
-outcome events. `difference(A, A)` must succeed with an empty normalized result
-and record that the original positive operand was completely removed; its
-subtractor must not be mislabeled `no_effect`.
+outcome events. `difference(A, A)` must succeed with an empty normalized
+result, record that the original positive operand was completely removed, and
+emit a concrete `subtraction_effect_survives` event for the subtractor with an
+empty boundary/result reference range.
 
 A zero-operand union stage and a zero-operand difference stage are each run
 after the baseline union. Both must preserve normalized geometry, per-face

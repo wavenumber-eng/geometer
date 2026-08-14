@@ -245,7 +245,7 @@ degeneracy_sweep_sha256 = "fa7809b15ef4425d0b6e7a5336d2fd09a99f6b018a1136dcb16bc
 boolean_identity_test = "tests/cpp/exact_boolean_identities_test.cpp"
 boolean_identity_parity_validator = "scripts/validate_exact_boolean_identities_parity.py"
 boolean_identity_cases = ["union_self", "difference_self", "union_empty", "difference_empty"]
-boolean_identity_sha256 = "345a2d39c16756db33bdfc36814cc4a68c54ad0189234f2e99da87b8d0d367fc"
+boolean_identity_sha256 = "bf0c289c99026044bfcb6b8d990fbc33306ec61a50763cab1158d312f656027e"
 
 [transports]
 generic_c_abi = "implemented_a0"
@@ -731,11 +731,11 @@ status = "design_frozen"
 named_consumer = "appz.data_models.pcb.matz"
 compatibility_snapshot = "docs/contracts/compatibility/data-models-geom-a0-2026-08-12.toml"
 design = "docs/design/analytic-planar-boolean-a0.md"
-design_sha256 = "bc773cd9a9eeecedecee19619ef8aa7afa65c82096f0ed2634652bf299990447"
+design_sha256 = "dcf02b09fbbc9513f50d921e21c9660237c4fff1e021c889402d101bed9befda"
 packet_spec = "docs/design/analytic-planar-boolean-packet-a0.md"
-packet_spec_sha256 = "83e97d3636a93a8358777f459e4dbee70cfd88c6d16b28b683c2f8a538eb7727"
+packet_spec_sha256 = "a4f2f16ed736fa7ce3cdfe55229f5816db12c0a10b196d79483dbaa5222e13de"
 numeric_catalog = "docs/contracts/analytic-planar-boolean-a0-catalog.toml"
-numeric_catalog_sha256 = "035a730185e1aa2613a0b550f29750d264158baa28a8be0b2f045a90575ebc6a"
+numeric_catalog_sha256 = "3786d14a55a86b8a303242c9eb8a6279a4929545f7b6b9ebc81f18faa9867704"
 solver_adr = "docs/adr/012_exact_analytic_planar_boolean_arrangement.md"
 solver_adr_sha256 = "0ee658576aedacf14f132fc3f6e48a93b7a514a1dafff554c8284815d5c66fb6"
 feasibility_test = "tests/cpp/analytic_planar_boolean_feasibility_test.cpp"

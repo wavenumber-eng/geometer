@@ -54,7 +54,21 @@ std::uint64_t checked_multiply(std::uint64_t left, std::uint64_t right)
 
 std::uint64_t limbs(const BigInt& value)
 {
-    return std::max<std::uint64_t>(1, static_cast<std::uint64_t>(value.backend().size()));
+    if (value == 0)
+        return 1;
+    const auto& backend = value.backend();
+    auto high_limb = backend.limbs()[backend.size() - 1];
+    std::uint64_t high_bits = 0;
+    while (high_limb != 0)
+    {
+        ++high_bits;
+        high_limb >>= 1;
+    }
+    const std::uint64_t bits =
+        checked_add(checked_multiply(static_cast<std::uint64_t>(backend.size() - 1),
+                                     sizeof(boost::multiprecision::limb_type) * 8),
+                    high_bits);
+    return checked_add(bits, 31) / 32;
 }
 
 BigInt absolute(BigInt value)

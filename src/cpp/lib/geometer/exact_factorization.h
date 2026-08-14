@@ -8,14 +8,17 @@
 namespace geometer::exact
 {
 
+struct FactorizationResult;
+
 class PolynomialFactorSet
 {
   public:
-    explicit PolynomialFactorSet(std::vector<Polynomial> factors);
-
     [[nodiscard]] const std::vector<Polynomial>& factors() const;
 
   private:
+    friend FactorizationResult factor_primitive_polynomial(Budget&, const Polynomial&);
+    explicit PolynomialFactorSet(std::vector<Polynomial> factors);
+
     std::vector<Polynomial> factors_;
 };
 

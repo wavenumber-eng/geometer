@@ -40,7 +40,10 @@ void test_canonical_rational_and_irrational_values()
                 sqrt_eight.value->kind() == geometer::exact::CanonicalRealKind::irrational &&
                 sqrt_eight.value->polynomial()->coefficients() ==
                     std::vector<geometer::exact::BigInt>({-8, 0, 1}) &&
-                sqrt_eight.value->root()->ordinal == 1,
+                sqrt_eight.value->root()->ordinal == 1 &&
+                sqrt_eight.value->root()->precision == 0 &&
+                sqrt_eight.value->root()->interval_k == 2 &&
+                sqrt_eight.value->root()->thom_signs == std::vector<std::int8_t>({1, 1}),
             "selected factor/root must become canonical irrational identity");
     auto sign = geometer::exact::sign_of_canonical_real(budget, *sqrt_eight.value);
     require(sign.error == geometer::exact::Error::none && sign.ordering == 1,
@@ -95,6 +98,30 @@ void test_value_resource_and_refinement_outcomes()
                 limited.usage().owned_bytes == 0,
             "canonical rational construction must fail closed on storage exhaustion");
 }
+
+void test_platform_independent_32_bit_limb_budget()
+{
+    geometer::exact::Budget fixture_budget({1'000'000'000, 268'435'456});
+    const geometer::exact::BigInt numerator = geometer::exact::BigInt(1) << 40;
+    auto polynomial = geometer::exact::make_primitive_polynomial(fixture_budget, {-numerator, 1});
+    require(polynomial.value.has_value(), "40-bit rational polynomial setup failed");
+    auto factors = geometer::exact::factor_primitive_polynomial(fixture_budget, *polynomial.value);
+    require(factors.value.has_value(), "40-bit rational factor setup failed");
+
+    geometer::exact::Budget exact_budget({25'627, 1'000'000});
+    auto exact = geometer::exact::make_canonical_real(exact_budget, *factors.value, numerator - 1,
+                                                      numerator + 1, 0);
+    require(exact.error == geometer::exact::Error::none && exact.value.has_value() &&
+                exact.value->numerator() == numerator && exact_budget.usage().work_units == 25'627,
+            "40-bit rational construction must use deterministic 32-bit limb work units");
+
+    geometer::exact::Budget short_budget({25'626, 1'000'000});
+    auto short_result = geometer::exact::make_canonical_real(short_budget, *factors.value,
+                                                             numerator - 1, numerator + 1, 0);
+    require(short_result.error == geometer::exact::Error::resource_limit_exceeded &&
+                short_budget.usage().work_units == 25'600 && short_budget.usage().owned_bytes == 0,
+            "one-unit-short 40-bit construction must fail at the same phase on every target");
+}
 } // namespace
 
 int main()
@@ -102,5 +129,6 @@ int main()
     test_canonical_rational_and_irrational_values();
     test_irrational_equality_and_cross_polynomial_order();
     test_value_resource_and_refinement_outcomes();
+    test_platform_independent_32_bit_limb_budget();
     return 0;
 }

@@ -1,5 +1,7 @@
 #include "geometer/exact_value_codec.h"
 
+#include <boost/multiprecision/cpp_int/import_export.hpp>
+
 #include <algorithm>
 #include <limits>
 #include <stdexcept>
@@ -98,11 +100,8 @@ void append_integer(std::vector<std::uint8_t>& output, const BigInt& value)
     output.push_back(value == 0 ? 0 : (value > 0 ? 1 : 2));
     output.insert(output.end(), 3, 0);
     append_u32(output, static_cast<std::uint32_t>(bytes));
-    for (std::uint64_t index = bytes; index > 0; --index)
-    {
-        const BigInt octet = (magnitude >> ((index - 1) * 8)) & 0xff;
-        output.push_back(octet.convert_to<std::uint8_t>());
-    }
+    if (bytes != 0)
+        boost::multiprecision::export_bits(magnitude, std::back_inserter(output), 8, true);
     while (output.size() % 4 != 0)
         output.push_back(0);
 }

@@ -70,6 +70,28 @@ void test_encoding_budget_failure()
                 limited.usage().work_units == 0 && limited.usage().owned_bytes == 0,
             "scalar encoder must fail before work and release reserved storage");
 }
+
+void test_large_negative_rational_golden_and_budget_boundary()
+{
+    geometer::exact::Budget fixture_budget({1'000'000'000, 268'435'456});
+    const BigInt magnitude = (BigInt(1) << 136) + 0x0102030405;
+    auto negative = make_value(fixture_budget, {magnitude, 1}, -magnitude - 1, -magnitude + 1);
+    const std::vector<std::uint8_t> expected = {
+        1, 0, 0, 0, 48, 0, 0, 0, 2, 0, 0, 0, 18, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0,  1, 2, 3, 4, 5, 0, 0, 1,  0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0,
+    };
+    geometer::exact::Budget exact_budget({384, 1'000'000});
+    auto encoded = geometer::exact::encode_canonical_real(exact_budget, negative);
+    require(encoded.error == geometer::exact::Error::none && encoded.value.has_value() &&
+                encoded.value->bytes() == expected && exact_budget.usage().work_units == 384,
+            "large signed scalar bytes and linear work boundary changed");
+
+    geometer::exact::Budget short_budget({383, 1'000'000});
+    auto short_result = geometer::exact::encode_canonical_real(short_budget, negative);
+    require(short_result.error == geometer::exact::Error::resource_limit_exceeded &&
+                short_budget.usage().work_units == 0 && short_budget.usage().owned_bytes == 0,
+            "one-unit-short large scalar encoding must fail identically before emission");
+}
 } // namespace
 
 int main()
@@ -77,5 +99,6 @@ int main()
     test_rational_zero_scalar_golden();
     test_irrational_scalar_golden();
     test_encoding_budget_failure();
+    test_large_negative_rational_golden_and_budget_boundary();
     return 0;
 }

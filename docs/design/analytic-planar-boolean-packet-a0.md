@@ -532,6 +532,17 @@ The complete directed-fragment key includes direction between kind and
 major-arc branch; every other canonical key likewise contains every semantic
 field before generated ids are assigned.
 
+For a batch result, caller job id is the leading outer key for the job-owned
+vertex, fragment, ring, and result-region tables, followed by the complete key
+below. Identical geometry from distinct jobs remains distinct and is never
+coalesced across standalone job closures. This is the only
+allocator-independent ordering of semantic multiplicity when two jobs produce
+the same geometry. Within each job the keys below are unchanged. Immutable
+source references and source sets remain globally content-interned, while
+fragment-reference and ring/region-reference records retain their governed
+owner sequence. A pre-golden implementation review clarified this omitted
+batch tie without changing packet generation or magic.
+
 The total result-table keys are:
 
 - job results: caller job id;

@@ -1,4 +1,5 @@
 set(GEOMETER_LIB_SOURCES
+    analytic_result_packet_canonical.cpp
     analytic_result_packet_layout.cpp
     analytic_result_packet_records.cpp
     c_api.cpp
@@ -29,6 +30,7 @@ set(GEOMETER_LIB_SOURCES
 )
 
 set(GEOMETER_EXACT_SOURCES
+    analytic_result_packet_canonical.cpp
     analytic_result_packet_layout.cpp
     analytic_result_packet_records.cpp
     exact_arc_distance.cpp

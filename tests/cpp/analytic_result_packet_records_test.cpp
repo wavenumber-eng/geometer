@@ -1,3 +1,4 @@
+#include "geometer/analytic_result_packet_canonical.h"
 #include "geometer/analytic_result_packet_records.h"
 
 #include <cstdlib>
@@ -126,6 +127,77 @@ AnalyticResultPacketRecords deeply_nested_records(std::uint32_t ring_count)
     return records;
 }
 
+AnalyticResultPacketRecords scrambled_records()
+{
+    AnalyticResultPacketRecords records = rich_records();
+    const std::uint32_t vertex_order[]{2, 0, 3, 1};
+    std::vector<std::uint32_t> vertex_map(4);
+    std::vector<AnalyticResultVertexRecord> vertices;
+    for (std::uint32_t index = 0; index < 4; ++index)
+    {
+        vertex_map[vertex_order[index]] = index;
+        auto value = records.vertices[vertex_order[index]];
+        value.id = static_cast<std::uint64_t>(index) + 1;
+        vertices.push_back(value);
+    }
+    records.vertices = std::move(vertices);
+    for (auto& fragment : records.fragments)
+    {
+        fragment.start_vertex = vertex_map[fragment.start_vertex];
+        fragment.end_vertex = vertex_map[fragment.end_vertex];
+    }
+    const std::uint32_t fragment_order[]{2, 0, 3, 1};
+    std::vector<std::uint32_t> fragment_map(4);
+    std::vector<AnalyticDirectedFragmentRecord> fragments;
+    for (std::uint32_t index = 0; index < 4; ++index)
+    {
+        fragment_map[fragment_order[index]] = index;
+        auto value = records.fragments[fragment_order[index]];
+        value.id = static_cast<std::uint64_t>(index) + 1;
+        fragments.push_back(value);
+    }
+    records.fragments = std::move(fragments);
+    records.fragment_references = {fragment_map[2], fragment_map[3], fragment_map[0],
+                                   fragment_map[1]};
+    return records;
+}
+
+AnalyticResultPacketRecords identical_two_job_records(bool reverse_job_topology)
+{
+    AnalyticResultPacketRecords records;
+    std::uint32_t ring_for_job[2]{};
+    const std::uint32_t first = reverse_job_topology ? 1 : 0;
+    for (std::uint32_t iteration = 0; iteration < 2; ++iteration)
+    {
+        const std::uint32_t job = iteration == 0 ? first : 1 - first;
+        const std::uint32_t vertex_begin = static_cast<std::uint32_t>(records.vertices.size());
+        const std::pair<std::int64_t, std::int64_t> points[] = {
+            {-10, 0}, {10, 0}, {10, 10}, {-10, 10}};
+        for (const auto& [x, y] : points)
+            records.vertices.push_back(
+                {static_cast<std::uint64_t>(records.vertices.size()) + 1, x, y, 0, 0});
+        const std::uint32_t fragment_begin = static_cast<std::uint32_t>(records.fragments.size());
+        for (std::uint32_t offset = 0; offset < 4; ++offset)
+        {
+            records.fragments.push_back({static_cast<std::uint64_t>(records.fragments.size()) + 1,
+                                         vertex_begin + offset, vertex_begin + (offset + 1) % 4, 1,
+                                         0, false, 0, 1, 0});
+            records.fragment_references.push_back(fragment_begin + offset);
+        }
+        ring_for_job[job] = static_cast<std::uint32_t>(records.rings.size());
+        records.rings.push_back({static_cast<std::uint64_t>(records.rings.size()) + 1,
+                                 fragment_begin, 4, std::numeric_limits<std::uint32_t>::max(), 0,
+                                 0});
+    }
+    records.regions = {{1, ring_for_job[0], 1}, {2, ring_for_job[1], 1}};
+    records.job_results = {{10, 0, 0, 0, 0, 1, 0, 0}, {20, 0, 0, 0, 1, 1, 0, 0}};
+    records.source_sets = {{0, 1}};
+    records.source_references = {{exact::ExactSourceKind::authored_segment_curve,
+                                  exact::ExactSourceRole::authored_line, 1, 1, 1}};
+    records.source_reference_indices = {0};
+    return records;
+}
+
 void require_decode_failure(const std::vector<std::uint8_t>& bytes, const std::string& message)
 {
     AnalyticResultPacketRecordsResult decoded =
@@ -232,6 +304,48 @@ int main()
                 AnalyticResultPacketLayoutError::none,
             "materially deep ring hierarchy failed bounded ownership validation");
 
+    AnalyticResultPacketRecordsResult canonical =
+        canonicalize_analytic_result_packet_records(records);
+    AnalyticResultPacketRecordsResult canonical_scrambled =
+        canonicalize_analytic_result_packet_records(scrambled_records());
+    require(canonical.error == AnalyticResultPacketLayoutError::none && canonical.value &&
+                canonical_scrambled.error == AnalyticResultPacketLayoutError::none &&
+                canonical_scrambled.value,
+            "semantic canonical projection failed");
+    AnalyticResultPacketEncodeResult canonical_bytes =
+        encode_analytic_result_packet_records(*canonical.value);
+    AnalyticResultPacketEncodeResult canonical_scrambled_bytes =
+        encode_analytic_result_packet_records(*canonical_scrambled.value);
+    AnalyticResultPacketRecordsResult canonical_twice =
+        canonicalize_analytic_result_packet_records(*canonical.value);
+    AnalyticResultPacketEncodeResult canonical_twice_bytes =
+        canonical_twice.value ? encode_analytic_result_packet_records(*canonical_twice.value)
+                              : AnalyticResultPacketEncodeResult{};
+    require(canonical_bytes.error == AnalyticResultPacketLayoutError::none &&
+                canonical_bytes.value && canonical_scrambled_bytes.value &&
+                *canonical_bytes.value == *canonical_scrambled_bytes.value &&
+                canonical_twice.error == AnalyticResultPacketLayoutError::none &&
+                canonical_twice_bytes.value &&
+                *canonical_bytes.value == *canonical_twice_bytes.value,
+            "semantic permutation changed canonical result bytes");
+    AnalyticResultPacketRecordsResult jobs_forward =
+        canonicalize_analytic_result_packet_records(identical_two_job_records(false));
+    AnalyticResultPacketRecordsResult jobs_reverse =
+        canonicalize_analytic_result_packet_records(identical_two_job_records(true));
+    require(jobs_forward.error == AnalyticResultPacketLayoutError::none && jobs_forward.value &&
+                jobs_reverse.error == AnalyticResultPacketLayoutError::none && jobs_reverse.value,
+            "identical mixed-job canonical projection failed");
+    AnalyticResultPacketEncodeResult jobs_forward_bytes =
+        encode_analytic_result_packet_records(*jobs_forward.value);
+    AnalyticResultPacketEncodeResult jobs_reverse_bytes =
+        encode_analytic_result_packet_records(*jobs_reverse.value);
+    require(jobs_forward_bytes.value && jobs_reverse_bytes.value &&
+                *jobs_forward_bytes.value == *jobs_reverse_bytes.value &&
+                jobs_reverse.value->regions[0].outer_ring == 0 &&
+                jobs_reverse.value->regions[1].outer_ring == 1,
+            "owner job id did not break identical batch geometry ties canonically");
+
     std::cout << "ANALYTIC_RESULT_PACKET_RECORD_VECTOR=" << hex(*encoded.value) << '\n';
+    std::cout << "ANALYTIC_RESULT_PACKET_CANONICAL_VECTOR=" << hex(*canonical_bytes.value) << '\n';
     return 0;
 }

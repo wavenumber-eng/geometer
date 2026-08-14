@@ -9,7 +9,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "docs" / "contracts" / "promotion-manifest.toml"
-PREFIX = "ANALYTIC_RESULT_PACKET_RECORD_VECTOR="
+RECORD_PREFIX = "ANALYTIC_RESULT_PACKET_RECORD_VECTOR="
+CANONICAL_PREFIX = "ANALYTIC_RESULT_PACKET_CANONICAL_VECTOR="
 
 
 def _discover_native() -> Path:
@@ -32,14 +33,20 @@ def _discover_native() -> Path:
     raise FileNotFoundError("build the native analytic result-packet record test first")
 
 
-def _packet(command: list[str]) -> bytes:
+def _packets(command: list[str]) -> tuple[bytes, bytes]:
     completed = subprocess.run(
         command, cwd=ROOT, check=True, capture_output=True, text=True
     )
+    record: bytes | None = None
+    canonical: bytes | None = None
     for line in completed.stdout.splitlines():
-        if line.startswith(PREFIX):
-            return bytes.fromhex(line.removeprefix(PREFIX))
-    raise RuntimeError("typed result-packet test omitted its governed vector")
+        if line.startswith(RECORD_PREFIX):
+            record = bytes.fromhex(line.removeprefix(RECORD_PREFIX))
+        if line.startswith(CANONICAL_PREFIX):
+            canonical = bytes.fromhex(line.removeprefix(CANONICAL_PREFIX))
+    if record is None or canonical is None:
+        raise RuntimeError("typed result-packet test omitted a governed vector")
+    return record, canonical
 
 
 def main() -> int:
@@ -63,17 +70,28 @@ def main() -> int:
     wasm = args.wasm.resolve()
     if not wasm.is_file():
         raise FileNotFoundError("build the Emscripten typed result-packet test first")
-    native_packet = _packet([str(native)])
-    wasm_packet = _packet(["node", str(wasm)])
+    native_packet, native_canonical = _packets([str(native)])
+    wasm_packet, wasm_canonical = _packets(["node", str(wasm)])
     if native_packet != wasm_packet:
         raise RuntimeError("native and Emscripten typed result-packet bytes differ")
+    if native_canonical != wasm_canonical:
+        raise RuntimeError("native and Emscripten canonical result-packet bytes differ")
     expected = tomllib.loads(MANIFEST.read_text(encoding="utf-8"))["analytic_exact_backend"]
     digest = hashlib.sha256(native_packet).hexdigest()
     if len(native_packet) != expected["result_packet_record_vector_bytes"]:
         raise RuntimeError("typed result-packet byte count differs from the manifest")
     if digest != expected["result_packet_record_vector_sha256"]:
         raise RuntimeError("typed result-packet SHA-256 differs from the manifest")
+    canonical_digest = hashlib.sha256(native_canonical).hexdigest()
+    if len(native_canonical) != expected["result_packet_canonical_vector_bytes"]:
+        raise RuntimeError("canonical result-packet byte count differs from the manifest")
+    if canonical_digest != expected["result_packet_canonical_vector_sha256"]:
+        raise RuntimeError("canonical result-packet SHA-256 differs from the manifest")
     print(f"analytic result-packet record parity: bytes={len(native_packet)} sha256={digest}")
+    print(
+        "analytic result-packet canonical parity: "
+        f"bytes={len(native_canonical)} sha256={canonical_digest}"
+    )
     return 0
 
 

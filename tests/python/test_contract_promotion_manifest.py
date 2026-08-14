@@ -372,7 +372,7 @@ def test_exact_algebraic_backend_design_gate_is_closed() -> None:
         "production_solver_allowed": False,
         "design_review_revision": "a8c9604de280e2a67018e1106fd1b430b34fcf50",
         "design_review_packet": "reviewer-019ffd1f-3c67-7001-87a5-200b6cda10d8",
-        "implemented_surface": "budgeted_exact_intersections_nm_normalization_curve_domain_half_edge_face_classification_stage_lineage_result_region_provenance_operand_outcome_certified_arc_result_normalization_canonical_source_set_result_packet_layout_and_typed_record_graph_feasibility",
+        "implemented_surface": "budgeted_exact_intersections_nm_normalization_curve_domain_half_edge_face_classification_stage_lineage_result_region_provenance_operand_outcome_certified_arc_result_normalization_canonical_source_set_result_packet_layout_typed_record_graph_and_semantic_canonical_projection_feasibility",
         "arc_distance_source": "src/cpp/lib/exact_arc_distance.cpp",
         "result_normalization_source": "src/cpp/lib/exact_result_normalization.cpp",
         "source_sets_source": "src/cpp/lib/exact_source_sets.cpp",
@@ -462,6 +462,11 @@ def test_exact_algebraic_backend_design_gate_is_closed() -> None:
         "result_packet_records_parity_validator": "scripts/validate_analytic_result_packet_records_parity.py",
         "result_packet_record_vector_bytes": 1220,
         "result_packet_record_vector_sha256": "37fe2c16c59d2f39d7900300883b80cc1412f343774bef81b6a9d8aea69df93f",
+        "result_packet_canonical_source": "src/cpp/lib/analytic_result_packet_canonical.cpp",
+        "result_packet_canonical_vector_bytes": 1220,
+        "result_packet_canonical_vector_sha256": "07019a4c2f94f8066db90b6f57bb3e5ea7801bb6b8bda63d8c7268dcad5bcb72",
+        "result_packet_batch_owner_key": "owner_job_id_then_existing_complete_semantic_key",
+        "result_packet_batch_owner_key_review": "reviewer-01a000c8-8fb8-73b2-93b0-505315c71f09",
     }
     assert (ROOT / backend["design"]).is_file()
     assert _sha256(ROOT / backend["design"]) == backend["design_sha256"]
@@ -479,6 +484,7 @@ def test_exact_algebraic_backend_design_gate_is_closed() -> None:
         "source_sets_source",
         "result_packet_layout_source",
         "result_packet_records_source",
+        "result_packet_canonical_source",
         "boolean_outcomes_source",
         "result_normalization_source",
         "boolean_provenance_source",

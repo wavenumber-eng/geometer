@@ -77,8 +77,10 @@ def main() -> int:
     prefix = f"seeds:{len(expected['seeded_property_seeds'])},cases:{expected['seeded_property_cases']}|"
     if not native_signature.startswith(prefix):
         raise RuntimeError("exact Boolean seeded-property inventory differs")
-    if not native_signature.endswith(expected["seeded_property_reducer_sentinel"]):
+    if f"|{expected['seeded_property_reducer_sentinel']}|" not in native_signature:
         raise RuntimeError("exact Boolean seeded-property reducer sentinel differs")
+    if not native_signature.endswith(expected["seeded_property_reducer_multistage_sentinel"]):
+        raise RuntimeError("exact Boolean seeded-property multistage reducer sentinel differs")
     print(
         "exact Boolean seeded-property parity: "
         f"seeds={len(expected['seeded_property_seeds'])} "

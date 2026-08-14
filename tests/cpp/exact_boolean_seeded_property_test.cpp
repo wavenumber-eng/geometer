@@ -416,9 +416,13 @@ PropertyCase minimize_failure(PropertyCase current,
             }
         if (changed)
             continue;
-        for (const PropertyStage& stage : current.stages)
-            for (const std::uint32_t operand : stage.operands)
+        for (std::size_t stage_index = 0; stage_index < current.stages.size() && !changed;
+             ++stage_index)
+            for (std::size_t operand_index = 0;
+                 operand_index < current.stages[stage_index].operands.size() && !changed;
+                 ++operand_index)
             {
+                const std::uint32_t operand = current.stages[stage_index].operands[operand_index];
                 const Rectangle original = current.rectangles[operand];
                 const std::array<Rectangle, 4> candidates{
                     Rectangle{original.x0, original.y0, original.x0 + 1, original.y1},
@@ -441,8 +445,6 @@ PropertyCase minimize_failure(PropertyCase current,
                         break;
                     }
                 }
-                if (changed)
-                    break;
             }
     }
     return current;
@@ -477,6 +479,23 @@ std::string require_reducer_sentinel()
     return descriptor;
 }
 
+std::string require_multistage_reducer_sentinel()
+{
+    PropertyCase fixture;
+    fixture.rectangles = {{1, 1, 2, 2}, {0, 0, 4, 4}, {2, 2, 4, 4}};
+    fixture.stages = {
+        {ExactBooleanStageOperation::difference, {0}},
+        {ExactBooleanStageOperation::union_, {1, 2}},
+    };
+    const PropertyCase minimized =
+        minimize_failure(fixture, [](const PropertyCase& candidate)
+                         { return candidate.stages.size() >= 2 && covers_origin(candidate); });
+    const std::string descriptor = replay_descriptor(0, 1, minimized);
+    require(descriptor == "seed=0x0,case=1,stages=D[]U[0,0,1,1;]",
+            "multistage reducer sentinel did not exercise a guarded rectangle mutation");
+    return descriptor;
+}
+
 } // namespace
 
 int main()
@@ -489,6 +508,7 @@ int main()
     };
     constexpr std::uint32_t cases_per_seed = 8;
     const std::string reducer_sentinel = require_reducer_sentinel();
+    const std::string multistage_reducer_sentinel = require_multistage_reducer_sentinel();
     std::ostringstream signature;
     std::uint32_t case_count = 0;
     for (const std::uint64_t seed : seeds)
@@ -522,6 +542,7 @@ int main()
     }
     require(case_count == seeds.size() * cases_per_seed, "seeded-property case count changed");
     std::cout << "EXACT_BOOLEAN_SEEDED_PROPERTY=seeds:" << seeds.size() << ",cases:" << case_count
-              << '|' << signature.str() << "reducer:" << reducer_sentinel << '\n';
+              << '|' << signature.str() << "reducer:" << reducer_sentinel
+              << "|reducer_multistage:" << multistage_reducer_sentinel << '\n';
     return 0;
 }

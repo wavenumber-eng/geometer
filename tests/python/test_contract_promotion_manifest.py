@@ -57,7 +57,10 @@ _SEEDED_PROPERTY_GATE: dict[str, Any] = {
     "seeded_property_cases": 32,
     "seeded_property_reducer": "greedy_one_minimal_stage_operand_rectangle_extent",
     "seeded_property_reducer_sentinel": "reducer:seed=0x0,case=0,stages=U[0,0,1,1;]",
-    "seeded_property_sha256": "d201a374b0816f7e29f18ad1fb17314f2f3ac9b3a43e62a7d57a7f8250b66b97",
+    "seeded_property_reducer_multistage_sentinel": (
+        "reducer_multistage:seed=0x0,case=1,stages=D[]U[0,0,1,1;]"
+    ),
+    "seeded_property_sha256": "60945d8695701d82457c8aad4f47d225b0b66a2759dd4bac43f4dacf23d0b01e",
 }
 
 _SYNTHETIC_CORRECTNESS_GATE: dict[str, Any] = {

@@ -959,8 +959,11 @@ deterministically removes stages and operands and shrinks/translates rectangle
 extents while the same property failure persists. It reports the resulting
 one-minimal fixture under those transformations. An injected reducer sentinel
 must reduce a three-stage, four-rectangle input to the single unit rectangle
-`U[0,0,1,1]`. The complete actual boundary, face-lineage, result-count, and
-reducer projection is digest-locked under native/Emscripten parity.
+`U[0,0,1,1]`. Rectangle mutation uses guarded index iteration and immediately
+restarts after an accepted replacement; a second sentinel retains two stages
+while accepting the rectangle shrink and must reach `D[]U[0,0,1,1]`. The
+complete actual boundary, face-lineage, result-count, and reducer projection is
+digest-locked under native/Emscripten parity.
 
 This is the modest deterministic pull-request seed set. Promotion of any real
 minimized failure into the committed regression corpus and larger nightly

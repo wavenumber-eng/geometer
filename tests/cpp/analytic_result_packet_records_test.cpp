@@ -81,6 +81,51 @@ AnalyticResultPacketRecords rich_records()
     return records;
 }
 
+AnalyticResultPacketRecords deeply_nested_records(std::uint32_t ring_count)
+{
+    AnalyticResultPacketRecords records;
+    records.vertices.reserve(static_cast<std::size_t>(ring_count) * 4);
+    records.fragments.reserve(static_cast<std::size_t>(ring_count) * 4);
+    records.rings.reserve(ring_count);
+    records.fragment_references.reserve(static_cast<std::size_t>(ring_count) * 4);
+    records.regions.reserve((ring_count + 1) / 2);
+    for (std::uint32_t ring = 0; ring < ring_count; ++ring)
+    {
+        const std::int64_t radius = static_cast<std::int64_t>(ring_count - ring);
+        const std::uint32_t vertex_begin = static_cast<std::uint32_t>(records.vertices.size());
+        const bool hole = ring % 2 != 0;
+        const std::pair<std::int64_t, std::int64_t> points[] = {
+            {-radius, -radius},
+            {hole ? -radius : radius, hole ? radius : -radius},
+            {radius, radius},
+            {hole ? radius : -radius, hole ? -radius : radius}};
+        for (const auto& [x, y] : points)
+            records.vertices.push_back(
+                {static_cast<std::uint64_t>(records.vertices.size()) + 1, x, y, 0, 0});
+        const std::uint32_t fragment_begin = static_cast<std::uint32_t>(records.fragments.size());
+        for (std::uint32_t offset = 0; offset < 4; ++offset)
+        {
+            records.fragments.push_back({static_cast<std::uint64_t>(records.fragments.size()) + 1,
+                                         vertex_begin + offset, vertex_begin + (offset + 1) % 4, 1,
+                                         0, false, 0, 1, 0});
+            records.fragment_references.push_back(fragment_begin + offset);
+        }
+        records.rings.push_back({static_cast<std::uint64_t>(ring) + 1, fragment_begin, 4,
+                                 ring == 0 ? std::numeric_limits<std::uint32_t>::max() : ring - 1,
+                                 ring, hole ? 1U : 0U});
+        if (!hole)
+            records.regions.push_back(
+                {static_cast<std::uint64_t>(records.regions.size()) + 1, ring, 1});
+    }
+    records.job_results = {
+        {1, 0, 0, 0, 0, static_cast<std::uint32_t>(records.regions.size()), 0, 0}};
+    records.source_sets = {{0, 1}};
+    records.source_references = {{exact::ExactSourceKind::authored_segment_curve,
+                                  exact::ExactSourceRole::authored_line, 1, 1, 1}};
+    records.source_reference_indices = {0};
+    return records;
+}
+
 void require_decode_failure(const std::vector<std::uint8_t>& bytes, const std::string& message)
 {
     AnalyticResultPacketRecordsResult decoded =
@@ -175,6 +220,17 @@ int main()
     require(validate_analytic_result_packet_records(disconnected_ring) ==
                 AnalyticResultPacketLayoutError::invalid_packet,
             "disconnected ring fragment sequence was accepted");
+    AnalyticResultPacketRecords unused_source_set = rich_records();
+    unused_source_set.source_sets.push_back({1, 1});
+    unused_source_set.source_references.push_back({exact::ExactSourceKind::authored_segment_curve,
+                                                   exact::ExactSourceRole::authored_line, 8, 1, 1});
+    unused_source_set.source_reference_indices.push_back(1);
+    require(validate_analytic_result_packet_records(unused_source_set) ==
+                AnalyticResultPacketLayoutError::invalid_packet,
+            "unreferenced source set was accepted into canonical bytes");
+    require(validate_analytic_result_packet_records(deeply_nested_records(16'384)) ==
+                AnalyticResultPacketLayoutError::none,
+            "materially deep ring hierarchy failed bounded ownership validation");
 
     std::cout << "ANALYTIC_RESULT_PACKET_RECORD_VECTOR=" << hex(*encoded.value) << '\n';
     return 0;

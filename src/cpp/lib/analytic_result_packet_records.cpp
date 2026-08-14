@@ -413,12 +413,29 @@ LayoutError validate_owners(const AnalyticResultPacketRecords& records)
                                             std::numeric_limits<std::uint32_t>::max());
     for (std::uint32_t region = 0; region < records.regions.size(); ++region)
         outer_region[records.regions[region].outer_ring] = region;
+    const std::uint32_t no_ring = std::numeric_limits<std::uint32_t>::max();
+    std::vector<std::uint32_t> ring_root(records.rings.size(), no_ring);
+    std::vector<std::uint32_t> path;
+    for (std::uint32_t ring = 0; ring < records.rings.size(); ++ring)
+    {
+        std::uint32_t current = ring;
+        path.clear();
+        while (ring_root[current] == no_ring)
+        {
+            path.push_back(current);
+            const std::uint32_t parent = records.rings[current].parent_ring;
+            if (parent == no_ring)
+                break;
+            current = parent;
+        }
+        const std::uint32_t root = ring_root[current] == no_ring ? current : ring_root[current];
+        for (auto entry = path.rbegin(); entry != path.rend(); ++entry)
+            ring_root[*entry] = root;
+    }
     std::vector<std::uint32_t> ring_owner(records.rings.size());
     for (std::uint32_t ring = 0; ring < records.rings.size(); ++ring)
     {
-        std::uint32_t root = ring;
-        while (records.rings[root].parent_ring != std::numeric_limits<std::uint32_t>::max())
-            root = records.rings[root].parent_ring;
+        const std::uint32_t root = ring_root[ring];
         if (outer_region[root] == std::numeric_limits<std::uint32_t>::max())
             return LayoutError::invalid_packet;
         ring_owner[ring] = region_owner[outer_region[root]];
@@ -512,6 +529,34 @@ LayoutError validate_owners(const AnalyticResultPacketRecords& records)
     return LayoutError::none;
 }
 
+LayoutError validate_source_uses(const AnalyticResultPacketRecords& records)
+{
+    std::vector<bool> used(records.source_sets.size());
+    const auto mark = [&used](std::uint32_t handle)
+    {
+        if (handle > used.size())
+            return false;
+        if (handle != 0)
+            used[handle - 1] = true;
+        return true;
+    };
+    for (const auto& vertex : records.vertices)
+        if (!mark(vertex.intersection_source_set))
+            return LayoutError::invalid_packet;
+    for (const auto& fragment : records.fragments)
+        if (!mark(fragment.positive_source_set) || !mark(fragment.subtraction_source_set))
+            return LayoutError::invalid_packet;
+    for (const auto& region : records.regions)
+        if (!mark(region.positive_source_set))
+            return LayoutError::invalid_packet;
+    for (const auto& event : records.operand_events)
+        if (!mark(event.source_set))
+            return LayoutError::invalid_packet;
+    return std::all_of(used.begin(), used.end(), [](bool value) { return value; })
+               ? LayoutError::none
+               : LayoutError::invalid_packet;
+}
+
 LayoutError validate_relationships(const AnalyticResultPacketRecords& records)
 {
     if (!gapless_partition(
@@ -571,7 +616,7 @@ validate_analytic_result_packet_records(const AnalyticResultPacketRecords& recor
             records.source_sets.size() > std::numeric_limits<std::uint32_t>::max())
             return LayoutError::limit_exceeded;
         const auto validators = {validate_sources, validate_geometry, validate_owners,
-                                 validate_relationships};
+                                 validate_source_uses, validate_relationships};
         for (const auto validator : validators)
         {
             const LayoutError error = validator(records);

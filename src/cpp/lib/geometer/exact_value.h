@@ -35,6 +35,9 @@ class CanonicalReal
     friend struct CanonicalRealResult;
     friend CanonicalRealResult make_canonical_real(Budget&, const PolynomialFactorSet&,
                                                    const BigInt&, const BigInt&, std::uint32_t);
+    friend CanonicalRealResult make_canonical_rational(Budget&, const BigInt&, const BigInt&);
+    friend CanonicalRealResult make_canonical_irrational(Budget&, const std::vector<BigInt>&,
+                                                         std::uint32_t);
     CanonicalReal(Budget& budget, std::uint64_t charged_bytes, BigInt numerator,
                   BigInt denominator);
     CanonicalReal(Polynomial polynomial, IsolatedRootSet roots, std::uint32_t ordinal);
@@ -66,6 +69,13 @@ struct ComparisonResult
                                                       const PolynomialFactorSet& factors,
                                                       const BigInt& lower_k, const BigInt& upper_k,
                                                       std::uint32_t precision);
+
+[[nodiscard]] CanonicalRealResult make_canonical_rational(Budget& budget, const BigInt& numerator,
+                                                          const BigInt& denominator);
+
+[[nodiscard]] CanonicalRealResult make_canonical_irrational(Budget& budget,
+                                                            const std::vector<BigInt>& coefficients,
+                                                            std::uint32_t root_ordinal);
 
 [[nodiscard]] ComparisonResult compare_canonical_reals(Budget& budget, const CanonicalReal& left,
                                                        const CanonicalReal& right);

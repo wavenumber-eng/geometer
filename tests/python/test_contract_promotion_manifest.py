@@ -372,7 +372,7 @@ def test_exact_algebraic_backend_design_gate_is_closed() -> None:
         "production_solver_allowed": False,
         "design_review_revision": "a8c9604de280e2a67018e1106fd1b430b34fcf50",
         "design_review_packet": "reviewer-019ffd1f-3c67-7001-87a5-200b6cda10d8",
-        "implemented_surface": "budgeted_canonical_value_comparison_and_scalar_encoding_feasibility",
+        "implemented_surface": "budgeted_canonical_value_comparison_and_strict_scalar_codec_feasibility",
         "rational_source": "src/cpp/lib/exact_rational.cpp",
         "polynomial_source": "src/cpp/lib/exact_polynomial.cpp",
         "resultant_source": "src/cpp/lib/exact_resultant.cpp",

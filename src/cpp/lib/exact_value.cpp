@@ -186,45 +186,69 @@ CanonicalRealResult make_canonical_real(Budget& budget, const PolynomialFactorSe
             return {selected.error, selected.status, std::nullopt};
         const Polynomial& factor = factors.factors()[*selected.factor_index];
         if (factor.degree() == 1)
-        {
-            const std::uint64_t width =
-                checked_add(limbs(factor.coefficients()[0]), limbs(factor.coefficients()[1]));
-            const std::uint64_t storage = checked_add(512, checked_multiply(width, 64));
-            const std::uint64_t work = checked_multiply(checked_multiply(width, width), width);
-            StorageReservation reservation(budget, storage);
-            if (!reservation.acquired() || !budget.consume_work(work))
-                return {Error::resource_limit_exceeded, FactorRootSelectionStatus::error,
-                        std::nullopt};
-            BigInt numerator = -factor.coefficients()[0];
-            BigInt denominator = factor.coefficients()[1];
-            const BigInt divisor = gcd(numerator, denominator);
-            numerator /= divisor;
-            denominator /= divisor;
-            if (denominator < 0)
-            {
-                numerator = -numerator;
-                denominator = -denominator;
-            }
-            reservation.commit();
-            return {Error::none, FactorRootSelectionStatus::selected,
-                    CanonicalReal(budget, storage, std::move(numerator), std::move(denominator))};
-        }
-        auto polynomial = make_primitive_polynomial(budget, factor.coefficients());
-        if (polynomial.error != Error::none || !polynomial.value)
-            return {polynomial.error, FactorRootSelectionStatus::error, std::nullopt};
-        auto roots = isolate_real_roots(budget, *polynomial.value);
-        if (roots.error != Error::none || !roots.value ||
-            selected.root_ordinal >= roots.value->roots().size())
-            return {roots.error == Error::none ? Error::invalid_argument : roots.error,
-                    FactorRootSelectionStatus::error, std::nullopt};
-        return {Error::none, FactorRootSelectionStatus::selected,
-                CanonicalReal(std::move(*polynomial.value), std::move(*roots.value),
-                              selected.root_ordinal)};
+            return make_canonical_rational(budget, -factor.coefficients()[0],
+                                           factor.coefficients()[1]);
+        return make_canonical_irrational(budget, factor.coefficients(), selected.root_ordinal);
     }
     catch (const std::exception&)
     {
         return {Error::resource_limit_exceeded, FactorRootSelectionStatus::error, std::nullopt};
     }
+}
+
+CanonicalRealResult make_canonical_rational(Budget& budget, const BigInt& input_numerator,
+                                            const BigInt& input_denominator)
+{
+    if (input_denominator == 0)
+        return {Error::invalid_argument, FactorRootSelectionStatus::error, std::nullopt};
+    try
+    {
+        const std::uint64_t width = checked_add(limbs(input_numerator), limbs(input_denominator));
+        const std::uint64_t storage = checked_add(512, checked_multiply(width, 64));
+        const std::uint64_t work = checked_multiply(checked_multiply(width, width), width);
+        StorageReservation reservation(budget, storage);
+        if (!reservation.acquired() || !budget.consume_work(work))
+            return {Error::resource_limit_exceeded, FactorRootSelectionStatus::error, std::nullopt};
+        BigInt numerator = input_numerator;
+        BigInt denominator = input_denominator;
+        const BigInt divisor = gcd(numerator, denominator);
+        numerator /= divisor;
+        denominator /= divisor;
+        if (denominator < 0)
+        {
+            numerator = -numerator;
+            denominator = -denominator;
+        }
+        reservation.commit();
+        return {Error::none, FactorRootSelectionStatus::selected,
+                CanonicalReal(budget, storage, std::move(numerator), std::move(denominator))};
+    }
+    catch (const std::exception&)
+    {
+        return {Error::resource_limit_exceeded, FactorRootSelectionStatus::error, std::nullopt};
+    }
+}
+
+CanonicalRealResult make_canonical_irrational(Budget& budget,
+                                              const std::vector<BigInt>& coefficients,
+                                              std::uint32_t root_ordinal)
+{
+    auto polynomial = make_primitive_polynomial(budget, coefficients);
+    if (polynomial.error != Error::none || !polynomial.value || polynomial.value->degree() < 2)
+        return {polynomial.error == Error::none ? Error::invalid_argument : polynomial.error,
+                FactorRootSelectionStatus::error, std::nullopt};
+    auto factors = factor_primitive_polynomial(budget, *polynomial.value);
+    if (factors.error != Error::none || !factors.value)
+        return {factors.error, FactorRootSelectionStatus::error, std::nullopt};
+    if (factors.value->factors().size() != 1 ||
+        factors.value->factors()[0].coefficients() != polynomial.value->coefficients())
+        return {Error::invalid_argument, FactorRootSelectionStatus::error, std::nullopt};
+    auto roots = isolate_real_roots(budget, *polynomial.value);
+    if (roots.error != Error::none || !roots.value || root_ordinal >= roots.value->roots().size())
+        return {roots.error == Error::none ? Error::invalid_argument : roots.error,
+                FactorRootSelectionStatus::error, std::nullopt};
+    return {Error::none, FactorRootSelectionStatus::selected,
+            CanonicalReal(std::move(*polynomial.value), std::move(*roots.value), root_ordinal)};
 }
 
 ComparisonResult compare_canonical_reals(Budget& budget, const CanonicalReal& left,

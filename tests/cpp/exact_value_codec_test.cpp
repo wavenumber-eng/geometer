@@ -85,12 +85,62 @@ void test_large_negative_rational_golden_and_budget_boundary()
     require(encoded.error == geometer::exact::Error::none && encoded.value.has_value() &&
                 encoded.value->bytes() == expected && exact_budget.usage().work_units == 384,
             "large signed scalar bytes and linear work boundary changed");
+    geometer::exact::Budget decode_budget({1'000'000'000, 268'435'456});
+    auto decoded = geometer::exact::decode_canonical_real(decode_budget, expected);
+    require(decoded.error == geometer::exact::Error::none && decoded.value.has_value() &&
+                decoded.value->numerator() == -magnitude && decoded.value->denominator() == 1,
+            "large signed rational scalar decode changed");
 
     geometer::exact::Budget short_budget({383, 1'000'000});
     auto short_result = geometer::exact::encode_canonical_real(short_budget, negative);
     require(short_result.error == geometer::exact::Error::resource_limit_exceeded &&
                 short_budget.usage().work_units == 0 && short_budget.usage().owned_bytes == 0,
             "one-unit-short large scalar encoding must fail identically before emission");
+}
+
+void test_strict_decode_and_canonical_revalidation()
+{
+    geometer::exact::Budget budget({1'000'000'000, 268'435'456});
+    auto sqrt_eight = make_value(budget, {-8, 0, 1}, 2, 4);
+    auto encoded = geometer::exact::encode_canonical_real(budget, sqrt_eight);
+    require(encoded.value.has_value(), "decode fixture encoding failed");
+    const std::vector<std::uint8_t> bytes = encoded.value->bytes();
+    auto decoded = geometer::exact::decode_canonical_real(budget, bytes);
+    require(decoded.error == geometer::exact::Error::none && decoded.value.has_value() &&
+                decoded.value->polynomial()->coefficients() == std::vector<BigInt>({-8, 0, 1}) &&
+                decoded.value->root()->ordinal == 1 &&
+                decoded.value->root()->thom_signs == std::vector<std::int8_t>({1, 1}),
+            "strict irrational scalar round trip failed");
+
+    auto expect_invalid = [&](std::vector<std::uint8_t> candidate, const std::string& message)
+    {
+        geometer::exact::Budget invalid_budget({1'000'000'000, 268'435'456});
+        auto result = geometer::exact::decode_canonical_real(invalid_budget, candidate);
+        require(result.error == geometer::exact::Error::invalid_argument && !result.value, message);
+    };
+    auto reserved = bytes;
+    reserved[1] = 1;
+    expect_invalid(std::move(reserved), "nonzero scalar reserved byte was accepted");
+    auto length = bytes;
+    length[4] = 64;
+    expect_invalid(std::move(length), "incorrect scalar record length was accepted");
+    auto nonminimal = bytes;
+    nonminimal[20] = 0;
+    expect_invalid(std::move(nonminimal), "nonminimal embedded integer was accepted");
+    auto reducible = bytes;
+    reducible[20] = 4;
+    expect_invalid(std::move(reducible), "reducible minimal-polynomial claim was accepted");
+    auto thom = bytes;
+    thom[68] = 255;
+    expect_invalid(std::move(thom), "inconsistent Thom evidence was accepted");
+    auto padding = bytes;
+    padding.back() = 1;
+    expect_invalid(std::move(padding), "nonzero scalar alignment padding was accepted");
+    const std::vector<std::uint8_t> unreduced = {
+        1, 0, 0, 0, 32, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0,
+        2, 0, 0, 0, 1,  0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0,
+    };
+    expect_invalid(unreduced, "unreduced rational scalar was accepted");
 }
 } // namespace
 
@@ -100,5 +150,6 @@ int main()
     test_irrational_scalar_golden();
     test_encoding_budget_failure();
     test_large_negative_rational_golden_and_budget_boundary();
+    test_strict_decode_and_canonical_revalidation();
     return 0;
 }

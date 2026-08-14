@@ -93,6 +93,63 @@ void patch_u32(std::vector<std::uint8_t>& output, std::size_t offset, std::uint3
         output[offset++] = static_cast<std::uint8_t>((value >> shift) & 0xff);
 }
 
+bool read_u32(const std::vector<std::uint8_t>& input, std::size_t& offset, std::uint32_t& value)
+{
+    if (offset > input.size() || input.size() - offset < 4)
+        return false;
+    value = 0;
+    for (std::uint32_t shift = 0; shift < 32; shift += 8)
+        value |= static_cast<std::uint32_t>(input[offset++]) << shift;
+    return true;
+}
+
+bool read_integer(const std::vector<std::uint8_t>& input, std::size_t& offset, BigInt& value)
+{
+    const std::size_t start = offset;
+    if (offset > input.size() || input.size() - offset < 8)
+        return false;
+    const std::uint8_t sign = input[offset++];
+    if (input[offset++] != 0 || input[offset++] != 0 || input[offset++] != 0)
+        return false;
+    std::uint32_t magnitude_size = 0;
+    if (!read_u32(input, offset, magnitude_size) || magnitude_size > 2048 ||
+        magnitude_size > input.size() - offset)
+        return false;
+    if ((sign == 0) != (magnitude_size == 0) || sign > 2 ||
+        (magnitude_size != 0 && input[offset] == 0))
+        return false;
+    value = 0;
+    if (magnitude_size != 0)
+        boost::multiprecision::import_bits(
+            value, input.begin() + static_cast<std::ptrdiff_t>(offset),
+            input.begin() + static_cast<std::ptrdiff_t>(offset + magnitude_size), 8, true);
+    offset += magnitude_size;
+    const std::uint64_t aligned = align(checked_add(start, checked_add(8, magnitude_size)), 4);
+    if (aligned > input.size())
+        return false;
+    while (offset < aligned)
+        if (input[offset++] != 0)
+            return false;
+    if (sign == 2)
+        value = -value;
+    return true;
+}
+
+BigInt integer_gcd(BigInt left, BigInt right)
+{
+    if (left < 0)
+        left = -left;
+    if (right < 0)
+        right = -right;
+    while (right != 0)
+    {
+        BigInt next = left % right;
+        left = std::move(right);
+        right = std::move(next);
+    }
+    return left;
+}
+
 void append_integer(std::vector<std::uint8_t>& output, const BigInt& value)
 {
     const BigInt magnitude = value < 0 ? -value : value;
@@ -166,6 +223,90 @@ EncodeResult encode_canonical_real(Budget& budget, const CanonicalReal& value)
         patch_u32(output, 4, static_cast<std::uint32_t>(size));
         reservation.commit();
         return {Error::none, EncodedBytes(budget, storage, std::move(output))};
+    }
+    catch (const std::exception&)
+    {
+        return {Error::resource_limit_exceeded, std::nullopt};
+    }
+}
+
+DecodeCanonicalRealResult decode_canonical_real(Budget& budget,
+                                                const std::vector<std::uint8_t>& input)
+{
+    if (input.size() < 8 || input.size() > 1'048'576 || input.size() % 8 != 0)
+        return {Error::invalid_argument, std::nullopt};
+    try
+    {
+        const std::uint64_t storage = checked_add(1024, checked_multiply(input.size(), 4));
+        const std::uint64_t work = checked_multiply(input.size(), 16);
+        StorageReservation reservation(budget, storage);
+        if (!reservation.acquired() || !budget.consume_work(work))
+            return {Error::resource_limit_exceeded, std::nullopt};
+        std::size_t offset = 0;
+        const std::uint8_t kind = input[offset++];
+        if ((kind != 1 && kind != 2) || input[offset++] != 0 || input[offset++] != 0 ||
+            input[offset++] != 0)
+            return {Error::invalid_argument, std::nullopt};
+        std::uint32_t record_bytes = 0;
+        if (!read_u32(input, offset, record_bytes) || record_bytes != input.size())
+            return {Error::invalid_argument, std::nullopt};
+        if (kind == 1)
+        {
+            BigInt numerator;
+            BigInt denominator;
+            if (!read_integer(input, offset, numerator) ||
+                !read_integer(input, offset, denominator) || denominator <= 0 ||
+                integer_gcd(numerator, denominator) != 1)
+                return {Error::invalid_argument, std::nullopt};
+            while (offset < input.size())
+                if (input[offset++] != 0)
+                    return {Error::invalid_argument, std::nullopt};
+            CanonicalRealResult value = make_canonical_rational(budget, numerator, denominator);
+            return {value.error, std::move(value.value)};
+        }
+        std::uint32_t coefficient_count = 0;
+        if (!read_u32(input, offset, coefficient_count) || coefficient_count < 3 ||
+            coefficient_count > 65 ||
+            checked_multiply(coefficient_count, 8) > input.size() - offset)
+            return {Error::invalid_argument, std::nullopt};
+        std::vector<BigInt> coefficients;
+        coefficients.reserve(coefficient_count);
+        for (std::uint32_t index = 0; index < coefficient_count; ++index)
+        {
+            BigInt coefficient;
+            if (!read_integer(input, offset, coefficient))
+                return {Error::invalid_argument, std::nullopt};
+            coefficients.push_back(std::move(coefficient));
+        }
+        std::uint32_t ordinal = 0;
+        std::uint32_t precision = 0;
+        BigInt interval_k;
+        std::uint32_t thom_count = 0;
+        if (!read_u32(input, offset, ordinal) || !read_u32(input, offset, precision) ||
+            precision > 4096 || !read_integer(input, offset, interval_k) ||
+            !read_u32(input, offset, thom_count) || thom_count != coefficient_count - 1 ||
+            thom_count > input.size() - offset)
+            return {Error::invalid_argument, std::nullopt};
+        std::vector<std::int8_t> thom_signs;
+        thom_signs.reserve(thom_count);
+        for (std::uint32_t index = 0; index < thom_count; ++index)
+        {
+            const std::uint8_t encoded = input[offset++];
+            if (encoded != 0 && encoded != 1 && encoded != 255)
+                return {Error::invalid_argument, std::nullopt};
+            thom_signs.push_back(encoded == 255 ? -1 : static_cast<std::int8_t>(encoded));
+        }
+        while (offset < input.size())
+            if (input[offset++] != 0)
+                return {Error::invalid_argument, std::nullopt};
+        CanonicalRealResult value = make_canonical_irrational(budget, coefficients, ordinal);
+        if (value.error != Error::none || !value.value)
+            return {value.error, std::nullopt};
+        const IsolatedRoot& root = *value.value->root();
+        if (root.precision != precision || root.interval_k != interval_k ||
+            root.thom_signs != thom_signs)
+            return {Error::invalid_argument, std::nullopt};
+        return {Error::none, std::move(value.value)};
     }
     catch (const std::exception&)
     {

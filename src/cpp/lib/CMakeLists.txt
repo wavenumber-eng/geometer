@@ -48,12 +48,13 @@ set(GEOMETER_EXACT_SOURCES
     exact_polynomial.cpp
     exact_rational.cpp
     exact_resultant.cpp
+    exact_result_normalization.cpp
     exact_value.cpp
     exact_value_codec.cpp
 )
 
 if(NOT EMSCRIPTEN)
-    list(APPEND GEOMETER_LIB_SOURCES exact_boolean_outcomes.cpp exact_boolean_provenance.cpp exact_boolean_regions.cpp exact_boolean_stages.cpp exact_arrangement.cpp exact_arrangement_classification.cpp exact_arrangement_faces.cpp exact_arrangement_order.cpp exact_arrangement_result.cpp exact_arrangement_validation.cpp exact_artifact.cpp exact_construction.cpp exact_construction_builder.cpp exact_curve_domain.cpp exact_expression.cpp exact_factorization.cpp exact_geometry.cpp exact_normalization.cpp exact_polynomial.cpp exact_resultant.cpp exact_value.cpp exact_value_codec.cpp)
+    list(APPEND GEOMETER_LIB_SOURCES exact_boolean_outcomes.cpp exact_boolean_provenance.cpp exact_boolean_regions.cpp exact_boolean_stages.cpp exact_arrangement.cpp exact_arrangement_classification.cpp exact_arrangement_faces.cpp exact_arrangement_order.cpp exact_arrangement_result.cpp exact_arrangement_validation.cpp exact_artifact.cpp exact_construction.cpp exact_construction_builder.cpp exact_curve_domain.cpp exact_expression.cpp exact_factorization.cpp exact_geometry.cpp exact_normalization.cpp exact_polynomial.cpp exact_resultant.cpp exact_result_normalization.cpp exact_value.cpp exact_value_codec.cpp)
 endif()
 
 if(NOT EMSCRIPTEN)

@@ -372,7 +372,8 @@ def test_exact_algebraic_backend_design_gate_is_closed() -> None:
         "production_solver_allowed": False,
         "design_review_revision": "a8c9604de280e2a67018e1106fd1b430b34fcf50",
         "design_review_packet": "reviewer-019ffd1f-3c67-7001-87a5-200b6cda10d8",
-        "implemented_surface": "budgeted_exact_intersections_nm_normalization_curve_domain_half_edge_face_classification_stage_lineage_result_region_provenance_and_operand_outcome_feasibility",
+        "implemented_surface": "budgeted_exact_intersections_nm_normalization_curve_domain_half_edge_face_classification_stage_lineage_result_region_provenance_operand_outcome_and_grid_exact_result_normalization_feasibility",
+        "result_normalization_source": "src/cpp/lib/exact_result_normalization.cpp",
         "boolean_outcomes_source": "src/cpp/lib/exact_boolean_outcomes.cpp",
         "boolean_provenance_source": "src/cpp/lib/exact_boolean_provenance.cpp",
         "boolean_regions_source": "src/cpp/lib/exact_boolean_regions.cpp",
@@ -439,6 +440,9 @@ def test_exact_algebraic_backend_design_gate_is_closed() -> None:
         "boolean_outcomes_vector_sha256": "e8cfe16cf62b1f074537415eb9a8ddfe2d9d7d6bdebb70abe152d8b3d82744af",
         "boolean_outcomes_vector_success_work_units": 1600,
         "boolean_outcomes_vector_storage_bytes": 11584,
+        "result_normalization_test": "tests/cpp/exact_result_normalization_test.cpp",
+        "result_normalization_parity_validator": "scripts/validate_exact_result_normalization_parity.py",
+        "result_normalization_vector_sha256": "bb41b54ebd52dba0407c245c3d4cbd24c4ba2b28c7fc5a07a0df4603f67ffe58",
     }
     assert (ROOT / backend["design"]).is_file()
     assert _sha256(ROOT / backend["design"]) == backend["design_sha256"]
@@ -453,6 +457,7 @@ def test_exact_algebraic_backend_design_gate_is_closed() -> None:
         "normalization_source",
         "curve_domain_source",
         "boolean_outcomes_source",
+        "result_normalization_source",
         "boolean_provenance_source",
         "boolean_regions_source",
         "boolean_stages_source",
@@ -481,6 +486,8 @@ def test_exact_algebraic_backend_design_gate_is_closed() -> None:
         "boolean_provenance_parity_validator",
         "boolean_outcomes_test",
         "boolean_outcomes_parity_validator",
+        "result_normalization_test",
+        "result_normalization_parity_validator",
     ):
         assert (ROOT / backend[key]).is_file()
 

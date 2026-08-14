@@ -63,8 +63,24 @@ _SEEDED_PROPERTY_GATE: dict[str, Any] = {
     "seeded_property_sha256": "60945d8695701d82457c8aad4f47d225b0b66a2759dd4bac43f4dacf23d0b01e",
 }
 
+_LINEAGE_MATRIX_GATE: dict[str, Any] = {
+    "boolean_lineage_matrix_test": "tests/cpp/exact_boolean_lineage_matrix_test.cpp",
+    "boolean_lineage_matrix_parity_validator": (
+        "scripts/validate_exact_boolean_lineage_matrix_parity.py"
+    ),
+    "boolean_lineage_matrix_cases": [
+        "two_contributors_two_disconnected_results",
+        "same_stage_permutation",
+        "omitted_association_mutation",
+    ],
+    "boolean_lineage_matrix_sha256": (
+        "6f084826be2bf3b34ce13e4b392dd0f81d3de40ed97b8245ab05d18ae4fa6ae4"
+    ),
+}
+
 _SYNTHETIC_CORRECTNESS_GATE: dict[str, Any] = {
     **_BOOLEAN_METAMORPHIC_GATE,
+    **_LINEAGE_MATRIX_GATE,
     **_NORMALIZATION_COLLAPSE_GATE,
     **_RECTANGLE_ENUMERATION_GATE,
     **_SEEDED_PROPERTY_GATE,
@@ -431,7 +447,7 @@ def test_exact_algebraic_backend_design_gate_is_closed() -> None:
         "production_solver_allowed": False,
         "design_review_revision": "a8c9604de280e2a67018e1106fd1b430b34fcf50",
         "design_review_packet": "reviewer-019ffd1f-3c67-7001-87a5-200b6cda10d8",
-        "implemented_surface": "budgeted_exact_intersections_nm_normalization_curve_domain_half_edge_face_classification_stage_lineage_result_region_provenance_operand_outcome_certified_arc_result_normalization_canonical_source_set_result_packet_layout_typed_record_graph_semantic_canonical_projection_standalone_closure_digest_decoder_enforcement_exact_topology_replay_mutation_sentinels_closed_form_invariants_degeneracy_sweeps_boolean_identities_metamorphic_relations_bounded_enumeration_and_seeded_property_feasibility",
+        "implemented_surface": "budgeted_exact_intersections_nm_normalization_curve_domain_half_edge_face_classification_stage_lineage_result_region_provenance_operand_outcome_certified_arc_result_normalization_canonical_source_set_result_packet_layout_typed_record_graph_semantic_canonical_projection_standalone_closure_digest_decoder_enforcement_exact_topology_replay_mutation_sentinels_closed_form_invariants_degeneracy_sweeps_boolean_identities_metamorphic_relations_bounded_enumeration_seeded_property_and_many_to_many_lineage_feasibility",
         "arc_distance_source": "src/cpp/lib/exact_arc_distance.cpp",
         "result_normalization_source": "src/cpp/lib/exact_result_normalization.cpp",
         "source_sets_source": "src/cpp/lib/exact_source_sets.cpp",
@@ -644,6 +660,8 @@ def test_exact_algebraic_backend_paths_exist() -> None:
         "boolean_provenance_parity_validator",
         "boolean_outcomes_test",
         "boolean_outcomes_parity_validator",
+        "boolean_lineage_matrix_test",
+        "boolean_lineage_matrix_parity_validator",
         "result_normalization_test",
         "result_normalization_parity_validator",
         "source_sets_test",

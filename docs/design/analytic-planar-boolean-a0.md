@@ -969,6 +969,24 @@ This is the modest deterministic pull-request seed set. Promotion of any real
 minimized failure into the committed regression corpus and larger nightly
 seeds remain separate work before the property program is complete.
 
+### Exact Many-To-Many Lineage Matrix
+
+A dedicated exact fixture overlays two distinct positive operands across two
+disconnected rectangles. Both final result regions must carry both operand
+identities, yielding the complete four-edge operand/result association matrix
+`{A->R0, A->R1, B->R0, B->R1}`. Every one of the eight surviving line
+fragments must retain both coincident authored sources. Both operands publish
+`contributes_final_material` with references to both regions and the symmetric
+`redundant_or_absorbed_coverage` event.
+
+The fixture requires the exact association matrix and separately injects an
+omitted-association mutation that the equality oracle must reject. Reversing
+the unordered union operands must preserve the complete region, provenance,
+and outcome projection. Native and Emscripten executions are digest-locked
+byte for byte. This closes the true many-to-many association subcase; the
+remaining broader lineage, nightly, and production cross-runtime lanes stay
+pending.
+
 ### OCCT 8.0.1 Qualification
 
 Production solver work and conformance-golden freeze require a side-by-side

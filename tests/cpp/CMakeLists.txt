@@ -176,6 +176,17 @@ else()
 endif()
 add_test(NAME geometer_exact_boolean_outcomes_test COMMAND geometer_exact_boolean_outcomes_test)
 
+add_executable(geometer_exact_boolean_lineage_matrix_test
+               exact_boolean_lineage_matrix_test.cpp)
+if(EMSCRIPTEN)
+    target_link_libraries(geometer_exact_boolean_lineage_matrix_test
+                          PRIVATE geometer_exact_feasibility)
+else()
+    target_link_libraries(geometer_exact_boolean_lineage_matrix_test PRIVATE geometer_lib)
+endif()
+add_test(NAME geometer_exact_boolean_lineage_matrix_test
+         COMMAND geometer_exact_boolean_lineage_matrix_test)
+
 add_executable(geometer_exact_result_normalization_test exact_result_normalization_test.cpp)
 if(EMSCRIPTEN)
     target_link_libraries(geometer_exact_result_normalization_test PRIVATE geometer_exact_feasibility)
@@ -311,6 +322,7 @@ if(EMSCRIPTEN)
         geometer_exact_boolean_regions_test
         geometer_exact_boolean_provenance_test
         geometer_exact_boolean_outcomes_test
+        geometer_exact_boolean_lineage_matrix_test
         geometer_exact_result_normalization_test
         geometer_exact_source_sets_test
         geometer_analytic_result_packet_layout_test
@@ -356,6 +368,8 @@ if(EMSCRIPTEN)
     target_link_options(geometer_exact_boolean_provenance_test PRIVATE -fexceptions)
     target_compile_options(geometer_exact_boolean_outcomes_test PRIVATE -fexceptions)
     target_link_options(geometer_exact_boolean_outcomes_test PRIVATE -fexceptions)
+    target_compile_options(geometer_exact_boolean_lineage_matrix_test PRIVATE -fexceptions)
+    target_link_options(geometer_exact_boolean_lineage_matrix_test PRIVATE -fexceptions)
     target_compile_options(geometer_exact_result_normalization_test PRIVATE -fexceptions)
     target_link_options(geometer_exact_result_normalization_test PRIVATE -fexceptions)
     target_compile_options(geometer_exact_source_sets_test PRIVATE -fexceptions)

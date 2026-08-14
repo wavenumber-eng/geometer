@@ -10,6 +10,7 @@
 #include <limits>
 #include <map>
 #include <optional>
+#include <set>
 #include <vector>
 
 namespace geometer
@@ -31,7 +32,10 @@ struct Ownership
 {
     std::vector<std::uint32_t> region_owner;
     std::vector<std::uint32_t> outer_region;
+    std::vector<std::uint32_t> ring_region;
     std::vector<std::uint32_t> ring_owner;
+    std::vector<std::vector<std::uint32_t>> rings_by_job;
+    std::vector<std::vector<std::uint32_t>> regions_by_job;
 };
 
 std::optional<Ownership> derive_ownership(const AnalyticResultPacketRecords& records)
@@ -39,7 +43,10 @@ std::optional<Ownership> derive_ownership(const AnalyticResultPacketRecords& rec
     Ownership output;
     output.region_owner.resize(records.regions.size(), kNone);
     output.outer_region.resize(records.rings.size(), kNone);
+    output.ring_region.resize(records.rings.size(), kNone);
     output.ring_owner.resize(records.rings.size(), kNone);
+    output.rings_by_job.resize(records.job_results.size());
+    output.regions_by_job.resize(records.job_results.size());
     for (std::uint32_t job = 0; job < records.job_results.size(); ++job)
     {
         const auto& value = records.job_results[job];
@@ -49,6 +56,7 @@ std::optional<Ownership> derive_ownership(const AnalyticResultPacketRecords& rec
             if (region >= records.regions.size())
                 return std::nullopt;
             output.region_owner[region] = job;
+            output.regions_by_job[job].push_back(region);
         }
     }
     for (std::uint32_t region = 0; region < records.regions.size(); ++region)
@@ -60,18 +68,15 @@ std::optional<Ownership> derive_ownership(const AnalyticResultPacketRecords& rec
     }
     for (std::uint32_t ring = 0; ring < records.rings.size(); ++ring)
     {
-        std::uint32_t root = ring;
-        for (std::uint32_t depth = records.rings[ring].depth; depth != 0; --depth)
-        {
-            root = records.rings[root].parent_ring;
-            if (root >= records.rings.size())
-                return std::nullopt;
-        }
-        if (output.outer_region[root] == kNone)
+        const auto& value = records.rings[ring];
+        const std::uint32_t component_ring = value.depth % 2 == 0 ? ring : value.parent_ring;
+        if (component_ring >= records.rings.size() || output.outer_region[component_ring] == kNone)
             return std::nullopt;
-        output.ring_owner[ring] = output.region_owner[output.outer_region[root]];
+        output.ring_region[ring] = output.outer_region[component_ring];
+        output.ring_owner[ring] = output.region_owner[output.ring_region[ring]];
         if (output.ring_owner[ring] == kNone)
             return std::nullopt;
+        output.rings_by_job[output.ring_owner[ring]].push_back(ring);
     }
     return output;
 }
@@ -176,29 +181,23 @@ LayoutError compare_replay(const AnalyticResultPacketRecords& records, const Own
                            const ExactBooleanRegions& replay)
 {
     std::map<std::vector<std::uint64_t>, std::uint32_t> expected;
-    std::size_t expected_ring_count = 0;
-    for (std::uint32_t ring = 0; ring < records.rings.size(); ++ring)
-        if (ownership.ring_owner[ring] == job_index)
-        {
-            if (!expected.emplace(expected_ring_key(records, ring), ring).second)
-                return LayoutError::invalid_packet;
-            ++expected_ring_count;
-        }
+    for (const std::uint32_t ring : ownership.rings_by_job[job_index])
+        if (!expected.emplace(expected_ring_key(records, ring), ring).second)
+            return LayoutError::invalid_packet;
     const auto& job = records.job_results[job_index];
-    if (replay.rings().size() != expected_ring_count ||
+    if (replay.rings().size() != ownership.rings_by_job[job_index].size() ||
         replay.regions().size() != job.result_region_count)
         return LayoutError::invalid_packet;
     std::vector<std::uint32_t> replay_to_expected(replay.rings().size(), kNone);
-    std::vector<bool> matched_ring(records.rings.size());
+    std::set<std::uint32_t> matched_rings;
     for (std::uint32_t ring = 0; ring < replay.rings().size(); ++ring)
     {
         const auto key = replayed_ring_key(arrangement, replay, ring);
         if (!key)
             return LayoutError::invalid_packet;
         const auto found = expected.find(*key);
-        if (found == expected.end() || matched_ring[found->second])
+        if (found == expected.end() || !matched_rings.insert(found->second).second)
             return LayoutError::invalid_packet;
-        matched_ring[found->second] = true;
         replay_to_expected[ring] = found->second;
         const auto& actual = replay.rings()[ring];
         const auto& claimed = records.rings[found->second];
@@ -213,7 +212,7 @@ LayoutError compare_replay(const AnalyticResultPacketRecords& records, const Own
         if (records.rings[replay_to_expected[ring]].parent_ring != expected_parent)
             return LayoutError::invalid_packet;
     }
-    std::vector<bool> matched_region(records.regions.size());
+    std::set<std::uint32_t> matched_regions;
     for (const auto& region : replay.regions())
     {
         if (region.positive_source_count != 1)
@@ -223,10 +222,9 @@ LayoutError compare_replay(const AnalyticResultPacketRecords& records, const Own
             return LayoutError::invalid_packet;
         const std::uint32_t expected_region = static_cast<std::uint32_t>(source - 1);
         if (ownership.region_owner[expected_region] != job_index ||
-            matched_region[expected_region] ||
+            !matched_regions.insert(expected_region).second ||
             records.regions[expected_region].outer_ring != replay_to_expected[region.outer_ring])
             return LayoutError::invalid_packet;
-        matched_region[expected_region] = true;
     }
     return LayoutError::none;
 }
@@ -242,15 +240,10 @@ LayoutError validate_job(const AnalyticResultPacketRecords& records, const Owner
     ConstructionBuilder builder(arena);
     std::vector<ExactAtomicCurve> curves;
     std::vector<ExactCoverageOccurrence> coverages;
-    for (std::uint32_t ring = 0; ring < records.rings.size(); ++ring)
+    for (const std::uint32_t ring : ownership.rings_by_job[job_index])
     {
-        if (ownership.ring_owner[ring] != job_index)
-            continue;
-        std::uint32_t root = ring;
-        while (records.rings[root].parent_ring != kNone)
-            root = records.rings[root].parent_ring;
         const std::uint64_t coverage_id =
-            static_cast<std::uint64_t>(ownership.outer_region[root]) + 1;
+            static_cast<std::uint64_t>(ownership.ring_region[ring]) + 1;
         const auto& value = records.rings[ring];
         for (std::uint32_t offset = 0; offset < value.fragment_reference_count; ++offset)
             if (!append_curve(builder, records,
@@ -262,10 +255,9 @@ LayoutError validate_job(const AnalyticResultPacketRecords& records, const Owner
     if (arrangement.error != Error::none || !arrangement.value)
         return map_error(arrangement.error);
     std::vector<ExactBooleanOperand> operands;
-    for (std::uint32_t offset = 0; offset < job.result_region_count; ++offset)
+    for (const std::uint32_t region_index : ownership.regions_by_job[job_index])
     {
-        const std::uint64_t region =
-            static_cast<std::uint64_t>(job.result_region_begin + offset) + 1;
+        const std::uint64_t region = static_cast<std::uint64_t>(region_index) + 1;
         operands.push_back({region, region});
     }
     ExactBooleanSelectionResult selection = evaluate_exact_boolean_stages(

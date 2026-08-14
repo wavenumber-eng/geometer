@@ -782,6 +782,11 @@ silently invoking a geometry operation in a codec.
 The pull-request mutation lane currently proves that the oracle rejects
 structurally valid reversed line winding, reversed circular-arc winding, a hole
 assigned to a non-containing root, and a false point-tangent hierarchy merge.
+Valid outer/hole/island replay proves that every even-depth island owns its own
+result component, while an island collapsed into the surrounding component is
+rejected. A single linear ownership index assigns each ring to its nearest
+even-depth result ring and builds per-job ring/region lists; 16,384-deep and
+65,535-empty-job regressions protect the bounded traversal before exact replay.
 Canonical packet bytes separately detect removal of an otherwise geometrically
 invisible contributor, and the exact normalization oracle detects a
 ties-to-even substitution. Native and Emscripten must report the identical

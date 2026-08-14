@@ -101,10 +101,43 @@ AnalyticResultPacketRecords nested_disjoint()
 {
     AnalyticResultPacketRecords records;
     add_sources(records, ExactSourceRole::authored_line);
-    add_line_ring(records, {{0, 0}, {10, 0}, {10, 10}, {0, 10}}, kNone, 0);
-    add_line_ring(records, {{2, 2}, {2, 4}, {4, 4}, {4, 2}}, 0, 1);
-    add_line_ring(records, {{20, 0}, {30, 0}, {30, 10}, {20, 10}}, kNone, 0);
-    finish_success(records, {0, 2});
+    add_line_ring(records, {{0, 0}, {20, 0}, {20, 20}, {0, 20}}, kNone, 0);
+    add_line_ring(records, {{4, 4}, {4, 16}, {16, 16}, {16, 4}}, 0, 1);
+    add_line_ring(records, {{8, 8}, {12, 8}, {12, 12}, {8, 12}}, 1, 2);
+    add_line_ring(records, {{30, 0}, {40, 0}, {40, 10}, {30, 10}}, kNone, 0);
+    finish_success(records, {0, 2, 3});
+    return records;
+}
+
+AnalyticResultPacketRecords deeply_nested(std::uint32_t ring_count)
+{
+    AnalyticResultPacketRecords records;
+    add_sources(records, ExactSourceRole::authored_line);
+    std::vector<std::uint32_t> outer_rings;
+    outer_rings.reserve((ring_count + 1) / 2);
+    for (std::uint32_t ring = 0; ring < ring_count; ++ring)
+    {
+        const std::int64_t radius = static_cast<std::int64_t>(ring_count - ring);
+        const bool hole = ring % 2 != 0;
+        add_line_ring(records,
+                      {{-radius, -radius},
+                       {hole ? -radius : radius, hole ? radius : -radius},
+                       {radius, radius},
+                       {hole ? radius : -radius, hole ? -radius : radius}},
+                      ring == 0 ? kNone : ring - 1, ring);
+        if (!hole)
+            outer_rings.push_back(ring);
+    }
+    finish_success(records, outer_rings);
+    return records;
+}
+
+AnalyticResultPacketRecords many_empty_jobs()
+{
+    AnalyticResultPacketRecords records;
+    records.job_results.reserve(65'535);
+    for (std::uint32_t job = 1; job <= 65'535; ++job)
+        records.job_results.push_back({job, 0, 0, 0, 0, 0, 0, 0});
     return records;
 }
 
@@ -185,8 +218,17 @@ int main()
     require_structural_but_not_topological(reversed_arc, "reversed arc winding");
 
     auto wrong_parent = nested_disjoint();
-    wrong_parent.rings[1].parent_ring = 2;
+    wrong_parent.rings[1].parent_ring = 3;
     require_structural_but_not_topological(wrong_parent, "non-containing parent hierarchy");
+
+    auto lost_island = nested_disjoint();
+    lost_island.rings[2].parent_ring = 0;
+    lost_island.rings[2].depth = 1;
+    lost_island.rings[2].flags = 1;
+    lost_island.regions.erase(lost_island.regions.begin() + 1);
+    lost_island.regions[1].id = 2;
+    lost_island.job_results[0].result_region_count = 2;
+    require_structural_but_not_topological(lost_island, "nested island component ownership");
 
     auto tangent_merge = point_tangent();
     tangent_merge.rings[1].parent_ring = 0;
@@ -208,8 +250,15 @@ int main()
             "omitted contributor escaped the canonical lineage oracle");
 
     require_tie_policy_sentinel();
+    require(validate_analytic_result_packet_topology(many_empty_jobs()) ==
+                AnalyticResultPacketLayoutError::none,
+            "many-empty-job ownership indexing failed");
+    require(validate_analytic_result_packet_topology(deeply_nested(16'384)) ==
+                AnalyticResultPacketLayoutError::limit_exceeded,
+            "deep hierarchy did not terminate at the governed exact replay bound");
     std::cout << "ANALYTIC_MUTATION_SENTINELS="
                  "reversed_line,reversed_arc,non_containing_parent,point_tangent_merge,"
-                 "omitted_lineage,ties_to_even\n";
+                 "nested_island_ownership,omitted_lineage,ties_to_even,deep_hierarchy_bound,"
+                 "many_empty_jobs\n";
     return 0;
 }

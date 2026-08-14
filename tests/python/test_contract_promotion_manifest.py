@@ -481,8 +481,11 @@ def test_exact_algebraic_backend_design_gate_is_closed() -> None:
             "reversed_arc",
             "non_containing_parent",
             "point_tangent_merge",
+            "nested_island_ownership",
             "omitted_lineage",
             "ties_to_even",
+            "deep_hierarchy_bound",
+            "many_empty_jobs",
         ],
     }
     assert (ROOT / backend["design"]).is_file()

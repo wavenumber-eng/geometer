@@ -514,10 +514,11 @@ def test_exact_algebraic_backend_design_gate_is_closed() -> None:
             "concentric_coincidence",
             "near_collinearity",
             "half_grid_ties",
+            "arc_0_360_boundary",
             "arc_180_boundary",
             "closed_arc_rejection",
         ],
-        "degeneracy_sweep_sha256": "d27a7403d84f4916537cd2ee4ab29bd07b03bdc1205469b87c72e065b894537f",
+        "degeneracy_sweep_sha256": "fa7809b15ef4425d0b6e7a5336d2fd09a99f6b018a1136dcb16bcdbf57aa6f8a",
     }
     assert (ROOT / backend["design"]).is_file()
     assert _sha256(ROOT / backend["design"]) == backend["design_sha256"]

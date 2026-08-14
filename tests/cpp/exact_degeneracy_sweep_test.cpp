@@ -161,28 +161,46 @@ void append_arc_boundary_sweep(ConstructionArena& arena, std::string& signature)
 {
     const ExactCircle circle{point(arena, 0, 0), rational(arena, 101)};
     const ExactPoint start = point(arena, 101, 0);
+    const ExactCircularArc near_zero{circle, start, point(arena, 99, 20), true, false};
+    const ExactCircularArc near_full{circle, start, point(arena, 99, -20), true, true};
     const ExactCircularArc below{circle, start, point(arena, -99, 20), true, false};
     const ExactCircularArc exact{circle, start, point(arena, -101, 0), true, false};
     const ExactCircularArc above{circle, start, point(arena, -99, -20), true, true};
+    require_arc_endpoint(arena, near_zero, "near-zero-degree minor arc rejected");
+    require_arc_endpoint(arena, near_full, "near-360-degree major arc rejected");
     require_arc_endpoint(arena, below, "sub-180-degree arc rejected");
     require_arc_endpoint(arena, exact, "exact 180-degree arc rejected");
     require_arc_endpoint(arena, above, "super-180-degree arc rejected");
 
+    const ExactCircularArc wrong_near_zero{near_zero.circle, near_zero.start, near_zero.end, true,
+                                           true};
+    const ExactCircularArc wrong_near_full{near_full.circle, near_full.start, near_full.end, true,
+                                           false};
     const ExactCircularArc wrong_below{below.circle, below.start, below.end, true, true};
+    const ExactCircularArc wrong_exact{exact.circle, exact.start, exact.end, true, true};
     const ExactCircularArc wrong_above{above.circle, above.start, above.end, true, false};
+    auto invalid_near_zero =
+        geometer::exact::point_on_closed_exact_arc(arena, wrong_near_zero, wrong_near_zero.end);
+    auto invalid_near_full =
+        geometer::exact::point_on_closed_exact_arc(arena, wrong_near_full, wrong_near_full.end);
     auto invalid_below =
         geometer::exact::point_on_closed_exact_arc(arena, wrong_below, wrong_below.end);
+    auto invalid_exact =
+        geometer::exact::point_on_closed_exact_arc(arena, wrong_exact, wrong_exact.end);
     auto invalid_above =
         geometer::exact::point_on_closed_exact_arc(arena, wrong_above, wrong_above.end);
-    require(invalid_below.error == Error::invalid_argument && !invalid_below.value &&
+    require(invalid_near_zero.error == Error::invalid_argument && !invalid_near_zero.value &&
+                invalid_near_full.error == Error::invalid_argument && !invalid_near_full.value &&
+                invalid_below.error == Error::invalid_argument && !invalid_below.value &&
+                invalid_exact.error == Error::invalid_argument && !invalid_exact.value &&
                 invalid_above.error == Error::invalid_argument && !invalid_above.value,
-            "incoherent 180-degree boundary flag must reject");
+            "incoherent arc boundary flag must reject");
 
     const ExactCircularArc closed{circle, start, start, true, false};
     auto invalid_closed = geometer::exact::point_on_closed_exact_arc(arena, closed, start);
     require(invalid_closed.error == Error::invalid_argument && !invalid_closed.value,
             "single-arc zero/full-circle encoding must reject");
-    signature += "|arc_180:minor,semicircle,major|arc_closed:invalid";
+    signature += "|arc_0_360:minor,major|arc_180:minor,semicircle,major|arc_closed:invalid";
 }
 
 } // namespace

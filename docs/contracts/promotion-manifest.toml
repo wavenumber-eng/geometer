@@ -240,8 +240,8 @@ metamorphic_invariants = ["translation", "rotation_90", "reflection", "integer_s
 metamorphic_invariants_sha256 = "2f53db616f2795dd754f827d199a8ff1cdc2eb641d8e0a9f2dc96d4ef908f2ca"
 degeneracy_sweep_test = "tests/cpp/exact_degeneracy_sweep_test.cpp"
 degeneracy_sweep_parity_validator = "scripts/validate_exact_degeneracy_sweep_parity.py"
-degeneracy_sweep_cases = ["external_tangency", "internal_tangency", "concentric_coincidence", "near_collinearity", "half_grid_ties", "arc_180_boundary", "closed_arc_rejection"]
-degeneracy_sweep_sha256 = "d27a7403d84f4916537cd2ee4ab29bd07b03bdc1205469b87c72e065b894537f"
+degeneracy_sweep_cases = ["external_tangency", "internal_tangency", "concentric_coincidence", "near_collinearity", "half_grid_ties", "arc_0_360_boundary", "arc_180_boundary", "closed_arc_rejection"]
+degeneracy_sweep_sha256 = "fa7809b15ef4425d0b6e7a5336d2fd09a99f6b018a1136dcb16bcdbf57aa6f8a"
 
 [transports]
 generic_c_abi = "implemented_a0"
@@ -727,7 +727,7 @@ status = "design_frozen"
 named_consumer = "appz.data_models.pcb.matz"
 compatibility_snapshot = "docs/contracts/compatibility/data-models-geom-a0-2026-08-12.toml"
 design = "docs/design/analytic-planar-boolean-a0.md"
-design_sha256 = "328cf58b9b3311980c9a2586e672fb5d147911f913d687d5b69af3a608d8a270"
+design_sha256 = "59bfbe37f4e46d56f60299208dc5eed65cb76652522de6933a9dfbc0addf751d"
 packet_spec = "docs/design/analytic-planar-boolean-packet-a0.md"
 packet_spec_sha256 = "83e97d3636a93a8358777f459e4dbee70cfd88c6d16b28b683c2f8a538eb7727"
 numeric_catalog = "docs/contracts/analytic-planar-boolean-a0-catalog.toml"

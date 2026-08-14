@@ -851,12 +851,13 @@ intersection, exact coincidence, and the opposite shared-point perturbation.
 The normalization sweep covers both signs around one-half nm and the interval
 around three-halves nm, including exact ties, and requires the governed
 ties-away-from-zero result. Rational Pythagorean endpoints on a radius-101
-circle exercise counterclockwise arcs immediately below and above 180 degrees,
-with the exact semicircle between them. Their minor/major flags must be
-coherent; flipped flags and a single-arc start-equals-end encoding fail closed.
-Full circles remain represented by multiple analytic fragments. Native and
-Emscripten executions must reproduce the complete classification signature
-byte for byte.
+circle exercise counterclockwise arcs immediately above 0 degrees and below
+360 degrees, as well as immediately below and above 180 degrees with the exact
+semicircle between them. Their minor/major flags must be coherent; flipped
+flags, the alternate branch at exactly 180 degrees, and a single-arc
+start-equals-end encoding fail closed. Full circles remain represented by
+multiple analytic fragments. Native and Emscripten executions must reproduce
+the complete classification signature byte for byte.
 
 ### OCCT 8.0.1 Qualification
 

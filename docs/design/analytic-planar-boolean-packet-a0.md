@@ -7,8 +7,16 @@ separately governed binary projection carries the logical models in
 [Analytic Planar Boolean A0 Design](analytic-planar-boolean-a0.md). It is not
 generated merely by choosing a TypeSpec emitter. Any incompatible change now
 requires a new packet generation and magic. Raw-byte goldens and production
-codecs remain post-freeze implementation work rather than evidence already
-claimed by this status.
+codecs are post-freeze implementation work rather than evidence claimed by
+this design status.
+
+An implementation-review erratum dated 2026-08-14 resolves the only
+pre-golden layout contradiction: table offsets are eight-byte aligned, while
+table byte lengths remain the exact `record count * record bytes` value and
+therefore may be four modulo eight for kinds 106 and 114. Minimum zero padding
+aligns the following table. This records the uniquely encodable intent of A0;
+the generation and magic are unchanged because no raw golden or deployed codec
+preceded the correction.
 
 Every numeric enum, flag, role, status, event, diagnostic, and path token is
 assigned in the machine-readable governed catalog
@@ -60,8 +68,9 @@ the canonical result attachment or its digest.
 - Coordinates and lengths are integer nanometers. A0 packets contain no angle
   or trigonometric fields.
 - Every packet offset is relative to byte zero of that packet.
-- Every table offset and byte length is a multiple of eight. Padding bytes and
-  reserved fields must be zero.
+- Every table offset is a multiple of eight. Table byte lengths are exact and
+  need not be aligned. Minimum inter-table padding bytes and reserved fields
+  must be zero.
 - Decoders read fields explicitly; they do not cast packet memory to host
   structs.
 

@@ -16,6 +16,18 @@ _RECTANGLE_ENUMERATION_GATE: dict[str, Any] = {
     "rectangle_enumeration_grid": "2x2_integer_unit_cells",
     "rectangle_enumeration_cases": 558,
     "rectangle_enumeration_sha256": "db0ebca47a53585d7d52312b128a1c77fd345c282481b5415b061401cd5deb74",
+    "rectangle_differential_engine": "clipper2_existing_planar_solve",
+    "rectangle_differential_policy": "warning_only_non_authoritative",
+    "rectangle_differential_schedule": "monthly_and_manual_release",
+    "rectangle_differential_eligible_cases": 117,
+    "rectangle_differential_baseline_warnings": 2,
+    "rectangle_differential_baseline_sha256": (
+        "4d5bb7b6302424bbf6621fc4a0a611d8fb17981710c95b617edd3b5fe4762a80"
+    ),
+    "rectangle_differential_warning_identities": [
+        "case_433_point_contact_component_merge",
+        "case_465_point_contact_component_merge",
+    ],
 }
 
 _NORMALIZATION_COLLAPSE_GATE: dict[str, Any] = {
@@ -495,7 +507,7 @@ def test_exact_algebraic_backend_design_gate_is_closed() -> None:
         "production_solver_allowed": False,
         "design_review_revision": "a8c9604de280e2a67018e1106fd1b430b34fcf50",
         "design_review_packet": "reviewer-019ffd1f-3c67-7001-87a5-200b6cda10d8",
-        "implemented_surface": "budgeted_exact_intersections_nm_normalization_curve_domain_half_edge_face_classification_stage_lineage_result_region_provenance_operand_outcome_certified_arc_result_normalization_canonical_source_set_result_packet_layout_typed_record_graph_semantic_canonical_projection_standalone_closure_digest_decoder_enforcement_exact_topology_replay_mutation_sentinels_closed_form_invariants_degeneracy_sweeps_boolean_identities_metamorphic_relations_bounded_enumeration_seeded_property_many_to_many_lineage_monthly_extended_seed_and_quarter_arc_swept_path_feasibility",
+        "implemented_surface": "budgeted_exact_intersections_nm_normalization_curve_domain_half_edge_face_classification_stage_lineage_result_region_provenance_operand_outcome_certified_arc_result_normalization_canonical_source_set_result_packet_layout_typed_record_graph_semantic_canonical_projection_standalone_closure_digest_decoder_enforcement_exact_topology_replay_mutation_sentinels_closed_form_invariants_degeneracy_sweeps_boolean_identities_metamorphic_relations_bounded_enumeration_seeded_property_many_to_many_lineage_monthly_extended_seed_quarter_arc_swept_path_and_clipper_warning_feasibility",
         "arc_distance_source": "src/cpp/lib/exact_arc_distance.cpp",
         "result_normalization_source": "src/cpp/lib/exact_result_normalization.cpp",
         "source_sets_source": "src/cpp/lib/exact_source_sets.cpp",

@@ -1,18 +1,28 @@
 #include "geometer/exact_result_normalization.h"
+#ifndef __EMSCRIPTEN__
+#include "geometer/planar_solve.h"
+#endif
 
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <cstdint>
 #include <cstdlib>
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace
 {
 
 using namespace geometer::exact;
+
+#ifndef __EMSCRIPTEN__
+std::uint32_t differential_case_count = 0;
+std::vector<std::string> differential_warnings;
+#endif
 
 struct Rectangle
 {
@@ -295,6 +305,63 @@ std::string boundary_signature(const std::vector<std::uint32_t>& edges)
     return signature.str();
 }
 
+#ifndef __EMSCRIPTEN__
+geometer::PlanarSolveRing planar_ring(const Rectangle& rectangle)
+{
+    return {
+        {static_cast<double>(rectangle.x0), static_cast<double>(rectangle.y0)},
+        {static_cast<double>(rectangle.x1), static_cast<double>(rectangle.y0)},
+        {static_cast<double>(rectangle.x1), static_cast<double>(rectangle.y1)},
+        {static_cast<double>(rectangle.x0), static_cast<double>(rectangle.y1)},
+    };
+}
+
+std::string differential_descriptor(const std::vector<StageInput>& stages)
+{
+    std::ostringstream out;
+    for (const StageInput& stage : stages)
+        out << (stage.operation == ExactBooleanStageOperation::union_ ? 'U' : 'D') << '['
+            << stage.rectangle.x0 << ',' << stage.rectangle.y0 << ',' << stage.rectangle.x1 << ','
+            << stage.rectangle.y1 << ']';
+    return out.str();
+}
+
+void record_clipper_differential(const std::vector<StageInput>& stages, std::uint8_t mask,
+                                 std::uint32_t components, const std::string& case_label)
+{
+    if (stages.empty() || stages.front().operation != ExactBooleanStageOperation::union_ ||
+        std::any_of(stages.begin() + 1, stages.end(), [](const StageInput& stage)
+                    { return stage.operation != ExactBooleanStageOperation::difference; }))
+        return;
+    ++differential_case_count;
+    geometer::PlanarBatchSolveInput input;
+    input.options.decimal_precision = 0;
+    geometer::PlanarSolveJob job;
+    job.clip_to_final_rings = false;
+    job.subject_rings.push_back(planar_ring(stages.front().rectangle));
+    for (auto stage = stages.begin() + 1; stage != stages.end(); ++stage)
+        job.subtract_rings.push_back(planar_ring(stage->rectangle));
+    input.jobs.push_back(std::move(job));
+    geometer::PlanarBatchSolveResult result;
+    geometer::Status status;
+    const int code = geometer::solve_planar_batch(input, &result, &status);
+    if (code != 0 || result.jobs.size() != 1)
+    {
+        differential_warnings.push_back(case_label + ':' + differential_descriptor(stages) +
+                                        ":clipper_error:" + status.message);
+        return;
+    }
+    const double expected_area = bit_count(mask);
+    const auto& actual = result.jobs.front();
+    if (std::fabs(actual.area_mm2 - expected_area) > 1.0e-9 || actual.regions.size() != components)
+        differential_warnings.push_back(
+            case_label + ':' + differential_descriptor(stages) + ":expected_area=" +
+            std::to_string(expected_area) + ",actual_area=" + std::to_string(actual.area_mm2) +
+            ",expected_components=" + std::to_string(components) +
+            ",actual_components=" + std::to_string(actual.regions.size()));
+}
+#endif
+
 std::string run_case(const std::vector<StageInput>& inputs)
 {
     static std::uint32_t next_case = 0;
@@ -338,6 +405,9 @@ std::string run_case(const std::vector<StageInput>& inputs)
     require(normalized.value->regions().size() == components &&
                 normalized.value->rings().size() == components,
             "enumeration component count disagrees with unit-cell oracle");
+#ifndef __EMSCRIPTEN__
+    record_clipper_differential(inputs, mask, components, case_label);
+#endif
 
     std::ostringstream signature;
     signature << static_cast<unsigned>(occupancy_from_boundary(projected_boundary)) << ','
@@ -349,8 +419,11 @@ std::string run_case(const std::vector<StageInput>& inputs)
 
 } // namespace
 
-int main()
+int main(int argc, char** argv)
 {
+    require(argc == 1 || (argc == 2 && std::string(argv[1]) == "--differential-only"),
+            "usage: geometer_exact_rectangle_enumeration_test [--differential-only]");
+    const bool differential_only = argc == 2;
     const std::vector<Rectangle> rectangles = rectangle_catalog();
     const std::array<ExactBooleanStageOperation, 2> operations{
         ExactBooleanStageOperation::union_, ExactBooleanStageOperation::difference};
@@ -385,6 +458,15 @@ int main()
                             ++case_count;
                         }
     require(case_count == 558, "bounded rectangle enumeration case count changed");
-    std::cout << "EXACT_RECTANGLE_ENUMERATION=cases:" << case_count << '|' << signature << '\n';
+    if (!differential_only)
+        std::cout << "EXACT_RECTANGLE_ENUMERATION=cases:" << case_count << '|' << signature << '\n';
+#ifndef __EMSCRIPTEN__
+    std::cout << "EXACT_RECTANGLE_DIFFERENTIAL=policy:warning_only,eligible:"
+              << differential_case_count << ",warnings:" << differential_warnings.size() << '\n';
+    for (const std::string& warning : differential_warnings)
+        std::cout << "EXACT_RECTANGLE_DIFFERENTIAL_WARNING=" << warning << '\n';
+#else
+    require(!differential_only, "differential-only mode requires the native Clipper2 engine");
+#endif
     return 0;
 }

@@ -802,10 +802,12 @@ waive Geometer's genericity or release gates.
   normalize between stages, omit lineage, change operand order, corrupt
   hierarchy, or mishandle tangency, and require the suite to detect each.
 - Pull requests run the closed-form corpus, minimized regressions,
-  deterministic seed subset, and critical mutations. Nightly runs bounded
-  exhaustive enumeration, larger seeds, and differential warnings. Release
-  runs all frozen vectors through C++, native/WASM, IPC, TypeScript, Rust, and
-  Python with separate semantic, diagnostic, and canonical-byte assertions.
+  deterministic seed subset, and critical mutations. The conventional
+  extended/nightly profile runs monthly for this low-change repository and is
+  also manually dispatchable; it covers bounded exhaustive enumeration,
+  larger seeds, and non-authoritative differential warnings. Release runs all
+  frozen vectors through C++, native/WASM, IPC, TypeScript, Rust, and Python
+  with separate semantic, diagnostic, and canonical-byte assertions.
 - Compare id-renamed cases with a geometry-only projection or an explicit
   renaming map because provenance bytes and digests may change. Empty-operation
   properties use the governed zero-operand-stage semantics.

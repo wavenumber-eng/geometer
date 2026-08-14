@@ -161,3 +161,6 @@ jobs:
 
       - name: Run extended native/WASM seeded properties
         run: uv run python scripts/validate_exact_boolean_seeded_property_parity.py --profile nightly --wasm out/analytic-synthetic-wasm/geometer_exact_boolean_seeded_property_test.cjs
+
+      - name: Run non-authoritative Clipper2 differential warnings
+        run: build-native-linux-x64/tests/cpp/geometer_exact_rectangle_enumeration_test --differential-only

@@ -942,6 +942,16 @@ component count. The per-case actual occupancy, actual canonical directed-edge
 projection, component, vertex, and fragment signature is digest-locked and
 identical under native and Emscripten execution.
 
+The native scheduled lane additionally projects the 117 enumeration cases of
+the form one union followed only by differences through the existing Clipper2
+planar solver. This comparison is explicitly warning-only: it cannot accept or
+reject exact geometry. The governed baseline reports two useful disagreements.
+After subtracting opposite diagonal unit cells from the full `2x2` rectangle,
+the exact regularized oracle returns two point-contact components, while
+Clipper2 reports one component with the same area; both subtraction orders are
+recorded with complete replay descriptors. The monthly/manual workflow emits
+these warnings to its job log as investigation evidence.
+
 ### Deterministic Seeded Rectangle Properties
 
 The pull-request property lane uses a repository-owned SplitMix64 generator

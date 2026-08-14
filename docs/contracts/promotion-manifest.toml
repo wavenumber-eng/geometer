@@ -251,7 +251,7 @@ rectangle_enumeration_test = "tests/cpp/exact_rectangle_enumeration_test.cpp"
 rectangle_enumeration_parity_validator = "scripts/validate_exact_rectangle_enumeration_parity.py"
 rectangle_enumeration_grid = "2x2_integer_unit_cells"
 rectangle_enumeration_cases = 558
-rectangle_enumeration_sha256 = "a40df2229ca6396d9087409fa25d91c5b470d195359dd53aa6811cc3fc7ba9a2"
+rectangle_enumeration_sha256 = "db0ebca47a53585d7d52312b128a1c77fd345c282481b5415b061401cd5deb74"
 
 [transports]
 generic_c_abi = "implemented_a0"
@@ -737,7 +737,7 @@ status = "design_frozen"
 named_consumer = "appz.data_models.pcb.matz"
 compatibility_snapshot = "docs/contracts/compatibility/data-models-geom-a0-2026-08-12.toml"
 design = "docs/design/analytic-planar-boolean-a0.md"
-design_sha256 = "3b646e17168eb21b7850133b88ee1a2235e1a1e06f63093c5a2b9da9ba8b177e"
+design_sha256 = "041336f403d7c7166f907314904753b93fe7e73b53485f1651e58efae9ad85b7"
 packet_spec = "docs/design/analytic-planar-boolean-packet-a0.md"
 packet_spec_sha256 = "85d5b6cda87c4b34cd8c38f743ee5b35bf490b58fc1fb0824d25be436b0dc887"
 numeric_catalog = "docs/contracts/analytic-planar-boolean-a0-catalog.toml"

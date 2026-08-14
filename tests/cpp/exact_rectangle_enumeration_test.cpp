@@ -196,6 +196,105 @@ std::int64_t signed_double_area(const ExactNormalizedBooleanResult& result)
     return area;
 }
 
+std::uint32_t directed_edge_code(std::int64_t x0, std::int64_t y0, std::int64_t x1, std::int64_t y1)
+{
+    require(0 <= x0 && x0 <= 2 && 0 <= y0 && y0 <= 2 && 0 <= x1 && x1 <= 2 && 0 <= y1 && y1 <= 2,
+            "rectangle enumeration boundary left the 2x2 grid");
+    return static_cast<std::uint32_t>((((y0 * 3 + x0) * 3 + y1) * 3) + x1);
+}
+
+std::vector<std::uint32_t> expected_boundary(std::uint8_t mask)
+{
+    std::vector<std::uint32_t> edges;
+    auto append_if_exterior = [&](std::uint32_t cell, std::int32_t neighbor, std::int64_t x0,
+                                  std::int64_t y0, std::int64_t x1, std::int64_t y1)
+    {
+        if ((mask & static_cast<std::uint8_t>(1U << cell)) != 0 &&
+            (neighbor < 0 || (mask & static_cast<std::uint8_t>(1U << neighbor)) == 0))
+            edges.push_back(directed_edge_code(x0, y0, x1, y1));
+    };
+    for (std::uint32_t cell = 0; cell < 4; ++cell)
+    {
+        const std::int64_t x = cell % 2;
+        const std::int64_t y = cell / 2;
+        append_if_exterior(cell, y == 0 ? -1 : static_cast<std::int32_t>(cell - 2), x, y, x + 1, y);
+        append_if_exterior(cell, x == 1 ? -1 : static_cast<std::int32_t>(cell + 1), x + 1, y, x + 1,
+                           y + 1);
+        append_if_exterior(cell, y == 1 ? -1 : static_cast<std::int32_t>(cell + 2), x + 1, y + 1, x,
+                           y + 1);
+        append_if_exterior(cell, x == 0 ? -1 : static_cast<std::int32_t>(cell - 1), x, y + 1, x, y);
+    }
+    std::sort(edges.begin(), edges.end());
+    return edges;
+}
+
+std::vector<std::uint32_t> actual_boundary(const ExactNormalizedBooleanResult& result)
+{
+    std::vector<std::uint32_t> edges;
+    for (const ExactNormalizedResultFragment& fragment : result.fragments())
+    {
+        const ExactNormalizedResultVertex& start = result.vertices()[fragment.start_vertex];
+        const ExactNormalizedResultVertex& end = result.vertices()[fragment.end_vertex];
+        const std::int64_t dx = end.x_nm - start.x_nm;
+        const std::int64_t dy = end.y_nm - start.y_nm;
+        require((dx == 0) != (dy == 0), "rectangle enumeration boundary is not axis aligned");
+        const std::int64_t length = std::max(std::llabs(dx), std::llabs(dy));
+        const std::int64_t step_x = (dx > 0) - (dx < 0);
+        const std::int64_t step_y = (dy > 0) - (dy < 0);
+        require(length == std::llabs(dx) + std::llabs(dy),
+                "rectangle enumeration boundary is not a unit-grid carrier");
+        for (std::int64_t offset = 0; offset < length; ++offset)
+        {
+            const std::int64_t x0 = start.x_nm + offset * step_x;
+            const std::int64_t y0 = start.y_nm + offset * step_y;
+            edges.push_back(directed_edge_code(x0, y0, x0 + step_x, y0 + step_y));
+        }
+    }
+    std::sort(edges.begin(), edges.end());
+    require(std::adjacent_find(edges.begin(), edges.end()) == edges.end(),
+            "rectangle enumeration boundary contains a duplicate directed unit edge");
+    return edges;
+}
+
+std::uint8_t occupancy_from_boundary(const std::vector<std::uint32_t>& edges)
+{
+    std::uint8_t mask = 0;
+    for (std::int64_t cell_y = 0; cell_y < 2; ++cell_y)
+        for (std::int64_t cell_x = 0; cell_x < 2; ++cell_x)
+        {
+            std::int32_t winding = 0;
+            for (const std::uint32_t code : edges)
+            {
+                std::uint32_t value = code;
+                const std::int64_t x1 = value % 3;
+                value /= 3;
+                const std::int64_t y1 = value % 3;
+                value /= 3;
+                const std::int64_t x0 = value % 3;
+                const std::int64_t y0 = value / 3;
+                if (x0 != x1 || x0 <= cell_x)
+                    continue;
+                if (y0 <= cell_y && cell_y < y1)
+                    ++winding;
+                else if (y1 <= cell_y && cell_y < y0)
+                    --winding;
+            }
+            require(winding == 0 || winding == 1,
+                    "rectangle enumeration boundary has invalid material winding");
+            if (winding == 1)
+                mask |= static_cast<std::uint8_t>(1U << static_cast<unsigned>(cell_y * 2 + cell_x));
+        }
+    return mask;
+}
+
+std::string boundary_signature(const std::vector<std::uint32_t>& edges)
+{
+    std::ostringstream signature;
+    for (const std::uint32_t edge : edges)
+        signature << edge << '.';
+    return signature.str();
+}
+
 std::string run_case(const std::vector<StageInput>& inputs)
 {
     static std::uint32_t next_case = 0;
@@ -229,6 +328,11 @@ std::string run_case(const std::vector<StageInput>& inputs)
 
     const std::uint8_t mask = expected_mask(inputs);
     const std::uint32_t components = component_count(mask);
+    const std::vector<std::uint32_t> projected_boundary = actual_boundary(*normalized.value);
+    require(occupancy_from_boundary(projected_boundary) == mask,
+            "enumeration normalized occupancy disagrees with unit-cell oracle");
+    require(projected_boundary == expected_boundary(mask),
+            "enumeration normalized boundary disagrees with unit-cell oracle");
     require(signed_double_area(*normalized.value) == 2 * bit_count(mask),
             "enumeration normalized area disagrees with unit-cell oracle");
     require(normalized.value->regions().size() == components &&
@@ -236,7 +340,8 @@ std::string run_case(const std::vector<StageInput>& inputs)
             "enumeration component count disagrees with unit-cell oracle");
 
     std::ostringstream signature;
-    signature << static_cast<unsigned>(mask) << ',' << components << ','
+    signature << static_cast<unsigned>(occupancy_from_boundary(projected_boundary)) << ','
+              << boundary_signature(projected_boundary) << ',' << components << ','
               << normalized.value->vertices().size() << ',' << normalized.value->fragments().size()
               << ';';
     return signature.str();

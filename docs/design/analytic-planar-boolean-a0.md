@@ -897,13 +897,17 @@ in total.
 
 The input boundaries are split at every integer grid vertex before exact
 arrangement construction. An independent four-unit-cell oracle evaluates the
-ordered set operations and expected four-neighbor connected-component count.
-Every arrangement face must match the independently replayed stage value.
-Final normalized fragments must remain analytic lines, exact signed shoelace
-area must equal the occupied-cell area, and normalized region/ring counts must
-equal the oracle component count. The per-case mask, component, vertex, and
-fragment signature is digest-locked and identical under native and
-Emscripten execution.
+ordered set operations, directed exterior unit-edge set, and expected
+four-neighbor connected-component count. Every arrangement face must match the
+independently replayed stage value. Final normalized fragments must remain
+analytic lines. The test expands their actual directed boundaries into unit
+edges, independently reconstructs cell occupancy by a winding query at each
+cell center, and requires both the actual occupancy mask and exact directed
+edge set to equal the oracle. Exact signed shoelace area must equal the
+occupied-cell area, and normalized region/ring counts must equal the oracle
+component count. The per-case actual occupancy, actual canonical directed-edge
+projection, component, vertex, and fragment signature is digest-locked and
+identical under native and Emscripten execution.
 
 ### OCCT 8.0.1 Qualification
 

@@ -15,7 +15,7 @@ _RECTANGLE_ENUMERATION_GATE: dict[str, Any] = {
     "rectangle_enumeration_parity_validator": "scripts/validate_exact_rectangle_enumeration_parity.py",
     "rectangle_enumeration_grid": "2x2_integer_unit_cells",
     "rectangle_enumeration_cases": 558,
-    "rectangle_enumeration_sha256": "a40df2229ca6396d9087409fa25d91c5b470d195359dd53aa6811cc3fc7ba9a2",
+    "rectangle_enumeration_sha256": "db0ebca47a53585d7d52312b128a1c77fd345c282481b5415b061401cd5deb74",
 }
 
 

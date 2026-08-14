@@ -372,7 +372,8 @@ def test_exact_algebraic_backend_design_gate_is_closed() -> None:
         "production_solver_allowed": False,
         "design_review_revision": "a8c9604de280e2a67018e1106fd1b430b34fcf50",
         "design_review_packet": "reviewer-019ffd1f-3c67-7001-87a5-200b6cda10d8",
-        "implemented_surface": "budgeted_exact_intersections_nm_normalization_curve_domain_half_edge_face_classification_stage_lineage_result_region_provenance_operand_outcome_and_grid_exact_result_normalization_feasibility",
+        "implemented_surface": "budgeted_exact_intersections_nm_normalization_curve_domain_half_edge_face_classification_stage_lineage_result_region_provenance_operand_outcome_and_certified_arc_result_normalization_feasibility",
+        "arc_distance_source": "src/cpp/lib/exact_arc_distance.cpp",
         "result_normalization_source": "src/cpp/lib/exact_result_normalization.cpp",
         "boolean_outcomes_source": "src/cpp/lib/exact_boolean_outcomes.cpp",
         "boolean_provenance_source": "src/cpp/lib/exact_boolean_provenance.cpp",
@@ -442,7 +443,7 @@ def test_exact_algebraic_backend_design_gate_is_closed() -> None:
         "boolean_outcomes_vector_storage_bytes": 11584,
         "result_normalization_test": "tests/cpp/exact_result_normalization_test.cpp",
         "result_normalization_parity_validator": "scripts/validate_exact_result_normalization_parity.py",
-        "result_normalization_vector_sha256": "bb41b54ebd52dba0407c245c3d4cbd24c4ba2b28c7fc5a07a0df4603f67ffe58",
+        "result_normalization_vector_sha256": "db3be0a6e7bfc88bde2435bc603569d9dac18d8d320a32e2d0e48a8e00e469ea",
     }
     assert (ROOT / backend["design"]).is_file()
     assert _sha256(ROOT / backend["design"]) == backend["design_sha256"]
@@ -456,6 +457,7 @@ def test_exact_algebraic_backend_design_gate_is_closed() -> None:
         "geometry_source",
         "normalization_source",
         "curve_domain_source",
+        "arc_distance_source",
         "boolean_outcomes_source",
         "result_normalization_source",
         "boolean_provenance_source",

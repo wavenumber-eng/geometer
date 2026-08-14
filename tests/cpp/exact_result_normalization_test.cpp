@@ -1,3 +1,4 @@
+#include "geometer/exact_arc_distance.h"
 #include "geometer/exact_result_normalization.h"
 
 #include <cstdlib>
@@ -82,6 +83,96 @@ Pipeline build_pipeline(ConstructionArena& arena, const std::vector<ExactAtomicC
     return pipeline;
 }
 
+ExactCircularArc minor_quarter_arc(ConstructionArena& arena)
+{
+    const ExactPoint center = point(arena, 0, 1, 0, 1);
+    const ConstructionNodeId radius = rational(arena, 5);
+    const ExactPoint start = point(arena, 5, 1, 0, 1);
+    const ExactPoint end = point(arena, 0, 1, 5, 1);
+    return {{center, radius}, start, end, true, false};
+}
+
+void require_arc_distance_predicates()
+{
+    Budget budget({8'000'000'000, 268'435'456});
+    ConstructionArena arena(budget);
+    const ExactPoint center = point(arena, 0, 1, 0, 1);
+    const ExactCircularArc inner{{center, rational(arena, 5)},
+                                 point(arena, 5, 1, 0, 1),
+                                 point(arena, 0, 1, 5, 1),
+                                 true,
+                                 false};
+    const ExactCircularArc outer{{center, rational(arena, 6)},
+                                 point(arena, 6, 1, 0, 1),
+                                 point(arena, 0, 1, 6, 1),
+                                 true,
+                                 false};
+    const ExactCircularArc major{{center, rational(arena, 5)},
+                                 point(arena, 0, 1, 5, 1),
+                                 point(arena, 5, 1, 0, 1),
+                                 true,
+                                 true};
+    const ExactPoint translated_center = point(arena, 3, 4, 1, 1);
+    const ExactCircularArc translated{{translated_center, rational(arena, 5)},
+                                      point(arena, 23, 4, 1, 1),
+                                      point(arena, 3, 4, 6, 1),
+                                      true,
+                                      false};
+
+    ExactPredicateResult identical = exact_arc_hausdorff_within(arena, inner, inner, 0, 1);
+    require(identical.error == Error::none && identical.value && *identical.value,
+            "identical arc must have zero Hausdorff distance");
+    ExactPredicateResult radial_boundary = exact_arc_hausdorff_within(arena, inner, outer, 1, 1);
+    require(radial_boundary.error == Error::none && radial_boundary.value && *radial_boundary.value,
+            "concentric arcs must meet their exact radial-distance bound");
+    ExactPredicateResult radial_outside = exact_arc_hausdorff_within(arena, inner, outer, 1, 2);
+    require(radial_outside.error == Error::none && radial_outside.value && !*radial_outside.value,
+            "concentric arcs must reject a bound below their radial distance");
+    ExactPredicateResult major_identical = exact_arc_hausdorff_within(arena, major, major, 0, 1);
+    require(major_identical.error == Error::none && major_identical.value && *major_identical.value,
+            "identical major arcs must have zero Hausdorff distance");
+    ExactPredicateResult translated_boundary =
+        exact_arc_hausdorff_within(arena, inner, translated, 5, 4);
+    require(translated_boundary.error == Error::none && translated_boundary.value &&
+                *translated_boundary.value,
+            "translated arcs must meet the exact 1.25 nm boundary");
+    ExactPredicateResult translated_outside =
+        exact_arc_hausdorff_within(arena, inner, translated, 6, 5);
+    require(translated_outside.error == Error::none && translated_outside.value &&
+                !*translated_outside.value,
+            "translated arcs must reject a bound below exact displacement");
+    ExactPredicateResult invalid_threshold = exact_arc_hausdorff_within(arena, inner, outer, 1, 0);
+    require(invalid_threshold.error == Error::invalid_argument && !invalid_threshold.value,
+            "invalid Hausdorff threshold must fail closed");
+
+    Budget measured_budget({2'000'000'000, 268'435'456});
+    ConstructionArena measured_arena(measured_budget);
+    const ExactCircularArc measured = minor_quarter_arc(measured_arena);
+    const BudgetUsage input_usage = measured_budget.usage();
+
+    Budget short_work_budget(
+        {input_usage.work_units + 16'383, 268'435'456, 100'000'000, 100'000'000});
+    ConstructionArena short_work_arena(short_work_budget);
+    const ExactCircularArc short_work_arc = minor_quarter_arc(short_work_arena);
+    const std::uint64_t short_work_storage = short_work_budget.usage().owned_bytes;
+    ExactPredicateResult short_work =
+        exact_arc_hausdorff_within(short_work_arena, short_work_arc, short_work_arc, 0, 1);
+    require(short_work.error == Error::resource_limit_exceeded && !short_work.value &&
+                short_work_budget.usage().owned_bytes == short_work_storage,
+            "one-unit-short arc work budget must fail without retaining storage");
+
+    Budget short_storage_budget(
+        {2'000'000'000, input_usage.owned_bytes + 16'383, 100'000'000, 100'000'000});
+    ConstructionArena short_storage_arena(short_storage_budget);
+    const ExactCircularArc short_storage_arc = minor_quarter_arc(short_storage_arena);
+    const std::uint64_t retained_before_short = short_storage_budget.usage().owned_bytes;
+    ExactPredicateResult short_storage =
+        exact_arc_hausdorff_within(short_storage_arena, short_storage_arc, short_storage_arc, 0, 1);
+    require(short_storage.error == Error::resource_limit_exceeded && !short_storage.value &&
+                short_storage_budget.usage().owned_bytes == retained_before_short,
+            "one-byte-short arc storage budget must fail without retaining storage");
+}
+
 std::string signature(const ExactNormalizedBooleanResult& result)
 {
     std::ostringstream out;
@@ -108,6 +199,8 @@ std::string signature(const ExactNormalizedBooleanResult& result)
 
 int main()
 {
+    require_arc_distance_predicates();
+
     Budget empty_budget({2'000'000'000, 268'435'456});
     ConstructionArena empty_arena(empty_budget);
     const std::vector<ExactAtomicCurve> empty_curves;
@@ -195,7 +288,7 @@ int main()
                     !fragment.major_arc,
                 "normalized half-circle replay is incoherent");
 
-    Budget moved_arc_budget({2'000'000'000, 268'435'456});
+    Budget moved_arc_budget({8'000'000'000, 268'435'456});
     ConstructionArena moved_arc_arena(moved_arc_budget);
     const ExactPoint moved_center = point(moved_arc_arena, 1, 4, 1, 4);
     const ExactPoint moved_left = point(moved_arc_arena, -19, 4, 1, 4);
@@ -225,9 +318,9 @@ int main()
     ExactNormalizedBooleanResultResult moved_arc_result =
         normalize_exact_boolean_result(moved_arc_arena, *moved_arc.arrangement.value,
                                        *moved_arc.selection.value, *moved_arc.regions.value);
-    require(moved_arc_result.error == ExactResultNormalizationError::normalization_error_exceeded &&
-                !moved_arc_result.value,
-            "uncertified moved-arc replay must fail closed");
+    require(moved_arc_result.error == ExactResultNormalizationError::none &&
+                moved_arc_result.value && moved_arc_result.value->fragments().size() == 2,
+            "certified moved-arc replay failed");
 
     Budget collapse_budget({2'000'000'000, 268'435'456});
     ConstructionArena collapse_arena(collapse_budget);
@@ -246,6 +339,7 @@ int main()
 
     std::cout << "EXACT_RESULT_NORMALIZATION_VECTOR=ERN1:" << signature(*normalized_empty.value)
               << '|' << signature(*normalized_box.value) << '|'
-              << signature(*normalized_circle.value) << '\n';
+              << signature(*normalized_circle.value) << '|' << signature(*moved_arc_result.value)
+              << '\n';
     return 0;
 }

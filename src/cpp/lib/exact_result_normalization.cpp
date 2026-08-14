@@ -1,5 +1,6 @@
 #include "geometer/exact_result_normalization.h"
 
+#include "geometer/exact_arc_distance.h"
 #include "geometer/exact_normalization.h"
 
 #include <algorithm>
@@ -218,11 +219,6 @@ ExactResultNormalizationError normalize_point(ConstructionArena& arena, const Ex
                            : ExactResultNormalizationError::normalization_error_exceeded;
 }
 
-bool same_value(ConstructionBuilder& builder, ConstructionNodeId left, ConstructionNodeId right)
-{
-    return builder.compare(left, right) == 0 && builder.good();
-}
-
 struct ReplayFragment
 {
     ExactAtomicCurve curve;
@@ -284,13 +280,6 @@ make_replay_fragment(ConstructionArena& arena, const ExactArrangement& arrangeme
     const ConstructionNodeId radius_node = builder.rational(*radius.value);
     const ExactPoint& original_start = arrangement.vertices()[half_edge.origin_vertex].point;
     const ExactPoint& original_end = arrangement.vertices()[twin.origin_vertex].point;
-    if (!same_value(builder, original_start.x, start.exact.x) ||
-        !same_value(builder, original_start.y, start.exact.y) ||
-        !same_value(builder, original_end.x, end.exact.x) ||
-        !same_value(builder, original_end.y, end.exact.y) ||
-        !same_value(builder, edge.circle.radius, radius_node))
-        return builder.good() ? ExactResultNormalizationError::normalization_error_exceeded
-                              : map_error(builder.error());
 
     const ConstructionNodeId two = builder.rational(2);
     const ConstructionNodeId four = builder.rational(4);
@@ -322,15 +311,20 @@ make_replay_fragment(ConstructionArena& arena, const ExactArrangement& arrangeme
     const ConstructionNodeId center_y = builder.sum(midpoint_y, y_offset);
     if (!builder.good())
         return map_error(builder.error());
-    if (!same_value(builder, center_x, edge.circle.center.x) ||
-        !same_value(builder, center_y, edge.circle.center.y))
-        return builder.good() ? ExactResultNormalizationError::invalid_argument
-                              : map_error(builder.error());
-
     replay.curve.circle = {{center_x, center_y}, radius_node};
     replay.curve.counterclockwise = counterclockwise;
     replay.curve.major_arc = edge.major_arc;
     replay.curve.memberships.push_back({replay.coverage.occurrence_id, counterclockwise});
+    const ExactCircularArc original_arc{edge.circle, original_start, original_end, counterclockwise,
+                                        edge.major_arc};
+    const ExactCircularArc replay_arc{replay.curve.circle, replay.curve.start, replay.curve.end,
+                                      counterclockwise, edge.major_arc};
+    ExactPredicateResult certified =
+        exact_arc_hausdorff_within(arena, original_arc, replay_arc, 5, 4);
+    if (certified.error != Error::none || !certified.value)
+        return map_error(certified.error);
+    if (!*certified.value)
+        return ExactResultNormalizationError::normalization_error_exceeded;
     return ExactResultNormalizationError::none;
 }
 

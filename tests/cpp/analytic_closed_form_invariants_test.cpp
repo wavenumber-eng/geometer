@@ -412,12 +412,27 @@ void require_unchanged_directed_fragments(const AnalyticResultPacketRecords& bas
     }
 }
 
+void require_unchanged_source_identities(const AnalyticResultPacketRecords& base,
+                                         const AnalyticResultPacketRecords& transformed,
+                                         const std::string& name)
+{
+    for (std::size_t index = 0; index < base.source_references.size(); ++index)
+    {
+        const auto& left = base.source_references[index];
+        const auto& right = transformed.source_references[index];
+        require(left.operand_id == right.operand_id && left.primary_id == right.primary_id &&
+                    left.secondary_id == right.secondary_id,
+                name + " changed source identity");
+    }
+}
+
 void require_translation_relation(const AnalyticResultPacketRecords& base,
                                   const AnalyticResultPacketRecords& transformed, std::int64_t dx,
                                   std::int64_t dy)
 {
     require_common_record_fields(base, transformed, "translation");
     require_unchanged_directed_fragments(base, transformed, 1, "translation");
+    require_unchanged_source_identities(base, transformed, "translation");
     for (std::size_t index = 0; index < base.vertices.size(); ++index)
         require(transformed.vertices[index].x_nm == base.vertices[index].x_nm + dx &&
                     transformed.vertices[index].y_nm == base.vertices[index].y_nm + dy,
@@ -429,6 +444,7 @@ void require_rotation_relation(const AnalyticResultPacketRecords& base,
 {
     require_common_record_fields(base, transformed, "rotation_90");
     require_unchanged_directed_fragments(base, transformed, 1, "rotation_90");
+    require_unchanged_source_identities(base, transformed, "rotation_90");
     for (std::size_t index = 0; index < base.vertices.size(); ++index)
         require(transformed.vertices[index].x_nm == -base.vertices[index].y_nm &&
                     transformed.vertices[index].y_nm == base.vertices[index].x_nm,
@@ -439,6 +455,7 @@ void require_reflection_relation(const AnalyticResultPacketRecords& base,
                                  const AnalyticResultPacketRecords& transformed)
 {
     require_common_record_fields(base, transformed, "reflection");
+    require_unchanged_source_identities(base, transformed, "reflection");
     for (std::size_t index = 0; index < base.vertices.size(); ++index)
         require(transformed.vertices[index].x_nm == -base.vertices[index].x_nm &&
                     transformed.vertices[index].y_nm == base.vertices[index].y_nm,
@@ -464,6 +481,7 @@ void require_scaling_relation(const AnalyticResultPacketRecords& base,
 {
     require_common_record_fields(base, transformed, "integer_scaling");
     require_unchanged_directed_fragments(base, transformed, factor, "integer_scaling");
+    require_unchanged_source_identities(base, transformed, "integer_scaling");
     for (std::size_t index = 0; index < base.vertices.size(); ++index)
         require(transformed.vertices[index].x_nm == base.vertices[index].x_nm * factor &&
                     transformed.vertices[index].y_nm == base.vertices[index].y_nm * factor,

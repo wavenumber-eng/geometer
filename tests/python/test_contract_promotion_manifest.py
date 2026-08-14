@@ -438,7 +438,7 @@ def test_exact_algebraic_backend_design_gate_is_closed() -> None:
         "boolean_outcomes_parity_validator": "scripts/validate_exact_boolean_outcomes_parity.py",
         "boolean_outcomes_vector_sha256": "e8cfe16cf62b1f074537415eb9a8ddfe2d9d7d6bdebb70abe152d8b3d82744af",
         "boolean_outcomes_vector_success_work_units": 1600,
-        "boolean_outcomes_vector_storage_bytes": 6016,
+        "boolean_outcomes_vector_storage_bytes": 11584,
     }
     assert (ROOT / backend["design"]).is_file()
     assert _sha256(ROOT / backend["design"]) == backend["design_sha256"]

@@ -98,6 +98,53 @@ bool has_event(const ExactBooleanOutcomes& outcomes, std::uint64_t operand,
                        { return event.operand_id == operand && event.kind == kind; });
 }
 
+struct RepeatedSourceRun
+{
+    Error error = Error::none;
+    bool has_value = false;
+    BudgetUsage usage;
+};
+
+RepeatedSourceRun run_repeated_source_box(std::uint32_t repetitions,
+                                          std::uint64_t outcome_storage_limit)
+{
+    Budget geometry_budget({2'000'000'000, 268'435'456});
+    ConstructionArena arena(geometry_budget);
+    std::vector<ExactAtomicCurve> curves;
+    std::vector<ExactCoverageOccurrence> coverages;
+    std::vector<ExactOccurrenceSource> sources;
+    for (std::uint32_t repetition = 0; repetition < repetitions; ++repetition)
+        append_box(arena, 0, 12, 100 + repetition * 10, 10, 1000, curves, coverages, sources);
+    ExactArrangementResult arrangement = build_exact_arrangement(arena, curves, coverages);
+    require(arrangement.error == Error::none && arrangement.value,
+            "repeated-source arrangement failed");
+    require(arrangement.value->edges().size() == 4 &&
+                arrangement.value->memberships().size() == repetitions * 4,
+            "repeated coincident sources must scale memberships without scaling topology");
+
+    const std::vector<ExactBooleanStage> stages{
+        {10, ExactBooleanStageOperation::union_, {{10, 1000}}},
+    };
+    Budget selection_budget({2'000'000'000, 268'435'456});
+    ExactBooleanSelectionResult selection =
+        evaluate_exact_boolean_stages(selection_budget, *arrangement.value, stages);
+    require(selection.error == Error::none && selection.value, "repeated-source selection failed");
+    Budget region_budget({2'000'000'000, 268'435'456});
+    ExactBooleanRegionsResult regions =
+        build_exact_boolean_regions(region_budget, *arrangement.value, *selection.value);
+    require(regions.error == Error::none && regions.value, "repeated-source regions failed");
+    Budget provenance_budget({2'000'000'000, 268'435'456});
+    ExactBooleanProvenanceResult provenance = build_exact_boolean_provenance(
+        provenance_budget, *arrangement.value, *selection.value, *regions.value, stages, sources);
+    require(provenance.error == Error::none && provenance.value,
+            "repeated-source provenance failed");
+    Budget outcome_budget({2'000'000'000, outcome_storage_limit});
+    ExactBooleanOutcomesResult outcomes =
+        build_exact_boolean_outcomes(outcome_budget, *arrangement.value, *selection.value,
+                                     *regions.value, *provenance.value, stages, sources);
+    return {outcomes.error, outcomes.value.has_value(), outcome_budget.usage()};
+}
+
 std::string run_scenario(const ExactArrangement& arrangement,
                          const std::vector<ExactOccurrenceSource>& sources,
                          const std::vector<ExactBooleanStage>& stages,
@@ -223,6 +270,25 @@ int main()
     };
     const std::string no_effect = run_scenario(*arrangement.value, sources, no_effect_stages, 3000,
                                                ExactOperandOutcomeKind::no_effect);
+
+    const RepeatedSourceRun sparse_sources = run_repeated_source_box(1, 268'435'456);
+    const RepeatedSourceRun dense_sources = run_repeated_source_box(17, 268'435'456);
+    require(sparse_sources.error == Error::none && sparse_sources.has_value &&
+                dense_sources.error == Error::none && dense_sources.has_value,
+            "repeated-source storage fixtures failed");
+    constexpr std::uint64_t kAddedOccurrences = 16 * 4;
+    constexpr std::uint64_t kAddedMemberships = 16 * 4;
+    constexpr std::uint64_t kOccurrenceLogicalBytes = 192;
+    constexpr std::uint64_t kMembershipLogicalBytes = 16;
+    require(dense_sources.usage.owned_bytes - sparse_sources.usage.owned_bytes ==
+                kAddedOccurrences * kOccurrenceLogicalBytes +
+                    kAddedMemberships * kMembershipLogicalBytes,
+            "outcome storage bound omitted a fixed-topology source-scaled allocation term");
+    const RepeatedSourceRun dense_short =
+        run_repeated_source_box(17, dense_sources.usage.owned_bytes - 1);
+    require(dense_short.error == Error::resource_limit_exceeded && !dense_short.has_value &&
+                dense_short.usage.owned_bytes == 0,
+            "scaled outcome storage boundary must fail without a logical leak");
 
     const BudgetUsage usage = outcome_budget.usage();
     Budget short_work({usage.work_units - 1, 268'435'456});

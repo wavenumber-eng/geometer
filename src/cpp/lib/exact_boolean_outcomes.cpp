@@ -17,6 +17,30 @@ namespace
 constexpr std::uint64_t kMaximumOperands = 4'194'304;
 constexpr std::uint64_t kMaximumEvents = 4'194'304;
 constexpr std::uint64_t kMaximumReferences = 8'388'608;
+constexpr std::uint64_t kMaximumStages = 131'072;
+constexpr std::uint64_t kMaximumFaces = 4'194'304;
+constexpr std::uint64_t kMaximumEdges = 4'194'304;
+constexpr std::uint64_t kMaximumHalfEdges = 8'388'608;
+constexpr std::uint64_t kMaximumMemberships = 8'388'608;
+
+// Portable logical allocation bounds include vector growth (less than twice the final element
+// count) and are deliberately based on the larger supported 64-bit vector/object layout.
+constexpr std::uint64_t kStageStorageBytes = 16; // push-grown stage-id index
+constexpr std::uint64_t kOperandStorageBytes =
+    448; // two state indices, nested references, and three live face-id sets
+constexpr std::uint64_t kOccurrenceStorageBytes =
+    192; // sorted input copy, nested operand sources, and flattened output sources
+constexpr std::uint64_t kMembershipStorageBytes = 16; // push-grown used-occurrence ids
+constexpr std::uint64_t kFaceStorageBytes = 24;       // DSU, root map, and alignment
+constexpr std::uint64_t kEdgeStorageBytes = 16;       // twin-pair map and alignment
+constexpr std::uint64_t kHalfEdgeStorageBytes = 16;   // ring map and visited bits
+constexpr std::uint64_t kRingStorageBytes = 16;       // ring-to-region map and alignment
+constexpr std::uint64_t kRegionStorageBytes = 64;     // nested source-vector object and maps
+constexpr std::uint64_t kRegionSourceStorageBytes =
+    64; // push-grown association plus nested expected source
+constexpr std::uint64_t kEventStorageBytes = 80; // push-grown 40-byte event
+constexpr std::uint64_t kResultReferenceStorageBytes =
+    16; // nested and flattened push-grown u32 references
 
 std::uint64_t checked_add(std::uint64_t left, std::uint64_t right)
 {
@@ -30,6 +54,37 @@ std::uint64_t checked_multiply(std::uint64_t left, std::uint64_t right)
     if (left != 0 && right > std::numeric_limits<std::uint64_t>::max() / left)
         throw std::overflow_error("outcome size multiplication overflow");
     return left * right;
+}
+
+std::uint64_t outcome_storage_charge(std::uint64_t stage_count, std::uint64_t operand_count,
+                                     std::uint64_t occurrence_count, std::uint64_t membership_count,
+                                     std::uint64_t face_count, std::uint64_t edge_count,
+                                     std::uint64_t half_edge_count, std::uint64_t ring_count,
+                                     std::uint64_t region_count, std::uint64_t region_source_count,
+                                     std::uint64_t maximum_events,
+                                     std::uint64_t maximum_result_references)
+{
+    // These portable logical sizes cover vector growth as well as elements. Operand state includes
+    // both sorted indices, the three per-operand reference vectors, and the three live per-face id
+    // sets. Occurrences cover the sorted metadata copy, per-operand sources, and output sources.
+    std::uint64_t charge = 4096;
+    const std::array<std::pair<std::uint64_t, std::uint64_t>, 12> terms{{
+        {stage_count, kStageStorageBytes},
+        {operand_count, kOperandStorageBytes},
+        {occurrence_count, kOccurrenceStorageBytes},
+        {membership_count, kMembershipStorageBytes},
+        {face_count, kFaceStorageBytes},
+        {edge_count, kEdgeStorageBytes},
+        {half_edge_count, kHalfEdgeStorageBytes},
+        {ring_count, kRingStorageBytes},
+        {region_count, kRegionStorageBytes},
+        {region_source_count, kRegionSourceStorageBytes},
+        {maximum_events, kEventStorageBytes},
+        {maximum_result_references, kResultReferenceStorageBytes},
+    }};
+    for (const auto& [count, logical_bytes] : terms)
+        charge = checked_add(charge, checked_multiply(count, logical_bytes));
+    return charge;
 }
 
 class StorageReservation
@@ -770,37 +825,44 @@ ExactBooleanOutcomesResult build_exact_boolean_outcomes(
     try
     {
         const std::uint64_t face_count = arrangement.faces().size();
+        const std::uint64_t edge_count = arrangement.edges().size();
         const std::uint64_t half_edge_count = arrangement.half_edges().size();
+        const std::uint64_t membership_count = arrangement.memberships().size();
+        const std::uint64_t ring_count = regions.rings().size();
+        const std::uint64_t region_count = regions.regions().size();
+        const std::uint64_t region_source_count = regions.positive_sources().size();
+        const std::uint64_t occurrence_count = occurrence_sources.size();
         std::uint64_t operand_count = 0;
         for (const ExactBooleanStage& stage : stages)
             operand_count = checked_add(operand_count, stage.operands.size());
-        if (face_count == 0 || face_count > std::numeric_limits<std::uint32_t>::max() ||
+        if (face_count == 0 || face_count > kMaximumFaces || edge_count > kMaximumEdges ||
+            half_edge_count > kMaximumHalfEdges || membership_count > kMaximumMemberships ||
+            stages.size() > kMaximumStages ||
+            face_count > std::numeric_limits<std::uint32_t>::max() ||
             half_edge_count > std::numeric_limits<std::uint32_t>::max() ||
-            arrangement.edges().size() > std::numeric_limits<std::uint32_t>::max() ||
-            regions.rings().size() > std::numeric_limits<std::uint32_t>::max() ||
-            regions.regions().size() > std::numeric_limits<std::uint32_t>::max() ||
+            edge_count > std::numeric_limits<std::uint32_t>::max() ||
+            ring_count > std::numeric_limits<std::uint32_t>::max() ||
+            region_count > std::numeric_limits<std::uint32_t>::max() ||
             regions.ring_half_edges().size() > kMaximumReferences ||
-            regions.positive_sources().size() > kMaximumReferences ||
+            region_source_count > kMaximumReferences ||
             selection.positive_sources().size() > kMaximumReferences ||
             selection.subtraction_sources().size() > kMaximumReferences ||
-            operand_count > kMaximumOperands || occurrence_sources.size() > kMaximumReferences)
+            operand_count > kMaximumOperands || occurrence_count > kMaximumReferences)
             return failure(Error::resource_limit_exceeded);
         const std::uint64_t maximum_events =
             std::min(kMaximumEvents, checked_multiply(operand_count, 3));
         const std::uint64_t maximum_result_references =
-            std::min(kMaximumReferences,
-                     checked_multiply(operand_count, checked_add(regions.rings().size(),
-                                                                 regions.regions().size())));
-        const std::uint64_t charge = checked_add(
-            4096,
-            checked_add(checked_multiply(operand_count, 192),
-                        checked_add(checked_multiply(maximum_events, 40),
-                                    checked_add(checked_multiply(maximum_result_references, 8),
-                                                checked_multiply(occurrence_sources.size(), 32)))));
+            checked_multiply(operand_count, checked_add(ring_count, region_count));
+        if (maximum_result_references > kMaximumReferences)
+            return failure(Error::resource_limit_exceeded);
+        const std::uint64_t charge = outcome_storage_charge(
+            stages.size(), operand_count, occurrence_count, membership_count, face_count,
+            edge_count, half_edge_count, ring_count, region_count, region_source_count,
+            maximum_events, maximum_result_references);
         const std::uint64_t work = checked_add(
             256, checked_add(checked_multiply(face_count, checked_multiply(operand_count, 4)),
                              checked_add(checked_multiply(half_edge_count, 32),
-                                         checked_multiply(occurrence_sources.size(), 32))));
+                                         checked_multiply(occurrence_count, 32))));
         if (!budget.consume_work(work))
             return failure(Error::resource_limit_exceeded);
         StorageReservation reservation(budget, charge);

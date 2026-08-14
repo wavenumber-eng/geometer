@@ -372,7 +372,7 @@ def test_exact_algebraic_backend_design_gate_is_closed() -> None:
         "production_solver_allowed": False,
         "design_review_revision": "a8c9604de280e2a67018e1106fd1b430b34fcf50",
         "design_review_packet": "reviewer-019ffd1f-3c67-7001-87a5-200b6cda10d8",
-        "implemented_surface": "budgeted_exact_intersections_nm_normalization_curve_domain_half_edge_face_classification_stage_lineage_result_region_provenance_operand_outcome_certified_arc_result_normalization_canonical_source_set_result_packet_layout_typed_record_graph_semantic_canonical_projection_standalone_closure_digest_decoder_enforcement_exact_topology_replay_and_mutation_sentinels_feasibility",
+        "implemented_surface": "budgeted_exact_intersections_nm_normalization_curve_domain_half_edge_face_classification_stage_lineage_result_region_provenance_operand_outcome_certified_arc_result_normalization_canonical_source_set_result_packet_layout_typed_record_graph_semantic_canonical_projection_standalone_closure_digest_decoder_enforcement_exact_topology_replay_mutation_sentinels_and_closed_form_invariants_feasibility",
         "arc_distance_source": "src/cpp/lib/exact_arc_distance.cpp",
         "result_normalization_source": "src/cpp/lib/exact_result_normalization.cpp",
         "source_sets_source": "src/cpp/lib/exact_source_sets.cpp",
@@ -487,6 +487,16 @@ def test_exact_algebraic_backend_design_gate_is_closed() -> None:
             "deep_hierarchy_bound",
             "many_empty_jobs",
         ],
+        "closed_form_invariants_test": "tests/cpp/analytic_closed_form_invariants_test.cpp",
+        "closed_form_invariants_parity_validator": "scripts/validate_analytic_closed_form_invariants_parity.py",
+        "closed_form_invariants": [
+            "rectangle",
+            "circle",
+            "annulus",
+            "capsule",
+            "nested_island",
+        ],
+        "closed_form_invariants_sha256": "5d48ef70718a4728b72a7f70be72915f7623cacfbcb50ef945293ab2130273c7",
     }
     assert (ROOT / backend["design"]).is_file()
     assert _sha256(ROOT / backend["design"]) == backend["design_sha256"]
@@ -552,6 +562,8 @@ def test_exact_algebraic_backend_paths_exist() -> None:
         "result_packet_records_parity_validator",
         "result_packet_topology_test",
         "result_packet_topology_parity_validator",
+        "closed_form_invariants_test",
+        "closed_form_invariants_parity_validator",
     ):
         assert (ROOT / backend[key]).is_file()
 

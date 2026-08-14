@@ -794,6 +794,32 @@ governed sentinel inventory. These sentinels are an implemented subset of the
 larger synthetic-correctness program, not completion of its closed-form,
 degeneracy, exhaustive, property, or between-stage-normalization lanes.
 
+### Closed-Form Analytic Invariants
+
+The pull-request lane also includes an OCCT-independent closed-form oracle for
+controlled normalized result packets. Its initial corpus covers an
+axis-aligned rectangle, a disk, concentric annulus, line-and-semicircle
+capsule, and nested rectangular outer/hole/island topology. The oracle first
+requires exact topology replay, then integrates each directed line or circular
+semicircle independently using Green's theorem. It retains area and perimeter
+as exact rational-plus-pi coefficients rather than comparing floating-point
+approximations. Component, hole, and Euler-characteristic expectations are
+part of the same governed signature, and native and Emscripten must reproduce
+that signature byte for byte.
+
+Full circular arrangement cycles use exact squared-distance containment against
+their common circle carrier. This avoids an artificial algebraic ray-casting
+cost for simple concentric disks while preserving the generic ray oracle for
+mixed line/arc cycles. Diameter-defined packet arcs canonicalize their proven
+zero center offset to rational zero before arrangement replay.
+
+This first oracle intentionally accepts only axis-aligned lines and exact
+semicircles, for which the independent formulas are small and auditable. It is
+evidence for the closed-form lane, not completion of general-arc certified
+integration, tangency/coincidence sweeps, metamorphic properties, exhaustive or
+seeded property testing, lineage scenarios, or production cross-transport
+execution.
+
 ### OCCT 8.0.1 Qualification
 
 Production solver work and conformance-golden freeze require a side-by-side

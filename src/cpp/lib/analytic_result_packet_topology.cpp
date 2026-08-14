@@ -119,8 +119,13 @@ bool append_curve(ConstructionBuilder& builder, const AnalyticResultPacketRecord
             builder.sum(builder.square(dx), builder.square(dy));
         const ConstructionNodeId gap =
             builder.subtract(builder.product(four, builder.square(radius)), chord_squared);
+        const std::int8_t gap_sign = builder.sign(gap);
+        if (!builder.good())
+            return false;
         const ConstructionNodeId scale =
-            builder.square_root(builder.divide(gap, builder.product(four, chord_squared)));
+            gap_sign == 0
+                ? builder.rational(0)
+                : builder.square_root(builder.divide(gap, builder.product(four, chord_squared)));
         const ConstructionNodeId midpoint_x =
             builder.divide(builder.sum(curve.start.x, curve.end.x), two);
         const ConstructionNodeId midpoint_y =

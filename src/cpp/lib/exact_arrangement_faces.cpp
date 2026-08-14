@@ -55,6 +55,42 @@ ExactPredicateResult failure(Error error)
     return {error, std::nullopt};
 }
 
+std::optional<ExactPredicateResult>
+point_in_circular_cycle(ConstructionArena& arena, const ExactPoint& query, const CycleDraft& cycle,
+                        const std::vector<ExactArrangementEdge>& edges,
+                        const std::vector<ExactArrangementHalfEdge>& half_edges)
+{
+    if (cycle.half_edges.empty())
+        return failure(Error::invalid_argument);
+    const ExactArrangementEdge& first = edges[half_edges[cycle.half_edges.front()].edge];
+    if (first.kind != ExactAtomicCurveKind::circular_arc)
+        return std::nullopt;
+    for (const std::uint32_t half_edge_id : cycle.half_edges)
+    {
+        const ExactArrangementEdge& edge = edges[half_edges[half_edge_id].edge];
+        if (edge.kind != ExactAtomicCurveKind::circular_arc)
+            return std::nullopt;
+        const ExactPredicateResult same =
+            same_exact_circle_carrier(arena, first.circle, edge.circle);
+        if (same.error != Error::none || !same.value)
+            return failure(same.error == Error::none ? Error::invalid_argument : same.error);
+        if (!*same.value)
+            return std::nullopt;
+    }
+    ConstructionArenaTransaction transaction(arena);
+    ConstructionBuilder builder(arena);
+    const ConstructionNodeId dx = builder.subtract(query.x, first.circle.center.x);
+    const ConstructionNodeId dy = builder.subtract(query.y, first.circle.center.y);
+    const ConstructionNodeId distance_squared = builder.sum(builder.square(dx), builder.square(dy));
+    const ConstructionNodeId radius_squared = builder.square(first.circle.radius);
+    const std::int8_t order = builder.compare(distance_squared, radius_squared);
+    if (!builder.good())
+        return failure(builder.error());
+    if (order == 0)
+        return failure(Error::invalid_argument);
+    return ExactPredicateResult{Error::none, order < 0};
+}
+
 ExactPredicateResult point_in_cycle(ConstructionArena& arena, const ExactPoint& query,
                                     const CycleDraft& cycle,
                                     const std::vector<ExactArrangementVertex>& vertices,
@@ -63,6 +99,8 @@ ExactPredicateResult point_in_cycle(ConstructionArena& arena, const ExactPoint& 
 {
     try
     {
+        if (const auto circular = point_in_circular_cycle(arena, query, cycle, edges, half_edges))
+            return *circular;
         ConstructionArenaTransaction transaction(arena);
         ConstructionBuilder builder(arena);
         const ConstructionNodeId one = builder.rational(1);

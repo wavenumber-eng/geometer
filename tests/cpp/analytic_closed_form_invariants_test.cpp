@@ -311,6 +311,185 @@ std::string packet_digest(const AnalyticResultPacketRecords& records)
     return sha256_hex(encoded.value->data(), encoded.value->size());
 }
 
+void require_common_record_fields(const AnalyticResultPacketRecords& base,
+                                  const AnalyticResultPacketRecords& transformed,
+                                  const std::string& name)
+{
+    require(base.job_results.size() == transformed.job_results.size() &&
+                base.vertices.size() == transformed.vertices.size() &&
+                base.fragments.size() == transformed.fragments.size() &&
+                base.rings.size() == transformed.rings.size() &&
+                base.regions.size() == transformed.regions.size() &&
+                base.source_sets.size() == transformed.source_sets.size() &&
+                base.source_references.size() == transformed.source_references.size(),
+            name + " changed record counts");
+    require(base.diagnostics.empty() && transformed.diagnostics.empty() &&
+                base.operand_events.empty() && transformed.operand_events.empty() &&
+                base.relationship_results.empty() && transformed.relationship_results.empty() &&
+                base.relationship_pairs.empty() && transformed.relationship_pairs.empty() &&
+                base.ring_region_references == transformed.ring_region_references &&
+                base.source_reference_indices == transformed.source_reference_indices,
+            name + " changed non-geometric tables");
+    for (std::size_t index = 0; index < base.job_results.size(); ++index)
+    {
+        const auto& left = base.job_results[index];
+        const auto& right = transformed.job_results[index];
+        require(left.job_id == right.job_id && left.status == right.status &&
+                    left.diagnostic_begin == right.diagnostic_begin &&
+                    left.diagnostic_count == right.diagnostic_count &&
+                    left.result_region_begin == right.result_region_begin &&
+                    left.result_region_count == right.result_region_count &&
+                    left.operand_event_begin == right.operand_event_begin &&
+                    left.operand_event_count == right.operand_event_count,
+                name + " changed job projection");
+    }
+    for (std::size_t index = 0; index < base.vertices.size(); ++index)
+    {
+        const auto& left = base.vertices[index];
+        const auto& right = transformed.vertices[index];
+        require(left.id == right.id &&
+                    left.intersection_source_set == right.intersection_source_set &&
+                    left.flags == right.flags,
+                name + " changed vertex identity/provenance");
+    }
+    for (std::size_t index = 0; index < base.fragments.size(); ++index)
+    {
+        const auto& left = base.fragments[index];
+        const auto& right = transformed.fragments[index];
+        require(left.id == right.id && left.kind == right.kind &&
+                    left.major_arc == right.major_arc &&
+                    left.positive_source_set == right.positive_source_set &&
+                    left.subtraction_source_set == right.subtraction_source_set,
+                name + " changed fragment identity/provenance");
+    }
+    for (std::size_t index = 0; index < base.rings.size(); ++index)
+    {
+        const auto& left = base.rings[index];
+        const auto& right = transformed.rings[index];
+        require(left.id == right.id &&
+                    left.fragment_reference_begin == right.fragment_reference_begin &&
+                    left.fragment_reference_count == right.fragment_reference_count &&
+                    left.parent_ring == right.parent_ring && left.depth == right.depth &&
+                    left.flags == right.flags,
+                name + " changed ring hierarchy");
+    }
+    for (std::size_t index = 0; index < base.regions.size(); ++index)
+    {
+        const auto& left = base.regions[index];
+        const auto& right = transformed.regions[index];
+        require(left.id == right.id && left.outer_ring == right.outer_ring &&
+                    left.positive_source_set == right.positive_source_set,
+                name + " changed result regions");
+    }
+    for (std::size_t index = 0; index < base.source_sets.size(); ++index)
+    {
+        const auto& left = base.source_sets[index];
+        const auto& right = transformed.source_sets[index];
+        require(left.source_reference_index_begin == right.source_reference_index_begin &&
+                    left.source_reference_index_count == right.source_reference_index_count,
+                name + " changed source-set projection");
+    }
+    for (std::size_t index = 0; index < base.source_references.size(); ++index)
+        require(base.source_references[index].kind == transformed.source_references[index].kind &&
+                    base.source_references[index].role == transformed.source_references[index].role,
+                name + " changed source kind/role");
+}
+
+void require_unchanged_directed_fragments(const AnalyticResultPacketRecords& base,
+                                          const AnalyticResultPacketRecords& transformed,
+                                          std::int64_t radius_factor, const std::string& name)
+{
+    require(base.fragment_references == transformed.fragment_references,
+            name + " changed ring traversal");
+    for (std::size_t index = 0; index < base.fragments.size(); ++index)
+    {
+        const auto& left = base.fragments[index];
+        const auto& right = transformed.fragments[index];
+        require(left.start_vertex == right.start_vertex && left.end_vertex == right.end_vertex &&
+                    left.direction == right.direction &&
+                    right.radius_nm == left.radius_nm * radius_factor,
+                name + " changed directed curve data");
+    }
+}
+
+void require_translation_relation(const AnalyticResultPacketRecords& base,
+                                  const AnalyticResultPacketRecords& transformed, std::int64_t dx,
+                                  std::int64_t dy)
+{
+    require_common_record_fields(base, transformed, "translation");
+    require_unchanged_directed_fragments(base, transformed, 1, "translation");
+    for (std::size_t index = 0; index < base.vertices.size(); ++index)
+        require(transformed.vertices[index].x_nm == base.vertices[index].x_nm + dx &&
+                    transformed.vertices[index].y_nm == base.vertices[index].y_nm + dy,
+                "translation did not apply its exact coordinate map");
+}
+
+void require_rotation_relation(const AnalyticResultPacketRecords& base,
+                               const AnalyticResultPacketRecords& transformed)
+{
+    require_common_record_fields(base, transformed, "rotation_90");
+    require_unchanged_directed_fragments(base, transformed, 1, "rotation_90");
+    for (std::size_t index = 0; index < base.vertices.size(); ++index)
+        require(transformed.vertices[index].x_nm == -base.vertices[index].y_nm &&
+                    transformed.vertices[index].y_nm == base.vertices[index].x_nm,
+                "rotation_90 did not apply (-y,x)");
+}
+
+void require_reflection_relation(const AnalyticResultPacketRecords& base,
+                                 const AnalyticResultPacketRecords& transformed)
+{
+    require_common_record_fields(base, transformed, "reflection");
+    for (std::size_t index = 0; index < base.vertices.size(); ++index)
+        require(transformed.vertices[index].x_nm == -base.vertices[index].x_nm &&
+                    transformed.vertices[index].y_nm == base.vertices[index].y_nm,
+                "reflection did not apply (-x,y)");
+    for (std::size_t index = 0; index < base.fragments.size(); ++index)
+    {
+        const auto& left = base.fragments[index];
+        const auto& right = transformed.fragments[index];
+        require(right.start_vertex == left.end_vertex && right.end_vertex == left.start_vertex &&
+                    right.direction == left.direction && right.radius_nm == left.radius_nm,
+                "reflection did not reverse endpoints with net-preserved arc direction");
+    }
+    for (const auto& ring : base.rings)
+        for (std::uint32_t offset = 0; offset < ring.fragment_reference_count; ++offset)
+            require(transformed.fragment_references[ring.fragment_reference_begin + offset] ==
+                        base.fragment_references[ring.fragment_reference_begin +
+                                                 ring.fragment_reference_count - 1 - offset],
+                    "reflection did not reverse ring traversal");
+}
+
+void require_scaling_relation(const AnalyticResultPacketRecords& base,
+                              const AnalyticResultPacketRecords& transformed, std::int64_t factor)
+{
+    require_common_record_fields(base, transformed, "integer_scaling");
+    require_unchanged_directed_fragments(base, transformed, factor, "integer_scaling");
+    for (std::size_t index = 0; index < base.vertices.size(); ++index)
+        require(transformed.vertices[index].x_nm == base.vertices[index].x_nm * factor &&
+                    transformed.vertices[index].y_nm == base.vertices[index].y_nm * factor,
+                "integer scaling did not apply its exact coordinate map");
+}
+
+void require_source_renaming_relation(const AnalyticResultPacketRecords& base,
+                                      const AnalyticResultPacketRecords& transformed)
+{
+    require_common_record_fields(base, transformed, "source_id_renaming");
+    require_unchanged_directed_fragments(base, transformed, 1, "source_id_renaming");
+    for (std::size_t index = 0; index < base.vertices.size(); ++index)
+        require(transformed.vertices[index].x_nm == base.vertices[index].x_nm &&
+                    transformed.vertices[index].y_nm == base.vertices[index].y_nm,
+                "source renaming changed the exact geometry projection");
+    for (std::size_t index = 0; index < base.source_references.size(); ++index)
+    {
+        const auto& left = base.source_references[index];
+        const auto& right = transformed.source_references[index];
+        require(right.operand_id == left.operand_id + 100 &&
+                    right.primary_id == left.primary_id + 1'000 &&
+                    right.secondary_id == left.secondary_id + 10'000,
+                "source renaming did not apply its explicit ID map");
+    }
+}
+
 void check_metamorphic(const std::string& name, const AnalyticResultPacketRecords& base,
                        const AnalyticResultPacketRecords& transformed,
                        const SymbolicMeasure& expected, std::vector<std::string>& signatures)
@@ -330,26 +509,50 @@ void check_metamorphic_corpus(std::vector<std::string>& signatures)
     const auto island_value = nested_island();
     const SymbolicMeasure capsule_measure{800, 100, 80, 20, 1, 0};
     const SymbolicMeasure island_measure{1088, 0, 288, 0, 2, 1};
-    check_metamorphic("translation_capsule", capsule_value, translated(capsule_value, 13, -17),
-                      capsule_measure, signatures);
-    check_metamorphic("translation_nested_island", island_value, translated(island_value, 13, -17),
-                      island_measure, signatures);
-    check_metamorphic("rotation_90_capsule", capsule_value, rotated_90(capsule_value),
-                      capsule_measure, signatures);
-    check_metamorphic("rotation_90_nested_island", island_value, rotated_90(island_value),
-                      island_measure, signatures);
-    check_metamorphic("reflection_capsule", capsule_value, reflected_x(capsule_value),
-                      capsule_measure, signatures);
-    check_metamorphic("reflection_nested_island", island_value, reflected_x(island_value),
-                      island_measure, signatures);
-    check_metamorphic("integer_scaling_capsule", capsule_value, scaled(capsule_value, 3),
+    const auto translated_capsule = translated(capsule_value, 13, -17);
+    const auto translated_island = translated(island_value, 13, -17);
+    require_translation_relation(capsule_value, translated_capsule, 13, -17);
+    require_translation_relation(island_value, translated_island, 13, -17);
+    check_metamorphic("translation_capsule", capsule_value, translated_capsule, capsule_measure,
+                      signatures);
+    check_metamorphic("translation_nested_island", island_value, translated_island, island_measure,
+                      signatures);
+
+    const auto rotated_capsule = rotated_90(capsule_value);
+    const auto rotated_island = rotated_90(island_value);
+    require_rotation_relation(capsule_value, rotated_capsule);
+    require_rotation_relation(island_value, rotated_island);
+    check_metamorphic("rotation_90_capsule", capsule_value, rotated_capsule, capsule_measure,
+                      signatures);
+    check_metamorphic("rotation_90_nested_island", island_value, rotated_island, island_measure,
+                      signatures);
+
+    const auto reflected_capsule = reflected_x(capsule_value);
+    const auto reflected_island = reflected_x(island_value);
+    require_reflection_relation(capsule_value, reflected_capsule);
+    require_reflection_relation(island_value, reflected_island);
+    check_metamorphic("reflection_capsule", capsule_value, reflected_capsule, capsule_measure,
+                      signatures);
+    check_metamorphic("reflection_nested_island", island_value, reflected_island, island_measure,
+                      signatures);
+
+    const auto scaled_capsule = scaled(capsule_value, 3);
+    const auto scaled_island = scaled(island_value, 3);
+    require_scaling_relation(capsule_value, scaled_capsule, 3);
+    require_scaling_relation(island_value, scaled_island, 3);
+    check_metamorphic("integer_scaling_capsule", capsule_value, scaled_capsule,
                       scaled_measure(capsule_measure, 3), signatures);
-    check_metamorphic("integer_scaling_nested_island", island_value, scaled(island_value, 3),
+    check_metamorphic("integer_scaling_nested_island", island_value, scaled_island,
                       scaled_measure(island_measure, 3), signatures);
-    check_metamorphic("source_id_renaming_capsule", capsule_value, renamed_sources(capsule_value),
-                      capsule_measure, signatures);
-    check_metamorphic("source_id_renaming_nested_island", island_value,
-                      renamed_sources(island_value), island_measure, signatures);
+
+    const auto renamed_capsule = renamed_sources(capsule_value);
+    const auto renamed_island = renamed_sources(island_value);
+    require_source_renaming_relation(capsule_value, renamed_capsule);
+    require_source_renaming_relation(island_value, renamed_island);
+    check_metamorphic("source_id_renaming_capsule", capsule_value, renamed_capsule, capsule_measure,
+                      signatures);
+    check_metamorphic("source_id_renaming_nested_island", island_value, renamed_island,
+                      island_measure, signatures);
 }
 
 std::string signature(const SymbolicMeasure& value)

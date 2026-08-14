@@ -825,6 +825,13 @@ renaming. The mixed line/arc capsule and nested outer/hole/island fixture must
 retain exact topology and the appropriately transformed rational-plus-pi
 measure. Each transformed packet has a governed canonical SHA-256, with an
 identical aggregate signature under native and Emscripten execution.
+Before those aggregate checks, an independent field-level relation oracle ties
+every output vertex, radius, directed endpoint, ring reference, source table,
+and source identity to the named transformation. Reflection specifically
+requires reversed ring traversal and swapped fragment endpoints while arc
+direction remains unchanged after the two orientation reversals. Source-ID
+renaming requires byte-for-byte-equivalent geometry/topology fields and the
+explicit mapped source tuple.
 
 This is evidence for the closed-form and initial metamorphic lanes, not
 completion of general-arc certified integration, tangency/coincidence sweeps,

@@ -965,9 +965,15 @@ while accepting the rectangle shrink and must reach `D[]U[0,0,1,1]`. The
 complete actual boundary, face-lineage, result-count, and reducer projection is
 digest-locked under native/Emscripten parity.
 
-This is the modest deterministic pull-request seed set. Promotion of any real
-minimized failure into the committed regression corpus and larger nightly
-seeds remain separate work before the property program is complete.
+The default profile is the modest deterministic pull-request seed set. A
+separate conventional `nightly` profile expands this to eight frozen seeds and
+16 cases per seed (128 cases and 256 exact baseline/permutation executions).
+Native and Emscripten must produce the same separately governed digest. Because
+Geometer changes infrequently, CI schedules that extended profile monthly and
+also exposes it through an explicit manual workflow input for release or
+kernel-change validation. Promotion of any real minimized failure into the
+committed regression corpus remains required before the property program is
+complete.
 
 ### Exact Many-To-Many Lineage Matrix
 

@@ -4,6 +4,12 @@ name: WASM
 
 "on":
   workflow_dispatch:
+    inputs:
+      extended_synthetic:
+        description: Run the extended exact synthetic-correctness profile
+        required: false
+        default: false
+        type: boolean
   pull_request:
     paths:
       - ".github/workflows/wasm.yml"
@@ -17,7 +23,7 @@ name: WASM
       - "examples/wasm/**"
       - "third_party/**"
   schedule:
-    - cron: "18 8 * * 1"
+    - cron: "18 8 1 * *"
 
 permissions:
   contents: read
@@ -90,9 +96,68 @@ jobs:
           node tests/wasm/planar_batch_solve_bytes_validation.js
           node tests/wasm/step_to_glb_bytes_validation.js
 
+      - name: Upload extended synthetic-correctness harness
+        if: github.event_name == 'schedule' || inputs.extended_synthetic
+        uses: actions/upload-artifact@v7
+        with:
+          name: analytic-synthetic-wasm
+          path: build-wasm/tests/cpp/geometer_exact_boolean_seeded_property_test.*
+          if-no-files-found: error
+
       - name: Upload WASM artifacts
         uses: actions/upload-artifact@v7
         with:
           name: wasm-dist
           path: dist/wasm/**
           if-no-files-found: error
+
+  extended-synthetic:
+    name: Extended exact synthetic correctness
+    if: github.event_name == 'schedule' || inputs.extended_synthetic
+    needs: wasm
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - uses: astral-sh/setup-uv@v8.2.0
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+
+      - name: Read dependency versions
+        id: dependency_versions
+        run: uv run --no-project python scripts/dependency_versions.py --github-output
+
+      - name: Install native build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential ninja-build libgl1-mesa-dev libdbus-1-dev libudev-dev libx11-dev libxcursor-dev libxext-dev libxi-dev libxinerama-dev libxkbcommon-dev libxrandr-dev libwayland-dev wayland-protocols
+
+      - name: Cache native OCCT
+        uses: actions/cache@v5
+        with:
+          path: |
+            .deps/occt-src
+            .deps/native/linux-x64/occt-build
+            .deps/native/linux-x64/occt-install
+          key: occt-nightly-${{ runner.os }}-${{ runner.arch }}-${{ steps.dependency_versions.outputs.occt_tag }}-${{ hashFiles('scripts/build_occt.py', 'scripts/dependency_versions.py', 'scripts/occt_binary_cache.py', 'third_party/rapidjson/**') }}
+          restore-keys: |
+            occt-nightly-${{ runner.os }}-${{ runner.arch }}-${{ steps.dependency_versions.outputs.occt_tag }}-
+
+      - name: Download Emscripten harness
+        uses: actions/download-artifact@v8
+        with:
+          name: analytic-synthetic-wasm
+          path: out/analytic-synthetic-wasm
+
+      - name: Build and test native code
+        run: uv run --group dev python scripts/validate_native.py --skip-examples --skip-python --skip-ldd
+
+      - name: Run extended native/WASM seeded properties
+        run: uv run python scripts/validate_exact_boolean_seeded_property_parity.py --profile nightly --wasm out/analytic-synthetic-wasm/geometer_exact_boolean_seeded_property_test.cjs

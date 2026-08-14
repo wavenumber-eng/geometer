@@ -49,6 +49,7 @@ def main() -> int:
         description="Verify identical native/Emscripten exact Boolean seeded properties."
     )
     parser.add_argument("--native", type=Path)
+    parser.add_argument("--profile", choices=("pull-request", "nightly"), default="pull-request")
     parser.add_argument(
         "--wasm",
         type=Path,
@@ -66,15 +67,21 @@ def main() -> int:
     if not wasm.is_file():
         raise FileNotFoundError("build the Emscripten exact Boolean seeded-property test first")
 
-    native_signature = _signature([str(native)])
-    wasm_signature = _signature(["node", str(wasm)])
+    profile_arguments = ["--nightly"] if args.profile == "nightly" else []
+    native_signature = _signature([str(native), *profile_arguments])
+    wasm_signature = _signature(["node", str(wasm), *profile_arguments])
     if native_signature != wasm_signature:
         raise RuntimeError("native and Emscripten exact Boolean seeded properties differ")
     digest = hashlib.sha256(native_signature.encode("ascii")).hexdigest()
     expected = tomllib.loads(MANIFEST.read_text(encoding="utf-8"))["analytic_exact_backend"]
-    if digest != expected["seeded_property_sha256"]:
+    key_prefix = "nightly_seeded_property" if args.profile == "nightly" else "seeded_property"
+    if digest != expected[f"{key_prefix}_sha256"]:
         raise RuntimeError("exact Boolean seeded-property SHA-256 differs from the manifest")
-    prefix = f"seeds:{len(expected['seeded_property_seeds'])},cases:{expected['seeded_property_cases']}|"
+    profile_prefix = "profile:nightly," if args.profile == "nightly" else ""
+    prefix = (
+        f"{profile_prefix}seeds:{len(expected[f'{key_prefix}_seeds'])},"
+        f"cases:{expected[f'{key_prefix}_cases']}|"
+    )
     if not native_signature.startswith(prefix):
         raise RuntimeError("exact Boolean seeded-property inventory differs")
     if f"|{expected['seeded_property_reducer_sentinel']}|" not in native_signature:
@@ -83,8 +90,8 @@ def main() -> int:
         raise RuntimeError("exact Boolean seeded-property multistage reducer sentinel differs")
     print(
         "exact Boolean seeded-property parity: "
-        f"seeds={len(expected['seeded_property_seeds'])} "
-        f"cases={expected['seeded_property_cases']} sha256={digest}"
+        f"profile={args.profile} seeds={len(expected[f'{key_prefix}_seeds'])} "
+        f"cases={expected[f'{key_prefix}_cases']} sha256={digest}"
     )
     return 0
 

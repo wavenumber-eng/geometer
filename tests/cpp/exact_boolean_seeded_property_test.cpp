@@ -498,15 +498,23 @@ std::string require_multistage_reducer_sentinel()
 
 } // namespace
 
-int main()
+int main(int argc, char** argv)
 {
-    constexpr std::array<std::uint64_t, 4> seeds{
+    require(argc == 1 || (argc == 2 && std::string(argv[1]) == "--nightly"),
+            "usage: geometer_exact_boolean_seeded_property_test [--nightly]");
+    const bool nightly = argc == 2;
+    const std::vector<std::uint64_t> pull_request_seeds{
         0x0000000000000001ULL,
         0x0123456789abcdefULL,
         0x9e3779b97f4a7c15ULL,
         0xffffffffffffffffULL,
     };
-    constexpr std::uint32_t cases_per_seed = 8;
+    const std::vector<std::uint64_t> nightly_seeds{
+        0x0000000000000000ULL, 0x0000000000000001ULL, 0x0123456789abcdefULL, 0x3141592653589793ULL,
+        0x9e3779b97f4a7c15ULL, 0xc0ffeec0ffeec0ffULL, 0xdeadbeefcafebabeULL, 0xffffffffffffffffULL,
+    };
+    const std::vector<std::uint64_t>& seeds = nightly ? nightly_seeds : pull_request_seeds;
+    const std::uint32_t cases_per_seed = nightly ? 16 : 8;
     const std::string reducer_sentinel = require_reducer_sentinel();
     const std::string multistage_reducer_sentinel = require_multistage_reducer_sentinel();
     std::ostringstream signature;
@@ -541,8 +549,11 @@ int main()
         }
     }
     require(case_count == seeds.size() * cases_per_seed, "seeded-property case count changed");
-    std::cout << "EXACT_BOOLEAN_SEEDED_PROPERTY=seeds:" << seeds.size() << ",cases:" << case_count
-              << '|' << signature.str() << "reducer:" << reducer_sentinel
+    std::cout << "EXACT_BOOLEAN_SEEDED_PROPERTY=";
+    if (nightly)
+        std::cout << "profile:nightly,";
+    std::cout << "seeds:" << seeds.size() << ",cases:" << case_count << '|' << signature.str()
+              << "reducer:" << reducer_sentinel
               << "|reducer_multistage:" << multistage_reducer_sentinel << '\n';
     return 0;
 }

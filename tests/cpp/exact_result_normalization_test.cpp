@@ -1,6 +1,7 @@
 #include "geometer/exact_arc_distance.h"
 #include "geometer/exact_result_normalization.h"
 
+#include <algorithm>
 #include <cstdlib>
 #include <iostream>
 #include <sstream>
@@ -39,7 +40,8 @@ ExactPoint point(ConstructionArena& arena, const BigInt& x_numerator, const BigI
 void append_rectangle(ConstructionArena& arena, const ExactPoint& a, const ExactPoint& b,
                       const ExactPoint& c, const ExactPoint& d, std::uint64_t occurrence_base,
                       std::vector<ExactAtomicCurve>& curves,
-                      std::vector<ExactCoverageOccurrence>& coverages)
+                      std::vector<ExactCoverageOccurrence>& coverages,
+                      std::uint64_t coverage_id = 10)
 {
     curves.push_back(
         {ExactAtomicCurveKind::line, a, b, {}, true, false, {{occurrence_base, true}}});
@@ -49,10 +51,10 @@ void append_rectangle(ConstructionArena& arena, const ExactPoint& a, const Exact
         {ExactAtomicCurveKind::line, d, c, {}, true, false, {{occurrence_base + 2, true}}});
     curves.push_back(
         {ExactAtomicCurveKind::line, a, d, {}, true, false, {{occurrence_base + 3, true}}});
-    coverages.push_back({occurrence_base, 10, true});
-    coverages.push_back({occurrence_base + 1, 10, true});
-    coverages.push_back({occurrence_base + 2, 10, false});
-    coverages.push_back({occurrence_base + 3, 10, false});
+    coverages.push_back({occurrence_base, coverage_id, true});
+    coverages.push_back({occurrence_base + 1, coverage_id, true});
+    coverages.push_back({occurrence_base + 2, coverage_id, false});
+    coverages.push_back({occurrence_base + 3, coverage_id, false});
 }
 
 struct Pipeline
@@ -63,15 +65,13 @@ struct Pipeline
 };
 
 Pipeline build_pipeline(ConstructionArena& arena, const std::vector<ExactAtomicCurve>& curves,
-                        const std::vector<ExactCoverageOccurrence>& coverages)
+                        const std::vector<ExactCoverageOccurrence>& coverages,
+                        const std::vector<ExactBooleanStage>& stages)
 {
     Pipeline pipeline;
     pipeline.arrangement = build_exact_arrangement(arena, curves, coverages);
     require(pipeline.arrangement.error == Error::none && pipeline.arrangement.value,
             "normalization arrangement failed");
-    const std::vector<ExactBooleanStage> stages{
-        {1, ExactBooleanStageOperation::union_, {{10, 1000}}},
-    };
     pipeline.selection =
         evaluate_exact_boolean_stages(arena.budget(), *pipeline.arrangement.value, stages);
     require(pipeline.selection.error == Error::none && pipeline.selection.value,
@@ -81,6 +81,116 @@ Pipeline build_pipeline(ConstructionArena& arena, const std::vector<ExactAtomicC
     require(pipeline.regions.error == Error::none && pipeline.regions.value,
             "normalization regions failed");
     return pipeline;
+}
+
+Pipeline build_pipeline(ConstructionArena& arena, const std::vector<ExactAtomicCurve>& curves,
+                        const std::vector<ExactCoverageOccurrence>& coverages)
+{
+    return build_pipeline(arena, curves, coverages,
+                          {{1, ExactBooleanStageOperation::union_, {{10, 1000}}}});
+}
+
+void append_atomic_line(const ExactPoint& start, const ExactPoint& end,
+                        const std::vector<std::pair<std::uint64_t, std::uint64_t>>& occurrences,
+                        bool material_on_left, std::vector<ExactAtomicCurve>& curves,
+                        std::vector<ExactCoverageOccurrence>& coverages)
+{
+    std::vector<ExactCurveMembership> memberships;
+    memberships.reserve(occurrences.size());
+    for (const auto [occurrence, coverage] : occurrences)
+    {
+        memberships.push_back({occurrence, true});
+        coverages.push_back({occurrence, coverage, material_on_left});
+    }
+    curves.push_back(
+        {ExactAtomicCurveKind::line, start, end, {}, true, false, std::move(memberships)});
+}
+
+void append_overlapping_tail_fixture(ConstructionArena& arena,
+                                     std::vector<ExactAtomicCurve>& curves,
+                                     std::vector<ExactCoverageOccurrence>& coverages)
+{
+    const ExactPoint bottom_left = point(arena, 0, 1, 0, 1);
+    const ExactPoint bottom_split = point(arena, 6, 5, 0, 1);
+    const ExactPoint bottom_right = point(arena, 7, 5, 0, 1);
+    const ExactPoint top_left = point(arena, 0, 1, 4, 1);
+    const ExactPoint top_split = point(arena, 6, 5, 4, 1);
+    const ExactPoint top_right = point(arena, 7, 5, 4, 1);
+    append_atomic_line(bottom_left, bottom_split, {{1, 10}}, true, curves, coverages);
+    append_atomic_line(bottom_split, bottom_right, {{2, 10}, {3, 20}}, true, curves, coverages);
+    append_atomic_line(bottom_right, top_right, {{4, 10}, {5, 20}}, true, curves, coverages);
+    append_atomic_line(top_split, top_right, {{6, 10}, {7, 20}}, false, curves, coverages);
+    append_atomic_line(top_left, top_split, {{8, 10}}, false, curves, coverages);
+    append_atomic_line(bottom_left, top_left, {{9, 10}}, false, curves, coverages);
+    append_atomic_line(bottom_split, top_split, {{10, 20}}, false, curves, coverages);
+}
+
+std::string geometry_signature(const ExactNormalizedBooleanResult& result)
+{
+    std::ostringstream out;
+    out << "v";
+    for (const auto& vertex : result.vertices())
+        out << vertex.x_nm << ',' << vertex.y_nm << ';';
+    out << "f";
+    for (const auto& fragment : result.fragments())
+        out << fragment.start_vertex << ',' << fragment.end_vertex << ','
+            << static_cast<unsigned>(fragment.kind) << ','
+            << static_cast<unsigned>(fragment.direction) << ',' << fragment.major_arc << ','
+            << fragment.radius_nm << ';';
+    out << "r";
+    for (const auto& ring : result.rings())
+        out << ring.fragment_begin << ',' << ring.fragment_count << ',' << ring.parent_ring << ','
+            << ring.depth << ',' << ring.counterclockwise << ';';
+    out << "g";
+    for (const auto& region : result.regions())
+        out << region.outer_ring << ';';
+    return out.str();
+}
+
+bool has_subtraction_source(const ExactBooleanSelection& selection, std::uint64_t source)
+{
+    return std::find(selection.subtraction_sources().begin(), selection.subtraction_sources().end(),
+                     source) != selection.subtraction_sources().end();
+}
+
+void require_between_stage_normalization_sentinel()
+{
+    const std::vector<ExactBooleanStage> stages{
+        {1, ExactBooleanStageOperation::union_, {{10, 100}}},
+        {2, ExactBooleanStageOperation::difference, {{20, 200}}},
+    };
+    Budget exact_budget({2'000'000'000, 268'435'456});
+    ConstructionArena exact_arena(exact_budget);
+    std::vector<ExactAtomicCurve> exact_curves;
+    std::vector<ExactCoverageOccurrence> exact_coverages;
+    append_overlapping_tail_fixture(exact_arena, exact_curves, exact_coverages);
+    Pipeline exact = build_pipeline(exact_arena, exact_curves, exact_coverages, stages);
+    ExactNormalizedBooleanResultResult exact_result = normalize_exact_boolean_result(
+        exact_arena, *exact.arrangement.value, *exact.selection.value, *exact.regions.value);
+    require(exact_result.error == ExactResultNormalizationError::none && exact_result.value &&
+                has_subtraction_source(*exact.selection.value, 200),
+            "exact ordered stages lost the governed subtraction effect");
+
+    Budget snapped_budget({2'000'000'000, 268'435'456});
+    ConstructionArena snapped_arena(snapped_budget);
+    std::vector<ExactAtomicCurve> snapped_curves;
+    std::vector<ExactCoverageOccurrence> snapped_coverages;
+    append_rectangle(snapped_arena, point(snapped_arena, 0, 1, 0, 1),
+                     point(snapped_arena, 1, 1, 0, 1), point(snapped_arena, 1, 1, 4, 1),
+                     point(snapped_arena, 0, 1, 4, 1), 100, snapped_curves, snapped_coverages);
+    append_rectangle(snapped_arena, point(snapped_arena, 6, 5, 0, 1),
+                     point(snapped_arena, 7, 5, 0, 1), point(snapped_arena, 7, 5, 4, 1),
+                     point(snapped_arena, 6, 5, 4, 1), 200, snapped_curves, snapped_coverages, 20);
+    Pipeline snapped = build_pipeline(snapped_arena, snapped_curves, snapped_coverages, stages);
+    ExactNormalizedBooleanResultResult snapped_result =
+        normalize_exact_boolean_result(snapped_arena, *snapped.arrangement.value,
+                                       *snapped.selection.value, *snapped.regions.value);
+    require(snapped_result.error == ExactResultNormalizationError::none && snapped_result.value &&
+                geometry_signature(*snapped_result.value) ==
+                    geometry_signature(*exact_result.value),
+            "between-stage mutation fixture must retain the same final normalized geometry");
+    require(!has_subtraction_source(*snapped.selection.value, 200),
+            "premature stage normalization did not erase the expected subtraction effect");
 }
 
 ExactCircularArc minor_quarter_arc(ConstructionArena& arena)
@@ -200,6 +310,7 @@ std::string signature(const ExactNormalizedBooleanResult& result)
 int main()
 {
     require_arc_distance_predicates();
+    require_between_stage_normalization_sentinel();
 
     Budget empty_budget({2'000'000'000, 268'435'456});
     ConstructionArena empty_arena(empty_budget);
@@ -341,5 +452,6 @@ int main()
               << '|' << signature(*normalized_box.value) << '|'
               << signature(*normalized_circle.value) << '|' << signature(*moved_arc_result.value)
               << '\n';
+    std::cout << "EXACT_RESULT_NORMALIZATION_MUTATIONS=between_stage_normalization\n";
     return 0;
 }

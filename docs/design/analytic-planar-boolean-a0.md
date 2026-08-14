@@ -789,8 +789,12 @@ even-depth result ring and builds per-job ring/region lists; 16,384-deep and
 65,535-empty-job regressions protect the bounded traversal before exact replay.
 Canonical packet bytes separately detect removal of an otherwise geometrically
 invisible contributor, and the exact normalization oracle detects a
-ties-to-even substitution. Native and Emscripten must report the identical
-governed sentinel inventory. These sentinels are an implemented subset of the
+ties-to-even substitution. A separate ordered-stage sentinel replaces the
+first-stage boundary at `7/5` nm with its premature 1-nm-grid representation
+before subtracting the exact `[6/5, 7/5]` tail. Both paths publish the same
+final normalized rectangle, but the mutation erases the required subtraction
+effect and is rejected by the lineage oracle. Native and Emscripten must report
+the identical governed sentinel inventories. These sentinels are an implemented subset of the
 larger synthetic-correctness program, not completion of its closed-form,
 degeneracy, exhaustive, property, or between-stage-normalization lanes.
 

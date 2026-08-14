@@ -10,6 +10,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "docs" / "contracts" / "promotion-manifest.toml"
 VECTOR_PREFIX = "EXACT_RESULT_NORMALIZATION_VECTOR="
+MUTATION_PREFIX = "EXACT_RESULT_NORMALIZATION_MUTATIONS="
 
 
 def _discover_native() -> Path:
@@ -28,14 +29,20 @@ def _discover_native() -> Path:
     raise FileNotFoundError("build the native exact result-normalization test first")
 
 
-def _vector(command: list[str]) -> str:
+def _outputs(command: list[str]) -> tuple[str, list[str]]:
     completed = subprocess.run(
         command, cwd=ROOT, check=True, capture_output=True, text=True
     )
+    vector: str | None = None
+    mutations: list[str] | None = None
     for line in completed.stdout.splitlines():
         if line.startswith(VECTOR_PREFIX):
-            return line.removeprefix(VECTOR_PREFIX)
-    raise RuntimeError("exact result-normalization test omitted its governed vector")
+            vector = line.removeprefix(VECTOR_PREFIX)
+        elif line.startswith(MUTATION_PREFIX):
+            mutations = line.removeprefix(MUTATION_PREFIX).split(",")
+    if vector is None or mutations is None:
+        raise RuntimeError("exact result-normalization test omitted governed output")
+    return vector, mutations
 
 
 def main() -> int:
@@ -59,15 +66,22 @@ def main() -> int:
     wasm = args.wasm.resolve()
     if not wasm.is_file():
         raise FileNotFoundError("build the Emscripten exact result-normalization test first")
-    native_vector = _vector([str(native)])
-    wasm_vector = _vector(["node", str(wasm)])
+    native_vector, native_mutations = _outputs([str(native)])
+    wasm_vector, wasm_mutations = _outputs(["node", str(wasm)])
     if native_vector != wasm_vector:
         raise RuntimeError("native and Emscripten result-normalization vectors differ")
     digest = hashlib.sha256(native_vector.encode("ascii")).hexdigest()
     expected = tomllib.loads(MANIFEST.read_text(encoding="utf-8"))["analytic_exact_backend"]
     if digest != expected["result_normalization_vector_sha256"]:
         raise RuntimeError("exact result-normalization SHA-256 differs from the manifest")
-    print(f"exact result normalization parity: sha256={digest}")
+    if native_mutations != wasm_mutations or native_mutations != expected[
+        "result_normalization_mutation_sentinels"
+    ]:
+        raise RuntimeError("result-normalization mutation inventories differ")
+    print(
+        f"exact result normalization parity: sha256={digest} "
+        f"mutations={','.join(native_mutations)}"
+    )
     return 0
 
 

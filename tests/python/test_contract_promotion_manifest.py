@@ -445,6 +445,7 @@ def test_exact_algebraic_backend_design_gate_is_closed() -> None:
         "result_normalization_test": "tests/cpp/exact_result_normalization_test.cpp",
         "result_normalization_parity_validator": "scripts/validate_exact_result_normalization_parity.py",
         "result_normalization_vector_sha256": "db3be0a6e7bfc88bde2435bc603569d9dac18d8d320a32e2d0e48a8e00e469ea",
+        "result_normalization_mutation_sentinels": ["between_stage_normalization"],
         "source_sets_test": "tests/cpp/exact_source_sets_test.cpp",
         "source_sets_parity_validator": "scripts/validate_exact_source_sets_parity.py",
         "source_sets_vector_sha256": "dc19f5249a91d159f0ed1dff4ff78617315c157050f1df09fe47d834986daffc",

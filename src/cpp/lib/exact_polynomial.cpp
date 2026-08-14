@@ -863,4 +863,70 @@ RootIntervalCountResult count_real_roots_in_dyadic_interval(Budget& budget,
     }
 }
 
+RootRefinementResult refine_real_root(Budget& budget, const Polynomial& polynomial,
+                                      std::uint32_t ordinal, std::uint32_t precision)
+{
+    if (polynomial.degree() < 2 || ordinal >= polynomial.degree() || precision > 4096)
+        return {Error::invalid_argument, std::nullopt};
+    try
+    {
+        const std::uint64_t work = root_work_bound(polynomial, precision);
+        const std::uint64_t storage = root_storage_bound(polynomial, precision);
+        StorageReservation reservation(budget, storage);
+        if (!reservation.acquired() || !budget.consume_work(work) ||
+            !budget.consume_interval_refinement())
+            return {Error::resource_limit_exceeded, std::nullopt};
+        std::vector<FractionPolynomial> sturm;
+        if (!make_sturm_sequence(polynomial, sturm))
+            return {Error::invalid_argument, std::nullopt};
+        EvaluationContext context{budget};
+        BigInt cell;
+        std::uint32_t cell_roots = 0;
+        const EvaluationStatus status = cell_for_ordinal(context, sturm, root_bound(polynomial),
+                                                         precision, ordinal, cell, cell_roots);
+        if (status == EvaluationStatus::resource_limit)
+            return {Error::resource_limit_exceeded, std::nullopt};
+        if (status != EvaluationStatus::ok || cell_roots != 1)
+            return {Error::invalid_argument, std::nullopt};
+        return {Error::none, DyadicRootInterval{precision, std::move(cell)}};
+    }
+    catch (const std::exception&)
+    {
+        return {Error::resource_limit_exceeded, std::nullopt};
+    }
+}
+
+RootIntervalCountResult count_real_roots_below_rational(Budget& budget,
+                                                        const Polynomial& polynomial,
+                                                        const BigInt& numerator,
+                                                        const BigInt& denominator)
+{
+    if (polynomial.degree() < 2 || denominator <= 0)
+        return {Error::invalid_argument, 0, 0};
+    try
+    {
+        const std::uint64_t work = root_work_bound(polynomial, 0);
+        const std::uint64_t storage = root_storage_bound(polynomial, 0);
+        StorageReservation reservation(budget, storage);
+        if (!reservation.acquired() || !budget.consume_work(work))
+            return {Error::resource_limit_exceeded, 0, 0};
+        std::vector<FractionPolynomial> sturm;
+        if (!make_sturm_sequence(polynomial, sturm))
+            return {Error::invalid_argument, 0, 0};
+        EvaluationContext context{budget};
+        std::uint32_t count = 0;
+        const EvaluationStatus status =
+            roots_less_than(context, sturm, Fraction(numerator, denominator), count);
+        if (status == EvaluationStatus::resource_limit)
+            return {Error::resource_limit_exceeded, 0, 0};
+        if (status != EvaluationStatus::ok)
+            return {Error::invalid_argument, 0, 0};
+        return {Error::none, count, count};
+    }
+    catch (const std::exception&)
+    {
+        return {Error::resource_limit_exceeded, 0, 0};
+    }
+}
+
 } // namespace geometer::exact

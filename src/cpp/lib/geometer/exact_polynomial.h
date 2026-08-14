@@ -74,6 +74,18 @@ struct RootIntervalCountResult
     std::uint32_t first_ordinal = 0;
 };
 
+struct DyadicRootInterval
+{
+    std::uint32_t precision = 0;
+    BigInt interval_k;
+};
+
+struct RootRefinementResult
+{
+    Error error = Error::none;
+    std::optional<DyadicRootInterval> value;
+};
+
 [[nodiscard]] PolynomialResult make_primitive_polynomial(Budget& budget,
                                                          const std::vector<BigInt>& coefficients);
 
@@ -87,5 +99,13 @@ struct RootIntervalCountResult
 count_real_roots_in_dyadic_interval(Budget& budget, const Polynomial& polynomial,
                                     const BigInt& lower_k, const BigInt& upper_k,
                                     std::uint32_t precision);
+
+[[nodiscard]] RootRefinementResult refine_real_root(Budget& budget, const Polynomial& polynomial,
+                                                    std::uint32_t ordinal, std::uint32_t precision);
+
+[[nodiscard]] RootIntervalCountResult count_real_roots_below_rational(Budget& budget,
+                                                                      const Polynomial& polynomial,
+                                                                      const BigInt& numerator,
+                                                                      const BigInt& denominator);
 
 } // namespace geometer::exact

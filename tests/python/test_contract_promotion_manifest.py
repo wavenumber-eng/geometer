@@ -30,6 +30,24 @@ _NORMALIZATION_COLLAPSE_GATE: dict[str, Any] = {
     "normalization_collapse_sha256": "761350eccf99d53336aa8c99903b62cc5906eab29ebdd2b0b3a1c3bd17654ede",
 }
 
+_BOOLEAN_METAMORPHIC_GATE: dict[str, Any] = {
+    "boolean_metamorphic_test": "tests/cpp/exact_boolean_metamorphic_test.cpp",
+    "boolean_metamorphic_parity_validator": "scripts/validate_exact_boolean_metamorphic_parity.py",
+    "boolean_union_permutations": 6,
+    "boolean_difference_permutations": 2,
+    "boolean_metamorphic_sentinels": [
+        "split:union,difference",
+        "mutation:ordered_stage_swap",
+    ],
+    "boolean_metamorphic_sha256": "3572a4fcd40cc212a542d5dc8a166ce372404e058b01c819baa1b102e818bb6f",
+}
+
+_SYNTHETIC_CORRECTNESS_GATE: dict[str, Any] = {
+    **_BOOLEAN_METAMORPHIC_GATE,
+    **_NORMALIZATION_COLLAPSE_GATE,
+    **_RECTANGLE_ENUMERATION_GATE,
+}
+
 
 def _manifest() -> dict[str, Any]:
     with MANIFEST_PATH.open("rb") as stream:
@@ -548,8 +566,7 @@ def test_exact_algebraic_backend_design_gate_is_closed() -> None:
             "difference_empty",
         ],
         "boolean_identity_sha256": "bf0c289c99026044bfcb6b8d990fbc33306ec61a50763cab1158d312f656027e",
-        **_NORMALIZATION_COLLAPSE_GATE,
-        **_RECTANGLE_ENUMERATION_GATE,
+        **_SYNTHETIC_CORRECTNESS_GATE,
     }
     assert (ROOT / backend["design"]).is_file()
     assert _sha256(ROOT / backend["design"]) == backend["design_sha256"]
@@ -621,6 +638,8 @@ def test_exact_algebraic_backend_paths_exist() -> None:
         "degeneracy_sweep_parity_validator",
         "boolean_identity_test",
         "boolean_identity_parity_validator",
+        "boolean_metamorphic_test",
+        "boolean_metamorphic_parity_validator",
         "rectangle_enumeration_test",
         "rectangle_enumeration_parity_validator",
     ):

@@ -897,6 +897,24 @@ positive/subtractive lineage, and all operand outcome events exactly. Native
 and Emscripten executions reproduce one governed identity signature byte for
 byte.
 
+### Exact Boolean Metamorphic Relations
+
+The pull-request lane exhaustively permutes three operands within one union
+stage and two operands within one difference stage. Every permutation must
+produce byte-identical normalized geometry and byte-identical face/result
+lineage projections. Independent unit-cell area and connected-result counts
+anchor the union L-shape and the two disconnected difference results.
+
+Splitting the same union or difference operands into separate ordered stages
+must preserve normalized geometry for these mathematically equivalent cases;
+lineage is deliberately excluded from that relation because stage structure
+may legitimately affect attribution history. Conversely, swapping an ordered
+union-full-grid/difference-unit stage pair must change the exact result from
+three cells to four. This `ordered_stage_swap` mutation sentinel proves that
+the suite does not accidentally erase governed stage order. The complete
+geometry and lineage projections are digest-locked under native/Emscripten
+parity.
+
 ### Bounded Rectangle Enumeration
 
 The pull-request lane exhaustively enumerates all nine nonempty axis-aligned

@@ -259,6 +259,17 @@ endif()
 add_test(NAME geometer_exact_boolean_identities_test
          COMMAND geometer_exact_boolean_identities_test)
 
+add_executable(geometer_exact_boolean_metamorphic_test
+               exact_boolean_metamorphic_test.cpp)
+if(EMSCRIPTEN)
+    target_link_libraries(geometer_exact_boolean_metamorphic_test
+                          PRIVATE geometer_exact_feasibility)
+else()
+    target_link_libraries(geometer_exact_boolean_metamorphic_test PRIVATE geometer_lib)
+endif()
+add_test(NAME geometer_exact_boolean_metamorphic_test
+         COMMAND geometer_exact_boolean_metamorphic_test)
+
 add_executable(geometer_exact_rectangle_enumeration_test
                exact_rectangle_enumeration_test.cpp)
 if(EMSCRIPTEN)
@@ -297,6 +308,7 @@ if(EMSCRIPTEN)
         geometer_analytic_closed_form_invariants_test
         geometer_exact_degeneracy_sweep_test
         geometer_exact_boolean_identities_test
+        geometer_exact_boolean_metamorphic_test
         geometer_exact_rectangle_enumeration_test
         PROPERTIES SUFFIX ".cjs"
     )
@@ -348,6 +360,8 @@ if(EMSCRIPTEN)
     target_link_options(geometer_exact_degeneracy_sweep_test PRIVATE -fexceptions)
     target_compile_options(geometer_exact_boolean_identities_test PRIVATE -fexceptions)
     target_link_options(geometer_exact_boolean_identities_test PRIVATE -fexceptions)
+    target_compile_options(geometer_exact_boolean_metamorphic_test PRIVATE -fexceptions)
+    target_link_options(geometer_exact_boolean_metamorphic_test PRIVATE -fexceptions)
     target_compile_options(geometer_exact_rectangle_enumeration_test PRIVATE -fexceptions)
     target_link_options(geometer_exact_rectangle_enumeration_test PRIVATE -fexceptions)
 endif()

@@ -397,7 +397,7 @@ def test_exact_algebraic_backend_design_gate_is_closed() -> None:
         "geometry_parity_validator": "scripts/validate_exact_geometry_parity.py",
         "geometry_vector_artifact_bytes": 1248,
         "geometry_vector_artifact_sha256": "0af1965a293c1b7a90ec633d35ee98f2d53098350e86e922e8c18751ea15a5e0",
-        "geometry_vector_success_work_units": 41481416,
+        "geometry_vector_success_work_units": 41482728,
     }
     assert (ROOT / backend["design"]).is_file()
     assert _sha256(ROOT / backend["design"]) == backend["design_sha256"]
@@ -418,6 +418,16 @@ def test_exact_algebraic_backend_design_gate_is_closed() -> None:
         "geometry_parity_validator",
     ):
         assert (ROOT / backend[key]).is_file()
+
+
+def test_exact_geometry_contains_binary_allocation_failures() -> None:
+    geometry = (ROOT / "src/cpp/lib/exact_geometry.cpp").read_text(encoding="utf-8")
+    construction = (ROOT / "src/cpp/lib/exact_construction.cpp").read_text(encoding="utf-8")
+    assert "make_sum({left, right})" not in geometry
+    assert "make_product({left, right})" not in geometry
+    assert geometry.count("catch (const std::exception&)") == 3
+    assert "children.reserve(2);" in construction
+    assert "return make_associative(kind, children);" in construction
 
 
 def test_wasm_export_inventory_matches_cmake_exactly() -> None:

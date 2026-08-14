@@ -261,9 +261,40 @@ ConstructionResult ConstructionArena::make_sum(const std::vector<ConstructionNod
     return make_associative(ConstructionKind::sum, children);
 }
 
+ConstructionResult ConstructionArena::make_sum(ConstructionNodeId left, ConstructionNodeId right)
+{
+    return make_binary(ConstructionKind::sum, left, right);
+}
+
 ConstructionResult ConstructionArena::make_product(const std::vector<ConstructionNodeId>& children)
 {
     return make_associative(ConstructionKind::product, children);
+}
+
+ConstructionResult ConstructionArena::make_product(ConstructionNodeId left,
+                                                   ConstructionNodeId right)
+{
+    return make_binary(ConstructionKind::product, left, right);
+}
+
+ConstructionResult ConstructionArena::make_binary(ConstructionKind kind, ConstructionNodeId left,
+                                                  ConstructionNodeId right)
+{
+    try
+    {
+        StorageReservation reservation(budget_, 512);
+        if (!reservation.acquired() || !budget_.consume_work(32))
+            return {Error::resource_limit_exceeded, std::nullopt};
+        std::vector<ConstructionNodeId> children;
+        children.reserve(2);
+        children.push_back(left);
+        children.push_back(right);
+        return make_associative(kind, children);
+    }
+    catch (const std::exception&)
+    {
+        return {Error::resource_limit_exceeded, std::nullopt};
+    }
 }
 
 ConstructionResult

@@ -1,6 +1,7 @@
 #include "geometer/exact_geometry.h"
 
 #include <algorithm>
+#include <exception>
 #include <utility>
 #include <vector>
 
@@ -52,14 +53,14 @@ class Builder
     {
         if (!good())
             return 0;
-        return take(arena_.make_sum({left, right}));
+        return take(arena_.make_sum(left, right));
     }
 
     [[nodiscard]] ConstructionNodeId product(ConstructionNodeId left, ConstructionNodeId right)
     {
         if (!good())
             return 0;
-        return take(arena_.make_product({left, right}));
+        return take(arena_.make_product(left, right));
     }
 
     [[nodiscard]] ConstructionNodeId negate(ConstructionNodeId value)
@@ -203,8 +204,11 @@ ConstructionNodeId cross(Builder& builder, ConstructionNodeId ax, ConstructionNo
 
 } // namespace
 
-ExactIntersectionResult intersect_exact_lines(ConstructionArena& arena, const ExactLine& left,
-                                              const ExactLine& right)
+namespace
+{
+
+ExactIntersectionResult intersect_lines_impl(ConstructionArena& arena, const ExactLine& left,
+                                             const ExactLine& right)
 {
     if (!valid_point(arena, left.first) || !valid_point(arena, left.second) ||
         !valid_point(arena, right.first) || !valid_point(arena, right.second))
@@ -252,8 +256,8 @@ ExactIntersectionResult intersect_exact_lines(ConstructionArena& arena, const Ex
     return {Error::none, IntersectionRelation::point, 1, {point, {}}};
 }
 
-ExactIntersectionResult intersect_exact_line_circle(ConstructionArena& arena, const ExactLine& line,
-                                                    const ExactCircle& circle)
+ExactIntersectionResult intersect_line_circle_impl(ConstructionArena& arena, const ExactLine& line,
+                                                   const ExactCircle& circle)
 {
     if (!valid_point(arena, line.first) || !valid_point(arena, line.second) ||
         !valid_point(arena, circle.center) ||
@@ -320,8 +324,8 @@ ExactIntersectionResult intersect_exact_line_circle(ConstructionArena& arena, co
     return {Error::none, IntersectionRelation::two_points, 2, {first, second}};
 }
 
-ExactIntersectionResult intersect_exact_circles(ConstructionArena& arena, const ExactCircle& left,
-                                                const ExactCircle& right)
+ExactIntersectionResult intersect_circles_impl(ConstructionArena& arena, const ExactCircle& left,
+                                               const ExactCircle& right)
 {
     if (!valid_point(arena, left.center) || !valid_point(arena, right.center) ||
         static_cast<std::size_t>(left.radius) >= arena.size() ||
@@ -393,6 +397,47 @@ ExactIntersectionResult intersect_exact_circles(ConstructionArena& arena, const 
         return failure(builder.good() ? Error::invalid_argument : builder.error());
     transaction.commit();
     return {Error::none, IntersectionRelation::two_points, 2, {first, second}};
+}
+
+} // namespace
+
+ExactIntersectionResult intersect_exact_lines(ConstructionArena& arena, const ExactLine& left,
+                                              const ExactLine& right)
+{
+    try
+    {
+        return intersect_lines_impl(arena, left, right);
+    }
+    catch (const std::exception&)
+    {
+        return failure(Error::resource_limit_exceeded);
+    }
+}
+
+ExactIntersectionResult intersect_exact_line_circle(ConstructionArena& arena, const ExactLine& line,
+                                                    const ExactCircle& circle)
+{
+    try
+    {
+        return intersect_line_circle_impl(arena, line, circle);
+    }
+    catch (const std::exception&)
+    {
+        return failure(Error::resource_limit_exceeded);
+    }
+}
+
+ExactIntersectionResult intersect_exact_circles(ConstructionArena& arena, const ExactCircle& left,
+                                                const ExactCircle& right)
+{
+    try
+    {
+        return intersect_circles_impl(arena, left, right);
+    }
+    catch (const std::exception&)
+    {
+        return failure(Error::resource_limit_exceeded);
+    }
 }
 
 } // namespace geometer::exact

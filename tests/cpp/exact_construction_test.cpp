@@ -229,6 +229,34 @@ void test_transaction_work_boundary_and_rollback()
             "failed construction arena must release prior retained storage at destruction");
 }
 
+void test_binary_child_allocation_preflight()
+{
+    geometer::exact::Budget measured({1'000'000'000, 268'435'456});
+    std::uint64_t fixture_work = 0;
+    {
+        ConstructionArena arena(measured);
+        require_node(arena.make_rational(1), "binary fixture one failed");
+        require_node(arena.make_rational(2), "binary fixture two failed");
+        fixture_work = measured.usage().work_units;
+    }
+    geometer::exact::Budget short_budget({fixture_work + 31, 268'435'456});
+    {
+        ConstructionArena arena(short_budget);
+        const ConstructionNodeId one =
+            require_node(arena.make_rational(1), "short binary fixture one failed");
+        const ConstructionNodeId two =
+            require_node(arena.make_rational(2), "short binary fixture two failed");
+        const std::uint64_t retained_storage = short_budget.usage().owned_bytes;
+        auto failed = arena.make_sum(one, two);
+        require(failed.error == Error::resource_limit_exceeded && !failed.node &&
+                    arena.size() == 2 && short_budget.usage().work_units == fixture_work &&
+                    short_budget.usage().owned_bytes == retained_storage,
+                "binary child allocation must be preflighted before vector materialization");
+    }
+    require(short_budget.usage().owned_bytes == 0,
+            "binary preflight failure must release all retained storage at destruction");
+}
+
 } // namespace
 
 int main()
@@ -238,5 +266,6 @@ int main()
     test_rational_collapse_and_distinct_construction_value_identity();
     test_allocation_order_independent_keys();
     test_transaction_work_boundary_and_rollback();
+    test_binary_child_allocation_preflight();
     return 0;
 }

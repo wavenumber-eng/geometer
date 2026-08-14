@@ -286,7 +286,8 @@ std::uint64_t test_exact_resource_boundary_and_rollback()
     require(measured.usage().owned_bytes == 0,
             "completed geometric construction must release all arena storage");
     const std::uint64_t required_work = measured.usage().work_units;
-    require(required_work == 41'481'416, "geometric construction success work boundary changed");
+    require(required_work == 41'482'728, "geometric construction success work boundary changed: " +
+                                             std::to_string(required_work));
 
     geometer::exact::Budget short_budget({required_work - 1, 268'435'456});
     {

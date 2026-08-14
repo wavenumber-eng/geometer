@@ -151,7 +151,7 @@ geometry_test = "tests/cpp/exact_geometry_test.cpp"
 geometry_parity_validator = "scripts/validate_exact_geometry_parity.py"
 geometry_vector_artifact_bytes = 1248
 geometry_vector_artifact_sha256 = "0af1965a293c1b7a90ec633d35ee98f2d53098350e86e922e8c18751ea15a5e0"
-geometry_vector_success_work_units = 41481416
+geometry_vector_success_work_units = 41482728
 
 [transports]
 generic_c_abi = "implemented_a0"

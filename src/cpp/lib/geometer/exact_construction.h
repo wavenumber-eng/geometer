@@ -72,7 +72,10 @@ class ConstructionArena
     [[nodiscard]] ConstructionResult make_rational(const BigInt& numerator,
                                                    const BigInt& denominator = 1);
     [[nodiscard]] ConstructionResult make_sum(const std::vector<ConstructionNodeId>& children);
+    [[nodiscard]] ConstructionResult make_sum(ConstructionNodeId left, ConstructionNodeId right);
     [[nodiscard]] ConstructionResult make_product(const std::vector<ConstructionNodeId>& children);
+    [[nodiscard]] ConstructionResult make_product(ConstructionNodeId left,
+                                                  ConstructionNodeId right);
     [[nodiscard]] ConstructionResult make_reciprocal(ConstructionNodeId child);
     [[nodiscard]] ConstructionResult make_nonnegative_square_root(ConstructionNodeId child);
 
@@ -80,6 +83,8 @@ class ConstructionArena
     friend class ConstructionTransaction;
     [[nodiscard]] ConstructionResult
     make_associative(ConstructionKind kind, const std::vector<ConstructionNodeId>& input_children);
+    [[nodiscard]] ConstructionResult make_binary(ConstructionKind kind, ConstructionNodeId left,
+                                                 ConstructionNodeId right);
     [[nodiscard]] ConstructionResult intern_value(ConstructionKind kind,
                                                   std::vector<ConstructionNodeId> children,
                                                   CanonicalReal value);

@@ -2,6 +2,7 @@ set(GEOMETER_LIB_SOURCES
     analytic_result_packet_canonical.cpp
     analytic_result_packet_layout.cpp
     analytic_result_packet_records.cpp
+    analytic_result_packet_standalone.cpp
     c_api.cpp
     clipper2_bytes.cpp
     exact_rational.cpp
@@ -18,6 +19,7 @@ set(GEOMETER_LIB_SOURCES
     planar_triangulate.cpp
     projection.cpp
     projection_options_json.cpp
+    sha256.cpp
     step_to_glb.cpp
     step_to_glb_options_json.cpp
     version.cpp
@@ -33,6 +35,7 @@ set(GEOMETER_EXACT_SOURCES
     analytic_result_packet_canonical.cpp
     analytic_result_packet_layout.cpp
     analytic_result_packet_records.cpp
+    analytic_result_packet_standalone.cpp
     exact_arc_distance.cpp
     exact_boolean_outcomes.cpp
     exact_boolean_provenance.cpp
@@ -59,6 +62,7 @@ set(GEOMETER_EXACT_SOURCES
     exact_source_sets.cpp
     exact_value.cpp
     exact_value_codec.cpp
+    sha256.cpp
 )
 
 if(NOT EMSCRIPTEN)

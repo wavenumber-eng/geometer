@@ -1,5 +1,7 @@
 #include "geometer/analytic_result_packet_canonical.h"
 #include "geometer/analytic_result_packet_records.h"
+#include "geometer/analytic_result_packet_standalone.h"
+#include "geometer/sha256.h"
 
 #include <cstdlib>
 #include <iomanip>
@@ -26,6 +28,20 @@ void require(bool condition, const std::string& message)
 void write_u32(std::vector<std::uint8_t>& bytes, std::size_t offset, std::uint32_t value)
 {
     for (std::uint32_t index = 0; index < 4; ++index)
+        bytes[offset + index] = static_cast<std::uint8_t>(value >> (index * 8U));
+}
+
+std::uint32_t read_u32(const std::vector<std::uint8_t>& bytes, std::size_t offset)
+{
+    std::uint32_t value = 0;
+    for (std::uint32_t index = 0; index < 4; ++index)
+        value |= static_cast<std::uint32_t>(bytes[offset + index]) << (index * 8U);
+    return value;
+}
+
+void write_u64(std::vector<std::uint8_t>& bytes, std::size_t offset, std::uint64_t value)
+{
+    for (std::uint32_t index = 0; index < 8; ++index)
         bytes[offset + index] = static_cast<std::uint8_t>(value >> (index * 8U));
 }
 
@@ -210,6 +226,13 @@ void require_decode_failure(const std::vector<std::uint8_t>& bytes, const std::s
 
 int main()
 {
+    require(sha256_hex(nullptr, 0) ==
+                "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "SHA-256 empty NIST vector failed");
+    const std::string abc = "abc";
+    require(sha256_hex(reinterpret_cast<const std::uint8_t*>(abc.data()), abc.size()) ==
+                "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+            "SHA-256 abc NIST vector failed");
     AnalyticResultPacketRecords empty_records;
     AnalyticResultPacketEncodeResult empty = encode_analytic_result_packet_records(empty_records);
     require(empty.error == AnalyticResultPacketLayoutError::none && empty.value &&
@@ -344,8 +367,68 @@ int main()
                 jobs_reverse.value->regions[0].outer_ring == 0 &&
                 jobs_reverse.value->regions[1].outer_ring == 1,
             "owner job id did not break identical batch geometry ties canonically");
+    AnalyticStandaloneJobResult standalone_forward =
+        build_analytic_standalone_job(identical_two_job_records(false), 10);
+    AnalyticStandaloneJobResult standalone_reverse =
+        build_analytic_standalone_job(identical_two_job_records(true), 10);
+    require(standalone_forward.error == AnalyticResultPacketLayoutError::none &&
+                standalone_forward.value &&
+                standalone_reverse.error == AnalyticResultPacketLayoutError::none &&
+                standalone_reverse.value &&
+                standalone_forward.value->bytes == standalone_reverse.value->bytes &&
+                standalone_forward.value->digest_sha256 ==
+                    standalone_reverse.value->digest_sha256 &&
+                standalone_forward.value->records.job_results.size() == 1 &&
+                standalone_forward.value->records.relationship_results.empty(),
+            "standalone job changed between mixed-batch layouts");
+    AnalyticStandaloneJobResult standalone_alone =
+        build_analytic_standalone_job(standalone_forward.value->records, 10);
+    require(standalone_alone.error == AnalyticResultPacketLayoutError::none &&
+                standalone_alone.value &&
+                standalone_alone.value->bytes == standalone_forward.value->bytes &&
+                standalone_alone.value->digest_sha256 == standalone_forward.value->digest_sha256,
+            "standalone job bytes changed when extracted alone");
+    AnalyticStandaloneJobResult standalone_failure =
+        build_analytic_standalone_job(records, std::numeric_limits<std::uint64_t>::max());
+    require(standalone_failure.error == AnalyticResultPacketLayoutError::none &&
+                standalone_failure.value && standalone_failure.value->records.vertices.empty() &&
+                standalone_failure.value->records.diagnostics.size() == 1 &&
+                standalone_failure.value->digest_sha256.size() == 64,
+            "failed standalone job did not close over its diagnostic-only result");
+
+    AnalyticResultPacketLayoutResult canonical_layout = decode_analytic_result_packet_layout(
+        canonical_bytes.value->data(), canonical_bytes.value->size());
+    require(canonical_layout.error == AnalyticResultPacketLayoutError::none &&
+                canonical_layout.value,
+            "canonical vector layout missing");
+    std::vector<std::uint8_t> alternate_order = *canonical_bytes.value;
+    const std::size_t vertex_offset = canonical_layout.value->tables[2].offset;
+    for (std::size_t byte = 0; byte < 32; ++byte)
+        std::swap(alternate_order[vertex_offset + byte],
+                  alternate_order[vertex_offset + 32 + byte]);
+    write_u64(alternate_order, vertex_offset, 1);
+    write_u64(alternate_order, vertex_offset + 32, 2);
+    const std::size_t fragment_offset = canonical_layout.value->tables[3].offset;
+    for (std::size_t fragment = 0; fragment < 4; ++fragment)
+        for (const std::size_t field : {std::size_t{8}, std::size_t{12}})
+        {
+            const std::size_t at = fragment_offset + fragment * 48 + field;
+            const std::uint32_t value = read_u32(alternate_order, at);
+            if (value < 2)
+                write_u32(alternate_order, at, 1 - value);
+        }
+    require_decode_failure(alternate_order,
+                           "structurally valid alternate semantic order was accepted");
 
     std::cout << "ANALYTIC_RESULT_PACKET_RECORD_VECTOR=" << hex(*encoded.value) << '\n';
     std::cout << "ANALYTIC_RESULT_PACKET_CANONICAL_VECTOR=" << hex(*canonical_bytes.value) << '\n';
+    std::cout << "ANALYTIC_RESULT_PACKET_STANDALONE_VECTOR=" << hex(standalone_forward.value->bytes)
+              << '\n';
+    std::cout << "ANALYTIC_RESULT_PACKET_STANDALONE_DIGEST="
+              << standalone_forward.value->digest_sha256 << '\n';
+    std::cout << "ANALYTIC_RESULT_PACKET_FAILED_STANDALONE_VECTOR="
+              << hex(standalone_failure.value->bytes) << '\n';
+    std::cout << "ANALYTIC_RESULT_PACKET_FAILED_STANDALONE_DIGEST="
+              << standalone_failure.value->digest_sha256 << '\n';
     return 0;
 }

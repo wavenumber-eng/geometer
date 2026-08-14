@@ -1,5 +1,7 @@
 #include "geometer/analytic_result_packet_records.h"
 
+#include "geometer/analytic_result_packet_canonical.h"
+
 #include <algorithm>
 #include <exception>
 #include <limits>
@@ -632,7 +634,7 @@ validate_analytic_result_packet_records(const AnalyticResultPacketRecords& recor
 }
 
 AnalyticResultPacketEncodeResult
-encode_analytic_result_packet_records(const AnalyticResultPacketRecords& records)
+encode_records_unchecked(const AnalyticResultPacketRecords& records)
 {
     if (const LayoutError error = validate_analytic_result_packet_records(records);
         error != LayoutError::none)
@@ -797,6 +799,16 @@ encode_analytic_result_packet_records(const AnalyticResultPacketRecords& records
     }
 }
 
+AnalyticResultPacketEncodeResult
+encode_analytic_result_packet_records(const AnalyticResultPacketRecords& records)
+{
+    AnalyticResultPacketRecordsResult canonical =
+        canonicalize_analytic_result_packet_records(records);
+    if (canonical.error != LayoutError::none || !canonical.value)
+        return {canonical.error, std::nullopt};
+    return encode_records_unchecked(*canonical.value);
+}
+
 AnalyticResultPacketRecordsResult decode_analytic_result_packet_records(const std::uint8_t* data,
                                                                         std::size_t size)
 {
@@ -917,7 +929,15 @@ AnalyticResultPacketRecordsResult decode_analytic_result_packet_records(const st
         if (const LayoutError error = validate_analytic_result_packet_records(output);
             error != LayoutError::none)
             return {error, std::nullopt};
-        return {LayoutError::none, std::move(output)};
+        AnalyticResultPacketRecordsResult canonical =
+            canonicalize_analytic_result_packet_records(output);
+        if (canonical.error != LayoutError::none || !canonical.value)
+            return {canonical.error, std::nullopt};
+        AnalyticResultPacketEncodeResult encoded = encode_records_unchecked(*canonical.value);
+        if (encoded.error != LayoutError::none || !encoded.value || encoded.value->size() != size ||
+            !std::equal(encoded.value->begin(), encoded.value->end(), data))
+            return {LayoutError::invalid_packet, std::nullopt};
+        return {LayoutError::none, std::move(*canonical.value)};
     }
     catch (const std::exception&)
     {

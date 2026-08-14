@@ -67,6 +67,7 @@ class ConstructionArena
 
     [[nodiscard]] std::size_t size() const;
     [[nodiscard]] const ConstructionNode& at(ConstructionNodeId node) const;
+    [[nodiscard]] Budget& budget();
 
     [[nodiscard]] ConstructionResult make_rational(const BigInt& numerator,
                                                    const BigInt& denominator = 1);
@@ -76,6 +77,7 @@ class ConstructionArena
     [[nodiscard]] ConstructionResult make_nonnegative_square_root(ConstructionNodeId child);
 
   private:
+    friend class ConstructionTransaction;
     [[nodiscard]] ConstructionResult
     make_associative(ConstructionKind kind, const std::vector<ConstructionNodeId>& input_children);
     [[nodiscard]] ConstructionResult intern_value(ConstructionKind kind,

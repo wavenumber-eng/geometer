@@ -166,6 +166,11 @@ const ConstructionNode& ConstructionArena::at(ConstructionNodeId node) const
     return nodes_.at(node);
 }
 
+Budget& ConstructionArena::budget()
+{
+    return budget_;
+}
+
 bool ConstructionArena::valid_node(ConstructionNodeId node) const
 {
     return static_cast<std::size_t>(node) < nodes_.size();

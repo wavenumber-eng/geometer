@@ -42,10 +42,27 @@ _BOOLEAN_METAMORPHIC_GATE: dict[str, Any] = {
     "boolean_metamorphic_sha256": "3572a4fcd40cc212a542d5dc8a166ce372404e058b01c819baa1b102e818bb6f",
 }
 
+_SEEDED_PROPERTY_GATE: dict[str, Any] = {
+    "seeded_property_test": "tests/cpp/exact_boolean_seeded_property_test.cpp",
+    "seeded_property_parity_validator": "scripts/validate_exact_boolean_seeded_property_parity.py",
+    "seeded_property_generator": "splitmix64",
+    "seeded_property_grid": "4x4_integer_unit_cells",
+    "seeded_property_seeds": [
+        "0000000000000001",
+        "0123456789abcdef",
+        "9e3779b97f4a7c15",
+        "ffffffffffffffff",
+    ],
+    "seeded_property_cases_per_seed": 8,
+    "seeded_property_cases": 32,
+    "seeded_property_sha256": "8ec9069e601e8bf7f59294f64f3c3f724def414ad436066b17c6c4df4d144537",
+}
+
 _SYNTHETIC_CORRECTNESS_GATE: dict[str, Any] = {
     **_BOOLEAN_METAMORPHIC_GATE,
     **_NORMALIZATION_COLLAPSE_GATE,
     **_RECTANGLE_ENUMERATION_GATE,
+    **_SEEDED_PROPERTY_GATE,
 }
 
 
@@ -409,7 +426,7 @@ def test_exact_algebraic_backend_design_gate_is_closed() -> None:
         "production_solver_allowed": False,
         "design_review_revision": "a8c9604de280e2a67018e1106fd1b430b34fcf50",
         "design_review_packet": "reviewer-019ffd1f-3c67-7001-87a5-200b6cda10d8",
-        "implemented_surface": "budgeted_exact_intersections_nm_normalization_curve_domain_half_edge_face_classification_stage_lineage_result_region_provenance_operand_outcome_certified_arc_result_normalization_canonical_source_set_result_packet_layout_typed_record_graph_semantic_canonical_projection_standalone_closure_digest_decoder_enforcement_exact_topology_replay_mutation_sentinels_closed_form_invariants_degeneracy_sweeps_boolean_identities_and_bounded_enumeration_feasibility",
+        "implemented_surface": "budgeted_exact_intersections_nm_normalization_curve_domain_half_edge_face_classification_stage_lineage_result_region_provenance_operand_outcome_certified_arc_result_normalization_canonical_source_set_result_packet_layout_typed_record_graph_semantic_canonical_projection_standalone_closure_digest_decoder_enforcement_exact_topology_replay_mutation_sentinels_closed_form_invariants_degeneracy_sweeps_boolean_identities_metamorphic_relations_bounded_enumeration_and_seeded_property_feasibility",
         "arc_distance_source": "src/cpp/lib/exact_arc_distance.cpp",
         "result_normalization_source": "src/cpp/lib/exact_result_normalization.cpp",
         "source_sets_source": "src/cpp/lib/exact_source_sets.cpp",
@@ -640,6 +657,8 @@ def test_exact_algebraic_backend_paths_exist() -> None:
         "boolean_identity_parity_validator",
         "boolean_metamorphic_test",
         "boolean_metamorphic_parity_validator",
+        "seeded_property_test",
+        "seeded_property_parity_validator",
         "rectangle_enumeration_test",
         "rectangle_enumeration_parity_validator",
     ):

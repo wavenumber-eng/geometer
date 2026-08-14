@@ -939,6 +939,29 @@ component count. The per-case actual occupancy, actual canonical directed-edge
 projection, component, vertex, and fragment signature is digest-locked and
 identical under native and Emscripten execution.
 
+### Deterministic Seeded Rectangle Properties
+
+The pull-request property lane uses a repository-owned SplitMix64 generator
+with four frozen 64-bit seeds. It generates 32 cases on a `4x4` integer
+unit-cell grid; each case contains one to five ordered union/difference stages
+and one to three rectangle operands per stage. Every authored boundary is
+split into atomic unit carriers.
+
+An independent cell-mask evaluator applies the union of operands within each
+stage and then the ordered stage operation. It derives the exact directed
+unit-edge boundary and four-neighbor result-component count. Published
+normalized geometry must equal that boundary exactly and contain no duplicate
+edges, duplicate vertices, or unreferenced vertices. Reversing every
+same-stage operand list must preserve canonical geometry, face lineage, and
+result count byte for byte. Each failure identifies its seed, case index, and
+complete stage/rectangle replay descriptor. The complete actual boundary,
+face-lineage, and result-count projection is digest-locked under
+native/Emscripten parity.
+
+This is the modest deterministic pull-request seed set. Automatic failure
+reduction, committed minimized-regression promotion, and larger nightly seeds
+remain separate work before the property program is complete.
+
 ### OCCT 8.0.1 Qualification
 
 Production solver work and conformance-golden freeze require a side-by-side

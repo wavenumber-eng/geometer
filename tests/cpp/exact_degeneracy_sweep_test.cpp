@@ -203,6 +203,44 @@ void append_arc_boundary_sweep(ConstructionArena& arena, std::string& signature)
     signature += "|arc_0_360:minor,major|arc_180:minor,semicircle,major|arc_closed:invalid";
 }
 
+void append_swept_area_overlap_sweep(ConstructionArena& arena, std::string& signature)
+{
+    // This is an exact oracle for the nonadjacent horizontal legs of a valid U-shaped
+    // centerline. For a round sweep, their interior strips have overlap area
+    // leg_length * (width - separation) when that value is positive. The connector is
+    // perpendicular to both legs, so the centerline neither retraces nor self-intersects.
+    const BigInt leg_length = 12;
+    const BigInt width = 10;
+    const ExactCircle first_end_cap{point(arena, 0, 0), rational(arena, width, 2)};
+    std::vector<std::string> classifications;
+    for (const BigInt& separation : {BigInt(9), BigInt(10), BigInt(11)})
+    {
+        require(separation > 0 && leg_length > 0 && width > 0,
+                "swept-area overlap fixture must remain a valid U centerline");
+        const BigInt signed_witness_area = leg_length * (width - separation);
+        const ExactCircle second_end_cap{point(arena, 0, separation), rational(arena, width, 2)};
+        const std::string cap_relation = relation_name(
+            geometer::exact::intersect_exact_circles(arena, first_end_cap, second_end_cap));
+        std::string classification;
+        if (signed_witness_area > 0)
+            classification =
+                "overlap_allowed:witness_area_" + signed_witness_area.convert_to<std::string>();
+        else if (signed_witness_area == 0)
+            classification = "contact_allowed:witness_area_0";
+        else
+            classification =
+                "disjoint_allowed:gap_area_" + (-signed_witness_area).convert_to<std::string>();
+        classifications.push_back("separation_" + separation.convert_to<std::string>() + ":caps_" +
+                                  cap_relation + ':' + classification);
+    }
+    require(classifications == std::vector<std::string>(
+                                   {"separation_9:caps_two_points:overlap_allowed:witness_area_12",
+                                    "separation_10:caps_point:contact_allowed:witness_area_0",
+                                    "separation_11:caps_disjoint:disjoint_allowed:gap_area_12"}),
+            "permitted swept-area self-overlap boundary changed");
+    signature += "|swept_nonadjacent:" + join(classifications);
+}
+
 } // namespace
 
 int main()
@@ -214,6 +252,7 @@ int main()
     append_near_collinear_sweep(arena, signature);
     append_half_grid_sweep(arena, signature);
     append_arc_boundary_sweep(arena, signature);
+    append_swept_area_overlap_sweep(arena, signature);
     std::cout << "EXACT_DEGENERACY_SWEEP=" << signature << '\n';
     return 0;
 }

@@ -90,7 +90,7 @@ depends_on = ["geom-contract-alignment"]
 [[steps]]
 id = "analytic-synthetic-correctness"
 title = "Establish the analytic Boolean synthetic correctness and mutation program"
-status = "active"
+status = "done"
 depends_on = ["analytic-planar-boolean-design"]
 
 [[steps]]

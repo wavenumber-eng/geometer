@@ -801,9 +801,10 @@ first-stage boundary at `7/5` nm with its premature 1-nm-grid representation
 before subtracting the exact `[6/5, 7/5]` tail. Both paths publish the same
 final normalized rectangle, but the mutation erases the required subtraction
 effect and is rejected by the lineage oracle. Native and Emscripten must report
-the identical governed sentinel inventories. These sentinels are an implemented subset of the
-larger synthetic-correctness program, not completion of its closed-form,
-degeneracy, exhaustive, property, or between-stage-normalization lanes.
+the identical governed sentinel inventories. These sentinels are one layer of
+the synthetic-correctness program; the companion sections below govern its
+closed-form, degeneracy, exhaustive, property, lineage, and
+between-stage-normalization lanes.
 
 ### Closed-Form Analytic Invariants
 
@@ -880,6 +881,18 @@ outer-boundary intersections before the arrangement is constructed.
 Successful canonical geometry and failed outcome identities form one
 digest-locked signature that is identical under native and Emscripten
 execution.
+
+The same exact degeneracy signature includes a valid U-shaped line centerline
+whose two nonadjacent 12-nm legs are swept at width 10 nm. Separations of 9,
+10, and 11 nm respectively produce a positive 12-nm2 interior-strip overlap
+witness, exact contact, and a 12-nm2 gap witness. The exact circle-intersection
+backend independently classifies the corresponding round endpoint caps as
+two intersections, one tangent point, and disjoint. All three centerlines
+remain valid: A0 permits overlap between nonadjacent parts of the swept area
+even though it forbids centerline retracing and self-intersection. The
+classifications are `overlap_allowed`, `contact_allowed`, and
+`disjoint_allowed`; no tolerance or solver-generated geometry decides the
+boundary.
 
 ### Exact Boolean Identities
 
@@ -984,9 +997,9 @@ separate conventional `nightly` profile expands this to eight frozen seeds and
 Native and Emscripten must produce the same separately governed digest. Because
 Geometer changes infrequently, CI schedules that extended profile monthly and
 also exposes it through an explicit manual workflow input for release or
-kernel-change validation. Promotion of any real minimized failure into the
-committed regression corpus remains required before the property program is
-complete.
+kernel-change validation. Any real minimized failure must be promoted into the
+committed regression corpus before the affected change can proceed; no real
+property failure has been discovered by the frozen profiles to date.
 
 ### Exact Many-To-Many Lineage Matrix
 
@@ -1002,9 +1015,10 @@ The fixture requires the exact association matrix and separately injects an
 omitted-association mutation that the equality oracle must reject. Reversing
 the unordered union operands must preserve the complete region, provenance,
 and outcome projection. Native and Emscripten executions are digest-locked
-byte for byte. This closes the true many-to-many association subcase; the
-remaining broader lineage, nightly, and production cross-runtime lanes stay
-pending.
+byte for byte. Together with the absorbed/coincident, partial/complete
+removal, surviving/overwritten subtraction, and refill fixtures above, this
+closes the preproduction lineage matrix. Production operation replay through
+all released client transports remains a later promotion gate.
 
 ### OCCT 8.0.1 Qualification
 

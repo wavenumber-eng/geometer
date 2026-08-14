@@ -90,6 +90,17 @@ void test_large_negative_rational_golden_and_budget_boundary()
     require(decoded.error == geometer::exact::Error::none && decoded.value.has_value() &&
                 decoded.value->numerator() == -magnitude && decoded.value->denominator() == 1,
             "large signed rational scalar decode changed");
+    geometer::exact::Budget exact_decode_budget({984, 1'000'000});
+    auto exact_decoded = geometer::exact::decode_canonical_real(exact_decode_budget, expected);
+    require(exact_decoded.error == geometer::exact::Error::none && exact_decoded.value &&
+                exact_decode_budget.usage().work_units == 984,
+            "large rational decode charged-work boundary changed");
+    geometer::exact::Budget short_decode_budget({983, 1'000'000});
+    auto short_decoded = geometer::exact::decode_canonical_real(short_decode_budget, expected);
+    require(short_decoded.error == geometer::exact::Error::resource_limit_exceeded &&
+                short_decode_budget.usage().work_units == 768 &&
+                short_decode_budget.usage().owned_bytes == 0,
+            "one-unit-short large rational decode must fail at the charged normalization phase");
 
     geometer::exact::Budget short_budget({383, 1'000'000});
     auto short_result = geometer::exact::encode_canonical_real(short_budget, negative);
@@ -136,6 +147,14 @@ void test_strict_decode_and_canonical_revalidation()
     auto padding = bytes;
     padding.back() = 1;
     expect_invalid(std::move(padding), "nonzero scalar alignment padding was accepted");
+    auto extra_padding = bytes;
+    extra_padding.resize(80, 0);
+    extra_padding[4] = 80;
+    expect_invalid(std::move(extra_padding), "nonminimal scalar padding block was accepted");
+    auto scaled_polynomial = bytes;
+    scaled_polynomial[20] = 16;
+    scaled_polynomial[40] = 2;
+    expect_invalid(std::move(scaled_polynomial), "scaled polynomial presentation was accepted");
     const std::vector<std::uint8_t> unreduced = {
         1, 0, 0, 0, 32, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0,
         2, 0, 0, 0, 1,  0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0,

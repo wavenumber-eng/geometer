@@ -135,21 +135,6 @@ bool read_integer(const std::vector<std::uint8_t>& input, std::size_t& offset, B
     return true;
 }
 
-BigInt integer_gcd(BigInt left, BigInt right)
-{
-    if (left < 0)
-        left = -left;
-    if (right < 0)
-        right = -right;
-    while (right != 0)
-    {
-        BigInt next = left % right;
-        left = std::move(right);
-        right = std::move(next);
-    }
-    return left;
-}
-
 void append_integer(std::vector<std::uint8_t>& output, const BigInt& value)
 {
     const BigInt magnitude = value < 0 ? -value : value;
@@ -256,12 +241,16 @@ DecodeCanonicalRealResult decode_canonical_real(Budget& budget,
             BigInt denominator;
             if (!read_integer(input, offset, numerator) ||
                 !read_integer(input, offset, denominator) || denominator <= 0 ||
-                integer_gcd(numerator, denominator) != 1)
+                align(offset, 8) != input.size())
                 return {Error::invalid_argument, std::nullopt};
             while (offset < input.size())
                 if (input[offset++] != 0)
                     return {Error::invalid_argument, std::nullopt};
             CanonicalRealResult value = make_canonical_rational(budget, numerator, denominator);
+            if (value.error != Error::none || !value.value)
+                return {value.error, std::nullopt};
+            if (value.value->numerator() != numerator || value.value->denominator() != denominator)
+                return {Error::invalid_argument, std::nullopt};
             return {value.error, std::move(value.value)};
         }
         std::uint32_t coefficient_count = 0;
@@ -296,12 +285,16 @@ DecodeCanonicalRealResult decode_canonical_real(Budget& budget,
                 return {Error::invalid_argument, std::nullopt};
             thom_signs.push_back(encoded == 255 ? -1 : static_cast<std::int8_t>(encoded));
         }
+        if (align(offset, 8) != input.size())
+            return {Error::invalid_argument, std::nullopt};
         while (offset < input.size())
             if (input[offset++] != 0)
                 return {Error::invalid_argument, std::nullopt};
         CanonicalRealResult value = make_canonical_irrational(budget, coefficients, ordinal);
         if (value.error != Error::none || !value.value)
             return {value.error, std::nullopt};
+        if (value.value->polynomial()->coefficients() != coefficients)
+            return {Error::invalid_argument, std::nullopt};
         const IsolatedRoot& root = *value.value->root();
         if (root.precision != precision || root.interval_k != interval_k ||
             root.thom_signs != thom_signs)

@@ -2,8 +2,10 @@
 
 #include <algorithm>
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <cstdlib>
+#include <functional>
 #include <iomanip>
 #include <iostream>
 #include <set>
@@ -248,6 +250,14 @@ struct Scenario
     std::size_t regions = 0;
 };
 
+enum class PropertyFailure : std::uint8_t
+{
+    none = 0,
+    boundary = 1,
+    component_count = 2,
+    operand_reversal = 3,
+};
+
 Scenario run_scenario(const PropertyCase& property, bool reverse_operands,
                       const std::string& descriptor)
 {
@@ -349,6 +359,124 @@ std::string boundary_signature(const std::set<IntegerEdge>& boundary)
     return out.str();
 }
 
+struct PropertyEvaluation
+{
+    Scenario baseline;
+    PropertyFailure failure = PropertyFailure::none;
+};
+
+PropertyEvaluation evaluate_property(const PropertyCase& property, const std::string& descriptor)
+{
+    const std::uint16_t mask = expected_mask(property);
+    const Scenario baseline = run_scenario(property, false, descriptor);
+    if (baseline.boundary != expected_boundary(mask))
+        return {baseline, PropertyFailure::boundary};
+    if (baseline.regions != component_count(mask))
+        return {baseline, PropertyFailure::component_count};
+    const Scenario reversed = run_scenario(property, true, descriptor);
+    if (reversed.boundary != baseline.boundary || reversed.geometry != baseline.geometry ||
+        reversed.lineage != baseline.lineage || reversed.regions != baseline.regions)
+        return {baseline, PropertyFailure::operand_reversal};
+    return {baseline, PropertyFailure::none};
+}
+
+PropertyCase minimize_failure(PropertyCase current,
+                              const std::function<bool(const PropertyCase&)>& still_fails)
+{
+    bool changed = true;
+    while (changed)
+    {
+        changed = false;
+        for (std::size_t stage = 0; stage < current.stages.size(); ++stage)
+        {
+            PropertyCase candidate = current;
+            candidate.stages.erase(candidate.stages.begin() + static_cast<std::ptrdiff_t>(stage));
+            if (still_fails(candidate))
+            {
+                current = std::move(candidate);
+                changed = true;
+                break;
+            }
+        }
+        if (changed)
+            continue;
+        for (std::size_t stage = 0; stage < current.stages.size() && !changed; ++stage)
+            for (std::size_t operand = 0; operand < current.stages[stage].operands.size();
+                 ++operand)
+            {
+                PropertyCase candidate = current;
+                candidate.stages[stage].operands.erase(candidate.stages[stage].operands.begin() +
+                                                       static_cast<std::ptrdiff_t>(operand));
+                if (still_fails(candidate))
+                {
+                    current = std::move(candidate);
+                    changed = true;
+                    break;
+                }
+            }
+        if (changed)
+            continue;
+        for (const PropertyStage& stage : current.stages)
+            for (const std::uint32_t operand : stage.operands)
+            {
+                const Rectangle original = current.rectangles[operand];
+                const std::array<Rectangle, 4> candidates{
+                    Rectangle{original.x0, original.y0, original.x0 + 1, original.y1},
+                    Rectangle{original.x0, original.y0, original.x1, original.y0 + 1},
+                    Rectangle{0, original.y0, original.x1 - original.x0, original.y1},
+                    Rectangle{original.x0, 0, original.x1, original.y1 - original.y0},
+                };
+                for (const Rectangle& rectangle : candidates)
+                {
+                    if (rectangle.x0 >= rectangle.x1 || rectangle.y0 >= rectangle.y1 ||
+                        (rectangle.x0 == original.x0 && rectangle.y0 == original.y0 &&
+                         rectangle.x1 == original.x1 && rectangle.y1 == original.y1))
+                        continue;
+                    PropertyCase candidate = current;
+                    candidate.rectangles[operand] = rectangle;
+                    if (still_fails(candidate))
+                    {
+                        current = std::move(candidate);
+                        changed = true;
+                        break;
+                    }
+                }
+                if (changed)
+                    break;
+            }
+    }
+    return current;
+}
+
+bool covers_origin(const PropertyCase& property)
+{
+    for (const PropertyStage& stage : property.stages)
+        if (stage.operation == ExactBooleanStageOperation::union_)
+            for (const std::uint32_t operand : stage.operands)
+            {
+                const Rectangle& rectangle = property.rectangles[operand];
+                if (rectangle.x0 == 0 && rectangle.y0 == 0)
+                    return true;
+            }
+    return false;
+}
+
+std::string require_reducer_sentinel()
+{
+    PropertyCase fixture;
+    fixture.rectangles = {{1, 1, 2, 2}, {0, 0, 4, 4}, {2, 2, 4, 4}, {3, 0, 4, 1}};
+    fixture.stages = {
+        {ExactBooleanStageOperation::difference, {0}},
+        {ExactBooleanStageOperation::union_, {1, 2}},
+        {ExactBooleanStageOperation::difference, {3}},
+    };
+    const PropertyCase minimized = minimize_failure(fixture, covers_origin);
+    const std::string descriptor = replay_descriptor(0, 0, minimized);
+    require(descriptor == "seed=0x0,case=0,stages=U[0,0,1,1;]",
+            "seeded-property reducer sentinel did not reach its unique minimal fixture");
+    return descriptor;
+}
+
 } // namespace
 
 int main()
@@ -360,6 +488,7 @@ int main()
         0xffffffffffffffffULL,
     };
     constexpr std::uint32_t cases_per_seed = 8;
+    const std::string reducer_sentinel = require_reducer_sentinel();
     std::ostringstream signature;
     std::uint32_t case_count = 0;
     for (const std::uint64_t seed : seeds)
@@ -370,17 +499,21 @@ int main()
             const PropertyCase property = generate_case(generator);
             const std::string descriptor = replay_descriptor(seed, case_index, property);
             const std::uint16_t mask = expected_mask(property);
-            const std::set<IntegerEdge> oracle_boundary = expected_boundary(mask);
-            const Scenario baseline = run_scenario(property, false, descriptor);
-            require(baseline.boundary == oracle_boundary,
-                    descriptor + ": normalized boundary disagrees with independent cell oracle");
-            require(baseline.regions == component_count(mask),
-                    descriptor + ": region count disagrees with independent cell oracle");
-            const Scenario reversed = run_scenario(property, true, descriptor);
-            require(
-                reversed.boundary == baseline.boundary && reversed.geometry == baseline.geometry &&
-                    reversed.lineage == baseline.lineage && reversed.regions == baseline.regions,
-                descriptor + ": reversing same-stage operands changed the result");
+            const PropertyEvaluation evaluation = evaluate_property(property, descriptor);
+            if (evaluation.failure != PropertyFailure::none)
+            {
+                const PropertyFailure failure = evaluation.failure;
+                const PropertyCase minimized = minimize_failure(
+                    property,
+                    [&](const PropertyCase& candidate)
+                    {
+                        return evaluate_property(candidate, "reducer-candidate").failure == failure;
+                    });
+                require(false, descriptor + ": property failure=" +
+                                   std::to_string(static_cast<unsigned>(failure)) +
+                                   ",minimized=" + replay_descriptor(seed, case_index, minimized));
+            }
+            const Scenario& baseline = evaluation.baseline;
             signature << std::hex << std::setw(4) << std::setfill('0') << mask << std::dec << ':'
                       << boundary_signature(baseline.boundary) << ':' << baseline.regions << ':'
                       << baseline.lineage << '|';
@@ -389,6 +522,6 @@ int main()
     }
     require(case_count == seeds.size() * cases_per_seed, "seeded-property case count changed");
     std::cout << "EXACT_BOOLEAN_SEEDED_PROPERTY=seeds:" << seeds.size() << ",cases:" << case_count
-              << '|' << signature.str() << '\n';
+              << '|' << signature.str() << "reducer:" << reducer_sentinel << '\n';
     return 0;
 }

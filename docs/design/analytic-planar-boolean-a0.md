@@ -954,13 +954,17 @@ normalized geometry must equal that boundary exactly and contain no duplicate
 edges, duplicate vertices, or unreferenced vertices. Reversing every
 same-stage operand list must preserve canonical geometry, face lineage, and
 result count byte for byte. Each failure identifies its seed, case index, and
-complete stage/rectangle replay descriptor. The complete actual boundary,
-face-lineage, and result-count projection is digest-locked under
-native/Emscripten parity.
+complete stage/rectangle replay descriptor. Before failing, the harness
+deterministically removes stages and operands and shrinks/translates rectangle
+extents while the same property failure persists. It reports the resulting
+one-minimal fixture under those transformations. An injected reducer sentinel
+must reduce a three-stage, four-rectangle input to the single unit rectangle
+`U[0,0,1,1]`. The complete actual boundary, face-lineage, result-count, and
+reducer projection is digest-locked under native/Emscripten parity.
 
-This is the modest deterministic pull-request seed set. Automatic failure
-reduction, committed minimized-regression promotion, and larger nightly seeds
-remain separate work before the property program is complete.
+This is the modest deterministic pull-request seed set. Promotion of any real
+minimized failure into the committed regression corpus and larger nightly
+seeds remain separate work before the property program is complete.
 
 ### OCCT 8.0.1 Qualification
 

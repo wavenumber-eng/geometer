@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import subprocess
 import sys
 from pathlib import Path
 from typing import Any
@@ -62,6 +63,68 @@ def test_cache_key_includes_platform_and_recipe() -> None:
     )
 
     assert profile.cache_key == "occt-native-v7-8-1-linux-arm64-release-static-recipe-aaaaaaaaaaaaaaaa"
+
+
+def test_exact_tag_qualification_uses_isolated_native_and_wasm_profiles() -> None:
+    state_root = ".deps/occt-qualification/V8_0_1"
+    existed_before = (ROOT / state_root).exists()
+    native = subprocess.run(
+        [
+            sys.executable,
+            "scripts/build_occt.py",
+            "--occt-tag",
+            "V8_0_1",
+            "--occt-state-root",
+            state_root,
+            "--print-binary-cache-key",
+        ],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    wasm = subprocess.run(
+        [
+            sys.executable,
+            "scripts/build_wasm.py",
+            "--occt-tag",
+            "V8_0_1",
+            "--occt-state-root",
+            state_root,
+            "--print-occt-binary-cache-key",
+        ],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+
+    assert native.startswith("occt-native-v8-0-1-")
+    assert wasm.startswith("occt-wasm-v8-0-1-")
+    assert (ROOT / state_root).exists() == existed_before
+
+
+def test_qualification_rejects_master_and_state_outside_generated_root() -> None:
+    for arguments in (
+        ["--occt-tag", "master", "--occt-state-root", ".deps/occt-qualification/master"],
+        ["--occt-tag", "V8_0_1", "--occt-state-root", "out/occt-qualification/V8_0_1"],
+    ):
+        completed = subprocess.run(
+            [sys.executable, "scripts/build_occt.py", *arguments, "--print-binary-cache-key"],
+            cwd=ROOT,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        assert completed.returncode != 0
+
+
+def test_qualification_dist_root_is_isolated_from_committed_artifacts() -> None:
+    source = (ROOT / "CMakeLists.txt").read_text(encoding="utf-8")
+
+    assert 'set(GEOMETER_DIST_ROOT "${CMAKE_SOURCE_DIR}/dist"' in source
+    assert '"${GEOMETER_DIST_ROOT}/native/${GEOMETER_NATIVE_DIST_PLATFORM}"' in source
+    assert '"${GEOMETER_DIST_ROOT}/wasm/browser"' in source
 
 
 def test_public_config_defaults_to_artifacts_domain(monkeypatch: MonkeyPatch) -> None:

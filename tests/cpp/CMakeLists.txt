@@ -394,14 +394,38 @@ if(EMSCRIPTEN)
     target_link_options(geometer_exact_rectangle_enumeration_test PRIVATE -fexceptions)
 endif()
 
+function(configure_geometer_fixture_test target_name)
+    if(EMSCRIPTEN)
+        target_compile_definitions(${target_name} PRIVATE
+            GEOMETER_TEST_SOURCE_DIR="/repo"
+        )
+        target_compile_options(${target_name} PRIVATE -fexceptions)
+        target_link_options(${target_name} PRIVATE
+            -fexceptions
+            -sALLOW_MEMORY_GROWTH=1
+            -sINITIAL_MEMORY=67108864
+            -sSTACK_SIZE=8388608
+        )
+        foreach(fixture_path IN LISTS ARGN)
+            target_link_options(${target_name} PRIVATE
+                "SHELL:--preload-file ${CMAKE_SOURCE_DIR}/${fixture_path}@/repo/${fixture_path}"
+            )
+        endforeach()
+    else()
+        target_compile_definitions(${target_name} PRIVATE
+            GEOMETER_TEST_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
+        )
+    endif()
+endfunction()
+
 add_executable(geometer_model_bounds_test
     model_bounds_test.cpp
 )
 
 target_link_libraries(geometer_model_bounds_test PRIVATE geometer_lib)
 
-target_compile_definitions(geometer_model_bounds_test PRIVATE
-    GEOMETER_TEST_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
+configure_geometer_fixture_test(geometer_model_bounds_test
+    tests/fixtures/step/embedded_models/SOT-23.STEP
 )
 
 add_test(NAME geometer_model_bounds_test COMMAND geometer_model_bounds_test)
@@ -412,8 +436,9 @@ add_executable(geometer_operation_contract_test
 
 target_link_libraries(geometer_operation_contract_test PRIVATE geometer_lib)
 
-target_compile_definitions(geometer_operation_contract_test PRIVATE
-    GEOMETER_TEST_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
+configure_geometer_fixture_test(geometer_operation_contract_test
+    tests/contracts/vectors
+    tests/fixtures/step/embedded_models/SOT-23.STEP
 )
 
 add_test(NAME geometer_operation_contract_test COMMAND geometer_operation_contract_test)
@@ -454,8 +479,8 @@ add_executable(geometer_projection_model_transform_test
 
 target_link_libraries(geometer_projection_model_transform_test PRIVATE geometer_lib)
 
-target_compile_definitions(geometer_projection_model_transform_test PRIVATE
-    GEOMETER_TEST_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
+configure_geometer_fixture_test(geometer_projection_model_transform_test
+    tests/fixtures/step/embedded_models/SOT-23.STEP
 )
 
 add_test(NAME geometer_projection_model_transform_test COMMAND geometer_projection_model_transform_test)
@@ -466,11 +491,31 @@ add_executable(geometer_projection_outline_test
 
 target_link_libraries(geometer_projection_outline_test PRIVATE geometer_lib)
 
-target_compile_definitions(geometer_projection_outline_test PRIVATE
-    GEOMETER_TEST_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
+configure_geometer_fixture_test(geometer_projection_outline_test
+    tests/fixtures/step/embedded_models/BGA90-8X13mm.step
+    tests/fixtures/step/embedded_models/SOT-23.STEP
+    tests/fixtures/step/embedded_models/TSOT-23-5.STEP
+    tests/fixtures/step/embedded_models/sot223.stp
 )
 
 add_test(NAME geometer_projection_outline_test COMMAND geometer_projection_outline_test)
+
+if(EMSCRIPTEN)
+    # The repository package is ESM, while these executable test harnesses use
+    # Emscripten's CommonJS Node runtime. Keep every registered WASM CTest on
+    # the same .cjs policy as the exact/synthetic targets above.
+    set_target_properties(
+        geometer_planar_contours_test
+        geometer_planar_solve_test
+        geometer_planar_step_test
+        geometer_model_bounds_test
+        geometer_operation_contract_test
+        geometer_projection_options_json_test
+        geometer_projection_model_transform_test
+        geometer_projection_outline_test
+        PROPERTIES SUFFIX ".cjs"
+    )
+endif()
 
 if(WIN32 AND OpenCASCADE_BINARY_DIR)
     set_tests_properties(

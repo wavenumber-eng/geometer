@@ -408,6 +408,12 @@ python scripts\build_occt.py --print-binary-cache-key
 python scripts\build_wasm.py --print-occt-binary-cache-key
 ```
 
+For a side-by-side kernel upgrade decision, use the isolated exact-tag
+qualification harness rather than editing `dependency_versions.py` between
+builds. See [OCCT qualification](occt-qualification.md). It keeps dependency
+state below `.deps/occt-qualification/<tag>/`, build evidence below
+`out/occt-qualification/<tag>/`, and committed `dist/` artifacts untouched.
+
 The trusted GitHub workflow `.github/workflows/occt-deps.yml` publishes OCCT
 archives to R2. Normal CI and release workflows consume the public artifact
 cache and do not need R2 secrets. When the printed keys are missing from

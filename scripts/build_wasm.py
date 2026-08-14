@@ -50,6 +50,24 @@ GEOMETER_WASM_BUILD = ROOT / "build-wasm"
 OCCT_REPO = dependency_versions.OCCT_REPO
 OCCT_TAG = dependency_versions.OCCT_TAG
 OCCT_WASM_PLATFORM_TAG = "wasm-emscripten"
+OCCT_STATE_ROOT = DEPS_DIR
+
+
+def configure_occt_variant(tag: str, state_root: Path | None) -> None:
+    global OCCT_SRC, OCCT_STATE_ROOT, OCCT_TAG, OCCT_WASM_BUILD, OCCT_WASM_INSTALL
+    if not re.fullmatch(r"V[0-9]+(?:_[0-9]+)+", tag):
+        raise ValueError(f"OCCT tag must be an exact release tag, got {tag!r}")
+    OCCT_TAG = tag
+    if state_root is None:
+        return
+    resolved = state_root.resolve()
+    generated_root = (ROOT / ".deps").resolve()
+    if resolved == generated_root or generated_root not in resolved.parents:
+        raise ValueError(f"OCCT state root must be a strict descendant of {generated_root}")
+    OCCT_STATE_ROOT = resolved
+    OCCT_SRC = resolved / "occt-src"
+    OCCT_WASM_BUILD = resolved / "occt-wasm-build"
+    OCCT_WASM_INSTALL = resolved / "occt-wasm-install"
 
 
 def run(cmd: list[str], **kwargs) -> None:
@@ -368,7 +386,10 @@ def build_geometer_wasm() -> None:
 # ---- clean ----
 
 def clean() -> None:
-    for d in [EMSDK_DIR, OCCT_WASM_BUILD, OCCT_WASM_INSTALL, GEOMETER_WASM_BUILD]:
+    targets = [OCCT_WASM_BUILD, OCCT_WASM_INSTALL]
+    if OCCT_STATE_ROOT == DEPS_DIR:
+        targets.extend([EMSDK_DIR, GEOMETER_WASM_BUILD])
+    for d in targets:
         if d.exists():
             print(f"Removing {d}")
             remove_tree(d)
@@ -386,6 +407,17 @@ def prepare_occt_source_build() -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description="Build geometer for WASM via Emscripten.")
     parser.add_argument("--clean", action="store_true", help="Remove all WASM build artifacts")
+    parser.add_argument(
+        "--occt-tag",
+        default=dependency_versions.OCCT_TAG,
+        help="Exact OCCT release tag (default: repository production pin).",
+    )
+    parser.add_argument(
+        "--occt-state-root",
+        type=Path,
+        default=None,
+        help="Isolated generated OCCT state root below .deps/ (qualification use).",
+    )
     parser.add_argument(
         "--occt-binary-cache",
         choices=sorted(occt_binary_cache.VALID_MODES),
@@ -408,6 +440,10 @@ def main() -> None:
         help="Stop after preparing the WASM OCCT install tree.",
     )
     args = parser.parse_args()
+    try:
+        configure_occt_variant(args.occt_tag, args.occt_state_root)
+    except ValueError as exc:
+        parser.error(str(exc))
 
     if args.clean:
         clean()

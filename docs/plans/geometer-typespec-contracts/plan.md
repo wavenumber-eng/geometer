@@ -96,7 +96,7 @@ depends_on = ["analytic-planar-boolean-design"]
 [[steps]]
 id = "occt-8-0-1-qualification"
 title = "Qualify OCCT V8_0_1 against V8_0_0 on native, WASM, and existing regressions"
-status = "pending"
+status = "active"
 depends_on = ["analytic-synthetic-correctness"]
 
 [[steps]]

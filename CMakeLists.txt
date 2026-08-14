@@ -63,17 +63,19 @@ endif()
 
 set(GEOMETER_NATIVE_DIST_PLATFORM "${_geometer_dist_os}-${_geometer_dist_arch}"
     CACHE STRING "Geometer native dist platform directory")
+set(GEOMETER_DIST_ROOT "${CMAKE_SOURCE_DIR}/dist"
+    CACHE PATH "Root directory for generated Geometer distribution artifacts")
 set(GEOMETER_NATIVE_DIST_DIR
-    "${CMAKE_SOURCE_DIR}/dist/native/${GEOMETER_NATIVE_DIST_PLATFORM}"
+    "${GEOMETER_DIST_ROOT}/native/${GEOMETER_NATIVE_DIST_PLATFORM}"
     CACHE PATH "Geometer platform-specific native dist directory")
 set(GEOMETER_WASM_BROWSER_DIST_DIR
-    "${CMAKE_SOURCE_DIR}/dist/wasm/browser"
+    "${GEOMETER_DIST_ROOT}/wasm/browser"
     CACHE PATH "Geometer full browser WASM dist directory")
 set(GEOMETER_WASM_NODE_TEST_DIST_DIR
-    "${CMAKE_SOURCE_DIR}/dist/wasm/node-test"
+    "${GEOMETER_DIST_ROOT}/wasm/node-test"
     CACHE PATH "Geometer Node CLI test WASM dist directory")
 set(GEOMETER_WASM_PLANAR_BROWSER_DIST_DIR
-    "${CMAKE_SOURCE_DIR}/dist/wasm/planar-browser"
+    "${GEOMETER_DIST_ROOT}/wasm/planar-browser"
     CACHE PATH "Geometer planar browser WASM dist directory")
 
 # ---------------------------------------------------------------------------

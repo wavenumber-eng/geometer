@@ -21,6 +21,7 @@ from __future__ import annotations
 import argparse
 import os
 import platform
+import re
 import shutil
 import stat
 import subprocess
@@ -44,6 +45,22 @@ RAPIDJSON_PATCH_SENTINEL = (
 OCCT_REPO = dependency_versions.OCCT_REPO
 OCCT_TAG = dependency_versions.OCCT_TAG
 DEFAULT_MACOS_DEPLOYMENT_TARGET = "11.0"
+
+
+def configure_occt_variant(tag: str, state_root: Path | None) -> None:
+    global DEPS_DIR, NATIVE_DEPS_DIR, OCCT_SRC, OCCT_TAG
+    if not re.fullmatch(r"V[0-9]+(?:_[0-9]+)+", tag):
+        raise ValueError(f"OCCT tag must be an exact release tag, got {tag!r}")
+    OCCT_TAG = tag
+    if state_root is None:
+        return
+    resolved = state_root.resolve()
+    generated_root = (ROOT / ".deps").resolve()
+    if resolved == generated_root or generated_root not in resolved.parents:
+        raise ValueError(f"OCCT state root must be a strict descendant of {generated_root}")
+    DEPS_DIR = resolved
+    NATIVE_DEPS_DIR = resolved / "native"
+    OCCT_SRC = resolved / "occt-src"
 
 
 def cmake_generator_args() -> list[str]:
@@ -319,6 +336,17 @@ def main() -> None:
         help="Native dependency platform tag (default: current platform)",
     )
     parser.add_argument(
+        "--occt-tag",
+        default=dependency_versions.OCCT_TAG,
+        help="Exact OCCT release tag (default: repository production pin).",
+    )
+    parser.add_argument(
+        "--occt-state-root",
+        type=Path,
+        default=None,
+        help="Isolated generated OCCT state root below .deps/ (qualification use).",
+    )
+    parser.add_argument(
         "--macos-deployment-target",
         default=None,
         help=f"Minimum macOS deployment target for native dependencies (default: {DEFAULT_MACOS_DEPLOYMENT_TARGET})",
@@ -346,6 +374,10 @@ def main() -> None:
         help="Print the computed OCCT binary cache key and exit.",
     )
     args = parser.parse_args()
+    try:
+        configure_occt_variant(args.occt_tag, args.occt_state_root)
+    except ValueError as exc:
+        parser.error(str(exc))
 
     if args.clean:
         clean(args.platform_tag, include_source=args.clean_source)

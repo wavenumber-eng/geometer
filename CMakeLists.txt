@@ -155,6 +155,15 @@ endif()
 
 message(STATUS "OpenCASCADE ${OpenCASCADE_VERSION} found at ${OpenCASCADE_INSTALL_PREFIX}")
 
+if(WIN32 AND EXISTS "${OpenCASCADE_INSTALL_PREFIX}/win64/vc14/lib" AND NOT MSVC)
+    message(FATAL_ERROR
+        "The restored Windows OCCT install uses the MSVC ABI, but CMake selected "
+        "${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER}. Reconfigure from a Visual Studio "
+        "Developer PowerShell/Command Prompt, or build a separate OCCT install from source "
+        "with the selected compiler. Do not link the MSVC cache with MinGW."
+    )
+endif()
+
 set(GEOMETER_OCCT_RUNTIME_FILES "")
 if(WIN32 AND GEOMETER_OCCT_LIBRARY_TYPE STREQUAL "Shared")
     set(_geometer_occt_runtime_dir "${OpenCASCADE_INSTALL_PREFIX}/win64/vc14/bin")

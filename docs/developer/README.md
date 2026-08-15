@@ -84,7 +84,8 @@ Pinned dependency versions live in scripts:
 - RapidJSON: `third_party/rapidjson/`
 - Clipper2: `third_party/clipper2/`
 
-The exact real-algebraic feasibility backend uses the pinned header-only Boost
+The non-primary exact real-algebraic oracle and bounded fallback use the pinned
+header-only Boost
 source tree under `.deps/boost_1_92_0/`. CMake restores it automatically after
 verifying the official archive SHA-256, or it can be prepared explicitly:
 
@@ -168,6 +169,11 @@ On Windows, use a Visual Studio developer environment or another shell where the
 selected C++ compiler is available to CMake. The default CMake preset uses
 Ninja. The OCCT dependency is built with the active native compiler for that
 platform, so use the same shell consistently for configure/build/validation.
+The published `windows-x64` OCCT 8.0.1 cache is an MSVC-ABI install and must be
+consumed from a Visual Studio Developer PowerShell or Developer Command Prompt.
+CMake rejects that cache under MinGW instead of deferring the mismatch to the
+linker. A MinGW build requires a separately keyed OCCT source build; it cannot
+reuse the MSVC archive.
 
 On WSL2/Linux, install the usual build toolchain first. For Debian/Ubuntu
 distros, the minimum package set is:
@@ -248,6 +254,14 @@ GEOMETER_OCCT_CACHE_PUBLIC_BASE_URL=https://artifacts.wavenumber.net
   source.
 - `off` - ignore binary caches and build from source.
 - `only` - require a binary cache hit and fail otherwise.
+
+Cache recipe keys cover files and explicit values that can change the installed
+OCCT bytes. Cache transport code and the indirect dependency-version file are
+not hashed: the selected OCCT repository/tag, platform, configuration, library
+type, Emscripten version when applicable, and platform baselines are already
+included directly.
+Previously accepted OCCT 8.0.1 archives may be reached only through exact
+profile-and-SHA aliases; there is no generic stale-cache fallback.
 
 R2 credentials are only needed for producer uploads or explicit private fallback
 testing. Copy `.env.example` to `.env` for those cases and fill the `R2_*`

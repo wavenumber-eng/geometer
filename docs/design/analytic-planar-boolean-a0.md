@@ -2,7 +2,12 @@
 
 ## Status
 
-Accepted and frozen for A0 implementation planning. MATZ accepted the
+The logical TypeSpec shapes and packed A0 record layout are accepted and
+frozen. The solver and numeric policy are reopened under
+[ADR-013](../adr/013_filtered_resolution_bounded_planar_boolean.md) for a
+speed-first filtered implementation with a 50 nm topology-resolution envelope.
+The arbitrary-precision algebraic engine is explicitly non-primary. MATZ
+accepted the original
 consumer/provider design input, and independent review approved the analytic
 architecture at normative revision
 `529c768e559b4c88874264748d4186e775c8a4dd`. The separately compiled TypeSpec
@@ -10,11 +15,11 @@ candidate and its logical/packed reconciliation were accepted at
 `f4b6a9b87bf16f57ef29dae22150b16f2a742b64`; it remains isolated from the
 promoted-contract entrypoint until production promotion.
 
-This freeze authorizes raw packet goldens, exact-backend feasibility, synthetic
-correctness, and OCCT qualification. It does not authorize production solver
-promotion, generated production projections, or release before those later
-gates pass. The accepted solver decision is recorded in
-[ADR-012](../adr/012_exact_analytic_planar_boolean_arrangement.md).
+The structural freeze authorizes raw packet goldens and generated codec work.
+It does not authorize production solver promotion, generated production
+projections, or release before the filtered-solver gates pass. ADR-012 records
+the historical exact-first feasibility decision; ADR-013 supersedes it for
+production implementation.
 
 The stable operation identity is
 `geometry.analytic_planar_boolean_batch.a0`. Friendly generated methods are
@@ -97,6 +102,10 @@ The committed feasibility test asserts this list on both targets. The packet
 implementation must later add ring order, provenance/source-set indices,
 generated ids, and the standalone job-result digest without changing these
 normalized analytic fragments.
+
+The 1.25/1.4 nm collision probe above is retained as historical feasibility
+evidence. Under ADR-013 it is inside the 50 nm topology-resolution envelope and
+may merge deterministically; it is no longer a normative production failure.
 
 ## Logical Request
 
@@ -255,7 +264,59 @@ PlanarRelationshipQuery
 Only listed pairs are evaluated. A0 does not imply all-pairs work and does not
 accept solver-generated result-region ids in the one-pass request.
 
-## Solver Architecture
+## Production Solver Architecture
+
+The primary production engine is a Geometer-owned filtered line/circle
+arrangement. It preserves analytic lines and circular arcs without making the
+canonical real-algebraic backend part of the normal execution path. OCCT and
+Clipper2 may be used as differential, feasibility, or sampled topology oracles;
+their output is not independently authoritative.
+
+Each job uses a deterministic integer-nm local origin near its bounds before
+conversion to binary64 working coordinates. A spatial index over conservative
+outward-rounded curve bounds produces candidate pairs. This broad phase is a
+required part of the algorithm, not an optional later optimization: typical
+work should be `O(n log n + k)` for `n` boundary occurrences and `k` candidate
+or intersecting pairs. Adversarial dense overlap can still be quadratic and is
+stopped by the governed job-local candidate-pair limit.
+
+The implementation collects solver budgets in one internal limits value
+object. Catalog values are immutable hard ceilings, while a host may select and
+advertise lower effective memory/work/pair limits and tests may inject smaller
+budgets. The 50 nm topology-resolution policy is not in that object and is not
+caller-programmable.
+
+Narrow-phase intersections and same-domain tests use filtered binary64
+predicates with conservative outward error bounds. Integer-nanometer inputs use
+fixed-width wide-integer predicates where practical. A decision is accepted
+from the fast path only when its error interval proves the relevant side of the
+50 nm topology threshold. An uncertain decision takes a deterministic bounded
+slow path or fails the isolated job. It must never silently choose a topology
+from an unchecked epsilon.
+
+Coincident or near-coincident carriers are overlaid into deterministic atomic
+intervals. Each group uses the lexicographically least complete source tuple as
+its carrier key; no OCCT identity, allocation order, algebraic expression-DAG
+byte string, angle, or trigonometric sort key participates. Face classification
+decides which intervals survive while retaining the existing positive and
+subtractive provenance memberships.
+
+Across ordered stages, the accumulator retains the resolved analytic
+arrangement and lineage. Publication to the governed nm grid occurs once after
+the final stage. Publishing an intermediate stage is forbidden because it
+could change whether a later operand touches, crosses, or removes material.
+
+The arbitrary-precision algebraic implementation is isolated behind a narrow
+non-primary interface. It may support conformance tests, offline diagnosis, or
+a measured and governed fallback for a genuinely uncertain predicate. Normal
+production success must not depend on constructing canonical algebraic values,
+resultants, or nested radicals.
+
+## Historical Exact-First Architecture (Non-Primary)
+
+The following section records the already implemented ADR-012 prototype and
+its invariants for oracle and fallback maintenance. It does not prescribe the
+ADR-013 production hot path.
 
 OCCT is the selected A0 analytic kernel, subject to completion of the portable
 fixture suite and performance gates. Clipper2 may be used only as a sampled
@@ -353,7 +414,45 @@ endpoints. Circular arcs use exact shared topology endpoints, an integer-nm
 radius, direction, and major-arc branch; the circle center is derived and is
 not stored as a competing result fact.
 
-## Certified Normalization
+## Resolution-Bounded Production Normalization
+
+The public coordinate unit and governed output grid remain one nanometer. The
+separate topology-resolution envelope is 50 nm and cannot be relaxed per
+request.
+
+1. Authored values begin as bounded integers. Working intersections carry
+   conservative error bounds in job-local coordinates.
+2. Fast-path line-line, line-circle, and circle-circle construction uses
+   binary64 plus outward bounds. Fixed-width wide integers certify applicable
+   orientation, incidence, squared-distance, and threshold predicates without
+   building symbolic roots.
+3. Nearest-nanometer, ties-away-from-zero rounding remains deterministic. A
+   bounded uncertainty that cannot establish one rounding or topology outcome
+   takes the governed slow path or returns `resource_limit_exceeded` for that
+   job.
+4. Features, gaps, and separations at or below 50 nm may be deterministically
+   merged, bridged, shortened, or collapsed. A separation or feature width
+   proven greater than 50 nm must retain its topology. Threshold fixtures at
+   49, 50, and 51 nm govern this boundary.
+5. Every published vertex must remain within 50 nm of its resolved analytic
+   position, and every published line/arc boundary must have Hausdorff
+   displacement no greater than 50 nm. A normalized radius may move by no more
+   than 50 nm, subject to the same whole-arc Hausdorff bound.
+6. Distinct required vertices separated by more than 50 nm may not share one
+   representative. Above that threshold a fragment may not collapse, cyclic
+   order may not invert, and containment may not change.
+7. The retained exact arc checker should compare squared distances against
+   squared tolerances so ordinary irrational endpoints do not force a nested
+   outer square root. This is an oracle/fallback repair, not a reason to make
+   the algebraic engine primary again.
+
+Full result circles still use the canonical two-half-arc representation below.
+
+## Historical Exact Normalization (Oracle Only)
+
+The following 1 nm exact-first rules define the existing conformance engine.
+They are retained for oracle coverage but are superseded as production
+acceptance rules by the 50 nm policy above.
 
 The governed grid is one nanometer. Normalization is part of the operation and
 cannot be relaxed per request.
@@ -433,9 +532,11 @@ A hole emits `L -> R` CW through the upper half, then `R -> L` CW through the
 lower half. Both fragments set `majorArc = false`. This is an exact
 endpoint/radius replay form, not tessellation.
 
-Any violation fails the isolated job with a stable normalization diagnostic.
-The MATZ 1.25/1.4 nm notch is the normative topology-collapse failure. The
-arbitrary-angle arc fixture is the normative successful non-grid-intersection
+Under the historical exact-first policy, any violation failed the isolated job
+with a stable normalization diagnostic. The MATZ 1.25/1.4 nm notch was its
+topology-collapse sentinel. ADR-013 places that notch below the production
+resolution envelope, so it may now collapse deterministically. The
+arbitrary-angle arc fixture remains a required successful non-grid-intersection
 case.
 
 ## Canonical Result
@@ -734,9 +835,11 @@ factory details.
 
 ## Performance And Telemetry
 
-Correctness takes precedence. The initial real-board design target is at most
-5 seconds and 1 GiB peak working memory per all-copper batch on the recorded
-reference machine; the stretch target is 1 second and 512 MiB.
+Speed within the 50 nm correctness envelope is the primary production goal.
+The initial real-board acceptance target is at most 1 second and 512 MiB peak
+working memory per all-copper batch on the recorded reference machine. A
+5-second/1-GiB ceiling remains a temporary bring-up limit, not the desired
+steady-state performance.
 
 The A0 qualification reference is a single serialized worker in a Release
 build on Windows 11 Pro build 26200, AMD Ryzen 9 9950X (16 physical/32 logical
@@ -747,7 +850,8 @@ with every accepted benchmark. A different machine may supply comparative
 telemetry but cannot silently replace this release target.
 
 Wall time, peak memory, operand/input-segment/result-region/result-segment
-counts, and normalization-failure count are noncanonical telemetry. They are
+counts, broad-phase candidate pairs, narrow-phase predicates, exact-fallback
+count, and normalization-failure count are noncanonical telemetry. They are
 reported outside canonical job-result bytes.
 
 ## Promotion Gates
@@ -768,6 +872,26 @@ reviews are recorded in the compatibility snapshot and plan log; the isolated
 TypeSpec API shapes received focused independent review; and the ten portable
 plus two real-board observation cases are digest-locked in this repository.
 Raw-byte goldens deliberately remain the first post-freeze codec artifact.
+
+### Filtered Production Gates
+
+ADR-013 adds gates that supersede exact-first production acceptance:
+
+- ordinary line/arc and real-board fixtures execute without algebraic fallback;
+- 49/50/51 nm sweeps prove deterministic at-threshold collapse and
+  above-threshold topology preservation;
+- all published boundaries remain within the 50 nm Hausdorff envelope;
+- broad-phase pruning and governed candidate-pair counts are exercised by
+  sparse, dense, and adversarial inputs;
+- native and WASM produce equivalent topology, canonical bytes, threshold
+  decisions, and diagnostics; and
+- the 1-second/512-MiB target and 5-second/1-GiB temporary ceiling are measured
+  on the recorded reference corpus.
+
+The exact-focused sections below describe retained conformance evidence from
+the prototype. They remain valuable oracle and mutation lanes, but their
+sub-50-nm topology expectations do not override ADR-013 and they do not make
+the algebraic backend the production hot path.
 
 ### Exact Result Replay And Mutation Sentinels
 

@@ -81,6 +81,49 @@ class OcctCacheProfile:
         return "-".join(_slug(part) for part in parts)
 
 
+@dataclasses.dataclass(frozen=True)
+class AcceptedCacheAlias:
+    kind: str
+    platform_tag: str
+    config: str
+    library_type: str
+    occt_repo: str
+    occt_tag: str
+    recipe_hash: str
+    archive_sha256: str
+    macos_deployment_target: str | None = None
+    emsdk_version: str | None = None
+
+
+# These aliases name archives whose exact profiles and bytes received
+# independent review. They bridge recipe-key churn caused solely by changing
+# dependency_versions.py from the qualification baseline pin to the accepted
+# production pin. They are deliberately not a general stale-cache fallback.
+ACCEPTED_CACHE_ALIASES = (
+    AcceptedCacheAlias(
+        kind="native",
+        platform_tag="windows-x64",
+        config="Release",
+        library_type="Static",
+        occt_repo="https://github.com/Open-Cascade-SAS/OCCT.git",
+        occt_tag="V8_0_1",
+        recipe_hash="02d3ac07fe672579f1d5d97249964248a36e4b3982b3195c4fe7bd0d1dece46d",
+        archive_sha256="255ad723184c62ef4e6dc82c20c1acd5b0aa43407cbefc6e26e484eb74a05df9",
+    ),
+    AcceptedCacheAlias(
+        kind="wasm",
+        platform_tag="wasm-emscripten",
+        config="Release",
+        library_type="Static",
+        occt_repo="https://github.com/Open-Cascade-SAS/OCCT.git",
+        occt_tag="V8_0_1",
+        recipe_hash="a15818c33b508d24f66702e3834be2d25fce89031a00a58f6391c0d702bb95f4",
+        archive_sha256="44fe6d6294c7a26ac77cfa17e1fd4a312578638a5669b7032c227750d032614e",
+        emsdk_version="3.1.56",
+    ),
+)
+
+
 def load_dotenv(root: Path) -> None:
     env_path = root / ".env"
     if not env_path.exists():
@@ -100,7 +143,11 @@ def load_dotenv(root: Path) -> None:
 
 
 def mode_from_value(value: str | None) -> str:
-    mode = (value or os.environ.get("GEOMETER_OCCT_BINARY") or os.environ.get("GEOMETER_OCCT_BINARY_CACHE") or "auto").strip().lower()
+    mode = (
+        (value or os.environ.get("GEOMETER_OCCT_BINARY") or os.environ.get("GEOMETER_OCCT_BINARY_CACHE") or "auto")
+        .strip()
+        .lower()
+    )
     if mode not in VALID_MODES:
         raise ValueError(f"Unsupported OCCT binary cache mode {mode!r}; expected one of {sorted(VALID_MODES)}")
     return mode
@@ -159,10 +206,9 @@ def recipe_hash(paths: list[Path], extra: dict[str, str]) -> str:
 
 
 def install_ready(install_dir: Path) -> bool:
-    return (
-        (install_dir / "lib" / "cmake" / "opencascade" / "OpenCASCADEConfig.cmake").exists()
-        or (install_dir / "cmake" / "OpenCASCADEConfig.cmake").exists()
-    )
+    return (install_dir / "lib" / "cmake" / "opencascade" / "OpenCASCADEConfig.cmake").exists() or (
+        install_dir / "cmake" / "OpenCASCADEConfig.cmake"
+    ).exists()
 
 
 def occt_version_from_tag(tag: str) -> str:
@@ -214,23 +260,37 @@ def restore_prebuilt_install(profile: OcctCacheProfile, install_dir: Path, *, mo
         print(message)
         return False
 
+    candidates: list[tuple[OcctCacheProfile, str | None]] = [(profile, None)]
+    for alias in accepted_cache_aliases(profile):
+        if alias.recipe_hash != profile.recipe_hash:
+            candidates.append((dataclasses.replace(profile, recipe_hash=alias.recipe_hash), alias.archive_sha256))
+
     prefix = ""
     selected_config: PublicCacheConfig | CacheConfig | None = None
+    selected_profile: OcctCacheProfile | None = None
+    selected_archive_sha256: str | None = None
     manifest_bytes = None
     read_errors: list[str] = []
     for config in configs:
-        for candidate_prefix in object_prefix_candidates(config, profile):
-            manifest_key = f"{candidate_prefix}/{MANIFEST_NAME}"
-            print(f"Checking OCCT binary cache: {_cache_location(config, manifest_key)}")
-            try:
-                candidate_manifest = _get_cache_object(config, manifest_key)
-            except CacheReadError as exc:
-                read_errors.append(f"{_cache_kind(config)}: {exc}")
-                break
-            if candidate_manifest is not None:
-                prefix = candidate_prefix
-                selected_config = config
-                manifest_bytes = candidate_manifest
+        cache_read_failed = False
+        for candidate_profile, accepted_archive_sha256 in candidates:
+            for candidate_prefix in object_prefix_candidates(config, candidate_profile):
+                manifest_key = f"{candidate_prefix}/{MANIFEST_NAME}"
+                print(f"Checking OCCT binary cache: {_cache_location(config, manifest_key)}")
+                try:
+                    candidate_manifest = _get_cache_object(config, manifest_key)
+                except CacheReadError as exc:
+                    read_errors.append(f"{_cache_kind(config)}: {exc}")
+                    cache_read_failed = True
+                    break
+                if candidate_manifest is not None:
+                    prefix = candidate_prefix
+                    selected_config = config
+                    selected_profile = candidate_profile
+                    selected_archive_sha256 = accepted_archive_sha256
+                    manifest_bytes = candidate_manifest
+                    break
+            if manifest_bytes is not None or cache_read_failed:
                 break
         if manifest_bytes is not None:
             break
@@ -245,14 +305,14 @@ def restore_prebuilt_install(profile: OcctCacheProfile, install_dir: Path, *, mo
         return False
 
     assert selected_config is not None
+    assert selected_profile is not None
     manifest = json.loads(manifest_bytes.decode("utf-8"))
-    validate_manifest(manifest, profile)
+    validate_manifest(manifest, selected_profile)
     archive_key = f"{prefix}/{ARCHIVE_NAME}"
     archive_bytes = _get_cache_object(selected_config, archive_key)
     if archive_bytes is None:
         raise RuntimeError(
-            "OCCT binary cache manifest exists but archive is missing: "
-            f"{_cache_location(selected_config, archive_key)}"
+            f"OCCT binary cache manifest exists but archive is missing: {_cache_location(selected_config, archive_key)}"
         )
 
     archive_sha256 = hashlib.sha256(archive_bytes).hexdigest()
@@ -261,14 +321,34 @@ def restore_prebuilt_install(profile: OcctCacheProfile, install_dir: Path, *, mo
             "OCCT binary cache archive checksum mismatch: "
             f"expected {manifest['archive']['sha256']}, got {archive_sha256}"
         )
+    if selected_archive_sha256 is not None and archive_sha256 != selected_archive_sha256:
+        raise RuntimeError(
+            "Accepted OCCT binary cache archive checksum mismatch: "
+            f"expected {selected_archive_sha256}, got {archive_sha256}"
+        )
 
     with tempfile.TemporaryDirectory(prefix="geometer-occt-cache-") as tmp_name:
         archive_path = Path(tmp_name) / ARCHIVE_NAME
         archive_path.write_bytes(archive_bytes)
         extract_install_archive(archive_path, install_dir)
 
-    print(f"Restored OCCT binary cache {profile.cache_key} to {install_dir}")
+    print(f"Restored OCCT binary cache {selected_profile.cache_key} to {install_dir}")
     return True
+
+
+def accepted_cache_aliases(profile: OcctCacheProfile) -> tuple[AcceptedCacheAlias, ...]:
+    return tuple(
+        alias
+        for alias in ACCEPTED_CACHE_ALIASES
+        if alias.kind == profile.kind
+        and alias.platform_tag == profile.platform_tag
+        and alias.config == profile.config
+        and alias.library_type == profile.library_type
+        and alias.occt_repo == profile.occt_repo
+        and alias.occt_tag == profile.occt_tag
+        and alias.macos_deployment_target == profile.macos_deployment_target
+        and alias.emsdk_version == profile.emsdk_version
+    )
 
 
 def upload_prebuilt_install(profile: OcctCacheProfile, install_dir: Path, *, out_dir: Path) -> Path:
@@ -507,7 +587,9 @@ def _r2_put_object(config: CacheConfig, key: str, body: bytes, content_type: str
     _r2_request(config, "PUT", key, body=body, content_type=content_type)
 
 
-def _r2_request(config: CacheConfig, method: str, key: str, *, body: bytes = b"", content_type: str | None = None) -> bytes:
+def _r2_request(
+    config: CacheConfig, method: str, key: str, *, body: bytes = b"", content_type: str | None = None
+) -> bytes:
     parsed = urllib.parse.urlparse(config.endpoint_url)
     if not parsed.scheme or not parsed.netloc:
         raise RuntimeError(f"Invalid R2 endpoint URL: {config.endpoint_url}")

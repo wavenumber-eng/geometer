@@ -187,11 +187,10 @@ def occt_cache_profile(
     recipe = occt_binary_cache.recipe_hash(
         [
             Path(__file__),
-            ROOT / "scripts" / "dependency_versions.py",
-            ROOT / "scripts" / "occt_binary_cache.py",
             RAPIDJSON_SRC,
         ],
         {
+            "recipe_schema": "native-install-a1",
             "kind": "native",
             "occt_repo": OCCT_REPO,
             "occt_tag": OCCT_TAG,

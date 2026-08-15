@@ -36,6 +36,14 @@ add_test(
     COMMAND geometer_analytic_planar_boolean_feasibility_test
 )
 
+add_executable(geometer_analytic_filtered_core_test
+    analytic_filtered_core_test.cpp
+)
+
+target_link_libraries(geometer_analytic_filtered_core_test PRIVATE geometer_lib)
+
+add_test(NAME geometer_analytic_filtered_core_test COMMAND geometer_analytic_filtered_core_test)
+
 add_executable(geometer_exact_rational_test
     exact_rational_test.cpp
 )
@@ -328,6 +336,7 @@ add_test(NAME geometer_exact_rectangle_enumeration_test
 if(EMSCRIPTEN)
     set_target_properties(
         geometer_analytic_planar_boolean_feasibility_test
+        geometer_analytic_filtered_core_test
         geometer_exact_rational_test
         geometer_exact_polynomial_test
         geometer_exact_resultant_test

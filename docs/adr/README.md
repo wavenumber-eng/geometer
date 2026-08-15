@@ -15,3 +15,4 @@ and should not be treated as docs of record after a change ships.
 - [ADR 010: TypeSpec Contract Authority And Promotion](010_typespec_contract_authority_and_promotion.md)
 - [ADR 011: Generic Operation Transports](011_generic_operation_transports.md)
 - [ADR 012: Exact Arrangement For Analytic Planar Booleans](012_exact_analytic_planar_boolean_arrangement.md)
+- [ADR 013: Filtered, Resolution-Bounded Analytic Planar Booleans](013_filtered_resolution_bounded_planar_boolean.md)

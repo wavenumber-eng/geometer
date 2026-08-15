@@ -6,16 +6,21 @@ Accepted for feasibility implementation at revision
 `a8c9604de280e2a67018e1106fd1b430b34fcf50` in reviewer packet
 `reviewer-019ffd1f-3c67-7001-87a5-200b6cda10d8`. This document freezes the
 portable value identity, construction DAG, conformance encoding, and resource
-boundary required by ADR-012. It does not promote the analytic planar Boolean
-operation or define bytes inside its public request/result packet.
+boundary originally required by ADR-012. ADR-013 now classifies this backend as
+a non-primary conformance oracle, offline diagnostic tool, and optional bounded
+fallback. It must not define the normal production solver architecture. This
+document does not promote the analytic planar Boolean operation or define bytes
+inside its public request/result packet.
 
 ## Purpose And Authority
 
-The analytic solver needs exact equality, order, sign, root selection, and
-half-nanometer comparison for values produced by line/circle arrangements.
-Binary floating point and OCCT tolerances are not decision oracles. The same
-C++17 implementation and governed work counters run natively and under
-Emscripten.
+The retained oracle needs exact equality, order, sign, root selection, and
+half-nanometer comparison for selected line/circle conformance cases. It exists
+to test and diagnose the filtered solver and, only when justified by measured
+coverage, to resolve bounded ambiguous predicates. The primary solver instead
+uses binary64 filters with outward error bounds, fixed-width wide integers, and
+the 50 nm topology-resolution policy in ADR-013. The same exact C++17 oracle
+and governed work counters remain portable across native and Emscripten.
 
 There are two deliberately separate identities:
 
@@ -325,7 +330,9 @@ synthetic-correctness stratum.
 
 ## Gate
 
-Focused independent review must accept this node/value/byte design before the
-dependency restore helper or backend implementation lands. Production solver
-work remains blocked until the implemented native/Emscripten feasibility corpus
-passes and the separate OCCT 8.0.0/8.0.1 qualification step is accepted.
+Focused independent review accepted this node/value/byte design before the
+dependency restore helper and backend implementation landed. Its conformance
+corpus remains useful, but production solver work is no longer blocked on
+making this backend universal. New production paths must prove that ordinary
+fixtures do not enter arbitrary-precision algebraic processing and that any
+enabled fallback has explicit work, storage, and call-count limits.

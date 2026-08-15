@@ -238,11 +238,10 @@ def occt_wasm_cache_profile() -> occt_binary_cache.OcctCacheProfile:
         [
             Path(__file__),
             ROOT / "scripts" / "build_occt.py",
-            ROOT / "scripts" / "dependency_versions.py",
-            ROOT / "scripts" / "occt_binary_cache.py",
             RAPIDJSON_SRC,
         ],
         {
+            "recipe_schema": "wasm-install-a1",
             "kind": "wasm",
             "occt_repo": OCCT_REPO,
             "occt_tag": OCCT_TAG,

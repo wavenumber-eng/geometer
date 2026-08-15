@@ -29,11 +29,11 @@ sys.modules[COMPARE_SPEC.name] = compare_occt_qualification
 COMPARE_SPEC.loader.exec_module(compare_occt_qualification)
 
 
-def make_install_tree(root: Path) -> None:
+def make_install_tree(root: Path, version: str = "7.8.1") -> None:
     cmake_dir = root / "lib" / "cmake" / "opencascade"
     cmake_dir.mkdir(parents=True)
     (cmake_dir / "OpenCASCADEConfig.cmake").write_text("# test config\n", encoding="utf-8")
-    (cmake_dir / "OpenCASCADEConfigVersion.cmake").write_text('set(PACKAGE_VERSION "7.8.1")\n', encoding="utf-8")
+    (cmake_dir / "OpenCASCADEConfigVersion.cmake").write_text(f'set(PACKAGE_VERSION "{version}")\n', encoding="utf-8")
     (root / "lib").mkdir(exist_ok=True)
     (root / "lib" / "libTKTest.a").write_bytes(b"test")
 
@@ -74,6 +74,88 @@ def test_cache_key_includes_platform_and_recipe() -> None:
     assert profile.cache_key == "occt-native-v7-8-1-linux-arm64-release-static-recipe-aaaaaaaaaaaaaaaa"
 
 
+def test_accepted_v801_native_cache_alias_is_exactly_pinned() -> None:
+    profile = occt_binary_cache.OcctCacheProfile(
+        kind="native",
+        platform_tag="windows-x64",
+        config="Release",
+        library_type="Static",
+        occt_repo="https://github.com/Open-Cascade-SAS/OCCT.git",
+        occt_tag="V8_0_1",
+        recipe_hash="1d34d4d5c7ab2e5f" + "0" * 48,
+    )
+
+    assert occt_binary_cache.accepted_cache_aliases(profile) == (
+        occt_binary_cache.AcceptedCacheAlias(
+            kind="native",
+            platform_tag="windows-x64",
+            config="Release",
+            library_type="Static",
+            occt_repo="https://github.com/Open-Cascade-SAS/OCCT.git",
+            occt_tag="V8_0_1",
+            recipe_hash="02d3ac07fe672579f1d5d97249964248a36e4b3982b3195c4fe7bd0d1dece46d",
+            archive_sha256="255ad723184c62ef4e6dc82c20c1acd5b0aa43407cbefc6e26e484eb74a05df9",
+        ),
+    )
+
+
+def test_restore_uses_only_an_exact_pinned_compatible_alias(
+    monkeypatch: MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    clear_cache_env(monkeypatch)
+    install_dir = tmp_path / "occt-install"
+    make_install_tree(install_dir, "8.0.1")
+    archive_path = tmp_path / occt_binary_cache.ARCHIVE_NAME
+    occt_binary_cache.package_install_archive(install_dir, archive_path)
+    archive_sha = occt_binary_cache.sha256_file(archive_path)
+    current_profile = occt_binary_cache.OcctCacheProfile(
+        kind="native",
+        platform_tag="windows-x64",
+        config="Release",
+        library_type="Static",
+        occt_repo="https://github.com/Open-Cascade-SAS/OCCT.git",
+        occt_tag="V8_0_1",
+        recipe_hash="c" * 64,
+    )
+    accepted_alias = occt_binary_cache.AcceptedCacheAlias(
+        kind=current_profile.kind,
+        platform_tag=current_profile.platform_tag,
+        config=current_profile.config,
+        library_type=current_profile.library_type,
+        occt_repo=current_profile.occt_repo,
+        occt_tag=current_profile.occt_tag,
+        recipe_hash="a" * 64,
+        archive_sha256=archive_sha,
+    )
+    accepted_profile = occt_binary_cache.dataclasses.replace(current_profile, recipe_hash=accepted_alias.recipe_hash)
+    manifest = occt_binary_cache.build_manifest(accepted_profile, archive_path, archive_sha)
+    public_config = occt_binary_cache.PublicCacheConfig(
+        base_url="https://artifacts.example.invalid",
+        prefix="deps/v1/geometer/occt",
+    )
+    accepted_prefix = occt_binary_cache.object_prefix(public_config, accepted_profile)
+    requested_keys: list[str] = []
+
+    def fake_public_get(_config: Any, key: str) -> bytes | None:
+        requested_keys.append(key)
+        if key == f"{accepted_prefix}/{occt_binary_cache.MANIFEST_NAME}":
+            return json.dumps(manifest).encode("utf-8")
+        if key == f"{accepted_prefix}/{occt_binary_cache.ARCHIVE_NAME}":
+            return archive_path.read_bytes()
+        return None
+
+    monkeypatch.setattr(occt_binary_cache, "ACCEPTED_CACHE_ALIASES", (accepted_alias,))
+    monkeypatch.setattr(occt_binary_cache, "public_config_from_env", lambda: public_config)
+    monkeypatch.setattr(occt_binary_cache, "config_from_env", lambda: None)
+    monkeypatch.setattr(occt_binary_cache, "_public_get_object", fake_public_get)
+
+    restored = tmp_path / "restored-install"
+    assert occt_binary_cache.restore_prebuilt_install(current_profile, restored, mode="only")
+    assert occt_binary_cache.installed_occt_version(restored) == "8.0.1"
+    assert f"{accepted_prefix}/{occt_binary_cache.MANIFEST_NAME}" in requested_keys
+
+
 def test_exact_tag_qualification_uses_isolated_native_and_wasm_profiles() -> None:
     state_root = ".deps/occt-qualification/V8_0_1"
     existed_before = (ROOT / state_root).exists()
@@ -111,6 +193,28 @@ def test_exact_tag_qualification_uses_isolated_native_and_wasm_profiles() -> Non
     assert native.startswith("occt-native-v8-0-1-")
     assert wasm.startswith("occt-wasm-v8-0-1-")
     assert (ROOT / state_root).exists() == existed_before
+
+
+def test_occt_recipe_keys_exclude_cache_transport_and_indirect_pin_files() -> None:
+    native_source = (ROOT / "scripts" / "build_occt.py").read_text(encoding="utf-8")
+    wasm_source = (ROOT / "scripts" / "build_wasm.py").read_text(encoding="utf-8")
+
+    native_recipe = native_source[native_source.index("def occt_cache_profile(") :]
+    native_recipe = native_recipe[: native_recipe.index("def linux_glibc_baseline(")]
+    wasm_recipe = wasm_source[wasm_source.index("def occt_wasm_cache_profile(") :]
+    wasm_recipe = wasm_recipe[: wasm_recipe.index("def build_occt_wasm(")]
+    for recipe in (native_recipe, wasm_recipe):
+        assert '"dependency_versions.py"' not in recipe
+        assert '"occt_binary_cache.py"' not in recipe
+    assert '"recipe_schema": "native-install-a1"' in native_recipe
+    assert '"recipe_schema": "wasm-install-a1"' in wasm_recipe
+
+
+def test_windows_cached_occt_abi_is_guarded_at_configure_time() -> None:
+    source = (ROOT / "CMakeLists.txt").read_text(encoding="utf-8")
+
+    assert 'EXISTS "${OpenCASCADE_INSTALL_PREFIX}/win64/vc14/lib" AND NOT MSVC' in source
+    assert "The restored Windows OCCT install uses the MSVC ABI" in source
 
 
 def test_qualification_rejects_master_and_state_outside_generated_root() -> None:
@@ -168,16 +272,16 @@ def test_qualification_comparison_normalizes_only_runtime_fields(tmp_path: Path)
         "FILE_NAME('Open CASCADE Shape Model','2026-08-15T04:05:06',('Author'));\n#1=POINT();\n",
         encoding="utf-8",
     )
-    assert compare_occt_qualification.normalized_step(
-        first_step
-    ) == compare_occt_qualification.normalized_step(second_step)
+    assert compare_occt_qualification.normalized_step(first_step) == compare_occt_qualification.normalized_step(
+        second_step
+    )
     second_step.write_text(
         "FILE_NAME('Open CASCADE Shape Model','2026-08-15T04:05:06',('Author'));\n#1=LINE();\n",
         encoding="utf-8",
     )
-    assert compare_occt_qualification.normalized_step(
-        first_step
-    ) != compare_occt_qualification.normalized_step(second_step)
+    assert compare_occt_qualification.normalized_step(first_step) != compare_occt_qualification.normalized_step(
+        second_step
+    )
 
 
 def test_consumer_validators_accept_isolated_qualification_artifacts() -> None:

@@ -100,10 +100,16 @@ status = "done"
 depends_on = ["analytic-synthetic-correctness"]
 
 [[steps]]
+id = "filtered-analytic-solver-design"
+title = "Replace the exact-first production path with the filtered 50 nm solver architecture"
+status = "active"
+depends_on = ["analytic-synthetic-correctness"]
+
+[[steps]]
 id = "analytic-planar-boolean-promotion"
 title = "Promote analytic planar Boolean batch through every production client"
-status = "active"
-depends_on = ["occt-8-0-1-qualification"]
+status = "pending"
+depends_on = ["filtered-analytic-solver-design", "occt-8-0-1-qualification"]
 
 [[steps]]
 id = "analytic-planar-boolean-demo-release"
@@ -235,12 +241,12 @@ status = "pending"
 
 [[exit_criteria]]
 id = "analytic-planar-boolean"
-title = "The analytic planar Boolean operation preserves exact topology and passes native, WASM, IPC, TypeScript, Rust, Python, and MATZ integration gates"
+title = "The analytic planar Boolean operation preserves topology above 50 nm and passes filtered-solver native, WASM, IPC, TypeScript, Rust, Python, and consumer integration gates"
 status = "pending"
 
 [[exit_criteria]]
 id = "analytic-planar-boolean-demo"
-title = "A polished static browser demo proves analytic Boolean stages, exact lines and arcs, topology, lineage, and generated TypeScript Worker/WASM integration"
+title = "A polished static browser demo proves analytic Boolean stages, analytic lines and arcs, resolution-bounded topology, lineage, and generated TypeScript Worker/WASM integration"
 status = "pending"
 
 [[exit_criteria]]
@@ -358,6 +364,17 @@ The plan also accepts analytic planar Boolean batch as the first additive
 capability after the `model_bounds` infrastructure pilot. The MATZ packet is a
 frozen consumer-requirements input; Geometer still owns and reviews the generic
 contract, solver, packed format, and release shape.
+
+On 2026-08-15, project-owner direction reopened the solver and numeric policy
+while leaving the logical TypeSpec and packed record layout frozen. The primary
+production solver is now the speed-first filtered line/circle arrangement in
+ADR-013. It keeps a 1 nm coordinate grid, uses a 50 nm topology-resolution
+envelope, requires spatial broad-phase pruning, and preserves analytic lines
+and arcs. The arbitrary-precision algebraic implementation is explicitly not
+the primary production path; it is retained only as an isolated conformance
+oracle, offline diagnostic tool, and optional bounded fallback. Production
+promotion pauses until this simpler architecture and its threshold/performance
+gates receive implementation review.
 
 The plan adopts lessons from the ALX TypeSpec work in
 `C:/eli/wn-hw/appz/data_models`, while keeping Geometer generic and independently
@@ -779,6 +796,40 @@ Geometer proposal, not the original consumer packet.
   provenance recovery. Clipper2 may serve as a sampled area/topology oracle,
   but its polygonized output cannot be authoritative. Record an ADR-level
   solver decision or stop the promotion if the spike cannot meet the invariants.
+- Treat the exact-first prototype as completed feasibility evidence, not the
+  production module template. Implement ADR-013 with filtered binary64 and
+  outward error bounds on the normal path, fixed-width wide-integer predicates
+  where practical, and no routine construction of canonical algebraic values.
+- Build a spatial broad phase before narrow-phase intersection. Target typical
+  `O(n log n + k)` behavior and govern the remaining adversarial candidate-pair
+  count. Record candidate pairs, predicate calls, fallback calls, wall time,
+  and peak memory on dense real-board fixtures.
+- Review every subsequent solver stage for hidden `O(n^2)` scans. Require
+  indexed/sorted deduplication, insertion, provenance, and normalization paths;
+  add sparse 1x/2x scaling assertions and dense-case budget termination to each
+  slice's review packet.
+- Consolidate scattered solver resource constants into one internal
+  `SolverLimits` value passed through the filtered pipeline. Catalog values are
+  hard ceilings; runtime capability negotiation may lower them and tests may
+  inject smaller values. Do not expose the 50 nm resolution policy as a request
+  tolerance.
+- The first filtered implementation slice now provides the centralized limits,
+  fixed 49/50/51 nm classifier, and deterministic curve-bound broad phase. The
+  broad phase estimates overlap on both coordinate axes and sweeps the sparser
+  axis so common long horizontal or vertical artwork does not create an
+  avoidable quadratic scan. Production operation dispatch remains disabled
+  until the narrow phase, arrangement, normalization, parity, and performance
+  gates land.
+- Before filtered operation dispatch is enabled, move the retained native
+  exact/oracle sources out of the normal `geometer_lib` source list into an
+  explicit feasibility-oracle target, matching the separation already used by
+  WASM tests. Keep only dependencies required by live public operations in the
+  production link graph.
+- Keep integer nanometers on the wire and a 1 nm output grid, but apply one
+  fixed 50 nm topology-resolution envelope. At-or-below-threshold gaps and
+  features may bridge or collapse deterministically; above-threshold topology
+  must be preserved and published boundary displacement must remain within
+  50 nm.
 - Decide whether the existing planar-only browser artifact will export the
   generic operation ABI or whether this operation requires the full browser
   artifact. If that choice changes the digest-locked generic transport packet,
@@ -814,21 +865,22 @@ waive Geometer's genericity or release gates.
   identity/self operations, and standalone-versus-mixed-batch equivalence.
   Stage splitting compares geometry only when mathematically equivalent and
   may legitimately change lineage. Scaling applies only while the transformed
-  case remains valid under the fixed 1-nm/error rules.
+  case remains valid under the fixed 1 nm grid and 50 nm resolution rules.
 - Sweep parameters below, at, and above tangency, coincidence, half-grid ties,
   normalization collisions, vanishing notches/holes, collinearity, 0/180/360
-  degree arc boundaries, and permitted swept-area self-overlap. Each case has
-  an exact result or exact fail-closed diagnostic, never a tolerance-based
-  disposition.
+  degree arc boundaries, and permitted swept-area self-overlap. Add explicit
+  49/50/51 nm feature, gap, and separation cases. Each case has a deterministic
+  resolved result or a governed fail-closed diagnostic.
 - Exhaustively enumerate a bounded small integer domain and run larger
   reproducibly seeded property tests. Every failure records its seed and is
   minimized into a committed regression vector.
 - Test lineage independently: absorbed/coincident positives, partial and
   complete later removal, surviving and overwritten subtraction, refill, and
   many-to-many operand/result associations.
-- Use closed-form solutions, the selected exact algebraic predicates, and
+- Use closed-form solutions, the retained exact algebraic oracle, and
   independently implemented certified line/arc area formulas as authoritative
-  oracles. Secondary geometry engines and dense raster/sampling comparisons are
+  conformance oracles. The exact backend is not the production hot path.
+  Secondary geometry engines and dense raster/sampling comparisons are
   differential warnings only.
 - Run critical mutation sentinels that reverse arcs, change tie policy,
   normalize between stages, omit lineage, change operand order, corrupt
@@ -843,18 +895,18 @@ waive Geometer's genericity or release gates.
 - Compare id-renamed cases with a geometry-only projection or an explicit
   renaming map because provenance bytes and digests may change. Empty-operation
   properties use the governed zero-operand-stage semantics.
-- Freeze the canonical exact expression-DAG node set, child ordering,
-  integer/algebraic payload encoding, structural interning, and byte encoding
-  before exact-backend implementation can satisfy its feasibility gate. Assert
-  byte-identical expression keys natively and under Emscripten.
+- Retain the already frozen exact expression-DAG corpus for oracle parity, but
+  isolate it behind a narrow non-primary interface. Ordinary production and
+  benchmark fixtures must assert zero algebraic fallback calls. Only measured,
+  reviewed ambiguous cases may enable the bounded fallback.
 - Include canonical provenance vectors whose interned source sets overlap,
   including `{A, B}` and `{A, C}`, and prove that source-reference-index
   indirection produces unique bytes and round-trips every set.
 - Include deterministic IPC shutdown vectors for every
   `activeRequestCompleted` case: no active request, completion winning before
   draining, and an active-at-transition request completing during grace.
-- Qualify exact upstream OCCT tags `V8_0_0` and `V8_0_1` side-by-side before
-  production solver work or golden freeze. Include bounded timeout regressions
+- Preserve the completed upstream OCCT `V8_0_0`/`V8_0_1` qualification as
+  differential evidence. Include bounded timeout regressions
   for fixed Boolean hangs plus all existing STEP, HLR, GLB, planar, CLI,
   Python, native, and WASM suites. Retest the local Emscripten install-rule
   patch. Accept and cache V8_0_1 only with reviewed evidence; otherwise retain

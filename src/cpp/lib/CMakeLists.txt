@@ -1,10 +1,13 @@
 set(GEOMETER_LIB_SOURCES
+    analytic_curve_broad_phase.cpp
+    analytic_numeric_filter.cpp
     analytic_request_packet.cpp
     analytic_result_packet_canonical.cpp
     analytic_result_packet_layout.cpp
     analytic_result_packet_records.cpp
     analytic_result_packet_standalone.cpp
     analytic_result_packet_topology.cpp
+    analytic_solver_limits.cpp
     c_api.cpp
     clipper2_bytes.cpp
     exact_rational.cpp

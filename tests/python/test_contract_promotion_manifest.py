@@ -21,9 +21,7 @@ _RECTANGLE_ENUMERATION_GATE: dict[str, Any] = {
     "rectangle_differential_schedule": "monthly_and_manual_release",
     "rectangle_differential_eligible_cases": 117,
     "rectangle_differential_baseline_warnings": 2,
-    "rectangle_differential_baseline_sha256": (
-        "4d5bb7b6302424bbf6621fc4a0a611d8fb17981710c95b617edd3b5fe4762a80"
-    ),
+    "rectangle_differential_baseline_sha256": ("4d5bb7b6302424bbf6621fc4a0a611d8fb17981710c95b617edd3b5fe4762a80"),
     "rectangle_differential_warning_identities": [
         "case_433_point_contact_component_merge",
         "case_465_point_contact_component_merge",
@@ -69,9 +67,7 @@ _SEEDED_PROPERTY_GATE: dict[str, Any] = {
     "seeded_property_cases": 32,
     "seeded_property_reducer": "greedy_one_minimal_stage_operand_rectangle_extent",
     "seeded_property_reducer_sentinel": "reducer:seed=0x0,case=0,stages=U[0,0,1,1;]",
-    "seeded_property_reducer_multistage_sentinel": (
-        "reducer_multistage:seed=0x0,case=1,stages=D[]U[0,0,1,1;]"
-    ),
+    "seeded_property_reducer_multistage_sentinel": ("reducer_multistage:seed=0x0,case=1,stages=D[]U[0,0,1,1;]"),
     "seeded_property_sha256": "60945d8695701d82457c8aad4f47d225b0b66a2759dd4bac43f4dacf23d0b01e",
     "nightly_seeded_property_profile": "nightly",
     "nightly_seeded_property_schedule": "monthly_and_manual_release",
@@ -88,31 +84,23 @@ _SEEDED_PROPERTY_GATE: dict[str, Any] = {
     ],
     "nightly_seeded_property_cases_per_seed": 16,
     "nightly_seeded_property_cases": 128,
-    "nightly_seeded_property_sha256": (
-        "0cc922aca1bd2718b330cf1d0d080882181aed861fb5edf6601ee5c5d96f56a5"
-    ),
+    "nightly_seeded_property_sha256": ("0cc922aca1bd2718b330cf1d0d080882181aed861fb5edf6601ee5c5d96f56a5"),
 }
 
 _LINEAGE_MATRIX_GATE: dict[str, Any] = {
     "boolean_lineage_matrix_test": "tests/cpp/exact_boolean_lineage_matrix_test.cpp",
-    "boolean_lineage_matrix_parity_validator": (
-        "scripts/validate_exact_boolean_lineage_matrix_parity.py"
-    ),
+    "boolean_lineage_matrix_parity_validator": ("scripts/validate_exact_boolean_lineage_matrix_parity.py"),
     "boolean_lineage_matrix_cases": [
         "two_contributors_two_disconnected_results",
         "same_stage_permutation",
         "omitted_association_mutation",
     ],
-    "boolean_lineage_matrix_sha256": (
-        "6f084826be2bf3b34ce13e4b392dd0f81d3de40ed97b8245ab05d18ae4fa6ae4"
-    ),
+    "boolean_lineage_matrix_sha256": ("6f084826be2bf3b34ce13e4b392dd0f81d3de40ed97b8245ab05d18ae4fa6ae4"),
 }
 
 _CLOSED_FORM_GATE: dict[str, Any] = {
     "closed_form_invariants_test": "tests/cpp/analytic_closed_form_invariants_test.cpp",
-    "closed_form_invariants_parity_validator": (
-        "scripts/validate_analytic_closed_form_invariants_parity.py"
-    ),
+    "closed_form_invariants_parity_validator": ("scripts/validate_analytic_closed_form_invariants_parity.py"),
     "closed_form_invariants": [
         "rectangle",
         "circle",
@@ -122,9 +110,7 @@ _CLOSED_FORM_GATE: dict[str, Any] = {
         "swept_l_path",
     ],
     "closed_form_arc_classes": ["semicircle", "quarter_circle"],
-    "closed_form_invariants_sha256": (
-        "0f9ec222d05e077277e2356e4a4f1b247946d0a6b7f9e2d6b2f11d0113bf33f6"
-    ),
+    "closed_form_invariants_sha256": ("0f9ec222d05e077277e2356e4a4f1b247946d0a6b7f9e2d6b2f11d0113bf33f6"),
     "metamorphic_invariants": [
         "translation",
         "rotation_90",
@@ -132,9 +118,7 @@ _CLOSED_FORM_GATE: dict[str, Any] = {
         "integer_scaling",
         "source_id_renaming",
     ],
-    "metamorphic_invariants_sha256": (
-        "0907fe0bcc8b6d14989dceefa3cd8029405a09a493d91ea7434180b856ab80ea"
-    ),
+    "metamorphic_invariants_sha256": ("0907fe0bcc8b6d14989dceefa3cd8029405a09a493d91ea7434180b856ab80ea"),
 }
 
 _SYNTHETIC_CORRECTNESS_GATE: dict[str, Any] = {
@@ -420,9 +404,7 @@ def test_manifest_promoted_and_candidate_surfaces_are_complete() -> None:
     operation_ids = [item["id"] for item in operations]
     _unique(operation_ids, "operation id")
     assert {item["id"] for item in operations if item["status"] == "pilot_candidate"} == set()
-    assert {item["id"] for item in operations if item["status"] == "promoted"} == {
-        "geometry.model_bounds.a0"
-    }
+    assert {item["id"] for item in operations if item["status"] == "promoted"} == {"geometry.model_bounds.a0"}
 
     candidates = manifest["candidate_operations"]
     candidate_ids = [item["id"] for item in candidates]
@@ -431,6 +413,8 @@ def test_manifest_promoted_and_candidate_surfaces_are_complete() -> None:
     assert candidate_ids == ["geometry.analytic_planar_boolean_batch.a0"]
     candidate = candidates[0]
     assert candidate["status"] == "contract_frozen"
+    assert candidate["solver_numeric_status"] == "reopened_filtered_50nm"
+    assert candidate["filtered_solver_foundation"] == "implemented_not_dispatched"
     assert candidate["request_contract"] == "geometry.analytic_planar_boolean_batch.request.a0"
     assert candidate["result_contract"] == "geometry.analytic_planar_boolean_batch.result.a0"
     assert candidate["request_contract"] in contract_ids
@@ -448,6 +432,7 @@ def test_manifest_promoted_and_candidate_surfaces_are_complete() -> None:
     assert (ROOT / candidate["design"]).is_file()
     assert (ROOT / candidate["packet_spec"]).is_file()
     assert (ROOT / candidate["numeric_catalog"]).is_file()
+    assert (ROOT / candidate["superseded_solver_adr"]).is_file()
     assert (ROOT / candidate["feasibility_test"]).is_file()
     assert (ROOT / candidate["portable_fixture"]).is_file()
     assert (ROOT / candidate["independent_design_review_log"]).is_file()
@@ -498,12 +483,12 @@ def test_c_abi_manifest_matches_header_exactly() -> None:
     assert declared == c_abi["symbols"]
 
 
-def test_exact_algebraic_backend_design_gate_is_closed() -> None:
+def test_exact_algebraic_backend_is_governed_and_non_primary() -> None:
     backend = _manifest()["analytic_exact_backend"]
     assert backend == {
-        "status": "design_accepted_implementation_in_progress",
+        "status": "implemented_non_primary_oracle",
         "design": "docs/design/exact-real-algebraic-a0.md",
-        "design_sha256": "39576b283f162c87503f18f2c2bec23a83e394ec9b042449550e8b8ab59823bb",
+        "design_sha256": "71139fbe41e98fd1c4bab70916fb4fc3f9e720f948d2629815a61bba1433fb8e",
         "conformance_identity": "geometry.exact_real_algebraic.feasibility.a0",
         "magic": "GEXPA001",
         "generation": 1,
@@ -514,6 +499,8 @@ def test_exact_algebraic_backend_design_gate_is_closed() -> None:
         "boost_upstream_commit": "afdfa32505af73e3d208144b3f623f0096cb62b6",
         "generated_dependency_root": ".deps/boost_1_92_0",
         "production_solver_allowed": False,
+        "normal_production_path_allowed": False,
+        "production_role": ("conformance_oracle_offline_diagnostics_optional_bounded_fallback"),
         "design_review_revision": "a8c9604de280e2a67018e1106fd1b430b34fcf50",
         "design_review_packet": "reviewer-019ffd1f-3c67-7001-87a5-200b6cda10d8",
         "implemented_surface": "budgeted_exact_intersections_nm_normalization_curve_domain_half_edge_face_classification_stage_lineage_result_region_provenance_operand_outcome_certified_arc_result_normalization_canonical_source_set_result_packet_layout_typed_record_graph_semantic_canonical_projection_standalone_closure_digest_decoder_enforcement_exact_topology_replay_mutation_sentinels_closed_form_invariants_degeneracy_sweeps_boolean_identities_metamorphic_relations_bounded_enumeration_seeded_property_many_to_many_lineage_monthly_extended_seed_quarter_arc_swept_path_clipper_warning_and_swept_area_self_overlap_feasibility",
@@ -670,6 +657,44 @@ def test_exact_algebraic_backend_design_gate_is_closed() -> None:
     }
     assert (ROOT / backend["design"]).is_file()
     assert _sha256(ROOT / backend["design"]) == backend["design_sha256"]
+
+
+def test_filtered_solver_foundation_is_bounded_non_algebraic_and_not_dispatched() -> None:
+    solver = _manifest()["analytic_filtered_solver"]
+    assert solver == {
+        "status": "implemented_foundation_not_dispatched",
+        "design": "docs/adr/013_filtered_resolution_bounded_planar_boolean.md",
+        "coordinate_grid_nm": 1,
+        "topology_resolution_nm": 50,
+        "topology_resolution_caller_programmable": False,
+        "production_dispatch_allowed": False,
+        "algebraic_fallback_hard_limit": 0,
+        "limits_header": "src/cpp/lib/geometer/analytic_solver_limits.h",
+        "limits_source": "src/cpp/lib/analytic_solver_limits.cpp",
+        "numeric_filter_header": "src/cpp/lib/geometer/analytic_numeric_filter.h",
+        "numeric_filter_source": "src/cpp/lib/analytic_numeric_filter.cpp",
+        "broad_phase_header": "src/cpp/lib/geometer/analytic_curve_broad_phase.h",
+        "broad_phase_source": "src/cpp/lib/analytic_curve_broad_phase.cpp",
+        "foundation_test": "tests/cpp/analytic_filtered_core_test.cpp",
+        "broad_phase_policy": "deterministic_sparser_axis_sweep",
+    }
+    implementation_paths = [
+        solver[key]
+        for key in (
+            "limits_header",
+            "limits_source",
+            "numeric_filter_header",
+            "numeric_filter_source",
+            "broad_phase_header",
+            "broad_phase_source",
+        )
+    ]
+    for relative_path in implementation_paths:
+        source = (ROOT / relative_path).read_text(encoding="utf-8")
+        assert "boost::" not in source
+        assert "multiprecision" not in source
+        assert "geometer/exact" not in source
+    assert all((ROOT / solver[key]).is_file() for key in ("design", "foundation_test"))
 
 
 def test_exact_algebraic_backend_paths_exist() -> None:
@@ -904,12 +929,8 @@ def test_data_models_geom_a0_requirements_snapshot_is_frozen() -> None:
     geom_contract = snapshot["geom_contract"]
     assert geom_contract["mapping_status"] == "accepted"
     assert geom_contract["mapping_review_commit"] == "433bad5"
-    assert geom_contract["mapping_review_packet"] == (
-        "reviewer-019ffce8-ac66-76c0-877d-3fcb5c1aa6c5"
-    )
-    assert geom_contract["consumer_confirmation"] == (
-        "joint_semantic_and_fixture_review_complete_no_known_blocker"
-    )
+    assert geom_contract["mapping_review_packet"] == ("reviewer-019ffce8-ac66-76c0-877d-3fcb5c1aa6c5")
+    assert geom_contract["consumer_confirmation"] == ("joint_semantic_and_fixture_review_complete_no_known_blocker")
     mapping_report = ROOT / geom_contract["mapping_report"]
     assert mapping_report.is_file()
     assert _sha256(mapping_report) == geom_contract["mapping_report_sha256"]
@@ -1109,11 +1130,7 @@ def test_vendored_matz_analytic_boolean_observations_are_structurally_closed() -
         _assert_nonzero_uint64(query["query_id"], "relationship query id")
         _assert_nonzero_uint64(query["left_job_id"], "relationship left job reference")
         _assert_nonzero_uint64(query["right_job_id"], "relationship right job reference")
-    assert all(
-        query[side] in known_job_ids
-        for query in all_queries
-        for side in ("left_job_id", "right_job_id")
-    )
+    assert all(query[side] in known_job_ids for query in all_queries for side in ("left_job_id", "right_job_id"))
 
     arc_case = next(item for item in cases if item["fixture_id"] == "intersecting_arbitrary_angle_arcs")
     arc_expected = arc_case["expected"]
@@ -1151,7 +1168,7 @@ def test_analytic_planar_boolean_numeric_catalog_is_closed() -> None:
         catalog = tomllib.load(stream)
 
     assert catalog["catalog_version"] == 1
-    assert catalog["status"] == "frozen_a0"
+    assert catalog["status"] == "structural_frozen_numeric_reopened"
     assert catalog["operation_identity"] == candidate["id"]
     assert catalog["request_magic"] == "GMABRQ01"
     assert catalog["result_magic"] == "GMABRS01"
@@ -1269,14 +1286,21 @@ def test_analytic_planar_boolean_numeric_catalog_is_closed() -> None:
     assert catalog["operand_event_semantics"]["subtraction_effect_survives"] == {
         "required_for_unfilled_attributed_removal": True,
         "result_references": "all_attributed_final_boundary_ring_region_references",
-        "empty_result_reference_case": (
-            "unfilled_attributed_removal_without_final_material_boundary"
-        ),
+        "empty_result_reference_case": ("unfilled_attributed_removal_without_final_material_boundary"),
     }
     assert catalog["path_token"]["none"] == 0
     assert sorted(catalog["path_token"].values()) == list(range(27))
 
     solver_limits = catalog["limit"]
+    assert solver_limits["coordinate_grid_nm"] == 1
+    assert solver_limits["topology_resolution_nm"] == 50
+    assert solver_limits["filtered_algebraic_fallback_calls_per_job"] == 0
+    assert solver_limits["vertex_squared_error_nm2_numerator"] == 2_500
+    assert solver_limits["vertex_squared_error_nm2_denominator"] == 1
+    assert solver_limits["radius_error_nm_numerator"] == 50
+    assert solver_limits["radius_error_nm_denominator"] == 1
+    assert solver_limits["arc_hausdorff_error_nm_numerator"] == 50
+    assert solver_limits["arc_hausdorff_error_nm_denominator"] == 1
     assert solver_limits["algebraic_work_units_per_job"] == 1_000_000_000
     for name in (
         "examined_curve_pairs_per_job",
@@ -1294,7 +1318,7 @@ def test_analytic_planar_boolean_numeric_catalog_is_closed() -> None:
         assert solver_limits[name] > 0
 
     packet_spec = (ROOT / candidate["packet_spec"]).read_text(encoding="utf-8")
-    assert "| Algebraic work units per job | 1,000,000,000 |" in packet_spec
+    assert "| Fallback/oracle algebraic work units per job | 1,000,000,000 |" in packet_spec
     for magic in (catalog["request_magic"], catalog["result_magic"]):
         assert magic in packet_spec
     assert "normalized curves" not in packet_spec

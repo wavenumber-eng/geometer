@@ -18,6 +18,12 @@ aligns the following table. This records the uniquely encodable intent of A0;
 the generation and magic are unchanged because no raw golden or deployed codec
 preceded the correction.
 
+ADR-013 leaves the record layout, generation, and magic frozen but reopens the
+solver-facing numeric limits. In particular, the 1 nm coordinate grid is
+retained while the production topology-resolution and boundary-displacement
+envelope becomes 50 nm. Changing those governed limits does not alter packet
+bytes or field interpretation.
+
 Every numeric enum, flag, role, status, event, diagnostic, and path token is
 assigned in the machine-readable governed catalog
 `docs/contracts/analytic-planar-boolean-a0-catalog.toml`. This document names
@@ -629,32 +635,42 @@ Additional A0 maxima are:
 | Records in any one table | `UINT32_MAX` and packet-size limited |
 | Job-local coordinate span per axis | `1,000,000,000,000 nm` |
 | Job-local positive radius or width | `1,000,000,000,000 nm` |
+| Published coordinate grid | `1 nm` |
+| Topology-resolution envelope | `50 nm` |
+| Maximum published vertex displacement | `50 nm` (`2,500 nm^2` squared) |
+| Maximum published radius displacement | `50 nm` |
+| Maximum published arc Hausdorff displacement | `50 nm` |
 | Analytic boundary occurrences per job | 131,072 |
 | Curve pairs examined after conservative pruning per job | 8,388,608 |
-| Exact intersections per job | 1,048,576 |
+| Narrow-phase intersections per job | 1,048,576 |
 | Arrangement vertices per job | 1,048,576 |
 | Arrangement half-edges per job | 2,097,152 |
 | Arrangement faces per job | 1,048,576 |
-| Live real-algebraic scalars per job | 4,194,304 |
-| Defining-polynomial degree | 64 |
-| Bits in any algebraic polynomial coefficient | 16,384 |
-| Algebraic integer/coefficient storage per job | 256 MiB |
-| Algebraic work units per job | 1,000,000,000 |
+| Fallback/oracle live real-algebraic scalars per job | 4,194,304 |
+| Fallback/oracle defining-polynomial degree | 64 |
+| Fallback/oracle algebraic coefficient bits | 16,384 |
+| Fallback/oracle integer/coefficient storage per job | 256 MiB |
+| Fallback/oracle algebraic work units per job | 1,000,000,000 |
 | Provenance source references per job | 8,388,608 |
 | Source-reference-index memberships per job | 8,388,608 |
-| Exact predicate calls per job | 100,000,000 |
-| Total interval-refinement steps per job | 100,000,000 |
+| Narrow-phase predicate calls per job | 100,000,000 |
+| Fallback/oracle interval-refinement steps per job | 100,000,000 |
 | Solver working memory per job | 1 GiB |
 
 Implementations advertise smaller effective limits when required by available
 memory. Every multiplication, addition, alignment, index/range, signed-origin
 subtraction, and native-size conversion is checked before allocation. The
 decoder validates the full structural graph before invoking OCCT.
-The authoritative arrangement charges each counter before performing the work
+The filtered arrangement and any isolated fallback charge each counter before performing the work
 or allocation that would exceed it. Hitting any solver counter is the stable
 job-local `resource_limit_exceeded` outcome. Native and WASM use the same hard
 counts; an advertised effective limit may only be smaller, and clients target
 the minimum negotiated capability when cross-runtime parity is required.
+
+The algebraic limits do not make that backend primary. Ordinary production
+fixtures and performance qualification must remain on the filtered path;
+algebraic work is reserved for conformance, diagnosis, and explicitly governed
+fallback cases.
 
 ## Generated Codec Tests
 

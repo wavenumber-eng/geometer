@@ -51,24 +51,31 @@ ConstructionNodeId dot(ConstructionBuilder& builder, const VectorNodes& left,
     return builder.sum(x_product, y_product);
 }
 
-std::int8_t direction_half(ConstructionBuilder& builder, const VectorNodes& direction)
-{
-    const std::int8_t y_sign = builder.sign(direction.y);
-    if (!builder.good())
-        return 0;
-    if (y_sign > 0)
-        return 0;
-    if (y_sign < 0)
-        return 1;
-    return builder.sign(direction.x) >= 0 ? 0 : 1;
-}
-
 struct Tangent
 {
     VectorNodes direction;
     std::int8_t curvature_sign = 0;
     ConstructionNodeId radius = 0;
 };
+
+std::int8_t direction_half(ConstructionBuilder& builder, const Tangent& tangent)
+{
+    const std::int8_t y_sign = builder.sign(tangent.direction.y);
+    if (!builder.good())
+        return 0;
+    if (y_sign > 0)
+        return 0;
+    if (y_sign < 0)
+        return 1;
+    if (builder.sign(tangent.direction.x) < 0)
+        return 1;
+    // A clockwise germ whose tangent lies exactly on the positive x axis dips
+    // infinitesimally below that axis, so it wraps past both halves to the very
+    // end of the rotational order. The other direction-half boundaries are not
+    // wrap points: infinitesimal curvature perturbations there stay adjacent in
+    // the circular order, so the exact tangent direction decides the half.
+    return tangent.curvature_sign < 0 ? 2 : 0;
+}
 
 Tangent outgoing_tangent(ConstructionBuilder& builder, std::uint32_t half_edge_id,
                          const std::vector<ExactArrangementVertex>& vertices,
@@ -94,15 +101,6 @@ Tangent outgoing_tangent(ConstructionBuilder& builder, std::uint32_t half_edge_i
 std::int8_t compare_curvature(ConstructionBuilder& builder, const Tangent& left,
                               const Tangent& right)
 {
-    const std::int8_t y_sign = builder.sign(left.direction.y);
-    const std::int8_t x_sign = builder.sign(left.direction.x);
-    if (!builder.good())
-        return 0;
-    if (y_sign == 0 && x_sign > 0 && left.curvature_sign != right.curvature_sign)
-    {
-        const auto seam_rank = [](std::int8_t sign) { return sign == 0 ? 0 : sign > 0 ? 1 : 2; };
-        return seam_rank(left.curvature_sign) < seam_rank(right.curvature_sign) ? -1 : 1;
-    }
     if (left.curvature_sign != right.curvature_sign)
         return left.curvature_sign < right.curvature_sign ? -1 : 1;
     if (left.curvature_sign == 0)
@@ -217,8 +215,8 @@ Ordering compare_outgoing(ConstructionArena& arena, std::uint32_t left_half_edge
         const Tangent left = outgoing_tangent(builder, left_half_edge, vertices, edges, half_edges);
         const Tangent right =
             outgoing_tangent(builder, right_half_edge, vertices, edges, half_edges);
-        const std::int8_t left_half = direction_half(builder, left.direction);
-        const std::int8_t right_half = direction_half(builder, right.direction);
+        const std::int8_t left_half = direction_half(builder, left);
+        const std::int8_t right_half = direction_half(builder, right);
         if (!builder.good())
             return failure(builder.error());
         if (left_half != right_half)

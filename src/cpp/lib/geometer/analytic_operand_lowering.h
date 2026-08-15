@@ -42,10 +42,13 @@ struct AnalyticLoweredGeometryResult
 // ids are allocated densely from one in canonical owner-traversal order.
 // Authored ring winding is accepted in either direction and resolved with
 // exact predicates; the emitted material-side flags always describe the
-// operand interior. Any violated job-local geometric rule (degenerate or
-// incoherent segments, coordinate span, occurrence budget) fails this job
-// only. Capsule and swept-path operands are not lowered yet and currently
-// report unsupported_geometry.
+// operand interior. Capsules lower directly to two exact offset lines and
+// two semicircular caps; swept paths resolve overlap among their per-vertex
+// disks and per-segment offset strips through a job-local exact
+// pre-arrangement whose union boundary is re-emitted, so both keep the
+// exact rational width/2 inflation. Any violated job-local geometric rule
+// (degenerate or incoherent segments, cusps, self-intersecting centerlines,
+// coordinate span, occurrence budget) fails this job only.
 [[nodiscard]] AnalyticLoweredGeometryResult
 lower_analytic_job_geometry(exact::ConstructionArena& arena,
                             const AnalyticRequestPacketRecords& records, std::uint32_t job_index);

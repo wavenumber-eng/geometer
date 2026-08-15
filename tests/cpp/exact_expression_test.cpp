@@ -179,16 +179,16 @@ void test_resource_boundary_and_rollback()
     require(complete.error == Error::none && complete.value.has_value(),
             "expression boundary measurement failed");
     const std::uint64_t required_work = measured.usage().work_units;
-    require(required_work == 3'883'272,
+    require(required_work == 3'879'048,
             "expression success work boundary must be platform independent");
     complete.value.reset();
     require(measured.usage().owned_bytes == 0,
             "completed expression temporaries must release with the result");
 
-    geometer::exact::Budget short_budget({3'883'271, 268'435'456});
+    geometer::exact::Budget short_budget({3'879'047, 268'435'456});
     auto short_result = geometer::exact::add_canonical_reals(short_budget, sqrt_two, half);
     require(short_result.error == Error::resource_limit_exceeded && !short_result.value &&
-                short_budget.usage().work_units == 3'494'472 &&
+                short_budget.usage().work_units == 3'490'248 &&
                 short_budget.usage().owned_bytes == 0,
             "one-unit-short expression must fail after work with semantic/storage rollback");
 }

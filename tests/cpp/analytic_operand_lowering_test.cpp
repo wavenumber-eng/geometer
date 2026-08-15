@@ -39,7 +39,7 @@ struct SegmentSpec
 
 std::uint32_t add_ring(AnalyticRequestPacketRecords& records, std::uint64_t ring_id,
                        const std::vector<std::pair<std::int64_t, std::int64_t>>& vertices,
-                       const std::vector<SegmentSpec>& segments)
+                       const std::vector<SegmentSpec>& segments, std::uint32_t flags = 0)
 {
     const auto ring_index = static_cast<std::uint32_t>(records.rings.size());
     const auto vertex_begin = static_cast<std::uint32_t>(records.vertices.size());
@@ -51,7 +51,7 @@ std::uint32_t add_ring(AnalyticRequestPacketRecords& records, std::uint64_t ring
         records.segments.push_back({segment.id, segment.curve_id, segment.kind, segment.direction,
                                     segment.major_arc, segment.center_x_nm, segment.center_y_nm});
     records.rings.push_back({ring_id, vertex_begin, static_cast<std::uint32_t>(vertices.size()),
-                             segment_begin, static_cast<std::uint32_t>(segments.size()), 0});
+                             segment_begin, static_cast<std::uint32_t>(segments.size()), flags});
     return ring_index;
 }
 
@@ -79,13 +79,38 @@ AnalyticRequestPacketRecords square_region_records(bool clockwise)
                                             {803, 903, 1, 0, false, 0, 0}});
 }
 
+AnalyticRequestPacketRecords capsule_records(std::int64_t start_x, std::int64_t start_y,
+                                             std::int64_t end_x, std::int64_t end_y,
+                                             std::uint64_t width)
+{
+    AnalyticRequestPacketRecords records;
+    records.jobs = {{10, 0, 1}};
+    records.stages = {{100, 1, 0, 1}};
+    records.operands = {{1000, 4, 0}};
+    records.capsules = {{9300, start_x, start_y, end_x, end_y, width}};
+    return records;
+}
+
+AnalyticRequestPacketRecords
+swept_records(const std::vector<std::pair<std::int64_t, std::int64_t>>& vertices,
+              const std::vector<SegmentSpec>& segments, std::uint64_t width)
+{
+    AnalyticRequestPacketRecords records;
+    records.jobs = {{10, 0, 1}};
+    records.stages = {{100, 1, 0, 1}};
+    records.operands = {{1000, 5, 0}};
+    const std::uint32_t ring = add_ring(records, 600, vertices, segments, 1);
+    records.swept_paths = {{9400, ring, width}};
+    return records;
+}
+
 AnalyticLoweredGeometry lower_or_die(ConstructionArena& arena,
                                      const AnalyticRequestPacketRecords& records,
                                      std::uint32_t job_index, const std::string& message)
 {
     AnalyticLoweredGeometryResult lowered = lower_analytic_job_geometry(arena, records, job_index);
     require(lowered.error == AnalyticOperandLoweringError::none && lowered.value.has_value(),
-            message);
+            message + " (error " + std::to_string(static_cast<int>(lowered.error)) + ")");
     return std::move(*lowered.value);
 }
 
@@ -108,6 +133,35 @@ void require_source(const ExactOccurrenceSource& source, std::uint64_t occurrenc
                 source.source.operand_id == operand && source.source.primary_id == primary &&
                 source.source.secondary_id == secondary,
             message);
+}
+
+// Every swept occurrence must carry the operand/feature header and a
+// (role, boundary-occurrence-key) pair from the expected set, and every
+// expected pair must appear at least once.
+void require_swept_sources(const AnalyticLoweredGeometry& lowered,
+                           const std::vector<std::pair<ExactSourceRole, std::uint64_t>>& expected,
+                           const std::string& label)
+{
+    for (const ExactOccurrenceSource& source : lowered.occurrence_sources)
+    {
+        require(source.coverage_id == 1000 &&
+                    source.source.kind == ExactSourceKind::compact_feature_role &&
+                    source.source.operand_id == 1000 && source.source.primary_id == 9400,
+                label + ": swept source header wrong");
+        bool found = false;
+        for (const auto& [role, secondary] : expected)
+            if (source.source.role == role && source.source.secondary_id == secondary)
+                found = true;
+        require(found, label + ": unexpected swept role/key pair");
+    }
+    for (const auto& [role, secondary] : expected)
+    {
+        bool found = false;
+        for (const ExactOccurrenceSource& source : lowered.occurrence_sources)
+            if (source.source.role == role && source.source.secondary_id == secondary)
+                found = true;
+        require(found, label + ": missing swept role/key pair");
+    }
 }
 
 std::string geometry_signature(const ExactNormalizedBooleanResult& result)
@@ -147,7 +201,11 @@ NormalizedRun run_union_pipeline(const AnalyticRequestPacketRecords& records,
                                  std::uint32_t job_index, std::uint64_t coverage_id,
                                  const std::string& label)
 {
-    Budget budget({2'000'000'000, 268'435'456});
+    // Overlapping swept strokes atomize every curve pair before arranging, so
+    // the overlapping-U pipeline needs about 28e9 work units end to end; the
+    // limit leaves headroom above that measured peak without masking runaway
+    // regressions.
+    Budget budget({40'000'000'000, 268'435'456});
     ConstructionArena arena(budget);
     const AnalyticLoweredGeometry lowered =
         lower_or_die(arena, records, job_index, label + ": lowering failed");
@@ -419,15 +477,15 @@ void require_job_isolation()
     records.jobs = {{10, 0, 1}, {20, 1, 1}};
     records.stages = {{100, 1, 0, 1}, {101, 1, 1, 1}};
     records.operands = {{1000, 4, 0}, {1001, 2, 0}};
-    records.capsules = {{9300, 0, 0, 1000, 0, 50}};
+    records.capsules = {{9300, 0, 0, 0, 0, 50}};
     records.disks = {{9100, 5, 5, 5}};
 
     Budget budget({2'000'000'000, 268'435'456});
     ConstructionArena arena(budget);
     AnalyticLoweredGeometryResult capsule_job = lower_analytic_job_geometry(arena, records, 0);
-    require(capsule_job.error == AnalyticOperandLoweringError::unsupported_geometry &&
+    require(capsule_job.error == AnalyticOperandLoweringError::invalid_topology &&
                 !capsule_job.value.has_value(),
-            "capsule operand must stay unsupported in this slice");
+            "degenerate capsule job must fail alone with invalid_topology");
     const AnalyticLoweredGeometry disk_job =
         lower_or_die(arena, records, 1, "sibling disk job must survive the capsule failure");
     require(disk_job.curves.size() == 2 && disk_job.coverages[0].coverage_id == 1001 &&
@@ -504,6 +562,249 @@ void require_occurrence_budget()
                            "occurrence budget overflow must report resource_limit_exceeded");
 }
 
+void require_capsule_lowering_and_differential()
+{
+    // Capsule (0,0)->(30,40), width 10: offset vector is exactly (-4, 3).
+    const AnalyticRequestPacketRecords records = capsule_records(0, 0, 30, 40, 10);
+    Budget budget({2'000'000'000, 268'435'456});
+    ConstructionArena arena(budget);
+    const AnalyticLoweredGeometry lowered =
+        lower_or_die(arena, records, 0, "capsule lowering failed");
+    require(lowered.curves.size() == 4 && lowered.coverages.size() == 4 &&
+                lowered.occurrence_sources.size() == 4,
+            "capsule lowered wrong element counts");
+    const ExactAtomicCurveKind expected_kinds[4] = {
+        ExactAtomicCurveKind::line, ExactAtomicCurveKind::circular_arc, ExactAtomicCurveKind::line,
+        ExactAtomicCurveKind::circular_arc};
+    const bool expected_agrees[4] = {true, true, false, true};
+    const ExactSourceRole expected_roles[4] = {
+        ExactSourceRole::capsule_right_line, ExactSourceRole::capsule_end_cap,
+        ExactSourceRole::capsule_left_line, ExactSourceRole::capsule_start_cap};
+    for (std::size_t index = 0; index < 4; ++index)
+    {
+        const ExactAtomicCurve& curve = lowered.curves[index];
+        require(curve.kind == expected_kinds[index] && curve.memberships.size() == 1 &&
+                    curve.memberships[0].occurrence_id == index + 1 &&
+                    curve.memberships[0].agrees_with_carrier == expected_agrees[index],
+                "capsule curve shape wrong");
+        if (curve.kind == ExactAtomicCurveKind::circular_arc)
+            require(curve.counterclockwise && !curve.major_arc,
+                    "capsule caps must be counterclockwise minor semicircles");
+        require(lowered.coverages[index].coverage_id == 1000 &&
+                    lowered.coverages[index].material_on_left_of_occurrence,
+                "capsule coverage wrong");
+        require_source(lowered.occurrence_sources[index], index + 1, 1000,
+                       ExactSourceKind::compact_feature_role, expected_roles[index], 1000, 9300, 0,
+                       "capsule source reference wrong");
+    }
+
+    // The same stadium authored as a region ring must normalize identically.
+    const AnalyticRequestPacketRecords authored = single_region_records(
+        {{4, -3}, {34, 37}, {26, 43}, {-4, 3}}, {{870, 970, 1, 0, false, 0, 0},
+                                                 {871, 971, 2, 1, false, 30, 40},
+                                                 {872, 972, 1, 0, false, 0, 0},
+                                                 {873, 973, 2, 1, false, 0, 0}});
+    const NormalizedRun capsule_run = run_union_pipeline(records, 0, 1000, "capsule pipeline");
+    const NormalizedRun authored_run =
+        run_union_pipeline(authored, 0, 1000, "authored stadium pipeline");
+    require(!capsule_run.signature.empty() && capsule_run.signature == authored_run.signature,
+            "capsule and authored stadium region normalized differently");
+    require(capsule_run.rings.size() == 1 && capsule_run.regions.size() == 1,
+            "capsule normalized to unexpected topology");
+}
+
+void require_capsule_diagnostics()
+{
+    require_lowering_error(capsule_records(5, 5, 5, 5, 10),
+                           AnalyticOperandLoweringError::invalid_topology,
+                           "degenerate capsule endpoints must report invalid_topology");
+    // The doubled span accumulator keeps the half-width inflation exact: an
+    // even width of 10 lands exactly on the governed limit while width 11
+    // overshoots it by one half-unit per side.
+    constexpr std::int64_t kFarX = 999'999'999'990;
+    Budget budget({2'000'000'000, 268'435'456});
+    ConstructionArena arena(budget);
+    lower_or_die(arena, capsule_records(0, 0, kFarX, 0, 10), 0,
+                 "capsule span exactly at the governed limit must lower");
+    require_lowering_error(capsule_records(0, 0, kFarX, 0, 11),
+                           AnalyticOperandLoweringError::resource_limit_exceeded,
+                           "capsule half-width span overflow must report resource_limit_exceeded");
+}
+
+void require_single_segment_swept_differential()
+{
+    // One line segment (0,0)->(30,40), width 10: the union boundary is the
+    // capsule stadium, but with the disk-seam vertices (-5,0) and (35,40)
+    // retained where the cap circles' extreme points survive.
+    const AnalyticRequestPacketRecords records =
+        swept_records({{0, 0}, {30, 40}}, {{880, 980, 1, 0, false, 0, 0}}, 10);
+    Budget budget({2'000'000'000, 268'435'456});
+    ConstructionArena arena(budget);
+    const AnalyticLoweredGeometry lowered =
+        lower_or_die(arena, records, 0, "single-segment swept lowering failed");
+    require(lowered.curves.size() == 6, "single-segment swept wrong curve count");
+    require_swept_sources(lowered,
+                          {{ExactSourceRole::swept_right_offset_line, std::uint64_t(1) << 32},
+                           {ExactSourceRole::swept_left_offset_line, std::uint64_t(1) << 32},
+                           {ExactSourceRole::swept_start_cap, std::uint64_t(1) << 32},
+                           {ExactSourceRole::swept_end_cap, std::uint64_t(2) << 32}},
+                          "single-segment swept");
+
+    const AnalyticRequestPacketRecords authored = single_region_records(
+        {{4, -3}, {34, 37}, {35, 40}, {26, 43}, {-4, 3}, {-5, 0}}, {{881, 981, 1, 0, false, 0, 0},
+                                                                    {882, 982, 2, 1, false, 30, 40},
+                                                                    {883, 982, 2, 1, false, 30, 40},
+                                                                    {884, 983, 1, 0, false, 0, 0},
+                                                                    {885, 984, 2, 1, false, 0, 0},
+                                                                    {886, 984, 2, 1, false, 0, 0}});
+    const NormalizedRun swept_run =
+        run_union_pipeline(records, 0, 1000, "single-segment swept pipeline");
+    const NormalizedRun authored_run =
+        run_union_pipeline(authored, 0, 1000, "authored split stadium pipeline");
+    require(!swept_run.signature.empty() && swept_run.signature == authored_run.signature,
+            "single-segment swept and split stadium normalized differently");
+    require(swept_run.rings.size() == 1 && swept_run.regions.size() == 1,
+            "single-segment swept normalized to unexpected topology");
+}
+
+void require_l_shape_swept_differential()
+{
+    // Two line segments (0,0)->(20,0)->(20,20), width 10: right angle with a
+    // round join at (20,0); the join disk survives only as the outer quarter
+    // arc and the inner corner is trimmed at the strip crossing (15,5).
+    const AnalyticRequestPacketRecords records =
+        swept_records({{0, 0}, {20, 0}, {20, 20}},
+                      {{890, 990, 1, 0, false, 0, 0}, {891, 991, 1, 0, false, 0, 0}}, 10);
+    Budget budget({2'000'000'000, 268'435'456});
+    ConstructionArena arena(budget);
+    const AnalyticLoweredGeometry lowered =
+        lower_or_die(arena, records, 0, "l-shape swept lowering failed");
+    require(lowered.curves.size() == 8, "l-shape swept wrong curve count");
+    require_swept_sources(lowered,
+                          {{ExactSourceRole::swept_right_offset_line, std::uint64_t(1) << 32},
+                           {ExactSourceRole::swept_left_offset_line, std::uint64_t(1) << 32},
+                           {ExactSourceRole::swept_right_offset_line, std::uint64_t(2) << 32},
+                           {ExactSourceRole::swept_left_offset_line, std::uint64_t(2) << 32},
+                           {ExactSourceRole::swept_round_join, (std::uint64_t(1) << 32) | 2},
+                           {ExactSourceRole::swept_start_cap, std::uint64_t(1) << 32},
+                           {ExactSourceRole::swept_end_cap, std::uint64_t(3) << 32}},
+                          "l-shape swept");
+
+    const AnalyticRequestPacketRecords authored = single_region_records(
+        {{0, -5}, {20, -5}, {25, 0}, {25, 20}, {15, 20}, {15, 5}, {0, 5}, {-5, 0}},
+        {{920, 1020, 1, 0, false, 0, 0},
+         {921, 1021, 2, 1, false, 20, 0},
+         {922, 1022, 1, 0, false, 0, 0},
+         {923, 1023, 2, 1, false, 20, 20},
+         {924, 1024, 1, 0, false, 0, 0},
+         {925, 1025, 1, 0, false, 0, 0},
+         {926, 1026, 2, 1, false, 0, 0},
+         {927, 1026, 2, 1, false, 0, 0}});
+    const NormalizedRun swept_run = run_union_pipeline(records, 0, 1000, "l-shape swept pipeline");
+    const NormalizedRun authored_run =
+        run_union_pipeline(authored, 0, 1000, "authored l-shape pipeline");
+    require(!swept_run.signature.empty() && swept_run.signature == authored_run.signature,
+            "l-shape swept and authored region normalized differently");
+    require(swept_run.rings.size() == 1 && swept_run.regions.size() == 1,
+            "l-shape swept normalized to unexpected topology");
+}
+
+void require_arc_swept_differential()
+{
+    // One counterclockwise quarter arc (10,0)->(0,10) around the origin,
+    // width 4: the strip is an exact annular sector with radii 8 and 12; the
+    // inner offset travels clockwise on the union boundary.
+    const AnalyticRequestPacketRecords records =
+        swept_records({{10, 0}, {0, 10}}, {{892, 992, 2, 1, false, 0, 0}}, 4);
+    Budget budget({2'000'000'000, 268'435'456});
+    ConstructionArena arena(budget);
+    const AnalyticLoweredGeometry lowered =
+        lower_or_die(arena, records, 0, "arc swept lowering failed");
+    require(lowered.curves.size() == 5, "arc swept wrong curve count");
+    require_swept_sources(lowered,
+                          {{ExactSourceRole::swept_left_offset_arc, std::uint64_t(1) << 32},
+                           {ExactSourceRole::swept_right_offset_arc, std::uint64_t(1) << 32},
+                           {ExactSourceRole::swept_start_cap, std::uint64_t(1) << 32},
+                           {ExactSourceRole::swept_end_cap, std::uint64_t(2) << 32}},
+                          "arc swept");
+
+    const AnalyticRequestPacketRecords authored = single_region_records(
+        {{12, 0}, {0, 12}, {-2, 10}, {0, 8}, {8, 0}}, {{930, 1030, 2, 1, false, 0, 0},
+                                                       {931, 1031, 2, 1, false, 0, 10},
+                                                       {932, 1031, 2, 1, false, 0, 10},
+                                                       {933, 1032, 2, 2, false, 0, 0},
+                                                       {934, 1033, 2, 1, false, 10, 0}});
+    const NormalizedRun swept_run = run_union_pipeline(records, 0, 1000, "arc swept pipeline");
+    const NormalizedRun authored_run =
+        run_union_pipeline(authored, 0, 1000, "authored annular sector pipeline");
+    require(!swept_run.signature.empty() && swept_run.signature == authored_run.signature,
+            "arc swept and authored annular sector normalized differently");
+    require(swept_run.rings.size() == 1 && swept_run.regions.size() == 1,
+            "arc swept normalized to unexpected topology");
+}
+
+void require_swept_overlap_resolution()
+{
+    // U-shaped centerline with legs sep apart, width 10: sep 8 overlaps the
+    // legs in two dimensions (radius-5 cap disks 8 apart cross at rational
+    // 3-4-5 points, keeping every pre-arrangement vertex rational), sep 10
+    // makes their offset lines exactly coincident with opposite material
+    // sides, and sep 20 keeps them apart. All must resolve through the local
+    // pre-arrangement into one region.
+    const auto records = [](std::int64_t sep)
+    {
+        return swept_records({{0, 12}, {0, 0}, {sep, 0}, {sep, 12}},
+                             {{893, 993, 1, 0, false, 0, 0},
+                              {894, 994, 1, 0, false, 0, 0},
+                              {895, 995, 1, 0, false, 0, 0}},
+                             10);
+    };
+    const NormalizedRun overlapping =
+        run_union_pipeline(records(8), 0, 1000, "overlapping u swept pipeline");
+    const NormalizedRun tangent =
+        run_union_pipeline(records(10), 0, 1000, "tangent u swept pipeline");
+    const NormalizedRun apart =
+        run_union_pipeline(records(20), 0, 1000, "separated u swept pipeline");
+    require(overlapping.regions.size() == 1 && tangent.regions.size() == 1 &&
+                apart.regions.size() == 1,
+            "u swept must union into one region");
+    require(!overlapping.signature.empty() && overlapping.signature != tangent.signature &&
+                tangent.signature != apart.signature && overlapping.signature != apart.signature,
+            "u swept separations must normalize distinctly");
+}
+
+void require_swept_invalid_inputs()
+{
+    require_lowering_error(
+        swept_records({{0, 0}, {10, 0}, {10, 0}},
+                      {{940, 1040, 1, 0, false, 0, 0}, {941, 1041, 1, 0, false, 0, 0}}, 10),
+        AnalyticOperandLoweringError::invalid_topology,
+        "zero-length swept segment must report invalid_topology");
+    require_lowering_error(
+        swept_records({{0, 0}, {10, 0}, {5, 0}},
+                      {{942, 1042, 1, 0, false, 0, 0}, {943, 1043, 1, 0, false, 0, 0}}, 10),
+        AnalyticOperandLoweringError::invalid_topology,
+        "swept reversal cusp must report invalid_topology");
+    require_lowering_error(swept_records({{0, 0}, {10, 0}, {10, 10}, {5, -5}},
+                                         {{944, 1044, 1, 0, false, 0, 0},
+                                          {945, 1045, 1, 0, false, 0, 0},
+                                          {946, 1046, 1, 0, false, 0, 0}},
+                                         2),
+                           AnalyticOperandLoweringError::invalid_topology,
+                           "self-crossing swept centerline must report invalid_topology");
+    require_lowering_error(swept_records({{0, 0}, {20, 0}, {20, 10}, {10, 10}, {10, 0}},
+                                         {{947, 1047, 1, 0, false, 0, 0},
+                                          {948, 1048, 1, 0, false, 0, 0},
+                                          {949, 1049, 1, 0, false, 0, 0},
+                                          {950, 1050, 1, 0, false, 0, 0}},
+                                         2),
+                           AnalyticOperandLoweringError::invalid_topology,
+                           "swept centerline endpoint touch must report invalid_topology");
+    require_lowering_error(swept_records({{0, 0}, {10, 0}}, {{951, 1051, 2, 1, false, 5, 0}}, 10),
+                           AnalyticOperandLoweringError::invalid_arc,
+                           "swept arc radius exactly at half the width must report invalid_arc");
+}
+
 } // namespace
 
 int main()
@@ -521,5 +822,12 @@ int main()
     require_invalid_topology_diagnostics();
     require_span_limit();
     require_occurrence_budget();
+    require_capsule_lowering_and_differential();
+    require_capsule_diagnostics();
+    require_single_segment_swept_differential();
+    require_l_shape_swept_differential();
+    require_arc_swept_differential();
+    require_swept_overlap_resolution();
+    require_swept_invalid_inputs();
     return 0;
 }

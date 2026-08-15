@@ -185,6 +185,62 @@ enum class SearchStatus
     resource_limit
 };
 
+BigInt integer_sqrt(const BigInt& value)
+{
+    if (value <= 0)
+        return 0;
+    BigInt estimate = BigInt(1) << static_cast<unsigned>((bit_length(value) + 2) / 2);
+    while (true)
+    {
+        BigInt next = (estimate + value / estimate) / 2;
+        if (next >= estimate)
+            return estimate;
+        estimate = std::move(next);
+    }
+}
+
+// A primitive quadratic has a linear integer factor exactly when its
+// discriminant is a perfect square (rational root theorem plus Gauss's
+// lemma), so quadratics never need the divisor-enumeration search. This
+// keeps square roots of large rationals (for example governed-span capsule
+// lengths near the coordinate limit) inside the work budget.
+SearchStatus find_quadratic_factor(Budget& budget, const IntegerPolynomial& polynomial,
+                                   IntegerPolynomial& factor)
+{
+    try
+    {
+        const std::uint64_t bits = std::max(
+            {bit_length(polynomial[0]), bit_length(polynomial[1]), bit_length(polynomial[2])});
+        const std::uint64_t limbs = checked_add(bits, 31) / 32;
+        if (!budget.consume_work(checked_multiply(
+                16, checked_multiply(checked_add(bits, 1), checked_multiply(limbs, limbs)))))
+            return SearchStatus::resource_limit;
+        const BigInt discriminant =
+            polynomial[1] * polynomial[1] - 4 * polynomial[2] * polynomial[0];
+        if (discriminant < 0)
+            return SearchStatus::irreducible;
+        const BigInt root = integer_sqrt(discriminant);
+        if (root * root != discriminant)
+            return SearchStatus::irreducible;
+        BigInt numerator = root - polynomial[1];
+        BigInt denominator = 2 * polynomial[2];
+        const BigInt divisor = gcd(numerator, denominator);
+        numerator /= divisor;
+        denominator /= divisor;
+        if (denominator < 0)
+        {
+            numerator = -numerator;
+            denominator = -denominator;
+        }
+        factor = {-numerator, std::move(denominator)};
+        return SearchStatus::found;
+    }
+    catch (const std::exception&)
+    {
+        return SearchStatus::resource_limit;
+    }
+}
+
 bool signed_divisors(Budget& budget, const BigInt& value, std::vector<BigInt>& divisors)
 {
     const BigInt magnitude = absolute(value);
@@ -276,6 +332,8 @@ SearchStatus find_factor(Budget& budget, const IntegerPolynomial& polynomial,
                          IntegerPolynomial& factor)
 {
     const std::size_t degree = polynomial.size() - 1;
+    if (degree == 2)
+        return find_quadratic_factor(budget, polynomial, factor);
     for (std::size_t candidate_degree = 1; candidate_degree <= degree / 2; ++candidate_degree)
     {
         std::vector<std::int64_t> points;

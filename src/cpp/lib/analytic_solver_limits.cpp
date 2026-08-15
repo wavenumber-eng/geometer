@@ -6,7 +6,7 @@ namespace geometer
 bool analytic_solver_limits_within_hard_ceilings(const AnalyticSolverLimits& limits) noexcept
 {
     return limits.boundary_occurrences <= kAnalyticSolverHardLimits.boundary_occurrences &&
-           limits.candidate_curve_pairs <= kAnalyticSolverHardLimits.candidate_curve_pairs &&
+           limits.examined_curve_pairs <= kAnalyticSolverHardLimits.examined_curve_pairs &&
            limits.intersections <= kAnalyticSolverHardLimits.intersections &&
            limits.arrangement_vertices <= kAnalyticSolverHardLimits.arrangement_vertices &&
            limits.arrangement_half_edges <= kAnalyticSolverHardLimits.arrangement_half_edges &&

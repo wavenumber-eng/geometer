@@ -101,7 +101,7 @@ depends_on = ["analytic-synthetic-correctness"]
 
 [[steps]]
 id = "filtered-analytic-solver-design"
-title = "Replace the exact-first production path with the filtered 50 nm solver architecture"
+title = "Select and implement the fast filtered 50 nm engine, assessing reusable line/arc Boolean kernels before further custom arrangement work"
 status = "active"
 depends_on = ["analytic-synthetic-correctness"]
 

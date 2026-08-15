@@ -463,6 +463,7 @@ def main() -> None:
         clone_source("OCCT", OCCT_SRC, OCCT_REPO, OCCT_TAG, "CMakeLists.txt")
         patch_occt_wasm_install_rules()
         build_occt_wasm()
+        occt_binary_cache.write_install_profile(OCCT_WASM_INSTALL, profile)
 
     if not occt_binary_cache.install_matches_profile(OCCT_WASM_INSTALL, profile):
         expected = occt_binary_cache.occt_version_from_tag(profile.occt_tag)

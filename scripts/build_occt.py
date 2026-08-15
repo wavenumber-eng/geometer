@@ -174,6 +174,25 @@ def occt_paths(platform_name: str, library_type: str) -> tuple[Path, Path]:
     return platform_dir / "occt-build", platform_dir / "occt-install"
 
 
+def native_toolchain_abi(platform_name: str) -> str | None:
+    if not platform_name.startswith("windows-"):
+        return None
+    generator = os.environ.get("CMAKE_GENERATOR", "").lower()
+    compiler = os.environ.get("CXX", "").lower()
+    if "mingw" in generator or "g++" in compiler or "gcc" in compiler:
+        return "mingw"
+    if "clang" in compiler:
+        return "clang-cl" if "clang-cl" in compiler else "clang"
+    tools_version = os.environ.get("VCToolsVersion", "")
+    match = re.match(r"14\.(\d+)", tools_version)
+    if match and int(match.group(1)) < 30:
+        return "msvc-v142"
+    cl_path = (shutil.which("cl") or "").lower()
+    if "\\2019\\" in cl_path:
+        return "msvc-v142"
+    return "msvc-v143"
+
+
 def occt_cache_profile(
     platform_name: str,
     config: str,
@@ -184,6 +203,7 @@ def occt_cache_profile(
     if platform_name.startswith("macos-"):
         resolved_macos_target = macos_deployment_target(macos_deployment_target_value)
     resolved_linux_glibc = linux_glibc_baseline(platform_name)
+    toolchain_abi = native_toolchain_abi(platform_name)
     recipe = occt_binary_cache.recipe_hash(
         [
             Path(__file__),
@@ -197,6 +217,7 @@ def occt_cache_profile(
             "platform_tag": platform_name,
             "config": config,
             "library_type": library_type,
+            "toolchain_abi": toolchain_abi or "",
             "macos_deployment_target": resolved_macos_target or "",
             "linux_glibc_baseline": resolved_linux_glibc,
             "rapidjson_patch": RAPIDJSON_PATCH_SENTINEL,
@@ -210,6 +231,7 @@ def occt_cache_profile(
         occt_repo=OCCT_REPO,
         occt_tag=OCCT_TAG,
         recipe_hash=recipe,
+        toolchain_abi=toolchain_abi,
         macos_deployment_target=resolved_macos_target,
     )
 
@@ -406,6 +428,7 @@ def main() -> None:
         configure_occt(args.platform_tag, args.config, args.library_type, args.macos_deployment_target)
         build_occt(args.platform_tag, args.config, args.library_type)
         install_occt(args.platform_tag, args.config, args.library_type)
+        occt_binary_cache.write_install_profile(install_dir, profile)
 
     if not occt_binary_cache.install_matches_profile(install_dir, profile):
         expected = occt_binary_cache.occt_version_from_tag(profile.occt_tag)

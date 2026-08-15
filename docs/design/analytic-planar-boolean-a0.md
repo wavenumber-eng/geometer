@@ -273,12 +273,15 @@ Clipper2 may be used as differential, feasibility, or sampled topology oracles;
 their output is not independently authoritative.
 
 Each job uses a deterministic integer-nm local origin near its bounds before
-conversion to binary64 working coordinates. A spatial index over conservative
-outward-rounded curve bounds produces candidate pairs. This broad phase is a
-required part of the algorithm, not an optional later optimization: typical
-work should be `O(n log n + k)` for `n` boundary occurrences and `k` candidate
-or intersecting pairs. Adversarial dense overlap can still be quadratic and is
-stopped by the governed job-local candidate-pair limit.
+conversion to binary64 working coordinates. A deterministic sweep over
+conservative outward-rounded curve bounds produces candidate pairs. The
+secondary axis uses an augmented interval index; dense overlap on a single
+projection therefore does not trigger a linear active-list scan for every
+curve. This broad phase is a conservative filter: it may retain a disjoint pair
+but must never discard an intersecting or within-resolution pair. Typical work
+is `O(n log n + k)` for `n` boundary occurrences and `k` examined 2D pairs.
+Adversarial inputs where `k` itself is quadratic are stopped by the governed
+job-local examined-pair limit.
 
 The implementation collects solver budgets in one internal limits value
 object. Catalog values are immutable hard ceilings, while a host may select and

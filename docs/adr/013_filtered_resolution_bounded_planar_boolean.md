@@ -49,13 +49,16 @@ engine.
   guesses are not permitted.
 - A spatial broad phase must prune disjoint curve pairs before narrow-phase
   intersection. Typical work should scale as `O(n log n + k)`, where `k` is the
-  number of candidate or intersecting pairs. The unavoidable adversarial
-  quadratic case remains governed by a job-local candidate-pair limit.
+  number of examined 2D curve pairs. Dense overlap on either projection alone
+  must not cause an active-list scan: the production broad phase indexes the
+  secondary axis and meters index visits separately. The unavoidable case in
+  which `k` itself is quadratic remains governed by the job-local
+  examined-curve-pair limit.
 - No later stage may reintroduce an unmeasured whole-job all-pairs scan.
   Intersection deduplication, arrangement insertion, provenance aggregation,
   and normalization must use indexed or sorted structures, expose work
   telemetry, and include sparse 1x/2x scaling tests. A genuinely dense output
-  may require quadratic work in its reported candidate count; it must terminate
+  may require quadratic work in its reported examined-pair count; it must terminate
   at a job-local budget instead of degrading without a bound.
 - Solver resource limits are supplied through one internal limits value object
   rather than scattered production constants. The catalog values are governed
@@ -100,6 +103,18 @@ Production dispatch remains disabled during that work.
 
 ## Alternatives Considered
 
+- **Adopt an existing line/arc Boolean engine without adaptation.** A review of
+  Cavalier Contours 0.8.0 found reusable analytic intersection, overlap,
+  slicing, stitching, and spatial-index work, but not the governed 50 nm
+  certification, n-ary region/stage semantics, canonical bytes, resource
+  accounting, or provenance required here. Its pairwise classifier also has
+  whole-contour winding scans that can become quadratic. Before further custom
+  arrangement work, a bounded reuse spike may compare its algorithms and
+  slice metadata against Geometer fixtures. C++ remains authoritative under
+  issue 18; adding a Rust production kernel would require a separate approved
+  architecture decision. If adaptation requires replacing the upstream
+  predicates, classifier, stitcher, and lineage flow, retain it only as a
+  differential oracle/reference.
 - **Keep exact algebraic evaluation primary.** Rejected because its complexity
   and resource behavior do not match the speed-first product requirement.
 - **Only raise algebraic memory limits or loosen the old Hausdorff check.**

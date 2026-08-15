@@ -29,6 +29,7 @@ SHA256_NAME = "occt-install.zip.sha256"
 VALID_MODES = {"auto", "off", "only"}
 PUBLIC_CACHE_DISABLE_VALUES = {"0", "false", "no", "off"}
 DOWNLOAD_USER_AGENT = "wn-geometer-cache/1.0"
+INSTALL_PROFILE_NAME = ".geometer-occt-profile.json"
 
 
 class CacheReadError(RuntimeError):
@@ -60,6 +61,7 @@ class OcctCacheProfile:
     occt_repo: str
     occt_tag: str
     recipe_hash: str
+    toolchain_abi: str | None = None
     macos_deployment_target: str | None = None
     emsdk_version: str | None = None
 
@@ -77,6 +79,8 @@ class OcctCacheProfile:
             parts.append(f"macos-{self.macos_deployment_target}")
         if self.emsdk_version:
             parts.append(f"emsdk-{self.emsdk_version}")
+        if self.toolchain_abi:
+            parts.append(f"abi-{self.toolchain_abi}")
         parts.append(f"recipe-{self.recipe_hash[:16]}")
         return "-".join(_slug(part) for part in parts)
 
@@ -91,6 +95,9 @@ class AcceptedCacheAlias:
     occt_tag: str
     recipe_hash: str
     archive_sha256: str
+    compatible_recipe_hashes: tuple[str, ...]
+    requested_toolchain_abi: str | None = None
+    source_toolchain_abi: str | None = None
     macos_deployment_target: str | None = None
     emsdk_version: str | None = None
 
@@ -109,6 +116,8 @@ ACCEPTED_CACHE_ALIASES = (
         occt_tag="V8_0_1",
         recipe_hash="02d3ac07fe672579f1d5d97249964248a36e4b3982b3195c4fe7bd0d1dece46d",
         archive_sha256="255ad723184c62ef4e6dc82c20c1acd5b0aa43407cbefc6e26e484eb74a05df9",
+        compatible_recipe_hashes=("45aee960e6bad68c5f26c67335b82b6cbd539922aaefcf96003f20d7193485d9",),
+        requested_toolchain_abi="msvc-v143",
     ),
     AcceptedCacheAlias(
         kind="wasm",
@@ -119,6 +128,7 @@ ACCEPTED_CACHE_ALIASES = (
         occt_tag="V8_0_1",
         recipe_hash="a15818c33b508d24f66702e3834be2d25fce89031a00a58f6391c0d702bb95f4",
         archive_sha256="44fe6d6294c7a26ac77cfa17e1fd4a312578638a5669b7032c227750d032614e",
+        compatible_recipe_hashes=("d71a27bcf279d9cabdd3d9f012867a0d419b0ffcfeee7036d5ed6fdc269e70fc",),
         emsdk_version="3.1.56",
     ),
 )
@@ -236,7 +246,40 @@ def install_matches_profile(install_dir: Path, profile: OcctCacheProfile) -> boo
         return False
     expected = occt_version_from_tag(profile.occt_tag)
     actual = installed_occt_version(install_dir)
-    return actual == expected
+    if actual != expected:
+        return False
+    marker_path = install_dir / INSTALL_PROFILE_NAME
+    if not marker_path.exists():
+        return False
+    try:
+        marker = json.loads(marker_path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return False
+    return marker == install_profile_identity(profile)
+
+
+def install_profile_identity(profile: OcctCacheProfile) -> dict[str, str | None]:
+    return {
+        "kind": profile.kind,
+        "platform_tag": profile.platform_tag,
+        "config": profile.config,
+        "library_type": profile.library_type,
+        "occt_repo": profile.occt_repo,
+        "occt_tag": profile.occt_tag,
+        "recipe_hash": profile.recipe_hash,
+        "toolchain_abi": profile.toolchain_abi,
+        "macos_deployment_target": profile.macos_deployment_target,
+        "emsdk_version": profile.emsdk_version,
+    }
+
+
+def write_install_profile(install_dir: Path, profile: OcctCacheProfile) -> None:
+    if not install_ready(install_dir):
+        raise RuntimeError(f"OCCT install is not ready for a profile marker: {install_dir}")
+    (install_dir / INSTALL_PROFILE_NAME).write_text(
+        json.dumps(install_profile_identity(profile), indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
 
 
 def restore_prebuilt_install(profile: OcctCacheProfile, install_dir: Path, *, mode: str | None = None) -> bool:
@@ -260,10 +303,24 @@ def restore_prebuilt_install(profile: OcctCacheProfile, install_dir: Path, *, mo
         print(message)
         return False
 
-    candidates: list[tuple[OcctCacheProfile, str | None]] = [(profile, None)]
-    for alias in accepted_cache_aliases(profile):
-        if alias.recipe_hash != profile.recipe_hash:
-            candidates.append((dataclasses.replace(profile, recipe_hash=alias.recipe_hash), alias.archive_sha256))
+    aliases = accepted_cache_aliases(profile)
+    pinned_current_sha = next(
+        (
+            alias.archive_sha256
+            for alias in aliases
+            if alias.recipe_hash == profile.recipe_hash and alias.source_toolchain_abi == profile.toolchain_abi
+        ),
+        None,
+    )
+    candidates: list[tuple[OcctCacheProfile, str | None]] = [(profile, pinned_current_sha)]
+    for alias in aliases:
+        alias_profile = dataclasses.replace(
+            profile,
+            recipe_hash=alias.recipe_hash,
+            toolchain_abi=alias.source_toolchain_abi,
+        )
+        if alias_profile.cache_key != profile.cache_key:
+            candidates.append((alias_profile, alias.archive_sha256))
 
     prefix = ""
     selected_config: PublicCacheConfig | CacheConfig | None = None
@@ -331,6 +388,7 @@ def restore_prebuilt_install(profile: OcctCacheProfile, install_dir: Path, *, mo
         archive_path = Path(tmp_name) / ARCHIVE_NAME
         archive_path.write_bytes(archive_bytes)
         extract_install_archive(archive_path, install_dir)
+    write_install_profile(install_dir, profile)
 
     print(f"Restored OCCT binary cache {selected_profile.cache_key} to {install_dir}")
     return True
@@ -346,14 +404,16 @@ def accepted_cache_aliases(profile: OcctCacheProfile) -> tuple[AcceptedCacheAlia
         and alias.library_type == profile.library_type
         and alias.occt_repo == profile.occt_repo
         and alias.occt_tag == profile.occt_tag
+        and profile.recipe_hash in alias.compatible_recipe_hashes
+        and alias.requested_toolchain_abi == profile.toolchain_abi
         and alias.macos_deployment_target == profile.macos_deployment_target
         and alias.emsdk_version == profile.emsdk_version
     )
 
 
 def upload_prebuilt_install(profile: OcctCacheProfile, install_dir: Path, *, out_dir: Path) -> Path:
-    if not install_ready(install_dir):
-        raise RuntimeError(f"OCCT install is not ready and cannot be cached: {install_dir}")
+    if not install_matches_profile(install_dir, profile):
+        raise RuntimeError(f"OCCT install does not match its cache profile: {install_dir}")
     config = config_from_env()
     if config is None:
         raise RuntimeError("OCCT binary cache upload requires R2/GEOMETER_OCCT_CACHE credentials in the environment.")
@@ -418,7 +478,7 @@ def build_manifest(profile: OcctCacheProfile, archive_path: Path, archive_sha256
         "target": {
             "kind": profile.kind,
             "platform_tag": profile.platform_tag,
-            "toolchain": "emscripten" if profile.kind == "wasm" else None,
+            "toolchain": "emscripten" if profile.kind == "wasm" else profile.toolchain_abi,
         },
         "build": {
             "config": profile.config,
@@ -436,6 +496,7 @@ def build_manifest(profile: OcctCacheProfile, archive_path: Path, archive_sha256
             "tag": profile.occt_tag,
         },
         "recipe_hash": profile.recipe_hash,
+        "toolchain_abi": profile.toolchain_abi,
         "macos_deployment_target": profile.macos_deployment_target,
         "emsdk_version": profile.emsdk_version,
         "archive": {
@@ -462,6 +523,7 @@ def validate_manifest(manifest: dict[str, Any], profile: OcctCacheProfile) -> No
         "config": profile.config,
         "library_type": profile.library_type,
         "recipe_hash": profile.recipe_hash,
+        "toolchain_abi": profile.toolchain_abi,
     }
     for key, value in expected.items():
         if manifest.get(key) != value:

@@ -675,8 +675,10 @@ def test_filtered_solver_foundation_is_bounded_non_algebraic_and_not_dispatched(
         "numeric_filter_source": "src/cpp/lib/analytic_numeric_filter.cpp",
         "broad_phase_header": "src/cpp/lib/geometer/analytic_curve_broad_phase.h",
         "broad_phase_source": "src/cpp/lib/analytic_curve_broad_phase.cpp",
+        "interval_index_header": "src/cpp/lib/analytic_interval_index.h",
+        "interval_index_source": "src/cpp/lib/analytic_interval_index.cpp",
         "foundation_test": "tests/cpp/analytic_filtered_core_test.cpp",
-        "broad_phase_policy": "deterministic_sparser_axis_sweep",
+        "broad_phase_policy": "deterministic_sparser_axis_sweep_with_secondary_interval_index",
     }
     implementation_paths = [
         solver[key]
@@ -687,6 +689,8 @@ def test_filtered_solver_foundation_is_bounded_non_algebraic_and_not_dispatched(
             "numeric_filter_source",
             "broad_phase_header",
             "broad_phase_source",
+            "interval_index_header",
+            "interval_index_source",
         )
     ]
     for relative_path in implementation_paths:

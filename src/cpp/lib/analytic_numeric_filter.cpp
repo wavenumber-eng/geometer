@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 
 namespace geometer
 {
@@ -15,8 +16,15 @@ classify_analytic_resolution(const AnalyticFilteredDistanceNm& distance) noexcep
         distance.value < 0.0 || distance.absolute_error < 0.0)
         return AnalyticResolutionClass::invalid;
 
-    const double lower = std::max(0.0, distance.value - distance.absolute_error);
-    const double upper = distance.value + distance.absolute_error;
+    double lower = distance.value;
+    double upper = distance.value;
+    if (distance.absolute_error != 0.0)
+    {
+        lower = std::max(0.0, std::nextafter(distance.value - distance.absolute_error,
+                                             -std::numeric_limits<double>::infinity()));
+        upper = std::nextafter(distance.value + distance.absolute_error,
+                               std::numeric_limits<double>::infinity());
+    }
     const double resolution = static_cast<double>(kAnalyticTopologyResolutionNm);
     if (upper <= resolution)
         return AnalyticResolutionClass::at_or_below_resolution;

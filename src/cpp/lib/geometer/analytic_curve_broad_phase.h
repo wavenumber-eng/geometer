@@ -35,7 +35,8 @@ struct AnalyticBroadPhaseTelemetry
     std::uint64_t input_curves = 0;
     std::uint64_t sort_comparisons = 0;
     std::uint64_t primary_axis_pairs = 0;
-    std::uint64_t active_pair_tests = 0;
+    std::uint64_t spatial_index_node_visits = 0;
+    std::uint64_t examined_curve_pairs = 0;
     std::uint64_t candidate_pairs = 0;
     std::uint64_t peak_working_memory_bytes = 0;
     std::uint64_t algebraic_fallback_calls = 0;
@@ -49,9 +50,10 @@ struct AnalyticBroadPhaseResult
     AnalyticBroadPhaseTelemetry telemetry;
 };
 
-// Deterministic sweep-and-prune over conservative curve bounds. Bounds whose
-// axis separation is exactly 50 nm remain candidates so the narrow phase can
-// apply the governed at-or-below-resolution rule.
+// Deterministic sweep over conservative curve bounds, with an interval index
+// on the secondary axis. Bounds whose axis separation is exactly 50 nm remain
+// candidates so the narrow phase can apply the governed
+// at-or-below-resolution rule.
 [[nodiscard]] AnalyticBroadPhaseResult
 build_analytic_curve_candidates(const std::vector<AnalyticCurveBoundsNm>& bounds,
                                 const AnalyticSolverLimits& limits = {});

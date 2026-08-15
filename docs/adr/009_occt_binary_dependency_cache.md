@@ -84,12 +84,20 @@ Each archive key includes:
 - OCCT tag
 - build configuration
 - OCCT library type
+- native compiler ABI when relevant
 - macOS deployment target when relevant
 - Emscripten version for WASM
 - a recipe hash derived from the build scripts and vendored RapidJSON inputs
 
 Changing the OCCT recipe produces a new object key rather than replacing an
-existing dependency silently.
+existing dependency silently. A generated local profile marker carries the
+same identity, so an existing install is not reused after its configuration,
+toolchain ABI, or recipe changes.
+
+An independently reviewed older archive may bridge intentional recipe-key
+churn only when its alias names the exact destination recipe hash and archive
+SHA-256. The alias is not considered for any later recipe, even when the OCCT
+tag, platform, and configuration still match.
 
 ## Configuration
 

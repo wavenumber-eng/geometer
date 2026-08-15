@@ -60,7 +60,7 @@ def clear_cache_env(monkeypatch: MonkeyPatch) -> None:
         monkeypatch.delenv(name, raising=False)
 
 
-def test_cache_key_includes_platform_and_recipe() -> None:
+def test_cache_key_includes_platform_recipe_and_abi() -> None:
     profile = occt_binary_cache.OcctCacheProfile(
         kind="native",
         platform_tag="linux-arm64",
@@ -69,9 +69,10 @@ def test_cache_key_includes_platform_and_recipe() -> None:
         occt_repo="https://example.invalid/OCCT.git",
         occt_tag="V7_8_1",
         recipe_hash="a" * 64,
+        toolchain_abi="gnu",
     )
 
-    assert profile.cache_key == "occt-native-v7-8-1-linux-arm64-release-static-recipe-aaaaaaaaaaaaaaaa"
+    assert profile.cache_key == ("occt-native-v7-8-1-linux-arm64-release-static-abi-gnu-recipe-aaaaaaaaaaaaaaaa")
 
 
 def test_accepted_v801_native_cache_alias_is_exactly_pinned() -> None:
@@ -82,7 +83,8 @@ def test_accepted_v801_native_cache_alias_is_exactly_pinned() -> None:
         library_type="Static",
         occt_repo="https://github.com/Open-Cascade-SAS/OCCT.git",
         occt_tag="V8_0_1",
-        recipe_hash="1d34d4d5c7ab2e5f" + "0" * 48,
+        recipe_hash="45aee960e6bad68c5f26c67335b82b6cbd539922aaefcf96003f20d7193485d9",
+        toolchain_abi="msvc-v143",
     )
 
     assert occt_binary_cache.accepted_cache_aliases(profile) == (
@@ -95,8 +97,15 @@ def test_accepted_v801_native_cache_alias_is_exactly_pinned() -> None:
             occt_tag="V8_0_1",
             recipe_hash="02d3ac07fe672579f1d5d97249964248a36e4b3982b3195c4fe7bd0d1dece46d",
             archive_sha256="255ad723184c62ef4e6dc82c20c1acd5b0aa43407cbefc6e26e484eb74a05df9",
+            compatible_recipe_hashes=("45aee960e6bad68c5f26c67335b82b6cbd539922aaefcf96003f20d7193485d9",),
+            requested_toolchain_abi="msvc-v143",
         ),
     )
+
+    changed_recipe = occt_binary_cache.dataclasses.replace(profile, recipe_hash="f" * 64)
+    changed_abi = occt_binary_cache.dataclasses.replace(profile, toolchain_abi="mingw")
+    assert occt_binary_cache.accepted_cache_aliases(changed_recipe) == ()
+    assert occt_binary_cache.accepted_cache_aliases(changed_abi) == ()
 
 
 def test_restore_uses_only_an_exact_pinned_compatible_alias(
@@ -127,6 +136,7 @@ def test_restore_uses_only_an_exact_pinned_compatible_alias(
         occt_tag=current_profile.occt_tag,
         recipe_hash="a" * 64,
         archive_sha256=archive_sha,
+        compatible_recipe_hashes=(current_profile.recipe_hash,),
     )
     accepted_profile = occt_binary_cache.dataclasses.replace(current_profile, recipe_hash=accepted_alias.recipe_hash)
     manifest = occt_binary_cache.build_manifest(accepted_profile, archive_path, archive_sha)
@@ -153,7 +163,64 @@ def test_restore_uses_only_an_exact_pinned_compatible_alias(
     restored = tmp_path / "restored-install"
     assert occt_binary_cache.restore_prebuilt_install(current_profile, restored, mode="only")
     assert occt_binary_cache.installed_occt_version(restored) == "8.0.1"
+    assert occt_binary_cache.install_matches_profile(restored, current_profile)
     assert f"{accepted_prefix}/{occt_binary_cache.MANIFEST_NAME}" in requested_keys
+
+
+def test_current_candidate_preserves_an_accepted_pinned_sha(
+    monkeypatch: MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    clear_cache_env(monkeypatch)
+    install_dir = tmp_path / "occt-install"
+    make_install_tree(install_dir, "8.0.1")
+    archive_path = tmp_path / occt_binary_cache.ARCHIVE_NAME
+    occt_binary_cache.package_install_archive(install_dir, archive_path)
+    archive_sha = occt_binary_cache.sha256_file(archive_path)
+    profile = occt_binary_cache.OcctCacheProfile(
+        kind="native",
+        platform_tag="windows-x64",
+        config="Release",
+        library_type="Static",
+        occt_repo="https://github.com/Open-Cascade-SAS/OCCT.git",
+        occt_tag="V8_0_1",
+        recipe_hash="c" * 64,
+        toolchain_abi="msvc-v143",
+    )
+    alias = occt_binary_cache.AcceptedCacheAlias(
+        kind=profile.kind,
+        platform_tag=profile.platform_tag,
+        config=profile.config,
+        library_type=profile.library_type,
+        occt_repo=profile.occt_repo,
+        occt_tag=profile.occt_tag,
+        recipe_hash=profile.recipe_hash,
+        archive_sha256="0" * 64,
+        compatible_recipe_hashes=(profile.recipe_hash,),
+        requested_toolchain_abi=profile.toolchain_abi,
+        source_toolchain_abi=profile.toolchain_abi,
+    )
+    manifest = occt_binary_cache.build_manifest(profile, archive_path, archive_sha)
+    public_config = occt_binary_cache.PublicCacheConfig(
+        base_url="https://artifacts.example.invalid",
+        prefix="deps/v1/geometer/occt",
+    )
+    prefix = occt_binary_cache.object_prefix(public_config, profile)
+
+    def fake_public_get(_config: Any, key: str) -> bytes | None:
+        if key == f"{prefix}/{occt_binary_cache.MANIFEST_NAME}":
+            return json.dumps(manifest).encode("utf-8")
+        if key == f"{prefix}/{occt_binary_cache.ARCHIVE_NAME}":
+            return archive_path.read_bytes()
+        return None
+
+    monkeypatch.setattr(occt_binary_cache, "ACCEPTED_CACHE_ALIASES", (alias,))
+    monkeypatch.setattr(occt_binary_cache, "public_config_from_env", lambda: public_config)
+    monkeypatch.setattr(occt_binary_cache, "config_from_env", lambda: None)
+    monkeypatch.setattr(occt_binary_cache, "_public_get_object", fake_public_get)
+
+    with pytest.raises(RuntimeError, match="Accepted OCCT binary cache archive checksum mismatch"):
+        occt_binary_cache.restore_prebuilt_install(profile, tmp_path / "restored", mode="only")
 
 
 def test_exact_tag_qualification_uses_isolated_native_and_wasm_profiles() -> None:
@@ -391,8 +458,18 @@ def test_install_matches_profile_requires_occt_version(tmp_path: Path) -> None:
         recipe_hash="b" * 64,
     )
 
+    assert not occt_binary_cache.install_matches_profile(install_dir, profile_7)
+    occt_binary_cache.write_install_profile(install_dir, profile_7)
     assert occt_binary_cache.install_matches_profile(install_dir, profile_7)
     assert not occt_binary_cache.install_matches_profile(install_dir, profile_8)
+    assert not occt_binary_cache.install_matches_profile(
+        install_dir,
+        occt_binary_cache.dataclasses.replace(profile_7, toolchain_abi="different-abi"),
+    )
+    assert not occt_binary_cache.install_matches_profile(
+        install_dir,
+        occt_binary_cache.dataclasses.replace(profile_7, recipe_hash="c" * 64),
+    )
 
 
 def test_object_prefix_uses_wavenumber_layout_and_legacy_fallback() -> None:

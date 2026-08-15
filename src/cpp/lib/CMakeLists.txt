@@ -1,5 +1,6 @@
 set(GEOMETER_LIB_SOURCES
     analytic_curve_broad_phase.cpp
+    analytic_interval_index.cpp
     analytic_numeric_filter.cpp
     analytic_request_packet.cpp
     analytic_result_packet_canonical.cpp

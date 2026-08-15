@@ -169,11 +169,12 @@ On Windows, use a Visual Studio developer environment or another shell where the
 selected C++ compiler is available to CMake. The default CMake preset uses
 Ninja. The OCCT dependency is built with the active native compiler for that
 platform, so use the same shell consistently for configure/build/validation.
-The published `windows-x64` OCCT 8.0.1 cache is an MSVC-ABI install and must be
-consumed from a Visual Studio Developer PowerShell or Developer Command Prompt.
-CMake rejects that cache under MinGW instead of deferring the mismatch to the
-linker. A MinGW build requires a separately keyed OCCT source build; it cannot
-reuse the MSVC archive.
+Binary-cache keys and local install markers include the native toolchain ABI and
+complete build-recipe hash; a compiler, configuration, or recipe change cannot
+silently reuse a stale local install. The published `windows-x64` OCCT 8.0.1
+cache is an MSVC v143-ABI install and must be consumed from a Visual Studio
+Developer PowerShell or Developer Command Prompt. MinGW and other compiler
+families use a different key and cannot restore the MSVC archive.
 
 On WSL2/Linux, install the usual build toolchain first. For Debian/Ubuntu
 distros, the minimum package set is:
@@ -261,7 +262,8 @@ not hashed: the selected OCCT repository/tag, platform, configuration, library
 type, Emscripten version when applicable, and platform baselines are already
 included directly.
 Previously accepted OCCT 8.0.1 archives may be reached only through exact
-profile-and-SHA aliases; there is no generic stale-cache fallback.
+profile, destination-recipe, and SHA aliases; there is no generic stale-cache
+fallback.
 
 R2 credentials are only needed for producer uploads or explicit private fallback
 testing. Copy `.env.example` to `.env` for those cases and fill the `R2_*`

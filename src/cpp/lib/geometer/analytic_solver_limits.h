@@ -10,7 +10,7 @@ namespace geometer
 struct AnalyticSolverLimits
 {
     std::uint64_t boundary_occurrences = 131'072;
-    std::uint64_t candidate_curve_pairs = 8'388'608;
+    std::uint64_t examined_curve_pairs = 8'388'608;
     std::uint64_t intersections = 1'048'576;
     std::uint64_t arrangement_vertices = 1'048'576;
     std::uint64_t arrangement_half_edges = 2'097'152;

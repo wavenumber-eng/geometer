@@ -1,38 +1,45 @@
 #include "geometer/analytic_curve_broad_phase.h"
 
+#include "analytic_interval_index.h"
+
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <limits>
+#include <queue>
 #include <tuple>
 #include <utility>
+#include <vector>
 
 namespace geometer
 {
 namespace
 {
 
+struct ExpiryEntry
+{
+    double primary_maximum = 0.0;
+    double secondary_minimum = 0.0;
+    std::size_t payload = 0;
+    std::uint32_t curve_index = 0;
+};
+
+struct ExpiryLater
+{
+    bool operator()(const ExpiryEntry& left, const ExpiryEntry& right) const noexcept
+    {
+        return std::tie(left.primary_maximum, left.curve_index) >
+               std::tie(right.primary_maximum, right.curve_index);
+    }
+};
+
 bool valid_bounds(const AnalyticCurveBoundsNm& bounds)
 {
     return std::isfinite(bounds.min_x) && std::isfinite(bounds.min_y) &&
            std::isfinite(bounds.max_x) && std::isfinite(bounds.max_y) &&
            bounds.min_x <= bounds.max_x && bounds.min_y <= bounds.max_y;
-}
-
-bool separated_above_resolution(double first_min, double first_max, double second_min,
-                                double second_max)
-{
-    const double resolution = static_cast<double>(kAnalyticTopologyResolutionNm);
-    if (second_min > first_max)
-        return second_min - first_max > resolution;
-    if (first_min > second_max)
-        return first_min - second_max > resolution;
-    return false;
-}
-
-bool pair_less(const AnalyticCurvePair& left, const AnalyticCurvePair& right)
-{
-    return std::tie(left.first, left.second) < std::tie(right.first, right.second);
 }
 
 double axis_min(const AnalyticCurveBoundsNm& bounds, std::uint8_t axis)
@@ -43,6 +50,18 @@ double axis_min(const AnalyticCurveBoundsNm& bounds, std::uint8_t axis)
 double axis_max(const AnalyticCurveBoundsNm& bounds, std::uint8_t axis)
 {
     return axis == 0 ? bounds.max_x : bounds.max_y;
+}
+
+double conservative_query_minimum(double minimum)
+{
+    return std::nextafter(minimum - static_cast<double>(kAnalyticTopologyResolutionNm),
+                          -std::numeric_limits<double>::infinity());
+}
+
+double conservative_query_maximum(double maximum)
+{
+    return std::nextafter(maximum + static_cast<double>(kAnalyticTopologyResolutionNm),
+                          std::numeric_limits<double>::infinity());
 }
 
 std::vector<std::size_t> sorted_on_axis(const std::vector<AnalyticCurveBoundsNm>& bounds,
@@ -79,10 +98,9 @@ std::uint64_t axis_overlap_count(const std::vector<AnalyticCurveBoundsNm>& bound
     std::size_t expired = 0;
     for (std::size_t position = 0; position < order.size(); ++position)
     {
-        const std::size_t current_index = order[position];
-        const double current_min = axis_min(bounds[current_index], axis);
-        while (expired < position && current_min - ordered_ends[expired] >
-                                         static_cast<double>(kAnalyticTopologyResolutionNm))
+        const double query_minimum =
+            conservative_query_minimum(axis_min(bounds[order[position]], axis));
+        while (expired < position && ordered_ends[expired] < query_minimum)
             ++expired;
         const std::uint64_t active_count = position - expired;
         if (active_count > std::numeric_limits<std::uint64_t>::max() - count)
@@ -90,6 +108,89 @@ std::uint64_t axis_overlap_count(const std::vector<AnalyticCurveBoundsNm>& bound
         count += active_count;
     }
     return count;
+}
+
+std::uint64_t bytes_for(std::size_t count, std::uint64_t item_size)
+{
+    if (count > std::numeric_limits<std::uint64_t>::max() / item_size)
+        return std::numeric_limits<std::uint64_t>::max();
+    return static_cast<std::uint64_t>(count) * item_size;
+}
+
+std::uint64_t sum_bytes(std::initializer_list<std::uint64_t> values)
+{
+    std::uint64_t result = 0;
+    for (const std::uint64_t value : values)
+    {
+        if (value > std::numeric_limits<std::uint64_t>::max() - result)
+            return std::numeric_limits<std::uint64_t>::max();
+        result += value;
+    }
+    return result;
+}
+
+std::uint64_t sweep_base_bytes(std::size_t count)
+{
+    return sum_bytes({bytes_for(count, sizeof(std::size_t)),
+                      detail::AnalyticIntervalIndex::storage_bytes(count),
+                      bytes_for(count, sizeof(ExpiryEntry))});
+}
+
+std::uint64_t pair_phase_bytes(std::uint64_t base, std::size_t pair_capacity,
+                               std::size_t scratch_size)
+{
+    return sum_bytes({base, bytes_for(pair_capacity, sizeof(AnalyticCurvePair)),
+                      bytes_for(scratch_size, sizeof(AnalyticCurvePair))});
+}
+
+bool reserve_next_pair(std::vector<AnalyticCurvePair>& pairs, std::uint64_t base_memory,
+                       const AnalyticSolverLimits& limits, AnalyticBroadPhaseTelemetry& telemetry)
+{
+    if (pairs.size() < pairs.capacity())
+        return true;
+    std::size_t requested = pairs.capacity() == 0 ? 64 : pairs.capacity() * 2;
+    requested =
+        std::min<std::size_t>(requested, static_cast<std::size_t>(limits.examined_curve_pairs));
+    if (requested <= pairs.capacity() ||
+        pair_phase_bytes(base_memory, requested, requested) > limits.working_memory_bytes)
+        return false;
+    pairs.reserve(requested);
+    const std::uint64_t peak = pair_phase_bytes(base_memory, pairs.capacity(), pairs.capacity());
+    if (peak > limits.working_memory_bytes)
+        return false;
+    telemetry.peak_working_memory_bytes = std::max(telemetry.peak_working_memory_bytes, peak);
+    return true;
+}
+
+std::uint64_t pair_key(const AnalyticCurvePair& pair)
+{
+    return (static_cast<std::uint64_t>(pair.first) << 32U) | pair.second;
+}
+
+void radix_sort_pairs(std::vector<AnalyticCurvePair>& pairs)
+{
+    if (pairs.size() < 2)
+        return;
+    std::vector<AnalyticCurvePair> scratch(pairs.size());
+    bool source_is_pairs = true;
+    for (std::uint32_t shift = 0; shift < 64; shift += 8)
+    {
+        std::array<std::size_t, 256> offsets{};
+        const std::vector<AnalyticCurvePair>& source = source_is_pairs ? pairs : scratch;
+        std::vector<AnalyticCurvePair>& destination = source_is_pairs ? scratch : pairs;
+        for (const AnalyticCurvePair& pair : source)
+            ++offsets[(pair_key(pair) >> shift) & 0xffU];
+        std::size_t total = 0;
+        for (std::size_t& offset : offsets)
+        {
+            const std::size_t count = offset;
+            offset = total;
+            total += count;
+        }
+        for (const AnalyticCurvePair& pair : source)
+            destination[offsets[(pair_key(pair) >> shift) & 0xffU]++] = pair;
+        source_is_pairs = !source_is_pairs;
+    }
 }
 
 AnalyticBroadPhaseResult failure(AnalyticBroadPhaseError error,
@@ -113,11 +214,16 @@ build_analytic_curve_candidates(const std::vector<AnalyticCurveBoundsNm>& bounds
         bounds.size() > limits.boundary_occurrences)
         return failure(AnalyticBroadPhaseError::resource_limit_exceeded, telemetry);
 
-    constexpr std::uint64_t workspace_bytes_per_curve = 3 * sizeof(std::size_t);
-    const std::uint64_t base_working_memory = bounds.size() * workspace_bytes_per_curve;
-    if (base_working_memory > limits.working_memory_bytes)
+    const std::uint64_t validation_memory = bytes_for(bounds.size(), sizeof(std::uint32_t));
+    const std::uint64_t preindex_memory =
+        sum_bytes({bytes_for(bounds.size(), 2 * sizeof(std::size_t)),
+                   bytes_for(bounds.size(), sizeof(double))});
+    const std::uint64_t base_sweep_memory = sweep_base_bytes(bounds.size());
+    const std::uint64_t base_memory =
+        std::max({validation_memory, preindex_memory, base_sweep_memory});
+    if (base_memory > limits.working_memory_bytes)
         return failure(AnalyticBroadPhaseError::resource_limit_exceeded, telemetry);
-    telemetry.peak_working_memory_bytes = base_working_memory;
+    telemetry.peak_working_memory_bytes = base_memory;
 
     {
         std::vector<std::uint32_t> curve_indices;
@@ -133,59 +239,64 @@ build_analytic_curve_candidates(const std::vector<AnalyticCurveBoundsNm>& bounds
             return failure(AnalyticBroadPhaseError::invalid_argument, telemetry);
     }
 
-    const std::vector<std::size_t> x_order = sorted_on_axis(bounds, 0, telemetry.sort_comparisons);
-    const std::vector<std::size_t> y_order = sorted_on_axis(bounds, 1, telemetry.sort_comparisons);
-    const std::uint64_t x_pairs = axis_overlap_count(bounds, x_order, 0);
-    const std::uint64_t y_pairs = axis_overlap_count(bounds, y_order, 1);
-    const std::uint8_t primary_axis = y_pairs < x_pairs ? 1 : 0;
-    const std::uint8_t secondary_axis = primary_axis == 0 ? 1 : 0;
-    const std::vector<std::size_t>& order = primary_axis == 0 ? x_order : y_order;
-    telemetry.primary_axis = primary_axis;
-    telemetry.primary_axis_pairs = primary_axis == 0 ? x_pairs : y_pairs;
+    std::vector<std::size_t> order;
+    {
+        std::vector<std::size_t> x_order = sorted_on_axis(bounds, 0, telemetry.sort_comparisons);
+        std::vector<std::size_t> y_order = sorted_on_axis(bounds, 1, telemetry.sort_comparisons);
+        const std::uint64_t x_pairs = axis_overlap_count(bounds, x_order, 0);
+        const std::uint64_t y_pairs = axis_overlap_count(bounds, y_order, 1);
+        telemetry.primary_axis = y_pairs < x_pairs ? 1 : 0;
+        telemetry.primary_axis_pairs = telemetry.primary_axis == 0 ? x_pairs : y_pairs;
+        order = telemetry.primary_axis == 0 ? std::move(x_order) : std::move(y_order);
+    }
+    const std::uint8_t secondary_axis = telemetry.primary_axis == 0 ? 1 : 0;
 
-    std::vector<std::size_t> active;
-    active.reserve(bounds.size());
+    detail::AnalyticIntervalIndex secondary_index(bounds.size());
+    std::priority_queue<ExpiryEntry, std::vector<ExpiryEntry>, ExpiryLater> expiry;
     std::vector<AnalyticCurvePair> pairs;
-    const std::uint64_t pair_capacity = std::min(
-        {telemetry.primary_axis_pairs, limits.predicate_calls, limits.candidate_curve_pairs,
-         (limits.working_memory_bytes - base_working_memory) /
-             static_cast<std::uint64_t>(sizeof(AnalyticCurvePair))});
-    pairs.reserve(static_cast<std::size_t>(pair_capacity));
-    telemetry.peak_working_memory_bytes =
-        base_working_memory + pair_capacity * sizeof(AnalyticCurvePair);
     for (const std::size_t current_index : order)
     {
         const AnalyticCurveBoundsNm& current = bounds[current_index];
-        active.erase(std::remove_if(active.begin(), active.end(),
-                                    [&](std::size_t index)
-                                    {
-                                        return separated_above_resolution(
-                                            axis_min(bounds[index], primary_axis),
-                                            axis_max(bounds[index], primary_axis),
-                                            axis_min(current, primary_axis),
-                                            axis_max(current, primary_axis));
-                                    }),
-                     active.end());
-
-        for (const std::size_t other_index : active)
+        const double primary_query_minimum =
+            conservative_query_minimum(axis_min(current, telemetry.primary_axis));
+        while (!expiry.empty() && expiry.top().primary_maximum < primary_query_minimum)
         {
-            if (telemetry.active_pair_tests == limits.predicate_calls)
-                return failure(AnalyticBroadPhaseError::resource_limit_exceeded, telemetry);
-            ++telemetry.active_pair_tests;
-            const AnalyticCurveBoundsNm& other = bounds[other_index];
-            if (separated_above_resolution(
-                    axis_min(other, secondary_axis), axis_max(other, secondary_axis),
-                    axis_min(current, secondary_axis), axis_max(current, secondary_axis)))
-                continue;
-            if (pairs.size() == pair_capacity)
-                return failure(AnalyticBroadPhaseError::resource_limit_exceeded, telemetry);
-            pairs.push_back({std::min(other.curve_index, current.curve_index),
-                             std::max(other.curve_index, current.curve_index)});
+            const ExpiryEntry expired = expiry.top();
+            expiry.pop();
+            secondary_index.erase(expired.secondary_minimum, expired.curve_index);
         }
-        active.push_back(current_index);
+
+        const bool query_completed = secondary_index.query(
+            conservative_query_minimum(axis_min(current, secondary_axis)),
+            conservative_query_maximum(axis_max(current, secondary_axis)),
+            telemetry.spatial_index_node_visits, limits.predicate_calls,
+            [&](std::size_t other_index, std::uint32_t other_curve_index)
+            {
+                if (telemetry.examined_curve_pairs == limits.examined_curve_pairs ||
+                    !reserve_next_pair(pairs, base_sweep_memory, limits, telemetry))
+                {
+                    return false;
+                }
+                ++telemetry.examined_curve_pairs;
+                pairs.push_back({std::min(other_curve_index, current.curve_index),
+                                 std::max(other_curve_index, current.curve_index)});
+                return true;
+            });
+        if (!query_completed)
+            return failure(AnalyticBroadPhaseError::resource_limit_exceeded, telemetry);
+
+        secondary_index.insert(axis_min(current, secondary_axis), axis_max(current, secondary_axis),
+                               current_index, current.curve_index);
+        expiry.push({axis_max(current, telemetry.primary_axis), axis_min(current, secondary_axis),
+                     current_index, current.curve_index});
     }
 
-    std::sort(pairs.begin(), pairs.end(), pair_less);
+    telemetry.peak_working_memory_bytes =
+        std::max(telemetry.peak_working_memory_bytes,
+                 pair_phase_bytes(base_sweep_memory, pairs.capacity(), pairs.size()));
+    if (telemetry.peak_working_memory_bytes > limits.working_memory_bytes)
+        return failure(AnalyticBroadPhaseError::resource_limit_exceeded, telemetry);
+    radix_sort_pairs(pairs);
     telemetry.candidate_pairs = pairs.size();
     AnalyticBroadPhaseResult result;
     result.pairs = std::move(pairs);

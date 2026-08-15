@@ -10,6 +10,20 @@
   },
   "roots": [
     {
+      "name": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.AnalyticPlanarBooleanBatchRequestA0",
+      "contract_identity": "geometry.analytic_planar_boolean_batch.request.a0",
+      "schema_id": "urn:wavenumber:schema:geometer:geometry.analytic_planar_boolean_batch.request:a0",
+      "declaration_kind": "model",
+      "option_patch": false
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.AnalyticPlanarBooleanBatchResultA0",
+      "contract_identity": "geometry.analytic_planar_boolean_batch.result.a0",
+      "schema_id": "urn:wavenumber:schema:geometer:geometry.analytic_planar_boolean_batch.result:a0",
+      "declaration_kind": "model",
+      "option_patch": false
+    },
+    {
       "name": "Wavenumber.Geometer.Contracts.Common.DiagnosticA0",
       "contract_identity": "geometry.common.diagnostic.a0",
       "schema_id": "urn:wavenumber:schema:geometer:geometry.common.diagnostic:a0",
@@ -102,6 +116,2692 @@
     }
   ],
   "declarations": [
+    {
+      "name": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.AnalyticPlanarBooleanBatchRequestA0",
+      "kind": "model",
+      "doc": "Logical request projected to the governed packed request attachment.",
+      "annotations": {
+        "x-wn-production-wire": "packed_attachment"
+      },
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "jobs",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "reference",
+              "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.AnalyticPlanarBooleanJob"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "max_items": 65535
+          }
+        },
+        {
+          "name": "relationship_queries",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "reference",
+              "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.PlanarRelationshipQuery"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "max_items": 1048576
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.AnalyticPlanarBooleanBatchResultA0",
+      "kind": "model",
+      "doc": "Logical result projected from the governed packed result attachment.",
+      "annotations": {
+        "x-wn-production-wire": "packed_attachment"
+      },
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "job_results",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "reference",
+              "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.AnalyticPlanarBooleanJobResult"
+            }
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "relationship_results",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "reference",
+              "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.PlanarRelationshipResult"
+            }
+          },
+          "annotations": {},
+          "constraints": {}
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.AnalyticPlanarBooleanJob",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "job_id",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.JobId"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "stages",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "reference",
+              "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.AnalyticPlanarBooleanStage"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "max_items": 1048576
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.AnalyticPlanarBooleanJobResult",
+      "kind": "union",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "composition": "one_of",
+      "variants": [
+        {
+          "name": "success",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.SuccessfulJobResult"
+          },
+          "doc": "",
+          "annotations": {}
+        },
+        {
+          "name": "failure",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.FailedJobResult"
+          },
+          "doc": "",
+          "annotations": {}
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.AnalyticPlanarBooleanStage",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "stage_id",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.StageId"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "operation",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.StageOperation"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "operands",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "reference",
+              "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.AnalyticPlanarOperand"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "max_items": 4194304
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.AnalyticPlanarOperand",
+      "kind": "union",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "composition": "one_of",
+      "variants": [
+        {
+          "name": "planar_region",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.PlanarRegionOperand"
+          },
+          "doc": "",
+          "annotations": {}
+        },
+        {
+          "name": "disk",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.DiskOperand"
+          },
+          "doc": "",
+          "annotations": {}
+        },
+        {
+          "name": "annulus",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.AnnulusOperand"
+          },
+          "doc": "",
+          "annotations": {}
+        },
+        {
+          "name": "capsule",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.CapsuleOperand"
+          },
+          "doc": "",
+          "annotations": {}
+        },
+        {
+          "name": "swept_path",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.SweptPathOperand"
+          },
+          "doc": "",
+          "annotations": {}
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.AnnulusOperand",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "operand_id",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.OperandId"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "kind",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "annulus"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "feature_id",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.FeatureId"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "center",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.PointNm"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "inner_radius_nm",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint64"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_value": 1,
+            "max_value": 1000000000000
+          }
+        },
+        {
+          "name": "outer_radius_nm",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint64"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_value": 1,
+            "max_value": 1000000000000
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.ArcDirection",
+      "kind": "enum",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "members": [
+        {
+          "name": "ccw",
+          "value": "ccw",
+          "doc": ""
+        },
+        {
+          "name": "cw",
+          "value": "cw",
+          "doc": ""
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.AuthoredCircularArcSegment",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "segment_id",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.SegmentId"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "curve_id",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.CurveId"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "kind",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "circular_arc"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "center",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.PointNm"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "direction",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.ArcDirection"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "major_arc",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "boolean"
+          },
+          "annotations": {},
+          "constraints": {}
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.AuthoredLineSegment",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "segment_id",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.SegmentId"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "curve_id",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.CurveId"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "kind",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "line"
+          },
+          "annotations": {},
+          "constraints": {}
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.AuthoredSegment",
+      "kind": "union",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "composition": "one_of",
+      "variants": [
+        {
+          "name": "line",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.AuthoredLineSegment"
+          },
+          "doc": "",
+          "annotations": {}
+        },
+        {
+          "name": "circular_arc",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.AuthoredCircularArcSegment"
+          },
+          "doc": "",
+          "annotations": {}
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.AuthoredVertex",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "vertex_id",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.VertexId"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "point",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.PointNm"
+          },
+          "annotations": {},
+          "constraints": {}
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.CapsuleOperand",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "operand_id",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.OperandId"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "kind",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "capsule"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "feature_id",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.FeatureId"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "start",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.PointNm"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "end",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.PointNm"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "width_nm",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint64"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_value": 1,
+            "max_value": 1000000000000
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.CurveId",
+      "kind": "scalar",
+      "doc": "",
+      "annotations": {},
+      "constraints": {
+        "min_value": 1
+      },
+      "base": {
+        "kind": "primitive",
+        "name": "uint64"
+      }
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.DiagnosticSeverity",
+      "kind": "enum",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "members": [
+        {
+          "name": "error",
+          "value": "error",
+          "doc": ""
+        },
+        {
+          "name": "warning",
+          "value": "warning",
+          "doc": ""
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.DirectedFragment",
+      "kind": "union",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "composition": "one_of",
+      "variants": [
+        {
+          "name": "line",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.ResultLineFragment"
+          },
+          "doc": "",
+          "annotations": {}
+        },
+        {
+          "name": "circular_arc",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.ResultCircularArcFragment"
+          },
+          "doc": "",
+          "annotations": {}
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.DiskOperand",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "operand_id",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.OperandId"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "kind",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "disk"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "feature_id",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.FeatureId"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "center",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.PointNm"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "radius_nm",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint64"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_value": 1,
+            "max_value": 1000000000000
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.FailedJobResult",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "job_id",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.JobId"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "status",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "failure"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "diagnostics",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "reference",
+              "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.JobDiagnostic"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "min_items": 1
+          }
+        },
+        {
+          "name": "digest_sha256",
+          "optional": false,
+          "doc": "Derived from the canonical standalone job-result packet; not an encoded record field.",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {
+            "x-wn-derived-field": "standalone_job_result_sha256"
+          },
+          "constraints": {
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.FeatureId",
+      "kind": "scalar",
+      "doc": "",
+      "annotations": {},
+      "constraints": {
+        "min_value": 1
+      },
+      "base": {
+        "kind": "primitive",
+        "name": "uint64"
+      }
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.IntersectionDimension",
+      "kind": "enum",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "members": [
+        {
+          "name": "disjoint",
+          "value": "disjoint",
+          "doc": ""
+        },
+        {
+          "name": "point",
+          "value": "point",
+          "doc": ""
+        },
+        {
+          "name": "curve",
+          "value": "curve",
+          "doc": ""
+        },
+        {
+          "name": "area",
+          "value": "area",
+          "doc": ""
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.JobDiagnostic",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "code",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.JobDiagnosticCode"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "severity",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.DiagnosticSeverity"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "job_id",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.JobId"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "stage_id",
+          "optional": true,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.StageId"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "operand_id",
+          "optional": true,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.OperandId"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "geometry_id",
+          "optional": true,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint64"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_value": 1
+          }
+        },
+        {
+          "name": "path_identity",
+          "optional": true,
+          "doc": "Governed standalone location identity; token zero projects to absence.",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.JobDiagnosticPath"
+          },
+          "annotations": {
+            "x-wn-packed-field": "path_token"
+          },
+          "constraints": {}
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.JobDiagnosticCode",
+      "kind": "enum",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "members": [
+        {
+          "name": "invalid_topology",
+          "value": "geometer.operation.analytic_planar_boolean.invalid_topology",
+          "doc": ""
+        },
+        {
+          "name": "invalid_arc",
+          "value": "geometer.operation.analytic_planar_boolean.invalid_arc",
+          "doc": ""
+        },
+        {
+          "name": "unsupported_geometry",
+          "value": "geometer.operation.analytic_planar_boolean.unsupported_geometry",
+          "doc": ""
+        },
+        {
+          "name": "normalization_error_exceeded",
+          "value": "geometer.operation.analytic_planar_boolean.normalization_error_exceeded",
+          "doc": ""
+        },
+        {
+          "name": "normalization_topology_collapse",
+          "value": "geometer.operation.analytic_planar_boolean.normalization_topology_collapse",
+          "doc": ""
+        },
+        {
+          "name": "nonanalytic_result",
+          "value": "geometer.operation.analytic_planar_boolean.nonanalytic_result",
+          "doc": ""
+        },
+        {
+          "name": "solver_failed",
+          "value": "geometer.operation.analytic_planar_boolean.solver_failed",
+          "doc": ""
+        },
+        {
+          "name": "resource_limit_exceeded",
+          "value": "geometer.operation.analytic_planar_boolean.resource_limit_exceeded",
+          "doc": ""
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.JobDiagnosticPath",
+      "kind": "enum",
+      "doc": "Standalone logical identities projected one-to-one from nonzero packed path tokens.",
+      "annotations": {},
+      "constraints": {},
+      "members": [
+        {
+          "name": "request_jobs",
+          "value": "request_jobs",
+          "doc": ""
+        },
+        {
+          "name": "job_id",
+          "value": "job_id",
+          "doc": ""
+        },
+        {
+          "name": "job_stages",
+          "value": "job_stages",
+          "doc": ""
+        },
+        {
+          "name": "stage_id",
+          "value": "stage_id",
+          "doc": ""
+        },
+        {
+          "name": "stage_operation",
+          "value": "stage_operation",
+          "doc": ""
+        },
+        {
+          "name": "stage_operands",
+          "value": "stage_operands",
+          "doc": ""
+        },
+        {
+          "name": "operand_id",
+          "value": "operand_id",
+          "doc": ""
+        },
+        {
+          "name": "operand_geometry",
+          "value": "operand_geometry",
+          "doc": ""
+        },
+        {
+          "name": "region_outer",
+          "value": "region_outer",
+          "doc": ""
+        },
+        {
+          "name": "region_holes",
+          "value": "region_holes",
+          "doc": ""
+        },
+        {
+          "name": "ring_vertices",
+          "value": "ring_vertices",
+          "doc": ""
+        },
+        {
+          "name": "ring_segments",
+          "value": "ring_segments",
+          "doc": ""
+        },
+        {
+          "name": "path_vertices",
+          "value": "path_vertices",
+          "doc": ""
+        },
+        {
+          "name": "path_segments",
+          "value": "path_segments",
+          "doc": ""
+        },
+        {
+          "name": "segment_curve",
+          "value": "segment_curve",
+          "doc": ""
+        },
+        {
+          "name": "disk_radius",
+          "value": "disk_radius",
+          "doc": ""
+        },
+        {
+          "name": "annulus_inner_radius",
+          "value": "annulus_inner_radius",
+          "doc": ""
+        },
+        {
+          "name": "annulus_outer_radius",
+          "value": "annulus_outer_radius",
+          "doc": ""
+        },
+        {
+          "name": "capsule_start",
+          "value": "capsule_start",
+          "doc": ""
+        },
+        {
+          "name": "capsule_end",
+          "value": "capsule_end",
+          "doc": ""
+        },
+        {
+          "name": "capsule_width",
+          "value": "capsule_width",
+          "doc": ""
+        },
+        {
+          "name": "swept_path_centerline",
+          "value": "swept_path_centerline",
+          "doc": ""
+        },
+        {
+          "name": "swept_path_width",
+          "value": "swept_path_width",
+          "doc": ""
+        },
+        {
+          "name": "relationship_queries",
+          "value": "relationship_queries",
+          "doc": ""
+        },
+        {
+          "name": "relationship_left_job_id",
+          "value": "relationship_left_job_id",
+          "doc": ""
+        },
+        {
+          "name": "relationship_right_job_id",
+          "value": "relationship_right_job_id",
+          "doc": ""
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.JobId",
+      "kind": "scalar",
+      "doc": "",
+      "annotations": {},
+      "constraints": {
+        "min_value": 1
+      },
+      "base": {
+        "kind": "primitive",
+        "name": "uint64"
+      }
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.OperandId",
+      "kind": "scalar",
+      "doc": "",
+      "annotations": {},
+      "constraints": {
+        "min_value": 1
+      },
+      "base": {
+        "kind": "primitive",
+        "name": "uint64"
+      }
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.OperandOutcomeEvent",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "operand_id",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.OperandId"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "kind",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.OperandOutcomeKind"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "result_ring_ids",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "reference",
+              "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.ResultRingId"
+            }
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "result_region_ids",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "reference",
+              "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.ResultRegionId"
+            }
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "sources",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.SourceSet"
+          },
+          "annotations": {},
+          "constraints": {}
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.OperandOutcomeKind",
+      "kind": "enum",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "members": [
+        {
+          "name": "contributes_final_material",
+          "value": "contributes_final_material",
+          "doc": ""
+        },
+        {
+          "name": "redundant_or_absorbed_coverage",
+          "value": "redundant_or_absorbed_coverage",
+          "doc": ""
+        },
+        {
+          "name": "partially_removed_later",
+          "value": "partially_removed_later",
+          "doc": ""
+        },
+        {
+          "name": "completely_removed_later",
+          "value": "completely_removed_later",
+          "doc": ""
+        },
+        {
+          "name": "subtraction_effect_survives",
+          "value": "subtraction_effect_survives",
+          "doc": ""
+        },
+        {
+          "name": "subtraction_effect_overwritten_later",
+          "value": "subtraction_effect_overwritten_later",
+          "doc": ""
+        },
+        {
+          "name": "no_effect",
+          "value": "no_effect",
+          "doc": ""
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.PathId",
+      "kind": "scalar",
+      "doc": "",
+      "annotations": {},
+      "constraints": {
+        "min_value": 1
+      },
+      "base": {
+        "kind": "primitive",
+        "name": "uint64"
+      }
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.PlanarPath",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "path_id",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.PathId"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "vertices",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "reference",
+              "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.AuthoredVertex"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "min_items": 2,
+            "max_items": 131073
+          }
+        },
+        {
+          "name": "segments",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "reference",
+              "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.AuthoredSegment"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "min_items": 1,
+            "max_items": 131072
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.PlanarRegionOperand",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "operand_id",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.OperandId"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "kind",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "planar_region"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "region_id",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.RegionId"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "outer",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.PlanarRing"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "holes",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "reference",
+              "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.PlanarRing"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "max_items": 131071
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.PlanarRelationshipQuery",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "query_id",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.QueryId"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "left_job_id",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.JobId"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "right_job_id",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.JobId"
+          },
+          "annotations": {},
+          "constraints": {}
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.PlanarRelationshipResult",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "query_id",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.QueryId"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "status",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.RelationshipStatus"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "aggregate_dimension",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.IntersectionDimension"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "pairs",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "reference",
+              "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.RelationshipRegionPair"
+            }
+          },
+          "annotations": {},
+          "constraints": {}
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.PlanarRing",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "ring_id",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.RingId"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "vertices",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "reference",
+              "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.AuthoredVertex"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "min_items": 2,
+            "max_items": 131072
+          }
+        },
+        {
+          "name": "segments",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "reference",
+              "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.AuthoredSegment"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "min_items": 2,
+            "max_items": 131072
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.PointNm",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "x",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "int64"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "y",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "int64"
+          },
+          "annotations": {},
+          "constraints": {}
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.QueryId",
+      "kind": "scalar",
+      "doc": "",
+      "annotations": {},
+      "constraints": {
+        "min_value": 1
+      },
+      "base": {
+        "kind": "primitive",
+        "name": "uint64"
+      }
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.RegionId",
+      "kind": "scalar",
+      "doc": "",
+      "annotations": {},
+      "constraints": {
+        "min_value": 1
+      },
+      "base": {
+        "kind": "primitive",
+        "name": "uint64"
+      }
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.RelationshipRegionPair",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "left_result_region_id",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.ResultRegionId"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "right_result_region_id",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.ResultRegionId"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "dimension",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.IntersectionDimension"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "equality",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "boolean"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "left_contains_right",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "boolean"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "right_contains_left",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "boolean"
+          },
+          "annotations": {},
+          "constraints": {}
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.RelationshipStatus",
+      "kind": "enum",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "members": [
+        {
+          "name": "success",
+          "value": "success",
+          "doc": ""
+        },
+        {
+          "name": "skipped_dependency_failed",
+          "value": "skipped_dependency_failed",
+          "doc": ""
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.ResultCircularArcFragment",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "fragment_id",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.ResultFragmentId"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "kind",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "circular_arc"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "start_vertex_id",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.ResultVertexId"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "end_vertex_id",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.ResultVertexId"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "radius_nm",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint64"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_value": 1,
+            "max_value": 1000000000000
+          }
+        },
+        {
+          "name": "direction",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.ArcDirection"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "major_arc",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "boolean"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "coincident_positive_sources",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.SourceSet"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "surviving_subtraction_sources",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.SourceSet"
+          },
+          "annotations": {},
+          "constraints": {}
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.ResultFragmentId",
+      "kind": "scalar",
+      "doc": "",
+      "annotations": {},
+      "constraints": {
+        "min_value": 1
+      },
+      "base": {
+        "kind": "primitive",
+        "name": "uint64"
+      }
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.ResultLineFragment",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "fragment_id",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.ResultFragmentId"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "kind",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "line"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "start_vertex_id",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.ResultVertexId"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "end_vertex_id",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.ResultVertexId"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "coincident_positive_sources",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.SourceSet"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "surviving_subtraction_sources",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.SourceSet"
+          },
+          "annotations": {},
+          "constraints": {}
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.ResultRegion",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "result_region_id",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.ResultRegionId"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "outer_ring_id",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.ResultRingId"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "positive_contributors",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.SourceSet"
+          },
+          "annotations": {},
+          "constraints": {}
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.ResultRegionId",
+      "kind": "scalar",
+      "doc": "",
+      "annotations": {},
+      "constraints": {
+        "min_value": 1
+      },
+      "base": {
+        "kind": "primitive",
+        "name": "uint64"
+      }
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.ResultRing",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "ring_id",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.ResultRingId"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "fragment_ids",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "reference",
+              "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.ResultFragmentId"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "min_items": 2,
+            "max_items": 2097152
+          }
+        },
+        {
+          "name": "parent_ring_id",
+          "optional": true,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.ResultRingId"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "depth",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "hole",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "boolean"
+          },
+          "annotations": {},
+          "constraints": {}
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.ResultRingId",
+      "kind": "scalar",
+      "doc": "",
+      "annotations": {},
+      "constraints": {
+        "min_value": 1
+      },
+      "base": {
+        "kind": "primitive",
+        "name": "uint64"
+      }
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.ResultVertex",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "vertex_id",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.ResultVertexId"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "point",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.PointNm"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "intersection_sources",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.SourceSet"
+          },
+          "annotations": {},
+          "constraints": {}
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.ResultVertexId",
+      "kind": "scalar",
+      "doc": "",
+      "annotations": {},
+      "constraints": {
+        "min_value": 1
+      },
+      "base": {
+        "kind": "primitive",
+        "name": "uint64"
+      }
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.RingId",
+      "kind": "scalar",
+      "doc": "",
+      "annotations": {},
+      "constraints": {
+        "min_value": 1
+      },
+      "base": {
+        "kind": "primitive",
+        "name": "uint64"
+      }
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.SegmentId",
+      "kind": "scalar",
+      "doc": "",
+      "annotations": {},
+      "constraints": {
+        "min_value": 1
+      },
+      "base": {
+        "kind": "primitive",
+        "name": "uint64"
+      }
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.SourceKind",
+      "kind": "enum",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "members": [
+        {
+          "name": "authored_segment_curve",
+          "value": "authored_segment_curve",
+          "doc": ""
+        },
+        {
+          "name": "compact_feature_role",
+          "value": "compact_feature_role",
+          "doc": ""
+        },
+        {
+          "name": "subtractive_operand_effect",
+          "value": "subtractive_operand_effect",
+          "doc": ""
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.SourceReference",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "kind",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.SourceKind"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "role",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.SourceRole"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "operand_id",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.OperandId"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "primary_id",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint64"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_value": 1
+          }
+        },
+        {
+          "name": "secondary_id",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint64"
+          },
+          "annotations": {},
+          "constraints": {}
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.SourceRole",
+      "kind": "enum",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "members": [
+        {
+          "name": "none",
+          "value": "none",
+          "doc": ""
+        },
+        {
+          "name": "authored_line",
+          "value": "authored_line",
+          "doc": ""
+        },
+        {
+          "name": "authored_circular_arc",
+          "value": "authored_circular_arc",
+          "doc": ""
+        },
+        {
+          "name": "primitive_outer_circle",
+          "value": "primitive_outer_circle",
+          "doc": ""
+        },
+        {
+          "name": "primitive_inner_circle",
+          "value": "primitive_inner_circle",
+          "doc": ""
+        },
+        {
+          "name": "capsule_left_line",
+          "value": "capsule_left_line",
+          "doc": ""
+        },
+        {
+          "name": "capsule_end_cap",
+          "value": "capsule_end_cap",
+          "doc": ""
+        },
+        {
+          "name": "capsule_right_line",
+          "value": "capsule_right_line",
+          "doc": ""
+        },
+        {
+          "name": "capsule_start_cap",
+          "value": "capsule_start_cap",
+          "doc": ""
+        },
+        {
+          "name": "swept_left_offset_line",
+          "value": "swept_left_offset_line",
+          "doc": ""
+        },
+        {
+          "name": "swept_left_offset_arc",
+          "value": "swept_left_offset_arc",
+          "doc": ""
+        },
+        {
+          "name": "swept_right_offset_line",
+          "value": "swept_right_offset_line",
+          "doc": ""
+        },
+        {
+          "name": "swept_right_offset_arc",
+          "value": "swept_right_offset_arc",
+          "doc": ""
+        },
+        {
+          "name": "swept_round_join",
+          "value": "swept_round_join",
+          "doc": ""
+        },
+        {
+          "name": "swept_start_cap",
+          "value": "swept_start_cap",
+          "doc": ""
+        },
+        {
+          "name": "swept_end_cap",
+          "value": "swept_end_cap",
+          "doc": ""
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.SourceSet",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "sources",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "reference",
+              "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.SourceReference"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "max_items": 8388608
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.StageId",
+      "kind": "scalar",
+      "doc": "",
+      "annotations": {},
+      "constraints": {
+        "min_value": 1
+      },
+      "base": {
+        "kind": "primitive",
+        "name": "uint64"
+      }
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.StageOperation",
+      "kind": "enum",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "members": [
+        {
+          "name": "union_stage",
+          "value": "union",
+          "doc": ""
+        },
+        {
+          "name": "difference",
+          "value": "difference",
+          "doc": ""
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.SuccessfulJobResult",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "job_id",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.JobId"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "status",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "success"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "diagnostics",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "reference",
+              "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.JobDiagnostic"
+            }
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "vertices",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "reference",
+              "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.ResultVertex"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "max_items": 1048576
+          }
+        },
+        {
+          "name": "directed_fragments",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "reference",
+              "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.DirectedFragment"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "max_items": 2097152
+          }
+        },
+        {
+          "name": "rings",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "reference",
+              "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.ResultRing"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "max_items": 1048576
+          }
+        },
+        {
+          "name": "result_regions",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "reference",
+              "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.ResultRegion"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "max_items": 1048576
+          }
+        },
+        {
+          "name": "operand_outcomes",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "reference",
+              "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.OperandOutcomeEvent"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "max_items": 4194304
+          }
+        },
+        {
+          "name": "digest_sha256",
+          "optional": false,
+          "doc": "Derived from the canonical standalone job-result packet; not an encoded record field.",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {
+            "x-wn-derived-field": "standalone_job_result_sha256"
+          },
+          "constraints": {
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.SweptPathOperand",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "operand_id",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.OperandId"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "kind",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "swept_path"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "feature_id",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.FeatureId"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "centerline",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.PlanarPath"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "width_nm",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint64"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_value": 1,
+            "max_value": 1000000000000
+          }
+        },
+        {
+          "name": "cap",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "round"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "join",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "round"
+          },
+          "annotations": {},
+          "constraints": {}
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.VertexId",
+      "kind": "scalar",
+      "doc": "",
+      "annotations": {},
+      "constraints": {
+        "min_value": 1
+      },
+      "base": {
+        "kind": "primitive",
+        "name": "uint64"
+      }
+    },
     {
       "name": "Wavenumber.Geometer.Contracts.Common.DiagnosticA0",
       "kind": "model",
@@ -1932,6 +4632,43 @@
     }
   ],
   "operations": [
+    {
+      "name": "Wavenumber.Geometer.Contracts.Operations.analyticPlanarBooleanBatch",
+      "identity": "geometry.analytic_planar_boolean_batch.a0",
+      "request_contract": "geometry.analytic_planar_boolean_batch.request.a0",
+      "result_contract": "geometry.analytic_planar_boolean_batch.result.a0",
+      "input_attachments": [
+        {
+          "name": "analytic_planar_boolean_request",
+          "required": true,
+          "media_types": [
+            "application/vnd.wavenumber.geometer.analytic-planar-boolean-request"
+          ],
+          "max_bytes": 268435456
+        }
+      ],
+      "output_attachments": [
+        {
+          "name": "analytic_planar_boolean_result",
+          "required": true,
+          "media_types": [
+            "application/vnd.wavenumber.geometer.analytic-planar-boolean-result"
+          ],
+          "max_bytes": 268435456
+        }
+      ],
+      "request_projection": {
+        "kind": "packed_attachment",
+        "attachment_name": "analytic_planar_boolean_request",
+        "format": "geometry.analytic_planar_boolean.packet.a0"
+      },
+      "result_projection": {
+        "kind": "packed_attachment",
+        "attachment_name": "analytic_planar_boolean_result",
+        "format": "geometry.analytic_planar_boolean.packet.a0"
+      },
+      "doc": "Execute independent ordered analytic planar Boolean jobs through packed attachments."
+    },
     {
       "name": "Wavenumber.Geometer.Contracts.Operations.modelBounds",
       "identity": "geometry.model_bounds.a0",

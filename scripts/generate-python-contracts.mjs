@@ -6,12 +6,17 @@ import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { applyProjectionDeferrals } from "./contract-projection-deferral.mjs";
+
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const catalog = JSON.parse(
-  await readFile(
-    join(root, "contracts/geometer/generated/wn_geometer_contract_catalog.a0.json"),
-    "utf8",
+const catalog = await applyProjectionDeferrals(
+  JSON.parse(
+    await readFile(
+      join(root, "contracts/geometer/generated/wn_geometer_contract_catalog.a0.json"),
+      "utf8",
+    ),
   ),
+  "python",
 );
 const outputPath = join(root, catalog.output_roots.python);
 const stagingPath = join(dirname(outputPath), `contracts-stage-${process.pid}`);

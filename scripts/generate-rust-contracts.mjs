@@ -4,12 +4,14 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { applyProjectionDeferrals } from "./contract-projection-deferral.mjs";
+
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const catalogText = await readFile(
   join(root, "contracts/geometer/generated/wn_geometer_contract_catalog.a0.json"),
   "utf8",
 );
-const catalog = JSON.parse(catalogText);
+const catalog = await applyProjectionDeferrals(JSON.parse(catalogText), "rust");
 const catalogSha256 = createHash("sha256").update(catalogText).digest("hex");
 const output = join(root, catalog.output_roots.rust);
 const check = process.argv.slice(2).includes("--check");

@@ -1,0 +1,534 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:wavenumber:schema:geometer:geometry.analytic_planar_boolean_batch.request:a0",
+  "type": "object",
+  "properties": {
+    "jobs": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/AnalyticPlanarBooleanJob"
+      },
+      "maxItems": 65535
+    },
+    "relationship_queries": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/PlanarRelationshipQuery"
+      },
+      "maxItems": 1048576
+    }
+  },
+  "required": [
+    "jobs",
+    "relationship_queries"
+  ],
+  "unevaluatedProperties": {
+    "not": {}
+  },
+  "description": "Logical request projected to the governed packed request attachment.",
+  "x-wn-production-wire": "packed_attachment",
+  "$defs": {
+    "AnalyticPlanarBooleanJob": {
+      "type": "object",
+      "properties": {
+        "job_id": {
+          "$ref": "#/$defs/JobId"
+        },
+        "stages": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/AnalyticPlanarBooleanStage"
+          },
+          "maxItems": 1048576
+        }
+      },
+      "required": [
+        "job_id",
+        "stages"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "PlanarRelationshipQuery": {
+      "type": "object",
+      "properties": {
+        "query_id": {
+          "$ref": "#/$defs/QueryId"
+        },
+        "left_job_id": {
+          "$ref": "#/$defs/JobId"
+        },
+        "right_job_id": {
+          "$ref": "#/$defs/JobId"
+        }
+      },
+      "required": [
+        "query_id",
+        "left_job_id",
+        "right_job_id"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "JobId": {
+      "type": "string",
+      "minimum": 1
+    },
+    "AnalyticPlanarBooleanStage": {
+      "type": "object",
+      "properties": {
+        "stage_id": {
+          "$ref": "#/$defs/StageId"
+        },
+        "operation": {
+          "$ref": "#/$defs/StageOperation"
+        },
+        "operands": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/AnalyticPlanarOperand"
+          },
+          "maxItems": 4194304
+        }
+      },
+      "required": [
+        "stage_id",
+        "operation",
+        "operands"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "QueryId": {
+      "type": "string",
+      "minimum": 1
+    },
+    "StageId": {
+      "type": "string",
+      "minimum": 1
+    },
+    "StageOperation": {
+      "type": "string",
+      "enum": [
+        "union",
+        "difference"
+      ]
+    },
+    "AnalyticPlanarOperand": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/PlanarRegionOperand"
+        },
+        {
+          "$ref": "#/$defs/DiskOperand"
+        },
+        {
+          "$ref": "#/$defs/AnnulusOperand"
+        },
+        {
+          "$ref": "#/$defs/CapsuleOperand"
+        },
+        {
+          "$ref": "#/$defs/SweptPathOperand"
+        }
+      ]
+    },
+    "PlanarRegionOperand": {
+      "type": "object",
+      "properties": {
+        "operand_id": {
+          "$ref": "#/$defs/OperandId"
+        },
+        "kind": {
+          "type": "string",
+          "const": "planar_region"
+        },
+        "region_id": {
+          "$ref": "#/$defs/RegionId"
+        },
+        "outer": {
+          "$ref": "#/$defs/PlanarRing"
+        },
+        "holes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PlanarRing"
+          },
+          "maxItems": 131071
+        }
+      },
+      "required": [
+        "operand_id",
+        "kind",
+        "region_id",
+        "outer",
+        "holes"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "DiskOperand": {
+      "type": "object",
+      "properties": {
+        "operand_id": {
+          "$ref": "#/$defs/OperandId"
+        },
+        "kind": {
+          "type": "string",
+          "const": "disk"
+        },
+        "feature_id": {
+          "$ref": "#/$defs/FeatureId"
+        },
+        "center": {
+          "$ref": "#/$defs/PointNm"
+        },
+        "radius_nm": {
+          "type": "string",
+          "minimum": 1,
+          "maximum": 1000000000000
+        }
+      },
+      "required": [
+        "operand_id",
+        "kind",
+        "feature_id",
+        "center",
+        "radius_nm"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "AnnulusOperand": {
+      "type": "object",
+      "properties": {
+        "operand_id": {
+          "$ref": "#/$defs/OperandId"
+        },
+        "kind": {
+          "type": "string",
+          "const": "annulus"
+        },
+        "feature_id": {
+          "$ref": "#/$defs/FeatureId"
+        },
+        "center": {
+          "$ref": "#/$defs/PointNm"
+        },
+        "inner_radius_nm": {
+          "type": "string",
+          "minimum": 1,
+          "maximum": 1000000000000
+        },
+        "outer_radius_nm": {
+          "type": "string",
+          "minimum": 1,
+          "maximum": 1000000000000
+        }
+      },
+      "required": [
+        "operand_id",
+        "kind",
+        "feature_id",
+        "center",
+        "inner_radius_nm",
+        "outer_radius_nm"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "CapsuleOperand": {
+      "type": "object",
+      "properties": {
+        "operand_id": {
+          "$ref": "#/$defs/OperandId"
+        },
+        "kind": {
+          "type": "string",
+          "const": "capsule"
+        },
+        "feature_id": {
+          "$ref": "#/$defs/FeatureId"
+        },
+        "start": {
+          "$ref": "#/$defs/PointNm"
+        },
+        "end": {
+          "$ref": "#/$defs/PointNm"
+        },
+        "width_nm": {
+          "type": "string",
+          "minimum": 1,
+          "maximum": 1000000000000
+        }
+      },
+      "required": [
+        "operand_id",
+        "kind",
+        "feature_id",
+        "start",
+        "end",
+        "width_nm"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "SweptPathOperand": {
+      "type": "object",
+      "properties": {
+        "operand_id": {
+          "$ref": "#/$defs/OperandId"
+        },
+        "kind": {
+          "type": "string",
+          "const": "swept_path"
+        },
+        "feature_id": {
+          "$ref": "#/$defs/FeatureId"
+        },
+        "centerline": {
+          "$ref": "#/$defs/PlanarPath"
+        },
+        "width_nm": {
+          "type": "string",
+          "minimum": 1,
+          "maximum": 1000000000000
+        },
+        "cap": {
+          "type": "string",
+          "const": "round"
+        },
+        "join": {
+          "type": "string",
+          "const": "round"
+        }
+      },
+      "required": [
+        "operand_id",
+        "kind",
+        "feature_id",
+        "centerline",
+        "width_nm",
+        "cap",
+        "join"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "OperandId": {
+      "type": "string",
+      "minimum": 1
+    },
+    "RegionId": {
+      "type": "string",
+      "minimum": 1
+    },
+    "PlanarRing": {
+      "type": "object",
+      "properties": {
+        "ring_id": {
+          "$ref": "#/$defs/RingId"
+        },
+        "vertices": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/AuthoredVertex"
+          },
+          "minItems": 2,
+          "maxItems": 131072
+        },
+        "segments": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/AuthoredSegment"
+          },
+          "minItems": 2,
+          "maxItems": 131072
+        }
+      },
+      "required": [
+        "ring_id",
+        "vertices",
+        "segments"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "FeatureId": {
+      "type": "string",
+      "minimum": 1
+    },
+    "PointNm": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "string"
+        },
+        "y": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "x",
+        "y"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "PlanarPath": {
+      "type": "object",
+      "properties": {
+        "path_id": {
+          "$ref": "#/$defs/PathId"
+        },
+        "vertices": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/AuthoredVertex"
+          },
+          "minItems": 2,
+          "maxItems": 131073
+        },
+        "segments": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/AuthoredSegment"
+          },
+          "minItems": 1,
+          "maxItems": 131072
+        }
+      },
+      "required": [
+        "path_id",
+        "vertices",
+        "segments"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "RingId": {
+      "type": "string",
+      "minimum": 1
+    },
+    "AuthoredVertex": {
+      "type": "object",
+      "properties": {
+        "vertex_id": {
+          "$ref": "#/$defs/VertexId"
+        },
+        "point": {
+          "$ref": "#/$defs/PointNm"
+        }
+      },
+      "required": [
+        "vertex_id",
+        "point"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "AuthoredSegment": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/AuthoredLineSegment"
+        },
+        {
+          "$ref": "#/$defs/AuthoredCircularArcSegment"
+        }
+      ]
+    },
+    "PathId": {
+      "type": "string",
+      "minimum": 1
+    },
+    "VertexId": {
+      "type": "string",
+      "minimum": 1
+    },
+    "AuthoredLineSegment": {
+      "type": "object",
+      "properties": {
+        "segment_id": {
+          "$ref": "#/$defs/SegmentId"
+        },
+        "curve_id": {
+          "$ref": "#/$defs/CurveId"
+        },
+        "kind": {
+          "type": "string",
+          "const": "line"
+        }
+      },
+      "required": [
+        "segment_id",
+        "curve_id",
+        "kind"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "AuthoredCircularArcSegment": {
+      "type": "object",
+      "properties": {
+        "segment_id": {
+          "$ref": "#/$defs/SegmentId"
+        },
+        "curve_id": {
+          "$ref": "#/$defs/CurveId"
+        },
+        "kind": {
+          "type": "string",
+          "const": "circular_arc"
+        },
+        "center": {
+          "$ref": "#/$defs/PointNm"
+        },
+        "direction": {
+          "$ref": "#/$defs/ArcDirection"
+        },
+        "major_arc": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "segment_id",
+        "curve_id",
+        "kind",
+        "center",
+        "direction",
+        "major_arc"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "SegmentId": {
+      "type": "string",
+      "minimum": 1
+    },
+    "CurveId": {
+      "type": "string",
+      "minimum": 1
+    },
+    "ArcDirection": {
+      "type": "string",
+      "enum": [
+        "ccw",
+        "cw"
+      ]
+    }
+  }
+}

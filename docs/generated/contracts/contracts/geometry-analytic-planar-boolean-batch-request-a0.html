@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="126edc93c7fbb23b0e15da35966abe0145972586807be6b7fdbc46948adb175c">
+  <title>geometry.analytic_planar_boolean_batch.request.a0 — Geometer</title>
+  <link rel="stylesheet" href="../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="126edc93c7fbb23b0e15da35966abe0145972586807be6b7fdbc46948adb175c" data-page-kind="contract" data-contract-identity="geometry.analytic_planar_boolean_batch.request.a0" data-promotion-status="candidate_frozen">
+<main>
+<header>
+  <p class="page-type">Contract root</p>
+  <h1><code>geometry.analytic_planar_boolean_batch.request.a0</code></h1>
+  <p class="lede">Logical request projected to the governed packed request attachment.</p>
+</header>
+<nav class="nav" aria-label="Contract navigation"><a href="../index.html">All contracts</a><a href="../../../../contracts/geometer/generated/schema/AnalyticPlanarBooleanBatchRequestA0.json">JSON Schema</a><a href="../../../../src/tsp/geometer/main.tsp">TypeSpec entry point</a><a href="../../../design/contract-semantics.md">Compatibility policy</a></nav>
+<aside class="callout"><strong>Generated, not authored.</strong> Edit TypeSpec and regenerate. Lifecycle evidence remains in the promotion manifest.</aside>
+
+<section><h2>Identity</h2><table><tbody>
+<tr><th>Contract</th><td><code>geometry.analytic_planar_boolean_batch.request.a0</code></td></tr>
+<tr><th>Schema</th><td><code>urn:wavenumber:schema:geometer:geometry.analytic_planar_boolean_batch.request:a0</code></td></tr>
+<tr><th>Declaration</th><td><code>Wavenumber.Geometer.Contracts.AnalyticPlanarBooleanA0.AnalyticPlanarBooleanBatchRequestA0</code></td></tr>
+<tr><th>Lifecycle</th><td><span class="status">candidate_frozen</span></td></tr>
+<tr><th>Current authority</th><td><code>typespec_normalized_catalog</code></td></tr>
+</tbody></table></section>
+<section class="model-section"><h2>Declarations <span class="tag">30</span></h2><details open id="declaration-wavenumber-geometer-contracts-analyticplanarbooleana0-analyticplanarbooleanbatchrequesta0"><summary><h2><code>AnalyticPlanarBooleanBatchRequestA0</code> <span class="tag">model</span></h2></summary><p>Logical request projected to the governed packed request attachment.</p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>jobs</code></td><td>required</td><td><code>AnalyticPlanarBooleanJob[]</code></td><td>—</td><td><code>max_items=65535</code></td><td></td></tr>
+<tr><td><code>relationship_queries</code></td><td>required</td><td><code>PlanarRelationshipQuery[]</code></td><td>—</td><td><code>max_items=1048576</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-analyticplanarbooleana0-analyticplanarbooleanjob"><summary><h2><code>AnalyticPlanarBooleanJob</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>job_id</code></td><td>required</td><td><code>JobId</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>stages</code></td><td>required</td><td><code>AnalyticPlanarBooleanStage[]</code></td><td>—</td><td><code>max_items=1048576</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-analyticplanarbooleana0-analyticplanarbooleanstage"><summary><h2><code>AnalyticPlanarBooleanStage</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>stage_id</code></td><td>required</td><td><code>StageId</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>operation</code></td><td>required</td><td><code>StageOperation</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>operands</code></td><td>required</td><td><code>AnalyticPlanarOperand[]</code></td><td>—</td><td><code>max_items=4194304</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-analyticplanarbooleana0-analyticplanaroperand"><summary><h2><code>AnalyticPlanarOperand</code> <span class="tag">union</span></h2></summary><p></p><ul><li><code>planar_region</code>: <code>PlanarRegionOperand</code></li><li><code>disk</code>: <code>DiskOperand</code></li><li><code>annulus</code>: <code>AnnulusOperand</code></li><li><code>capsule</code>: <code>CapsuleOperand</code></li><li><code>swept_path</code>: <code>SweptPathOperand</code></li></ul></details>
+<details open id="declaration-wavenumber-geometer-contracts-analyticplanarbooleana0-annulusoperand"><summary><h2><code>AnnulusOperand</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>operand_id</code></td><td>required</td><td><code>OperandId</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>kind</code></td><td>required</td><td><code>&quot;annulus&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>feature_id</code></td><td>required</td><td><code>FeatureId</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>center</code></td><td>required</td><td><code>PointNm</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>inner_radius_nm</code></td><td>required</td><td><code>uint64</code></td><td>—</td><td><code>min_value=1</code> <code>max_value=1000000000000</code></td><td></td></tr>
+<tr><td><code>outer_radius_nm</code></td><td>required</td><td><code>uint64</code></td><td>—</td><td><code>min_value=1</code> <code>max_value=1000000000000</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-analyticplanarbooleana0-arcdirection"><summary><h2><code>ArcDirection</code> <span class="tag">enum</span></h2></summary><p></p><table><thead><tr><th>Member</th><th>Wire value</th><th>Description</th></tr></thead><tbody><tr><td><code>ccw</code></td><td><code>ccw</code></td><td></td></tr>
+<tr><td><code>cw</code></td><td><code>cw</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-analyticplanarbooleana0-authoredcirculararcsegment"><summary><h2><code>AuthoredCircularArcSegment</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>segment_id</code></td><td>required</td><td><code>SegmentId</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>curve_id</code></td><td>required</td><td><code>CurveId</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>kind</code></td><td>required</td><td><code>&quot;circular_arc&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>center</code></td><td>required</td><td><code>PointNm</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>direction</code></td><td>required</td><td><code>ArcDirection</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>major_arc</code></td><td>required</td><td><code>boolean</code></td><td>—</td><td>none</td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-analyticplanarbooleana0-authoredlinesegment"><summary><h2><code>AuthoredLineSegment</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>segment_id</code></td><td>required</td><td><code>SegmentId</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>curve_id</code></td><td>required</td><td><code>CurveId</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>kind</code></td><td>required</td><td><code>&quot;line&quot;</code></td><td>—</td><td>none</td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-analyticplanarbooleana0-authoredsegment"><summary><h2><code>AuthoredSegment</code> <span class="tag">union</span></h2></summary><p></p><ul><li><code>line</code>: <code>AuthoredLineSegment</code></li><li><code>circular_arc</code>: <code>AuthoredCircularArcSegment</code></li></ul></details>
+<details open id="declaration-wavenumber-geometer-contracts-analyticplanarbooleana0-authoredvertex"><summary><h2><code>AuthoredVertex</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>vertex_id</code></td><td>required</td><td><code>VertexId</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>point</code></td><td>required</td><td><code>PointNm</code></td><td>—</td><td>none</td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-analyticplanarbooleana0-capsuleoperand"><summary><h2><code>CapsuleOperand</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>operand_id</code></td><td>required</td><td><code>OperandId</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>kind</code></td><td>required</td><td><code>&quot;capsule&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>feature_id</code></td><td>required</td><td><code>FeatureId</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>start</code></td><td>required</td><td><code>PointNm</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>end</code></td><td>required</td><td><code>PointNm</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>width_nm</code></td><td>required</td><td><code>uint64</code></td><td>—</td><td><code>min_value=1</code> <code>max_value=1000000000000</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-analyticplanarbooleana0-curveid"><summary><h2><code>CurveId</code> <span class="tag">scalar</span></h2></summary><p></p><p>Base type <code>uint64</code>; <code>min_value=1</code></p></details>
+<details open id="declaration-wavenumber-geometer-contracts-analyticplanarbooleana0-diskoperand"><summary><h2><code>DiskOperand</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>operand_id</code></td><td>required</td><td><code>OperandId</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>kind</code></td><td>required</td><td><code>&quot;disk&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>feature_id</code></td><td>required</td><td><code>FeatureId</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>center</code></td><td>required</td><td><code>PointNm</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>radius_nm</code></td><td>required</td><td><code>uint64</code></td><td>—</td><td><code>min_value=1</code> <code>max_value=1000000000000</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-analyticplanarbooleana0-featureid"><summary><h2><code>FeatureId</code> <span class="tag">scalar</span></h2></summary><p></p><p>Base type <code>uint64</code>; <code>min_value=1</code></p></details>
+<details open id="declaration-wavenumber-geometer-contracts-analyticplanarbooleana0-jobid"><summary><h2><code>JobId</code> <span class="tag">scalar</span></h2></summary><p></p><p>Base type <code>uint64</code>; <code>min_value=1</code></p></details>
+<details open id="declaration-wavenumber-geometer-contracts-analyticplanarbooleana0-operandid"><summary><h2><code>OperandId</code> <span class="tag">scalar</span></h2></summary><p></p><p>Base type <code>uint64</code>; <code>min_value=1</code></p></details>
+<details open id="declaration-wavenumber-geometer-contracts-analyticplanarbooleana0-pathid"><summary><h2><code>PathId</code> <span class="tag">scalar</span></h2></summary><p></p><p>Base type <code>uint64</code>; <code>min_value=1</code></p></details>
+<details open id="declaration-wavenumber-geometer-contracts-analyticplanarbooleana0-planarpath"><summary><h2><code>PlanarPath</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>path_id</code></td><td>required</td><td><code>PathId</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>vertices</code></td><td>required</td><td><code>AuthoredVertex[]</code></td><td>—</td><td><code>min_items=2</code> <code>max_items=131073</code></td><td></td></tr>
+<tr><td><code>segments</code></td><td>required</td><td><code>AuthoredSegment[]</code></td><td>—</td><td><code>min_items=1</code> <code>max_items=131072</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-analyticplanarbooleana0-planarregionoperand"><summary><h2><code>PlanarRegionOperand</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>operand_id</code></td><td>required</td><td><code>OperandId</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>kind</code></td><td>required</td><td><code>&quot;planar_region&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>region_id</code></td><td>required</td><td><code>RegionId</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>outer</code></td><td>required</td><td><code>PlanarRing</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>holes</code></td><td>required</td><td><code>PlanarRing[]</code></td><td>—</td><td><code>max_items=131071</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-analyticplanarbooleana0-planarrelationshipquery"><summary><h2><code>PlanarRelationshipQuery</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>query_id</code></td><td>required</td><td><code>QueryId</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>left_job_id</code></td><td>required</td><td><code>JobId</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>right_job_id</code></td><td>required</td><td><code>JobId</code></td><td>—</td><td>none</td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-analyticplanarbooleana0-planarring"><summary><h2><code>PlanarRing</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>ring_id</code></td><td>required</td><td><code>RingId</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>vertices</code></td><td>required</td><td><code>AuthoredVertex[]</code></td><td>—</td><td><code>min_items=2</code> <code>max_items=131072</code></td><td></td></tr>
+<tr><td><code>segments</code></td><td>required</td><td><code>AuthoredSegment[]</code></td><td>—</td><td><code>min_items=2</code> <code>max_items=131072</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-analyticplanarbooleana0-pointnm"><summary><h2><code>PointNm</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>x</code></td><td>required</td><td><code>int64</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>y</code></td><td>required</td><td><code>int64</code></td><td>—</td><td>none</td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-analyticplanarbooleana0-queryid"><summary><h2><code>QueryId</code> <span class="tag">scalar</span></h2></summary><p></p><p>Base type <code>uint64</code>; <code>min_value=1</code></p></details>
+<details open id="declaration-wavenumber-geometer-contracts-analyticplanarbooleana0-regionid"><summary><h2><code>RegionId</code> <span class="tag">scalar</span></h2></summary><p></p><p>Base type <code>uint64</code>; <code>min_value=1</code></p></details>
+<details open id="declaration-wavenumber-geometer-contracts-analyticplanarbooleana0-ringid"><summary><h2><code>RingId</code> <span class="tag">scalar</span></h2></summary><p></p><p>Base type <code>uint64</code>; <code>min_value=1</code></p></details>
+<details open id="declaration-wavenumber-geometer-contracts-analyticplanarbooleana0-segmentid"><summary><h2><code>SegmentId</code> <span class="tag">scalar</span></h2></summary><p></p><p>Base type <code>uint64</code>; <code>min_value=1</code></p></details>
+<details open id="declaration-wavenumber-geometer-contracts-analyticplanarbooleana0-stageid"><summary><h2><code>StageId</code> <span class="tag">scalar</span></h2></summary><p></p><p>Base type <code>uint64</code>; <code>min_value=1</code></p></details>
+<details open id="declaration-wavenumber-geometer-contracts-analyticplanarbooleana0-stageoperation"><summary><h2><code>StageOperation</code> <span class="tag">enum</span></h2></summary><p></p><table><thead><tr><th>Member</th><th>Wire value</th><th>Description</th></tr></thead><tbody><tr><td><code>union_stage</code></td><td><code>union</code></td><td></td></tr>
+<tr><td><code>difference</code></td><td><code>difference</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-analyticplanarbooleana0-sweptpathoperand"><summary><h2><code>SweptPathOperand</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>operand_id</code></td><td>required</td><td><code>OperandId</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>kind</code></td><td>required</td><td><code>&quot;swept_path&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>feature_id</code></td><td>required</td><td><code>FeatureId</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>centerline</code></td><td>required</td><td><code>PlanarPath</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>width_nm</code></td><td>required</td><td><code>uint64</code></td><td>—</td><td><code>min_value=1</code> <code>max_value=1000000000000</code></td><td></td></tr>
+<tr><td><code>cap</code></td><td>required</td><td><code>&quot;round&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>join</code></td><td>required</td><td><code>&quot;round&quot;</code></td><td>—</td><td>none</td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-analyticplanarbooleana0-vertexid"><summary><h2><code>VertexId</code> <span class="tag">scalar</span></h2></summary><p></p><p>Base type <code>uint64</code>; <code>min_value=1</code></p></details></section>
+</main>
+</body>
+</html>

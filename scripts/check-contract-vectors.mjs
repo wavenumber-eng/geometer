@@ -24,8 +24,14 @@ async function main() {
   validateManifest(manifest);
 
   const schemas = new Map();
-  const ajv = new Ajv2020({ allErrors: true, strict: true });
+  // strictTypes stays off: the governed int64-as-string schema strategy keeps
+  // numeric bounds (enforced by catalog constraints and generated codecs) that
+  // Ajv's type lint would reject on string-typed scalars.
+  const ajv = new Ajv2020({ allErrors: true, strict: true, strictTypes: false });
   ajv.addKeyword({ keyword: "x-wn-default-intent", schemaType: "string" });
+  ajv.addKeyword({ keyword: "x-wn-production-wire", schemaType: "string" });
+  ajv.addKeyword({ keyword: "x-wn-derived-field", schemaType: "string" });
+  ajv.addKeyword({ keyword: "x-wn-packed-field", schemaType: "string" });
   const schemaDocuments = [];
   for (const root of catalog.roots) {
     const filename = `${root.name.slice(root.name.lastIndexOf(".") + 1)}.json`;

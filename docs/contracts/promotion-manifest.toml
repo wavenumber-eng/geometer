@@ -76,7 +76,7 @@ structural_vector_count = 20
 operation_vector_count = 2
 local_ctest_count = 10
 local_rack_passed = 66
-catalog_sha256 = "12f521239c1a714c3dbb27478ee3980ebcf07a91c4fcae239de4a4d811c03190"
+catalog_sha256 = "126edc93c7fbb23b0e15da35966abe0145972586807be6b7fdbc46948adb175c"
 vector_manifest_sha256 = "30f697bf63e6ca1ba28e0b9617a061b59a90115ea4ef06a06761d09ea68301a5"
 browser_js_sha256 = "abbd4a8864a438e7208cf59899c944085f88d92cdf1ffbcda81e8eaa888d8263"
 historical_reviewed_browser_js_sha256 = "5c9f0594465cdb5732911777e2ca38cc2814c1ef9cb52b7672022df6a50bf937"
@@ -599,6 +599,24 @@ pilot_required = true
 compatibility = "Additive executable IPC A0 graceful-shutdown acknowledgment."
 
 [[contracts]]
+id = "geometry.analytic_planar_boolean_batch.request.a0"
+kind = "request"
+status = "candidate_frozen"
+current_authority = "typespec_normalized_catalog"
+source = "src/tsp/geometer/operations/analytic-planar-boolean-a0.tsp"
+pilot_required = true
+compatibility = "Frozen candidate request; nanometer integer geometry aligned with the MATZ observation manifest, no runtime dispatch until the governed promotion slice."
+
+[[contracts]]
+id = "geometry.analytic_planar_boolean_batch.result.a0"
+kind = "result"
+status = "candidate_frozen"
+current_authority = "typespec_normalized_catalog"
+source = "src/tsp/geometer/operations/analytic-planar-boolean-a0.tsp"
+pilot_required = true
+compatibility = "Frozen candidate result; typed outcomes reference the separately governed packed attachment format."
+
+[[contracts]]
 id = "geometry.projection.options.b0"
 kind = "option_patch"
 status = "inventory_only"
@@ -777,7 +795,7 @@ compatibility_cli_names = []
 
 [[candidate_operations]]
 id = "geometry.analytic_planar_boolean_batch.a0"
-status = "design_frozen"
+status = "contract_frozen"
 named_consumer = "appz.data_models.pcb.matz"
 compatibility_snapshot = "docs/contracts/compatibility/data-models-geom-a0-2026-08-12.toml"
 design = "docs/design/analytic-planar-boolean-a0.md"
@@ -798,8 +816,11 @@ candidate_operation_source = "src/tsp/geometer/operations/analytic-planar-boolea
 candidate_operation_source_sha256 = "0300c6c303c09d8e4152e0b65018b9d80742dd401020d825074b989378f6a61f"
 candidate_check = "scripts/check-analytic-contract-candidate.mjs"
 candidate_check_sha256 = "ec3c41562a70020b54e1b8d2ef54c5f47f5526d7275d92988c70ec190c0effb4"
-request_contract = "typespec_candidate_frozen_a0"
-result_contract = "typespec_candidate_frozen_a0"
+request_contract = "geometry.analytic_planar_boolean_batch.request.a0"
+result_contract = "geometry.analytic_planar_boolean_batch.result.a0"
+input_attachments = ["analytic_planar_boolean_request"]
+output_attachments = ["analytic_planar_boolean_result"]
+deferred_projections = ["cpp", "typescript", "rust", "python"]
 packed_format = "separately_governed_frozen_a0"
 transport = "generic_named_attachments"
 operation_specific_c_abi_symbol = false
@@ -810,7 +831,7 @@ independent_design_review_head = "b86a065c5926c35f1eee23a9ba1cef890689c7d7"
 independent_design_review_log = "docs/plans/geometer-typespec-contracts/logs/2026-08-12T194800-0400.md"
 typespec_projection_review_revision = "f4b6a9b87bf16f57ef29dae22150b16f2a742b64"
 typespec_projection_review_packet = "reviewer-019ffd0d-fa76-74b6-ac3e-c1c2642ba0de"
-implementation_gate = "exact_backend_feasibility_and_occt_qualification_pending"
+implementation_gate = "cpp_wasm_rust_python_implementation_slices_pending"
 
 [[demos]]
 id = "model_bounds"

@@ -3,8 +3,10 @@
   "generation": "a0",
   "catalog_identity": "wn.geometer.contract_catalog",
   "catalog_generation": "a0",
-  "catalog_sha256": "12f521239c1a714c3dbb27478ee3980ebcf07a91c4fcae239de4a4d811c03190",
+  "catalog_sha256": "126edc93c7fbb23b0e15da35966abe0145972586807be6b7fdbc46948adb175c",
   "contracts": {
+    "geometry.analytic_planar_boolean_batch.request.a0": "contracts/geometry-analytic-planar-boolean-batch-request-a0.html",
+    "geometry.analytic_planar_boolean_batch.result.a0": "contracts/geometry-analytic-planar-boolean-batch-result-a0.html",
     "geometry.common.diagnostic.a0": "contracts/geometry-common-diagnostic-a0.html",
     "geometer.ipc.cancelled.a0": "contracts/geometer-ipc-cancelled-a0.html",
     "geometer.ipc.cancel_rejected.a0": "contracts/geometer-ipc-cancel-rejected-a0.html",
@@ -20,6 +22,7 @@
     "geometer.operation.outcome.a0": "contracts/geometer-operation-outcome-a0.html"
   },
   "operations": {
+    "geometry.analytic_planar_boolean_batch.a0": "operations/geometry-analytic-planar-boolean-batch-a0.html",
     "geometry.model_bounds.a0": "operations/geometry-model-bounds-a0.html"
   }
 }

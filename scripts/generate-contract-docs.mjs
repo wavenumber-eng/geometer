@@ -57,7 +57,12 @@ try {
 
 async function generateSite(catalog, manifest, catalogDigest) {
   const contractById = new Map(manifest.contracts.map((contract) => [contract.id, contract]));
-  const operationById = new Map(manifest.operations.map((operation) => [operation.id, operation]));
+  const operationById = new Map(
+    [...manifest.operations, ...manifest.candidateOperations].map((operation) => [
+      operation.id,
+      operation,
+    ]),
+  );
   const declarationByName = new Map(
     catalog.declarations.map((declaration) => [declaration.name, declaration]),
   );
@@ -457,7 +462,12 @@ async function listFiles(root) {
 }
 
 function parsePromotionManifest(text) {
-  const manifest = { contracts: [], operations: [], documentationAssets: [] };
+  const manifest = {
+    contracts: [],
+    operations: [],
+    candidateOperations: [],
+    documentationAssets: [],
+  };
   let target = null;
   for (const rawLine of text.split(/\r?\n/u)) {
     const line = rawLine.trim();
@@ -470,6 +480,11 @@ function parsePromotionManifest(text) {
     if (line === "[[operations]]") {
       target = {};
       manifest.operations.push(target);
+      continue;
+    }
+    if (line === "[[candidate_operations]]") {
+      target = {};
+      manifest.candidateOperations.push(target);
       continue;
     }
     if (line === "[[documentation.assets]]") {

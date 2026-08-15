@@ -405,10 +405,14 @@ def test_manifest_promoted_and_candidate_surfaces_are_complete() -> None:
         "geometry.model_bounds.a0",
         "geometer.operation.outcome.a0",
     }
+    assert {item["id"] for item in contracts if item["status"] == "candidate_frozen"} == {
+        "geometry.analytic_planar_boolean_batch.request.a0",
+        "geometry.analytic_planar_boolean_batch.result.a0",
+    }
     assert all(
         item["current_authority"] == "typespec_normalized_catalog"
         for item in contracts
-        if item["status"] == "promoted"
+        if item["status"] in {"promoted", "candidate_frozen"}
     )
     assert all((ROOT / item["source"]).is_file() for item in contracts if item["source"] != "none")
 
@@ -426,11 +430,16 @@ def test_manifest_promoted_and_candidate_surfaces_are_complete() -> None:
     assert not set(candidate_ids) & set(operation_ids)
     assert candidate_ids == ["geometry.analytic_planar_boolean_batch.a0"]
     candidate = candidates[0]
-    assert candidate["status"] == "design_frozen"
-    assert candidate["request_contract"] == "typespec_candidate_frozen_a0"
-    assert candidate["result_contract"] == "typespec_candidate_frozen_a0"
+    assert candidate["status"] == "contract_frozen"
+    assert candidate["request_contract"] == "geometry.analytic_planar_boolean_batch.request.a0"
+    assert candidate["result_contract"] == "geometry.analytic_planar_boolean_batch.result.a0"
+    assert candidate["request_contract"] in contract_ids
+    assert candidate["result_contract"] in contract_ids
+    assert candidate["input_attachments"] == ["analytic_planar_boolean_request"]
+    assert candidate["output_attachments"] == ["analytic_planar_boolean_result"]
+    assert candidate["deferred_projections"] == ["cpp", "typescript", "rust", "python"]
     assert candidate["packed_format"] == "separately_governed_frozen_a0"
-    assert candidate["implementation_gate"] == "exact_backend_feasibility_and_occt_qualification_pending"
+    assert candidate["implementation_gate"] == "cpp_wasm_rust_python_implementation_slices_pending"
     assert candidate["transport"] == "generic_named_attachments"
     assert candidate["operation_specific_c_abi_symbol"] is False
     assert candidate["replaces_existing_operation"] is False

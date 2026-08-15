@@ -6,6 +6,8 @@ import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { applyProjectionDeferrals } from "./contract-projection-deferral.mjs";
+
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const catalogPath = join(
   root,
@@ -23,7 +25,10 @@ if (process.argv.slice(2).some((argument) => argument !== "--check")) {
   throw new Error("Usage: node scripts/generate-typescript-contracts.mjs [--check]");
 }
 
-const catalog = JSON.parse(await readFile(catalogPath, "utf8"));
+const catalog = await applyProjectionDeferrals(
+  JSON.parse(await readFile(catalogPath, "utf8")),
+  "typescript",
+);
 const declarations = new Map(catalog.declarations.map((item) => [item.name, item]));
 assertUniqueShortNames(catalog.declarations);
 

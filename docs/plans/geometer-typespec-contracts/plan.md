@@ -102,7 +102,7 @@ depends_on = ["analytic-synthetic-correctness"]
 [[steps]]
 id = "analytic-planar-boolean-promotion"
 title = "Promote analytic planar Boolean batch through every production client"
-status = "pending"
+status = "active"
 depends_on = ["occt-8-0-1-qualification"]
 
 [[steps]]

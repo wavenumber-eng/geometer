@@ -74,7 +74,11 @@ engine.
   point and radius intervals plus optional integer certificates, so irrational
   authored radii and non-integral offset geometry do not require an integer-only
   side representation. Radial sagitta alone never certifies a near-tangent
-  collapse; the possible point displacement itself must be within the envelope.
+  collapse; the possible point displacement itself must be within half the
+  envelope when two roots merge. Trusted lowering may attach validated
+  job-local construction tokens for correlated offset endpoints, shared
+  carriers, parallel/concentric families, and arc sweeps; these are bounded
+  fixed-width facts, not symbolic expressions.
 - Solver resource limits are supplied through one internal limits value object
   rather than scattered production constants. The catalog values are governed
   hard ceilings; a host may advertise and enforce lower effective limits, and

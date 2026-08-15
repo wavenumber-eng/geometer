@@ -53,6 +53,17 @@ struct AnalyticAtomicCurveNm
     AnalyticIntegerPointNm integer_start;
     AnalyticIntegerPointNm integer_end;
     AnalyticIntegerPointNm integer_center;
+    bool has_integer_radius_certificate = false;
+    std::uint64_t integer_radius = 0;
+    // Nonzero construction ids are job-local proof tokens emitted by the
+    // trusted lowering stage. Equal carrier ids mean the same infinite line
+    // or circle; equal family ids mean parallel lines or concentric circles.
+    std::uint64_t construction_carrier_id = 0;
+    std::uint64_t construction_family_id = 0;
+    // Certifies the authored minor/major and direction flags when correlated
+    // filtered endpoint expressions make an exact zero cross product appear
+    // as a non-singleton interval (notably arbitrary-angle offset caps).
+    bool has_arc_sweep_certificate = false;
 };
 
 enum class AnalyticPairRelation : std::uint8_t
@@ -109,8 +120,11 @@ struct AnalyticNarrowPhaseResult
 
 // Intersects only the supplied broad-phase candidates. Input coordinates and
 // radii are outward bounds on one authored curve; each bound must itself fit
-// the fixed 50 nm displacement envelope. Optional integer certificates enable
-// exact fixed-width signs but are not required for non-integral authored arcs.
+// the fixed 50 nm displacement envelope. Optional integer certificates bind
+// singleton coordinates and enable exact fixed-width signs. Trusted lowering
+// may also attach job-local construction proof tokens for correlated
+// non-integral carriers and arc sweeps; neither certificate stores algebraic
+// expressions.
 // Curves use dense canonical indices 1..N, and pairs are in strictly increasing
 // index order; this makes pair resolution direct O(1) work instead of a hidden
 // per-pair search. No implicit all-curves cross product is performed.

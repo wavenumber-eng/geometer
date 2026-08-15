@@ -293,8 +293,12 @@ Narrow-phase intersections and same-domain tests use filtered binary64
 predicates with conservative outward error bounds. The internal curve domain
 accepts bounded point and radius intervals, so authored irrational-radius arcs
 and non-integral offset geometry do not need a second representation. Optional
-integer certificates use fixed-width wide-integer predicates where practical.
-A decision is accepted
+integer certificates use fixed-width wide-integer predicates where practical;
+job-local construction tokens certify shared carriers, parallel/concentric
+families, and correlated arc sweeps emitted by the trusted lowering stage.
+Integer certificates bind only singleton-equal filtered coordinates, and a
+certified radius must bind either its integer radius or the complete outward
+square-root enclosure. A decision is accepted
 from the fast path only when its error interval proves the relevant side of the
 50 nm topology threshold. An uncertain decision takes a deterministic bounded
 slow path or fails the isolated job. It must never silently choose a topology
@@ -318,7 +322,10 @@ all point construction and repair is checked against that same bound. Exact
 tangent contact is reported separately from a certified resolution collapse.
 In cancellation-heavy near-tangent cases, radial closeness to a circle is not
 sufficient: the kernel also proves that the possible intersection displacement
-from the published point is at most 50 nm, otherwise the job fails closed.
+from the published point is at most 25 nm when two roots share one
+representative, so their separation cannot exceed 50 nm; otherwise the job
+fails closed. Large exact integer line/circle and circle/circle tangencies use
+fixed-width carrier certificates rather than cancellation-prone subtraction.
 Coincident carriers are reported without partitioning finite overlap spans; the
 indexed same-domain overlay stage owns that partition so no pair kernel grows a
 hidden global scan.

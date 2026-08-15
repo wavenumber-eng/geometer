@@ -829,8 +829,11 @@ Geometer proposal, not the original consumer packet.
   finite line/line, line/circle, and circle/circle pairs. It uses portable
   fixed-wide integer signs when optional integer certificates are available,
   while bounded point/radius intervals directly represent irrational authored
-  arcs and non-integral offset geometry. FMA-verified outward coordinates,
-  trig-free arc domains, displacement-certified tangent repair, canonical
+  arcs and non-integral offset geometry. Validated integer and job-local
+  construction certificates cover exact large-coordinate tangencies, shared
+  carriers, offset families, and correlated arc sweeps without symbolic
+  values. FMA-verified outward coordinates, trig-free arc domains,
+  separation-certified tangent repair, canonical
   pair/point ordering, fixed logical memory charges, predicate/intersection
   telemetry, direct dense pair lookup, and exact 49/50/51 nm endpoint tests are
   covered. It never generates its own pair cross product. Same-domain span

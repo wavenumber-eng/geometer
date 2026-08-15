@@ -60,6 +60,16 @@ AnalyticAtomicCurveNm line(std::uint32_t index, std::int64_t x1, std::int64_t y1
     return result;
 }
 
+AnalyticAtomicCurveNm filtered_line(std::uint32_t index, double x1, double y1, double x2, double y2)
+{
+    AnalyticAtomicCurveNm result;
+    result.curve_index = index;
+    result.kind = AnalyticAtomicCurveKind::line;
+    result.start = filtered_point(x1, y1);
+    result.end = filtered_point(x2, y2);
+    return result;
+}
+
 AnalyticAtomicCurveNm filtered_arc(std::uint32_t index, double x1, double y1, double x2, double y2,
                                    double cx, double cy, AnalyticCoordinateIntervalNm radius,
                                    bool counterclockwise, bool major = false)
@@ -88,6 +98,8 @@ AnalyticAtomicCurveNm arc(std::uint32_t index, std::int64_t x1, std::int64_t y1,
     result.counterclockwise = counterclockwise;
     result.major_arc = major;
     result.integer_center = {cx, cy};
+    result.has_integer_radius_certificate = true;
+    result.integer_radius = radius;
     return result;
 }
 
@@ -459,11 +471,71 @@ void test_narrow_phase_filtered_authored_arcs()
     require(accepted.error == AnalyticNarrowPhaseError::none,
             "filtered authored arcs must not require an integer radius or center");
 
+    AnalyticAtomicCurveNm incomplete_radius_certificate = irrational_radius;
+    incomplete_radius_certificate.circle.radius = {
+        root_two, std::nextafter(root_two, std::numeric_limits<double>::infinity())};
+    require(intersect_analytic_curve_candidates({incomplete_radius_certificate}, {}).error ==
+                AnalyticNarrowPhaseError::invalid_argument,
+            "a non-integral certified radius interval must enclose the exact outward root");
+
     AnalyticAtomicCurveNm too_wide = noninteger_offset;
     too_wide.circle.radius = {1.0, 102.0};
     require(intersect_analytic_curve_candidates({irrational_radius, too_wide}, {}).error ==
                 AnalyticNarrowPhaseError::invalid_argument,
             "an input interval wider than the output displacement envelope must fail closed");
+
+    const double offset = 5.0 / std::sqrt(2.0);
+    AnalyticAtomicCurveNm irrational_cap =
+        filtered_arc(1, 100.0 - offset, 100.0 + offset, 100.0 + offset, 100.0 - offset, 100.0,
+                     100.0, {5.0, 5.0}, true);
+    irrational_cap.start.x = {
+        std::nextafter(irrational_cap.start.x.lower, 0.0),
+        std::nextafter(irrational_cap.start.x.upper, std::numeric_limits<double>::infinity())};
+    irrational_cap.start.y = {
+        std::nextafter(irrational_cap.start.y.lower, 0.0),
+        std::nextafter(irrational_cap.start.y.upper, std::numeric_limits<double>::infinity())};
+    irrational_cap.end.x = {
+        std::nextafter(irrational_cap.end.x.lower, 0.0),
+        std::nextafter(irrational_cap.end.x.upper, std::numeric_limits<double>::infinity())};
+    irrational_cap.end.y = {
+        std::nextafter(irrational_cap.end.y.lower, 0.0),
+        std::nextafter(irrational_cap.end.y.upper, std::numeric_limits<double>::infinity())};
+    irrational_cap.has_arc_sweep_certificate = true;
+    irrational_cap.construction_family_id = 91;
+    irrational_cap.construction_carrier_id = 92;
+    AnalyticAtomicCurveNm duplicate_cap = irrational_cap;
+    duplicate_cap.curve_index = 2;
+    const AnalyticNarrowPhaseResult cap_overlay =
+        intersect_analytic_curve_candidates({irrational_cap, duplicate_cap}, {{1, 2}});
+    require(cap_overlay.error == AnalyticNarrowPhaseError::none &&
+                cap_overlay.intersections[0].relation == AnalyticPairRelation::coincident,
+            "an arbitrary-angle irrational capsule cap must validate and reach overlay");
+
+    AnalyticAtomicCurveNm first_offset = filtered_line(1, 0.25, 0.25, 100.25, 0.25);
+    AnalyticAtomicCurveNm second_offset = filtered_line(2, 0.25, 10.75, 100.25, 10.75);
+    first_offset.construction_family_id = second_offset.construction_family_id = 101;
+    first_offset.construction_carrier_id = 102;
+    second_offset.construction_carrier_id = 103;
+    const AnalyticNarrowPhaseResult parallel_offsets =
+        intersect_analytic_curve_candidates({first_offset, second_offset}, {{1, 2}});
+    require(parallel_offsets.error == AnalyticNarrowPhaseError::none &&
+                parallel_offsets.intersections[0].relation == AnalyticPairRelation::disjoint,
+            "certified non-integral parallel offset carriers must not fail uncertain");
+
+    const AnalyticNarrowPhaseResult singleton_parallel = intersect_analytic_curve_candidates(
+        {filtered_line(1, 0.25, 0.25, 100.25, 0.25), filtered_line(2, 0.25, 10.75, 100.25, 10.75)},
+        {{1, 2}});
+    require(singleton_parallel.error == AnalyticNarrowPhaseError::none &&
+                singleton_parallel.intersections[0].relation == AnalyticPairRelation::disjoint,
+            "singleton non-integral parallel lines must be decided without a token");
+
+    const AnalyticNarrowPhaseResult singleton_concentric = intersect_analytic_curve_candidates(
+        {filtered_arc(1, 10.75, 0.25, -10.25, 0.25, 0.25, 0.25, {10.5, 10.5}, true),
+         filtered_arc(2, 10.75, 0.25, -10.25, 0.25, 0.25, 0.25, {10.5, 10.5}, true)},
+        {{1, 2}});
+    require(singleton_concentric.error == AnalyticNarrowPhaseError::none &&
+                singleton_concentric.intersections[0].relation == AnalyticPairRelation::coincident,
+            "singleton non-integral concentric circles must reach overlay without a token");
 }
 
 void test_narrow_phase_near_tangent_displacement_guard()
@@ -513,6 +585,87 @@ void test_narrow_phase_near_tangent_displacement_guard()
     require(guarded_separation.error == AnalyticNarrowPhaseError::resource_limit_exceeded &&
                 guarded_separation.telemetry.resolution_collapses == 0,
             "circle uncertainty spanning an 80 nm gap must not certify a collapse");
+
+    constexpr double base_radius = 1'000'000.0;
+    const double eighty_nm_roots = std::sqrt(base_radius * base_radius + 1'600.0);
+    AnalyticAtomicCurveNm uncertain_semicircle =
+        filtered_arc(2, eighty_nm_roots, 0.0, -eighty_nm_roots, 0.0, 0.0, 0.0,
+                     {base_radius, eighty_nm_roots}, true);
+    uncertain_semicircle.has_arc_sweep_certificate = true;
+    const AnalyticNarrowPhaseResult guarded_root_pair = intersect_analytic_curve_candidates(
+        {filtered_line(1, -100.0, base_radius, 100.0, base_radius), uncertain_semicircle},
+        {{1, 2}});
+    require(guarded_root_pair.error == AnalyticNarrowPhaseError::resource_limit_exceeded &&
+                guarded_root_pair.telemetry.resolution_collapses == 0,
+            "two possible roots 80 nm apart must not share one representative");
+}
+
+void test_narrow_phase_tangent_certificates_and_root_threshold()
+{
+    constexpr std::int64_t large_radius = 500'000'000'000;
+    const std::vector<AnalyticAtomicCurveNm> external = {
+        arc(1, -large_radius, -large_radius, -large_radius, large_radius, -large_radius, 0,
+            large_radius, true),
+        arc(2, large_radius, large_radius, large_radius, -large_radius, large_radius, 0,
+            large_radius, true),
+    };
+    const AnalyticNarrowPhaseResult external_contact =
+        intersect_analytic_curve_candidates(external, {{1, 2}});
+    require(external_contact.error == AnalyticNarrowPhaseError::none &&
+                external_contact.intersections[0].relation == AnalyticPairRelation::point &&
+                !external_contact.intersections[0].resolution_collapsed &&
+                external_contact.telemetry.tangent_contacts == 1,
+            "large exact external circle tangency must use its fixed-width certificate");
+
+    const std::vector<AnalyticAtomicCurveNm> internal = {
+        arc(1, 0, -large_radius, 0, large_radius, 0, 0, large_radius, true),
+        arc(2, large_radius / 2, -large_radius / 2, large_radius / 2, large_radius / 2,
+            large_radius / 2, 0, large_radius / 2, true),
+    };
+    const AnalyticNarrowPhaseResult internal_contact =
+        intersect_analytic_curve_candidates(internal, {{1, 2}});
+    require(internal_contact.error == AnalyticNarrowPhaseError::none &&
+                internal_contact.intersections[0].relation == AnalyticPairRelation::point &&
+                internal_contact.telemetry.tangent_contacts == 1 &&
+                internal_contact.telemetry.resolution_collapses == 0,
+            "large exact internal circle tangency must use its fixed-width certificate");
+
+    constexpr std::int64_t line_circle_radius = 1'000'000'000'000;
+    const AnalyticNarrowPhaseResult line_contact = intersect_analytic_curve_candidates(
+        {line(1, -line_circle_radius, line_circle_radius, line_circle_radius, line_circle_radius),
+         arc(2, line_circle_radius, 0, -line_circle_radius, 0, 0, 0, line_circle_radius, true)},
+        {{1, 2}});
+    require(line_contact.error == AnalyticNarrowPhaseError::none &&
+                line_contact.intersections[0].relation == AnalyticPairRelation::point &&
+                line_contact.telemetry.tangent_contacts == 1 &&
+                line_contact.telemetry.resolution_collapses == 0,
+            "large exact line/circle tangency must use its fixed-width certificate");
+
+    const AnalyticNarrowPhaseResult line_height_25 = intersect_analytic_curve_candidates(
+        {line(1, -100, 60, 100, 60), arc(2, 65, 0, -65, 0, 0, 0, 65, true)}, {{1, 2}});
+    const AnalyticNarrowPhaseResult line_height_26 = intersect_analytic_curve_candidates(
+        {line(1, -200, 168, 200, 168), arc(2, 170, 0, -170, 0, 0, 0, 170, true)}, {{1, 2}});
+    require(line_height_25.error == AnalyticNarrowPhaseError::none &&
+                line_height_25.intersections[0].relation == AnalyticPairRelation::point &&
+                line_height_25.intersections[0].resolution_collapsed &&
+                line_height_26.error == AnalyticNarrowPhaseError::none &&
+                line_height_26.intersections[0].relation == AnalyticPairRelation::two_points &&
+                !line_height_26.intersections[0].resolution_collapsed,
+            "line/circle roots 50 nm apart may collapse but roots 52 nm apart must survive");
+
+    const AnalyticNarrowPhaseResult circle_height_25 = intersect_analytic_curve_candidates(
+        {arc(1, 0, -65, 0, 65, 0, 0, 65, true), arc(2, 120, 65, 120, -65, 120, 0, 65, true)},
+        {{1, 2}});
+    const AnalyticNarrowPhaseResult circle_height_26 = intersect_analytic_curve_candidates(
+        {arc(1, 0, -170, 0, 170, 0, 0, 170, true), arc(2, 336, 170, 336, -170, 336, 0, 170, true)},
+        {{1, 2}});
+    require(circle_height_25.error == AnalyticNarrowPhaseError::none &&
+                circle_height_25.intersections[0].relation == AnalyticPairRelation::point &&
+                circle_height_25.intersections[0].resolution_collapsed &&
+                circle_height_26.error == AnalyticNarrowPhaseError::none &&
+                circle_height_26.intersections[0].relation == AnalyticPairRelation::two_points &&
+                !circle_height_26.intersections[0].resolution_collapsed,
+            "circle roots 50 nm apart may collapse but roots 52 nm apart must survive");
 }
 
 void test_narrow_phase_arc_domains_and_contacts()
@@ -697,6 +850,19 @@ void test_narrow_phase_rejects_noncanonical_or_invalid_input()
     require(intersect_analytic_curve_candidates(invalid, {}).error ==
                 AnalyticNarrowPhaseError::invalid_argument,
             "degenerate narrow-phase curves must be rejected");
+
+    invalid = curves;
+    invalid[0].start.x = {0.0, 1.0};
+    require(intersect_analytic_curve_candidates(invalid, {}).error ==
+                AnalyticNarrowPhaseError::invalid_argument,
+            "an integer point certificate must bind a singleton filtered coordinate");
+
+    AnalyticAtomicCurveNm invalid_radius = arc(1, 5, 0, -5, 0, 0, 0, 5, true);
+    invalid_radius.integer_radius = 6;
+    invalid_radius.circle.radius = {5.0, 6.0};
+    require(intersect_analytic_curve_candidates({invalid_radius}, {}).error ==
+                AnalyticNarrowPhaseError::invalid_argument,
+            "an integer radius certificate must bind the certified endpoint radius");
 }
 
 } // namespace
@@ -715,6 +881,7 @@ int main()
     test_narrow_phase_circle_circle_and_irrational_output();
     test_narrow_phase_filtered_authored_arcs();
     test_narrow_phase_near_tangent_displacement_guard();
+    test_narrow_phase_tangent_certificates_and_root_threshold();
     test_narrow_phase_arc_domains_and_contacts();
     test_narrow_phase_large_local_coordinates_and_limits();
     test_narrow_phase_resolution_endpoint_boundary();

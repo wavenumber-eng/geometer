@@ -309,6 +309,90 @@ SignedWide exact_dot_from(AnalyticIntegerPointNm origin, AnalyticIntegerPointNm 
     return wide_add(wide_multiply(left_x, right_x), wide_multiply(left_y, right_y));
 }
 
+SignedWide wide_absolute(SignedWide value) noexcept
+{
+    return wide_sign(value) < 0 ? wide_subtract(wide_multiply(0, 0), value) : value;
+}
+
+bool exact_integer_length(AnalyticIntegerPointNm direction, std::uint64_t& length) noexcept
+{
+    const SignedWide squared =
+        wide_add(wide_multiply(direction.x, direction.x), wide_multiply(direction.y, direction.y));
+    const double approximate =
+        std::sqrt(static_cast<double>(direction.x) * static_cast<double>(direction.x) +
+                  static_cast<double>(direction.y) * static_cast<double>(direction.y));
+    const std::uint64_t center = static_cast<std::uint64_t>(approximate);
+    constexpr std::uint64_t search_radius = 4;
+    const std::uint64_t first = center > search_radius ? center - search_radius : 0;
+    for (std::uint64_t candidate = first; candidate <= center + search_radius; ++candidate)
+    {
+        if (candidate <= static_cast<std::uint64_t>(std::numeric_limits<std::int64_t>::max()) &&
+            wide_compare(wide_multiply(static_cast<std::int64_t>(candidate),
+                                       static_cast<std::int64_t>(candidate)),
+                         squared) == 0)
+        {
+            length = candidate;
+            return true;
+        }
+    }
+    return false;
+}
+
+bool certified_line_circle_tangent(const AnalyticAtomicCurveNm& line,
+                                   const AnalyticAtomicCurveNm& arc) noexcept
+{
+    if (!line.has_integer_certificate || !arc.has_integer_certificate ||
+        !arc.has_integer_radius_certificate)
+        return false;
+    const AnalyticIntegerPointNm direction{difference(line.integer_end.x, line.integer_start.x),
+                                           difference(line.integer_end.y, line.integer_start.y)};
+    std::uint64_t length = 0;
+    if (!exact_integer_length(direction, length))
+        return false;
+    const SignedWide distance_numerator =
+        wide_absolute(exact_cross(line.integer_start, line.integer_end, arc.integer_center));
+    const SignedWide expected = wide_multiply(static_cast<std::int64_t>(arc.integer_radius),
+                                              static_cast<std::int64_t>(length));
+    return wide_compare(distance_numerator, expected) == 0;
+}
+
+enum class CertifiedCircleRelation : std::uint8_t
+{
+    unavailable,
+    disjoint,
+    tangent,
+    intersecting,
+    coincident,
+};
+
+CertifiedCircleRelation certified_circle_relation(const AnalyticAtomicCurveNm& left,
+                                                  const AnalyticAtomicCurveNm& right) noexcept
+{
+    if (!left.has_integer_certificate || !right.has_integer_certificate ||
+        !left.has_integer_radius_certificate || !right.has_integer_radius_certificate)
+        return CertifiedCircleRelation::unavailable;
+    const SignedWide distance_squared =
+        exact_squared_distance(left.integer_center, right.integer_center);
+    const std::uint64_t radius_sum = left.integer_radius + right.integer_radius;
+    const std::uint64_t radius_difference = left.integer_radius > right.integer_radius
+                                                ? left.integer_radius - right.integer_radius
+                                                : right.integer_radius - left.integer_radius;
+    const SignedWide sum_squared =
+        wide_multiply(static_cast<std::int64_t>(radius_sum), static_cast<std::int64_t>(radius_sum));
+    const SignedWide difference_squared = wide_multiply(
+        static_cast<std::int64_t>(radius_difference), static_cast<std::int64_t>(radius_difference));
+    if (wide_sign(distance_squared) == 0)
+        return radius_difference == 0 ? CertifiedCircleRelation::coincident
+                                      : CertifiedCircleRelation::disjoint;
+    const int external = wide_compare(distance_squared, sum_squared);
+    const int internal = wide_compare(distance_squared, difference_squared);
+    if (external > 0 || internal < 0)
+        return CertifiedCircleRelation::disjoint;
+    if (external == 0 || internal == 0)
+        return CertifiedCircleRelation::tangent;
+    return CertifiedCircleRelation::intersecting;
+}
+
 bool same_point(AnalyticIntegerPointNm left, AnalyticIntegerPointNm right) noexcept
 {
     return left.x == right.x && left.y == right.y;
@@ -326,17 +410,17 @@ bool coordinate_in_span(AnalyticCoordinateIntervalNm value) noexcept
            value.upper <= static_cast<double>(kLocalCoordinateSpanNm);
 }
 
-bool interval_contains(AnalyticCoordinateIntervalNm interval, std::int64_t value) noexcept
+bool interval_equals_integer(AnalyticCoordinateIntervalNm interval, std::int64_t value) noexcept
 {
     const double converted = static_cast<double>(value);
-    return interval.lower <= converted && converted <= interval.upper;
+    return interval.lower == converted && interval.upper == converted;
 }
 
-bool point_contains_certificate(AnalyticFilteredPointNm point_value,
-                                AnalyticIntegerPointNm certificate) noexcept
+bool point_equals_certificate(AnalyticFilteredPointNm point_value,
+                              AnalyticIntegerPointNm certificate) noexcept
 {
-    return interval_contains(point_value.x, certificate.x) &&
-           interval_contains(point_value.y, certificate.y);
+    return interval_equals_integer(point_value.x, certificate.x) &&
+           interval_equals_integer(point_value.y, certificate.y);
 }
 
 Interval absolute(Interval value) noexcept
@@ -364,7 +448,7 @@ bool scalar_interval_fits_resolution(Interval value) noexcept
            static_cast<double>(kAnalyticTopologyResolutionNm);
 }
 
-bool valid_curve(const AnalyticAtomicCurveNm& curve) noexcept
+bool valid_common_curve(const AnalyticAtomicCurveNm& curve) noexcept
 {
     if (curve.curve_index == 0 || !coordinate_in_span(curve.start.x) ||
         !coordinate_in_span(curve.start.y) || !coordinate_in_span(curve.end.x) ||
@@ -375,45 +459,55 @@ bool valid_curve(const AnalyticAtomicCurveNm& curve) noexcept
     const Point end = point(curve.end);
     if (dot(subtract(end, start), subtract(end, start)).lower <= 0.0)
         return false;
-    if (curve.has_integer_certificate &&
-        (!coordinate_in_span(curve.integer_start.x) || !coordinate_in_span(curve.integer_start.y) ||
-         !coordinate_in_span(curve.integer_end.x) || !coordinate_in_span(curve.integer_end.y) ||
-         same_point(curve.integer_start, curve.integer_end) ||
-         !point_contains_certificate(curve.start, curve.integer_start) ||
-         !point_contains_certificate(curve.end, curve.integer_end)))
+    if (!curve.has_integer_certificate)
+        return !curve.has_integer_radius_certificate;
+    return coordinate_in_span(curve.integer_start.x) && coordinate_in_span(curve.integer_start.y) &&
+           coordinate_in_span(curve.integer_end.x) && coordinate_in_span(curve.integer_end.y) &&
+           !same_point(curve.integer_start, curve.integer_end) &&
+           point_equals_certificate(curve.start, curve.integer_start) &&
+           point_equals_certificate(curve.end, curve.integer_end);
+}
+
+bool valid_arc_certificate(const AnalyticAtomicCurveNm& curve, Interval start_radius,
+                           Interval end_radius) noexcept
+{
+    if (!curve.has_integer_certificate)
+        return !curve.has_integer_radius_certificate;
+    if (!coordinate_in_span(curve.integer_center.x) ||
+        !coordinate_in_span(curve.integer_center.y) ||
+        !point_equals_certificate(curve.circle.center, curve.integer_center))
         return false;
-    if (curve.kind == AnalyticAtomicCurveKind::line)
-        return true;
-    if (curve.kind != AnalyticAtomicCurveKind::circular_arc ||
-        !coordinate_in_span(curve.circle.center.x) || !coordinate_in_span(curve.circle.center.y) ||
-        !point_interval_fits_resolution(point(curve.circle.center)) ||
-        !std::isfinite(curve.circle.radius.lower) || !std::isfinite(curve.circle.radius.upper) ||
-        curve.circle.radius.lower <= 0.0 || curve.circle.radius.lower > curve.circle.radius.upper ||
-        curve.circle.radius.upper > static_cast<double>(kLocalCoordinateSpanNm) ||
-        !scalar_interval_fits_resolution({curve.circle.radius.lower, curve.circle.radius.upper}))
-        return false;
-    const Point center = point(curve.circle.center);
     const Interval radius = {curve.circle.radius.lower, curve.circle.radius.upper};
-    const Interval start_radius =
-        square_root(dot(subtract(start, center), subtract(start, center)));
-    const Interval end_radius = square_root(dot(subtract(end, center), subtract(end, center)));
-    const double common_radius_lower =
-        std::max({radius.lower, start_radius.lower, end_radius.lower});
-    const double common_radius_upper =
-        std::min({radius.upper, start_radius.upper, end_radius.upper});
-    if (common_radius_lower > common_radius_upper)
+    const SignedWide start_squared =
+        exact_squared_distance(curve.integer_start, curve.integer_center);
+    if (wide_compare(start_squared,
+                     exact_squared_distance(curve.integer_end, curve.integer_center)) != 0)
         return false;
+    if (curve.has_integer_radius_certificate)
+    {
+        if (curve.integer_radius == 0 ||
+            curve.integer_radius > static_cast<std::uint64_t>(kLocalCoordinateSpanNm) ||
+            wide_compare(start_squared,
+                         wide_multiply(static_cast<std::int64_t>(curve.integer_radius),
+                                       static_cast<std::int64_t>(curve.integer_radius))) != 0)
+            return false;
+        const double certified_radius = static_cast<double>(curve.integer_radius);
+        if (radius.lower > certified_radius || radius.upper < certified_radius)
+            return false;
+    }
+    else if (radius.lower > start_radius.lower || radius.upper < start_radius.upper ||
+             radius.lower > end_radius.lower || radius.upper < end_radius.upper)
+        return false;
+    return true;
+}
+
+bool valid_arc_sweep(const AnalyticAtomicCurveNm& curve, Point start, Point end,
+                     Point center) noexcept
+{
+    if (curve.has_arc_sweep_certificate)
+        return true;
     if (curve.has_integer_certificate)
     {
-        if (!coordinate_in_span(curve.integer_center.x) ||
-            !coordinate_in_span(curve.integer_center.y) ||
-            !point_contains_certificate(curve.circle.center, curve.integer_center))
-            return false;
-        const SignedWide start_squared =
-            exact_squared_distance(curve.integer_start, curve.integer_center);
-        if (wide_compare(start_squared,
-                         exact_squared_distance(curve.integer_end, curve.integer_center)) != 0)
-            return false;
         int orientation =
             wide_sign(exact_cross(curve.integer_center, curve.integer_start, curve.integer_end));
         if (!curve.counterclockwise)
@@ -433,6 +527,34 @@ bool valid_curve(const AnalyticAtomicCurveNm& curve) noexcept
         return true;
     const Interval endpoint_dot = dot(subtract(start, center), subtract(end, center));
     return singleton(orientation) && orientation.lower == 0.0 && endpoint_dot.upper < 0.0;
+}
+
+bool valid_curve(const AnalyticAtomicCurveNm& curve) noexcept
+{
+    if (!valid_common_curve(curve))
+        return false;
+    if (curve.kind == AnalyticAtomicCurveKind::line)
+        return !curve.has_arc_sweep_certificate;
+    if (curve.kind != AnalyticAtomicCurveKind::circular_arc ||
+        !coordinate_in_span(curve.circle.center.x) || !coordinate_in_span(curve.circle.center.y) ||
+        !point_interval_fits_resolution(point(curve.circle.center)) ||
+        !std::isfinite(curve.circle.radius.lower) || !std::isfinite(curve.circle.radius.upper) ||
+        curve.circle.radius.lower <= 0.0 || curve.circle.radius.lower > curve.circle.radius.upper ||
+        curve.circle.radius.upper > static_cast<double>(kLocalCoordinateSpanNm) ||
+        !scalar_interval_fits_resolution({curve.circle.radius.lower, curve.circle.radius.upper}))
+        return false;
+    const Point start = point(curve.start);
+    const Point end = point(curve.end);
+    const Point center = point(curve.circle.center);
+    const Interval radius = {curve.circle.radius.lower, curve.circle.radius.upper};
+    const Interval start_radius =
+        square_root(dot(subtract(start, center), subtract(start, center)));
+    const Interval end_radius = square_root(dot(subtract(end, center), subtract(end, center)));
+    if (std::max({radius.lower, start_radius.lower, end_radius.lower}) >
+        std::min({radius.upper, start_radius.upper, end_radius.upper}))
+        return false;
+    return valid_arc_certificate(curve, start_radius, end_radius) &&
+           valid_arc_sweep(curve, start, end, center);
 }
 
 bool charge_predicate(AnalyticNarrowPhaseTelemetry& telemetry, const AnalyticSolverLimits& limits,
@@ -636,6 +758,16 @@ PairWork intersect_lines(const AnalyticAtomicCurveNm& left, const AnalyticAtomic
         work.uncertain = true;
         return work;
     }
+    if (left.construction_carrier_id != 0 &&
+        left.construction_carrier_id == right.construction_carrier_id)
+    {
+        work.value.relation = AnalyticPairRelation::coincident;
+        return work;
+    }
+    if (left.construction_carrier_id != 0 && right.construction_carrier_id != 0 &&
+        left.construction_family_id != 0 &&
+        left.construction_family_id == right.construction_family_id)
+        return work;
     if (left.has_integer_certificate && right.has_integer_certificate)
     {
         const AnalyticIntegerPointNm left_direction{
@@ -684,6 +816,13 @@ PairWork intersect_lines(const AnalyticAtomicCurveNm& left, const AnalyticAtomic
     const Interval denominator = cross(left_direction, right_direction);
     if (denominator.lower <= 0.0 && denominator.upper >= 0.0)
     {
+        const Interval same_domain = cross(offset, left_direction);
+        if (singleton(denominator) && denominator.lower == 0.0 && singleton(same_domain))
+        {
+            if (same_domain.lower == 0.0)
+                work.value.relation = AnalyticPairRelation::coincident;
+            return work;
+        }
         work.uncertain = true;
         return work;
     }
@@ -717,20 +856,26 @@ PairWork intersect_line_circle(const AnalyticAtomicCurveNm& line, const Analytic
     if (height_squared.upper < 0.0)
         return work;
 
-    if (height_squared.lower <= 0.0)
+    const bool certified_tangent = certified_line_circle_tangent(line, arc);
+    if (certified_tangent || height_squared.lower <= 0.0)
     {
-        const bool exact_tangent = height_squared.lower == 0.0 && height_squared.upper == 0.0;
+        const bool exact_tangent =
+            certified_tangent || (height_squared.lower == 0.0 && height_squared.upper == 0.0);
         const double maximum_height = measured_square_root(height_squared, telemetry).upper;
-        if (maximum_height > static_cast<double>(kAnalyticTopologyResolutionNm) ||
+        if ((!exact_tangent &&
+             2.0 * maximum_height > static_cast<double>(kAnalyticTopologyResolutionNm)) ||
             !circle_boundary_within_resolution(base, arc.circle, telemetry))
         {
             work.uncertain = true;
             return work;
         }
-        work.value.resolution_collapsed = !exact_tangent;
-        if (exact_tangent)
-            ++telemetry.tangent_contacts;
         retain_point(work, base, line, arc, telemetry, limits);
+        if (work.value.point_count != 0)
+        {
+            work.value.resolution_collapsed = !exact_tangent;
+            if (exact_tangent)
+                ++telemetry.tangent_contacts;
+        }
         finish_relation(work);
         return work;
     }
@@ -746,8 +891,9 @@ PairWork intersect_line_circle(const AnalyticAtomicCurveNm& line, const Analytic
             work.uncertain = true;
             return work;
         }
-        work.value.resolution_collapsed = true;
         retain_point(work, base, line, arc, telemetry, limits);
+        if (work.value.point_count != 0)
+            work.value.resolution_collapsed = true;
     }
     else
     {
@@ -774,22 +920,37 @@ PairWork intersect_circles(const AnalyticAtomicCurveNm& left, const AnalyticAtom
     const Interval distance_squared = dot(center_delta, center_delta);
     const Interval left_radius = {left.circle.radius.lower, left.circle.radius.upper};
     const Interval right_radius = {right.circle.radius.lower, right.circle.radius.upper};
-    if (left.has_integer_certificate && right.has_integer_certificate &&
-        same_point(left.integer_center, right.integer_center))
+    if (left.construction_carrier_id != 0 &&
+        left.construction_carrier_id == right.construction_carrier_id)
     {
-        work.value.relation =
-            wide_compare(exact_squared_distance(left.integer_start, left.integer_center),
-                         exact_squared_distance(right.integer_start, right.integer_center)) == 0
-                ? AnalyticPairRelation::coincident
-                : AnalyticPairRelation::disjoint;
+        work.value.relation = AnalyticPairRelation::coincident;
         return work;
     }
+    if (left.construction_carrier_id != 0 && right.construction_carrier_id != 0 &&
+        left.construction_family_id != 0 &&
+        left.construction_family_id == right.construction_family_id)
+        return work;
+    const CertifiedCircleRelation certified_relation = certified_circle_relation(left, right);
+    if (certified_relation == CertifiedCircleRelation::coincident)
+    {
+        work.value.relation = AnalyticPairRelation::coincident;
+        return work;
+    }
+    if (certified_relation == CertifiedCircleRelation::disjoint)
+        return work;
     if (distance_squared.lower <= 0.0)
     {
-        if (distance_squared.upper == 0.0 && left_radius.upper < right_radius.lower)
-            return work;
-        if (distance_squared.upper == 0.0 && right_radius.upper < left_radius.lower)
-            return work;
+        if (distance_squared.upper == 0.0)
+        {
+            if (singleton(left_radius) && singleton(right_radius) &&
+                left_radius.lower == right_radius.lower)
+            {
+                work.value.relation = AnalyticPairRelation::coincident;
+                return work;
+            }
+            if (left_radius.upper < right_radius.lower || right_radius.upper < left_radius.lower)
+                return work;
+        }
         work.uncertain = true;
         return work;
     }
@@ -806,12 +967,13 @@ PairWork intersect_circles(const AnalyticAtomicCurveNm& left, const AnalyticAtom
     const Point base = add(first_center, scale(center_delta, along));
     const Interval height_squared =
         subtract(left_radius_squared, multiply(square(along), distance_squared));
-    const bool exact_tangent = height_squared.lower == 0.0 && height_squared.upper == 0.0;
+    const bool exact_tangent = certified_relation == CertifiedCircleRelation::tangent ||
+                               (height_squared.lower == 0.0 && height_squared.upper == 0.0);
     if (exact_tangent || height_squared.lower <= 0.0)
     {
         const double maximum_height = measured_square_root(height_squared, telemetry).upper;
         if ((!exact_tangent &&
-             (maximum_height > static_cast<double>(kAnalyticTopologyResolutionNm) ||
+             (2.0 * maximum_height > static_cast<double>(kAnalyticTopologyResolutionNm) ||
               !circle_separation_within_resolution(distance, left_radius, right_radius))) ||
             !circle_boundary_within_resolution(base, left.circle, telemetry) ||
             !circle_boundary_within_resolution(base, right.circle, telemetry))
@@ -819,10 +981,13 @@ PairWork intersect_circles(const AnalyticAtomicCurveNm& left, const AnalyticAtom
             work.uncertain = true;
             return work;
         }
-        work.value.resolution_collapsed = !exact_tangent;
-        if (exact_tangent)
-            ++telemetry.tangent_contacts;
         retain_point(work, base, left, right, telemetry, limits);
+        if (work.value.point_count != 0)
+        {
+            work.value.resolution_collapsed = !exact_tangent;
+            if (exact_tangent)
+                ++telemetry.tangent_contacts;
+        }
         finish_relation(work);
         return work;
     }
@@ -839,8 +1004,9 @@ PairWork intersect_circles(const AnalyticAtomicCurveNm& left, const AnalyticAtom
             work.uncertain = true;
             return work;
         }
-        work.value.resolution_collapsed = true;
         retain_point(work, base, left, right, telemetry, limits);
+        if (work.value.point_count != 0)
+            work.value.resolution_collapsed = true;
     }
     else
     {

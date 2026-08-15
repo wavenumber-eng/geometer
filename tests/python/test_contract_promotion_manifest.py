@@ -682,7 +682,7 @@ def test_filtered_solver_foundation_is_bounded_non_algebraic_and_not_dispatched(
         "narrow_phase_header": "src/cpp/lib/geometer/analytic_curve_narrow_phase.h",
         "narrow_phase_source": "src/cpp/lib/analytic_curve_narrow_phase.cpp",
         "narrow_phase_policy": "canonical_candidate_pairs_only_constant_work_per_pair",
-        "narrow_phase_input": "job_local_filtered_nm_line_and_arc_carriers_with_optional_integer_certificates",
+        "narrow_phase_input": "job_local_filtered_nm_line_and_arc_carriers_with_validated_integer_and_construction_certificates",
         "narrow_phase_uncertain_policy": "job_local_resource_limit_exceeded",
         "narrow_phase_pair_logical_bytes": 256,
         "narrow_phase_parity_validator": "scripts/validate_analytic_filtered_core_parity.py",

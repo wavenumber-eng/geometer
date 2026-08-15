@@ -820,6 +820,20 @@ Geometer proposal, not the original consumer packet.
   avoidable quadratic scan. Production operation dispatch remains disabled
   until the narrow phase, arrangement, normalization, parity, and performance
   gates land.
+- The reuse checkpoint selected a direct focused C++17 narrow phase rather than
+  importing Cavalier Contours. Cavalier remains cited algorithmic prior art and
+  a possible differential oracle: its useful carrier math is small, but its
+  decisive tolerance and whole-contour classification behavior would need
+  replacement, while adopting it would add a Rust/FFI/WASM build surface.
+- The candidate-driven integer-carrier narrow phase is now implemented for
+  finite line/line, line/circle, and circle/circle pairs. It uses portable
+  fixed-wide integer signs for bounded exact classifications, FMA-verified
+  outward coordinate intervals, trig-free arc domains, canonical pair/point
+  ordering, fixed logical memory charges, predicate/intersection telemetry,
+  and exact 49/50/51 nm endpoint-resolution tests. It never generates its own
+  pair cross product. Same-domain span partitioning, filtered non-integral
+  capsule/swept-path lowering, arrangement insertion, face classification,
+  final normalization, and dispatch remain pending.
 - Before filtered operation dispatch is enabled, move the retained native
   exact/oracle sources out of the normal `geometer_lib` source list into an
   explicit feasibility-oracle target, matching the separation already used by

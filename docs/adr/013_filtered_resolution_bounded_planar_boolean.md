@@ -60,6 +60,17 @@ engine.
   telemetry, and include sparse 1x/2x scaling tests. A genuinely dense output
   may require quadratic work in its reported examined-pair count; it must terminate
   at a job-local budget instead of degrading without a bound.
+- The narrow phase is a focused Geometer-owned C++17 module. It consumes only
+  canonical pairs supplied by the broad phase and performs constant carrier
+  and finite-domain work for each pair; it has no internal all-curves loop,
+  winding classifier, arrangement traversal, or dependency on OCCT, Rust, or
+  the algebraic backend. Line-line parallelism, collinearity, circle
+  separation, tangency, and integer arc validity use portable fixed-width
+  wide-integer signs where their bounded integer inputs make that sufficient.
+  Constructed coordinates use outward interval operations, and a square-root
+  enclosure is accepted only after an FMA residual verifies both endpoints.
+  Any point interval or resolution collapse that cannot prove the 50 nm
+  displacement bound fails the isolated job.
 - Solver resource limits are supplied through one internal limits value object
   rather than scattered production constants. The catalog values are governed
   hard ceilings; a host may advertise and enforce lower effective limits, and
@@ -117,7 +128,14 @@ Production dispatch remains disabled during that work.
   issue 18; adding a Rust production kernel would require a separate approved
   architecture decision. If adaptation requires replacing the upstream
   predicates, classifier, stitcher, and lineage flow, retain it only as a
-  differential oracle/reference.
+  differential oracle/reference. The bounded follow-up compared upstream
+  commit `8f0b85739d65a12128200f3d064f41547b76244c`: its maintained Rust core and
+  C FFI are about 12,194 and 2,420 lines respectively, while the three carrier
+  intersection modules are only about 460 lines and still use caller epsilon
+  rather than outward certification. The superseded C++ implementation has
+  the same fuzzy-threshold issue. Importing either implementation would add
+  more integration and replacement work than the focused governed kernel, so
+  production adopts the direct C++ module and cites Cavalier only as prior art.
 - **Keep exact algebraic evaluation primary.** Rejected because its complexity
   and resource behavior do not match the speed-first product requirement.
 - **Only raise algebraic memory limits or loosen the old Hausdorff check.**

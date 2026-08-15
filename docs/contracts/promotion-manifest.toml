@@ -111,7 +111,7 @@ catalog_identity = "wn.geometer.contract_catalog"
 catalog_generation = "a0"
 
 [analytic_filtered_solver]
-status = "implemented_foundation_not_dispatched"
+status = "implemented_broad_and_narrow_phase_not_dispatched"
 design = "docs/adr/013_filtered_resolution_bounded_planar_boolean.md"
 coordinate_grid_nm = 1
 topology_resolution_nm = 50
@@ -128,6 +128,15 @@ interval_index_header = "src/cpp/lib/analytic_interval_index.h"
 interval_index_source = "src/cpp/lib/analytic_interval_index.cpp"
 foundation_test = "tests/cpp/analytic_filtered_core_test.cpp"
 broad_phase_policy = "deterministic_sparser_axis_sweep_with_secondary_interval_index"
+narrow_phase_header = "src/cpp/lib/geometer/analytic_curve_narrow_phase.h"
+narrow_phase_source = "src/cpp/lib/analytic_curve_narrow_phase.cpp"
+narrow_phase_policy = "canonical_candidate_pairs_only_constant_work_per_pair"
+narrow_phase_input = "job_local_integer_nm_line_and_arc_carriers"
+narrow_phase_uncertain_policy = "job_local_resource_limit_exceeded"
+narrow_phase_pair_logical_bytes = 256
+narrow_phase_parity_validator = "scripts/validate_analytic_filtered_core_parity.py"
+narrow_phase_vector_bytes = 192
+narrow_phase_vector_sha256 = "29b8ee0aafa7194d072a0d98ee14eb0d86373ae8b71dc50ecfe785583d4e9f92"
 
 [analytic_exact_backend]
 status = "implemented_non_primary_oracle"
@@ -821,15 +830,15 @@ solver_numeric_status = "reopened_filtered_50nm"
 named_consumer = "appz.data_models.pcb.matz"
 compatibility_snapshot = "docs/contracts/compatibility/data-models-geom-a0-2026-08-12.toml"
 design = "docs/design/analytic-planar-boolean-a0.md"
-design_sha256 = "7f5e6951795e42d5a767a64fb92c58cfa5981d4a054d0d3979a0ccc46cfaaeaf"
+design_sha256 = "68c6e88c2be75c419b70fad673cd2068d1f56798522e344b6e2b9c90026c1952"
 packet_spec = "docs/design/analytic-planar-boolean-packet-a0.md"
 packet_spec_sha256 = "5fb82f495b17b1c47536d6c0ade77aa3183bc6b7f342f70013c462fcaf469856"
 numeric_catalog = "docs/contracts/analytic-planar-boolean-a0-catalog.toml"
 numeric_catalog_sha256 = "f0b52ef8a032dcf47d2083b1f843aeeb791d4bc477a36b10c8c590474d47db7e"
 solver_adr = "docs/adr/013_filtered_resolution_bounded_planar_boolean.md"
-solver_adr_sha256 = "7b5e2237d853fcdbad04548d760c3df69af0858fd85c3d6c009a81529a1eb046"
+solver_adr_sha256 = "9cae6b6fe1048c4be8342af1f062edb52d44aab7327c9ba59f0474062a584d68"
 superseded_solver_adr = "docs/adr/012_exact_analytic_planar_boolean_arrangement.md"
-filtered_solver_foundation = "implemented_not_dispatched"
+filtered_solver_foundation = "broad_and_narrow_phase_implemented_not_dispatched"
 feasibility_test = "tests/cpp/analytic_planar_boolean_feasibility_test.cpp"
 portable_fixture = "tests/fixtures/analytic_planar_boolean/matz_observations_a0.json"
 candidate_typespec_entrypoint = "src/tsp/geometer/analytic-candidate.tsp"

@@ -414,7 +414,7 @@ def test_manifest_promoted_and_candidate_surfaces_are_complete() -> None:
     candidate = candidates[0]
     assert candidate["status"] == "contract_frozen"
     assert candidate["solver_numeric_status"] == "reopened_filtered_50nm"
-    assert candidate["filtered_solver_foundation"] == "implemented_not_dispatched"
+    assert candidate["filtered_solver_foundation"] == ("broad_and_narrow_phase_implemented_not_dispatched")
     assert candidate["request_contract"] == "geometry.analytic_planar_boolean_batch.request.a0"
     assert candidate["result_contract"] == "geometry.analytic_planar_boolean_batch.result.a0"
     assert candidate["request_contract"] in contract_ids
@@ -662,7 +662,7 @@ def test_exact_algebraic_backend_is_governed_and_non_primary() -> None:
 def test_filtered_solver_foundation_is_bounded_non_algebraic_and_not_dispatched() -> None:
     solver = _manifest()["analytic_filtered_solver"]
     assert solver == {
-        "status": "implemented_foundation_not_dispatched",
+        "status": "implemented_broad_and_narrow_phase_not_dispatched",
         "design": "docs/adr/013_filtered_resolution_bounded_planar_boolean.md",
         "coordinate_grid_nm": 1,
         "topology_resolution_nm": 50,
@@ -679,6 +679,15 @@ def test_filtered_solver_foundation_is_bounded_non_algebraic_and_not_dispatched(
         "interval_index_source": "src/cpp/lib/analytic_interval_index.cpp",
         "foundation_test": "tests/cpp/analytic_filtered_core_test.cpp",
         "broad_phase_policy": "deterministic_sparser_axis_sweep_with_secondary_interval_index",
+        "narrow_phase_header": "src/cpp/lib/geometer/analytic_curve_narrow_phase.h",
+        "narrow_phase_source": "src/cpp/lib/analytic_curve_narrow_phase.cpp",
+        "narrow_phase_policy": "canonical_candidate_pairs_only_constant_work_per_pair",
+        "narrow_phase_input": "job_local_integer_nm_line_and_arc_carriers",
+        "narrow_phase_uncertain_policy": "job_local_resource_limit_exceeded",
+        "narrow_phase_pair_logical_bytes": 256,
+        "narrow_phase_parity_validator": "scripts/validate_analytic_filtered_core_parity.py",
+        "narrow_phase_vector_bytes": 192,
+        "narrow_phase_vector_sha256": ("29b8ee0aafa7194d072a0d98ee14eb0d86373ae8b71dc50ecfe785583d4e9f92"),
     }
     implementation_paths = [
         solver[key]
@@ -691,6 +700,8 @@ def test_filtered_solver_foundation_is_bounded_non_algebraic_and_not_dispatched(
             "broad_phase_source",
             "interval_index_header",
             "interval_index_source",
+            "narrow_phase_header",
+            "narrow_phase_source",
         )
     ]
     for relative_path in implementation_paths:
@@ -698,7 +709,7 @@ def test_filtered_solver_foundation_is_bounded_non_algebraic_and_not_dispatched(
         assert "boost::" not in source
         assert "multiprecision" not in source
         assert "geometer/exact" not in source
-    assert all((ROOT / solver[key]).is_file() for key in ("design", "foundation_test"))
+    assert all((ROOT / solver[key]).is_file() for key in ("design", "foundation_test", "narrow_phase_parity_validator"))
 
 
 def test_exact_algebraic_backend_paths_exist() -> None:

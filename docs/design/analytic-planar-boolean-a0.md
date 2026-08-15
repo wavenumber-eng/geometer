@@ -297,6 +297,26 @@ from the fast path only when its error interval proves the relevant side of the
 slow path or fails the isolated job. It must never silently choose a topology
 from an unchecked epsilon.
 
+The implemented narrow-phase boundary is candidate-driven: it accepts a
+strictly canonical curve table and only the pairs emitted by the broad phase.
+It does not enumerate pairs, classify faces, run winding tests, or stitch
+fragments. Each supplied pair performs bounded line-line, line-circle, or
+circle-circle carrier construction followed by trig-free segment/arc-domain
+tests. Ordinary irrational circle crossings remain small binary64 coordinate
+intervals; they do not construct algebraic roots. Exact integer signs decide
+bounded parallel/collinear, circle separation/tangency, and authored arc
+validity cases. Square-root endpoints are adjusted outward until FMA residuals
+verify the enclosure. A result interval wider than the 50 nm publication
+radius, an unprovable domain decision, or an unprovable resolution collapse
+returns the job-local resource failure with algebraic fallback still at zero.
+
+This first narrow-phase slice accepts job-local integer line/arc carriers,
+which covers authored polygon, disk, annulus, and lattice-coherent arc
+boundaries. Filtered lowering of non-integral capsule and swept-path offsets is
+owned by the next lowering/arrangement slice. Coincident carriers are reported
+without partitioning finite overlap spans; the indexed same-domain overlay
+stage owns that partition so no pair kernel grows a hidden global scan.
+
 Coincident or near-coincident carriers are overlaid into deterministic atomic
 intervals. Each group uses the lexicographically least complete source tuple as
 its carrier key; no OCCT identity, allocation order, algebraic expression-DAG

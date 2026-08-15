@@ -204,6 +204,17 @@ else()
 endif()
 add_test(NAME geometer_exact_source_sets_test COMMAND geometer_exact_source_sets_test)
 
+add_executable(geometer_analytic_request_packet_test
+               analytic_request_packet_test.cpp)
+if(EMSCRIPTEN)
+    target_link_libraries(geometer_analytic_request_packet_test
+                          PRIVATE geometer_exact_feasibility)
+else()
+    target_link_libraries(geometer_analytic_request_packet_test PRIVATE geometer_lib)
+endif()
+add_test(NAME geometer_analytic_request_packet_test
+         COMMAND geometer_analytic_request_packet_test)
+
 add_executable(geometer_analytic_result_packet_layout_test
                analytic_result_packet_layout_test.cpp)
 if(EMSCRIPTEN)
@@ -325,6 +336,7 @@ if(EMSCRIPTEN)
         geometer_exact_boolean_lineage_matrix_test
         geometer_exact_result_normalization_test
         geometer_exact_source_sets_test
+        geometer_analytic_request_packet_test
         geometer_analytic_result_packet_layout_test
         geometer_analytic_result_packet_records_test
         geometer_analytic_result_packet_topology_test
@@ -374,6 +386,8 @@ if(EMSCRIPTEN)
     target_link_options(geometer_exact_result_normalization_test PRIVATE -fexceptions)
     target_compile_options(geometer_exact_source_sets_test PRIVATE -fexceptions)
     target_link_options(geometer_exact_source_sets_test PRIVATE -fexceptions)
+    target_compile_options(geometer_analytic_request_packet_test PRIVATE -fexceptions)
+    target_link_options(geometer_analytic_request_packet_test PRIVATE -fexceptions)
     target_compile_options(geometer_analytic_result_packet_layout_test PRIVATE -fexceptions)
     target_link_options(geometer_analytic_result_packet_layout_test PRIVATE -fexceptions)
     target_compile_options(geometer_analytic_result_packet_records_test PRIVATE -fexceptions)

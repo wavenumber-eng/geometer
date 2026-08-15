@@ -1,4 +1,5 @@
 set(GEOMETER_LIB_SOURCES
+    analytic_request_packet.cpp
     analytic_result_packet_canonical.cpp
     analytic_result_packet_layout.cpp
     analytic_result_packet_records.cpp
@@ -33,6 +34,7 @@ set(GEOMETER_LIB_SOURCES
 )
 
 set(GEOMETER_EXACT_SOURCES
+    analytic_request_packet.cpp
     analytic_result_packet_canonical.cpp
     analytic_result_packet_layout.cpp
     analytic_result_packet_records.cpp

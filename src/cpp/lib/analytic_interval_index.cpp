@@ -16,16 +16,19 @@ bool key_less(double left_minimum, std::uint32_t left_index, double right_minimu
 } // namespace
 
 AnalyticIntervalIndex::AnalyticIntervalIndex(std::size_t capacity)
+    : nodes_(capacity == 0 ? nullptr : std::make_unique<Node[]>(capacity)), capacity_(capacity)
 {
-    nodes_.reserve(capacity);
 }
 
-void AnalyticIntervalIndex::insert(double minimum, double maximum, std::size_t payload,
+bool AnalyticIntervalIndex::insert(double minimum, double maximum, std::size_t payload,
                                    std::uint32_t curve_index)
 {
-    const std::size_t inserted = nodes_.size();
-    nodes_.push_back({minimum, maximum, maximum, payload, npos, npos, curve_index, 1});
+    if (size_ == capacity_)
+        return false;
+    const std::size_t inserted = size_++;
+    nodes_[inserted] = {minimum, maximum, maximum, payload, npos, npos, curve_index, 1};
     root_ = insert_node(root_, inserted);
+    return true;
 }
 
 void AnalyticIntervalIndex::erase(double minimum, std::uint32_t curve_index)

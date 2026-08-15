@@ -8,7 +8,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <limits>
-#include <queue>
+#include <memory>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -34,6 +34,13 @@ struct ExpiryLater
                std::tie(right.primary_maximum, right.curve_index);
     }
 };
+
+constexpr std::uint64_t kCanonicalOrderSlotBytes = 8;
+constexpr std::uint64_t kCanonicalExpiryEntryBytes = 32;
+static_assert(sizeof(std::size_t) <= kCanonicalOrderSlotBytes,
+              "size_t exceeds the governed canonical memory charge");
+static_assert(sizeof(ExpiryEntry) <= kCanonicalExpiryEntryBytes,
+              "expiry entry exceeds the governed canonical memory charge");
 
 bool valid_bounds(const AnalyticCurveBoundsNm& bounds)
 {
@@ -131,9 +138,9 @@ std::uint64_t sum_bytes(std::initializer_list<std::uint64_t> values)
 
 std::uint64_t sweep_base_bytes(std::size_t count)
 {
-    return sum_bytes({bytes_for(count, sizeof(std::size_t)),
-                      detail::AnalyticIntervalIndex::storage_bytes(count),
-                      bytes_for(count, sizeof(ExpiryEntry))});
+    return sum_bytes({bytes_for(count, kCanonicalOrderSlotBytes),
+                      detail::AnalyticIntervalIndex::canonical_storage_bytes(count),
+                      bytes_for(count, kCanonicalExpiryEntryBytes)});
 }
 
 std::uint64_t pair_phase_bytes(std::uint64_t base, std::size_t pair_capacity,
@@ -216,7 +223,7 @@ build_analytic_curve_candidates(const std::vector<AnalyticCurveBoundsNm>& bounds
 
     const std::uint64_t validation_memory = bytes_for(bounds.size(), sizeof(std::uint32_t));
     const std::uint64_t preindex_memory =
-        sum_bytes({bytes_for(bounds.size(), 2 * sizeof(std::size_t)),
+        sum_bytes({bytes_for(bounds.size(), 2 * kCanonicalOrderSlotBytes),
                    bytes_for(bounds.size(), sizeof(double))});
     const std::uint64_t base_sweep_memory = sweep_base_bytes(bounds.size());
     const std::uint64_t base_memory =
@@ -252,17 +259,19 @@ build_analytic_curve_candidates(const std::vector<AnalyticCurveBoundsNm>& bounds
     const std::uint8_t secondary_axis = telemetry.primary_axis == 0 ? 1 : 0;
 
     detail::AnalyticIntervalIndex secondary_index(bounds.size());
-    std::priority_queue<ExpiryEntry, std::vector<ExpiryEntry>, ExpiryLater> expiry;
+    std::unique_ptr<ExpiryEntry[]> expiry =
+        bounds.empty() ? nullptr : std::make_unique<ExpiryEntry[]>(bounds.size());
+    std::size_t expiry_size = 0;
     std::vector<AnalyticCurvePair> pairs;
     for (const std::size_t current_index : order)
     {
         const AnalyticCurveBoundsNm& current = bounds[current_index];
         const double primary_query_minimum =
             conservative_query_minimum(axis_min(current, telemetry.primary_axis));
-        while (!expiry.empty() && expiry.top().primary_maximum < primary_query_minimum)
+        while (expiry_size != 0 && expiry[0].primary_maximum < primary_query_minimum)
         {
-            const ExpiryEntry expired = expiry.top();
-            expiry.pop();
+            std::pop_heap(expiry.get(), expiry.get() + expiry_size, ExpiryLater{});
+            const ExpiryEntry expired = expiry[--expiry_size];
             secondary_index.erase(expired.secondary_minimum, expired.curve_index);
         }
 
@@ -285,10 +294,14 @@ build_analytic_curve_candidates(const std::vector<AnalyticCurveBoundsNm>& bounds
         if (!query_completed)
             return failure(AnalyticBroadPhaseError::resource_limit_exceeded, telemetry);
 
-        secondary_index.insert(axis_min(current, secondary_axis), axis_max(current, secondary_axis),
-                               current_index, current.curve_index);
-        expiry.push({axis_max(current, telemetry.primary_axis), axis_min(current, secondary_axis),
-                     current_index, current.curve_index});
+        if (!secondary_index.insert(axis_min(current, secondary_axis),
+                                    axis_max(current, secondary_axis), current_index,
+                                    current.curve_index))
+            return failure(AnalyticBroadPhaseError::resource_limit_exceeded, telemetry);
+        expiry[expiry_size++] = {axis_max(current, telemetry.primary_axis),
+                                 axis_min(current, secondary_axis), current_index,
+                                 current.curve_index};
+        std::push_heap(expiry.get(), expiry.get() + expiry_size, ExpiryLater{});
     }
 
     telemetry.peak_working_memory_bytes =

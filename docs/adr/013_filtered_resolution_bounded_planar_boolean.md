@@ -64,7 +64,10 @@ engine.
   rather than scattered production constants. The catalog values are governed
   hard ceilings; a host may advertise and enforce lower effective limits, and
   tests may inject smaller budgets. Callers cannot change the 50 nm resolution
-  semantics per request.
+  semantics per request. Working-memory telemetry uses fixed conservative
+  logical byte charges shared by native and WASM rather than ABI-dependent
+  `sizeof` values. Fixed-capacity index and expiry storage may not grow beyond
+  the reported charge.
 - `boost::multiprecision::cpp_int`, canonical algebraic values, resultants, and
   root isolation are not part of the normal production path. The existing
   exact backend is isolated behind a narrow interface for conformance tests,

@@ -213,6 +213,31 @@ void test_broad_phase_avoids_crossed_projection_quadratic_work()
             "doubling crossed projections must retain near n-log-n index work");
 }
 
+void test_broad_phase_memory_charge_is_cross_runtime_canonical()
+{
+    std::vector<AnalyticCurveBoundsNm> curves;
+    curves.reserve(257);
+    for (std::uint32_t index = 0; index < 257; ++index)
+    {
+        const double x = static_cast<double>(index) * 101.0;
+        curves.push_back({index + 1, x, 0.0, x + 1.0, 1.0});
+    }
+
+    constexpr std::uint64_t canonical_sweep_bytes = 257 * 96;
+    AnalyticSolverLimits exact_memory = kAnalyticSolverHardLimits;
+    exact_memory.working_memory_bytes = canonical_sweep_bytes;
+    const AnalyticBroadPhaseResult accepted = build_analytic_curve_candidates(curves, exact_memory);
+    require(accepted.error == AnalyticBroadPhaseError::none && accepted.pairs.empty() &&
+                accepted.telemetry.peak_working_memory_bytes == canonical_sweep_bytes,
+            "a non-power-of-two sweep must use the canonical cross-runtime memory charge");
+
+    AnalyticSolverLimits one_byte_short = exact_memory;
+    --one_byte_short.working_memory_bytes;
+    require(build_analytic_curve_candidates(curves, one_byte_short).error ==
+                AnalyticBroadPhaseError::resource_limit_exceeded,
+            "native and WASM must reject one byte below the canonical sweep charge");
+}
+
 } // namespace
 
 int main()
@@ -223,5 +248,6 @@ int main()
     test_broad_phase_limits_and_validation();
     test_broad_phase_chooses_sparse_axis();
     test_broad_phase_avoids_crossed_projection_quadratic_work();
+    test_broad_phase_memory_charge_is_cross_runtime_canonical();
     return 0;
 }

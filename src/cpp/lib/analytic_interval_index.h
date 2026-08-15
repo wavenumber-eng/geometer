@@ -4,7 +4,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <limits>
-#include <vector>
+#include <memory>
 
 namespace geometer::detail
 {
@@ -17,10 +17,12 @@ class AnalyticIntervalIndex
   public:
     explicit AnalyticIntervalIndex(std::size_t capacity);
 
-    void insert(double minimum, double maximum, std::size_t payload, std::uint32_t curve_index);
+    [[nodiscard]] bool insert(double minimum, double maximum, std::size_t payload,
+                              std::uint32_t curve_index);
     void erase(double minimum, std::uint32_t curve_index);
 
-    [[nodiscard]] static constexpr std::uint64_t storage_bytes(std::size_t capacity) noexcept;
+    [[nodiscard]] static constexpr std::uint64_t
+    canonical_storage_bytes(std::size_t capacity) noexcept;
 
     template <typename Visitor>
     bool query(double minimum, double maximum, std::uint64_t& node_visits,
@@ -43,6 +45,10 @@ class AnalyticIntervalIndex
         std::uint32_t curve_index = 0;
         std::uint32_t height = 1;
     };
+
+    static constexpr std::uint64_t kCanonicalNodeBytes = 56;
+    static_assert(sizeof(Node) <= kCanonicalNodeBytes,
+                  "interval node exceeds the governed canonical memory charge");
 
     [[nodiscard]] std::uint32_t height(std::size_t node) const noexcept;
     [[nodiscard]] int balance(std::size_t node) const noexcept;
@@ -78,13 +84,16 @@ class AnalyticIntervalIndex
         return true;
     }
 
-    std::vector<Node> nodes_;
+    std::unique_ptr<Node[]> nodes_;
+    std::size_t capacity_ = 0;
+    std::size_t size_ = 0;
     std::size_t root_ = npos;
 };
 
-constexpr std::uint64_t AnalyticIntervalIndex::storage_bytes(std::size_t capacity) noexcept
+constexpr std::uint64_t
+AnalyticIntervalIndex::canonical_storage_bytes(std::size_t capacity) noexcept
 {
-    return static_cast<std::uint64_t>(capacity) * sizeof(Node);
+    return static_cast<std::uint64_t>(capacity) * kCanonicalNodeBytes;
 }
 
 } // namespace geometer::detail

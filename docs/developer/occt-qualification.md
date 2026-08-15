@@ -86,3 +86,24 @@ WASM OCCT install, 54,784 bytes to the native executable, and 23,267 bytes to
 the browser WASM artifact. This evidence authorizes the exact `V8_0_1` pin and
 new immutable cache profiles; it does not authorize production analytic
 solver dispatch.
+
+## Published 8.0.1 Cache Profiles
+
+Both immutable V8_0_1 dependency-cache profiles were published from the
+reviewed local install trees using credentialed producer upload:
+
+- `occt-native-v8-0-1-windows-x64-release-static-recipe-02d3ac07fe672579`
+  with archive SHA-256
+  `255ad723184c62ef4e6dc82c20c1acd5b0aa43407cbefc6e26e484eb74a05df9`
+- `occt-wasm-v8-0-1-wasm-emscripten-release-static-emsdk-3.1.56-recipe-a15818c33b508d24`
+  with archive SHA-256
+  `44fe6d6294c7a26ac77cfa17e1fd4a312578638a5669b7032c227750d032614e`
+
+Publication was verified without credentials: both `manifest.json` objects are
+served publicly under `https://artifacts.wavenumber.net/deps/v1/geometer/occt/`
+with schema `wavenumber.dependency_cache_manifest.a1`, and both profiles were
+restored in `only` mode into a clean isolated state root using only the public
+HTTPS path. Each restored install tree reports OCCT 8.0.1 and is byte-for-byte
+identical to the local install tree it was packaged from. This completes the
+qualification step's cache-publication evidence; production analytic solver
+dispatch remains unauthorized.

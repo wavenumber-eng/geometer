@@ -96,7 +96,7 @@ depends_on = ["analytic-planar-boolean-design"]
 [[steps]]
 id = "occt-8-0-1-qualification"
 title = "Qualify OCCT V8_0_1 against V8_0_0 on native, WASM, and existing regressions"
-status = "active"
+status = "done"
 depends_on = ["analytic-synthetic-correctness"]
 
 [[steps]]
@@ -251,7 +251,7 @@ status = "pending"
 [[exit_criteria]]
 id = "occt-8-0-1-qualification"
 title = "OCCT V8_0_1 is accepted with complete native/WASM evidence or V8_0_0 retention has a governed rejecting fixture and decision"
-status = "pending"
+status = "met"
 
 [[exit_criteria]]
 id = "matz-compatibility"

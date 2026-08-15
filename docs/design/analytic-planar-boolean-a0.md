@@ -290,8 +290,11 @@ budgets. The 50 nm topology-resolution policy is not in that object and is not
 caller-programmable.
 
 Narrow-phase intersections and same-domain tests use filtered binary64
-predicates with conservative outward error bounds. Integer-nanometer inputs use
-fixed-width wide-integer predicates where practical. A decision is accepted
+predicates with conservative outward error bounds. The internal curve domain
+accepts bounded point and radius intervals, so authored irrational-radius arcs
+and non-integral offset geometry do not need a second representation. Optional
+integer certificates use fixed-width wide-integer predicates where practical.
+A decision is accepted
 from the fast path only when its error interval proves the relevant side of the
 50 nm topology threshold. An uncertain decision takes a deterministic bounded
 slow path or fails the isolated job. It must never silently choose a topology
@@ -310,12 +313,15 @@ verify the enclosure. A result interval wider than the 50 nm publication
 radius, an unprovable domain decision, or an unprovable resolution collapse
 returns the job-local resource failure with algebraic fallback still at zero.
 
-This first narrow-phase slice accepts job-local integer line/arc carriers,
-which covers authored polygon, disk, annulus, and lattice-coherent arc
-boundaries. Filtered lowering of non-integral capsule and swept-path offsets is
-owned by the next lowering/arrangement slice. Coincident carriers are reported
-without partitioning finite overlap spans; the indexed same-domain overlay
-stage owns that partition so no pair kernel grows a hidden global scan.
+Each input interval must itself fit the fixed 50 nm displacement envelope, and
+all point construction and repair is checked against that same bound. Exact
+tangent contact is reported separately from a certified resolution collapse.
+In cancellation-heavy near-tangent cases, radial closeness to a circle is not
+sufficient: the kernel also proves that the possible intersection displacement
+from the published point is at most 50 nm, otherwise the job fails closed.
+Coincident carriers are reported without partitioning finite overlap spans; the
+indexed same-domain overlay stage owns that partition so no pair kernel grows a
+hidden global scan.
 
 Coincident or near-coincident carriers are overlaid into deterministic atomic
 intervals. Each group uses the lexicographically least complete source tuple as

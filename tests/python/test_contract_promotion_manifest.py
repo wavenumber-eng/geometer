@@ -682,12 +682,12 @@ def test_filtered_solver_foundation_is_bounded_non_algebraic_and_not_dispatched(
         "narrow_phase_header": "src/cpp/lib/geometer/analytic_curve_narrow_phase.h",
         "narrow_phase_source": "src/cpp/lib/analytic_curve_narrow_phase.cpp",
         "narrow_phase_policy": "canonical_candidate_pairs_only_constant_work_per_pair",
-        "narrow_phase_input": "job_local_integer_nm_line_and_arc_carriers",
+        "narrow_phase_input": "job_local_filtered_nm_line_and_arc_carriers_with_optional_integer_certificates",
         "narrow_phase_uncertain_policy": "job_local_resource_limit_exceeded",
         "narrow_phase_pair_logical_bytes": 256,
         "narrow_phase_parity_validator": "scripts/validate_analytic_filtered_core_parity.py",
-        "narrow_phase_vector_bytes": 192,
-        "narrow_phase_vector_sha256": ("29b8ee0aafa7194d072a0d98ee14eb0d86373ae8b71dc50ecfe785583d4e9f92"),
+        "narrow_phase_vector_bytes": 216,
+        "narrow_phase_vector_sha256": ("b651ed2c956090e65855689f6e179d3d91f29ae16ba64fd4989479b546da1003"),
     }
     implementation_paths = [
         solver[key]

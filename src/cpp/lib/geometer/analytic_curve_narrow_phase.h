@@ -10,19 +10,28 @@
 namespace geometer
 {
 
-// Narrow-phase inputs are job-local integer nanometers. The lowering stage is
-// responsible for choosing an origin that keeps every coordinate within the
-// governed 1e12 nm span before constructing these values.
+struct AnalyticCoordinateIntervalNm
+{
+    double lower = 0.0;
+    double upper = 0.0;
+};
+
+struct AnalyticFilteredPointNm
+{
+    AnalyticCoordinateIntervalNm x;
+    AnalyticCoordinateIntervalNm y;
+};
+
+struct AnalyticFilteredCircleNm
+{
+    AnalyticFilteredPointNm center;
+    AnalyticCoordinateIntervalNm radius;
+};
+
 struct AnalyticIntegerPointNm
 {
     std::int64_t x = 0;
     std::int64_t y = 0;
-};
-
-struct AnalyticIntegerCircleNm
-{
-    AnalyticIntegerPointNm center;
-    std::uint64_t radius = 0;
 };
 
 enum class AnalyticAtomicCurveKind : std::uint8_t
@@ -35,23 +44,15 @@ struct AnalyticAtomicCurveNm
 {
     std::uint32_t curve_index = 0;
     AnalyticAtomicCurveKind kind = AnalyticAtomicCurveKind::line;
-    AnalyticIntegerPointNm start;
-    AnalyticIntegerPointNm end;
-    AnalyticIntegerCircleNm circle;
+    AnalyticFilteredPointNm start;
+    AnalyticFilteredPointNm end;
+    AnalyticFilteredCircleNm circle;
     bool counterclockwise = true;
     bool major_arc = false;
-};
-
-struct AnalyticCoordinateIntervalNm
-{
-    double lower = 0.0;
-    double upper = 0.0;
-};
-
-struct AnalyticFilteredPointNm
-{
-    AnalyticCoordinateIntervalNm x;
-    AnalyticCoordinateIntervalNm y;
+    bool has_integer_certificate = false;
+    AnalyticIntegerPointNm integer_start;
+    AnalyticIntegerPointNm integer_end;
+    AnalyticIntegerPointNm integer_center;
 };
 
 enum class AnalyticPairRelation : std::uint8_t
@@ -80,6 +81,8 @@ enum class AnalyticNarrowPhaseError : std::uint8_t
 
 struct AnalyticNarrowPhaseTelemetry
 {
+    std::uint64_t curve_table_entries = 0;
+    std::uint64_t curve_references_resolved = 0;
     std::uint64_t candidate_pairs_consumed = 0;
     std::uint64_t line_line_pairs = 0;
     std::uint64_t line_circle_pairs = 0;
@@ -88,6 +91,7 @@ struct AnalyticNarrowPhaseTelemetry
     std::uint64_t domain_predicates = 0;
     std::uint64_t square_root_calls = 0;
     std::uint64_t uncertain_predicates = 0;
+    std::uint64_t tangent_contacts = 0;
     std::uint64_t resolution_collapses = 0;
     std::uint64_t point_intersections = 0;
     std::uint64_t coincident_pairs = 0;
@@ -103,11 +107,15 @@ struct AnalyticNarrowPhaseResult
     AnalyticNarrowPhaseTelemetry telemetry;
 };
 
-// Intersects only the supplied broad-phase candidates. Curves and pairs must
-// both be in strictly increasing canonical curve-index order. No implicit
-// all-curves cross product is performed. Coincident carriers are identified
-// here; their finite overlap spans are deliberately owned by the subsequent
-// same-domain overlay stage.
+// Intersects only the supplied broad-phase candidates. Input coordinates and
+// radii are outward bounds on one authored curve; each bound must itself fit
+// the fixed 50 nm displacement envelope. Optional integer certificates enable
+// exact fixed-width signs but are not required for non-integral authored arcs.
+// Curves use dense canonical indices 1..N, and pairs are in strictly increasing
+// index order; this makes pair resolution direct O(1) work instead of a hidden
+// per-pair search. No implicit all-curves cross product is performed.
+// Coincident carriers are identified here; their finite overlap spans are
+// deliberately owned by the subsequent same-domain overlay stage.
 [[nodiscard]] AnalyticNarrowPhaseResult
 intersect_analytic_curve_candidates(const std::vector<AnalyticAtomicCurveNm>& curves,
                                     const std::vector<AnalyticCurvePair>& candidate_pairs,

@@ -41,23 +41,54 @@ bool same_pairs(const std::vector<AnalyticCurvePair>& actual,
     return true;
 }
 
+AnalyticFilteredPointNm filtered_point(double x, double y)
+{
+    return {{x, x}, {y, y}};
+}
+
 AnalyticAtomicCurveNm line(std::uint32_t index, std::int64_t x1, std::int64_t y1, std::int64_t x2,
                            std::int64_t y2)
 {
-    return {index, AnalyticAtomicCurveKind::line, {x1, y1}, {x2, y2}, {}, true, false};
+    AnalyticAtomicCurveNm result;
+    result.curve_index = index;
+    result.kind = AnalyticAtomicCurveKind::line;
+    result.start = filtered_point(static_cast<double>(x1), static_cast<double>(y1));
+    result.end = filtered_point(static_cast<double>(x2), static_cast<double>(y2));
+    result.has_integer_certificate = true;
+    result.integer_start = {x1, y1};
+    result.integer_end = {x2, y2};
+    return result;
+}
+
+AnalyticAtomicCurveNm filtered_arc(std::uint32_t index, double x1, double y1, double x2, double y2,
+                                   double cx, double cy, AnalyticCoordinateIntervalNm radius,
+                                   bool counterclockwise, bool major = false)
+{
+    AnalyticAtomicCurveNm result;
+    result.curve_index = index;
+    result.kind = AnalyticAtomicCurveKind::circular_arc;
+    result.start = filtered_point(x1, y1);
+    result.end = filtered_point(x2, y2);
+    result.circle.center = filtered_point(cx, cy);
+    result.circle.radius = radius;
+    result.counterclockwise = counterclockwise;
+    result.major_arc = major;
+    return result;
 }
 
 AnalyticAtomicCurveNm arc(std::uint32_t index, std::int64_t x1, std::int64_t y1, std::int64_t x2,
                           std::int64_t y2, std::int64_t cx, std::int64_t cy, std::uint64_t radius,
                           bool counterclockwise, bool major = false)
 {
-    return {index,
-            AnalyticAtomicCurveKind::circular_arc,
-            {x1, y1},
-            {x2, y2},
-            {{cx, cy}, radius},
-            counterclockwise,
-            major};
+    AnalyticAtomicCurveNm result = line(index, x1, y1, x2, y2);
+    result.kind = AnalyticAtomicCurveKind::circular_arc;
+    result.circle.center = {{static_cast<double>(cx), static_cast<double>(cx)},
+                            {static_cast<double>(cy), static_cast<double>(cy)}};
+    result.circle.radius = {static_cast<double>(radius), static_cast<double>(radius)};
+    result.counterclockwise = counterclockwise;
+    result.major_arc = major;
+    result.integer_center = {cx, cy};
+    return result;
 }
 
 bool contains(AnalyticCoordinateIntervalNm interval, double value)
@@ -102,8 +133,11 @@ std::string narrow_phase_parity_vector()
         }
     }
     append_u64(result.telemetry.candidate_pairs_consumed);
+    append_u64(result.telemetry.curve_table_entries);
+    append_u64(result.telemetry.curve_references_resolved);
     append_u64(result.telemetry.predicate_calls);
     append_u64(result.telemetry.square_root_calls);
+    append_u64(result.telemetry.tangent_contacts);
     append_u64(result.telemetry.point_intersections);
     append_u64(result.telemetry.peak_working_memory_bytes);
     append_u64(result.telemetry.algebraic_fallback_calls);
@@ -365,7 +399,9 @@ void test_narrow_phase_line_circle()
                 contains(result.intersections[3].points[0].x, 0.0) &&
                 contains(result.intersections[3].points[0].y, 100.0),
             "finite upper arc must reject the lower carrier intersection");
-    require(result.telemetry.line_circle_pairs == 4 && result.telemetry.square_root_calls == 5,
+    require(result.telemetry.line_circle_pairs == 4 && result.telemetry.square_root_calls == 6 &&
+                result.telemetry.tangent_contacts == 1 &&
+                !result.intersections[1].resolution_collapsed,
             "line/circle work telemetry changed");
 }
 
@@ -397,9 +433,121 @@ void test_narrow_phase_circle_circle_and_irrational_output()
         "ordinary irrational circle crossing must remain a tiny filtered interval");
     require(result.intersections[2].relation == AnalyticPairRelation::point,
             "external circle tangency changed");
-    require(result.telemetry.circle_circle_pairs == 3 &&
+    require(result.telemetry.circle_circle_pairs == 3 && result.telemetry.tangent_contacts == 1 &&
+                !result.intersections[2].resolution_collapsed &&
                 result.telemetry.algebraic_fallback_calls == 0,
             "ordinary circle intersections must not enter algebraic fallback");
+}
+
+void test_narrow_phase_filtered_authored_arcs()
+{
+    const double root_two = std::sqrt(2.0);
+    AnalyticAtomicCurveNm irrational_radius =
+        filtered_arc(1, 1.0, 1.0, -1.0, 1.0, 0.0, 0.0,
+                     {std::nextafter(root_two, 0.0),
+                      std::nextafter(root_two, std::numeric_limits<double>::infinity())},
+                     true);
+    irrational_radius.has_integer_certificate = true;
+    irrational_radius.integer_start = {1, 1};
+    irrational_radius.integer_end = {-1, 1};
+    irrational_radius.integer_center = {0, 0};
+
+    const AnalyticAtomicCurveNm noninteger_offset =
+        filtered_arc(2, 10.75, 0.0, -10.25, 0.0, 0.25, 0.0, {10.5, 10.5}, true);
+    const AnalyticNarrowPhaseResult accepted =
+        intersect_analytic_curve_candidates({irrational_radius, noninteger_offset}, {});
+    require(accepted.error == AnalyticNarrowPhaseError::none,
+            "filtered authored arcs must not require an integer radius or center");
+
+    AnalyticAtomicCurveNm too_wide = noninteger_offset;
+    too_wide.circle.radius = {1.0, 102.0};
+    require(intersect_analytic_curve_candidates({irrational_radius, too_wide}, {}).error ==
+                AnalyticNarrowPhaseError::invalid_argument,
+            "an input interval wider than the output displacement envelope must fail closed");
+}
+
+void test_narrow_phase_near_tangent_displacement_guard()
+{
+    constexpr std::int64_t radius = 1'000'000'000'000;
+    const std::vector<AnalyticAtomicCurveNm> line_circle = {
+        line(1, -100'019'999, 999'999'994'998, -99'979'999, 999'999'995'002),
+        arc(2, radius, 0, -radius, 0, 0, 0, radius, true),
+    };
+    const AnalyticNarrowPhaseResult guarded_line_circle =
+        intersect_analytic_curve_candidates(line_circle, {{1, 2}});
+    require(guarded_line_circle.error == AnalyticNarrowPhaseError::resource_limit_exceeded &&
+                guarded_line_circle.telemetry.resolution_collapses == 0,
+            "a small radial sagitta must not collapse line/circle points separated by 26 um");
+
+    constexpr double filtered_radius = 500'000'000'000.0;
+    const double nearly_external = std::nextafter(1'000'000'000'000.0, 0.0);
+    const std::vector<AnalyticAtomicCurveNm> circle_circle = {
+        filtered_arc(1, 0.0, -filtered_radius, 0.0, filtered_radius, 0.0, 0.0,
+                     {filtered_radius, filtered_radius}, true),
+        filtered_arc(2, nearly_external, filtered_radius, nearly_external, -filtered_radius,
+                     nearly_external, 0.0, {filtered_radius, filtered_radius}, true),
+    };
+    const AnalyticNarrowPhaseResult guarded_circle_circle =
+        intersect_analytic_curve_candidates(circle_circle, {{1, 2}});
+    require(guarded_circle_circle.error == AnalyticNarrowPhaseError::resource_limit_exceeded &&
+                guarded_circle_circle.telemetry.resolution_collapses == 0,
+            "a cancellation-heavy circle tangency must preserve intersections beyond 50 nm");
+
+    AnalyticAtomicCurveNm uncertain_line = line(2, 0, 0, 1'000, 0);
+    uncertain_line.has_integer_certificate = false;
+    uncertain_line.start.y = {0.1, 1.0};
+    uncertain_line.end.y = {-1.0, 0.1};
+    const AnalyticNarrowPhaseResult guarded_parallel =
+        intersect_analytic_curve_candidates({line(1, 0, 0, 1'000, 0), uncertain_line}, {{1, 2}});
+    require(guarded_parallel.error == AnalyticNarrowPhaseError::resource_limit_exceeded,
+            "an unresolved near-parallel denominator must not be labeled disjoint");
+
+    AnalyticAtomicCurveNm uncertain_circle =
+        filtered_arc(2, 1'040.0, 500.0, 540.0, 0.0, 1'040.0, 0.0, {500.0, 500.0}, true);
+    uncertain_circle.start.x = {1'000.0, 1'080.0};
+    uncertain_circle.end.x = {500.0, 580.0};
+    uncertain_circle.circle.center.x = {1'000.0, 1'080.0};
+    const AnalyticNarrowPhaseResult guarded_separation = intersect_analytic_curve_candidates(
+        {filtered_arc(1, 500.0, 0.0, 0.0, 500.0, 0.0, 0.0, {500.0, 500.0}, true), uncertain_circle},
+        {{1, 2}});
+    require(guarded_separation.error == AnalyticNarrowPhaseError::resource_limit_exceeded &&
+                guarded_separation.telemetry.resolution_collapses == 0,
+            "circle uncertainty spanning an 80 nm gap must not certify a collapse");
+}
+
+void test_narrow_phase_arc_domains_and_contacts()
+{
+    const std::vector<AnalyticAtomicCurveNm> domain_curves = {
+        line(1, -1'000, -1'000, 1'000, 1'000), arc(2, 500, 0, -500, 0, 0, 0, 500, true),
+        line(3, -1'000, -300, 1'000, -300),    arc(4, 500, 0, 300, -400, 0, 0, 500, false),
+        line(5, -1'000, 300, 1'000, 300),      arc(6, 500, 0, 300, -400, 0, 0, 500, true, true),
+        line(7, -1'000, 300, 1'000, 300),      arc(8, 500, 0, 300, 400, 0, 0, 500, true),
+    };
+    const AnalyticNarrowPhaseResult domains =
+        intersect_analytic_curve_candidates(domain_curves, {{1, 2}, {3, 4}, {5, 6}, {7, 8}});
+    require(domains.error == AnalyticNarrowPhaseError::none &&
+                domains.intersections[0].relation == AnalyticPairRelation::point &&
+                domains.intersections[1].relation == AnalyticPairRelation::point &&
+                domains.intersections[2].relation == AnalyticPairRelation::two_points &&
+                domains.intersections[3].relation == AnalyticPairRelation::point &&
+                contains(domains.intersections[1].points[0].x, 400.0) &&
+                contains(domains.intersections[3].points[0].x, 400.0),
+            "CW, sloped, minor, and major arc-domain filtering changed");
+
+    const std::vector<AnalyticAtomicCurveNm> contact_curves = {
+        arc(1, 100, 0, -100, 0, 0, 0, 100, true),
+        arc(2, 100, 0, 0, 0, 50, 0, 50, true),
+        arc(3, -100, 0, 100, 0, 0, 0, 100, false),
+    };
+    const AnalyticNarrowPhaseResult contacts =
+        intersect_analytic_curve_candidates(contact_curves, {{1, 2}, {1, 3}});
+    require(contacts.error == AnalyticNarrowPhaseError::none &&
+                contacts.intersections[0].relation == AnalyticPairRelation::point &&
+                !contacts.intersections[0].resolution_collapsed &&
+                contacts.intersections[1].relation == AnalyticPairRelation::coincident &&
+                contacts.telemetry.tangent_contacts == 1 &&
+                contacts.telemetry.resolution_collapses == 0,
+            "internal tangency and reversed coincident carriers must remain distinct from repair");
 }
 
 void test_narrow_phase_large_local_coordinates_and_limits()
@@ -423,6 +571,11 @@ void test_narrow_phase_large_local_coordinates_and_limits()
     require(intersect_analytic_curve_candidates(crossing, one_pair, no_pairs).error ==
                 AnalyticNarrowPhaseError::resource_limit_exceeded,
             "narrow phase must enforce its supplied pair ceiling");
+    AnalyticSolverLimits one_curve = kAnalyticSolverHardLimits;
+    one_curve.boundary_occurrences = 1;
+    require(intersect_analytic_curve_candidates(crossing, {}, one_curve).error ==
+                AnalyticNarrowPhaseError::resource_limit_exceeded,
+            "curve-table validation must enforce the boundary-occurrence ceiling first");
     AnalyticSolverLimits no_predicates = kAnalyticSolverHardLimits;
     no_predicates.predicate_calls = 0;
     require(intersect_analytic_curve_candidates(crossing, one_pair, no_predicates).error ==
@@ -500,6 +653,35 @@ void test_narrow_phase_candidate_driven_linear_work()
             "narrow-phase working memory must scale linearly with supplied candidates");
 }
 
+void test_narrow_phase_direct_dense_index_resolution()
+{
+    auto fixture = [](std::uint32_t curve_count)
+    {
+        std::vector<AnalyticAtomicCurveNm> curves;
+        curves.reserve(curve_count);
+        curves.push_back(line(1, 0, 0, 10, 0));
+        curves.push_back(line(2, 0, 100, 10, 100));
+        for (std::uint32_t index = 2; index < curve_count; ++index)
+        {
+            const std::int64_t x = static_cast<std::int64_t>(index) * 100;
+            curves.push_back(line(index + 1, x, 0, x + 10, 0));
+        }
+        return curves;
+    };
+    const AnalyticNarrowPhaseResult small =
+        intersect_analytic_curve_candidates(fixture(128), {{1, 2}});
+    const AnalyticNarrowPhaseResult large =
+        intersect_analytic_curve_candidates(fixture(4'096), {{1, 2}});
+    require(small.error == AnalyticNarrowPhaseError::none &&
+                large.error == AnalyticNarrowPhaseError::none &&
+                small.telemetry.curve_table_entries == 128 &&
+                large.telemetry.curve_table_entries == 4'096 &&
+                small.telemetry.curve_references_resolved == 2 &&
+                large.telemetry.curve_references_resolved == 2 &&
+                small.telemetry.predicate_calls == large.telemetry.predicate_calls,
+            "pair resolution must remain direct when the validated curve table grows");
+}
+
 void test_narrow_phase_rejects_noncanonical_or_invalid_input()
 {
     const std::vector<AnalyticAtomicCurveNm> curves = {line(1, 0, 0, 10, 0), line(2, 0, -1, 0, 1),
@@ -531,9 +713,13 @@ int main()
     test_narrow_phase_line_line();
     test_narrow_phase_line_circle();
     test_narrow_phase_circle_circle_and_irrational_output();
+    test_narrow_phase_filtered_authored_arcs();
+    test_narrow_phase_near_tangent_displacement_guard();
+    test_narrow_phase_arc_domains_and_contacts();
     test_narrow_phase_large_local_coordinates_and_limits();
     test_narrow_phase_resolution_endpoint_boundary();
     test_narrow_phase_candidate_driven_linear_work();
+    test_narrow_phase_direct_dense_index_resolution();
     test_narrow_phase_rejects_noncanonical_or_invalid_input();
     std::cout << "ANALYTIC_FILTERED_CORE_VECTOR=" << narrow_phase_parity_vector() << '\n';
     return 0;

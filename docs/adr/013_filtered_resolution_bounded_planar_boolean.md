@@ -70,7 +70,11 @@ engine.
   Constructed coordinates use outward interval operations, and a square-root
   enclosure is accepted only after an FMA residual verifies both endpoints.
   Any point interval or resolution collapse that cannot prove the 50 nm
-  displacement bound fails the isolated job.
+  displacement bound fails the isolated job. Its internal curves carry bounded
+  point and radius intervals plus optional integer certificates, so irrational
+  authored radii and non-integral offset geometry do not require an integer-only
+  side representation. Radial sagitta alone never certifies a near-tangent
+  collapse; the possible point displacement itself must be within the envelope.
 - Solver resource limits are supplied through one internal limits value object
   rather than scattered production constants. The catalog values are governed
   hard ceilings; a host may advertise and enforce lower effective limits, and

@@ -411,7 +411,7 @@ void test_narrow_phase_line_circle()
                 contains(result.intersections[3].points[0].x, 0.0) &&
                 contains(result.intersections[3].points[0].y, 100.0),
             "finite upper arc must reject the lower carrier intersection");
-    require(result.telemetry.line_circle_pairs == 4 && result.telemetry.square_root_calls == 6 &&
+    require(result.telemetry.line_circle_pairs == 4 && result.telemetry.square_root_calls == 7 &&
                 result.telemetry.tangent_contacts == 1 &&
                 !result.intersections[1].resolution_collapsed,
             "line/circle work telemetry changed");

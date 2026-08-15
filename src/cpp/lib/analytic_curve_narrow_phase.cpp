@@ -314,10 +314,12 @@ SignedWide wide_absolute(SignedWide value) noexcept
     return wide_sign(value) < 0 ? wide_subtract(wide_multiply(0, 0), value) : value;
 }
 
-bool exact_integer_length(AnalyticIntegerPointNm direction, std::uint64_t& length) noexcept
+bool exact_integer_length(AnalyticIntegerPointNm direction, std::uint64_t& length,
+                          AnalyticNarrowPhaseTelemetry& telemetry) noexcept
 {
     const SignedWide squared =
         wide_add(wide_multiply(direction.x, direction.x), wide_multiply(direction.y, direction.y));
+    ++telemetry.square_root_calls;
     const double approximate =
         std::sqrt(static_cast<double>(direction.x) * static_cast<double>(direction.x) +
                   static_cast<double>(direction.y) * static_cast<double>(direction.y));
@@ -339,7 +341,8 @@ bool exact_integer_length(AnalyticIntegerPointNm direction, std::uint64_t& lengt
 }
 
 bool certified_line_circle_tangent(const AnalyticAtomicCurveNm& line,
-                                   const AnalyticAtomicCurveNm& arc) noexcept
+                                   const AnalyticAtomicCurveNm& arc,
+                                   AnalyticNarrowPhaseTelemetry& telemetry) noexcept
 {
     if (!line.has_integer_certificate || !arc.has_integer_certificate ||
         !arc.has_integer_radius_certificate)
@@ -347,7 +350,7 @@ bool certified_line_circle_tangent(const AnalyticAtomicCurveNm& line,
     const AnalyticIntegerPointNm direction{difference(line.integer_end.x, line.integer_start.x),
                                            difference(line.integer_end.y, line.integer_start.y)};
     std::uint64_t length = 0;
-    if (!exact_integer_length(direction, length))
+    if (!exact_integer_length(direction, length, telemetry))
         return false;
     const SignedWide distance_numerator =
         wide_absolute(exact_cross(line.integer_start, line.integer_end, arc.integer_center));
@@ -856,7 +859,17 @@ PairWork intersect_line_circle(const AnalyticAtomicCurveNm& line, const Analytic
     if (height_squared.upper < 0.0)
         return work;
 
-    const bool certified_tangent = certified_line_circle_tangent(line, arc);
+    bool certified_tangent = false;
+    if (height_squared.lower <= 0.0 && line.has_integer_certificate &&
+        arc.has_integer_certificate && arc.has_integer_radius_certificate)
+    {
+        if (!charge_predicate(telemetry, limits))
+        {
+            work.uncertain = true;
+            return work;
+        }
+        certified_tangent = certified_line_circle_tangent(line, arc, telemetry);
+    }
     if (certified_tangent || height_squared.lower <= 0.0)
     {
         const bool exact_tangent =

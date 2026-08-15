@@ -136,7 +136,7 @@ narrow_phase_uncertain_policy = "job_local_resource_limit_exceeded"
 narrow_phase_pair_logical_bytes = 256
 narrow_phase_parity_validator = "scripts/validate_analytic_filtered_core_parity.py"
 narrow_phase_vector_bytes = 216
-narrow_phase_vector_sha256 = "b651ed2c956090e65855689f6e179d3d91f29ae16ba64fd4989479b546da1003"
+narrow_phase_vector_sha256 = "140760f79dfb64aca3bb68c8f849659d81fa590ae49f9805f707bc3990b86144"
 
 [analytic_exact_backend]
 status = "implemented_non_primary_oracle"

@@ -687,7 +687,7 @@ def test_filtered_solver_foundation_is_bounded_non_algebraic_and_not_dispatched(
         "narrow_phase_pair_logical_bytes": 256,
         "narrow_phase_parity_validator": "scripts/validate_analytic_filtered_core_parity.py",
         "narrow_phase_vector_bytes": 216,
-        "narrow_phase_vector_sha256": ("b651ed2c956090e65855689f6e179d3d91f29ae16ba64fd4989479b546da1003"),
+        "narrow_phase_vector_sha256": ("140760f79dfb64aca3bb68c8f849659d81fa590ae49f9805f707bc3990b86144"),
     }
     implementation_paths = [
         solver[key]

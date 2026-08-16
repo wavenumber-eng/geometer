@@ -705,6 +705,9 @@ class OverlayBuilder
     bool build_events()
     {
         bool valid = true;
+        const std::uint64_t column_work = checked_multiply(geometry_.curves.size(), 5, valid);
+        if (!valid || !charge(column_work))
+            return false;
         std::uint64_t raw_count = checked_multiply(geometry_.curves.size(), 2, valid);
         raw_count = checked_add(
             raw_count, checked_multiply(result_.telemetry.input_point_intersections, 2, valid),
@@ -821,10 +824,6 @@ class OverlayBuilder
 
     bool validate_endpoint_partition_columns()
     {
-        bool valid = true;
-        const std::uint64_t work = checked_multiply(geometry_.curves.size(), 5, valid);
-        if (!valid || !charge(work))
-            return false;
         std::uint64_t maximum_group = 0;
         for (std::uint32_t curve = 0; curve < geometry_.curves.size(); ++curve)
             if (!bind_endpoint_partition_column(curve, true, maximum_group) ||

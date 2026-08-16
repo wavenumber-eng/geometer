@@ -509,6 +509,39 @@ void test_limits_and_sparse_scaling()
             "overlay vertex ceiling did not account for both line endpoints");
 }
 
+void test_endpoint_column_work_precedes_event_allocation()
+{
+    const AnalyticFilteredGeometry geometry = sparse_lines(4);
+    const AnalyticNarrowPhaseResult narrow =
+        intersect_analytic_curve_candidates(geometry.curves, {});
+    require(narrow.error == AnalyticNarrowPhaseError::none,
+            "endpoint-column precharge fixture narrow phase failed");
+    const std::uint64_t initial_memory =
+        narrow.telemetry.peak_working_memory_bytes +
+        geometry.curves.size() * kAnalyticOverlayCurveGroupLogicalBytes;
+    AnalyticSolverLimits limits = kAnalyticSolverHardLimits;
+    limits.predicate_calls = 31;
+    const AnalyticFilteredOverlayResult one_short =
+        build_analytic_filtered_overlay(geometry, {}, limits);
+    require(one_short.error == AnalyticFilteredOverlayError::resource_limit_exceeded &&
+                one_short.telemetry.predicate_calls == 12 &&
+                one_short.telemetry.peak_working_memory_bytes == initial_memory &&
+                one_short.telemetry.raw_events == 0,
+            "one-short endpoint-column work escaped the pre-allocation gate: work=" +
+                std::to_string(one_short.telemetry.predicate_calls) +
+                " peak=" + std::to_string(one_short.telemetry.peak_working_memory_bytes) +
+                " initial=" + std::to_string(initial_memory) +
+                " raw=" + std::to_string(one_short.telemetry.raw_events));
+
+    limits.predicate_calls = 32;
+    const AnalyticFilteredOverlayResult exact =
+        build_analytic_filtered_overlay(geometry, {}, limits);
+    require(exact.error == AnalyticFilteredOverlayError::resource_limit_exceeded &&
+                exact.telemetry.predicate_calls == 32 &&
+                exact.telemetry.peak_working_memory_bytes > initial_memory,
+            "exact endpoint-column work did not enter the governed event phase");
+}
+
 AnalyticFilteredOverlayResult impossible_combined_memory_result()
 {
     AnalyticFilteredGeometry geometry;
@@ -634,6 +667,7 @@ int main()
     test_circular_preorder_is_total_and_fails_closed();
     test_lowered_irrational_capsule_pipeline();
     test_limits_and_sparse_scaling();
+    test_endpoint_column_work_precedes_event_allocation();
     test_integrated_preflight_rejects_before_narrow_work();
     std::cout << "ANALYTIC_FILTERED_OVERLAY_VECTOR=" << parity_vector() << '\n';
     return 0;

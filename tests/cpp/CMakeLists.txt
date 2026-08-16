@@ -53,6 +53,15 @@ target_link_libraries(geometer_analytic_filtered_lowering_test PRIVATE geometer_
 add_test(NAME geometer_analytic_filtered_lowering_test
          COMMAND geometer_analytic_filtered_lowering_test)
 
+add_executable(geometer_analytic_filtered_overlay_test
+    analytic_filtered_overlay_test.cpp
+)
+
+target_link_libraries(geometer_analytic_filtered_overlay_test PRIVATE geometer_lib)
+
+add_test(NAME geometer_analytic_filtered_overlay_test
+         COMMAND geometer_analytic_filtered_overlay_test)
+
 add_executable(geometer_exact_rational_test
     exact_rational_test.cpp
 )
@@ -347,6 +356,7 @@ if(EMSCRIPTEN)
         geometer_analytic_planar_boolean_feasibility_test
         geometer_analytic_filtered_core_test
         geometer_analytic_filtered_lowering_test
+        geometer_analytic_filtered_overlay_test
         geometer_exact_rational_test
         geometer_exact_polynomial_test
         geometer_exact_resultant_test

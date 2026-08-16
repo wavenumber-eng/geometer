@@ -100,6 +100,18 @@ engine.
   Swept paths fail job-locally as unsupported until their piece union is
   implemented by the filtered indexed arrangement; the exact swept
   pre-arrangement is not a production fallback.
+- The filtered split/overlay stage groups only lowering-issued exact carrier
+  ids and consumes only the narrow phase's candidate results. It sorts bounded
+  endpoint/intersection events once, merges events only when their complete
+  outward enclosure proves at-or-below-50-nm equivalence, and partitions each
+  line or circle in canonical carrier order. A fixed-array Fenwick/indexed
+  active set makes membership maintenance logarithmic and membership emission
+  output-proportional; no carrier-group cross product or per-cell full-group
+  scan is permitted. A count pass fixes span and membership allocation before
+  publication, and arrangement, provenance, work, and target-independent
+  logical-memory ceilings fail the job before overrun. Circle groups use the
+  deterministic leftmost seam, with certified sweep tokens resolving
+  cancellation-prone constructed semicircles.
 - Solver resource limits are supplied through one internal limits value object
   rather than scattered production constants. The catalog values are governed
   hard ceilings; a host may advertise and enforce lower effective limits, and

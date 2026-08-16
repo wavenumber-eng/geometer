@@ -361,12 +361,24 @@ their old exact piece-union and quadratic centerline validation are not used as
 a production fallback. They become supported when the filtered indexed
 arrangement can resolve the piece union under the same work budgets.
 
-Coincident or near-coincident carriers are overlaid into deterministic atomic
-intervals. Each group uses the lexicographically least complete source tuple as
-its carrier key; no OCCT identity, allocation order, algebraic expression-DAG
-byte string, angle, or trigonometric sort key participates. Face classification
-decides which intervals survive while retaining the existing positive and
-subtractive provenance memberships.
+The implemented filtered split/overlay boundary groups exact lowering-issued
+carrier ids and consumes only candidate-driven narrow-phase results. Bounded
+endpoint and intersection events sort once in canonical carrier order; event
+enclosures merge only when their complete distance bound is at or below 50 nm.
+Line groups use a monotone dominant-axis projection. Circle groups use
+outward-certified half-plane/cross-product ordering and the deterministic
+leftmost seam, without angles or trigonometric sort keys. Constructed
+semicircle sweep certificates resolve the cancellation-prone antipodal case.
+
+Each carrier group is swept with a fixed-array Fenwick/indexed active set.
+Updates are logarithmic, membership enumeration is proportional to memberships
+actually emitted, and a two-pass count/fill scheme fixes allocation before
+output. There is no carrier-group pair cross product, per-cell full-group scan,
+or linear duplicate search. Arrangement vertex/half-edge, provenance/source
+membership, work, and target-independent logical-memory limits are enforced
+before overrun. The output is deterministic atomic spans plus complete ordered
+occurrence memberships; the following face-classification stage decides which
+spans survive while retaining positive and subtractive lineage.
 
 Across ordered stages, the accumulator retains the resolved analytic
 arrangement and lineage. Publication to the governed nm grid occurs once after

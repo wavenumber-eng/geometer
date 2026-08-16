@@ -857,6 +857,18 @@ Geometer proposal, not the original consumer packet.
   `unsupported_geometry` until their piece union can use the filtered indexed
   arrangement; the former exact quadratic path is not retained as a normal
   fallback.
+- Candidate-driven split and same-domain overlay are now implemented. Exact
+  lowering carrier ids group curves without pair enumeration; endpoint and
+  narrow-phase intersection events are sorted and outward-certified before a
+  fixed-array Fenwick/indexed active sweep emits atomic spans and complete
+  ordered memberships. At-or-below-50-nm event gaps merge inclusively, circle
+  ordering uses half-plane/cross predicates plus the leftmost seam, and
+  constructed semicircle certificates resolve antipodal cancellation. A
+  count/fill pass fixes allocation, while arrangement, provenance, work, and
+  logical-memory ceilings stop adversarial output. Sparse 1x/2x and dense
+  membership-limit fixtures prohibit hidden pair scans and per-cell full-group
+  scans. Face classification, global vertex reconciliation, traversal,
+  publication, and dispatch remain pending.
 - Before filtered operation dispatch is enabled, move the retained native
   exact/oracle sources out of the normal `geometer_lib` source list into an
   explicit feasibility-oracle target, matching the separation already used by

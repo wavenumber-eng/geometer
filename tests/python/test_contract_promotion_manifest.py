@@ -415,7 +415,7 @@ def test_manifest_promoted_and_candidate_surfaces_are_complete() -> None:
     assert candidate["status"] == "contract_frozen"
     assert candidate["solver_numeric_status"] == "reopened_filtered_50nm"
     assert candidate["filtered_solver_foundation"] == (
-        "direct_lowering_broad_and_narrow_phase_implemented_not_dispatched"
+        "direct_lowering_broad_narrow_and_overlay_implemented_not_dispatched"
     )
     assert candidate["request_contract"] == "geometry.analytic_planar_boolean_batch.request.a0"
     assert candidate["result_contract"] == "geometry.analytic_planar_boolean_batch.result.a0"
@@ -712,6 +712,16 @@ def test_filtered_solver_foundation_is_bounded_non_algebraic_and_not_dispatched(
         "lowering_vector_sha256": (
             "c249679df2ed5b1f2448e61992871340459f4526b2ce5cb6876a91a662fc6cf4"
         ),
+        "overlay_header": "src/cpp/lib/geometer/analytic_filtered_overlay.h",
+        "overlay_source": "src/cpp/lib/analytic_filtered_overlay.cpp",
+        "overlay_test": "tests/cpp/analytic_filtered_overlay_test.cpp",
+        "overlay_policy": "carrier_grouped_sorted_events_indexed_active_memberships",
+        "overlay_resolution_policy": "certified_at_or_below_50nm_event_merge",
+        "overlay_parity_validator": "scripts/validate_analytic_filtered_overlay_parity.py",
+        "overlay_vector_bytes": 936,
+        "overlay_vector_sha256": (
+            "a1ef255ece688447139541d4d73f4b3763820541c44c4fbfae0ca1da8752e952"
+        ),
     }
     implementation_paths = [
         solver[key]
@@ -730,6 +740,8 @@ def test_filtered_solver_foundation_is_bounded_non_algebraic_and_not_dispatched(
             "fixed_width_integer_header",
             "lowering_header",
             "lowering_source",
+            "overlay_header",
+            "overlay_source",
         )
     ]
     for relative_path in implementation_paths:
@@ -745,6 +757,8 @@ def test_filtered_solver_foundation_is_bounded_non_algebraic_and_not_dispatched(
             "narrow_phase_parity_validator",
             "lowering_test",
             "lowering_parity_validator",
+            "overlay_test",
+            "overlay_parity_validator",
         )
     )
 

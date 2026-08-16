@@ -1,0 +1,78 @@
+#pragma once
+
+#include "geometer/analytic_curve_narrow_phase.h"
+#include "geometer/analytic_filtered_lowering.h"
+#include "geometer/analytic_solver_limits.h"
+
+#include <cstdint>
+#include <vector>
+
+namespace geometer
+{
+
+struct AnalyticAtomicSpanNm
+{
+    std::uint32_t span_index = 0;
+    std::uint32_t carrier_curve_index = 0;
+    AnalyticAtomicCurveKind kind = AnalyticAtomicCurveKind::line;
+    AnalyticFilteredPointNm start;
+    AnalyticFilteredPointNm end;
+    bool major_arc = false;
+    std::uint32_t membership_begin = 0;
+    std::uint32_t membership_count = 0;
+};
+
+struct AnalyticSpanMembership
+{
+    std::uint32_t curve_index = 0;
+    bool agrees_with_span = false;
+    bool material_on_span_left = false;
+};
+
+enum class AnalyticFilteredOverlayError : std::uint8_t
+{
+    none = 0,
+    invalid_argument = 1,
+    resource_limit_exceeded = 2,
+};
+
+struct AnalyticFilteredOverlayTelemetry
+{
+    std::uint64_t input_curves = 0;
+    std::uint64_t input_pair_results = 0;
+    std::uint64_t input_point_intersections = 0;
+    std::uint64_t carrier_groups = 0;
+    std::uint64_t raw_events = 0;
+    std::uint64_t unique_events = 0;
+    std::uint64_t resolution_merges = 0;
+    std::uint64_t collapsed_domains = 0;
+    std::uint64_t sort_work_units = 0;
+    std::uint64_t active_set_updates = 0;
+    std::uint64_t membership_visits = 0;
+    std::uint64_t predicate_calls = 0;
+    std::uint64_t emitted_spans = 0;
+    std::uint64_t emitted_memberships = 0;
+    std::uint64_t peak_working_memory_bytes = 0;
+    std::uint64_t algebraic_fallback_calls = 0;
+};
+
+struct AnalyticFilteredOverlayResult
+{
+    AnalyticFilteredOverlayError error = AnalyticFilteredOverlayError::none;
+    std::vector<AnalyticAtomicSpanNm> spans;
+    std::vector<AnalyticSpanMembership> memberships;
+    AnalyticFilteredOverlayTelemetry telemetry;
+};
+
+// Converts the candidate-driven narrow-phase results into canonical atomic
+// carrier intervals. Equal lowering-issued carrier ids are grouped directly;
+// no curve-pair search is performed. Endpoint/intersection events are sorted
+// once per job, resolution-equivalent events merge only when a 50 nm enclosure
+// is certified, and an indexed active set makes same-domain membership output
+// proportional to the memberships actually emitted.
+[[nodiscard]] AnalyticFilteredOverlayResult
+build_analytic_filtered_overlay(const AnalyticFilteredGeometry& geometry,
+                                const AnalyticNarrowPhaseResult& narrow_phase,
+                                const AnalyticSolverLimits& limits = {});
+
+} // namespace geometer

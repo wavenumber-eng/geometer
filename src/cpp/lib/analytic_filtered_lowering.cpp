@@ -288,11 +288,11 @@ class FilteredJobLowerer
         return false;
     }
 
-    bool charge_work()
+    bool charge_work(std::uint64_t units = 1)
     {
-        if (telemetry_.work_units == limits_.predicate_calls)
+        if (units > limits_.predicate_calls - telemetry_.work_units)
             return fail(AnalyticFilteredLoweringError::resource_limit_exceeded);
-        ++telemetry_.work_units;
+        telemetry_.work_units += units;
         return true;
     }
 
@@ -347,7 +347,6 @@ class FilteredJobLowerer
                 return false;
             const AnalyticRequestOperandRecord& operand = records_.operands[operand_index];
             ++telemetry_.input_operands;
-            scan_operand(operand);
             switch (operand.geometry_kind)
             {
             case 1:
@@ -380,6 +379,8 @@ class FilteredJobLowerer
             default:
                 return fail(AnalyticFilteredLoweringError::unsupported_geometry);
             }
+            if (!scan_operand(operand))
+                return false;
         }
         if (projected_curves_ > std::numeric_limits<std::uint64_t>::max() / kLogicalBytesPerCurve)
             return fail(AnalyticFilteredLoweringError::resource_limit_exceeded);
@@ -392,6 +393,8 @@ class FilteredJobLowerer
 
     bool preflight_ring(const AnalyticRequestRingRecord& ring)
     {
+        if (!charge_work())
+            return false;
         telemetry_.input_segments += ring.segment_count;
         return add_projected(ring.segment_count);
     }
@@ -411,8 +414,10 @@ class FilteredJobLowerer
         max_global_y_ = std::max(max_global_y_, y);
     }
 
-    void scan_ring(const AnalyticRequestRingRecord& ring)
+    bool scan_ring(const AnalyticRequestRingRecord& ring)
     {
+        if (!charge_work(ring.vertex_count))
+            return false;
         for (std::uint32_t index = 0; index < ring.vertex_count; ++index)
         {
             const AnalyticRequestVertexRecord& vertex =
@@ -423,9 +428,10 @@ class FilteredJobLowerer
             if (segment.kind == 2)
                 include_global(segment.center_x_nm, segment.center_y_nm);
         }
+        return true;
     }
 
-    void scan_operand(const AnalyticRequestOperandRecord& operand)
+    bool scan_operand(const AnalyticRequestOperandRecord& operand)
     {
         switch (operand.geometry_kind)
         {
@@ -433,10 +439,13 @@ class FilteredJobLowerer
         {
             const AnalyticRequestPlanarRegionRecord& region =
                 records_.planar_regions[operand.geometry_index];
-            scan_ring(records_.rings[region.outer_ring]);
+            if (!scan_ring(records_.rings[region.outer_ring]))
+                return false;
             for (std::uint32_t index = 0; index < region.hole_reference_count; ++index)
-                scan_ring(
-                    records_.rings[records_.ring_references[region.hole_reference_begin + index]]);
+                if (!scan_ring(
+                        records_
+                            .rings[records_.ring_references[region.hole_reference_begin + index]]))
+                    return false;
             break;
         }
         case 2:
@@ -461,6 +470,7 @@ class FilteredJobLowerer
         default:
             break;
         }
+        return true;
     }
 
     bool local_coordinate(std::int64_t value, std::int64_t origin, std::int64_t& output) const
@@ -506,6 +516,8 @@ class FilteredJobLowerer
 
     bool validate_ring_extent(const AnalyticRequestRingRecord& ring)
     {
+        if (!charge_work(ring.vertex_count))
+            return false;
         for (std::uint32_t index = 0; index < ring.vertex_count; ++index)
         {
             const auto& vertex = records_.vertices[ring.vertex_begin + index];
@@ -763,12 +775,39 @@ class FilteredJobLowerer
         AnalyticCurveBoundsNm bounds;
         if (!bounds_for(curve, bounds))
             return false;
+        if (!has_output_bounds_)
+        {
+            min_output_x_ = bounds.min_x;
+            min_output_y_ = bounds.min_y;
+            max_output_x_ = bounds.max_x;
+            max_output_y_ = bounds.max_y;
+            has_output_bounds_ = true;
+        }
+        else
+        {
+            min_output_x_ = std::min(min_output_x_, bounds.min_x);
+            min_output_y_ = std::min(min_output_y_, bounds.min_y);
+            max_output_x_ = std::max(max_output_x_, bounds.max_x);
+            max_output_y_ = std::max(max_output_y_, bounds.max_y);
+        }
+        if (!output_bounds_within_span())
+            return false;
         out_.bounds.push_back(bounds);
         out_.curves.push_back(std::move(curve));
         descriptors_.push_back(std::move(descriptor));
         out_.occurrences.push_back({static_cast<std::uint64_t>(out_.curves.size()), coverage_id,
                                     agrees_with_carrier, material_on_left, source});
         ++telemetry_.emitted_curves;
+        return true;
+    }
+
+    bool output_bounds_within_span()
+    {
+        if (!has_output_bounds_ || !std::isfinite(min_output_x_) || !std::isfinite(min_output_y_) ||
+            !std::isfinite(max_output_x_) || !std::isfinite(max_output_y_) ||
+            max_output_x_ - min_output_x_ > kMaximumSpanNm ||
+            max_output_y_ - min_output_y_ > kMaximumSpanNm)
+            return fail(AnalyticFilteredLoweringError::resource_limit_exceeded);
         return true;
     }
 
@@ -921,6 +960,8 @@ class FilteredJobLowerer
 
     bool resolve_ring_orientation(const AnalyticRequestRingRecord& ring, bool& counterclockwise)
     {
+        if (!charge_work(ring.vertex_count))
+            return false;
         std::uint32_t best_vertex = 0;
         for (std::uint32_t index = 1; index < ring.vertex_count; ++index)
         {
@@ -940,6 +981,8 @@ class FilteredJobLowerer
         AnalyticIntegerPointNm best_center{};
         WideInteger best_squared{};
 
+        if (!charge_work(ring.segment_count))
+            return false;
         for (std::uint32_t index = 0; index < ring.segment_count; ++index)
         {
             SegmentGeometry segment;
@@ -1001,6 +1044,8 @@ class FilteredJobLowerer
         if (!resolve_ring_orientation(ring, ring_ccw))
             return false;
         const bool material_on_left = hole ? !ring_ccw : ring_ccw;
+        if (!charge_work(ring.segment_count))
+            return false;
         for (std::uint32_t index = 0; index < ring.segment_count; ++index)
         {
             SegmentGeometry segment;
@@ -1272,6 +1317,11 @@ class FilteredJobLowerer
     std::int64_t max_extent_x_ = 0;
     std::int64_t min_extent_y_ = 0;
     std::int64_t max_extent_y_ = 0;
+    bool has_output_bounds_ = false;
+    double min_output_x_ = 0.0;
+    double max_output_x_ = 0.0;
+    double min_output_y_ = 0.0;
+    double max_output_y_ = 0.0;
     std::vector<TokenDescriptor> descriptors_;
 };
 

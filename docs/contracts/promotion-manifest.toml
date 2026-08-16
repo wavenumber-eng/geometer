@@ -150,7 +150,7 @@ lowering_token_policy = "fixed_capacity_open_addressed_exact_construction_keys_w
 lowering_logical_bytes_per_curve = 768
 lowering_parity_validator = "scripts/validate_analytic_filtered_lowering_parity.py"
 lowering_vector_bytes = 3552
-lowering_vector_sha256 = "c3bdb4e5fa66fae4677b7a5088cb645cd81d8bf09a927cbe331d2d4c5015b059"
+lowering_vector_sha256 = "c249679df2ed5b1f2448e61992871340459f4526b2ce5cb6876a91a662fc6cf4"
 
 [analytic_exact_backend]
 status = "implemented_non_primary_oracle"
@@ -844,13 +844,13 @@ solver_numeric_status = "reopened_filtered_50nm"
 named_consumer = "appz.data_models.pcb.matz"
 compatibility_snapshot = "docs/contracts/compatibility/data-models-geom-a0-2026-08-12.toml"
 design = "docs/design/analytic-planar-boolean-a0.md"
-design_sha256 = "677595d57da9301bfab72ed5aee9e02f5fbd39b0024c12d495a1e6db0b567203"
+design_sha256 = "ed97d931729226e1f799307226ef0d9b5cc746f3cea897c38175d2de8491ef50"
 packet_spec = "docs/design/analytic-planar-boolean-packet-a0.md"
 packet_spec_sha256 = "5fb82f495b17b1c47536d6c0ade77aa3183bc6b7f342f70013c462fcaf469856"
 numeric_catalog = "docs/contracts/analytic-planar-boolean-a0-catalog.toml"
 numeric_catalog_sha256 = "f0b52ef8a032dcf47d2083b1f843aeeb791d4bc477a36b10c8c590474d47db7e"
 solver_adr = "docs/adr/013_filtered_resolution_bounded_planar_boolean.md"
-solver_adr_sha256 = "c8fff64115d8882b0fbbeef4a9203a9527a762a82c0621127c2b6e9c9aeace2d"
+solver_adr_sha256 = "1f8cd3c73dee245aae3733ee1f99019d8b6a86c7574526c2cb1c15619eb150d0"
 superseded_solver_adr = "docs/adr/012_exact_analytic_planar_boolean_arrangement.md"
 filtered_solver_foundation = "direct_lowering_broad_and_narrow_phase_implemented_not_dispatched"
 feasibility_test = "tests/cpp/analytic_planar_boolean_feasibility_test.cpp"

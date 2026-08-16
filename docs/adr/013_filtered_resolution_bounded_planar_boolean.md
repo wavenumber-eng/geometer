@@ -95,6 +95,8 @@ engine.
   therefore reuse carriers, while distinct parallel carriers are certified as
   such. Empty stages are bounded no-ops, and global expansion is rejected when
   a later origin translation could leave signed 64-bit public coordinates.
+  Aggregate sweep-tight output bounds, including finite-arc cardinal extrema,
+  must remain inside the governed job-local coordinate span.
   Swept paths fail job-locally as unsupported until their piece union is
   implemented by the filtered indexed arrangement; the exact swept
   pre-arrangement is not a production fallback.

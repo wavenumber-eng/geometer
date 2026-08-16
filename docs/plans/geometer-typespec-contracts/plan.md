@@ -851,8 +851,9 @@ Geometer proposal, not the original consumer packet.
   fixed-capacity exact-key token tables meter every probe and preserve
   duplicate capsule and authored/constructed carrier equality. Stage/operand
   visits share the work ceiling, empty stages are no-ops, and expanded global
-  geometry must remain signed-64-bit representable. Swept paths deliberately
-  return job-local
+  geometry must remain signed-64-bit representable. Aggregate sweep-tight
+  output bounds, including finite-arc cardinal extrema, must remain within the
+  job-local span. Swept paths deliberately return job-local
   `unsupported_geometry` until their piece union can use the filtered indexed
   arrangement; the former exact quadratic path is not retained as a normal
   fallback.

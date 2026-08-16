@@ -353,7 +353,9 @@ prove equality or inequality without a general symbolic value. Stage and
 operand visits share the same work meter, zero-operand jobs return an empty
 geometry, exact maximum radii are canonicalized to singleton intervals, and
 expanded geometry must remain representable after restoring the signed 64-bit
-global origin.
+global origin. The aggregate sweep-tight emitted bounds, including finite-arc
+cardinal extrema, must also remain inside the governed job-local coordinate
+span.
 Swept paths currently return job-local `unsupported_geometry` on this path;
 their old exact piece-union and quadratic centerline validation are not used as
 a production fallback. They become supported when the filtered indexed

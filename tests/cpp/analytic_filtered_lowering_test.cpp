@@ -368,6 +368,22 @@ void test_empty_jobs_radius_domain_and_global_expansion()
     result = lower_analytic_job_to_filtered_curves(edge, 0);
     require(result.error == AnalyticFilteredLoweringError::resource_limit_exceeded,
             "negative global coordinate expansion overflow was accepted");
+
+    const AnalyticRequestPacketRecords maximum_minor_arc =
+        region_records({{0, 0}, {1'000'000'000'000, 1'000'000'000'000}},
+                       {{800, 900, 2, 2, false, 1'000'000'000'000, 0}, {801, 901}});
+    const AnalyticFilteredGeometry minor = lower(maximum_minor_arc, "maximum-span minor arc");
+    require(minor.bounds[0].max_x - minor.bounds[0].min_x <= 1'000'000'000'000.0 &&
+                minor.bounds[0].max_y - minor.bounds[0].min_y <= 1'000'000'000'000.0,
+            "sweep-tight minor arc did not remain inside the maximum span");
+
+    const AnalyticRequestPacketRecords excessive_major_arc =
+        region_records({{0, 0}, {1'000'000'000'000, 1'000'000'000'000}},
+                       {{800, 900, 2, 1, true, 1'000'000'000'000, 0}, {801, 901}});
+    result = lower_analytic_job_to_filtered_curves(excessive_major_arc, 0);
+    require(result.error == AnalyticFilteredLoweringError::resource_limit_exceeded &&
+                !result.value.has_value(),
+            "major-arc cardinal extrema bypassed the maximum job span");
 }
 
 void test_fail_closed_limits_and_swept_path()
@@ -407,6 +423,49 @@ void test_fail_closed_limits_and_swept_path()
                 result.telemetry.token_table_probes != 0 &&
                 result.telemetry.work_units == limits.predicate_calls,
             "one-unit-short lowering work limit did not stop deterministically");
+
+    constexpr std::uint32_t large_ring_size = 131'072;
+    constexpr std::int64_t large_ring_side = large_ring_size / 4;
+    AnalyticRequestPacketRecords large_ring;
+    large_ring.jobs = {{10, 0, 1}};
+    large_ring.stages = {{100, 1, 0, 1}};
+    large_ring.operands = {{1000, 1, 0}};
+    large_ring.planar_regions = {{500, 0, 0, 0}};
+    large_ring.rings = {{600, 0, large_ring_size, 0, large_ring_size, 0}};
+    large_ring.vertices.reserve(large_ring_size);
+    large_ring.segments.reserve(large_ring_size);
+    for (std::uint32_t index = 0; index < large_ring_size; ++index)
+    {
+        std::int64_t x = 0;
+        std::int64_t y = 0;
+        if (index < large_ring_side)
+            x = index;
+        else if (index < large_ring_side * 2)
+        {
+            x = large_ring_side;
+            y = index - large_ring_side;
+        }
+        else if (index < large_ring_side * 3)
+        {
+            x = large_ring_side * 3 - index;
+            y = large_ring_side;
+        }
+        else
+            y = large_ring_size - index;
+        large_ring.vertices.push_back({10'000 + index, x, y});
+        large_ring.segments.push_back({20'000 + index, 30'000 + index, 1, 0, false, 0, 0});
+    }
+    require(validate_analytic_request_packet_records(large_ring) ==
+                AnalyticRequestPacketError::none,
+            "large authored-ring work fixture is not packet-valid");
+    limits = kAnalyticSolverHardLimits;
+    limits.predicate_calls = 3;
+    result = lower_analytic_job_to_filtered_curves(large_ring, 0, limits);
+    require(result.error == AnalyticFilteredLoweringError::resource_limit_exceeded &&
+                !result.value.has_value() && result.telemetry.work_units == 3 &&
+                result.telemetry.input_segments == large_ring_size &&
+                result.telemetry.peak_working_memory_bytes == 0,
+            "large authored ring was traversed or allocated past its short work budget");
 
     AnalyticRequestPacketRecords swept;
     swept.jobs = {{10, 0, 1}};

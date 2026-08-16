@@ -710,7 +710,7 @@ def test_filtered_solver_foundation_is_bounded_non_algebraic_and_not_dispatched(
         "lowering_parity_validator": "scripts/validate_analytic_filtered_lowering_parity.py",
         "lowering_vector_bytes": 3552,
         "lowering_vector_sha256": (
-            "c3bdb4e5fa66fae4677b7a5088cb645cd81d8bf09a927cbe331d2d4c5015b059"
+            "c249679df2ed5b1f2448e61992871340459f4526b2ce5cb6876a91a662fc6cf4"
         ),
     }
     implementation_paths = [

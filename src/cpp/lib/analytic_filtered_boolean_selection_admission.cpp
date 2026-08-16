@@ -587,11 +587,16 @@ SelectionAdmission prepare_boolean_selection_admission(
                 // target-independent O((T+F) log S + O log S) work is added to
                 // selection below. This downstream reservation covers the
                 // allocation-free lineage/reference count and canonical fill
-                // pass. Exact publication capacity is checked after that
-                // count, before any outcome vector is allocated.
-                outcomes_work = checked_multiply(operands, 12, valid);
-                outcomes_work = checked_add(
-                    outcomes_work, checked_multiply(geometry.occurrences.size(), 6, valid), valid);
+                // pass. Source copying is bounded from the admitted occurrence
+                // table here; output-sensitive lineage incidences are charged
+                // in one bulk reservation before their exact count traversal.
+                const std::uint64_t operand_tree = tree_operation_units(operands);
+                outcomes_work = checked_multiply(operands, 16, valid);
+                outcomes_work =
+                    checked_add(outcomes_work,
+                                checked_multiply(geometry.occurrences.size(),
+                                                 checked_add(operand_tree, 4, valid), valid),
+                                valid);
                 outcomes_work =
                     checked_add(outcomes_work, checked_multiply(maximum_regions, 4, valid), valid);
                 outcomes_work = checked_add(outcomes_work,

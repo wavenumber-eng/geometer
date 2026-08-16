@@ -1005,10 +1005,16 @@ Geometer proposal, not the original consumer packet.
   fact once with active-and-unseen stage reporters; publication derives
   nonexclusive events, complete original occurrence sources, and tagged local
   ring/region handles from actual lineage incidences without face-by-operand
-  replay. Same-stage symmetry, removal/refill/removal epochs, collapsed
-  no-effect, exact/one-short budgets, sparse 1x/2x scaling, and native/WASM
-  parity gate the slice. Final packet IDs remain intentionally deferred until
-  one-time 1 nm normalization supplies canonical topology remaps.
+  replay. Stage batches use fixed-capacity generation marks rather than an
+  operand-sized temporary list. Tagged handles are counted exactly with
+  generation-stamped operand/ring/region groups, so coincident or repeated
+  fragments cannot inflate publication capacity. The complete count and fill
+  traversals are bulk-precharged before they begin. Same-stage symmetry,
+  removal/refill/removal epochs, 1,024 zero-operand stages, dense coincident
+  operands, duplicate-heavy subtraction lineage, collapsed no-effect,
+  exact/one-short budgets, sparse 1x/2x scaling, and native/WASM parity gate
+  the slice. Final packet IDs remain intentionally deferred until one-time
+  1 nm normalization supplies canonical topology remaps.
   One-time coordinate publication, post-normalization topology validation,
   dispatch, and transport remain pending.
 - Before filtered operation dispatch is enabled, move the retained native

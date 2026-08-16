@@ -284,6 +284,147 @@ AnalyticFilteredOutcomesResult build_disjoint(std::uint32_t count,
     return build(records_for({{1, operands}}), geometry, limits);
 }
 
+AnalyticFilteredOutcomesResult build_empty_stages(std::uint32_t count,
+                                                  const AnalyticSolverLimits& limits = {})
+{
+    std::vector<StageSpec> stages(count);
+    for (std::uint32_t index = 0; index < count; ++index)
+        stages[index].operation = index % 2 == 0 ? 1 : 2;
+    return build(records_for(stages), {}, limits);
+}
+
+AnalyticFilteredOutcomesResult build_coincident(std::uint32_t count,
+                                                const AnalyticSolverLimits& limits = {})
+{
+    AnalyticFilteredGeometry geometry;
+    std::vector<std::uint64_t> operands;
+    operands.reserve(count);
+    for (std::uint32_t index = 0; index < count; ++index)
+    {
+        operands.push_back(index + 1);
+        const std::uint32_t begin = static_cast<std::uint32_t>(geometry.curves.size());
+        append_box(geometry, index + 1, 0, 0, 1000, 1000);
+        if (index != 0)
+            share_box_carriers(geometry, 0, begin);
+    }
+    return build(records_for({{1, operands}}), geometry, limits);
+}
+
+AnalyticFilteredOutcomesResult build_duplicate_subtraction(std::uint32_t copies,
+                                                           const AnalyticSolverLimits& limits = {})
+{
+    AnalyticFilteredGeometry geometry;
+    append_box(geometry, 1, 0, 0, 2000, 2000);
+    std::uint32_t authority = 0;
+    for (std::uint32_t index = 0; index < copies; ++index)
+    {
+        const std::uint32_t begin = static_cast<std::uint32_t>(geometry.curves.size());
+        append_box(geometry, 2, 500, 500, 1500, 1500);
+        if (index == 0)
+            authority = begin;
+        else
+            share_box_carriers(geometry, authority, begin);
+    }
+    return build(records_for({{1, {1}}, {2, {2}}}), geometry, limits);
+}
+
+void test_dense_stage_and_exact_reference_counting()
+{
+    const auto dense = build_coincident(16);
+    require(dense.error == AnalyticFilteredOutcomesError::none,
+            "dense same-stage outcome tracker failed");
+    for (std::uint64_t operand = 1; operand <= 16; ++operand)
+        require(has(dense, operand, AnalyticOperandOutcomeKind::contributes_final_material) &&
+                    has(dense, operand, AnalyticOperandOutcomeKind::redundant_or_absorbed_coverage),
+                "dense same-stage batch lost symmetric evidence");
+
+    const auto duplicate = build_duplicate_subtraction(12);
+    require(duplicate.error == AnalyticFilteredOutcomesError::none,
+            "duplicate subtraction outcome fixture failed");
+    const auto& removal =
+        event(duplicate, 2, AnalyticOperandOutcomeKind::subtraction_effect_survives);
+    require(removal.result_references.count == 2 && duplicate.result_references.size() == 3,
+            "duplicate subtraction fragments inflated exact tagged references");
+
+    AnalyticSolverLimits limits;
+    std::uint64_t low = 0;
+    std::uint64_t high = limits.working_memory_bytes;
+    while (low < high)
+    {
+        const std::uint64_t middle = low + (high - low) / 2;
+        auto probe = limits;
+        probe.working_memory_bytes = middle;
+        if (build_coincident(8, probe).error == AnalyticFilteredOutcomesError::none)
+            high = middle;
+        else
+            low = middle + 1;
+    }
+    auto exact_memory = limits;
+    exact_memory.working_memory_bytes = low;
+    require(build_coincident(8, exact_memory).error == AnalyticFilteredOutcomesError::none,
+            "dense same-stage tracker failed at exact logical memory");
+    --exact_memory.working_memory_bytes;
+    const auto short_memory = build_coincident(8, exact_memory);
+    require(short_memory.error == AnalyticFilteredOutcomesError::resource_limit_exceeded &&
+                short_memory.events.empty() && short_memory.result_references.empty() &&
+                short_memory.source_references.empty(),
+            "one-byte-short dense stage memory leaked outcome publication");
+
+    low = 0;
+    high = limits.predicate_calls;
+    while (low < high)
+    {
+        const std::uint64_t middle = low + (high - low) / 2;
+        auto probe = limits;
+        probe.predicate_calls = middle;
+        if (build_duplicate_subtraction(8, probe).error == AnalyticFilteredOutcomesError::none)
+            high = middle;
+        else
+            low = middle + 1;
+    }
+    auto exact_work = limits;
+    exact_work.predicate_calls = low;
+    require(build_duplicate_subtraction(8, exact_work).error == AnalyticFilteredOutcomesError::none,
+            "duplicate-reference publication failed at exact governed work");
+    --exact_work.predicate_calls;
+    const auto short_work = build_duplicate_subtraction(8, exact_work);
+    require(short_work.error == AnalyticFilteredOutcomesError::resource_limit_exceeded &&
+                short_work.events.empty() && short_work.result_references.empty() &&
+                short_work.source_references.empty(),
+            "one-unit-short duplicate publication leaked output");
+}
+
+void test_empty_stage_work_admission()
+{
+    constexpr std::uint32_t kStages = 1024;
+    const auto baseline = build_empty_stages(kStages);
+    require(baseline.error == AnalyticFilteredOutcomesError::none && baseline.events.empty(),
+            "zero-operand stage outcome fixture failed");
+
+    AnalyticSolverLimits limits;
+    std::uint64_t low = 0;
+    std::uint64_t high = limits.predicate_calls;
+    while (low < high)
+    {
+        const std::uint64_t middle = low + (high - low) / 2;
+        auto probe = limits;
+        probe.predicate_calls = middle;
+        if (build_empty_stages(kStages, probe).error == AnalyticFilteredOutcomesError::none)
+            high = middle;
+        else
+            low = middle + 1;
+    }
+    auto exact = limits;
+    exact.predicate_calls = low;
+    require(build_empty_stages(kStages, exact).error == AnalyticFilteredOutcomesError::none,
+            "zero-operand stages failed at exact governed work");
+    --exact.predicate_calls;
+    const auto short_result = build_empty_stages(kStages, exact);
+    require(short_result.error == AnalyticFilteredOutcomesError::resource_limit_exceeded &&
+                short_result.telemetry.arrangement_work_units == 0 && short_result.events.empty(),
+            "one-short zero-operand stage work reached arrangement");
+}
+
 void test_governance_and_sparse_scaling()
 {
     const auto small = build_disjoint(16);
@@ -458,6 +599,8 @@ int main(int argc, char** argv)
     test_accumulator_redundancy_and_same_stage_subtractors();
     test_complete_removal_and_no_effect();
     test_remove_refill_remove_and_collapsed_no_effect();
+    test_dense_stage_and_exact_reference_counting();
+    test_empty_stage_work_admission();
     test_governance_and_sparse_scaling();
     test_malformed_source_fails_before_arrangement();
     if (argc == 2 && std::string(argv[1]) == "--emit-parity")

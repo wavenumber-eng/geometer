@@ -41,7 +41,7 @@ std::uint64_t outcome_tracker_logical_bytes(std::uint64_t operands, std::uint64_
     // fixed-capacity operand/stage scratch lists are owned by the tracker.
     bytes = checked_add(
         bytes, checked_multiply(operands, kOutcomeEvidenceLogicalBytes + 1 + 4, valid), valid);
-    bytes = checked_add(bytes, checked_multiply(stages, 8 + 4 * 5, valid), valid);
+    bytes = checked_add(bytes, checked_multiply(stages, 9 + 4 * 5, valid), valid);
     // Stage state: five target-independent int32 trees and one uint32 count
     // vector. Six reporters each own prev/next/linked operand slots, four
     // stage vectors, and one uint32 sum tree.
@@ -59,6 +59,7 @@ std::uint64_t outcome_tracker_work_upper_bound(std::uint64_t transitions, std::u
                                                std::uint64_t operands, std::uint64_t stages,
                                                bool& valid) noexcept
 {
+    const std::uint64_t leaves = leaf_capacity(stages, valid);
     const std::uint64_t tree = tree_operation_units(std::max<std::uint64_t>(1, stages));
     // Every tree edge is applied and reverted. A changed operand can touch
     // three reporters, one stage leaf, old/new successor searches, and three
@@ -70,8 +71,13 @@ std::uint64_t outcome_tracker_work_upper_bound(std::uint64_t transitions, std::u
         checked_add(work, checked_multiply(faces, checked_add(tree * 8, 12, valid), valid), valid);
     work = checked_add(work, checked_multiply(operands, checked_add(tree * 6, 12, valid), valid),
                        valid);
-    work =
-        checked_add(work, checked_add(operands, checked_multiply(stages, 8, valid), valid), valid);
+    std::uint64_t initialization = checked_add(
+        operands,
+        checked_add(checked_multiply(stages, 8, valid), checked_multiply(leaves, 8, valid), valid),
+        valid);
+    initialization = checked_add(
+        initialization, checked_multiply(checked_multiply(stages, 2, valid), tree, valid), valid);
+    work = checked_add(work, initialization, valid);
     return work;
 }
 
@@ -407,7 +413,7 @@ struct OutcomeHistoryTracker::Impl
           unfilled(Fact::unfilled, operands.size(), operations.size(), stages.capacity, *this),
           overwritten(Fact::overwritten, operands.size(), operations.size(), stages.capacity,
                       *this),
-          active(operands.size()), stage_delta(operations.size())
+          active(operands.size()), stage_delta(operations.size()), stage_touched(operations.size())
     {
         batch.reserve(operands.size());
         changed_stages.reserve(operations.size());
@@ -546,7 +552,16 @@ struct OutcomeHistoryTracker::Impl
             return false;
         changed_stages.clear();
         for (const std::uint32_t operand : batch)
-            changed_stages.push_back(operands[operand].stage_ordinal);
+        {
+            const std::uint32_t stage = operands[operand].stage_ordinal;
+            if (stage >= stage_touched.size())
+                return false;
+            if (stage_touched[stage] == 0)
+            {
+                stage_touched[stage] = 1;
+                changed_stages.push_back(stage);
+            }
+        }
         const std::uint64_t stage_sort = sort_units(changed_stages.size());
         if (!consume(stage_sort))
             return false;
@@ -586,6 +601,8 @@ struct OutcomeHistoryTracker::Impl
             else
                 return false;
         }
+        for (const std::uint32_t stage : changed_stages)
+            stage_touched[stage] = 0;
         for (const std::uint32_t stage : changed_stages)
         {
             const std::int64_t updated =
@@ -664,6 +681,7 @@ struct OutcomeHistoryTracker::Impl
     Reporter overwritten;
     std::vector<std::uint8_t> active;
     std::vector<std::int64_t> stage_delta;
+    std::vector<std::uint8_t> stage_touched;
     std::vector<std::uint32_t> batch;
     std::vector<std::uint32_t> changed_stages;
     std::vector<std::uint32_t> affected_stages;

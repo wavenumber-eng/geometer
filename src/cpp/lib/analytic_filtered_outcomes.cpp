@@ -10,6 +10,7 @@
 #include <cstdint>
 #include <limits>
 #include <new>
+#include <numeric>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -34,7 +35,6 @@ constexpr std::uint32_t kNone = std::numeric_limits<std::uint32_t>::max();
 constexpr std::uint64_t kStateLogicalBytes = 48;
 constexpr std::uint64_t kLookupLogicalBytes = 16;
 constexpr std::uint64_t kRawSourceLogicalBytes = 40;
-constexpr std::uint64_t kRawReferenceLogicalBytes = 16;
 constexpr std::uint64_t kEventLogicalBytes = 32;
 constexpr std::uint64_t kTaggedReferenceLogicalBytes = 8;
 constexpr std::uint64_t kSourceLogicalBytes = 32;
@@ -48,6 +48,7 @@ struct State
     std::uint32_t stage = 0;
     std::uint8_t operation = 0;
     bool final_lineage = false;
+    std::uint32_t reference_count = 0;
     AnalyticFilteredSourceRange sources;
     AnalyticFilteredSourceRange references;
 };
@@ -62,12 +63,6 @@ struct RawSource
 {
     std::uint32_t operand = 0;
     AnalyticFilteredSourceReference source;
-};
-
-struct RawReference
-{
-    std::uint32_t operand = 0;
-    AnalyticFilteredTaggedResultReference reference;
 };
 
 auto source_key(const AnalyticFilteredSourceReference& value) noexcept
@@ -237,6 +232,14 @@ class Builder
         return found != lookup_.end() && found->operand_id == id ? found->ordinal : kNone;
     }
 
+    std::uint32_t find_operand_precharged(std::uint64_t id) const noexcept
+    {
+        const auto found = std::lower_bound(lookup_.begin(), lookup_.end(), id,
+                                            [](const Lookup& value, std::uint64_t key)
+                                            { return value.operand_id < key; });
+        return found != lookup_.end() && found->operand_id == id ? found->ordinal : kNone;
+    }
+
     bool prepare_states()
     {
         if (job_index_ >= records_.jobs.size())
@@ -252,11 +255,12 @@ class Builder
             operand_count = checked_add(
                 operand_count, records_.stages[job.stage_begin + local].operand_count, valid);
         const std::uint64_t retained = retained_lineage_bytes(result_.lineage, valid);
-        std::uint64_t ring_indices = result_.lineage.regions.ring_half_edges.size();
-        ring_indices = checked_add(ring_indices, result_.lineage.regions.rings.size(), valid);
+        std::uint64_t ring_indices =
+            checked_multiply(result_.lineage.regions.rings.size(), 2, valid);
         ring_indices =
             checked_add(ring_indices,
                         checked_multiply(result_.lineage.regions.regions.size(), 2, valid), valid);
+        ring_indices = checked_add(ring_indices, checked_multiply(operand_count, 2, valid), valid);
         const std::uint64_t structural = checked_add(
             checked_multiply(operand_count, kStateLogicalBytes + kLookupLogicalBytes, valid),
             checked_multiply(ring_indices, kIndexLogicalBytes, valid), valid);
@@ -267,6 +271,8 @@ class Builder
             return false;
         states_.reserve(static_cast<std::size_t>(operand_count));
         lookup_.reserve(static_cast<std::size_t>(operand_count));
+        reference_stamps_.assign(static_cast<std::size_t>(operand_count), 0);
+        reference_cursors_.resize(static_cast<std::size_t>(operand_count));
         std::uint32_t ordinal = 0;
         for (std::uint32_t local = 0; local < job.stage_count; ++local)
         {
@@ -299,7 +305,6 @@ class Builder
     {
         const auto& regions = result_.lineage.regions;
         const auto& selection = regions.selection;
-        ring_by_boundary_.assign(regions.ring_half_edges.size(), kNone);
         ring_region_.assign(regions.rings.size(), kNone);
         bool valid = true;
         std::uint64_t map_work = checked_add(regions.rings.size(), regions.regions.size(), valid);
@@ -319,8 +324,7 @@ class Builder
                 static_cast<std::uint64_t>(value.half_edge_begin) + value.half_edge_count;
             if (value.half_edge_begin != cursor || end > regions.ring_half_edges.size())
                 return invalid();
-            while (cursor < end)
-                ring_by_boundary_[cursor++] = ring;
+            cursor = static_cast<std::uint32_t>(end);
         }
         if (cursor != regions.ring_half_edges.size() ||
             result_.lineage.boundaries.size() != regions.ring_half_edges.size())
@@ -357,22 +361,41 @@ class Builder
                 return invalid();
             ring_region_[ring] = found->second;
         }
+        ring_order_.resize(regions.rings.size());
+        std::iota(ring_order_.begin(), ring_order_.end(), 0);
+        const std::uint64_t ring_sort = sort_units(ring_order_.size());
+        if (!charge(ring_sort))
+            return false;
+        result_.telemetry.sort_work_units += ring_sort;
+        std::sort(
+            ring_order_.begin(), ring_order_.end(), [&](std::uint32_t left, std::uint32_t right)
+            { return std::tie(ring_region_[left], left) < std::tie(ring_region_[right], right); });
         return true;
     }
 
     bool collect_counts()
     {
         raw_source_count_ = geometry_.occurrences.size();
-        raw_reference_count_ = 0;
+        reference_count_ = 0;
+        positive_incidence_count_ = 0;
+        subtraction_incidence_count_ = 0;
         const auto& lineage = result_.lineage;
-        for (const auto& region : lineage.region_lineage)
+        if (!charge(lineage.region_lineage.size() + lineage.boundaries.size()))
+            return false;
+        if (lineage.region_lineage.size() != lineage.regions.regions.size())
+            return invalid();
+        for (std::uint32_t region_index = 0; region_index < lineage.region_lineage.size();
+             ++region_index)
         {
+            const auto& region = lineage.region_lineage[region_index];
+            if (region.region != region_index)
+                return invalid();
             if (region.positive_contributors.begin > lineage.source_references.size() ||
                 region.positive_contributors.count >
                     lineage.source_references.size() - region.positive_contributors.begin)
                 return invalid();
-            raw_reference_count_ =
-                checked_count_add(raw_reference_count_, region.positive_contributors.count);
+            positive_incidence_count_ =
+                checked_count_add(positive_incidence_count_, region.positive_contributors.count);
         }
         for (const auto& boundary : lineage.boundaries)
         {
@@ -380,32 +403,35 @@ class Builder
                 boundary.subtraction.count >
                     lineage.source_references.size() - boundary.subtraction.begin)
                 return invalid();
-            bool valid = true;
-            const std::uint64_t additions = checked_multiply(boundary.subtraction.count, 2, valid);
-            if (!valid)
-                return resource();
-            raw_reference_count_ = checked_count_add(raw_reference_count_, additions);
+            subtraction_incidence_count_ =
+                checked_count_add(subtraction_incidence_count_, boundary.subtraction.count);
         }
         if (result_.error != AnalyticFilteredOutcomesError::none)
             return false;
-        if (!charge(lineage.region_lineage.size() + lineage.boundaries.size()))
+
+        bool valid = true;
+        const std::uint64_t reference_visits =
+            checked_add(positive_incidence_count_,
+                        checked_multiply(subtraction_incidence_count_, 2, valid), valid);
+        std::uint64_t count_work = checked_multiply(
+            reference_visits, checked_add(tree_operation_units(states_.size()), 2, valid), valid);
+        count_work = checked_add(count_work, checked_multiply(states_.size(), 2, valid), valid);
+        count_work = checked_add(
+            count_work, checked_multiply(result_.lineage.regions.rings.size(), 2, valid), valid);
+        count_work = checked_add(count_work, result_.lineage.regions.regions.size(), valid);
+        count_work = checked_add(
+            count_work, checked_multiply(result_.lineage.boundaries.size(), 2, valid), valid);
+        if (!valid || !charge(count_work))
             return false;
-        // Mark final contributors without allocating a face/operand matrix.
-        for (const auto& region : lineage.region_lineage)
-            for (std::uint32_t offset = 0; offset < region.positive_contributors.count; ++offset)
-            {
-                ++result_.telemetry.lineage_source_visits;
-                const auto& source =
-                    lineage.source_references[region.positive_contributors.begin + offset];
-                const std::uint32_t operand = find_operand(source.operand_id);
-                if (operand == kNone)
-                    return result_.error == AnalyticFilteredOutcomesError::none ? invalid() : false;
-                states_[operand].final_lineage = true;
-            }
+        for (auto& state : states_)
+        {
+            state.final_lineage = false;
+            state.reference_count = 0;
+        }
+        if (!project_references(true))
+            return false;
         const auto& evidence = lineage.regions.selection.outcome_evidence;
         event_count_ = 0;
-        if (!charge(states_.size()))
-            return false;
         for (std::uint32_t ordinal = 0; ordinal < states_.size(); ++ordinal)
         {
             const State& state = states_[ordinal];
@@ -435,6 +461,103 @@ class Builder
         return true;
     }
 
+    bool begin_reference_group()
+    {
+        if (reference_generation_ == std::numeric_limits<std::uint32_t>::max())
+            return invalid();
+        ++reference_generation_;
+        return true;
+    }
+
+    bool visit_reference_range(const AnalyticFilteredSourceRange& range,
+                               AnalyticFilteredTaggedResultReference reference,
+                               std::uint8_t expected_operation, bool final_lineage, bool counting)
+    {
+        const auto& sources = result_.lineage.source_references;
+        if (range.begin > sources.size() || range.count > sources.size() - range.begin)
+            return invalid();
+        for (std::uint32_t offset = 0; offset < range.count; ++offset)
+        {
+            ++result_.telemetry.lineage_source_visits;
+            const auto& source = sources[range.begin + offset];
+            const std::uint32_t operand = find_operand_precharged(source.operand_id);
+            if (operand == kNone || states_[operand].operation != expected_operation)
+                return invalid();
+            if (final_lineage)
+                states_[operand].final_lineage = true;
+            if (reference_stamps_[operand] == reference_generation_)
+                continue;
+            reference_stamps_[operand] = reference_generation_;
+            if (counting)
+            {
+                ++states_[operand].reference_count;
+                reference_count_ = checked_count_add(reference_count_, 1);
+                if (result_.error != AnalyticFilteredOutcomesError::none)
+                    return false;
+            }
+            else
+            {
+                if (reference_cursors_[operand] >= result_.result_references.size())
+                    return invalid();
+                result_.result_references[reference_cursors_[operand]++] = reference;
+            }
+        }
+        return true;
+    }
+
+    bool visit_ring_subtraction(std::uint32_t ring, AnalyticFilteredResultReferenceKind kind,
+                                std::uint32_t local_index, bool counting)
+    {
+        const auto& regions = result_.lineage.regions;
+        if (ring >= regions.rings.size())
+            return invalid();
+        const auto& value = regions.rings[ring];
+        const std::uint64_t end =
+            static_cast<std::uint64_t>(value.half_edge_begin) + value.half_edge_count;
+        if (end > result_.lineage.boundaries.size())
+            return invalid();
+        for (std::uint32_t boundary = value.half_edge_begin; boundary < end; ++boundary)
+            if (!visit_reference_range(result_.lineage.boundaries[boundary].subtraction,
+                                       {kind, local_index}, 2, false, counting))
+                return false;
+        return true;
+    }
+
+    bool project_references(bool counting)
+    {
+        std::fill(reference_stamps_.begin(), reference_stamps_.end(), 0);
+        reference_generation_ = 0;
+        const auto& regions = result_.lineage.regions;
+        for (std::uint32_t ring = 0; ring < regions.rings.size(); ++ring)
+        {
+            if (!begin_reference_group() ||
+                !visit_ring_subtraction(ring, AnalyticFilteredResultReferenceKind::ring, ring,
+                                        counting))
+                return false;
+        }
+        std::size_t ring_cursor = 0;
+        for (std::uint32_t region = 0; region < regions.regions.size(); ++region)
+        {
+            if (!begin_reference_group() ||
+                !visit_reference_range(result_.lineage.region_lineage[region].positive_contributors,
+                                       {AnalyticFilteredResultReferenceKind::region, region}, 1,
+                                       true, counting))
+                return false;
+            if (ring_cursor < ring_order_.size() && ring_region_[ring_order_[ring_cursor]] < region)
+                return invalid();
+            while (ring_cursor < ring_order_.size() &&
+                   ring_region_[ring_order_[ring_cursor]] == region)
+            {
+                if (!visit_ring_subtraction(ring_order_[ring_cursor],
+                                            AnalyticFilteredResultReferenceKind::region, region,
+                                            counting))
+                    return false;
+                ++ring_cursor;
+            }
+        }
+        return ring_cursor == ring_order_.size();
+    }
+
     std::uint64_t checked_count_add(std::uint64_t left, std::uint64_t right)
     {
         bool valid = true;
@@ -447,69 +570,88 @@ class Builder
     bool preflight_publication()
     {
         if (event_count_ > limits_.provenance_references ||
-            raw_reference_count_ > limits_.provenance_references ||
+            reference_count_ > limits_.provenance_references ||
             raw_source_count_ > limits_.source_reference_memberships)
             return resource();
         bool valid = true;
         const std::uint64_t retained = retained_lineage_bytes(result_.lineage, valid);
         std::uint64_t persistent =
             checked_multiply(states_.size(), kStateLogicalBytes + kLookupLogicalBytes, valid);
-        persistent = checked_add(persistent,
-                                 checked_multiply(ring_by_boundary_.size() + ring_region_.size(),
-                                                  kIndexLogicalBytes, valid),
-                                 valid);
+        persistent =
+            checked_add(persistent,
+                        checked_multiply(ring_region_.size() + ring_order_.size() +
+                                             reference_stamps_.size() + reference_cursors_.size(),
+                                         kIndexLogicalBytes, valid),
+                        valid);
         std::uint64_t publication = checked_multiply(
             raw_source_count_, kRawSourceLogicalBytes + kSourceLogicalBytes, valid);
         publication = checked_add(
-            publication,
-            checked_multiply(raw_reference_count_,
-                             kRawReferenceLogicalBytes + kTaggedReferenceLogicalBytes, valid),
+            publication, checked_multiply(reference_count_, kTaggedReferenceLogicalBytes, valid),
             valid);
         publication = checked_add(publication,
                                   checked_multiply(event_count_, kEventLogicalBytes, valid), valid);
         const std::uint64_t phase =
             checked_add(checked_add(retained, persistent, valid), publication, valid);
-        std::uint64_t remaining_work = raw_source_count_ + raw_reference_count_ * 2 + event_count_;
-        remaining_work = checked_add(remaining_work, states_.size(), valid);
-        remaining_work = checked_add(remaining_work, result_.lineage.region_lineage.size(), valid);
-        remaining_work = checked_add(remaining_work, result_.lineage.boundaries.size(), valid);
-        remaining_work = checked_add(remaining_work, sort_units(raw_source_count_), valid);
-        remaining_work = checked_add(remaining_work, sort_units(raw_reference_count_), valid);
-        remaining_work = checked_add(remaining_work,
-                                     checked_multiply(raw_source_count_ + raw_reference_count_,
-                                                      tree_operation_units(states_.size()), valid),
-                                     valid);
+        const std::uint64_t tree = tree_operation_units(states_.size());
+        std::uint64_t remaining_work =
+            checked_multiply(raw_source_count_, checked_add(tree, 4, valid), valid);
+        const std::uint64_t source_sort = sort_units(raw_source_count_);
+        remaining_work = checked_add(remaining_work, source_sort, valid);
+        const std::uint64_t reference_visits =
+            checked_add(positive_incidence_count_,
+                        checked_multiply(subtraction_incidence_count_, 2, valid), valid);
+        remaining_work = checked_add(
+            remaining_work, checked_multiply(reference_visits, checked_add(tree, 2, valid), valid),
+            valid);
+        remaining_work = checked_add(remaining_work, reference_count_, valid);
+        remaining_work = checked_add(
+            remaining_work,
+            checked_add(checked_multiply(result_.lineage.regions.rings.size(), 2, valid),
+                        checked_add(result_.lineage.regions.regions.size(),
+                                    checked_multiply(result_.lineage.boundaries.size(), 2, valid),
+                                    valid),
+                        valid),
+            valid);
+        remaining_work =
+            checked_add(remaining_work, checked_multiply(states_.size(), 4, valid), valid);
+        remaining_work = checked_add(remaining_work, event_count_, valid);
         const std::uint64_t upstream = result_.lineage.telemetry.predicate_calls;
         if (!valid || phase > limits_.working_memory_bytes || upstream > limits_.predicate_calls ||
             work_ > limits_.predicate_calls - upstream ||
             remaining_work > limits_.predicate_calls - upstream - work_)
             return resource();
+        if (!charge(remaining_work))
+            return false;
+        result_.telemetry.sort_work_units += source_sort;
         result_.telemetry.peak_working_memory_bytes =
             std::max(result_.lineage.telemetry.peak_working_memory_bytes, phase);
         raw_sources_.reserve(static_cast<std::size_t>(raw_source_count_));
-        raw_references_.reserve(static_cast<std::size_t>(raw_reference_count_));
         result_.source_references.reserve(static_cast<std::size_t>(raw_source_count_));
-        result_.result_references.reserve(static_cast<std::size_t>(raw_reference_count_));
+        result_.result_references.resize(static_cast<std::size_t>(reference_count_));
+        std::uint64_t cursor = 0;
+        for (std::uint32_t operand = 0; operand < states_.size(); ++operand)
+        {
+            states_[operand].references.begin = static_cast<std::uint32_t>(cursor);
+            states_[operand].references.count = states_[operand].reference_count;
+            reference_cursors_[operand] = static_cast<std::uint32_t>(cursor);
+            cursor = checked_add(cursor, states_[operand].reference_count, valid);
+        }
+        if (!valid || cursor != reference_count_)
+            return invalid();
         result_.events.reserve(static_cast<std::size_t>(event_count_));
         return true;
     }
 
     bool fill_sources()
     {
-        if (!charge(geometry_.occurrences.size()))
-            return false;
         for (const auto& occurrence : geometry_.occurrences)
         {
             ++result_.telemetry.operand_source_visits;
-            const std::uint32_t operand = find_operand(occurrence.source.operand_id);
+            const std::uint32_t operand = find_operand_precharged(occurrence.source.operand_id);
             if (operand == kNone)
-                return result_.error == AnalyticFilteredOutcomesError::none ? invalid() : false;
+                return invalid();
             raw_sources_.push_back({operand, occurrence.source});
         }
-        const std::uint64_t units = sort_units(raw_sources_.size());
-        if (!charge(units))
-            return false;
-        result_.telemetry.sort_work_units += units;
         std::sort(raw_sources_.begin(), raw_sources_.end(),
                   [](const RawSource& a, const RawSource& b)
                   {
@@ -537,87 +679,16 @@ class Builder
         return cursor == raw_sources_.size();
     }
 
-    bool append_reference(std::uint64_t operand_id, AnalyticFilteredResultReferenceKind kind,
-                          std::uint32_t local_index)
-    {
-        const std::uint32_t operand = find_operand(operand_id);
-        if (operand == kNone)
-            return result_.error == AnalyticFilteredOutcomesError::none ? invalid() : false;
-        raw_references_.push_back({operand, {kind, local_index}});
-        return true;
-    }
-
     bool fill_references()
     {
-        const auto& lineage = result_.lineage;
-        if (!charge(lineage.region_lineage.size() + lineage.boundaries.size()))
+        if (!project_references(false))
             return false;
-        for (const auto& region : lineage.region_lineage)
-        {
-            if (region.region >= lineage.regions.regions.size())
-                return invalid();
-            for (std::uint32_t offset = 0; offset < region.positive_contributors.count; ++offset)
-            {
-                ++result_.telemetry.lineage_source_visits;
-                const auto& source =
-                    lineage.source_references[region.positive_contributors.begin + offset];
-                if (!append_reference(source.operand_id,
-                                      AnalyticFilteredResultReferenceKind::region, region.region))
-                    return false;
-            }
-        }
-        for (std::uint32_t boundary = 0; boundary < lineage.boundaries.size(); ++boundary)
-        {
-            const std::uint32_t ring = ring_by_boundary_[boundary];
-            if (ring == kNone || ring >= ring_region_.size() || ring_region_[ring] == kNone)
-                return invalid();
-            const auto& range = lineage.boundaries[boundary].subtraction;
-            for (std::uint32_t offset = 0; offset < range.count; ++offset)
-            {
-                ++result_.telemetry.lineage_source_visits;
-                const auto& source = lineage.source_references[range.begin + offset];
-                if (!append_reference(source.operand_id, AnalyticFilteredResultReferenceKind::ring,
-                                      ring) ||
-                    !append_reference(source.operand_id,
-                                      AnalyticFilteredResultReferenceKind::region,
-                                      ring_region_[ring]))
-                    return false;
-            }
-        }
-        if (raw_references_.size() != raw_reference_count_)
-            return invalid();
-        const std::uint64_t units = sort_units(raw_references_.size());
-        if (!charge(units))
-            return false;
-        result_.telemetry.sort_work_units += units;
-        std::sort(raw_references_.begin(), raw_references_.end(),
-                  [](const RawReference& a, const RawReference& b)
-                  {
-                      return std::tie(a.operand, a.reference.kind, a.reference.local_index) <
-                             std::tie(b.operand, b.reference.kind, b.reference.local_index);
-                  });
-        raw_references_.erase(std::unique(raw_references_.begin(), raw_references_.end(),
-                                          [](const RawReference& a, const RawReference& b)
-                                          {
-                                              return a.operand == b.operand &&
-                                                     a.reference.kind == b.reference.kind &&
-                                                     a.reference.local_index ==
-                                                         b.reference.local_index;
-                                          }),
-                              raw_references_.end());
-        std::size_t cursor = 0;
         for (std::uint32_t operand = 0; operand < states_.size(); ++operand)
         {
-            states_[operand].references.begin =
-                static_cast<std::uint32_t>(result_.result_references.size());
-            while (cursor < raw_references_.size() && raw_references_[cursor].operand == operand)
-                result_.result_references.push_back(raw_references_[cursor++].reference);
-            states_[operand].references.count =
-                static_cast<std::uint32_t>(result_.result_references.size()) -
-                states_[operand].references.begin;
+            if (reference_cursors_[operand] !=
+                states_[operand].references.begin + states_[operand].references.count)
+                return invalid();
         }
-        if (cursor != raw_references_.size())
-            return invalid();
         const auto& evidence = result_.lineage.regions.selection.outcome_evidence;
         for (std::uint32_t operand = 0; operand < states_.size(); ++operand)
         {
@@ -641,8 +712,6 @@ class Builder
     bool publish_events()
     {
         const auto& evidence = result_.lineage.regions.selection.outcome_evidence;
-        if (!charge(states_.size() + event_count_))
-            return false;
         for (const Lookup& entry : lookup_)
         {
             const State& state = states_[entry.ordinal];
@@ -700,20 +769,23 @@ class Builder
     AnalyticFilteredOutcomesResult result_;
     std::vector<State> states_;
     std::vector<Lookup> lookup_;
-    std::vector<std::uint32_t> ring_by_boundary_;
     std::vector<std::uint32_t> ring_region_;
+    std::vector<std::uint32_t> ring_order_;
+    std::vector<std::uint32_t> reference_stamps_;
+    std::vector<std::uint32_t> reference_cursors_;
     std::vector<RawSource> raw_sources_;
-    std::vector<RawReference> raw_references_;
     std::uint64_t raw_source_count_ = 0;
-    std::uint64_t raw_reference_count_ = 0;
+    std::uint64_t reference_count_ = 0;
+    std::uint64_t positive_incidence_count_ = 0;
+    std::uint64_t subtraction_incidence_count_ = 0;
     std::uint64_t event_count_ = 0;
     std::uint64_t work_ = 0;
+    std::uint32_t reference_generation_ = 0;
 };
 
 static_assert(sizeof(State) <= kStateLogicalBytes);
 static_assert(sizeof(Lookup) <= kLookupLogicalBytes);
 static_assert(sizeof(RawSource) <= kRawSourceLogicalBytes);
-static_assert(sizeof(RawReference) <= kRawReferenceLogicalBytes);
 static_assert(sizeof(AnalyticFilteredOperandOutcomeEvent) <= kEventLogicalBytes);
 static_assert(sizeof(AnalyticFilteredTaggedResultReference) <= kTaggedReferenceLogicalBytes);
 } // namespace

@@ -806,7 +806,7 @@ def test_filtered_solver_foundation_is_bounded_non_algebraic_and_not_dispatched(
         ),
         "outcomes_parity_validator": "scripts/validate_analytic_filtered_outcomes_parity.py",
         "outcomes_vector_bytes": 1480,
-        "outcomes_vector_sha256": ("68996c2ce0798c5e728f6482d4ac3ee241f49f2abe1f6e27da22353caf1b7018"),
+        "outcomes_vector_sha256": ("ea9954302ef66bb0edec3b5a63b40e51f4b4e4990a0282ff5b912b493ab87fe0"),
     }
     implementation_paths = [
         solver[key]

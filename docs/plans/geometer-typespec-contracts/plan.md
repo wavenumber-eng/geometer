@@ -893,7 +893,9 @@ Geometer proposal, not the original consumer packet.
   an arbitrary shared-carrier representative, closing overlapping irrational
   disk and partial coincident-line rejection. Before upstream execution, an
   allocation-free canonical-token scan reserves unavoidable arrangement work
-  and phase memory; known-doomed jobs report zero overlay work/storage.
+  and phase memory. Its proportional traversal is bulk-charged before scanning;
+  known-doomed jobs report zero overlay work/storage while admission work stays
+  explicit in arrangement telemetry.
   Strict preliminary angular keys followed by
   outward tangent/curvature certification build twins, outgoing tables,
   `next`/`previous` links, connected components, and directed cycles without

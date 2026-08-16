@@ -439,9 +439,12 @@ zero-allocation scan of lowering's dense first-use carrier-token stream derives
 a safe lower bound on distinct noncollapsed carrier spans. Their unavoidable
 endpoint, membership, topology, sort, and live-memory work is combined with the
 upstream minimum; a budget that cannot admit the arrangement returns with zero
-overlay work or storage. Noncanonical internal token streams retain only a
-proven strictly increasing prefix as a conservative lower bound and are still
-validated by the owned overlay. Sparse 1x/2x fixtures guard expected
+overlay work or storage. The scan bulk-charges one shared work unit per curve
+before traversal, includes that charge in successful telemetry, and does no
+scan when the remaining ceiling cannot admit the whole visit. Noncanonical
+internal token streams retain only a proven strictly increasing prefix as a
+conservative lower bound and are still validated by the owned overlay. Sparse
+1x/2x fixtures guard expected
 `O(n log n + k)` behavior. A direct 128-entry overlapping, nonmergeable interval
 fixture proves the shared index stops exactly at its injected visit ceiling;
 integrated tests separately prove budget propagation through certified carrier

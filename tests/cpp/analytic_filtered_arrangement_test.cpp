@@ -448,6 +448,7 @@ void test_downstream_preflight_stops_before_overlay()
     const AnalyticFilteredGeometry geometry = disjoint_squares(32);
     const AnalyticFilteredArrangementResult baseline = arrange(geometry);
     require(baseline.error == AnalyticFilteredArrangementError::none &&
+                baseline.telemetry.admission_work_units == geometry.curves.size() &&
                 baseline.telemetry.peak_working_memory_bytes >
                     baseline.telemetry.overlay_peak_working_memory_bytes &&
                 baseline.telemetry.predicate_calls > baseline.telemetry.overlay_predicate_calls,
@@ -459,7 +460,8 @@ void test_downstream_preflight_stops_before_overlay()
     require(rejected.error == AnalyticFilteredArrangementError::resource_limit_exceeded &&
                 rejected.telemetry.overlay_predicate_calls == 0 &&
                 rejected.telemetry.overlay_peak_working_memory_bytes == 0 &&
-                rejected.telemetry.predicate_calls == 0 &&
+                rejected.telemetry.admission_work_units == geometry.curves.size() &&
+                rejected.telemetry.predicate_calls == geometry.curves.size() &&
                 rejected.telemetry.peak_working_memory_bytes == 0,
             "known-impossible arrangement allocated overlay memory before rejection");
 
@@ -468,8 +470,18 @@ void test_downstream_preflight_stops_before_overlay()
     rejected = arrange(geometry, limits);
     require(rejected.error == AnalyticFilteredArrangementError::resource_limit_exceeded &&
                 rejected.telemetry.overlay_predicate_calls == 0 &&
-                rejected.telemetry.predicate_calls == 0,
+                rejected.telemetry.admission_work_units == geometry.curves.size() &&
+                rejected.telemetry.predicate_calls == geometry.curves.size(),
             "known-impossible arrangement performed overlay work before rejection");
+
+    limits = {};
+    limits.predicate_calls = geometry.curves.size() - 1;
+    rejected = arrange(geometry, limits);
+    require(rejected.error == AnalyticFilteredArrangementError::resource_limit_exceeded &&
+                rejected.telemetry.admission_work_units == 0 &&
+                rejected.telemetry.overlay_predicate_calls == 0 &&
+                rejected.telemetry.predicate_calls == 0,
+            "admission scan traversed curves before its bulk work charge");
 }
 
 void test_limits_and_malformed_inputs()
@@ -731,6 +743,7 @@ std::string parity_vector()
         append_u64(result.cycle_half_edges.size());
         for (std::uint32_t half_edge : result.cycle_half_edges)
             append_u64(half_edge);
+        append_u64(result.telemetry.admission_work_units);
         append_u64(result.telemetry.endpoint_records);
         append_u64(result.telemetry.endpoint_index_node_visits);
         append_u64(result.telemetry.endpoint_index_update_work_units);

@@ -70,6 +70,7 @@ enum class AnalyticFilteredArrangementError : std::uint8_t
 
 struct AnalyticFilteredArrangementTelemetry
 {
+    std::uint64_t admission_work_units = 0;
     std::uint64_t input_spans = 0;
     std::uint64_t input_memberships = 0;
     std::uint64_t endpoint_records = 0;
@@ -116,7 +117,9 @@ struct AnalyticFilteredArrangementResult
 // deliberately the next indexed stage; this boundary performs no cycle-pair
 // containment scan. A zero-allocation admission pass reserves the unavoidable
 // downstream memory/work for proven distinct carrier spans before narrow or
-// overlay execution, so a known-doomed job performs no upstream work.
+// overlay execution. The proportional admission scan is itself bulk-charged
+// before traversal, so a job whose work ceiling cannot admit the scan performs
+// no scan or upstream work.
 [[nodiscard]] AnalyticFilteredArrangementResult
 build_analytic_filtered_arrangement(const AnalyticFilteredGeometry& geometry,
                                     const std::vector<AnalyticCurvePair>& candidate_pairs,

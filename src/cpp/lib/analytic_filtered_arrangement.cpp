@@ -521,15 +521,18 @@ class ArrangementBuilder
 {
   public:
     ArrangementBuilder(const AnalyticFilteredGeometry& geometry,
-                       const AnalyticFilteredOverlayResult& overlay, AnalyticSolverLimits limits)
+                       const AnalyticFilteredOverlayResult& overlay, AnalyticSolverLimits limits,
+                       std::uint64_t admission_work_units)
         : geometry_(geometry), overlay_(overlay), limits_(limits)
     {
+        result_.telemetry.admission_work_units = admission_work_units;
         result_.telemetry.input_spans = overlay.spans.size();
         result_.telemetry.input_memberships = overlay.memberships.size();
         result_.telemetry.overlay_predicate_calls = overlay.telemetry.predicate_calls;
         result_.telemetry.overlay_peak_working_memory_bytes =
             overlay.telemetry.peak_working_memory_bytes;
-        result_.telemetry.predicate_calls = overlay.telemetry.predicate_calls;
+        result_.telemetry.predicate_calls =
+            admission_work_units + overlay.telemetry.predicate_calls;
         result_.telemetry.peak_working_memory_bytes = overlay.telemetry.peak_working_memory_bytes;
         result_.telemetry.algebraic_fallback_calls = overlay.telemetry.algebraic_fallback_calls;
     }
@@ -1263,6 +1266,14 @@ build_analytic_filtered_arrangement(const AnalyticFilteredGeometry& geometry,
         preflight.error = AnalyticFilteredArrangementError::resource_limit_exceeded;
         return preflight;
     }
+    const std::uint64_t admission_work = geometry.curves.size();
+    if (admission_work > limits.predicate_calls)
+    {
+        preflight.error = AnalyticFilteredArrangementError::resource_limit_exceeded;
+        return preflight;
+    }
+    preflight.telemetry.admission_work_units = admission_work;
+    preflight.telemetry.predicate_calls = admission_work;
     std::uint64_t minimum_memory = 0;
     std::uint64_t minimum_work = 0;
     bool valid = arrangement_minimum_requirements(
@@ -1275,30 +1286,33 @@ build_analytic_filtered_arrangement(const AnalyticFilteredGeometry& geometry,
         overlay_memory,
         checked_multiply(curve_count, kAnalyticOverlayCurveGroupLogicalBytes, valid), valid);
     minimum_memory = std::max(minimum_memory, overlay_memory);
-    if (!valid || minimum_memory > limits.working_memory_bytes ||
-        minimum_work > limits.predicate_calls)
+    const std::uint64_t remaining_work = limits.predicate_calls - admission_work;
+    if (!valid || minimum_memory > limits.working_memory_bytes || minimum_work > remaining_work)
     {
         preflight.error = AnalyticFilteredArrangementError::resource_limit_exceeded;
         return preflight;
     }
 
+    AnalyticSolverLimits overlay_limits = limits;
+    overlay_limits.predicate_calls = remaining_work;
     const AnalyticFilteredOverlayResult overlay =
-        build_analytic_filtered_overlay(geometry, candidate_pairs, limits);
+        build_analytic_filtered_overlay(geometry, candidate_pairs, overlay_limits);
     if (overlay.error != AnalyticFilteredOverlayError::none)
     {
         AnalyticFilteredArrangementResult result;
+        result.telemetry.admission_work_units = admission_work;
         result.error = overlay.error == AnalyticFilteredOverlayError::invalid_argument
                            ? AnalyticFilteredArrangementError::invalid_argument
                            : AnalyticFilteredArrangementError::resource_limit_exceeded;
         result.telemetry.overlay_predicate_calls = overlay.telemetry.predicate_calls;
         result.telemetry.overlay_peak_working_memory_bytes =
             overlay.telemetry.peak_working_memory_bytes;
-        result.telemetry.predicate_calls = overlay.telemetry.predicate_calls;
+        result.telemetry.predicate_calls = admission_work + overlay.telemetry.predicate_calls;
         result.telemetry.peak_working_memory_bytes = overlay.telemetry.peak_working_memory_bytes;
         result.telemetry.algebraic_fallback_calls = overlay.telemetry.algebraic_fallback_calls;
         return result;
     }
-    return ArrangementBuilder(geometry, overlay, limits).build();
+    return ArrangementBuilder(geometry, overlay, limits, admission_work).build();
 }
 
 } // namespace geometer

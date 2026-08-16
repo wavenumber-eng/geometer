@@ -151,8 +151,11 @@ engine.
   lineage. Before owned narrow/overlay execution, a zero-allocation scan of the
   lowering-issued dense first-use carrier-token stream derives unavoidable
   distinct noncollapsed spans and reserves their minimum downstream work and
-  phase memory. A known-doomed arrangement therefore reports zero overlay work
-  and storage; later exact-count checks retain phase-accurate enforcement.
+  phase memory. The proportional scan is bulk-charged before traversal and its
+  work remains visible in arrangement telemetry; a ceiling too small for the
+  scan performs neither the scan nor upstream work. A known-doomed arrangement
+  therefore reports zero overlay work and storage; later exact-count checks
+  retain phase-accurate enforcement.
 - The arrangement constructs twins, canonical outgoing tables, `next` and
   `previous` links, connected components, and directed boundary cycles without
   a cycle-pair scan. A strict total binary64 key is used only to satisfy the

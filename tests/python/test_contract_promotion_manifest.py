@@ -743,15 +743,15 @@ def test_filtered_solver_foundation_is_bounded_non_algebraic_and_not_dispatched(
             "inclusive_50nm_nontransitive_global_vertex_reconciliation"
         ),
         "arrangement_budget_policy": (
-            "allocation_free_downstream_minimum_preflight_then_phase_accurate_"
+            "bulk_metered_allocation_free_downstream_minimum_preflight_then_phase_accurate_"
             "target_independent_memory_and_shared_upstream_work"
         ),
         "arrangement_parity_validator": (
             "scripts/validate_analytic_filtered_arrangement_parity.py"
         ),
-        "arrangement_vector_bytes": 11352,
+        "arrangement_vector_bytes": 11392,
         "arrangement_vector_sha256": (
-            "40b40f2b9579d342610b919880bfb6e1556438bb26f479a3cf307b9e78199584"
+            "ba79e8b87448542a5a4c1a5f1030f9beca295997ec7cd748707772db664dfb48"
         ),
     }
     implementation_paths = [

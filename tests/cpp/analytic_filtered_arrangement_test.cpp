@@ -1,6 +1,8 @@
 #include "geometer/analytic_curve_broad_phase.h"
 #include "geometer/analytic_filtered_arrangement.h"
 
+#include "analytic_interval_index.h"
+
 #include <algorithm>
 #include <cstdint>
 #include <cstdlib>
@@ -353,6 +355,123 @@ void test_lowered_irrational_capsule_arrangement()
                 " cycles=" + std::to_string(result.cycles.size()));
 }
 
+AnalyticFilteredArrangementResult overlapping_disks_arrangement()
+{
+    AnalyticRequestPacketRecords records;
+    records.jobs = {{10, 0, 1}};
+    records.stages = {{100, 1, 0, 2}};
+    records.operands = {{1000, 2, 0}, {1001, 2, 1}};
+    records.disks = {{7000, 0, 0, 100}, {7001, 150, 0, 100}};
+    const AnalyticFilteredLoweringResult lowered =
+        lower_analytic_job_to_filtered_curves(records, 0);
+    require(lowered.error == AnalyticFilteredLoweringError::none && lowered.value.has_value(),
+            "overlapping disks did not lower");
+    const AnalyticBroadPhaseResult broad = build_analytic_curve_candidates(lowered.value->bounds);
+    require(broad.error == AnalyticBroadPhaseError::none && broad.pairs.size() == 6,
+            "overlapping disks broad phase drifted");
+    return build_analytic_filtered_arrangement(*lowered.value, broad.pairs);
+}
+
+void test_covering_span_carriers()
+{
+    const AnalyticFilteredArrangementResult disks = overlapping_disks_arrangement();
+    require(disks.error == AnalyticFilteredArrangementError::none && disks.vertices.size() == 5 &&
+                disks.edges.size() == 8 && disks.cycles.size() == 3,
+            "overlapping irrational disks failed arrangement error=" +
+                std::to_string(static_cast<int>(disks.error)) +
+                " vertices=" + std::to_string(disks.vertices.size()) +
+                " edges=" + std::to_string(disks.edges.size()) +
+                " cycles=" + std::to_string(disks.cycles.size()));
+
+    AnalyticFilteredGeometry lines;
+    append_line(lines, 0, 0, 200, 0);
+    append_line(lines, 200, 0, 200, 200);
+    append_line(lines, 200, 200, 0, 200);
+    append_line(lines, 0, 200, 0, 0);
+    append_line(lines, 100, 0, 500, 0);
+    append_line(lines, 500, 0, 500, 100);
+    append_line(lines, 500, 100, 100, 100);
+    append_line(lines, 100, 100, 100, 0);
+    lines.curves[4].construction_carrier_id = lines.curves[0].construction_carrier_id;
+    lines.curves[4].construction_family_id = lines.curves[0].construction_family_id;
+    const AnalyticBroadPhaseResult broad = build_analytic_curve_candidates(lines.bounds);
+    require(broad.error == AnalyticBroadPhaseError::none,
+            "partial same-carrier line broad phase failed");
+    const AnalyticFilteredOverlayResult line_overlay =
+        build_analytic_filtered_overlay(lines, broad.pairs);
+    require(line_overlay.error == AnalyticFilteredOverlayError::none,
+            "partial same-carrier line overlay failed");
+    for (const AnalyticAtomicSpanNm& span : line_overlay.spans)
+    {
+        const AnalyticFilteredPointCurveStatus start = classify_analytic_filtered_point_on_curve(
+            lines.curves[span.carrier_curve_index - 1], span.start);
+        const AnalyticFilteredPointCurveStatus end = classify_analytic_filtered_point_on_curve(
+            lines.curves[span.carrier_curve_index - 1], span.end);
+        require(start == AnalyticFilteredPointCurveStatus::certified_on_domain &&
+                    end == AnalyticFilteredPointCurveStatus::certified_on_domain,
+                "overlay did not publish a finite-domain covering line carrier span=" +
+                    std::to_string(span.span_index) +
+                    " carrier=" + std::to_string(span.carrier_curve_index) +
+                    " start_status=" + std::to_string(static_cast<int>(start)) +
+                    " end_status=" + std::to_string(static_cast<int>(end)));
+    }
+    const AnalyticFilteredArrangementResult partial =
+        build_analytic_filtered_arrangement(lines, broad.pairs);
+    require(partial.error == AnalyticFilteredArrangementError::none &&
+                partial.memberships.size() > partial.edges.size(),
+            "partial same-carrier lines lacked a covering span witness error=" +
+                std::to_string(static_cast<int>(partial.error)) +
+                " edges=" + std::to_string(partial.edges.size()) +
+                " memberships=" + std::to_string(partial.memberships.size()) +
+                " overlay_work=" + std::to_string(partial.telemetry.overlay_predicate_calls) +
+                " work=" + std::to_string(partial.telemetry.predicate_calls) +
+                " endpoints=" + std::to_string(partial.telemetry.endpoint_records) +
+                " angular=" + std::to_string(partial.telemetry.angular_predicates));
+}
+
+AnalyticFilteredGeometry disjoint_squares(std::uint32_t count)
+{
+    AnalyticFilteredGeometry geometry;
+    for (std::uint32_t index = 0; index < count; ++index)
+    {
+        const double x = static_cast<double>(index) * 10000.0;
+        append_line(geometry, x, 0, x + 1000, 0);
+        append_line(geometry, x + 1000, 0, x + 1000, 1000);
+        append_line(geometry, x + 1000, 1000, x, 1000);
+        append_line(geometry, x, 1000, x, 0);
+    }
+    return geometry;
+}
+
+void test_downstream_preflight_stops_before_overlay()
+{
+    const AnalyticFilteredGeometry geometry = disjoint_squares(32);
+    const AnalyticFilteredArrangementResult baseline = arrange(geometry);
+    require(baseline.error == AnalyticFilteredArrangementError::none &&
+                baseline.telemetry.peak_working_memory_bytes >
+                    baseline.telemetry.overlay_peak_working_memory_bytes &&
+                baseline.telemetry.predicate_calls > baseline.telemetry.overlay_predicate_calls,
+            "downstream preflight baseline does not separate phase requirements");
+
+    AnalyticSolverLimits limits;
+    limits.working_memory_bytes = baseline.telemetry.overlay_peak_working_memory_bytes;
+    AnalyticFilteredArrangementResult rejected = arrange(geometry, limits);
+    require(rejected.error == AnalyticFilteredArrangementError::resource_limit_exceeded &&
+                rejected.telemetry.overlay_predicate_calls == 0 &&
+                rejected.telemetry.overlay_peak_working_memory_bytes == 0 &&
+                rejected.telemetry.predicate_calls == 0 &&
+                rejected.telemetry.peak_working_memory_bytes == 0,
+            "known-impossible arrangement allocated overlay memory before rejection");
+
+    limits = {};
+    limits.predicate_calls = baseline.telemetry.overlay_predicate_calls;
+    rejected = arrange(geometry, limits);
+    require(rejected.error == AnalyticFilteredArrangementError::resource_limit_exceeded &&
+                rejected.telemetry.overlay_predicate_calls == 0 &&
+                rejected.telemetry.predicate_calls == 0,
+            "known-impossible arrangement performed overlay work before rejection");
+}
+
 void test_limits_and_malformed_inputs()
 {
     const AnalyticFilteredGeometry geometry = square();
@@ -416,7 +535,7 @@ void test_empty_arrangement()
             "empty arrangement was not a successful no-op");
 }
 
-void test_dense_endpoint_candidates_stop_at_budget()
+void test_endpoint_index_budget_propagation()
 {
     AnalyticFilteredGeometry geometry;
     constexpr std::uint32_t count = 256;
@@ -441,10 +560,48 @@ void test_dense_endpoint_candidates_stop_at_budget()
                 result.vertices.empty() && result.edges.empty() &&
                 result.telemetry.endpoint_index_node_visits != 0 &&
                 result.telemetry.predicate_calls == limits.predicate_calls,
-            "dense endpoint candidates did not stop exactly before the next tree update error=" +
+            "endpoint-index budget did not propagate exactly error=" +
                 std::to_string(static_cast<int>(result.error)) +
                 " visits=" + std::to_string(result.telemetry.endpoint_index_node_visits) +
                 " work=" + std::to_string(result.telemetry.predicate_calls));
+}
+
+struct DenseIndexResult
+{
+    std::uint64_t node_visits = 0;
+    std::uint64_t matches = 0;
+    bool stopped = false;
+};
+
+DenseIndexResult dense_interval_index_result()
+{
+    constexpr std::uint32_t count = 128;
+    constexpr std::uint64_t visit_limit = 4096;
+    geometer::detail::AnalyticIntervalIndex index(count);
+    DenseIndexResult result;
+    for (std::uint32_t item = 0; item < count; ++item)
+    {
+        const bool completed = index.query(-30.0, 30.0, result.node_visits, visit_limit,
+                                           [&](std::size_t, std::uint32_t)
+                                           {
+                                               ++result.matches;
+                                               return true;
+                                           });
+        if (!completed)
+        {
+            result.stopped = true;
+            break;
+        }
+        require(index.insert(-30.0, 30.0, item, item + 1), "dense interval-index insert failed");
+    }
+    return result;
+}
+
+void test_dense_interval_index_stops_at_budget()
+{
+    const DenseIndexResult result = dense_interval_index_result();
+    require(result.stopped && result.node_visits == 4096 && result.matches > 4000,
+            "dense overlapping interval index did not stop exactly at its visit ceiling");
 }
 
 AnalyticFilteredArrangementResult wedge_fan(std::uint32_t count)
@@ -482,10 +639,13 @@ std::string parity_vector()
     append_line(collapsed_geometry, 0, 0, 30, 40);
     const AnalyticFilteredArrangementResult collapsed_result = arrange(collapsed_geometry);
     const AnalyticFilteredArrangementResult capsule_result = irrational_capsule_arrangement();
+    const AnalyticFilteredArrangementResult disk_result = overlapping_disks_arrangement();
+    const DenseIndexResult dense_index = dense_interval_index_result();
     require(square_result.error == AnalyticFilteredArrangementError::none &&
                 threshold_result.error == AnalyticFilteredArrangementError::none &&
                 collapsed_result.error == AnalyticFilteredArrangementError::none &&
-                capsule_result.error == AnalyticFilteredArrangementError::none,
+                capsule_result.error == AnalyticFilteredArrangementError::none &&
+                disk_result.error == AnalyticFilteredArrangementError::none && dense_index.stopped,
             "arrangement parity fixture failed");
 
     std::ostringstream output;
@@ -586,6 +746,10 @@ std::string parity_vector()
     append_result(threshold_result);
     append_result(collapsed_result);
     append_result(capsule_result);
+    append_result(disk_result);
+    append_u64(dense_index.node_visits);
+    append_u64(dense_index.matches);
+    append_u64(dense_index.stopped ? 1 : 0);
     return output.str();
 }
 
@@ -601,9 +765,12 @@ int main()
     test_crossing_rectangles_pipeline();
     test_right_partition_makes_major_arc_x_monotone();
     test_lowered_irrational_capsule_arrangement();
+    test_covering_span_carriers();
+    test_downstream_preflight_stops_before_overlay();
     test_limits_and_malformed_inputs();
     test_empty_arrangement();
-    test_dense_endpoint_candidates_stop_at_budget();
+    test_endpoint_index_budget_propagation();
+    test_dense_interval_index_stops_at_budget();
     test_indexed_scaling();
     std::cout << "ANALYTIC_FILTERED_ARRANGEMENT_VECTOR=" << parity_vector() << '\n';
     return 0;

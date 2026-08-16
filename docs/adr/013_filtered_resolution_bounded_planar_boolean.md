@@ -118,7 +118,9 @@ engine.
   output-proportional; no carrier-group cross product or per-cell full-group
   scan is permitted. A count pass fixes span and membership allocation before
   publication, and arrangement, provenance, work, and target-independent
-  logical-memory ceilings fail the job before overrun. Circle groups use the
+  logical-memory ceilings fail the job before overrun. Each emitted span names
+  an active member whose finite domain covers it, rather than an arbitrary
+  shared-carrier representative. Circle groups use the
   deterministic leftmost seam, with certified sweep tokens resolving
   cancellation-prone constructed semicircles. The preliminary circle sort uses
   a strict total scalar key; outward carrier/domain predicates then certify the
@@ -146,7 +148,11 @@ engine.
   carrier germ. Domains collapsed by overlay resolution and spans collapsed by
   global reconciliation both retain an explicit vertex and their complete
   membership ranges; a permitted sub-resolution feature never silently loses
-  lineage.
+  lineage. Before owned narrow/overlay execution, a zero-allocation scan of the
+  lowering-issued dense first-use carrier-token stream derives unavoidable
+  distinct noncollapsed spans and reserves their minimum downstream work and
+  phase memory. A known-doomed arrangement therefore reports zero overlay work
+  and storage; later exact-count checks retain phase-accurate enforcement.
 - The arrangement constructs twins, canonical outgoing tables, `next` and
   `previous` links, connected components, and directed boundary cycles without
   a cycle-pair scan. A strict total binary64 key is used only to satisfy the
@@ -155,7 +161,8 @@ engine.
   order fails the isolated job. Endpoint-index visits, balanced-tree/heap
   updates, sorts, traversals, angular predicates, and phase-specific logical
   memory are governed, and the stage inherits the overlay's already consumed
-  work. Dense candidate enclosures terminate at the same work ceiling on
+  work. A direct adversarial interval-index fixture forces all earlier
+  enclosures to be visited and terminates at the same exact work ceiling on
   native and WASM. Face ownership and material classification remain the next
   indexed stage; this arrangement boundary does not perform containment tests.
 - Solver resource limits are supplied through one internal limits value object

@@ -170,6 +170,81 @@ std::uint64_t tree_update_units(std::uint64_t capacity) noexcept
     return levels * 4 + 4;
 }
 
+std::uint64_t arrangement_memory_requirement(std::uint64_t curve_count, std::uint64_t spans,
+                                             std::uint64_t collapsed_domains,
+                                             std::uint64_t overlay_memberships,
+                                             std::uint64_t result_memberships,
+                                             std::uint64_t endpoints, std::uint64_t half_edges,
+                                             std::uint64_t overlay_peak, bool& valid) noexcept
+{
+    const std::uint64_t maximum_collapsed = checked_add(spans, collapsed_domains, valid);
+    std::uint64_t base = checked_multiply(spans, kAnalyticOverlaySpanLogicalBytes, valid);
+    base = checked_add(
+        base, checked_multiply(overlay_memberships, kAnalyticOverlayMembershipLogicalBytes, valid),
+        valid);
+    base = checked_add(base, checked_multiply(curve_count, kCurveFlagLogicalBytes, valid), valid);
+    base = checked_add(base, checked_multiply(collapsed_domains, kIndexLogicalBytes, valid), valid);
+
+    std::uint64_t cluster_phase = base;
+    cluster_phase = checked_add(cluster_phase,
+                                checked_multiply(endpoints, kEndpointLogicalBytes, valid), valid);
+    cluster_phase = checked_add(
+        cluster_phase, checked_multiply(endpoints, kEndpointSlotLogicalBytes, valid), valid);
+    cluster_phase =
+        checked_add(cluster_phase, checked_multiply(endpoints, kClusterLogicalBytes, valid), valid);
+    cluster_phase =
+        checked_add(cluster_phase, checked_multiply(endpoints, kExpiryLogicalBytes, valid), valid);
+    cluster_phase = checked_add(
+        cluster_phase,
+        detail::AnalyticIntervalIndex::canonical_storage_bytes(static_cast<std::size_t>(endpoints)),
+        valid);
+
+    std::uint64_t edge_phase = base;
+    edge_phase = checked_add(edge_phase,
+                             checked_multiply(endpoints, kEndpointSlotLogicalBytes, valid), valid);
+    edge_phase =
+        checked_add(edge_phase, checked_multiply(endpoints, kClusterLogicalBytes, valid), valid);
+    edge_phase =
+        checked_add(edge_phase, checked_multiply(spans, kEdgeDraftLogicalBytes, valid), valid);
+    edge_phase =
+        checked_add(edge_phase, checked_multiply(endpoints, kIndexLogicalBytes * 2, valid), valid);
+    edge_phase =
+        checked_add(edge_phase, checked_multiply(endpoints, kVertexLogicalBytes, valid), valid);
+    edge_phase = checked_add(edge_phase, checked_multiply(spans, kEdgeLogicalBytes, valid), valid);
+    edge_phase = checked_add(
+        edge_phase, checked_multiply(maximum_collapsed, kCollapsedSpanLogicalBytes, valid), valid);
+    edge_phase = checked_add(
+        edge_phase, checked_multiply(maximum_collapsed, kCollapsedSpanLogicalBytes, valid), valid);
+    edge_phase = checked_add(
+        edge_phase,
+        checked_multiply(result_memberships, kAnalyticOverlayMembershipLogicalBytes, valid), valid);
+
+    std::uint64_t cycle_phase = base;
+    cycle_phase =
+        checked_add(cycle_phase, checked_multiply(endpoints, kVertexLogicalBytes, valid), valid);
+    cycle_phase =
+        checked_add(cycle_phase, checked_multiply(spans, kEdgeLogicalBytes, valid), valid);
+    cycle_phase = checked_add(
+        cycle_phase, checked_multiply(maximum_collapsed, kCollapsedSpanLogicalBytes, valid), valid);
+    cycle_phase = checked_add(
+        cycle_phase,
+        checked_multiply(result_memberships, kAnalyticOverlayMembershipLogicalBytes, valid), valid);
+    cycle_phase =
+        checked_add(cycle_phase, checked_multiply(half_edges, kHalfEdgeLogicalBytes, valid), valid);
+    cycle_phase =
+        checked_add(cycle_phase, checked_multiply(half_edges, kIndexLogicalBytes, valid), valid);
+    cycle_phase =
+        checked_add(cycle_phase, checked_multiply(endpoints, kIndexLogicalBytes * 2, valid), valid);
+    cycle_phase =
+        checked_add(cycle_phase, checked_multiply(half_edges, kIndexLogicalBytes, valid), valid);
+    cycle_phase =
+        checked_add(cycle_phase, checked_multiply(half_edges, kCycleLogicalBytes, valid), valid);
+    cycle_phase =
+        checked_add(cycle_phase, checked_multiply(half_edges, kIndexLogicalBytes, valid), valid);
+
+    return std::max({cluster_phase, edge_phase, cycle_phase, overlay_peak});
+}
+
 double midpoint(const AnalyticCoordinateIntervalNm& value) noexcept
 {
     return value.lower + (value.upper - value.lower) * 0.5;
@@ -199,6 +274,85 @@ bool complete_points_within_resolution(const AnalyticFilteredPointNm& left,
     const Interval distance_squared = complete_distance_squared(point(left), point(right));
     return distance_squared.upper <=
            static_cast<double>(kAnalyticTopologyResolutionNm * kAnalyticTopologyResolutionNm);
+}
+
+bool curve_guarantees_overlay_span(const AnalyticAtomicCurveNm& curve) noexcept
+{
+    if (!valid_point(curve.start) || !valid_point(curve.end))
+        return false;
+    return (curve.kind == AnalyticAtomicCurveKind::circular_arc && curve.major_arc) ||
+           !complete_points_within_resolution(curve.start, curve.end);
+}
+
+std::uint64_t guaranteed_carrier_span_count(const AnalyticFilteredGeometry& geometry) noexcept
+{
+    // Lowering assigns dense carrier ids on first use. Track that stream with
+    // O(1) state; a strictly increasing prefix also admits hand-built internal
+    // fixtures. If a malformed/noncanonical stream appears, retain only the
+    // already-proven distinct prefix/groups and let overlay validate it.
+    std::uint64_t dense_maximum = 0;
+    std::uint64_t dense_spans = 0;
+    bool dense = true;
+    std::uint64_t increasing_previous = 0;
+    std::uint64_t increasing_spans = 0;
+    bool increasing = true;
+    bool first = true;
+    for (const AnalyticAtomicCurveNm& curve : geometry.curves)
+    {
+        const std::uint64_t carrier = curve.construction_carrier_id;
+        const bool guarantees_span = curve_guarantees_overlay_span(curve);
+        if (dense)
+        {
+            if (carrier == dense_maximum + 1)
+            {
+                ++dense_maximum;
+                dense_spans += guarantees_span ? 1 : 0;
+            }
+            else if (carrier == 0 || carrier > dense_maximum)
+                dense = false;
+        }
+        if (increasing)
+        {
+            if (carrier != 0 && (first || carrier > increasing_previous))
+            {
+                increasing_previous = carrier;
+                increasing_spans += guarantees_span ? 1 : 0;
+            }
+            else
+                increasing = false;
+        }
+        first = false;
+    }
+    return std::max(dense_spans, increasing_spans);
+}
+
+bool arrangement_minimum_requirements(const AnalyticFilteredGeometry& geometry,
+                                      std::uint64_t pair_count, std::uint64_t& memory,
+                                      std::uint64_t& work) noexcept
+{
+    bool valid = true;
+    const std::uint64_t curve_count = geometry.curves.size();
+    const std::uint64_t spans = guaranteed_carrier_span_count(geometry);
+    const std::uint64_t endpoints = checked_multiply(spans, 2, valid);
+    const std::uint64_t half_edges = checked_multiply(spans, 2, valid);
+    memory = arrangement_memory_requirement(curve_count, spans, 0, spans, curve_count, endpoints,
+                                            half_edges, 0, valid);
+
+    // Overlay consumes at least two units per candidate, visits every curve and
+    // raw endpoint event, sorts the curve/event tables, and sweeps every
+    // guaranteed carrier span twice. Arrangement then validates every curve,
+    // span endpoint, and membership, visits/sorts every endpoint, builds every
+    // guaranteed span, and republishes at least one lineage membership per
+    // source curve.
+    work = checked_multiply(pair_count, 2, valid);
+    work = checked_add(work, checked_multiply(curve_count, 6, valid), valid);
+    work = checked_add(work, sort_units(curve_count), valid);
+    work = checked_add(work, sort_units(checked_multiply(curve_count, 2, valid)), valid);
+    work = checked_add(work, checked_multiply(spans, 11, valid), valid);
+    work = checked_add(work, checked_multiply(sort_units(endpoints), 2, valid), valid);
+    work = checked_add(work, checked_multiply(sort_units(spans), 2, valid), valid);
+    work = checked_add(work, spans == 0 ? 0 : 1, valid);
+    return valid;
 }
 
 AnalyticFilteredPointNm point_hull(const AnalyticFilteredPointNm& left,
@@ -436,86 +590,6 @@ class ArrangementBuilder
         return true;
     }
 
-    std::uint64_t memory_requirement(std::uint64_t spans, std::uint64_t collapsed_domains,
-                                     std::uint64_t memberships, std::uint64_t endpoints,
-                                     std::uint64_t half_edges, bool& valid) const
-    {
-        const std::uint64_t maximum_collapsed = checked_add(spans, collapsed_domains, valid);
-        std::uint64_t base = checked_multiply(spans, kAnalyticOverlaySpanLogicalBytes, valid);
-        base = checked_add(base,
-                           checked_multiply(overlay_.memberships.size(),
-                                            kAnalyticOverlayMembershipLogicalBytes, valid),
-                           valid);
-        base = checked_add(
-            base, checked_multiply(geometry_.curves.size(), kCurveFlagLogicalBytes, valid), valid);
-        base = checked_add(base, checked_multiply(collapsed_domains, kIndexLogicalBytes, valid),
-                           valid);
-
-        std::uint64_t cluster_phase = base;
-        cluster_phase = checked_add(
-            cluster_phase, checked_multiply(endpoints, kEndpointLogicalBytes, valid), valid);
-        cluster_phase = checked_add(
-            cluster_phase, checked_multiply(endpoints, kEndpointSlotLogicalBytes, valid), valid);
-        cluster_phase = checked_add(
-            cluster_phase, checked_multiply(endpoints, kClusterLogicalBytes, valid), valid);
-        cluster_phase = checked_add(cluster_phase,
-                                    checked_multiply(endpoints, kExpiryLogicalBytes, valid), valid);
-        cluster_phase = checked_add(cluster_phase,
-                                    detail::AnalyticIntervalIndex::canonical_storage_bytes(
-                                        static_cast<std::size_t>(endpoints)),
-                                    valid);
-
-        std::uint64_t edge_phase = base;
-        edge_phase = checked_add(
-            edge_phase, checked_multiply(endpoints, kEndpointSlotLogicalBytes, valid), valid);
-        edge_phase = checked_add(edge_phase,
-                                 checked_multiply(endpoints, kClusterLogicalBytes, valid), valid);
-        edge_phase =
-            checked_add(edge_phase, checked_multiply(spans, kEdgeDraftLogicalBytes, valid), valid);
-        edge_phase = checked_add(edge_phase,
-                                 checked_multiply(endpoints, kIndexLogicalBytes * 2, valid), valid);
-        edge_phase =
-            checked_add(edge_phase, checked_multiply(endpoints, kVertexLogicalBytes, valid), valid);
-        edge_phase =
-            checked_add(edge_phase, checked_multiply(spans, kEdgeLogicalBytes, valid), valid);
-        edge_phase = checked_add(
-            edge_phase, checked_multiply(maximum_collapsed, kCollapsedSpanLogicalBytes, valid),
-            valid);
-        edge_phase = checked_add(
-            edge_phase, checked_multiply(maximum_collapsed, kCollapsedSpanLogicalBytes, valid),
-            valid);
-        edge_phase = checked_add(
-            edge_phase,
-            checked_multiply(memberships, kAnalyticOverlayMembershipLogicalBytes, valid), valid);
-
-        std::uint64_t cycle_phase = base;
-        cycle_phase = checked_add(cycle_phase,
-                                  checked_multiply(endpoints, kVertexLogicalBytes, valid), valid);
-        cycle_phase =
-            checked_add(cycle_phase, checked_multiply(spans, kEdgeLogicalBytes, valid), valid);
-        cycle_phase = checked_add(
-            cycle_phase, checked_multiply(maximum_collapsed, kCollapsedSpanLogicalBytes, valid),
-            valid);
-        cycle_phase = checked_add(
-            cycle_phase,
-            checked_multiply(memberships, kAnalyticOverlayMembershipLogicalBytes, valid), valid);
-        cycle_phase = checked_add(
-            cycle_phase, checked_multiply(half_edges, kHalfEdgeLogicalBytes, valid), valid);
-        cycle_phase = checked_add(cycle_phase,
-                                  checked_multiply(half_edges, kIndexLogicalBytes, valid), valid);
-        cycle_phase = checked_add(
-            cycle_phase, checked_multiply(endpoints, kIndexLogicalBytes * 2, valid), valid);
-        cycle_phase = checked_add(cycle_phase,
-                                  checked_multiply(half_edges, kIndexLogicalBytes, valid), valid);
-        cycle_phase = checked_add(cycle_phase,
-                                  checked_multiply(half_edges, kCycleLogicalBytes, valid), valid);
-        cycle_phase = checked_add(cycle_phase,
-                                  checked_multiply(half_edges, kIndexLogicalBytes, valid), valid);
-
-        return std::max(
-            {cluster_phase, edge_phase, cycle_phase, overlay_.telemetry.peak_working_memory_bytes});
-    }
-
     bool valid_preflight_shape() const noexcept
     {
         return analytic_solver_limits_within_hard_ceilings(limits_) &&
@@ -561,8 +635,10 @@ class ArrangementBuilder
         const std::uint64_t maximum_collapsed = checked_add(spans, collapsed_domains, valid);
         if (!valid || derived_limits_exceeded(collapsed_domains, maximum_collapsed, memberships))
             return fail(AnalyticFilteredArrangementError::resource_limit_exceeded);
-        const std::uint64_t bytes =
-            memory_requirement(spans, collapsed_domains, memberships, endpoints, half_edges, valid);
+        const std::uint64_t bytes = arrangement_memory_requirement(
+            geometry_.curves.size(), spans, collapsed_domains, overlay_.memberships.size(),
+            memberships, endpoints, half_edges, overlay_.telemetry.peak_working_memory_bytes,
+            valid);
         if (!valid || bytes > limits_.working_memory_bytes)
             return fail(AnalyticFilteredArrangementError::resource_limit_exceeded);
         result_.telemetry.peak_working_memory_bytes = bytes;
@@ -1173,6 +1249,39 @@ build_analytic_filtered_arrangement(const AnalyticFilteredGeometry& geometry,
                                     const std::vector<AnalyticCurvePair>& candidate_pairs,
                                     const AnalyticSolverLimits& limits)
 {
+    AnalyticFilteredArrangementResult preflight;
+    if (!analytic_solver_limits_within_hard_ceilings(limits) ||
+        geometry.curves.size() != geometry.bounds.size() ||
+        geometry.curves.size() != geometry.occurrences.size())
+    {
+        preflight.error = AnalyticFilteredArrangementError::invalid_argument;
+        return preflight;
+    }
+    if (geometry.curves.size() > limits.boundary_occurrences ||
+        candidate_pairs.size() > limits.examined_curve_pairs)
+    {
+        preflight.error = AnalyticFilteredArrangementError::resource_limit_exceeded;
+        return preflight;
+    }
+    std::uint64_t minimum_memory = 0;
+    std::uint64_t minimum_work = 0;
+    bool valid = arrangement_minimum_requirements(
+        geometry, static_cast<std::uint64_t>(candidate_pairs.size()), minimum_memory, minimum_work);
+    const std::uint64_t curve_count = geometry.curves.size();
+    const std::uint64_t pair_count = candidate_pairs.size();
+    std::uint64_t overlay_memory =
+        checked_multiply(pair_count, kAnalyticNarrowPhasePairLogicalBytes, valid);
+    overlay_memory = checked_add(
+        overlay_memory,
+        checked_multiply(curve_count, kAnalyticOverlayCurveGroupLogicalBytes, valid), valid);
+    minimum_memory = std::max(minimum_memory, overlay_memory);
+    if (!valid || minimum_memory > limits.working_memory_bytes ||
+        minimum_work > limits.predicate_calls)
+    {
+        preflight.error = AnalyticFilteredArrangementError::resource_limit_exceeded;
+        return preflight;
+    }
+
     const AnalyticFilteredOverlayResult overlay =
         build_analytic_filtered_overlay(geometry, candidate_pairs, limits);
     if (overlay.error != AnalyticFilteredOverlayError::none)

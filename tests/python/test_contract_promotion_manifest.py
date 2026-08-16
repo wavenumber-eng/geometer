@@ -728,7 +728,7 @@ def test_filtered_solver_foundation_is_bounded_non_algebraic_and_not_dispatched(
         "overlay_parity_validator": "scripts/validate_analytic_filtered_overlay_parity.py",
         "overlay_vector_bytes": 1048,
         "overlay_vector_sha256": (
-            "b0f9e8013eeb02b876ce071b13663dbcae7dddf9f616432add5d1a72640c7438"
+            "5cf09f630b60cf96a598e08cae394032d65d02a743359f8354f88600f775b3c1"
         ),
         "arrangement_header": "src/cpp/lib/geometer/analytic_filtered_arrangement.h",
         "arrangement_source": "src/cpp/lib/analytic_filtered_arrangement.cpp",
@@ -743,14 +743,15 @@ def test_filtered_solver_foundation_is_bounded_non_algebraic_and_not_dispatched(
             "inclusive_50nm_nontransitive_global_vertex_reconciliation"
         ),
         "arrangement_budget_policy": (
-            "phase_accurate_target_independent_memory_and_shared_upstream_work"
+            "allocation_free_downstream_minimum_preflight_then_phase_accurate_"
+            "target_independent_memory_and_shared_upstream_work"
         ),
         "arrangement_parity_validator": (
             "scripts/validate_analytic_filtered_arrangement_parity.py"
         ),
-        "arrangement_vector_bytes": 8088,
+        "arrangement_vector_bytes": 11352,
         "arrangement_vector_sha256": (
-            "77f73c269d9f3ba0cbcea9ccc4c1d0fb4a1f56f43fcfc6e7eeed2598cbc8cd79"
+            "40b40f2b9579d342610b919880bfb6e1556438bb26f479a3cf307b9e78199584"
         ),
     }
     implementation_paths = [

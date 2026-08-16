@@ -393,8 +393,11 @@ output. There is no carrier-group pair cross product, per-cell full-group scan,
 or linear duplicate search. Arrangement vertex/half-edge, provenance/source
 membership, work, and target-independent logical-memory limits are enforced
 before overrun. The output is deterministic atomic spans plus complete ordered
-occurrence memberships; the following face-classification stage decides which
-spans survive while retaining positive and subtractive lineage.
+occurrence memberships. Each span names the first active member covering that
+finite interval, not merely the carrier group's first curve; shared-carrier
+partial overlaps and circle halves therefore retain a finite-domain witness.
+The following face-classification stage decides which spans survive while
+retaining positive and subtractive lineage.
 
 The implemented filtered arrangement entry point accepts filtered geometry and
 canonical broad-phase pairs, then runs the narrow phase and carrier overlay
@@ -431,11 +434,21 @@ fallback count. Endpoint-index node visits, balanced-index and heap updates,
 sort work, topology traversal, and angular predicates all consume the same job
 ceiling. Target-independent logical charges model the clustering, edge,
 half-edge, and cycle phases separately; the maximum phase and prior overlay
-peak are checked before allocation. Sparse 1x/2x fixtures guard expected
-`O(n log n + k)` behavior, while adversarial overlapping endpoint enclosures
-must stop exactly at the injected work ceiling. Native/WASM bytes include the
-complete rotation system, cycles, collapsed lineage, and canonical telemetry.
-Indexed face ownership and ordered material classification are the next stage.
+peak are checked before allocation. Before narrow/overlay execution, a
+zero-allocation scan of lowering's dense first-use carrier-token stream derives
+a safe lower bound on distinct noncollapsed carrier spans. Their unavoidable
+endpoint, membership, topology, sort, and live-memory work is combined with the
+upstream minimum; a budget that cannot admit the arrangement returns with zero
+overlay work or storage. Noncanonical internal token streams retain only a
+proven strictly increasing prefix as a conservative lower bound and are still
+validated by the owned overlay. Sparse 1x/2x fixtures guard expected
+`O(n log n + k)` behavior. A direct 128-entry overlapping, nonmergeable interval
+fixture proves the shared index stops exactly at its injected visit ceiling;
+integrated tests separately prove budget propagation through certified carrier
+inputs. Native/WASM bytes include overlapping irrational disks, partial
+same-carrier domains, early rejection, the dense index result, the complete
+rotation system, cycles, collapsed lineage, and canonical telemetry. Indexed
+face ownership and ordered material classification are the next stage.
 
 Across ordered stages, the accumulator retains the resolved analytic
 arrangement and lineage. Publication to the governed nm grid occurs once after

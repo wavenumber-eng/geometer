@@ -889,14 +889,20 @@ Geometer proposal, not the original consumer packet.
   certified carrier endpoints for tangent decisions, while globally repaired
   vertices retain the complete enclosure. Overlay-collapsed domains and
   arrangement-collapsed spans remain explicit vertex-attached lineage records.
+  Overlay spans now name an active finite-domain covering member rather than
+  an arbitrary shared-carrier representative, closing overlapping irrational
+  disk and partial coincident-line rejection. Before upstream execution, an
+  allocation-free canonical-token scan reserves unavoidable arrangement work
+  and phase memory; known-doomed jobs report zero overlay work/storage.
   Strict preliminary angular keys followed by
   outward tangent/curvature certification build twins, outgoing tables,
   `next`/`previous` links, connected components, and directed cycles without
   containment scans. Work accounting inherits the overlay, meters indexed
   visits/updates and every proportional traversal, and uses phase-specific
   target-independent logical memory. Exact 49/50/51 nm, nontransitive-chain,
-  sparse 1x/2x, dense-budget, line/circle, and native/WASM canonical fixtures
-  gate the stage. Indexed face classification, ordered stage material updates,
+  sparse 1x/2x, direct dense-index termination, overlapping disks, partial
+  carriers, early downstream rejection, line/circle, and native/WASM canonical
+  fixtures gate the stage. Indexed face classification, ordered stage material updates,
   publication, and dispatch remain pending.
 - Before filtered operation dispatch is enabled, move the retained native
   exact/oracle sources out of the normal `geometer_lib` source list into an

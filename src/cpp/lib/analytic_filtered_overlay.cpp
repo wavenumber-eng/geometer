@@ -1038,8 +1038,10 @@ class OverlayBuilder
                 continue;
             }
             AnalyticAtomicSpanNm& span = result_.spans[span_cursor];
+            const std::uint32_t covering_curve_offset =
+                curve_order_[group.curve_begin + active.head()];
             span = {static_cast<std::uint32_t>(span_cursor + 1),
-                    group.representative_curve,
+                    covering_curve_offset + 1,
                     group.kind,
                     start,
                     end,
@@ -1143,6 +1145,7 @@ static_assert(sizeof(UniqueEvent) <= kUniqueEventLogicalBytes);
 static_assert(sizeof(EndpointAction) <= kActionLogicalBytes);
 static_assert(sizeof(AnalyticAtomicSpanNm) <= kSpanLogicalBytes);
 static_assert(sizeof(AnalyticSpanMembership) <= kMembershipLogicalBytes);
+static_assert(kCurveLogicalBytes + kGroupLogicalBytes == kAnalyticOverlayCurveGroupLogicalBytes);
 
 } // namespace
 
@@ -1177,7 +1180,7 @@ build_analytic_filtered_overlay(const AnalyticFilteredGeometry& geometry,
         checked_multiply(pair_count, kAnalyticNarrowPhasePairLogicalBytes, valid);
     minimum_memory = checked_add(
         minimum_memory,
-        checked_multiply(curve_count, kCurveLogicalBytes + kGroupLogicalBytes, valid), valid);
+        checked_multiply(curve_count, kAnalyticOverlayCurveGroupLogicalBytes, valid), valid);
 
     // Every valid pair consumes at least one narrow predicate, and overlay
     // input validation consumes one unit per curve and retained pair.

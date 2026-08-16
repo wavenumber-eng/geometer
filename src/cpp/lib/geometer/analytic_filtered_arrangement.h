@@ -114,7 +114,9 @@ struct AnalyticFilteredArrangementResult
 // predicates before topology is linked. Domains already collapsed by the
 // overlay retain isolated vertices and occurrence lineage. Face ownership is
 // deliberately the next indexed stage; this boundary performs no cycle-pair
-// containment scan.
+// containment scan. A zero-allocation admission pass reserves the unavoidable
+// downstream memory/work for proven distinct carrier spans before narrow or
+// overlay execution, so a known-doomed job performs no upstream work.
 [[nodiscard]] AnalyticFilteredArrangementResult
 build_analytic_filtered_arrangement(const AnalyticFilteredGeometry& geometry,
                                     const std::vector<AnalyticCurvePair>& candidate_pairs,

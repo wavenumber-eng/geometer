@@ -10,6 +10,8 @@
 namespace geometer
 {
 
+inline constexpr std::uint64_t kAnalyticOverlayCurveGroupLogicalBytes = 96;
+
 struct AnalyticAtomicSpanNm
 {
     std::uint32_t span_index = 0;
@@ -75,7 +77,9 @@ struct AnalyticFilteredOverlayResult
 // a 50 nm enclosure is certified, and an indexed active set makes same-domain
 // membership output proportional to the memberships actually emitted. The
 // combined minimum narrow-result and overlay-table memory/work is preflighted
-// before the narrow phase allocates or evaluates a candidate.
+// before the narrow phase allocates or evaluates a candidate. Every published
+// span names an active member whose finite domain covers that span, rather than
+// merely naming an arbitrary representative of the shared carrier.
 [[nodiscard]] AnalyticFilteredOverlayResult
 build_analytic_filtered_overlay(const AnalyticFilteredGeometry& geometry,
                                 const std::vector<AnalyticCurvePair>& candidate_pairs,

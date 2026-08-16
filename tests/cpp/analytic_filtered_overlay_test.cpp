@@ -260,6 +260,17 @@ void test_circle_seam_and_coincident_arcs()
                 bridged.spans[0].start.x.lower == -313 && bridged.spans[0].end.x.lower == 313 &&
                 bridged.spans[1].start.x.lower == 313 && bridged.spans[1].end.x.lower == -313,
             "near-seam major arc did not bridge its <=50 nm endpoint gap canonically");
+    AnalyticSolverLimits exact_work;
+    exact_work.predicate_calls = bridged.telemetry.predicate_calls;
+    require(build_analytic_filtered_overlay(almost_full, {}, exact_work).error ==
+                AnalyticFilteredOverlayError::none,
+            "exact circular seam-support work budget failed");
+    --exact_work.predicate_calls;
+    const AnalyticFilteredOverlayResult short_work =
+        build_analytic_filtered_overlay(almost_full, {}, exact_work);
+    require(short_work.error == AnalyticFilteredOverlayError::resource_limit_exceeded &&
+                short_work.telemetry.predicate_calls == exact_work.predicate_calls,
+            "one-unit-short circular seam-support work was not fully metered");
 }
 
 void test_invalid_pipeline_inputs_fail_closed()

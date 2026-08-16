@@ -751,6 +751,38 @@ void test_many_memberships_are_linear_and_fixed_capacity()
     require(memory_failure.error == AnalyticFilteredBooleanSelectionError::resource_limit_exceeded,
             "one-byte-short non-power-of-two selection memory succeeded");
 
+    std::uint64_t lower = 0;
+    std::uint64_t upper = baseline.telemetry.peak_working_memory_bytes;
+    while (lower < upper)
+    {
+        const std::uint64_t middle = lower + (upper - lower) / 2;
+        AnalyticSolverLimits probe_limits;
+        probe_limits.working_memory_bytes = middle;
+        const AnalyticFilteredBooleanSelectionResult probe =
+            build_analytic_filtered_boolean_selection(records, 0, geometry, broad.pairs,
+                                                      probe_limits);
+        if (probe.telemetry.arrangement_predicate_calls == 0)
+            lower = middle + 1;
+        else
+            upper = middle;
+    }
+    require(lower != 0, "persistent-coverage admission threshold was not found");
+    AnalyticSolverLimits admission_exact;
+    admission_exact.working_memory_bytes = lower;
+    const AnalyticFilteredBooleanSelectionResult exact_admission =
+        build_analytic_filtered_boolean_selection(records, 0, geometry, broad.pairs,
+                                                  admission_exact);
+    --admission_exact.working_memory_bytes;
+    const AnalyticFilteredBooleanSelectionResult short_admission =
+        build_analytic_filtered_boolean_selection(records, 0, geometry, broad.pairs,
+                                                  admission_exact);
+    require(exact_admission.telemetry.arrangement_predicate_calls != 0 &&
+                short_admission.error ==
+                    AnalyticFilteredBooleanSelectionError::resource_limit_exceeded &&
+                short_admission.telemetry.arrangement_predicate_calls == 0 &&
+                short_admission.telemetry.arrangement_peak_working_memory_bytes == 0,
+            "persistent-coverage admission did not reject at its exact one-byte boundary");
+
     const AnalyticFilteredBooleanSelectionResult small = disjoint_rectangles(64);
     const AnalyticFilteredBooleanSelectionResult large = disjoint_rectangles(128);
     require(small.error == AnalyticFilteredBooleanSelectionError::none &&

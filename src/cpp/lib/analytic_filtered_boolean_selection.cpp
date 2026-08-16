@@ -326,9 +326,12 @@ class SelectionBuilder
         const std::uint64_t edges = result_.arrangement.edges.size();
         const std::uint64_t cycles = result_.arrangement.cycles.size();
         const std::uint64_t half_edges = result_.arrangement.half_edges.size();
+        if (!charge(cycles))
+            return false;
         std::uint64_t faces = 1;
         for (const AnalyticArrangementCycle& cycle : result_.arrangement.cycles)
             faces += cycle.counterclockwise ? 1 : 0;
+        expected_face_capacity_ = faces;
         if (faces > limits_.arrangement_faces)
             return fail(AnalyticFilteredBooleanSelectionError::resource_limit_exceeded);
         std::uint64_t topology = checked_multiply(
@@ -356,7 +359,7 @@ class SelectionBuilder
         if (!set_phase_memory(topology))
             return false;
         const std::uint64_t validation_work =
-            vertices * 3 + edges * 5 + result_.arrangement.half_edges.size() * 2 + cycles * 3;
+            vertices * 3 + edges * 5 + result_.arrangement.half_edges.size() * 2 + cycles * 2;
         return charge(validation_work);
     }
 
@@ -892,10 +895,7 @@ class SelectionBuilder
         face_by_root[sentinel_root] = 0;
         if (limits_.arrangement_faces == 0)
             return fail(AnalyticFilteredBooleanSelectionError::resource_limit_exceeded);
-        std::uint64_t face_capacity = 1;
-        for (const AnalyticArrangementCycle& cycle : result_.arrangement.cycles)
-            face_capacity += cycle.counterclockwise ? 1 : 0;
-        result_.faces.reserve(static_cast<std::size_t>(face_capacity));
+        result_.faces.reserve(static_cast<std::size_t>(expected_face_capacity_));
         result_.face_boundary_cycles.reserve(cycle_count);
         result_.faces.push_back({0, 0, 0, true, false});
         for (std::uint32_t cycle = 0; cycle < cycle_count; ++cycle)
@@ -1167,23 +1167,11 @@ class SelectionBuilder
     bool propagate_coverages()
     {
         bool valid = true;
-        std::uint32_t operand_depth = 0;
-        for (std::uint64_t capacity = 1; capacity < std::max<std::uint64_t>(1, operands_.size());
-             capacity <<= 1U)
-            ++operand_depth;
-        std::uint64_t maximum_nodes =
-            checked_add(2, checked_multiply(transitions_.size(), operand_depth, valid), valid);
+        const std::uint64_t maximum_nodes =
+            coverage_maximum_nodes(transitions_.size(), operands_.size(), valid);
         if (maximum_nodes > std::numeric_limits<std::uint32_t>::max())
             valid = false;
-        std::uint64_t table_capacity = 4;
-        const std::uint64_t required_table = checked_multiply(maximum_nodes, 2, valid);
-        while (valid && table_capacity < required_table)
-        {
-            if (table_capacity > std::numeric_limits<std::uint64_t>::max() / 2)
-                valid = false;
-            else
-                table_capacity *= 2;
-        }
+        const std::uint64_t table_capacity = coverage_table_capacity(maximum_nodes, valid);
         std::uint64_t stage_leaf_capacity = 1;
         while (stage_leaf_capacity < std::max<std::uint64_t>(1, stage_operations_.size()))
             stage_leaf_capacity *= 2;
@@ -1361,6 +1349,7 @@ class SelectionBuilder
     const AnalyticRequestPacketRecords& records_;
     std::uint32_t job_index_ = 0;
     std::uint64_t expected_operand_count_ = 0;
+    std::uint64_t expected_face_capacity_ = 0;
     const AnalyticFilteredGeometry& geometry_;
     AnalyticSolverLimits limits_;
     AnalyticFilteredBooleanSelectionResult result_;

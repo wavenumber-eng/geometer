@@ -778,9 +778,13 @@ class OverlayBuilder
                     return false;
                 bool merge = false;
                 if (unique_events_.size() > group.point_begin)
+                {
+                    if (!charge(2))
+                        return false;
                     merge =
                         points_within_resolution(unique_events_.back().proof_first, event.point) &&
                         points_within_resolution(unique_events_.back().proof_last, event.point);
+                }
                 if (merge)
                 {
                     AnalyticFilteredPointNm representative =
@@ -828,7 +832,7 @@ class OverlayBuilder
                 static_cast<std::uint32_t>(unique_events_.size() - group.point_begin);
             if (group.kind == AnalyticAtomicCurveKind::circular_arc && group.point_count > 1)
             {
-                if (!charge(1))
+                if (!charge(4))
                     return false;
                 UniqueEvent& first = unique_events_[group.point_begin];
                 const std::uint32_t last_index = group.point_begin + group.point_count - 1;

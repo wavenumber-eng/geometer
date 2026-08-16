@@ -716,8 +716,8 @@ def test_filtered_solver_foundation_is_bounded_non_algebraic_and_not_dispatched(
             "complete_same_carrier_clusters_at_or_below_50nm_without_independent_circle_seam_snaps"
         ),
         "overlay_budget_policy": (
-            "allocation_free_combined_minimum_preflight_then_combined_narrow_and_overlay_"
-            "predicate_work_and_live_logical_memory"
+            "allocation_free_combined_minimum_preflight_then_fully_metered_complete_cluster_"
+            "narrow_and_overlay_work_and_live_logical_memory"
         ),
         "overlay_parity_validator": "scripts/validate_analytic_filtered_overlay_parity.py",
         "overlay_vector_bytes": 1048,
@@ -729,12 +729,12 @@ def test_filtered_solver_foundation_is_bounded_non_algebraic_and_not_dispatched(
         "arrangement_policy": ("indexed_complete_diameter_vertex_clusters_and_fixed_width_certified_half_edge_germs"),
         "arrangement_resolution_policy": ("inclusive_50nm_nontransitive_global_vertex_reconciliation"),
         "arrangement_budget_policy": (
-            "bulk_metered_allocation_free_downstream_minimum_preflight_then_phase_accurate_"
-            "target_independent_memory_and_shared_upstream_work"
+            "single_validated_bulk_metered_allocation_free_downstream_minimum_preflight_then_"
+            "phase_accurate_target_independent_memory_and_shared_upstream_work"
         ),
         "arrangement_parity_validator": ("scripts/validate_analytic_filtered_arrangement_parity.py"),
         "arrangement_vector_bytes": 13032,
-        "arrangement_vector_sha256": ("1ac528f9b7f45b1a36fad5f0fafb20b96c6bee8c0ad6e76e0c758783b3d770b3"),
+        "arrangement_vector_sha256": ("c548d63bf8577eb615de5569dedef2d5cbff9ab7dccf831d24bb82ad08788d1d"),
         "boolean_selection_header": ("src/cpp/lib/geometer/analytic_filtered_boolean_selection.h"),
         "boolean_selection_source": "src/cpp/lib/analytic_filtered_boolean_selection.cpp",
         "boolean_selection_admission_source": ("src/cpp/lib/analytic_filtered_boolean_selection_admission.cpp"),
@@ -748,12 +748,12 @@ def test_filtered_solver_foundation_is_bounded_non_algebraic_and_not_dispatched(
             "indexed_sweep_and_sparse_edge_transitions_without_cycle_pair_containment_or_face_by_operand_copies"
         ),
         "boolean_selection_budget_policy": (
-            "metered_multi_pass_admission_fixed_capacity_phase_memory_o1_membership_ordinals_"
-            "and_early_collapsed_topology_reservation"
+            "metered_multi_pass_admission_fixed_capacity_distinct_phase_memory_o1_membership_"
+            "ordinals_and_early_collapsed_and_persistent_coverage_reservation"
         ),
         "boolean_selection_parity_validator": ("scripts/validate_analytic_filtered_boolean_selection_parity.py"),
         "boolean_selection_vector_bytes": 12360,
-        "boolean_selection_vector_sha256": ("af7167919a461cd69b7f055cbc609a933bd1248ad47bba7834ee6b47a12a9806"),
+        "boolean_selection_vector_sha256": ("56274596c6005d1def4c7197719836d4ea8730b3876472b336ba6a7571c5edb8"),
     }
     implementation_paths = [
         solver[key]

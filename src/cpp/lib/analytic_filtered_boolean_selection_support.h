@@ -87,6 +87,36 @@ inline std::uint64_t tree_operation_units(std::uint64_t capacity) noexcept
     return levels * 4 + 4;
 }
 
+inline std::uint64_t coverage_operand_depth(std::uint64_t operand_count) noexcept
+{
+    std::uint64_t depth = 0;
+    for (std::uint64_t capacity = 1; capacity < std::max<std::uint64_t>(1, operand_count);
+         capacity <<= 1U)
+        ++depth;
+    return depth;
+}
+
+inline std::uint64_t coverage_maximum_nodes(std::uint64_t transition_count,
+                                            std::uint64_t operand_count, bool& valid) noexcept
+{
+    return checked_add(
+        2, checked_multiply(transition_count, coverage_operand_depth(operand_count), valid), valid);
+}
+
+inline std::uint64_t coverage_table_capacity(std::uint64_t maximum_nodes, bool& valid) noexcept
+{
+    const std::uint64_t required = checked_multiply(maximum_nodes, 2, valid);
+    std::uint64_t capacity = 4;
+    while (valid && capacity < required)
+    {
+        if (capacity > std::numeric_limits<std::uint64_t>::max() / 2)
+            valid = false;
+        else
+            capacity *= 2;
+    }
+    return capacity;
+}
+
 inline Point point(const AnalyticFilteredPointNm& value) noexcept
 {
     return {{value.x.lower, value.x.upper}, {value.y.lower, value.y.upper}};

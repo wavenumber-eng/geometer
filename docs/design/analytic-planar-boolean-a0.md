@@ -492,11 +492,17 @@ ordinal, making transition construction linear in emitted memberships. Every
 stage-table pass is charged before traversal, known-size vectors use fixed
 reserved capacities, and telemetry takes the maximum actual live phase instead
 of adding sequential peaks. Separated short domains reserve their unavoidable
-collapsed vertices and sort work before arrangement runs. The result also
+collapsed vertices and sort work before arrangement runs. The allocation-free
+evidence comes from one validated, bulk-metered curve/bounds scan. Selection
+models topology and persistent coverage as distinct live phases: face outputs
+are counted once, and the proven transition prefix reserves fixed-capacity
+coverage nodes and its canonical table before arrangement. Every two-support
+and cyclic four-support seam-distance kernel is precharged. The result also
 retains the lowering origin so later publication can recover global integer-nm
-coordinates without rescanning the request. Canonical native/WASM fixtures cover line and arc
-faces, nested components, tangent contact, odd-width vertical capsules,
-ordered stage combinations, exact/one-short budgets, and sparse scaling.
+coordinates without rescanning the request. Canonical native/WASM fixtures
+cover line and arc faces, nested components, tangent contact, odd-width
+vertical capsules, ordered stage combinations, exact/one-short budgets, and
+sparse scaling.
 Selected-boundary publication, complete lineage projection, final 1 nm
 normalization, and operation dispatch remain subsequent stages.
 

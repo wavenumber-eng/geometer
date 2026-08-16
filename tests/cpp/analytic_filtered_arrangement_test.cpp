@@ -9,6 +9,7 @@
 #include <cstring>
 #include <iomanip>
 #include <iostream>
+#include <limits>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -513,6 +514,18 @@ void test_limits_and_malformed_inputs()
     malformed_geometry.curves[0].kind = static_cast<AnalyticAtomicCurveKind>(255);
     require(arrange(malformed_geometry).error == AnalyticFilteredArrangementError::invalid_argument,
             "invalid curve kind was accepted");
+
+    AnalyticFilteredArrangementMinimumRequirements minimum;
+    malformed_geometry = square();
+    malformed_geometry.bounds.pop_back();
+    require(!estimate_analytic_filtered_arrangement_minimum_requirements(malformed_geometry, 0,
+                                                                         minimum),
+            "minimum estimator accepted mismatched curve/bounds arrays");
+    malformed_geometry = square();
+    malformed_geometry.curves[0].start.x.lower = std::numeric_limits<double>::quiet_NaN();
+    require(!estimate_analytic_filtered_arrangement_minimum_requirements(malformed_geometry, 0,
+                                                                         minimum),
+            "minimum estimator counted a malformed curve as guaranteed topology");
 
     const std::vector<AnalyticCurvePair> malformed_pairs = {{2, 1}};
     require(build_analytic_filtered_arrangement(geometry, malformed_pairs).error ==

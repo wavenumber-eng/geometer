@@ -285,8 +285,19 @@ bool curve_guarantees_overlay_span(const AnalyticAtomicCurveNm& curve) noexcept
            !complete_points_within_resolution(curve.start, curve.end);
 }
 
-std::uint64_t guaranteed_carrier_span_count(const AnalyticFilteredGeometry& geometry) noexcept
+struct GuaranteedCarrierCounts
 {
+    std::uint64_t spans = 0;
+    std::uint64_t collapsed_vertices = 0;
+};
+
+bool guaranteed_carrier_counts(const AnalyticFilteredGeometry& geometry,
+                               GuaranteedCarrierCounts& counts) noexcept
+{
+    counts = {};
+    if (geometry.curves.size() != geometry.bounds.size() ||
+        geometry.curves.size() != geometry.occurrences.size())
+        return false;
     // Lowering assigns dense carrier ids on first use. Track that stream with
     // O(1) state; a strictly increasing prefix also admits hand-built internal
     // fixtures. If a malformed/noncanonical stream appears, retain only the
@@ -298,8 +309,15 @@ std::uint64_t guaranteed_carrier_span_count(const AnalyticFilteredGeometry& geom
     std::uint64_t increasing_spans = 0;
     bool increasing = true;
     bool first = true;
-    for (const AnalyticAtomicCurveNm& curve : geometry.curves)
+    bool separated_collapsed = !geometry.curves.empty();
+    std::uint64_t previous_carrier = 0;
+    double previous_maximum_x = 0.0;
+    for (std::size_t index = 0; index < geometry.curves.size(); ++index)
     {
+        const AnalyticAtomicCurveNm& curve = geometry.curves[index];
+        const AnalyticCurveBoundsNm& bounds = geometry.bounds[index];
+        if (!valid_point(curve.start) || !valid_point(curve.end))
+            return false;
         const std::uint64_t carrier = curve.construction_carrier_id;
         const bool guarantees_span = curve_guarantees_overlay_span(curve);
         if (dense)
@@ -322,52 +340,48 @@ std::uint64_t guaranteed_carrier_span_count(const AnalyticFilteredGeometry& geom
             else
                 increasing = false;
         }
+
+        if (separated_collapsed)
+        {
+            const bool valid_bounds = bounds.curve_index == curve.curve_index &&
+                                      std::isfinite(bounds.min_x) && std::isfinite(bounds.min_y) &&
+                                      std::isfinite(bounds.max_x) && std::isfinite(bounds.max_y) &&
+                                      bounds.min_x <= bounds.max_x && bounds.min_y <= bounds.max_y;
+            if (guarantees_span || carrier == 0 || carrier <= previous_carrier || !valid_bounds)
+                separated_collapsed = false;
+            else if (index != 0)
+            {
+                const double separated = std::nextafter(
+                    previous_maximum_x + static_cast<double>(kAnalyticTopologyResolutionNm),
+                    std::numeric_limits<double>::infinity());
+                if (!(separated < bounds.min_x))
+                    separated_collapsed = false;
+            }
+            if (separated_collapsed)
+            {
+                previous_carrier = carrier;
+                previous_maximum_x = bounds.max_x;
+            }
+        }
         first = false;
     }
-    return std::max(dense_spans, increasing_spans);
-}
-
-std::uint64_t
-guaranteed_separated_collapsed_vertex_count(const AnalyticFilteredGeometry& geometry) noexcept
-{
-    if (geometry.curves.empty())
-        return 0;
-    std::uint64_t previous_carrier = 0;
-    double previous_maximum_x = 0.0;
-    for (std::size_t index = 0; index < geometry.curves.size(); ++index)
-    {
-        const AnalyticAtomicCurveNm& curve = geometry.curves[index];
-        const AnalyticCurveBoundsNm& bounds = geometry.bounds[index];
-        if (curve_guarantees_overlay_span(curve) || curve.construction_carrier_id == 0 ||
-            curve.construction_carrier_id <= previous_carrier ||
-            bounds.curve_index != curve.curve_index || !std::isfinite(bounds.min_x) ||
-            !std::isfinite(bounds.max_x) || bounds.min_x > bounds.max_x)
-            return 0;
-        if (index != 0)
-        {
-            const double separated = std::nextafter(
-                previous_maximum_x + static_cast<double>(kAnalyticTopologyResolutionNm),
-                std::numeric_limits<double>::infinity());
-            if (!(separated < bounds.min_x))
-                return 0;
-        }
-        previous_carrier = curve.construction_carrier_id;
-        previous_maximum_x = bounds.max_x;
-    }
-    return geometry.curves.size();
+    counts.spans = std::max(dense_spans, increasing_spans);
+    counts.collapsed_vertices = separated_collapsed ? geometry.curves.size() : 0;
+    return true;
 }
 
 bool calculate_arrangement_minimum_requirements(const AnalyticFilteredGeometry& geometry,
-                                                std::uint64_t pair_count, std::uint64_t& memory,
-                                                std::uint64_t& work) noexcept
+                                                std::uint64_t pair_count,
+                                                const GuaranteedCarrierCounts& guaranteed,
+                                                std::uint64_t& memory, std::uint64_t& work) noexcept
 {
     bool valid = true;
     const std::uint64_t curve_count = geometry.curves.size();
-    const std::uint64_t spans = guaranteed_carrier_span_count(geometry);
+    const std::uint64_t spans = guaranteed.spans;
     // A monotone sequence of short, distinct carriers whose conservative
     // bounds are separated by more than 50 nm must publish one isolated vertex
     // per carrier. Count that allocation-free case before running overlay.
-    const std::uint64_t collapsed_domains = guaranteed_separated_collapsed_vertex_count(geometry);
+    const std::uint64_t collapsed_domains = guaranteed.collapsed_vertices;
     const std::uint64_t endpoints =
         checked_add(checked_multiply(spans, 2, valid), collapsed_domains, valid);
     const std::uint64_t half_edges = checked_multiply(spans, 2, valid);
@@ -387,7 +401,7 @@ bool calculate_arrangement_minimum_requirements(const AnalyticFilteredGeometry& 
     work = checked_add(work, checked_multiply(spans, 11, valid), valid);
     work = checked_add(work, checked_multiply(sort_units(endpoints), 2, valid), valid);
     work = checked_add(work, checked_multiply(sort_units(spans), 2, valid), valid);
-    work = checked_add(work, checked_multiply(collapsed_domains, 42, valid), valid);
+    work = checked_add(work, checked_multiply(collapsed_domains, 52, valid), valid);
     work = checked_add(work, spans == 0 ? 0 : 1, valid);
     return valid;
 }
@@ -1315,9 +1329,14 @@ bool estimate_analytic_filtered_arrangement_minimum_requirements(
     AnalyticFilteredArrangementMinimumRequirements& requirements) noexcept
 {
     requirements = {};
-    requirements.guaranteed_spans = guaranteed_carrier_span_count(geometry);
-    return calculate_arrangement_minimum_requirements(
-        geometry, pair_count, requirements.working_memory_bytes, requirements.predicate_calls);
+    GuaranteedCarrierCounts guaranteed;
+    if (!guaranteed_carrier_counts(geometry, guaranteed))
+        return false;
+    requirements.guaranteed_spans = guaranteed.spans;
+    requirements.guaranteed_collapsed_vertices = guaranteed.collapsed_vertices;
+    return calculate_arrangement_minimum_requirements(geometry, pair_count, guaranteed,
+                                                      requirements.working_memory_bytes,
+                                                      requirements.predicate_calls);
 }
 
 AnalyticFilteredArrangementResult
@@ -1347,10 +1366,17 @@ build_analytic_filtered_arrangement(const AnalyticFilteredGeometry& geometry,
     }
     preflight.telemetry.admission_work_units = admission_work;
     preflight.telemetry.predicate_calls = admission_work;
+    GuaranteedCarrierCounts guaranteed;
+    if (!guaranteed_carrier_counts(geometry, guaranteed))
+    {
+        preflight.error = AnalyticFilteredArrangementError::invalid_argument;
+        return preflight;
+    }
     std::uint64_t minimum_memory = 0;
     std::uint64_t minimum_work = 0;
     bool valid = calculate_arrangement_minimum_requirements(
-        geometry, static_cast<std::uint64_t>(candidate_pairs.size()), minimum_memory, minimum_work);
+        geometry, static_cast<std::uint64_t>(candidate_pairs.size()), guaranteed, minimum_memory,
+        minimum_work);
     const std::uint64_t curve_count = geometry.curves.size();
     const std::uint64_t pair_count = candidate_pairs.size();
     std::uint64_t overlay_memory =

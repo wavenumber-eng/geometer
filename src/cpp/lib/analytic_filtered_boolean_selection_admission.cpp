@@ -153,15 +153,13 @@ SelectionAdmission prepare_boolean_selection_admission(
         selection_memory,
         checked_multiply(geometry.occurrences.size(), kOperandOrdinalLogicalBytes, valid), valid);
     selection_memory = checked_add(
-        selection_memory,
-        checked_multiply(operands, kOperandMetadataLogicalBytes + kByteLogicalBytes, valid), valid);
+        selection_memory, checked_multiply(operands, kOperandMetadataLogicalBytes, valid), valid);
     selection_memory = checked_add(
         selection_memory, checked_multiply(job.stage_count, kByteLogicalBytes, valid), valid);
-    selection_memory =
-        checked_add(selection_memory, kFaceLogicalBytes + kCoverageNodeLogicalBytes * 2, valid);
 
     const std::uint64_t spans = arrangement_minimum.guaranteed_spans;
-    const std::uint64_t collapsed_vertex_reservation = geometry.curves.size();
+    const std::uint64_t collapsed_vertex_reservation =
+        arrangement_minimum.guaranteed_collapsed_vertices;
     const std::uint64_t vertex_reservation =
         checked_add(checked_multiply(spans, 2, valid), collapsed_vertex_reservation, valid);
     const std::uint64_t half_edge_reservation = checked_multiply(spans, 2, valid);
@@ -193,12 +191,14 @@ SelectionAdmission prepare_boolean_selection_admission(
                          kAnalyticArrangementCycleLogicalBytes + kIndexLogicalBytes, valid),
         valid);
 
-    std::uint64_t selection_outputs =
+    std::uint64_t retained_selection_outputs =
         checked_multiply(half_edge_reservation, kIndexLogicalBytes, valid);
-    selection_outputs = checked_add(
-        selection_outputs, checked_multiply(face_reservation, kFaceLogicalBytes, valid), valid);
-    selection_outputs = checked_add(
-        selection_outputs, checked_multiply(cycle_reservation, kIndexLogicalBytes, valid), valid);
+    retained_selection_outputs =
+        checked_add(retained_selection_outputs,
+                    checked_multiply(face_reservation, kFaceLogicalBytes, valid), valid);
+    retained_selection_outputs =
+        checked_add(retained_selection_outputs,
+                    checked_multiply(cycle_reservation, kIndexLogicalBytes, valid), valid);
 
     std::uint64_t topology_scratch = checked_multiply(
         vertex_reservation,
@@ -225,14 +225,60 @@ SelectionAdmission prepare_boolean_selection_admission(
     topology_scratch = checked_add(
         topology_scratch, checked_multiply(face_reservation, kFaceLogicalBytes, valid), valid);
 
-    const std::uint64_t selection_phase_memory =
-        checked_add(checked_add(retained_arrangement, selection_memory, valid),
-                    checked_add(selection_outputs, topology_scratch, valid), valid);
+    const std::uint64_t topology_phase_memory = checked_add(
+        checked_add(retained_arrangement, selection_memory, valid), topology_scratch, valid);
+
+    const std::uint64_t guaranteed_transitions = spans;
+    const std::uint64_t maximum_coverage_nodes =
+        coverage_maximum_nodes(guaranteed_transitions, operands, valid);
+    const std::uint64_t coverage_table = coverage_table_capacity(maximum_coverage_nodes, valid);
+    std::uint64_t stage_leaf_capacity = 1;
+    while (stage_leaf_capacity < std::max<std::uint64_t>(1, job.stage_count))
+        stage_leaf_capacity *= 2;
+    const std::uint64_t span_adjacencies = checked_multiply(spans, 2, valid);
+    const std::uint64_t transition_ranges = checked_add(spans, 1, valid);
+    const std::uint64_t adjacency_ranges = checked_add(face_reservation, 1, valid);
+    const std::uint64_t stage_tree_nodes = checked_multiply(stage_leaf_capacity, 2, valid);
+    std::uint64_t coverage_scratch =
+        checked_multiply(geometry.curves.size(), kTransitionLogicalBytes, valid);
+    coverage_scratch = checked_add(
+        coverage_scratch, checked_multiply(transition_ranges, kIndexLogicalBytes, valid), valid);
+    coverage_scratch = checked_add(
+        coverage_scratch,
+        checked_multiply(span_adjacencies, kIndexLogicalBytes + kAdjacencyLogicalBytes, valid),
+        valid);
+    coverage_scratch = checked_add(
+        coverage_scratch, checked_multiply(adjacency_ranges, kIndexLogicalBytes, valid), valid);
+    coverage_scratch = checked_add(
+        coverage_scratch,
+        checked_multiply(face_reservation, kByteLogicalBytes + kDualFrameLogicalBytes, valid),
+        valid);
+    coverage_scratch = checked_add(
+        coverage_scratch, checked_multiply(operands, kByteLogicalBytes + kIndexLogicalBytes, valid),
+        valid);
+    coverage_scratch = checked_add(
+        coverage_scratch, checked_multiply(job.stage_count, kIndexLogicalBytes, valid), valid);
+    coverage_scratch = checked_add(
+        coverage_scratch, checked_multiply(stage_tree_nodes, kIndexLogicalBytes, valid), valid);
+    coverage_scratch = checked_add(
+        coverage_scratch,
+        checked_multiply(maximum_coverage_nodes, kCoverageNodeLogicalBytes, valid), valid);
+    coverage_scratch = checked_add(
+        coverage_scratch, checked_multiply(coverage_table, kCoverageTableEntryLogicalBytes, valid),
+        valid);
+    const std::uint64_t coverage_phase_memory =
+        checked_add(checked_add(checked_add(retained_arrangement, selection_memory, valid),
+                                retained_selection_outputs, valid),
+                    coverage_scratch, valid);
     const std::uint64_t integrated_minimum_memory =
-        std::max(arrangement_minimum.working_memory_bytes, selection_phase_memory);
+        std::max(arrangement_minimum.working_memory_bytes,
+                 std::max(topology_phase_memory, coverage_phase_memory));
 
     std::uint64_t selection_work = sort_units(operands);
-    selection_work = checked_add(selection_work, job.stage_count * 2 + operands * 2, valid);
+    selection_work = checked_add(selection_work,
+                                 checked_add(checked_multiply(job.stage_count, 2, valid),
+                                             checked_multiply(operands, 2, valid), valid),
+                                 valid);
     selection_work = checked_add(
         selection_work,
         checked_multiply(geometry.occurrences.size(), tree_operation_units(operands), valid),
@@ -243,11 +289,11 @@ SelectionAdmission prepare_boolean_selection_admission(
         checked_add(selection_work, checked_multiply(vertex_reservation, 3, valid), valid);
     selection_work = checked_add(selection_work,
                                  checked_multiply(sort_units(vertex_reservation), 2, valid), valid);
-    std::uint64_t stage_leaf_capacity = 1;
-    while (stage_leaf_capacity < std::max<std::uint64_t>(1, job.stage_count))
-        stage_leaf_capacity *= 2;
-    selection_work = checked_add(selection_work,
-                                 7 + job.stage_count + stage_leaf_capacity * 2 + operands, valid);
+    std::uint64_t stage_initialization_work = checked_add(7, job.stage_count, valid);
+    stage_initialization_work = checked_add(stage_initialization_work, stage_tree_nodes, valid);
+    stage_initialization_work = checked_add(stage_initialization_work, operands, valid);
+    selection_work = checked_add(selection_work, stage_initialization_work, valid);
+    selection_work = checked_add(selection_work, coverage_table, valid);
     std::uint64_t integrated_arrangement_work =
         checked_add(geometry.curves.size(), arrangement_minimum.predicate_calls, valid);
     integrated_arrangement_work = checked_add(integrated_arrangement_work, selection_work, valid);

@@ -936,6 +936,15 @@ Geometer proposal, not the original consumer packet.
   separated collapsed domains reserve downstream work before arrangement.
   The 257-item adversarial fixtures keep transition construction linear and
   prove exact/one-short work and memory behavior on native and WASM.
+- Performance re-review remediation combines span/collapsed admission evidence
+  into one validated, bulk-metered scan and rejects malformed geometry arrays
+  without indexing them. Every complete-cluster seam distance is now charged.
+  Selection memory separates topology from persistent coverage, counts retained
+  outputs once, and reserves the guaranteed transition prefix's canonical
+  coverage table before arrangement. Face capacity is reused from the charged
+  preflight pass and all widened stage arithmetic is checked. Malformed,
+  circular-seam, 257-operand persistent-coverage, and exact/one-short admission
+  fixtures cover the new boundaries on native and WASM.
 - Before filtered operation dispatch is enabled, move the retained native
   exact/oracle sources out of the normal `geometer_lib` source list into an
   explicit feasibility-oracle target, matching the separation already used by

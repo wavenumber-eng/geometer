@@ -201,9 +201,16 @@ engine.
   capacities, and phase telemetry reports actual canonical live storage rather
   than summing non-overlapping peaks. An allocation-free separated-short-domain
   certificate reserves unavoidable collapsed vertices and downstream sort work
-  before arrangement execution. The selection result retains the lowering
-  origin required to reconstruct global coordinates. Selected-boundary publication, complete
-  lineage projection, final grid normalization, and dispatch remain gated.
+  before arrangement execution. That certificate is produced by one validated,
+  bulk-metered curve/bounds scan; malformed parallel arrays or point enclosures
+  cannot enter downstream admission. Topology and persistent-coverage memory
+  are reserved as separate live phases, outputs are counted once, and the
+  guaranteed transition prefix reserves canonical coverage nodes/table storage
+  before arrangement execution. Complete-cluster seam distance predicates are
+  charged before evaluation. The selection result retains the lowering origin
+  required to reconstruct global coordinates. Selected-boundary publication,
+  complete lineage projection, final grid normalization, and dispatch remain
+  gated.
 - Solver resource limits are supplied through one internal limits value object
   rather than scattered production constants. The catalog values are governed
   hard ceilings; a host may advertise and enforce lower effective limits, and

@@ -434,6 +434,46 @@ void test_limits_and_sparse_scaling()
             "overlay vertex ceiling did not account for both line endpoints");
 }
 
+AnalyticFilteredOverlayResult impossible_combined_memory_result()
+{
+    AnalyticFilteredGeometry geometry;
+    append_curve(geometry, line(1, 0, 0, 1000, 0, 10), occurrence(1));
+    append_curve(geometry, line(2, 500, -500, 500, 500, 20), occurrence(2));
+    AnalyticSolverLimits limits = kAnalyticSolverHardLimits;
+    limits.working_memory_bytes = kAnalyticNarrowPhasePairLogicalBytes;
+    return build_analytic_filtered_overlay(geometry, {{1, 2}}, limits);
+}
+
+AnalyticFilteredOverlayResult impossible_combined_work_result()
+{
+    AnalyticFilteredGeometry geometry;
+    append_curve(geometry, line(1, 0, 0, 1000, 0, 10), occurrence(1));
+    append_curve(geometry, line(2, 500, -500, 500, 500, 20), occurrence(2));
+    AnalyticSolverLimits limits = kAnalyticSolverHardLimits;
+    limits.predicate_calls = 0;
+    return build_analytic_filtered_overlay(geometry, {{1, 2}}, limits);
+}
+
+void test_integrated_preflight_rejects_before_narrow_work()
+{
+    const AnalyticFilteredOverlayResult memory = impossible_combined_memory_result();
+    require(memory.error == AnalyticFilteredOverlayError::resource_limit_exceeded &&
+                memory.spans.empty() && memory.memberships.empty() &&
+                memory.telemetry.narrow_phase_predicate_calls == 0 &&
+                memory.telemetry.narrow_phase_peak_working_memory_bytes == 0 &&
+                memory.telemetry.predicate_calls == 0 &&
+                memory.telemetry.peak_working_memory_bytes == 0,
+            "known-impossible combined memory escaped the allocation-free preflight");
+
+    const AnalyticFilteredOverlayResult work = impossible_combined_work_result();
+    require(
+        work.error == AnalyticFilteredOverlayError::resource_limit_exceeded && work.spans.empty() &&
+            work.memberships.empty() && work.telemetry.narrow_phase_predicate_calls == 0 &&
+            work.telemetry.narrow_phase_peak_working_memory_bytes == 0 &&
+            work.telemetry.predicate_calls == 0 && work.telemetry.peak_working_memory_bytes == 0,
+        "known-impossible combined work escaped the allocation-free preflight");
+}
+
 std::string parity_vector()
 {
     AnalyticFilteredGeometry geometry;
@@ -490,6 +530,18 @@ std::string parity_vector()
     append_u64(circular_cycle.telemetry.raw_events);
     append_u64(circular_cycle.telemetry.unique_events);
     append_u64(circular_cycle.telemetry.predicate_calls);
+    const AnalyticFilteredOverlayResult impossible_memory = impossible_combined_memory_result();
+    append_u64(static_cast<std::uint8_t>(impossible_memory.error));
+    append_u64(impossible_memory.telemetry.narrow_phase_predicate_calls);
+    append_u64(impossible_memory.telemetry.narrow_phase_peak_working_memory_bytes);
+    append_u64(impossible_memory.telemetry.predicate_calls);
+    append_u64(impossible_memory.telemetry.peak_working_memory_bytes);
+    const AnalyticFilteredOverlayResult impossible_work = impossible_combined_work_result();
+    append_u64(static_cast<std::uint8_t>(impossible_work.error));
+    append_u64(impossible_work.telemetry.narrow_phase_predicate_calls);
+    append_u64(impossible_work.telemetry.narrow_phase_peak_working_memory_bytes);
+    append_u64(impossible_work.telemetry.predicate_calls);
+    append_u64(impossible_work.telemetry.peak_working_memory_bytes);
     return output.str();
 }
 
@@ -506,6 +558,7 @@ int main()
     test_circular_preorder_is_total_and_fails_closed();
     test_lowered_irrational_capsule_pipeline();
     test_limits_and_sparse_scaling();
+    test_integrated_preflight_rejects_before_narrow_work();
     std::cout << "ANALYTIC_FILTERED_OVERLAY_VECTOR=" << parity_vector() << '\n';
     return 0;
 }

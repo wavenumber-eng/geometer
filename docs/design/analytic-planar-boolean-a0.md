@@ -378,7 +378,11 @@ to both named carriers and finite domains within the fixed envelope before
 event insertion. Finite-domain repair also requires an actual pair of curve
 witnesses at or below 50 nm; two independent endpoint-to-carrier allowances
 cannot bridge a larger diagonal gap. Narrow work and pair storage are included
-in the integrated stage budgets.
+in the integrated stage budgets. Before allocating the narrow result table, the
+integrated boundary checks the target-independent minimum live storage for all
+candidate results plus curve/carrier-group tables and the minimum work required
+to evaluate and validate them. A known-impossible job therefore performs zero
+narrow predicates and allocates no narrow result storage.
 
 Each carrier group is swept with a fixed-array Fenwick/indexed active set.
 Updates are logarithmic, membership enumeration is proportional to memberships

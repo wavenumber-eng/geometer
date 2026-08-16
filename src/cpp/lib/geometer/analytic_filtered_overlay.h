@@ -73,7 +73,9 @@ struct AnalyticFilteredOverlayResult
 // grouped directly; no curve-pair search is performed. Endpoint/intersection
 // events are sorted once per job, resolution-equivalent events merge only when
 // a 50 nm enclosure is certified, and an indexed active set makes same-domain
-// membership output proportional to the memberships actually emitted.
+// membership output proportional to the memberships actually emitted. The
+// combined minimum narrow-result and overlay-table memory/work is preflighted
+// before the narrow phase allocates or evaluates a candidate.
 [[nodiscard]] AnalyticFilteredOverlayResult
 build_analytic_filtered_overlay(const AnalyticFilteredGeometry& geometry,
                                 const std::vector<AnalyticCurvePair>& candidate_pairs,

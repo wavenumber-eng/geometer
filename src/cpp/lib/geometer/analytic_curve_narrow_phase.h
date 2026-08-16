@@ -10,6 +10,11 @@
 namespace geometer
 {
 
+// Canonical target-independent storage charged for each retained candidate
+// result. Integrated stages use the same charge to reject work that cannot fit
+// before the narrow phase allocates its result table.
+inline constexpr std::uint64_t kAnalyticNarrowPhasePairLogicalBytes = 256;
+
 struct AnalyticCoordinateIntervalNm
 {
     double lower = 0.0;

@@ -123,7 +123,11 @@ engine.
   resulting adjacency. Every internally produced narrow-phase split is
   independently rebound to both named finite curves before it can become an
   arrangement vertex. Narrow-phase work and retained pair storage remain live
-  charges in the overlay's total predicate and logical-memory telemetry.
+  charges in the overlay's total predicate and logical-memory telemetry. The
+  integrated boundary preflights the unavoidable retained pair, curve, and
+  carrier-group storage plus the minimum pair/validation work before narrow
+  allocation or evaluation; a job that cannot possibly fit stops with zero
+  narrow work.
 - Solver resource limits are supplied through one internal limits value object
   rather than scattered production constants. The catalog values are governed
   hard ceilings; a host may advertise and enforce lower effective limits, and

@@ -722,12 +722,13 @@ def test_filtered_solver_foundation_is_bounded_non_algebraic_and_not_dispatched(
         "overlay_policy": "carrier_grouped_sorted_events_indexed_active_memberships",
         "overlay_resolution_policy": "certified_at_or_below_50nm_event_merge",
         "overlay_budget_policy": (
-            "combined_narrow_and_overlay_predicate_work_and_live_logical_memory"
+            "allocation_free_combined_minimum_preflight_then_combined_narrow_and_overlay_"
+            "predicate_work_and_live_logical_memory"
         ),
         "overlay_parity_validator": "scripts/validate_analytic_filtered_overlay_parity.py",
-        "overlay_vector_bytes": 968,
+        "overlay_vector_bytes": 1048,
         "overlay_vector_sha256": (
-            "8f79c9c2c225cec225d6d57039388ece5d4f1c5cca47771451714ccf692fd14d"
+            "b0f9e8013eeb02b876ce071b13663dbcae7dddf9f616432add5d1a72640c7438"
         ),
     }
     implementation_paths = [

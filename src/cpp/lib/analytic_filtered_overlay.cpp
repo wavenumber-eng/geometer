@@ -1140,6 +1140,45 @@ build_analytic_filtered_overlay(const AnalyticFilteredGeometry& geometry,
                                 const std::vector<AnalyticCurvePair>& candidate_pairs,
                                 const AnalyticSolverLimits& limits)
 {
+    AnalyticFilteredOverlayResult preflight;
+    preflight.telemetry.input_curves = geometry.curves.size();
+    if (!analytic_solver_limits_within_hard_ceilings(limits) ||
+        geometry.curves.size() != geometry.bounds.size() ||
+        geometry.curves.size() != geometry.occurrences.size())
+    {
+        preflight.error = AnalyticFilteredOverlayError::invalid_argument;
+        return preflight;
+    }
+    if (geometry.curves.size() > limits.boundary_occurrences ||
+        candidate_pairs.size() > limits.examined_curve_pairs)
+    {
+        preflight.error = AnalyticFilteredOverlayError::resource_limit_exceeded;
+        return preflight;
+    }
+
+    // A successful integrated stage must retain one narrow result for every
+    // candidate while also holding the curve/group tables. Reject this known
+    // minimum before narrow reserves or evaluates any pair.
+    bool valid = true;
+    const std::uint64_t pair_count = static_cast<std::uint64_t>(candidate_pairs.size());
+    const std::uint64_t curve_count = static_cast<std::uint64_t>(geometry.curves.size());
+    std::uint64_t minimum_memory =
+        checked_multiply(pair_count, kAnalyticNarrowPhasePairLogicalBytes, valid);
+    minimum_memory = checked_add(
+        minimum_memory,
+        checked_multiply(curve_count, kCurveLogicalBytes + kGroupLogicalBytes, valid), valid);
+
+    // Every valid pair consumes at least one narrow predicate, and overlay
+    // input validation consumes one unit per curve and retained pair.
+    std::uint64_t minimum_work = checked_multiply(pair_count, 2, valid);
+    minimum_work = checked_add(minimum_work, curve_count, valid);
+    if (!valid || minimum_memory > limits.working_memory_bytes ||
+        minimum_work > limits.predicate_calls)
+    {
+        preflight.error = AnalyticFilteredOverlayError::resource_limit_exceeded;
+        return preflight;
+    }
+
     const AnalyticNarrowPhaseResult narrow_phase =
         intersect_analytic_curve_candidates(geometry.curves, candidate_pairs, limits);
     if (narrow_phase.error != AnalyticNarrowPhaseError::none)

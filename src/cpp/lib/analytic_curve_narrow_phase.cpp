@@ -17,7 +17,6 @@ namespace
 {
 
 constexpr std::int64_t kLocalCoordinateSpanNm = 1'000'000'000'000;
-constexpr std::uint64_t kPairLogicalBytes = 256;
 
 using namespace analytic_detail;
 using SignedWide = WideInteger;
@@ -971,10 +970,11 @@ bool checked_memory(std::size_t count, std::uint64_t& bytes) noexcept
 {
     if constexpr (sizeof(std::size_t) >= sizeof(std::uint64_t))
     {
-        if (count > std::numeric_limits<std::uint64_t>::max() / kPairLogicalBytes)
+        if (count >
+            std::numeric_limits<std::uint64_t>::max() / kAnalyticNarrowPhasePairLogicalBytes)
             return false;
     }
-    bytes = static_cast<std::uint64_t>(count) * kPairLogicalBytes;
+    bytes = static_cast<std::uint64_t>(count) * kAnalyticNarrowPhasePairLogicalBytes;
     return true;
 }
 
@@ -1100,7 +1100,7 @@ intersect_analytic_curve_candidates(const std::vector<AnalyticAtomicCurveNm>& cu
         return result;
     }
     result.telemetry.peak_working_memory_bytes = logical_bytes;
-    static_assert(sizeof(AnalyticPairIntersection) <= kPairLogicalBytes,
+    static_assert(sizeof(AnalyticPairIntersection) <= kAnalyticNarrowPhasePairLogicalBytes,
                   "canonical narrow-phase pair charge must cover the native record");
     try
     {

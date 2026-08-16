@@ -873,6 +873,8 @@ Geometer proposal, not the original consumer packet.
   records cannot reach event sorting. Pair-level endpoint witnesses prevent two
   independent sub-50-nm repairs from bridging a separation above 50 nm; narrow
   work and retained pair storage count toward the integrated stage budgets.
+  The integrated boundary rejects a known-impossible combined live-memory or
+  minimum-work budget before narrow allocation or candidate evaluation.
   Every narrow split is rebound to both finite curve domains before event
   insertion. Face classification, global vertex reconciliation, traversal,
   publication, and dispatch remain pending.

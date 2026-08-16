@@ -98,6 +98,29 @@ void append_rectangle(AnalyticFilteredGeometry& geometry, std::uint64_t operand,
     append_line(geometry, operand, minimum, maximum, minimum, minimum);
 }
 
+void append_box(AnalyticFilteredGeometry& geometry, std::uint64_t operand, double min_x,
+                double min_y, double max_x, double max_y)
+{
+    append_line(geometry, operand, min_x, min_y, max_x, min_y);
+    append_line(geometry, operand, max_x, min_y, max_x, max_y);
+    append_line(geometry, operand, max_x, max_y, min_x, max_y);
+    append_line(geometry, operand, min_x, max_y, min_x, min_y);
+}
+
+void share_rectangle_carriers(AnalyticFilteredGeometry& geometry, std::uint32_t authority_begin,
+                              std::uint32_t target_begin)
+{
+    for (std::uint32_t side = 0; side < 4; ++side)
+    {
+        auto& target = geometry.curves[target_begin + side];
+        const auto& authority = geometry.curves[authority_begin + side];
+        target.construction_carrier_id = authority.construction_carrier_id;
+        target.construction_family_id = authority.construction_family_id;
+        target.start.construction_x_column_id = authority.start.construction_x_column_id;
+        target.end.construction_x_column_id = authority.end.construction_x_column_id;
+    }
+}
+
 AnalyticFilteredLineageResult build(const AnalyticRequestPacketRecords& records,
                                     const AnalyticFilteredGeometry& geometry,
                                     const AnalyticSolverLimits& limits = {})
@@ -434,6 +457,109 @@ void test_publication_dense_output_preflight()
                 short_result.telemetry.publication_capacity_records == 0 &&
                 short_result.source_references.empty(),
             "publication-dense one-short work allocated publication storage");
+
+    low = 0;
+    high = limits.working_memory_bytes;
+    while (low < high)
+    {
+        const std::uint64_t middle = low + (high - low) / 2;
+        auto probe = limits;
+        probe.working_memory_bytes = middle;
+        if (run(probe).error == AnalyticFilteredLineageError::none)
+            high = middle;
+        else
+            low = middle + 1;
+    }
+    auto exact_memory = limits;
+    exact_memory.working_memory_bytes = low;
+    const auto exact_memory_result = run(exact_memory);
+    require(exact_memory_result.error == AnalyticFilteredLineageError::none &&
+                exact_memory_result.telemetry.peak_working_memory_bytes == low,
+            "publication-dense exact memory failed threshold=" + std::to_string(low) +
+                " peak=" + std::to_string(exact_memory_result.telemetry.peak_working_memory_bytes));
+    --exact_memory.working_memory_bytes;
+    const auto short_memory_result = run(exact_memory);
+    require(short_memory_result.error == AnalyticFilteredLineageError::resource_limit_exceeded &&
+                short_memory_result.telemetry.publication_capacity_records == 0 &&
+                short_memory_result.source_references.empty(),
+            "publication-dense one-byte-short memory allocated publication storage");
+}
+
+AnalyticFilteredLineageResult build_branch_dense(std::uint32_t count,
+                                                 const AnalyticSolverLimits& limits = {})
+{
+    AnalyticFilteredGeometry geometry;
+    std::vector<std::uint64_t> first_stage;
+    first_stage.reserve(count * 2);
+    std::uint32_t authority_begin = 0;
+    for (std::uint32_t index = 0; index < count; ++index)
+    {
+        const std::uint64_t central = index * 2 + 1;
+        const std::uint64_t remote = central + 1;
+        first_stage.push_back(central);
+        first_stage.push_back(remote);
+        const std::uint32_t begin = static_cast<std::uint32_t>(geometry.curves.size());
+        append_box(geometry, central, 0, 0, 10000, 1000);
+        if (index == 0)
+            authority_begin = begin;
+        else
+            share_rectangle_carriers(geometry, authority_begin, begin);
+        const double remote_x = 100000.0 + index * 1000.0;
+        append_box(geometry, remote, remote_x, 0, remote_x + 500.0, 500.0);
+    }
+    constexpr std::uint64_t difference = 1000000;
+    append_box(geometry, difference, 99500, -500, 100000.0 + count * 1000.0, 1000);
+    for (std::uint32_t index = 0; index < count; ++index)
+    {
+        const double x = 250.0 + index * (9000.0 / count);
+        append_box(geometry, difference, x, 200, x + 100.0, 800);
+    }
+    constexpr std::uint64_t refill = 2000000;
+    const std::uint32_t refill_begin = static_cast<std::uint32_t>(geometry.curves.size());
+    append_box(geometry, refill, 0, 0, 10000, 1000);
+    share_rectangle_carriers(geometry, authority_begin, refill_begin);
+    const auto records = records_for({{1, first_stage}, {2, {difference}}, {1, {refill}}});
+    const auto pairs = pairs_for(geometry);
+    return build_analytic_filtered_lineage(records, 0, geometry, pairs, limits);
+}
+
+void test_branch_dense_reporter_scaling()
+{
+    const auto small = build_branch_dense(8);
+    const auto large = build_branch_dense(16);
+    require(small.error == AnalyticFilteredLineageError::none &&
+                large.error == AnalyticFilteredLineageError::none,
+            "branch-dense reporter fixture failed");
+    require(large.telemetry.coverage_node_visits < small.telemetry.coverage_node_visits * 3 &&
+                large.telemetry.lineage_work_units < small.telemetry.lineage_work_units * 3,
+            "active-unreported reporter exceeded 3x work at 2x input");
+
+    AnalyticSolverLimits limits;
+    std::uint64_t low = 0;
+    std::uint64_t high = limits.working_memory_bytes;
+    while (low < high)
+    {
+        const std::uint64_t middle = low + (high - low) / 2;
+        auto probe = limits;
+        probe.working_memory_bytes = middle;
+        if (build_branch_dense(8, probe).error == AnalyticFilteredLineageError::none)
+            high = middle;
+        else
+            low = middle + 1;
+    }
+    auto exact = limits;
+    exact.working_memory_bytes = low;
+    const auto exact_result = build_branch_dense(8, exact);
+    require(exact_result.error == AnalyticFilteredLineageError::none,
+            "connected branch-dense exact memory failed threshold=" + std::to_string(low) +
+                " peak=" + std::to_string(exact_result.telemetry.peak_working_memory_bytes));
+    --exact.working_memory_bytes;
+    const auto short_result = build_branch_dense(8, exact);
+    require(short_result.error == AnalyticFilteredLineageError::resource_limit_exceeded &&
+                short_result.regions.selection.telemetry.arrangement_predicate_calls == 0 &&
+                short_result.telemetry.publication_capacity_records == 0 &&
+                short_result.source_references.empty(),
+            "connected branch-dense one-byte-short memory reached arrangement or publication");
 }
 
 void test_disconnected_many_to_many()
@@ -609,6 +735,7 @@ int main(int argc, char** argv)
     test_governed_admission_and_publication();
     test_sparse_scaling();
     test_publication_dense_output_preflight();
+    test_branch_dense_reporter_scaling();
     if (argc == 2 && std::string(argv[1]) == "--emit-parity")
         std::cout << "ANALYTIC_FILTERED_LINEAGE_VECTOR=" << parity_vector() << '\n';
     std::cout << "ANALYTIC_FILTERED_LINEAGE_TEST=ok\n";

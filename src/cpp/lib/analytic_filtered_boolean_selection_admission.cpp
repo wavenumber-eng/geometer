@@ -475,6 +475,13 @@ SelectionAdmission prepare_boolean_selection_admission(
                 valid);
             lineage_scratch = checked_add(
                 lineage_scratch,
+                checked_multiply(possible_transitions, kTransitionLogicalBytes, valid), valid);
+            lineage_scratch = checked_add(
+                lineage_scratch,
+                checked_multiply(checked_add(maximum_edges, 1, valid), kIndexLogicalBytes, valid),
+                valid);
+            lineage_scratch = checked_add(
+                lineage_scratch,
                 checked_multiply(checked_add(job.stage_count, 1, valid), kIndexLogicalBytes, valid),
                 valid);
             lineage_scratch =
@@ -483,11 +490,13 @@ SelectionAdmission prepare_boolean_selection_admission(
                                 maximum_edges,
                                 kIndexLogicalBytes * 2 + kMaterialAdjacencyLogicalBytes * 2, valid),
                             valid);
-            lineage_scratch =
-                checked_add(lineage_scratch,
-                            checked_multiply(maximum_faces,
-                                             kIndexLogicalBytes * 4 + kByteLogicalBytes * 2, valid),
-                            valid);
+            lineage_scratch = checked_add(lineage_scratch,
+                                          checked_multiply(maximum_faces,
+                                                           kIndexLogicalBytes * 3 +
+                                                               kLineageTraversalFrameLogicalBytes +
+                                                               kByteLogicalBytes * 2,
+                                                           valid),
+                                          valid);
             lineage_scratch = checked_add(
                 lineage_scratch,
                 checked_multiply(maximum_half_edges,
@@ -522,6 +531,12 @@ SelectionAdmission prepare_boolean_selection_admission(
                                        valid);
             lineage_work = checked_add(lineage_work, geometry.occurrences.size(), valid);
             lineage_work = checked_add(lineage_work, maximum_coverage_nodes, valid);
+            lineage_work =
+                checked_add(lineage_work,
+                            checked_add(checked_add(possible_transitions,
+                                                    sort_units(possible_transitions), valid),
+                                        maximum_edges, valid),
+                            valid);
             lineage_work = checked_add(
                 lineage_work,
                 checked_add(checked_multiply(reporter_nodes, 2, valid), operands, valid), valid);
@@ -549,6 +564,11 @@ SelectionAdmission prepare_boolean_selection_admission(
                             checked_multiply(checked_add(maximum_faces, maximum_half_edges, valid),
                                              tree_operation_units(operands), valid),
                             valid);
+            lineage_work = checked_add(
+                lineage_work,
+                checked_multiply(checked_multiply(possible_transitions, 2, valid),
+                                 checked_add(tree_operation_units(operands), 1, valid), valid),
+                valid);
         }
     }
 

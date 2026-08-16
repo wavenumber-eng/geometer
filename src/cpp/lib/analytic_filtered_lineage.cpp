@@ -25,6 +25,8 @@ constexpr std::uint64_t kRegionLogicalBytes = 16;
 constexpr std::uint64_t kOperandLogicalBytes = 32;
 constexpr std::uint64_t kLookupLogicalBytes = 16;
 constexpr std::uint64_t kAdjacencyLogicalBytes = 16;
+constexpr std::uint64_t kTransitionLogicalBytes = 16;
+constexpr std::uint64_t kTraversalFrameLogicalBytes = 40;
 constexpr std::uint64_t kIndexLogicalBytes = 8;
 constexpr std::uint64_t kByteLogicalBytes = 1;
 
@@ -57,6 +59,20 @@ struct Adjacency
 {
     std::uint32_t neighbor = 0;
     std::uint32_t edge = 0;
+};
+struct ComponentTransition
+{
+    std::uint32_t edge = 0;
+    std::uint32_t operand = 0;
+    bool active_left = false;
+};
+struct TraversalFrame
+{
+    std::uint32_t face = 0;
+    std::uint32_t parent_face = kNoIndex;
+    std::uint32_t via_edge = kNoIndex;
+    std::uint32_t next = 0;
+    std::uint32_t end = 0;
 };
 
 std::uint64_t sort_units(std::uint64_t count) noexcept
@@ -149,6 +165,53 @@ class Builder
         }
         work_ += units;
         return true;
+    }
+    bool prepare_component_transitions()
+    {
+        const auto& arrangement = result_.regions.selection.arrangement;
+        bool valid = true;
+        std::uint64_t units = analytic_selection_detail::checked_add(
+            arrangement.memberships.size(), sort_units(arrangement.memberships.size()), valid);
+        units = analytic_selection_detail::checked_add(units, arrangement.edges.size(), valid);
+        if (!valid || !charge(units))
+            return false;
+        component_transitions_.reserve(arrangement.memberships.size());
+        for (std::uint32_t edge = 0; edge < arrangement.edges.size(); ++edge)
+        {
+            const auto& value = arrangement.edges[edge];
+            for (std::uint32_t local = 0; local < value.membership_count; ++local)
+            {
+                const auto& membership = arrangement.memberships[value.membership_begin + local];
+                if (membership.curve_index == 0 ||
+                    membership.curve_index > occurrence_operands_.size())
+                    return false;
+                component_transitions_.push_back({edge,
+                                                  occurrence_operands_[membership.curve_index - 1],
+                                                  membership.material_on_span_left});
+            }
+        }
+        std::sort(
+            component_transitions_.begin(), component_transitions_.end(),
+            [](const ComponentTransition& left, const ComponentTransition& right)
+            { return std::tie(left.edge, left.operand) < std::tie(right.edge, right.operand); });
+        for (std::size_t index = 1; index < component_transitions_.size(); ++index)
+            if (component_transitions_[index - 1].edge == component_transitions_[index].edge &&
+                component_transitions_[index - 1].operand ==
+                    component_transitions_[index].operand &&
+                component_transitions_[index - 1].active_left !=
+                    component_transitions_[index].active_left)
+                return false;
+        component_transition_begin_.resize(arrangement.edges.size() + 1);
+        std::size_t cursor = 0;
+        for (std::uint32_t edge = 0; edge < arrangement.edges.size(); ++edge)
+        {
+            component_transition_begin_[edge] = static_cast<std::uint32_t>(cursor);
+            while (cursor < component_transitions_.size() &&
+                   component_transitions_[cursor].edge == edge)
+                ++cursor;
+        }
+        component_transition_begin_.back() = static_cast<std::uint32_t>(cursor);
+        return cursor == component_transitions_.size();
     }
     AnalyticFilteredLineageResult failure()
     {
@@ -257,7 +320,7 @@ class Builder
         auto cursor = operand_occurrence_begin_;
         for (std::uint32_t i = 0; i < occurrence_operands_.size(); ++i)
             ordered_occurrences_[cursor[occurrence_operands_[i]]++] = i;
-        return true;
+        return prepare_component_transitions();
     }
     bool validate_coverage()
     {
@@ -299,57 +362,40 @@ class Builder
                enumerate(nodes[root].right, begin + half, half, first, end, emit);
     }
     template <typename Emit>
-    bool enumerate_unreported(std::uint32_t root, std::uint32_t reporter_node, std::uint32_t begin,
-                              std::uint32_t width, std::uint32_t first, std::uint32_t end,
-                              Emit&& emit)
+    bool enumerate_reporter(std::uint32_t node, std::uint32_t begin, std::uint32_t width,
+                            std::uint32_t first, std::uint32_t end, Emit&& emit)
     {
         if (!charge(1))
             return false;
         ++result_.telemetry.coverage_node_visits;
-        const auto& nodes = result_.regions.selection.coverage_state_nodes;
-        if (root == 0 || begin >= end || begin + width <= first ||
-            reporter_node >= reporter_counts_.size() ||
-            reporter_count(reporter_node, begin, width) == 0)
+        if (begin >= end || begin + width <= first || node >= reporter_counts_.size() ||
+            reporter_count(node) == 0)
             return true;
-        if (root >= nodes.size() || (root == 1 && width != 1))
-            return false;
         if (width == 1)
             return begin < operands_.size() && emit(begin);
         const std::uint32_t half = width / 2;
-        return enumerate_unreported(nodes[root].left, reporter_node * 2, begin, half, first, end,
-                                    emit) &&
-               enumerate_unreported(nodes[root].right, reporter_node * 2 + 1, begin + half, half,
-                                    first, end, emit);
+        return enumerate_reporter(node * 2, begin, half, first, end, emit) &&
+               enumerate_reporter(node * 2 + 1, begin + half, half, first, end, emit);
     }
-    std::uint32_t default_reporter_count(std::uint32_t begin, std::uint32_t width) const noexcept
+    std::uint32_t reporter_count(std::uint32_t node) const noexcept
     {
-        if (begin >= operands_.size())
-            return 0;
-        return std::min<std::uint32_t>(width, static_cast<std::uint32_t>(operands_.size()) - begin);
+        return reporter_generations_[node] == reporter_generation_ ? reporter_counts_[node] : 0;
     }
-    std::uint32_t reporter_count(std::uint32_t node, std::uint32_t begin,
-                                 std::uint32_t width) const noexcept
-    {
-        return reporter_generations_[node] == reporter_generation_
-                   ? reporter_counts_[node]
-                   : default_reporter_count(begin, width);
-    }
-    void mark_reported(std::uint32_t node, std::uint32_t begin, std::uint32_t width,
-                       std::uint32_t operand) noexcept
+    void set_reporter_operand(std::uint32_t node, std::uint32_t begin, std::uint32_t width,
+                              std::uint32_t operand, bool active) noexcept
     {
         reporter_generations_[node] = reporter_generation_;
         if (width == 1)
         {
-            reporter_counts_[node] = 0;
+            reporter_counts_[node] = active ? 1 : 0;
             return;
         }
         const std::uint32_t half = width / 2;
         if (operand < begin + half)
-            mark_reported(node * 2, begin, half, operand);
+            set_reporter_operand(node * 2, begin, half, operand, active);
         else
-            mark_reported(node * 2 + 1, begin + half, half, operand);
-        reporter_counts_[node] = reporter_count(node * 2, begin, half) +
-                                 reporter_count(node * 2 + 1, begin + half, half);
+            set_reporter_operand(node * 2 + 1, begin + half, half, operand, active);
+        reporter_counts_[node] = reporter_count(node * 2) + reporter_count(node * 2 + 1);
     }
     bool emit_region_operand(std::uint32_t region, std::uint32_t operand)
     {
@@ -363,7 +409,34 @@ class Builder
                         geometry_.occurrences[ordered_occurrences_[at]].source))
                 return false;
         reported_generations_[operand] = reporter_generation_;
-        mark_reported(1, 0, leaf_capacity_, operand);
+        set_reporter_operand(1, 0, leaf_capacity_, operand, false);
+        return true;
+    }
+    bool apply_component_edge(std::uint32_t edge, std::uint32_t destination,
+                              const std::vector<std::uint32_t>& left,
+                              const std::vector<std::uint32_t>& right, std::uint32_t exposed_stage)
+    {
+        if (edge + 1 >= component_transition_begin_.size() ||
+            destination >= result_.regions.selection.faces.size() ||
+            (destination != left[edge] && destination != right[edge]))
+            return false;
+        const std::uint64_t update_units =
+            analytic_selection_detail::coverage_operand_depth(operands_.size()) + 1;
+        for (std::uint32_t at = component_transition_begin_[edge];
+             at < component_transition_begin_[edge + 1]; ++at)
+        {
+            if (!charge(1))
+                return false;
+            const auto& transition = component_transitions_[at];
+            if (transition.operand >= operands_.size() ||
+                operands_[transition.operand].stage < exposed_stage ||
+                reported_generations_[transition.operand] == reporter_generation_)
+                continue;
+            if (!charge(update_units))
+                return false;
+            const bool active = destination == (transition.active_left ? left[edge] : right[edge]);
+            set_reporter_operand(1, 0, leaf_capacity_, transition.operand, active);
+        }
         return true;
     }
     bool build_region_contributors()
@@ -419,7 +492,7 @@ class Builder
             if (selection.faces[face].material)
                 seed[regions.face_components[face]] = face;
         std::vector<std::uint8_t> visited(face_count, 0);
-        std::vector<std::uint32_t> stack;
+        std::vector<TraversalFrame> stack;
         stack.reserve(face_count);
         for (std::uint32_t region = 0; region < regions.regions.size(); ++region)
         {
@@ -428,58 +501,51 @@ class Builder
                 return false;
             const std::uint32_t first = seed[component];
             ++reporter_generation_;
-            const std::uint32_t first_stage = selection.faces[first].positive_stage_begin;
-            if (first_stage >= stage_begin_.size() ||
-                !enumerate_unreported(selection.faces[first].coverage_state_root, 1, 0,
-                                      leaf_capacity_, stage_begin_[first_stage], operands_.size(),
-                                      [&](std::uint32_t operand)
-                                      { return emit_region_operand(region, operand); }))
+            std::uint32_t exposed_stage = selection.faces[first].positive_stage_begin;
+            if (exposed_stage >= stage_begin_.size() ||
+                !enumerate(selection.faces[first].coverage_state_root, 0, leaf_capacity_,
+                           stage_begin_[exposed_stage], operands_.size(), [&](std::uint32_t operand)
+                           { return emit_region_operand(region, operand); }))
                 return false;
             visited[first] = 1;
-            stack.push_back(first);
+            stack.push_back({first, kNoIndex, kNoIndex, counts[first], counts[first + 1]});
             while (!stack.empty())
             {
-                const std::uint32_t face = stack.back();
-                stack.pop_back();
-                for (std::uint32_t at = counts[face]; at < counts[face + 1]; ++at)
+                TraversalFrame& frame = stack.back();
+                if (frame.next == frame.end)
                 {
-                    ++result_.telemetry.component_transition_visits;
-                    const Adjacency next = adjacency[at];
-                    if (visited[next.neighbor])
-                        continue;
-                    visited[next.neighbor] = 1;
-                    stack.push_back(next.neighbor);
-                    const auto& face_state = selection.faces[face];
-                    const auto& next_face = selection.faces[next.neighbor];
-                    if (next_face.positive_stage_begin < face_state.positive_stage_begin)
-                    {
-                        if (!enumerate_unreported(next_face.coverage_state_root, 1, 0,
-                                                  leaf_capacity_,
-                                                  stage_begin_[next_face.positive_stage_begin],
-                                                  stage_begin_[face_state.positive_stage_begin],
-                                                  [&](std::uint32_t operand)
-                                                  { return emit_region_operand(region, operand); }))
-                            return false;
-                    }
-                    const auto& edge = arrangement.edges[next.edge];
-                    for (std::uint32_t m = 0; m < edge.membership_count; ++m)
-                    {
-                        if (!charge(1))
-                            return false;
-                        const auto& membership = arrangement.memberships[edge.membership_begin + m];
-                        if (membership.curve_index == 0 ||
-                            membership.curve_index > occurrence_operands_.size())
-                            return false;
-                        const std::uint32_t operand =
-                            occurrence_operands_[membership.curve_index - 1];
-                        const std::uint32_t covered =
-                            membership.material_on_span_left ? left[next.edge] : right[next.edge];
-                        if (covered == next.neighbor &&
-                            operands_[operand].stage >= next_face.positive_stage_begin &&
-                            !emit_region_operand(region, operand))
-                            return false;
-                    }
+                    const TraversalFrame completed = frame;
+                    stack.pop_back();
+                    if (completed.via_edge != kNoIndex &&
+                        !apply_component_edge(completed.via_edge, completed.parent_face, left,
+                                              right, exposed_stage))
+                        return false;
+                    continue;
                 }
+                const Adjacency next = adjacency[frame.next++];
+                ++result_.telemetry.component_transition_visits;
+                if (visited[next.neighbor])
+                    continue;
+                if (!apply_component_edge(next.edge, next.neighbor, left, right, exposed_stage))
+                    return false;
+                const auto& next_face = selection.faces[next.neighbor];
+                if (next_face.positive_stage_begin < exposed_stage)
+                {
+                    if (!enumerate(next_face.coverage_state_root, 0, leaf_capacity_,
+                                   stage_begin_[next_face.positive_stage_begin],
+                                   stage_begin_[exposed_stage], [&](std::uint32_t operand)
+                                   { return emit_region_operand(region, operand); }))
+                        return false;
+                    exposed_stage = next_face.positive_stage_begin;
+                }
+                if (!enumerate_reporter(1, 0, leaf_capacity_,
+                                        stage_begin_[next_face.positive_stage_begin],
+                                        operands_.size(), [&](std::uint32_t operand)
+                                        { return emit_region_operand(region, operand); }))
+                    return false;
+                visited[next.neighbor] = 1;
+                stack.push_back({next.neighbor, frame.face, next.edge, counts[next.neighbor],
+                                 counts[next.neighbor + 1]});
             }
         }
         return true;
@@ -702,6 +768,12 @@ class Builder
             persistent, checked_multiply(ordered_occurrences_.size(), kIndexLogicalBytes, valid),
             valid);
         persistent = checked_add(
+            persistent,
+            checked_multiply(component_transitions_.size(), kTransitionLogicalBytes, valid), valid);
+        persistent = checked_add(
+            persistent,
+            checked_multiply(component_transition_begin_.size(), kIndexLogicalBytes, valid), valid);
+        persistent = checked_add(
             persistent, checked_multiply(reported_generations_.size(), kIndexLogicalBytes, valid),
             valid);
         persistent = checked_add(
@@ -713,11 +785,13 @@ class Builder
 
         std::uint64_t contributor_scratch = checked_multiply(
             arrangement.edges.size(), kIndexLogicalBytes * 2 + kAdjacencyLogicalBytes * 2, valid);
-        contributor_scratch =
-            checked_add(contributor_scratch,
-                        checked_multiply(selection.faces.size(),
-                                         kIndexLogicalBytes * 3 + kByteLogicalBytes, valid),
-                        valid);
+        contributor_scratch = checked_add(
+            contributor_scratch,
+            checked_multiply(
+                selection.faces.size(),
+                kIndexLogicalBytes * 3 + kTraversalFrameLogicalBytes + kByteLogicalBytes, valid),
+            valid);
+        contributor_scratch = checked_add(contributor_scratch, kIndexLogicalBytes * 2, valid);
         std::uint64_t boundary_scratch = checked_multiply(
             arrangement.vertices.size(), kIndexLogicalBytes + kByteLogicalBytes, valid);
         const std::uint64_t traversal_scratch = std::max(contributor_scratch, boundary_scratch);
@@ -850,6 +924,8 @@ class Builder
     std::vector<std::uint32_t> occurrence_operands_;
     std::vector<std::uint32_t> operand_occurrence_begin_;
     std::vector<std::uint32_t> ordered_occurrences_;
+    std::vector<ComponentTransition> component_transitions_;
+    std::vector<std::uint32_t> component_transition_begin_;
     std::vector<std::uint64_t> reported_generations_;
     std::vector<std::uint32_t> reporter_counts_;
     std::vector<std::uint64_t> reporter_generations_;
@@ -868,6 +944,8 @@ class Builder
 static_assert(sizeof(Operand) <= kOperandLogicalBytes);
 static_assert(sizeof(Lookup) <= kLookupLogicalBytes);
 static_assert(sizeof(Adjacency) <= kAdjacencyLogicalBytes);
+static_assert(sizeof(ComponentTransition) <= kTransitionLogicalBytes);
+static_assert(sizeof(TraversalFrame) <= kTraversalFrameLogicalBytes);
 static_assert(sizeof(RawSource) <= kRawLogicalBytes);
 static_assert(sizeof(AnalyticFilteredSourceReference) <= kSourceLogicalBytes);
 static_assert(sizeof(AnalyticFilteredBoundaryLineage) <= kBoundaryLogicalBytes);

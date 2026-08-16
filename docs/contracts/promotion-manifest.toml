@@ -203,7 +203,7 @@ lineage_complexity_policy = "indexed_material_component_transitions_and_actual_m
 lineage_budget_policy = "candidate_bounded_pre_arrangement_structural_reservation_then_allocation_free_exact_source_count_and_fixed_capacity_publication"
 lineage_parity_validator = "scripts/validate_analytic_filtered_lineage_parity.py"
 lineage_vector_bytes = 3672
-lineage_vector_sha256 = "01595ed8a3bdeaf3cc63ab63f5f3be25b2a579a5a76a1b4e0f29b57c4078280e"
+lineage_vector_sha256 = "466fb955863a53de2686d2d373b3ae92bd787483f1f35bc9e940b85b7d409e18"
 
 [analytic_exact_backend]
 status = "implemented_non_primary_oracle"
@@ -897,7 +897,7 @@ solver_numeric_status = "reopened_filtered_50nm"
 named_consumer = "appz.data_models.pcb.matz"
 compatibility_snapshot = "docs/contracts/compatibility/data-models-geom-a0-2026-08-12.toml"
 design = "docs/design/analytic-planar-boolean-a0.md"
-design_sha256 = "546daa8cd996d460c284bec12db3241842b801d3c3e5bb052c43b772b1e7c6e1"
+design_sha256 = "15dec2536bb1feb2886c492bee41c55360da1e32ad96aba7f5546b7e6619b33d"
 packet_spec = "docs/design/analytic-planar-boolean-packet-a0.md"
 packet_spec_sha256 = "5fb82f495b17b1c47536d6c0ade77aa3183bc6b7f342f70013c462fcaf469856"
 numeric_catalog = "docs/contracts/analytic-planar-boolean-a0-catalog.toml"

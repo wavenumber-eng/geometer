@@ -53,6 +53,7 @@ constexpr std::uint64_t kMaterialRingLogicalBytes = 32;
 constexpr std::uint64_t kMaterialRegionLogicalBytes = 16;
 constexpr std::uint64_t kMaterialRawRingLogicalBytes = 40;
 constexpr std::uint64_t kMaterialAdjacencyLogicalBytes = 16;
+constexpr std::uint64_t kLineageTraversalFrameLogicalBytes = 40;
 
 inline std::uint64_t checked_add(std::uint64_t left, std::uint64_t right, bool& valid) noexcept
 {

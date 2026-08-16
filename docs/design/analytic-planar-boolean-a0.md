@@ -552,10 +552,12 @@ last active union. Those descriptors distinguish final positive lineage from
 the active removal epoch without replaying every stage for every face. Region
 contributors are accumulated by one indexed walk of each material component.
 Every dual-tree transition compares its destination lineage epoch with its
-predecessor epoch; newly live covered operands are intersected with a sparse
-generation-stamped unreported tree, and actual boundary toggles supply later
-contributors. Each region/operand association is emitted once without clearing
-or scanning all operands per region. There is no persistent set union per face
+predecessor epoch. Newly exposed stage ranges are enumerated once from the
+destination coverage root. Thereafter the depth-first component walk applies
+and reverts only actual edge/operand transitions in a generation-stamped
+active-and-unseen tree, and range reporting visits only live contributors.
+Each region/operand association is emitted once without clearing or scanning
+all operands per region. There is no persistent set union per face
 and no face-by-operand replay. Boundary positives visit the boundary edge
 memberships; surviving subtraction enumerates the active
 difference-stage operands on the empty-side face, so a refill island retains

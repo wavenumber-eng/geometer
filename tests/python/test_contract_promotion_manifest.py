@@ -774,8 +774,7 @@ def test_filtered_solver_foundation_is_bounded_non_algebraic_and_not_dispatched(
         "lineage_test": "tests/cpp/analytic_filtered_lineage_test.cpp",
         "lineage_input": "owned_filtered_regions_with_stage_order_coverage_roots",
         "lineage_policy": (
-            "coordinate_free_transition_driven_region_boundary_vertex_and_empty_face_"
-            "subtraction_projection"
+            "coordinate_free_transition_driven_region_boundary_vertex_and_empty_face_subtraction_projection"
         ),
         "lineage_complexity_policy": (
             "indexed_material_component_transitions_and_actual_membership_incidence_without_"
@@ -787,7 +786,7 @@ def test_filtered_solver_foundation_is_bounded_non_algebraic_and_not_dispatched(
         ),
         "lineage_parity_validator": "scripts/validate_analytic_filtered_lineage_parity.py",
         "lineage_vector_bytes": 3672,
-        "lineage_vector_sha256": ("01595ed8a3bdeaf3cc63ab63f5f3be25b2a579a5a76a1b4e0f29b57c4078280e"),
+        "lineage_vector_sha256": ("466fb955863a53de2686d2d373b3ae92bd787483f1f35bc9e940b85b7d409e18"),
     }
     implementation_paths = [
         solver[key]

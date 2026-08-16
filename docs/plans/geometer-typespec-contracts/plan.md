@@ -983,11 +983,13 @@ Geometer proposal, not the original consumer packet.
   owned records/geometry/pairs entry point. Selection coverage leaves retain
   request stage order and each face carries compact positive and active-removal
   stage descriptors. An indexed material-component traversal compares lineage
-  epochs on every dual-tree edge and intersects newly live coverage with a
-  sparse generation-stamped unreported tree; actual dual-edge transitions add
-  later contributors. Each region/operand association is emitted once without
-  per-region operand clearing, per-face persistent-set union, or face-by-operand
-  replay. Boundary positives use edge memberships; subtraction uses the active
+  epochs on every dual-tree edge, enumerates each newly exposed stage interval
+  once from the destination coverage root, and applies/reverts actual edge
+  transitions in a generation-stamped active-and-unseen tree. Range reporting
+  therefore visits only live contributors. Each region/operand association is
+  emitted once without per-region operand clearing, per-face persistent-set
+  union, or face-by-operand replay. Boundary positives use edge memberships;
+  subtraction uses the active
   difference-stage coverage of the empty-side face, preserving noncoincident
   and same-stage subtractors on refill boundaries. Result-vertex source sets
   scan only incident edge/collapsed membership incidences. Source identities,

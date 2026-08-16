@@ -131,6 +131,14 @@ AnalyticFilteredOverlayResult separated_lines(double gap)
 
 void test_resolution_merge_threshold()
 {
+    AnalyticFilteredGeometry collapsed_geometry;
+    append_curve(collapsed_geometry, line(1, 0, 0, 30, 40, 10), occurrence(1));
+    const AnalyticFilteredOverlayResult collapsed =
+        build_analytic_filtered_overlay(collapsed_geometry, {});
+    require(collapsed.error == AnalyticFilteredOverlayError::none && collapsed.spans.empty() &&
+                collapsed.memberships.empty() && collapsed.telemetry.collapsed_domains == 1,
+            "standalone 50 nm domain was not retained as a successful resolution collapse");
+
     const AnalyticFilteredOverlayResult merged = separated_lines(49);
     require(merged.error == AnalyticFilteredOverlayError::none && merged.spans.size() == 2 &&
                 merged.telemetry.resolution_merges != 0,

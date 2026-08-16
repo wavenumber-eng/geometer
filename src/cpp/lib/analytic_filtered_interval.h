@@ -108,12 +108,38 @@ inline Interval divide(Interval numerator, Interval denominator) noexcept
 
 inline Interval square(Interval value) noexcept
 {
-    if (value.lower >= 0.0)
-        return multiply(value, value);
-    if (value.upper <= 0.0)
-        return multiply(negate(value), negate(value));
-    const double maximum = std::max(value.lower * value.lower, value.upper * value.upper);
-    return {0.0, upward(maximum)};
+    const double lower_absolute = std::fabs(value.lower);
+    const double upper_absolute = std::fabs(value.upper);
+    const double maximum_absolute = std::max(lower_absolute, upper_absolute);
+    const Interval maximum_square = multiply_singletons(maximum_absolute, maximum_absolute);
+    if (value.lower <= 0.0 && value.upper >= 0.0)
+        return {0.0, maximum_square.upper};
+    const double minimum_absolute = std::min(lower_absolute, upper_absolute);
+    const Interval minimum_square = multiply_singletons(minimum_absolute, minimum_absolute);
+    return {minimum_square.lower, maximum_square.upper};
+}
+
+inline Interval maximum_axis_separation_squared(Interval left, Interval right) noexcept
+{
+    const Interval first = subtract(exact(left.lower), exact(right.upper));
+    const Interval second = subtract(exact(left.upper), exact(right.lower));
+    const double maximum_absolute = std::max({std::fabs(first.lower), std::fabs(first.upper),
+                                              std::fabs(second.lower), std::fabs(second.upper)});
+    return multiply_singletons(maximum_absolute, maximum_absolute);
+}
+
+inline Interval complete_distance_squared(Point left, Point right) noexcept
+{
+    return add(maximum_axis_separation_squared(left.x, right.x),
+               maximum_axis_separation_squared(left.y, right.y));
+}
+
+inline Interval enclosure_radius_squared(Point value) noexcept
+{
+    const Interval two = exact(2.0);
+    const Interval half_width = divide(subtract(exact(value.x.upper), exact(value.x.lower)), two);
+    const Interval half_height = divide(subtract(exact(value.y.upper), exact(value.y.lower)), two);
+    return add(square(half_width), square(half_height));
 }
 
 inline Interval square_root(Interval value) noexcept

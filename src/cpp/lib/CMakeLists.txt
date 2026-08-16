@@ -1,6 +1,7 @@
 set(GEOMETER_LIB_SOURCES
     analytic_curve_broad_phase.cpp
     analytic_curve_narrow_phase.cpp
+    analytic_filtered_arrangement.cpp
     analytic_filtered_lowering.cpp
     analytic_filtered_overlay.cpp
     analytic_interval_index.cpp

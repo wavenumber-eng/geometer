@@ -369,7 +369,9 @@ endpoint and intersection events sort once in canonical carrier order; event
 enclosures merge only when their complete distance bound is at or below 50 nm.
 Line groups use a monotone dominant-axis projection. Circle groups use
 outward-certified half-plane/cross-product ordering and the deterministic
-leftmost seam, without angles or trigonometric sort keys. Constructed
+leftmost seam, without angles or trigonometric sort keys. A rightmost
+partition is also emitted so each surviving circular span is x-monotone; the
+left seam alone remains the cyclic ordering origin. Constructed
 semicircle sweep certificates resolve the cancellation-prone antipodal case.
 A strict total preliminary scalar key satisfies the sort contract even when a
 rounded cross product is zero; the subsequent outward predicates remain the
@@ -393,6 +395,47 @@ membership, work, and target-independent logical-memory limits are enforced
 before overrun. The output is deterministic atomic spans plus complete ordered
 occurrence memberships; the following face-classification stage decides which
 spans survive while retaining positive and subtractive lineage.
+
+The implemented filtered arrangement entry point accepts filtered geometry and
+canonical broad-phase pairs, then runs the narrow phase and carrier overlay
+internally. There is no public path for caller-constructed overlay spans,
+memberships, split coordinates, or upstream telemetry. The arrangement globally
+reconciles the resulting carrier-local span endpoints before it constructs
+topology. Endpoint records
+sort once by their complete coordinate intervals. An x sweep expires clusters
+from a fixed-capacity heap and queries a deterministic secondary-y interval
+index. An endpoint can join a cluster only if its complete outward distance to
+the accumulated cluster hull is at most 50 nm. This is intentionally not a
+transitive union-find proximity relation: a 0/40/80 nm chain produces two
+vertices, never one 80 nm-wide repair. Mathematically exact threshold box
+distances retain inclusive 50 nm behavior by evaluating the extreme endpoint
+differences independently before squaring. Each global vertex stores the
+complete hull, while every edge separately retains its certified carrier
+start/end points so a permitted vertex merge cannot blur tangent order.
+
+Noncollapsed spans become canonical edges and twin half-edges. A domain that
+the overlay resolves to one event is forwarded as an isolated arrangement
+vertex, and spans collapsed during global reconciliation use the same explicit
+vertex-attached record. Both retain complete ordered occurrence memberships, so
+sub-resolution removal does not erase lineage. Outgoing germs
+first receive a strict scalar total key, including the clockwise positive-x
+arc case, and every adjacent pair is then certified by outward tangent,
+cross/dot, curvature, and radius predicates. The certified rotation system
+builds `next`/`previous` links and enumerates components and directed cycles in
+linear traversal work after sorting. Arc cycle orientation is valid because
+the overlay has partitioned interior x extrema. No cycle-pair containment or
+face/operand winding scan occurs in this boundary.
+
+The arrangement inherits the overlay's consumed predicate count and algebraic
+fallback count. Endpoint-index node visits, balanced-index and heap updates,
+sort work, topology traversal, and angular predicates all consume the same job
+ceiling. Target-independent logical charges model the clustering, edge,
+half-edge, and cycle phases separately; the maximum phase and prior overlay
+peak are checked before allocation. Sparse 1x/2x fixtures guard expected
+`O(n log n + k)` behavior, while adversarial overlapping endpoint enclosures
+must stop exactly at the injected work ceiling. Native/WASM bytes include the
+complete rotation system, cycles, collapsed lineage, and canonical telemetry.
+Indexed face ownership and ordered material classification are the next stage.
 
 Across ordered stages, the accumulator retains the resolved analytic
 arrangement and lineage. Publication to the governed nm grid occurs once after

@@ -862,8 +862,10 @@ Geometer proposal, not the original consumer packet.
   narrow-phase intersection events are sorted and outward-certified before a
   fixed-array Fenwick/indexed active sweep emits atomic spans and complete
   ordered memberships. At-or-below-50-nm event gaps merge inclusively, circle
-  ordering uses half-plane/cross predicates plus the leftmost seam, and
-  constructed semicircle certificates resolve antipodal cancellation. A
+  ordering uses half-plane/cross predicates plus the leftmost seam, and a
+  rightmost partition makes emitted arc spans x-monotone. The left point
+  remains the cyclic ordering origin. Lowering-issued constructed semicircle
+  certificates resolve antipodal cancellation. A
   count/fill pass fixes allocation, while arrangement, provenance, work, and
   logical-memory ceilings stop adversarial output. Sparse 1x/2x and dense
   membership-limit fixtures prohibit hidden pair scans and per-cell full-group
@@ -876,7 +878,25 @@ Geometer proposal, not the original consumer packet.
   The integrated boundary rejects a known-impossible combined live-memory or
   minimum-work budget before narrow allocation or candidate evaluation.
   Every narrow split is rebound to both finite curve domains before event
-  insertion. Face classification, global vertex reconciliation, traversal,
+  insertion.
+- Global filtered arrangement construction is now implemented behind an entry
+  point that accepts only filtered geometry and canonical broad-phase pairs and
+  owns narrow/overlay execution; callers cannot inject overlay spans, split
+  points, memberships, or work telemetry. A sorted x sweep with a secondary-y
+  interval index reconciles span endpoints only when
+  their complete cluster hull remains at or below 50 nm, preventing a
+  transitive 0/40/80 nm collapse. Canonical edges retain their original
+  certified carrier endpoints for tangent decisions, while globally repaired
+  vertices retain the complete enclosure. Overlay-collapsed domains and
+  arrangement-collapsed spans remain explicit vertex-attached lineage records.
+  Strict preliminary angular keys followed by
+  outward tangent/curvature certification build twins, outgoing tables,
+  `next`/`previous` links, connected components, and directed cycles without
+  containment scans. Work accounting inherits the overlay, meters indexed
+  visits/updates and every proportional traversal, and uses phase-specific
+  target-independent logical memory. Exact 49/50/51 nm, nontransitive-chain,
+  sparse 1x/2x, dense-budget, line/circle, and native/WASM canonical fixtures
+  gate the stage. Indexed face classification, ordered stage material updates,
   publication, and dispatch remain pending.
 - Before filtered operation dispatch is enabled, move the retained native
   exact/oracle sources out of the normal `geometer_lib` source list into an

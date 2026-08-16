@@ -17,13 +17,14 @@ namespace geometer
 namespace
 {
 using analytic_detail::add;
+using analytic_detail::complete_distance_squared;
 using analytic_detail::cross;
 using analytic_detail::dot;
+using analytic_detail::enclosure_radius_squared;
 using analytic_detail::exact;
 using analytic_detail::Interval;
 using analytic_detail::negate;
 using analytic_detail::Point;
-using analytic_detail::square;
 using analytic_detail::subtract;
 
 constexpr std::uint32_t kNoIndex = std::numeric_limits<std::uint32_t>::max();
@@ -41,6 +42,7 @@ enum class EventRole : std::uint8_t
     domain_start = 1,
     split = 2,
     circle_seam = 3,
+    circle_right_partition = 4,
 };
 
 enum class DomainMode : std::uint8_t
@@ -83,6 +85,7 @@ struct UniqueEvent
     bool has_intersection = false;
     bool has_endpoint = false;
     bool has_circle_seam = false;
+    bool has_circle_right_partition = false;
 };
 
 struct EndpointAction
@@ -152,17 +155,14 @@ bool valid_point(const AnalyticFilteredPointNm& value) noexcept
 {
     if (!valid_coordinate(value.x) || !valid_coordinate(value.y))
         return false;
-    const double half_x = (value.x.upper - value.x.lower) * 0.5;
-    const double half_y = (value.y.upper - value.y.lower) * 0.5;
-    return half_x * half_x + half_y * half_y <=
+    return enclosure_radius_squared(point(value)).upper <=
            static_cast<double>(kAnalyticTopologyResolutionNm * kAnalyticTopologyResolutionNm);
 }
 
 bool points_within_resolution(const AnalyticFilteredPointNm& left,
                               const AnalyticFilteredPointNm& right) noexcept
 {
-    const Point delta = subtract(point(left), point(right));
-    const Interval distance_squared = add(square(delta.x), square(delta.y));
+    const Interval distance_squared = complete_distance_squared(point(left), point(right));
     return distance_squared.upper <=
            static_cast<double>(kAnalyticTopologyResolutionNm * kAnalyticTopologyResolutionNm);
 }
@@ -603,7 +603,7 @@ class OverlayBuilder
         std::uint64_t circle_groups = 0;
         for (const CarrierGroup& group : groups_)
             circle_groups += group.kind == AnalyticAtomicCurveKind::circular_arc ? 1 : 0;
-        raw_count = checked_add(raw_count, circle_groups, valid);
+        raw_count = checked_add(raw_count, checked_multiply(circle_groups, 2, valid), valid);
         if (!valid || raw_count > std::numeric_limits<std::uint32_t>::max() ||
             !set_base_memory(raw_count))
             return false;
@@ -633,6 +633,8 @@ class OverlayBuilder
                     const std::uint32_t curve_offset = group.representative_curve - 1;
                     append_event(curve_offset, circle_left_seam(geometry_.curves[curve_offset]),
                                  EventRole::circle_seam);
+                    append_event(curve_offset, circle_right_seam(geometry_.curves[curve_offset]),
+                                 EventRole::circle_right_partition);
                 }
             for (const AnalyticPairIntersection& intersection : narrow_.intersections)
                 for (std::uint8_t point_index = 0; point_index < intersection.point_count;
@@ -734,6 +736,11 @@ class OverlayBuilder
                          event.role == EventRole::circle_seam))
                         representative =
                             circle_left_seam(geometry_.curves[group.representative_curve - 1]);
+                    else if (group.kind == AnalyticAtomicCurveKind::circular_arc &&
+                             (unique_events_.back().has_circle_right_partition ||
+                              event.role == EventRole::circle_right_partition))
+                        representative =
+                            circle_right_seam(geometry_.curves[group.representative_curve - 1]);
                     if (!valid_point(representative))
                         return fail(AnalyticFilteredOverlayError::resource_limit_exceeded);
                     unique_events_.back().point = representative;
@@ -748,7 +755,7 @@ class OverlayBuilder
                             return fail(AnalyticFilteredOverlayError::resource_limit_exceeded);
                         return false;
                     }
-                    unique_events_.push_back({event.point, false, false, false});
+                    unique_events_.push_back({event.point, false, false, false, false});
                 }
                 UniqueEvent& unique = unique_events_.back();
                 unique.has_intersection = unique.has_intersection || event.role == EventRole::split;
@@ -757,6 +764,8 @@ class OverlayBuilder
                                       event.role == EventRole::domain_end;
                 unique.has_circle_seam =
                     unique.has_circle_seam || event.role == EventRole::circle_seam;
+                unique.has_circle_right_partition = unique.has_circle_right_partition ||
+                                                    event.role == EventRole::circle_right_partition;
                 event.point_index = static_cast<std::uint32_t>(unique_events_.size() - 1);
             }
             group.point_count =
@@ -782,6 +791,8 @@ class OverlayBuilder
                     first.has_intersection = first.has_intersection || last.has_intersection;
                     first.has_endpoint = first.has_endpoint || last.has_endpoint;
                     first.has_circle_seam = first.has_circle_seam || last.has_circle_seam;
+                    first.has_circle_right_partition =
+                        first.has_circle_right_partition || last.has_circle_right_partition;
                     for (std::uint32_t local = 0; local < group.event_count; ++local)
                     {
                         RawEvent& event = events_[group.event_begin + local];
@@ -793,7 +804,7 @@ class OverlayBuilder
                     ++result_.telemetry.resolution_merges;
                 }
             }
-            if (group.point_count < 2)
+            if (group.point_count == 0)
                 return fail(AnalyticFilteredOverlayError::resource_limit_exceeded);
             group.seam_local = 0;
             if (group.kind == AnalyticAtomicCurveKind::circular_arc)

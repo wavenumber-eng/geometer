@@ -111,7 +111,9 @@ engine.
   unverified point cannot cross the narrow/overlay trust boundary. It sorts bounded
   endpoint/intersection events once, merges events only when their complete
   outward enclosure proves at-or-below-50-nm equivalence, and partitions each
-  line or circle in canonical carrier order. A fixed-array Fenwick/indexed
+  line or circle in canonical carrier order. Circle carriers receive both the
+  canonical leftmost seam and a rightmost partition, so every published arc
+  span is x-monotone for indexed face classification. A fixed-array Fenwick/indexed
   active set makes membership maintenance logarithmic and membership emission
   output-proportional; no carrier-group cross product or per-cell full-group
   scan is permitted. A count pass fixes span and membership allocation before
@@ -128,6 +130,34 @@ engine.
   carrier-group storage plus the minimum pair/validation work before narrow
   allocation or evaluation; a job that cannot possibly fit stops with zero
   narrow work.
+- The filtered arrangement entry point accepts filtered geometry plus only the
+  canonical broad-phase pairs and owns narrow-phase and overlay execution. No
+  caller-constructed overlay or split point crosses this trust boundary. It
+  reconciles the resulting carrier-local span endpoints into global vertices
+  with an x sweep and a secondary-axis interval index. A new
+  endpoint joins a cluster only when the complete outward distance between it
+  and the cluster hull is at most 50 nm. The cluster hull, rather than a
+  transitive union-find chain, is authoritative: points at 0, 40, and 80 nm
+  cannot all acquire one representative. Exact-threshold box distances use
+  independently evaluated endpoint differences so outward rounding does not
+  turn a mathematically exact 50 nm bound into an accidental rejection.
+  Edge-specific certified carrier endpoints remain attached to each edge for
+  tangent decisions; a repaired global vertex enclosure never perturbs the
+  carrier germ. Domains collapsed by overlay resolution and spans collapsed by
+  global reconciliation both retain an explicit vertex and their complete
+  membership ranges; a permitted sub-resolution feature never silently loses
+  lineage.
+- The arrangement constructs twins, canonical outgoing tables, `next` and
+  `previous` links, connected components, and directed boundary cycles without
+  a cycle-pair scan. A strict total binary64 key is used only to satisfy the
+  sort contract; adjacent outgoing germs are then certified with outward
+  tangent, cross, dot, curvature, and radius predicates. Uncertain angular
+  order fails the isolated job. Endpoint-index visits, balanced-tree/heap
+  updates, sorts, traversals, angular predicates, and phase-specific logical
+  memory are governed, and the stage inherits the overlay's already consumed
+  work. Dense candidate enclosures terminate at the same work ceiling on
+  native and WASM. Face ownership and material classification remain the next
+  indexed stage; this arrangement boundary does not perform containment tests.
 - Solver resource limits are supplied through one internal limits value object
   rather than scattered production constants. The catalog values are governed
   hard ceilings; a host may advertise and enforce lower effective limits, and

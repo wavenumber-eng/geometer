@@ -415,7 +415,7 @@ def test_manifest_promoted_and_candidate_surfaces_are_complete() -> None:
     assert candidate["status"] == "contract_frozen"
     assert candidate["solver_numeric_status"] == "reopened_filtered_50nm"
     assert candidate["filtered_solver_foundation"] == (
-        "direct_lowering_broad_narrow_and_overlay_implemented_not_dispatched"
+        "direct_lowering_broad_narrow_overlay_and_arrangement_implemented_not_dispatched"
     )
     assert candidate["request_contract"] == "geometry.analytic_planar_boolean_batch.request.a0"
     assert candidate["result_contract"] == "geometry.analytic_planar_boolean_batch.result.a0"
@@ -664,7 +664,7 @@ def test_exact_algebraic_backend_is_governed_and_non_primary() -> None:
 def test_filtered_solver_foundation_is_bounded_non_algebraic_and_not_dispatched() -> None:
     solver = _manifest()["analytic_filtered_solver"]
     assert solver == {
-        "status": "implemented_direct_lowering_broad_narrow_and_overlay_not_dispatched",
+        "status": "implemented_filtered_arrangement_not_dispatched",
         "design": "docs/adr/013_filtered_resolution_bounded_planar_boolean.md",
         "coordinate_grid_nm": 1,
         "topology_resolution_nm": 50,
@@ -730,6 +730,28 @@ def test_filtered_solver_foundation_is_bounded_non_algebraic_and_not_dispatched(
         "overlay_vector_sha256": (
             "b0f9e8013eeb02b876ce071b13663dbcae7dddf9f616432add5d1a72640c7438"
         ),
+        "arrangement_header": "src/cpp/lib/geometer/analytic_filtered_arrangement.h",
+        "arrangement_source": "src/cpp/lib/analytic_filtered_arrangement.cpp",
+        "arrangement_test": "tests/cpp/analytic_filtered_arrangement_test.cpp",
+        "arrangement_input": (
+            "filtered_geometry_and_canonical_broad_pairs_with_internal_narrow_overlay"
+        ),
+        "arrangement_policy": (
+            "indexed_complete_diameter_vertex_clusters_and_certified_half_edge_germs"
+        ),
+        "arrangement_resolution_policy": (
+            "inclusive_50nm_nontransitive_global_vertex_reconciliation"
+        ),
+        "arrangement_budget_policy": (
+            "phase_accurate_target_independent_memory_and_shared_upstream_work"
+        ),
+        "arrangement_parity_validator": (
+            "scripts/validate_analytic_filtered_arrangement_parity.py"
+        ),
+        "arrangement_vector_bytes": 8088,
+        "arrangement_vector_sha256": (
+            "77f73c269d9f3ba0cbcea9ccc4c1d0fb4a1f56f43fcfc6e7eeed2598cbc8cd79"
+        ),
     }
     implementation_paths = [
         solver[key]
@@ -750,6 +772,8 @@ def test_filtered_solver_foundation_is_bounded_non_algebraic_and_not_dispatched(
             "lowering_source",
             "overlay_header",
             "overlay_source",
+            "arrangement_header",
+            "arrangement_source",
         )
     ]
     for relative_path in implementation_paths:
@@ -767,6 +791,8 @@ def test_filtered_solver_foundation_is_bounded_non_algebraic_and_not_dispatched(
             "lowering_parity_validator",
             "overlay_test",
             "overlay_parity_validator",
+            "arrangement_test",
+            "arrangement_parity_validator",
         )
     )
 

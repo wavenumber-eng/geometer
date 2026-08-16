@@ -266,7 +266,7 @@ bool valid_common_curve(const AnalyticAtomicCurveNm& curve) noexcept
 bool valid_endpoint_authoritative_arc_certificate(const AnalyticAtomicCurveNm& curve) noexcept
 {
     if (!curve.has_endpoint_authoritative_arc_certificate)
-        return true;
+        return !curve.has_endpoint_authoritative_x_monotone_certificate;
     if (curve.has_integer_certificate || !curve.has_integer_radius_certificate ||
         !curve.has_arc_sweep_certificate || curve.major_arc || curve.integer_radius == 0 ||
         curve.integer_radius > static_cast<std::uint64_t>(kLocalCoordinateSpanNm) ||
@@ -283,8 +283,15 @@ bool valid_endpoint_authoritative_arc_certificate(const AnalyticAtomicCurveNm& c
             curve.integer_radius, curve.counterclockwise, curve.major_arc, reconstructed))
         return false;
     const Point supplied = point(curve.circle.center);
-    return supplied.x.lower <= reconstructed.x.lower && supplied.x.upper >= reconstructed.x.upper &&
-           supplied.y.lower <= reconstructed.y.lower && supplied.y.upper >= reconstructed.y.upper;
+    if (supplied.x.lower > reconstructed.x.lower || supplied.x.upper < reconstructed.x.upper ||
+        supplied.y.lower > reconstructed.y.lower || supplied.y.upper < reconstructed.y.upper)
+        return false;
+
+    return !curve.has_endpoint_authoritative_x_monotone_certificate ||
+           endpoint_authoritative_arc_is_x_monotone(
+               curve.integer_start.x, curve.integer_start.y, curve.integer_end.x,
+               curve.integer_end.y, curve.integer_radius, curve.counterclockwise, curve.major_arc,
+               reconstructed, curve.endpoint_authoritative_upper_branch);
 }
 
 bool valid_arc_certificate(const AnalyticAtomicCurveNm& curve, Interval start_radius,
@@ -784,13 +791,15 @@ bool append_strict_second_root(PairWork& work, Point candidate, const AnalyticAt
         return false;
     const DomainResult left_domain = curve_domain(candidate, left, telemetry, limits);
     const DomainResult right_domain = curve_domain(candidate, right, telemetry, limits);
+    if (left_domain == DomainResult::outside || right_domain == DomainResult::outside)
+        return true;
     if (left_domain == DomainResult::uncertain || right_domain == DomainResult::uncertain ||
         left_domain == DomainResult::inside_resolution ||
         right_domain == DomainResult::inside_resolution ||
         left_domain == DomainResult::ambiguous_resolution ||
         right_domain == DomainResult::ambiguous_resolution)
         return false;
-    return left_domain != DomainResult::inside || right_domain != DomainResult::inside ||
+    return left_domain == DomainResult::inside && right_domain == DomainResult::inside &&
            append_authoritative_point(work, candidate);
 }
 
@@ -859,22 +868,14 @@ PairWork intersect_endpoint_authoritative(const AnalyticAtomicCurveNm& left,
     const Point second = add(anchor, scale(direction, parameter));
     const Point delta = subtract(second, anchor);
     const Interval separation_squared = dot(delta, delta);
-    constexpr double kResolutionSquared =
-        static_cast<double>(kAnalyticTopologyResolutionNm * kAnalyticTopologyResolutionNm);
     if (!valid(separation_squared))
     {
         work.uncertain = true;
         return work;
     }
-    if (separation_squared.upper <= kResolutionSquared)
+    if (separation_squared.lower == 0.0 && separation_squared.upper == 0.0)
     {
-        work.value.resolution_collapsed = true;
         finish_relation(work);
-        return work;
-    }
-    if (separation_squared.lower <= kResolutionSquared)
-    {
-        work.uncertain = true;
         return work;
     }
     if (!append_strict_second_root(work, second, left, right, telemetry, limits))

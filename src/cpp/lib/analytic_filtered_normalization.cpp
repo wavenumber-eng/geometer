@@ -745,6 +745,11 @@ class Builder
         replay.has_endpoint_authoritative_arc_certificate = true;
         replay.endpoint_authoritative_upper_branch =
             edge.x_monotone_branch == AnalyticXMonotoneBranch::upper;
+        replay.has_endpoint_authoritative_x_monotone_certificate =
+            analytic_detail::endpoint_authoritative_arc_is_x_monotone(
+                local_start.x, local_start.y, local_end.x, local_end.y,
+                static_cast<std::uint64_t>(radius_local), fragment.counterclockwise,
+                fragment.major_arc, replay_center, replay.endpoint_authoritative_upper_branch);
         replay.has_arc_sweep_certificate = true;
         fragment.radius_nm = static_cast<std::uint64_t>(radius_local);
         const Arc source{point(edge.circle.center),

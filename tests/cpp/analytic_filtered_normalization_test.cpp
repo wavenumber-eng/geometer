@@ -1,6 +1,9 @@
 #include "geometer/analytic_curve_broad_phase.h"
 #include "geometer/analytic_filtered_normalization.h"
 
+#include "analytic_endpoint_arc_reconstruction.h"
+#include "analytic_filtered_normalization_replay.h"
+
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
@@ -28,6 +31,34 @@ void require(bool condition, const std::string& message)
 AnalyticFilteredPointNm exact_point(double x, double y)
 {
     return {{x, x}, {y, y}};
+}
+
+AnalyticAtomicCurveNm endpoint_authoritative_arc(std::uint32_t index, std::int64_t start_x,
+                                                 std::int64_t start_y, std::int64_t end_x,
+                                                 std::int64_t end_y, std::uint64_t radius,
+                                                 bool counterclockwise, bool upper_branch)
+{
+    AnalyticAtomicCurveNm curve;
+    curve.curve_index = index;
+    curve.kind = AnalyticAtomicCurveKind::circular_arc;
+    curve.start = exact_point(static_cast<double>(start_x), static_cast<double>(start_y));
+    curve.end = exact_point(static_cast<double>(end_x), static_cast<double>(end_y));
+    curve.integer_start = {start_x, start_y};
+    curve.integer_end = {end_x, end_y};
+    curve.circle.radius = {static_cast<double>(radius), static_cast<double>(radius)};
+    curve.counterclockwise = counterclockwise;
+    curve.has_integer_radius_certificate = true;
+    curve.integer_radius = radius;
+    curve.has_arc_sweep_certificate = true;
+    curve.has_endpoint_authoritative_arc_certificate = true;
+    curve.has_endpoint_authoritative_x_monotone_certificate = true;
+    curve.endpoint_authoritative_upper_branch = upper_branch;
+    analytic_detail::Point center;
+    require(analytic_detail::reconstruct_endpoint_authoritative_arc_center(
+                start_x, start_y, end_x, end_y, radius, counterclockwise, false, center),
+            "replay test center reconstruction failed");
+    curve.circle.center = {{center.x.lower, center.x.upper}, {center.y.lower, center.y.upper}};
+    return curve;
 }
 
 AnalyticRequestPacketRecords records_for(std::uint64_t operand)
@@ -541,6 +572,61 @@ void test_large_sparse_admission()
                 std::to_string(result.telemetry.reserved_normalization_work_units));
 }
 
+void test_direct_replay_narrow_memory_boundary()
+{
+    AnalyticFilteredGeometry geometry;
+    append_line(geometry, 1, -1000, 0, 1000, 0);
+    append_line(geometry, 1, 0, -1000, 0, 1000);
+    AnalyticFilteredRegionsResult empty_regions;
+    AnalyticSolverLimits limits;
+    std::uint64_t low = 0;
+    std::uint64_t high = limits.working_memory_bytes;
+    while (low < high)
+    {
+        const std::uint64_t middle = low + (high - low) / 2;
+        auto probe = limits;
+        probe.working_memory_bytes = middle;
+        const auto replay = analytic_normalization_detail::validate_normalized_replay(
+            0, 0, geometry.curves, geometry.bounds, empty_regions, probe);
+        if (replay.error == analytic_normalization_detail::ReplayError::resource_limit_exceeded)
+            low = middle + 1;
+        else
+            high = middle;
+    }
+    auto exact = limits;
+    exact.working_memory_bytes = low;
+    const auto admitted = analytic_normalization_detail::validate_normalized_replay(
+        0, 0, geometry.curves, geometry.bounds, empty_regions, exact);
+    require(admitted.error == analytic_normalization_detail::ReplayError::topology_collapse &&
+                admitted.peak_working_memory_bytes == low,
+            "direct replay exact narrow memory boundary failed");
+    --exact.working_memory_bytes;
+    const auto short_result = analytic_normalization_detail::validate_normalized_replay(
+        0, 0, geometry.curves, geometry.bounds, empty_regions, exact);
+    require(short_result.error ==
+                analytic_normalization_detail::ReplayError::resource_limit_exceeded,
+            "direct replay one-byte-short narrow memory was admitted");
+}
+
+void test_strict_replay_rejects_nearby_residual_root()
+{
+    const std::vector<AnalyticAtomicCurveNm> curves = {
+        endpoint_authoritative_arc(1, 0, 0, -34, 68, 85, false, false),
+        endpoint_authoritative_arc(2, 0, 0, -77, 49, 85, true, true),
+    };
+    std::vector<AnalyticCurveBoundsNm> bounds;
+    for (const auto& curve : curves)
+        bounds.push_back({curve.curve_index,
+                          curve.circle.center.x.lower - curve.circle.radius.upper,
+                          curve.circle.center.y.lower - curve.circle.radius.upper,
+                          curve.circle.center.x.upper + curve.circle.radius.upper,
+                          curve.circle.center.y.upper + curve.circle.radius.upper});
+    const auto replay = analytic_normalization_detail::validate_normalized_replay(
+        0, 0, curves, bounds, AnalyticFilteredRegionsResult{}, {});
+    require(replay.error == analytic_normalization_detail::ReplayError::topology_collapse,
+            "strict replay accepted a distinct residual root within 50 nm");
+}
+
 void append_parity_result(std::ostringstream& output,
                           const AnalyticFilteredNormalizationResult& result)
 {
@@ -657,6 +743,8 @@ int main(int argc, char** argv)
     test_early_normalization_reservation();
     test_exact_limits_and_sparse_scaling();
     test_large_sparse_admission();
+    test_direct_replay_narrow_memory_boundary();
+    test_strict_replay_rejects_nearby_residual_root();
     if (argc == 2 && std::string(argv[1]) == "--emit-parity")
         std::cout << "ANALYTIC_FILTERED_NORMALIZATION_VECTOR=" << parity_vector() << '\n';
     std::cout << "analytic filtered normalization tests passed\n";

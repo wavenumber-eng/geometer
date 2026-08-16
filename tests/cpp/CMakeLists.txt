@@ -107,6 +107,8 @@ add_executable(geometer_analytic_filtered_normalization_test
     analytic_filtered_normalization_test.cpp
 )
 target_link_libraries(geometer_analytic_filtered_normalization_test PRIVATE geometer_lib)
+target_include_directories(geometer_analytic_filtered_normalization_test
+                           PRIVATE ${PROJECT_SOURCE_DIR}/src/cpp/lib)
 add_test(NAME geometer_analytic_filtered_normalization_test
          COMMAND geometer_analytic_filtered_normalization_test)
 

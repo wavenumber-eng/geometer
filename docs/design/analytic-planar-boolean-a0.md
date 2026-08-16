@@ -607,14 +607,19 @@ from outward filtered critical points and squared-distance comparisons. It
 then replays the integer geometry with no proximity repair and requires the
 same material boundary partition, winding, parent depth, and region ownership.
 Replay binds every normalized arc to exact integer endpoints, an integer
-radius, its selected center branch, and its already certified x-monotone half.
+radius, and its selected center branch. A separate refinement is accepted only
+when the reconstructed arc is outward-certified to remain on the named
+x-monotone half; otherwise replay retains its own cardinal partitions as
+distinct internal vertices (unless a seam is exactly the endpoint) and may map
+multiple internal spans back to one published boundary fragment.
 When two replay curves share a normalized endpoint, the narrow phase treats
 that endpoint as a verified construction root and factors only the possible
 second line/circle or circle/circle root with outward interval arithmetic. It
 does not take another square root, snap a point, or construct an algebraic
-value. A distinct on-domain second root rejects the replay; an uncertain root
-fails closed. Already x-monotone replay arcs do not invent new irrational
-cardinal seams, and only an identical normalized construction key or identical
+value. Every distinct on-domain second root rejects the replay, including one
+within 50 nm of the known endpoint; an uncertain root fails closed. Already
+x-monotone replay arcs need no internal cardinal partition, and only an
+identical normalized construction key or identical
 singleton center/radius can prove coincident carriers. This closes ordinary
 irrational circle-intersection normalization without calling the algebraic
 backend. Outcome history and projection perform no numeric predicate, snapping,

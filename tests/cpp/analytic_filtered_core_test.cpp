@@ -123,6 +123,7 @@ AnalyticAtomicCurveNm endpoint_authoritative_arc(std::uint32_t index, std::int64
     result.integer_radius = radius;
     result.has_arc_sweep_certificate = true;
     result.has_endpoint_authoritative_arc_certificate = true;
+    result.has_endpoint_authoritative_x_monotone_certificate = true;
     result.endpoint_authoritative_upper_branch = upper_branch;
     geometer::analytic_detail::Point center;
     require(geometer::analytic_detail::reconstruct_endpoint_authoritative_arc_center(
@@ -200,7 +201,7 @@ std::string narrow_phase_parity_vector()
     }
     const std::vector<AnalyticAtomicCurveNm> authoritative = {
         endpoint_authoritative_arc(1, 0, 0, 1000, 0, 600, true, false),
-        endpoint_authoritative_arc(2, 0, 0, 0, 1000, 600, false, false),
+        line(2, 0, 0, -1000, 0),
     };
     const auto authoritative_result = intersect_analytic_curve_candidates(authoritative, {{1, 2}});
     require(authoritative_result.error == AnalyticNarrowPhaseError::none &&
@@ -217,7 +218,7 @@ void test_endpoint_authoritative_arc_certificate()
 {
     std::vector<AnalyticAtomicCurveNm> curves = {
         endpoint_authoritative_arc(1, 0, 0, 1000, 0, 600, true, false),
-        endpoint_authoritative_arc(2, 0, 0, 0, 1000, 600, false, false),
+        line(2, 0, 0, -1000, 0),
     };
     const auto result = intersect_analytic_curve_candidates(curves, {{1, 2}});
     require(result.error == AnalyticNarrowPhaseError::none && result.intersections.size() == 1 &&
@@ -239,6 +240,22 @@ void test_endpoint_authoritative_arc_certificate()
     require(intersect_analytic_curve_candidates(curves, {{1, 2}}).error ==
                 AnalyticNarrowPhaseError::invalid_argument,
             "a forged endpoint-authoritative center enclosure must be rejected");
+
+    const auto forged_half = endpoint_authoritative_arc(1, 3, -4, 4, 3, 5, true, true);
+    require(intersect_analytic_curve_candidates({forged_half}, {}).error ==
+                AnalyticNarrowPhaseError::invalid_argument,
+            "an endpoint-authoritative arc crossing a cardinal seam must be rejected");
+
+    curves = {
+        endpoint_authoritative_arc(1, 0, 0, -34, 68, 85, false, false),
+        endpoint_authoritative_arc(2, 0, 0, -77, 49, 85, true, true),
+    };
+    const auto nearby_crossing = intersect_analytic_curve_candidates(curves, {{1, 2}});
+    require(nearby_crossing.error == AnalyticNarrowPhaseError::none &&
+                nearby_crossing.intersections.size() == 1 &&
+                nearby_crossing.intersections[0].point_count == 2 &&
+                !nearby_crossing.intersections[0].resolution_collapsed,
+            "strict endpoint-authoritative roots within 50 nm must remain distinct");
 }
 
 void test_limits()

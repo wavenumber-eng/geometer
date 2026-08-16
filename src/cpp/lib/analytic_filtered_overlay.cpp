@@ -165,6 +165,14 @@ bool valid_point(const AnalyticFilteredPointNm& value) noexcept
            static_cast<double>(kAnalyticTopologyResolutionNm * kAnalyticTopologyResolutionNm);
 }
 
+bool same_singleton_point(const AnalyticFilteredPointNm& left,
+                          const AnalyticFilteredPointNm& right) noexcept
+{
+    return left.x.lower == left.x.upper && left.y.lower == left.y.upper &&
+           right.x.lower == right.x.upper && right.y.lower == right.y.upper &&
+           left.x.lower == right.x.lower && left.y.lower == right.y.lower;
+}
+
 bool points_within_resolution(const AnalyticFilteredPointNm& left,
                               const AnalyticFilteredPointNm& right) noexcept
 {
@@ -655,12 +663,12 @@ class OverlayBuilder
             valid);
         std::uint64_t circle_groups = 0;
         for (const CarrierGroup& group : groups_)
-            circle_groups +=
-                group.kind == AnalyticAtomicCurveKind::circular_arc &&
-                        !(group.curve_count == 1 && geometry_.curves[group.representative_curve - 1]
-                                                        .has_endpoint_authoritative_arc_certificate)
-                    ? 1
-                    : 0;
+            circle_groups += group.kind == AnalyticAtomicCurveKind::circular_arc &&
+                                     !(group.curve_count == 1 &&
+                                       geometry_.curves[group.representative_curve - 1]
+                                           .has_endpoint_authoritative_x_monotone_certificate)
+                                 ? 1
+                                 : 0;
         raw_count = checked_add(raw_count, checked_multiply(circle_groups, 2, valid), valid);
         if (!valid || raw_count > std::numeric_limits<std::uint32_t>::max() ||
             !set_base_memory(raw_count))
@@ -690,7 +698,8 @@ class OverlayBuilder
                 {
                     const std::uint32_t curve_offset = group.representative_curve - 1;
                     if (group.curve_count == 1 &&
-                        geometry_.curves[curve_offset].has_endpoint_authoritative_arc_certificate)
+                        geometry_.curves[curve_offset]
+                            .has_endpoint_authoritative_x_monotone_certificate)
                         continue;
                     append_event(curve_offset, circle_left_seam(geometry_.curves[curve_offset]),
                                  EventRole::circle_seam);
@@ -734,11 +743,13 @@ class OverlayBuilder
         return -1;
     }
 
-    bool certified_order(const AnalyticFilteredPointNm& left, const AnalyticFilteredPointNm& right,
+    bool certified_order(const UniqueEvent& left_event, const RawEvent& right_event,
                          const CarrierGroup& group)
     {
         if (!charge(1))
             return false;
+        const AnalyticFilteredPointNm& left = left_event.point;
+        const AnalyticFilteredPointNm& right = right_event.point;
         const AnalyticAtomicCurveNm& curve = geometry_.curves[group.representative_curve - 1];
         if (group.kind == AnalyticAtomicCurveKind::line)
         {
@@ -757,11 +768,25 @@ class OverlayBuilder
             return ascending ? left_value.upper < right_value.lower
                              : right_value.upper < left_value.lower;
         }
-        if (group.curve_count == 1 && curve.has_endpoint_authoritative_arc_certificate)
+        if (group.curve_count == 1 && curve.has_endpoint_authoritative_x_monotone_certificate)
         {
             if (curve.endpoint_authoritative_upper_branch)
                 return right.x.upper < left.x.lower;
             return left.x.upper < right.x.lower;
+        }
+        if (group.kind == AnalyticAtomicCurveKind::circular_arc)
+        {
+            if (left_event.has_circle_right_partition && right_event.role == EventRole::circle_seam)
+                return true;
+            if (left_event.has_circle_right_partition)
+                return certified_half(right, curve) == 0;
+            if (right_event.role == EventRole::circle_seam)
+                return certified_half(left, curve) == 0;
+            if (left_event.has_circle_seam)
+                return right_event.role == EventRole::circle_right_partition ||
+                       certified_half(right, curve) == 1;
+            if (right_event.role == EventRole::circle_right_partition)
+                return certified_half(left, curve) == 1;
         }
         const int left_half = certified_half(left, curve);
         const int right_half = certified_half(right, curve);
@@ -799,6 +824,20 @@ class OverlayBuilder
                     merge =
                         points_within_resolution(unique_events_.back().proof_first, event.point) &&
                         points_within_resolution(unique_events_.back().proof_last, event.point);
+                    const bool seam_endpoint_pair =
+                        (unique_events_.back().has_endpoint &&
+                         (event.role == EventRole::circle_seam ||
+                          event.role == EventRole::circle_right_partition)) ||
+                        ((unique_events_.back().has_circle_seam ||
+                          unique_events_.back().has_circle_right_partition) &&
+                         (event.role == EventRole::domain_start ||
+                          event.role == EventRole::domain_end));
+                    if (group.kind == AnalyticAtomicCurveKind::circular_arc &&
+                        geometry_.curves[group.representative_curve - 1]
+                            .has_endpoint_authoritative_arc_certificate &&
+                        seam_endpoint_pair &&
+                        !same_singleton_point(unique_events_.back().point, event.point))
+                        merge = false;
                 }
                 if (merge)
                 {
@@ -823,7 +862,7 @@ class OverlayBuilder
                 else
                 {
                     if (unique_events_.size() > group.point_begin &&
-                        !certified_order(unique_events_.back().point, event.point, group))
+                        !certified_order(unique_events_.back(), event, group))
                     {
                         if (result_.error == AnalyticFilteredOverlayError::none)
                             return fail(AnalyticFilteredOverlayError::resource_limit_exceeded);
@@ -852,10 +891,20 @@ class OverlayBuilder
                 UniqueEvent& first = unique_events_[group.point_begin];
                 const std::uint32_t last_index = group.point_begin + group.point_count - 1;
                 const UniqueEvent& last = unique_events_[last_index];
+                const bool seam_endpoint_pair =
+                    (first.has_endpoint &&
+                     (last.has_circle_seam || last.has_circle_right_partition)) ||
+                    (last.has_endpoint &&
+                     (first.has_circle_seam || first.has_circle_right_partition));
+                const bool retain_authoritative_seam =
+                    geometry_.curves[group.representative_curve - 1]
+                        .has_endpoint_authoritative_arc_certificate &&
+                    seam_endpoint_pair && !same_singleton_point(first.point, last.point);
                 if (points_within_resolution(first.proof_first, last.proof_first) &&
                     points_within_resolution(first.proof_first, last.proof_last) &&
                     points_within_resolution(first.proof_last, last.proof_first) &&
-                    points_within_resolution(first.proof_last, last.proof_last))
+                    points_within_resolution(first.proof_last, last.proof_last) &&
+                    !retain_authoritative_seam)
                 {
                     AnalyticFilteredPointNm representative = point_hull(first.point, last.point);
                     const AnalyticFilteredPointNm right_seam =
@@ -890,7 +939,7 @@ class OverlayBuilder
                 const AnalyticAtomicCurveNm& representative =
                     geometry_.curves[group.representative_curve - 1];
                 if (!(group.curve_count == 1 &&
-                      representative.has_endpoint_authoritative_arc_certificate))
+                      representative.has_endpoint_authoritative_x_monotone_certificate))
                 {
                     bool found_seam = false;
                     for (std::uint32_t local = 0; local < group.point_count; ++local)
@@ -1080,7 +1129,7 @@ class OverlayBuilder
         AnalyticXMonotoneBranch circle_branch = AnalyticXMonotoneBranch::lower;
         if (group.kind == AnalyticAtomicCurveKind::circular_arc && group.curve_count == 1 &&
             geometry_.curves[group.representative_curve - 1]
-                .has_endpoint_authoritative_arc_certificate)
+                .has_endpoint_authoritative_x_monotone_certificate)
             circle_branch =
                 geometry_.curves[group.representative_curve - 1].endpoint_authoritative_upper_branch
                     ? AnalyticXMonotoneBranch::upper

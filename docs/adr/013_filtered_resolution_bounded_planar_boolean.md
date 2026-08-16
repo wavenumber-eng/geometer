@@ -267,9 +267,13 @@ engine.
   verified endpoint/radius/center-branch certificate. At a certified shared
   endpoint, replay factors the possible second line/circle or circle/circle
   root directly with outward intervals instead of rediscovering the known root
-  through a square root. Already x-monotone replay arcs add no synthetic
-  cardinal seam, so generic irrational intersections and irrational-radius
-  arcs remain on the fast filtered path. Packet source-set interning, canonical
+  through a square root. A distinct residual root always rejects, even within
+  50 nm. The reconstruction certificate is separate from the x-monotone-half
+  refinement: arcs that remain on their named half need no internal seam;
+  others retain distinct internal cardinal partitions while mapping all such
+  spans back to the one published fragment. Generic irrational intersections
+  and irrational-radius arcs therefore remain on the fast filtered path
+  without a second proximity merge. Packet source-set interning, canonical
   record IDs, and dispatch remain gated.
 - Solver resource limits are supplied through one internal limits value object
   rather than scattered production constants. The catalog values are governed

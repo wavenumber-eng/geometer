@@ -99,9 +99,10 @@ struct AnalyticAtomicCurveNm
     // storing its generally irrational center algebraically. Request inputs
     // cannot mint this certificate.
     bool has_endpoint_authoritative_arc_certificate = false;
-    // The same trusted certificate binds the already-partitioned normalized
-    // fragment to one x-monotone circle half. Generic overlay must not invent
-    // new cardinal seam vertices for this finite replay fragment.
+    // A separately verified refinement proves that the reconstructed finite
+    // arc remains on one named x-monotone half. Without it, overlay performs
+    // its ordinary internal cardinal partition.
+    bool has_endpoint_authoritative_x_monotone_certificate = false;
     bool endpoint_authoritative_upper_branch = false;
     // Nonzero construction ids are job-local proof tokens emitted by the
     // trusted lowering stage. Equal carrier ids mean the same infinite line

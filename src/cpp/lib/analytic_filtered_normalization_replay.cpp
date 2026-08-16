@@ -24,6 +24,8 @@ using analytic_detail::subtract;
 
 constexpr std::uint64_t kIndexLogicalBytes = 8;
 constexpr std::uint64_t kReplayGeometryLogicalBytesPerCurve = 480;
+constexpr std::uint64_t kPersistentReplayGeometryLogicalBytesPerCurve =
+    kAnalyticAtomicCurveLogicalBytes + 48 + 56;
 constexpr std::uint64_t kReplayRingScratchLogicalBytes = 16;
 constexpr std::uint64_t kReplayRegionScratchLogicalBytes = 16;
 constexpr std::uint64_t kReplayFixedLogicalBytes = 512;
@@ -251,8 +253,7 @@ bool valid_intersection(const AnalyticPairIntersection& intersection,
     const auto& left = curves[intersection.pair.first - 1];
     const auto& right = curves[intersection.pair.second - 1];
     const std::uint8_t shared = shared_endpoint_count(left, right);
-    if (intersection.relation != AnalyticPairRelation::coincident &&
-        intersection.resolution_collapsed && (shared == 0 || intersection.point_count != shared))
+    if (intersection.resolution_collapsed)
         return false;
     if (intersection.relation == AnalyticPairRelation::disjoint)
         return shared == 0;
@@ -333,16 +334,17 @@ class Validator
     {
         AnalyticSolverLimits limits = limits_;
         limits.predicate_calls -= result_.work_units;
-        if (pair_bytes_ > limits.working_memory_bytes)
+        if (persistent_geometry_bytes_ > limits.working_memory_bytes)
         {
             result_.error = ReplayError::resource_limit_exceeded;
             return false;
         }
-        limits.working_memory_bytes -= pair_bytes_;
+        limits.working_memory_bytes -= persistent_geometry_bytes_;
         AnalyticNarrowPhaseResult narrow =
             intersect_analytic_curve_candidates(geometry_.curves, pairs, limits);
         std::uint64_t narrow_peak = 0;
-        if (!checked_add(pair_bytes_, narrow.telemetry.peak_working_memory_bytes, narrow_peak) ||
+        if (!checked_add(persistent_geometry_bytes_, narrow.telemetry.peak_working_memory_bytes,
+                         narrow_peak) ||
             narrow_peak > limits_.working_memory_bytes)
         {
             result_.error = ReplayError::resource_limit_exceeded;
@@ -375,10 +377,16 @@ class Validator
 
     bool prepare_geometry()
     {
+        std::uint64_t persistent_curve_bytes = 0;
         std::uint64_t curve_bytes = 0;
         std::uint64_t ring_bytes = 0;
         std::uint64_t region_bytes = 0;
-        if (!checked_multiply(curves_.size(), kReplayGeometryLogicalBytesPerCurve, curve_bytes) ||
+        if (!checked_multiply(curves_.size(), kPersistentReplayGeometryLogicalBytesPerCurve,
+                              persistent_curve_bytes) ||
+            !checked_add(persistent_curve_bytes, pair_bytes_, persistent_geometry_bytes_) ||
+            !checked_add(persistent_geometry_bytes_, kReplayFixedLogicalBytes,
+                         persistent_geometry_bytes_) ||
+            !checked_multiply(curves_.size(), kReplayGeometryLogicalBytesPerCurve, curve_bytes) ||
             !checked_multiply(original_.rings.size(), kReplayRingScratchLogicalBytes, ring_bytes) ||
             !checked_multiply(original_.regions.size(), kReplayRegionScratchLogicalBytes,
                               region_bytes) ||
@@ -595,7 +603,7 @@ class Validator
         for (std::uint32_t offset = 0; offset < source.half_edge_count; ++offset)
         {
             const std::uint32_t boundary = source.half_edge_begin + offset;
-            if (boundary >= boundary_ring.size() || boundary_visits[boundary] != 1 ||
+            if (boundary >= boundary_ring.size() || boundary_visits[boundary] == 0 ||
                 boundary_ring[boundary] == kNoIndex)
                 return false;
             if (matched == kNoIndex)
@@ -644,6 +652,7 @@ class Validator
     AnalyticFilteredGeometry geometry_;
     std::vector<std::uint32_t> old_to_replay_;
     std::uint64_t pair_bytes_ = 0;
+    std::uint64_t persistent_geometry_bytes_ = 0;
     std::uint64_t own_bytes_ = 0;
 };
 } // namespace

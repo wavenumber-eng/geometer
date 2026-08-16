@@ -1029,11 +1029,15 @@ Geometer proposal, not the original consumer packet.
   boundary maps rather than fragment-pair or ring-pair scans. Exact-commit
   remediation meters broad-phase index visits, retains pair/scratch memory in
   child budgets, validates original hard ceilings before reservation, and
-  binds normalized arcs to a verified endpoint/radius/center-branch and
-  x-monotone certificate. A certified shared endpoint is factored out of the
+  binds normalized arcs to a verified endpoint/radius/center-branch
+  certificate, with a separate outward-validated x-monotone refinement. A
+  certified shared endpoint is factored out of the
   line/circle or circle/circle equation, leaving one constant-work outward
-  interval root check and no algebraic value. Already partitioned replay arcs
-  add no synthetic cardinal seam. Generic irrational overlapping disks,
+  interval root check and no algebraic value; every distinct residual root,
+  including one within 50 nm, rejects. Replay arcs that no longer remain on
+  one half retain distinct internal cardinal partitions and compress those
+  spans back to the published boundary mapping without a proximity merge.
+  Generic irrational overlapping disks,
   irrational-radius authored arcs, clockwise annular holes, full two-half
   circles, nested hole/island topology, reciprocal old-to-normalized maps,
   513 disjoint sparse boxes, global half ties, early work/memory rejection, and

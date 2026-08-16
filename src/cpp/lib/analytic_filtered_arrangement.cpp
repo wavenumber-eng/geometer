@@ -427,7 +427,7 @@ bool calculate_arrangement_minimum_requirements(const AnalyticFilteredGeometry& 
     work = checked_add(work, checked_multiply(curve_count, 6, valid), valid);
     work = checked_add(work, sort_units(curve_count), valid);
     work = checked_add(work, sort_units(checked_multiply(curve_count, 2, valid)), valid);
-    work = checked_add(work, checked_multiply(spans, 13, valid), valid);
+    work = checked_add(work, checked_multiply(spans, 14, valid), valid);
     work = checked_add(work, checked_multiply(sort_units(endpoints), 2, valid), valid);
     work = checked_add(work, checked_multiply(sort_units(spans), 2, valid), valid);
     work = checked_add(work, checked_multiply(collapsed_domains, 52, valid), valid);
@@ -1298,21 +1298,13 @@ class ArrangementBuilder
         if (!charge(static_cast<std::uint64_t>(last - first)))
             return false;
         bool endpoint_authoritative_cycle = false;
-        bool authoritative_vertices_are_exact = true;
         for (auto at = first; at != last; ++at)
         {
             const std::uint32_t half_edge = *at;
             endpoint_authoritative_cycle =
                 endpoint_authoritative_cycle ||
                 result_.edges[result_.half_edges[half_edge].edge].endpoint_authoritative_arc;
-            const auto& vertex =
-                result_.vertices[result_.half_edges[half_edge].origin_vertex].point;
-            authoritative_vertices_are_exact = authoritative_vertices_are_exact &&
-                                               vertex.x.lower == vertex.x.upper &&
-                                               vertex.y.lower == vertex.y.upper;
         }
-        if (endpoint_authoritative_cycle && !authoritative_vertices_are_exact)
-            return fail(AnalyticFilteredArrangementError::resource_limit_exceeded);
         auto canonical = std::min_element(
             first, last,
             [&](std::uint32_t left, std::uint32_t right)
@@ -1324,24 +1316,24 @@ class ArrangementBuilder
                     const auto& left_point = result_.vertices[left_vertex].point;
                     const auto& right_point = result_.vertices[right_vertex].point;
                     const auto left_key =
-                        std::tie(left_point.x.lower, left_point.y.lower, left_vertex, left);
+                        std::tie(left_point.x.lower, left_point.x.upper, left_point.y.lower,
+                                 left_point.y.upper, left_vertex, left);
                     const auto right_key =
-                        std::tie(right_point.x.lower, right_point.y.lower, right_vertex, right);
+                        std::tie(right_point.x.lower, right_point.x.upper, right_point.y.lower,
+                                 right_point.y.upper, right_vertex, right);
                     return left_key < right_key;
                 }
                 return left_vertex != right_vertex ? left_vertex < right_vertex : left < right;
             });
         std::rotate(first, canonical, last);
-        const std::uint32_t outgoing = *first;
-        const std::uint32_t reverse_incoming =
-            result_.half_edges[result_.half_edges[outgoing].previous].twin;
-        if (!charge(1))
-            return false;
-        ++result_.telemetry.angular_predicates;
-        std::optional<std::int8_t> orientation = compare_cycle_germs(
-            outgoing_tangent(outgoing, result_), outgoing_tangent(reverse_incoming, result_));
-        if (!orientation)
+        const auto orientation_at = [&](std::uint32_t outgoing)
         {
+            const std::uint32_t reverse_incoming =
+                result_.half_edges[result_.half_edges[outgoing].previous].twin;
+            std::optional<std::int8_t> orientation = compare_cycle_germs(
+                outgoing_tangent(outgoing, result_), outgoing_tangent(reverse_incoming, result_));
+            if (orientation)
+                return orientation;
             auto outgoing_half = cycle_germ_half(outgoing_tangent(outgoing, result_));
             auto incoming_half = cycle_germ_half(outgoing_tangent(reverse_incoming, result_));
             if (!outgoing_half)
@@ -1354,6 +1346,22 @@ class ArrangementBuilder
                 orientation =
                     compare_or_defer_collinear(outgoing_tangent(outgoing, result_),
                                                outgoing_tangent(reverse_incoming, result_));
+            return orientation;
+        };
+        const std::uint32_t outgoing = *first;
+        if (!charge(1))
+            return false;
+        ++result_.telemetry.angular_predicates;
+        std::optional<std::int8_t> orientation = orientation_at(outgoing);
+        if (!orientation && endpoint_authoritative_cycle)
+        {
+            if (!charge(static_cast<std::uint64_t>(last - first)))
+                return false;
+            for (auto at = first + 1; at != last && !orientation; ++at)
+            {
+                ++result_.telemetry.angular_predicates;
+                orientation = orientation_at(*at);
+            }
         }
         if (!orientation)
             return fail(AnalyticFilteredArrangementError::resource_limit_exceeded);

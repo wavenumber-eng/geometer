@@ -166,8 +166,32 @@ engine.
   memory are governed, and the stage inherits the overlay's already consumed
   work. A direct adversarial interval-index fixture forces all earlier
   enclosures to be visited and terminates at the same exact work ceiling on
-  native and WASM. Face ownership and material classification remain the next
-  indexed stage; this arrangement boundary does not perform containment tests.
+  native and WASM. This arrangement boundary does not perform containment
+  tests.
+- The filtered Boolean-selection stage accepts ordered request records only
+  together with trusted lowered geometry and canonical broad-phase pairs, and
+  owns arrangement construction. A certified vertical-slab sweep processes
+  each x event column atomically, maintains crossing branches in a
+  fixed-capacity implicit AVL sequence, and joins cycle sides bordering the
+  same open gap with a governed disjoint set. This assigns nested and
+  disconnected boundary components without cycle-pair containment tests.
+  Lowering-issued construction-column identities prove correlated non-integral
+  vertical coordinates; unrelated overlapping coordinate enclosures fail
+  closed. Circle branches retain the left/right seam and x-monotone
+  certificates issued by overlay. Face assignment performs no coordinate
+  merge and consumes no additional 50 nm allowance.
+- Face coverage is sparse. Sorted edge-membership transitions propagate from
+  the unbounded face through a fixed dual adjacency structure. Canonical
+  persistent binary-set roots represent complete active-operand states without
+  copying an operand vector per face, and non-tree dual edges validate root
+  equality exactly. An indexed stage tree updates only changed stages and
+  evaluates ordered union/difference semantics incrementally, including
+  add-subtract-add and zero-operand stages. The implementation therefore has no
+  face-by-operand replay. Sweep/index visits, disjoint-set probes, transition
+  normalization, persistent-table probes, stage updates, sorts, and output
+  writes share the programmable work ceiling; target-independent live-memory
+  charges are preflighted by phase. Selected-boundary publication, complete
+  lineage projection, final grid normalization, and dispatch remain gated.
 - Solver resource limits are supplied through one internal limits value object
   rather than scattered production constants. The catalog values are governed
   hard ceilings; a host may advertise and enforce lower effective limits, and

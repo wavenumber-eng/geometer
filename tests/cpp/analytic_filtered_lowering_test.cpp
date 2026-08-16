@@ -107,6 +107,14 @@ void test_authored_winding_and_large_origin()
                     ccw.curves[index].construction_carrier_id != 0 &&
                     ccw.curves[index].construction_family_id != 0,
                 "authored line proof tokens were not emitted");
+        if (ccw.curves[index].construction_line_dx == 0)
+        {
+            const std::uint64_t column =
+                analytic_vertical_x_column_token(ccw.curves[index].construction_carrier_id);
+            require(column != 0 && ccw.curves[index].start.construction_x_column_id == column &&
+                        ccw.curves[index].end.construction_x_column_id == column,
+                    "authored vertical line did not receive a shared x-column token");
+        }
     }
     require_narrow_accepts(ccw, "large-origin CCW square");
 
@@ -523,10 +531,12 @@ std::string lowering_parity_vector()
         append_double(curve.start.x.upper);
         append_double(curve.start.y.lower);
         append_double(curve.start.y.upper);
+        append_u64(curve.start.construction_x_column_id);
         append_double(curve.end.x.lower);
         append_double(curve.end.x.upper);
         append_double(curve.end.y.lower);
         append_double(curve.end.y.upper);
+        append_u64(curve.end.construction_x_column_id);
         append_double(curve.circle.center.x.lower);
         append_double(curve.circle.center.x.upper);
         append_double(curve.circle.center.y.lower);
@@ -538,6 +548,9 @@ std::string lowering_parity_vector()
         append_u64(curve.construction_carrier_id);
         append_u64(curve.construction_family_id);
         append_u64(curve.has_arc_sweep_certificate ? 1U : 0U);
+        append_u64(curve.has_construction_line_direction ? 1U : 0U);
+        append_u64(static_cast<std::uint64_t>(curve.construction_line_dx));
+        append_u64(static_cast<std::uint64_t>(curve.construction_line_dy));
         append_u64(curve.has_integer_certificate ? 1U : 0U);
         append_u64(static_cast<std::uint64_t>(curve.integer_start.x));
         append_u64(static_cast<std::uint64_t>(curve.integer_start.y));

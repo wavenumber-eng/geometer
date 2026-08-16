@@ -11,6 +11,14 @@ namespace geometer
 {
 
 inline constexpr std::uint64_t kAnalyticOverlayCurveGroupLogicalBytes = 96;
+inline constexpr std::uint64_t kAnalyticOverlaySpanLogicalBytes = 112;
+
+enum class AnalyticXMonotoneBranch : std::uint8_t
+{
+    none = 0,
+    lower = 1,
+    upper = 2,
+};
 
 struct AnalyticAtomicSpanNm
 {
@@ -22,6 +30,7 @@ struct AnalyticAtomicSpanNm
     bool major_arc = false;
     std::uint32_t membership_begin = 0;
     std::uint32_t membership_count = 0;
+    AnalyticXMonotoneBranch x_monotone_branch = AnalyticXMonotoneBranch::none;
 };
 
 struct AnalyticSpanMembership

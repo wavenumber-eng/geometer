@@ -142,6 +142,7 @@ std::string narrow_phase_parity_vector()
             append_double(intersection.points[index].x.upper);
             append_double(intersection.points[index].y.lower);
             append_double(intersection.points[index].y.upper);
+            append_u64(intersection.points[index].construction_x_column_id);
         }
     }
     append_u64(result.telemetry.candidate_pairs_consumed);
@@ -398,6 +399,36 @@ void test_narrow_phase_line_line()
                 result.telemetry.candidate_pairs_consumed == 4 &&
                 result.telemetry.algebraic_fallback_calls == 0,
             "line/line telemetry changed");
+}
+
+void test_vertical_construction_column_tokens()
+{
+    std::vector<AnalyticAtomicCurveNm> curves = {line(1, 100, -1000, 100, 1000),
+                                                 line(2, -1000, -200, 1000, -200),
+                                                 line(3, -1000, 300, 1000, 300)};
+    curves[0].construction_carrier_id = 7;
+    curves[0].construction_family_id = 11;
+    curves[0].has_construction_line_direction = true;
+    curves[0].construction_line_dy = 1;
+    const std::uint64_t column = analytic_vertical_x_column_token(7);
+    curves[0].start.construction_x_column_id = column;
+    curves[0].end.construction_x_column_id = column;
+    curves[1].construction_carrier_id = 8;
+    curves[2].construction_carrier_id = 9;
+
+    const AnalyticNarrowPhaseResult result =
+        intersect_analytic_curve_candidates(curves, {{1, 2}, {1, 3}});
+    require(result.error == AnalyticNarrowPhaseError::none && result.intersections.size() == 2 &&
+                result.intersections[0].point_count == 1 &&
+                result.intersections[1].point_count == 1 &&
+                result.intersections[0].points[0].construction_x_column_id == column &&
+                result.intersections[1].points[0].construction_x_column_id == column,
+            "vertical carrier intersections did not preserve one construction column");
+
+    curves[0].end.construction_x_column_id ^= 1U;
+    require(intersect_analytic_curve_candidates(curves, {}).error ==
+                AnalyticNarrowPhaseError::invalid_argument,
+            "an inconsistent vertical construction column token was accepted");
 }
 
 void test_narrow_phase_line_circle()
@@ -921,6 +952,7 @@ int main()
     test_broad_phase_avoids_crossed_projection_quadratic_work();
     test_broad_phase_memory_charge_is_cross_runtime_canonical();
     test_narrow_phase_line_line();
+    test_vertical_construction_column_tokens();
     test_narrow_phase_line_circle();
     test_narrow_phase_circle_circle_and_irrational_output();
     test_narrow_phase_filtered_authored_arcs();

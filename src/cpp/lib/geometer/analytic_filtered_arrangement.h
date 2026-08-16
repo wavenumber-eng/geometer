@@ -9,8 +9,12 @@
 namespace geometer
 {
 
-inline constexpr std::uint64_t kAnalyticOverlaySpanLogicalBytes = 96;
 inline constexpr std::uint64_t kAnalyticOverlayMembershipLogicalBytes = 8;
+inline constexpr std::uint64_t kAnalyticArrangementVertexLogicalBytes = 48;
+inline constexpr std::uint64_t kAnalyticArrangementEdgeLogicalBytes = 192;
+inline constexpr std::uint64_t kAnalyticArrangementHalfEdgeLogicalBytes = 32;
+inline constexpr std::uint64_t kAnalyticArrangementCollapsedSpanLogicalBytes = 24;
+inline constexpr std::uint64_t kAnalyticArrangementCycleLogicalBytes = 24;
 
 struct AnalyticArrangementVertexNm
 {
@@ -32,6 +36,10 @@ struct AnalyticArrangementEdgeNm
     bool major_arc = false;
     std::uint32_t membership_begin = 0;
     std::uint32_t membership_count = 0;
+    AnalyticXMonotoneBranch x_monotone_branch = AnalyticXMonotoneBranch::none;
+    bool has_construction_line_direction = false;
+    std::int64_t construction_line_dx = 0;
+    std::int64_t construction_line_dy = 0;
 };
 
 struct AnalyticArrangementHalfEdge
@@ -104,6 +112,22 @@ struct AnalyticFilteredArrangementResult
     std::vector<std::uint32_t> cycle_half_edges;
     AnalyticFilteredArrangementTelemetry telemetry;
 };
+
+struct AnalyticFilteredArrangementMinimumRequirements
+{
+    std::uint64_t guaranteed_spans = 0;
+    std::uint64_t working_memory_bytes = 0;
+    // Excludes the arrangement entry point's separately reported admission
+    // scan, matching AnalyticFilteredArrangementTelemetry.
+    std::uint64_t predicate_calls = 0;
+};
+
+// Allocation-free estimate shared by integrated downstream stages so they can
+// reserve their own unavoidable work and live output before arrangement work
+// begins. False means checked arithmetic could not represent the estimate.
+[[nodiscard]] bool estimate_analytic_filtered_arrangement_minimum_requirements(
+    const AnalyticFilteredGeometry& geometry, std::uint64_t pair_count,
+    AnalyticFilteredArrangementMinimumRequirements& requirements) noexcept;
 
 // Runs narrow/same-carrier overlay internally for only the supplied canonical
 // broad-phase pairs, reconciles the resulting span endpoints into one global

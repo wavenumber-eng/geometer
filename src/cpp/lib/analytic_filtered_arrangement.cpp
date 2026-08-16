@@ -23,24 +23,25 @@ using analytic_detail::complete_distance_squared;
 using analytic_detail::cross;
 using analytic_detail::dot;
 using analytic_detail::enclosure_radius_squared;
+using analytic_detail::exact;
 using analytic_detail::Interval;
 using analytic_detail::negate;
 using analytic_detail::Point;
 using analytic_detail::subtract;
 
 constexpr std::uint32_t kNoIndex = std::numeric_limits<std::uint32_t>::max();
-constexpr std::uint64_t kEndpointLogicalBytes = 48;
+constexpr std::uint64_t kEndpointLogicalBytes = 64;
 constexpr std::uint64_t kEndpointSlotLogicalBytes = 8;
-constexpr std::uint64_t kClusterLogicalBytes = 72;
+constexpr std::uint64_t kClusterLogicalBytes = 80;
 constexpr std::uint64_t kExpiryLogicalBytes = 24;
-constexpr std::uint64_t kVertexLogicalBytes = 48;
+constexpr std::uint64_t kVertexLogicalBytes = kAnalyticArrangementVertexLogicalBytes;
 constexpr std::uint64_t kEdgeDraftLogicalBytes = 192;
-constexpr std::uint64_t kEdgeLogicalBytes = 176;
-constexpr std::uint64_t kHalfEdgeLogicalBytes = 32;
-constexpr std::uint64_t kCollapsedSpanLogicalBytes = 24;
+constexpr std::uint64_t kEdgeLogicalBytes = kAnalyticArrangementEdgeLogicalBytes;
+constexpr std::uint64_t kHalfEdgeLogicalBytes = kAnalyticArrangementHalfEdgeLogicalBytes;
+constexpr std::uint64_t kCollapsedSpanLogicalBytes = kAnalyticArrangementCollapsedSpanLogicalBytes;
 constexpr std::uint64_t kIndexLogicalBytes = 8;
 constexpr std::uint64_t kCurveFlagLogicalBytes = 1;
-constexpr std::uint64_t kCycleLogicalBytes = 24;
+constexpr std::uint64_t kCycleLogicalBytes = kAnalyticArrangementCycleLogicalBytes;
 
 struct EndpointRecord
 {
@@ -326,9 +327,9 @@ std::uint64_t guaranteed_carrier_span_count(const AnalyticFilteredGeometry& geom
     return std::max(dense_spans, increasing_spans);
 }
 
-bool arrangement_minimum_requirements(const AnalyticFilteredGeometry& geometry,
-                                      std::uint64_t pair_count, std::uint64_t& memory,
-                                      std::uint64_t& work) noexcept
+bool calculate_arrangement_minimum_requirements(const AnalyticFilteredGeometry& geometry,
+                                                std::uint64_t pair_count, std::uint64_t& memory,
+                                                std::uint64_t& work) noexcept
 {
     bool valid = true;
     const std::uint64_t curve_count = geometry.curves.size();
@@ -358,8 +359,15 @@ bool arrangement_minimum_requirements(const AnalyticFilteredGeometry& geometry,
 AnalyticFilteredPointNm point_hull(const AnalyticFilteredPointNm& left,
                                    const AnalyticFilteredPointNm& right) noexcept
 {
+    const std::uint64_t column =
+        left.construction_x_column_id == right.construction_x_column_id
+            ? left.construction_x_column_id
+        : left.construction_x_column_id == 0  ? right.construction_x_column_id
+        : right.construction_x_column_id == 0 ? left.construction_x_column_id
+                                              : 0;
     return {{std::min(left.x.lower, right.x.lower), std::max(left.x.upper, right.x.upper)},
-            {std::min(left.y.lower, right.y.lower), std::max(left.y.upper, right.y.upper)}};
+            {std::min(left.y.lower, right.y.lower), std::max(left.y.upper, right.y.upper)},
+            column};
 }
 
 double expanded_lower(double value) noexcept
@@ -408,9 +416,24 @@ Tangent outgoing_tangent(std::uint32_t half_edge_id,
     const Point origin = point(half_edge.forward ? edge.carrier_start : edge.carrier_end);
     const Point target = point(half_edge.forward ? edge.carrier_end : edge.carrier_start);
     if (edge.kind == AnalyticAtomicCurveKind::line)
+    {
+        if (edge.has_construction_line_direction)
+        {
+            Point direction{exact(static_cast<double>(edge.construction_line_dx)),
+                            exact(static_cast<double>(edge.construction_line_dy))};
+            if (!half_edge.forward)
+                direction = {negate(direction.x), negate(direction.y)};
+            return {direction, 0, {0.0, 0.0}};
+        }
         return {subtract(target, origin), 0, {0.0, 0.0}};
+    }
 
-    const Point radial = subtract(origin, point(edge.circle.center));
+    Point radial = subtract(origin, point(edge.circle.center));
+    if (origin.y.lower == edge.circle.center.y.lower &&
+        origin.y.upper == edge.circle.center.y.upper &&
+        (origin.x.upper < edge.circle.center.x.lower ||
+         origin.x.lower > edge.circle.center.x.upper))
+        radial.y = exact(0.0);
     const bool counterclockwise =
         half_edge.forward ? edge.counterclockwise : !edge.counterclockwise;
     if (counterclockwise)
@@ -884,6 +907,10 @@ class ArrangementBuilder
             edge.counterclockwise = true;
             edge.major_arc = span.major_arc;
             edge.membership_count = span.membership_count;
+            edge.x_monotone_branch = span.x_monotone_branch;
+            edge.has_construction_line_direction = carrier.has_construction_line_direction;
+            edge.construction_line_dx = carrier.construction_line_dx;
+            edge.construction_line_dy = carrier.construction_line_dy;
             drafts.push_back({edge, span_offset});
         }
         const std::uint32_t collapsed_endpoint_begin =
@@ -1247,6 +1274,16 @@ static_assert(sizeof(AnalyticArrangementCycle) <= kCycleLogicalBytes);
 
 } // namespace
 
+bool estimate_analytic_filtered_arrangement_minimum_requirements(
+    const AnalyticFilteredGeometry& geometry, std::uint64_t pair_count,
+    AnalyticFilteredArrangementMinimumRequirements& requirements) noexcept
+{
+    requirements = {};
+    requirements.guaranteed_spans = guaranteed_carrier_span_count(geometry);
+    return calculate_arrangement_minimum_requirements(
+        geometry, pair_count, requirements.working_memory_bytes, requirements.predicate_calls);
+}
+
 AnalyticFilteredArrangementResult
 build_analytic_filtered_arrangement(const AnalyticFilteredGeometry& geometry,
                                     const std::vector<AnalyticCurvePair>& candidate_pairs,
@@ -1276,7 +1313,7 @@ build_analytic_filtered_arrangement(const AnalyticFilteredGeometry& geometry,
     preflight.telemetry.predicate_calls = admission_work;
     std::uint64_t minimum_memory = 0;
     std::uint64_t minimum_work = 0;
-    bool valid = arrangement_minimum_requirements(
+    bool valid = calculate_arrangement_minimum_requirements(
         geometry, static_cast<std::uint64_t>(candidate_pairs.size()), minimum_memory, minimum_work);
     const std::uint64_t curve_count = geometry.curves.size();
     const std::uint64_t pair_count = candidate_pairs.size();

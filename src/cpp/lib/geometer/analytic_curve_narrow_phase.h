@@ -25,7 +25,39 @@ struct AnalyticFilteredPointNm
 {
     AnalyticCoordinateIntervalNm x;
     AnalyticCoordinateIntervalNm y;
+    // Nonzero only when trusted lowering/narrow construction proves one x
+    // column. Upstream 50 nm event reconciliation may carry that identity onto
+    // the merged vertex hull; the token never spends another repair or stores
+    // an algebraic expression/coordinate.
+    std::uint64_t construction_x_column_id = 0;
 };
+
+// Fixed-width proof-token namespaces used only inside the trusted filtered
+// pipeline. A vertical carrier token proves every point on that line has one
+// exact x coordinate; a pair token proves the two roots produced by one
+// carrier pair share an exact x coordinate. Neither token stores that value.
+inline constexpr std::uint64_t kAnalyticVerticalXColumnTag = std::uint64_t{1} << 63U;
+
+[[nodiscard]] inline constexpr std::uint64_t
+analytic_vertical_x_column_token(std::uint64_t carrier_id) noexcept
+{
+    return carrier_id != 0 && carrier_id < (std::uint64_t{1} << 31U)
+               ? kAnalyticVerticalXColumnTag | carrier_id
+               : 0;
+}
+
+[[nodiscard]] inline constexpr std::uint64_t
+analytic_pair_x_column_token(std::uint64_t first_carrier_id,
+                             std::uint64_t second_carrier_id) noexcept
+{
+    const std::uint64_t first =
+        first_carrier_id < second_carrier_id ? first_carrier_id : second_carrier_id;
+    const std::uint64_t second =
+        first_carrier_id < second_carrier_id ? second_carrier_id : first_carrier_id;
+    return first != 0 && first < (std::uint64_t{1} << 31U) && second < (std::uint64_t{1} << 32U)
+               ? (first << 32U) | second
+               : 0;
+}
 
 struct AnalyticFilteredCircleNm
 {
@@ -69,6 +101,13 @@ struct AnalyticAtomicCurveNm
     // filtered endpoint expressions make an exact zero cross product appear
     // as a non-singleton interval (notably arbitrary-angle offset caps).
     bool has_arc_sweep_certificate = false;
+    // Lowering-issued primitive direction for line carriers. The pair is
+    // canonical (first nonzero component positive) and proves vertical/east
+    // sweep behavior even when correlated offset endpoints are non-singleton
+    // filtered values. It is not accepted from request packets.
+    bool has_construction_line_direction = false;
+    std::int64_t construction_line_dx = 0;
+    std::int64_t construction_line_dy = 0;
 };
 
 enum class AnalyticPairRelation : std::uint8_t

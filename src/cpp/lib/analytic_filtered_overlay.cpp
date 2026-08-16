@@ -33,7 +33,7 @@ constexpr std::uint64_t kGroupLogicalBytes = 48;
 constexpr std::uint64_t kRawEventLogicalBytes = 96;
 constexpr std::uint64_t kUniqueEventLogicalBytes = 48;
 constexpr std::uint64_t kActionLogicalBytes = 24;
-constexpr std::uint64_t kSpanLogicalBytes = 96;
+constexpr std::uint64_t kSpanLogicalBytes = kAnalyticOverlaySpanLogicalBytes;
 constexpr std::uint64_t kMembershipLogicalBytes = 8;
 
 enum class EventRole : std::uint8_t
@@ -170,8 +170,15 @@ bool points_within_resolution(const AnalyticFilteredPointNm& left,
 AnalyticFilteredPointNm point_hull(const AnalyticFilteredPointNm& left,
                                    const AnalyticFilteredPointNm& right) noexcept
 {
+    const std::uint64_t column =
+        left.construction_x_column_id == right.construction_x_column_id
+            ? left.construction_x_column_id
+        : left.construction_x_column_id == 0  ? right.construction_x_column_id
+        : right.construction_x_column_id == 0 ? left.construction_x_column_id
+                                              : 0;
     return {{std::min(left.x.lower, right.x.lower), std::max(left.x.upper, right.x.upper)},
-            {std::min(left.y.lower, right.y.lower), std::max(left.y.upper, right.y.upper)}};
+            {std::min(left.y.lower, right.y.lower), std::max(left.y.upper, right.y.upper)},
+            column};
 }
 
 double approximate_circle_key(double x, double y) noexcept
@@ -467,6 +474,29 @@ class OverlayBuilder
             }
             if (value.point_count != expected_points)
                 return fail(AnalyticFilteredOverlayError::invalid_argument);
+            const AnalyticAtomicCurveNm& first_curve = geometry_.curves[value.pair.first - 1];
+            const AnalyticAtomicCurveNm& second_curve = geometry_.curves[value.pair.second - 1];
+            const std::uint64_t expected_pair_column = analytic_pair_x_column_token(
+                first_curve.construction_carrier_id, second_curve.construction_carrier_id);
+            const std::uint64_t expected_first_vertical =
+                first_curve.kind == AnalyticAtomicCurveKind::line &&
+                        first_curve.has_construction_line_direction &&
+                        first_curve.construction_line_dx == 0
+                    ? analytic_vertical_x_column_token(first_curve.construction_carrier_id)
+                    : 0;
+            const std::uint64_t expected_second_vertical =
+                second_curve.kind == AnalyticAtomicCurveKind::line &&
+                        second_curve.has_construction_line_direction &&
+                        second_curve.construction_line_dx == 0
+                    ? analytic_vertical_x_column_token(second_curve.construction_carrier_id)
+                    : 0;
+            for (std::uint8_t point_index = 0; point_index < value.point_count; ++point_index)
+            {
+                const std::uint64_t token = value.points[point_index].construction_x_column_id;
+                if (token != 0 && token != expected_pair_column &&
+                    token != expected_first_vertical && token != expected_second_vertical)
+                    return fail(AnalyticFilteredOverlayError::invalid_argument);
+            }
             const std::uint64_t left_carrier =
                 geometry_.curves[value.pair.first - 1].construction_carrier_id;
             const std::uint64_t right_carrier =
@@ -551,6 +581,19 @@ class OverlayBuilder
     {
         if (curve.kind == AnalyticAtomicCurveKind::circular_arc)
         {
+            const AnalyticFilteredPointNm right_seam = circle_right_seam(curve);
+            const AnalyticFilteredPointNm left_seam = circle_left_seam(curve);
+            const auto approximately_near = [&](const AnalyticFilteredPointNm& seam)
+            {
+                const double dx = midpoint(event.x) - midpoint(seam.x);
+                const double dy = midpoint(event.y) - midpoint(seam.y);
+                return dx * dx + dy * dy <= static_cast<double>(kAnalyticTopologyResolutionNm *
+                                                                kAnalyticTopologyResolutionNm);
+            };
+            if (approximately_near(right_seam))
+                return {0.0, 0.0};
+            if (approximately_near(left_seam))
+                return {2.0, 0.0};
             const double radial_x = midpoint(event.x) - midpoint(curve.circle.center.x);
             const double radial_y = midpoint(event.y) - midpoint(curve.circle.center.y);
             return {approximate_circle_key(radial_x, radial_y), 0.0};
@@ -724,6 +767,19 @@ class OverlayBuilder
                 RawEvent& event = events_[group.event_begin + local];
                 if (!charge(1))
                     return false;
+                if (group.kind == AnalyticAtomicCurveKind::circular_arc)
+                {
+                    if (!charge(2))
+                        return false;
+                    const AnalyticAtomicCurveNm& circle =
+                        geometry_.curves[group.representative_curve - 1];
+                    const AnalyticFilteredPointNm right_seam = circle_right_seam(circle);
+                    const AnalyticFilteredPointNm left_seam = circle_left_seam(circle);
+                    if (points_within_resolution(event.point, right_seam))
+                        event.point = right_seam;
+                    else if (points_within_resolution(event.point, left_seam))
+                        event.point = left_seam;
+                }
                 bool merge = false;
                 if (unique_events_.size() > group.point_begin)
                     merge = points_within_resolution(unique_events_.back().point, event.point);
@@ -993,6 +1049,7 @@ class OverlayBuilder
                 return false;
         }
         std::size_t action_cursor = action_begin;
+        AnalyticXMonotoneBranch circle_branch = AnalyticXMonotoneBranch::lower;
         for (std::uint32_t rank = 0; rank < group.point_count; ++rank)
         {
             const bool incoming_active = active.count() != 0;
@@ -1008,6 +1065,9 @@ class OverlayBuilder
             }
             const bool has_next =
                 group.kind == AnalyticAtomicCurveKind::circular_arc || rank + 1 < group.point_count;
+            if (group.kind == AnalyticAtomicCurveKind::circular_arc &&
+                point_at_rank(group, rank).has_circle_right_partition)
+                circle_branch = AnalyticXMonotoneBranch::upper;
             const bool outgoing_active = has_next && active.count() != 0;
             if (!emit && (incoming_active || outgoing_active))
             {
@@ -1048,6 +1108,9 @@ class OverlayBuilder
                     major_arc,
                     static_cast<std::uint32_t>(membership_cursor),
                     active.count()};
+            span.x_monotone_branch = group.kind == AnalyticAtomicCurveKind::circular_arc
+                                         ? circle_branch
+                                         : AnalyticXMonotoneBranch::none;
             for (std::uint32_t local = active.head(); local != kNoIndex; local = active.next(local))
             {
                 const std::uint32_t curve_offset = curve_order_[group.curve_begin + local];

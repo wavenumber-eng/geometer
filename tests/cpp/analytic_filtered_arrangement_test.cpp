@@ -669,12 +669,13 @@ std::string parity_vector()
         std::memcpy(&bits, &value, sizeof(bits));
         append_u64(bits);
     };
-    const auto append_point = [&append_double](const AnalyticFilteredPointNm& point)
+    const auto append_point = [&](const AnalyticFilteredPointNm& point)
     {
         append_double(point.x.lower);
         append_double(point.x.upper);
         append_double(point.y.lower);
         append_double(point.y.upper);
+        append_u64(point.construction_x_column_id);
     };
     const auto append_result = [&](const AnalyticFilteredArrangementResult& result)
     {
@@ -702,6 +703,10 @@ std::string parity_vector()
             append_u64(edge.major_arc ? 1 : 0);
             append_u64(edge.membership_begin);
             append_u64(edge.membership_count);
+            append_u64(static_cast<std::uint8_t>(edge.x_monotone_branch));
+            append_u64(edge.has_construction_line_direction ? 1 : 0);
+            append_u64(static_cast<std::uint64_t>(edge.construction_line_dx));
+            append_u64(static_cast<std::uint64_t>(edge.construction_line_dy));
         }
         append_u64(result.half_edges.size());
         for (const AnalyticArrangementHalfEdge& half_edge : result.half_edges)

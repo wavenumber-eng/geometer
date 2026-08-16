@@ -34,6 +34,7 @@ struct PairWork
 {
     AnalyticPairIntersection value;
     bool uncertain = false;
+    bool points_share_x = false;
 };
 
 Point point(AnalyticIntegerPointNm value) noexcept
@@ -229,9 +230,20 @@ bool scalar_interval_fits_resolution(Interval value) noexcept
 
 bool valid_common_curve(const AnalyticAtomicCurveNm& curve) noexcept
 {
+    const std::uint64_t start_column = curve.start.construction_x_column_id;
+    const std::uint64_t end_column = curve.end.construction_x_column_id;
+    const std::uint64_t vertical_column =
+        curve.kind == AnalyticAtomicCurveKind::line && curve.has_construction_line_direction &&
+                curve.construction_line_dx == 0
+            ? analytic_vertical_x_column_token(curve.construction_carrier_id)
+            : 0;
+    const bool valid_columns =
+        (start_column == 0 && end_column == 0) ||
+        (vertical_column != 0 && start_column == vertical_column && end_column == vertical_column);
     if (curve.curve_index == 0 || !coordinate_in_span(curve.start.x) ||
         !coordinate_in_span(curve.start.y) || !coordinate_in_span(curve.end.x) ||
-        !coordinate_in_span(curve.end.y) || !point_interval_fits_resolution(point(curve.start)) ||
+        !coordinate_in_span(curve.end.y) || !valid_columns ||
+        !point_interval_fits_resolution(point(curve.start)) ||
         !point_interval_fits_resolution(point(curve.end)))
         return false;
     const Point start = point(curve.start);
@@ -313,9 +325,30 @@ bool valid_curve(const AnalyticAtomicCurveNm& curve) noexcept
     if (!valid_common_curve(curve))
         return false;
     if (curve.kind == AnalyticAtomicCurveKind::line)
-        return !curve.has_arc_sweep_certificate;
+    {
+        if (curve.has_arc_sweep_certificate)
+            return false;
+        if (!curve.has_construction_line_direction)
+            return curve.construction_line_dx == 0 && curve.construction_line_dy == 0;
+        if (curve.construction_line_dx < 0 ||
+            (curve.construction_line_dx == 0 && curve.construction_line_dy <= 0))
+            return false;
+        if (curve.has_integer_certificate)
+        {
+            const std::int64_t dx = curve.integer_end.x - curve.integer_start.x;
+            const std::int64_t dy = curve.integer_end.y - curve.integer_start.y;
+            if (wide_compare(wide_subtract(wide_multiply(dx, curve.construction_line_dy),
+                                           wide_multiply(dy, curve.construction_line_dx)),
+                             WideInteger{}) != 0)
+                return false;
+        }
+        return true;
+    }
     if (curve.kind != AnalyticAtomicCurveKind::circular_arc ||
-        !coordinate_in_span(curve.circle.center.x) || !coordinate_in_span(curve.circle.center.y) ||
+        curve.has_construction_line_direction || curve.construction_line_dx != 0 ||
+        curve.construction_line_dy != 0 || !coordinate_in_span(curve.circle.center.x) ||
+        !coordinate_in_span(curve.circle.center.y) ||
+        curve.circle.center.construction_x_column_id != 0 ||
         !point_interval_fits_resolution(point(curve.circle.center)) ||
         !std::isfinite(curve.circle.radius.lower) || !std::isfinite(curve.circle.radius.upper) ||
         curve.circle.radius.lower <= 0.0 || curve.circle.radius.lower > curve.circle.radius.upper ||
@@ -744,6 +777,31 @@ PairWork intersect_lines(const AnalyticAtomicCurveNm& left, const AnalyticAtomic
             work.value.relation = AnalyticPairRelation::coincident;
             return work;
         }
+        const std::array<AnalyticIntegerPointNm, 2> left_endpoints = {left.integer_start,
+                                                                      left.integer_end};
+        const std::array<AnalyticIntegerPointNm, 2> right_endpoints = {right.integer_start,
+                                                                       right.integer_end};
+        for (const AnalyticIntegerPointNm& left_endpoint : left_endpoints)
+            for (const AnalyticIntegerPointNm& right_endpoint : right_endpoints)
+                if (same_point(left_endpoint, right_endpoint))
+                {
+                    retain_point(work, point(left_endpoint), left, right, telemetry, limits);
+                    finish_relation(work);
+                    return work;
+                }
+        const bool left_vertical = left_direction.x == 0;
+        const bool left_horizontal = left_direction.y == 0;
+        const bool right_vertical = right_direction.x == 0;
+        const bool right_horizontal = right_direction.y == 0;
+        if ((left_vertical && right_horizontal) || (right_vertical && left_horizontal))
+        {
+            const AnalyticIntegerPointNm intersection{
+                left_vertical ? left.integer_start.x : right.integer_start.x,
+                left_horizontal ? left.integer_start.y : right.integer_start.y};
+            retain_point(work, point(intersection), left, right, telemetry, limits);
+            finish_relation(work);
+            return work;
+        }
     }
 
     const Point first = point(left.start);
@@ -849,6 +907,10 @@ PairWork intersect_line_circle(const AnalyticAtomicCurveNm& line, const Analytic
         if (!work.uncertain)
             retain_point(work, add(base, displacement), line, arc, telemetry, limits);
     }
+    work.points_share_x =
+        (line.has_construction_line_direction && line.construction_line_dx == 0) ||
+        (line.has_integer_certificate && line.integer_start.x == line.integer_end.x) ||
+        (singleton(direction.x) && direction.x.lower == 0.0);
     finish_relation(work);
     return work;
 }
@@ -962,6 +1024,9 @@ PairWork intersect_circles(const AnalyticAtomicCurveNm& left, const AnalyticAtom
         if (!work.uncertain)
             retain_point(work, add(base, displacement), left, right, telemetry, limits);
     }
+    work.points_share_x = (left.has_integer_certificate && right.has_integer_certificate &&
+                           left.integer_center.y == right.integer_center.y) ||
+                          (singleton(center_delta.y) && center_delta.y.lower == 0.0);
     finish_relation(work);
     return work;
 }
@@ -1022,6 +1087,22 @@ PairWork dispatch_pair(const AnalyticAtomicCurveNm& left, const AnalyticAtomicCu
         work = intersect_line_circle(line, arc, telemetry, limits);
     }
     work.value.pair = pair;
+    if (work.value.point_count != 0)
+    {
+        std::uint64_t token = 0;
+        if (left.kind == AnalyticAtomicCurveKind::line && left.has_construction_line_direction &&
+            left.construction_line_dx == 0)
+            token = analytic_vertical_x_column_token(left.construction_carrier_id);
+        if (token == 0 && right.kind == AnalyticAtomicCurveKind::line &&
+            right.has_construction_line_direction && right.construction_line_dx == 0)
+            token = analytic_vertical_x_column_token(right.construction_carrier_id);
+        if (token == 0 && work.points_share_x)
+            token = analytic_pair_x_column_token(left.construction_carrier_id,
+                                                 right.construction_carrier_id);
+        if (token != 0)
+            for (std::uint8_t index = 0; index < work.value.point_count; ++index)
+                work.value.points[index].construction_x_column_id = token;
+    }
     return work;
 }
 

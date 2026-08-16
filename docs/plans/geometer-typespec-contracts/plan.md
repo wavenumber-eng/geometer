@@ -818,8 +818,8 @@ Geometer proposal, not the original consumer packet.
   broad phase estimates overlap on both coordinate axes and sweeps the sparser
   axis so common long horizontal or vertical artwork does not create an
   avoidable quadratic scan. Production operation dispatch remains disabled
-  until the narrow phase, arrangement, normalization, parity, and performance
-  gates land.
+  until selected-boundary publication, normalization, complete parity, and
+  performance gates land.
 - The reuse checkpoint selected a direct focused C++17 narrow phase rather than
   importing Cavalier Contours. Cavalier remains cited algorithmic prior art and
   a possible differential oracle: its useful carrier math is small, but its
@@ -836,9 +836,9 @@ Geometer proposal, not the original consumer packet.
   separation-certified tangent repair, canonical
   pair/point ordering, fixed logical memory charges, predicate/intersection
   telemetry, direct dense pair lookup, and exact 49/50/51 nm endpoint tests are
-  covered. It never generates its own pair cross product. Same-domain span
-  partitioning, arrangement insertion, face classification, final
-  normalization, and dispatch remain pending.
+  covered. It never generates its own pair cross product. The subsequent
+  same-domain overlay, arrangement, and face-selection stages are described
+  below; final publication, normalization, and dispatch remain pending.
 - Direct filtered lowering is now implemented for authored regions, disks,
   annuli, and capsules. It chooses an overflow-safe deterministic integer-nm
   job origin, emits outward-bounded coordinates and radii, preserves source and
@@ -904,8 +904,27 @@ Geometer proposal, not the original consumer packet.
   target-independent logical memory. Exact 49/50/51 nm, nontransitive-chain,
   sparse 1x/2x, direct dense-index termination, overlapping disks, partial
   carriers, early downstream rejection, line/circle, and native/WASM canonical
-  fixtures gate the stage. Indexed face classification, ordered stage material updates,
-  publication, and dispatch remain pending.
+  fixtures gate the stage.
+- Indexed face ownership and ordered material selection are now implemented
+  behind an internal boundary that owns arrangement construction. A certified
+  vertical-slab sweep and fixed-capacity implicit AVL status assign cycle sides
+  to open slab gaps; a governed disjoint set resolves nested and disconnected
+  boundary components without cycle-pair containment. Lowering-issued vertical
+  construction-column identities and overlay-issued circle seam/branch facts
+  cover correlated irrational and odd-width primitive coordinates, while
+  unrelated interval overlap fails closed. This stage performs no second
+  coordinate repair and spends no additional 50 nm allowance.
+- Sorted edge/coverage transitions propagate through the face dual as
+  canonical persistent operand-state roots. Ordered union/difference material
+  state is updated through an indexed stage tree, so there is no face-by-operand
+  copy or replay. The admission scan, event sorts, sweep/index visits,
+  disjoint-set work, transition normalization, dual traversal, persistent-table
+  probes, stage updates, and output writes share the programmable work ceiling
+  and phase-specific logical-memory accounting. Native/WASM vectors include
+  nested line/arc faces, tangent contact, odd-width vertical capsules, all
+  sixteen four-stage rectangle add/difference patterns, sparse scaling, and
+  exact/one-short budgets. Selected-boundary publication, complete lineage,
+  final 1 nm normalization, and dispatch remain pending.
 - Before filtered operation dispatch is enabled, move the retained native
   exact/oracle sources out of the normal `geometer_lib` source list into an
   explicit feasibility-oracle target, matching the separation already used by

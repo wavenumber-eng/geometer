@@ -450,8 +450,42 @@ fixture proves the shared index stops exactly at its injected visit ceiling;
 integrated tests separately prove budget propagation through certified carrier
 inputs. Native/WASM bytes include overlapping irrational disks, partial
 same-carrier domains, early rejection, the dense index result, the complete
-rotation system, cycles, collapsed lineage, and canonical telemetry. Indexed
-face ownership and ordered material classification are the next stage.
+rotation system, cycles, collapsed lineage, and canonical telemetry.
+
+The implemented filtered Boolean-selection boundary owns arrangement
+construction from ordered request records, trusted lowered geometry, and
+canonical broad-phase pairs. It assigns directed cycles and half-edges to
+faces with a certified vertical-slab sweep. Event columns are processed
+atomically in certified y order, while a fixed-capacity implicit AVL sequence
+stores only branches crossing the open slab. A disjoint-set structure joins
+the cycle sides that border the same open gap. Vertical edges are resolved by
+the rotation system rather than inserted into an open slab. Lowering-issued
+vertical construction-column identities preserve exact shared x coordinates
+for non-integral capsule offsets; unrelated overlapping x intervals remain an
+uncertain predicate and fail the job. Circle events use canonical left/right
+seam identities and x-monotone branch certificates. The stage does not run a
+cycle-by-cycle containment test and does not spend a second 50 nm repair
+allowance: it preserves the arrangement coordinates and accepts only certified
+ordering decisions.
+
+Face 0 is the canonical unbounded face. Every other face is ordered by its
+unique counterclockwise boundary cycle and owns its directly adjacent
+clockwise boundary cycles in canonical order. Edge memberships become sorted
+coverage transitions in a fixed dual adjacency structure. Coverage propagates
+from face 0 as canonical persistent binary-set roots, so each face stores one
+root id rather than a copy of every operand bit. Non-tree dual edges validate
+the propagated root exactly. A separate indexed stage tree updates only the
+stage touched by each transition and evaluates ordered union/difference
+semantics incrementally, including add-subtract-add and zero-operand stages.
+Work is proportional to sorted topology plus actual edge/coverage transitions
+and logarithmic state updates; there is no face-by-operand replay. Admission,
+sweep, disjoint-set, dual, persistent-table, stage-tree, sort, and output work
+share the programmable job ceiling, and target-independent logical memory is
+checked before each phase. Canonical native/WASM fixtures cover line and arc
+faces, nested components, tangent contact, odd-width vertical capsules,
+ordered stage combinations, exact/one-short budgets, and sparse scaling.
+Selected-boundary publication, complete lineage projection, final 1 nm
+normalization, and operation dispatch remain subsequent stages.
 
 Across ordered stages, the accumulator retains the resolved analytic
 arrangement and lineage. Publication to the governed nm grid occurs once after

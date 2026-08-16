@@ -682,11 +682,30 @@ class FilteredJobLowerer
         std::uint64_t next_family = 1;
         std::uint64_t next_carrier = 1;
         for (std::uint32_t index = 0; index < descriptors_.size(); ++index)
+        {
+            if (descriptors_[index].kind == TokenKeyKind::line)
+            {
+                out_.curves[index].has_construction_line_direction = true;
+                out_.curves[index].construction_line_dx = descriptors_[index].line.family.dx;
+                out_.curves[index].construction_line_dy = descriptors_[index].line.family.dy;
+            }
             if (!intern_token(family_table, index, false, next_family,
                               out_.curves[index].construction_family_id) ||
                 !intern_token(carrier_table, index, true, next_carrier,
                               out_.curves[index].construction_carrier_id))
                 return false;
+            if (out_.curves[index].kind == AnalyticAtomicCurveKind::line &&
+                out_.curves[index].has_construction_line_direction &&
+                out_.curves[index].construction_line_dx == 0)
+            {
+                const std::uint64_t column =
+                    analytic_vertical_x_column_token(out_.curves[index].construction_carrier_id);
+                if (column == 0)
+                    return fail(AnalyticFilteredLoweringError::resource_limit_exceeded);
+                out_.curves[index].start.construction_x_column_id = column;
+                out_.curves[index].end.construction_x_column_id = column;
+            }
+        }
         return true;
     }
 

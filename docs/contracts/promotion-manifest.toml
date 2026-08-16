@@ -111,7 +111,7 @@ catalog_identity = "wn.geometer.contract_catalog"
 catalog_generation = "a0"
 
 [analytic_filtered_solver]
-status = "implemented_direct_lowering_broad_and_narrow_phase_not_dispatched"
+status = "implemented_direct_lowering_broad_narrow_and_overlay_not_dispatched"
 design = "docs/adr/013_filtered_resolution_bounded_planar_boolean.md"
 coordinate_grid_nm = 1
 topology_resolution_nm = 50
@@ -157,8 +157,8 @@ overlay_test = "tests/cpp/analytic_filtered_overlay_test.cpp"
 overlay_policy = "carrier_grouped_sorted_events_indexed_active_memberships"
 overlay_resolution_policy = "certified_at_or_below_50nm_event_merge"
 overlay_parity_validator = "scripts/validate_analytic_filtered_overlay_parity.py"
-overlay_vector_bytes = 936
-overlay_vector_sha256 = "a1ef255ece688447139541d4d73f4b3763820541c44c4fbfae0ca1da8752e952"
+overlay_vector_bytes = 968
+overlay_vector_sha256 = "80409f9eda9b73289f97dc61ae7b8fb23534856ffcb9cacb17e342ad0beace41"
 
 [analytic_exact_backend]
 status = "implemented_non_primary_oracle"
@@ -852,13 +852,13 @@ solver_numeric_status = "reopened_filtered_50nm"
 named_consumer = "appz.data_models.pcb.matz"
 compatibility_snapshot = "docs/contracts/compatibility/data-models-geom-a0-2026-08-12.toml"
 design = "docs/design/analytic-planar-boolean-a0.md"
-design_sha256 = "97f309aedd2df1d02ce7f601a17c4bde20c5e2cface44ec0646a418894f4557e"
+design_sha256 = "1bfb83832ac669fa703ace700963c01adc28c3a79fc4482d93927c0ca8fd0f94"
 packet_spec = "docs/design/analytic-planar-boolean-packet-a0.md"
 packet_spec_sha256 = "5fb82f495b17b1c47536d6c0ade77aa3183bc6b7f342f70013c462fcaf469856"
 numeric_catalog = "docs/contracts/analytic-planar-boolean-a0-catalog.toml"
 numeric_catalog_sha256 = "f0b52ef8a032dcf47d2083b1f843aeeb791d4bc477a36b10c8c590474d47db7e"
 solver_adr = "docs/adr/013_filtered_resolution_bounded_planar_boolean.md"
-solver_adr_sha256 = "c7d42b27771f598ce5c23d3744e0ec6ce633e412643f3cc4174ddb356f873178"
+solver_adr_sha256 = "2e7b7b27c8f83911359fc17356506d24505d703d43700c625fe8f268a0df5b62"
 superseded_solver_adr = "docs/adr/012_exact_analytic_planar_boolean_arrangement.md"
 filtered_solver_foundation = "direct_lowering_broad_narrow_and_overlay_implemented_not_dispatched"
 feasibility_test = "tests/cpp/analytic_planar_boolean_feasibility_test.cpp"

@@ -369,6 +369,12 @@ Line groups use a monotone dominant-axis projection. Circle groups use
 outward-certified half-plane/cross-product ordering and the deterministic
 leftmost seam, without angles or trigonometric sort keys. Constructed
 semicircle sweep certificates resolve the cancellation-prone antipodal case.
+A strict total preliminary scalar key satisfies the sort contract even when a
+rounded cross product is zero; the subsequent outward predicates remain the
+authority and fail closed on uncertifiable adjacency. Split points are rebound
+to both named carriers and finite domains within the fixed envelope before
+event insertion, so malformed intermediate records cannot publish off-carrier
+coordinates.
 
 Each carrier group is swept with a fixed-array Fenwick/indexed active set.
 Updates are logarithmic, membership enumeration is proportional to memberships

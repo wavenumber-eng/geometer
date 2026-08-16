@@ -111,7 +111,10 @@ engine.
   publication, and arrangement, provenance, work, and target-independent
   logical-memory ceilings fail the job before overrun. Circle groups use the
   deterministic leftmost seam, with certified sweep tokens resolving
-  cancellation-prone constructed semicircles.
+  cancellation-prone constructed semicircles. The preliminary circle sort uses
+  a strict total scalar key; outward carrier/domain predicates then certify the
+  resulting adjacency. Every narrow-phase split is independently rebound to
+  both named finite curves before it can become an arrangement vertex.
 - Solver resource limits are supplied through one internal limits value object
   rather than scattered production constants. The catalog values are governed
   hard ceilings; a host may advertise and enforce lower effective limits, and

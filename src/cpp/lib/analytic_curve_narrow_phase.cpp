@@ -890,6 +890,61 @@ bool append_pair_work(AnalyticNarrowPhaseResult& result, const PairWork& work,
 
 } // namespace
 
+bool analytic_filtered_curve_is_valid(const AnalyticAtomicCurveNm& curve) noexcept
+{
+    return valid_curve(curve);
+}
+
+AnalyticFilteredPointCurveStatus
+classify_analytic_filtered_point_on_curve(const AnalyticAtomicCurveNm& curve,
+                                          const AnalyticFilteredPointNm& candidate) noexcept
+{
+    if (!valid_curve(curve) || !valid_interval(point(candidate).x) ||
+        !valid_interval(point(candidate).y) || !point_interval_fits_resolution(point(candidate)))
+        return AnalyticFilteredPointCurveStatus::invalid_argument;
+
+    const Point candidate_point = point(candidate);
+    if (interval_within_resolution(candidate_point, point(curve.start)) ||
+        interval_within_resolution(candidate_point, point(curve.end)))
+        return AnalyticFilteredPointCurveStatus::certified_on_domain;
+
+    constexpr double resolution_squared =
+        static_cast<double>(kAnalyticTopologyResolutionNm * kAnalyticTopologyResolutionNm);
+    if (curve.kind == AnalyticAtomicCurveKind::line)
+    {
+        const Point direction = subtract(point(curve.end), point(curve.start));
+        const Interval direction_squared = dot(direction, direction);
+        const Interval determinant =
+            cross(subtract(candidate_point, point(curve.start)), direction);
+        const Interval determinant_squared = square(determinant);
+        const Interval threshold = multiply(exact(resolution_squared), direction_squared);
+        if (determinant_squared.lower > threshold.upper)
+            return AnalyticFilteredPointCurveStatus::outside_domain;
+        if (determinant_squared.upper > threshold.lower)
+            return AnalyticFilteredPointCurveStatus::uncertain;
+    }
+    else
+    {
+        const Point radial = subtract(candidate_point, point(curve.circle.center));
+        const Interval distance = square_root(dot(radial, radial));
+        const Interval gap =
+            absolute(subtract(distance, {curve.circle.radius.lower, curve.circle.radius.upper}));
+        if (gap.lower > static_cast<double>(kAnalyticTopologyResolutionNm))
+            return AnalyticFilteredPointCurveStatus::outside_domain;
+        if (gap.upper > static_cast<double>(kAnalyticTopologyResolutionNm))
+            return AnalyticFilteredPointCurveStatus::uncertain;
+    }
+
+    AnalyticNarrowPhaseTelemetry telemetry;
+    const DomainResult domain =
+        curve_domain(candidate_point, curve, telemetry, kAnalyticSolverHardLimits);
+    if (domain == DomainResult::inside || domain == DomainResult::inside_resolution)
+        return AnalyticFilteredPointCurveStatus::certified_on_domain;
+    if (domain == DomainResult::outside)
+        return AnalyticFilteredPointCurveStatus::outside_domain;
+    return AnalyticFilteredPointCurveStatus::uncertain;
+}
+
 AnalyticNarrowPhaseResult
 intersect_analytic_curve_candidates(const std::vector<AnalyticAtomicCurveNm>& curves,
                                     const std::vector<AnalyticCurvePair>& candidate_pairs,

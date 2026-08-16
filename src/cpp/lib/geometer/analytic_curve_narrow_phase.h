@@ -118,6 +118,25 @@ struct AnalyticNarrowPhaseResult
     AnalyticNarrowPhaseTelemetry telemetry;
 };
 
+enum class AnalyticFilteredPointCurveStatus : std::uint8_t
+{
+    certified_on_domain = 0,
+    outside_domain = 1,
+    uncertain = 2,
+    invalid_argument = 3,
+};
+
+[[nodiscard]] bool analytic_filtered_curve_is_valid(const AnalyticAtomicCurveNm& curve) noexcept;
+
+// Revalidates a filtered point at a stage boundary. Certification requires the
+// complete point enclosure to remain within the fixed topology-resolution
+// distance of the carrier and its finite line/arc domain. This is deliberately
+// independent of construction provenance so a malformed intermediate result
+// cannot publish an off-carrier split.
+[[nodiscard]] AnalyticFilteredPointCurveStatus
+classify_analytic_filtered_point_on_curve(const AnalyticAtomicCurveNm& curve,
+                                          const AnalyticFilteredPointNm& candidate) noexcept;
+
 // Intersects only the supplied broad-phase candidates. Input coordinates and
 // radii are outward bounds on one authored curve; each bound must itself fit
 // the fixed 50 nm displacement envelope. Optional integer certificates bind

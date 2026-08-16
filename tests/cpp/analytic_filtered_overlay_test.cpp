@@ -29,6 +29,11 @@ AnalyticFilteredPointNm exact_point(double x, double y)
     return {{x, x}, {y, y}};
 }
 
+AnalyticFilteredPointNm interval_point(double x, double y, double half_width)
+{
+    return {{x - half_width, x + half_width}, {y - half_width, y + half_width}};
+}
+
 AnalyticAtomicCurveNm line(std::uint32_t index, double x1, double y1, double x2, double y2,
                            std::uint64_t carrier)
 {
@@ -198,17 +203,112 @@ void test_circle_seam_and_coincident_arcs()
     require_span(halves, 1, 100, 0, -100, 0, 1);
 
     AnalyticFilteredGeometry almost_full;
-    AnalyticAtomicCurveNm major = arc(1, 1000, 20, 1000, -20, true, true, 50);
-    major.circle.radius = {1000, 1000};
+    AnalyticAtomicCurveNm major = arc(1, 312, 25, 312, -25, true, true, 50);
+    major.circle.radius = {313, 313};
     major.has_arc_sweep_certificate = true;
     append_curve(almost_full, major, occurrence(1));
     const AnalyticFilteredOverlayResult bridged =
         build_analytic_filtered_overlay(almost_full, empty_narrow());
     require(bridged.error == AnalyticFilteredOverlayError::none && bridged.spans.size() == 2 &&
                 bridged.memberships.size() == 2 && bridged.telemetry.collapsed_domains == 1 &&
-                bridged.spans[0].start.x.lower == -1000 && bridged.spans[0].end.x.lower == 1000 &&
-                bridged.spans[1].start.x.lower == 1000 && bridged.spans[1].end.x.lower == -1000,
+                bridged.spans[0].start.x.lower == -313 && bridged.spans[0].end.x.lower == 313 &&
+                bridged.spans[1].start.x.lower == 313 && bridged.spans[1].end.x.lower == -313,
             "near-seam major arc did not bridge its <=50 nm endpoint gap canonically");
+}
+
+void test_malformed_narrow_results_fail_closed()
+{
+    AnalyticFilteredGeometry geometry;
+    append_curve(geometry, line(1, 0, 0, 1000, 0, 10), occurrence(1));
+    append_curve(geometry, line(2, 500, -500, 500, 500, 20), occurrence(2));
+    AnalyticPairIntersection intersection;
+    intersection.pair = {1, 2};
+    intersection.relation = AnalyticPairRelation::point;
+    intersection.point_count = 1;
+    intersection.points[0] = exact_point(500, 100);
+    AnalyticNarrowPhaseResult narrow;
+    narrow.intersections.push_back(intersection);
+    AnalyticFilteredOverlayResult result = build_analytic_filtered_overlay(geometry, narrow);
+    require(result.error == AnalyticFilteredOverlayError::invalid_argument && result.spans.empty(),
+            "off-carrier narrow point was accepted by the overlay boundary");
+
+    narrow.intersections[0].relation = static_cast<AnalyticPairRelation>(255);
+    narrow.intersections[0].point_count = 0;
+    result = build_analytic_filtered_overlay(geometry, narrow);
+    require(result.error == AnalyticFilteredOverlayError::invalid_argument,
+            "invalid narrow relation discriminant was accepted");
+
+    AnalyticFilteredGeometry invalid_curve = geometry;
+    invalid_curve.curves[0].kind = static_cast<AnalyticAtomicCurveKind>(255);
+    result = build_analytic_filtered_overlay(invalid_curve, empty_narrow());
+    require(result.error == AnalyticFilteredOverlayError::invalid_argument,
+            "invalid curve-kind discriminant was accepted");
+
+    invalid_curve = geometry;
+    invalid_curve.curves[0].kind = AnalyticAtomicCurveKind::circular_arc;
+    invalid_curve.curves[0].circle.center = exact_point(0, 0);
+    invalid_curve.curves[0].circle.radius = {-1, -1};
+    result = build_analytic_filtered_overlay(invalid_curve, empty_narrow());
+    require(result.error == AnalyticFilteredOverlayError::invalid_argument,
+            "invalid circular carrier fields were accepted");
+}
+
+AnalyticFilteredOverlayResult circular_sort_cycle_result()
+{
+    constexpr double radius = 1414213495.9050577;
+    constexpr double half_width = 33.0;
+    constexpr double coordinates[3][2] = {
+        {999999920.0, 999999922.0},
+        {999999952.0, 999999954.0},
+        {999999983.0, 999999985.0},
+    };
+    AnalyticFilteredGeometry geometry;
+    for (std::uint32_t index = 0; index < 3; ++index)
+    {
+        AnalyticAtomicCurveNm curve;
+        curve.curve_index = index + 1;
+        curve.kind = AnalyticAtomicCurveKind::circular_arc;
+        curve.start = interval_point(coordinates[index][0], coordinates[index][1], half_width);
+        curve.end = interval_point(-coordinates[index][0], -coordinates[index][1], half_width);
+        curve.circle.center = exact_point(0, 0);
+        curve.circle.radius = {radius, radius};
+        curve.counterclockwise = true;
+        curve.major_arc = false;
+        curve.construction_carrier_id = 90;
+        curve.construction_family_id = 90;
+        curve.has_arc_sweep_certificate = true;
+        append_curve(geometry, curve, occurrence(index + 1));
+    }
+    for (std::uint32_t index = 0; index < 3; ++index)
+        append_curve(geometry,
+                     line(index + 4, coordinates[index][0], coordinates[index][1],
+                          coordinates[index][0] + 1000.0, coordinates[index][1], 100 + index),
+                     occurrence(index + 4));
+
+    AnalyticNarrowPhaseResult narrow;
+    for (std::uint32_t index = 0; index < 3; ++index)
+    {
+        AnalyticPairIntersection intersection;
+        intersection.pair = {index + 1, index + 4};
+        intersection.relation = AnalyticPairRelation::point;
+        intersection.point_count = 1;
+        intersection.points[0] = exact_point(coordinates[index][0], coordinates[index][1]);
+        narrow.intersections.push_back(intersection);
+    }
+    return build_analytic_filtered_overlay(geometry, narrow);
+}
+
+void test_circular_preorder_is_total_and_fails_closed()
+{
+    const AnalyticFilteredOverlayResult result = circular_sort_cycle_result();
+    require(
+        result.error == AnalyticFilteredOverlayError::resource_limit_exceeded &&
+            result.spans.empty() && result.telemetry.raw_events != 0,
+        "rounded circular-order cycle did not terminate deterministically before output error=" +
+            std::to_string(static_cast<int>(result.error)) +
+            " spans=" + std::to_string(result.spans.size()) +
+            " raw=" + std::to_string(result.telemetry.raw_events) +
+            " unique=" + std::to_string(result.telemetry.unique_events));
 }
 
 void test_lowered_irrational_capsule_pipeline()
@@ -380,6 +480,11 @@ std::string parity_vector()
     append_u64(result.telemetry.emitted_spans);
     append_u64(result.telemetry.emitted_memberships);
     append_u64(result.telemetry.peak_working_memory_bytes);
+    const AnalyticFilteredOverlayResult circular_cycle = circular_sort_cycle_result();
+    append_u64(static_cast<std::uint8_t>(circular_cycle.error));
+    append_u64(circular_cycle.telemetry.raw_events);
+    append_u64(circular_cycle.telemetry.unique_events);
+    append_u64(circular_cycle.telemetry.predicate_calls);
     return output.str();
 }
 
@@ -391,6 +496,8 @@ int main()
     test_resolution_merge_threshold();
     test_crossing_split_events();
     test_circle_seam_and_coincident_arcs();
+    test_malformed_narrow_results_fail_closed();
+    test_circular_preorder_is_total_and_fails_closed();
     test_lowered_irrational_capsule_pipeline();
     test_limits_and_sparse_scaling();
     std::cout << "ANALYTIC_FILTERED_OVERLAY_VECTOR=" << parity_vector() << '\n';

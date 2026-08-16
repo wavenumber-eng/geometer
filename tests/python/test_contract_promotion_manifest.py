@@ -664,7 +664,7 @@ def test_exact_algebraic_backend_is_governed_and_non_primary() -> None:
 def test_filtered_solver_foundation_is_bounded_non_algebraic_and_not_dispatched() -> None:
     solver = _manifest()["analytic_filtered_solver"]
     assert solver == {
-        "status": "implemented_direct_lowering_broad_and_narrow_phase_not_dispatched",
+        "status": "implemented_direct_lowering_broad_narrow_and_overlay_not_dispatched",
         "design": "docs/adr/013_filtered_resolution_bounded_planar_boolean.md",
         "coordinate_grid_nm": 1,
         "topology_resolution_nm": 50,
@@ -718,9 +718,9 @@ def test_filtered_solver_foundation_is_bounded_non_algebraic_and_not_dispatched(
         "overlay_policy": "carrier_grouped_sorted_events_indexed_active_memberships",
         "overlay_resolution_policy": "certified_at_or_below_50nm_event_merge",
         "overlay_parity_validator": "scripts/validate_analytic_filtered_overlay_parity.py",
-        "overlay_vector_bytes": 936,
+        "overlay_vector_bytes": 968,
         "overlay_vector_sha256": (
-            "a1ef255ece688447139541d4d73f4b3763820541c44c4fbfae0ca1da8752e952"
+            "80409f9eda9b73289f97dc61ae7b8fb23534856ffcb9cacb17e342ad0beace41"
         ),
     }
     implementation_paths = [

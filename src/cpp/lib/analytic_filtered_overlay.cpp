@@ -174,32 +174,26 @@ AnalyticFilteredPointNm point_hull(const AnalyticFilteredPointNm& left,
             {std::min(left.y.lower, right.y.lower), std::max(left.y.upper, right.y.upper)}};
 }
 
-int approximate_half(double x, double y) noexcept
+double approximate_circle_key(double x, double y) noexcept
 {
-    return y > 0.0 || (y == 0.0 && x >= 0.0) ? 0 : 1;
+    const double absolute_x = std::fabs(x);
+    const double absolute_y = std::fabs(y);
+    const double denominator = absolute_x + absolute_y;
+    if (denominator == 0.0)
+        return 0.0;
+    if (y >= 0.0)
+        return x >= 0.0 ? absolute_y / denominator : 1.0 + absolute_x / denominator;
+    return x < 0.0 ? 2.0 + absolute_y / denominator : 3.0 + absolute_x / denominator;
 }
 
 bool raw_event_less(const RawEvent& left, const RawEvent& right) noexcept
 {
     if (left.carrier_id != right.carrier_id)
         return left.carrier_id < right.carrier_id;
-    if (left.kind == AnalyticAtomicCurveKind::line)
-    {
-        if (left.key_x != right.key_x)
-            return left.key_x < right.key_x;
-    }
-    else
-    {
-        const int left_half = approximate_half(left.key_x, left.key_y);
-        const int right_half = approximate_half(right.key_x, right.key_y);
-        if (left_half != right_half)
-            return left_half < right_half;
-        const double determinant = left.key_x * right.key_y - left.key_y * right.key_x;
-        if (determinant != 0.0)
-            return determinant > 0.0;
-    }
-    return std::tie(left.key_x, left.key_y, left.curve_index, left.role) <
-           std::tie(right.key_x, right.key_y, right.curve_index, right.role);
+    return std::tie(left.key_x, left.key_y, left.point.x.lower, left.point.x.upper,
+                    left.point.y.lower, left.point.y.upper, left.curve_index, left.role) <
+           std::tie(right.key_x, right.key_y, right.point.x.lower, right.point.x.upper,
+                    right.point.y.lower, right.point.y.upper, right.curve_index, right.role);
 }
 
 class ActiveCurves
@@ -427,7 +421,7 @@ class OverlayBuilder
             const AnalyticFilteredOccurrence& occurrence = geometry_.occurrences[index];
             if (curve.curve_index != index + 1 || curve.construction_carrier_id == 0 ||
                 occurrence.occurrence_id != index + 1 || !valid_point(curve.start) ||
-                !valid_point(curve.end))
+                !valid_point(curve.end) || !analytic_filtered_curve_is_valid(curve))
                 return fail(AnalyticFilteredOverlayError::invalid_argument);
             if (curve.kind == AnalyticAtomicCurveKind::circular_arc &&
                 occurrence.agrees_with_carrier != curve.counterclockwise)
@@ -444,10 +438,21 @@ class OverlayBuilder
                                    std::tie(previous.first, previous.second)))
                 return fail(AnalyticFilteredOverlayError::invalid_argument);
             previous = value.pair;
-            const std::uint8_t expected_points =
-                value.relation == AnalyticPairRelation::point        ? 1
-                : value.relation == AnalyticPairRelation::two_points ? 2
-                                                                     : 0;
+            std::uint8_t expected_points = 0;
+            switch (value.relation)
+            {
+            case AnalyticPairRelation::disjoint:
+            case AnalyticPairRelation::coincident:
+                break;
+            case AnalyticPairRelation::point:
+                expected_points = 1;
+                break;
+            case AnalyticPairRelation::two_points:
+                expected_points = 2;
+                break;
+            default:
+                return fail(AnalyticFilteredOverlayError::invalid_argument);
+            }
             if (value.point_count != expected_points)
                 return fail(AnalyticFilteredOverlayError::invalid_argument);
             const std::uint64_t left_carrier =
@@ -458,8 +463,24 @@ class OverlayBuilder
                 (left_carrier == right_carrier))
                 return fail(AnalyticFilteredOverlayError::invalid_argument);
             for (std::uint8_t point_index = 0; point_index < value.point_count; ++point_index)
+            {
+                if (!charge(2))
+                    return false;
                 if (!valid_point(value.points[point_index]))
                     return fail(AnalyticFilteredOverlayError::invalid_argument);
+                const AnalyticFilteredPointCurveStatus left_status =
+                    classify_analytic_filtered_point_on_curve(
+                        geometry_.curves[value.pair.first - 1], value.points[point_index]);
+                const AnalyticFilteredPointCurveStatus right_status =
+                    classify_analytic_filtered_point_on_curve(
+                        geometry_.curves[value.pair.second - 1], value.points[point_index]);
+                if (left_status == AnalyticFilteredPointCurveStatus::uncertain ||
+                    right_status == AnalyticFilteredPointCurveStatus::uncertain)
+                    return fail(AnalyticFilteredOverlayError::resource_limit_exceeded);
+                if (left_status != AnalyticFilteredPointCurveStatus::certified_on_domain ||
+                    right_status != AnalyticFilteredPointCurveStatus::certified_on_domain)
+                    return fail(AnalyticFilteredOverlayError::invalid_argument);
+            }
             point_count += value.point_count;
             if (point_count > limits_.intersections)
                 return fail(AnalyticFilteredOverlayError::resource_limit_exceeded);
@@ -517,8 +538,11 @@ class OverlayBuilder
                                         const AnalyticFilteredPointNm& event) const noexcept
     {
         if (curve.kind == AnalyticAtomicCurveKind::circular_arc)
-            return {midpoint(event.x) - midpoint(curve.circle.center.x),
-                    midpoint(event.y) - midpoint(curve.circle.center.y)};
+        {
+            const double radial_x = midpoint(event.x) - midpoint(curve.circle.center.x);
+            const double radial_y = midpoint(event.y) - midpoint(curve.circle.center.y);
+            return {approximate_circle_key(radial_x, radial_y), 0.0};
+        }
         const AnalyticFilteredPointNm& canonical_start =
             occurrence.agrees_with_carrier ? curve.start : curve.end;
         const AnalyticFilteredPointNm& canonical_end =

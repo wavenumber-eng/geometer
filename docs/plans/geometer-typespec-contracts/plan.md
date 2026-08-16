@@ -867,7 +867,9 @@ Geometer proposal, not the original consumer packet.
   count/fill pass fixes allocation, while arrangement, provenance, work, and
   logical-memory ceilings stop adversarial output. Sparse 1x/2x and dense
   membership-limit fixtures prohibit hidden pair scans and per-cell full-group
-  scans. Face classification, global vertex reconciliation, traversal,
+  scans. Its preliminary circular key is a strict total order, followed by
+  outward adjacency certification, and every narrow split is rebound to both
+  finite curve domains before event insertion. Face classification, global vertex reconciliation, traversal,
   publication, and dispatch remain pending.
 - Before filtered operation dispatch is enabled, move the retained native
   exact/oracle sources out of the normal `geometer_lib` source list into an

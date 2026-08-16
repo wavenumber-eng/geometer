@@ -49,6 +49,8 @@ struct AnalyticFilteredOverlayTelemetry
     std::uint64_t sort_work_units = 0;
     std::uint64_t active_set_updates = 0;
     std::uint64_t membership_visits = 0;
+    std::uint64_t narrow_phase_predicate_calls = 0;
+    std::uint64_t narrow_phase_peak_working_memory_bytes = 0;
     std::uint64_t predicate_calls = 0;
     std::uint64_t emitted_spans = 0;
     std::uint64_t emitted_memberships = 0;
@@ -64,15 +66,17 @@ struct AnalyticFilteredOverlayResult
     AnalyticFilteredOverlayTelemetry telemetry;
 };
 
-// Converts the candidate-driven narrow-phase results into canonical atomic
-// carrier intervals. Equal lowering-issued carrier ids are grouped directly;
-// no curve-pair search is performed. Endpoint/intersection events are sorted
-// once per job, resolution-equivalent events merge only when a 50 nm enclosure
-// is certified, and an indexed active set makes same-domain membership output
-// proportional to the memberships actually emitted.
+// Runs the narrow phase for only the supplied broad-phase candidates and
+// converts its trusted results directly into canonical atomic carrier
+// intervals. Keeping the result boundary internal prevents a caller from
+// injecting unverified split points. Equal lowering-issued carrier ids are
+// grouped directly; no curve-pair search is performed. Endpoint/intersection
+// events are sorted once per job, resolution-equivalent events merge only when
+// a 50 nm enclosure is certified, and an indexed active set makes same-domain
+// membership output proportional to the memberships actually emitted.
 [[nodiscard]] AnalyticFilteredOverlayResult
 build_analytic_filtered_overlay(const AnalyticFilteredGeometry& geometry,
-                                const AnalyticNarrowPhaseResult& narrow_phase,
+                                const std::vector<AnalyticCurvePair>& candidate_pairs,
                                 const AnalyticSolverLimits& limits = {});
 
 } // namespace geometer

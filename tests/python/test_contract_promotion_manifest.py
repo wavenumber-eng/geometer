@@ -686,10 +686,13 @@ def test_filtered_solver_foundation_is_bounded_non_algebraic_and_not_dispatched(
         "narrow_phase_policy": "canonical_candidate_pairs_only_constant_work_per_pair",
         "narrow_phase_input": "job_local_filtered_nm_line_and_arc_carriers_with_validated_integer_and_construction_certificates",
         "narrow_phase_uncertain_policy": "job_local_resource_limit_exceeded",
+        "narrow_phase_resolution_policy": (
+            "pair_witness_at_or_below_50nm_no_independent_tolerance_composition"
+        ),
         "narrow_phase_pair_logical_bytes": 256,
         "narrow_phase_parity_validator": "scripts/validate_analytic_filtered_core_parity.py",
-        "narrow_phase_vector_bytes": 216,
-        "narrow_phase_vector_sha256": ("140760f79dfb64aca3bb68c8f849659d81fa590ae49f9805f707bc3990b86144"),
+        "narrow_phase_vector_bytes": 264,
+        "narrow_phase_vector_sha256": ("bacb4f77c3f2121df476196b42b5fe5d53b41fadce9583a4753fc87d9944e7cc"),
         "interval_arithmetic_header": "src/cpp/lib/analytic_filtered_interval.h",
         "fixed_width_integer_header": "src/cpp/lib/analytic_wide_integer.h",
         "lowering_header": "src/cpp/lib/geometer/analytic_filtered_lowering.h",
@@ -715,12 +718,16 @@ def test_filtered_solver_foundation_is_bounded_non_algebraic_and_not_dispatched(
         "overlay_header": "src/cpp/lib/geometer/analytic_filtered_overlay.h",
         "overlay_source": "src/cpp/lib/analytic_filtered_overlay.cpp",
         "overlay_test": "tests/cpp/analytic_filtered_overlay_test.cpp",
+        "overlay_input": "canonical_broad_phase_pairs_with_internal_narrow_phase_execution",
         "overlay_policy": "carrier_grouped_sorted_events_indexed_active_memberships",
         "overlay_resolution_policy": "certified_at_or_below_50nm_event_merge",
+        "overlay_budget_policy": (
+            "combined_narrow_and_overlay_predicate_work_and_live_logical_memory"
+        ),
         "overlay_parity_validator": "scripts/validate_analytic_filtered_overlay_parity.py",
         "overlay_vector_bytes": 968,
         "overlay_vector_sha256": (
-            "80409f9eda9b73289f97dc61ae7b8fb23534856ffcb9cacb17e342ad0beace41"
+            "8f79c9c2c225cec225d6d57039388ece5d4f1c5cca47771451714ccf692fd14d"
         ),
     }
     implementation_paths = [

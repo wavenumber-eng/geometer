@@ -326,6 +326,12 @@ class OverlayBuilder
                    const AnalyticNarrowPhaseResult& narrow_phase, AnalyticSolverLimits limits)
         : geometry_(geometry), narrow_(narrow_phase), limits_(limits)
     {
+        result_.telemetry.narrow_phase_predicate_calls = narrow_.telemetry.predicate_calls;
+        result_.telemetry.narrow_phase_peak_working_memory_bytes =
+            narrow_.telemetry.peak_working_memory_bytes;
+        result_.telemetry.predicate_calls = narrow_.telemetry.predicate_calls;
+        result_.telemetry.peak_working_memory_bytes = narrow_.telemetry.peak_working_memory_bytes;
+        result_.telemetry.algebraic_fallback_calls = narrow_.telemetry.algebraic_fallback_calls;
     }
 
     AnalyticFilteredOverlayResult build()
@@ -378,7 +384,9 @@ class OverlayBuilder
     bool set_base_memory(std::uint64_t raw_count)
     {
         bool valid = true;
-        std::uint64_t bytes = checked_multiply(geometry_.curves.size(), kCurveLogicalBytes, valid);
+        std::uint64_t bytes = narrow_.telemetry.peak_working_memory_bytes;
+        bytes = checked_add(
+            bytes, checked_multiply(geometry_.curves.size(), kCurveLogicalBytes, valid), valid);
         bytes = checked_add(
             bytes, checked_multiply(geometry_.curves.size(), kGroupLogicalBytes, valid), valid);
         bytes =
@@ -406,8 +414,12 @@ class OverlayBuilder
             narrow_.intersections.size() > limits_.examined_curve_pairs)
             return fail(AnalyticFilteredOverlayError::resource_limit_exceeded);
         bool valid_memory = true;
-        const std::uint64_t initial_memory = checked_multiply(
-            geometry_.curves.size(), kCurveLogicalBytes + kGroupLogicalBytes, valid_memory);
+        std::uint64_t initial_memory = narrow_.telemetry.peak_working_memory_bytes;
+        initial_memory =
+            checked_add(initial_memory,
+                        checked_multiply(geometry_.curves.size(),
+                                         kCurveLogicalBytes + kGroupLogicalBytes, valid_memory),
+                        valid_memory);
         if (!valid_memory || initial_memory > limits_.working_memory_bytes)
             return fail(AnalyticFilteredOverlayError::resource_limit_exceeded);
         result_.telemetry.peak_working_memory_bytes = initial_memory;
@@ -1125,9 +1137,28 @@ static_assert(sizeof(AnalyticSpanMembership) <= kMembershipLogicalBytes);
 
 AnalyticFilteredOverlayResult
 build_analytic_filtered_overlay(const AnalyticFilteredGeometry& geometry,
-                                const AnalyticNarrowPhaseResult& narrow_phase,
+                                const std::vector<AnalyticCurvePair>& candidate_pairs,
                                 const AnalyticSolverLimits& limits)
 {
+    const AnalyticNarrowPhaseResult narrow_phase =
+        intersect_analytic_curve_candidates(geometry.curves, candidate_pairs, limits);
+    if (narrow_phase.error != AnalyticNarrowPhaseError::none)
+    {
+        AnalyticFilteredOverlayResult result;
+        result.error = narrow_phase.error == AnalyticNarrowPhaseError::invalid_argument
+                           ? AnalyticFilteredOverlayError::invalid_argument
+                           : AnalyticFilteredOverlayError::resource_limit_exceeded;
+        result.telemetry.input_curves = geometry.curves.size();
+        result.telemetry.input_pair_results = narrow_phase.intersections.size();
+        result.telemetry.narrow_phase_predicate_calls = narrow_phase.telemetry.predicate_calls;
+        result.telemetry.narrow_phase_peak_working_memory_bytes =
+            narrow_phase.telemetry.peak_working_memory_bytes;
+        result.telemetry.predicate_calls = narrow_phase.telemetry.predicate_calls;
+        result.telemetry.peak_working_memory_bytes =
+            narrow_phase.telemetry.peak_working_memory_bytes;
+        result.telemetry.algebraic_fallback_calls = narrow_phase.telemetry.algebraic_fallback_calls;
+        return result;
+    }
     return OverlayBuilder(geometry, narrow_phase, limits).build();
 }
 

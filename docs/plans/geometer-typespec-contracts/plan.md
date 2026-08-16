@@ -868,8 +868,13 @@ Geometer proposal, not the original consumer packet.
   logical-memory ceilings stop adversarial output. Sparse 1x/2x and dense
   membership-limit fixtures prohibit hidden pair scans and per-cell full-group
   scans. Its preliminary circular key is a strict total order, followed by
-  outward adjacency certification, and every narrow split is rebound to both
-  finite curve domains before event insertion. Face classification, global vertex reconciliation, traversal,
+  outward adjacency certification. The stage now accepts canonical broad-phase
+  pairs and owns narrow-phase execution, so caller-constructed intersection
+  records cannot reach event sorting. Pair-level endpoint witnesses prevent two
+  independent sub-50-nm repairs from bridging a separation above 50 nm; narrow
+  work and retained pair storage count toward the integrated stage budgets.
+  Every narrow split is rebound to both finite curve domains before event
+  insertion. Face classification, global vertex reconciliation, traversal,
   publication, and dispatch remain pending.
 - Before filtered operation dispatch is enabled, move the retained native
   exact/oracle sources out of the normal `geometer_lib` source list into an

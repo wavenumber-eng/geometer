@@ -362,7 +362,9 @@ a production fallback. They become supported when the filtered indexed
 arrangement can resolve the piece union under the same work budgets.
 
 The implemented filtered split/overlay boundary groups exact lowering-issued
-carrier ids and consumes only candidate-driven narrow-phase results. Bounded
+carrier ids, accepts only canonical broad-phase pairs, and runs the
+candidate-driven narrow phase internally. There is no public boundary for
+caller-constructed intersection records. Bounded
 endpoint and intersection events sort once in canonical carrier order; event
 enclosures merge only when their complete distance bound is at or below 50 nm.
 Line groups use a monotone dominant-axis projection. Circle groups use
@@ -373,8 +375,10 @@ A strict total preliminary scalar key satisfies the sort contract even when a
 rounded cross product is zero; the subsequent outward predicates remain the
 authority and fail closed on uncertifiable adjacency. Split points are rebound
 to both named carriers and finite domains within the fixed envelope before
-event insertion, so malformed intermediate records cannot publish off-carrier
-coordinates.
+event insertion. Finite-domain repair also requires an actual pair of curve
+witnesses at or below 50 nm; two independent endpoint-to-carrier allowances
+cannot bridge a larger diagonal gap. Narrow work and pair storage are included
+in the integrated stage budgets.
 
 Each carrier group is swept with a fixed-array Fenwick/indexed active set.
 Updates are logarithmic, membership enumeration is proportional to memberships

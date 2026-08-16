@@ -27,6 +27,7 @@ enum class DomainResult : std::uint8_t
     outside,
     inside,
     inside_resolution,
+    ambiguous_resolution,
     uncertain,
 };
 
@@ -400,18 +401,17 @@ DomainResult line_domain(Point candidate, const AnalyticAtomicCurveNm& line,
     if (interval_is_exact_point(candidate, point(line.start)) ||
         interval_is_exact_point(candidate, point(line.end)))
         return DomainResult::inside;
-    if (interval_within_resolution(candidate, point(line.start)) ||
-        interval_within_resolution(candidate, point(line.end)))
-        return DomainResult::inside_resolution;
     const Point start = point(line.start);
     const Point direction = subtract(point(line.end), start);
     const Interval parameter =
         divide(dot(subtract(candidate, start), direction), dot(direction, direction));
-    if (parameter.upper < 0.0 || parameter.lower > 1.0)
-        return DomainResult::outside;
     if (parameter.lower >= 0.0 && parameter.upper <= 1.0)
         return DomainResult::inside;
-    return DomainResult::uncertain;
+    const bool within_endpoint = interval_within_resolution(candidate, point(line.start)) ||
+                                 interval_within_resolution(candidate, point(line.end));
+    if (parameter.upper < 0.0 || parameter.lower > 1.0)
+        return within_endpoint ? DomainResult::inside_resolution : DomainResult::outside;
+    return within_endpoint ? DomainResult::ambiguous_resolution : DomainResult::uncertain;
 }
 
 DomainResult arc_domain(Point candidate, const AnalyticAtomicCurveNm& arc,
@@ -423,9 +423,6 @@ DomainResult arc_domain(Point candidate, const AnalyticAtomicCurveNm& arc,
     if (interval_is_exact_point(candidate, point(arc.start)) ||
         interval_is_exact_point(candidate, point(arc.end)))
         return DomainResult::inside;
-    if (interval_within_resolution(candidate, point(arc.start)) ||
-        interval_within_resolution(candidate, point(arc.end)))
-        return DomainResult::inside_resolution;
 
     const Point center = point(arc.circle.center);
     const Point start = subtract(point(arc.start), center);
@@ -441,7 +438,10 @@ DomainResult arc_domain(Point candidate, const AnalyticAtomicCurveNm& arc,
     if (!arc.major_arc)
     {
         if (from_start.upper < 0.0 || to_end.upper < 0.0)
-            return DomainResult::outside;
+            return interval_within_resolution(candidate, point(arc.start)) ||
+                           interval_within_resolution(candidate, point(arc.end))
+                       ? DomainResult::inside_resolution
+                       : DomainResult::outside;
         if (from_start.lower > 0.0 && to_end.lower > 0.0)
             return DomainResult::inside;
     }
@@ -450,9 +450,15 @@ DomainResult arc_domain(Point candidate, const AnalyticAtomicCurveNm& arc,
         if (from_start.lower > 0.0 || to_end.lower > 0.0)
             return DomainResult::inside;
         if (from_start.upper < 0.0 && to_end.upper < 0.0)
-            return DomainResult::outside;
+            return interval_within_resolution(candidate, point(arc.start)) ||
+                           interval_within_resolution(candidate, point(arc.end))
+                       ? DomainResult::inside_resolution
+                       : DomainResult::outside;
     }
-    return DomainResult::uncertain;
+    return interval_within_resolution(candidate, point(arc.start)) ||
+                   interval_within_resolution(candidate, point(arc.end))
+               ? DomainResult::ambiguous_resolution
+               : DomainResult::uncertain;
 }
 
 DomainResult curve_domain(Point candidate, const AnalyticAtomicCurveNm& curve,
@@ -462,6 +468,141 @@ DomainResult curve_domain(Point candidate, const AnalyticAtomicCurveNm& curve,
     return curve.kind == AnalyticAtomicCurveKind::line
                ? line_domain(candidate, curve, telemetry, limits)
                : arc_domain(candidate, curve, telemetry, limits);
+}
+
+AnalyticFilteredPointCurveStatus classify_point_on_valid_curve(const AnalyticAtomicCurveNm& curve,
+                                                               Point candidate) noexcept
+{
+    if (interval_within_resolution(candidate, point(curve.start)) ||
+        interval_within_resolution(candidate, point(curve.end)))
+        return AnalyticFilteredPointCurveStatus::certified_on_domain;
+
+    constexpr double resolution_squared =
+        static_cast<double>(kAnalyticTopologyResolutionNm * kAnalyticTopologyResolutionNm);
+    if (curve.kind == AnalyticAtomicCurveKind::line)
+    {
+        const Point direction = subtract(point(curve.end), point(curve.start));
+        const Interval direction_squared = dot(direction, direction);
+        const Interval determinant = cross(subtract(candidate, point(curve.start)), direction);
+        const Interval determinant_squared = square(determinant);
+        const Interval threshold = multiply(exact(resolution_squared), direction_squared);
+        if (determinant_squared.lower > threshold.upper)
+            return AnalyticFilteredPointCurveStatus::outside_domain;
+        if (determinant_squared.upper > threshold.lower)
+            return AnalyticFilteredPointCurveStatus::uncertain;
+    }
+    else
+    {
+        const Point radial = subtract(candidate, point(curve.circle.center));
+        const Interval distance = square_root(dot(radial, radial));
+        const Interval gap =
+            absolute(subtract(distance, {curve.circle.radius.lower, curve.circle.radius.upper}));
+        if (gap.lower > static_cast<double>(kAnalyticTopologyResolutionNm))
+            return AnalyticFilteredPointCurveStatus::outside_domain;
+        if (gap.upper > static_cast<double>(kAnalyticTopologyResolutionNm))
+            return AnalyticFilteredPointCurveStatus::uncertain;
+    }
+
+    AnalyticNarrowPhaseTelemetry telemetry;
+    const DomainResult domain =
+        curve_domain(candidate, curve, telemetry, kAnalyticSolverHardLimits);
+    if (domain == DomainResult::inside || domain == DomainResult::inside_resolution ||
+        domain == DomainResult::ambiguous_resolution)
+        return AnalyticFilteredPointCurveStatus::certified_on_domain;
+    if (domain == DomainResult::outside)
+        return AnalyticFilteredPointCurveStatus::outside_domain;
+    return AnalyticFilteredPointCurveStatus::uncertain;
+}
+
+enum class ResolutionPairStatus : std::uint8_t
+{
+    within,
+    outside,
+    uncertain,
+};
+
+ResolutionPairStatus compare_point_distance(Point left, Point right) noexcept
+{
+    constexpr double resolution_squared =
+        static_cast<double>(kAnalyticTopologyResolutionNm * kAnalyticTopologyResolutionNm);
+    const Point delta = subtract(left, right);
+    const Interval distance_squared = add(square(delta.x), square(delta.y));
+    if (distance_squared.upper <= resolution_squared)
+        return ResolutionPairStatus::within;
+    if (distance_squared.lower > resolution_squared)
+        return ResolutionPairStatus::outside;
+    return ResolutionPairStatus::uncertain;
+}
+
+std::uint8_t resolution_endpoints(Point candidate, const AnalyticAtomicCurveNm& curve,
+                                  Point (&endpoints)[2]) noexcept
+{
+    std::uint8_t count = 0;
+    for (const Point endpoint : {point(curve.start), point(curve.end)})
+        if (interval_within_resolution(candidate, endpoint))
+            endpoints[count++] = endpoint;
+    return count;
+}
+
+ResolutionPairStatus certify_resolution_pair(Point candidate, const AnalyticAtomicCurveNm& left,
+                                             const AnalyticAtomicCurveNm& right,
+                                             DomainResult left_domain, DomainResult right_domain,
+                                             AnalyticNarrowPhaseTelemetry& telemetry,
+                                             const AnalyticSolverLimits& limits) noexcept
+{
+    const bool left_resolution = left_domain == DomainResult::inside_resolution ||
+                                 left_domain == DomainResult::ambiguous_resolution;
+    const bool right_resolution = right_domain == DomainResult::inside_resolution ||
+                                  right_domain == DomainResult::ambiguous_resolution;
+    if (!left_resolution && !right_resolution)
+        return ResolutionPairStatus::within;
+
+    Point left_endpoints[2]{};
+    Point right_endpoints[2]{};
+    if ((left_resolution && !charge_predicate(telemetry, limits, true)) ||
+        (right_resolution && !charge_predicate(telemetry, limits, true)))
+        return ResolutionPairStatus::uncertain;
+    const std::uint8_t left_count =
+        left_resolution ? resolution_endpoints(candidate, left, left_endpoints) : 0;
+    const std::uint8_t right_count =
+        right_resolution ? resolution_endpoints(candidate, right, right_endpoints) : 0;
+    if ((left_resolution && left_count == 0) || (right_resolution && right_count == 0))
+        return ResolutionPairStatus::uncertain;
+
+    bool saw_uncertain = false;
+    if (left_resolution && right_resolution)
+    {
+        for (std::uint8_t left_index = 0; left_index < left_count; ++left_index)
+            for (std::uint8_t right_index = 0; right_index < right_count; ++right_index)
+            {
+                if (!charge_predicate(telemetry, limits, true))
+                    return ResolutionPairStatus::uncertain;
+                const ResolutionPairStatus status = compare_point_distance(
+                    left_endpoints[left_index], right_endpoints[right_index]);
+                if (status == ResolutionPairStatus::within)
+                    return status;
+                saw_uncertain = saw_uncertain || status == ResolutionPairStatus::uncertain;
+            }
+    }
+    else
+    {
+        const Point* endpoints = left_resolution ? left_endpoints : right_endpoints;
+        const std::uint8_t count = left_resolution ? left_count : right_count;
+        const AnalyticAtomicCurveNm& other = left_resolution ? right : left;
+        for (std::uint8_t index = 0; index < count; ++index)
+        {
+            if (!charge_predicate(telemetry, limits, true))
+                return ResolutionPairStatus::uncertain;
+            const AnalyticFilteredPointCurveStatus status =
+                classify_point_on_valid_curve(other, endpoints[index]);
+            if (status == AnalyticFilteredPointCurveStatus::certified_on_domain)
+                return ResolutionPairStatus::within;
+            saw_uncertain = saw_uncertain ||
+                            status == AnalyticFilteredPointCurveStatus::uncertain ||
+                            status == AnalyticFilteredPointCurveStatus::invalid_argument;
+        }
+    }
+    return saw_uncertain ? ResolutionPairStatus::uncertain : ResolutionPairStatus::outside;
 }
 
 bool retain_point(PairWork& work, Point candidate, const AnalyticAtomicCurveNm& left,
@@ -483,8 +624,27 @@ bool retain_point(PairWork& work, Point candidate, const AnalyticAtomicCurveNm& 
     }
     if (left_domain == DomainResult::outside || right_domain == DomainResult::outside)
         return true;
+    const ResolutionPairStatus pair_status = certify_resolution_pair(
+        candidate, left, right, left_domain, right_domain, telemetry, limits);
+    if (pair_status == ResolutionPairStatus::uncertain)
+    {
+        work.uncertain = true;
+        return false;
+    }
+    if (pair_status == ResolutionPairStatus::outside)
+    {
+        if (left_domain == DomainResult::ambiguous_resolution ||
+            right_domain == DomainResult::ambiguous_resolution)
+        {
+            work.uncertain = true;
+            return false;
+        }
+        return true;
+    }
     if (left_domain == DomainResult::inside_resolution ||
-        right_domain == DomainResult::inside_resolution)
+        left_domain == DomainResult::ambiguous_resolution ||
+        right_domain == DomainResult::inside_resolution ||
+        right_domain == DomainResult::ambiguous_resolution)
         work.value.resolution_collapsed = true;
     if (work.value.point_count == work.value.points.size())
     {
@@ -902,47 +1062,7 @@ classify_analytic_filtered_point_on_curve(const AnalyticAtomicCurveNm& curve,
     if (!valid_curve(curve) || !valid_interval(point(candidate).x) ||
         !valid_interval(point(candidate).y) || !point_interval_fits_resolution(point(candidate)))
         return AnalyticFilteredPointCurveStatus::invalid_argument;
-
-    const Point candidate_point = point(candidate);
-    if (interval_within_resolution(candidate_point, point(curve.start)) ||
-        interval_within_resolution(candidate_point, point(curve.end)))
-        return AnalyticFilteredPointCurveStatus::certified_on_domain;
-
-    constexpr double resolution_squared =
-        static_cast<double>(kAnalyticTopologyResolutionNm * kAnalyticTopologyResolutionNm);
-    if (curve.kind == AnalyticAtomicCurveKind::line)
-    {
-        const Point direction = subtract(point(curve.end), point(curve.start));
-        const Interval direction_squared = dot(direction, direction);
-        const Interval determinant =
-            cross(subtract(candidate_point, point(curve.start)), direction);
-        const Interval determinant_squared = square(determinant);
-        const Interval threshold = multiply(exact(resolution_squared), direction_squared);
-        if (determinant_squared.lower > threshold.upper)
-            return AnalyticFilteredPointCurveStatus::outside_domain;
-        if (determinant_squared.upper > threshold.lower)
-            return AnalyticFilteredPointCurveStatus::uncertain;
-    }
-    else
-    {
-        const Point radial = subtract(candidate_point, point(curve.circle.center));
-        const Interval distance = square_root(dot(radial, radial));
-        const Interval gap =
-            absolute(subtract(distance, {curve.circle.radius.lower, curve.circle.radius.upper}));
-        if (gap.lower > static_cast<double>(kAnalyticTopologyResolutionNm))
-            return AnalyticFilteredPointCurveStatus::outside_domain;
-        if (gap.upper > static_cast<double>(kAnalyticTopologyResolutionNm))
-            return AnalyticFilteredPointCurveStatus::uncertain;
-    }
-
-    AnalyticNarrowPhaseTelemetry telemetry;
-    const DomainResult domain =
-        curve_domain(candidate_point, curve, telemetry, kAnalyticSolverHardLimits);
-    if (domain == DomainResult::inside || domain == DomainResult::inside_resolution)
-        return AnalyticFilteredPointCurveStatus::certified_on_domain;
-    if (domain == DomainResult::outside)
-        return AnalyticFilteredPointCurveStatus::outside_domain;
-    return AnalyticFilteredPointCurveStatus::uncertain;
+    return classify_point_on_valid_curve(curve, point(candidate));
 }
 
 AnalyticNarrowPhaseResult

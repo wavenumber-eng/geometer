@@ -153,6 +153,21 @@ std::string narrow_phase_parity_vector()
     append_u64(result.telemetry.point_intersections);
     append_u64(result.telemetry.peak_working_memory_bytes);
     append_u64(result.telemetry.algebraic_fallback_calls);
+
+    const std::vector<AnalyticAtomicCurveNm> endpoint_pairs = {
+        line(1, -1000, 0, 0, 0),  line(2, 35, 35, 35, 1000), line(3, 36, 36, 36, 1000),
+        line(4, -1000, 0, 10, 0), line(5, 0, -1000, 0, 10),
+    };
+    const AnalyticNarrowPhaseResult endpoint_result =
+        intersect_analytic_curve_candidates(endpoint_pairs, {{1, 2}, {1, 3}, {4, 5}});
+    require(endpoint_result.error == AnalyticNarrowPhaseError::none &&
+                endpoint_result.intersections.size() == 3,
+            "pair-level endpoint parity fixture failed");
+    for (const AnalyticPairIntersection& intersection : endpoint_result.intersections)
+    {
+        append_u64(static_cast<std::uint8_t>(intersection.relation));
+        append_u64(intersection.resolution_collapsed ? 1U : 0U);
+    }
     return output.str();
 }
 
@@ -771,6 +786,35 @@ void test_narrow_phase_resolution_endpoint_boundary()
             "49 and 50 nm endpoint repairs must be visible in telemetry");
 }
 
+void test_narrow_phase_pair_resolution_boundary()
+{
+    const std::vector<AnalyticAtomicCurveNm> diagonal = {
+        line(1, -1000, 0, 0, 0),
+        line(2, 35, 35, 35, 1000),
+        line(3, 36, 36, 36, 1000),
+    };
+    const AnalyticNarrowPhaseResult diagonal_result =
+        intersect_analytic_curve_candidates(diagonal, {{1, 2}, {1, 3}});
+    require(diagonal_result.error == AnalyticNarrowPhaseError::none &&
+                diagonal_result.intersections[0].relation == AnalyticPairRelation::point &&
+                diagonal_result.intersections[0].resolution_collapsed &&
+                diagonal_result.intersections[1].relation == AnalyticPairRelation::disjoint,
+            "pair-level repair must bridge a 35/35 nm diagonal gap but preserve 36/36 nm");
+
+    const std::vector<AnalyticAtomicCurveNm> true_intersection = {
+        line(1, -1000, 0, 10, 0),
+        line(2, 0, -1000, 0, 10),
+    };
+    const AnalyticNarrowPhaseResult true_result =
+        intersect_analytic_curve_candidates(true_intersection, {{1, 2}});
+    require(true_result.error == AnalyticNarrowPhaseError::none &&
+                true_result.intersections[0].relation == AnalyticPairRelation::point &&
+                !true_result.intersections[0].resolution_collapsed &&
+                contains(true_result.intersections[0].points[0].x, 0.0) &&
+                contains(true_result.intersections[0].points[0].y, 0.0),
+            "a true carrier intersection near both endpoints must not be mislabeled as a repair");
+}
+
 void test_narrow_phase_candidate_driven_linear_work()
 {
     auto fixture = [](std::uint32_t pair_count)
@@ -885,6 +929,7 @@ int main()
     test_narrow_phase_arc_domains_and_contacts();
     test_narrow_phase_large_local_coordinates_and_limits();
     test_narrow_phase_resolution_endpoint_boundary();
+    test_narrow_phase_pair_resolution_boundary();
     test_narrow_phase_candidate_driven_linear_work();
     test_narrow_phase_direct_dense_index_resolution();
     test_narrow_phase_rejects_noncanonical_or_invalid_input();

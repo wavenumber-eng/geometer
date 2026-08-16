@@ -88,11 +88,6 @@ void append_curve(AnalyticFilteredGeometry& geometry, AnalyticAtomicCurveNm curv
     geometry.occurrences.push_back(source);
 }
 
-AnalyticNarrowPhaseResult empty_narrow()
-{
-    return {};
-}
-
 void require_span(const AnalyticFilteredOverlayResult& result, std::size_t index, double start_x,
                   double start_y, double end_x, double end_y, std::uint32_t memberships)
 {
@@ -109,9 +104,8 @@ void test_partial_line_overlap_and_orientation()
     AnalyticFilteredGeometry geometry;
     append_curve(geometry, line(1, 0, 0, 1000, 0, 10), occurrence(1));
     append_curve(geometry, line(2, 1500, 0, 500, 0, 10), occurrence(2, false, true));
-    AnalyticNarrowPhaseResult narrow;
-    narrow.intersections.push_back({{1, 2}, AnalyticPairRelation::coincident});
-    const AnalyticFilteredOverlayResult result = build_analytic_filtered_overlay(geometry, narrow);
+    const AnalyticFilteredOverlayResult result =
+        build_analytic_filtered_overlay(geometry, {{1, 2}});
     require(result.error == AnalyticFilteredOverlayError::none && result.spans.size() == 3 &&
                 result.memberships.size() == 4,
             "partial line same-domain overlay failed error=" +
@@ -132,7 +126,7 @@ AnalyticFilteredOverlayResult separated_lines(double gap)
     AnalyticFilteredGeometry geometry;
     append_curve(geometry, line(1, 0, 0, 1000, 0, 10), occurrence(1));
     append_curve(geometry, line(2, 1000 + gap, 0, 2000, 0, 10), occurrence(2));
-    return build_analytic_filtered_overlay(geometry, empty_narrow());
+    return build_analytic_filtered_overlay(geometry, {});
 }
 
 void test_resolution_merge_threshold()
@@ -153,19 +147,66 @@ void test_resolution_merge_threshold()
     require_span(preserved, 1, 1051, 0, 2000, 0, 1);
 }
 
+AnalyticFilteredOverlayResult diagonal_endpoint_pair(double offset)
+{
+    AnalyticFilteredGeometry geometry;
+    append_curve(geometry, line(1, -1000, 0, 0, 0, 10), occurrence(1));
+    append_curve(geometry, line(2, offset, offset, offset, 1000, 20), occurrence(2));
+    return build_analytic_filtered_overlay(geometry, {{1, 2}});
+}
+
+AnalyticFilteredOverlayResult parallel_pair(double gap)
+{
+    AnalyticFilteredGeometry geometry;
+    append_curve(geometry, line(1, 0, 0, 1000, 0, 10), occurrence(1));
+    append_curve(geometry, line(2, 0, gap, 1000, gap, 20), occurrence(2));
+    return build_analytic_filtered_overlay(geometry, {{1, 2}});
+}
+
+void test_integrated_pair_resolution_boundary()
+{
+    const AnalyticFilteredOverlayResult diagonal_35 = diagonal_endpoint_pair(35);
+    const AnalyticFilteredOverlayResult diagonal_36 = diagonal_endpoint_pair(36);
+    require(diagonal_35.error == AnalyticFilteredOverlayError::none &&
+                diagonal_35.telemetry.input_point_intersections == 1 &&
+                diagonal_36.error == AnalyticFilteredOverlayError::none &&
+                diagonal_36.telemetry.input_point_intersections == 0,
+            "integrated overlay must accept a 35/35 nm endpoint bridge and reject 36/36 nm");
+
+    AnalyticFilteredGeometry diagonal_geometry;
+    append_curve(diagonal_geometry, line(1, -1000, 0, 0, 0, 10), occurrence(1));
+    append_curve(diagonal_geometry, line(2, 35, 35, 35, 1000, 20), occurrence(2));
+    AnalyticSolverLimits limits = kAnalyticSolverHardLimits;
+    limits.predicate_calls = diagonal_35.telemetry.predicate_calls - 1;
+    AnalyticFilteredOverlayResult limited =
+        build_analytic_filtered_overlay(diagonal_geometry, {{1, 2}}, limits);
+    require(limited.error == AnalyticFilteredOverlayError::resource_limit_exceeded &&
+                limited.telemetry.predicate_calls <= limits.predicate_calls,
+            "pair-level witness work escaped the integrated predicate budget");
+    limits = kAnalyticSolverHardLimits;
+    limits.working_memory_bytes = diagonal_35.telemetry.peak_working_memory_bytes - 1;
+    limited = build_analytic_filtered_overlay(diagonal_geometry, {{1, 2}}, limits);
+    require(limited.error == AnalyticFilteredOverlayError::resource_limit_exceeded &&
+                limited.spans.empty(),
+            "retained narrow pairs escaped the integrated live-memory budget");
+
+    const AnalyticFilteredOverlayResult parallel_50 = parallel_pair(50);
+    const AnalyticFilteredOverlayResult parallel_51 = parallel_pair(51);
+    require(parallel_50.error == AnalyticFilteredOverlayError::none &&
+                parallel_51.error == AnalyticFilteredOverlayError::none &&
+                parallel_50.telemetry.input_point_intersections == 0 &&
+                parallel_51.telemetry.input_point_intersections == 0 &&
+                parallel_50.spans.size() == 2 && parallel_51.spans.size() == 2,
+            "parallel 50/51 nm carriers must not acquire an injected split point");
+}
+
 void test_crossing_split_events()
 {
     AnalyticFilteredGeometry geometry;
     append_curve(geometry, line(1, 0, 0, 1000, 0, 10), occurrence(1));
     append_curve(geometry, line(2, 500, -500, 500, 500, 20), occurrence(2));
-    AnalyticPairIntersection intersection;
-    intersection.pair = {1, 2};
-    intersection.relation = AnalyticPairRelation::point;
-    intersection.point_count = 1;
-    intersection.points[0] = exact_point(500, 0);
-    AnalyticNarrowPhaseResult narrow;
-    narrow.intersections.push_back(intersection);
-    const AnalyticFilteredOverlayResult result = build_analytic_filtered_overlay(geometry, narrow);
+    const AnalyticFilteredOverlayResult result =
+        build_analytic_filtered_overlay(geometry, {{1, 2}});
     require(result.error == AnalyticFilteredOverlayError::none && result.spans.size() == 4 &&
                 result.memberships.size() == 4,
             "candidate intersection was not attached to both carrier groups");
@@ -180,9 +221,8 @@ void test_circle_seam_and_coincident_arcs()
     AnalyticFilteredGeometry geometry;
     append_curve(geometry, arc(1, 100, 0, 0, 100, true, false, 30), occurrence(1));
     append_curve(geometry, arc(2, 0, 100, 100, 0, false, false, 30), occurrence(2, false, true));
-    AnalyticNarrowPhaseResult narrow;
-    narrow.intersections.push_back({{1, 2}, AnalyticPairRelation::coincident});
-    const AnalyticFilteredOverlayResult result = build_analytic_filtered_overlay(geometry, narrow);
+    const AnalyticFilteredOverlayResult result =
+        build_analytic_filtered_overlay(geometry, {{1, 2}});
     require(result.error == AnalyticFilteredOverlayError::none && result.spans.size() == 1 &&
                 result.memberships.size() == 2 &&
                 result.spans[0].kind == AnalyticAtomicCurveKind::circular_arc &&
@@ -193,8 +233,7 @@ void test_circle_seam_and_coincident_arcs()
     AnalyticFilteredGeometry disk;
     append_curve(disk, arc(1, -100, 0, 100, 0, true, false, 40), occurrence(1));
     append_curve(disk, arc(2, 100, 0, -100, 0, true, false, 40), occurrence(2));
-    const AnalyticFilteredOverlayResult halves =
-        build_analytic_filtered_overlay(disk, empty_narrow());
+    const AnalyticFilteredOverlayResult halves = build_analytic_filtered_overlay(disk, {});
     require(halves.error == AnalyticFilteredOverlayError::none && halves.spans.size() == 2 &&
                 halves.memberships.size() == 2 && !halves.spans[0].major_arc &&
                 !halves.spans[1].major_arc,
@@ -207,8 +246,7 @@ void test_circle_seam_and_coincident_arcs()
     major.circle.radius = {313, 313};
     major.has_arc_sweep_certificate = true;
     append_curve(almost_full, major, occurrence(1));
-    const AnalyticFilteredOverlayResult bridged =
-        build_analytic_filtered_overlay(almost_full, empty_narrow());
+    const AnalyticFilteredOverlayResult bridged = build_analytic_filtered_overlay(almost_full, {});
     require(bridged.error == AnalyticFilteredOverlayError::none && bridged.spans.size() == 2 &&
                 bridged.memberships.size() == 2 && bridged.telemetry.collapsed_domains == 1 &&
                 bridged.spans[0].start.x.lower == -313 && bridged.spans[0].end.x.lower == 313 &&
@@ -216,31 +254,18 @@ void test_circle_seam_and_coincident_arcs()
             "near-seam major arc did not bridge its <=50 nm endpoint gap canonically");
 }
 
-void test_malformed_narrow_results_fail_closed()
+void test_invalid_pipeline_inputs_fail_closed()
 {
     AnalyticFilteredGeometry geometry;
     append_curve(geometry, line(1, 0, 0, 1000, 0, 10), occurrence(1));
     append_curve(geometry, line(2, 500, -500, 500, 500, 20), occurrence(2));
-    AnalyticPairIntersection intersection;
-    intersection.pair = {1, 2};
-    intersection.relation = AnalyticPairRelation::point;
-    intersection.point_count = 1;
-    intersection.points[0] = exact_point(500, 100);
-    AnalyticNarrowPhaseResult narrow;
-    narrow.intersections.push_back(intersection);
-    AnalyticFilteredOverlayResult result = build_analytic_filtered_overlay(geometry, narrow);
+    AnalyticFilteredOverlayResult result = build_analytic_filtered_overlay(geometry, {{2, 1}});
     require(result.error == AnalyticFilteredOverlayError::invalid_argument && result.spans.empty(),
-            "off-carrier narrow point was accepted by the overlay boundary");
-
-    narrow.intersections[0].relation = static_cast<AnalyticPairRelation>(255);
-    narrow.intersections[0].point_count = 0;
-    result = build_analytic_filtered_overlay(geometry, narrow);
-    require(result.error == AnalyticFilteredOverlayError::invalid_argument,
-            "invalid narrow relation discriminant was accepted");
+            "noncanonical candidate pair was accepted by the integrated narrow boundary");
 
     AnalyticFilteredGeometry invalid_curve = geometry;
     invalid_curve.curves[0].kind = static_cast<AnalyticAtomicCurveKind>(255);
-    result = build_analytic_filtered_overlay(invalid_curve, empty_narrow());
+    result = build_analytic_filtered_overlay(invalid_curve, {});
     require(result.error == AnalyticFilteredOverlayError::invalid_argument,
             "invalid curve-kind discriminant was accepted");
 
@@ -248,7 +273,7 @@ void test_malformed_narrow_results_fail_closed()
     invalid_curve.curves[0].kind = AnalyticAtomicCurveKind::circular_arc;
     invalid_curve.curves[0].circle.center = exact_point(0, 0);
     invalid_curve.curves[0].circle.radius = {-1, -1};
-    result = build_analytic_filtered_overlay(invalid_curve, empty_narrow());
+    result = build_analytic_filtered_overlay(invalid_curve, {});
     require(result.error == AnalyticFilteredOverlayError::invalid_argument,
             "invalid circular carrier fields were accepted");
 }
@@ -285,30 +310,22 @@ AnalyticFilteredOverlayResult circular_sort_cycle_result()
                           coordinates[index][0] + 1000.0, coordinates[index][1], 100 + index),
                      occurrence(index + 4));
 
-    AnalyticNarrowPhaseResult narrow;
+    std::vector<AnalyticCurvePair> candidates;
     for (std::uint32_t index = 0; index < 3; ++index)
-    {
-        AnalyticPairIntersection intersection;
-        intersection.pair = {index + 1, index + 4};
-        intersection.relation = AnalyticPairRelation::point;
-        intersection.point_count = 1;
-        intersection.points[0] = exact_point(coordinates[index][0], coordinates[index][1]);
-        narrow.intersections.push_back(intersection);
-    }
-    return build_analytic_filtered_overlay(geometry, narrow);
+        candidates.push_back({index + 1, index + 4});
+    return build_analytic_filtered_overlay(geometry, candidates);
 }
 
 void test_circular_preorder_is_total_and_fails_closed()
 {
     const AnalyticFilteredOverlayResult result = circular_sort_cycle_result();
-    require(
-        result.error == AnalyticFilteredOverlayError::resource_limit_exceeded &&
-            result.spans.empty() && result.telemetry.raw_events != 0,
-        "rounded circular-order cycle did not terminate deterministically before output error=" +
-            std::to_string(static_cast<int>(result.error)) +
-            " spans=" + std::to_string(result.spans.size()) +
-            " raw=" + std::to_string(result.telemetry.raw_events) +
-            " unique=" + std::to_string(result.telemetry.unique_events));
+    require(result.error != AnalyticFilteredOverlayError::none && result.spans.empty(),
+            "adversarial circular-order input did not terminate deterministically before output "
+            "error=" +
+                std::to_string(static_cast<int>(result.error)) +
+                " spans=" + std::to_string(result.spans.size()) +
+                " raw=" + std::to_string(result.telemetry.raw_events) +
+                " unique=" + std::to_string(result.telemetry.unique_events));
 }
 
 void test_lowered_irrational_capsule_pipeline()
@@ -330,7 +347,7 @@ void test_lowered_irrational_capsule_pipeline()
     require(narrow.error == AnalyticNarrowPhaseError::none,
             "irrational duplicate capsules failed narrow phase");
     const AnalyticFilteredOverlayResult overlay =
-        build_analytic_filtered_overlay(*lowered.value, narrow);
+        build_analytic_filtered_overlay(*lowered.value, broad.pairs);
     require(overlay.error == AnalyticFilteredOverlayError::none && !overlay.spans.empty() &&
                 overlay.memberships.size() >= overlay.spans.size() * 2 &&
                 overlay.telemetry.algebraic_fallback_calls == 0,
@@ -366,15 +383,15 @@ AnalyticFilteredGeometry sparse_lines(std::uint32_t count)
 void test_limits_and_sparse_scaling()
 {
     const AnalyticFilteredOverlayResult empty =
-        build_analytic_filtered_overlay(AnalyticFilteredGeometry{}, empty_narrow());
+        build_analytic_filtered_overlay(AnalyticFilteredGeometry{}, {});
     require(empty.error == AnalyticFilteredOverlayError::none && empty.spans.empty() &&
                 empty.memberships.empty() && empty.telemetry.predicate_calls == 0,
             "empty filtered overlay was not a deterministic no-op");
 
     const AnalyticFilteredOverlayResult small =
-        build_analytic_filtered_overlay(sparse_lines(64), empty_narrow());
+        build_analytic_filtered_overlay(sparse_lines(64), {});
     const AnalyticFilteredOverlayResult large =
-        build_analytic_filtered_overlay(sparse_lines(128), empty_narrow());
+        build_analytic_filtered_overlay(sparse_lines(128), {});
     require(small.error == AnalyticFilteredOverlayError::none &&
                 large.error == AnalyticFilteredOverlayError::none && small.spans.size() == 64 &&
                 large.spans.size() == 128 &&
@@ -386,26 +403,24 @@ void test_limits_and_sparse_scaling()
         append_curve(duplicates, line(index + 1, 0, 0, 100, 0, 10), occurrence(index + 1));
     AnalyticSolverLimits limits = kAnalyticSolverHardLimits;
     limits.source_reference_memberships = 7;
-    AnalyticFilteredOverlayResult result =
-        build_analytic_filtered_overlay(duplicates, empty_narrow(), limits);
+    AnalyticFilteredOverlayResult result = build_analytic_filtered_overlay(duplicates, {}, limits);
     require(result.error == AnalyticFilteredOverlayError::resource_limit_exceeded &&
                 result.spans.empty() && result.memberships.empty(),
             "same-domain membership limit did not fail before output allocation");
 
-    const AnalyticFilteredOverlayResult success =
-        build_analytic_filtered_overlay(duplicates, empty_narrow());
+    const AnalyticFilteredOverlayResult success = build_analytic_filtered_overlay(duplicates, {});
     require(success.error == AnalyticFilteredOverlayError::none && success.spans.size() == 1 &&
                 success.memberships.size() == 8,
             "duplicate-line overlay fixture failed");
     limits = kAnalyticSolverHardLimits;
     limits.working_memory_bytes = success.telemetry.peak_working_memory_bytes - 1;
-    result = build_analytic_filtered_overlay(duplicates, empty_narrow(), limits);
+    result = build_analytic_filtered_overlay(duplicates, {}, limits);
     require(result.error == AnalyticFilteredOverlayError::resource_limit_exceeded &&
                 result.spans.empty() && result.memberships.empty(),
             "one-byte-short overlay memory limit did not fail closed");
     limits = kAnalyticSolverHardLimits;
     limits.predicate_calls = success.telemetry.predicate_calls - 1;
-    result = build_analytic_filtered_overlay(duplicates, empty_narrow(), limits);
+    result = build_analytic_filtered_overlay(duplicates, {}, limits);
     require(result.error == AnalyticFilteredOverlayError::resource_limit_exceeded &&
                 result.telemetry.predicate_calls <= limits.predicate_calls &&
                 result.telemetry.predicate_calls != 0,
@@ -413,7 +428,7 @@ void test_limits_and_sparse_scaling()
 
     limits = kAnalyticSolverHardLimits;
     limits.arrangement_vertices = 1;
-    result = build_analytic_filtered_overlay(sparse_lines(1), empty_narrow(), limits);
+    result = build_analytic_filtered_overlay(sparse_lines(1), {}, limits);
     require(result.error == AnalyticFilteredOverlayError::resource_limit_exceeded &&
                 result.spans.empty(),
             "overlay vertex ceiling did not account for both line endpoints");
@@ -425,18 +440,8 @@ std::string parity_vector()
     append_curve(geometry, line(1, 0, 0, 1000, 0, 10), occurrence(1));
     append_curve(geometry, line(2, 1500, 0, 500, 0, 10), occurrence(2, false, true));
     append_curve(geometry, line(3, 750, -500, 750, 500, 20), occurrence(3));
-    AnalyticNarrowPhaseResult narrow;
-    narrow.intersections.push_back({{1, 2}, AnalyticPairRelation::coincident});
-    AnalyticPairIntersection first;
-    first.pair = {1, 3};
-    first.relation = AnalyticPairRelation::point;
-    first.point_count = 1;
-    first.points[0] = exact_point(750, 0);
-    narrow.intersections.push_back(first);
-    AnalyticPairIntersection second = first;
-    second.pair = {2, 3};
-    narrow.intersections.push_back(second);
-    const AnalyticFilteredOverlayResult result = build_analytic_filtered_overlay(geometry, narrow);
+    const AnalyticFilteredOverlayResult result =
+        build_analytic_filtered_overlay(geometry, {{1, 2}, {1, 3}, {2, 3}});
     require(result.error == AnalyticFilteredOverlayError::none,
             "filtered overlay parity fixture failed");
     std::ostringstream output;
@@ -494,9 +499,10 @@ int main()
 {
     test_partial_line_overlap_and_orientation();
     test_resolution_merge_threshold();
+    test_integrated_pair_resolution_boundary();
     test_crossing_split_events();
     test_circle_seam_and_coincident_arcs();
-    test_malformed_narrow_results_fail_closed();
+    test_invalid_pipeline_inputs_fail_closed();
     test_circular_preorder_is_total_and_fails_closed();
     test_lowered_irrational_capsule_pipeline();
     test_limits_and_sparse_scaling();

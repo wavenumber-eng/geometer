@@ -70,7 +70,12 @@ engine.
   Constructed coordinates use outward interval operations, and a square-root
   enclosure is accepted only after an FMA residual verifies both endpoints.
   Any point interval or resolution collapse that cannot prove the 50 nm
-  displacement bound fails the isolated job. Its internal curves carry bounded
+  displacement bound fails the isolated job. Finite-domain repairs are
+  certified pairwise: when both carrier intersections lie beyond their finite
+  curves, actual endpoint witnesses must be at most 50 nm apart. Two
+  independently sub-50-nm endpoint distances may not compose into a bridge
+  above the envelope, and a domain predicate that merely straddles an endpoint
+  fails closed. Its internal curves carry bounded
   point and radius intervals plus optional integer certificates, so irrational
   authored radii and non-integral offset geometry do not require an integer-only
   side representation. Radial sagitta alone never certifies a near-tangent
@@ -101,7 +106,9 @@ engine.
   implemented by the filtered indexed arrangement; the exact swept
   pre-arrangement is not a production fallback.
 - The filtered split/overlay stage groups only lowering-issued exact carrier
-  ids and consumes only the narrow phase's candidate results. It sorts bounded
+  ids, accepts only canonical broad-phase pairs, and invokes the narrow phase
+  internally. No API accepts caller-constructed intersection records, so an
+  unverified point cannot cross the narrow/overlay trust boundary. It sorts bounded
   endpoint/intersection events once, merges events only when their complete
   outward enclosure proves at-or-below-50-nm equivalence, and partitions each
   line or circle in canonical carrier order. A fixed-array Fenwick/indexed
@@ -113,8 +120,10 @@ engine.
   deterministic leftmost seam, with certified sweep tokens resolving
   cancellation-prone constructed semicircles. The preliminary circle sort uses
   a strict total scalar key; outward carrier/domain predicates then certify the
-  resulting adjacency. Every narrow-phase split is independently rebound to
-  both named finite curves before it can become an arrangement vertex.
+  resulting adjacency. Every internally produced narrow-phase split is
+  independently rebound to both named finite curves before it can become an
+  arrangement vertex. Narrow-phase work and retained pair storage remain live
+  charges in the overlay's total predicate and logical-memory telemetry.
 - Solver resource limits are supplied through one internal limits value object
   rather than scattered production constants. The catalog values are governed
   hard ceilings; a host may advertise and enforce lower effective limits, and

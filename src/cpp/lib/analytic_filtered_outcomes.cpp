@@ -159,8 +159,12 @@ class Builder
 
     AnalyticFilteredOutcomesResult build()
     {
-        result_.lineage = analytic_lineage_detail::build_lineage_for_outcomes(
-            records_, job_index_, geometry_, pairs_, limits_);
+        analytic_lineage_detail::OutcomeLineageResult lineage =
+            analytic_lineage_detail::build_lineage_for_outcomes(records_, job_index_, geometry_,
+                                                                pairs_, limits_);
+        result_.lineage = std::move(lineage.lineage);
+        region_operands_ = std::move(lineage.region_operands);
+        boundary_subtractors_ = std::move(lineage.boundary_subtractors);
         const auto& upstream = result_.lineage.telemetry;
         result_.telemetry.lineage_work_units = upstream.predicate_calls;
         result_.telemetry.lineage_peak_working_memory_bytes = upstream.peak_working_memory_bytes;
@@ -216,20 +220,11 @@ class Builder
         result_.result_references.clear();
         result_.source_references.clear();
         result_.lineage = {};
+        region_operands_.clear();
+        boundary_subtractors_.clear();
         result_.telemetry.outcome_work_units = work_;
         result_.telemetry.predicate_calls = upstream_work + work_;
         return std::move(result_);
-    }
-
-    std::uint32_t find_operand(std::uint64_t id)
-    {
-        const std::uint64_t units = tree_operation_units(lookup_.size());
-        if (!charge(units))
-            return kNone;
-        const auto found = std::lower_bound(lookup_.begin(), lookup_.end(), id,
-                                            [](const Lookup& value, std::uint64_t key)
-                                            { return value.operand_id < key; });
-        return found != lookup_.end() && found->operand_id == id ? found->ordinal : kNone;
     }
 
     std::uint32_t find_operand_precharged(std::uint64_t id) const noexcept
@@ -261,9 +256,18 @@ class Builder
             checked_add(ring_indices,
                         checked_multiply(result_.lineage.regions.regions.size(), 2, valid), valid);
         ring_indices = checked_add(ring_indices, checked_multiply(operand_count, 2, valid), valid);
+        ring_indices = checked_add(ring_indices,
+                                   checked_add(result_.lineage.boundaries.size() + 1,
+                                               result_.lineage.regions.regions.size() + 1, valid),
+                                   valid);
+        const std::uint64_t association_bytes = checked_multiply(
+            checked_add(region_operands_.size(), boundary_subtractors_.size(), valid),
+            kIndexLogicalBytes * 2, valid);
         const std::uint64_t structural = checked_add(
             checked_multiply(operand_count, kStateLogicalBytes + kLookupLogicalBytes, valid),
-            checked_multiply(ring_indices, kIndexLogicalBytes, valid), valid);
+            checked_add(checked_multiply(ring_indices, kIndexLogicalBytes, valid),
+                        association_bytes, valid),
+            valid);
         if (!valid || operand_count != evidence.size() ||
             checked_add(retained, structural, valid) > limits_.working_memory_bytes)
             return resource();
@@ -273,6 +277,8 @@ class Builder
         lookup_.reserve(static_cast<std::size_t>(operand_count));
         reference_stamps_.assign(static_cast<std::size_t>(operand_count), 0);
         reference_cursors_.resize(static_cast<std::size_t>(operand_count));
+        region_association_begin_.resize(result_.lineage.regions.regions.size() + 1);
+        boundary_association_begin_.resize(result_.lineage.boundaries.size() + 1);
         std::uint32_t ordinal = 0;
         for (std::uint32_t local = 0; local < job.stage_count; ++local)
         {
@@ -298,7 +304,43 @@ class Builder
         if (std::adjacent_find(lookup_.begin(), lookup_.end(), [](const Lookup& a, const Lookup& b)
                                { return a.operand_id == b.operand_id; }) != lookup_.end())
             return invalid();
-        return build_ring_maps();
+        return build_ring_maps() && build_association_ranges();
+    }
+
+    bool build_association_ranges()
+    {
+        const std::uint64_t association_count =
+            region_operands_.size() + boundary_subtractors_.size();
+        if (!charge(association_count + region_association_begin_.size() +
+                    boundary_association_begin_.size()))
+            return false;
+        const auto build =
+            [&](const auto& values, std::vector<std::uint32_t>& begin, std::uint8_t operation)
+        {
+            std::size_t cursor = 0;
+            for (std::uint32_t owner = 0; owner + 1 < begin.size(); ++owner)
+            {
+                begin[owner] = static_cast<std::uint32_t>(cursor);
+                std::uint32_t previous = kNone;
+                while (cursor < values.size() && values[cursor].owner == owner)
+                {
+                    const std::uint32_t operand = values[cursor].operand;
+                    if (operand >= states_.size() || states_[operand].operation != operation ||
+                        (previous != kNone && previous >= operand))
+                        return false;
+                    previous = operand;
+                    ++cursor;
+                }
+                if (cursor < values.size() && values[cursor].owner < owner)
+                    return false;
+            }
+            begin.back() = static_cast<std::uint32_t>(cursor);
+            return cursor == values.size();
+        };
+        if (!build(region_operands_, region_association_begin_, 1) ||
+            !build(boundary_subtractors_, boundary_association_begin_, 2))
+            return invalid();
+        return true;
     }
 
     bool build_ring_maps()
@@ -377,44 +419,17 @@ class Builder
     {
         raw_source_count_ = geometry_.occurrences.size();
         reference_count_ = 0;
-        positive_incidence_count_ = 0;
-        subtraction_incidence_count_ = 0;
         const auto& lineage = result_.lineage;
-        if (!charge(lineage.region_lineage.size() + lineage.boundaries.size()))
-            return false;
-        if (lineage.region_lineage.size() != lineage.regions.regions.size())
+        if (lineage.region_lineage.size() != lineage.regions.regions.size() ||
+            region_association_begin_.size() != lineage.regions.regions.size() + 1 ||
+            boundary_association_begin_.size() != lineage.boundaries.size() + 1)
             return invalid();
-        for (std::uint32_t region_index = 0; region_index < lineage.region_lineage.size();
-             ++region_index)
-        {
-            const auto& region = lineage.region_lineage[region_index];
-            if (region.region != region_index)
-                return invalid();
-            if (region.positive_contributors.begin > lineage.source_references.size() ||
-                region.positive_contributors.count >
-                    lineage.source_references.size() - region.positive_contributors.begin)
-                return invalid();
-            positive_incidence_count_ =
-                checked_count_add(positive_incidence_count_, region.positive_contributors.count);
-        }
-        for (const auto& boundary : lineage.boundaries)
-        {
-            if (boundary.subtraction.begin > lineage.source_references.size() ||
-                boundary.subtraction.count >
-                    lineage.source_references.size() - boundary.subtraction.begin)
-                return invalid();
-            subtraction_incidence_count_ =
-                checked_count_add(subtraction_incidence_count_, boundary.subtraction.count);
-        }
-        if (result_.error != AnalyticFilteredOutcomesError::none)
-            return false;
 
         bool valid = true;
         const std::uint64_t reference_visits =
-            checked_add(positive_incidence_count_,
-                        checked_multiply(subtraction_incidence_count_, 2, valid), valid);
-        std::uint64_t count_work = checked_multiply(
-            reference_visits, checked_add(tree_operation_units(states_.size()), 2, valid), valid);
+            checked_add(region_operands_.size(),
+                        checked_multiply(boundary_subtractors_.size(), 2, valid), valid);
+        std::uint64_t count_work = checked_multiply(reference_visits, 2, valid);
         count_work = checked_add(count_work, checked_multiply(states_.size(), 2, valid), valid);
         count_work = checked_add(
             count_work, checked_multiply(result_.lineage.regions.rings.size(), 2, valid), valid);
@@ -469,43 +484,44 @@ class Builder
         return true;
     }
 
-    bool visit_reference_range(const AnalyticFilteredSourceRange& range,
-                               AnalyticFilteredTaggedResultReference reference,
-                               std::uint8_t expected_operation, bool final_lineage, bool counting)
+    bool visit_association(std::uint32_t operand, AnalyticFilteredTaggedResultReference reference,
+                           bool final_lineage, bool counting)
     {
-        const auto& sources = result_.lineage.source_references;
-        if (range.begin > sources.size() || range.count > sources.size() - range.begin)
+        ++result_.telemetry.lineage_source_visits;
+        if (operand >= states_.size())
             return invalid();
-        for (std::uint32_t offset = 0; offset < range.count; ++offset)
+        if (final_lineage)
+            states_[operand].final_lineage = true;
+        if (reference_stamps_[operand] == reference_generation_)
+            return true;
+        reference_stamps_[operand] = reference_generation_;
+        if (counting)
         {
-            ++result_.telemetry.lineage_source_visits;
-            const auto& source = sources[range.begin + offset];
-            const std::uint32_t operand = find_operand_precharged(source.operand_id);
-            if (operand == kNone || states_[operand].operation != expected_operation)
-                return invalid();
-            if (final_lineage)
-                states_[operand].final_lineage = true;
-            if (reference_stamps_[operand] == reference_generation_)
-                continue;
-            reference_stamps_[operand] = reference_generation_;
-            if (counting)
-            {
-                ++states_[operand].reference_count;
-                reference_count_ = checked_count_add(reference_count_, 1);
-                if (result_.error != AnalyticFilteredOutcomesError::none)
-                    return false;
-            }
-            else
-            {
-                if (reference_cursors_[operand] >= result_.result_references.size())
-                    return invalid();
-                result_.result_references[reference_cursors_[operand]++] = reference;
-            }
+            ++states_[operand].reference_count;
+            reference_count_ = checked_count_add(reference_count_, 1);
+            return result_.error == AnalyticFilteredOutcomesError::none;
         }
+        if (reference_cursors_[operand] >= result_.result_references.size())
+            return invalid();
+        result_.result_references[reference_cursors_[operand]++] = reference;
         return true;
     }
 
-    bool visit_ring_subtraction(std::uint32_t ring, AnalyticFilteredResultReferenceKind kind,
+    bool visit_boundary_subtractors(std::uint32_t boundary,
+                                    AnalyticFilteredResultReferenceKind kind,
+                                    std::uint32_t local_index, bool counting)
+    {
+        if (boundary + 1 >= boundary_association_begin_.size())
+            return invalid();
+        for (std::uint32_t at = boundary_association_begin_[boundary];
+             at < boundary_association_begin_[boundary + 1]; ++at)
+            if (!visit_association(boundary_subtractors_[at].operand, {kind, local_index}, false,
+                                   counting))
+                return false;
+        return true;
+    }
+
+    bool visit_ring_subtractors(std::uint32_t ring, AnalyticFilteredResultReferenceKind kind,
                                 std::uint32_t local_index, bool counting)
     {
         const auto& regions = result_.lineage.regions;
@@ -517,8 +533,7 @@ class Builder
         if (end > result_.lineage.boundaries.size())
             return invalid();
         for (std::uint32_t boundary = value.half_edge_begin; boundary < end; ++boundary)
-            if (!visit_reference_range(result_.lineage.boundaries[boundary].subtraction,
-                                       {kind, local_index}, 2, false, counting))
+            if (!visit_boundary_subtractors(boundary, kind, local_index, counting))
                 return false;
         return true;
     }
@@ -531,24 +546,27 @@ class Builder
         for (std::uint32_t ring = 0; ring < regions.rings.size(); ++ring)
         {
             if (!begin_reference_group() ||
-                !visit_ring_subtraction(ring, AnalyticFilteredResultReferenceKind::ring, ring,
+                !visit_ring_subtractors(ring, AnalyticFilteredResultReferenceKind::ring, ring,
                                         counting))
                 return false;
         }
         std::size_t ring_cursor = 0;
         for (std::uint32_t region = 0; region < regions.regions.size(); ++region)
         {
-            if (!begin_reference_group() ||
-                !visit_reference_range(result_.lineage.region_lineage[region].positive_contributors,
-                                       {AnalyticFilteredResultReferenceKind::region, region}, 1,
-                                       true, counting))
+            if (!begin_reference_group())
                 return false;
+            for (std::uint32_t at = region_association_begin_[region];
+                 at < region_association_begin_[region + 1]; ++at)
+                if (!visit_association(region_operands_[at].operand,
+                                       {AnalyticFilteredResultReferenceKind::region, region}, true,
+                                       counting))
+                    return false;
             if (ring_cursor < ring_order_.size() && ring_region_[ring_order_[ring_cursor]] < region)
                 return invalid();
             while (ring_cursor < ring_order_.size() &&
                    ring_region_[ring_order_[ring_cursor]] == region)
             {
-                if (!visit_ring_subtraction(ring_order_[ring_cursor],
+                if (!visit_ring_subtractors(ring_order_[ring_cursor],
                                             AnalyticFilteredResultReferenceKind::region, region,
                                             counting))
                     return false;
@@ -577,11 +595,17 @@ class Builder
         const std::uint64_t retained = retained_lineage_bytes(result_.lineage, valid);
         std::uint64_t persistent =
             checked_multiply(states_.size(), kStateLogicalBytes + kLookupLogicalBytes, valid);
+        persistent = checked_add(
+            persistent,
+            checked_multiply(ring_region_.size() + ring_order_.size() + reference_stamps_.size() +
+                                 reference_cursors_.size() + region_association_begin_.size() +
+                                 boundary_association_begin_.size(),
+                             kIndexLogicalBytes, valid),
+            valid);
         persistent =
             checked_add(persistent,
-                        checked_multiply(ring_region_.size() + ring_order_.size() +
-                                             reference_stamps_.size() + reference_cursors_.size(),
-                                         kIndexLogicalBytes, valid),
+                        checked_multiply(region_operands_.size() + boundary_subtractors_.size(),
+                                         kIndexLogicalBytes * 2, valid),
                         valid);
         std::uint64_t publication = checked_multiply(
             raw_source_count_, kRawSourceLogicalBytes + kSourceLogicalBytes, valid);
@@ -598,11 +622,10 @@ class Builder
         const std::uint64_t source_sort = sort_units(raw_source_count_);
         remaining_work = checked_add(remaining_work, source_sort, valid);
         const std::uint64_t reference_visits =
-            checked_add(positive_incidence_count_,
-                        checked_multiply(subtraction_incidence_count_, 2, valid), valid);
-        remaining_work = checked_add(
-            remaining_work, checked_multiply(reference_visits, checked_add(tree, 2, valid), valid),
-            valid);
+            checked_add(region_operands_.size(),
+                        checked_multiply(boundary_subtractors_.size(), 2, valid), valid);
+        remaining_work =
+            checked_add(remaining_work, checked_multiply(reference_visits, 2, valid), valid);
         remaining_work = checked_add(remaining_work, reference_count_, valid);
         remaining_work = checked_add(
             remaining_work,
@@ -773,11 +796,13 @@ class Builder
     std::vector<std::uint32_t> ring_order_;
     std::vector<std::uint32_t> reference_stamps_;
     std::vector<std::uint32_t> reference_cursors_;
+    std::vector<analytic_lineage_detail::OutcomeOperandAssociation> region_operands_;
+    std::vector<analytic_lineage_detail::OutcomeOperandAssociation> boundary_subtractors_;
+    std::vector<std::uint32_t> region_association_begin_;
+    std::vector<std::uint32_t> boundary_association_begin_;
     std::vector<RawSource> raw_sources_;
     std::uint64_t raw_source_count_ = 0;
     std::uint64_t reference_count_ = 0;
-    std::uint64_t positive_incidence_count_ = 0;
-    std::uint64_t subtraction_incidence_count_ = 0;
     std::uint64_t event_count_ = 0;
     std::uint64_t work_ = 0;
     std::uint32_t reference_generation_ = 0;

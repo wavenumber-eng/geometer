@@ -1004,8 +1004,11 @@ Geometer proposal, not the original consumer packet.
   continuation. The existing face-dual DFS collects each positive-area history
   fact once with active-and-unseen stage reporters; publication derives
   nonexclusive events, complete original occurrence sources, and tagged local
-  ring/region handles from actual lineage incidences without face-by-operand
-  replay. Stage batches use fixed-capacity generation marks rather than an
+  ring/region handles without face-by-operand replay. The same sparse lineage
+  traversal retains canonical unique operand/topology associations, so outcome
+  reference count/fill is proportional to actual emitted handles and is
+  independent of duplicate authored-source multiplicity. Stage batches use
+  fixed-capacity generation marks rather than an
   operand-sized temporary list. Tagged handles are counted exactly with
   generation-stamped operand/ring/region groups, so coincident or repeated
   fragments cannot inflate publication capacity. The complete count and fill

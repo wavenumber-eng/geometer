@@ -589,6 +589,13 @@ symmetric stage sets, never as transient sequential toggles.
 
 Final positive region lineage supplies contribution references, while
 surviving subtraction lineage supplies ring and owning-region references.
+The sparse lineage walk retains one canonical fixed-capacity
+`(region, operand)` or `(boundary, subtractor)` association for each such
+relationship while it already owns the coverage state. Outcome reference
+count/fill therefore visits actual unique topology associations, not every
+authored source tuple carried by that operand. Duplicate occurrence provenance
+can enlarge the complete event source set but cannot multiply ring/region
+projection work or capacity.
 Every event shares its operand's complete sorted/unique original occurrence
 source tuple set. The events are nonexclusive and canonical by operand and
 kind. Result references are deliberately tagged pre-normalization ring/region

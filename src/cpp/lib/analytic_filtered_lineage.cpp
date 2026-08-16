@@ -31,6 +31,7 @@ constexpr std::uint64_t kTransitionLogicalBytes = 16;
 constexpr std::uint64_t kTraversalFrameLogicalBytes = 40;
 constexpr std::uint64_t kIndexLogicalBytes = 8;
 constexpr std::uint64_t kByteLogicalBytes = 1;
+constexpr std::uint64_t kOutcomeAssociationLogicalBytes = 8;
 
 struct Operand
 {
@@ -97,9 +98,10 @@ class Builder
     Builder(const AnalyticRequestPacketRecords& records, std::uint32_t job_index,
             const AnalyticFilteredGeometry& geometry,
             const std::vector<AnalyticCurvePair>& candidate_pairs,
-            const AnalyticSolverLimits& limits, bool reserve_outcomes = false)
+            const AnalyticSolverLimits& limits,
+            analytic_lineage_detail::OutcomeLineageResult* outcome = nullptr)
         : records_(records), job_index_(job_index), geometry_(geometry), pairs_(candidate_pairs),
-          limits_(limits), reserve_outcomes_(reserve_outcomes)
+          limits_(limits), reserve_outcomes_(outcome != nullptr), outcome_(outcome)
     {
     }
 
@@ -232,6 +234,11 @@ class Builder
         result_.vertices.clear();
         result_.region_lineage.clear();
         result_.source_references.clear();
+        if (outcome_ != nullptr)
+        {
+            outcome_->region_operands.clear();
+            outcome_->boundary_subtractors.clear();
+        }
         result_.telemetry = {};
         result_.telemetry.regions_work_units = region_work;
         result_.telemetry.regions_peak_working_memory_bytes = region_memory;
@@ -407,6 +414,8 @@ class Builder
             return true;
         if (!charge(analytic_selection_detail::coverage_operand_depth(operands_.size()) + 2))
             return false;
+        if (!record_outcome_association(true, region, operand))
+            return false;
         for (std::uint32_t at = operand_occurrence_begin_[operand];
              at < operand_occurrence_begin_[operand + 1]; ++at)
             if (!append(OwnerKind::region, region,
@@ -414,6 +423,31 @@ class Builder
                 return false;
         reported_generations_[operand] = reporter_generation_;
         set_reporter_operand(1, 0, leaf_capacity_, operand, false);
+        return true;
+    }
+
+    bool record_outcome_association(bool region, std::uint32_t owner, std::uint32_t operand)
+    {
+        if (outcome_ == nullptr)
+            return true;
+        if (!charge(1))
+            return false;
+        std::uint64_t& count = region ? region_association_count_ : boundary_association_count_;
+        if (counting_)
+        {
+            bool valid = true;
+            count = analytic_selection_detail::checked_add(count, 1, valid);
+            if (!valid)
+            {
+                result_.error = AnalyticFilteredLineageError::resource_limit_exceeded;
+                return false;
+            }
+            return true;
+        }
+        auto& values = region ? outcome_->region_operands : outcome_->boundary_subtractors;
+        if (values.size() >= count)
+            return false;
+        values.push_back({owner, operand});
         return true;
     }
     bool apply_component_edge(std::uint32_t edge, std::uint32_t destination,
@@ -620,16 +654,17 @@ class Builder
             if (removal != kNoIndex)
             {
                 if (removal + 1 >= stage_begin_.size() ||
-                    !enumerate(selection.faces[empty_face].coverage_state_root, 0, leaf_capacity_,
-                               stage_begin_[removal], stage_begin_[removal + 1],
-                               [&](std::uint32_t operand)
-                               {
-                                   return append(
-                                       OwnerKind::boundary_subtraction, owner,
-                                       {AnalyticFilteredSourceKind::subtractive_operand_effect,
-                                        AnalyticFilteredSourceRole::none, operands_[operand].id,
-                                        operands_[operand].stage_id, 0});
-                               }))
+                    !enumerate(
+                        selection.faces[empty_face].coverage_state_root, 0, leaf_capacity_,
+                        stage_begin_[removal], stage_begin_[removal + 1],
+                        [&](std::uint32_t operand)
+                        {
+                            return record_outcome_association(false, owner, operand) &&
+                                   append(OwnerKind::boundary_subtraction, owner,
+                                          {AnalyticFilteredSourceKind::subtractive_operand_effect,
+                                           AnalyticFilteredSourceRole::none, operands_[operand].id,
+                                           operands_[operand].stage_id, 0});
+                        }))
                     return false;
             }
         }
@@ -817,6 +852,13 @@ class Builder
         publication = checked_add(
             publication, checked_multiply(regions.regions.size(), kRegionLogicalBytes, valid),
             valid);
+        if (outcome_ != nullptr)
+            publication =
+                checked_add(publication,
+                            checked_multiply(checked_add(region_association_count_,
+                                                         boundary_association_count_, valid),
+                                             kOutcomeAssociationLogicalBytes, valid),
+                            valid);
         const std::uint64_t preparation_scratch =
             checked_multiply(operand_occurrence_begin_.size(), kIndexLogicalBytes, valid);
         const std::uint64_t phase = checked_add(
@@ -850,6 +892,12 @@ class Builder
         result_.boundaries.reserve(regions.ring_half_edges.size());
         result_.vertices.reserve(arrangement.vertices.size());
         result_.region_lineage.reserve(regions.regions.size());
+        if (outcome_ != nullptr)
+        {
+            outcome_->region_operands.reserve(static_cast<std::size_t>(region_association_count_));
+            outcome_->boundary_subtractors.reserve(
+                static_cast<std::size_t>(boundary_association_count_));
+        }
         result_.telemetry.publication_capacity_records = expected_raw_count_;
         raw_count_ = 0;
         return true;
@@ -857,6 +905,10 @@ class Builder
     bool publish()
     {
         if (raw_count_ != expected_raw_count_ || raw_.size() != expected_raw_count_)
+            return false;
+        if (outcome_ != nullptr &&
+            (outcome_->region_operands.size() != region_association_count_ ||
+             outcome_->boundary_subtractors.size() != boundary_association_count_))
             return false;
         bool valid = true;
         std::uint64_t traversal_work =
@@ -949,6 +1001,9 @@ class Builder
     std::uint64_t reporter_generation_ = 0;
     bool counting_ = false;
     bool reserve_outcomes_ = false;
+    analytic_lineage_detail::OutcomeLineageResult* outcome_ = nullptr;
+    std::uint64_t region_association_count_ = 0;
+    std::uint64_t boundary_association_count_ = 0;
 };
 
 static_assert(sizeof(Operand) <= kOperandLogicalBytes);
@@ -961,6 +1016,8 @@ static_assert(sizeof(AnalyticFilteredSourceReference) <= kSourceLogicalBytes);
 static_assert(sizeof(AnalyticFilteredBoundaryLineage) <= kBoundaryLogicalBytes);
 static_assert(sizeof(AnalyticFilteredVertexLineage) <= kVertexLogicalBytes);
 static_assert(sizeof(AnalyticFilteredRegionLineage) <= kRegionLogicalBytes);
+static_assert(sizeof(analytic_lineage_detail::OutcomeOperandAssociation) <=
+              kOutcomeAssociationLogicalBytes);
 } // namespace
 
 AnalyticFilteredLineageResult
@@ -972,11 +1029,14 @@ build_analytic_filtered_lineage(const AnalyticRequestPacketRecords& records,
     return Builder(records, job_index, geometry, candidate_pairs, limits).build();
 }
 
-AnalyticFilteredLineageResult analytic_lineage_detail::build_lineage_for_outcomes(
+analytic_lineage_detail::OutcomeLineageResult analytic_lineage_detail::build_lineage_for_outcomes(
     const AnalyticRequestPacketRecords& records, std::uint32_t job_index,
     const AnalyticFilteredGeometry& geometry, const std::vector<AnalyticCurvePair>& candidate_pairs,
     const AnalyticSolverLimits& limits)
 {
-    return Builder(records, job_index, geometry, candidate_pairs, limits, true).build();
+    OutcomeLineageResult output;
+    output.lineage =
+        Builder(records, job_index, geometry, candidate_pairs, limits, &output).build();
+    return output;
 }
 } // namespace geometer

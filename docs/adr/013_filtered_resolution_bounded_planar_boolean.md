@@ -248,8 +248,10 @@ engine.
   identical logical charges and canonical ring/component/source ordering.
   Operand outcomes are derived during the same face-dual walk with six
   active-and-unseen stage reporters. Each `(operand, history fact)` is emitted
-  at most once, and later reference projection visits only actual lineage
-  incidences. Outcome sources are the complete original occurrence tuples;
+  at most once. The lineage walk also retains canonical unique operand/topology
+  associations, so later reference projection is proportional to emitted
+  ring/region associations rather than repeated occurrence-source
+  multiplicity. Outcome sources remain the complete original occurrence tuples;
   ring/region references remain tagged local topology handles until the
   one-time 1 nm publisher returns canonical remap tables. No face-by-operand
   replay or second geometric tolerance is permitted. Final grid normalization

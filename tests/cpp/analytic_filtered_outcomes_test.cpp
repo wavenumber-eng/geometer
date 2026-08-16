@@ -284,6 +284,18 @@ AnalyticFilteredOutcomesResult build_disjoint(std::uint32_t count,
     return build(records_for({{1, operands}}), geometry, limits);
 }
 
+AnalyticFilteredOutcomesResult
+build_disconnected_one_operand(std::uint32_t count, const AnalyticSolverLimits& limits = {})
+{
+    AnalyticFilteredGeometry geometry;
+    for (std::uint32_t index = 0; index < count; ++index)
+    {
+        const double x = index * 2000.0;
+        append_box(geometry, 1, x, 0, x + 1000, 1000);
+    }
+    return build(records_for({{1, {1}}}), geometry, limits);
+}
+
 AnalyticFilteredOutcomesResult build_empty_stages(std::uint32_t count,
                                                   const AnalyticSolverLimits& limits = {})
 {
@@ -345,6 +357,11 @@ void test_dense_stage_and_exact_reference_counting()
         event(duplicate, 2, AnalyticOperandOutcomeKind::subtraction_effect_survives);
     require(removal.result_references.count == 2 && duplicate.result_references.size() == 3,
             "duplicate subtraction fragments inflated exact tagged references");
+    const auto single_copy = build_duplicate_subtraction(1);
+    require(single_copy.error == AnalyticFilteredOutcomesError::none &&
+                single_copy.telemetry.lineage_source_visits ==
+                    duplicate.telemetry.lineage_source_visits,
+            "duplicate authored sources inflated topology-reference projection work");
 
     AnalyticSolverLimits limits;
     std::uint64_t low = 0;
@@ -392,6 +409,76 @@ void test_dense_stage_and_exact_reference_counting()
                 short_work.events.empty() && short_work.result_references.empty() &&
                 short_work.source_references.empty(),
             "one-unit-short duplicate publication leaked output");
+}
+
+void test_output_association_scaling()
+{
+    const auto small = build_disconnected_one_operand(8);
+    const auto large = build_disconnected_one_operand(16);
+    require(small.error == AnalyticFilteredOutcomesError::none &&
+                large.error == AnalyticFilteredOutcomesError::none,
+            "disconnected single-operand outcome fixture failed");
+    require(small.result_references.size() == 8 && large.result_references.size() == 16,
+            "disconnected operand did not retain one reference per region");
+    require(small.telemetry.lineage_source_visits == 16 &&
+                large.telemetry.lineage_source_visits == 32,
+            "count/fill topology-reference visits did not track emitted associations");
+    require(large.telemetry.predicate_calls < small.telemetry.predicate_calls * 3,
+            "topology-reference association work was not output-linear");
+    require(large.telemetry.peak_working_memory_bytes <
+                small.telemetry.peak_working_memory_bytes * 3,
+            "topology-reference association storage was not output-linear: " +
+                std::to_string(small.telemetry.peak_working_memory_bytes) + "/" +
+                std::to_string(large.telemetry.peak_working_memory_bytes));
+
+    AnalyticSolverLimits limits;
+    std::uint64_t low = 0;
+    std::uint64_t high = limits.predicate_calls;
+    while (low < high)
+    {
+        const std::uint64_t middle = low + (high - low) / 2;
+        auto probe = limits;
+        probe.predicate_calls = middle;
+        if (build_disconnected_one_operand(8, probe).error == AnalyticFilteredOutcomesError::none)
+            high = middle;
+        else
+            low = middle + 1;
+    }
+    auto exact_work = limits;
+    exact_work.predicate_calls = low;
+    require(build_disconnected_one_operand(8, exact_work).error ==
+                AnalyticFilteredOutcomesError::none,
+            "association-heavy publication failed at exact governed work");
+    --exact_work.predicate_calls;
+    const auto short_work = build_disconnected_one_operand(8, exact_work);
+    require(short_work.error == AnalyticFilteredOutcomesError::resource_limit_exceeded &&
+                short_work.events.empty() && short_work.result_references.empty() &&
+                short_work.source_references.empty(),
+            "one-unit-short association publication leaked output");
+
+    low = 0;
+    high = limits.working_memory_bytes;
+    while (low < high)
+    {
+        const std::uint64_t middle = low + (high - low) / 2;
+        auto probe = limits;
+        probe.working_memory_bytes = middle;
+        if (build_disconnected_one_operand(8, probe).error == AnalyticFilteredOutcomesError::none)
+            high = middle;
+        else
+            low = middle + 1;
+    }
+    auto exact_memory = limits;
+    exact_memory.working_memory_bytes = low;
+    require(build_disconnected_one_operand(8, exact_memory).error ==
+                AnalyticFilteredOutcomesError::none,
+            "association-heavy publication failed at exact logical memory");
+    --exact_memory.working_memory_bytes;
+    const auto short_memory = build_disconnected_one_operand(8, exact_memory);
+    require(short_memory.error == AnalyticFilteredOutcomesError::resource_limit_exceeded &&
+                short_memory.events.empty() && short_memory.result_references.empty() &&
+                short_memory.source_references.empty(),
+            "one-byte-short association publication leaked output");
 }
 
 void test_empty_stage_work_admission()
@@ -600,6 +687,7 @@ int main(int argc, char** argv)
     test_complete_removal_and_no_effect();
     test_remove_refill_remove_and_collapsed_no_effect();
     test_dense_stage_and_exact_reference_counting();
+    test_output_association_scaling();
     test_empty_stage_work_admission();
     test_governance_and_sparse_scaling();
     test_malformed_source_fails_before_arrangement();

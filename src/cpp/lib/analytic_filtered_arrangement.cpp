@@ -49,13 +49,14 @@ struct EndpointRecord
     AnalyticFilteredPointNm point;
     std::uint32_t endpoint_slot = 0;
     std::uint32_t span_offset = 0;
+    std::uint32_t endpoint_authoritative_curve = 0;
     bool start = true;
 };
 
 struct VertexCluster
 {
-    AnalyticFilteredPointNm seed;
     AnalyticFilteredPointNm hull;
+    std::uint32_t endpoint_authoritative_curve = 0;
 };
 
 struct ExpiryEntry
@@ -276,6 +277,33 @@ bool complete_points_within_resolution(const AnalyticFilteredPointNm& left,
     const Interval distance_squared = complete_distance_squared(point(left), point(right));
     return distance_squared.upper <=
            static_cast<double>(kAnalyticTopologyResolutionNm * kAnalyticTopologyResolutionNm);
+}
+
+bool same_point_enclosure(const AnalyticFilteredPointNm& left,
+                          const AnalyticFilteredPointNm& right) noexcept
+{
+    return left.x.lower == right.x.lower && left.x.upper == right.x.upper &&
+           left.y.lower == right.y.lower && left.y.upper == right.y.upper;
+}
+
+bool same_singleton_point(const AnalyticFilteredPointNm& left,
+                          const AnalyticFilteredPointNm& right) noexcept
+{
+    return left.x.lower == left.x.upper && left.y.lower == left.y.upper &&
+           right.x.lower == right.x.upper && right.y.lower == right.y.upper &&
+           left.x.lower == right.x.lower && left.y.lower == right.y.lower;
+}
+
+bool endpoint_can_join_cluster(const VertexCluster& cluster,
+                               const EndpointRecord& endpoint) noexcept
+{
+    if (cluster.endpoint_authoritative_curve == 0 && endpoint.endpoint_authoritative_curve == 0)
+        return complete_points_within_resolution(cluster.hull, endpoint.point);
+    if (cluster.endpoint_authoritative_curve != 0 &&
+        cluster.endpoint_authoritative_curve == endpoint.endpoint_authoritative_curve &&
+        same_point_enclosure(cluster.hull, endpoint.point))
+        return true;
+    return same_singleton_point(cluster.hull, endpoint.point);
 }
 
 bool curve_guarantees_overlay_span(const AnalyticAtomicCurveNm& curve) noexcept
@@ -890,17 +918,23 @@ class ArrangementBuilder
         endpoint_vertices_.resize(endpoint_count);
         for (std::uint32_t span = 0; span < overlay_.spans.size(); ++span)
         {
-            endpoints_.push_back({overlay_.spans[span].start, span * 2, span, true});
-            endpoints_.push_back({overlay_.spans[span].end, span * 2 + 1, span, false});
+            const std::uint32_t carrier = overlay_.spans[span].carrier_curve_index;
+            const std::uint32_t authoritative =
+                geometry_.curves[carrier - 1].has_endpoint_authoritative_arc_certificate ? carrier
+                                                                                         : 0;
+            endpoints_.push_back({overlay_.spans[span].start, span * 2, span, authoritative, true});
+            endpoints_.push_back(
+                {overlay_.spans[span].end, span * 2 + 1, span, authoritative, false});
         }
         for (std::uint32_t local = 0; local < collapsed_curve_indices_.size(); ++local)
         {
             const std::uint32_t curve_offset = collapsed_curve_indices_[local];
             const AnalyticAtomicCurveNm& curve = geometry_.curves[curve_offset];
-            endpoints_.push_back({point_hull(curve.start, curve.end),
-                                  static_cast<std::uint32_t>(span_endpoint_count + local),
-                                  static_cast<std::uint32_t>(overlay_.spans.size() + local),
-                                  false});
+            endpoints_.push_back(
+                {point_hull(curve.start, curve.end),
+                 static_cast<std::uint32_t>(span_endpoint_count + local),
+                 static_cast<std::uint32_t>(overlay_.spans.size() + local),
+                 curve.has_endpoint_authoritative_arc_certificate ? curve.curve_index : 0, false});
         }
         std::sort(endpoints_.begin(), endpoints_.end(),
                   [](const EndpointRecord& left, const EndpointRecord& right)
@@ -936,7 +970,7 @@ class ArrangementBuilder
                 [&](std::size_t payload, std::uint32_t)
                 {
                     const std::uint32_t cluster = static_cast<std::uint32_t>(payload);
-                    if (complete_points_within_resolution(clusters_[cluster].hull, endpoint.point))
+                    if (endpoint_can_join_cluster(clusters_[cluster], endpoint))
                         selected = std::min(selected, cluster);
                     return true;
                 });
@@ -954,7 +988,7 @@ class ArrangementBuilder
                 if (!charge(update_units))
                     return false;
                 result_.telemetry.endpoint_index_update_work_units += update_units;
-                clusters_.push_back({endpoint.point, endpoint.point});
+                clusters_.push_back({endpoint.point, endpoint.endpoint_authoritative_curve});
                 if (!index.insert(endpoint.point.y.lower, endpoint.point.y.upper, selected,
                                   selected + 1))
                     return fail(AnalyticFilteredArrangementError::resource_limit_exceeded);

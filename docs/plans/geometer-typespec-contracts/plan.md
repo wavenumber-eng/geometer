@@ -1037,6 +1037,11 @@ Geometer proposal, not the original consumer packet.
   including one within 50 nm, rejects. Replay arcs that no longer remain on
   one half retain distinct internal cardinal partitions and compress those
   spans back to the published boundary mapping without a proximity merge.
+  Endpoint-authoritative arrangement vertices reconcile only by exact
+  construction identity/equal enclosure, and any collapsed authoritative span
+  rejects. A lowering-internal endpoint/cardinal-side column identity batches
+  overlapping filtered x enclosures atomically without changing coordinates
+  or merging vertices.
   Generic irrational overlapping disks,
   irrational-radius authored arcs, clockwise annular holes, full two-half
   circles, nested hole/island topology, reciprocal old-to-normalized maps,

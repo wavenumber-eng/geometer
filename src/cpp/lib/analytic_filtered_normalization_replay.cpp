@@ -16,8 +16,11 @@ namespace geometer::analytic_normalization_detail
 {
 namespace
 {
+using analytic_detail::add;
+using analytic_detail::complete_distance_squared;
 using analytic_detail::cross;
 using analytic_detail::exact;
+using analytic_detail::Interval;
 using analytic_detail::negate;
 using analytic_detail::Point;
 using analytic_detail::subtract;
@@ -49,6 +52,25 @@ struct ArcCarrierEntry
     {
         return std::tie(exact_center, center_x, center_y, first_x, first_y, second_x, second_y,
                         radius, center_on_positive_side);
+    }
+};
+
+struct EndpointColumnEntry
+{
+    std::int64_t x = 0;
+    std::int64_t y = 0;
+    std::uint32_t curve = 0;
+    bool start = true;
+    bool right = false;
+
+    auto key() const noexcept
+    {
+        return std::tie(right, x, y, curve, start);
+    }
+
+    auto group_key() const noexcept
+    {
+        return std::tie(right, x, y);
     }
 };
 
@@ -400,8 +422,11 @@ class Validator
             return false;
         }
         std::uint64_t traversal_work = 0;
-        if (!checked_multiply(curves_.size(), 3, traversal_work) ||
+        std::uint64_t endpoint_count = 0;
+        if (!checked_multiply(curves_.size(), 2, endpoint_count) ||
+            !checked_multiply(curves_.size(), 7, traversal_work) ||
             !checked_add(traversal_work, sort_units(curves_.size()), traversal_work) ||
+            !checked_add(traversal_work, sort_units(endpoint_count), traversal_work) ||
             !charge(traversal_work))
             return false;
         geometry_.origin_x_nm = origin_x_nm_;
@@ -443,6 +468,61 @@ class Validator
             auto& curve = geometry_.curves[arc_carriers[index].curve];
             curve.construction_carrier_id = curves_.size() + group;
             curve.construction_family_id = curve.construction_carrier_id;
+        }
+        std::vector<ArcCarrierEntry>().swap(arc_carriers);
+
+        std::vector<EndpointColumnEntry> endpoint_columns;
+        endpoint_columns.reserve(static_cast<std::size_t>(endpoint_count));
+        for (std::uint32_t curve_index = 0; curve_index < geometry_.curves.size(); ++curve_index)
+        {
+            const auto& curve = geometry_.curves[curve_index];
+            if (!curve.has_endpoint_authoritative_arc_certificate)
+                continue;
+            const Interval center_x{curve.circle.center.x.lower, curve.circle.center.x.upper};
+            const Interval radius{curve.circle.radius.lower, curve.circle.radius.upper};
+            const Interval left = subtract(center_x, radius);
+            const Interval right = add(center_x, radius);
+            const auto collect = [&](const AnalyticFilteredPointNm& endpoint,
+                                     const AnalyticIntegerPointNm& integer, bool start)
+            {
+                const AnalyticFilteredPointNm left_seam = {{left.lower, left.upper},
+                                                           curve.circle.center.y};
+                const AnalyticFilteredPointNm right_seam = {{right.lower, right.upper},
+                                                            curve.circle.center.y};
+                constexpr double kResolutionSquared = static_cast<double>(
+                    kAnalyticTopologyResolutionNm * kAnalyticTopologyResolutionNm);
+                const bool near_left =
+                    complete_distance_squared(point(left_seam), point(endpoint)).upper <=
+                    kResolutionSquared;
+                const bool near_right =
+                    complete_distance_squared(point(right_seam), point(endpoint)).upper <=
+                    kResolutionSquared;
+                if (near_left == near_right)
+                    return;
+                const AnalyticFilteredPointNm& seam = near_right ? right_seam : left_seam;
+                const bool same_seam =
+                    endpoint.x.lower == seam.x.lower && endpoint.x.upper == seam.x.upper &&
+                    endpoint.y.lower == seam.y.lower && endpoint.y.upper == seam.y.upper;
+                if (!same_seam)
+                    endpoint_columns.push_back(
+                        {integer.x, integer.y, curve_index, start, near_right});
+            };
+            collect(curve.start, curve.integer_start, true);
+            collect(curve.end, curve.integer_end, false);
+        }
+        std::sort(endpoint_columns.begin(), endpoint_columns.end(),
+                  [](const EndpointColumnEntry& left, const EndpointColumnEntry& right)
+                  { return left.key() < right.key(); });
+        std::uint64_t endpoint_group = 0;
+        for (std::size_t index = 0; index < endpoint_columns.size(); ++index)
+        {
+            if (index == 0 ||
+                endpoint_columns[index - 1].group_key() != endpoint_columns[index].group_key())
+                ++endpoint_group;
+            auto& entry = endpoint_columns[index];
+            auto& curve = geometry_.curves[entry.curve];
+            (entry.start ? curve.start : curve.end).construction_x_column_id =
+                analytic_endpoint_arc_partition_column_token(endpoint_group, entry.right);
         }
         for (std::uint32_t index = 0; index < geometry_.curves.size(); ++index)
             append_occurrence(index);
@@ -516,6 +596,16 @@ class Validator
             return fail(replay.error == AnalyticFilteredRegionsError::resource_limit_exceeded
                             ? ReplayError::resource_limit_exceeded
                             : ReplayError::topology_collapse);
+        }
+        if (!charge(replay.selection.arrangement.collapsed_spans.size()))
+            return result_;
+        for (const auto& collapsed : replay.selection.arrangement.collapsed_spans)
+        {
+            if (collapsed.carrier_curve_index == 0 ||
+                collapsed.carrier_curve_index > geometry_.curves.size() ||
+                geometry_.curves[collapsed.carrier_curve_index - 1]
+                    .has_endpoint_authoritative_arc_certificate)
+                return fail(ReplayError::topology_collapse);
         }
         if (!validate_ring_mapping(replay) || !validate_region_mapping(replay))
             return fail(ReplayError::topology_collapse);
@@ -667,6 +757,7 @@ ReplayResult validate_normalized_replay(std::int64_t origin_x_nm, std::int64_t o
 }
 
 static_assert(sizeof(AnalyticAtomicCurveNm) <= kAnalyticAtomicCurveLogicalBytes);
+static_assert(sizeof(EndpointColumnEntry) <= 32);
 static_assert(sizeof(AnalyticCurveBoundsNm) <= 48);
 static_assert(sizeof(AnalyticFilteredOccurrence) <= 56);
 static_assert(sizeof(ArcCarrierEntry) <= 80);

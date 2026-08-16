@@ -612,6 +612,14 @@ when the reconstructed arc is outward-certified to remain on the named
 x-monotone half; otherwise replay retains its own cardinal partitions as
 distinct internal vertices (unless a seam is exactly the endpoint) and may map
 multiple internal spans back to one published boundary fragment.
+Arrangement reconciliation treats those endpoint-authoritative endpoints and
+seams by exact construction identity/equal enclosure, not by the ordinary
+50 nm endpoint cluster rule; any collapsed endpoint-authoritative replay span
+is a topology failure. When independently reconstructed seams and normalized
+endpoints have overlapping filtered x enclosures, replay mints a deterministic
+endpoint-and-cardinal-side column identity so the face sweep processes them as
+one atomic event column. That identity neither changes coordinates nor merges
+the distinct vertices.
 When two replay curves share a normalized endpoint, the narrow phase treats
 that endpoint as a verified construction root and factors only the possible
 second line/circle or circle/circle root with outward interval arithmetic. It

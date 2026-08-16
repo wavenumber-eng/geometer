@@ -271,10 +271,15 @@ engine.
   50 nm. The reconstruction certificate is separate from the x-monotone-half
   refinement: arcs that remain on their named half need no internal seam;
   others retain distinct internal cardinal partitions while mapping all such
-  spans back to the one published fragment. Generic irrational intersections
-  and irrational-radius arcs therefore remain on the fast filtered path
-  without a second proximity merge. Packet source-set interning, canonical
-  record IDs, and dispatch remain gated.
+  spans back to the one published fragment. Replay arrangement reconciles
+  endpoint-authoritative endpoints and seams only by exact construction
+  identity/equal enclosure; a collapsed such span is a topology failure. A
+  deterministic endpoint/cardinal-side token may correlate overlapping x
+  enclosures for atomic face-sweep processing, but cannot change coordinates
+  or merge vertices. Generic irrational intersections and irrational-radius
+  arcs therefore remain on the fast filtered path without a second proximity
+  merge. Packet source-set interning, canonical record IDs, and dispatch remain
+  gated.
 - Solver resource limits are supplied through one internal limits value object
   rather than scattered production constants. The catalog values are governed
   hard ceilings; a host may advertise and enforce lower effective limits, and

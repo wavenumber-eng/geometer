@@ -643,15 +643,63 @@ class OverlayBuilder
     {
         const Interval center_x{curve.circle.center.x.lower, curve.circle.center.x.upper};
         const Interval radius{curve.circle.radius.lower, curve.circle.radius.upper};
-        return {{subtract(center_x, radius).lower, subtract(center_x, radius).upper},
-                curve.circle.center.y};
+        AnalyticFilteredPointNm result = {
+            {subtract(center_x, radius).lower, subtract(center_x, radius).upper},
+            curve.circle.center.y};
+        if (curve.has_endpoint_authoritative_arc_certificate)
+        {
+            bool conflict = false;
+            const auto assign = [&](const AnalyticFilteredPointNm& endpoint)
+            {
+                const std::uint64_t token = endpoint.construction_x_column_id;
+                if (analytic_is_endpoint_arc_partition_column_token(token) &&
+                    !analytic_endpoint_arc_partition_column_is_right(token) &&
+                    points_within_resolution(endpoint, result))
+                {
+                    if (result.construction_x_column_id == 0 && !conflict)
+                        result.construction_x_column_id = token;
+                    else if (result.construction_x_column_id != token)
+                    {
+                        result.construction_x_column_id = 0;
+                        conflict = true;
+                    }
+                }
+            };
+            assign(curve.start);
+            assign(curve.end);
+        }
+        return result;
     }
 
     AnalyticFilteredPointNm circle_right_seam(const AnalyticAtomicCurveNm& curve) const noexcept
     {
         const Interval center_x{curve.circle.center.x.lower, curve.circle.center.x.upper};
         const Interval radius{curve.circle.radius.lower, curve.circle.radius.upper};
-        return {{add(center_x, radius).lower, add(center_x, radius).upper}, curve.circle.center.y};
+        AnalyticFilteredPointNm result = {
+            {add(center_x, radius).lower, add(center_x, radius).upper}, curve.circle.center.y};
+        if (curve.has_endpoint_authoritative_arc_certificate)
+        {
+            bool conflict = false;
+            const auto assign = [&](const AnalyticFilteredPointNm& endpoint)
+            {
+                const std::uint64_t token = endpoint.construction_x_column_id;
+                if (analytic_is_endpoint_arc_partition_column_token(token) &&
+                    analytic_endpoint_arc_partition_column_is_right(token) &&
+                    points_within_resolution(endpoint, result))
+                {
+                    if (result.construction_x_column_id == 0 && !conflict)
+                        result.construction_x_column_id = token;
+                    else if (result.construction_x_column_id != token)
+                    {
+                        result.construction_x_column_id = 0;
+                        conflict = true;
+                    }
+                }
+            };
+            assign(curve.start);
+            assign(curve.end);
+        }
+        return result;
     }
 
     bool build_events()

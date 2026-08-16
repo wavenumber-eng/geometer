@@ -35,8 +35,14 @@ struct AnalyticFilteredPointNm
 // Fixed-width proof-token namespaces used only inside the trusted filtered
 // pipeline. A vertical carrier token proves every point on that line has one
 // exact x coordinate; a pair token proves the two roots produced by one
-// carrier pair share an exact x coordinate. Neither token stores that value.
+// carrier pair share an exact x coordinate. An endpoint-arc partition token
+// correlates overlapping event enclosures around one normalized endpoint and
+// one cardinal side so the face sweep handles them in one atomic column; it
+// does not prove coordinate equality and may never merge vertices. No token
+// stores an algebraic expression or coordinate.
 inline constexpr std::uint64_t kAnalyticVerticalXColumnTag = std::uint64_t{1} << 63U;
+inline constexpr std::uint64_t kAnalyticEndpointArcLeftColumnTag = std::uint64_t{3} << 62U;
+inline constexpr std::uint64_t kAnalyticEndpointArcRightColumnTag = std::uint64_t{7} << 61U;
 
 [[nodiscard]] inline constexpr std::uint64_t
 analytic_vertical_x_column_token(std::uint64_t carrier_id) noexcept
@@ -57,6 +63,28 @@ analytic_pair_x_column_token(std::uint64_t first_carrier_id,
     return first != 0 && first < (std::uint64_t{1} << 31U) && second < (std::uint64_t{1} << 32U)
                ? (first << 32U) | second
                : 0;
+}
+
+[[nodiscard]] inline constexpr std::uint64_t
+analytic_endpoint_arc_partition_column_token(std::uint64_t carrier_id, bool right) noexcept
+{
+    if (carrier_id == 0 || carrier_id >= (std::uint64_t{1} << 61U))
+        return 0;
+    return (right ? kAnalyticEndpointArcRightColumnTag : kAnalyticEndpointArcLeftColumnTag) |
+           carrier_id;
+}
+
+[[nodiscard]] inline constexpr bool
+analytic_is_endpoint_arc_partition_column_token(std::uint64_t token) noexcept
+{
+    const std::uint64_t tag = token >> 61U;
+    return tag == 6 || tag == 7;
+}
+
+[[nodiscard]] inline constexpr bool
+analytic_endpoint_arc_partition_column_is_right(std::uint64_t token) noexcept
+{
+    return (token >> 61U) == 7;
 }
 
 struct AnalyticFilteredCircleNm

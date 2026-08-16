@@ -826,7 +826,7 @@ def test_filtered_solver_foundation_is_bounded_non_algebraic_and_not_dispatched(
         ),
         "normalization_parity_validator": ("scripts/validate_analytic_filtered_normalization_parity.py"),
         "normalization_vector_bytes": 2360,
-        "normalization_vector_sha256": ("e828260664f67c79644ed8aaedeaa0d831ea155584cfc0dc11eb735f480bab99"),
+        "normalization_vector_sha256": ("1e88c77cfb533c1ed14f74a7ff8afb19fddd6f543f2297cb32f1ea7847bb66a0"),
     }
     implementation_paths = [
         solver[key]

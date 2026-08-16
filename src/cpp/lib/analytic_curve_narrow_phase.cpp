@@ -238,9 +238,14 @@ bool valid_common_curve(const AnalyticAtomicCurveNm& curve) noexcept
                 curve.construction_line_dx == 0
             ? analytic_vertical_x_column_token(curve.construction_carrier_id)
             : 0;
-    const bool valid_columns =
-        (start_column == 0 && end_column == 0) ||
-        (vertical_column != 0 && start_column == vertical_column && end_column == vertical_column);
+    const auto valid_arc_column = [](std::uint64_t value)
+    { return value == 0 || analytic_is_endpoint_arc_partition_column_token(value); };
+    const bool valid_columns = (start_column == 0 && end_column == 0) ||
+                               (vertical_column != 0 && start_column == vertical_column &&
+                                end_column == vertical_column) ||
+                               (curve.kind == AnalyticAtomicCurveKind::circular_arc &&
+                                curve.has_endpoint_authoritative_arc_certificate &&
+                                valid_arc_column(start_column) && valid_arc_column(end_column));
     if (curve.curve_index == 0 || !coordinate_in_span(curve.start.x) ||
         !coordinate_in_span(curve.start.y) || !coordinate_in_span(curve.end.x) ||
         !coordinate_in_span(curve.end.y) || !valid_columns ||
@@ -285,6 +290,24 @@ bool valid_endpoint_authoritative_arc_certificate(const AnalyticAtomicCurveNm& c
     const Point supplied = point(curve.circle.center);
     if (supplied.x.lower > reconstructed.x.lower || supplied.x.upper < reconstructed.x.upper ||
         supplied.y.lower > reconstructed.y.lower || supplied.y.upper < reconstructed.y.upper)
+        return false;
+
+    const Interval radius_interval = exact(radius);
+    const auto valid_partition_token = [&](const AnalyticFilteredPointNm& endpoint)
+    {
+        const std::uint64_t token = endpoint.construction_x_column_id;
+        if (token == 0)
+            return true;
+        if (!analytic_is_endpoint_arc_partition_column_token(token))
+            return false;
+        const Interval seam_x = analytic_endpoint_arc_partition_column_is_right(token)
+                                    ? add(reconstructed.x, radius_interval)
+                                    : subtract(reconstructed.x, radius_interval);
+        const Point seam{seam_x, reconstructed.y};
+        return complete_distance_squared(point(endpoint), seam).upper <=
+               static_cast<double>(kAnalyticTopologyResolutionNm * kAnalyticTopologyResolutionNm);
+    };
+    if (!valid_partition_token(curve.start) || !valid_partition_token(curve.end))
         return false;
 
     return !curve.has_endpoint_authoritative_x_monotone_certificate ||

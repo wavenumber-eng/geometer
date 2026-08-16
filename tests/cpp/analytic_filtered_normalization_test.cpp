@@ -36,7 +36,8 @@ AnalyticFilteredPointNm exact_point(double x, double y)
 AnalyticAtomicCurveNm endpoint_authoritative_arc(std::uint32_t index, std::int64_t start_x,
                                                  std::int64_t start_y, std::int64_t end_x,
                                                  std::int64_t end_y, std::uint64_t radius,
-                                                 bool counterclockwise, bool upper_branch)
+                                                 bool counterclockwise, bool upper_branch,
+                                                 bool x_monotone = true)
 {
     AnalyticAtomicCurveNm curve;
     curve.curve_index = index;
@@ -51,7 +52,7 @@ AnalyticAtomicCurveNm endpoint_authoritative_arc(std::uint32_t index, std::int64
     curve.integer_radius = radius;
     curve.has_arc_sweep_certificate = true;
     curve.has_endpoint_authoritative_arc_certificate = true;
-    curve.has_endpoint_authoritative_x_monotone_certificate = true;
+    curve.has_endpoint_authoritative_x_monotone_certificate = x_monotone;
     curve.endpoint_authoritative_upper_branch = upper_branch;
     analytic_detail::Point center;
     require(analytic_detail::reconstruct_endpoint_authoritative_arc_center(
@@ -627,6 +628,34 @@ void test_strict_replay_rejects_nearby_residual_root()
             "strict replay accepted a distinct residual root within 50 nm");
 }
 
+void test_strict_replay_retains_near_cardinal_partition()
+{
+    std::vector<AnalyticAtomicCurveNm> curves = {
+        endpoint_authoritative_arc(1, 399, -40, 399, 40, 401, true, false, false),
+    };
+    AnalyticAtomicCurveNm line;
+    line.curve_index = 2;
+    line.start = exact_point(399.0, 40.0);
+    line.end = exact_point(399.0, -40.0);
+    line.has_integer_certificate = true;
+    line.integer_start = {399, 40};
+    line.integer_end = {399, -40};
+    curves.push_back(line);
+
+    const std::vector<AnalyticCurveBoundsNm> bounds = {
+        {1, -401.0, -401.0, 401.0, 401.0},
+        {2, 399.0, -40.0, 399.0, 40.0},
+    };
+    AnalyticFilteredRegionsResult expected;
+    expected.rings.push_back({0, 2, kNoAnalyticFilteredRing, 0, true});
+    expected.ring_half_edges = {0, 1};
+    expected.regions.push_back({0, 0});
+    const auto replay = analytic_normalization_detail::validate_normalized_replay(
+        0, 0, curves, bounds, expected, {});
+    require(replay.error == analytic_normalization_detail::ReplayError::none,
+            "strict replay failed to retain a distinct near-cardinal partition");
+}
+
 void append_parity_result(std::ostringstream& output,
                           const AnalyticFilteredNormalizationResult& result)
 {
@@ -745,6 +774,7 @@ int main(int argc, char** argv)
     test_large_sparse_admission();
     test_direct_replay_narrow_memory_boundary();
     test_strict_replay_rejects_nearby_residual_root();
+    test_strict_replay_retains_near_cardinal_partition();
     if (argc == 2 && std::string(argv[1]) == "--emit-parity")
         std::cout << "ANALYTIC_FILTERED_NORMALIZATION_VECTOR=" << parity_vector() << '\n';
     std::cout << "analytic filtered normalization tests passed\n";

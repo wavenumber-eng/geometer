@@ -291,7 +291,7 @@ struct GuaranteedCarrierCounts
     std::uint64_t collapsed_vertices = 0;
     std::uint64_t possible_base_spans = 0;
     std::uint64_t possible_repeated_base_spans = 0;
-    bool strictly_increasing_carriers = false;
+    std::uint64_t possible_base_memberships = 0;
 };
 
 bool guaranteed_carrier_counts(const AnalyticFilteredGeometry& geometry,
@@ -331,6 +331,9 @@ bool guaranteed_carrier_counts(const AnalyticFilteredGeometry& geometry,
         counts.possible_repeated_base_spans =
             checked_add(counts.possible_repeated_base_spans,
                         curve.kind == AnalyticAtomicCurveKind::circular_arc ? 4 : 2, count_valid);
+        counts.possible_base_memberships =
+            checked_add(counts.possible_base_memberships,
+                        curve.kind == AnalyticAtomicCurveKind::circular_arc ? 3 : 1, count_valid);
         if (!count_valid)
             return false;
         const std::uint64_t carrier = curve.construction_carrier_id;
@@ -382,7 +385,6 @@ bool guaranteed_carrier_counts(const AnalyticFilteredGeometry& geometry,
     }
     counts.spans = std::max(dense_spans, increasing_spans);
     counts.collapsed_vertices = separated_collapsed ? geometry.curves.size() : 0;
-    counts.strictly_increasing_carriers = increasing;
     if (!increasing)
         counts.possible_base_spans = counts.possible_repeated_base_spans;
     return true;
@@ -1353,7 +1355,7 @@ bool estimate_analytic_filtered_arrangement_minimum_requirements(
     requirements.guaranteed_spans = guaranteed.spans;
     requirements.guaranteed_collapsed_vertices = guaranteed.collapsed_vertices;
     requirements.possible_base_spans = guaranteed.possible_base_spans;
-    requirements.strictly_increasing_carriers = guaranteed.strictly_increasing_carriers;
+    requirements.possible_base_memberships = guaranteed.possible_base_memberships;
     return calculate_arrangement_minimum_requirements(geometry, pair_count, guaranteed,
                                                       requirements.working_memory_bytes,
                                                       requirements.predicate_calls);

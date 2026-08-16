@@ -753,7 +753,7 @@ def test_filtered_solver_foundation_is_bounded_non_algebraic_and_not_dispatched(
         ),
         "boolean_selection_parity_validator": ("scripts/validate_analytic_filtered_boolean_selection_parity.py"),
         "boolean_selection_vector_bytes": 12360,
-        "boolean_selection_vector_sha256": ("0924963a9a86709e1cafad69d7178bbd2fd58204da842fb11e79453d2ebe666d"),
+        "boolean_selection_vector_sha256": ("28d5387e04745a191376cd1b17163d9956865d0b5edbc3d448690cd42a031b6f"),
     }
     implementation_paths = [
         solver[key]

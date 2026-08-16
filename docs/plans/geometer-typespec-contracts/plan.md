@@ -953,6 +953,14 @@ Geometer proposal, not the original consumer packet.
   retain `invalid_argument` semantics independent of the budget, and the third
   proportional cycle-publication traversal is precharged. Native/WASM parity
   includes the updated admission telemetry.
+- Performance rejection remediation replaces the job-wide repeated-carrier
+  span multiplier with an incidence bound: base membership segments per curve,
+  both curve incidences per possible intersection, and at most two foreign
+  endpoints per curve for same-carrier candidates. Disjoint 200/400-disk
+  fixtures succeed under the default budget with sub-3x work and memory.
+  Candidate streams are globally sorted/unique-validated in the same fully
+  precharged scan; duplicate and out-of-order streams remain `invalid_argument`
+  with zero arrangement telemetry at both default and tight admitted memory.
 - Before filtered operation dispatch is enabled, move the retained native
   exact/oracle sources out of the normal `geometer_lib` source list into an
   explicit feasibility-oracle target, matching the separation already used by

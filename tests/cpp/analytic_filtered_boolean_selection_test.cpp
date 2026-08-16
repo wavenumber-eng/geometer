@@ -362,6 +362,31 @@ select_disks(const std::vector<AnalyticRequestDiskRecord>& disks, std::uint8_t o
     return select(records, *lowered.value);
 }
 
+std::vector<AnalyticRequestDiskRecord> disjoint_disks(std::uint32_t count)
+{
+    std::vector<AnalyticRequestDiskRecord> disks;
+    disks.reserve(count);
+    for (std::uint32_t index = 0; index < count; ++index)
+        disks.push_back({static_cast<std::uint64_t>(index) + 10,
+                         static_cast<std::int64_t>(index) * 5000, 0, 1000});
+    return disks;
+}
+
+void test_disjoint_disk_admission_remains_sparse()
+{
+    const AnalyticFilteredBooleanSelectionResult small = select_disks(disjoint_disks(200));
+    const AnalyticFilteredBooleanSelectionResult large = select_disks(disjoint_disks(400));
+    require(small.error == AnalyticFilteredBooleanSelectionError::none &&
+                large.error == AnalyticFilteredBooleanSelectionError::none &&
+                large.faces.size() == 401 && large.telemetry.material_faces == 400,
+            "ordinary disjoint disks were rejected by repeated-carrier admission");
+    require(large.telemetry.admission_work_units <= small.telemetry.admission_work_units * 3 &&
+                large.telemetry.predicate_calls <= small.telemetry.predicate_calls * 3 &&
+                large.telemetry.peak_working_memory_bytes <=
+                    small.telemetry.peak_working_memory_bytes * 3,
+            "disjoint repeated-carrier disks regressed toward quadratic scaling");
+}
+
 void test_irrational_overlapping_disks()
 {
     const AnalyticFilteredBooleanSelectionResult result =
@@ -856,6 +881,34 @@ void test_malformed_filtered_point_is_invalid()
             "malformed filtered point was misclassified as resource exhaustion");
 }
 
+void test_noncanonical_candidate_pairs_are_invalid()
+{
+    AnalyticFilteredGeometry geometry;
+    append_line(geometry, 1, 0, 0, 1000, 0, true);
+    append_line(geometry, 1, 0, 100, 1000, 100, false);
+    append_line(geometry, 1, 0, 200, 1000, 200, false);
+    const AnalyticRequestPacketRecords records = records_for({{1, {1}}});
+    const std::array<std::vector<AnalyticCurvePair>, 2> malformed = {
+        std::vector<AnalyticCurvePair>{{1, 2}, {1, 2}},
+        std::vector<AnalyticCurvePair>{{1, 3}, {1, 2}},
+    };
+    for (const auto& pairs : malformed)
+    {
+        for (const std::uint64_t memory :
+             {AnalyticSolverLimits{}.working_memory_bytes, std::uint64_t{9}})
+        {
+            AnalyticSolverLimits limits;
+            limits.working_memory_bytes = memory;
+            const AnalyticFilteredBooleanSelectionResult result =
+                build_analytic_filtered_boolean_selection(records, 0, geometry, pairs, limits);
+            require(result.error == AnalyticFilteredBooleanSelectionError::invalid_argument &&
+                        result.telemetry.arrangement_predicate_calls == 0 &&
+                        result.telemetry.arrangement_peak_working_memory_bytes == 0,
+                    "noncanonical candidate pairs produced a budget-dependent outcome");
+        }
+    }
+}
+
 void test_zero_operand_stage_scans_are_metered()
 {
     constexpr std::uint32_t count = 257;
@@ -1066,6 +1119,7 @@ int main()
     test_add_subtract_add();
     test_overlapping_rectangles();
     test_lowered_disk();
+    test_disjoint_disk_admission_remains_sparse();
     test_large_origin_is_retained();
     test_seam_adjacent_intersections_remain_distinct();
     test_irrational_overlapping_disks();
@@ -1079,6 +1133,7 @@ int main()
     test_many_memberships_are_linear_and_fixed_capacity();
     test_split_heavy_coverage_is_reserved_before_arrangement();
     test_malformed_filtered_point_is_invalid();
+    test_noncanonical_candidate_pairs_are_invalid();
     test_zero_operand_stage_scans_are_metered();
     test_collapsed_topology_is_reserved_before_arrangement();
     test_empty_job();

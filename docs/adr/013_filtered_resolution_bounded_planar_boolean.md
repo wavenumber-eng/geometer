@@ -210,9 +210,14 @@ engine.
   scan derives a conservative possible split-span and coverage-transition
   capacity before arrangement execution: line/line pairs contribute at most
   one point, line/circle and circle/circle pairs at most two, and exact shared
-  authored endpoints do not count as new splits. Strictly increasing carrier
-  identities make memberships output-linear; noncanonical repeated carriers
-  use a conservative span-by-curve bound. Split-heavy sparse inputs therefore
+  authored endpoints do not count as new splits. Membership capacity starts
+  from each curve's own line/partitioned-arc segments, adds both incidences of
+  every possible intersection point, and, for same-carrier candidates, adds at
+  most two foreign endpoints per curve. This stays `O(curves + candidates)` for
+  ordinary repeated carriers such as the paired semicircles of each disk.
+  Candidate pairs must also be globally sorted and unique before any derived
+  allocation; malformed sequences remain `invalid_argument` at every admitted
+  memory budget. Split-heavy sparse inputs therefore
   cannot complete arrangement and face topology only to fail at persistent
   coverage allocation. Malformed filtered points remain `invalid_argument`,
   independent of the resource budget, and every proportional cycle publication

@@ -172,7 +172,7 @@ SelectionAdmission prepare_boolean_selection_admission(
         return admission;
     }
     admission_work =
-        checked_add(admission_work, checked_multiply(candidate_pairs.size(), 5, valid), valid);
+        checked_add(admission_work, checked_multiply(candidate_pairs.size(), 6, valid), valid);
     if (!valid || admission_work > limits.predicate_calls)
     {
         preflight.error = AnalyticFilteredBooleanSelectionError::resource_limit_exceeded;
@@ -182,6 +182,9 @@ SelectionAdmission prepare_boolean_selection_admission(
     preflight.telemetry.predicate_calls = admission_work;
 
     std::uint64_t possible_spans = arrangement_minimum.possible_base_spans;
+    std::uint64_t possible_transitions = arrangement_minimum.possible_base_memberships;
+    AnalyticCurvePair previous_pair{};
+    bool has_previous_pair = false;
     for (const AnalyticCurvePair& pair : candidate_pairs)
     {
         if (pair.first == 0 || pair.first >= pair.second || pair.second > geometry.curves.size())
@@ -189,6 +192,15 @@ SelectionAdmission prepare_boolean_selection_admission(
             preflight.error = AnalyticFilteredBooleanSelectionError::invalid_argument;
             return admission;
         }
+        if (has_previous_pair &&
+            (pair.first < previous_pair.first ||
+             (pair.first == previous_pair.first && pair.second <= previous_pair.second)))
+        {
+            preflight.error = AnalyticFilteredBooleanSelectionError::invalid_argument;
+            return admission;
+        }
+        previous_pair = pair;
+        has_previous_pair = true;
         const AnalyticAtomicCurveNm& left = geometry.curves[pair.first - 1];
         const AnalyticAtomicCurveNm& right = geometry.curves[pair.second - 1];
         const std::uint64_t maximum_points = left.kind == AnalyticAtomicCurveKind::line &&
@@ -199,11 +211,11 @@ SelectionAdmission prepare_boolean_selection_admission(
             std::min(maximum_points, shared_exact_endpoints(left, right));
         possible_spans = checked_add(possible_spans,
                                      checked_multiply(maximum_points - existing, 2, valid), valid);
+        possible_transitions = checked_add(
+            possible_transitions, checked_multiply(maximum_points - existing, 2, valid), valid);
+        if (left.construction_carrier_id == right.construction_carrier_id)
+            possible_transitions = checked_add(possible_transitions, 4, valid);
     }
-    const std::uint64_t possible_transitions =
-        arrangement_minimum.strictly_increasing_carriers
-            ? possible_spans
-            : checked_multiply(possible_spans, geometry.curves.size(), valid);
     if (!valid)
     {
         preflight.error = AnalyticFilteredBooleanSelectionError::resource_limit_exceeded;

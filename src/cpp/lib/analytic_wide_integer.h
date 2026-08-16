@@ -47,6 +47,16 @@ inline int wide_sign(WideInteger value) noexcept
         return 1;
     return 0;
 }
+
+inline std::uint64_t wide_low_bits(WideInteger value) noexcept
+{
+    return value.low;
+}
+
+inline std::uint64_t wide_high_bits(WideInteger value) noexcept
+{
+    return static_cast<std::uint64_t>(value.high);
+}
 #else
 using WideInteger = __int128;
 
@@ -68,6 +78,16 @@ inline WideInteger wide_subtract(WideInteger left, WideInteger right) noexcept
 inline int wide_sign(WideInteger value) noexcept
 {
     return value < 0 ? -1 : value > 0 ? 1 : 0;
+}
+
+inline std::uint64_t wide_low_bits(WideInteger value) noexcept
+{
+    return static_cast<std::uint64_t>(value);
+}
+
+inline std::uint64_t wide_high_bits(WideInteger value) noexcept
+{
+    return static_cast<std::uint64_t>(static_cast<unsigned __int128>(value) >> 64U);
 }
 #endif
 

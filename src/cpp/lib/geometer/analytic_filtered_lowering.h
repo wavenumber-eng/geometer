@@ -70,7 +70,11 @@ struct AnalyticFilteredLoweringTelemetry
     std::uint64_t input_operands = 0;
     std::uint64_t input_segments = 0;
     std::uint64_t emitted_curves = 0;
+    std::uint64_t stage_records_visited = 0;
+    std::uint64_t operand_records_visited = 0;
     std::uint64_t fixed_width_predicates = 0;
+    std::uint64_t token_table_probes = 0;
+    std::uint64_t work_units = 0;
     std::uint64_t square_root_calls = 0;
     std::uint64_t peak_working_memory_bytes = 0;
     std::uint64_t algebraic_fallback_calls = 0;

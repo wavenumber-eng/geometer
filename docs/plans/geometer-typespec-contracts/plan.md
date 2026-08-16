@@ -844,8 +844,15 @@ Geometer proposal, not the original consumer packet.
   job origin, emits outward-bounded coordinates and radii, preserves source and
   material-side metadata, and is the sole issuer of construction proof tokens.
   Count and target-independent logical memory limits are charged before
-  allocation, lowering is linear in owned inputs, and native/WASM coordinate
-  bytes are parity-gated. Swept paths deliberately return job-local
+  allocation, lowering uses single-pass ownership traversal plus
+  expected-amortized-linear token lookup, and native/WASM coordinate bytes are
+  parity-gated. Every token probe consumes the work ceiling so adversarial
+  hashing cannot become unbounded quadratic work. Finite arcs use sweep-tight cardinal bounds, while
+  fixed-capacity exact-key token tables meter every probe and preserve
+  duplicate capsule and authored/constructed carrier equality. Stage/operand
+  visits share the work ceiling, empty stages are no-ops, and expanded global
+  geometry must remain signed-64-bit representable. Swept paths deliberately
+  return job-local
   `unsupported_geometry` until their piece union can use the filtered indexed
   arrangement; the former exact quadratic path is not retained as a normal
   fallback.

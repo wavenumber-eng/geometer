@@ -7,10 +7,10 @@
 #include <cmath>
 #include <cstddef>
 #include <limits>
-#include <map>
 #include <numeric>
 #include <tuple>
 #include <utility>
+#include <vector>
 
 namespace geometer
 {
@@ -36,30 +36,18 @@ struct LineFamilyKey
 struct LineCarrierKey
 {
     LineFamilyKey family;
-    WideInteger offset{};
-};
-
-struct LineCarrierLess
-{
-    bool operator()(const LineCarrierKey& left, const LineCarrierKey& right) const noexcept
-    {
-        if (left.family < right.family)
-            return true;
-        if (right.family < left.family)
-            return false;
-        return wide_compare(left.offset, right.offset) < 0;
-    }
+    // Exact carrier offset is rational_part_times_two / 2 plus
+    // radical_coefficient / 2 * sqrt(dx^2 + dy^2). The radical coefficient is
+    // zero for authored lines and constructed lines with an integral primitive
+    // direction length.
+    WideInteger rational_part_times_two{};
+    std::int64_t radical_coefficient = 0;
 };
 
 struct CircleFamilyKey
 {
     std::int64_t x = 0;
     std::int64_t y = 0;
-
-    bool operator<(const CircleFamilyKey& other) const noexcept
-    {
-        return std::tie(x, y) < std::tie(other.x, other.y);
-    }
 };
 
 struct CircleCarrierKey
@@ -68,17 +56,31 @@ struct CircleCarrierKey
     WideInteger radius_squared_times_four{};
 };
 
-struct CircleCarrierLess
+enum class TokenKeyKind : std::uint8_t
 {
-    bool operator()(const CircleCarrierKey& left, const CircleCarrierKey& right) const noexcept
-    {
-        if (left.family < right.family)
-            return true;
-        if (right.family < left.family)
-            return false;
-        return wide_compare(left.radius_squared_times_four, right.radius_squared_times_four) < 0;
-    }
+    line,
+    circle,
 };
+
+struct TokenDescriptor
+{
+    TokenKeyKind kind = TokenKeyKind::line;
+    LineCarrierKey line;
+    CircleCarrierKey circle;
+};
+
+struct TokenSlot
+{
+    std::uint32_t descriptor_index = 0;
+    std::uint64_t token = 0;
+    bool occupied = false;
+};
+
+static_assert(sizeof(AnalyticAtomicCurveNm) + sizeof(AnalyticCurveBoundsNm) +
+                      sizeof(AnalyticFilteredOccurrence) + sizeof(TokenDescriptor) +
+                      8 * sizeof(TokenSlot) <=
+                  kLogicalBytesPerCurve,
+              "filtered lowering storage exceeds its canonical per-curve charge");
 
 struct SegmentGeometry
 {
@@ -101,6 +103,12 @@ std::uint64_t span(std::int64_t minimum, std::int64_t maximum) noexcept
     return ordered_key(maximum) - ordered_key(minimum);
 }
 
+bool global_expansion_fits(std::int64_t center, std::uint64_t extent) noexcept
+{
+    const std::uint64_t key = ordered_key(center);
+    return key >= extent && key <= std::numeric_limits<std::uint64_t>::max() - extent;
+}
+
 std::uint64_t magnitude(std::int64_t value) noexcept
 {
     return value < 0 ? std::uint64_t{0} - static_cast<std::uint64_t>(value)
@@ -118,6 +126,79 @@ LineFamilyKey canonical_direction(std::int64_t dx, std::int64_t dy) noexcept
         dy = -dy;
     }
     return {dx, dy};
+}
+
+std::uint64_t hash_word(std::uint64_t state, std::uint64_t value) noexcept
+{
+    state ^= value + 0x9e3779b97f4a7c15ULL + (state << 6U) + (state >> 2U);
+    state ^= state >> 30U;
+    state *= 0xbf58476d1ce4e5b9ULL;
+    state ^= state >> 27U;
+    state *= 0x94d049bb133111ebULL;
+    return state ^ (state >> 31U);
+}
+
+std::uint64_t hash_wide(std::uint64_t state, WideInteger value) noexcept
+{
+    return hash_word(hash_word(state, wide_low_bits(value)), wide_high_bits(value));
+}
+
+bool same_line_family(const LineFamilyKey& left, const LineFamilyKey& right) noexcept
+{
+    return left.dx == right.dx && left.dy == right.dy;
+}
+
+bool same_circle_family(const CircleFamilyKey& left, const CircleFamilyKey& right) noexcept
+{
+    return left.x == right.x && left.y == right.y;
+}
+
+bool same_family(const TokenDescriptor& left, const TokenDescriptor& right) noexcept
+{
+    if (left.kind != right.kind)
+        return false;
+    return left.kind == TokenKeyKind::line
+               ? same_line_family(left.line.family, right.line.family)
+               : same_circle_family(left.circle.family, right.circle.family);
+}
+
+bool same_carrier(const TokenDescriptor& left, const TokenDescriptor& right) noexcept
+{
+    if (!same_family(left, right))
+        return false;
+    if (left.kind == TokenKeyKind::line)
+        return wide_compare(left.line.rational_part_times_two,
+                            right.line.rational_part_times_two) == 0 &&
+               left.line.radical_coefficient == right.line.radical_coefficient;
+    return wide_compare(left.circle.radius_squared_times_four,
+                        right.circle.radius_squared_times_four) == 0;
+}
+
+std::uint64_t token_hash(const TokenDescriptor& value, bool carrier) noexcept
+{
+    std::uint64_t state = hash_word(0x243f6a8885a308d3ULL, static_cast<std::uint8_t>(value.kind));
+    if (value.kind == TokenKeyKind::line)
+    {
+        state = hash_word(state, static_cast<std::uint64_t>(value.line.family.dx));
+        state = hash_word(state, static_cast<std::uint64_t>(value.line.family.dy));
+        if (carrier)
+        {
+            state = hash_wide(state, value.line.rational_part_times_two);
+            state = hash_word(state, static_cast<std::uint64_t>(value.line.radical_coefficient));
+        }
+        return state;
+    }
+    state = hash_word(state, static_cast<std::uint64_t>(value.circle.family.x));
+    state = hash_word(state, static_cast<std::uint64_t>(value.circle.family.y));
+    return carrier ? hash_wide(state, value.circle.radius_squared_times_four) : state;
+}
+
+std::size_t token_table_capacity(std::size_t count) noexcept
+{
+    std::size_t capacity = 1;
+    while (capacity < count * 2)
+        capacity *= 2;
+    return capacity;
 }
 
 WideInteger squared_distance(AnalyticIntegerPointNm left, AnalyticIntegerPointNm right) noexcept
@@ -173,6 +254,8 @@ class FilteredJobLowerer
         job_ = &records_.jobs[job_index];
         if (!preflight())
             return result(error_);
+        if (projected_curves_ == 0)
+            return {AnalyticFilteredLoweringError::none, std::move(out_), telemetry_};
         if (!choose_origin_and_validate_span())
             return result(error_);
         try
@@ -180,7 +263,10 @@ class FilteredJobLowerer
             out_.curves.reserve(projected_curves_);
             out_.bounds.reserve(projected_curves_);
             out_.occurrences.reserve(projected_curves_);
+            descriptors_.reserve(projected_curves_);
             if (!lower_operands())
+                return result(error_);
+            if (!assign_construction_tokens())
                 return result(error_);
         }
         catch (const std::bad_alloc&)
@@ -202,11 +288,35 @@ class FilteredJobLowerer
         return false;
     }
 
+    bool charge_work()
+    {
+        if (telemetry_.work_units == limits_.predicate_calls)
+            return fail(AnalyticFilteredLoweringError::resource_limit_exceeded);
+        ++telemetry_.work_units;
+        return true;
+    }
+
     bool charge_predicate()
     {
-        if (telemetry_.fixed_width_predicates == limits_.predicate_calls)
-            return fail(AnalyticFilteredLoweringError::resource_limit_exceeded);
+        if (!charge_work())
+            return false;
         ++telemetry_.fixed_width_predicates;
+        return true;
+    }
+
+    bool charge_stage_visit()
+    {
+        if (!charge_work())
+            return false;
+        ++telemetry_.stage_records_visited;
+        return true;
+    }
+
+    bool charge_operand_visit()
+    {
+        if (!charge_work())
+            return false;
+        ++telemetry_.operand_records_visited;
         return true;
     }
 
@@ -220,49 +330,55 @@ class FilteredJobLowerer
 
     bool preflight()
     {
+        if (job_->stage_count != 0)
+            operand_begin_ = records_.stages[job_->stage_begin].operand_begin;
         for (std::uint32_t stage_offset = 0; stage_offset < job_->stage_count; ++stage_offset)
         {
+            if (!charge_stage_visit())
+                return false;
             const AnalyticRequestStageRecord& stage =
                 records_.stages[job_->stage_begin + stage_offset];
-            for (std::uint32_t operand_offset = 0; operand_offset < stage.operand_count;
-                 ++operand_offset)
+            operand_end_ = stage.operand_begin + stage.operand_count;
+        }
+        for (std::uint32_t operand_index = operand_begin_; operand_index < operand_end_;
+             ++operand_index)
+        {
+            if (!charge_operand_visit())
+                return false;
+            const AnalyticRequestOperandRecord& operand = records_.operands[operand_index];
+            ++telemetry_.input_operands;
+            scan_operand(operand);
+            switch (operand.geometry_kind)
             {
-                const AnalyticRequestOperandRecord& operand =
-                    records_.operands[stage.operand_begin + operand_offset];
-                ++telemetry_.input_operands;
-                switch (operand.geometry_kind)
-                {
-                case 1:
-                {
-                    const AnalyticRequestPlanarRegionRecord& region =
-                        records_.planar_regions[operand.geometry_index];
-                    if (!preflight_ring(records_.rings[region.outer_ring]))
-                        return false;
-                    for (std::uint32_t index = 0; index < region.hole_reference_count; ++index)
-                        if (!preflight_ring(
-                                records_
-                                    .rings[records_.ring_references[region.hole_reference_begin +
+            case 1:
+            {
+                const AnalyticRequestPlanarRegionRecord& region =
+                    records_.planar_regions[operand.geometry_index];
+                if (!preflight_ring(records_.rings[region.outer_ring]))
+                    return false;
+                for (std::uint32_t index = 0; index < region.hole_reference_count; ++index)
+                    if (!preflight_ring(
+                            records_.rings[records_.ring_references[region.hole_reference_begin +
                                                                     index]]))
-                            return false;
-                    break;
-                }
-                case 2:
-                    if (!add_projected(2))
                         return false;
-                    break;
-                case 3:
-                    if (!add_projected(4))
-                        return false;
-                    break;
-                case 4:
-                    if (!add_projected(4))
-                        return false;
-                    break;
-                case 5:
-                    return fail(AnalyticFilteredLoweringError::unsupported_geometry);
-                default:
-                    return fail(AnalyticFilteredLoweringError::unsupported_geometry);
-                }
+                break;
+            }
+            case 2:
+                if (!add_projected(2))
+                    return false;
+                break;
+            case 3:
+                if (!add_projected(4))
+                    return false;
+                break;
+            case 4:
+                if (!add_projected(4))
+                    return false;
+                break;
+            case 5:
+                return fail(AnalyticFilteredLoweringError::unsupported_geometry);
+            default:
+                return fail(AnalyticFilteredLoweringError::unsupported_geometry);
             }
         }
         if (projected_curves_ > std::numeric_limits<std::uint64_t>::max() / kLogicalBytesPerCurve)
@@ -422,6 +538,9 @@ class FilteredJobLowerer
         if (operand.geometry_kind == 2)
         {
             const auto& value = records_.disks[operand.geometry_index];
+            if (!global_expansion_fits(value.center_x_nm, value.radius_nm) ||
+                !global_expansion_fits(value.center_y_nm, value.radius_nm))
+                return false;
             if (!local_coordinate(value.center_x_nm, out_.origin_x_nm, x) ||
                 !local_coordinate(value.center_y_nm, out_.origin_y_nm, y))
                 return false;
@@ -435,6 +554,9 @@ class FilteredJobLowerer
         if (operand.geometry_kind == 3)
         {
             const auto& value = records_.annuli[operand.geometry_index];
+            if (!global_expansion_fits(value.center_x_nm, value.outer_radius_nm) ||
+                !global_expansion_fits(value.center_y_nm, value.outer_radius_nm))
+                return false;
             if (!local_coordinate(value.center_x_nm, out_.origin_x_nm, x) ||
                 !local_coordinate(value.center_y_nm, out_.origin_y_nm, y))
                 return false;
@@ -446,6 +568,12 @@ class FilteredJobLowerer
             return true;
         }
         const auto& value = records_.capsules[operand.geometry_index];
+        const std::uint64_t half_width_ceiling = value.width_nm / 2 + value.width_nm % 2;
+        if (!global_expansion_fits(value.start_x_nm, half_width_ceiling) ||
+            !global_expansion_fits(value.start_y_nm, half_width_ceiling) ||
+            !global_expansion_fits(value.end_x_nm, half_width_ceiling) ||
+            !global_expansion_fits(value.end_y_nm, half_width_ceiling))
+            return false;
         AnalyticIntegerPointNm start;
         AnalyticIntegerPointNm end;
         if (!local_point(value.start_x_nm, value.start_y_nm, start) ||
@@ -461,111 +589,183 @@ class FilteredJobLowerer
 
     bool choose_origin_and_validate_span()
     {
-        for_each_operand([&](const AnalyticRequestOperandRecord& operand)
-                         { scan_operand(operand); });
         if (!has_global_bounds_ || span(min_global_x_, max_global_x_) > kMaximumSpanNm ||
             span(min_global_y_, max_global_y_) > kMaximumSpanNm)
             return fail(AnalyticFilteredLoweringError::resource_limit_exceeded);
         out_.origin_x_nm = min_global_x_;
         out_.origin_y_nm = min_global_y_;
         bool valid_extents = true;
-        for_each_operand([&](const AnalyticRequestOperandRecord& operand)
-                         { valid_extents = valid_extents && validate_operand_extent(operand); });
+        if (!for_each_operand(
+                [&](const AnalyticRequestOperandRecord& operand)
+                {
+                    valid_extents = validate_operand_extent(operand);
+                    return valid_extents;
+                }))
+            return error_ == AnalyticFilteredLoweringError::none
+                       ? fail(AnalyticFilteredLoweringError::resource_limit_exceeded)
+                       : false;
         if (!valid_extents || !has_extent_ || max_extent_x_ - min_extent_x_ > 2'000'000'000'000LL ||
             max_extent_y_ - min_extent_y_ > 2'000'000'000'000LL)
             return fail(AnalyticFilteredLoweringError::resource_limit_exceeded);
         return true;
     }
 
-    template <typename Function> void for_each_operand(Function&& function)
+    template <typename Function> bool for_each_operand(Function&& function)
     {
-        for (std::uint32_t stage_offset = 0; stage_offset < job_->stage_count; ++stage_offset)
+        for (std::uint32_t operand_index = operand_begin_; operand_index < operand_end_;
+             ++operand_index)
         {
-            const auto& stage = records_.stages[job_->stage_begin + stage_offset];
-            for (std::uint32_t operand_offset = 0; operand_offset < stage.operand_count;
-                 ++operand_offset)
-                function(records_.operands[stage.operand_begin + operand_offset]);
+            if (!charge_operand_visit() || !function(records_.operands[operand_index]))
+                return false;
         }
+        return true;
     }
 
-    std::uint64_t intern_line_family(LineFamilyKey key)
+    bool charge_token_probe()
     {
-        const auto [iterator, inserted] = line_families_.emplace(key, 0);
-        if (inserted)
-            iterator->second = next_family_id_++;
-        return iterator->second;
+        if (!charge_work())
+            return false;
+        ++telemetry_.token_table_probes;
+        ++telemetry_.fixed_width_predicates;
+        return true;
     }
 
-    std::uint64_t intern_line_carrier(LineCarrierKey key)
+    bool intern_token(std::vector<TokenSlot>& table, std::uint32_t descriptor_index, bool carrier,
+                      std::uint64_t& next_token, std::uint64_t& token)
     {
-        const auto [iterator, inserted] = line_carriers_.emplace(key, 0);
-        if (inserted)
-            iterator->second = next_carrier_id_++;
-        return iterator->second;
+        const std::size_t mask = table.size() - 1;
+        std::size_t slot =
+            static_cast<std::size_t>(token_hash(descriptors_[descriptor_index], carrier)) & mask;
+        for (std::size_t probe = 0; probe < table.size(); ++probe)
+        {
+            if (!charge_token_probe())
+                return false;
+            TokenSlot& candidate = table[slot];
+            if (!candidate.occupied)
+            {
+                candidate = {descriptor_index, next_token++, true};
+                token = candidate.token;
+                return true;
+            }
+            const TokenDescriptor& existing = descriptors_[candidate.descriptor_index];
+            const bool equal = carrier ? same_carrier(existing, descriptors_[descriptor_index])
+                                       : same_family(existing, descriptors_[descriptor_index]);
+            if (equal)
+            {
+                token = candidate.token;
+                return true;
+            }
+            slot = (slot + 1) & mask;
+        }
+        return fail(AnalyticFilteredLoweringError::resource_limit_exceeded);
     }
 
-    std::uint64_t intern_circle_family(CircleFamilyKey key)
+    bool assign_construction_tokens()
     {
-        const auto [iterator, inserted] = circle_families_.emplace(key, 0);
-        if (inserted)
-            iterator->second = next_family_id_++;
-        return iterator->second;
+        if (descriptors_.size() != out_.curves.size())
+            return fail(AnalyticFilteredLoweringError::resource_limit_exceeded);
+        const std::size_t capacity = token_table_capacity(descriptors_.size());
+        std::vector<TokenSlot> family_table(capacity);
+        std::vector<TokenSlot> carrier_table(capacity);
+        std::uint64_t next_family = 1;
+        std::uint64_t next_carrier = 1;
+        for (std::uint32_t index = 0; index < descriptors_.size(); ++index)
+            if (!intern_token(family_table, index, false, next_family,
+                              out_.curves[index].construction_family_id) ||
+                !intern_token(carrier_table, index, true, next_carrier,
+                              out_.curves[index].construction_carrier_id))
+                return false;
+        return true;
     }
 
-    std::uint64_t intern_circle_carrier(CircleCarrierKey key)
-    {
-        const auto [iterator, inserted] = circle_carriers_.emplace(key, 0);
-        if (inserted)
-            iterator->second = next_carrier_id_++;
-        return iterator->second;
-    }
-
-    void set_exact_line_tokens(AnalyticAtomicCurveNm& curve)
+    TokenDescriptor exact_line_descriptor(const AnalyticAtomicCurveNm& curve) const
     {
         const std::int64_t dx = curve.integer_end.x - curve.integer_start.x;
         const std::int64_t dy = curve.integer_end.y - curve.integer_start.y;
         const LineFamilyKey family = canonical_direction(dx, dy);
         const WideInteger offset = wide_subtract(wide_multiply(family.dx, curve.integer_start.y),
                                                  wide_multiply(family.dy, curve.integer_start.x));
-        curve.construction_family_id = intern_line_family(family);
-        curve.construction_carrier_id = intern_line_carrier({family, offset});
+        TokenDescriptor descriptor;
+        descriptor.line = {family, wide_add(offset, offset), 0};
+        return descriptor;
     }
 
-    void set_exact_circle_tokens(AnalyticAtomicCurveNm& curve,
-                                 WideInteger radius_squared_times_four)
+    TokenDescriptor circle_descriptor(AnalyticIntegerPointNm center,
+                                      WideInteger radius_squared_times_four) const
     {
-        const CircleFamilyKey family{curve.integer_center.x, curve.integer_center.y};
-        curve.construction_family_id = intern_circle_family(family);
-        curve.construction_carrier_id = intern_circle_carrier({family, radius_squared_times_four});
+        TokenDescriptor descriptor;
+        descriptor.kind = TokenKeyKind::circle;
+        descriptor.circle = {{center.x, center.y}, radius_squared_times_four};
+        return descriptor;
     }
 
-    AnalyticCurveBoundsNm bounds_for(const AnalyticAtomicCurveNm& curve) const
+    bool cardinal_may_be_on_arc(const AnalyticAtomicCurveNm& curve, Point radial)
     {
-        AnalyticCurveBoundsNm bounds;
-        bounds.curve_index = curve.curve_index;
-        if (curve.kind == AnalyticAtomicCurveKind::line)
+        if (!charge_predicate())
+            return true;
+        const Point center{{curve.circle.center.x.lower, curve.circle.center.x.upper},
+                           {curve.circle.center.y.lower, curve.circle.center.y.upper}};
+        const Point start = subtract({{curve.start.x.lower, curve.start.x.upper},
+                                      {curve.start.y.lower, curve.start.y.upper}},
+                                     center);
+        const Point end = subtract(
+            {{curve.end.x.lower, curve.end.x.upper}, {curve.end.y.lower, curve.end.y.upper}},
+            center);
+        Interval from_start = cross(start, radial);
+        Interval to_end = cross(radial, end);
+        if (!curve.counterclockwise)
         {
-            bounds.min_x = std::min(curve.start.x.lower, curve.end.x.lower);
-            bounds.min_y = std::min(curve.start.y.lower, curve.end.y.lower);
-            bounds.max_x = std::max(curve.start.x.upper, curve.end.x.upper);
-            bounds.max_y = std::max(curve.start.y.upper, curve.end.y.upper);
-            return bounds;
+            from_start = negate(from_start);
+            to_end = negate(to_end);
         }
-        bounds.min_x = downward(curve.circle.center.x.lower - curve.circle.radius.upper);
-        bounds.min_y = downward(curve.circle.center.y.lower - curve.circle.radius.upper);
-        bounds.max_x = upward(curve.circle.center.x.upper + curve.circle.radius.upper);
-        bounds.max_y = upward(curve.circle.center.y.upper + curve.circle.radius.upper);
-        return bounds;
+        if (!curve.major_arc)
+            return from_start.upper >= 0.0 && to_end.upper >= 0.0;
+        return from_start.upper >= 0.0 || to_end.upper >= 0.0;
+    }
+
+    bool bounds_for(const AnalyticAtomicCurveNm& curve, AnalyticCurveBoundsNm& bounds)
+    {
+        bounds.curve_index = curve.curve_index;
+        bounds.min_x = std::min(curve.start.x.lower, curve.end.x.lower);
+        bounds.min_y = std::min(curve.start.y.lower, curve.end.y.lower);
+        bounds.max_x = std::max(curve.start.x.upper, curve.end.x.upper);
+        bounds.max_y = std::max(curve.start.y.upper, curve.end.y.upper);
+        if (curve.kind == AnalyticAtomicCurveKind::line)
+            return true;
+        const Interval center_x{curve.circle.center.x.lower, curve.circle.center.x.upper};
+        const Interval center_y{curve.circle.center.y.lower, curve.circle.center.y.upper};
+        const Interval radius{curve.circle.radius.lower, curve.circle.radius.upper};
+        const auto include = [&](Interval x, Interval y)
+        {
+            bounds.min_x = std::min(bounds.min_x, x.lower);
+            bounds.min_y = std::min(bounds.min_y, y.lower);
+            bounds.max_x = std::max(bounds.max_x, x.upper);
+            bounds.max_y = std::max(bounds.max_y, y.upper);
+        };
+        if (cardinal_may_be_on_arc(curve, {exact(1.0), exact(0.0)}))
+            include(add(center_x, radius), center_y);
+        if (cardinal_may_be_on_arc(curve, {exact(-1.0), exact(0.0)}))
+            include(subtract(center_x, radius), center_y);
+        if (cardinal_may_be_on_arc(curve, {exact(0.0), exact(1.0)}))
+            include(center_x, add(center_y, radius));
+        if (cardinal_may_be_on_arc(curve, {exact(0.0), exact(-1.0)}))
+            include(center_x, subtract(center_y, radius));
+        return error_ == AnalyticFilteredLoweringError::none;
     }
 
     bool emit(AnalyticAtomicCurveNm curve, bool agrees_with_carrier, bool material_on_left,
-              std::uint64_t coverage_id, AnalyticFilteredSourceReference source)
+              std::uint64_t coverage_id, AnalyticFilteredSourceReference source,
+              TokenDescriptor descriptor)
     {
         if (out_.curves.size() >= projected_curves_)
             return fail(AnalyticFilteredLoweringError::resource_limit_exceeded);
         curve.curve_index = static_cast<std::uint32_t>(out_.curves.size() + 1);
-        out_.bounds.push_back(bounds_for(curve));
+        AnalyticCurveBoundsNm bounds;
+        if (!bounds_for(curve, bounds))
+            return false;
+        out_.bounds.push_back(bounds);
         out_.curves.push_back(std::move(curve));
+        descriptors_.push_back(std::move(descriptor));
         out_.occurrences.push_back({static_cast<std::uint64_t>(out_.curves.size()), coverage_id,
                                     agrees_with_carrier, material_on_left, source});
         ++telemetry_.emitted_curves;
@@ -579,7 +779,8 @@ class FilteredJobLowerer
         return square_root(dot(radial, radial));
     }
 
-    bool integer_radius(WideInteger squared, double approximation, std::uint64_t& radius)
+    bool integer_square_root(WideInteger squared, double approximation,
+                             std::uint64_t maximum_candidate, std::uint64_t& root)
     {
         const std::uint64_t center = static_cast<std::uint64_t>(approximation);
         const std::uint64_t first = center > 4 ? center - 4 : 0;
@@ -587,16 +788,21 @@ class FilteredJobLowerer
         {
             if (!charge_predicate())
                 return false;
-            if (candidate <= kMaximumSpanNm &&
+            if (candidate <= maximum_candidate &&
                 wide_compare(wide_multiply(static_cast<std::int64_t>(candidate),
                                            static_cast<std::int64_t>(candidate)),
                              squared) == 0)
             {
-                radius = candidate;
+                root = candidate;
                 return true;
             }
         }
         return false;
+    }
+
+    bool integer_radius(WideInteger squared, double approximation, std::uint64_t& radius)
+    {
+        return integer_square_root(squared, approximation, kMaximumSpanNm, radius);
     }
 
     bool validate_segment(const AnalyticRequestRingRecord& ring, std::uint32_t index,
@@ -810,14 +1016,14 @@ class FilteredJobLowerer
             bool agrees = segment.end.x != segment.start.x ? segment.end.x > segment.start.x
                                                            : segment.end.y > segment.start.y;
             AnalyticFilteredSourceRole role = AnalyticFilteredSourceRole::authored_line;
+            TokenDescriptor descriptor;
             if (segment.is_arc)
             {
                 curve.kind = AnalyticAtomicCurveKind::circular_arc;
                 curve.counterclockwise = segment.counterclockwise;
                 curve.major_arc = segment.major_arc;
                 curve.circle.center = public_point(point(segment.center));
-                const Interval radius = radius_interval(segment.start, segment.center);
-                curve.circle.radius = public_interval(radius);
+                Interval radius = radius_interval(segment.start, segment.center);
                 curve.integer_center = segment.center;
                 std::uint64_t exact_radius = 0;
                 if (!integer_radius(segment.radius_squared, radius.upper, exact_radius) &&
@@ -827,18 +1033,29 @@ class FilteredJobLowerer
                 {
                     curve.has_integer_radius_certificate = true;
                     curve.integer_radius = exact_radius;
+                    radius = exact(static_cast<double>(exact_radius));
                 }
-                set_exact_circle_tokens(
-                    curve, wide_add(wide_add(segment.radius_squared, segment.radius_squared),
-                                    wide_add(segment.radius_squared, segment.radius_squared)));
+                if (!valid(radius) || radius.lower <= 0.0 || radius.upper > kMaximumSpanNm)
+                    return fail(AnalyticFilteredLoweringError::resource_limit_exceeded);
+                const std::uint64_t radius_ceiling =
+                    static_cast<std::uint64_t>(std::ceil(radius.upper));
+                if (!global_expansion_fits(record.center_x_nm, radius_ceiling) ||
+                    !global_expansion_fits(record.center_y_nm, radius_ceiling))
+                    return fail(AnalyticFilteredLoweringError::resource_limit_exceeded);
+                curve.circle.radius = public_interval(radius);
+                descriptor = circle_descriptor(
+                    segment.center,
+                    wide_add(wide_add(segment.radius_squared, segment.radius_squared),
+                             wide_add(segment.radius_squared, segment.radius_squared)));
                 agrees = segment.counterclockwise;
                 role = AnalyticFilteredSourceRole::authored_circular_arc;
             }
             else
-                set_exact_line_tokens(curve);
+                descriptor = exact_line_descriptor(curve);
             if (!emit(std::move(curve), agrees, material_on_left, coverage_id,
                       {AnalyticFilteredSourceKind::authored_segment_curve, role, coverage_id,
-                       record.id, record.curve_id}))
+                       record.id, record.curve_id},
+                      std::move(descriptor)))
                 return false;
         }
         return true;
@@ -872,11 +1089,12 @@ class FilteredJobLowerer
             curve.integer_center = center;
             curve.has_integer_radius_certificate = true;
             curve.integer_radius = radius;
-            set_exact_circle_tokens(curve, squared_times_four);
             return curve;
         };
-        return emit(make_half(left, right), true, material_inside, coverage_id, source) &&
-               emit(make_half(right, left), true, material_inside, coverage_id, source);
+        const TokenDescriptor descriptor = circle_descriptor(center, squared_times_four);
+        return emit(make_half(left, right), true, material_inside, coverage_id, source,
+                    descriptor) &&
+               emit(make_half(right, left), true, material_inside, coverage_id, source, descriptor);
     }
 
     bool lower_capsule(const AnalyticRequestOperandRecord& operand)
@@ -907,11 +1125,47 @@ class FilteredJobLowerer
         const Point end_left = add(end_point, offset);
         const Point end_right = subtract(end_point, offset);
         const LineFamilyKey line_family = canonical_direction(dx, dy);
-        const std::uint64_t family_id = intern_line_family(line_family);
         const WideInteger width_squared =
             wide_multiply(static_cast<std::int64_t>(capsule.width_nm),
                           static_cast<std::int64_t>(capsule.width_nm));
         const bool forward_agrees = dx != 0 ? dx > 0 : dy > 0;
+        const WideInteger base = wide_subtract(wide_multiply(line_family.dx, start.y),
+                                               wide_multiply(line_family.dy, start.x));
+        const WideInteger base_times_two = wide_add(base, base);
+        const WideInteger primitive_squared =
+            wide_add(wide_multiply(line_family.dx, line_family.dx),
+                     wide_multiply(line_family.dy, line_family.dy));
+        std::uint64_t primitive_length = 0;
+        const double primitive_approximation =
+            std::hypot(static_cast<double>(line_family.dx), static_cast<double>(line_family.dy));
+        const bool integral_primitive_length = integer_square_root(
+            primitive_squared, primitive_approximation,
+            static_cast<std::uint64_t>(std::numeric_limits<std::int64_t>::max()), primitive_length);
+        if (error_ != AnalyticFilteredLoweringError::none)
+            return false;
+        const auto line_descriptor = [&](bool original_left)
+        {
+            const bool canonical_left = original_left == forward_agrees;
+            const std::int64_t sign = canonical_left ? 1 : -1;
+            TokenDescriptor descriptor;
+            descriptor.line.family = line_family;
+            if (integral_primitive_length)
+            {
+                const WideInteger shift =
+                    wide_multiply(static_cast<std::int64_t>(capsule.width_nm),
+                                  static_cast<std::int64_t>(primitive_length));
+                descriptor.line.rational_part_times_two =
+                    sign > 0 ? wide_add(base_times_two, shift)
+                             : wide_subtract(base_times_two, shift);
+            }
+            else
+            {
+                descriptor.line.rational_part_times_two = base_times_two;
+                descriptor.line.radical_coefficient =
+                    sign * static_cast<std::int64_t>(capsule.width_nm);
+            }
+            return descriptor;
+        };
         const auto source = [&](AnalyticFilteredSourceRole role)
         {
             return AnalyticFilteredSourceReference{AnalyticFilteredSourceKind::compact_feature_role,
@@ -922,8 +1176,6 @@ class FilteredJobLowerer
             AnalyticAtomicCurveNm curve;
             curve.start = public_point(first);
             curve.end = public_point(second);
-            curve.construction_family_id = family_id;
-            curve.construction_carrier_id = next_carrier_id_++;
             return curve;
         };
         const auto cap = [&](Point first, Point second, AnalyticIntegerPointNm center)
@@ -936,19 +1188,19 @@ class FilteredJobLowerer
             curve.circle.radius = public_interval(half_width);
             curve.counterclockwise = true;
             curve.has_arc_sweep_certificate = true;
-            const CircleFamilyKey circle_family{center.x, center.y};
-            curve.construction_family_id = intern_circle_family(circle_family);
-            curve.construction_carrier_id = intern_circle_carrier({circle_family, width_squared});
             return curve;
         };
         return emit(line(start_right, end_right), forward_agrees, true, operand.operand_id,
-                    source(AnalyticFilteredSourceRole::capsule_right_line)) &&
+                    source(AnalyticFilteredSourceRole::capsule_right_line),
+                    line_descriptor(false)) &&
                emit(cap(end_right, end_left, end), true, true, operand.operand_id,
-                    source(AnalyticFilteredSourceRole::capsule_end_cap)) &&
+                    source(AnalyticFilteredSourceRole::capsule_end_cap),
+                    circle_descriptor(end, width_squared)) &&
                emit(line(end_left, start_left), !forward_agrees, true, operand.operand_id,
-                    source(AnalyticFilteredSourceRole::capsule_left_line)) &&
+                    source(AnalyticFilteredSourceRole::capsule_left_line), line_descriptor(true)) &&
                emit(cap(start_left, start_right, start), true, true, operand.operand_id,
-                    source(AnalyticFilteredSourceRole::capsule_start_cap));
+                    source(AnalyticFilteredSourceRole::capsule_start_cap),
+                    circle_descriptor(start, width_squared));
     }
 
     bool lower_operand(const AnalyticRequestOperandRecord& operand)
@@ -996,10 +1248,9 @@ class FilteredJobLowerer
 
     bool lower_operands()
     {
-        bool good = true;
-        for_each_operand([&](const AnalyticRequestOperandRecord& operand)
-                         { good = good && lower_operand(operand); });
-        return good && out_.curves.size() == projected_curves_;
+        return for_each_operand([&](const AnalyticRequestOperandRecord& operand)
+                                { return lower_operand(operand); }) &&
+               out_.curves.size() == projected_curves_;
     }
 
     const AnalyticRequestPacketRecords& records_;
@@ -1009,6 +1260,8 @@ class FilteredJobLowerer
     AnalyticFilteredLoweringTelemetry telemetry_;
     AnalyticFilteredLoweringError error_ = AnalyticFilteredLoweringError::none;
     std::uint64_t projected_curves_ = 0;
+    std::uint32_t operand_begin_ = 0;
+    std::uint32_t operand_end_ = 0;
     bool has_global_bounds_ = false;
     std::int64_t min_global_x_ = 0;
     std::int64_t max_global_x_ = 0;
@@ -1019,12 +1272,7 @@ class FilteredJobLowerer
     std::int64_t max_extent_x_ = 0;
     std::int64_t min_extent_y_ = 0;
     std::int64_t max_extent_y_ = 0;
-    std::uint64_t next_carrier_id_ = 1;
-    std::uint64_t next_family_id_ = 1;
-    std::map<LineFamilyKey, std::uint64_t> line_families_;
-    std::map<LineCarrierKey, std::uint64_t, LineCarrierLess> line_carriers_;
-    std::map<CircleFamilyKey, std::uint64_t> circle_families_;
-    std::map<CircleCarrierKey, std::uint64_t, CircleCarrierLess> circle_carriers_;
+    std::vector<TokenDescriptor> descriptors_;
 };
 
 } // namespace

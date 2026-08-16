@@ -340,8 +340,20 @@ certificates while irrational radii use FMA-verified outward square-root
 intervals. Disks and annuli lower to paired semicircles. Capsules lower to two
 parallel offset lines and two certified semicircular caps, including arbitrary
 angles and odd widths. Only this trusted stage mints construction carrier,
-family, and sweep proof tokens; request bytes cannot supply them. Lowering is
-linear in owned operands and segments and does not enumerate curve pairs.
+family, and sweep proof tokens; request bytes cannot supply them. Lowering uses
+single-pass ownership traversal and expected-amortized-linear token lookup; it
+does not enumerate curve pairs, and every token probe consumes the hard work
+ceiling so adversarial hashing cannot become unbounded quadratic work.
+Finite-arc bounds contain their endpoints and only the cardinal extrema that
+may lie in the actual sweep, avoiding full-supporting-circle candidate
+explosion for short arcs. Fixed-capacity open-address tables intern exact
+carrier/family keys with every probe metered; capsule line keys retain a
+fixed-width rational plus at most one square-root coefficient, sufficient to
+prove equality or inequality without a general symbolic value. Stage and
+operand visits share the same work meter, zero-operand jobs return an empty
+geometry, exact maximum radii are canonicalized to singleton intervals, and
+expanded geometry must remain representable after restoring the signed 64-bit
+global origin.
 Swept paths currently return job-local `unsupported_geometry` on this path;
 their old exact piece-union and quadratic centerline validation are not used as
 a production fallback. They become supported when the filtered indexed

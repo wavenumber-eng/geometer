@@ -702,11 +702,15 @@ def test_filtered_solver_foundation_is_bounded_non_algebraic_and_not_dispatched(
         "lowering_swept_path_policy": (
             "job_local_unsupported_until_filtered_indexed_piece_union"
         ),
+        "lowering_bounds_policy": "finite_arc_endpoints_plus_contained_cardinal_extrema",
+        "lowering_token_policy": (
+            "fixed_capacity_open_addressed_exact_construction_keys_with_metered_probes"
+        ),
         "lowering_logical_bytes_per_curve": 768,
         "lowering_parity_validator": "scripts/validate_analytic_filtered_lowering_parity.py",
-        "lowering_vector_bytes": 1168,
+        "lowering_vector_bytes": 3552,
         "lowering_vector_sha256": (
-            "0145ec89b9a081ff26a05a9fa6fb31183b10b4fb46e63025deb3e4c5d9248f61"
+            "c3bdb4e5fa66fae4677b7a5088cb645cd81d8bf09a927cbe331d2d4c5015b059"
         ),
     }
     implementation_paths = [

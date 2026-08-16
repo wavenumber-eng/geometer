@@ -87,9 +87,17 @@ engine.
   arbitrary-angle and odd-width offsets. Carrier, parallel/concentric family,
   and correlated sweep tokens are minted only by this trusted lowering stage.
   The lowerer precharges curve count and canonical logical memory before
-  allocation and performs no curve-pair scan. Swept paths fail job-locally as
-  unsupported until their piece union is implemented by the filtered indexed
-  arrangement; the exact swept pre-arrangement is not a production fallback.
+  allocation and performs no curve-pair scan. Finite-arc broad-phase bounds use
+  endpoints plus only contained cardinal extrema. Proof tokens are interned in
+  fixed-capacity open-address tables from exact fixed-width construction keys;
+  table probes, input traversal, and geometric predicates consume one shared
+  work budget. Duplicate capsules and authored/constructed equal lines
+  therefore reuse carriers, while distinct parallel carriers are certified as
+  such. Empty stages are bounded no-ops, and global expansion is rejected when
+  a later origin translation could leave signed 64-bit public coordinates.
+  Swept paths fail job-locally as unsupported until their piece union is
+  implemented by the filtered indexed arrangement; the exact swept
+  pre-arrangement is not a production fallback.
 - Solver resource limits are supplied through one internal limits value object
   rather than scattered production constants. The catalog values are governed
   hard ceilings; a host may advertise and enforce lower effective limits, and

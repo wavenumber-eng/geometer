@@ -200,6 +200,176 @@ void test_arbitrary_capsule()
     require_narrow_accepts(geometry, "3-4-5 odd-width capsule");
 }
 
+AnalyticRequestPacketRecords duplicate_capsule_records()
+{
+    AnalyticRequestPacketRecords records;
+    records.jobs = {{10, 0, 1}};
+    records.stages = {{100, 1, 0, 2}};
+    records.operands = {{1000, 4, 0}, {1001, 4, 1}};
+    records.capsules = {{8000, 0, 0, 100, 0, 20}, {8001, 0, 0, 100, 0, 20}};
+    return records;
+}
+
+void test_capsule_carrier_proofs()
+{
+    const AnalyticFilteredGeometry duplicates =
+        lower(duplicate_capsule_records(), "duplicate capsules");
+    require(duplicates.curves[0].construction_family_id ==
+                    duplicates.curves[4].construction_family_id &&
+                duplicates.curves[0].construction_carrier_id ==
+                    duplicates.curves[4].construction_carrier_id &&
+                duplicates.curves[2].construction_carrier_id ==
+                    duplicates.curves[6].construction_carrier_id,
+            "duplicate capsule offset carriers did not reuse proof tokens");
+    const AnalyticNarrowPhaseResult duplicate_intersections =
+        intersect_analytic_curve_candidates(duplicates.curves, {{1, 5}, {3, 7}});
+    require(
+        duplicate_intersections.error == AnalyticNarrowPhaseError::none &&
+            duplicate_intersections.intersections.size() == 2 &&
+            duplicate_intersections.intersections[0].relation == AnalyticPairRelation::coincident &&
+            duplicate_intersections.intersections[1].relation == AnalyticPairRelation::coincident,
+        "duplicate capsule lines were not preserved for same-domain overlay");
+
+    AnalyticRequestPacketRecords irrational = duplicate_capsule_records();
+    irrational.capsules = {{8000, -7, 11, 16, 28, 21}, {8001, -7, 11, 16, 28, 21}};
+    const AnalyticFilteredGeometry irrational_duplicates =
+        lower(irrational, "duplicate irrational-direction capsules");
+    require(irrational_duplicates.curves[0].construction_carrier_id ==
+                    irrational_duplicates.curves[4].construction_carrier_id &&
+                irrational_duplicates.curves[2].construction_carrier_id ==
+                    irrational_duplicates.curves[6].construction_carrier_id,
+            "duplicate irrational capsule carriers did not reuse exact proof tokens");
+    const AnalyticNarrowPhaseResult irrational_intersections =
+        intersect_analytic_curve_candidates(irrational_duplicates.curves, {{1, 5}, {3, 7}});
+    require(irrational_intersections.error == AnalyticNarrowPhaseError::none &&
+                irrational_intersections.intersections.size() == 2 &&
+                irrational_intersections.intersections[0].relation ==
+                    AnalyticPairRelation::coincident &&
+                irrational_intersections.intersections[1].relation ==
+                    AnalyticPairRelation::coincident,
+            "irrational duplicate capsule lines were not preserved for same-domain overlay");
+
+    AnalyticRequestPacketRecords authored;
+    authored.jobs = {{10, 0, 1}};
+    authored.stages = {{100, 1, 0, 2}};
+    authored.operands = {{1000, 1, 0}, {1001, 4, 0}};
+    authored.planar_regions = {{500, 0, 0, 0}};
+    add_ring(authored, 600, {{0, -10}, {100, -10}, {100, -20}, {0, -20}},
+             {{800, 900}, {801, 901}, {802, 902}, {803, 903}});
+    authored.capsules = {{8000, 0, 0, 100, 0, 20}};
+    const AnalyticFilteredGeometry mixed = lower(authored, "authored/capsule coincidence");
+    require(mixed.curves[0].construction_family_id == mixed.curves[4].construction_family_id &&
+                mixed.curves[0].construction_carrier_id == mixed.curves[4].construction_carrier_id,
+            "authored and constructed equal line carriers did not reuse proof tokens");
+    const AnalyticNarrowPhaseResult mixed_intersection =
+        intersect_analytic_curve_candidates(mixed.curves, {{1, 5}});
+    require(mixed_intersection.error == AnalyticNarrowPhaseError::none &&
+                mixed_intersection.intersections[0].relation == AnalyticPairRelation::coincident,
+            "authored/capsule coincidence was not forwarded to overlay");
+}
+
+AnalyticRequestPacketRecords sparse_short_arc_records(std::uint32_t count)
+{
+    AnalyticRequestPacketRecords records;
+    records.jobs = {{10, 0, 1}};
+    records.stages = {{100, 1, 0, count}};
+    for (std::uint32_t index = 0; index < count; ++index)
+    {
+        const std::int64_t center_x = static_cast<std::int64_t>(index) * 1'100'000;
+        records.operands.push_back({1000 + index, 1, index});
+        records.planar_regions.push_back({5000 + index, index, 0, 0});
+        add_ring(records, 6000 + index,
+                 {{center_x + 5'000'000, 0}, {center_x + 4'000'000, 3'000'000}},
+                 {{8000 + index * 2, 9000 + index * 2, 2, 1, false, center_x, 0},
+                  {8001 + index * 2, 9001 + index * 2}});
+    }
+    return records;
+}
+
+void test_arc_tight_bounds_and_sparse_scaling()
+{
+    const AnalyticFilteredLoweringResult small_result =
+        lower_analytic_job_to_filtered_curves(sparse_short_arc_records(24), 0);
+    const AnalyticFilteredLoweringResult large_result =
+        lower_analytic_job_to_filtered_curves(sparse_short_arc_records(48), 0);
+    require(small_result.error == AnalyticFilteredLoweringError::none &&
+                small_result.value.has_value() &&
+                large_result.error == AnalyticFilteredLoweringError::none &&
+                large_result.value.has_value(),
+            "sparse short-arc lowering failed");
+    require(large_result.telemetry.work_units <= small_result.telemetry.work_units * 3 &&
+                large_result.telemetry.token_table_probes <=
+                    small_result.telemetry.token_table_probes * 3,
+            "lowering/token-table work did not remain near-linear at 2x input");
+    const AnalyticFilteredGeometry& small = *small_result.value;
+    const AnalyticFilteredGeometry& large = *large_result.value;
+    const AnalyticBroadPhaseResult small_pairs = build_analytic_curve_candidates(small.bounds);
+    const AnalyticBroadPhaseResult large_pairs = build_analytic_curve_candidates(large.bounds);
+    require(small_pairs.error == AnalyticBroadPhaseError::none &&
+                large_pairs.error == AnalyticBroadPhaseError::none &&
+                small_pairs.pairs.size() == 24 && large_pairs.pairs.size() == 48,
+            "short large-radius arcs retained full-circle quadratic broad-phase bounds");
+    require(small.bounds[0].min_x == 4'000'000.0 && small.bounds[0].max_x == 5'000'000.0 &&
+                small.bounds[0].min_y == 0.0 && small.bounds[0].max_y == 3'000'000.0,
+            "CCW minor-arc cardinal bounds drifted");
+
+    const AnalyticRequestPacketRecords major_records = region_records(
+        {{5'000'000, 0}, {4'000'000, 3'000'000}}, {{800, 900, 2, 2, true, 0, 0}, {801, 901}});
+    const AnalyticFilteredGeometry major = lower(major_records, "CW major arc");
+    require(major.bounds[0].min_x <= -5'000'000.0 && major.bounds[0].min_y <= -5'000'000.0 &&
+                major.bounds[0].max_y >= 5'000'000.0,
+            "major-arc cardinal extrema were omitted");
+}
+
+void test_empty_jobs_radius_domain_and_global_expansion()
+{
+    AnalyticRequestPacketRecords empty;
+    empty.jobs = {{10, 0, 4}};
+    empty.stages = {{100, 1, 0, 0}, {101, 2, 0, 0}, {102, 1, 0, 0}, {103, 2, 0, 0}};
+    AnalyticFilteredLoweringResult result = lower_analytic_job_to_filtered_curves(empty, 0);
+    require(result.error == AnalyticFilteredLoweringError::none && result.value.has_value() &&
+                result.value->curves.empty() && result.value->origin_x_nm == 0 &&
+                result.value->origin_y_nm == 0 && result.telemetry.stage_records_visited == 4,
+            "zero-operand stages must lower as a deterministic empty no-op");
+    AnalyticSolverLimits limits = kAnalyticSolverHardLimits;
+    limits.predicate_calls = 3;
+    result = lower_analytic_job_to_filtered_curves(empty, 0, limits);
+    require(result.error == AnalyticFilteredLoweringError::resource_limit_exceeded &&
+                result.telemetry.stage_records_visited == 3 && result.telemetry.work_units == 3,
+            "empty-stage traversal did not stop at the effective work limit");
+
+    const AnalyticRequestPacketRecords excessive_radius =
+        region_records({{0, 999'999'999'999}, {999'999'999'999, 0}},
+                       {{800, 900, 2, 1, false, 1'000'000'000'000, 1'000'000'000'000}, {801, 901}});
+    result = lower_analytic_job_to_filtered_curves(excessive_radius, 0);
+    require(result.error == AnalyticFilteredLoweringError::resource_limit_exceeded &&
+                !result.value.has_value(),
+            "an authored radius outside the narrow domain lowered successfully");
+
+    const AnalyticRequestPacketRecords maximum_radius =
+        region_records({{1'000'000'000'000, 0}, {0, 1'000'000'000'000}},
+                       {{800, 900, 2, 1, false, 0, 0}, {801, 901}});
+    const AnalyticFilteredGeometry maximum = lower(maximum_radius, "maximum exact radius");
+    require(maximum.curves[0].has_integer_radius_certificate &&
+                maximum.curves[0].circle.radius.lower == 1'000'000'000'000.0 &&
+                maximum.curves[0].circle.radius.upper == 1'000'000'000'000.0,
+            "the exact maximum radius was not canonicalized to a singleton");
+    require_narrow_accepts(maximum, "maximum exact radius");
+
+    AnalyticRequestPacketRecords edge;
+    edge.jobs = {{10, 0, 1}};
+    edge.stages = {{100, 1, 0, 1}};
+    edge.operands = {{1000, 2, 0}};
+    edge.disks = {{7000, std::numeric_limits<std::int64_t>::max(), 0, 1}};
+    result = lower_analytic_job_to_filtered_curves(edge, 0);
+    require(result.error == AnalyticFilteredLoweringError::resource_limit_exceeded,
+            "positive global coordinate expansion overflow was accepted");
+    edge.disks[0].center_x_nm = std::numeric_limits<std::int64_t>::min();
+    result = lower_analytic_job_to_filtered_curves(edge, 0);
+    require(result.error == AnalyticFilteredLoweringError::resource_limit_exceeded,
+            "negative global coordinate expansion overflow was accepted");
+}
+
 void test_fail_closed_limits_and_swept_path()
 {
     AnalyticRequestPacketRecords disk;
@@ -227,6 +397,17 @@ void test_fail_closed_limits_and_swept_path()
                 result.telemetry.peak_working_memory_bytes == 2 * 768,
             "exact lowering memory budget did not succeed deterministically");
 
+    const std::uint64_t disk_work_units = result.telemetry.work_units;
+    require(result.telemetry.token_table_probes != 0 && disk_work_units != 0,
+            "disk lowering did not meter token-table work");
+    limits = kAnalyticSolverHardLimits;
+    limits.predicate_calls = disk_work_units - 1;
+    result = lower_analytic_job_to_filtered_curves(disk, 0, limits);
+    require(result.error == AnalyticFilteredLoweringError::resource_limit_exceeded &&
+                result.telemetry.token_table_probes != 0 &&
+                result.telemetry.work_units == limits.predicate_calls,
+            "one-unit-short lowering work limit did not stop deterministically");
+
     AnalyticRequestPacketRecords swept;
     swept.jobs = {{10, 0, 1}};
     swept.stages = {{100, 1, 0, 1}};
@@ -245,13 +426,20 @@ std::string lowering_parity_vector()
 {
     AnalyticRequestPacketRecords records;
     records.jobs = {{10, 0, 1}};
-    records.stages = {{100, 1, 0, 1}};
-    records.operands = {{1000, 4, 0}};
-    records.capsules = {{8000, -7, 11, 16, 28, 21}};
+    records.stages = {{100, 1, 0, 3}};
+    records.operands = {{1000, 1, 0}, {1001, 4, 0}, {1002, 4, 1}};
+    records.planar_regions = {{500, 0, 0, 0}};
+    add_ring(records, 600, {{1, 1}, {-1, 1}}, {{800, 900, 2, 1, false, 0, 0}, {801, 901}});
+    records.capsules = {{8000, -7, 11, 16, 28, 21}, {8001, -7, 11, 16, 28, 21}};
     const AnalyticFilteredLoweringResult result = lower_analytic_job_to_filtered_curves(records, 0);
     require(result.error == AnalyticFilteredLoweringError::none && result.value.has_value(),
             "lowering parity fixture failed");
     const AnalyticFilteredGeometry& geometry = *result.value;
+    require(geometry.curves[2].construction_carrier_id ==
+                    geometry.curves[6].construction_carrier_id &&
+                geometry.curves[4].construction_carrier_id ==
+                    geometry.curves[8].construction_carrier_id,
+            "parity fixture duplicate capsule carrier proofs drifted");
     std::ostringstream output;
     output << std::hex << std::setfill('0');
     auto append_u64 = [&output](std::uint64_t value) { output << std::setw(16) << value; };
@@ -291,6 +479,15 @@ std::string lowering_parity_vector()
         append_u64(curve.construction_carrier_id);
         append_u64(curve.construction_family_id);
         append_u64(curve.has_arc_sweep_certificate ? 1U : 0U);
+        append_u64(curve.has_integer_certificate ? 1U : 0U);
+        append_u64(static_cast<std::uint64_t>(curve.integer_start.x));
+        append_u64(static_cast<std::uint64_t>(curve.integer_start.y));
+        append_u64(static_cast<std::uint64_t>(curve.integer_end.x));
+        append_u64(static_cast<std::uint64_t>(curve.integer_end.y));
+        append_u64(static_cast<std::uint64_t>(curve.integer_center.x));
+        append_u64(static_cast<std::uint64_t>(curve.integer_center.y));
+        append_u64(curve.has_integer_radius_certificate ? 1U : 0U);
+        append_u64(curve.integer_radius);
         append_double(bounds.min_x);
         append_double(bounds.min_y);
         append_double(bounds.max_x);
@@ -308,7 +505,11 @@ std::string lowering_parity_vector()
     append_u64(result.telemetry.input_operands);
     append_u64(result.telemetry.input_segments);
     append_u64(result.telemetry.emitted_curves);
+    append_u64(result.telemetry.stage_records_visited);
+    append_u64(result.telemetry.operand_records_visited);
     append_u64(result.telemetry.fixed_width_predicates);
+    append_u64(result.telemetry.token_table_probes);
+    append_u64(result.telemetry.work_units);
     append_u64(result.telemetry.square_root_calls);
     append_u64(result.telemetry.peak_working_memory_bytes);
     append_u64(result.telemetry.algebraic_fallback_calls);
@@ -323,6 +524,9 @@ int main()
     test_irrational_authored_arc();
     test_disks_annuli_and_tokens();
     test_arbitrary_capsule();
+    test_capsule_carrier_proofs();
+    test_arc_tight_bounds_and_sparse_scaling();
+    test_empty_jobs_radius_domain_and_global_expansion();
     test_fail_closed_limits_and_swept_path();
     std::cout << "ANALYTIC_FILTERED_LOWERING_VECTOR=" << lowering_parity_vector() << '\n';
     return 0;

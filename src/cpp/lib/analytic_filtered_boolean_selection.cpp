@@ -223,6 +223,8 @@ class SelectionBuilder
         scratch = checked_add(
             scratch, checked_multiply(operand_count, kOperandMetadataLogicalBytes, valid), valid);
         scratch = checked_add(
+            scratch, checked_multiply(operand_count, kOperandLookupLogicalBytes, valid), valid);
+        scratch = checked_add(
             scratch,
             checked_multiply(geometry_.occurrences.size(), kOperandOrdinalLogicalBytes, valid),
             valid);
@@ -286,13 +288,17 @@ class SelectionBuilder
             return fail(AnalyticFilteredBooleanSelectionError::resource_limit_exceeded);
         if (!charge(validation_work))
             return false;
-        if (!charge_sort(operands_.size()))
+        std::vector<OperandLookup> operand_lookup;
+        operand_lookup.reserve(operands_.size());
+        for (std::uint32_t index = 0; index < operands_.size(); ++index)
+            operand_lookup.push_back({operands_[index].operand_id, index});
+        if (!charge_sort(operand_lookup.size()))
             return false;
-        std::sort(operands_.begin(), operands_.end(),
-                  [](const OperandMetadata& left, const OperandMetadata& right)
+        std::sort(operand_lookup.begin(), operand_lookup.end(),
+                  [](const OperandLookup& left, const OperandLookup& right)
                   { return left.operand_id < right.operand_id; });
-        for (std::size_t index = 1; index < operands_.size(); ++index)
-            if (operands_[index - 1].operand_id == operands_[index].operand_id)
+        for (std::size_t index = 1; index < operand_lookup.size(); ++index)
+            if (operand_lookup[index - 1].operand_id == operand_lookup[index].operand_id)
                 return fail(AnalyticFilteredBooleanSelectionError::invalid_argument);
 
         std::vector<std::uint8_t> used(operands_.size());
@@ -303,13 +309,12 @@ class SelectionBuilder
                 occurrence.coverage_id == 0 ||
                 occurrence.source.operand_id != occurrence.coverage_id)
                 return fail(AnalyticFilteredBooleanSelectionError::invalid_argument);
-            const auto found =
-                std::lower_bound(operands_.begin(), operands_.end(), occurrence.coverage_id,
-                                 [](const OperandMetadata& value, std::uint64_t id)
-                                 { return value.operand_id < id; });
-            if (found == operands_.end() || found->operand_id != occurrence.coverage_id)
+            const auto found = std::lower_bound(
+                operand_lookup.begin(), operand_lookup.end(), occurrence.coverage_id,
+                [](const OperandLookup& value, std::uint64_t id) { return value.operand_id < id; });
+            if (found == operand_lookup.end() || found->operand_id != occurrence.coverage_id)
                 return fail(AnalyticFilteredBooleanSelectionError::invalid_argument);
-            const std::uint32_t operand = static_cast<std::uint32_t>(found - operands_.begin());
+            const std::uint32_t operand = found->ordinal;
             used[operand] = 1;
             occurrence_operands_[index] = operand;
         }
@@ -897,7 +902,7 @@ class SelectionBuilder
             return fail(AnalyticFilteredBooleanSelectionError::resource_limit_exceeded);
         result_.faces.reserve(static_cast<std::size_t>(expected_face_capacity_));
         result_.face_boundary_cycles.reserve(cycle_count);
-        result_.faces.push_back({0, 0, 0, true, false});
+        result_.faces.push_back({0, 0, 0, 0, kNoIndex, true, false});
         for (std::uint32_t cycle = 0; cycle < cycle_count; ++cycle)
         {
             if (!result_.arrangement.cycles[cycle].counterclockwise)
@@ -1199,7 +1204,7 @@ class SelectionBuilder
         scratch = checked_add(
             scratch, checked_multiply(stage_operations_.size(), kIndexLogicalBytes, valid), valid);
         scratch = checked_add(
-            scratch, checked_multiply(stage_leaf_capacity * 2, kIndexLogicalBytes, valid), valid);
+            scratch, checked_multiply(stage_leaf_capacity * 4, kIndexLogicalBytes, valid), valid);
         scratch = checked_add(
             scratch, checked_multiply(maximum_nodes, kCoverageNodeLogicalBytes, valid), valid);
         scratch = checked_add(
@@ -1211,7 +1216,7 @@ class SelectionBuilder
             return false;
         std::uint64_t initialization_work = table_capacity;
         initialization_work = checked_add(
-            initialization_work, stage_operations_.size() + stage_leaf_capacity * 2, valid);
+            initialization_work, stage_operations_.size() + stage_leaf_capacity * 4, valid);
         initialization_work = checked_add(
             initialization_work,
             result_.faces.size() + result_.arrangement.edges.size() + operands_.size(), valid);
@@ -1279,6 +1284,8 @@ class SelectionBuilder
         std::uint32_t root = 0;
         visited[0] = 1;
         result_.faces[0].coverage_state_root = 0;
+        result_.faces[0].positive_stage_begin = 0;
+        result_.faces[0].active_removal_stage = kNoIndex;
         result_.faces[0].material = false;
         if (!charge(1))
             return false;
@@ -1315,6 +1322,8 @@ class SelectionBuilder
                 visited[next.neighbor] = 1;
                 result_.faces[next.neighbor].coverage_state_root = root;
                 result_.faces[next.neighbor].material = stages.material();
+                result_.faces[next.neighbor].positive_stage_begin = stages.positive_stage_begin();
+                result_.faces[next.neighbor].active_removal_stage = stages.active_removal_stage();
                 if (!charge(1))
                     return false;
                 stack.push_back({next.neighbor, adjacency_begin[next.neighbor],

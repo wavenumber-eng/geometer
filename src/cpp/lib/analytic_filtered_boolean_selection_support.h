@@ -42,6 +42,7 @@ constexpr std::uint64_t kAdjacencyLogicalBytes = 16;
 constexpr std::uint64_t kIndexLogicalBytes = 8;
 constexpr std::uint64_t kOccurrenceLogicalBytes = 64;
 constexpr std::uint64_t kOperandMetadataLogicalBytes = 32;
+constexpr std::uint64_t kOperandLookupLogicalBytes = 16;
 constexpr std::uint64_t kOperandOrdinalLogicalBytes = 8;
 constexpr std::uint64_t kByteLogicalBytes = 1;
 constexpr std::uint64_t kSweepTemporaryLogicalBytes = 64;
@@ -471,6 +472,12 @@ struct OperandMetadata
     std::uint8_t operation = 0;
 };
 
+struct OperandLookup
+{
+    std::uint64_t operand_id = 0;
+    std::uint32_t ordinal = 0;
+};
+
 struct CoverageTableEntry
 {
     std::uint32_t left = 0;
@@ -629,7 +636,8 @@ class ActiveStageTree
             leaf_capacity_ <<= 1U;
             ++depth_;
         }
-        last_active_.assign(leaf_capacity_ * 2, -1);
+        last_union_.assign(leaf_capacity_ * 2, -1);
+        last_difference_.assign(leaf_capacity_ * 2, -1);
     }
 
     template <typename Charge>
@@ -645,19 +653,39 @@ class ActiveStageTree
         else
             --counts_[stage];
         std::size_t node = leaf_capacity_ + stage;
-        last_active_[node] = counts_[stage] == 0 ? -1 : static_cast<std::int32_t>(stage);
+        const bool active = counts_[stage] != 0;
+        last_union_[node] =
+            active && operations_[stage] == 1 ? static_cast<std::int32_t>(stage) : -1;
+        last_difference_[node] =
+            active && operations_[stage] == 2 ? static_cast<std::int32_t>(stage) : -1;
         while (node > 1)
         {
             node /= 2;
-            last_active_[node] = std::max(last_active_[node * 2], last_active_[node * 2 + 1]);
+            last_union_[node] = std::max(last_union_[node * 2], last_union_[node * 2 + 1]);
+            last_difference_[node] =
+                std::max(last_difference_[node * 2], last_difference_[node * 2 + 1]);
         }
         return true;
     }
 
     [[nodiscard]] bool material() const noexcept
     {
-        const std::int32_t stage = last_active_[1];
-        return stage >= 0 && operations_[static_cast<std::size_t>(stage)] == 1;
+        return last_union_[1] > last_difference_[1];
+    }
+
+    [[nodiscard]] std::uint32_t positive_stage_begin() const noexcept
+    {
+        return last_difference_[1] < 0 ? 0 : static_cast<std::uint32_t>(last_difference_[1]) + 1;
+    }
+
+    [[nodiscard]] std::uint32_t active_removal_stage() const noexcept
+    {
+        if (material() || last_union_[1] < 0)
+            return kNoIndex;
+        const std::int32_t stage =
+            first_difference_after(1, 0, static_cast<std::uint32_t>(leaf_capacity_),
+                                   static_cast<std::uint32_t>(last_union_[1]) + 1);
+        return stage < 0 ? kNoIndex : static_cast<std::uint32_t>(stage);
     }
 
     [[nodiscard]] std::uint32_t depth() const noexcept
@@ -666,9 +694,24 @@ class ActiveStageTree
     }
 
   private:
+    [[nodiscard]] std::int32_t first_difference_after(std::size_t node, std::uint32_t begin,
+                                                      std::uint32_t width,
+                                                      std::uint32_t minimum) const noexcept
+    {
+        if (node >= last_difference_.size() || last_difference_[node] < 0 ||
+            begin + width <= minimum)
+            return -1;
+        if (width == 1)
+            return static_cast<std::int32_t>(begin);
+        const std::uint32_t half = width / 2;
+        const std::int32_t left = first_difference_after(node * 2, begin, half, minimum);
+        return left >= 0 ? left : first_difference_after(node * 2 + 1, begin + half, half, minimum);
+    }
+
     const std::vector<std::uint8_t>& operations_;
     std::vector<std::uint32_t> counts_;
-    std::vector<std::int32_t> last_active_;
+    std::vector<std::int32_t> last_union_;
+    std::vector<std::int32_t> last_difference_;
     std::size_t leaf_capacity_ = 1;
     std::uint32_t depth_ = 0;
 };

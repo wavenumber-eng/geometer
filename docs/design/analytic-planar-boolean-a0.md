@@ -543,7 +543,22 @@ traversals consume the reservation with actual work reported separately. A
 known-doomed region job therefore performs no arrangement work. Every
 half-edge, rotation, component, ring, adjacency, output, and sort traversal is
 precharged, known arrays are fixed-capacity, and native/WASM topology and
-telemetry bytes are identical. Complete lineage projection, final 1 nm
+telemetry bytes are identical.
+
+The implemented filtered lineage stage owns material-region construction and
+projects no geometry of its own. Selection retains, for each face, the stage
+after its last active difference and the first effective difference after its
+last active union. Those descriptors distinguish final positive lineage from
+the active removal epoch without replaying every stage for every face. Region
+contributors are structurally unioned from persistent stage-ordered coverage
+roots; boundary positives and subtractors visit only actual edge memberships;
+and result-vertex lineage visits only incident edge and attached collapsed-span
+memberships. Source references remain complete tuple-sorted inline ranges for
+the later global source-set interning pass. A refill clears the prior active
+removal epoch, so an overwritten subtractor cannot claim a later hole. This
+coordinate-free stage performs no predicate, snapping, or additional 50 nm
+repair. Isolated collapsed vertices remain internal lineage and are not
+published as unreachable result vertices. Operand outcome events, final 1 nm
 normalization, and operation dispatch remain subsequent stages.
 
 Across ordered stages, the accumulator retains the resolved analytic

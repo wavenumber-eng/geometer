@@ -978,9 +978,18 @@ Geometer proposal, not the original consumer packet.
   region traversal and sort consumes the reservation, and actual region work
   remains separately visible. Exact/one-short admission, 1x/2x many-edge,
   nested line rings, tangent arcs, collapsed lineage, and native/WASM parity
-  fixtures gate the slice. Complete source lineage, one-time 1 nm coordinate
-  publication, post-normalization topology validation, dispatch, and transport
-  remain pending.
+  fixtures gate the slice.
+- Coordinate-free filtered lineage projection is now implemented behind an
+  owned records/geometry/pairs entry point. Selection coverage leaves retain
+  request stage order and each face carries compact positive and active-removal
+  stage descriptors. Structurally shared coverage unions project region
+  contributors without a face-by-operand replay, while boundary and result-
+  vertex source sets scan only actual edge/collapsed membership incidences.
+  Refill/removal epochs, disconnected many-to-many contributors, complete
+  vertex incidence, canonical source tuples, and native/WASM bytes gate the
+  slice. The stage never changes coordinates or spends another tolerance.
+  Operand outcomes, one-time 1 nm coordinate publication, post-normalization
+  topology validation, dispatch, and transport remain pending.
 - Before filtered operation dispatch is enabled, move the retained native
   exact/oracle sources out of the normal `geometer_lib` source list into an
   explicit feasibility-oracle target, matching the separation already used by

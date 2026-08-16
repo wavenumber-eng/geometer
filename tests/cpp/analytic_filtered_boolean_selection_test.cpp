@@ -1062,6 +1062,8 @@ std::string parity_vector()
             append_u64(face.boundary_cycle_begin);
             append_u64(face.boundary_cycle_count);
             append_u64(face.coverage_state_root);
+            append_u64(face.positive_stage_begin);
+            append_u64(face.active_removal_stage);
             append_u64(face.unbounded ? 1 : 0);
             append_u64(face.material ? 1 : 0);
         }

@@ -5,6 +5,7 @@
 #include "geometer/analytic_solver_limits.h"
 
 #include <cstdint>
+#include <limits>
 #include <vector>
 
 namespace geometer
@@ -15,6 +16,13 @@ struct AnalyticFilteredSelectedFace
     std::uint32_t boundary_cycle_begin = 0;
     std::uint32_t boundary_cycle_count = 0;
     std::uint32_t coverage_state_root = 0;
+    // Ordered-stage lineage descriptors. For a material face, surviving
+    // positive operands are the active union operands in stages at or after
+    // positive_stage_begin. For an empty face, active_removal_stage names the
+    // first active difference after the last active union; it is the only
+    // subtraction epoch that can own the final material/empty boundary.
+    std::uint32_t positive_stage_begin = 0;
+    std::uint32_t active_removal_stage = std::numeric_limits<std::uint32_t>::max();
     bool unbounded = false;
     bool material = false;
 };

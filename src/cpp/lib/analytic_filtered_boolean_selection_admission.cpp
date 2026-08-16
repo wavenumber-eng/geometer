@@ -339,7 +339,9 @@ SelectionAdmission prepare_boolean_selection_admission(
     coverage_scratch = checked_add(
         coverage_scratch, checked_multiply(job.stage_count, kIndexLogicalBytes, valid), valid);
     coverage_scratch = checked_add(
-        coverage_scratch, checked_multiply(stage_tree_nodes, kIndexLogicalBytes, valid), valid);
+        coverage_scratch,
+        checked_multiply(checked_multiply(stage_tree_nodes, 2, valid), kIndexLogicalBytes, valid),
+        valid);
     coverage_scratch = checked_add(
         coverage_scratch,
         checked_multiply(maximum_coverage_nodes, kCoverageNodeLogicalBytes, valid), valid);
@@ -458,7 +460,8 @@ SelectionAdmission prepare_boolean_selection_admission(
         checked_add(selection_work,
                     checked_multiply(sort_units(guaranteed_vertex_reservation), 2, valid), valid);
     std::uint64_t stage_initialization_work = checked_add(7, job.stage_count, valid);
-    stage_initialization_work = checked_add(stage_initialization_work, stage_tree_nodes, valid);
+    stage_initialization_work =
+        checked_add(stage_initialization_work, checked_multiply(stage_tree_nodes, 2, valid), valid);
     stage_initialization_work = checked_add(stage_initialization_work, operands, valid);
     selection_work = checked_add(selection_work, stage_initialization_work, valid);
     selection_work = checked_add(selection_work, coverage_table, valid);

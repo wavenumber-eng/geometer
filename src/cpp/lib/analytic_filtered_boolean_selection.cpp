@@ -1,6 +1,7 @@
 #include "geometer/analytic_filtered_boolean_selection.h"
 
 #include "analytic_filtered_boolean_selection_support.h"
+#include "analytic_filtered_outcome_tracker.h"
 
 #include <algorithm>
 #include <cmath>
@@ -24,8 +25,10 @@ class SelectionBuilder
     SelectionBuilder(const AnalyticRequestPacketRecords& records, std::uint32_t job_index,
                      const AnalyticFilteredGeometry& geometry,
                      AnalyticFilteredArrangementResult arrangement, AnalyticSolverLimits limits,
-                     std::uint64_t admission_work, std::uint64_t admission_peak_memory)
-        : records_(records), job_index_(job_index), geometry_(geometry), limits_(limits)
+                     std::uint64_t admission_work, std::uint64_t admission_peak_memory,
+                     bool collect_outcomes)
+        : records_(records), job_index_(job_index), geometry_(geometry), limits_(limits),
+          collect_outcomes_(collect_outcomes)
     {
         result_.origin_x_nm = geometry_.origin_x_nm;
         result_.origin_y_nm = geometry_.origin_y_nm;
@@ -102,6 +105,7 @@ class SelectionBuilder
         result_.faces.clear();
         result_.face_boundary_cycles.clear();
         result_.coverage_state_nodes.clear();
+        result_.outcome_evidence.clear();
     }
 
     void release_sweep_storage()
@@ -198,6 +202,10 @@ class SelectionBuilder
         retained = checked_add(
             retained,
             checked_multiply(result_.coverage_state_nodes.size(), kCoverageNodeLogicalBytes, valid),
+            valid);
+        retained = checked_add(
+            retained,
+            checked_multiply(result_.outcome_evidence.size(), kOutcomeEvidenceLogicalBytes, valid),
             valid);
         const std::uint64_t phase = checked_add(retained, scratch, valid);
         if (!valid || phase > limits_.working_memory_bytes)
@@ -1031,6 +1039,8 @@ class SelectionBuilder
                       return std::tie(left.edge, left.coverage_id, left.expected_left) <
                              std::tie(right.edge, right.coverage_id, right.expected_left);
                   });
+        if (!charge(transitions_.size()))
+            return false;
         std::size_t output = 0;
         for (const Transition transition : transitions_)
         {
@@ -1089,11 +1099,14 @@ class SelectionBuilder
                           const std::vector<std::uint32_t>& left_faces,
                           CanonicalCoverageSet& coverage, ActiveStageTree& stages,
                           std::vector<std::uint8_t>& active, std::uint32_t& root,
-                          bool validate_side, bool update_coverage)
+                          bool validate_side, bool update_coverage,
+                          OutcomeHistoryTracker* outcome_tracker)
     {
         const auto [begin, end] = transition_range(edge);
         if (!charge(1 + end - begin))
             return false;
+        if (outcome_tracker != nullptr)
+            outcome_tracker->begin_batch();
         for (std::uint32_t index = begin; index < end; ++index)
         {
             const Transition& transition = transitions_[index];
@@ -1123,6 +1136,8 @@ class SelectionBuilder
                 root = updated;
             }
             active[transition.operand] = present ? 0 : 1;
+            if (outcome_tracker != nullptr && !outcome_tracker->record_toggle(transition.operand))
+                return fail(AnalyticFilteredBooleanSelectionError::invalid_argument);
             if (!stages.toggle(
                     operands_[transition.operand].stage_ordinal, !present, [&](std::uint64_t units)
                     { return charge(units); }, result_.telemetry.stage_state_update_work_units))
@@ -1132,6 +1147,10 @@ class SelectionBuilder
                 return false;
             }
         }
+        if (outcome_tracker != nullptr && !outcome_tracker->finish_batch())
+            return fail(outcome_tracker->resource_exhausted()
+                            ? AnalyticFilteredBooleanSelectionError::resource_limit_exceeded
+                            : AnalyticFilteredBooleanSelectionError::invalid_argument);
         return true;
     }
 
@@ -1210,6 +1229,11 @@ class SelectionBuilder
         scratch = checked_add(
             scratch, checked_multiply(table_capacity, kCoverageTableEntryLogicalBytes, valid),
             valid);
+        if (collect_outcomes_)
+            scratch = checked_add(
+                scratch,
+                outcome_tracker_logical_bytes(operands_.size(), stage_operations_.size(), valid),
+                valid);
         if (!valid)
             return fail(AnalyticFilteredBooleanSelectionError::resource_limit_exceeded);
         if (!set_phase_memory(scratch))
@@ -1268,6 +1292,15 @@ class SelectionBuilder
                                       static_cast<std::uint32_t>(operands_.size()), maximum_nodes,
                                       table_capacity);
         ActiveStageTree stages(stage_operations_);
+        std::unique_ptr<OutcomeHistoryTracker> outcome_tracker;
+        if (collect_outcomes_)
+        {
+            outcome_tracker = std::make_unique<OutcomeHistoryTracker>(
+                operands_, stage_operations_, result_.outcome_evidence, result_.telemetry,
+                result_.telemetry.predicate_calls, limits_.predicate_calls);
+            if (!outcome_tracker->initialize())
+                return fail(AnalyticFilteredBooleanSelectionError::resource_limit_exceeded);
+        }
         struct Frame
         {
             std::uint32_t face = 0;
@@ -1300,7 +1333,7 @@ class SelectionBuilder
                 if (finished.entering_edge != kNoIndex)
                 {
                     if (!toggle_tree_edge(finished.entering_edge, 0, left_faces, coverage, stages,
-                                          active, root, false, false))
+                                          active, root, false, false, outcome_tracker.get()))
                         return false;
                     root = finished.previous_root;
                 }
@@ -1316,7 +1349,7 @@ class SelectionBuilder
             {
                 const std::uint32_t previous_root = root;
                 if (!toggle_tree_edge(next.edge, frame.face, left_faces, coverage, stages, active,
-                                      root, true, true))
+                                      root, true, true, outcome_tracker.get()))
                     return false;
                 edge_validated[next.edge] = 1;
                 visited[next.neighbor] = 1;
@@ -1326,6 +1359,11 @@ class SelectionBuilder
                 if (!charge(stages.depth() * 2 + 1))
                     return false;
                 result_.faces[next.neighbor].active_removal_stage = stages.active_removal_stage();
+                if (outcome_tracker != nullptr &&
+                    !outcome_tracker->evaluate(result_.faces[next.neighbor]))
+                    return fail(outcome_tracker->resource_exhausted()
+                                    ? AnalyticFilteredBooleanSelectionError::resource_limit_exceeded
+                                    : AnalyticFilteredBooleanSelectionError::invalid_argument);
                 if (!charge(1))
                     return false;
                 stack.push_back({next.neighbor, adjacency_begin[next.neighbor],
@@ -1349,6 +1387,8 @@ class SelectionBuilder
             std::find(active.begin(), active.end(), 1) != active.end() ||
             std::find(visited.begin(), visited.end(), 0) != visited.end() ||
             std::find(edge_validated.begin(), edge_validated.end(), 0) != edge_validated.end())
+            return fail(AnalyticFilteredBooleanSelectionError::invalid_argument);
+        if (outcome_tracker != nullptr && !outcome_tracker->empty())
             return fail(AnalyticFilteredBooleanSelectionError::invalid_argument);
         result_.telemetry.coverage_state_nodes = result_.coverage_state_nodes.size();
         result_.telemetry.material_faces =
@@ -1376,6 +1416,7 @@ class SelectionBuilder
     std::vector<Transition> transitions_;
     std::vector<std::uint32_t> transition_begin_;
     std::vector<std::uint8_t> stage_operations_;
+    bool collect_outcomes_ = false;
 };
 
 static_assert(sizeof(SweepEdge) <= kSweepEdgeLogicalBytes);
@@ -1404,7 +1445,7 @@ analytic_selection_detail::finish_boolean_selection_from_admission(
     }
     return SelectionBuilder(records, job_index, geometry, std::move(admission.arrangement),
                             admission.execution_limits, admission.admission_work,
-                            admission.admission_peak_memory)
+                            admission.admission_peak_memory, admission.collect_outcomes)
         .build();
 }
 

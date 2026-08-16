@@ -765,7 +765,9 @@ struct SelectionAdmission
     std::uint64_t downstream_reserved_work = 0;
     std::uint64_t material_regions_reserved_work = 0;
     std::uint64_t lineage_reserved_work = 0;
+    std::uint64_t outcomes_reserved_work = 0;
     AnalyticSolverLimits execution_limits;
+    bool collect_outcomes = false;
     bool ready = false;
 };
 
@@ -779,6 +781,10 @@ struct SelectionAdmissionOptions
     // implies material-region reservation. Exact source publication is
     // preflighted after its allocation-free count pass.
     bool reserve_lineage = false;
+    // Collect sparse per-operand positive-area history during the already-
+    // owned face-dual traversal and reserve the later coordinate-free outcome
+    // projection. This implies regions and lineage.
+    bool reserve_outcomes = false;
 };
 
 [[nodiscard]] SelectionAdmission prepare_boolean_selection_admission(

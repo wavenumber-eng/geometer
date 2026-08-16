@@ -1,6 +1,7 @@
 #include "geometer/analytic_filtered_regions.h"
 
 #include "analytic_filtered_boolean_selection_support.h"
+#include "analytic_filtered_outcome_tracker.h"
 #include "analytic_filtered_regions_internal.h"
 
 #include <algorithm>
@@ -147,9 +148,14 @@ std::uint64_t retained_selection_bytes(const AnalyticFilteredBooleanSelectionRes
     bytes = checked_add(
         bytes, checked_multiply(selection.face_boundary_cycles.size(), kLogicalIndexBytes, valid),
         valid);
+    bytes =
+        checked_add(bytes,
+                    checked_multiply(selection.coverage_state_nodes.size(),
+                                     analytic_selection_detail::kCoverageNodeLogicalBytes, valid),
+                    valid);
     return checked_add(bytes,
-                       checked_multiply(selection.coverage_state_nodes.size(),
-                                        analytic_selection_detail::kCoverageNodeLogicalBytes,
+                       checked_multiply(selection.outcome_evidence.size(),
+                                        analytic_selection_detail::kOutcomeEvidenceLogicalBytes,
                                         valid),
                        valid);
 }
@@ -737,14 +743,15 @@ LineageRegionsAdmission
 build_regions_for_lineage(const AnalyticRequestPacketRecords& records, std::uint32_t job_index,
                           const AnalyticFilteredGeometry& geometry,
                           const std::vector<AnalyticCurvePair>& candidate_pairs,
-                          const AnalyticSolverLimits& limits)
+                          const AnalyticSolverLimits& limits, bool reserve_outcomes)
 {
     LineageRegionsAdmission output;
     analytic_selection_detail::SelectionAdmission admission =
         analytic_selection_detail::prepare_boolean_selection_admission(
-            records, job_index, geometry, candidate_pairs, limits, {true, true});
+            records, job_index, geometry, candidate_pairs, limits, {true, true, reserve_outcomes});
     const std::uint64_t region_work = admission.material_regions_reserved_work;
     output.reserved_lineage_work = admission.lineage_reserved_work;
+    output.reserved_outcomes_work = admission.outcomes_reserved_work;
     AnalyticFilteredBooleanSelectionResult selection =
         analytic_selection_detail::finish_boolean_selection_from_admission(
             records, job_index, geometry, std::move(admission));

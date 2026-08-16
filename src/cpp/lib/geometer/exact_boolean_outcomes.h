@@ -1,5 +1,6 @@
 #pragma once
 
+#include "geometer/analytic_operand_outcome.h"
 #include "geometer/exact_boolean_provenance.h"
 
 #include <cstdint>
@@ -9,16 +10,7 @@
 namespace geometer::exact
 {
 
-enum class ExactOperandOutcomeKind : std::uint16_t
-{
-    contributes_final_material = 1,
-    redundant_or_absorbed_coverage = 2,
-    partially_removed_later = 3,
-    completely_removed_later = 4,
-    subtraction_effect_survives = 5,
-    subtraction_effect_overwritten_later = 6,
-    no_effect = 7,
-};
+using ExactOperandOutcomeKind = AnalyticOperandOutcomeKind;
 
 struct ExactOperandOutcomeEvent
 {

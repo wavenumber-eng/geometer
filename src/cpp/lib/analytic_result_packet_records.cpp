@@ -904,7 +904,7 @@ AnalyticResultPacketRecordsResult decode_analytic_result_packet_records(const st
                 r.u64(40) != 0)
                 return {LayoutError::invalid_packet, std::nullopt};
             output.operand_events.push_back({r.u64(0),
-                                             static_cast<exact::ExactOperandOutcomeKind>(r.u16(8)),
+                                             static_cast<AnalyticOperandOutcomeKind>(r.u16(8)),
                                              r.u32(12), r.u32(16), r.u32(20)});
         }
         for (std::uint64_t index = 0; index < views[11].record_count; ++index)

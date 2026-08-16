@@ -88,7 +88,7 @@ AnalyticResultPacketRecords rich_records()
          std::numeric_limits<std::uint64_t>::max() - 5},
     };
     records.operand_events = {
-        {7, exact::ExactOperandOutcomeKind::contributes_final_material, 0, 1, 1},
+        {7, AnalyticOperandOutcomeKind::contributes_final_material, 0, 1, 1},
     };
     records.relationship_results = {
         {std::numeric_limits<std::uint64_t>::max(), 0, 3, 0, 1},

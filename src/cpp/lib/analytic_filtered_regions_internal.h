@@ -12,13 +12,14 @@ struct LineageRegionsAdmission
 {
     AnalyticFilteredRegionsResult regions;
     std::uint64_t reserved_lineage_work = 0;
+    std::uint64_t reserved_outcomes_work = 0;
 };
 
 [[nodiscard]] LineageRegionsAdmission
 build_regions_for_lineage(const AnalyticRequestPacketRecords& records, std::uint32_t job_index,
                           const AnalyticFilteredGeometry& geometry,
                           const std::vector<AnalyticCurvePair>& candidate_pairs,
-                          const AnalyticSolverLimits& limits);
+                          const AnalyticSolverLimits& limits, bool reserve_outcomes = false);
 
 } // namespace analytic_regions_detail
 } // namespace geometer

@@ -1,5 +1,6 @@
 #include "analytic_filtered_boolean_selection_support.h"
 #include "analytic_filtered_capacity.h"
+#include "analytic_filtered_outcome_tracker.h"
 
 namespace geometer
 {
@@ -146,8 +147,9 @@ SelectionAdmission prepare_boolean_selection_admission(
             if (occurrence.occurrence_id != static_cast<std::uint64_t>(index) + 1 ||
                 occurrence.coverage_id == 0 ||
                 occurrence.source.operand_id != occurrence.coverage_id ||
-                (options.reserve_lineage && !valid_occurrence_source_for_curve(
-                                                occurrence.source, geometry.curves[index].kind)) ||
+                ((options.reserve_lineage || options.reserve_outcomes) &&
+                 !valid_occurrence_source_for_curve(occurrence.source,
+                                                    geometry.curves[index].kind)) ||
                 found == operand_ids.end() || *found != occurrence.coverage_id)
             {
                 preflight.error = AnalyticFilteredBooleanSelectionError::invalid_argument;
@@ -350,6 +352,10 @@ SelectionAdmission prepare_boolean_selection_admission(
     coverage_scratch = checked_add(
         coverage_scratch, checked_multiply(coverage_table, kCoverageTableEntryLogicalBytes, valid),
         valid);
+    if (options.reserve_outcomes)
+        coverage_scratch =
+            checked_add(coverage_scratch,
+                        outcome_tracker_logical_bytes(operands, job.stage_count, valid), valid);
     const std::uint64_t coverage_phase_memory =
         checked_add(checked_add(checked_add(retained_arrangement, selection_memory, valid),
                                 retained_selection_outputs, valid),
@@ -374,7 +380,8 @@ SelectionAdmission prepare_boolean_selection_admission(
 
     std::uint64_t material_regions_work = 0;
     std::uint64_t lineage_work = 0;
-    if (options.reserve_material_regions || options.reserve_lineage)
+    std::uint64_t outcomes_work = 0;
+    if (options.reserve_material_regions || options.reserve_lineage || options.reserve_outcomes)
     {
         const std::uint64_t maximum_edges = spans;
         const std::uint64_t maximum_half_edges = checked_multiply(maximum_edges, 2, valid);
@@ -389,6 +396,10 @@ SelectionAdmission prepare_boolean_selection_admission(
         retained_selection = checked_add(
             retained_selection,
             checked_multiply(maximum_coverage_nodes, kCoverageNodeLogicalBytes, valid), valid);
+        if (options.reserve_outcomes)
+            retained_selection =
+                checked_add(retained_selection,
+                            checked_multiply(operands, kOutcomeEvidenceLogicalBytes, valid), valid);
 
         std::uint64_t region_scratch =
             checked_multiply(maximum_edges, kIndexLogicalBytes * 2, valid);
@@ -445,7 +456,7 @@ SelectionAdmission prepare_boolean_selection_admission(
         material_regions_work =
             checked_add(material_regions_work, sort_units(maximum_faces), valid);
 
-        if (options.reserve_lineage)
+        if (options.reserve_lineage || options.reserve_outcomes)
         {
             const std::uint64_t maximum_vertices = vertex_reservation;
             std::uint64_t operand_leaf_capacity = 1;
@@ -569,6 +580,27 @@ SelectionAdmission prepare_boolean_selection_admission(
                 checked_multiply(checked_multiply(possible_transitions, 2, valid),
                                  checked_add(tree_operation_units(operands), 1, valid), valid),
                 valid);
+
+            if (options.reserve_outcomes)
+            {
+                // The structural history tracker runs inside selection. Its
+                // target-independent O((T+F) log S + O log S) work is added to
+                // selection below. This downstream reservation covers the
+                // allocation-free lineage/reference count and canonical fill
+                // pass. Exact publication capacity is checked after that
+                // count, before any outcome vector is allocated.
+                outcomes_work = checked_multiply(operands, 12, valid);
+                outcomes_work = checked_add(
+                    outcomes_work, checked_multiply(geometry.occurrences.size(), 6, valid), valid);
+                outcomes_work =
+                    checked_add(outcomes_work, checked_multiply(maximum_regions, 4, valid), valid);
+                outcomes_work = checked_add(outcomes_work,
+                                            checked_multiply(maximum_half_edges, 4, valid), valid);
+                outcomes_work = checked_add(
+                    outcomes_work, checked_multiply(possible_transitions, 2, valid), valid);
+                outcomes_work =
+                    checked_add(outcomes_work, sort_units(geometry.occurrences.size()), valid);
+            }
         }
     }
 
@@ -603,12 +635,20 @@ SelectionAdmission prepare_boolean_selection_admission(
             valid),
         valid);
     selection_work = checked_add(selection_work, coverage_table, valid);
+    selection_work = checked_add(selection_work, possible_transitions, valid);
+    if (options.reserve_outcomes)
+        selection_work =
+            checked_add(selection_work,
+                        outcome_tracker_work_upper_bound(possible_transitions, face_reservation,
+                                                         operands, job.stage_count, valid),
+                        valid);
     std::uint64_t integrated_arrangement_work =
         checked_add(geometry.curves.size(), arrangement_minimum.predicate_calls, valid);
     integrated_arrangement_work = checked_add(integrated_arrangement_work, selection_work, valid);
     integrated_arrangement_work =
         checked_add(integrated_arrangement_work, material_regions_work, valid);
     integrated_arrangement_work = checked_add(integrated_arrangement_work, lineage_work, valid);
+    integrated_arrangement_work = checked_add(integrated_arrangement_work, outcomes_work, valid);
     const std::uint64_t remaining_work = limits.predicate_calls - admission_work;
     if (!valid || integrated_minimum_memory > limits.working_memory_bytes ||
         integrated_arrangement_work > remaining_work)
@@ -618,7 +658,7 @@ SelectionAdmission prepare_boolean_selection_admission(
     }
     AnalyticSolverLimits arrangement_limits = limits;
     arrangement_limits.predicate_calls =
-        remaining_work - selection_work - material_regions_work - lineage_work;
+        remaining_work - selection_work - material_regions_work - lineage_work - outcomes_work;
     AnalyticFilteredArrangementResult arrangement =
         build_analytic_filtered_arrangement(geometry, candidate_pairs, arrangement_limits);
     if (arrangement.error != AnalyticFilteredArrangementError::none)
@@ -642,7 +682,9 @@ SelectionAdmission prepare_boolean_selection_admission(
     admission.admission_peak_memory = admission_peak_memory;
     admission.material_regions_reserved_work = material_regions_work;
     admission.lineage_reserved_work = lineage_work;
-    admission.downstream_reserved_work = material_regions_work + lineage_work;
+    admission.outcomes_reserved_work = outcomes_work;
+    admission.downstream_reserved_work = material_regions_work + lineage_work + outcomes_work;
+    admission.collect_outcomes = options.reserve_outcomes;
     admission.execution_limits = limits;
     admission.execution_limits.predicate_calls -= admission.downstream_reserved_work;
     admission.ready = true;

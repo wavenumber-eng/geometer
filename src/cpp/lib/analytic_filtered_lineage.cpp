@@ -2,6 +2,8 @@
 
 #include "analytic_filtered_boolean_selection_support.h"
 #include "analytic_filtered_capacity.h"
+#include "analytic_filtered_lineage_internal.h"
+#include "analytic_filtered_outcome_tracker.h"
 #include "analytic_filtered_regions_internal.h"
 
 #include <algorithm>
@@ -95,9 +97,9 @@ class Builder
     Builder(const AnalyticRequestPacketRecords& records, std::uint32_t job_index,
             const AnalyticFilteredGeometry& geometry,
             const std::vector<AnalyticCurvePair>& candidate_pairs,
-            const AnalyticSolverLimits& limits)
+            const AnalyticSolverLimits& limits, bool reserve_outcomes = false)
         : records_(records), job_index_(job_index), geometry_(geometry), pairs_(candidate_pairs),
-          limits_(limits)
+          limits_(limits), reserve_outcomes_(reserve_outcomes)
     {
     }
 
@@ -105,9 +107,10 @@ class Builder
     {
         analytic_regions_detail::LineageRegionsAdmission admission =
             analytic_regions_detail::build_regions_for_lineage(records_, job_index_, geometry_,
-                                                               pairs_, limits_);
+                                                               pairs_, limits_, reserve_outcomes_);
         reserved_work_ = admission.reserved_lineage_work;
         result_.telemetry.reserved_lineage_work_units = reserved_work_;
+        result_.telemetry.reserved_outcomes_work_units = admission.reserved_outcomes_work;
         result_.regions = std::move(admission.regions);
         const auto& region_telemetry = result_.regions.telemetry;
         result_.telemetry.regions_work_units = region_telemetry.predicate_calls;
@@ -739,6 +742,11 @@ class Builder
             valid);
         retained = checked_add(
             retained,
+            checked_multiply(selection.outcome_evidence.size(),
+                             analytic_selection_detail::kOutcomeEvidenceLogicalBytes, valid),
+            valid);
+        retained = checked_add(
+            retained,
             checked_multiply(regions.rings.size(),
                              analytic_selection_detail::kMaterialRingLogicalBytes, valid),
             valid);
@@ -940,6 +948,7 @@ class Builder
     std::uint32_t expected_vertex_count_ = 0;
     std::uint64_t reporter_generation_ = 0;
     bool counting_ = false;
+    bool reserve_outcomes_ = false;
 };
 
 static_assert(sizeof(Operand) <= kOperandLogicalBytes);
@@ -961,5 +970,13 @@ build_analytic_filtered_lineage(const AnalyticRequestPacketRecords& records,
                                 const AnalyticSolverLimits& limits)
 {
     return Builder(records, job_index, geometry, candidate_pairs, limits).build();
+}
+
+AnalyticFilteredLineageResult analytic_lineage_detail::build_lineage_for_outcomes(
+    const AnalyticRequestPacketRecords& records, std::uint32_t job_index,
+    const AnalyticFilteredGeometry& geometry, const std::vector<AnalyticCurvePair>& candidate_pairs,
+    const AnalyticSolverLimits& limits)
+{
+    return Builder(records, job_index, geometry, candidate_pairs, limits, true).build();
 }
 } // namespace geometer

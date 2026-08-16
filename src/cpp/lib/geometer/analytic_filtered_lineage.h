@@ -56,6 +56,7 @@ struct AnalyticFilteredLineageTelemetry
     std::uint64_t publication_capacity_records = 0;
     std::uint64_t sort_work_units = 0;
     std::uint64_t reserved_lineage_work_units = 0;
+    std::uint64_t reserved_outcomes_work_units = 0;
     std::uint64_t lineage_work_units = 0;
     std::uint64_t predicate_calls = 0;
     std::uint64_t peak_working_memory_bytes = 0;

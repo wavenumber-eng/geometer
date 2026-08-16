@@ -1,7 +1,8 @@
 #pragma once
 
+#include "geometer/analytic_operand_outcome.h"
 #include "geometer/analytic_result_packet_layout.h"
-#include "geometer/exact_boolean_outcomes.h"
+#include "geometer/exact_boolean_provenance.h"
 
 #include <cstdint>
 #include <optional>
@@ -82,7 +83,7 @@ struct AnalyticPacketSourceSetRecord
 struct AnalyticOperandEventRecord
 {
     std::uint64_t operand_id = 0;
-    exact::ExactOperandOutcomeKind kind = exact::ExactOperandOutcomeKind::no_effect;
+    AnalyticOperandOutcomeKind kind = AnalyticOperandOutcomeKind::no_effect;
     std::uint32_t result_reference_begin = 0;
     std::uint32_t result_reference_count = 0;
     std::uint32_t source_set = 0;

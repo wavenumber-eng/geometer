@@ -576,8 +576,26 @@ pass. A refill clears the prior active removal epoch, so an overwritten
 subtractor cannot claim a later hole. This coordinate-free stage performs no
 predicate, snapping, or additional 50 nm repair. Isolated collapsed vertices
 remain internal lineage and are not published as unreachable result vertices.
-Operand outcome events, final 1 nm normalization, and operation dispatch remain
-subsequent stages.
+
+The owned filtered-outcome continuation is now implemented. Selection can
+enable a fixed-capacity history tracker during its existing face-dual DFS.
+Whole edge transition batches update stage counts atomically; six
+active-and-unseen reporters record positive-area coverage, redundancy, later
+removal, effective subtraction, unfilled subtraction, and overwritten
+subtraction. Reporter leaves contain only currently active operands whose fact
+has not been emitted, so range drains are proportional to new evidence rather
+than faces times operands. Same-stage unions and differences are evaluated as
+symmetric stage sets, never as transient sequential toggles.
+
+Final positive region lineage supplies contribution references, while
+surviving subtraction lineage supplies ring and owning-region references.
+Every event shares its operand's complete sorted/unique original occurrence
+source tuple set. The events are nonexclusive and canonical by operand and
+kind. Result references are deliberately tagged pre-normalization ring/region
+handles: the one-time 1 nm publisher must remap them through its canonical
+old-to-published index tables before packet encoding. Outcome history and
+projection perform no numeric predicate, snapping, or additional 50 nm repair.
+Final 1 nm normalization and operation dispatch remain subsequent stages.
 
 Across ordered stages, the accumulator retains the resolved analytic
 arrangement and lineage. Publication to the governed nm grid occurs once after

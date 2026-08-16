@@ -33,6 +33,21 @@ struct AnalyticFilteredCoverageStateNode
     std::uint32_t right = 0;
 };
 
+// Monotone positive-area history collected only by the owned filtered-outcome
+// pipeline while the canonical face-dual traversal is already live. These are
+// coordinate-free stage facts, not geometric classifications. Standalone face
+// selection leaves this table empty.
+struct AnalyticFilteredOperandOutcomeEvidence
+{
+    std::uint64_t operand_id = 0;
+    bool covered_positive_area = false;
+    bool redundant_or_absorbed = false;
+    bool removed_later = false;
+    bool attributed_removal = false;
+    bool unfilled_removal = false;
+    bool overwritten = false;
+};
+
 enum class AnalyticFilteredBooleanSelectionError : std::uint8_t
 {
     none = 0,
@@ -60,6 +75,9 @@ struct AnalyticFilteredBooleanSelectionTelemetry
     std::uint64_t coverage_state_table_probes = 0;
     std::uint64_t coverage_state_update_work_units = 0;
     std::uint64_t stage_state_update_work_units = 0;
+    std::uint64_t outcome_stage_state_update_work_units = 0;
+    std::uint64_t outcome_reporter_node_visits = 0;
+    std::uint64_t outcome_evidence_flags_set = 0;
     std::uint64_t material_faces = 0;
     std::uint64_t sort_work_units = 0;
     std::uint64_t arrangement_predicate_calls = 0;
@@ -83,6 +101,7 @@ struct AnalyticFilteredBooleanSelectionResult
     // nodes are canonical (left,right) pairs. A face root therefore represents
     // its complete active-operand set without copying that set per face.
     std::vector<AnalyticFilteredCoverageStateNode> coverage_state_nodes;
+    std::vector<AnalyticFilteredOperandOutcomeEvidence> outcome_evidence;
     AnalyticFilteredBooleanSelectionTelemetry telemetry;
 };
 

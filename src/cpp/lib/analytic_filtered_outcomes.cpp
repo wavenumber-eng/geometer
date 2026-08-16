@@ -321,14 +321,11 @@ class Builder
             for (std::uint32_t owner = 0; owner + 1 < begin.size(); ++owner)
             {
                 begin[owner] = static_cast<std::uint32_t>(cursor);
-                std::uint32_t previous = kNone;
                 while (cursor < values.size() && values[cursor].owner == owner)
                 {
                     const std::uint32_t operand = values[cursor].operand;
-                    if (operand >= states_.size() || states_[operand].operation != operation ||
-                        (previous != kNone && previous >= operand))
+                    if (operand >= states_.size() || states_[operand].operation != operation)
                         return false;
-                    previous = operand;
                     ++cursor;
                 }
                 if (cursor < values.size() && values[cursor].owner < owner)

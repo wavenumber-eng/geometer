@@ -170,6 +170,33 @@ void test_single_and_coincident_union()
                 "same-stage coincident union lost symmetric outcome evidence");
 }
 
+void test_partial_union_association_order()
+{
+    const auto run = [](bool reflected, const std::vector<std::uint64_t>& operands)
+    {
+        AnalyticFilteredGeometry geometry;
+        if (reflected)
+        {
+            append_box(geometry, 10, -1500, 0, -500, 1000);
+            append_box(geometry, 20, -1000, 200, 0, 800);
+        }
+        else
+        {
+            append_box(geometry, 10, 0, 0, 1000, 1000);
+            append_box(geometry, 20, 500, 200, 1500, 800);
+        }
+        return build(records_for({{1, operands}}), geometry);
+    };
+    for (const bool reflected : {false, true})
+    {
+        const auto result = run(reflected, {10, 20});
+        require(result.error == AnalyticFilteredOutcomesError::none &&
+                    has(result, 10, AnalyticOperandOutcomeKind::contributes_final_material) &&
+                    has(result, 20, AnalyticOperandOutcomeKind::contributes_final_material),
+                "partial same-stage union depended on association discovery order");
+    }
+}
+
 void test_remove_refill_history()
 {
     AnalyticFilteredGeometry geometry;
@@ -682,6 +709,7 @@ std::string parity_vector()
 int main(int argc, char** argv)
 {
     test_single_and_coincident_union();
+    test_partial_union_association_order();
     test_remove_refill_history();
     test_accumulator_redundancy_and_same_stage_subtractors();
     test_complete_removal_and_no_effect();

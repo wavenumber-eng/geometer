@@ -725,9 +725,12 @@ class OverlayBuilder
         {
             events_.reserve(static_cast<std::size_t>(raw_count));
             unique_events_.reserve(static_cast<std::size_t>(raw_count));
+            actions_.assign(geometry_.curves.size() * 2, {});
             start_rank_.assign(geometry_.curves.size(), kNoIndex);
             end_rank_.assign(geometry_.curves.size(), kNoIndex);
             domain_modes_.assign(geometry_.curves.size(), DomainMode::normal);
+            if (!validate_endpoint_partition_columns())
+                return false;
             for (std::uint32_t curve_offset = 0; curve_offset < geometry_.curves.size();
                  ++curve_offset)
             {
@@ -772,6 +775,73 @@ class OverlayBuilder
             return false;
         std::sort(events_.begin(), events_.end(), raw_event_less);
         result_.telemetry.raw_events = events_.size();
+        return true;
+    }
+
+    bool bind_endpoint_partition_column(std::uint32_t curve_index, bool start,
+                                        std::uint64_t& maximum_group)
+    {
+        const auto& curve = geometry_.curves[curve_index];
+        if (!curve.has_endpoint_authoritative_arc_certificate)
+            return true;
+        const auto& endpoint = start ? curve.start : curve.end;
+        const std::uint64_t token = endpoint.construction_x_column_id;
+        if (!analytic_is_endpoint_arc_partition_column_token(token))
+            return token == 0;
+        const std::uint64_t group = analytic_endpoint_arc_partition_column_group(token);
+        if (group > actions_.size())
+            return false;
+        maximum_group = std::max(maximum_group, group);
+        EndpointAction& representative = actions_[static_cast<std::size_t>(group - 1)];
+        if (representative.carrier_id == 0)
+        {
+            representative.carrier_id = token;
+            representative.curve_index = curve_index;
+            representative.role = start ? EventRole::domain_start : EventRole::domain_end;
+            return true;
+        }
+        const auto& prior_curve = geometry_.curves[representative.curve_index];
+        const auto& prior = representative.role == EventRole::domain_start
+                                ? prior_curve.integer_start
+                                : prior_curve.integer_end;
+        const auto& integer = start ? curve.integer_start : curve.integer_end;
+        return analytic_endpoint_arc_partition_column_is_right(representative.carrier_id) ==
+                   analytic_endpoint_arc_partition_column_is_right(token) &&
+               prior.x == integer.x && prior.y == integer.y;
+    }
+
+    auto endpoint_partition_column_key(const EndpointAction& value) const
+    {
+        const auto& curve = geometry_.curves[value.curve_index];
+        const auto& integer =
+            value.role == EventRole::domain_start ? curve.integer_start : curve.integer_end;
+        return std::tuple{analytic_endpoint_arc_partition_column_is_right(value.carrier_id),
+                          integer.x, integer.y};
+    }
+
+    bool validate_endpoint_partition_columns()
+    {
+        bool valid = true;
+        const std::uint64_t work = checked_multiply(geometry_.curves.size(), 5, valid);
+        if (!valid || !charge(work))
+            return false;
+        std::uint64_t maximum_group = 0;
+        for (std::uint32_t curve = 0; curve < geometry_.curves.size(); ++curve)
+            if (!bind_endpoint_partition_column(curve, true, maximum_group) ||
+                !bind_endpoint_partition_column(curve, false, maximum_group))
+                return fail(AnalyticFilteredOverlayError::invalid_argument);
+        for (std::uint64_t group = 0; group < maximum_group; ++group)
+        {
+            const EndpointAction& current = actions_[static_cast<std::size_t>(group)];
+            if (current.carrier_id == 0)
+                return fail(AnalyticFilteredOverlayError::invalid_argument);
+            if (group == 0)
+                continue;
+            const EndpointAction& previous = actions_[static_cast<std::size_t>(group - 1)];
+            if (endpoint_partition_column_key(previous) >= endpoint_partition_column_key(current))
+                return fail(AnalyticFilteredOverlayError::invalid_argument);
+        }
+        actions_.clear();
         return true;
     }
 
@@ -1377,10 +1447,11 @@ build_analytic_filtered_overlay(const AnalyticFilteredGeometry& geometry,
         minimum_memory,
         checked_multiply(curve_count, kAnalyticOverlayCurveGroupLogicalBytes, valid), valid);
 
-    // Every valid pair consumes at least one narrow predicate, and overlay
-    // input validation consumes one unit per curve and retained pair.
+    // Every valid pair consumes at least one narrow predicate. Overlay input
+    // validation consumes one unit per curve and retained pair, and canonical
+    // endpoint/cardinal group validation consumes five units per curve.
     std::uint64_t minimum_work = checked_multiply(pair_count, 2, valid);
-    minimum_work = checked_add(minimum_work, curve_count, valid);
+    minimum_work = checked_add(minimum_work, checked_multiply(curve_count, 6, valid), valid);
     if (!valid || minimum_memory > limits.working_memory_bytes ||
         minimum_work > limits.predicate_calls)
     {

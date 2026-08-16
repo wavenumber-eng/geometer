@@ -1041,7 +1041,9 @@ Geometer proposal, not the original consumer packet.
   construction identity/equal enclosure, and any collapsed authoritative span
   rejects. A lowering-internal endpoint/cardinal-side column identity batches
   overlapping filtered x enclosures atomically without changing coordinates
-  or merging vertices.
+  or merging vertices. Overlay revalidates a dense canonical group table by
+  cardinal side and exact integer endpoint before using the identity, rejecting
+  zero payloads and any cross-endpoint reuse without adding a pair scan.
   Generic irrational overlapping disks,
   irrational-radius authored arcs, clockwise annular holes, full two-half
   circles, nested hole/island topology, reciprocal old-to-normalized maps,

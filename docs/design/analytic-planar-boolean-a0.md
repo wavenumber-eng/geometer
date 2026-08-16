@@ -619,7 +619,12 @@ is a topology failure. When independently reconstructed seams and normalized
 endpoints have overlapping filtered x enclosures, replay mints a deterministic
 endpoint-and-cardinal-side column identity so the face sweep processes them as
 one atomic event column. That identity neither changes coordinates nor merges
-the distinct vertices.
+the distinct vertices. Before overlay uses the identity, it validates a dense,
+canonical group table ordered by cardinal side and exact integer endpoint;
+zero-payload tokens, skipped groups, split equal keys, and cross-endpoint token
+reuse are invalid input. The check reuses fixed-capacity overlay scratch and is
+linear after the lowering-issued order, so the correlation proof introduces no
+pair scan.
 When two replay curves share a normalized endpoint, the narrow phase treats
 that endpoint as a verified construction root and factors only the possible
 second line/circle or circle/circle root with outward interval arithmetic. It

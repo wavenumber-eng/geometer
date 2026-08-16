@@ -452,7 +452,7 @@ bool calculate_arrangement_minimum_requirements(const AnalyticFilteredGeometry& 
     // guaranteed span, and republishes at least one lineage membership per
     // source curve.
     work = checked_multiply(pair_count, 2, valid);
-    work = checked_add(work, checked_multiply(curve_count, 6, valid), valid);
+    work = checked_add(work, checked_multiply(curve_count, 11, valid), valid);
     work = checked_add(work, sort_units(curve_count), valid);
     work = checked_add(work, sort_units(checked_multiply(curve_count, 2, valid)), valid);
     work = checked_add(work, checked_multiply(spans, 14, valid), valid);

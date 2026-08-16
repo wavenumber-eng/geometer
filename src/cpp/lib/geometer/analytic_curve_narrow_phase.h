@@ -66,25 +66,33 @@ analytic_pair_x_column_token(std::uint64_t first_carrier_id,
 }
 
 [[nodiscard]] inline constexpr std::uint64_t
-analytic_endpoint_arc_partition_column_token(std::uint64_t carrier_id, bool right) noexcept
+analytic_endpoint_arc_partition_column_token(std::uint64_t group_id, bool right) noexcept
 {
-    if (carrier_id == 0 || carrier_id >= (std::uint64_t{1} << 61U))
+    if (group_id == 0 || group_id >= (std::uint64_t{1} << 61U))
         return 0;
     return (right ? kAnalyticEndpointArcRightColumnTag : kAnalyticEndpointArcLeftColumnTag) |
-           carrier_id;
+           group_id;
 }
 
 [[nodiscard]] inline constexpr bool
 analytic_is_endpoint_arc_partition_column_token(std::uint64_t token) noexcept
 {
     const std::uint64_t tag = token >> 61U;
-    return tag == 6 || tag == 7;
+    return (tag == 6 || tag == 7) && (token & ((std::uint64_t{1} << 61U) - 1U)) != 0;
 }
 
 [[nodiscard]] inline constexpr bool
 analytic_endpoint_arc_partition_column_is_right(std::uint64_t token) noexcept
 {
     return (token >> 61U) == 7;
+}
+
+[[nodiscard]] inline constexpr std::uint64_t
+analytic_endpoint_arc_partition_column_group(std::uint64_t token) noexcept
+{
+    return analytic_is_endpoint_arc_partition_column_token(token)
+               ? token & ((std::uint64_t{1} << 61U) - 1U)
+               : 0;
 }
 
 struct AnalyticFilteredCircleNm

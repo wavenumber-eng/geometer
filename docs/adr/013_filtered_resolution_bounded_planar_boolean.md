@@ -276,7 +276,10 @@ engine.
   identity/equal enclosure; a collapsed such span is a topology failure. A
   deterministic endpoint/cardinal-side token may correlate overlapping x
   enclosures for atomic face-sweep processing, but cannot change coordinates
-  or merge vertices. Generic irrational intersections and irrational-radius
+  or merge vertices. Overlay revalidates that these tokens form a dense
+  canonical table ordered by side and exact integer endpoint, rejecting zero
+  payloads and reused or split endpoint identities before the sweep. Generic
+  irrational intersections and irrational-radius
   arcs therefore remain on the fast filtered path without a second proximity
   merge. Packet source-set interning, canonical record IDs, and dispatch remain
   gated.

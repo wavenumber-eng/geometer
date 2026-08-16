@@ -579,7 +579,7 @@ void test_endpoint_index_budget_propagation()
         geometry.occurrences.push_back(occurrence(index));
     }
     AnalyticSolverLimits limits;
-    limits.predicate_calls = 29960;
+    limits.predicate_calls = 31240;
     const AnalyticFilteredArrangementResult result = arrange(geometry, limits);
     require(result.error == AnalyticFilteredArrangementError::resource_limit_exceeded &&
                 result.vertices.empty() && result.edges.empty() &&

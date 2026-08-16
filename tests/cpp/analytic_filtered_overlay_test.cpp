@@ -1,5 +1,7 @@
 #include "geometer/analytic_filtered_overlay.h"
 
+#include "analytic_endpoint_arc_reconstruction.h"
+
 #include <algorithm>
 #include <cstdint>
 #include <cstdlib>
@@ -58,6 +60,34 @@ AnalyticAtomicCurveNm arc(std::uint32_t index, double x1, double y1, double x2, 
     curve.circle.radius = {100, 100};
     curve.counterclockwise = counterclockwise;
     curve.major_arc = major;
+    curve.construction_carrier_id = carrier;
+    curve.construction_family_id = carrier;
+    return curve;
+}
+
+AnalyticAtomicCurveNm endpoint_authoritative_arc(std::uint32_t index, std::int64_t start_y,
+                                                 std::uint64_t carrier)
+{
+    AnalyticAtomicCurveNm curve;
+    curve.curve_index = index;
+    curve.kind = AnalyticAtomicCurveKind::circular_arc;
+    curve.start = exact_point(100.0, static_cast<double>(start_y));
+    curve.end = exact_point(-100.0, static_cast<double>(start_y));
+    curve.integer_start = {100, start_y};
+    curve.integer_end = {-100, start_y};
+    curve.circle.radius = {100.0, 100.0};
+    curve.counterclockwise = true;
+    curve.has_integer_radius_certificate = true;
+    curve.integer_radius = 100;
+    curve.has_arc_sweep_certificate = true;
+    curve.has_endpoint_authoritative_arc_certificate = true;
+    curve.has_endpoint_authoritative_x_monotone_certificate = true;
+    curve.endpoint_authoritative_upper_branch = true;
+    analytic_detail::Point center;
+    require(analytic_detail::reconstruct_endpoint_authoritative_arc_center(
+                100, start_y, -100, start_y, 100, true, false, center),
+            "test endpoint-authoritative center reconstruction failed");
+    curve.circle.center = {{center.x.lower, center.x.upper}, {center.y.lower, center.y.upper}};
     curve.construction_carrier_id = carrier;
     curve.construction_family_id = carrier;
     return curve;
@@ -153,6 +183,32 @@ void test_resolution_merge_threshold()
             "51 nm same-carrier endpoint gap was collapsed");
     require_span(preserved, 0, 0, 0, 1000, 0, 1);
     require_span(preserved, 1, 1051, 0, 2000, 0, 1);
+}
+
+void test_endpoint_partition_tokens_are_canonical()
+{
+    AnalyticFilteredGeometry geometry;
+    auto first = endpoint_authoritative_arc(1, 0, 10);
+    auto second = endpoint_authoritative_arc(2, 1, 20);
+    const std::uint64_t forged = analytic_endpoint_arc_partition_column_token(1, true);
+    first.start.construction_x_column_id = forged;
+    second.start.construction_x_column_id = forged;
+    append_curve(geometry, first, occurrence(1));
+    append_curve(geometry, second, occurrence(2));
+    require(build_analytic_filtered_overlay(geometry, {}).error ==
+                AnalyticFilteredOverlayError::invalid_argument,
+            "unrelated endpoint/cardinal identities must not share a correlation token");
+
+    geometry.curves[1].start.construction_x_column_id =
+        analytic_endpoint_arc_partition_column_token(2, true);
+    require(build_analytic_filtered_overlay(geometry, {}).error ==
+                AnalyticFilteredOverlayError::none,
+            "canonical endpoint/cardinal correlation groups were rejected");
+
+    geometry.curves[0].start.construction_x_column_id = kAnalyticEndpointArcRightColumnTag;
+    require(build_analytic_filtered_overlay(geometry, {}).error ==
+                AnalyticFilteredOverlayError::invalid_argument,
+            "a zero-payload endpoint/cardinal token must be rejected");
 }
 
 AnalyticFilteredOverlayResult diagonal_endpoint_pair(double offset)
@@ -570,6 +626,7 @@ int main()
 {
     test_partial_line_overlap_and_orientation();
     test_resolution_merge_threshold();
+    test_endpoint_partition_tokens_are_canonical();
     test_integrated_pair_resolution_boundary();
     test_crossing_split_events();
     test_circle_seam_and_coincident_arcs();

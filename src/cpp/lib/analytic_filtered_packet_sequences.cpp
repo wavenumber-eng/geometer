@@ -95,6 +95,43 @@ std::uint64_t sort_units(std::uint64_t count) noexcept
     return count * levels;
 }
 
+bool admit_packet_encoding_memory(const AnalyticResultPacketRecords& records,
+                                  std::uint64_t retained_bytes, std::uint64_t memory_limit,
+                                  std::uint64_t& packet_bytes, std::uint64_t& peak_bytes) noexcept
+{
+    const std::uint64_t counts[]{
+        records.job_results.size(),
+        records.diagnostics.size(),
+        records.vertices.size(),
+        records.fragments.size(),
+        records.rings.size(),
+        records.fragment_references.size(),
+        records.regions.size(),
+        records.ring_region_references.size(),
+        records.source_sets.size(),
+        records.source_references.size(),
+        records.operand_events.size(),
+        records.relationship_results.size(),
+        records.relationship_pairs.size(),
+        records.source_reference_indices.size(),
+    };
+    constexpr std::uint64_t sizes[]{48, 56, 32, 48, 32, 4, 24, 8, 8, 32, 48, 32, 32, 4};
+    packet_bytes = 512;
+    for (std::size_t index = 0; index < std::size(counts); ++index)
+    {
+        if (packet_bytes > std::numeric_limits<std::uint64_t>::max() - 7)
+            return false;
+        packet_bytes = (packet_bytes + 7) & ~std::uint64_t{7};
+        std::uint64_t term = 0;
+        if (!checked_multiply(counts[index], sizes[index], term) ||
+            !checked_add(packet_bytes, term, packet_bytes))
+            return false;
+    }
+    std::uint64_t scratch_bytes = 0;
+    return packet_bytes <= 268'435'456ULL && checked_multiply(packet_bytes, 2, scratch_bytes) &&
+           checked_add(retained_bytes, scratch_bytes, peak_bytes) && peak_bytes <= memory_limit;
+}
+
 bool WorkBudget::charge(std::uint64_t units) noexcept
 {
     if (used > limit || units > limit - used)

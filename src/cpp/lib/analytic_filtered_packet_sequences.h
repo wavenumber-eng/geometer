@@ -15,6 +15,15 @@ namespace geometer::analytic_packet_detail
                                     std::uint64_t& output) noexcept;
 [[nodiscard]] std::uint64_t sort_units(std::uint64_t count) noexcept;
 
+// Computes and admits the exact target-independent live phase for encoding
+// canonical packet records: retained records plus serialized table buffers
+// plus the final aligned packet.
+[[nodiscard]] bool admit_packet_encoding_memory(const AnalyticResultPacketRecords& records,
+                                                std::uint64_t retained_bytes,
+                                                std::uint64_t memory_limit,
+                                                std::uint64_t& packet_bytes,
+                                                std::uint64_t& peak_bytes) noexcept;
+
 struct WorkBudget
 {
     std::uint64_t limit = 0;

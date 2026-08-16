@@ -47,6 +47,7 @@ struct AnalyticFilteredPacketTelemetry
     std::uint64_t emitted_regions = 0;
     std::uint64_t emitted_events = 0;
     std::uint64_t emitted_packet_bytes = 0;
+    std::uint64_t encoding_peak_working_memory_bytes = 0;
     std::uint64_t reserved_packet_work_units = 0;
     std::uint64_t reserved_packet_memory_bytes = 0;
     std::uint64_t packet_work_units = 0;

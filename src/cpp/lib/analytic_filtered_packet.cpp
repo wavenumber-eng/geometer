@@ -22,6 +22,7 @@ namespace
 constexpr std::uint32_t kNone = std::numeric_limits<std::uint32_t>::max();
 constexpr std::uint64_t kFixedPacketWork = 1024;
 constexpr std::uint64_t kFixedPacketBytes = 4096;
+using analytic_packet_detail::admit_packet_encoding_memory;
 using analytic_packet_detail::canonicalize_sequences;
 using analytic_packet_detail::CanonicalSequences;
 using analytic_packet_detail::checked_add;
@@ -1668,22 +1669,22 @@ class PacketBuilder
              static_cast<std::uint32_t>(records_out_.regions.size()),
              records_out_.operand_events.empty() ? 0U : 0U,
              static_cast<std::uint32_t>(records_out_.operand_events.size())});
-        const std::uint64_t packet_bytes =
-            512ULL + records_out_.job_results.size() * 48ULL +
-            records_out_.vertices.size() * 32ULL + records_out_.fragments.size() * 48ULL +
-            records_out_.rings.size() * 32ULL + records_out_.fragment_references.size() * 4ULL +
-            records_out_.regions.size() * 24ULL +
-            records_out_.ring_region_references.size() * 8ULL +
-            records_out_.source_sets.size() * 8ULL + records_out_.source_references.size() * 32ULL +
-            records_out_.operand_events.size() * 48ULL +
-            records_out_.source_reference_indices.size() * 4ULL;
-        if (packet_bytes > 268'435'456ULL || !budget_.charge(packet_bytes / 8 + 1))
+        std::uint64_t packet_bytes = 0;
+        std::uint64_t encoding_peak = 0;
+        std::uint64_t retained_bytes = 0;
+        if (!persistent_bytes(retained_bytes) ||
+            !admit_packet_encoding_memory(records_out_, retained_bytes,
+                                          limits_.working_memory_bytes, packet_bytes,
+                                          encoding_peak) ||
+            !budget_.charge(packet_bytes / 8 + 1))
             return fail_resource();
-        if (!check_phase(packet_bytes))
-            return false;
+        result_.telemetry.encoding_peak_working_memory_bytes = encoding_peak;
+        result_.telemetry.peak_working_memory_bytes =
+            std::max(result_.telemetry.peak_working_memory_bytes, encoding_peak);
         AnalyticResultPacketEncodeResult encoded =
             analytic_result_detail::encode_canonical_records_unchecked(records_out_);
-        if (encoded.error != AnalyticResultPacketLayoutError::none || !encoded.value)
+        if (encoded.error != AnalyticResultPacketLayoutError::none || !encoded.value ||
+            encoded.value->size() != packet_bytes)
         {
             result_.error = AnalyticFilteredPacketError::encoding_failed;
             return false;

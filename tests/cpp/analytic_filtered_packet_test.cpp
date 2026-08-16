@@ -402,6 +402,61 @@ void test_sparse_packet_scaling()
             "sparse packet logical memory grew superlinearly");
 }
 
+void test_encoding_memory_boundary()
+{
+    const PreparedJob job = prepare(disjoint_disk_records(96));
+    const auto baseline = build(job, {});
+    require_success(baseline, 16);
+    require(baseline.telemetry.encoding_peak_working_memory_bytes != 0 &&
+                baseline.telemetry.encoding_peak_working_memory_bytes <=
+                    baseline.telemetry.peak_working_memory_bytes &&
+                baseline.telemetry.encoding_peak_working_memory_bytes >=
+                    baseline.telemetry.emitted_packet_bytes * 2ULL,
+            "sparse packet encoding did not retain both packet payloads");
+
+    using geometer::analytic_packet_detail::admit_packet_encoding_memory;
+    constexpr std::uint64_t retained_bytes = 12'345;
+    const std::uint64_t direct_exact = retained_bytes + baseline.standalone->bytes.size() * 2ULL;
+    std::uint64_t admitted_packet_bytes = 0;
+    std::uint64_t admitted_peak_bytes = 0;
+    require(admit_packet_encoding_memory(baseline.standalone->records, retained_bytes, direct_exact,
+                                         admitted_packet_bytes, admitted_peak_bytes) &&
+                admitted_packet_bytes == baseline.standalone->bytes.size() &&
+                admitted_peak_bytes == direct_exact,
+            "exact direct packet encoding phase was not admitted");
+    require(!admit_packet_encoding_memory(baseline.standalone->records, retained_bytes,
+                                          direct_exact - 1, admitted_packet_bytes,
+                                          admitted_peak_bytes) &&
+                admitted_packet_bytes == baseline.standalone->bytes.size() &&
+                admitted_peak_bytes == direct_exact,
+            "one-byte-short direct packet encoding phase was admitted");
+
+    AnalyticSolverLimits limits;
+    std::uint64_t low = 0;
+    std::uint64_t high = limits.working_memory_bytes;
+    while (low < high)
+    {
+        const std::uint64_t middle = low + (high - low) / 2;
+        limits.working_memory_bytes = middle;
+        if (successful(build(job, limits)))
+            high = middle;
+        else
+            low = middle + 1;
+    }
+    const std::uint64_t exact_memory = low;
+    limits = {};
+    limits.working_memory_bytes = exact_memory;
+    const auto exact = build(job, limits);
+    require(successful(exact) && exact.telemetry.peak_working_memory_bytes <= exact_memory,
+            "exact packet encoding memory boundary did not succeed");
+
+    limits.working_memory_bytes = exact_memory - 1;
+    const auto one_short = build(job, limits);
+    require(!successful(one_short) && one_short.standalone &&
+                one_short.standalone->records.vertices.empty(),
+            "one-byte-short packet memory did not fail without partial publication");
+}
+
 std::uint64_t shared_prefix_work(std::uint32_t sequence_count)
 {
     using namespace geometer::analytic_packet_detail;
@@ -506,6 +561,7 @@ void append_parity_result(std::ostringstream& output, const AnalyticFilteredJobP
     append_hex(output, telemetry.sequence_table_probes);
     append_hex(output, telemetry.predicate_calls);
     append_hex(output, telemetry.peak_working_memory_bytes);
+    append_hex(output, telemetry.encoding_peak_working_memory_bytes);
     append_hex(output, telemetry.algebraic_fallback_calls);
 }
 
@@ -530,6 +586,7 @@ int main(int argc, char** argv)
     test_exact_resource_boundaries();
     test_authored_source_role_binding();
     test_sparse_packet_scaling();
+    test_encoding_memory_boundary();
     test_shared_prefix_sequence_scaling();
     test_exact_sequence_memory_boundary();
     if (argc == 2 && std::string(argv[1]) == "--emit-parity")

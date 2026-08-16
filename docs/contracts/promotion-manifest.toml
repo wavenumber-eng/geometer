@@ -240,8 +240,8 @@ packet_policy = "coordinate_preserving_canonical_source_set_topology_event_and_s
 packet_complexity_policy = "fixed_width_sort_keys_and_exact_prefix_trie_without_variable_length_comparators_or_face_by_operand_replay"
 packet_budget_policy = "candidate_bounded_pre_normalization_reservation_then_exact_fixed_capacity_source_and_packet_publication"
 packet_parity_validator = "scripts/validate_analytic_filtered_packet_parity.py"
-packet_vector_bytes = 4264
-packet_vector_sha256 = "367c9bfeee1a993be77fc454bb7199b7500985d0d5a5db3eca16da0227a444fe"
+packet_vector_bytes = 4288
+packet_vector_sha256 = "a47f82ad1ab38c9e38ea55f38b44849ebd477de31c465726cbd17f5c4047ccfb"
 
 [analytic_exact_backend]
 status = "implemented_non_primary_oracle"

@@ -132,6 +132,46 @@ inline bool valid_interval(const AnalyticCoordinateIntervalNm& value) noexcept
     return std::isfinite(value.lower) && std::isfinite(value.upper) && value.lower <= value.upper;
 }
 
+inline bool valid_occurrence_source_for_curve(const AnalyticFilteredSourceReference& source,
+                                              AnalyticAtomicCurveKind curve) noexcept
+{
+    if (source.operand_id == 0 || source.primary_id == 0)
+        return false;
+    if (source.kind == AnalyticFilteredSourceKind::authored_segment_curve)
+        return source.secondary_id != 0 &&
+               ((curve == AnalyticAtomicCurveKind::line &&
+                 source.role == AnalyticFilteredSourceRole::authored_line) ||
+                (curve == AnalyticAtomicCurveKind::circular_arc &&
+                 source.role == AnalyticFilteredSourceRole::authored_circular_arc));
+    if (source.kind != AnalyticFilteredSourceKind::compact_feature_role)
+        return false;
+    const std::uint32_t first = static_cast<std::uint32_t>(source.secondary_id >> 32U);
+    const std::uint32_t second = static_cast<std::uint32_t>(source.secondary_id);
+    switch (source.role)
+    {
+    case AnalyticFilteredSourceRole::primitive_outer_circle:
+    case AnalyticFilteredSourceRole::primitive_inner_circle:
+    case AnalyticFilteredSourceRole::capsule_end_cap:
+    case AnalyticFilteredSourceRole::capsule_start_cap:
+        return curve == AnalyticAtomicCurveKind::circular_arc && source.secondary_id == 0;
+    case AnalyticFilteredSourceRole::capsule_left_line:
+    case AnalyticFilteredSourceRole::capsule_right_line:
+        return curve == AnalyticAtomicCurveKind::line && source.secondary_id == 0;
+    case AnalyticFilteredSourceRole::swept_left_offset_line:
+    case AnalyticFilteredSourceRole::swept_right_offset_line:
+        return curve == AnalyticAtomicCurveKind::line && first != 0 && second == 0;
+    case AnalyticFilteredSourceRole::swept_left_offset_arc:
+    case AnalyticFilteredSourceRole::swept_right_offset_arc:
+    case AnalyticFilteredSourceRole::swept_start_cap:
+    case AnalyticFilteredSourceRole::swept_end_cap:
+        return curve == AnalyticAtomicCurveKind::circular_arc && first != 0 && second == 0;
+    case AnalyticFilteredSourceRole::swept_round_join:
+        return curve == AnalyticAtomicCurveKind::circular_arc && first != 0 && second != 0;
+    default:
+        return false;
+    }
+}
+
 struct DisjointSet
 {
     explicit DisjointSet(std::size_t count) : parent(count), rank(count)
@@ -723,6 +763,8 @@ struct SelectionAdmission
     std::uint64_t admission_work = 0;
     std::uint64_t admission_peak_memory = 0;
     std::uint64_t downstream_reserved_work = 0;
+    std::uint64_t material_regions_reserved_work = 0;
+    std::uint64_t lineage_reserved_work = 0;
     AnalyticSolverLimits execution_limits;
     bool ready = false;
 };
@@ -733,6 +775,10 @@ struct SelectionAdmissionOptions
     // begins. The owned regions entry point consumes this reservation after
     // selection; the standalone selection entry point leaves it disabled.
     bool reserve_material_regions = false;
+    // Also reserve the fixed, output-independent lineage count phase. This
+    // implies material-region reservation. Exact source publication is
+    // preflighted after its allocation-free count pass.
+    bool reserve_lineage = false;
 };
 
 [[nodiscard]] SelectionAdmission prepare_boolean_selection_admission(

@@ -82,8 +82,10 @@ void append_line(AnalyticFilteredGeometry& geometry, std::uint64_t operand, doub
     occurrence.coverage_id = operand;
     occurrence.agrees_with_carrier = agrees;
     occurrence.material_on_left = true;
+    occurrence.source.role = AnalyticFilteredSourceRole::authored_line;
     occurrence.source.operand_id = operand;
     occurrence.source.primary_id = 10000 + index;
+    occurrence.source.secondary_id = 20000 + index;
     geometry.occurrences.push_back(occurrence);
 }
 
@@ -103,6 +105,13 @@ AnalyticFilteredLineageResult build(const AnalyticRequestPacketRecords& records,
     const AnalyticBroadPhaseResult broad = build_analytic_curve_candidates(geometry.bounds, limits);
     require(broad.error == AnalyticBroadPhaseError::none, "lineage broad phase failed");
     return build_analytic_filtered_lineage(records, 0, geometry, broad.pairs, limits);
+}
+
+std::vector<AnalyticCurvePair> pairs_for(const AnalyticFilteredGeometry& geometry)
+{
+    const AnalyticBroadPhaseResult broad = build_analytic_curve_candidates(geometry.bounds);
+    require(broad.error == AnalyticBroadPhaseError::none, "lineage pair fixture failed");
+    return broad.pairs;
 }
 
 std::vector<AnalyticFilteredSourceReference> range(const AnalyticFilteredLineageResult& result,
@@ -157,10 +166,12 @@ void test_difference_and_refill_epoch()
                 std::to_string(static_cast<unsigned>(result.error)) +
                 " region-error=" + std::to_string(static_cast<unsigned>(result.regions.error)));
     bool saw_refill_hole = false;
+    bool saw_refill_outer = false;
     std::set<std::uint64_t> subtractors;
     for (const auto& boundary : result.boundaries)
     {
         const auto subtraction = range(result, boundary.subtraction);
+        const auto positive = operands(range(result, boundary.positive));
         if (!subtraction.empty())
         {
             const auto values = operands(subtraction);
@@ -172,9 +183,11 @@ void test_difference_and_refill_epoch()
                 require(boundary.positive.count == 0,
                         "noncoincident refill source claimed subtractive boundary geometry");
             }
+            if (*values.begin() == 10 && positive == std::set<std::uint64_t>{30})
+                saw_refill_outer = true;
         }
     }
-    require(saw_refill_hole && subtractors == std::set<std::uint64_t>({10, 20}),
+    require(saw_refill_outer && saw_refill_hole && subtractors == std::set<std::uint64_t>({10, 20}),
             "surviving subtraction epochs were not attributed separately");
     std::set<std::uint64_t> contributors;
     for (const auto& region : result.region_lineage)
@@ -184,6 +197,137 @@ void test_difference_and_refill_epoch()
     }
     require(contributors == std::set<std::uint64_t>({30, 40}),
             "stage-aware region contributor sets drifted");
+}
+
+void test_malformed_sources_fail_before_arrangement()
+{
+    const auto records = records_for({{1, {20}}});
+    const auto check = [&](const AnalyticFilteredSourceReference& source)
+    {
+        AnalyticFilteredGeometry geometry;
+        append_rectangle(geometry, 20, 0, 1000);
+        geometry.occurrences[0].source = source;
+        const AnalyticFilteredLineageResult result = build(records, geometry);
+        require(result.error == AnalyticFilteredLineageError::invalid_argument &&
+                    result.regions.selection.telemetry.arrangement_predicate_calls == 0 &&
+                    result.boundaries.empty() && result.source_references.empty(),
+                "malformed source escaped owned lineage admission error=" +
+                    std::to_string(static_cast<unsigned>(result.error)));
+    };
+    AnalyticFilteredSourceReference source{AnalyticFilteredSourceKind::authored_segment_curve,
+                                           AnalyticFilteredSourceRole::authored_line, 20, 10001,
+                                           20001};
+    source.role = AnalyticFilteredSourceRole::none;
+    check(source);
+    source.role = AnalyticFilteredSourceRole::authored_line;
+    source.primary_id = 0;
+    check(source);
+    source.primary_id = 10001;
+    source.kind = AnalyticFilteredSourceKind::subtractive_operand_effect;
+    source.role = AnalyticFilteredSourceRole::none;
+    source.secondary_id = 0;
+    check(source);
+    source.kind = AnalyticFilteredSourceKind::compact_feature_role;
+    source.role = AnalyticFilteredSourceRole::primitive_outer_circle;
+    check(source);
+}
+
+void test_governed_admission_and_publication()
+{
+    AnalyticFilteredGeometry geometry;
+    append_rectangle(geometry, 20, 0, 1000);
+    const auto records = records_for({{1, {20}}});
+    const auto pairs = pairs_for(geometry);
+    const auto run = [&](const AnalyticSolverLimits& limits)
+    { return build_analytic_filtered_lineage(records, 0, geometry, pairs, limits); };
+
+    AnalyticSolverLimits limits;
+    std::uint64_t low = 0;
+    std::uint64_t high = limits.working_memory_bytes;
+    while (low < high)
+    {
+        const std::uint64_t middle = low + (high - low) / 2;
+        auto probe = limits;
+        probe.working_memory_bytes = middle;
+        if (run(probe).error == AnalyticFilteredLineageError::none)
+            high = middle;
+        else
+            low = middle + 1;
+    }
+    auto exact_memory = limits;
+    exact_memory.working_memory_bytes = low;
+    require(run(exact_memory).error == AnalyticFilteredLineageError::none,
+            "exact lineage memory admission failed");
+    auto short_memory = exact_memory;
+    --short_memory.working_memory_bytes;
+    const auto memory_failure = run(short_memory);
+    require(memory_failure.error == AnalyticFilteredLineageError::resource_limit_exceeded &&
+                memory_failure.regions.selection.telemetry.arrangement_predicate_calls == 0 &&
+                memory_failure.source_references.empty(),
+            "one-byte-short lineage admission was late");
+
+    low = 0;
+    high = limits.predicate_calls;
+    while (low < high)
+    {
+        const std::uint64_t middle = low + (high - low) / 2;
+        auto probe = limits;
+        probe.predicate_calls = middle;
+        if (run(probe).telemetry.arrangement_work_units != 0)
+            high = middle;
+        else
+            low = middle + 1;
+    }
+    auto exact_work = limits;
+    exact_work.predicate_calls = low;
+    require(run(exact_work).telemetry.arrangement_work_units != 0,
+            "exact lineage structural-work admission failed");
+    auto short_work = exact_work;
+    --short_work.predicate_calls;
+    const auto work_failure = run(short_work);
+    require(work_failure.error == AnalyticFilteredLineageError::resource_limit_exceeded &&
+                work_failure.telemetry.arrangement_work_units == 0 &&
+                work_failure.source_references.empty(),
+            "one-unit-short lineage admission was late");
+
+    const auto success = run(limits);
+    auto short_output = limits;
+    short_output.provenance_references = success.source_references.size() - 1;
+    const auto output_failure = run(short_output);
+    require(output_failure.error == AnalyticFilteredLineageError::resource_limit_exceeded &&
+                output_failure.source_references.empty() && output_failure.boundaries.empty(),
+            "one-reference-short lineage publication escaped count preflight error=" +
+                std::to_string(static_cast<unsigned>(output_failure.error)) +
+                " refs=" + std::to_string(output_failure.source_references.size()) +
+                " success=" + std::to_string(success.source_references.size()));
+}
+
+AnalyticFilteredLineageResult build_disjoint(std::uint32_t count)
+{
+    AnalyticFilteredGeometry geometry;
+    std::vector<std::uint64_t> ids;
+    ids.reserve(count);
+    for (std::uint32_t index = 0; index < count; ++index)
+    {
+        const std::uint64_t operand = 1000 + index;
+        ids.push_back(operand);
+        const double minimum = static_cast<double>(index) * 2000.0;
+        append_rectangle(geometry, operand, minimum, minimum + 100.0);
+    }
+    return build(records_for({{1, ids}}), geometry);
+}
+
+void test_sparse_scaling()
+{
+    const auto small = build_disjoint(16);
+    const auto large = build_disjoint(32);
+    require(small.error == AnalyticFilteredLineageError::none &&
+                large.error == AnalyticFilteredLineageError::none,
+            "sparse lineage scaling fixture failed");
+    require(large.telemetry.predicate_calls <= small.telemetry.predicate_calls * 3 &&
+                large.telemetry.peak_working_memory_bytes <=
+                    small.telemetry.peak_working_memory_bytes * 3,
+            "sparse lineage scaling exceeded 3x at 2x input");
 }
 
 void test_disconnected_many_to_many()
@@ -200,6 +344,79 @@ void test_disconnected_many_to_many()
         require(operands(range(result, region.positive_contributors)) ==
                     std::set<std::uint64_t>({100, 200}),
                 "disconnected contributor association drifted");
+}
+
+void test_same_stage_subtractors_and_coincident_positives()
+{
+    AnalyticFilteredGeometry geometry;
+    append_rectangle(geometry, 40, 0, 1000);
+    append_rectangle(geometry, 10, 200, 800);
+    append_rectangle(geometry, 20, 250, 750);
+    append_rectangle(geometry, 30, 300, 700);
+    const auto result = build(records_for({{1, {40}}, {2, {10, 20}}, {1, {30}}}), geometry);
+    require(result.error == AnalyticFilteredLineageError::none,
+            "same-stage subtraction lineage failed");
+    bool saw_both = false;
+    for (const auto& boundary : result.boundaries)
+        if (operands(range(result, boundary.positive)) == std::set<std::uint64_t>{30} &&
+            operands(range(result, boundary.subtraction)) == std::set<std::uint64_t>({10, 20}))
+            saw_both = true;
+    require(saw_both, "refill boundary lost same-stage noncoincident subtractors");
+
+    AnalyticFilteredGeometry coincident;
+    append_rectangle(coincident, 100, 0, 1000);
+    append_rectangle(coincident, 200, 0, 1000);
+    for (std::uint32_t index = 4; index < 8; ++index)
+    {
+        coincident.curves[index].construction_carrier_id =
+            coincident.curves[index - 4].construction_carrier_id;
+        coincident.curves[index].construction_family_id =
+            coincident.curves[index - 4].construction_family_id;
+        coincident.curves[index].start.construction_x_column_id =
+            coincident.curves[index - 4].start.construction_x_column_id;
+        coincident.curves[index].end.construction_x_column_id =
+            coincident.curves[index - 4].end.construction_x_column_id;
+    }
+    const auto coincident_result = build(records_for({{1, {100, 200}}}), coincident);
+    require(coincident_result.error == AnalyticFilteredLineageError::none &&
+                coincident_result.region_lineage.size() == 1 &&
+                operands(range(coincident_result,
+                               coincident_result.region_lineage[0].positive_contributors)) ==
+                    std::set<std::uint64_t>({100, 200}),
+            "coincident positive contributors were not retained error=" +
+                std::to_string(static_cast<unsigned>(coincident_result.error)) +
+                " regions=" + std::to_string(coincident_result.region_lineage.size()));
+}
+
+void test_isolated_collapsed_lineage_stays_internal()
+{
+    AnalyticFilteredGeometry geometry;
+    append_line(geometry, 1, 0, 0, 20, 20);
+    const auto result = build(records_for({{1, {1}}}), geometry);
+    require(result.error == AnalyticFilteredLineageError::none && result.boundaries.empty() &&
+                result.vertices.empty() && result.region_lineage.empty() &&
+                result.regions.selection.arrangement.collapsed_spans.size() == 1,
+            "isolated collapsed lineage manufactured public topology");
+}
+
+void test_production_lowered_compact_sources()
+{
+    AnalyticRequestPacketRecords records;
+    records.jobs = {{1, 0, 1}};
+    records.stages = {{1, 1, 0, 1}};
+    records.operands = {{1, 2, 0}};
+    records.disks = {{10, 0, 0, 1000}};
+    const auto lowered = lower_analytic_job_to_filtered_curves(records, 0);
+    require(lowered.error == AnalyticFilteredLoweringError::none && lowered.value,
+            "compact lineage lowering failed");
+    const auto result = build(records, *lowered.value);
+    require(result.error == AnalyticFilteredLineageError::none && !result.source_references.empty(),
+            "production-lowered compact lineage failed");
+    for (const auto& source : result.source_references)
+        require(source.kind == AnalyticFilteredSourceKind::compact_feature_role &&
+                    source.role == AnalyticFilteredSourceRole::primitive_outer_circle &&
+                    source.primary_id == 10 && source.secondary_id == 0,
+                "compact source identity drifted during lineage publication");
 }
 
 std::string parity_vector()
@@ -253,8 +470,9 @@ std::string parity_vector()
     const auto& telemetry = result.telemetry;
     append(telemetry.regions_work_units);
     append(telemetry.regions_peak_working_memory_bytes);
+    append(telemetry.arrangement_work_units);
     append(telemetry.coverage_node_visits);
-    append(telemetry.set_union_visits);
+    append(telemetry.component_transition_visits);
     append(telemetry.boundary_membership_visits);
     append(telemetry.vertex_membership_visits);
     append(telemetry.emitted_boundary_records);
@@ -262,6 +480,7 @@ std::string parity_vector()
     append(telemetry.emitted_region_records);
     append(telemetry.emitted_source_references);
     append(telemetry.sort_work_units);
+    append(telemetry.reserved_lineage_work_units);
     append(telemetry.lineage_work_units);
     append(telemetry.predicate_calls);
     append(telemetry.peak_working_memory_bytes);
@@ -275,6 +494,12 @@ int main(int argc, char** argv)
     test_single_rectangle();
     test_difference_and_refill_epoch();
     test_disconnected_many_to_many();
+    test_same_stage_subtractors_and_coincident_positives();
+    test_isolated_collapsed_lineage_stays_internal();
+    test_production_lowered_compact_sources();
+    test_malformed_sources_fail_before_arrangement();
+    test_governed_admission_and_publication();
+    test_sparse_scaling();
     if (argc == 2 && std::string(argv[1]) == "--emit-parity")
         std::cout << "ANALYTIC_FILTERED_LINEAGE_VECTOR=" << parity_vector() << '\n';
     std::cout << "ANALYTIC_FILTERED_LINEAGE_TEST=ok\n";

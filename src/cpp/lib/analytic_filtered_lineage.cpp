@@ -1,26 +1,32 @@
 #include "geometer/analytic_filtered_lineage.h"
 
+#include "analytic_filtered_boolean_selection_support.h"
+#include "analytic_filtered_capacity.h"
+#include "analytic_filtered_regions_internal.h"
+
 #include <algorithm>
-#include <cstddef>
 #include <cstdint>
 #include <limits>
 #include <new>
 #include <tuple>
-#include <unordered_map>
 #include <utility>
+#include <vector>
 
 namespace geometer
 {
 namespace
 {
 constexpr std::uint32_t kNoIndex = std::numeric_limits<std::uint32_t>::max();
-constexpr std::uint64_t kSourceReferenceLogicalBytes = 32;
-constexpr std::uint64_t kRawSourceLogicalBytes = 40;
+constexpr std::uint64_t kRawLogicalBytes = 40;
+constexpr std::uint64_t kSourceLogicalBytes = 32;
 constexpr std::uint64_t kBoundaryLogicalBytes = 24;
 constexpr std::uint64_t kVertexLogicalBytes = 16;
 constexpr std::uint64_t kRegionLogicalBytes = 16;
+constexpr std::uint64_t kOperandLogicalBytes = 32;
+constexpr std::uint64_t kLookupLogicalBytes = 16;
+constexpr std::uint64_t kAdjacencyLogicalBytes = 16;
 constexpr std::uint64_t kIndexLogicalBytes = 8;
-constexpr std::uint64_t kSetNodeLogicalBytes = 8;
+constexpr std::uint64_t kByteLogicalBytes = 1;
 
 struct Operand
 {
@@ -29,43 +35,29 @@ struct Operand
     std::uint32_t stage = 0;
     std::uint8_t operation = 0;
 };
-
 struct Lookup
 {
     std::uint64_t id = 0;
     std::uint32_t ordinal = 0;
 };
-
 enum class OwnerKind : std::uint8_t
 {
-    boundary_positive = 0,
-    boundary_subtraction = 1,
-    vertex = 2,
-    region = 3,
+    boundary_positive,
+    boundary_subtraction,
+    vertex,
+    region,
 };
-
 struct RawSource
 {
-    OwnerKind kind = OwnerKind::boundary_positive;
+    OwnerKind kind{};
     std::uint32_t owner = 0;
     AnalyticFilteredSourceReference source;
 };
-
-bool checked_add(std::uint64_t left, std::uint64_t right, std::uint64_t& output) noexcept
+struct Adjacency
 {
-    if (right > std::numeric_limits<std::uint64_t>::max() - left)
-        return false;
-    output = left + right;
-    return true;
-}
-
-bool checked_multiply(std::uint64_t left, std::uint64_t right, std::uint64_t& output) noexcept
-{
-    if (left != 0 && right > std::numeric_limits<std::uint64_t>::max() / left)
-        return false;
-    output = left * right;
-    return true;
-}
+    std::uint32_t neighbor = 0;
+    std::uint32_t edge = 0;
+};
 
 std::uint64_t sort_units(std::uint64_t count) noexcept
 {
@@ -76,208 +68,10 @@ std::uint64_t sort_units(std::uint64_t count) noexcept
         ++levels;
     return count * levels;
 }
-
 auto source_key(const AnalyticFilteredSourceReference& value) noexcept
 {
     return std::tie(value.kind, value.role, value.operand_id, value.primary_id, value.secondary_id);
 }
-
-bool valid_source(const AnalyticFilteredSourceReference& source) noexcept
-{
-    const auto kind = static_cast<std::uint16_t>(source.kind);
-    const auto role = static_cast<std::uint16_t>(source.role);
-    if (kind < 1 || kind > 3 || source.operand_id == 0)
-        return false;
-    switch (role)
-    {
-    case 0:
-    case 1:
-    case 2:
-    case 16:
-    case 17:
-    case 32:
-    case 33:
-    case 34:
-    case 35:
-    case 48:
-    case 49:
-    case 50:
-    case 51:
-    case 52:
-    case 53:
-    case 54:
-        return true;
-    default:
-        return false;
-    }
-}
-
-class CoverageDag
-{
-  public:
-    CoverageDag(const std::vector<AnalyticFilteredCoverageStateNode>& input,
-                std::uint32_t operand_count, std::uint64_t& visits, std::uint64_t& union_visits)
-        : nodes_(input), operand_count_(operand_count), visits_(visits), union_visits_(union_visits)
-    {
-        leaf_capacity_ = 1;
-        while (leaf_capacity_ < std::max<std::uint32_t>(1, operand_count_))
-            leaf_capacity_ <<= 1U;
-        for (std::uint32_t index = 2; index < nodes_.size(); ++index)
-            intern_.emplace(key(nodes_[index].left, nodes_[index].right), index);
-    }
-
-    [[nodiscard]] bool valid() const noexcept
-    {
-        if (nodes_.size() < 2 || nodes_[0].left != 0 || nodes_[0].right != 0 ||
-            nodes_[1].left != kNoIndex || nodes_[1].right != kNoIndex)
-            return false;
-        for (std::uint32_t index = 2; index < nodes_.size(); ++index)
-            if (nodes_[index].left >= index || nodes_[index].right >= index ||
-                (nodes_[index].left == 0 && nodes_[index].right == 0))
-                return false;
-        return true;
-    }
-
-    [[nodiscard]] bool contains(std::uint32_t root, std::uint32_t operand) noexcept
-    {
-        if (root >= nodes_.size() || operand >= operand_count_)
-            return false;
-        std::uint32_t begin = 0;
-        std::uint32_t width = leaf_capacity_;
-        while (width > 1)
-        {
-            ++visits_;
-            if (root == 0)
-                return false;
-            if (root == 1 || root >= nodes_.size())
-                return false;
-            const std::uint32_t half = width / 2;
-            if (operand < begin + half)
-                root = nodes_[root].left;
-            else
-            {
-                begin += half;
-                root = nodes_[root].right;
-            }
-            width = half;
-        }
-        ++visits_;
-        return root == 1;
-    }
-
-    std::uint32_t suffix(std::uint32_t root, std::uint32_t first)
-    {
-        return suffix_impl(root, 0, leaf_capacity_, first);
-    }
-
-    std::uint32_t unite(std::uint32_t left, std::uint32_t right)
-    {
-        if (left > right)
-            std::swap(left, right);
-        const std::uint64_t memo_key = key(left, right);
-        if (const auto found = union_memo_.find(memo_key); found != union_memo_.end())
-            return found->second;
-        const std::uint32_t output = unite_impl(left, right, leaf_capacity_);
-        union_memo_.emplace(memo_key, output);
-        return output;
-    }
-
-    template <typename Emit> bool enumerate(std::uint32_t root, Emit&& emit)
-    {
-        return enumerate_impl(root, 0, leaf_capacity_, emit);
-    }
-
-    [[nodiscard]] std::uint64_t logical_bytes() const noexcept
-    {
-        return static_cast<std::uint64_t>(nodes_.size()) * kSetNodeLogicalBytes;
-    }
-
-  private:
-    static std::uint64_t key(std::uint32_t left, std::uint32_t right) noexcept
-    {
-        return (static_cast<std::uint64_t>(left) << 32U) | right;
-    }
-
-    std::uint32_t intern(std::uint32_t left, std::uint32_t right)
-    {
-        if (left == 0 && right == 0)
-            return 0;
-        const std::uint64_t value = key(left, right);
-        if (const auto found = intern_.find(value); found != intern_.end())
-            return found->second;
-        if (nodes_.size() >= std::numeric_limits<std::uint32_t>::max())
-            return kNoIndex;
-        const std::uint32_t node = static_cast<std::uint32_t>(nodes_.size());
-        nodes_.push_back({left, right});
-        intern_.emplace(value, node);
-        return node;
-    }
-
-    std::uint32_t suffix_impl(std::uint32_t root, std::uint32_t begin, std::uint32_t width,
-                              std::uint32_t first)
-    {
-        ++visits_;
-        if (root == 0 || begin + width <= first)
-            return 0;
-        if (root >= nodes_.size() || (root == 1 && width != 1))
-            return kNoIndex;
-        if (begin >= first || width == 1)
-            return root;
-        const std::uint32_t half = width / 2;
-        const std::uint32_t left = suffix_impl(nodes_[root].left, begin, half, first);
-        const std::uint32_t right = suffix_impl(nodes_[root].right, begin + half, half, first);
-        if (left == kNoIndex || right == kNoIndex)
-            return kNoIndex;
-        return intern(left, right);
-    }
-
-    std::uint32_t unite_impl(std::uint32_t left, std::uint32_t right, std::uint32_t width)
-    {
-        ++union_visits_;
-        if (left == right || right == 0)
-            return left;
-        if (left == 0)
-            return right;
-        if (left >= nodes_.size() || right >= nodes_.size())
-            return kNoIndex;
-        if (width == 1)
-            return left == 1 && right == 1 ? 1 : kNoIndex;
-        if (left == 1 || right == 1)
-            return kNoIndex;
-        const std::uint32_t half = width / 2;
-        const std::uint32_t merged_left = unite_impl(nodes_[left].left, nodes_[right].left, half);
-        const std::uint32_t merged_right =
-            unite_impl(nodes_[left].right, nodes_[right].right, half);
-        if (merged_left == kNoIndex || merged_right == kNoIndex)
-            return kNoIndex;
-        return intern(merged_left, merged_right);
-    }
-
-    template <typename Emit>
-    bool enumerate_impl(std::uint32_t root, std::uint32_t begin, std::uint32_t width, Emit& emit)
-    {
-        ++visits_;
-        if (root == 0)
-            return true;
-        if (root >= nodes_.size())
-            return false;
-        if (width == 1)
-            return root == 1 && begin < operand_count_ && emit(begin);
-        if (root == 1)
-            return false;
-        const std::uint32_t half = width / 2;
-        return enumerate_impl(nodes_[root].left, begin, half, emit) &&
-               enumerate_impl(nodes_[root].right, begin + half, half, emit);
-    }
-
-    std::vector<AnalyticFilteredCoverageStateNode> nodes_;
-    std::uint32_t operand_count_ = 0;
-    std::uint32_t leaf_capacity_ = 1;
-    std::uint64_t& visits_;
-    std::uint64_t& union_visits_;
-    std::unordered_map<std::uint64_t, std::uint32_t> intern_;
-    std::unordered_map<std::uint64_t, std::uint32_t> union_memo_;
-};
 
 class Builder
 {
@@ -286,20 +80,26 @@ class Builder
             const AnalyticFilteredGeometry& geometry,
             const std::vector<AnalyticCurvePair>& candidate_pairs,
             const AnalyticSolverLimits& limits)
-        : records_(records), job_index_(job_index), geometry_(geometry),
-          candidate_pairs_(candidate_pairs), limits_(limits)
+        : records_(records), job_index_(job_index), geometry_(geometry), pairs_(candidate_pairs),
+          limits_(limits)
     {
     }
 
     AnalyticFilteredLineageResult build()
     {
-        result_.regions = build_analytic_filtered_regions(records_, job_index_, geometry_,
-                                                          candidate_pairs_, limits_);
-        result_.telemetry.regions_work_units = result_.regions.telemetry.predicate_calls;
+        analytic_regions_detail::LineageRegionsAdmission admission =
+            analytic_regions_detail::build_regions_for_lineage(records_, job_index_, geometry_,
+                                                               pairs_, limits_);
+        reserved_work_ = admission.reserved_lineage_work;
+        result_.telemetry.reserved_lineage_work_units = reserved_work_;
+        result_.regions = std::move(admission.regions);
+        const auto& region_telemetry = result_.regions.telemetry;
+        result_.telemetry.regions_work_units = region_telemetry.predicate_calls;
         result_.telemetry.regions_peak_working_memory_bytes =
-            result_.regions.telemetry.peak_working_memory_bytes;
-        result_.telemetry.algebraic_fallback_calls =
-            result_.regions.telemetry.algebraic_fallback_calls;
+            region_telemetry.peak_working_memory_bytes;
+        result_.telemetry.arrangement_work_units =
+            result_.regions.selection.telemetry.arrangement_predicate_calls;
+        result_.telemetry.algebraic_fallback_calls = region_telemetry.algebraic_fallback_calls;
         if (result_.regions.error != AnalyticFilteredRegionsError::none)
         {
             result_.error = result_.regions.error == AnalyticFilteredRegionsError::invalid_argument
@@ -309,29 +109,35 @@ class Builder
         }
         try
         {
-            if (!prepare_operands() || !project())
+            if (!prepare() || !validate_coverage())
                 return failure();
-            result_.telemetry.predicate_calls = result_.regions.telemetry.predicate_calls + work_;
-            result_.telemetry.lineage_work_units = work_;
-            result_.telemetry.emitted_boundary_records = result_.boundaries.size();
-            result_.telemetry.emitted_vertex_records = result_.vertices.size();
-            result_.telemetry.emitted_region_records = result_.region_lineage.size();
-            result_.telemetry.emitted_source_references = result_.source_references.size();
-            return std::move(result_);
+            counting_ = true;
+            if (!build_region_contributors() || !build_boundary_and_vertex_rows() ||
+                !preflight_publication())
+                return failure();
+            counting_ = false;
+            if (!build_region_contributors() || !build_boundary_and_vertex_rows() || !publish())
+                return failure();
         }
         catch (const std::bad_alloc&)
         {
             result_.error = AnalyticFilteredLineageError::resource_limit_exceeded;
             return failure();
         }
+        result_.telemetry.lineage_work_units = work_;
+        result_.telemetry.predicate_calls = result_.regions.telemetry.predicate_calls + work_;
+        result_.telemetry.emitted_boundary_records = result_.boundaries.size();
+        result_.telemetry.emitted_vertex_records = result_.vertices.size();
+        result_.telemetry.emitted_region_records = result_.region_lineage.size();
+        result_.telemetry.emitted_source_references = result_.source_references.size();
+        return std::move(result_);
     }
 
   private:
     bool charge(std::uint64_t units)
     {
-        if (units >
-            limits_.predicate_calls - std::min(limits_.predicate_calls,
-                                               result_.regions.telemetry.predicate_calls + work_))
+        const std::uint64_t used = result_.regions.telemetry.predicate_calls + work_;
+        if (used > limits_.predicate_calls || units > limits_.predicate_calls - used)
         {
             result_.error = AnalyticFilteredLineageError::resource_limit_exceeded;
             return false;
@@ -339,62 +145,71 @@ class Builder
         work_ += units;
         return true;
     }
-
     AnalyticFilteredLineageResult failure()
     {
         if (result_.error == AnalyticFilteredLineageError::none)
             result_.error = AnalyticFilteredLineageError::invalid_argument;
-        const auto regions_work = result_.regions.telemetry.predicate_calls;
-        const auto regions_memory = result_.regions.telemetry.peak_working_memory_bytes;
+        const auto region_work = result_.regions.telemetry.predicate_calls;
+        const auto region_memory = result_.regions.telemetry.peak_working_memory_bytes;
         const auto fallback = result_.regions.telemetry.algebraic_fallback_calls;
-        const auto origin_x = result_.regions.selection.origin_x_nm;
-        const auto origin_y = result_.regions.selection.origin_y_nm;
+        const auto arrangement_work =
+            result_.regions.selection.telemetry.arrangement_predicate_calls;
         result_.regions = {};
-        result_.regions.selection.origin_x_nm = origin_x;
-        result_.regions.selection.origin_y_nm = origin_y;
         result_.boundaries.clear();
         result_.vertices.clear();
         result_.region_lineage.clear();
         result_.source_references.clear();
-        result_.telemetry.regions_work_units = regions_work;
-        result_.telemetry.regions_peak_working_memory_bytes = regions_memory;
+        result_.telemetry = {};
+        result_.telemetry.regions_work_units = region_work;
+        result_.telemetry.regions_peak_working_memory_bytes = region_memory;
+        result_.telemetry.arrangement_work_units = arrangement_work;
+        result_.telemetry.reserved_lineage_work_units = reserved_work_;
         result_.telemetry.lineage_work_units = work_;
-        result_.telemetry.predicate_calls = regions_work + work_;
-        result_.telemetry.peak_working_memory_bytes = regions_memory;
+        result_.telemetry.predicate_calls = region_work + work_;
+        result_.telemetry.peak_working_memory_bytes = region_memory;
         result_.telemetry.algebraic_fallback_calls = fallback;
         return std::move(result_);
     }
-
-    bool prepare_operands()
+    bool prepare()
     {
         if (job_index_ >= records_.jobs.size())
             return false;
-        const AnalyticRequestJobRecord& job = records_.jobs[job_index_];
+        const auto& job = records_.jobs[job_index_];
         if (job.stage_begin > records_.stages.size() ||
             job.stage_count > records_.stages.size() - job.stage_begin || !charge(job.stage_count))
             return false;
-        stage_operand_begin_.reserve(job.stage_count + 1);
+        std::uint64_t operand_count = 0;
         for (std::uint32_t local = 0; local < job.stage_count; ++local)
         {
-            const AnalyticRequestStageRecord& stage = records_.stages[job.stage_begin + local];
-            if (stage.operand_begin > records_.operands.size() ||
+            const auto& stage = records_.stages[job.stage_begin + local];
+            if (stage.stage_id == 0 || (stage.operation != 1 && stage.operation != 2) ||
+                stage.operand_begin > records_.operands.size() ||
                 stage.operand_count > records_.operands.size() - stage.operand_begin ||
-                (stage.operation != 1 && stage.operation != 2) || stage.stage_id == 0)
+                operand_count > limits_.boundary_occurrences ||
+                stage.operand_count > limits_.boundary_occurrences - operand_count)
                 return false;
-            stage_operand_begin_.push_back(static_cast<std::uint32_t>(operands_.size()));
+            operand_count += stage.operand_count;
+        }
+        operands_.reserve(static_cast<std::size_t>(operand_count));
+        lookup_.reserve(static_cast<std::size_t>(operand_count));
+        stage_begin_.reserve(static_cast<std::size_t>(job.stage_count) + 1);
+        if (!charge(job.stage_count + operand_count))
+            return false;
+        for (std::uint32_t local = 0; local < job.stage_count; ++local)
+        {
+            const auto& stage = records_.stages[job.stage_begin + local];
+            stage_begin_.push_back(static_cast<std::uint32_t>(operands_.size()));
             for (std::uint32_t offset = 0; offset < stage.operand_count; ++offset)
             {
-                const AnalyticRequestOperandRecord& operand =
-                    records_.operands[stage.operand_begin + offset];
-                if (operand.operand_id == 0 || operands_.size() >= limits_.boundary_occurrences)
+                const auto& operand = records_.operands[stage.operand_begin + offset];
+                if (operand.operand_id == 0)
                     return false;
                 operands_.push_back({operand.operand_id, stage.stage_id, local, stage.operation});
             }
         }
-        stage_operand_begin_.push_back(static_cast<std::uint32_t>(operands_.size()));
-        if (!charge(operands_.size() + sort_units(operands_.size())))
+        stage_begin_.push_back(static_cast<std::uint32_t>(operands_.size()));
+        if (!charge(operands_.size() * 2 + sort_units(operands_.size())))
             return false;
-        lookup_.reserve(operands_.size());
         for (std::uint32_t index = 0; index < operands_.size(); ++index)
             lookup_.push_back({operands_[index].id, index});
         std::sort(lookup_.begin(), lookup_.end(),
@@ -403,14 +218,21 @@ class Builder
             if (lookup_[index - 1].id == lookup_[index].id)
                 return false;
         occurrence_operands_.reserve(geometry_.occurrences.size());
-        if (!charge(geometry_.occurrences.size()))
+        operand_occurrence_begin_.assign(operands_.size() + 1, 0);
+        bool valid = true;
+        const std::uint64_t occurrence_work = analytic_selection_detail::checked_multiply(
+            geometry_.occurrences.size(),
+            analytic_selection_detail::tree_operation_units(operands_.size()), valid);
+        if (!valid || !charge(occurrence_work))
             return false;
         for (std::uint32_t index = 0; index < geometry_.occurrences.size(); ++index)
         {
-            const AnalyticFilteredOccurrence& occurrence = geometry_.occurrences[index];
-            if (!valid_source(occurrence.source) ||
+            const auto& occurrence = geometry_.occurrences[index];
+            if (index >= geometry_.curves.size() ||
+                occurrence.occurrence_id != static_cast<std::uint64_t>(index) + 1 ||
                 occurrence.source.operand_id != occurrence.coverage_id ||
-                occurrence.occurrence_id != static_cast<std::uint64_t>(index) + 1)
+                !analytic_selection_detail::valid_occurrence_source_for_curve(
+                    occurrence.source, geometry_.curves[index].kind))
                 return false;
             const auto found = std::lower_bound(
                 lookup_.begin(), lookup_.end(), occurrence.coverage_id,
@@ -418,324 +240,535 @@ class Builder
             if (found == lookup_.end() || found->id != occurrence.coverage_id)
                 return false;
             occurrence_operands_.push_back(found->ordinal);
+            ++operand_occurrence_begin_[found->ordinal + 1];
         }
-        operand_occurrence_begin_.assign(operands_.size() + 1, 0);
-        for (const std::uint32_t operand : occurrence_operands_)
-            ++operand_occurrence_begin_[operand + 1];
-        for (std::uint32_t operand = 1; operand < operand_occurrence_begin_.size(); ++operand)
-            operand_occurrence_begin_[operand] += operand_occurrence_begin_[operand - 1];
+        if (!charge(operands_.size() * 2 + geometry_.occurrences.size()))
+            return false;
+        for (std::uint32_t i = 1; i < operand_occurrence_begin_.size(); ++i)
+            operand_occurrence_begin_[i] += operand_occurrence_begin_[i - 1];
         ordered_occurrences_.resize(geometry_.occurrences.size());
-        std::vector<std::uint32_t> cursor = operand_occurrence_begin_;
-        for (std::uint32_t occurrence = 0; occurrence < occurrence_operands_.size(); ++occurrence)
-            ordered_occurrences_[cursor[occurrence_operands_[occurrence]]++] = occurrence;
+        auto cursor = operand_occurrence_begin_;
+        for (std::uint32_t i = 0; i < occurrence_operands_.size(); ++i)
+            ordered_occurrences_[cursor[occurrence_operands_[i]]++] = i;
         return true;
     }
-
-    const Operand* operand_for_occurrence(std::uint32_t curve_index, std::uint32_t& ordinal) const
+    bool validate_coverage()
     {
-        if (curve_index == 0 || curve_index > occurrence_operands_.size())
-            return nullptr;
-        ordinal = occurrence_operands_[curve_index - 1];
-        return ordinal < operands_.size() ? &operands_[ordinal] : nullptr;
+        const auto& nodes = result_.regions.selection.coverage_state_nodes;
+        if (!charge(nodes.size()) || nodes.size() < 2 || nodes[0].left != 0 ||
+            nodes[0].right != 0 || nodes[1].left != kNoIndex || nodes[1].right != kNoIndex)
+            return false;
+        for (std::uint32_t i = 2; i < nodes.size(); ++i)
+            if (nodes[i].left >= i || nodes[i].right >= i ||
+                (nodes[i].left == 0 && nodes[i].right == 0))
+                return false;
+        leaf_capacity_ = 1;
+        while (leaf_capacity_ < std::max<std::uint32_t>(1, operands_.size()))
+            leaf_capacity_ <<= 1U;
+        return true;
     }
-
-    bool append_raw(OwnerKind kind, std::uint32_t owner,
-                    const AnalyticFilteredSourceReference& source)
+    template <typename Emit>
+    bool enumerate(std::uint32_t root, std::uint32_t begin, std::uint32_t width,
+                   std::uint32_t first, std::uint32_t end, Emit&& emit)
     {
-        if (raw_.size() == limits_.source_reference_memberships)
+        if (!charge(1))
+            return false;
+        ++result_.telemetry.coverage_node_visits;
+        const auto& nodes = result_.regions.selection.coverage_state_nodes;
+        if (root == 0 || begin >= end || begin + width <= first)
+            return true;
+        if (root >= nodes.size() || (root == 1 && width != 1))
+            return false;
+        if (width == 1)
+            return begin < operands_.size() && emit(begin);
+        const std::uint32_t half = width / 2;
+        return enumerate(nodes[root].left, begin, half, first, end, emit) &&
+               enumerate(nodes[root].right, begin + half, half, first, end, emit);
+    }
+    bool emit_region_operand(std::uint32_t region, std::uint32_t operand)
+    {
+        if (seen_operand_[operand] == region + 1)
+            return true;
+        seen_operand_[operand] = region + 1;
+        if (!charge(1))
+            return false;
+        for (std::uint32_t at = operand_occurrence_begin_[operand];
+             at < operand_occurrence_begin_[operand + 1]; ++at)
+            if (!append(OwnerKind::region, region,
+                        geometry_.occurrences[ordered_occurrences_[at]].source))
+                return false;
+        return true;
+    }
+    bool build_region_contributors()
+    {
+        const auto& regions = result_.regions;
+        const auto& selection = regions.selection;
+        const auto& arrangement = selection.arrangement;
+        const std::uint32_t face_count = static_cast<std::uint32_t>(selection.faces.size());
+        std::vector<std::uint32_t> left(arrangement.edges.size(), kNoIndex),
+            right(arrangement.edges.size(), kNoIndex);
+        bool valid = true;
+        std::uint64_t structural_work =
+            analytic_selection_detail::checked_multiply(arrangement.edges.size(), 4, valid);
+        structural_work = analytic_selection_detail::checked_add(
+            structural_work, arrangement.half_edges.size(), valid);
+        structural_work = analytic_selection_detail::checked_add(
+            structural_work, analytic_selection_detail::checked_multiply(face_count, 3, valid),
+            valid);
+        structural_work =
+            analytic_selection_detail::checked_add(structural_work, regions.regions.size(), valid);
+        if (!valid || !charge(structural_work))
+            return false;
+        for (std::uint32_t h = 0; h < arrangement.half_edges.size(); ++h)
         {
-            result_.error = AnalyticFilteredLineageError::resource_limit_exceeded;
-            return false;
+            const auto& half = arrangement.half_edges[h];
+            if (half.edge >= left.size() || h >= selection.half_edge_faces.size())
+                return false;
+            (half.forward ? left[half.edge] : right[half.edge]) = selection.half_edge_faces[h];
         }
-        raw_.push_back({kind, owner, source});
-        return true;
-    }
-
-    bool project()
-    {
-        auto& regions = result_.regions;
-        auto& selection = regions.selection;
-        auto& arrangement = selection.arrangement;
-        CoverageDag dag(selection.coverage_state_nodes,
-                        static_cast<std::uint32_t>(operands_.size()),
-                        result_.telemetry.coverage_node_visits, result_.telemetry.set_union_visits);
-        if (!dag.valid())
-            return false;
-        std::vector<std::uint32_t> region_by_component(selection.faces.size(), kNoIndex);
+        std::vector<std::uint32_t> counts(face_count + 1, 0);
+        for (std::uint32_t edge = 0; edge < arrangement.edges.size(); ++edge)
+            if (left[edge] < face_count && right[edge] < face_count &&
+                selection.faces[left[edge]].material && selection.faces[right[edge]].material &&
+                regions.face_components[left[edge]] == regions.face_components[right[edge]])
+            {
+                ++counts[left[edge] + 1];
+                ++counts[right[edge] + 1];
+            }
+        for (std::uint32_t i = 1; i < counts.size(); ++i)
+            counts[i] += counts[i - 1];
+        std::vector<Adjacency> adjacency(counts.back());
+        auto cursor = counts;
+        for (std::uint32_t edge = 0; edge < arrangement.edges.size(); ++edge)
+            if (left[edge] < face_count && right[edge] < face_count &&
+                selection.faces[left[edge]].material && selection.faces[right[edge]].material &&
+                regions.face_components[left[edge]] == regions.face_components[right[edge]])
+            {
+                adjacency[cursor[left[edge]]++] = {right[edge], edge};
+                adjacency[cursor[right[edge]]++] = {left[edge], edge};
+            }
+        std::vector<std::uint32_t> seed(selection.faces.size(), kNoIndex);
+        for (std::uint32_t face = 0; face < face_count; ++face)
+            if (selection.faces[face].material)
+                seed[regions.face_components[face]] = face;
+        std::vector<std::uint8_t> visited(face_count, 0);
+        std::vector<std::uint32_t> stack;
+        stack.reserve(face_count);
+        seen_operand_.assign(operands_.size(), 0);
         for (std::uint32_t region = 0; region < regions.regions.size(); ++region)
         {
             const std::uint32_t component = regions.regions[region].material_component;
-            if (component >= region_by_component.size() ||
-                region_by_component[component] != kNoIndex)
+            if (component >= seed.size() || seed[component] == kNoIndex)
                 return false;
-            region_by_component[component] = region;
+            const std::uint32_t first = seed[component];
+            std::uint32_t minimum_stage = selection.faces[first].positive_stage_begin;
+            if (minimum_stage >= stage_begin_.size() ||
+                !enumerate(selection.faces[first].coverage_state_root, 0, leaf_capacity_,
+                           stage_begin_[minimum_stage], operands_.size(), [&](std::uint32_t operand)
+                           { return emit_region_operand(region, operand); }))
+                return false;
+            visited[first] = 1;
+            stack.push_back(first);
+            while (!stack.empty())
+            {
+                const std::uint32_t face = stack.back();
+                stack.pop_back();
+                for (std::uint32_t at = counts[face]; at < counts[face + 1]; ++at)
+                {
+                    ++result_.telemetry.component_transition_visits;
+                    const Adjacency next = adjacency[at];
+                    if (visited[next.neighbor])
+                        continue;
+                    visited[next.neighbor] = 1;
+                    stack.push_back(next.neighbor);
+                    const auto& next_face = selection.faces[next.neighbor];
+                    if (next_face.positive_stage_begin < minimum_stage)
+                    {
+                        if (!enumerate(next_face.coverage_state_root, 0, leaf_capacity_,
+                                       stage_begin_[next_face.positive_stage_begin],
+                                       stage_begin_[minimum_stage], [&](std::uint32_t operand)
+                                       { return emit_region_operand(region, operand); }))
+                            return false;
+                        minimum_stage = next_face.positive_stage_begin;
+                    }
+                    const auto& edge = arrangement.edges[next.edge];
+                    for (std::uint32_t m = 0; m < edge.membership_count; ++m)
+                    {
+                        if (!charge(1))
+                            return false;
+                        const auto& membership = arrangement.memberships[edge.membership_begin + m];
+                        if (membership.curve_index == 0 ||
+                            membership.curve_index > occurrence_operands_.size())
+                            return false;
+                        const std::uint32_t operand =
+                            occurrence_operands_[membership.curve_index - 1];
+                        const std::uint32_t covered =
+                            membership.material_on_span_left ? left[next.edge] : right[next.edge];
+                        if (covered == next.neighbor &&
+                            operands_[operand].stage >= next_face.positive_stage_begin &&
+                            !emit_region_operand(region, operand))
+                            return false;
+                    }
+                }
+            }
         }
-        std::vector<std::uint32_t> region_roots(regions.regions.size());
-        if (!charge(selection.faces.size()))
-            return false;
-        for (std::uint32_t face = 0; face < selection.faces.size(); ++face)
+        return true;
+    }
+    bool append(OwnerKind kind, std::uint32_t owner, const AnalyticFilteredSourceReference& source)
+    {
+        if (!charge(1) || raw_count_ == limits_.source_reference_memberships)
         {
-            const AnalyticFilteredSelectedFace& selected = selection.faces[face];
-            if (!selected.material)
-                continue;
-            if (face >= regions.face_components.size())
-                return false;
-            const std::uint32_t component = regions.face_components[face];
-            if (component >= region_by_component.size() ||
-                region_by_component[component] == kNoIndex ||
-                selected.positive_stage_begin >= stage_operand_begin_.size())
-                return false;
-            const std::uint32_t root = dag.suffix(
-                selected.coverage_state_root, stage_operand_begin_[selected.positive_stage_begin]);
-            if (root == kNoIndex)
-                return false;
-            std::uint32_t& region_root = region_roots[region_by_component[component]];
-            region_root = dag.unite(region_root, root);
-            if (region_root == kNoIndex)
-                return false;
-        }
-
-        if (!charge(regions.ring_half_edges.size()))
+            result_.error = AnalyticFilteredLineageError::resource_limit_exceeded;
             return false;
-        result_.boundaries.resize(regions.ring_half_edges.size());
+        }
+        ++raw_count_;
+        if (!counting_)
+            raw_.push_back({kind, owner, source});
+        return true;
+    }
+    bool build_boundary_and_vertex_rows()
+    {
+        const auto& regions = result_.regions;
+        const auto& selection = regions.selection;
+        const auto& arrangement = selection.arrangement;
+        bool valid = true;
+        std::uint64_t structural_work =
+            analytic_selection_detail::checked_multiply(regions.ring_half_edges.size(), 2, valid);
+        structural_work = analytic_selection_detail::checked_add(
+            structural_work,
+            analytic_selection_detail::checked_multiply(arrangement.vertices.size(), 2, valid),
+            valid);
+        structural_work = analytic_selection_detail::checked_add(
+            structural_work,
+            analytic_selection_detail::checked_multiply(arrangement.edges.size(), 3, valid), valid);
+        structural_work = analytic_selection_detail::checked_add(
+            structural_work, arrangement.collapsed_spans.size(), valid);
+        structural_work =
+            analytic_selection_detail::checked_add(structural_work, regions.regions.size(), valid);
+        if (!valid || !charge(structural_work))
+            return false;
+        if (!counting_)
+            result_.boundaries.resize(regions.ring_half_edges.size());
         for (std::uint32_t owner = 0; owner < regions.ring_half_edges.size(); ++owner)
         {
-            const std::uint32_t half_edge_index = regions.ring_half_edges[owner];
-            if (half_edge_index >= arrangement.half_edges.size() ||
-                half_edge_index >= selection.half_edge_faces.size())
+            const std::uint32_t h = regions.ring_half_edges[owner];
+            if (h >= arrangement.half_edges.size())
                 return false;
-            const AnalyticArrangementHalfEdge& half_edge = arrangement.half_edges[half_edge_index];
-            if (half_edge.twin >= arrangement.half_edges.size() ||
-                half_edge.twin >= selection.half_edge_faces.size() ||
-                half_edge.edge >= arrangement.edges.size())
-                return false;
-            const std::uint32_t material_face = selection.half_edge_faces[half_edge_index];
-            const std::uint32_t empty_face = selection.half_edge_faces[half_edge.twin];
-            if (material_face >= selection.faces.size() || empty_face >= selection.faces.size() ||
-                !selection.faces[material_face].material || selection.faces[empty_face].material)
-                return false;
-            const AnalyticArrangementEdgeNm& edge = arrangement.edges[half_edge.edge];
-            if (edge.membership_begin > arrangement.memberships.size() ||
-                edge.membership_count > arrangement.memberships.size() - edge.membership_begin)
-                return false;
-            for (std::uint32_t offset = 0; offset < edge.membership_count; ++offset)
+            const auto& half = arrangement.half_edges[h];
+            const std::uint32_t material_face = selection.half_edge_faces[h];
+            const std::uint32_t empty_face = selection.half_edge_faces[half.twin];
+            const auto& edge = arrangement.edges[half.edge];
+            for (std::uint32_t m = 0; m < edge.membership_count; ++m)
             {
+                if (!charge(1))
+                    return false;
                 ++result_.telemetry.boundary_membership_visits;
-                const AnalyticSpanMembership& membership =
-                    arrangement.memberships[edge.membership_begin + offset];
-                std::uint32_t ordinal = 0;
-                const Operand* operand = operand_for_occurrence(membership.curve_index, ordinal);
-                if (operand == nullptr)
-                    return false;
-                const bool covered_on_material_left =
-                    membership.material_on_span_left == half_edge.forward;
-                if (operand->operation == 1 && covered_on_material_left &&
-                    operand->stage >= selection.faces[material_face].positive_stage_begin &&
-                    dag.contains(selection.faces[material_face].coverage_state_root, ordinal))
-                {
-                    if (!append_raw(OwnerKind::boundary_positive, owner,
-                                    geometry_.occurrences[membership.curve_index - 1].source))
-                        return false;
-                }
-                if (operand->operation == 2 && !covered_on_material_left &&
-                    operand->stage == selection.faces[empty_face].active_removal_stage &&
-                    dag.contains(selection.faces[empty_face].coverage_state_root, ordinal))
-                {
-                    if (!append_raw(OwnerKind::boundary_subtraction, owner,
-                                    {AnalyticFilteredSourceKind::subtractive_operand_effect,
-                                     AnalyticFilteredSourceRole::none, operand->id,
-                                     operand->stage_id, 0}))
-                        return false;
-                }
-            }
-        }
-
-        std::vector<std::uint8_t> retained_vertices(arrangement.vertices.size());
-        for (const std::uint32_t half_edge_index : regions.ring_half_edges)
-        {
-            if (half_edge_index >= arrangement.half_edges.size())
-                return false;
-            retained_vertices[arrangement.half_edges[half_edge_index].origin_vertex] = 1;
-        }
-        std::vector<std::uint32_t> vertex_owner(arrangement.vertices.size(), kNoIndex);
-        for (std::uint32_t vertex = 0; vertex < retained_vertices.size(); ++vertex)
-            if (retained_vertices[vertex])
-            {
-                vertex_owner[vertex] = static_cast<std::uint32_t>(result_.vertices.size());
-                result_.vertices.push_back({vertex, {}});
-            }
-        if (!charge(arrangement.edges.size() + arrangement.collapsed_spans.size()))
-            return false;
-        for (const AnalyticArrangementEdgeNm& edge : arrangement.edges)
-        {
-            if (edge.start_vertex >= vertex_owner.size() ||
-                edge.end_vertex >= vertex_owner.size() ||
-                edge.membership_begin > arrangement.memberships.size() ||
-                edge.membership_count > arrangement.memberships.size() - edge.membership_begin)
-                return false;
-            for (const std::uint32_t vertex : {edge.start_vertex, edge.end_vertex})
-            {
-                if (vertex_owner[vertex] == kNoIndex)
-                    continue;
-                for (std::uint32_t offset = 0; offset < edge.membership_count; ++offset)
-                {
-                    ++result_.telemetry.vertex_membership_visits;
-                    const AnalyticSpanMembership& membership =
-                        arrangement.memberships[edge.membership_begin + offset];
-                    if (membership.curve_index == 0 ||
-                        membership.curve_index > geometry_.occurrences.size() ||
-                        !append_raw(OwnerKind::vertex, vertex_owner[vertex],
-                                    geometry_.occurrences[membership.curve_index - 1].source))
-                        return false;
-                }
-            }
-        }
-        for (const AnalyticArrangementCollapsedSpan& span : arrangement.collapsed_spans)
-        {
-            if (span.vertex >= vertex_owner.size() ||
-                span.membership_begin > arrangement.memberships.size() ||
-                span.membership_count > arrangement.memberships.size() - span.membership_begin)
-                return false;
-            if (vertex_owner[span.vertex] == kNoIndex)
-                continue;
-            for (std::uint32_t offset = 0; offset < span.membership_count; ++offset)
-            {
-                ++result_.telemetry.vertex_membership_visits;
-                const AnalyticSpanMembership& membership =
-                    arrangement.memberships[span.membership_begin + offset];
+                const auto& membership = arrangement.memberships[edge.membership_begin + m];
                 if (membership.curve_index == 0 ||
-                    membership.curve_index > geometry_.occurrences.size() ||
-                    !append_raw(OwnerKind::vertex, vertex_owner[span.vertex],
-                                geometry_.occurrences[membership.curve_index - 1].source))
+                    membership.curve_index > occurrence_operands_.size())
+                    return false;
+                const std::uint32_t operand = occurrence_operands_[membership.curve_index - 1];
+                if (operands_[operand].operation == 1 &&
+                    membership.material_on_span_left == half.forward &&
+                    operands_[operand].stage >=
+                        selection.faces[material_face].positive_stage_begin &&
+                    !append(OwnerKind::boundary_positive, owner,
+                            geometry_.occurrences[membership.curve_index - 1].source))
                     return false;
             }
-        }
-
-        result_.region_lineage.resize(regions.regions.size());
-        for (std::uint32_t region = 0; region < regions.regions.size(); ++region)
-        {
-            result_.region_lineage[region].region = region;
-            if (!dag.enumerate(region_roots[region],
+            const std::uint32_t removal = selection.faces[empty_face].active_removal_stage;
+            if (removal != kNoIndex)
+            {
+                if (removal + 1 >= stage_begin_.size() ||
+                    !enumerate(selection.faces[empty_face].coverage_state_root, 0, leaf_capacity_,
+                               stage_begin_[removal], stage_begin_[removal + 1],
                                [&](std::uint32_t operand)
                                {
-                                   if (operand + 1 >= operand_occurrence_begin_.size())
-                                       return false;
-                                   for (std::uint32_t cursor = operand_occurrence_begin_[operand];
-                                        cursor < operand_occurrence_begin_[operand + 1]; ++cursor)
-                                   {
-                                       const std::uint32_t occurrence =
-                                           ordered_occurrences_[cursor];
-                                       if (!append_raw(OwnerKind::region, region,
-                                                       geometry_.occurrences[occurrence].source))
-                                           return false;
-                                   }
-                                   return true;
+                                   return append(
+                                       OwnerKind::boundary_subtraction, owner,
+                                       {AnalyticFilteredSourceKind::subtractive_operand_effect,
+                                        AnalyticFilteredSourceRole::none, operands_[operand].id,
+                                        operands_[operand].stage_id, 0});
                                }))
-                return false;
+                    return false;
+            }
         }
-        return publish(dag);
+        std::vector<std::uint8_t> retained(arrangement.vertices.size(), 0);
+        for (const std::uint32_t h : regions.ring_half_edges)
+            retained[arrangement.half_edges[h].origin_vertex] = 1;
+        std::vector<std::uint32_t> owner_by_vertex(arrangement.vertices.size(), kNoIndex);
+        std::uint32_t vertex_count = 0;
+        for (std::uint32_t v = 0; v < retained.size(); ++v)
+            if (retained[v])
+            {
+                owner_by_vertex[v] = vertex_count++;
+                if (!counting_)
+                    result_.vertices.push_back({v, {}});
+            }
+        for (const auto& edge : arrangement.edges)
+            for (const std::uint32_t vertex : {edge.start_vertex, edge.end_vertex})
+                if (owner_by_vertex[vertex] != kNoIndex)
+                    for (std::uint32_t m = 0; m < edge.membership_count; ++m)
+                    {
+                        ++result_.telemetry.vertex_membership_visits;
+                        const auto& membership = arrangement.memberships[edge.membership_begin + m];
+                        if (!append(OwnerKind::vertex, owner_by_vertex[vertex],
+                                    geometry_.occurrences[membership.curve_index - 1].source))
+                            return false;
+                    }
+        for (const auto& span : arrangement.collapsed_spans)
+            if (owner_by_vertex[span.vertex] != kNoIndex)
+                for (std::uint32_t m = 0; m < span.membership_count; ++m)
+                {
+                    ++result_.telemetry.vertex_membership_visits;
+                    const auto& membership = arrangement.memberships[span.membership_begin + m];
+                    if (!append(OwnerKind::vertex, owner_by_vertex[span.vertex],
+                                geometry_.occurrences[membership.curve_index - 1].source))
+                        return false;
+                }
+        if (!counting_)
+            result_.region_lineage.resize(regions.regions.size());
+        return true;
     }
-
-    bool publish(const CoverageDag& dag)
+    bool preflight_publication()
     {
-        std::uint64_t units = sort_units(raw_.size());
+        expected_raw_count_ = raw_count_;
+        if (expected_raw_count_ > limits_.source_reference_memberships ||
+            expected_raw_count_ > limits_.provenance_references)
+        {
+            result_.error = AnalyticFilteredLineageError::resource_limit_exceeded;
+            return false;
+        }
+        const auto& regions = result_.regions;
+        const auto& selection = regions.selection;
+        const auto& arrangement = selection.arrangement;
+        bool valid = true;
+        using analytic_selection_detail::checked_add;
+        using analytic_selection_detail::checked_multiply;
+        std::uint64_t retained = checked_multiply(arrangement.vertices.size(),
+                                                  kAnalyticArrangementVertexLogicalBytes, valid);
+        retained = checked_add(
+            retained,
+            checked_multiply(arrangement.edges.size(), kAnalyticArrangementEdgeLogicalBytes, valid),
+            valid);
+        retained = checked_add(retained,
+                               checked_multiply(arrangement.half_edges.size(),
+                                                kAnalyticArrangementHalfEdgeLogicalBytes, valid),
+                               valid);
+        retained =
+            checked_add(retained,
+                        checked_multiply(arrangement.collapsed_spans.size(),
+                                         kAnalyticArrangementCollapsedSpanLogicalBytes, valid),
+                        valid);
+        retained = checked_add(retained,
+                               checked_multiply(arrangement.memberships.size(),
+                                                kAnalyticOverlayMembershipLogicalBytes, valid),
+                               valid);
+        retained = checked_add(retained,
+                               checked_multiply(arrangement.cycles.size(),
+                                                kAnalyticArrangementCycleLogicalBytes, valid),
+                               valid);
+        retained = checked_add(
+            retained,
+            checked_multiply(arrangement.cycle_half_edges.size(), kIndexLogicalBytes, valid),
+            valid);
+        retained =
+            checked_add(retained,
+                        checked_multiply(selection.occurrences.size(),
+                                         analytic_selection_detail::kOccurrenceLogicalBytes, valid),
+                        valid);
+        retained = checked_add(
+            retained, checked_multiply(selection.half_edge_faces.size(), kIndexLogicalBytes, valid),
+            valid);
+        retained =
+            checked_add(retained,
+                        checked_multiply(selection.faces.size(),
+                                         analytic_selection_detail::kFaceLogicalBytes, valid),
+                        valid);
+        retained = checked_add(
+            retained,
+            checked_multiply(selection.face_boundary_cycles.size(), kIndexLogicalBytes, valid),
+            valid);
+        retained = checked_add(
+            retained,
+            checked_multiply(selection.coverage_state_nodes.size(),
+                             analytic_selection_detail::kCoverageNodeLogicalBytes, valid),
+            valid);
+        retained = checked_add(
+            retained,
+            checked_multiply(regions.rings.size(),
+                             analytic_selection_detail::kMaterialRingLogicalBytes, valid),
+            valid);
+        retained = checked_add(
+            retained, checked_multiply(regions.ring_half_edges.size(), kIndexLogicalBytes, valid),
+            valid);
+        retained = checked_add(
+            retained,
+            checked_multiply(regions.regions.size(),
+                             analytic_selection_detail::kMaterialRegionLogicalBytes, valid),
+            valid);
+        retained = checked_add(
+            retained, checked_multiply(regions.face_components.size(), kIndexLogicalBytes, valid),
+            valid);
+
+        std::uint64_t persistent = checked_multiply(operands_.size(), kOperandLogicalBytes, valid);
+        persistent = checked_add(
+            persistent, checked_multiply(lookup_.size(), kLookupLogicalBytes, valid), valid);
+        persistent = checked_add(
+            persistent, checked_multiply(stage_begin_.size(), kIndexLogicalBytes, valid), valid);
+        persistent = checked_add(
+            persistent, checked_multiply(occurrence_operands_.size(), kIndexLogicalBytes, valid),
+            valid);
+        persistent = checked_add(
+            persistent,
+            checked_multiply(operand_occurrence_begin_.size(), kIndexLogicalBytes, valid), valid);
+        persistent = checked_add(
+            persistent, checked_multiply(ordered_occurrences_.size(), kIndexLogicalBytes, valid),
+            valid);
+        persistent = checked_add(
+            persistent, checked_multiply(seen_operand_.size(), kIndexLogicalBytes, valid), valid);
+
+        std::uint64_t contributor_scratch = checked_multiply(
+            arrangement.edges.size(), kIndexLogicalBytes * 2 + kAdjacencyLogicalBytes * 2, valid);
+        contributor_scratch =
+            checked_add(contributor_scratch,
+                        checked_multiply(selection.faces.size(),
+                                         kIndexLogicalBytes * 3 + kByteLogicalBytes, valid),
+                        valid);
+        std::uint64_t boundary_scratch = checked_multiply(
+            arrangement.vertices.size(), kIndexLogicalBytes + kByteLogicalBytes, valid);
+        const std::uint64_t traversal_scratch = std::max(contributor_scratch, boundary_scratch);
+
+        std::uint64_t publication = checked_multiply(expected_raw_count_, kRawLogicalBytes, valid);
+        publication = checked_add(
+            publication, checked_multiply(expected_raw_count_, kSourceLogicalBytes, valid), valid);
+        publication = checked_add(
+            publication,
+            checked_multiply(regions.ring_half_edges.size(), kBoundaryLogicalBytes, valid), valid);
+        publication = checked_add(
+            publication, checked_multiply(arrangement.vertices.size(), kVertexLogicalBytes, valid),
+            valid);
+        publication = checked_add(
+            publication, checked_multiply(regions.regions.size(), kRegionLogicalBytes, valid),
+            valid);
+        const std::uint64_t preparation_scratch =
+            checked_multiply(operand_occurrence_begin_.size(), kIndexLogicalBytes, valid);
+        const std::uint64_t phase = checked_add(
+            checked_add(retained, persistent, valid),
+            std::max(preparation_scratch, checked_add(traversal_scratch, publication, valid)),
+            valid);
+        if (!valid || phase > limits_.working_memory_bytes)
+        {
+            result_.error = AnalyticFilteredLineageError::resource_limit_exceeded;
+            return false;
+        }
+        result_.telemetry.peak_working_memory_bytes =
+            std::max(result_.regions.telemetry.peak_working_memory_bytes, phase);
+        raw_.reserve(static_cast<std::size_t>(expected_raw_count_));
+        result_.source_references.reserve(static_cast<std::size_t>(expected_raw_count_));
+        result_.boundaries.reserve(regions.ring_half_edges.size());
+        result_.vertices.reserve(arrangement.vertices.size());
+        result_.region_lineage.reserve(regions.regions.size());
+        raw_count_ = 0;
+        return true;
+    }
+    bool publish()
+    {
+        if (raw_count_ != expected_raw_count_ || raw_.size() != expected_raw_count_)
+            return false;
+        bool valid = true;
+        std::uint64_t traversal_work =
+            analytic_selection_detail::checked_multiply(raw_.size(), 2, valid);
+        traversal_work = analytic_selection_detail::checked_add(
+            traversal_work,
+            analytic_selection_detail::checked_multiply(result_.boundaries.size(), 2, valid),
+            valid);
+        traversal_work = analytic_selection_detail::checked_add(
+            traversal_work, result_.vertices.size() + result_.region_lineage.size(), valid);
+        if (!valid || !charge(traversal_work))
+            return false;
+        const std::uint64_t units = sort_units(raw_.size());
         if (!charge(units))
             return false;
-        result_.telemetry.sort_work_units += units;
-        std::sort(raw_.begin(), raw_.end(),
-                  [](const RawSource& left, const RawSource& right)
-                  {
-                      if (left.kind != right.kind)
-                          return left.kind < right.kind;
-                      if (left.owner != right.owner)
-                          return left.owner < right.owner;
-                      return source_key(left.source) < source_key(right.source);
-                  });
+        result_.telemetry.sort_work_units = units;
+        std::sort(
+            raw_.begin(), raw_.end(),
+            [](const RawSource& a, const RawSource& b)
+            {
+                return std::tie(a.kind, a.owner, a.source.kind, a.source.role, a.source.operand_id,
+                                a.source.primary_id, a.source.secondary_id) <
+                       std::tie(b.kind, b.owner, b.source.kind, b.source.role, b.source.operand_id,
+                                b.source.primary_id, b.source.secondary_id);
+            });
         raw_.erase(std::unique(raw_.begin(), raw_.end(),
-                               [](const RawSource& left, const RawSource& right)
+                               [](const RawSource& a, const RawSource& b)
                                {
-                                   return left.kind == right.kind && left.owner == right.owner &&
-                                          source_key(left.source) == source_key(right.source);
+                                   return a.kind == b.kind && a.owner == b.owner &&
+                                          source_key(a.source) == source_key(b.source);
                                }),
                    raw_.end());
-        if (raw_.size() > limits_.source_reference_memberships ||
-            raw_.size() > std::numeric_limits<std::uint32_t>::max())
-        {
-            result_.error = AnalyticFilteredLineageError::resource_limit_exceeded;
+        if (raw_.size() > limits_.source_reference_memberships)
             return false;
-        }
-        result_.source_references.reserve(raw_.size());
         std::size_t cursor = 0;
-        const auto fill = [&](OwnerKind kind, std::uint32_t owner,
-                              AnalyticFilteredSourceRange& range, std::size_t& position,
-                              std::vector<AnalyticFilteredSourceReference>& output)
+        const auto fill =
+            [&](OwnerKind kind, std::uint32_t owner, AnalyticFilteredSourceRange& range)
         {
-            range.begin = static_cast<std::uint32_t>(output.size());
-            while (position < raw_.size() && raw_[position].kind == kind &&
-                   raw_[position].owner == owner)
-                output.push_back(raw_[position++].source);
-            range.count = static_cast<std::uint32_t>(output.size()) - range.begin;
+            range.begin = static_cast<std::uint32_t>(result_.source_references.size());
+            while (cursor < raw_.size() && raw_[cursor].kind == kind && raw_[cursor].owner == owner)
+                result_.source_references.push_back(raw_[cursor++].source);
+            range.count =
+                static_cast<std::uint32_t>(result_.source_references.size()) - range.begin;
         };
-        for (std::uint32_t owner = 0; owner < result_.boundaries.size(); ++owner)
+        for (std::uint32_t i = 0; i < result_.boundaries.size(); ++i)
         {
-            result_.boundaries[owner].half_edge = result_.regions.ring_half_edges[owner];
-            fill(OwnerKind::boundary_positive, owner, result_.boundaries[owner].positive, cursor,
-                 result_.source_references);
+            result_.boundaries[i].half_edge = result_.regions.ring_half_edges[i];
+            fill(OwnerKind::boundary_positive, i, result_.boundaries[i].positive);
         }
-        for (std::uint32_t owner = 0; owner < result_.boundaries.size(); ++owner)
-            fill(OwnerKind::boundary_subtraction, owner, result_.boundaries[owner].subtraction,
-                 cursor, result_.source_references);
-        for (std::uint32_t owner = 0; owner < result_.vertices.size(); ++owner)
-            fill(OwnerKind::vertex, owner, result_.vertices[owner].intersection, cursor,
-                 result_.source_references);
-        for (std::uint32_t owner = 0; owner < result_.region_lineage.size(); ++owner)
-            fill(OwnerKind::region, owner, result_.region_lineage[owner].positive_contributors,
-                 cursor, result_.source_references);
-        if (cursor != raw_.size())
-            return false;
-
-        std::uint64_t retained = result_.regions.telemetry.peak_working_memory_bytes;
-        std::uint64_t added = 0;
-        std::uint64_t term = 0;
-        if (!checked_multiply(raw_.size(), kRawSourceLogicalBytes, added) ||
-            !checked_multiply(result_.source_references.size(), kSourceReferenceLogicalBytes,
-                              term) ||
-            !checked_add(added, term, added) ||
-            !checked_multiply(result_.boundaries.size(), kBoundaryLogicalBytes, term) ||
-            !checked_add(added, term, added) ||
-            !checked_multiply(result_.vertices.size(), kVertexLogicalBytes, term) ||
-            !checked_add(added, term, added) ||
-            !checked_multiply(result_.region_lineage.size(), kRegionLogicalBytes, term) ||
-            !checked_add(added, term, added) || !checked_add(added, dag.logical_bytes(), added) ||
-            !checked_add(retained, added, retained))
+        for (std::uint32_t i = 0; i < result_.boundaries.size(); ++i)
+            fill(OwnerKind::boundary_subtraction, i, result_.boundaries[i].subtraction);
+        for (std::uint32_t i = 0; i < result_.vertices.size(); ++i)
+            fill(OwnerKind::vertex, i, result_.vertices[i].intersection);
+        for (std::uint32_t i = 0; i < result_.region_lineage.size(); ++i)
         {
-            result_.error = AnalyticFilteredLineageError::resource_limit_exceeded;
-            return false;
+            result_.region_lineage[i].region = i;
+            fill(OwnerKind::region, i, result_.region_lineage[i].positive_contributors);
         }
-        if (retained > limits_.working_memory_bytes)
-        {
-            result_.error = AnalyticFilteredLineageError::resource_limit_exceeded;
+        if (cursor != raw_.size() ||
+            result_.source_references.size() > limits_.provenance_references)
             return false;
-        }
-        result_.telemetry.peak_working_memory_bytes = retained;
-        return charge(raw_.size() + result_.source_references.size());
+        return true;
     }
 
     const AnalyticRequestPacketRecords& records_;
-    std::uint32_t job_index_ = 0;
+    std::uint32_t job_index_;
     const AnalyticFilteredGeometry& geometry_;
-    const std::vector<AnalyticCurvePair>& candidate_pairs_;
+    const std::vector<AnalyticCurvePair>& pairs_;
     const AnalyticSolverLimits& limits_;
     AnalyticFilteredLineageResult result_;
     std::vector<Operand> operands_;
     std::vector<Lookup> lookup_;
-    std::vector<std::uint32_t> stage_operand_begin_;
+    std::vector<std::uint32_t> stage_begin_;
     std::vector<std::uint32_t> occurrence_operands_;
     std::vector<std::uint32_t> operand_occurrence_begin_;
     std::vector<std::uint32_t> ordered_occurrences_;
+    std::vector<std::uint32_t> seen_operand_;
     std::vector<RawSource> raw_;
+    std::uint32_t leaf_capacity_ = 1;
     std::uint64_t work_ = 0;
+    std::uint64_t reserved_work_ = 0;
+    std::uint64_t raw_count_ = 0;
+    std::uint64_t expected_raw_count_ = 0;
+    bool counting_ = false;
 };
+
+static_assert(sizeof(Operand) <= kOperandLogicalBytes);
+static_assert(sizeof(Lookup) <= kLookupLogicalBytes);
+static_assert(sizeof(Adjacency) <= kAdjacencyLogicalBytes);
+static_assert(sizeof(RawSource) <= kRawLogicalBytes);
+static_assert(sizeof(AnalyticFilteredSourceReference) <= kSourceLogicalBytes);
+static_assert(sizeof(AnalyticFilteredBoundaryLineage) <= kBoundaryLogicalBytes);
+static_assert(sizeof(AnalyticFilteredVertexLineage) <= kVertexLogicalBytes);
+static_assert(sizeof(AnalyticFilteredRegionLineage) <= kRegionLogicalBytes);
 } // namespace
 
 AnalyticFilteredLineageResult
@@ -746,5 +779,4 @@ build_analytic_filtered_lineage(const AnalyticRequestPacketRecords& records,
 {
     return Builder(records, job_index, geometry, candidate_pairs, limits).build();
 }
-
 } // namespace geometer

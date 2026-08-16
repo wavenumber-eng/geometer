@@ -754,7 +754,7 @@ def test_filtered_solver_foundation_is_bounded_non_algebraic_and_not_dispatched(
         ),
         "boolean_selection_parity_validator": ("scripts/validate_analytic_filtered_boolean_selection_parity.py"),
         "boolean_selection_vector_bytes": 12744,
-        "boolean_selection_vector_sha256": ("fc11f4170121f024a58bf9e791c62aa6e6260d3b4965775aef3b47a7e235064b"),
+        "boolean_selection_vector_sha256": ("c990ca7e9539e9c73c626fc70f091f4e6cf4447bf3a434a683cc1b61f2e8572a"),
         "regions_header": "src/cpp/lib/geometer/analytic_filtered_regions.h",
         "regions_source": "src/cpp/lib/analytic_filtered_regions.cpp",
         "regions_test": "tests/cpp/analytic_filtered_regions_test.cpp",
@@ -768,18 +768,26 @@ def test_filtered_solver_foundation_is_bounded_non_algebraic_and_not_dispatched(
         ),
         "regions_parity_validator": "scripts/validate_analytic_filtered_regions_parity.py",
         "regions_vector_bytes": 800,
-        "regions_vector_sha256": ("c6dc655ae66b4cf97b5c8329f1908bb1bce80eb353b33184ecf8c654fbdaa810"),
+        "regions_vector_sha256": ("324e6e6d4e72619e380ca8c1e2821c73243e69431726b79ec239e78f1939ab58"),
         "lineage_header": "src/cpp/lib/geometer/analytic_filtered_lineage.h",
         "lineage_source": "src/cpp/lib/analytic_filtered_lineage.cpp",
         "lineage_test": "tests/cpp/analytic_filtered_lineage_test.cpp",
         "lineage_input": "owned_filtered_regions_with_stage_order_coverage_roots",
-        "lineage_policy": "coordinate_free_boundary_vertex_and_region_source_projection",
+        "lineage_policy": (
+            "coordinate_free_transition_driven_region_boundary_vertex_and_empty_face_"
+            "subtraction_projection"
+        ),
         "lineage_complexity_policy": (
-            "structurally_shared_coverage_sets_and_actual_membership_incidence_without_face_by_operand_scans"
+            "indexed_material_component_transitions_and_actual_membership_incidence_without_"
+            "dense_root_union_or_face_by_operand_scans"
+        ),
+        "lineage_budget_policy": (
+            "candidate_bounded_pre_arrangement_structural_reservation_then_allocation_free_"
+            "exact_source_count_and_fixed_capacity_publication"
         ),
         "lineage_parity_validator": "scripts/validate_analytic_filtered_lineage_parity.py",
-        "lineage_vector_bytes": 3488,
-        "lineage_vector_sha256": ("97040c1d781115da657799f997b7cc67e0568dc48e781526300d07cdf87f0a65"),
+        "lineage_vector_bytes": 3664,
+        "lineage_vector_sha256": ("8db59c002cd850d7a4af7897074aab74d44e779827b8f03d7b449b16351469af"),
     }
     implementation_paths = [
         solver[key]

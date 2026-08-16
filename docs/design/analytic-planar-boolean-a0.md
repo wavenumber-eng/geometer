@@ -550,16 +550,27 @@ projects no geometry of its own. Selection retains, for each face, the stage
 after its last active difference and the first effective difference after its
 last active union. Those descriptors distinguish final positive lineage from
 the active removal epoch without replaying every stage for every face. Region
-contributors are structurally unioned from persistent stage-ordered coverage
-roots; boundary positives and subtractors visit only actual edge memberships;
-and result-vertex lineage visits only incident edge and attached collapsed-span
-memberships. Source references remain complete tuple-sorted inline ranges for
-the later global source-set interning pass. A refill clears the prior active
-removal epoch, so an overwritten subtractor cannot claim a later hole. This
-coordinate-free stage performs no predicate, snapping, or additional 50 nm
-repair. Isolated collapsed vertices remain internal lineage and are not
-published as unreachable result vertices. Operand outcome events, final 1 nm
-normalization, and operation dispatch remain subsequent stages.
+contributors are accumulated by one indexed walk of each material component:
+newly exposed stage intervals are enumerated once and later contributors arrive
+only through actual dual-edge membership transitions. There is no persistent
+set union per face and no face-by-operand replay. Boundary positives visit the
+boundary edge memberships; surviving subtraction enumerates the active
+difference-stage operands on the empty-side face, so a refill island retains
+responsible noncoincident and same-stage subtractors. Result-vertex lineage
+visits only incident edge and attached collapsed-span memberships.
+
+Source identities are validated against their authored or compact curve role
+before arrangement. Lineage structural work and target-independent logical
+memory are reserved before arrangement; after regions exist, an allocation-free
+count pass checks the exact raw source-incidence ceilings and publication phase
+before fixed-capacity fill and tuple sort/unique. Source references remain
+complete tuple-sorted inline ranges for the later global source-set interning
+pass. A refill clears the prior active removal epoch, so an overwritten
+subtractor cannot claim a later hole. This coordinate-free stage performs no
+predicate, snapping, or additional 50 nm repair. Isolated collapsed vertices
+remain internal lineage and are not published as unreachable result vertices.
+Operand outcome events, final 1 nm normalization, and operation dispatch remain
+subsequent stages.
 
 Across ordered stages, the accumulator retains the resolved analytic
 arrangement and lineage. Publication to the governed nm grid occurs once after

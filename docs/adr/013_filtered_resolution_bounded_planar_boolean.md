@@ -239,11 +239,14 @@ engine.
   budget before arrangement starts. The envelope is linear in curves plus
   canonical candidates and counts endpoint-coincident full-circle domains.
   Selection consumes only the remaining work;
-  fixed-capacity region traversals consume the reservation and report actual
-  work separately. Every rotation, ring, component, adjacency, output, and
-  sort pass is precharged. Native and WASM use identical logical charges and
-  canonical ring/component ordering. Complete lineage projection, final grid
-  normalization, and dispatch remain gated.
+  fixed-capacity region and lineage count traversals consume their reservations
+  and report actual work separately. Lineage follows only material-component
+  dual transitions, then performs an allocation-free source-incidence count
+  before fixed-capacity publication; it never unions every face's coverage set
+  or scans every operand per face. Every rotation, ring, component, adjacency,
+  source-membership, output, and sort pass is precharged. Native and WASM use
+  identical logical charges and canonical ring/component/source ordering.
+  Final grid normalization, operand outcomes, and dispatch remain gated.
 - Solver resource limits are supplied through one internal limits value object
   rather than scattered production constants. The catalog values are governed
   hard ceilings; a host may advertise and enforce lower effective limits, and

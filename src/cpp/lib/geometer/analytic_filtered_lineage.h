@@ -44,8 +44,9 @@ struct AnalyticFilteredLineageTelemetry
 {
     std::uint64_t regions_work_units = 0;
     std::uint64_t regions_peak_working_memory_bytes = 0;
+    std::uint64_t arrangement_work_units = 0;
     std::uint64_t coverage_node_visits = 0;
-    std::uint64_t set_union_visits = 0;
+    std::uint64_t component_transition_visits = 0;
     std::uint64_t boundary_membership_visits = 0;
     std::uint64_t vertex_membership_visits = 0;
     std::uint64_t emitted_boundary_records = 0;
@@ -53,6 +54,7 @@ struct AnalyticFilteredLineageTelemetry
     std::uint64_t emitted_region_records = 0;
     std::uint64_t emitted_source_references = 0;
     std::uint64_t sort_work_units = 0;
+    std::uint64_t reserved_lineage_work_units = 0;
     std::uint64_t lineage_work_units = 0;
     std::uint64_t predicate_calls = 0;
     std::uint64_t peak_working_memory_bytes = 0;

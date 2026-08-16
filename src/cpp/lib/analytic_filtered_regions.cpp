@@ -1,6 +1,7 @@
 #include "geometer/analytic_filtered_regions.h"
 
 #include "analytic_filtered_boolean_selection_support.h"
+#include "analytic_filtered_regions_internal.h"
 
 #include <algorithm>
 #include <cstddef>
@@ -704,8 +705,8 @@ build_analytic_filtered_regions(const AnalyticRequestPacketRecords& records,
 {
     analytic_selection_detail::SelectionAdmission admission =
         analytic_selection_detail::prepare_boolean_selection_admission(
-            records, job_index, geometry, candidate_pairs, limits, {true});
-    const std::uint64_t reserved_work = admission.downstream_reserved_work;
+            records, job_index, geometry, candidate_pairs, limits, {true, false});
+    const std::uint64_t reserved_work = admission.material_regions_reserved_work;
     AnalyticFilteredBooleanSelectionResult selection =
         analytic_selection_detail::finish_boolean_selection_from_admission(
             records, job_index, geometry, std::move(admission));
@@ -728,5 +729,48 @@ build_analytic_filtered_regions(const AnalyticRequestPacketRecords& records,
     }
     return RegionsBuilder(std::move(selection), limits, reserved_work).build();
 }
+
+namespace analytic_regions_detail
+{
+
+LineageRegionsAdmission
+build_regions_for_lineage(const AnalyticRequestPacketRecords& records, std::uint32_t job_index,
+                          const AnalyticFilteredGeometry& geometry,
+                          const std::vector<AnalyticCurvePair>& candidate_pairs,
+                          const AnalyticSolverLimits& limits)
+{
+    LineageRegionsAdmission output;
+    analytic_selection_detail::SelectionAdmission admission =
+        analytic_selection_detail::prepare_boolean_selection_admission(
+            records, job_index, geometry, candidate_pairs, limits, {true, true});
+    const std::uint64_t region_work = admission.material_regions_reserved_work;
+    output.reserved_lineage_work = admission.lineage_reserved_work;
+    AnalyticFilteredBooleanSelectionResult selection =
+        analytic_selection_detail::finish_boolean_selection_from_admission(
+            records, job_index, geometry, std::move(admission));
+    if (selection.error != AnalyticFilteredBooleanSelectionError::none)
+    {
+        output.regions.error =
+            selection.error == AnalyticFilteredBooleanSelectionError::invalid_argument
+                ? AnalyticFilteredRegionsError::invalid_argument
+                : AnalyticFilteredRegionsError::resource_limit_exceeded;
+        output.regions.telemetry.selection_predicate_calls = selection.telemetry.predicate_calls;
+        output.regions.telemetry.selection_peak_working_memory_bytes =
+            selection.telemetry.peak_working_memory_bytes;
+        output.regions.telemetry.predicate_calls = selection.telemetry.predicate_calls;
+        output.regions.telemetry.peak_working_memory_bytes =
+            selection.telemetry.peak_working_memory_bytes;
+        output.regions.telemetry.algebraic_fallback_calls =
+            selection.telemetry.algebraic_fallback_calls;
+        output.regions.selection.origin_x_nm = geometry.origin_x_nm;
+        output.regions.selection.origin_y_nm = geometry.origin_y_nm;
+        output.regions.selection.telemetry = selection.telemetry;
+        return output;
+    }
+    output.regions = RegionsBuilder(std::move(selection), limits, region_work).build();
+    return output;
+}
+
+} // namespace analytic_regions_detail
 
 } // namespace geometer

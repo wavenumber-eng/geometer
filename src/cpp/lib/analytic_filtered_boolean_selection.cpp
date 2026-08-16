@@ -1323,6 +1323,8 @@ class SelectionBuilder
                 result_.faces[next.neighbor].coverage_state_root = root;
                 result_.faces[next.neighbor].material = stages.material();
                 result_.faces[next.neighbor].positive_stage_begin = stages.positive_stage_begin();
+                if (!charge(stages.depth() * 2 + 1))
+                    return false;
                 result_.faces[next.neighbor].active_removal_stage = stages.active_removal_stage();
                 if (!charge(1))
                     return false;

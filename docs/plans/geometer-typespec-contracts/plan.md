@@ -982,12 +982,19 @@ Geometer proposal, not the original consumer packet.
 - Coordinate-free filtered lineage projection is now implemented behind an
   owned records/geometry/pairs entry point. Selection coverage leaves retain
   request stage order and each face carries compact positive and active-removal
-  stage descriptors. Structurally shared coverage unions project region
-  contributors without a face-by-operand replay, while boundary and result-
-  vertex source sets scan only actual edge/collapsed membership incidences.
-  Refill/removal epochs, disconnected many-to-many contributors, complete
-  vertex incidence, canonical source tuples, and native/WASM bytes gate the
-  slice. The stage never changes coordinates or spends another tolerance.
+  stage descriptors. An indexed material-component traversal projects region
+  contributors from newly exposed stage intervals and actual dual-edge
+  transitions, without per-face persistent-set union or a face-by-operand
+  replay. Boundary positives use edge memberships; subtraction uses the active
+  difference-stage coverage of the empty-side face, preserving noncoincident
+  and same-stage subtractors on refill boundaries. Result-vertex source sets
+  scan only incident edge/collapsed membership incidences. Source identities,
+  structural memory, and count work are admitted before arrangement; an
+  allocation-free second count preflights exact fixed-capacity publication.
+  Exact/one-short work, memory, and source ceilings, 1x/2x sparse scaling,
+  malformed identities, refill/removal epochs, coincident positives,
+  disconnected contributors, and native/WASM bytes gate the slice. The stage
+  never changes coordinates or spends another tolerance.
   Operand outcomes, one-time 1 nm coordinate publication, post-normalization
   topology validation, dispatch, and transport remain pending.
 - Before filtered operation dispatch is enabled, move the retained native

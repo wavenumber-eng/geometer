@@ -502,7 +502,17 @@ retains the lowering origin so later publication can recover global integer-nm
 coordinates without rescanning the request. Canonical native/WASM fixtures
 cover line and arc faces, nested components, tangent contact, odd-width
 vertical capsules, ordered stage combinations, exact/one-short budgets, and
-sparse scaling.
+sparse scaling. A fixed-work, bulk-precharged scan of canonical broad-phase
+pairs also computes a conservative possible split-span and coverage-transition
+capacity before arrangement begins. Line/line pairs add at most one point and
+line/circle or circle/circle pairs add at most two; exact shared authored
+endpoints are removed because they do not split either domain. Dense first-use
+carrier identities keep transition storage output-linear. Noncanonical repeated
+carrier identities conservatively reserve possible spans times curve count.
+This makes a sparse split-heavy comb fail at admission, with zero arrangement
+work, when the persistent coverage phase cannot fit. Malformed filtered point
+enclosures remain `invalid_argument` rather than becoming budget-dependent, and
+all proportional cycle-publication traversals are charged before they begin.
 Selected-boundary publication, complete lineage projection, final 1 nm
 normalization, and operation dispatch remain subsequent stages.
 

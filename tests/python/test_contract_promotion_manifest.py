@@ -749,11 +749,11 @@ def test_filtered_solver_foundation_is_bounded_non_algebraic_and_not_dispatched(
         ),
         "boolean_selection_budget_policy": (
             "metered_multi_pass_admission_fixed_capacity_distinct_phase_memory_o1_membership_"
-            "ordinals_and_early_collapsed_and_persistent_coverage_reservation"
+            "ordinals_and_candidate_bounded_split_coverage_reservation"
         ),
         "boolean_selection_parity_validator": ("scripts/validate_analytic_filtered_boolean_selection_parity.py"),
         "boolean_selection_vector_bytes": 12360,
-        "boolean_selection_vector_sha256": ("56274596c6005d1def4c7197719836d4ea8730b3876472b336ba6a7571c5edb8"),
+        "boolean_selection_vector_sha256": ("0924963a9a86709e1cafad69d7178bbd2fd58204da842fb11e79453d2ebe666d"),
     }
     implementation_paths = [
         solver[key]

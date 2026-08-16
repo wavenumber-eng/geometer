@@ -206,8 +206,18 @@ engine.
   cannot enter downstream admission. Topology and persistent-coverage memory
   are reserved as separate live phases, outputs are counted once, and the
   guaranteed transition prefix reserves canonical coverage nodes/table storage
-  before arrangement execution. Complete-cluster seam distance predicates are
-  charged before evaluation. The selection result retains the lowering origin
+  before arrangement execution. A separately precharged canonical-candidate
+  scan derives a conservative possible split-span and coverage-transition
+  capacity before arrangement execution: line/line pairs contribute at most
+  one point, line/circle and circle/circle pairs at most two, and exact shared
+  authored endpoints do not count as new splits. Strictly increasing carrier
+  identities make memberships output-linear; noncanonical repeated carriers
+  use a conservative span-by-curve bound. Split-heavy sparse inputs therefore
+  cannot complete arrangement and face topology only to fail at persistent
+  coverage allocation. Malformed filtered points remain `invalid_argument`,
+  independent of the resource budget, and every proportional cycle publication
+  pass is precharged. Complete-cluster seam distance predicates are charged
+  before evaluation. The selection result retains the lowering origin
   required to reconstruct global coordinates. Selected-boundary publication,
   complete lineage projection, final grid normalization, and dispatch remain
   gated.

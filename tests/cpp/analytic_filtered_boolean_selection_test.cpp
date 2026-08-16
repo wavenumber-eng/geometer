@@ -10,6 +10,7 @@
 #include <cstring>
 #include <iomanip>
 #include <iostream>
+#include <limits>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -791,6 +792,70 @@ void test_many_memberships_are_linear_and_fixed_capacity()
             "membership/operand scaling regressed toward quadratic work");
 }
 
+void test_split_heavy_coverage_is_reserved_before_arrangement()
+{
+    constexpr std::uint32_t teeth = 64;
+    AnalyticFilteredGeometry geometry;
+    std::vector<std::uint64_t> operands;
+    operands.reserve(teeth + 1);
+    operands.push_back(1);
+    append_axis_rectangle(geometry, 1, 0, -100, teeth * 1000.0 + 1000, 100);
+    for (std::uint32_t index = 0; index < teeth; ++index)
+    {
+        const std::uint64_t operand = static_cast<std::uint64_t>(index) + 2;
+        const double minimum_x = 500.0 + index * 1000.0;
+        operands.push_back(operand);
+        append_axis_rectangle(geometry, operand, minimum_x, -1000, minimum_x + 100, 1000);
+    }
+    const AnalyticRequestPacketRecords records = records_for({{1, operands}});
+    const AnalyticBroadPhaseResult broad = build_analytic_curve_candidates(geometry.bounds);
+    require(broad.error == AnalyticBroadPhaseError::none, "split-heavy comb broad phase failed");
+    const AnalyticFilteredBooleanSelectionResult baseline =
+        build_analytic_filtered_boolean_selection(records, 0, geometry, broad.pairs);
+    require(baseline.error == AnalyticFilteredBooleanSelectionError::none &&
+                baseline.telemetry.transition_records > geometry.curves.size() * 2,
+            "split-heavy comb did not produce the expected sparse transition expansion");
+    std::uint64_t lower = 0;
+    std::uint64_t upper = AnalyticSolverLimits{}.working_memory_bytes;
+    while (lower < upper)
+    {
+        const std::uint64_t middle = lower + (upper - lower) / 2;
+        AnalyticSolverLimits probe_limits;
+        probe_limits.working_memory_bytes = middle;
+        const AnalyticFilteredBooleanSelectionResult probe =
+            build_analytic_filtered_boolean_selection(records, 0, geometry, broad.pairs,
+                                                      probe_limits);
+        if (probe.error == AnalyticFilteredBooleanSelectionError::none)
+            upper = middle;
+        else
+            lower = middle + 1;
+    }
+    AnalyticSolverLimits exact;
+    exact.working_memory_bytes = lower;
+    const AnalyticFilteredBooleanSelectionResult success =
+        build_analytic_filtered_boolean_selection(records, 0, geometry, broad.pairs, exact);
+    --exact.working_memory_bytes;
+    const AnalyticFilteredBooleanSelectionResult failure =
+        build_analytic_filtered_boolean_selection(records, 0, geometry, broad.pairs, exact);
+    require(success.error == AnalyticFilteredBooleanSelectionError::none &&
+                failure.error == AnalyticFilteredBooleanSelectionError::resource_limit_exceeded &&
+                failure.telemetry.arrangement_predicate_calls == 0 &&
+                failure.telemetry.arrangement_peak_working_memory_bytes == 0,
+            "split-heavy coverage admission did not stop at its exact one-byte boundary");
+}
+
+void test_malformed_filtered_point_is_invalid()
+{
+    AnalyticFilteredGeometry geometry;
+    append_rectangle(geometry, 1, 0, 1000);
+    geometry.curves[0].start.x.lower = std::numeric_limits<double>::quiet_NaN();
+    const AnalyticFilteredBooleanSelectionResult result =
+        build_analytic_filtered_boolean_selection(records_for({{1, {1}}}), 0, geometry, {});
+    require(result.error == AnalyticFilteredBooleanSelectionError::invalid_argument &&
+                result.telemetry.arrangement_predicate_calls == 0,
+            "malformed filtered point was misclassified as resource exhaustion");
+}
+
 void test_zero_operand_stage_scans_are_metered()
 {
     constexpr std::uint32_t count = 257;
@@ -1012,6 +1077,8 @@ int main()
     test_ordered_stage_area_oracle();
     test_exact_resource_boundaries();
     test_many_memberships_are_linear_and_fixed_capacity();
+    test_split_heavy_coverage_is_reserved_before_arrangement();
+    test_malformed_filtered_point_is_invalid();
     test_zero_operand_stage_scans_are_metered();
     test_collapsed_topology_is_reserved_before_arrangement();
     test_empty_job();

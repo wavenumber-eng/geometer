@@ -359,7 +359,7 @@ class SelectionBuilder
         if (!set_phase_memory(topology))
             return false;
         const std::uint64_t validation_work =
-            vertices * 3 + edges * 5 + result_.arrangement.half_edges.size() * 2 + cycles * 2;
+            vertices * 3 + edges * 5 + result_.arrangement.half_edges.size() * 2 + cycles * 3;
         return charge(validation_work);
     }
 

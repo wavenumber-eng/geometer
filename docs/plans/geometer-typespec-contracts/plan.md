@@ -945,6 +945,14 @@ Geometer proposal, not the original consumer packet.
   preflight pass and all widened stage arithmetic is checked. Malformed,
   circular-seam, 257-operand persistent-coverage, and exact/one-short admission
   fixtures cover the new boundaries on native and WASM.
+- Final performance remediation precharges one bounded scan of canonical
+  candidate pairs and reserves possible split-span and coverage-transition
+  capacity before arrangement execution. A sparse 64-crossing comb now
+  succeeds at its exact canonical admission boundary and fails one byte short
+  with zero arrangement work or storage. Malformed filtered point enclosures
+  retain `invalid_argument` semantics independent of the budget, and the third
+  proportional cycle-publication traversal is precharged. Native/WASM parity
+  includes the updated admission telemetry.
 - Before filtered operation dispatch is enabled, move the retained native
   exact/oracle sources out of the normal `geometer_lib` source list into an
   explicit feasibility-oracle target, matching the separation already used by

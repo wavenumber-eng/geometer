@@ -117,6 +117,8 @@ struct AnalyticFilteredArrangementMinimumRequirements
 {
     std::uint64_t guaranteed_spans = 0;
     std::uint64_t guaranteed_collapsed_vertices = 0;
+    std::uint64_t possible_base_spans = 0;
+    bool strictly_increasing_carriers = false;
     std::uint64_t working_memory_bytes = 0;
     // Excludes the arrangement entry point's separately reported admission
     // scan, matching AnalyticFilteredArrangementTelemetry.

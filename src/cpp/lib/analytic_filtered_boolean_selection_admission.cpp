@@ -4,6 +4,30 @@ namespace geometer
 {
 namespace analytic_selection_detail
 {
+namespace
+{
+bool same_singleton_point(const AnalyticFilteredPointNm& left,
+                          const AnalyticFilteredPointNm& right) noexcept
+{
+    return left.x.lower == left.x.upper && left.y.lower == left.y.upper &&
+           right.x.lower == right.x.upper && right.y.lower == right.y.upper &&
+           left.x.lower == right.x.lower && left.y.lower == right.y.lower;
+}
+
+std::uint64_t shared_exact_endpoints(const AnalyticAtomicCurveNm& left,
+                                     const AnalyticAtomicCurveNm& right) noexcept
+{
+    std::uint64_t count = 0;
+    if (same_singleton_point(left.start, right.start) ||
+        same_singleton_point(left.start, right.end))
+        ++count;
+    if (!same_singleton_point(left.start, left.end) &&
+        (same_singleton_point(left.end, right.start) || same_singleton_point(left.end, right.end)))
+        ++count;
+    return std::min<std::uint64_t>(count, 2);
+}
+} // namespace
+
 SelectionAdmission prepare_boolean_selection_admission(
     const AnalyticRequestPacketRecords& records, std::uint32_t job_index,
     const AnalyticFilteredGeometry& geometry, const std::vector<AnalyticCurvePair>& candidate_pairs,
@@ -144,6 +168,44 @@ SelectionAdmission prepare_boolean_selection_admission(
     if (!estimate_analytic_filtered_arrangement_minimum_requirements(
             geometry, candidate_pairs.size(), arrangement_minimum))
     {
+        preflight.error = AnalyticFilteredBooleanSelectionError::invalid_argument;
+        return admission;
+    }
+    admission_work =
+        checked_add(admission_work, checked_multiply(candidate_pairs.size(), 5, valid), valid);
+    if (!valid || admission_work > limits.predicate_calls)
+    {
+        preflight.error = AnalyticFilteredBooleanSelectionError::resource_limit_exceeded;
+        return admission;
+    }
+    preflight.telemetry.admission_work_units = admission_work;
+    preflight.telemetry.predicate_calls = admission_work;
+
+    std::uint64_t possible_spans = arrangement_minimum.possible_base_spans;
+    for (const AnalyticCurvePair& pair : candidate_pairs)
+    {
+        if (pair.first == 0 || pair.first >= pair.second || pair.second > geometry.curves.size())
+        {
+            preflight.error = AnalyticFilteredBooleanSelectionError::invalid_argument;
+            return admission;
+        }
+        const AnalyticAtomicCurveNm& left = geometry.curves[pair.first - 1];
+        const AnalyticAtomicCurveNm& right = geometry.curves[pair.second - 1];
+        const std::uint64_t maximum_points = left.kind == AnalyticAtomicCurveKind::line &&
+                                                     right.kind == AnalyticAtomicCurveKind::line
+                                                 ? 1
+                                                 : 2;
+        const std::uint64_t existing =
+            std::min(maximum_points, shared_exact_endpoints(left, right));
+        possible_spans = checked_add(possible_spans,
+                                     checked_multiply(maximum_points - existing, 2, valid), valid);
+    }
+    const std::uint64_t possible_transitions =
+        arrangement_minimum.strictly_increasing_carriers
+            ? possible_spans
+            : checked_multiply(possible_spans, geometry.curves.size(), valid);
+    if (!valid)
+    {
         preflight.error = AnalyticFilteredBooleanSelectionError::resource_limit_exceeded;
         return admission;
     }
@@ -157,9 +219,12 @@ SelectionAdmission prepare_boolean_selection_admission(
     selection_memory = checked_add(
         selection_memory, checked_multiply(job.stage_count, kByteLogicalBytes, valid), valid);
 
-    const std::uint64_t spans = arrangement_minimum.guaranteed_spans;
+    const std::uint64_t guaranteed_spans = arrangement_minimum.guaranteed_spans;
+    const std::uint64_t spans = possible_spans;
     const std::uint64_t collapsed_vertex_reservation =
         arrangement_minimum.guaranteed_collapsed_vertices;
+    const std::uint64_t guaranteed_vertex_reservation = checked_add(
+        checked_multiply(guaranteed_spans, 2, valid), collapsed_vertex_reservation, valid);
     const std::uint64_t vertex_reservation =
         checked_add(checked_multiply(spans, 2, valid), collapsed_vertex_reservation, valid);
     const std::uint64_t half_edge_reservation = checked_multiply(spans, 2, valid);
@@ -183,7 +248,7 @@ SelectionAdmission prepare_boolean_selection_admission(
                     valid);
     retained_arrangement = checked_add(
         retained_arrangement,
-        checked_multiply(geometry.curves.size(), kAnalyticOverlayMembershipLogicalBytes, valid),
+        checked_multiply(possible_transitions, kAnalyticOverlayMembershipLogicalBytes, valid),
         valid);
     retained_arrangement = checked_add(
         retained_arrangement,
@@ -228,9 +293,8 @@ SelectionAdmission prepare_boolean_selection_admission(
     const std::uint64_t topology_phase_memory = checked_add(
         checked_add(retained_arrangement, selection_memory, valid), topology_scratch, valid);
 
-    const std::uint64_t guaranteed_transitions = spans;
     const std::uint64_t maximum_coverage_nodes =
-        coverage_maximum_nodes(guaranteed_transitions, operands, valid);
+        coverage_maximum_nodes(possible_transitions, operands, valid);
     const std::uint64_t coverage_table = coverage_table_capacity(maximum_coverage_nodes, valid);
     std::uint64_t stage_leaf_capacity = 1;
     while (stage_leaf_capacity < std::max<std::uint64_t>(1, job.stage_count))
@@ -240,7 +304,7 @@ SelectionAdmission prepare_boolean_selection_admission(
     const std::uint64_t adjacency_ranges = checked_add(face_reservation, 1, valid);
     const std::uint64_t stage_tree_nodes = checked_multiply(stage_leaf_capacity, 2, valid);
     std::uint64_t coverage_scratch =
-        checked_multiply(geometry.curves.size(), kTransitionLogicalBytes, valid);
+        checked_multiply(possible_transitions, kTransitionLogicalBytes, valid);
     coverage_scratch = checked_add(
         coverage_scratch, checked_multiply(transition_ranges, kIndexLogicalBytes, valid), valid);
     coverage_scratch = checked_add(
@@ -284,11 +348,13 @@ SelectionAdmission prepare_boolean_selection_admission(
         checked_multiply(geometry.occurrences.size(), tree_operation_units(operands), valid),
         valid);
     selection_work = checked_add(selection_work, geometry.curves.size(), valid);
-    selection_work = checked_add(selection_work, checked_multiply(spans, 11, valid), valid);
     selection_work =
-        checked_add(selection_work, checked_multiply(vertex_reservation, 3, valid), valid);
+        checked_add(selection_work, checked_multiply(guaranteed_spans, 11, valid), valid);
     selection_work = checked_add(selection_work,
-                                 checked_multiply(sort_units(vertex_reservation), 2, valid), valid);
+                                 checked_multiply(guaranteed_vertex_reservation, 3, valid), valid);
+    selection_work =
+        checked_add(selection_work,
+                    checked_multiply(sort_units(guaranteed_vertex_reservation), 2, valid), valid);
     std::uint64_t stage_initialization_work = checked_add(7, job.stage_count, valid);
     stage_initialization_work = checked_add(stage_initialization_work, stage_tree_nodes, valid);
     stage_initialization_work = checked_add(stage_initialization_work, operands, valid);

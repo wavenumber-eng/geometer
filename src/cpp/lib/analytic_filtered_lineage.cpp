@@ -100,6 +100,8 @@ class Builder
         result_.telemetry.arrangement_work_units =
             result_.regions.selection.telemetry.arrangement_predicate_calls;
         result_.telemetry.algebraic_fallback_calls = region_telemetry.algebraic_fallback_calls;
+        result_.telemetry.predicate_calls = region_telemetry.predicate_calls;
+        result_.telemetry.peak_working_memory_bytes = region_telemetry.peak_working_memory_bytes;
         if (result_.regions.error != AnalyticFilteredRegionsError::none)
         {
             result_.error = result_.regions.error == AnalyticFilteredRegionsError::invalid_argument
@@ -112,8 +114,11 @@ class Builder
             if (!prepare() || !validate_coverage())
                 return failure();
             counting_ = true;
-            if (!build_region_contributors() || !build_boundary_and_vertex_rows() ||
-                !preflight_publication())
+            const std::uint64_t count_begin = work_;
+            if (!build_region_contributors() || !build_boundary_and_vertex_rows())
+                return failure();
+            count_pass_work_ = work_ - count_begin;
+            if (!preflight_publication())
                 return failure();
             counting_ = false;
             if (!build_region_contributors() || !build_boundary_and_vertex_rows() || !publish())
@@ -154,6 +159,7 @@ class Builder
         const auto fallback = result_.regions.telemetry.algebraic_fallback_calls;
         const auto arrangement_work =
             result_.regions.selection.telemetry.arrangement_predicate_calls;
+        const auto publication_capacity = result_.telemetry.publication_capacity_records;
         result_.regions = {};
         result_.boundaries.clear();
         result_.vertices.clear();
@@ -163,6 +169,7 @@ class Builder
         result_.telemetry.regions_work_units = region_work;
         result_.telemetry.regions_peak_working_memory_bytes = region_memory;
         result_.telemetry.arrangement_work_units = arrangement_work;
+        result_.telemetry.publication_capacity_records = publication_capacity;
         result_.telemetry.reserved_lineage_work_units = reserved_work_;
         result_.telemetry.lineage_work_units = work_;
         result_.telemetry.predicate_calls = region_work + work_;
@@ -265,6 +272,12 @@ class Builder
         leaf_capacity_ = 1;
         while (leaf_capacity_ < std::max<std::uint32_t>(1, operands_.size()))
             leaf_capacity_ <<= 1U;
+        const std::size_t reporter_nodes = static_cast<std::size_t>(leaf_capacity_) * 2;
+        if (!charge(reporter_nodes * 2 + operands_.size()))
+            return false;
+        reporter_counts_.assign(reporter_nodes, 0);
+        reporter_generations_.assign(reporter_nodes, 0);
+        reported_generations_.assign(operands_.size(), 0);
         return true;
     }
     template <typename Emit>
@@ -285,18 +298,72 @@ class Builder
         return enumerate(nodes[root].left, begin, half, first, end, emit) &&
                enumerate(nodes[root].right, begin + half, half, first, end, emit);
     }
+    template <typename Emit>
+    bool enumerate_unreported(std::uint32_t root, std::uint32_t reporter_node, std::uint32_t begin,
+                              std::uint32_t width, std::uint32_t first, std::uint32_t end,
+                              Emit&& emit)
+    {
+        if (!charge(1))
+            return false;
+        ++result_.telemetry.coverage_node_visits;
+        const auto& nodes = result_.regions.selection.coverage_state_nodes;
+        if (root == 0 || begin >= end || begin + width <= first ||
+            reporter_node >= reporter_counts_.size() ||
+            reporter_count(reporter_node, begin, width) == 0)
+            return true;
+        if (root >= nodes.size() || (root == 1 && width != 1))
+            return false;
+        if (width == 1)
+            return begin < operands_.size() && emit(begin);
+        const std::uint32_t half = width / 2;
+        return enumerate_unreported(nodes[root].left, reporter_node * 2, begin, half, first, end,
+                                    emit) &&
+               enumerate_unreported(nodes[root].right, reporter_node * 2 + 1, begin + half, half,
+                                    first, end, emit);
+    }
+    std::uint32_t default_reporter_count(std::uint32_t begin, std::uint32_t width) const noexcept
+    {
+        if (begin >= operands_.size())
+            return 0;
+        return std::min<std::uint32_t>(width, static_cast<std::uint32_t>(operands_.size()) - begin);
+    }
+    std::uint32_t reporter_count(std::uint32_t node, std::uint32_t begin,
+                                 std::uint32_t width) const noexcept
+    {
+        return reporter_generations_[node] == reporter_generation_
+                   ? reporter_counts_[node]
+                   : default_reporter_count(begin, width);
+    }
+    void mark_reported(std::uint32_t node, std::uint32_t begin, std::uint32_t width,
+                       std::uint32_t operand) noexcept
+    {
+        reporter_generations_[node] = reporter_generation_;
+        if (width == 1)
+        {
+            reporter_counts_[node] = 0;
+            return;
+        }
+        const std::uint32_t half = width / 2;
+        if (operand < begin + half)
+            mark_reported(node * 2, begin, half, operand);
+        else
+            mark_reported(node * 2 + 1, begin + half, half, operand);
+        reporter_counts_[node] = reporter_count(node * 2, begin, half) +
+                                 reporter_count(node * 2 + 1, begin + half, half);
+    }
     bool emit_region_operand(std::uint32_t region, std::uint32_t operand)
     {
-        if (seen_operand_[operand] == region + 1)
+        if (reported_generations_[operand] == reporter_generation_)
             return true;
-        seen_operand_[operand] = region + 1;
-        if (!charge(1))
+        if (!charge(analytic_selection_detail::coverage_operand_depth(operands_.size()) + 2))
             return false;
         for (std::uint32_t at = operand_occurrence_begin_[operand];
              at < operand_occurrence_begin_[operand + 1]; ++at)
             if (!append(OwnerKind::region, region,
                         geometry_.occurrences[ordered_occurrences_[at]].source))
                 return false;
+        reported_generations_[operand] = reporter_generation_;
+        mark_reported(1, 0, leaf_capacity_, operand);
         return true;
     }
     bool build_region_contributors()
@@ -354,18 +421,19 @@ class Builder
         std::vector<std::uint8_t> visited(face_count, 0);
         std::vector<std::uint32_t> stack;
         stack.reserve(face_count);
-        seen_operand_.assign(operands_.size(), 0);
         for (std::uint32_t region = 0; region < regions.regions.size(); ++region)
         {
             const std::uint32_t component = regions.regions[region].material_component;
             if (component >= seed.size() || seed[component] == kNoIndex)
                 return false;
             const std::uint32_t first = seed[component];
-            std::uint32_t minimum_stage = selection.faces[first].positive_stage_begin;
-            if (minimum_stage >= stage_begin_.size() ||
-                !enumerate(selection.faces[first].coverage_state_root, 0, leaf_capacity_,
-                           stage_begin_[minimum_stage], operands_.size(), [&](std::uint32_t operand)
-                           { return emit_region_operand(region, operand); }))
+            ++reporter_generation_;
+            const std::uint32_t first_stage = selection.faces[first].positive_stage_begin;
+            if (first_stage >= stage_begin_.size() ||
+                !enumerate_unreported(selection.faces[first].coverage_state_root, 1, 0,
+                                      leaf_capacity_, stage_begin_[first_stage], operands_.size(),
+                                      [&](std::uint32_t operand)
+                                      { return emit_region_operand(region, operand); }))
                 return false;
             visited[first] = 1;
             stack.push_back(first);
@@ -381,15 +449,17 @@ class Builder
                         continue;
                     visited[next.neighbor] = 1;
                     stack.push_back(next.neighbor);
+                    const auto& face_state = selection.faces[face];
                     const auto& next_face = selection.faces[next.neighbor];
-                    if (next_face.positive_stage_begin < minimum_stage)
+                    if (next_face.positive_stage_begin < face_state.positive_stage_begin)
                     {
-                        if (!enumerate(next_face.coverage_state_root, 0, leaf_capacity_,
-                                       stage_begin_[next_face.positive_stage_begin],
-                                       stage_begin_[minimum_stage], [&](std::uint32_t operand)
-                                       { return emit_region_operand(region, operand); }))
+                        if (!enumerate_unreported(next_face.coverage_state_root, 1, 0,
+                                                  leaf_capacity_,
+                                                  stage_begin_[next_face.positive_stage_begin],
+                                                  stage_begin_[face_state.positive_stage_begin],
+                                                  [&](std::uint32_t operand)
+                                                  { return emit_region_operand(region, operand); }))
                             return false;
-                        minimum_stage = next_face.positive_stage_begin;
                     }
                     const auto& edge = arrangement.edges[next.edge];
                     for (std::uint32_t m = 0; m < edge.membership_count; ++m)
@@ -505,6 +575,8 @@ class Builder
                 if (!counting_)
                     result_.vertices.push_back({v, {}});
             }
+        if (counting_)
+            expected_vertex_count_ = vertex_count;
         for (const auto& edge : arrangement.edges)
             for (const std::uint32_t vertex : {edge.start_vertex, edge.end_vertex})
                 if (owner_by_vertex[vertex] != kNoIndex)
@@ -572,6 +644,10 @@ class Builder
             retained,
             checked_multiply(arrangement.cycle_half_edges.size(), kIndexLogicalBytes, valid),
             valid);
+        retained = checked_add(
+            retained,
+            checked_multiply(arrangement.outgoing_half_edges.size(), kIndexLogicalBytes, valid),
+            valid);
         retained =
             checked_add(retained,
                         checked_multiply(selection.occurrences.size(),
@@ -626,7 +702,14 @@ class Builder
             persistent, checked_multiply(ordered_occurrences_.size(), kIndexLogicalBytes, valid),
             valid);
         persistent = checked_add(
-            persistent, checked_multiply(seen_operand_.size(), kIndexLogicalBytes, valid), valid);
+            persistent, checked_multiply(reported_generations_.size(), kIndexLogicalBytes, valid),
+            valid);
+        persistent = checked_add(
+            persistent, checked_multiply(reporter_counts_.size(), kIndexLogicalBytes, valid),
+            valid);
+        persistent = checked_add(
+            persistent, checked_multiply(reporter_generations_.size(), kIndexLogicalBytes, valid),
+            valid);
 
         std::uint64_t contributor_scratch = checked_multiply(
             arrangement.edges.size(), kIndexLogicalBytes * 2 + kAdjacencyLogicalBytes * 2, valid);
@@ -662,6 +745,21 @@ class Builder
             result_.error = AnalyticFilteredLineageError::resource_limit_exceeded;
             return false;
         }
+        std::uint64_t publication_work = count_pass_work_;
+        publication_work =
+            checked_add(publication_work, checked_multiply(expected_raw_count_, 2, valid), valid);
+        publication_work = checked_add(
+            publication_work, checked_multiply(regions.ring_half_edges.size(), 2, valid), valid);
+        publication_work = checked_add(publication_work, expected_vertex_count_, valid);
+        publication_work = checked_add(publication_work, regions.regions.size(), valid);
+        publication_work = checked_add(publication_work, sort_units(expected_raw_count_), valid);
+        const std::uint64_t used = result_.regions.telemetry.predicate_calls + work_;
+        if (!valid || used > limits_.predicate_calls ||
+            publication_work > limits_.predicate_calls - used)
+        {
+            result_.error = AnalyticFilteredLineageError::resource_limit_exceeded;
+            return false;
+        }
         result_.telemetry.peak_working_memory_bytes =
             std::max(result_.regions.telemetry.peak_working_memory_bytes, phase);
         raw_.reserve(static_cast<std::size_t>(expected_raw_count_));
@@ -669,6 +767,7 @@ class Builder
         result_.boundaries.reserve(regions.ring_half_edges.size());
         result_.vertices.reserve(arrangement.vertices.size());
         result_.region_lineage.reserve(regions.regions.size());
+        result_.telemetry.publication_capacity_records = expected_raw_count_;
         raw_count_ = 0;
         return true;
     }
@@ -751,13 +850,18 @@ class Builder
     std::vector<std::uint32_t> occurrence_operands_;
     std::vector<std::uint32_t> operand_occurrence_begin_;
     std::vector<std::uint32_t> ordered_occurrences_;
-    std::vector<std::uint32_t> seen_operand_;
+    std::vector<std::uint64_t> reported_generations_;
+    std::vector<std::uint32_t> reporter_counts_;
+    std::vector<std::uint64_t> reporter_generations_;
     std::vector<RawSource> raw_;
     std::uint32_t leaf_capacity_ = 1;
     std::uint64_t work_ = 0;
     std::uint64_t reserved_work_ = 0;
     std::uint64_t raw_count_ = 0;
     std::uint64_t expected_raw_count_ = 0;
+    std::uint64_t count_pass_work_ = 0;
+    std::uint32_t expected_vertex_count_ = 0;
+    std::uint64_t reporter_generation_ = 0;
     bool counting_ = false;
 };
 

@@ -448,6 +448,10 @@ SelectionAdmission prepare_boolean_selection_admission(
         if (options.reserve_lineage)
         {
             const std::uint64_t maximum_vertices = vertex_reservation;
+            std::uint64_t operand_leaf_capacity = 1;
+            while (operand_leaf_capacity < std::max<std::uint64_t>(1, operands))
+                operand_leaf_capacity *= 2;
+            const std::uint64_t reporter_nodes = checked_multiply(operand_leaf_capacity, 2, valid);
             std::uint64_t retained_regions = retained_selection;
             retained_regions =
                 checked_add(retained_regions,
@@ -501,6 +505,11 @@ SelectionAdmission prepare_boolean_selection_admission(
                 checked_multiply(maximum_regions, kReferenceRangeLogicalBytes + kIndexLogicalBytes,
                                  valid),
                 valid);
+            lineage_scratch = checked_add(
+                lineage_scratch, checked_multiply(operands, kIndexLogicalBytes, valid), valid);
+            lineage_scratch =
+                checked_add(lineage_scratch,
+                            checked_multiply(reporter_nodes, kIndexLogicalBytes * 2, valid), valid);
             integrated_minimum_memory = std::max(
                 integrated_minimum_memory, checked_add(retained_regions, lineage_scratch, valid));
 
@@ -513,6 +522,9 @@ SelectionAdmission prepare_boolean_selection_admission(
                                        valid);
             lineage_work = checked_add(lineage_work, geometry.occurrences.size(), valid);
             lineage_work = checked_add(lineage_work, maximum_coverage_nodes, valid);
+            lineage_work = checked_add(
+                lineage_work,
+                checked_add(checked_multiply(reporter_nodes, 2, valid), operands, valid), valid);
             std::uint64_t contributor_pass =
                 checked_add(maximum_half_edges, checked_multiply(maximum_edges, 4, valid), valid);
             contributor_pass =

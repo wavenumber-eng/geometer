@@ -145,8 +145,6 @@ inline bool valid_occurrence_source_for_curve(const AnalyticFilteredSourceRefere
                  source.role == AnalyticFilteredSourceRole::authored_circular_arc));
     if (source.kind != AnalyticFilteredSourceKind::compact_feature_role)
         return false;
-    const std::uint32_t first = static_cast<std::uint32_t>(source.secondary_id >> 32U);
-    const std::uint32_t second = static_cast<std::uint32_t>(source.secondary_id);
     switch (source.role)
     {
     case AnalyticFilteredSourceRole::primitive_outer_circle:
@@ -159,14 +157,15 @@ inline bool valid_occurrence_source_for_curve(const AnalyticFilteredSourceRefere
         return curve == AnalyticAtomicCurveKind::line && source.secondary_id == 0;
     case AnalyticFilteredSourceRole::swept_left_offset_line:
     case AnalyticFilteredSourceRole::swept_right_offset_line:
-        return curve == AnalyticAtomicCurveKind::line && first != 0 && second == 0;
     case AnalyticFilteredSourceRole::swept_left_offset_arc:
     case AnalyticFilteredSourceRole::swept_right_offset_arc:
+    case AnalyticFilteredSourceRole::swept_round_join:
     case AnalyticFilteredSourceRole::swept_start_cap:
     case AnalyticFilteredSourceRole::swept_end_cap:
-        return curve == AnalyticAtomicCurveKind::circular_arc && first != 0 && second == 0;
-    case AnalyticFilteredSourceRole::swept_round_join:
-        return curve == AnalyticAtomicCurveKind::circular_arc && first != 0 && second != 0;
+        // Filtered swept-path lowering is not connected yet. Do not admit
+        // caller-minted source tuples for a producer this pipeline does not
+        // own; role-specific governed keys land with that lowering slice.
+        return false;
     default:
         return false;
     }

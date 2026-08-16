@@ -53,6 +53,7 @@ struct AnalyticFilteredLineageTelemetry
     std::uint64_t emitted_vertex_records = 0;
     std::uint64_t emitted_region_records = 0;
     std::uint64_t emitted_source_references = 0;
+    std::uint64_t publication_capacity_records = 0;
     std::uint64_t sort_work_units = 0;
     std::uint64_t reserved_lineage_work_units = 0;
     std::uint64_t lineage_work_units = 0;

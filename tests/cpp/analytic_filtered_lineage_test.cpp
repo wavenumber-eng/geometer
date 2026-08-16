@@ -199,6 +199,36 @@ void test_difference_and_refill_epoch()
             "stage-aware region contributor sets drifted");
 }
 
+void test_branched_refill_contributors()
+{
+    const auto run = [](bool reflected)
+    {
+        AnalyticFilteredGeometry geometry;
+        const auto reflect = [reflected](double value) { return reflected ? -value : value; };
+        const auto rectangle = [&](std::uint64_t operand, double minimum, double maximum)
+        {
+            if (reflected)
+                append_rectangle(geometry, operand, reflect(maximum), reflect(minimum));
+            else
+                append_rectangle(geometry, operand, minimum, maximum);
+        };
+        rectangle(10, 200, 800);
+        rectangle(20, 300, 700);
+        rectangle(30, 0, 1000);
+        return build(records_for({{1, {10}}, {2, {20}}, {1, {30}}}), geometry);
+    };
+    for (const bool reflected : {false, true})
+    {
+        const auto result = run(reflected);
+        require(result.error == AnalyticFilteredLineageError::none &&
+                    result.region_lineage.size() == 1,
+                "branched refill lineage failed");
+        require(operands(range(result, result.region_lineage[0].positive_contributors)) ==
+                    std::set<std::uint64_t>({10, 30}),
+                "branch-local contributor epoch omitted a positive operand");
+    }
+}
+
 void test_malformed_sources_fail_before_arrangement()
 {
     const auto records = records_for({{1, {20}}});
@@ -210,6 +240,9 @@ void test_malformed_sources_fail_before_arrangement()
         const AnalyticFilteredLineageResult result = build(records, geometry);
         require(result.error == AnalyticFilteredLineageError::invalid_argument &&
                     result.regions.selection.telemetry.arrangement_predicate_calls == 0 &&
+                    result.telemetry.predicate_calls == result.telemetry.regions_work_units &&
+                    result.telemetry.peak_working_memory_bytes ==
+                        result.telemetry.regions_peak_working_memory_bytes &&
                     result.boundaries.empty() && result.source_references.empty(),
                 "malformed source escaped owned lineage admission error=" +
                     std::to_string(static_cast<unsigned>(result.error)));
@@ -229,6 +262,9 @@ void test_malformed_sources_fail_before_arrangement()
     check(source);
     source.kind = AnalyticFilteredSourceKind::compact_feature_role;
     source.role = AnalyticFilteredSourceRole::primitive_outer_circle;
+    check(source);
+    source.role = AnalyticFilteredSourceRole::swept_start_cap;
+    source.secondary_id = std::uint64_t{2} << 32U;
     check(source);
 }
 
@@ -291,6 +327,29 @@ void test_governed_admission_and_publication()
             "one-unit-short lineage admission was late");
 
     const auto success = run(limits);
+    low = 0;
+    high = limits.predicate_calls;
+    while (low < high)
+    {
+        const std::uint64_t middle = low + (high - low) / 2;
+        auto probe = limits;
+        probe.predicate_calls = middle;
+        if (run(probe).error == AnalyticFilteredLineageError::none)
+            high = middle;
+        else
+            low = middle + 1;
+    }
+    auto exact_total_work = limits;
+    exact_total_work.predicate_calls = low;
+    require(run(exact_total_work).error == AnalyticFilteredLineageError::none,
+            "exact total lineage work failed");
+    auto short_total_work = exact_total_work;
+    --short_total_work.predicate_calls;
+    const auto total_work_failure = run(short_total_work);
+    require(total_work_failure.error == AnalyticFilteredLineageError::resource_limit_exceeded &&
+                total_work_failure.telemetry.publication_capacity_records == 0 &&
+                total_work_failure.source_references.empty(),
+            "one-unit-short publication work was admitted after allocation");
     auto short_output = limits;
     short_output.provenance_references = success.source_references.size() - 1;
     const auto output_failure = run(short_output);
@@ -328,6 +387,53 @@ void test_sparse_scaling()
                 large.telemetry.peak_working_memory_bytes <=
                     small.telemetry.peak_working_memory_bytes * 3,
             "sparse lineage scaling exceeded 3x at 2x input");
+}
+
+void test_publication_dense_output_preflight()
+{
+    AnalyticFilteredGeometry geometry;
+    for (std::uint32_t index = 0; index < 8; ++index)
+        append_rectangle(geometry, 1, index * 2000.0, index * 2000.0 + 1000.0);
+    const auto records = records_for({{1, {1}}});
+    const auto pairs = pairs_for(geometry);
+    const auto run = [&](const AnalyticSolverLimits& limits)
+    { return build_analytic_filtered_lineage(records, 0, geometry, pairs, limits); };
+    AnalyticSolverLimits limits;
+    const auto success = run(limits);
+    require(success.error == AnalyticFilteredLineageError::none &&
+                success.region_lineage.size() == 8,
+            "publication-dense lineage fixture failed error=" +
+                std::to_string(static_cast<unsigned>(success.error)) +
+                " region_error=" + std::to_string(static_cast<unsigned>(success.regions.error)) +
+                " regions=" + std::to_string(success.region_lineage.size()));
+    std::uint64_t contributor_references = 0;
+    for (const auto& region : success.region_lineage)
+        contributor_references += region.positive_contributors.count;
+    require(contributor_references >= 8 * 32,
+            "publication-dense fixture did not create output-proportional lineage");
+
+    std::uint64_t low = 0;
+    std::uint64_t high = limits.predicate_calls;
+    while (low < high)
+    {
+        const std::uint64_t middle = low + (high - low) / 2;
+        auto probe = limits;
+        probe.predicate_calls = middle;
+        if (run(probe).error == AnalyticFilteredLineageError::none)
+            high = middle;
+        else
+            low = middle + 1;
+    }
+    auto exact = limits;
+    exact.predicate_calls = low;
+    require(run(exact).error == AnalyticFilteredLineageError::none,
+            "publication-dense exact work failed");
+    --exact.predicate_calls;
+    const auto short_result = run(exact);
+    require(short_result.error == AnalyticFilteredLineageError::resource_limit_exceeded &&
+                short_result.telemetry.publication_capacity_records == 0 &&
+                short_result.source_references.empty(),
+            "publication-dense one-short work allocated publication storage");
 }
 
 void test_disconnected_many_to_many()
@@ -479,6 +585,7 @@ std::string parity_vector()
     append(telemetry.emitted_vertex_records);
     append(telemetry.emitted_region_records);
     append(telemetry.emitted_source_references);
+    append(telemetry.publication_capacity_records);
     append(telemetry.sort_work_units);
     append(telemetry.reserved_lineage_work_units);
     append(telemetry.lineage_work_units);
@@ -493,6 +600,7 @@ int main(int argc, char** argv)
 {
     test_single_rectangle();
     test_difference_and_refill_epoch();
+    test_branched_refill_contributors();
     test_disconnected_many_to_many();
     test_same_stage_subtractors_and_coincident_positives();
     test_isolated_collapsed_lineage_stays_internal();
@@ -500,6 +608,7 @@ int main(int argc, char** argv)
     test_malformed_sources_fail_before_arrangement();
     test_governed_admission_and_publication();
     test_sparse_scaling();
+    test_publication_dense_output_preflight();
     if (argc == 2 && std::string(argv[1]) == "--emit-parity")
         std::cout << "ANALYTIC_FILTERED_LINEAGE_VECTOR=" << parity_vector() << '\n';
     std::cout << "ANALYTIC_FILTERED_LINEAGE_TEST=ok\n";

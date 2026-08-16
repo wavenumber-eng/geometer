@@ -550,20 +550,25 @@ projects no geometry of its own. Selection retains, for each face, the stage
 after its last active difference and the first effective difference after its
 last active union. Those descriptors distinguish final positive lineage from
 the active removal epoch without replaying every stage for every face. Region
-contributors are accumulated by one indexed walk of each material component:
-newly exposed stage intervals are enumerated once and later contributors arrive
-only through actual dual-edge membership transitions. There is no persistent
-set union per face and no face-by-operand replay. Boundary positives visit the
-boundary edge memberships; surviving subtraction enumerates the active
+contributors are accumulated by one indexed walk of each material component.
+Every dual-tree transition compares its destination lineage epoch with its
+predecessor epoch; newly live covered operands are intersected with a sparse
+generation-stamped unreported tree, and actual boundary toggles supply later
+contributors. Each region/operand association is emitted once without clearing
+or scanning all operands per region. There is no persistent set union per face
+and no face-by-operand replay. Boundary positives visit the boundary edge
+memberships; surviving subtraction enumerates the active
 difference-stage operands on the empty-side face, so a refill island retains
 responsible noncoincident and same-stage subtractors. Result-vertex lineage
 visits only incident edge and attached collapsed-span memberships.
 
-Source identities are validated against their authored or compact curve role
-before arrangement. Lineage structural work and target-independent logical
-memory are reserved before arrangement; after regions exist, an allocation-free
-count pass checks the exact raw source-incidence ceilings and publication phase
-before fixed-capacity fill and tuple sort/unique. Source references remain
+Source identities are validated against their authored or connected compact
+curve role before arrangement. Swept-path roles are rejected until filtered
+swept lowering owns and validates their governed occurrence keys. Lineage
+structural work and target-independent logical memory are reserved before
+arrangement; after regions exist, an allocation-free count pass checks the exact
+raw source-incidence ceilings, second-pass work, sort work, and publication live
+phase before fixed-capacity fill and tuple sort/unique. Source references remain
 complete tuple-sorted inline ranges for the later global source-set interning
 pass. A refill clears the prior active removal epoch, so an overwritten
 subtractor cannot claim a later hole. This coordinate-free stage performs no

@@ -330,6 +330,23 @@ Coincident carriers are reported without partitioning finite overlap spans; the
 indexed same-domain overlay stage owns that partition so no pair kernel grows a
 hidden global scan.
 
+The implemented production lowering boundary reads the already validated
+packet directly and never instantiates the algebraic construction arena. It
+chooses the least job coordinate as a deterministic local integer-nm origin,
+checks the governed span using overflow-safe signed ordering, and precharges
+the complete emitted curve count and a target-independent logical memory
+budget before allocation. Authored line/arc coordinates remain exact integer
+certificates while irrational radii use FMA-verified outward square-root
+intervals. Disks and annuli lower to paired semicircles. Capsules lower to two
+parallel offset lines and two certified semicircular caps, including arbitrary
+angles and odd widths. Only this trusted stage mints construction carrier,
+family, and sweep proof tokens; request bytes cannot supply them. Lowering is
+linear in owned operands and segments and does not enumerate curve pairs.
+Swept paths currently return job-local `unsupported_geometry` on this path;
+their old exact piece-union and quadratic centerline validation are not used as
+a production fallback. They become supported when the filtered indexed
+arrangement can resolve the piece union under the same work budgets.
+
 Coincident or near-coincident carriers are overlaid into deterministic atomic
 intervals. Each group uses the lexicographically least complete source tuple as
 its carrier key; no OCCT identity, allocation order, algebraic expression-DAG

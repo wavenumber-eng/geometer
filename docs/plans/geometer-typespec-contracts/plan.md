@@ -839,6 +839,16 @@ Geometer proposal, not the original consumer packet.
   covered. It never generates its own pair cross product. Same-domain span
   partitioning, arrangement insertion, face classification, final
   normalization, and dispatch remain pending.
+- Direct filtered lowering is now implemented for authored regions, disks,
+  annuli, and capsules. It chooses an overflow-safe deterministic integer-nm
+  job origin, emits outward-bounded coordinates and radii, preserves source and
+  material-side metadata, and is the sole issuer of construction proof tokens.
+  Count and target-independent logical memory limits are charged before
+  allocation, lowering is linear in owned inputs, and native/WASM coordinate
+  bytes are parity-gated. Swept paths deliberately return job-local
+  `unsupported_geometry` until their piece union can use the filtered indexed
+  arrangement; the former exact quadratic path is not retained as a normal
+  fallback.
 - Before filtered operation dispatch is enabled, move the retained native
   exact/oracle sources out of the normal `geometer_lib` source list into an
   explicit feasibility-oracle target, matching the separation already used by

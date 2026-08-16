@@ -79,6 +79,17 @@ engine.
   job-local construction tokens for correlated offset endpoints, shared
   carriers, parallel/concentric families, and arc sweeps; these are bounded
   fixed-width facts, not symbolic expressions.
+- The production lowerer translates each job to a deterministic local integer
+  origin before any binary64 construction. Authored lines and arcs retain exact
+  integer point certificates; irrational authored radii receive verified
+  outward square-root intervals. Disks and annuli use paired semicircles, and
+  capsules use four directly constructed filtered curves, including
+  arbitrary-angle and odd-width offsets. Carrier, parallel/concentric family,
+  and correlated sweep tokens are minted only by this trusted lowering stage.
+  The lowerer precharges curve count and canonical logical memory before
+  allocation and performs no curve-pair scan. Swept paths fail job-locally as
+  unsupported until their piece union is implemented by the filtered indexed
+  arrangement; the exact swept pre-arrangement is not a production fallback.
 - Solver resource limits are supplied through one internal limits value object
   rather than scattered production constants. The catalog values are governed
   hard ceilings; a host may advertise and enforce lower effective limits, and

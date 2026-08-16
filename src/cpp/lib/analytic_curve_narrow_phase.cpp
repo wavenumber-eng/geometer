@@ -1,15 +1,14 @@
 #include "geometer/analytic_curve_narrow_phase.h"
 
+#include "analytic_filtered_interval.h"
+#include "analytic_wide_integer.h"
+
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <limits>
 #include <new>
 #include <utility>
-
-#if defined(_MSC_VER) && defined(_M_X64)
-#include <intrin.h>
-#endif
 
 namespace geometer
 {
@@ -20,17 +19,8 @@ namespace
 constexpr std::int64_t kLocalCoordinateSpanNm = 1'000'000'000'000;
 constexpr std::uint64_t kPairLogicalBytes = 256;
 
-struct Interval
-{
-    double lower = 0.0;
-    double upper = 0.0;
-};
-
-struct Point
-{
-    Interval x;
-    Interval y;
-};
+using namespace analytic_detail;
+using SignedWide = WideInteger;
 
 enum class DomainResult : std::uint8_t
 {
@@ -45,215 +35,6 @@ struct PairWork
     AnalyticPairIntersection value;
     bool uncertain = false;
 };
-
-#if defined(_MSC_VER) && defined(_M_X64)
-struct SignedWide
-{
-    std::uint64_t low = 0;
-    std::int64_t high = 0;
-};
-
-SignedWide wide_multiply(std::int64_t left, std::int64_t right) noexcept
-{
-    std::int64_t high = 0;
-    const std::int64_t low = _mul128(left, right, &high);
-    return {static_cast<std::uint64_t>(low), high};
-}
-
-SignedWide wide_add(SignedWide left, SignedWide right) noexcept
-{
-    const std::uint64_t low = left.low + right.low;
-    const std::uint64_t carry = low < left.low ? 1U : 0U;
-    return {low, static_cast<std::int64_t>(static_cast<std::uint64_t>(left.high) +
-                                           static_cast<std::uint64_t>(right.high) + carry)};
-}
-
-SignedWide wide_subtract(SignedWide left, SignedWide right) noexcept
-{
-    const std::uint64_t low = left.low - right.low;
-    const std::uint64_t borrow = left.low < right.low ? 1U : 0U;
-    return {low, static_cast<std::int64_t>(static_cast<std::uint64_t>(left.high) -
-                                           static_cast<std::uint64_t>(right.high) - borrow)};
-}
-
-int wide_sign(SignedWide value) noexcept
-{
-    if (value.high < 0)
-        return -1;
-    if (value.high > 0 || value.low != 0)
-        return 1;
-    return 0;
-}
-
-int wide_compare(SignedWide left, SignedWide right) noexcept
-{
-    return wide_sign(wide_subtract(left, right));
-}
-#else
-using SignedWide = __int128;
-
-SignedWide wide_multiply(std::int64_t left, std::int64_t right) noexcept
-{
-    return static_cast<SignedWide>(left) * static_cast<SignedWide>(right);
-}
-
-SignedWide wide_add(SignedWide left, SignedWide right) noexcept
-{
-    return left + right;
-}
-
-SignedWide wide_subtract(SignedWide left, SignedWide right) noexcept
-{
-    return left - right;
-}
-
-int wide_sign(SignedWide value) noexcept
-{
-    return value < 0 ? -1 : value > 0 ? 1 : 0;
-}
-
-int wide_compare(SignedWide left, SignedWide right) noexcept
-{
-    return wide_sign(left - right);
-}
-#endif
-
-double downward(double value) noexcept
-{
-    return std::nextafter(value, -std::numeric_limits<double>::infinity());
-}
-
-double upward(double value) noexcept
-{
-    return std::nextafter(value, std::numeric_limits<double>::infinity());
-}
-
-Interval exact(double value) noexcept
-{
-    return {value, value};
-}
-
-bool singleton(Interval value) noexcept
-{
-    return value.lower == value.upper;
-}
-
-Interval add(Interval left, Interval right) noexcept
-{
-    if (singleton(left) && singleton(right))
-    {
-        const double sum = left.lower + right.lower;
-        const double right_virtual = sum - left.lower;
-        const double residual =
-            (left.lower - (sum - right_virtual)) + (right.lower - right_virtual);
-        if (residual == 0.0)
-            return exact(sum);
-        return {downward(sum + residual), upward(sum + residual)};
-    }
-    return {downward(left.lower + right.lower), upward(left.upper + right.upper)};
-}
-
-Interval negate(Interval value) noexcept
-{
-    return {-value.upper, -value.lower};
-}
-
-Interval subtract(Interval left, Interval right) noexcept
-{
-    return add(left, negate(right));
-}
-
-Interval multiply_singletons(double left, double right) noexcept
-{
-    const double product = left * right;
-    const double residual = std::fma(left, right, -product);
-    if (residual == 0.0)
-        return exact(product);
-    return {downward(product + residual), upward(product + residual)};
-}
-
-Interval multiply(Interval left, Interval right) noexcept
-{
-    if (singleton(left) && singleton(right))
-        return multiply_singletons(left.lower, right.lower);
-    const double products[] = {left.lower * right.lower, left.lower * right.upper,
-                               left.upper * right.lower, left.upper * right.upper};
-    return {downward(*std::min_element(std::begin(products), std::end(products))),
-            upward(*std::max_element(std::begin(products), std::end(products)))};
-}
-
-Interval divide(Interval numerator, Interval denominator) noexcept
-{
-    if (denominator.lower <= 0.0 && denominator.upper >= 0.0)
-        return {-std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity()};
-    if (singleton(numerator) && singleton(denominator))
-    {
-        const double quotient = numerator.lower / denominator.lower;
-        if (std::fma(quotient, denominator.lower, -numerator.lower) == 0.0)
-            return exact(quotient);
-        return {downward(quotient), upward(quotient)};
-    }
-    const double quotients[] = {
-        numerator.lower / denominator.lower, numerator.lower / denominator.upper,
-        numerator.upper / denominator.lower, numerator.upper / denominator.upper};
-    return {downward(*std::min_element(std::begin(quotients), std::end(quotients))),
-            upward(*std::max_element(std::begin(quotients), std::end(quotients)))};
-}
-
-Interval square(Interval value) noexcept
-{
-    if (value.lower >= 0.0)
-        return multiply(value, value);
-    if (value.upper <= 0.0)
-        return multiply(negate(value), negate(value));
-    const double maximum = std::max(value.lower * value.lower, value.upper * value.upper);
-    return {0.0, upward(maximum)};
-}
-
-Interval square_root(Interval value) noexcept
-{
-    const double lower_target = std::max(0.0, value.lower);
-    const double upper_target = std::max(0.0, value.upper);
-    double lower = std::sqrt(lower_target);
-    double upper = std::sqrt(upper_target);
-    for (int step = 0; step < 8 && std::fma(lower, lower, -lower_target) > 0.0; ++step)
-        lower = downward(lower);
-    for (int step = 0; step < 8 && std::fma(upper, upper, -upper_target) < 0.0; ++step)
-        upper = upward(upper);
-    if (std::fma(lower, lower, -lower_target) > 0.0 || std::fma(upper, upper, -upper_target) < 0.0)
-        return {0.0, std::numeric_limits<double>::infinity()};
-    return {lower, upper};
-}
-
-Interval dot(Point left, Point right) noexcept
-{
-    return add(multiply(left.x, right.x), multiply(left.y, right.y));
-}
-
-Interval cross(Point left, Point right) noexcept
-{
-    return subtract(multiply(left.x, right.y), multiply(left.y, right.x));
-}
-
-Point add(Point left, Point right) noexcept
-{
-    return {add(left.x, right.x), add(left.y, right.y)};
-}
-
-Point subtract(Point left, Point right) noexcept
-{
-    return {subtract(left.x, right.x), subtract(left.y, right.y)};
-}
-
-Point scale(Point point, Interval scalar) noexcept
-{
-    return {multiply(point.x, scalar), multiply(point.y, scalar)};
-}
-
-Point perpendicular(Point point) noexcept
-{
-    return {negate(point.y), point.x};
-}
 
 Point point(AnalyticIntegerPointNm value) noexcept
 {
@@ -273,7 +54,7 @@ AnalyticFilteredPointNm public_point(Point value) noexcept
 
 bool valid_interval(Interval value) noexcept
 {
-    return std::isfinite(value.lower) && std::isfinite(value.upper) && value.lower <= value.upper;
+    return valid(value);
 }
 
 std::int64_t difference(std::int64_t left, std::int64_t right) noexcept
@@ -307,11 +88,6 @@ SignedWide exact_dot_from(AnalyticIntegerPointNm origin, AnalyticIntegerPointNm 
     const std::int64_t right_x = difference(right.x, origin.x);
     const std::int64_t right_y = difference(right.y, origin.y);
     return wide_add(wide_multiply(left_x, right_x), wide_multiply(left_y, right_y));
-}
-
-SignedWide wide_absolute(SignedWide value) noexcept
-{
-    return wide_sign(value) < 0 ? wide_subtract(wide_multiply(0, 0), value) : value;
 }
 
 bool exact_integer_length(AnalyticIntegerPointNm direction, std::uint64_t& length,

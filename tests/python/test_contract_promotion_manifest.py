@@ -414,7 +414,9 @@ def test_manifest_promoted_and_candidate_surfaces_are_complete() -> None:
     candidate = candidates[0]
     assert candidate["status"] == "contract_frozen"
     assert candidate["solver_numeric_status"] == "reopened_filtered_50nm"
-    assert candidate["filtered_solver_foundation"] == ("broad_and_narrow_phase_implemented_not_dispatched")
+    assert candidate["filtered_solver_foundation"] == (
+        "direct_lowering_broad_and_narrow_phase_implemented_not_dispatched"
+    )
     assert candidate["request_contract"] == "geometry.analytic_planar_boolean_batch.request.a0"
     assert candidate["result_contract"] == "geometry.analytic_planar_boolean_batch.result.a0"
     assert candidate["request_contract"] in contract_ids
@@ -662,7 +664,7 @@ def test_exact_algebraic_backend_is_governed_and_non_primary() -> None:
 def test_filtered_solver_foundation_is_bounded_non_algebraic_and_not_dispatched() -> None:
     solver = _manifest()["analytic_filtered_solver"]
     assert solver == {
-        "status": "implemented_broad_and_narrow_phase_not_dispatched",
+        "status": "implemented_direct_lowering_broad_and_narrow_phase_not_dispatched",
         "design": "docs/adr/013_filtered_resolution_bounded_planar_boolean.md",
         "coordinate_grid_nm": 1,
         "topology_resolution_nm": 50,
@@ -688,6 +690,24 @@ def test_filtered_solver_foundation_is_bounded_non_algebraic_and_not_dispatched(
         "narrow_phase_parity_validator": "scripts/validate_analytic_filtered_core_parity.py",
         "narrow_phase_vector_bytes": 216,
         "narrow_phase_vector_sha256": ("140760f79dfb64aca3bb68c8f849659d81fa590ae49f9805f707bc3990b86144"),
+        "interval_arithmetic_header": "src/cpp/lib/analytic_filtered_interval.h",
+        "fixed_width_integer_header": "src/cpp/lib/analytic_wide_integer.h",
+        "lowering_header": "src/cpp/lib/geometer/analytic_filtered_lowering.h",
+        "lowering_source": "src/cpp/lib/analytic_filtered_lowering.cpp",
+        "lowering_test": "tests/cpp/analytic_filtered_lowering_test.cpp",
+        "lowering_policy": (
+            "direct_job_local_integer_origin_outward_intervals_and_lowering_only_proof_tokens"
+        ),
+        "lowering_supported_geometry": "authored_regions_disks_annuli_capsules",
+        "lowering_swept_path_policy": (
+            "job_local_unsupported_until_filtered_indexed_piece_union"
+        ),
+        "lowering_logical_bytes_per_curve": 768,
+        "lowering_parity_validator": "scripts/validate_analytic_filtered_lowering_parity.py",
+        "lowering_vector_bytes": 1168,
+        "lowering_vector_sha256": (
+            "0145ec89b9a081ff26a05a9fa6fb31183b10b4fb46e63025deb3e4c5d9248f61"
+        ),
     }
     implementation_paths = [
         solver[key]
@@ -702,6 +722,10 @@ def test_filtered_solver_foundation_is_bounded_non_algebraic_and_not_dispatched(
             "interval_index_source",
             "narrow_phase_header",
             "narrow_phase_source",
+            "interval_arithmetic_header",
+            "fixed_width_integer_header",
+            "lowering_header",
+            "lowering_source",
         )
     ]
     for relative_path in implementation_paths:
@@ -709,7 +733,16 @@ def test_filtered_solver_foundation_is_bounded_non_algebraic_and_not_dispatched(
         assert "boost::" not in source
         assert "multiprecision" not in source
         assert "geometer/exact" not in source
-    assert all((ROOT / solver[key]).is_file() for key in ("design", "foundation_test", "narrow_phase_parity_validator"))
+    assert all(
+        (ROOT / solver[key]).is_file()
+        for key in (
+            "design",
+            "foundation_test",
+            "narrow_phase_parity_validator",
+            "lowering_test",
+            "lowering_parity_validator",
+        )
+    )
 
 
 def test_exact_algebraic_backend_paths_exist() -> None:

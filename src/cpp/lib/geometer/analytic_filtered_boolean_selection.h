@@ -64,6 +64,8 @@ struct AnalyticFilteredBooleanSelectionTelemetry
 struct AnalyticFilteredBooleanSelectionResult
 {
     AnalyticFilteredBooleanSelectionError error = AnalyticFilteredBooleanSelectionError::none;
+    std::int64_t origin_x_nm = 0;
+    std::int64_t origin_y_nm = 0;
     AnalyticFilteredArrangementResult arrangement;
     std::vector<AnalyticFilteredOccurrence> occurrences;
     std::vector<std::uint32_t> half_edge_faces;

@@ -132,6 +132,11 @@ engine.
   carrier-group storage plus the minimum pair/validation work before narrow
   allocation or evaluation; a job that cannot possibly fit stops with zero
   narrow work.
+  Circle seam representatives never create an independent second repair: each
+  event cluster retains its ordered source supports, and a synthetic cardinal
+  point may represent the cluster only after every support-to-support distance
+  is certified at or below 50 nm. Thus two roots on opposite sides of a seam
+  cannot collapse through it when they are more than 50 nm apart.
 - The filtered arrangement entry point accepts filtered geometry plus only the
   canonical broad-phase pairs and owns narrow-phase and overlay execution. No
   caller-constructed overlay or split point crosses this trust boundary. It
@@ -189,8 +194,15 @@ engine.
   add-subtract-add and zero-operand stages. The implementation therefore has no
   face-by-operand replay. Sweep/index visits, disjoint-set probes, transition
   normalization, persistent-table probes, stage updates, sorts, and output
-  writes share the programmable work ceiling; target-independent live-memory
-  charges are preflighted by phase. Selected-boundary publication, complete
+  writes share the programmable work ceiling. Occurrences are rebound once to
+  dense operand ordinals, so transition construction is linear in emitted
+  memberships rather than a membership-by-log-operand lookup. Every repeated
+  stage traversal is precharged, all known-size vectors use fixed reserved
+  capacities, and phase telemetry reports actual canonical live storage rather
+  than summing non-overlapping peaks. An allocation-free separated-short-domain
+  certificate reserves unavoidable collapsed vertices and downstream sort work
+  before arrangement execution. The selection result retains the lowering
+  origin required to reconstruct global coordinates. Selected-boundary publication, complete
   lineage projection, final grid normalization, and dispatch remain gated.
 - Solver resource limits are supplied through one internal limits value object
   rather than scattered production constants. The catalog values are governed

@@ -27,6 +27,8 @@ class SelectionBuilder
                      std::uint64_t admission_work, std::uint64_t admission_peak_memory)
         : records_(records), job_index_(job_index), geometry_(geometry), limits_(limits)
     {
+        result_.origin_x_nm = geometry_.origin_x_nm;
+        result_.origin_y_nm = geometry_.origin_y_nm;
         result_.arrangement = std::move(arrangement);
         result_.telemetry.admission_work_units = admission_work;
         result_.telemetry.arrangement_predicate_calls =
@@ -179,6 +181,12 @@ class SelectionBuilder
             retained, checked_multiply(operands_.size(), kOperandMetadataLogicalBytes, valid),
             valid);
         retained = checked_add(
+            retained,
+            checked_multiply(occurrence_operands_.size(), kOperandOrdinalLogicalBytes, valid),
+            valid);
+        retained = checked_add(
+            retained, checked_multiply(stage_operations_.size(), kByteLogicalBytes, valid), valid);
+        retained = checked_add(
             retained, checked_multiply(result_.half_edge_faces.size(), kIndexLogicalBytes, valid),
             valid);
         retained = checked_add(
@@ -202,17 +210,26 @@ class SelectionBuilder
     bool preflight_input_memory()
     {
         const AnalyticRequestJobRecord& job = records_.jobs[job_index_];
+        if (!charge(job.stage_count))
+            return false;
         std::uint64_t operand_count = 0;
         bool valid = true;
         for (std::uint32_t local = 0; local < job.stage_count; ++local)
             operand_count = checked_add(
                 operand_count, records_.stages[job.stage_begin + local].operand_count, valid);
+        expected_operand_count_ = operand_count;
         std::uint64_t scratch =
             checked_multiply(geometry_.occurrences.size(), kOccurrenceLogicalBytes, valid);
         scratch = checked_add(
             scratch, checked_multiply(operand_count, kOperandMetadataLogicalBytes, valid), valid);
+        scratch = checked_add(
+            scratch,
+            checked_multiply(geometry_.occurrences.size(), kOperandOrdinalLogicalBytes, valid),
+            valid);
         scratch =
             checked_add(scratch, checked_multiply(operand_count, kByteLogicalBytes, valid), valid);
+        scratch = checked_add(scratch, checked_multiply(job.stage_count, kByteLogicalBytes, valid),
+                              valid);
         if (!valid)
             return fail(AnalyticFilteredBooleanSelectionError::resource_limit_exceeded);
         return set_phase_memory(scratch);
@@ -229,6 +246,10 @@ class SelectionBuilder
         result_.telemetry.input_stages = job.stage_count;
         result_.telemetry.input_cycles = result_.arrangement.cycles.size();
         stage_operations_.reserve(job.stage_count);
+        if (!charge(job.stage_count + expected_operand_count_))
+            return false;
+        operands_.reserve(static_cast<std::size_t>(expected_operand_count_));
+        occurrence_operands_.resize(geometry_.occurrences.size());
         std::uint64_t operand_count = 0;
         for (std::uint32_t local = 0; local < job.stage_count; ++local)
         {
@@ -255,8 +276,7 @@ class SelectionBuilder
         }
         result_.telemetry.input_operands = operand_count;
         bool valid = true;
-        std::uint64_t validation_work = checked_add(job.stage_count, operand_count, valid);
-        validation_work = checked_add(validation_work, operands_.size(), valid);
+        std::uint64_t validation_work = operands_.size();
         validation_work =
             checked_add(validation_work,
                         checked_multiply(geometry_.occurrences.size(),
@@ -289,7 +309,9 @@ class SelectionBuilder
                                  { return value.operand_id < id; });
             if (found == operands_.end() || found->operand_id != occurrence.coverage_id)
                 return fail(AnalyticFilteredBooleanSelectionError::invalid_argument);
-            used[static_cast<std::size_t>(found - operands_.begin())] = 1;
+            const std::uint32_t operand = static_cast<std::uint32_t>(found - operands_.begin());
+            used[operand] = 1;
+            occurrence_operands_[index] = operand;
         }
         if (std::find(used.begin(), used.end(), 0) != used.end())
             return fail(AnalyticFilteredBooleanSelectionError::invalid_argument);
@@ -480,6 +502,7 @@ class SelectionBuilder
     bool build_event_columns()
     {
         vertex_order_.resize(result_.arrangement.vertices.size());
+        columns_.reserve(result_.arrangement.vertices.size());
         for (std::uint32_t vertex = 0; vertex < vertex_order_.size(); ++vertex)
             vertex_order_[vertex] = vertex;
         if (!charge_sort(vertex_order_.size()))
@@ -644,6 +667,7 @@ class SelectionBuilder
         if (begin == end)
             return true;
         std::vector<std::uint32_t> expected;
+        expected.reserve(static_cast<std::size_t>(end - begin));
         for (auto value = begin; value != end; ++value)
             expected.push_back(value->edge);
         if (!charge_sort(expected.size()))
@@ -651,6 +675,9 @@ class SelectionBuilder
         std::sort(expected.begin(), expected.end());
         std::vector<std::uint32_t> lower;
         std::vector<std::uint32_t> upper;
+        lower.reserve(expected.size());
+        upper.reserve(expected.size());
+        ordered.reserve(expected.size());
         const AnalyticArrangementVertexNm& value = result_.arrangement.vertices[vertex];
         if (value.outgoing_begin > result_.arrangement.outgoing_half_edges.size() ||
             value.outgoing_count >
@@ -750,14 +777,18 @@ class SelectionBuilder
         SweepOrder status(result_.arrangement.edges.size());
         std::vector<std::uint32_t> inserted;
         std::vector<std::uint32_t> removal_vertices;
+        std::vector<std::pair<std::uint32_t, std::uint32_t>> removals;
+        inserted.reserve(result_.arrangement.edges.size());
+        removal_vertices.reserve(result_.arrangement.edges.size());
+        removals.reserve(result_.arrangement.edges.size());
         for (const EventColumn& column : columns_)
         {
-            std::vector<std::pair<std::uint32_t, std::uint32_t>> removals;
             for (std::uint32_t offset = 0; offset < column.vertex_count; ++offset)
             {
                 const std::uint32_t vertex = vertex_order_[column.vertex_begin + offset];
                 const auto [begin, end] = references_for(ends_, end_ranges_, vertex);
                 std::vector<std::uint32_t> ranks;
+                ranks.reserve(static_cast<std::size_t>(end - begin));
                 for (auto value = begin; value != end; ++value)
                 {
                     if (!charge_status_operation(false))
@@ -827,6 +858,7 @@ class SelectionBuilder
             }
             inserted.clear();
             removal_vertices.clear();
+            removals.clear();
         }
         return status.size() == 0;
     }
@@ -860,6 +892,11 @@ class SelectionBuilder
         face_by_root[sentinel_root] = 0;
         if (limits_.arrangement_faces == 0)
             return fail(AnalyticFilteredBooleanSelectionError::resource_limit_exceeded);
+        std::uint64_t face_capacity = 1;
+        for (const AnalyticArrangementCycle& cycle : result_.arrangement.cycles)
+            face_capacity += cycle.counterclockwise ? 1 : 0;
+        result_.faces.reserve(static_cast<std::size_t>(face_capacity));
+        result_.face_boundary_cycles.reserve(cycle_count);
         result_.faces.push_back({0, 0, 0, true, false});
         for (std::uint32_t cycle = 0; cycle < cycle_count; ++cycle)
         {
@@ -973,15 +1010,12 @@ class SelectionBuilder
                     return fail(AnalyticFilteredBooleanSelectionError::invalid_argument);
                 const AnalyticFilteredOccurrence& occurrence =
                     geometry_.occurrences[membership.curve_index - 1];
-                const auto operand =
-                    std::lower_bound(operands_.begin(), operands_.end(), occurrence.coverage_id,
-                                     [](const OperandMetadata& value, std::uint64_t id)
-                                     { return value.operand_id < id; });
-                if (operand == operands_.end() || operand->operand_id != occurrence.coverage_id)
+                const std::uint32_t operand = occurrence_operands_[membership.curve_index - 1];
+                if (operand >= operands_.size() ||
+                    operands_[operand].operand_id != occurrence.coverage_id)
                     return fail(AnalyticFilteredBooleanSelectionError::invalid_argument);
-                transitions_.push_back({edge_index,
-                                        static_cast<std::uint32_t>(operand - operands_.begin()),
-                                        occurrence.coverage_id, membership.material_on_span_left});
+                transitions_.push_back({edge_index, operand, occurrence.coverage_id,
+                                        membership.material_on_span_left});
             }
         }
         if (!charge_sort(transitions_.size()))
@@ -1253,6 +1287,7 @@ class SelectionBuilder
         std::vector<std::uint8_t> edge_validated(result_.arrangement.edges.size());
         std::vector<std::uint8_t> active(operands_.size());
         std::vector<Frame> stack;
+        stack.reserve(result_.faces.size());
         std::uint32_t root = 0;
         visited[0] = 1;
         result_.faces[0].coverage_state_root = 0;
@@ -1325,10 +1360,12 @@ class SelectionBuilder
 
     const AnalyticRequestPacketRecords& records_;
     std::uint32_t job_index_ = 0;
+    std::uint64_t expected_operand_count_ = 0;
     const AnalyticFilteredGeometry& geometry_;
     AnalyticSolverLimits limits_;
     AnalyticFilteredBooleanSelectionResult result_;
     std::vector<OperandMetadata> operands_;
+    std::vector<std::uint32_t> occurrence_operands_;
     std::vector<SweepEdge> sweep_edges_;
     std::vector<std::uint32_t> vertex_order_;
     std::vector<EventColumn> columns_;
@@ -1363,7 +1400,11 @@ AnalyticFilteredBooleanSelectionResult build_analytic_filtered_boolean_selection
         analytic_selection_detail::prepare_boolean_selection_admission(records, job_index, geometry,
                                                                        candidate_pairs, limits);
     if (!admission.ready)
+    {
+        admission.result.origin_x_nm = geometry.origin_x_nm;
+        admission.result.origin_y_nm = geometry.origin_y_nm;
         return std::move(admission.result);
+    }
     return SelectionBuilder(records, job_index, geometry, std::move(admission.arrangement), limits,
                             admission.admission_work, admission.admission_peak_memory)
         .build();

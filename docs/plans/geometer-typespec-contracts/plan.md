@@ -925,6 +925,17 @@ Geometer proposal, not the original consumer packet.
   sixteen four-stage rectangle add/difference patterns, sparse scaling, and
   exact/one-short budgets. Selected-boundary publication, complete lineage,
   final 1 nm normalization, and dispatch remain pending.
+- Exact-commit review remediation makes the 50 nm rule non-composable at circle
+  seams: clusters retain ordered proof supports, and a seam representative is
+  chosen only after the complete cluster passes. The radius-1000 / `x=999`
+  regression preserves two roots about 89.4 nm apart and verifies face
+  selection leaves arrangement coordinates unchanged. Selection results now
+  retain both job-local origin coordinates for later global publication.
+  Memberships use prebound dense operand ordinals, all repeated stage scans are
+  precharged, non-power-of-two working vectors are fixed-capacity, and
+  separated collapsed domains reserve downstream work before arrangement.
+  The 257-item adversarial fixtures keep transition construction linear and
+  prove exact/one-short work and memory behavior on native and WASM.
 - Before filtered operation dispatch is enabled, move the retained native
   exact/oracle sources out of the normal `geometer_lib` source list into an
   explicit feasibility-oracle target, matching the separation already used by

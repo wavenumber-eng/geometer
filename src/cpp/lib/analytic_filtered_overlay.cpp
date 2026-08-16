@@ -31,7 +31,7 @@ constexpr std::uint32_t kNoIndex = std::numeric_limits<std::uint32_t>::max();
 constexpr std::uint64_t kCurveLogicalBytes = 48;
 constexpr std::uint64_t kGroupLogicalBytes = 48;
 constexpr std::uint64_t kRawEventLogicalBytes = 96;
-constexpr std::uint64_t kUniqueEventLogicalBytes = 48;
+constexpr std::uint64_t kUniqueEventLogicalBytes = 144;
 constexpr std::uint64_t kActionLogicalBytes = 24;
 constexpr std::uint64_t kSpanLogicalBytes = kAnalyticOverlaySpanLogicalBytes;
 constexpr std::uint64_t kMembershipLogicalBytes = 8;
@@ -82,6 +82,11 @@ struct RawEvent
 struct UniqueEvent
 {
     AnalyticFilteredPointNm point;
+    // The published point may be an exact construction seam. Retain the ordered
+    // support endpoints separately so a later <=50 nm merge cannot compose two
+    // individually valid repairs through that representative.
+    AnalyticFilteredPointNm proof_first;
+    AnalyticFilteredPointNm proof_last;
     bool has_intersection = false;
     bool has_endpoint = false;
     bool has_circle_seam = false;
@@ -581,19 +586,20 @@ class OverlayBuilder
     {
         if (curve.kind == AnalyticAtomicCurveKind::circular_arc)
         {
-            const AnalyticFilteredPointNm right_seam = circle_right_seam(curve);
-            const AnalyticFilteredPointNm left_seam = circle_left_seam(curve);
-            const auto approximately_near = [&](const AnalyticFilteredPointNm& seam)
-            {
-                const double dx = midpoint(event.x) - midpoint(seam.x);
-                const double dy = midpoint(event.y) - midpoint(seam.y);
-                return dx * dx + dy * dy <= static_cast<double>(kAnalyticTopologyResolutionNm *
-                                                                kAnalyticTopologyResolutionNm);
-            };
-            if (approximately_near(right_seam))
+            const Interval radial_x_interval =
+                subtract(Interval{event.x.lower, event.x.upper},
+                         Interval{curve.circle.center.x.lower, curve.circle.center.x.upper});
+            const Interval radial_y_interval =
+                subtract(Interval{event.y.lower, event.y.upper},
+                         Interval{curve.circle.center.y.lower, curve.circle.center.y.upper});
+            // An enclosure that actually straddles the right-hand branch cut
+            // cannot be assigned an upper/lower key. Put only that uncertain
+            // enclosure beside the exact partition so the complete-cluster
+            // merge can absorb it or fail closed. Merely being within 50 nm of
+            // the seam is not enough: opposite-side roots can be >50 nm apart.
+            if (radial_x_interval.lower >= 0.0 && radial_y_interval.lower <= 0.0 &&
+                radial_y_interval.upper >= 0.0)
                 return {0.0, 0.0};
-            if (approximately_near(left_seam))
-                return {2.0, 0.0};
             const double radial_x = midpoint(event.x) - midpoint(curve.circle.center.x);
             const double radial_y = midpoint(event.y) - midpoint(curve.circle.center.y);
             return {approximate_circle_key(radial_x, radial_y), 0.0};
@@ -616,8 +622,11 @@ class OverlayBuilder
         const AnalyticAtomicCurveNm& curve = geometry_.curves[curve_offset];
         const AnalyticFilteredOccurrence& occurrence = geometry_.occurrences[curve_offset];
         const auto [key_x, key_y] = event_key(curve, occurrence, value);
+        const double partition_key =
+            role == EventRole::circle_seam || role == EventRole::circle_right_partition ? -1.0
+                                                                                        : key_y;
         events_.push_back({value, curve.construction_carrier_id, curve.curve_index, 0, 0, role,
-                           curve.kind, key_x, key_y});
+                           curve.kind, key_x, partition_key});
         return true;
     }
 
@@ -767,22 +776,11 @@ class OverlayBuilder
                 RawEvent& event = events_[group.event_begin + local];
                 if (!charge(1))
                     return false;
-                if (group.kind == AnalyticAtomicCurveKind::circular_arc)
-                {
-                    if (!charge(2))
-                        return false;
-                    const AnalyticAtomicCurveNm& circle =
-                        geometry_.curves[group.representative_curve - 1];
-                    const AnalyticFilteredPointNm right_seam = circle_right_seam(circle);
-                    const AnalyticFilteredPointNm left_seam = circle_left_seam(circle);
-                    if (points_within_resolution(event.point, right_seam))
-                        event.point = right_seam;
-                    else if (points_within_resolution(event.point, left_seam))
-                        event.point = left_seam;
-                }
                 bool merge = false;
                 if (unique_events_.size() > group.point_begin)
-                    merge = points_within_resolution(unique_events_.back().point, event.point);
+                    merge =
+                        points_within_resolution(unique_events_.back().proof_first, event.point) &&
+                        points_within_resolution(unique_events_.back().proof_last, event.point);
                 if (merge)
                 {
                     AnalyticFilteredPointNm representative =
@@ -800,6 +798,7 @@ class OverlayBuilder
                     if (!valid_point(representative))
                         return fail(AnalyticFilteredOverlayError::resource_limit_exceeded);
                     unique_events_.back().point = representative;
+                    unique_events_.back().proof_last = event.point;
                     ++result_.telemetry.resolution_merges;
                 }
                 else
@@ -811,7 +810,8 @@ class OverlayBuilder
                             return fail(AnalyticFilteredOverlayError::resource_limit_exceeded);
                         return false;
                     }
-                    unique_events_.push_back({event.point, false, false, false, false});
+                    unique_events_.push_back(
+                        {event.point, event.point, event.point, false, false, false, false});
                 }
                 UniqueEvent& unique = unique_events_.back();
                 unique.has_intersection = unique.has_intersection || event.role == EventRole::split;
@@ -833,17 +833,20 @@ class OverlayBuilder
                 UniqueEvent& first = unique_events_[group.point_begin];
                 const std::uint32_t last_index = group.point_begin + group.point_count - 1;
                 const UniqueEvent& last = unique_events_[last_index];
-                if (points_within_resolution(first.point, last.point))
+                if (points_within_resolution(first.proof_first, last.proof_first) &&
+                    points_within_resolution(first.proof_first, last.proof_last) &&
+                    points_within_resolution(first.proof_last, last.proof_first) &&
+                    points_within_resolution(first.proof_last, last.proof_last))
                 {
                     AnalyticFilteredPointNm representative = point_hull(first.point, last.point);
                     const AnalyticFilteredPointNm right_seam =
                         circle_right_seam(geometry_.curves[group.representative_curve - 1]);
-                    if (points_within_resolution(first.point, right_seam) &&
-                        points_within_resolution(last.point, right_seam))
+                    if (first.has_circle_right_partition || last.has_circle_right_partition)
                         representative = right_seam;
                     if (!valid_point(representative))
                         return fail(AnalyticFilteredOverlayError::resource_limit_exceeded);
                     first.point = representative;
+                    first.proof_first = last.proof_first;
                     first.has_intersection = first.has_intersection || last.has_intersection;
                     first.has_endpoint = first.has_endpoint || last.has_endpoint;
                     first.has_circle_seam = first.has_circle_seam || last.has_circle_seam;

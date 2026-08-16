@@ -32,6 +32,13 @@ AnalyticFilteredPointNm exact_point(double x, double y)
     return {{x, x}, {y, y}};
 }
 
+bool same_point(const AnalyticFilteredPointNm& left, const AnalyticFilteredPointNm& right)
+{
+    return left.x.lower == right.x.lower && left.x.upper == right.x.upper &&
+           left.y.lower == right.y.lower && left.y.upper == right.y.upper &&
+           left.construction_x_column_id == right.construction_x_column_id;
+}
+
 struct StageSpec
 {
     std::uint8_t operation = 1;
@@ -255,6 +262,87 @@ void test_lowered_disk()
                         [](const AnalyticArrangementEdgeNm& edge)
                         { return edge.x_monotone_branch != AnalyticXMonotoneBranch::none; }),
             "disk arrangement lost x-monotone branch certificates");
+}
+
+void test_large_origin_is_retained()
+{
+    AnalyticRequestPacketRecords records;
+    records.jobs = {{1, 0, 1}};
+    records.stages = {{1, 1, 0, 1}};
+    records.operands = {{1, 2, 0}};
+    records.disks = {{10, 700000000000LL, -600000000000LL, 1000}};
+    const AnalyticFilteredLoweringResult lowered =
+        lower_analytic_job_to_filtered_curves(records, 0);
+    require(lowered.error == AnalyticFilteredLoweringError::none && lowered.value,
+            "large-origin disk lowering failed");
+    const AnalyticFilteredBooleanSelectionResult result = select(records, *lowered.value);
+    require(result.error == AnalyticFilteredBooleanSelectionError::none &&
+                result.origin_x_nm == lowered.value->origin_x_nm &&
+                result.origin_y_nm == lowered.value->origin_y_nm && result.origin_x_nm != 0 &&
+                result.origin_y_nm < 0,
+            "face selection dropped its job-local coordinate origin");
+}
+
+AnalyticRequestPacketRecords seam_adjacent_disk_rectangle_records()
+{
+    AnalyticRequestPacketRecords records;
+    records.jobs = {{1, 0, 1}};
+    records.stages = {{1, 1, 0, 2}};
+    records.operands = {{1, 2, 0}, {2, 1, 0}};
+    records.disks = {{10, 0, 0, 1000}};
+    records.planar_regions = {{20, 0, 0, 0}};
+    records.rings = {{30, 0, 4, 0, 4, 0}};
+    records.vertices = {{40, 999, -500}, {41, 1500, -500}, {42, 1500, 500}, {43, 999, 500}};
+    for (std::uint32_t edge = 0; edge < 4; ++edge)
+        records.segments.push_back({50 + edge, 60 + edge, 1, 0, false, 0, 0});
+    return records;
+}
+
+AnalyticFilteredBooleanSelectionResult test_seam_adjacent_intersections_remain_distinct()
+{
+    const AnalyticRequestPacketRecords records = seam_adjacent_disk_rectangle_records();
+    const AnalyticFilteredLoweringResult lowered =
+        lower_analytic_job_to_filtered_curves(records, 0);
+    require(lowered.error == AnalyticFilteredLoweringError::none && lowered.value,
+            "seam-adjacent disk/rectangle lowering failed");
+    const AnalyticBroadPhaseResult broad = build_analytic_curve_candidates(lowered.value->bounds);
+    require(broad.error == AnalyticBroadPhaseError::none,
+            "seam-adjacent disk/rectangle broad phase failed");
+    const AnalyticFilteredArrangementResult arrangement =
+        build_analytic_filtered_arrangement(*lowered.value, broad.pairs);
+    const AnalyticFilteredBooleanSelectionResult result =
+        build_analytic_filtered_boolean_selection(records, 0, *lowered.value, broad.pairs);
+    require(arrangement.error == AnalyticFilteredArrangementError::none &&
+                result.error == AnalyticFilteredBooleanSelectionError::none,
+            "seam-adjacent disk/rectangle solve failed: arrangement=" +
+                std::to_string(static_cast<int>(arrangement.error)) +
+                " selection=" + std::to_string(static_cast<int>(result.error)) +
+                " overlay=" + std::to_string(static_cast<int>(result.arrangement.error)) +
+                " vertices=" + std::to_string(arrangement.vertices.size()) +
+                " edges=" + std::to_string(arrangement.edges.size()) +
+                " cycles=" + std::to_string(arrangement.cycles.size()) +
+                " columns=" + std::to_string(result.telemetry.event_columns) +
+                " unions=" + std::to_string(result.telemetry.face_gap_unions) +
+                " transitions=" + std::to_string(result.telemetry.transition_records));
+    require(result.arrangement.vertices.size() == arrangement.vertices.size(),
+            "face selection changed the arrangement vertex count");
+    for (std::size_t index = 0; index < arrangement.vertices.size(); ++index)
+        require(
+            same_point(result.arrangement.vertices[index].point, arrangement.vertices[index].point),
+            "face selection changed an arrangement coordinate");
+
+    std::vector<double> crossing_y;
+    for (const AnalyticArrangementVertexNm& vertex : result.arrangement.vertices)
+    {
+        const double global_x = result.origin_x_nm + vertex.point.x.lower;
+        const double global_y = result.origin_y_nm + vertex.point.y.lower;
+        if (global_x > 998.0 && global_x < 1000.0 && std::fabs(global_y) < 500.0)
+            crossing_y.push_back(global_y);
+    }
+    std::sort(crossing_y.begin(), crossing_y.end());
+    require(crossing_y.size() == 2 && crossing_y[1] - crossing_y[0] > 50.0,
+            "opposite seam-adjacent roots were collapsed through the cardinal point");
+    return result;
 }
 
 AnalyticFilteredBooleanSelectionResult
@@ -602,6 +690,138 @@ void test_exact_resource_boundaries()
             "one-byte-short face-selection memory budget did not fail closed");
 }
 
+AnalyticFilteredBooleanSelectionResult disjoint_rectangles(std::uint32_t count)
+{
+    AnalyticFilteredGeometry geometry;
+    std::vector<std::uint64_t> operands;
+    operands.reserve(count);
+    for (std::uint32_t index = 0; index < count; ++index)
+    {
+        const std::uint64_t operand = static_cast<std::uint64_t>(index) + 1;
+        const double minimum = static_cast<double>(index) * 2000.0;
+        operands.push_back(operand);
+        append_rectangle(geometry, operand, minimum, minimum + 1000.0);
+    }
+    return select(records_for({{1, operands}}), geometry);
+}
+
+void test_many_memberships_are_linear_and_fixed_capacity()
+{
+    constexpr std::uint32_t count = 257;
+    const AnalyticFilteredBooleanSelectionResult baseline = disjoint_rectangles(count);
+    require(baseline.error == AnalyticFilteredBooleanSelectionError::none &&
+                baseline.telemetry.input_operands == count &&
+                baseline.telemetry.transition_records == count * 4,
+            "non-power-of-two membership fixture failed");
+
+    AnalyticSolverLimits exact_memory;
+    exact_memory.working_memory_bytes = baseline.telemetry.peak_working_memory_bytes;
+    AnalyticFilteredGeometry geometry;
+    std::vector<std::uint64_t> operands;
+    operands.reserve(count);
+    for (std::uint32_t index = 0; index < count; ++index)
+    {
+        const std::uint64_t operand = static_cast<std::uint64_t>(index) + 1;
+        const double minimum = static_cast<double>(index) * 2000.0;
+        operands.push_back(operand);
+        append_rectangle(geometry, operand, minimum, minimum + 1000.0);
+    }
+    const AnalyticRequestPacketRecords records = records_for({{1, operands}});
+    const AnalyticBroadPhaseResult broad = build_analytic_curve_candidates(geometry.bounds);
+    require(broad.error == AnalyticBroadPhaseError::none, "many-membership broad phase failed");
+    AnalyticSolverLimits exact_work;
+    exact_work.predicate_calls = baseline.telemetry.predicate_calls;
+    const AnalyticFilteredBooleanSelectionResult work_success =
+        build_analytic_filtered_boolean_selection(records, 0, geometry, broad.pairs, exact_work);
+    require(work_success.error == AnalyticFilteredBooleanSelectionError::none &&
+                work_success.telemetry.predicate_calls == baseline.telemetry.predicate_calls,
+            "exact many-membership work budget failed or was nondeterministic");
+    --exact_work.predicate_calls;
+    const AnalyticFilteredBooleanSelectionResult work_failure =
+        build_analytic_filtered_boolean_selection(records, 0, geometry, broad.pairs, exact_work);
+    require(work_failure.error == AnalyticFilteredBooleanSelectionError::resource_limit_exceeded,
+            "one-unit-short many-membership work budget succeeded");
+    const AnalyticFilteredBooleanSelectionResult memory_success =
+        build_analytic_filtered_boolean_selection(records, 0, geometry, broad.pairs, exact_memory);
+    require(memory_success.error == AnalyticFilteredBooleanSelectionError::none,
+            "exact non-power-of-two selection memory failed");
+    --exact_memory.working_memory_bytes;
+    const AnalyticFilteredBooleanSelectionResult memory_failure =
+        build_analytic_filtered_boolean_selection(records, 0, geometry, broad.pairs, exact_memory);
+    require(memory_failure.error == AnalyticFilteredBooleanSelectionError::resource_limit_exceeded,
+            "one-byte-short non-power-of-two selection memory succeeded");
+
+    const AnalyticFilteredBooleanSelectionResult small = disjoint_rectangles(64);
+    const AnalyticFilteredBooleanSelectionResult large = disjoint_rectangles(128);
+    require(small.error == AnalyticFilteredBooleanSelectionError::none &&
+                large.error == AnalyticFilteredBooleanSelectionError::none &&
+                large.telemetry.predicate_calls < small.telemetry.predicate_calls * 3,
+            "membership/operand scaling regressed toward quadratic work");
+}
+
+void test_zero_operand_stage_scans_are_metered()
+{
+    constexpr std::uint32_t count = 257;
+    AnalyticRequestPacketRecords records;
+    records.jobs = {{1, 0, count}};
+    for (std::uint32_t index = 0; index < count; ++index)
+        records.stages.push_back({static_cast<std::uint64_t>(index) + 1, 1, 0, 0});
+    const AnalyticFilteredBooleanSelectionResult baseline = select(records, {});
+    require(baseline.error == AnalyticFilteredBooleanSelectionError::none &&
+                baseline.telemetry.admission_work_units >= count * 2 &&
+                baseline.telemetry.predicate_calls >= count * 4,
+            "repeated zero-operand stage traversals were not metered");
+    AnalyticSolverLimits one_short;
+    one_short.predicate_calls = baseline.telemetry.predicate_calls - 1;
+    const AnalyticFilteredBooleanSelectionResult failure =
+        build_analytic_filtered_boolean_selection(records, 0, {}, {}, one_short);
+    require(failure.error == AnalyticFilteredBooleanSelectionError::resource_limit_exceeded &&
+                failure.arrangement.edges.empty() && failure.faces.empty(),
+            "one-unit-short zero-operand stage job did not fail closed");
+}
+
+void test_collapsed_topology_is_reserved_before_arrangement()
+{
+    constexpr std::uint32_t count = 257;
+    AnalyticFilteredGeometry geometry;
+    std::vector<std::uint64_t> operands;
+    operands.reserve(count);
+    for (std::uint32_t index = 0; index < count; ++index)
+    {
+        const std::uint64_t operand = static_cast<std::uint64_t>(index) + 1;
+        const double x = static_cast<double>(index) * 1000.0;
+        operands.push_back(operand);
+        append_line(geometry, operand, x, 0, x + 20, 20, true);
+    }
+    const AnalyticRequestPacketRecords records = records_for({{1, operands}});
+    const AnalyticBroadPhaseResult broad = build_analytic_curve_candidates(geometry.bounds);
+    require(broad.error == AnalyticBroadPhaseError::none && broad.pairs.empty(),
+            "collapsed-topology broad phase failed");
+    const AnalyticFilteredBooleanSelectionResult baseline =
+        build_analytic_filtered_boolean_selection(records, 0, geometry, broad.pairs);
+    AnalyticFilteredArrangementMinimumRequirements minimum;
+    require(estimate_analytic_filtered_arrangement_minimum_requirements(geometry, 0, minimum),
+            "collapsed-topology minimum estimate failed");
+    require(baseline.error == AnalyticFilteredBooleanSelectionError::none &&
+                baseline.arrangement.collapsed_spans.size() == count,
+            "collapsed-topology baseline failed");
+    AnalyticSolverLimits one_short;
+    one_short.predicate_calls = baseline.telemetry.predicate_calls - 1;
+    const AnalyticFilteredBooleanSelectionResult failure =
+        build_analytic_filtered_boolean_selection(records, 0, geometry, broad.pairs, one_short);
+    require(failure.error == AnalyticFilteredBooleanSelectionError::resource_limit_exceeded &&
+                failure.telemetry.arrangement_predicate_calls == 0 &&
+                failure.telemetry.arrangement_peak_working_memory_bytes == 0,
+            "collapsed topology exhausted work only after arrangement execution: baseline=" +
+                std::to_string(baseline.telemetry.predicate_calls) +
+                " admission=" + std::to_string(baseline.telemetry.admission_work_units) +
+                " arrangement=" + std::to_string(baseline.telemetry.arrangement_predicate_calls) +
+                " minimum=" + std::to_string(minimum.predicate_calls) + " failure-arrangement=" +
+                std::to_string(failure.telemetry.arrangement_predicate_calls) +
+                " failure-total=" + std::to_string(failure.telemetry.predicate_calls) +
+                " failure-admission=" + std::to_string(failure.telemetry.admission_work_units));
+}
+
 void test_empty_job()
 {
     const AnalyticRequestPacketRecords records = records_for({{1, {}}});
@@ -636,6 +856,8 @@ std::string parity_vector()
                 nested_result.error == AnalyticFilteredBooleanSelectionError::none &&
                 capsule_result.error == AnalyticFilteredBooleanSelectionError::none,
             "boolean-selection parity fixture failed");
+    const AnalyticFilteredBooleanSelectionResult seam_result =
+        test_seam_adjacent_intersections_remain_distinct();
 
     std::ostringstream output;
     output << std::hex << std::setfill('0');
@@ -657,6 +879,8 @@ std::string parity_vector()
     const auto append_result = [&](const AnalyticFilteredBooleanSelectionResult& result)
     {
         append_u64(static_cast<std::uint8_t>(result.error));
+        append_u64(static_cast<std::uint64_t>(result.origin_x_nm));
+        append_u64(static_cast<std::uint64_t>(result.origin_y_nm));
         append_u64(result.arrangement.vertices.size());
         for (const AnalyticArrangementVertexNm& vertex : result.arrangement.vertices)
             append_point(vertex.point);
@@ -731,6 +955,7 @@ std::string parity_vector()
     append_result(disk_result);
     append_result(nested_result);
     append_result(capsule_result);
+    append_result(seam_result);
     return output.str();
 }
 
@@ -744,6 +969,8 @@ int main()
     test_add_subtract_add();
     test_overlapping_rectangles();
     test_lowered_disk();
+    test_large_origin_is_retained();
+    test_seam_adjacent_intersections_remain_distinct();
     test_irrational_overlapping_disks();
     test_tangent_disks_do_not_join_faces();
     test_coincident_and_difference_only_disks();
@@ -752,6 +979,9 @@ int main()
     test_sibling_island_ownership();
     test_ordered_stage_area_oracle();
     test_exact_resource_boundaries();
+    test_many_memberships_are_linear_and_fixed_capacity();
+    test_zero_operand_stage_scans_are_metered();
+    test_collapsed_topology_is_reserved_before_arrangement();
     test_empty_job();
     std::cout << "ANALYTIC_FILTERED_BOOLEAN_SELECTION_VECTOR=" << parity_vector() << '\n';
     return 0;

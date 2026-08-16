@@ -327,6 +327,36 @@ std::uint64_t guaranteed_carrier_span_count(const AnalyticFilteredGeometry& geom
     return std::max(dense_spans, increasing_spans);
 }
 
+std::uint64_t
+guaranteed_separated_collapsed_vertex_count(const AnalyticFilteredGeometry& geometry) noexcept
+{
+    if (geometry.curves.empty())
+        return 0;
+    std::uint64_t previous_carrier = 0;
+    double previous_maximum_x = 0.0;
+    for (std::size_t index = 0; index < geometry.curves.size(); ++index)
+    {
+        const AnalyticAtomicCurveNm& curve = geometry.curves[index];
+        const AnalyticCurveBoundsNm& bounds = geometry.bounds[index];
+        if (curve_guarantees_overlay_span(curve) || curve.construction_carrier_id == 0 ||
+            curve.construction_carrier_id <= previous_carrier ||
+            bounds.curve_index != curve.curve_index || !std::isfinite(bounds.min_x) ||
+            !std::isfinite(bounds.max_x) || bounds.min_x > bounds.max_x)
+            return 0;
+        if (index != 0)
+        {
+            const double separated = std::nextafter(
+                previous_maximum_x + static_cast<double>(kAnalyticTopologyResolutionNm),
+                std::numeric_limits<double>::infinity());
+            if (!(separated < bounds.min_x))
+                return 0;
+        }
+        previous_carrier = curve.construction_carrier_id;
+        previous_maximum_x = bounds.max_x;
+    }
+    return geometry.curves.size();
+}
+
 bool calculate_arrangement_minimum_requirements(const AnalyticFilteredGeometry& geometry,
                                                 std::uint64_t pair_count, std::uint64_t& memory,
                                                 std::uint64_t& work) noexcept
@@ -334,10 +364,15 @@ bool calculate_arrangement_minimum_requirements(const AnalyticFilteredGeometry& 
     bool valid = true;
     const std::uint64_t curve_count = geometry.curves.size();
     const std::uint64_t spans = guaranteed_carrier_span_count(geometry);
-    const std::uint64_t endpoints = checked_multiply(spans, 2, valid);
+    // A monotone sequence of short, distinct carriers whose conservative
+    // bounds are separated by more than 50 nm must publish one isolated vertex
+    // per carrier. Count that allocation-free case before running overlay.
+    const std::uint64_t collapsed_domains = guaranteed_separated_collapsed_vertex_count(geometry);
+    const std::uint64_t endpoints =
+        checked_add(checked_multiply(spans, 2, valid), collapsed_domains, valid);
     const std::uint64_t half_edges = checked_multiply(spans, 2, valid);
-    memory = arrangement_memory_requirement(curve_count, spans, 0, spans, curve_count, endpoints,
-                                            half_edges, 0, valid);
+    memory = arrangement_memory_requirement(curve_count, spans, collapsed_domains, spans,
+                                            curve_count, endpoints, half_edges, 0, valid);
 
     // Overlay consumes at least two units per candidate, visits every curve and
     // raw endpoint event, sorts the curve/event tables, and sweeps every
@@ -352,6 +387,7 @@ bool calculate_arrangement_minimum_requirements(const AnalyticFilteredGeometry& 
     work = checked_add(work, checked_multiply(spans, 11, valid), valid);
     work = checked_add(work, checked_multiply(sort_units(endpoints), 2, valid), valid);
     work = checked_add(work, checked_multiply(sort_units(spans), 2, valid), valid);
+    work = checked_add(work, checked_multiply(collapsed_domains, 42, valid), valid);
     work = checked_add(work, spans == 0 ? 0 : 1, valid);
     return valid;
 }

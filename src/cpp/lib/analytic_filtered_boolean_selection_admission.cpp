@@ -61,6 +61,7 @@ SelectionAdmission prepare_boolean_selection_admission(
         }
         operands += stage.operand_count;
     }
+    admission_work = checked_add(admission_work, job.stage_count, valid);
     admission_work = checked_add(admission_work, operands, valid);
     admission_work = checked_add(admission_work, sort_units(operands), valid);
     admission_work = checked_add(
@@ -150,33 +151,98 @@ SelectionAdmission prepare_boolean_selection_admission(
         checked_multiply(geometry.occurrences.size(), kOccurrenceLogicalBytes, valid);
     selection_memory = checked_add(
         selection_memory,
+        checked_multiply(geometry.occurrences.size(), kOperandOrdinalLogicalBytes, valid), valid);
+    selection_memory = checked_add(
+        selection_memory,
         checked_multiply(operands, kOperandMetadataLogicalBytes + kByteLogicalBytes, valid), valid);
     selection_memory = checked_add(
         selection_memory, checked_multiply(job.stage_count, kByteLogicalBytes, valid), valid);
     selection_memory =
         checked_add(selection_memory, kFaceLogicalBytes + kCoverageNodeLogicalBytes * 2, valid);
-    constexpr std::uint64_t per_span_selection_memory =
-        kSweepEdgeLogicalBytes + kSweepNodeLogicalBytes + kIndexLogicalBytes +
-        kEventReferenceLogicalBytes * 2 + kSweepTemporaryLogicalBytes + kIndexLogicalBytes * 2;
-    selection_memory = checked_add(
-        selection_memory,
-        checked_multiply(arrangement_minimum.guaranteed_spans, per_span_selection_memory, valid),
+
+    const std::uint64_t spans = arrangement_minimum.guaranteed_spans;
+    const std::uint64_t collapsed_vertex_reservation = geometry.curves.size();
+    const std::uint64_t vertex_reservation =
+        checked_add(checked_multiply(spans, 2, valid), collapsed_vertex_reservation, valid);
+    const std::uint64_t half_edge_reservation = checked_multiply(spans, 2, valid);
+    const std::uint64_t cycle_reservation = half_edge_reservation;
+    const std::uint64_t face_reservation = checked_add(cycle_reservation, 1, valid);
+
+    std::uint64_t retained_arrangement =
+        checked_multiply(vertex_reservation, kAnalyticArrangementVertexLogicalBytes, valid);
+    retained_arrangement =
+        checked_add(retained_arrangement,
+                    checked_multiply(spans, kAnalyticArrangementEdgeLogicalBytes, valid), valid);
+    retained_arrangement = checked_add(
+        retained_arrangement,
+        checked_multiply(half_edge_reservation,
+                         kAnalyticArrangementHalfEdgeLogicalBytes + kIndexLogicalBytes, valid),
         valid);
+    retained_arrangement =
+        checked_add(retained_arrangement,
+                    checked_multiply(collapsed_vertex_reservation,
+                                     kAnalyticArrangementCollapsedSpanLogicalBytes, valid),
+                    valid);
+    retained_arrangement = checked_add(
+        retained_arrangement,
+        checked_multiply(geometry.curves.size(), kAnalyticOverlayMembershipLogicalBytes, valid),
+        valid);
+    retained_arrangement = checked_add(
+        retained_arrangement,
+        checked_multiply(cycle_reservation,
+                         kAnalyticArrangementCycleLogicalBytes + kIndexLogicalBytes, valid),
+        valid);
+
+    std::uint64_t selection_outputs =
+        checked_multiply(half_edge_reservation, kIndexLogicalBytes, valid);
+    selection_outputs = checked_add(
+        selection_outputs, checked_multiply(face_reservation, kFaceLogicalBytes, valid), valid);
+    selection_outputs = checked_add(
+        selection_outputs, checked_multiply(cycle_reservation, kIndexLogicalBytes, valid), valid);
+
+    std::uint64_t topology_scratch = checked_multiply(
+        vertex_reservation,
+        kIndexLogicalBytes + kColumnLogicalBytes + kReferenceRangeLogicalBytes * 2, valid);
+    topology_scratch = checked_add(
+        topology_scratch,
+        checked_multiply(spans,
+                         kSweepEdgeLogicalBytes + kSweepNodeLogicalBytes + kIndexLogicalBytes +
+                             kEventReferenceLogicalBytes * 2 + kSweepTemporaryLogicalBytes,
+                         valid),
+        valid);
+    topology_scratch =
+        checked_add(topology_scratch,
+                    checked_multiply(face_reservation,
+                                     kDisjointSetLogicalBytes + kIndexLogicalBytes * 3, valid),
+                    valid);
+    topology_scratch = checked_add(
+        topology_scratch,
+        checked_multiply(cycle_reservation, kAdjacencyLogicalBytes + kIndexLogicalBytes, valid),
+        valid);
+    topology_scratch =
+        checked_add(topology_scratch,
+                    checked_multiply(half_edge_reservation, kIndexLogicalBytes, valid), valid);
+    topology_scratch = checked_add(
+        topology_scratch, checked_multiply(face_reservation, kFaceLogicalBytes, valid), valid);
+
+    const std::uint64_t selection_phase_memory =
+        checked_add(checked_add(retained_arrangement, selection_memory, valid),
+                    checked_add(selection_outputs, topology_scratch, valid), valid);
     const std::uint64_t integrated_minimum_memory =
-        checked_add(arrangement_minimum.working_memory_bytes, selection_memory, valid);
+        std::max(arrangement_minimum.working_memory_bytes, selection_phase_memory);
 
     std::uint64_t selection_work = sort_units(operands);
-    selection_work = checked_add(selection_work, job.stage_count + operands * 2, valid);
+    selection_work = checked_add(selection_work, job.stage_count * 2 + operands * 2, valid);
     selection_work = checked_add(
         selection_work,
         checked_multiply(geometry.occurrences.size(), tree_operation_units(operands), valid),
         valid);
     selection_work = checked_add(selection_work, geometry.curves.size(), valid);
-    selection_work = checked_add(
-        selection_work, checked_multiply(arrangement_minimum.guaranteed_spans, 11, valid), valid);
-    selection_work = checked_add(
-        selection_work,
-        sort_units(checked_multiply(arrangement_minimum.guaranteed_spans, 2, valid)), valid);
+    selection_work = checked_add(selection_work, checked_multiply(spans, 11, valid), valid);
+    selection_work =
+        checked_add(selection_work, checked_multiply(vertex_reservation, 3, valid), valid);
+    selection_work = checked_add(selection_work,
+                                 checked_multiply(sort_units(vertex_reservation), 2, valid), valid);
     std::uint64_t stage_leaf_capacity = 1;
     while (stage_leaf_capacity < std::max<std::uint64_t>(1, job.stage_count))
         stage_leaf_capacity *= 2;
@@ -192,9 +258,6 @@ SelectionAdmission prepare_boolean_selection_admission(
         preflight.error = AnalyticFilteredBooleanSelectionError::resource_limit_exceeded;
         return admission;
     }
-    admission_peak_memory = std::max(admission_peak_memory, integrated_minimum_memory);
-    preflight.telemetry.peak_working_memory_bytes = admission_peak_memory;
-
     AnalyticSolverLimits arrangement_limits = limits;
     arrangement_limits.predicate_calls = remaining_work - selection_work;
     AnalyticFilteredArrangementResult arrangement =

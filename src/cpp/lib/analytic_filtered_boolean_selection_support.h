@@ -42,6 +42,7 @@ constexpr std::uint64_t kAdjacencyLogicalBytes = 16;
 constexpr std::uint64_t kIndexLogicalBytes = 8;
 constexpr std::uint64_t kOccurrenceLogicalBytes = 64;
 constexpr std::uint64_t kOperandMetadataLogicalBytes = 32;
+constexpr std::uint64_t kOperandOrdinalLogicalBytes = 8;
 constexpr std::uint64_t kByteLogicalBytes = 1;
 constexpr std::uint64_t kSweepTemporaryLogicalBytes = 64;
 constexpr std::uint64_t kCoverageNodeLogicalBytes = 8;

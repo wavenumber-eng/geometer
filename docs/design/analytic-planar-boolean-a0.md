@@ -373,6 +373,12 @@ leftmost seam, without angles or trigonometric sort keys. A rightmost
 partition is also emitted so each surviving circular span is x-monotone; the
 left seam alone remains the cyclic ordering origin. Constructed
 semicircle sweep certificates resolve the cancellation-prone antipodal case.
+A cardinal seam is not an independent snap target. Each merged event retains
+the ordered support endpoints of its complete same-carrier cluster, and a seam
+may become the published representative only after all support pairs certify
+at-or-below-50-nm separation. For example, the two intersections of a
+radius-1000-nm circle with `x = 999 nm` remain distinct: each is less than
+50 nm from the right seam, but they are about 89.4 nm apart from each other.
 A strict total preliminary scalar key satisfies the sort contract even when a
 rounded cross product is zero; the subsequent outward predicates remain the
 authority and fail closed on uncertifiable adjacency. Split points are rebound
@@ -481,7 +487,14 @@ Work is proportional to sorted topology plus actual edge/coverage transitions
 and logarithmic state updates; there is no face-by-operand replay. Admission,
 sweep, disjoint-set, dual, persistent-table, stage-tree, sort, and output work
 share the programmable job ceiling, and target-independent logical memory is
-checked before each phase. Canonical native/WASM fixtures cover line and arc
+checked before each phase. Each occurrence is rebound once to a dense operand
+ordinal, making transition construction linear in emitted memberships. Every
+stage-table pass is charged before traversal, known-size vectors use fixed
+reserved capacities, and telemetry takes the maximum actual live phase instead
+of adding sequential peaks. Separated short domains reserve their unavoidable
+collapsed vertices and sort work before arrangement runs. The result also
+retains the lowering origin so later publication can recover global integer-nm
+coordinates without rescanning the request. Canonical native/WASM fixtures cover line and arc
 faces, nested components, tangent contact, odd-width vertical capsules,
 ordered stage combinations, exact/one-short budgets, and sparse scaling.
 Selected-boundary publication, complete lineage projection, final 1 nm

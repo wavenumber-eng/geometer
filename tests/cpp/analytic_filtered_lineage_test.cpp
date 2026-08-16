@@ -384,7 +384,8 @@ void test_governed_admission_and_publication()
                 " success=" + std::to_string(success.source_references.size()));
 }
 
-AnalyticFilteredLineageResult build_disjoint(std::uint32_t count)
+AnalyticFilteredLineageResult build_disjoint(std::uint32_t count,
+                                             const AnalyticSolverLimits& limits = {})
 {
     AnalyticFilteredGeometry geometry;
     std::vector<std::uint64_t> ids;
@@ -396,7 +397,7 @@ AnalyticFilteredLineageResult build_disjoint(std::uint32_t count)
         const double minimum = static_cast<double>(index) * 2000.0;
         append_rectangle(geometry, operand, minimum, minimum + 100.0);
     }
-    return build(records_for({{1, ids}}), geometry);
+    return build(records_for({{1, ids}}), geometry, limits);
 }
 
 void test_sparse_scaling()
@@ -410,6 +411,64 @@ void test_sparse_scaling()
                 large.telemetry.peak_working_memory_bytes <=
                     small.telemetry.peak_working_memory_bytes * 3,
             "sparse lineage scaling exceeded 3x at 2x input");
+}
+
+void test_transition_preparation_work_boundary()
+{
+    constexpr std::uint32_t kOperandCount = 64;
+    AnalyticSolverLimits limits;
+    const auto run = [&](const AnalyticSolverLimits& value)
+    { return build_disjoint(kOperandCount, value); };
+    const auto success = run(limits);
+    require(success.error == AnalyticFilteredLineageError::none &&
+                success.regions.selection.arrangement.memberships.size() == kOperandCount * 4,
+            "transition-heavy lineage fixture failed");
+
+    std::uint64_t low = 0;
+    std::uint64_t high = limits.predicate_calls;
+    while (low < high)
+    {
+        const std::uint64_t middle = low + (high - low) / 2;
+        auto probe = limits;
+        probe.predicate_calls = middle;
+        if (run(probe).telemetry.arrangement_work_units != 0)
+            high = middle;
+        else
+            low = middle + 1;
+    }
+    auto admitted = limits;
+    admitted.predicate_calls = low;
+    require(run(admitted).telemetry.arrangement_work_units != 0,
+            "transition-heavy exact admission work failed");
+    --admitted.predicate_calls;
+    const auto admission_failure = run(admitted);
+    require(admission_failure.error == AnalyticFilteredLineageError::resource_limit_exceeded &&
+                admission_failure.telemetry.arrangement_work_units == 0 &&
+                admission_failure.telemetry.publication_capacity_records == 0,
+            "transition-heavy one-short admission reached arrangement");
+
+    low = 0;
+    high = limits.predicate_calls;
+    while (low < high)
+    {
+        const std::uint64_t middle = low + (high - low) / 2;
+        auto probe = limits;
+        probe.predicate_calls = middle;
+        if (run(probe).error == AnalyticFilteredLineageError::none)
+            high = middle;
+        else
+            low = middle + 1;
+    }
+    auto exact = limits;
+    exact.predicate_calls = low;
+    require(run(exact).error == AnalyticFilteredLineageError::none,
+            "transition-heavy exact total work failed");
+    --exact.predicate_calls;
+    const auto total_failure = run(exact);
+    require(total_failure.error == AnalyticFilteredLineageError::resource_limit_exceeded &&
+                total_failure.telemetry.publication_capacity_records == 0 &&
+                total_failure.source_references.empty(),
+            "transition-heavy one-short total work allocated publication storage");
 }
 
 void test_publication_dense_output_preflight()
@@ -734,6 +793,7 @@ int main(int argc, char** argv)
     test_malformed_sources_fail_before_arrangement();
     test_governed_admission_and_publication();
     test_sparse_scaling();
+    test_transition_preparation_work_boundary();
     test_publication_dense_output_preflight();
     test_branch_dense_reporter_scaling();
     if (argc == 2 && std::string(argv[1]) == "--emit-parity")

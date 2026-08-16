@@ -171,7 +171,8 @@ class Builder
         const auto& arrangement = result_.regions.selection.arrangement;
         bool valid = true;
         std::uint64_t units = analytic_selection_detail::checked_add(
-            arrangement.memberships.size(), sort_units(arrangement.memberships.size()), valid);
+            analytic_selection_detail::checked_multiply(arrangement.memberships.size(), 3, valid),
+            sort_units(arrangement.memberships.size()), valid);
         units = analytic_selection_detail::checked_add(units, arrangement.edges.size(), valid);
         if (!valid || !charge(units))
             return false;

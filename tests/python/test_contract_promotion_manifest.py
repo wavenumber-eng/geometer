@@ -786,7 +786,7 @@ def test_filtered_solver_foundation_is_bounded_non_algebraic_and_not_dispatched(
         ),
         "lineage_parity_validator": "scripts/validate_analytic_filtered_lineage_parity.py",
         "lineage_vector_bytes": 3672,
-        "lineage_vector_sha256": ("466fb955863a53de2686d2d373b3ae92bd787483f1f35bc9e940b85b7d409e18"),
+        "lineage_vector_sha256": ("ced22d69e19779e842deb5e1148c82774e735cc5009513c883fe74fb399a1915"),
     }
     implementation_paths = [
         solver[key]

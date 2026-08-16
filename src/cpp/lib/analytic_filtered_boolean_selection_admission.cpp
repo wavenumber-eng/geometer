@@ -531,12 +531,12 @@ SelectionAdmission prepare_boolean_selection_admission(
                                        valid);
             lineage_work = checked_add(lineage_work, geometry.occurrences.size(), valid);
             lineage_work = checked_add(lineage_work, maximum_coverage_nodes, valid);
-            lineage_work =
-                checked_add(lineage_work,
-                            checked_add(checked_add(possible_transitions,
-                                                    sort_units(possible_transitions), valid),
-                                        maximum_edges, valid),
-                            valid);
+            lineage_work = checked_add(
+                lineage_work,
+                checked_add(checked_add(checked_multiply(possible_transitions, 3, valid),
+                                        sort_units(possible_transitions), valid),
+                            maximum_edges, valid),
+                valid);
             lineage_work = checked_add(
                 lineage_work,
                 checked_add(checked_multiply(reporter_nodes, 2, valid), operands, valid), valid);

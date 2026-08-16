@@ -17,7 +17,6 @@ namespace
 {
 
 using namespace geometer;
-using namespace geometer::exact;
 using BigInt = boost::multiprecision::cpp_int;
 constexpr std::uint32_t kNone = std::numeric_limits<std::uint32_t>::max();
 
@@ -51,9 +50,9 @@ struct SymbolicMeasure
     }
 };
 
-void add_source(AnalyticResultPacketRecords& records, ExactSourceRole role)
+void add_source(AnalyticResultPacketRecords& records, AnalyticSourceRole role)
 {
-    records.source_references = {{ExactSourceKind::authored_segment_curve, role, 1, 1, 1}};
+    records.source_references = {{AnalyticSourceKind::authored_segment_curve, role, 1, 1, 1}};
     records.source_reference_indices = {0};
     records.source_sets = {{0, 1}};
 }
@@ -120,7 +119,7 @@ void add_box_ring(AnalyticResultPacketRecords& records, std::int64_t low, std::i
 AnalyticResultPacketRecords rectangle()
 {
     AnalyticResultPacketRecords records;
-    add_source(records, ExactSourceRole::authored_line);
+    add_source(records, AnalyticSourceRole::authored_line);
     add_box_ring(records, 0, 10, false, kNone, 0);
     finish(records, {0});
     return records;
@@ -129,7 +128,7 @@ AnalyticResultPacketRecords rectangle()
 AnalyticResultPacketRecords circle()
 {
     AnalyticResultPacketRecords records;
-    add_source(records, ExactSourceRole::authored_circular_arc);
+    add_source(records, AnalyticSourceRole::authored_circular_arc);
     const auto left = add_vertex(records, -10, 0);
     const auto right = add_vertex(records, 10, 0);
     add_arc(records, left, right, 1, 10);
@@ -142,7 +141,7 @@ AnalyticResultPacketRecords circle()
 AnalyticResultPacketRecords annulus()
 {
     AnalyticResultPacketRecords records;
-    add_source(records, ExactSourceRole::authored_circular_arc);
+    add_source(records, AnalyticSourceRole::authored_circular_arc);
     const auto outer_left = add_vertex(records, -10, 0);
     const auto outer_right = add_vertex(records, 10, 0);
     add_arc(records, outer_left, outer_right, 1, 10);
@@ -160,7 +159,7 @@ AnalyticResultPacketRecords annulus()
 AnalyticResultPacketRecords capsule()
 {
     AnalyticResultPacketRecords records;
-    add_source(records, ExactSourceRole::authored_circular_arc);
+    add_source(records, AnalyticSourceRole::authored_circular_arc);
     const auto right_top = add_vertex(records, 20, 5);
     const auto left_top = add_vertex(records, 0, 5);
     const auto left_bottom = add_vertex(records, 0, -5);
@@ -177,7 +176,7 @@ AnalyticResultPacketRecords capsule()
 AnalyticResultPacketRecords nested_island()
 {
     AnalyticResultPacketRecords records;
-    add_source(records, ExactSourceRole::authored_line);
+    add_source(records, AnalyticSourceRole::authored_line);
     add_box_ring(records, 0, 20, false, kNone, 0);
     add_box_ring(records, 4, 16, true, 0, 1);
     add_box_ring(records, 8, 12, false, 1, 2);
@@ -188,7 +187,7 @@ AnalyticResultPacketRecords nested_island()
 AnalyticResultPacketRecords swept_l_path()
 {
     AnalyticResultPacketRecords records;
-    add_source(records, ExactSourceRole::authored_circular_arc);
+    add_source(records, AnalyticSourceRole::authored_circular_arc);
     const auto start_bottom = add_vertex(records, 0, -2);
     const auto outer_bottom = add_vertex(records, 10, -2);
     const auto outer_right = add_vertex(records, 12, 0);

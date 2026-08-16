@@ -2,6 +2,9 @@
 
 #include "geometer/analytic_result_packet_canonical.h"
 
+#include "analytic_result_packet_records_internal.h"
+#include "analytic_wide_integer.h"
+
 #include <algorithm>
 #include <exception>
 #include <limits>
@@ -98,12 +101,12 @@ bool valid_range(std::uint32_t begin, std::uint32_t count, std::size_t size)
                       : begin <= size && count <= size - static_cast<std::size_t>(begin);
 }
 
-bool valid_source(const exact::ExactSourceReference& source)
+bool valid_source(const AnalyticSourceReference& source)
 {
     if (source.operand_id == 0 || source.primary_id == 0)
         return false;
-    using Kind = exact::ExactSourceKind;
-    using Role = exact::ExactSourceRole;
+    using Kind = AnalyticSourceKind;
+    using Role = AnalyticSourceRole;
     if (source.kind == Kind::authored_segment_curve)
         return source.secondary_id != 0 &&
                (source.role == Role::authored_line || source.role == Role::authored_circular_arc);
@@ -137,11 +140,20 @@ bool valid_source(const exact::ExactSourceReference& source)
     }
 }
 
-auto source_key(const exact::ExactSourceReference& source)
+auto source_key(const AnalyticSourceReference& source)
 {
     return std::tuple{static_cast<std::uint16_t>(source.kind),
                       static_cast<std::uint16_t>(source.role), source.operand_id, source.primary_id,
                       source.secondary_id};
+}
+
+std::uint64_t absolute_difference(std::int64_t left, std::int64_t right) noexcept
+{
+    const auto ordered = [](std::int64_t value)
+    { return static_cast<std::uint64_t>(value) ^ (std::uint64_t{1} << 63U); };
+    const std::uint64_t a = ordered(left);
+    const std::uint64_t b = ordered(right);
+    return a >= b ? a - b : b - a;
 }
 
 bool valid_diagnostic_code(std::uint32_t code)
@@ -241,13 +253,20 @@ LayoutError validate_geometry(const AnalyticResultPacketRecords& records)
         {
             const auto& start = records.vertices[fragment.start_vertex];
             const auto& end = records.vertices[fragment.end_vertex];
-            const exact::BigInt dx = exact::BigInt(start.x_nm) - end.x_nm;
-            const exact::BigInt dy = exact::BigInt(start.y_nm) - end.y_nm;
-            const exact::BigInt diameter = exact::BigInt(fragment.radius_nm) * 2;
-            const exact::BigInt chord_squared = dx * dx + dy * dy;
-            const exact::BigInt diameter_squared = diameter * diameter;
-            if (chord_squared > diameter_squared ||
-                (fragment.major_arc && chord_squared == diameter_squared))
+            const std::uint64_t dx = absolute_difference(start.x_nm, end.x_nm);
+            const std::uint64_t dy = absolute_difference(start.y_nm, end.y_nm);
+            const std::uint64_t diameter = fragment.radius_nm * 2;
+            if (dx > diameter || dy > diameter)
+                return LayoutError::invalid_packet;
+            const auto chord_squared = analytic_detail::wide_add(
+                analytic_detail::wide_multiply(static_cast<std::int64_t>(dx),
+                                               static_cast<std::int64_t>(dx)),
+                analytic_detail::wide_multiply(static_cast<std::int64_t>(dy),
+                                               static_cast<std::int64_t>(dy)));
+            const auto diameter_squared = analytic_detail::wide_multiply(
+                static_cast<std::int64_t>(diameter), static_cast<std::int64_t>(diameter));
+            const int comparison = analytic_detail::wide_compare(chord_squared, diameter_squared);
+            if (comparison > 0 || (fragment.major_arc && comparison == 0))
                 return LayoutError::invalid_packet;
         }
         used_vertices[fragment.start_vertex] = true;
@@ -490,8 +509,8 @@ LayoutError validate_owners(const AnalyticResultPacketRecords& records)
     }
     for (std::uint32_t job = 0; job < records.job_results.size(); ++job)
         if (job_has_vertex[job] &&
-            (exact::BigInt(maximum_x[job]) - minimum_x[job] > 1'000'000'000'000ULL ||
-             exact::BigInt(maximum_y[job]) - minimum_y[job] > 1'000'000'000'000ULL))
+            (absolute_difference(maximum_x[job], minimum_x[job]) > 1'000'000'000'000ULL ||
+             absolute_difference(maximum_y[job], minimum_y[job]) > 1'000'000'000'000ULL))
             return LayoutError::limit_exceeded;
     for (std::uint32_t event_index = 0; event_index < records.operand_events.size(); ++event_index)
     {
@@ -634,11 +653,8 @@ validate_analytic_result_packet_records(const AnalyticResultPacketRecords& recor
 }
 
 AnalyticResultPacketEncodeResult
-encode_records_unchecked(const AnalyticResultPacketRecords& records)
+serialize_records_unchecked(const AnalyticResultPacketRecords& records)
 {
-    if (const LayoutError error = validate_analytic_result_packet_records(records);
-        error != LayoutError::none)
-        return {error, std::nullopt};
     try
     {
         AnalyticResultTableBytes tables;
@@ -799,6 +815,14 @@ encode_records_unchecked(const AnalyticResultPacketRecords& records)
     }
 }
 
+AnalyticResultPacketEncodeResult encode_records_checked(const AnalyticResultPacketRecords& records)
+{
+    if (const LayoutError error = validate_analytic_result_packet_records(records);
+        error != LayoutError::none)
+        return {error, std::nullopt};
+    return serialize_records_unchecked(records);
+}
+
 AnalyticResultPacketEncodeResult
 encode_analytic_result_packet_records(const AnalyticResultPacketRecords& records)
 {
@@ -806,7 +830,13 @@ encode_analytic_result_packet_records(const AnalyticResultPacketRecords& records
         canonicalize_analytic_result_packet_records(records);
     if (canonical.error != LayoutError::none || !canonical.value)
         return {canonical.error, std::nullopt};
-    return encode_records_unchecked(*canonical.value);
+    return encode_records_checked(*canonical.value);
+}
+
+AnalyticResultPacketEncodeResult analytic_result_detail::encode_canonical_records_unchecked(
+    const AnalyticResultPacketRecords& records)
+{
+    return serialize_records_unchecked(records);
 }
 
 AnalyticResultPacketRecordsResult decode_analytic_result_packet_records(const std::uint8_t* data,
@@ -893,9 +923,9 @@ AnalyticResultPacketRecordsResult decode_analytic_result_packet_records(const st
             Reader r{data, views[9].offset + index * 32};
             if (r.u32(4) != 0)
                 return {LayoutError::invalid_packet, std::nullopt};
-            output.source_references.push_back({static_cast<exact::ExactSourceKind>(r.u16(0)),
-                                                static_cast<exact::ExactSourceRole>(r.u16(2)),
-                                                r.u64(8), r.u64(16), r.u64(24)});
+            output.source_references.push_back({static_cast<AnalyticSourceKind>(r.u16(0)),
+                                                static_cast<AnalyticSourceRole>(r.u16(2)), r.u64(8),
+                                                r.u64(16), r.u64(24)});
         }
         for (std::uint64_t index = 0; index < views[10].record_count; ++index)
         {
@@ -933,7 +963,7 @@ AnalyticResultPacketRecordsResult decode_analytic_result_packet_records(const st
             canonicalize_analytic_result_packet_records(output);
         if (canonical.error != LayoutError::none || !canonical.value)
             return {canonical.error, std::nullopt};
-        AnalyticResultPacketEncodeResult encoded = encode_records_unchecked(*canonical.value);
+        AnalyticResultPacketEncodeResult encoded = serialize_records_unchecked(*canonical.value);
         if (encoded.error != LayoutError::none || !encoded.value || encoded.value->size() != size ||
             !std::equal(encoded.value->begin(), encoded.value->end(), data))
             return {LayoutError::invalid_packet, std::nullopt};

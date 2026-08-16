@@ -636,8 +636,30 @@ identical normalized construction key or identical
 singleton center/radius can prove coincident carriers. This closes ordinary
 irrational circle-intersection normalization without calling the algebraic
 backend. Outcome history and projection perform no numeric predicate, snapping,
-or additional 50 nm repair. Canonical source-set interning, packet record
-ordering/IDs, and operation dispatch remain subsequent stages.
+or additional 50 nm repair.
+
+The owned filtered packet continuation is also implemented. It consumes the
+normalizer through the request records and trusted lowered geometry rather than
+accepting caller-built topology. Normalized integer coordinates are copied
+verbatim. Explicit vertex, boundary, ring, and region maps bind lineage and
+outcome handles to the normalized topology; every used source tuple is also
+rebound to the originating request operand, authored segment, compact feature,
+or difference stage before publication. Outcome kinds constrain their allowed
+ring/region references, and every operand publishes at least one event with its
+complete original geometry source set.
+
+Global source identities are assigned once. Complete source sets, vertex
+incidence sequences, canonical ring rotations, and event reference sequences
+are interned/ranked by a fixed-capacity exact prefix trie with governed table
+probes. Outer record sorts therefore use fixed scalar keys rather than
+variable-length comparators. The packet stage reserves a candidate-bounded
+work/memory envelope before normalization, applies exact fixed-capacity gates
+after the compact normalized counts are known, emits one structurally canonical
+standalone packet, and computes its SHA-256 closure without invoking the exact
+topology solver or algebraic normalization. Failed governed jobs contain no
+partial geometry and publish one job-only diagnostic. Batch merging,
+relationships, operation dispatch, and transport projection remain subsequent
+stages.
 
 Across ordered stages, the accumulator retains the resolved analytic
 arrangement and lineage. Publication to the governed nm grid occurs once after

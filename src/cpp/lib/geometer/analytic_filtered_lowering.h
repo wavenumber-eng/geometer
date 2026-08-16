@@ -3,6 +3,7 @@
 #include "geometer/analytic_curve_narrow_phase.h"
 #include "geometer/analytic_request_packet.h"
 #include "geometer/analytic_solver_limits.h"
+#include "geometer/analytic_source_reference.h"
 
 #include <cstdint>
 #include <optional>
@@ -20,41 +21,9 @@ enum class AnalyticFilteredLoweringError : std::uint8_t
     resource_limit_exceeded = 4,
 };
 
-enum class AnalyticFilteredSourceKind : std::uint16_t
-{
-    authored_segment_curve = 1,
-    compact_feature_role = 2,
-    subtractive_operand_effect = 3,
-};
-
-enum class AnalyticFilteredSourceRole : std::uint16_t
-{
-    none = 0,
-    authored_line = 1,
-    authored_circular_arc = 2,
-    primitive_outer_circle = 16,
-    primitive_inner_circle = 17,
-    capsule_left_line = 32,
-    capsule_end_cap = 33,
-    capsule_right_line = 34,
-    capsule_start_cap = 35,
-    swept_left_offset_line = 48,
-    swept_left_offset_arc = 49,
-    swept_right_offset_line = 50,
-    swept_right_offset_arc = 51,
-    swept_round_join = 52,
-    swept_start_cap = 53,
-    swept_end_cap = 54,
-};
-
-struct AnalyticFilteredSourceReference
-{
-    AnalyticFilteredSourceKind kind = AnalyticFilteredSourceKind::authored_segment_curve;
-    AnalyticFilteredSourceRole role = AnalyticFilteredSourceRole::none;
-    std::uint64_t operand_id = 0;
-    std::uint64_t primary_id = 0;
-    std::uint64_t secondary_id = 0;
-};
+using AnalyticFilteredSourceKind = AnalyticSourceKind;
+using AnalyticFilteredSourceRole = AnalyticSourceRole;
+using AnalyticFilteredSourceReference = AnalyticSourceReference;
 
 struct AnalyticFilteredOccurrence
 {

@@ -281,8 +281,18 @@ engine.
   payloads and reused or split endpoint identities before the sweep. Generic
   irrational intersections and irrational-radius
   arcs therefore remain on the fast filtered path without a second proximity
-  merge. Packet source-set interning, canonical record IDs, and dispatch remain
-  gated.
+  merge.
+- The owned filtered packet stage consumes only the owned normalizer, copies
+  normalized integer coordinates without another tolerance, validates the
+  explicit old-topology maps and request-owned provenance, and publishes one
+  canonical standalone result packet with SHA-256 closure. Production source
+  types are independent of the algebraic namespace. Source sets and the other
+  variable-length canonical keys use a fixed-capacity exact prefix trie with
+  governed probes and scalar ranks; record sorting never compares long vectors
+  or replays every operand for every face. Predictable packet work and logical
+  memory are reserved before normalization, followed by exact fixed-capacity
+  publication gates. Batch merging, relationships, and operation dispatch
+  remain gated.
 - Solver resource limits are supplied through one internal limits value object
   rather than scattered production constants. The catalog values are governed
   hard ceilings; a host may advertise and enforce lower effective limits, and

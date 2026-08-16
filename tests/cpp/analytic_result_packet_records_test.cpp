@@ -83,7 +83,7 @@ AnalyticResultPacketRecords rich_records()
     records.ring_region_references = {(std::uint64_t{2} << 32U)};
     records.source_sets = {{0, 1}};
     records.source_references = {
-        {exact::ExactSourceKind::authored_segment_curve, exact::ExactSourceRole::authored_line, 7,
+        {AnalyticSourceKind::authored_segment_curve, AnalyticSourceRole::authored_line, 7,
          std::numeric_limits<std::uint64_t>::max() - 4,
          std::numeric_limits<std::uint64_t>::max() - 5},
     };
@@ -137,8 +137,8 @@ AnalyticResultPacketRecords deeply_nested_records(std::uint32_t ring_count)
     records.job_results = {
         {1, 0, 0, 0, 0, static_cast<std::uint32_t>(records.regions.size()), 0, 0}};
     records.source_sets = {{0, 1}};
-    records.source_references = {{exact::ExactSourceKind::authored_segment_curve,
-                                  exact::ExactSourceRole::authored_line, 1, 1, 1}};
+    records.source_references = {
+        {AnalyticSourceKind::authored_segment_curve, AnalyticSourceRole::authored_line, 1, 1, 1}};
     records.source_reference_indices = {0};
     return records;
 }
@@ -208,8 +208,8 @@ AnalyticResultPacketRecords identical_two_job_records(bool reverse_job_topology)
     records.regions = {{1, ring_for_job[0], 1}, {2, ring_for_job[1], 1}};
     records.job_results = {{10, 0, 0, 0, 0, 1, 0, 0}, {20, 0, 0, 0, 1, 1, 0, 0}};
     records.source_sets = {{0, 1}};
-    records.source_references = {{exact::ExactSourceKind::authored_segment_curve,
-                                  exact::ExactSourceRole::authored_line, 1, 1, 1}};
+    records.source_references = {
+        {AnalyticSourceKind::authored_segment_curve, AnalyticSourceRole::authored_line, 1, 1, 1}};
     records.source_reference_indices = {0};
     return records;
 }
@@ -317,8 +317,8 @@ int main()
             "disconnected ring fragment sequence was accepted");
     AnalyticResultPacketRecords unused_source_set = rich_records();
     unused_source_set.source_sets.push_back({1, 1});
-    unused_source_set.source_references.push_back({exact::ExactSourceKind::authored_segment_curve,
-                                                   exact::ExactSourceRole::authored_line, 8, 1, 1});
+    unused_source_set.source_references.push_back(
+        {AnalyticSourceKind::authored_segment_curve, AnalyticSourceRole::authored_line, 8, 1, 1});
     unused_source_set.source_reference_indices.push_back(1);
     require(validate_analytic_result_packet_records(unused_source_set) ==
                 AnalyticResultPacketLayoutError::invalid_packet,

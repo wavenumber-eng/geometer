@@ -2,7 +2,7 @@
 
 #include "geometer/analytic_operand_outcome.h"
 #include "geometer/analytic_result_packet_layout.h"
-#include "geometer/exact_boolean_provenance.h"
+#include "geometer/analytic_source_reference.h"
 
 #include <cstdint>
 #include <optional>
@@ -119,7 +119,7 @@ struct AnalyticResultPacketRecords
     std::vector<AnalyticResultRegionRecord> regions;
     std::vector<std::uint64_t> ring_region_references;
     std::vector<AnalyticPacketSourceSetRecord> source_sets;
-    std::vector<exact::ExactSourceReference> source_references;
+    std::vector<AnalyticSourceReference> source_references;
     std::vector<AnalyticOperandEventRecord> operand_events;
     std::vector<AnalyticRelationshipResultRecord> relationship_results;
     std::vector<AnalyticRelationshipPairRecord> relationship_pairs;

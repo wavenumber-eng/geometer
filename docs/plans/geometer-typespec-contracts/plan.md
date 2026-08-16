@@ -1048,8 +1048,17 @@ Geometer proposal, not the original consumer packet.
   irrational-radius authored arcs, clockwise annular holes, full two-half
   circles, nested hole/island topology, reciprocal old-to-normalized maps,
   513 disjoint sparse boxes, global half ties, early work/memory rejection, and
-  native/WASM canonical bytes gate the slice. Packet source-set interning,
-  canonical record IDs, dispatch, and transport remain pending.
+  native/WASM canonical bytes gate the slice.
+- Owned filtered packet assembly is implemented after normalization. It
+  validates all old-topology maps and request-owned source identities, copies
+  normalized coordinates without another tolerance, interns source and
+  topology sequences through a fixed-capacity exact prefix trie, assigns
+  canonical record IDs using scalar ranks, encodes one standalone packet, and
+  closes it with SHA-256. Candidate-bounded admission precedes normalization;
+  exact work/memory boundaries and shared-prefix scaling gate publication.
+  Production-neutral source types keep this path independent of the exact
+  namespace. Batch merge, relationship projection, operation dispatch, and
+  transport remain pending.
 - Before filtered operation dispatch is enabled, move the retained native
   exact/oracle sources out of the normal `geometer_lib` source list into an
   explicit feasibility-oracle target, matching the separation already used by

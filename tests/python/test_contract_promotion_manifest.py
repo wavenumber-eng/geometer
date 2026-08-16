@@ -416,7 +416,7 @@ def test_manifest_promoted_and_candidate_surfaces_are_complete() -> None:
     assert candidate["solver_numeric_status"] == "reopened_filtered_50nm"
     assert candidate["filtered_solver_foundation"] == (
         "direct_lowering_broad_narrow_overlay_arrangement_face_selection_material_regions_"
-        "lineage_operand_outcomes_and_normalization_implemented_not_dispatched"
+        "lineage_operand_outcomes_normalization_and_packet_assembly_implemented_not_dispatched"
     )
     assert candidate["request_contract"] == "geometry.analytic_planar_boolean_batch.request.a0"
     assert candidate["result_contract"] == "geometry.analytic_planar_boolean_batch.result.a0"
@@ -827,6 +827,31 @@ def test_filtered_solver_foundation_is_bounded_non_algebraic_and_not_dispatched(
         "normalization_parity_validator": ("scripts/validate_analytic_filtered_normalization_parity.py"),
         "normalization_vector_bytes": 2360,
         "normalization_vector_sha256": ("ea874451d9f86f3c30eae894562a68510f0b99e5fac194c856399d137d437252"),
+        "packet_header": "src/cpp/lib/geometer/analytic_filtered_packet.h",
+        "packet_source": "src/cpp/lib/analytic_filtered_packet.cpp",
+        "packet_sequences_header": "src/cpp/lib/analytic_filtered_packet_sequences.h",
+        "packet_sequences_source": "src/cpp/lib/analytic_filtered_packet_sequences.cpp",
+        "source_reference_header": "src/cpp/lib/geometer/analytic_source_reference.h",
+        "packet_test": "tests/cpp/analytic_filtered_packet_test.cpp",
+        "packet_input": (
+            "owned_filtered_normalization_with_lineage_outcomes_and_explicit_topology_maps"
+        ),
+        "packet_policy": (
+            "coordinate_preserving_canonical_source_set_topology_event_and_standalone_packet_assembly"
+        ),
+        "packet_complexity_policy": (
+            "fixed_width_sort_keys_and_exact_prefix_trie_without_variable_length_comparators_"
+            "or_face_by_operand_replay"
+        ),
+        "packet_budget_policy": (
+            "candidate_bounded_pre_normalization_reservation_then_exact_fixed_capacity_source_"
+            "and_packet_publication"
+        ),
+        "packet_parity_validator": "scripts/validate_analytic_filtered_packet_parity.py",
+        "packet_vector_bytes": 4264,
+        "packet_vector_sha256": (
+            "523c2c237b6b8ec329ee3585de0495f37e66d3b5aa3f1bd3b3cdf6a7496ea3cd"
+        ),
     }
     implementation_paths = [
         solver[key]
@@ -866,6 +891,11 @@ def test_filtered_solver_foundation_is_bounded_non_algebraic_and_not_dispatched(
             "normalization_replay_header",
             "normalization_replay_source",
             "normalization_reconstruction_header",
+            "packet_header",
+            "packet_source",
+            "packet_sequences_header",
+            "packet_sequences_source",
+            "source_reference_header",
         )
     ]
     for relative_path in implementation_paths:
@@ -896,6 +926,8 @@ def test_filtered_solver_foundation_is_bounded_non_algebraic_and_not_dispatched(
             "normalization_test",
             "normalization_parity_validator",
             "normalization_reconstruction_header",
+            "packet_test",
+            "packet_parity_validator",
         )
     )
 

@@ -27,11 +27,11 @@ void require(bool condition, const std::string& message)
     }
 }
 
-void add_sources(AnalyticResultPacketRecords& records, ExactSourceRole role)
+void add_sources(AnalyticResultPacketRecords& records, AnalyticSourceRole role)
 {
     records.source_references = {
-        {ExactSourceKind::authored_segment_curve, role, 1, 1, 1},
-        {ExactSourceKind::authored_segment_curve, role, 2, 1, 1},
+        {AnalyticSourceKind::authored_segment_curve, role, 1, 1, 1},
+        {AnalyticSourceKind::authored_segment_curve, role, 2, 1, 1},
     };
     records.source_reference_indices = {0, 1};
     records.source_sets = {{0, 2}};
@@ -75,7 +75,7 @@ void finish_success(AnalyticResultPacketRecords& records,
 AnalyticResultPacketRecords square()
 {
     AnalyticResultPacketRecords records;
-    add_sources(records, ExactSourceRole::authored_line);
+    add_sources(records, AnalyticSourceRole::authored_line);
     add_line_ring(records, {{0, 0}, {10, 0}, {10, 10}, {0, 10}}, kNone, 0);
     finish_success(records, {0});
     return records;
@@ -84,7 +84,7 @@ AnalyticResultPacketRecords square()
 AnalyticResultPacketRecords circle()
 {
     AnalyticResultPacketRecords records;
-    add_sources(records, ExactSourceRole::authored_circular_arc);
+    add_sources(records, AnalyticSourceRole::authored_circular_arc);
     add_vertex(records, -10, 0);
     add_vertex(records, 10, 0);
     records.fragments = {
@@ -100,7 +100,7 @@ AnalyticResultPacketRecords circle()
 AnalyticResultPacketRecords nested_disjoint()
 {
     AnalyticResultPacketRecords records;
-    add_sources(records, ExactSourceRole::authored_line);
+    add_sources(records, AnalyticSourceRole::authored_line);
     add_line_ring(records, {{0, 0}, {20, 0}, {20, 20}, {0, 20}}, kNone, 0);
     add_line_ring(records, {{4, 4}, {4, 16}, {16, 16}, {16, 4}}, 0, 1);
     add_line_ring(records, {{8, 8}, {12, 8}, {12, 12}, {8, 12}}, 1, 2);
@@ -112,7 +112,7 @@ AnalyticResultPacketRecords nested_disjoint()
 AnalyticResultPacketRecords deeply_nested(std::uint32_t ring_count)
 {
     AnalyticResultPacketRecords records;
-    add_sources(records, ExactSourceRole::authored_line);
+    add_sources(records, AnalyticSourceRole::authored_line);
     std::vector<std::uint32_t> outer_rings;
     outer_rings.reserve((ring_count + 1) / 2);
     for (std::uint32_t ring = 0; ring < ring_count; ++ring)
@@ -144,7 +144,7 @@ AnalyticResultPacketRecords many_empty_jobs()
 AnalyticResultPacketRecords point_tangent()
 {
     AnalyticResultPacketRecords records;
-    add_sources(records, ExactSourceRole::authored_line);
+    add_sources(records, AnalyticSourceRole::authored_line);
     add_line_ring(records, {{0, 0}, {2, 0}, {2, 2}, {0, 2}}, kNone, 0);
     add_line_ring(records, {{2, 2}, {4, 2}, {4, 4}, {2, 4}}, kNone, 0);
     finish_success(records, {0, 1});

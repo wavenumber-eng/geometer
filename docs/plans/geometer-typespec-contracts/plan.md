@@ -961,6 +961,26 @@ Geometer proposal, not the original consumer packet.
   Candidate streams are globally sorted/unique-validated in the same fully
   precharged scan; duplicate and out-of-order streams remain `invalid_argument`
   with zero arrangement telemetry at both default and tight admitted memory.
+- Selected material-boundary extraction and pre-normalization regions are now
+  implemented behind an owned records/geometry/pairs entry point. Each
+  selected half-edge receives one successor and predecessor from a single pass
+  over the certified vertex rotation, then every ring edge is traced once.
+  Same-material face components and one component-graph traversal derive
+  canonical parents, depths, outer/hole/island directions, and distinct
+  interior-connected regions without repeated seam walks, cycle-pair
+  containment, or point-in-ring queries. Collapsed isolated vertices remain
+  zero-area lineage; tangent disks remain separate regions.
+- Region work and live memory are reserved through selection admission before
+  arrangement executes, using the existing `O(curves + candidates)` possible
+  root/span envelope. The same scan now reserves predictable narrow, overlay,
+  and arrangement phases, including endpoint-coincident full-circle domains,
+  before pair evaluation. Selection runs against the remaining work ceiling, every
+  region traversal and sort consumes the reservation, and actual region work
+  remains separately visible. Exact/one-short admission, 1x/2x many-edge,
+  nested line rings, tangent arcs, collapsed lineage, and native/WASM parity
+  fixtures gate the slice. Complete source lineage, one-time 1 nm coordinate
+  publication, post-normalization topology validation, dispatch, and transport
+  remain pending.
 - Before filtered operation dispatch is enabled, move the retained native
   exact/oracle sources out of the normal `geometer_lib` source list into an
   explicit feasibility-oracle target, matching the separation already used by

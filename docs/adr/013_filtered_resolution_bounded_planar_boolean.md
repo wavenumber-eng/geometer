@@ -223,9 +223,27 @@ engine.
   independent of the resource budget, and every proportional cycle publication
   pass is precharged. Complete-cluster seam distance predicates are charged
   before evaluation. The selection result retains the lowering origin
-  required to reconstruct global coordinates. Selected-boundary publication,
-  complete lineage projection, final grid normalization, and dispatch remain
-  gated.
+  required to reconstruct global coordinates.
+- Material-boundary extraction owns selection rather than accepting a
+  caller-constructed DCEL. A single cyclic scan of each certified outgoing
+  rotation assigns exactly one selected successor and predecessor for every
+  half-edge separating material on the left from empty space on the right.
+  Each selected half-edge is traced once. Equal-material face components and
+  their material/empty boundary graph derive ring parentage and distinct
+  interior-connected regions without a seam walk, cycle-pair containment, or
+  point-in-ring query. Isolated collapsed vertices retain lineage but create no
+  area region; point-tangent material components remain separate.
+- The candidate-derived selection admission envelope also reserves the full
+  possible narrow-result, overlay-event/output, arrangement, and
+  material-region live-memory phases plus a conservative downstream work
+  budget before arrangement starts. The envelope is linear in curves plus
+  canonical candidates and counts endpoint-coincident full-circle domains.
+  Selection consumes only the remaining work;
+  fixed-capacity region traversals consume the reservation and report actual
+  work separately. Every rotation, ring, component, adjacency, output, and
+  sort pass is precharged. Native and WASM use identical logical charges and
+  canonical ring/component ordering. Complete lineage projection, final grid
+  normalization, and dispatch remain gated.
 - Solver resource limits are supplied through one internal limits value object
   rather than scattered production constants. The catalog values are governed
   hard ceilings; a host may advertise and enforce lower effective limits, and

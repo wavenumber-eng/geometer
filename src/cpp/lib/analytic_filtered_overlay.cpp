@@ -1,5 +1,6 @@
 #include "geometer/analytic_filtered_overlay.h"
 
+#include "analytic_filtered_capacity.h"
 #include "analytic_filtered_interval.h"
 
 #include <algorithm>
@@ -30,9 +31,9 @@ using analytic_detail::subtract;
 constexpr std::uint32_t kNoIndex = std::numeric_limits<std::uint32_t>::max();
 constexpr std::uint64_t kCurveLogicalBytes = 48;
 constexpr std::uint64_t kGroupLogicalBytes = 48;
-constexpr std::uint64_t kRawEventLogicalBytes = 96;
-constexpr std::uint64_t kUniqueEventLogicalBytes = 144;
-constexpr std::uint64_t kActionLogicalBytes = 24;
+constexpr std::uint64_t kRawEventLogicalBytes = analytic_detail::kOverlayRawEventLogicalBytes;
+constexpr std::uint64_t kUniqueEventLogicalBytes = analytic_detail::kOverlayUniqueEventLogicalBytes;
+constexpr std::uint64_t kActionLogicalBytes = analytic_detail::kOverlayActionLogicalBytes;
 constexpr std::uint64_t kSpanLogicalBytes = kAnalyticOverlaySpanLogicalBytes;
 constexpr std::uint64_t kMembershipLogicalBytes = 8;
 

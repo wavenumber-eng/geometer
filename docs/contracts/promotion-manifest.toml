@@ -111,7 +111,7 @@ catalog_identity = "wn.geometer.contract_catalog"
 catalog_generation = "a0"
 
 [analytic_filtered_solver]
-status = "implemented_filtered_face_selection_not_dispatched"
+status = "implemented_filtered_material_regions_not_dispatched"
 design = "docs/adr/013_filtered_resolution_bounded_planar_boolean.md"
 coordinate_grid_nm = 1
 topology_resolution_nm = 50
@@ -184,6 +184,16 @@ boolean_selection_budget_policy = "metered_multi_pass_admission_fixed_capacity_d
 boolean_selection_parity_validator = "scripts/validate_analytic_filtered_boolean_selection_parity.py"
 boolean_selection_vector_bytes = 12360
 boolean_selection_vector_sha256 = "28d5387e04745a191376cd1b17163d9956865d0b5edbc3d448690cd42a031b6f"
+regions_header = "src/cpp/lib/geometer/analytic_filtered_regions.h"
+regions_source = "src/cpp/lib/analytic_filtered_regions.cpp"
+regions_test = "tests/cpp/analytic_filtered_regions_test.cpp"
+regions_input = "ordered_request_records_and_trusted_filtered_geometry_with_canonical_broad_pairs"
+regions_policy = "rotation_indexed_selected_boundary_successors_and_component_graph_material_rings"
+regions_complexity_policy = "linear_boundary_tracing_and_component_graph_without_seam_walk_or_cycle_pair_containment"
+regions_budget_policy = "candidate_bounded_pre_arrangement_region_phase_reservation_then_fixed_capacity_metered_traversals"
+regions_parity_validator = "scripts/validate_analytic_filtered_regions_parity.py"
+regions_vector_bytes = 800
+regions_vector_sha256 = "4a9037d938d8263a2c749a60f1f88f626c67986dfc554bbf131fd6a836834f59"
 
 [analytic_exact_backend]
 status = "implemented_non_primary_oracle"
@@ -877,15 +887,15 @@ solver_numeric_status = "reopened_filtered_50nm"
 named_consumer = "appz.data_models.pcb.matz"
 compatibility_snapshot = "docs/contracts/compatibility/data-models-geom-a0-2026-08-12.toml"
 design = "docs/design/analytic-planar-boolean-a0.md"
-design_sha256 = "f545024f2e24ebc4891ccdee8d4ef850fd118170c8517b8c623320fbdae3e9ae"
+design_sha256 = "969f31b703dd49680403868017e3f500bd1c45dceed6c7c88ff537a1ba9a976c"
 packet_spec = "docs/design/analytic-planar-boolean-packet-a0.md"
 packet_spec_sha256 = "5fb82f495b17b1c47536d6c0ade77aa3183bc6b7f342f70013c462fcaf469856"
 numeric_catalog = "docs/contracts/analytic-planar-boolean-a0-catalog.toml"
 numeric_catalog_sha256 = "f0b52ef8a032dcf47d2083b1f843aeeb791d4bc477a36b10c8c590474d47db7e"
 solver_adr = "docs/adr/013_filtered_resolution_bounded_planar_boolean.md"
-solver_adr_sha256 = "df467d3382e2d2cdfec1295c6b2dad96151f83773b402cdeccd566333f39fb48"
+solver_adr_sha256 = "f6c25a1b1d688f9d77da9efa81e2cda93f4cbc1dd4137f6e4ed7149eb9031932"
 superseded_solver_adr = "docs/adr/012_exact_analytic_planar_boolean_arrangement.md"
-filtered_solver_foundation = "direct_lowering_broad_narrow_overlay_arrangement_and_face_selection_implemented_not_dispatched"
+filtered_solver_foundation = "direct_lowering_broad_narrow_overlay_arrangement_face_selection_and_material_regions_implemented_not_dispatched"
 feasibility_test = "tests/cpp/analytic_planar_boolean_feasibility_test.cpp"
 portable_fixture = "tests/fixtures/analytic_planar_boolean/matz_observations_a0.json"
 candidate_typespec_entrypoint = "src/tsp/geometer/analytic-candidate.tsp"

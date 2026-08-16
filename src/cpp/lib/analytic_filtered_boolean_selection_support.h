@@ -48,6 +48,10 @@ constexpr std::uint64_t kSweepTemporaryLogicalBytes = 64;
 constexpr std::uint64_t kCoverageNodeLogicalBytes = 8;
 constexpr std::uint64_t kCoverageTableEntryLogicalBytes = 16;
 constexpr std::uint64_t kDualFrameLogicalBytes = 24;
+constexpr std::uint64_t kMaterialRingLogicalBytes = 32;
+constexpr std::uint64_t kMaterialRegionLogicalBytes = 16;
+constexpr std::uint64_t kMaterialRawRingLogicalBytes = 40;
+constexpr std::uint64_t kMaterialAdjacencyLogicalBytes = 16;
 
 inline std::uint64_t checked_add(std::uint64_t left, std::uint64_t right, bool& valid) noexcept
 {
@@ -675,13 +679,27 @@ struct SelectionAdmission
     AnalyticFilteredArrangementResult arrangement;
     std::uint64_t admission_work = 0;
     std::uint64_t admission_peak_memory = 0;
+    std::uint64_t downstream_reserved_work = 0;
+    AnalyticSolverLimits execution_limits;
     bool ready = false;
+};
+
+struct SelectionAdmissionOptions
+{
+    // Reserve the complete structural material-ring phase before arrangement
+    // begins. The owned regions entry point consumes this reservation after
+    // selection; the standalone selection entry point leaves it disabled.
+    bool reserve_material_regions = false;
 };
 
 [[nodiscard]] SelectionAdmission prepare_boolean_selection_admission(
     const AnalyticRequestPacketRecords& records, std::uint32_t job_index,
     const AnalyticFilteredGeometry& geometry, const std::vector<AnalyticCurvePair>& candidate_pairs,
-    const AnalyticSolverLimits& limits);
+    const AnalyticSolverLimits& limits, const SelectionAdmissionOptions& options = {});
+
+[[nodiscard]] AnalyticFilteredBooleanSelectionResult finish_boolean_selection_from_admission(
+    const AnalyticRequestPacketRecords& records, std::uint32_t job_index,
+    const AnalyticFilteredGeometry& geometry, SelectionAdmission admission);
 
 } // namespace analytic_selection_detail
 } // namespace geometer

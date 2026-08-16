@@ -415,7 +415,8 @@ def test_manifest_promoted_and_candidate_surfaces_are_complete() -> None:
     assert candidate["status"] == "contract_frozen"
     assert candidate["solver_numeric_status"] == "reopened_filtered_50nm"
     assert candidate["filtered_solver_foundation"] == (
-        "direct_lowering_broad_narrow_overlay_arrangement_and_face_selection_implemented_not_dispatched"
+        "direct_lowering_broad_narrow_overlay_arrangement_face_selection_and_material_"
+        "regions_implemented_not_dispatched"
     )
     assert candidate["request_contract"] == "geometry.analytic_planar_boolean_batch.request.a0"
     assert candidate["result_contract"] == "geometry.analytic_planar_boolean_batch.result.a0"
@@ -664,7 +665,7 @@ def test_exact_algebraic_backend_is_governed_and_non_primary() -> None:
 def test_filtered_solver_foundation_is_bounded_non_algebraic_and_not_dispatched() -> None:
     solver = _manifest()["analytic_filtered_solver"]
     assert solver == {
-        "status": "implemented_filtered_face_selection_not_dispatched",
+        "status": "implemented_filtered_material_regions_not_dispatched",
         "design": "docs/adr/013_filtered_resolution_bounded_planar_boolean.md",
         "coordinate_grid_nm": 1,
         "topology_resolution_nm": 50,
@@ -754,6 +755,27 @@ def test_filtered_solver_foundation_is_bounded_non_algebraic_and_not_dispatched(
         "boolean_selection_parity_validator": ("scripts/validate_analytic_filtered_boolean_selection_parity.py"),
         "boolean_selection_vector_bytes": 12360,
         "boolean_selection_vector_sha256": ("28d5387e04745a191376cd1b17163d9956865d0b5edbc3d448690cd42a031b6f"),
+        "regions_header": "src/cpp/lib/geometer/analytic_filtered_regions.h",
+        "regions_source": "src/cpp/lib/analytic_filtered_regions.cpp",
+        "regions_test": "tests/cpp/analytic_filtered_regions_test.cpp",
+        "regions_input": (
+            "ordered_request_records_and_trusted_filtered_geometry_with_canonical_broad_pairs"
+        ),
+        "regions_policy": (
+            "rotation_indexed_selected_boundary_successors_and_component_graph_material_rings"
+        ),
+        "regions_complexity_policy": (
+            "linear_boundary_tracing_and_component_graph_without_seam_walk_or_cycle_pair_containment"
+        ),
+        "regions_budget_policy": (
+            "candidate_bounded_pre_arrangement_region_phase_reservation_then_fixed_capacity_"
+            "metered_traversals"
+        ),
+        "regions_parity_validator": "scripts/validate_analytic_filtered_regions_parity.py",
+        "regions_vector_bytes": 800,
+        "regions_vector_sha256": (
+            "4a9037d938d8263a2c749a60f1f88f626c67986dfc554bbf131fd6a836834f59"
+        ),
     }
     implementation_paths = [
         solver[key]
@@ -780,6 +802,8 @@ def test_filtered_solver_foundation_is_bounded_non_algebraic_and_not_dispatched(
             "boolean_selection_source",
             "boolean_selection_admission_source",
             "boolean_selection_support_header",
+            "regions_header",
+            "regions_source",
         )
     ]
     for relative_path in implementation_paths:
@@ -801,6 +825,8 @@ def test_filtered_solver_foundation_is_bounded_non_algebraic_and_not_dispatched(
             "arrangement_parity_validator",
             "boolean_selection_test",
             "boolean_selection_parity_validator",
+            "regions_test",
+            "regions_parity_validator",
         )
     )
 

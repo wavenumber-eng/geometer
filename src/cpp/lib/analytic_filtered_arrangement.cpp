@@ -1,5 +1,6 @@
 #include "geometer/analytic_filtered_arrangement.h"
 
+#include "analytic_filtered_capacity.h"
 #include "analytic_filtered_interval.h"
 #include "analytic_interval_index.h"
 
@@ -292,6 +293,8 @@ struct GuaranteedCarrierCounts
     std::uint64_t possible_base_spans = 0;
     std::uint64_t possible_repeated_base_spans = 0;
     std::uint64_t possible_base_memberships = 0;
+    std::uint64_t possible_collapsed_domains = 0;
+    std::uint64_t possible_circular_carrier_groups = 0;
 };
 
 bool guaranteed_carrier_counts(const AnalyticFilteredGeometry& geometry,
@@ -334,6 +337,12 @@ bool guaranteed_carrier_counts(const AnalyticFilteredGeometry& geometry,
         counts.possible_base_memberships =
             checked_add(counts.possible_base_memberships,
                         curve.kind == AnalyticAtomicCurveKind::circular_arc ? 3 : 1, count_valid);
+        counts.possible_collapsed_domains = checked_add(
+            counts.possible_collapsed_domains,
+            complete_points_within_resolution(curve.start, curve.end) ? 1 : 0, count_valid);
+        counts.possible_circular_carrier_groups =
+            checked_add(counts.possible_circular_carrier_groups,
+                        curve.kind == AnalyticAtomicCurveKind::circular_arc ? 1 : 0, count_valid);
         if (!count_valid)
             return false;
         const std::uint64_t carrier = curve.construction_carrier_id;
@@ -1356,9 +1365,54 @@ bool estimate_analytic_filtered_arrangement_minimum_requirements(
     requirements.guaranteed_collapsed_vertices = guaranteed.collapsed_vertices;
     requirements.possible_base_spans = guaranteed.possible_base_spans;
     requirements.possible_base_memberships = guaranteed.possible_base_memberships;
+    requirements.possible_collapsed_domains = guaranteed.possible_collapsed_domains;
+    requirements.possible_circular_carrier_groups = guaranteed.possible_circular_carrier_groups;
     return calculate_arrangement_minimum_requirements(geometry, pair_count, guaranteed,
                                                       requirements.working_memory_bytes,
                                                       requirements.predicate_calls);
+}
+
+bool analytic_detail::estimate_analytic_filtered_arrangement_possible_memory(
+    const AnalyticFilteredArrangementCapacityEnvelope& envelope,
+    std::uint64_t& working_memory_bytes) noexcept
+{
+    bool valid = true;
+    const std::uint64_t narrow_peak =
+        checked_multiply(envelope.pair_count, kAnalyticNarrowPhasePairLogicalBytes, valid);
+    std::uint64_t raw_events = checked_multiply(envelope.curve_count, 2, valid);
+    raw_events =
+        checked_add(raw_events, checked_multiply(envelope.point_intersections, 2, valid), valid);
+    raw_events = checked_add(raw_events,
+                             checked_multiply(envelope.circular_carrier_groups, 2, valid), valid);
+    std::uint64_t overlay_peak = checked_add(
+        narrow_peak,
+        checked_multiply(envelope.curve_count, kAnalyticOverlayCurveGroupLogicalBytes, valid),
+        valid);
+    overlay_peak = checked_add(
+        overlay_peak, checked_multiply(raw_events, kOverlayRawEventLogicalBytes, valid), valid);
+    overlay_peak = checked_add(
+        overlay_peak, checked_multiply(raw_events, kOverlayUniqueEventLogicalBytes, valid), valid);
+    overlay_peak = checked_add(overlay_peak,
+                               checked_multiply(checked_multiply(envelope.curve_count, 2, valid),
+                                                kOverlayActionLogicalBytes, valid),
+                               valid);
+    overlay_peak = checked_add(
+        overlay_peak, checked_multiply(envelope.spans, kAnalyticOverlaySpanLogicalBytes, valid),
+        valid);
+    overlay_peak = checked_add(
+        overlay_peak,
+        checked_multiply(envelope.memberships, kAnalyticOverlayMembershipLogicalBytes, valid),
+        valid);
+
+    const std::uint64_t result_memberships =
+        checked_add(envelope.memberships, envelope.collapsed_domains, valid);
+    const std::uint64_t endpoints =
+        checked_add(checked_multiply(envelope.spans, 2, valid), envelope.collapsed_domains, valid);
+    const std::uint64_t half_edges = checked_multiply(envelope.spans, 2, valid);
+    working_memory_bytes = arrangement_memory_requirement(
+        envelope.curve_count, envelope.spans, envelope.collapsed_domains, envelope.memberships,
+        result_memberships, endpoints, half_edges, overlay_peak, valid);
+    return valid;
 }
 
 AnalyticFilteredArrangementResult

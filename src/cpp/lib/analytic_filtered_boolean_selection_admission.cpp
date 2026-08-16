@@ -1,4 +1,5 @@
 #include "analytic_filtered_boolean_selection_support.h"
+#include "analytic_filtered_capacity.h"
 
 namespace geometer
 {
@@ -31,7 +32,7 @@ std::uint64_t shared_exact_endpoints(const AnalyticAtomicCurveNm& left,
 SelectionAdmission prepare_boolean_selection_admission(
     const AnalyticRequestPacketRecords& records, std::uint32_t job_index,
     const AnalyticFilteredGeometry& geometry, const std::vector<AnalyticCurvePair>& candidate_pairs,
-    const AnalyticSolverLimits& limits)
+    const AnalyticSolverLimits& limits, const SelectionAdmissionOptions& options)
 {
     SelectionAdmission admission;
     AnalyticFilteredBooleanSelectionResult& preflight = admission.result;
@@ -183,6 +184,7 @@ SelectionAdmission prepare_boolean_selection_admission(
 
     std::uint64_t possible_spans = arrangement_minimum.possible_base_spans;
     std::uint64_t possible_transitions = arrangement_minimum.possible_base_memberships;
+    std::uint64_t possible_point_intersections = 0;
     AnalyticCurvePair previous_pair{};
     bool has_previous_pair = false;
     for (const AnalyticCurvePair& pair : candidate_pairs)
@@ -209,6 +211,8 @@ SelectionAdmission prepare_boolean_selection_admission(
                                                  : 2;
         const std::uint64_t existing =
             std::min(maximum_points, shared_exact_endpoints(left, right));
+        possible_point_intersections =
+            checked_add(possible_point_intersections, maximum_points, valid);
         possible_spans = checked_add(possible_spans,
                                      checked_multiply(maximum_points - existing, 2, valid), valid);
         possible_transitions = checked_add(
@@ -346,9 +350,95 @@ SelectionAdmission prepare_boolean_selection_admission(
         checked_add(checked_add(checked_add(retained_arrangement, selection_memory, valid),
                                 retained_selection_outputs, valid),
                     coverage_scratch, valid);
-    const std::uint64_t integrated_minimum_memory =
+    std::uint64_t integrated_minimum_memory =
         std::max(arrangement_minimum.working_memory_bytes,
                  std::max(topology_phase_memory, coverage_phase_memory));
+    std::uint64_t possible_arrangement_memory = 0;
+    const analytic_detail::AnalyticFilteredArrangementCapacityEnvelope arrangement_envelope{
+        geometry.curves.size(),
+        candidate_pairs.size(),
+        possible_point_intersections,
+        arrangement_minimum.possible_circular_carrier_groups,
+        possible_spans,
+        arrangement_minimum.possible_collapsed_domains,
+        possible_transitions,
+    };
+    if (!analytic_detail::estimate_analytic_filtered_arrangement_possible_memory(
+            arrangement_envelope, possible_arrangement_memory))
+        valid = false;
+    integrated_minimum_memory = std::max(integrated_minimum_memory, possible_arrangement_memory);
+
+    std::uint64_t material_regions_work = 0;
+    if (options.reserve_material_regions)
+    {
+        const std::uint64_t maximum_edges = spans;
+        const std::uint64_t maximum_half_edges = checked_multiply(maximum_edges, 2, valid);
+        const std::uint64_t maximum_faces = checked_add(maximum_half_edges, 1, valid);
+        const std::uint64_t maximum_rings = maximum_half_edges;
+        const std::uint64_t maximum_adjacency = checked_multiply(maximum_rings, 2, valid);
+
+        std::uint64_t retained_selection =
+            checked_add(checked_add(retained_arrangement, selection_memory, valid),
+                        retained_selection_outputs, valid);
+        retained_selection = checked_add(
+            retained_selection,
+            checked_multiply(maximum_coverage_nodes, kCoverageNodeLogicalBytes, valid), valid);
+
+        std::uint64_t region_scratch =
+            checked_multiply(maximum_edges, kIndexLogicalBytes * 2, valid);
+        region_scratch =
+            checked_add(region_scratch,
+                        checked_multiply(maximum_half_edges,
+                                         kByteLogicalBytes * 4 + kIndexLogicalBytes * 2, valid),
+                        valid);
+        region_scratch = checked_add(
+            region_scratch,
+            checked_multiply(maximum_faces,
+                             kDisjointSetLogicalBytes + kIndexLogicalBytes * 4 + kByteLogicalBytes,
+                             valid),
+            valid);
+        region_scratch =
+            checked_add(region_scratch,
+                        checked_multiply(maximum_rings,
+                                         kMaterialRawRingLogicalBytes + kMaterialRingLogicalBytes +
+                                             kIndexLogicalBytes * 3 + kByteLogicalBytes,
+                                         valid),
+                        valid);
+        region_scratch = checked_add(
+            region_scratch,
+            checked_multiply(maximum_adjacency, kMaterialAdjacencyLogicalBytes, valid), valid);
+        region_scratch = checked_add(
+            region_scratch, checked_multiply(maximum_faces + 1, kIndexLogicalBytes, valid), valid);
+        region_scratch =
+            checked_add(region_scratch,
+                        checked_multiply(maximum_faces,
+                                         kMaterialRegionLogicalBytes + kIndexLogicalBytes, valid),
+                        valid);
+        region_scratch = checked_add(
+            region_scratch, checked_multiply(maximum_half_edges, kIndexLogicalBytes, valid), valid);
+        const std::uint64_t region_phase_memory =
+            checked_add(retained_selection, region_scratch, valid);
+        integrated_minimum_memory = std::max(integrated_minimum_memory, region_phase_memory);
+
+        material_regions_work = checked_multiply(maximum_half_edges, 16, valid);
+        material_regions_work =
+            checked_add(material_regions_work, checked_multiply(maximum_edges, 4, valid), valid);
+        material_regions_work =
+            checked_add(material_regions_work, checked_multiply(maximum_faces, 12, valid), valid);
+        material_regions_work =
+            checked_add(material_regions_work, checked_multiply(maximum_rings, 12, valid), valid);
+        material_regions_work =
+            checked_add(material_regions_work,
+                        checked_multiply(checked_add(maximum_edges, maximum_faces, valid),
+                                         tree_operation_units(maximum_faces), valid),
+                        valid);
+        material_regions_work =
+            checked_add(material_regions_work, sort_units(maximum_adjacency), valid);
+        material_regions_work =
+            checked_add(material_regions_work, sort_units(maximum_rings), valid);
+        material_regions_work =
+            checked_add(material_regions_work, sort_units(maximum_faces), valid);
+    }
 
     std::uint64_t selection_work = sort_units(operands);
     selection_work = checked_add(selection_work,
@@ -375,6 +465,8 @@ SelectionAdmission prepare_boolean_selection_admission(
     std::uint64_t integrated_arrangement_work =
         checked_add(geometry.curves.size(), arrangement_minimum.predicate_calls, valid);
     integrated_arrangement_work = checked_add(integrated_arrangement_work, selection_work, valid);
+    integrated_arrangement_work =
+        checked_add(integrated_arrangement_work, material_regions_work, valid);
     const std::uint64_t remaining_work = limits.predicate_calls - admission_work;
     if (!valid || integrated_minimum_memory > limits.working_memory_bytes ||
         integrated_arrangement_work > remaining_work)
@@ -383,7 +475,7 @@ SelectionAdmission prepare_boolean_selection_admission(
         return admission;
     }
     AnalyticSolverLimits arrangement_limits = limits;
-    arrangement_limits.predicate_calls = remaining_work - selection_work;
+    arrangement_limits.predicate_calls = remaining_work - selection_work - material_regions_work;
     AnalyticFilteredArrangementResult arrangement =
         build_analytic_filtered_arrangement(geometry, candidate_pairs, arrangement_limits);
     if (arrangement.error != AnalyticFilteredArrangementError::none)
@@ -405,6 +497,9 @@ SelectionAdmission prepare_boolean_selection_admission(
     admission.arrangement = std::move(arrangement);
     admission.admission_work = admission_work;
     admission.admission_peak_memory = admission_peak_memory;
+    admission.downstream_reserved_work = material_regions_work;
+    admission.execution_limits = limits;
+    admission.execution_limits.predicate_calls -= material_regions_work;
     admission.ready = true;
     return admission;
 }

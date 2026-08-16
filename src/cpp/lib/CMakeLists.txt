@@ -6,6 +6,7 @@ set(GEOMETER_LIB_SOURCES
     analytic_filtered_arrangement.cpp
     analytic_filtered_lowering.cpp
     analytic_filtered_overlay.cpp
+    analytic_filtered_regions.cpp
     analytic_interval_index.cpp
     analytic_numeric_filter.cpp
     analytic_request_packet.cpp

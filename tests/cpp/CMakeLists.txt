@@ -80,6 +80,15 @@ target_link_libraries(geometer_analytic_filtered_boolean_selection_test PRIVATE 
 add_test(NAME geometer_analytic_filtered_boolean_selection_test
          COMMAND geometer_analytic_filtered_boolean_selection_test)
 
+add_executable(geometer_analytic_filtered_regions_test
+    analytic_filtered_regions_test.cpp
+)
+
+target_link_libraries(geometer_analytic_filtered_regions_test PRIVATE geometer_lib)
+
+add_test(NAME geometer_analytic_filtered_regions_test
+         COMMAND geometer_analytic_filtered_regions_test)
+
 add_executable(geometer_exact_rational_test
     exact_rational_test.cpp
 )
@@ -377,6 +386,7 @@ if(EMSCRIPTEN)
         geometer_analytic_filtered_overlay_test
         geometer_analytic_filtered_arrangement_test
         geometer_analytic_filtered_boolean_selection_test
+        geometer_analytic_filtered_regions_test
         geometer_exact_rational_test
         geometer_exact_polynomial_test
         geometer_exact_resultant_test

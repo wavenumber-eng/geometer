@@ -1380,6 +1380,23 @@ static_assert(sizeof(AnalyticFilteredCoverageStateNode) <= kCoverageNodeLogicalB
 
 } // namespace
 
+AnalyticFilteredBooleanSelectionResult
+analytic_selection_detail::finish_boolean_selection_from_admission(
+    const AnalyticRequestPacketRecords& records, std::uint32_t job_index,
+    const AnalyticFilteredGeometry& geometry, SelectionAdmission admission)
+{
+    if (!admission.ready)
+    {
+        admission.result.origin_x_nm = geometry.origin_x_nm;
+        admission.result.origin_y_nm = geometry.origin_y_nm;
+        return std::move(admission.result);
+    }
+    return SelectionBuilder(records, job_index, geometry, std::move(admission.arrangement),
+                            admission.execution_limits, admission.admission_work,
+                            admission.admission_peak_memory)
+        .build();
+}
+
 AnalyticFilteredBooleanSelectionResult build_analytic_filtered_boolean_selection(
     const AnalyticRequestPacketRecords& records, std::uint32_t job_index,
     const AnalyticFilteredGeometry& geometry, const std::vector<AnalyticCurvePair>& candidate_pairs,
@@ -1388,15 +1405,8 @@ AnalyticFilteredBooleanSelectionResult build_analytic_filtered_boolean_selection
     analytic_selection_detail::SelectionAdmission admission =
         analytic_selection_detail::prepare_boolean_selection_admission(records, job_index, geometry,
                                                                        candidate_pairs, limits);
-    if (!admission.ready)
-    {
-        admission.result.origin_x_nm = geometry.origin_x_nm;
-        admission.result.origin_y_nm = geometry.origin_y_nm;
-        return std::move(admission.result);
-    }
-    return SelectionBuilder(records, job_index, geometry, std::move(admission.arrangement), limits,
-                            admission.admission_work, admission.admission_peak_memory)
-        .build();
+    return analytic_selection_detail::finish_boolean_selection_from_admission(
+        records, job_index, geometry, std::move(admission));
 }
 
 } // namespace geometer

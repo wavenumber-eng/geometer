@@ -515,10 +515,35 @@ paired semicircles. The scan also proves the pair stream globally sorted and
 unique before derived allocation, so malformed sequences are never classified
 by the available memory budget. This makes a sparse split-heavy comb fail at
 admission, with zero arrangement work, when the persistent coverage phase
-cannot fit. Malformed filtered point
-enclosures remain `invalid_argument` rather than becoming budget-dependent, and
-all proportional cycle-publication traversals are charged before they begin.
-Selected-boundary publication, complete lineage projection, final 1 nm
+cannot fit. Malformed filtered point enclosures remain `invalid_argument`
+rather than becoming budget-dependent, and all proportional cycle-publication
+traversals are charged before they begin.
+
+The implemented filtered material-region stage owns that selection boundary
+and never accepts caller-created faces or half-edge topology. It marks exactly
+the directed half-edges with material on the left and empty space on the right.
+At each vertex, one cyclic pass over the arrangement's already certified
+outgoing order assigns every selected incoming half-edge exactly one selected
+successor and predecessor. Rings are then traced once; there is no repeated
+seam walk through same-material edges. Equal-material faces are joined through
+a governed disjoint set, and the resulting material/empty component graph is
+traversed once from the unbounded component to derive canonical ring parents,
+depths, directions, and distinct interior-connected material regions. A
+point-tangent contact therefore keeps separate regions, while nested
+outer/hole/island structures form one parent chain. Isolated collapsed vertices
+remain successful zero-area lineage and create no ring or region.
+
+The selection admission pass uses its existing `O(curves + candidates)` split
+envelope to reserve the possible narrow result table, overlay event/output and
+arrangement phases, and the complete retained-selection plus material-region
+live phase before arrangement begins. Endpoint-coincident major/full-circle
+domains participate in that bound. It also reserves a conservative downstream
+work allowance; selection executes against the remaining ceiling and region
+traversals consume the reservation with actual work reported separately. A
+known-doomed region job therefore performs no arrangement work. Every
+half-edge, rotation, component, ring, adjacency, output, and sort traversal is
+precharged, known arrays are fixed-capacity, and native/WASM topology and
+telemetry bytes are identical. Complete lineage projection, final 1 nm
 normalization, and operation dispatch remain subsequent stages.
 
 Across ordered stages, the accumulator retains the resolved analytic

@@ -416,7 +416,7 @@ def test_manifest_promoted_and_candidate_surfaces_are_complete() -> None:
     assert candidate["solver_numeric_status"] == "reopened_filtered_50nm"
     assert candidate["filtered_solver_foundation"] == (
         "direct_lowering_broad_narrow_overlay_arrangement_face_selection_material_regions_"
-        "lineage_and_operand_outcomes_implemented_not_dispatched"
+        "lineage_operand_outcomes_and_normalization_implemented_not_dispatched"
     )
     assert candidate["request_contract"] == "geometry.analytic_planar_boolean_batch.request.a0"
     assert candidate["result_contract"] == "geometry.analytic_planar_boolean_batch.result.a0"
@@ -665,7 +665,7 @@ def test_exact_algebraic_backend_is_governed_and_non_primary() -> None:
 def test_filtered_solver_foundation_is_bounded_non_algebraic_and_not_dispatched() -> None:
     solver = _manifest()["analytic_filtered_solver"]
     assert solver == {
-        "status": "implemented_filtered_operand_outcomes_not_dispatched",
+        "status": "implemented_filtered_normalization_not_dispatched",
         "design": "docs/adr/013_filtered_resolution_bounded_planar_boolean.md",
         "coordinate_grid_nm": 1,
         "topology_resolution_nm": 50,
@@ -807,6 +807,37 @@ def test_filtered_solver_foundation_is_bounded_non_algebraic_and_not_dispatched(
         "outcomes_parity_validator": "scripts/validate_analytic_filtered_outcomes_parity.py",
         "outcomes_vector_bytes": 1480,
         "outcomes_vector_sha256": ("f1e998070384ff0096c5c88393951ce8e1a96e32f28f6e08a6006d89c7f1f035"),
+        "normalization_header": "src/cpp/lib/geometer/analytic_filtered_normalization.h",
+        "normalization_source": "src/cpp/lib/analytic_filtered_normalization.cpp",
+        "normalization_replay_header": (
+            "src/cpp/lib/analytic_filtered_normalization_replay.h"
+        ),
+        "normalization_replay_source": (
+            "src/cpp/lib/analytic_filtered_normalization_replay.cpp"
+        ),
+        "normalization_test": "tests/cpp/analytic_filtered_normalization_test.cpp",
+        "normalization_input": (
+            "owned_filtered_outcomes_with_retained_certified_arrangement_and_topology"
+        ),
+        "normalization_policy": (
+            "one_time_global_1nm_endpoint_authoritative_publication_with_filtered_whole_arc_"
+            "hausdorff_and_strict_zero_repair_topology_replay"
+        ),
+        "normalization_complexity_policy": (
+            "indexed_replay_candidates_and_boundary_to_ring_mapping_without_fragment_pair_or_"
+            "ring_pair_scans"
+        ),
+        "normalization_budget_policy": (
+            "candidate_bounded_pre_outcomes_reservation_then_exact_fixed_capacity_"
+            "normalization_and_replay_phases"
+        ),
+        "normalization_parity_validator": (
+            "scripts/validate_analytic_filtered_normalization_parity.py"
+        ),
+        "normalization_vector_bytes": 1968,
+        "normalization_vector_sha256": (
+            "899d588c79a4228ab4798ad9e14995850a6cc76f36238affbc8ee81767beb4c8"
+        ),
     }
     implementation_paths = [
         solver[key]
@@ -841,6 +872,10 @@ def test_filtered_solver_foundation_is_bounded_non_algebraic_and_not_dispatched(
             "outcomes_source",
             "outcomes_tracker_header",
             "outcomes_tracker_source",
+            "normalization_header",
+            "normalization_source",
+            "normalization_replay_header",
+            "normalization_replay_source",
         )
     ]
     for relative_path in implementation_paths:
@@ -868,6 +903,8 @@ def test_filtered_solver_foundation_is_bounded_non_algebraic_and_not_dispatched(
             "lineage_parity_validator",
             "outcomes_test",
             "outcomes_parity_validator",
+            "normalization_test",
+            "normalization_parity_validator",
         )
     )
 

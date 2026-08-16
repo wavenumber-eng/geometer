@@ -111,7 +111,7 @@ catalog_identity = "wn.geometer.contract_catalog"
 catalog_generation = "a0"
 
 [analytic_filtered_solver]
-status = "implemented_filtered_operand_outcomes_not_dispatched"
+status = "implemented_filtered_normalization_not_dispatched"
 design = "docs/adr/013_filtered_resolution_bounded_planar_boolean.md"
 coordinate_grid_nm = 1
 topology_resolution_nm = 50
@@ -216,6 +216,18 @@ outcomes_budget_policy = "candidate_bounded_pre_arrangement_history_reservation_
 outcomes_parity_validator = "scripts/validate_analytic_filtered_outcomes_parity.py"
 outcomes_vector_bytes = 1480
 outcomes_vector_sha256 = "f1e998070384ff0096c5c88393951ce8e1a96e32f28f6e08a6006d89c7f1f035"
+normalization_header = "src/cpp/lib/geometer/analytic_filtered_normalization.h"
+normalization_source = "src/cpp/lib/analytic_filtered_normalization.cpp"
+normalization_replay_header = "src/cpp/lib/analytic_filtered_normalization_replay.h"
+normalization_replay_source = "src/cpp/lib/analytic_filtered_normalization_replay.cpp"
+normalization_test = "tests/cpp/analytic_filtered_normalization_test.cpp"
+normalization_input = "owned_filtered_outcomes_with_retained_certified_arrangement_and_topology"
+normalization_policy = "one_time_global_1nm_endpoint_authoritative_publication_with_filtered_whole_arc_hausdorff_and_strict_zero_repair_topology_replay"
+normalization_complexity_policy = "indexed_replay_candidates_and_boundary_to_ring_mapping_without_fragment_pair_or_ring_pair_scans"
+normalization_budget_policy = "candidate_bounded_pre_outcomes_reservation_then_exact_fixed_capacity_normalization_and_replay_phases"
+normalization_parity_validator = "scripts/validate_analytic_filtered_normalization_parity.py"
+normalization_vector_bytes = 1968
+normalization_vector_sha256 = "899d588c79a4228ab4798ad9e14995850a6cc76f36238affbc8ee81767beb4c8"
 
 [analytic_exact_backend]
 status = "implemented_non_primary_oracle"
@@ -909,15 +921,15 @@ solver_numeric_status = "reopened_filtered_50nm"
 named_consumer = "appz.data_models.pcb.matz"
 compatibility_snapshot = "docs/contracts/compatibility/data-models-geom-a0-2026-08-12.toml"
 design = "docs/design/analytic-planar-boolean-a0.md"
-design_sha256 = "b4a43069ee9b5bb54201c2d54ad3080ef3842c6bed709467cef5f2d72cb7e153"
+design_sha256 = "9ced0687b18dd14a64a3dc12a43078991dfdbcc322886ccfed9512bbf7e6768b"
 packet_spec = "docs/design/analytic-planar-boolean-packet-a0.md"
 packet_spec_sha256 = "5fb82f495b17b1c47536d6c0ade77aa3183bc6b7f342f70013c462fcaf469856"
 numeric_catalog = "docs/contracts/analytic-planar-boolean-a0-catalog.toml"
 numeric_catalog_sha256 = "f0b52ef8a032dcf47d2083b1f843aeeb791d4bc477a36b10c8c590474d47db7e"
 solver_adr = "docs/adr/013_filtered_resolution_bounded_planar_boolean.md"
-solver_adr_sha256 = "2759c3d1a8487a70bea0ab55895d10b12799c1e69ccdc69b17c6871d4be1b57e"
+solver_adr_sha256 = "85749e297b84fd2c2449364f8efdb5b91754a833da61afbd8e248361bd47797c"
 superseded_solver_adr = "docs/adr/012_exact_analytic_planar_boolean_arrangement.md"
-filtered_solver_foundation = "direct_lowering_broad_narrow_overlay_arrangement_face_selection_material_regions_lineage_and_operand_outcomes_implemented_not_dispatched"
+filtered_solver_foundation = "direct_lowering_broad_narrow_overlay_arrangement_face_selection_material_regions_lineage_operand_outcomes_and_normalization_implemented_not_dispatched"
 feasibility_test = "tests/cpp/analytic_planar_boolean_feasibility_test.cpp"
 portable_fixture = "tests/fixtures/analytic_planar_boolean/matz_observations_a0.json"
 candidate_typespec_entrypoint = "src/tsp/geometer/analytic-candidate.tsp"

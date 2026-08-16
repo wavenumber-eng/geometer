@@ -5,6 +5,8 @@ set(GEOMETER_LIB_SOURCES
     analytic_filtered_boolean_selection_admission.cpp
     analytic_filtered_outcome_tracker.cpp
     analytic_filtered_outcomes.cpp
+    analytic_filtered_normalization.cpp
+    analytic_filtered_normalization_replay.cpp
     analytic_filtered_arrangement.cpp
     analytic_filtered_lowering.cpp
     analytic_filtered_overlay.cpp

@@ -1018,7 +1018,18 @@ Geometer proposal, not the original consumer packet.
   exact/one-short budgets, sparse 1x/2x scaling, and native/WASM parity gate
   the slice. Final packet IDs remain intentionally deferred until one-time
   1 nm normalization supplies canonical topology remaps.
-  One-time coordinate publication, post-normalization topology validation,
+- One-time filtered normalization is now implemented through an owned
+  records/geometry/pairs entry point. Global-coordinate midpoint rounding uses
+  exact binary64 expansions at half-grid ties, and every published vertex is
+  certified against its complete arrangement hull. Lines use endpoint
+  correspondence; arcs reconstruct an ephemeral filtered center and evaluate
+  the finite circle/line critical set in both Hausdorff directions with squared
+  comparisons, avoiding canonical nested-radical storage. A strict zero-repair
+  replay rebuilds rings, parents, and regions and compares them through direct
+  boundary maps rather than fragment-pair or ring-pair scans. Irrational
+  overlapping disks, full two-half circles, nested hole/island topology,
+  global half ties, early work/memory rejection, and native/WASM canonical
+  bytes gate the slice. Packet source-set interning, canonical record IDs,
   dispatch, and transport remain pending.
 - Before filtered operation dispatch is enabled, move the retained native
   exact/oracle sources out of the normal `geometer_lib` source list into an

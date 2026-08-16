@@ -103,6 +103,13 @@ target_link_libraries(geometer_analytic_filtered_outcomes_test PRIVATE geometer_
 add_test(NAME geometer_analytic_filtered_outcomes_test
          COMMAND geometer_analytic_filtered_outcomes_test)
 
+add_executable(geometer_analytic_filtered_normalization_test
+    analytic_filtered_normalization_test.cpp
+)
+target_link_libraries(geometer_analytic_filtered_normalization_test PRIVATE geometer_lib)
+add_test(NAME geometer_analytic_filtered_normalization_test
+         COMMAND geometer_analytic_filtered_normalization_test)
+
 add_executable(geometer_exact_rational_test
     exact_rational_test.cpp
 )
@@ -403,6 +410,7 @@ if(EMSCRIPTEN)
         geometer_analytic_filtered_regions_test
         geometer_analytic_filtered_lineage_test
         geometer_analytic_filtered_outcomes_test
+        geometer_analytic_filtered_normalization_test
         geometer_exact_rational_test
         geometer_exact_polynomial_test
         geometer_exact_resultant_test

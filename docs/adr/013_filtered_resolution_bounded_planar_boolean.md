@@ -252,10 +252,19 @@ engine.
   associations, so later reference projection is proportional to emitted
   ring/region associations rather than repeated occurrence-source
   multiplicity. Outcome sources remain the complete original occurrence tuples;
-  ring/region references remain tagged local topology handles until the
-  one-time 1 nm publisher returns canonical remap tables. No face-by-operand
-  replay or second geometric tolerance is permitted. Final grid normalization
-  and dispatch remain gated.
+  ring/region references remain tagged local topology handles until packet
+  assembly applies the normalizer's old-to-normalized topology maps. No
+  face-by-operand replay or second geometric tolerance is permitted.
+- The owned one-time normalizer publishes every material-boundary vertex on the
+  global 1 nm grid, certifies its complete source hull within 50 nm, and
+  reconstructs line and circular-arc fragments from those authoritative
+  endpoints. Arc certification evaluates a finite filtered critical-point set
+  with squared distances; it does not construct or serialize nested radicals.
+  A strict zero-repair replay rebuilds material rings, parents, and regions and
+  requires a one-to-one boundary/topology map. Candidate discovery and topology
+  comparison are indexed, and normalization reserves its downstream work and
+  logical memory before outcomes execute. Packet source-set interning,
+  canonical record IDs, and dispatch remain gated.
 - Solver resource limits are supplied through one internal limits value object
   rather than scattered production constants. The catalog values are governed
   hard ceilings; a host may advertise and enforce lower effective limits, and

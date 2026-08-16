@@ -599,10 +599,18 @@ projection work or capacity.
 Every event shares its operand's complete sorted/unique original occurrence
 source tuple set. The events are nonexclusive and canonical by operand and
 kind. Result references are deliberately tagged pre-normalization ring/region
-handles: the one-time 1 nm publisher must remap them through its canonical
-old-to-published index tables before packet encoding. Outcome history and
-projection perform no numeric predicate, snapping, or additional 50 nm repair.
-Final 1 nm normalization and operation dispatch remain subsequent stages.
+handles. The owned one-time 1 nm normalizer now returns explicit old vertex,
+boundary, ring, and region maps for packet assembly. It chooses one global-grid
+representative from each complete certified vertex hull, rebuilds
+endpoint-authoritative lines and arcs, and certifies finite-arc Hausdorff error
+from outward filtered critical points and squared-distance comparisons. It
+then replays the integer geometry with no proximity repair and requires the
+same material boundary partition, winding, parent depth, and region ownership.
+This closes ordinary irrational circle-intersection normalization without
+calling the algebraic backend. Outcome history and projection perform no
+numeric predicate, snapping, or additional 50 nm repair. Canonical source-set
+interning, packet record ordering/IDs, and operation dispatch remain subsequent
+stages.
 
 Across ordered stages, the accumulator retains the resolved analytic
 arrangement and lineage. Publication to the governed nm grid occurs once after

@@ -29,6 +29,19 @@ struct SequenceEdge
     std::uint32_t node = 0;
 };
 
+struct Frame
+{
+    std::uint32_t node = 0;
+    std::uint32_t next_child = 0;
+    bool entered = false;
+};
+
+static_assert(sizeof(SequenceNode) <= 16);
+static_assert(sizeof(SequenceEdge) <= 16);
+static_assert(sizeof(Frame) <= 16);
+static_assert(sizeof(SequenceRange) <= 8);
+static_assert(sizeof(AnalyticPacketSourceSetRecord) <= 8);
+
 std::uint64_t transition_hash(std::uint32_t parent, std::uint32_t label) noexcept
 {
     std::uint64_t value = (static_cast<std::uint64_t>(parent) << 32U) | label;
@@ -113,15 +126,21 @@ bool canonicalize_sequences(const std::vector<std::uint32_t>& labels,
         return false;
     std::uint64_t logical_bytes = 0;
     std::uint64_t term = 0;
-    if (!checked_multiply(maximum_nodes, 16, logical_bytes) ||
+    if (!checked_multiply(maximum_nodes, 64, logical_bytes) ||
         !checked_multiply(table_capacity, 4, term) ||
         !checked_add(logical_bytes, term, logical_bytes) ||
-        !checked_multiply(maximum_nodes, 28, term) ||
-        !checked_add(logical_bytes, term, logical_bytes) ||
-        !checked_multiply(ranges.size(), 8, term) ||
+        !checked_multiply(ranges.size(), 16, term) ||
         !checked_add(logical_bytes, term, logical_bytes))
         return false;
-    output.logical_bytes = logical_bytes;
+    if (serialize && (!checked_multiply(labels.size(), 4, term) ||
+                      !checked_add(logical_bytes, term, logical_bytes)))
+        return false;
+    std::uint64_t persistent_bytes = 0;
+    if (!checked_multiply(ranges.size(), 12, persistent_bytes) ||
+        (serialize && (!checked_multiply(labels.size(), 4, term) ||
+                       !checked_add(persistent_bytes, term, persistent_bytes))))
+        return false;
+    output.logical_bytes = persistent_bytes;
     std::uint64_t fixed_work = 0;
     std::uint64_t term_work = 0;
     if (!checked_multiply(ranges.size(), 3, fixed_work) ||
@@ -206,12 +225,6 @@ bool canonicalize_sequences(const std::vector<std::uint32_t>& labels,
             begin = end;
         }
         std::vector<std::uint32_t> rank_by_node(nodes.size(), 0);
-        struct Frame
-        {
-            std::uint32_t node = 0;
-            std::uint32_t next_child = 0;
-            bool entered = false;
-        };
         std::vector<Frame> stack;
         std::vector<std::uint32_t> path;
         stack.reserve(nodes.size());

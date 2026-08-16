@@ -850,7 +850,7 @@ def test_filtered_solver_foundation_is_bounded_non_algebraic_and_not_dispatched(
         "packet_parity_validator": "scripts/validate_analytic_filtered_packet_parity.py",
         "packet_vector_bytes": 4264,
         "packet_vector_sha256": (
-            "523c2c237b6b8ec329ee3585de0495f37e66d3b5aa3f1bd3b3cdf6a7496ea3cd"
+            "367c9bfeee1a993be77fc454bb7199b7500985d0d5a5db3eca16da0227a444fe"
         ),
     }
     implementation_paths = [

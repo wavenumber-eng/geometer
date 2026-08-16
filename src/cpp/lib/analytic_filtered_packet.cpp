@@ -117,6 +117,7 @@ struct SegmentBinding
     std::uint64_t segment_id = 0;
     std::uint64_t curve_id = 0;
     std::uint64_t operand_id = 0;
+    std::uint8_t kind = 0;
 };
 
 struct OperandSource
@@ -124,6 +125,43 @@ struct OperandSource
     std::uint64_t operand_id = 0;
     AnalyticSourceReference source;
 };
+
+static_assert(sizeof(SourceUse) <= 16);
+static_assert(sizeof(SourceOccurrence) <= 48);
+static_assert(sizeof(EventTemp) <= 64);
+static_assert(sizeof(RawReference) <= 16);
+static_assert(sizeof(OperandInfo) <= 32);
+static_assert(sizeof(SegmentBinding) <= 32);
+static_assert(sizeof(OperandSource) <= 40);
+static_assert(sizeof(AnalyticSourceReference) <= 32);
+static_assert(sizeof(AnalyticNormalizedVertexNm) <= 24);
+static_assert(sizeof(AnalyticNormalizedFragmentNm) <= 32);
+static_assert(sizeof(AnalyticNormalizedRing) <= 32);
+static_assert(sizeof(AnalyticNormalizedRegion) <= 8);
+static_assert(sizeof(AnalyticFilteredBoundaryLineage) <= 32);
+static_assert(sizeof(AnalyticFilteredVertexLineage) <= 16);
+static_assert(sizeof(AnalyticFilteredRegionLineage) <= 16);
+static_assert(sizeof(AnalyticResultVertexRecord) <= 32);
+static_assert(sizeof(AnalyticDirectedFragmentRecord) <= 48);
+static_assert(sizeof(AnalyticResultRingRecord) <= 32);
+static_assert(sizeof(AnalyticResultRegionRecord) <= 24);
+static_assert(sizeof(AnalyticOperandEventRecord) <= 48);
+static_assert(sizeof(AnalyticJobResultRecord) <= 48);
+
+std::uint64_t search_units(std::uint64_t count) noexcept
+{
+    std::uint64_t levels = 1;
+    for (std::uint64_t value = count; value > 1; value = (value + 1) >> 1U)
+        ++levels;
+    return levels;
+}
+
+bool add_array_bytes(std::uint64_t count, std::uint64_t bytes_per_item,
+                     std::uint64_t& total) noexcept
+{
+    std::uint64_t term = 0;
+    return checked_multiply(count, bytes_per_item, term) && checked_add(total, term, total);
+}
 
 const OperandInfo* find_operand(const std::vector<OperandInfo>& operands,
                                 std::uint64_t operand_id) noexcept
@@ -177,7 +215,9 @@ bool bind_geometry_source(const AnalyticSourceReference& source,
                                             [](const SegmentBinding& value, std::uint64_t id)
                                             { return value.segment_id < id; });
         return found != segments.end() && found->segment_id == source.primary_id &&
-               found->curve_id == source.secondary_id && found->operand_id == source.operand_id;
+               found->curve_id == source.secondary_id && found->operand_id == source.operand_id &&
+               ((found->kind == 1 && source.role == AnalyticSourceRole::authored_line) ||
+                (found->kind == 2 && source.role == AnalyticSourceRole::authored_circular_arc));
     }
     std::uint64_t feature = 0;
     switch (operand->geometry_kind)
@@ -312,6 +352,8 @@ struct IncidentOccurrence
     std::uint32_t label = 0;
 };
 
+static_assert(sizeof(IncidentOccurrence) <= 64);
+
 std::size_t least_rotation(const std::vector<std::uint32_t>& values, std::size_t begin,
                            std::size_t count) noexcept
 {
@@ -413,9 +455,17 @@ class PacketBuilder
             finish_telemetry();
             return std::move(result_);
         }
+        std::uint64_t compact_transfer_bytes =
+            result_.telemetry.normalization_peak_working_memory_bytes;
+        if (!add_array_bytes(normalization.outcomes.lineage.regions.rings.size(), 4,
+                             compact_transfer_bytes) ||
+            compact_transfer_bytes > limits_.working_memory_bytes)
+            return resource_failure();
+        result_.telemetry.peak_working_memory_bytes =
+            std::max(result_.telemetry.peak_working_memory_bytes, compact_transfer_bytes);
         if (!move_compact(normalization, input_))
             return resource_failure();
-        compact_bytes_ = compact_logical_bytes(input_);
+        compact_bytes_ = std::max(compact_logical_bytes(input_), compact_transfer_bytes);
         budget_.limit =
             limits_.predicate_calls - result_.telemetry.normalization_work_units - preflight_work_;
         if (reserved_work_ > budget_.limit)
@@ -444,17 +494,52 @@ class PacketBuilder
   private:
     std::uint64_t source_tables_persistent_bytes() const noexcept
     {
-        return source_tables_.sources.size() * 32ULL + source_tables_.sets.size() * 8ULL +
-               source_tables_.indices.size() * 4ULL + source_tables_.handles.size() * 4ULL;
+        return source_tables_.logical_bytes;
     }
 
-    std::uint64_t packet_records_logical_bytes() const noexcept
+    bool persistent_bytes(std::uint64_t& bytes) const noexcept
     {
-        return records_out_.vertices.size() * 32ULL + records_out_.fragments.size() * 48ULL +
-               records_out_.rings.size() * 32ULL + records_out_.fragment_references.size() * 4ULL +
-               records_out_.regions.size() * 24ULL +
-               records_out_.ring_region_references.size() * 8ULL +
-               records_out_.operand_events.size() * 48ULL;
+        bytes = compact_bytes_;
+        return checked_add(bytes, binding_bytes_, bytes) &&
+               checked_add(bytes, source_use_bytes_, bytes) &&
+               checked_add(bytes, source_tables_persistent_bytes(), bytes) &&
+               checked_add(bytes, publication_bytes_, bytes);
+    }
+
+    bool check_phase(std::uint64_t scratch_bytes)
+    {
+        std::uint64_t bytes = 0;
+        if (!persistent_bytes(bytes) || !checked_add(bytes, scratch_bytes, bytes) ||
+            bytes > limits_.working_memory_bytes)
+            return fail_resource();
+        result_.telemetry.peak_working_memory_bytes =
+            std::max(result_.telemetry.peak_working_memory_bytes, bytes);
+        return true;
+    }
+
+    bool initialize_publication_bytes()
+    {
+        publication_bytes_ = 0;
+        for (const auto [count, item_bytes] :
+             {std::pair<std::uint64_t, std::uint64_t>{input_.vertices.size(), 32},
+              {input_.fragments.size(), 48},
+              {input_.rings.size(), 32},
+              {input_.ring_fragments.size(), 4},
+              {input_.regions.size(), 24},
+              {input_.event_references.size(), 8},
+              {input_.events.size(), 48},
+              {input_.vertices.size(), 4},
+              {input_.fragments.size(), 4},
+              {input_.rings.size(), 4},
+              {input_.regions.size(), 4},
+              {input_.old_vertex_to_normalized.size(), 4},
+              {input_.old_boundary_to_normalized.size(), 4},
+              {input_.old_ring_to_normalized.size(), 4},
+              {input_.old_region_to_normalized.size(), 4},
+              {1, 48}})
+            if (!add_array_bytes(count, item_bytes, publication_bytes_))
+                return fail_resource();
+        return check_phase(0);
     }
 
     bool pre_admit()
@@ -562,6 +647,12 @@ class PacketBuilder
             visits += records_.stages[job.stage_begin + local].operand_count;
         if (!budget_.charge(visits))
             return fail_resource();
+        const std::uint64_t operand_count = visits - job.stage_count;
+        binding_bytes_ = 0;
+        if (!add_array_bytes(operand_count, 32, binding_bytes_) ||
+            !add_array_bytes(geometry_.occurrences.size(), 32, binding_bytes_) ||
+            !add_array_bytes(geometry_.occurrences.size(), 40, binding_bytes_) || !check_phase(0))
+            return false;
         operands_.reserve(static_cast<std::size_t>(visits - job.stage_count));
         for (std::uint32_t local = 0; local < job.stage_count; ++local)
         {
@@ -620,6 +711,8 @@ class PacketBuilder
             !checked_add(segment_work, segment_count, segment_work) ||
             !budget_.charge(segment_work))
             return fail_resource();
+        if (!add_array_bytes(segment_count, 32, binding_bytes_) || !check_phase(0))
+            return false;
         segments_.reserve(static_cast<std::size_t>(segment_count));
         for (const OperandInfo& operand : operands_)
         {
@@ -639,7 +732,8 @@ class PacketBuilder
                 for (std::uint32_t offset = 0; offset < ring.segment_count; ++offset)
                 {
                     const auto& segment = records_.segments[ring.segment_begin + offset];
-                    segments_.push_back({segment.id, segment.curve_id, operand.operand_id});
+                    segments_.push_back(
+                        {segment.id, segment.curve_id, operand.operand_id, segment.kind});
                 }
                 return true;
             };
@@ -662,7 +756,13 @@ class PacketBuilder
                                { return left.segment_id == right.segment_id; }) != segments_.end())
             return false;
 
-        if (!budget_.charge(geometry_.occurrences.size()))
+        std::uint64_t occurrence_work = 0;
+        std::uint64_t lookup_work = 0;
+        if (!checked_add(search_units(operands_.size()), search_units(segments_.size()),
+                         lookup_work) ||
+            !checked_add(lookup_work, 1, lookup_work) ||
+            !checked_multiply(geometry_.occurrences.size(), lookup_work, occurrence_work) ||
+            !budget_.charge(occurrence_work))
             return fail_resource();
         allowed_geometry_sources_.reserve(geometry_.occurrences.size());
         for (const auto& occurrence : geometry_.occurrences)
@@ -718,13 +818,13 @@ class PacketBuilder
         if (!checked_add(use_count, input_.vertex_lineage.size(), work) ||
             !checked_add(work, input_.region_lineage.size(), work) || !budget_.charge(work))
             return fail_resource();
-        const std::uint64_t phase_bytes = compact_bytes_ + use_count * 24ULL +
-                                          input_.old_vertex_to_normalized.size() * 4ULL +
-                                          input_.old_region_to_normalized.size() * 4ULL;
-        if (phase_bytes > limits_.working_memory_bytes)
-            return fail_resource();
-        result_.telemetry.peak_working_memory_bytes =
-            std::max(result_.telemetry.peak_working_memory_bytes, phase_bytes);
+        source_use_bytes_ = 0;
+        std::uint64_t map_bytes = 0;
+        if (!add_array_bytes(use_count, 16, source_use_bytes_) ||
+            !add_array_bytes(input_.old_vertex_to_normalized.size(), 4, map_bytes) ||
+            !add_array_bytes(input_.old_region_to_normalized.size(), 4, map_bytes) ||
+            !initialize_publication_bytes() || !check_phase(map_bytes))
+            return false;
         source_uses_.reserve(static_cast<std::size_t>(use_count));
         vertex_use_begin_ = static_cast<std::uint32_t>(source_uses_.size());
         std::vector<std::uint32_t> lineage_by_vertex(input_.old_vertex_to_normalized.size(), kNone);
@@ -788,6 +888,12 @@ class PacketBuilder
     {
         if (!budget_.charge(source_uses_.size()))
             return fail_resource();
+        std::uint64_t descriptor_scratch = 0;
+        if (!add_array_bytes(source_uses_.size(), 4, descriptor_scratch) ||
+            !add_array_bytes(source_uses_.size(), 16, descriptor_scratch) ||
+            !add_array_bytes(source_uses_.size(), 4, descriptor_scratch) ||
+            !check_phase(descriptor_scratch))
+            return false;
         std::vector<std::uint32_t> descriptor_order(source_uses_.size());
         std::iota(descriptor_order.begin(), descriptor_order.end(), 0);
         if (!budget_.charge_sort(descriptor_order.size()))
@@ -815,16 +921,21 @@ class PacketBuilder
         if (memberships > limits_.source_reference_memberships)
             return fail_resource();
         result_.telemetry.source_memberships = memberships;
-        std::uint64_t source_phase = compact_bytes_ + source_uses_.size() * 24ULL +
-                                     descriptors.size() * 24ULL + memberships * 64ULL;
-        if (source_phase > limits_.working_memory_bytes)
-            return fail_resource();
-        result_.telemetry.peak_working_memory_bytes =
-            std::max(result_.telemetry.peak_working_memory_bytes, source_phase);
+        std::uint64_t source_scratch = descriptor_scratch;
+        if (!add_array_bytes(memberships, 48, source_scratch) ||
+            !add_array_bytes(memberships, 32, source_scratch) ||
+            !add_array_bytes(memberships, 4, source_scratch) ||
+            !add_array_bytes(descriptors.size(), 8, source_scratch) || !check_phase(source_scratch))
+            return false;
 
         std::vector<SourceOccurrence> occurrences;
         std::uint64_t membership_work = 0;
-        if (!checked_multiply(memberships, 3, membership_work) || !budget_.charge(membership_work))
+        std::uint64_t per_membership_work = 0;
+        if (!checked_add(search_units(allowed_geometry_sources_.size()),
+                         search_units(operands_.size()), per_membership_work) ||
+            !checked_add(per_membership_work, 3, per_membership_work) ||
+            !checked_multiply(memberships, per_membership_work, membership_work) ||
+            !budget_.charge(membership_work))
             return fail_resource();
         occurrences.reserve(static_cast<std::size_t>(memberships));
         source_tables_.sources.reserve(static_cast<std::size_t>(memberships));
@@ -889,15 +1000,28 @@ class PacketBuilder
         if (cursor != occurrences.size())
             return false;
         CanonicalSequences sequences;
-        if (!canonicalize_sequences(labels, ranges, true, source_phase,
-                                    limits_.working_memory_bytes, budget_, sequences))
+        std::uint64_t source_base = 0;
+        if (!persistent_bytes(source_base) ||
+            !checked_add(source_base, source_scratch, source_base) ||
+            !canonicalize_sequences(labels, ranges, true, source_base, limits_.working_memory_bytes,
+                                    budget_, sequences))
             return fail_resource();
         source_tables_.sets = std::move(sequences.records);
         source_tables_.indices = std::move(sequences.indices);
-        source_tables_.logical_bytes = sequences.logical_bytes;
         source_tables_.handles.resize(source_uses_.size());
         for (std::uint32_t use = 0; use < source_uses_.size(); ++use)
             source_tables_.handles[use] = sequences.handles[descriptor_by_use[use]];
+        source_tables_.logical_bytes = sequences.logical_bytes;
+        if (!add_array_bytes(memberships, 32, source_tables_.logical_bytes) ||
+            !add_array_bytes(source_uses_.size(), 4, source_tables_.logical_bytes))
+            return false;
+        std::uint64_t retained_source_scratch = descriptor_scratch;
+        if (!add_array_bytes(memberships, 48, retained_source_scratch) ||
+            !add_array_bytes(memberships, 4, retained_source_scratch) ||
+            !add_array_bytes(descriptors.size(), 8, retained_source_scratch) ||
+            !add_array_bytes(descriptors.size(), 4, retained_source_scratch) ||
+            !check_phase(retained_source_scratch))
+            return false;
         result_.telemetry.unique_source_sets = source_tables_.sets.size();
         return source_tables_.indices.size() <= limits_.source_reference_memberships;
     }
@@ -908,6 +1032,13 @@ class PacketBuilder
         if (!checked_multiply(input_.fragments.size(), 2, incident_count) ||
             !budget_.charge(input_.fragments.size()) || !budget_.charge(incident_count * 3))
             return fail_resource();
+        std::uint64_t incident_scratch = 0;
+        if (!add_array_bytes(incident_count, 64, incident_scratch) ||
+            !add_array_bytes(incident_count, 4, incident_scratch) ||
+            !add_array_bytes(incident_count, 4, incident_scratch) ||
+            !add_array_bytes(input_.vertices.size(), 8, incident_scratch) ||
+            !check_phase(incident_scratch))
+            return false;
         std::vector<IncidentOccurrence> incidents;
         incidents.reserve(static_cast<std::size_t>(incident_count));
         for (const auto& fragment : input_.fragments)
@@ -967,12 +1098,21 @@ class PacketBuilder
             incident_ranges[vertex] = {begin, cursor - begin};
         }
         CanonicalSequences incident_sequences;
-        const std::uint64_t incident_base =
-            compact_bytes_ + source_tables_persistent_bytes() + incidents.size() * 64ULL +
-            incident_labels.size() * 4ULL + incident_ranges.size() * 8ULL;
+        std::uint64_t incident_base = 0;
+        if (!persistent_bytes(incident_base) ||
+            !checked_add(incident_base, incident_scratch, incident_base))
+            return fail_resource();
         if (!canonicalize_sequences(incident_labels, incident_ranges, false, incident_base,
                                     limits_.working_memory_bytes, budget_, incident_sequences))
             return fail_resource();
+
+        std::uint64_t publication_scratch = incident_scratch;
+        if (!checked_add(publication_scratch, incident_sequences.logical_bytes,
+                         publication_scratch) ||
+            !add_array_bytes(input_.vertices.size(), 4, publication_scratch) ||
+            !add_array_bytes(input_.fragments.size(), 64, publication_scratch) ||
+            !check_phase(publication_scratch))
+            return false;
 
         if (!budget_.charge_sort(input_.vertices.size()))
             return fail_resource();
@@ -1100,6 +1240,10 @@ class PacketBuilder
         if (!checked_multiply(input_.ring_fragments.size(), 3, ring_work) ||
             !checked_add(ring_work, input_.rings.size(), ring_work) || !budget_.charge(ring_work))
             return fail_resource();
+        std::uint64_t ring_scratch = 0;
+        if (!add_array_bytes(input_.ring_fragments.size(), 4, ring_scratch) ||
+            !add_array_bytes(input_.rings.size(), 8, ring_scratch) || !check_phase(ring_scratch))
+            return false;
         std::vector<std::uint32_t> ring_labels;
         std::vector<SequenceRange> ring_ranges(input_.rings.size());
         ring_labels.reserve(input_.ring_fragments.size());
@@ -1123,12 +1267,19 @@ class PacketBuilder
             ring_ranges[ring] = {begin, value.fragment_count};
         }
         CanonicalSequences ring_sequences;
-        const std::uint64_t ring_base = compact_bytes_ + source_tables_persistent_bytes() +
-                                        packet_records_logical_bytes() + ring_labels.size() * 4ULL +
-                                        ring_ranges.size() * 8ULL;
+        std::uint64_t ring_base = 0;
+        if (!persistent_bytes(ring_base) || !checked_add(ring_base, ring_scratch, ring_base))
+            return fail_resource();
         if (!canonicalize_sequences(ring_labels, ring_ranges, false, ring_base,
                                     limits_.working_memory_bytes, budget_, ring_sequences))
             return fail_resource();
+        std::uint64_t ring_publication_scratch = ring_scratch;
+        if (!checked_add(ring_publication_scratch, ring_sequences.logical_bytes,
+                         ring_publication_scratch) ||
+            !add_array_bytes(input_.rings.size(), 4, ring_publication_scratch) ||
+            !add_array_bytes(input_.regions.size(), 40, ring_publication_scratch) ||
+            !check_phase(ring_publication_scratch))
+            return false;
         if (!budget_.charge_sort(input_.rings.size()))
             return fail_resource();
         std::vector<std::uint32_t> ring_order(input_.rings.size());
@@ -1261,10 +1412,22 @@ class PacketBuilder
             if (!checked_add(event_source_visits, event.sources.count, event_source_visits))
                 return fail_resource();
         std::uint64_t event_work = 0;
+        std::uint64_t event_lookup_work = 0;
+        std::uint64_t expected_lookup_work = 0;
+        if (!checked_multiply(search_units(expected_event_sources_.size()), 2,
+                              expected_lookup_work) ||
+            !checked_add(search_units(operands_.size()), expected_lookup_work, event_lookup_work) ||
+            !checked_multiply(input_.events.size(), event_lookup_work, event_lookup_work))
+            return fail_resource();
         if (!checked_add(input_.events.size(), input_.event_references.size(), event_work) ||
             !checked_add(event_work, event_source_visits, event_work) ||
-            !budget_.charge(event_work))
+            !checked_add(event_work, event_lookup_work, event_work) || !budget_.charge(event_work))
             return fail_resource();
+        std::uint64_t event_scratch = 0;
+        if (!add_array_bytes(input_.events.size(), 64, event_scratch) ||
+            !add_array_bytes(input_.event_references.size(), 16, event_scratch) ||
+            !add_array_bytes(operands_.size(), 1, event_scratch) || !check_phase(event_scratch))
+            return false;
         events.reserve(input_.events.size());
         raw_references.reserve(input_.event_references.size());
         std::vector<std::uint8_t> operand_seen(operands_.size());
@@ -1420,13 +1583,24 @@ class PacketBuilder
             labels[reference_order[at]] = label;
         }
         CanonicalSequences sequences;
-        const std::uint64_t event_base =
-            compact_bytes_ + source_tables_persistent_bytes() + packet_records_logical_bytes() +
-            raw_references.size() * 16ULL + reference_values.size() * 8ULL + labels.size() * 4ULL +
-            ranges.size() * 8ULL;
+        std::uint64_t event_scratch = 0;
+        if (!add_array_bytes(events.size(), 64, event_scratch) ||
+            !add_array_bytes(input_.event_references.size(), 16, event_scratch) ||
+            !add_array_bytes(reference_values.size(), 8, event_scratch) ||
+            !add_array_bytes(labels.size(), 4, event_scratch) ||
+            !add_array_bytes(ranges.size(), 8, event_scratch) ||
+            !add_array_bytes(reference_values.size(), 4, event_scratch) ||
+            !check_phase(event_scratch))
+            return false;
+        std::uint64_t event_base = 0;
+        if (!persistent_bytes(event_base) || !checked_add(event_base, event_scratch, event_base))
+            return fail_resource();
         if (!canonicalize_sequences(labels, ranges, false, event_base, limits_.working_memory_bytes,
                                     budget_, sequences))
             return fail_resource();
+        if (!checked_add(event_scratch, sequences.logical_bytes, event_scratch) ||
+            !check_phase(event_scratch))
+            return false;
         for (std::uint32_t index = 0; index < events.size(); ++index)
             events[index].sequence_rank = sequences.handles[index];
         return true;
@@ -1488,6 +1662,7 @@ class PacketBuilder
         records_out_.source_sets = std::move(source_tables_.sets);
         records_out_.source_reference_indices = std::move(source_tables_.indices);
         const std::uint64_t job_id = records_.jobs[job_index_].job_id;
+        records_out_.job_results.reserve(1);
         records_out_.job_results.push_back(
             {job_id, 0, 0, 0, records_out_.regions.empty() ? 0U : 0U,
              static_cast<std::uint32_t>(records_out_.regions.size()),
@@ -1504,14 +1679,8 @@ class PacketBuilder
             records_out_.source_reference_indices.size() * 4ULL;
         if (packet_bytes > 268'435'456ULL || !budget_.charge(packet_bytes / 8 + 1))
             return fail_resource();
-        const std::uint64_t persistent =
-            compact_bytes_ + packet_bytes * 2 + records_out_.vertices.size() * 32ULL +
-            records_out_.fragments.size() * 48ULL + records_out_.rings.size() * 32ULL +
-            records_out_.regions.size() * 24ULL;
-        if (persistent > limits_.working_memory_bytes)
-            return fail_resource();
-        result_.telemetry.peak_working_memory_bytes =
-            std::max(result_.telemetry.peak_working_memory_bytes, persistent);
+        if (!check_phase(packet_bytes))
+            return false;
         AnalyticResultPacketEncodeResult encoded =
             analytic_result_detail::encode_canonical_records_unchecked(records_out_);
         if (encoded.error != AnalyticResultPacketLayoutError::none || !encoded.value)
@@ -1602,6 +1771,9 @@ class PacketBuilder
     std::uint64_t reserved_memory_ = 0;
     std::uint64_t preflight_work_ = 0;
     std::uint64_t compact_bytes_ = 0;
+    std::uint64_t binding_bytes_ = 0;
+    std::uint64_t source_use_bytes_ = 0;
+    std::uint64_t publication_bytes_ = 0;
     CompactInput input_;
     std::vector<OperandInfo> operands_;
     std::vector<SegmentBinding> segments_;

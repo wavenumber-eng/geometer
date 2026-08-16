@@ -80,6 +80,34 @@ AnalyticRequestPacketRecords difference_records()
     return records;
 }
 
+AnalyticRequestPacketRecords authored_arc_records()
+{
+    AnalyticRequestPacketRecords records;
+    records.jobs = {{15, 0, 1}};
+    records.stages = {{106, 1, 0, 1}};
+    records.operands = {{1003, 1, 0}};
+    records.planar_regions = {{503, 0, 0, 0}};
+    records.vertices = {{6010, 1000, 0}, {6011, -1000, 0}};
+    records.segments = {{7010, 8010, 2, 1, false, 0, 0}, {7011, 8011, 2, 1, false, 0, 0}};
+    records.rings = {{9010, 0, 2, 0, 2, 0}};
+    return records;
+}
+
+AnalyticRequestPacketRecords disjoint_disk_records(std::uint32_t count)
+{
+    AnalyticRequestPacketRecords records;
+    records.jobs = {{16, 0, 1}};
+    records.stages = {{107, 1, 0, count}};
+    records.operands.reserve(count);
+    records.disks.reserve(count);
+    for (std::uint32_t index = 0; index < count; ++index)
+    {
+        records.operands.push_back({2000 + index, 2, index});
+        records.disks.push_back({6000 + index, static_cast<std::int64_t>(index) * 5000, 0, 1000});
+    }
+    return records;
+}
+
 AnalyticFilteredJobPacketResult build(const AnalyticRequestPacketRecords& records,
                                       const AnalyticSolverLimits& limits = {})
 {
@@ -334,6 +362,46 @@ void test_exact_resource_boundaries()
             "one-byte-short packet memory did not fail without partial geometry");
 }
 
+void test_authored_source_role_binding()
+{
+    PreparedJob line_job = prepare(square_records());
+    line_job.records.segments[0].kind = 2;
+    const auto line_as_arc = build(line_job, {});
+    require(line_as_arc.error == AnalyticFilteredPacketError::invalid_argument,
+            "authored line source was accepted for an arc request segment");
+
+    PreparedJob arc_job = prepare(authored_arc_records());
+    require_success(build(arc_job, {}), 15);
+    arc_job.records.segments[0].kind = 1;
+    const auto arc_as_line = build(arc_job, {});
+    require(arc_as_line.error == AnalyticFilteredPacketError::invalid_argument,
+            "authored arc source was accepted for a line request segment");
+}
+
+void test_sparse_packet_scaling()
+{
+    const auto one = build(disjoint_disk_records(32));
+    const auto two = build(disjoint_disk_records(64));
+    require_success(one, 16);
+    require_success(two, 16);
+    require(one.telemetry.packet_work_units <= one.telemetry.reserved_packet_work_units &&
+                two.telemetry.packet_work_units <= two.telemetry.reserved_packet_work_units,
+            "candidate packet work reservation did not cover sparse publication");
+    require(one.telemetry.peak_working_memory_bytes <=
+                    one.telemetry.normalization_peak_working_memory_bytes +
+                        one.telemetry.reserved_packet_memory_bytes +
+                        one.standalone->records.rings.size() * 4ULL &&
+                two.telemetry.peak_working_memory_bytes <=
+                    two.telemetry.normalization_peak_working_memory_bytes +
+                        two.telemetry.reserved_packet_memory_bytes +
+                        two.standalone->records.rings.size() * 4ULL,
+            "candidate packet memory reservation did not cover sparse publication");
+    require(two.telemetry.packet_work_units < one.telemetry.packet_work_units * 3,
+            "sparse packet work grew superlinearly");
+    require(two.telemetry.peak_working_memory_bytes < one.telemetry.peak_working_memory_bytes * 3,
+            "sparse packet logical memory grew superlinearly");
+}
+
 std::uint64_t shared_prefix_work(std::uint32_t sequence_count)
 {
     using namespace geometer::analytic_packet_detail;
@@ -366,6 +434,46 @@ void test_shared_prefix_sequence_scaling()
     const std::uint64_t one = shared_prefix_work(64);
     const std::uint64_t two = shared_prefix_work(128);
     require(two < one * 3, "shared-prefix source-set work grew superlinearly");
+}
+
+void test_exact_sequence_memory_boundary()
+{
+    using namespace geometer::analytic_packet_detail;
+    std::vector<std::uint32_t> labels;
+    std::vector<SequenceRange> ranges;
+    for (std::uint32_t sequence = 0; sequence < 33; ++sequence)
+    {
+        const std::uint32_t begin = static_cast<std::uint32_t>(labels.size());
+        for (std::uint32_t prefix = 0; prefix < 17; ++prefix)
+            labels.push_back(prefix);
+        labels.push_back(100 + sequence);
+        ranges.push_back({begin, 18});
+    }
+    const auto succeeds = [&](std::uint64_t memory, std::uint64_t* peak)
+    {
+        AnalyticFilteredPacketTelemetry telemetry;
+        WorkBudget budget{std::numeric_limits<std::uint64_t>::max(), 0, &telemetry};
+        CanonicalSequences output;
+        const bool ok = canonicalize_sequences(labels, ranges, true, 4096, memory, budget, output);
+        if (peak != nullptr)
+            *peak = telemetry.peak_working_memory_bytes;
+        return ok;
+    };
+    std::uint64_t low = 0;
+    std::uint64_t high = 1'000'000;
+    while (low < high)
+    {
+        const std::uint64_t middle = low + (high - low) / 2;
+        if (succeeds(middle, nullptr))
+            high = middle;
+        else
+            low = middle + 1;
+    }
+    std::uint64_t peak = 0;
+    require(low != 0 && succeeds(low, &peak) && peak == low,
+            "exact sequence logical-memory boundary did not succeed");
+    require(!succeeds(low - 1, nullptr),
+            "one-byte-short sequence logical-memory boundary did not fail");
 }
 
 template <typename Value> void append_hex(std::ostringstream& output, Value value)
@@ -420,7 +528,10 @@ int main(int argc, char** argv)
     test_failed_normalization_packet();
     test_empty_success_and_early_resource_packet();
     test_exact_resource_boundaries();
+    test_authored_source_role_binding();
+    test_sparse_packet_scaling();
     test_shared_prefix_sequence_scaling();
+    test_exact_sequence_memory_boundary();
     if (argc == 2 && std::string(argv[1]) == "--emit-parity")
         std::cout << "ANALYTIC_FILTERED_PACKET_VECTOR=" << parity_vector() << '\n';
     return 0;

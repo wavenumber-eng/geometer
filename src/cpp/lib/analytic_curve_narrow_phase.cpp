@@ -1,5 +1,6 @@
 #include "geometer/analytic_curve_narrow_phase.h"
 
+#include "analytic_endpoint_arc_reconstruction.h"
 #include "analytic_filtered_interval.h"
 #include "analytic_wide_integer.h"
 
@@ -244,14 +245,17 @@ bool valid_common_curve(const AnalyticAtomicCurveNm& curve) noexcept
         !coordinate_in_span(curve.start.y) || !coordinate_in_span(curve.end.x) ||
         !coordinate_in_span(curve.end.y) || !valid_columns ||
         !point_interval_fits_resolution(point(curve.start)) ||
-        !point_interval_fits_resolution(point(curve.end)))
+        !point_interval_fits_resolution(point(curve.end)) ||
+        (curve.endpoint_authoritative_upper_branch &&
+         !curve.has_endpoint_authoritative_arc_certificate))
         return false;
     const Point start = point(curve.start);
     const Point end = point(curve.end);
     if (dot(subtract(end, start), subtract(end, start)).lower <= 0.0)
         return false;
     if (!curve.has_integer_certificate)
-        return !curve.has_integer_radius_certificate;
+        return !curve.has_integer_radius_certificate ||
+               curve.has_endpoint_authoritative_arc_certificate;
     return coordinate_in_span(curve.integer_start.x) && coordinate_in_span(curve.integer_start.y) &&
            coordinate_in_span(curve.integer_end.x) && coordinate_in_span(curve.integer_end.y) &&
            !same_point(curve.integer_start, curve.integer_end) &&
@@ -259,9 +263,35 @@ bool valid_common_curve(const AnalyticAtomicCurveNm& curve) noexcept
            point_equals_certificate(curve.end, curve.integer_end);
 }
 
+bool valid_endpoint_authoritative_arc_certificate(const AnalyticAtomicCurveNm& curve) noexcept
+{
+    if (!curve.has_endpoint_authoritative_arc_certificate)
+        return true;
+    if (curve.has_integer_certificate || !curve.has_integer_radius_certificate ||
+        !curve.has_arc_sweep_certificate || curve.major_arc || curve.integer_radius == 0 ||
+        curve.integer_radius > static_cast<std::uint64_t>(kLocalCoordinateSpanNm) ||
+        !point_equals_certificate(curve.start, curve.integer_start) ||
+        !point_equals_certificate(curve.end, curve.integer_end) ||
+        same_point(curve.integer_start, curve.integer_end))
+        return false;
+    const double radius = static_cast<double>(curve.integer_radius);
+    if (curve.circle.radius.lower != radius || curve.circle.radius.upper != radius)
+        return false;
+    Point reconstructed;
+    if (!reconstruct_endpoint_authoritative_arc_center(
+            curve.integer_start.x, curve.integer_start.y, curve.integer_end.x, curve.integer_end.y,
+            curve.integer_radius, curve.counterclockwise, curve.major_arc, reconstructed))
+        return false;
+    const Point supplied = point(curve.circle.center);
+    return supplied.x.lower <= reconstructed.x.lower && supplied.x.upper >= reconstructed.x.upper &&
+           supplied.y.lower <= reconstructed.y.lower && supplied.y.upper >= reconstructed.y.upper;
+}
+
 bool valid_arc_certificate(const AnalyticAtomicCurveNm& curve, Interval start_radius,
                            Interval end_radius) noexcept
 {
+    if (curve.has_endpoint_authoritative_arc_certificate)
+        return valid_endpoint_authoritative_arc_certificate(curve);
     if (!curve.has_integer_certificate)
         return !curve.has_integer_radius_certificate;
     if (!coordinate_in_span(curve.integer_center.x) ||
@@ -326,7 +356,7 @@ bool valid_curve(const AnalyticAtomicCurveNm& curve) noexcept
         return false;
     if (curve.kind == AnalyticAtomicCurveKind::line)
     {
-        if (curve.has_arc_sweep_certificate)
+        if (curve.has_arc_sweep_certificate || curve.has_endpoint_authoritative_arc_certificate)
             return false;
         if (!curve.has_construction_line_direction)
             return curve.construction_line_dx == 0 && curve.construction_line_dy == 0;
@@ -712,6 +742,149 @@ void finish_relation(PairWork& work) noexcept
                                                         : AnalyticPairRelation::two_points;
 }
 
+std::uint8_t shared_authoritative_endpoints(const AnalyticAtomicCurveNm& left,
+                                            const AnalyticAtomicCurveNm& right,
+                                            AnalyticIntegerPointNm (&output)[2]) noexcept
+{
+    const bool left_has_exact_endpoints =
+        left.has_integer_certificate || left.has_endpoint_authoritative_arc_certificate;
+    const bool right_has_exact_endpoints =
+        right.has_integer_certificate || right.has_endpoint_authoritative_arc_certificate;
+    if (!left_has_exact_endpoints || !right_has_exact_endpoints)
+        return 0;
+    std::uint8_t count = 0;
+    const AnalyticIntegerPointNm left_points[] = {left.integer_start, left.integer_end};
+    const AnalyticIntegerPointNm right_points[] = {right.integer_start, right.integer_end};
+    for (const AnalyticIntegerPointNm& a : left_points)
+        for (const AnalyticIntegerPointNm& b : right_points)
+            if (same_point(a, b))
+            {
+                if (count == 0 || !same_point(output[0], a))
+                    output[count++] = a;
+                break;
+            }
+    return count;
+}
+
+bool append_authoritative_point(PairWork& work, Point candidate) noexcept
+{
+    if (work.value.point_count == work.value.points.size())
+        return false;
+    work.value.points[work.value.point_count++] = public_point(candidate);
+    return true;
+}
+
+bool append_strict_second_root(PairWork& work, Point candidate, const AnalyticAtomicCurveNm& left,
+                               const AnalyticAtomicCurveNm& right,
+                               AnalyticNarrowPhaseTelemetry& telemetry,
+                               const AnalyticSolverLimits& limits) noexcept
+{
+    if (!valid_interval(candidate.x) || !valid_interval(candidate.y) ||
+        !point_interval_fits_resolution(candidate))
+        return false;
+    const DomainResult left_domain = curve_domain(candidate, left, telemetry, limits);
+    const DomainResult right_domain = curve_domain(candidate, right, telemetry, limits);
+    if (left_domain == DomainResult::uncertain || right_domain == DomainResult::uncertain ||
+        left_domain == DomainResult::inside_resolution ||
+        right_domain == DomainResult::inside_resolution ||
+        left_domain == DomainResult::ambiguous_resolution ||
+        right_domain == DomainResult::ambiguous_resolution)
+        return false;
+    return left_domain != DomainResult::inside || right_domain != DomainResult::inside ||
+           append_authoritative_point(work, candidate);
+}
+
+PairWork intersect_endpoint_authoritative(const AnalyticAtomicCurveNm& left,
+                                          const AnalyticAtomicCurveNm& right,
+                                          AnalyticNarrowPhaseTelemetry& telemetry,
+                                          const AnalyticSolverLimits& limits) noexcept
+{
+    PairWork work;
+    AnalyticIntegerPointNm shared[2]{};
+    const std::uint8_t shared_count = shared_authoritative_endpoints(left, right, shared);
+    if (shared_count == 0)
+    {
+        work.uncertain = true;
+        return work;
+    }
+    for (std::uint8_t index = 0; index < shared_count; ++index)
+        if (!append_authoritative_point(work, point(shared[index])))
+        {
+            work.uncertain = true;
+            return work;
+        }
+    if (shared_count == 2)
+    {
+        finish_relation(work);
+        return work;
+    }
+    if (!charge_predicate(telemetry, limits))
+    {
+        work.uncertain = true;
+        return work;
+    }
+
+    const Point anchor = point(shared[0]);
+    Point direction;
+    Point center;
+    if (left.kind == AnalyticAtomicCurveKind::line || right.kind == AnalyticAtomicCurveKind::line)
+    {
+        const AnalyticAtomicCurveNm& line =
+            left.kind == AnalyticAtomicCurveKind::line ? left : right;
+        const AnalyticAtomicCurveNm& arc =
+            left.kind == AnalyticAtomicCurveKind::circular_arc ? left : right;
+        direction = subtract(point(line.end), point(line.start));
+        center = point(arc.circle.center);
+    }
+    else
+    {
+        const Point first_center = point(left.circle.center);
+        const Point second_center = point(right.circle.center);
+        direction = perpendicular(subtract(second_center, first_center));
+        center = first_center;
+    }
+    const Interval denominator = dot(direction, direction);
+    if (denominator.lower <= 0.0)
+    {
+        work.uncertain = true;
+        return work;
+    }
+    const Interval parameter =
+        divide(multiply(exact(-2.0), dot(direction, subtract(anchor, center))), denominator);
+    if (!valid(parameter))
+    {
+        work.uncertain = true;
+        return work;
+    }
+    const Point second = add(anchor, scale(direction, parameter));
+    const Point delta = subtract(second, anchor);
+    const Interval separation_squared = dot(delta, delta);
+    constexpr double kResolutionSquared =
+        static_cast<double>(kAnalyticTopologyResolutionNm * kAnalyticTopologyResolutionNm);
+    if (!valid(separation_squared))
+    {
+        work.uncertain = true;
+        return work;
+    }
+    if (separation_squared.upper <= kResolutionSquared)
+    {
+        work.value.resolution_collapsed = true;
+        finish_relation(work);
+        return work;
+    }
+    if (separation_squared.lower <= kResolutionSquared)
+    {
+        work.uncertain = true;
+        return work;
+    }
+    if (!append_strict_second_root(work, second, left, right, telemetry, limits))
+    {
+        work.uncertain = true;
+    }
+    finish_relation(work);
+    return work;
+}
+
 AnalyticIntegerPointNm endpoint_at_projection(const AnalyticAtomicCurveNm& curve,
                                               std::int64_t projection, bool use_x) noexcept
 {
@@ -1066,7 +1239,26 @@ PairWork dispatch_pair(const AnalyticAtomicCurveNm& left, const AnalyticAtomicCu
                        const AnalyticSolverLimits& limits) noexcept
 {
     PairWork work;
-    if (left.kind == AnalyticAtomicCurveKind::line && right.kind == AnalyticAtomicCurveKind::line)
+    const bool endpoint_authoritative = left.has_endpoint_authoritative_arc_certificate ||
+                                        right.has_endpoint_authoritative_arc_certificate;
+    AnalyticIntegerPointNm shared[2]{};
+    const std::uint8_t shared_count =
+        endpoint_authoritative ? shared_authoritative_endpoints(left, right, shared) : 0;
+    const bool proven_coincident = left.kind == AnalyticAtomicCurveKind::circular_arc &&
+                                   right.kind == AnalyticAtomicCurveKind::circular_arc &&
+                                   left.construction_carrier_id != 0 &&
+                                   left.construction_carrier_id == right.construction_carrier_id;
+    if (endpoint_authoritative && shared_count != 0 && !proven_coincident)
+    {
+        if (left.kind == AnalyticAtomicCurveKind::circular_arc &&
+            right.kind == AnalyticAtomicCurveKind::circular_arc)
+            ++telemetry.circle_circle_pairs;
+        else
+            ++telemetry.line_circle_pairs;
+        work = intersect_endpoint_authoritative(left, right, telemetry, limits);
+    }
+    else if (left.kind == AnalyticAtomicCurveKind::line &&
+             right.kind == AnalyticAtomicCurveKind::line)
     {
         ++telemetry.line_line_pairs;
         work = intersect_lines(left, right, telemetry, limits);

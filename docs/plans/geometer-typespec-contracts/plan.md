@@ -1026,11 +1026,19 @@ Geometer proposal, not the original consumer packet.
   the finite circle/line critical set in both Hausdorff directions with squared
   comparisons, avoiding canonical nested-radical storage. A strict zero-repair
   replay rebuilds rings, parents, and regions and compares them through direct
-  boundary maps rather than fragment-pair or ring-pair scans. Irrational
-  overlapping disks, full two-half circles, nested hole/island topology,
-  global half ties, early work/memory rejection, and native/WASM canonical
-  bytes gate the slice. Packet source-set interning, canonical record IDs,
-  dispatch, and transport remain pending.
+  boundary maps rather than fragment-pair or ring-pair scans. Exact-commit
+  remediation meters broad-phase index visits, retains pair/scratch memory in
+  child budgets, validates original hard ceilings before reservation, and
+  binds normalized arcs to a verified endpoint/radius/center-branch and
+  x-monotone certificate. A certified shared endpoint is factored out of the
+  line/circle or circle/circle equation, leaving one constant-work outward
+  interval root check and no algebraic value. Already partitioned replay arcs
+  add no synthetic cardinal seam. Generic irrational overlapping disks,
+  irrational-radius authored arcs, clockwise annular holes, full two-half
+  circles, nested hole/island topology, reciprocal old-to-normalized maps,
+  513 disjoint sparse boxes, global half ties, early work/memory rejection, and
+  native/WASM canonical bytes gate the slice. Packet source-set interning,
+  canonical record IDs, dispatch, and transport remain pending.
 - Before filtered operation dispatch is enabled, move the retained native
   exact/oracle sources out of the normal `geometer_lib` source list into an
   explicit feasibility-oracle target, matching the separation already used by

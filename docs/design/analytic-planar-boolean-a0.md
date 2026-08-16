@@ -606,11 +606,20 @@ endpoint-authoritative lines and arcs, and certifies finite-arc Hausdorff error
 from outward filtered critical points and squared-distance comparisons. It
 then replays the integer geometry with no proximity repair and requires the
 same material boundary partition, winding, parent depth, and region ownership.
-This closes ordinary irrational circle-intersection normalization without
-calling the algebraic backend. Outcome history and projection perform no
-numeric predicate, snapping, or additional 50 nm repair. Canonical source-set
-interning, packet record ordering/IDs, and operation dispatch remain subsequent
-stages.
+Replay binds every normalized arc to exact integer endpoints, an integer
+radius, its selected center branch, and its already certified x-monotone half.
+When two replay curves share a normalized endpoint, the narrow phase treats
+that endpoint as a verified construction root and factors only the possible
+second line/circle or circle/circle root with outward interval arithmetic. It
+does not take another square root, snap a point, or construct an algebraic
+value. A distinct on-domain second root rejects the replay; an uncertain root
+fails closed. Already x-monotone replay arcs do not invent new irrational
+cardinal seams, and only an identical normalized construction key or identical
+singleton center/radius can prove coincident carriers. This closes ordinary
+irrational circle-intersection normalization without calling the algebraic
+backend. Outcome history and projection perform no numeric predicate, snapping,
+or additional 50 nm repair. Canonical source-set interning, packet record
+ordering/IDs, and operation dispatch remain subsequent stages.
 
 Across ordered stages, the accumulator retains the resolved analytic
 arrangement and lineage. Publication to the governed nm grid occurs once after

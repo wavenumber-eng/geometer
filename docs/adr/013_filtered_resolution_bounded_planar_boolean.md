@@ -263,8 +263,14 @@ engine.
   A strict zero-repair replay rebuilds material rings, parents, and regions and
   requires a one-to-one boundary/topology map. Candidate discovery and topology
   comparison are indexed, and normalization reserves its downstream work and
-  logical memory before outcomes execute. Packet source-set interning,
-  canonical record IDs, and dispatch remain gated.
+  logical memory before outcomes execute. Normalized arcs carry an internal,
+  verified endpoint/radius/center-branch certificate. At a certified shared
+  endpoint, replay factors the possible second line/circle or circle/circle
+  root directly with outward intervals instead of rediscovering the known root
+  through a square root. Already x-monotone replay arcs add no synthetic
+  cardinal seam, so generic irrational intersections and irrational-radius
+  arcs remain on the fast filtered path. Packet source-set interning, canonical
+  record IDs, and dispatch remain gated.
 - Solver resource limits are supplied through one internal limits value object
   rather than scattered production constants. The catalog values are governed
   hard ceilings; a host may advertise and enforce lower effective limits, and

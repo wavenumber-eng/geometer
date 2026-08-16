@@ -655,7 +655,12 @@ class OverlayBuilder
             valid);
         std::uint64_t circle_groups = 0;
         for (const CarrierGroup& group : groups_)
-            circle_groups += group.kind == AnalyticAtomicCurveKind::circular_arc ? 1 : 0;
+            circle_groups +=
+                group.kind == AnalyticAtomicCurveKind::circular_arc &&
+                        !(group.curve_count == 1 && geometry_.curves[group.representative_curve - 1]
+                                                        .has_endpoint_authoritative_arc_certificate)
+                    ? 1
+                    : 0;
         raw_count = checked_add(raw_count, checked_multiply(circle_groups, 2, valid), valid);
         if (!valid || raw_count > std::numeric_limits<std::uint32_t>::max() ||
             !set_base_memory(raw_count))
@@ -684,6 +689,9 @@ class OverlayBuilder
                 if (group.kind == AnalyticAtomicCurveKind::circular_arc)
                 {
                     const std::uint32_t curve_offset = group.representative_curve - 1;
+                    if (group.curve_count == 1 &&
+                        geometry_.curves[curve_offset].has_endpoint_authoritative_arc_certificate)
+                        continue;
                     append_event(curve_offset, circle_left_seam(geometry_.curves[curve_offset]),
                                  EventRole::circle_seam);
                     append_event(curve_offset, circle_right_seam(geometry_.curves[curve_offset]),
@@ -748,6 +756,12 @@ class OverlayBuilder
             const auto& right_value = use_x ? right.x : right.y;
             return ascending ? left_value.upper < right_value.lower
                              : right_value.upper < left_value.lower;
+        }
+        if (group.curve_count == 1 && curve.has_endpoint_authoritative_arc_certificate)
+        {
+            if (curve.endpoint_authoritative_upper_branch)
+                return right.x.upper < left.x.lower;
+            return left.x.upper < right.x.lower;
         }
         const int left_half = certified_half(left, curve);
         const int right_half = certified_half(right, curve);
@@ -873,16 +887,22 @@ class OverlayBuilder
             group.seam_local = 0;
             if (group.kind == AnalyticAtomicCurveKind::circular_arc)
             {
-                bool found_seam = false;
-                for (std::uint32_t local = 0; local < group.point_count; ++local)
-                    if (unique_events_[group.point_begin + local].has_circle_seam)
-                    {
-                        group.seam_local = local;
-                        found_seam = true;
-                        break;
-                    }
-                if (!found_seam)
-                    return fail(AnalyticFilteredOverlayError::invalid_argument);
+                const AnalyticAtomicCurveNm& representative =
+                    geometry_.curves[group.representative_curve - 1];
+                if (!(group.curve_count == 1 &&
+                      representative.has_endpoint_authoritative_arc_certificate))
+                {
+                    bool found_seam = false;
+                    for (std::uint32_t local = 0; local < group.point_count; ++local)
+                        if (unique_events_[group.point_begin + local].has_circle_seam)
+                        {
+                            group.seam_local = local;
+                            found_seam = true;
+                            break;
+                        }
+                    if (!found_seam)
+                        return fail(AnalyticFilteredOverlayError::invalid_argument);
+                }
             }
             for (std::uint32_t local = 0; local < group.event_count; ++local)
             {
@@ -1058,6 +1078,13 @@ class OverlayBuilder
         }
         std::size_t action_cursor = action_begin;
         AnalyticXMonotoneBranch circle_branch = AnalyticXMonotoneBranch::lower;
+        if (group.kind == AnalyticAtomicCurveKind::circular_arc && group.curve_count == 1 &&
+            geometry_.curves[group.representative_curve - 1]
+                .has_endpoint_authoritative_arc_certificate)
+            circle_branch =
+                geometry_.curves[group.representative_curve - 1].endpoint_authoritative_upper_branch
+                    ? AnalyticXMonotoneBranch::upper
+                    : AnalyticXMonotoneBranch::lower;
         for (std::uint32_t rank = 0; rank < group.point_count; ++rank)
         {
             const bool incoming_active = active.count() != 0;

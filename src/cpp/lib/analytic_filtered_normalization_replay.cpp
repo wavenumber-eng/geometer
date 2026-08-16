@@ -23,12 +23,32 @@ using analytic_detail::Point;
 using analytic_detail::subtract;
 
 constexpr std::uint64_t kIndexLogicalBytes = 8;
-constexpr std::uint64_t kReplayGeometryLogicalBytesPerCurve = 384;
+constexpr std::uint64_t kReplayGeometryLogicalBytesPerCurve = 480;
 constexpr std::uint64_t kReplayRingScratchLogicalBytes = 16;
 constexpr std::uint64_t kReplayRegionScratchLogicalBytes = 16;
 constexpr std::uint64_t kReplayFixedLogicalBytes = 512;
 constexpr std::uint64_t kIntersectionValidationWork = 16;
 constexpr std::uint32_t kNoIndex = std::numeric_limits<std::uint32_t>::max();
+
+struct ArcCarrierEntry
+{
+    bool exact_center = false;
+    double center_x = 0.0;
+    double center_y = 0.0;
+    std::int64_t first_x = 0;
+    std::int64_t first_y = 0;
+    std::int64_t second_x = 0;
+    std::int64_t second_y = 0;
+    std::uint64_t radius = 0;
+    bool center_on_positive_side = false;
+    std::uint32_t curve = 0;
+
+    auto key() const noexcept
+    {
+        return std::tie(exact_center, center_x, center_y, first_x, first_y, second_x, second_y,
+                        radius, center_on_positive_side);
+    }
+};
 
 Point point(const AnalyticFilteredPointNm& value) noexcept
 {
@@ -66,6 +86,38 @@ std::uint64_t sort_units(std::uint64_t count) noexcept
     std::uint64_t output = 0;
     return checked_multiply(count, levels, output) ? output
                                                    : std::numeric_limits<std::uint64_t>::max();
+}
+
+bool broad_fixed_work_upper_bound(std::uint64_t curves, std::uint64_t& output) noexcept
+{
+    std::uint64_t levels = 1;
+    for (std::uint64_t value = curves > 1 ? curves - 1 : 0; value != 0; value >>= 1U)
+        ++levels;
+    std::uint64_t per_curve = 0;
+    return checked_multiply(levels, 64, per_curve) && checked_add(per_curve, 64, per_curve) &&
+           checked_multiply(curves, per_curve, output) && checked_add(output, 4096, output);
+}
+
+bool retained_pair_bytes(std::uint64_t pairs, std::uint64_t pair_ceiling,
+                         std::uint64_t& output) noexcept
+{
+    if (pairs == 0)
+    {
+        output = 0;
+        return true;
+    }
+    std::uint64_t capacity = std::min<std::uint64_t>(64, pair_ceiling);
+    while (capacity < pairs)
+    {
+        const std::uint64_t doubled = capacity > std::numeric_limits<std::uint64_t>::max() / 2
+                                          ? std::numeric_limits<std::uint64_t>::max()
+                                          : capacity * 2;
+        const std::uint64_t next = std::min(doubled, pair_ceiling);
+        if (next <= capacity)
+            return false;
+        capacity = next;
+    }
+    return checked_multiply(capacity, kIndexLogicalBytes, output);
 }
 
 enum class Domain : std::uint8_t
@@ -229,18 +281,31 @@ class Validator
 
     ReplayResult run()
     {
-        AnalyticBroadPhaseResult broad = build_analytic_curve_candidates(bounds_, limits_);
-        if (broad.error != AnalyticBroadPhaseError::none)
-            return fail(ReplayError::resource_limit_exceeded);
+        std::uint64_t fixed_work = 0;
+        if (!broad_fixed_work_upper_bound(bounds_.size(), fixed_work) || !charge(fixed_work))
+            return result_;
+        AnalyticSolverLimits broad_limits = limits_;
+        const std::uint64_t dynamic_allowance = limits_.predicate_calls - result_.work_units;
+        broad_limits.predicate_calls = dynamic_allowance / 2;
+        broad_limits.examined_curve_pairs =
+            std::min(broad_limits.examined_curve_pairs, dynamic_allowance / 34);
+        AnalyticBroadPhaseResult broad = build_analytic_curve_candidates(bounds_, broad_limits);
         result_.candidate_pairs = broad.pairs.size();
         result_.peak_working_memory_bytes = broad.telemetry.peak_working_memory_bytes;
-        if (!checked_multiply(broad.pairs.size(), kIndexLogicalBytes, pair_bytes_))
+        std::uint64_t dynamic_work = 0;
+        std::uint64_t pair_work = 0;
+        if (broad.telemetry.candidate_pairs > broad.telemetry.examined_curve_pairs ||
+            !checked_multiply(broad.telemetry.candidate_pairs, 16, pair_work) ||
+            !checked_add(broad.telemetry.spatial_index_node_visits,
+                         broad.telemetry.examined_curve_pairs, dynamic_work) ||
+            !checked_add(dynamic_work, pair_work, dynamic_work) || !charge(dynamic_work) ||
+            !retained_pair_bytes(broad.pairs.size(), limits_.examined_curve_pairs, pair_bytes_))
             return fail(ReplayError::resource_limit_exceeded);
-        if (!charge(broad.telemetry.examined_curve_pairs))
+        if (broad.error != AnalyticBroadPhaseError::none)
+            return fail(ReplayError::resource_limit_exceeded);
+        if (!prepare_geometry())
             return result_;
         if (!validate_narrow(broad.pairs))
-            return result_;
-        if (!prepare_geometry())
             return result_;
         return validate_regions(broad.pairs);
     }
@@ -268,19 +333,23 @@ class Validator
     {
         AnalyticSolverLimits limits = limits_;
         limits.predicate_calls -= result_.work_units;
-        std::uint64_t pair_bytes = 0;
-        if (!checked_multiply(pairs.size(),
-                              kAnalyticNarrowPhasePairLogicalBytes + kIndexLogicalBytes,
-                              pair_bytes) ||
-            pair_bytes > limits.working_memory_bytes)
+        if (pair_bytes_ > limits.working_memory_bytes)
         {
             result_.error = ReplayError::resource_limit_exceeded;
             return false;
         }
+        limits.working_memory_bytes -= pair_bytes_;
         AnalyticNarrowPhaseResult narrow =
-            intersect_analytic_curve_candidates(curves_, pairs, limits);
+            intersect_analytic_curve_candidates(geometry_.curves, pairs, limits);
+        std::uint64_t narrow_peak = 0;
+        if (!checked_add(pair_bytes_, narrow.telemetry.peak_working_memory_bytes, narrow_peak) ||
+            narrow_peak > limits_.working_memory_bytes)
+        {
+            result_.error = ReplayError::resource_limit_exceeded;
+            return false;
+        }
         result_.peak_working_memory_bytes =
-            std::max(result_.peak_working_memory_bytes, narrow.telemetry.peak_working_memory_bytes);
+            std::max(result_.peak_working_memory_bytes, narrow_peak);
         if (!charge(narrow.telemetry.predicate_calls))
             return false;
         if (narrow.error != AnalyticNarrowPhaseError::none)
@@ -296,7 +365,7 @@ class Validator
             !charge(validation_work))
             return false;
         for (const auto& intersection : narrow.intersections)
-            if (!valid_intersection(intersection, curves_))
+            if (!valid_intersection(intersection, geometry_.curves))
             {
                 result_.error = ReplayError::topology_collapse;
                 return false;
@@ -332,42 +401,44 @@ class Validator
         geometry_.curves = curves_;
         geometry_.bounds = bounds_;
         geometry_.occurrences.reserve(curves_.size());
-        std::vector<std::uint32_t> circles;
-        circles.reserve(curves_.size());
-        for (std::uint32_t index = 0; index < curves_.size(); ++index)
-            if (curves_[index].kind == AnalyticAtomicCurveKind::circular_arc)
-                circles.push_back(index);
-        const auto key = [this](std::uint32_t index)
+        std::vector<ArcCarrierEntry> arc_carriers;
+        arc_carriers.reserve(curves_.size());
+        for (std::uint32_t index = 0; index < geometry_.curves.size(); ++index)
         {
-            const auto& circle = geometry_.curves[index].circle;
-            return std::tie(circle.center.x.lower, circle.center.x.upper, circle.center.y.lower,
-                            circle.center.y.upper, circle.radius.lower, circle.radius.upper);
-        };
-        std::sort(circles.begin(), circles.end(), [&key](std::uint32_t left, std::uint32_t right)
-                  { return key(left) != key(right) ? key(left) < key(right) : left < right; });
-        assign_circle_carriers(circles, key);
+            const auto& curve = geometry_.curves[index];
+            if (curve.kind != AnalyticAtomicCurveKind::circular_arc)
+                continue;
+            const bool canonical_direction =
+                std::tie(curve.integer_start.x, curve.integer_start.y) <
+                std::tie(curve.integer_end.x, curve.integer_end.y);
+            const auto& first = canonical_direction ? curve.integer_start : curve.integer_end;
+            const auto& second = canonical_direction ? curve.integer_end : curve.integer_start;
+            const bool exact_center = curve.circle.center.x.lower == curve.circle.center.x.upper &&
+                                      curve.circle.center.y.lower == curve.circle.center.y.upper;
+            arc_carriers.push_back({exact_center, exact_center ? curve.circle.center.x.lower : 0.0,
+                                    exact_center ? curve.circle.center.y.lower : 0.0,
+                                    exact_center ? 0 : first.x, exact_center ? 0 : first.y,
+                                    exact_center ? 0 : second.x, exact_center ? 0 : second.y,
+                                    curve.integer_radius,
+                                    !exact_center && (curve.counterclockwise != curve.major_arc) ==
+                                                         canonical_direction,
+                                    index});
+        }
+        std::sort(arc_carriers.begin(), arc_carriers.end(),
+                  [](const ArcCarrierEntry& left, const ArcCarrierEntry& right)
+                  { return left.key() < right.key(); });
+        std::uint64_t group = 0;
+        for (std::size_t index = 0; index < arc_carriers.size(); ++index)
+        {
+            if (index == 0 || arc_carriers[index - 1].key() != arc_carriers[index].key())
+                ++group;
+            auto& curve = geometry_.curves[arc_carriers[index].curve];
+            curve.construction_carrier_id = curves_.size() + group;
+            curve.construction_family_id = curve.construction_carrier_id;
+        }
         for (std::uint32_t index = 0; index < geometry_.curves.size(); ++index)
             append_occurrence(index);
         return true;
-    }
-
-    template <typename Key>
-    void assign_circle_carriers(const std::vector<std::uint32_t>& circles, const Key& key)
-    {
-        std::uint64_t carrier = geometry_.curves.size() + 1;
-        for (std::size_t begin = 0; begin < circles.size();)
-        {
-            std::size_t end = begin + 1;
-            while (end < circles.size() && key(circles[begin]) == key(circles[end]))
-                ++end;
-            for (std::size_t at = begin; at < end; ++at)
-            {
-                geometry_.curves[circles[at]].construction_carrier_id = carrier;
-                geometry_.curves[circles[at]].construction_family_id = carrier;
-            }
-            ++carrier;
-            begin = end;
-        }
     }
 
     void append_occurrence(std::uint32_t index)
@@ -392,6 +463,10 @@ class Validator
                 curve.end.construction_x_column_id = column;
             }
         }
+        else
+        {
+            agrees = curve.counterclockwise;
+        }
         AnalyticFilteredOccurrence occurrence;
         occurrence.occurrence_id = index + 1;
         occurrence.coverage_id = 1;
@@ -415,6 +490,9 @@ class Validator
         records.operands.push_back({1, 2, 0});
         AnalyticSolverLimits limits = limits_;
         limits.predicate_calls -= result_.work_units;
+        if (own_bytes_ > limits.working_memory_bytes)
+            return fail(ReplayError::resource_limit_exceeded);
+        limits.working_memory_bytes -= own_bytes_;
         AnalyticFilteredRegionsResult replay =
             build_analytic_filtered_regions(records, 0, geometry_, pairs, limits);
         std::uint64_t replay_peak = 0;
@@ -426,9 +504,11 @@ class Validator
         if (!charge(replay.telemetry.predicate_calls))
             return result_;
         if (replay.error != AnalyticFilteredRegionsError::none)
+        {
             return fail(replay.error == AnalyticFilteredRegionsError::resource_limit_exceeded
                             ? ReplayError::resource_limit_exceeded
                             : ReplayError::topology_collapse);
+        }
         if (!validate_ring_mapping(replay) || !validate_region_mapping(replay))
             return fail(ReplayError::topology_collapse);
         return result_;
@@ -577,8 +657,9 @@ ReplayResult validate_normalized_replay(std::int64_t origin_x_nm, std::int64_t o
     return Validator(origin_x_nm, origin_y_nm, curves, bounds, original, limits).run();
 }
 
-static_assert(sizeof(AnalyticAtomicCurveNm) <= 256);
+static_assert(sizeof(AnalyticAtomicCurveNm) <= kAnalyticAtomicCurveLogicalBytes);
 static_assert(sizeof(AnalyticCurveBoundsNm) <= 48);
 static_assert(sizeof(AnalyticFilteredOccurrence) <= 56);
+static_assert(sizeof(ArcCarrierEntry) <= 80);
 
 } // namespace geometer::analytic_normalization_detail

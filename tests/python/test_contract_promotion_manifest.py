@@ -690,8 +690,8 @@ def test_filtered_solver_foundation_is_bounded_non_algebraic_and_not_dispatched(
         "narrow_phase_resolution_policy": ("pair_witness_at_or_below_50nm_no_independent_tolerance_composition"),
         "narrow_phase_pair_logical_bytes": 256,
         "narrow_phase_parity_validator": "scripts/validate_analytic_filtered_core_parity.py",
-        "narrow_phase_vector_bytes": 280,
-        "narrow_phase_vector_sha256": ("1a4baa3075b8b377da83449aa6d2f17a9dbe260b5e5d0d2b793a6228f5deb07f"),
+        "narrow_phase_vector_bytes": 304,
+        "narrow_phase_vector_sha256": ("6cb876823564bb996984851003e0160306365f4ae2700e5566d7bbb112177824"),
         "interval_arithmetic_header": "src/cpp/lib/analytic_filtered_interval.h",
         "fixed_width_integer_header": "src/cpp/lib/analytic_wide_integer.h",
         "lowering_header": "src/cpp/lib/geometer/analytic_filtered_lowering.h",
@@ -735,7 +735,7 @@ def test_filtered_solver_foundation_is_bounded_non_algebraic_and_not_dispatched(
         ),
         "arrangement_parity_validator": ("scripts/validate_analytic_filtered_arrangement_parity.py"),
         "arrangement_vector_bytes": 13032,
-        "arrangement_vector_sha256": ("c548d63bf8577eb615de5569dedef2d5cbff9ab7dccf831d24bb82ad08788d1d"),
+        "arrangement_vector_sha256": ("ca19bb282b97c4438a8a218e0b481eba5c5b8f67f3794ff179e1bd5dc31a50a8"),
         "boolean_selection_header": ("src/cpp/lib/geometer/analytic_filtered_boolean_selection.h"),
         "boolean_selection_source": "src/cpp/lib/analytic_filtered_boolean_selection.cpp",
         "boolean_selection_admission_source": ("src/cpp/lib/analytic_filtered_boolean_selection_admission.cpp"),
@@ -754,7 +754,7 @@ def test_filtered_solver_foundation_is_bounded_non_algebraic_and_not_dispatched(
         ),
         "boolean_selection_parity_validator": ("scripts/validate_analytic_filtered_boolean_selection_parity.py"),
         "boolean_selection_vector_bytes": 12744,
-        "boolean_selection_vector_sha256": ("d228a46358487623eee720c263680956149fb02af63efc926da323163dc4d684"),
+        "boolean_selection_vector_sha256": ("16198b1d5c3a714b915224f548d5033467a7d0505822d4014cb36374496f39d4"),
         "regions_header": "src/cpp/lib/geometer/analytic_filtered_regions.h",
         "regions_source": "src/cpp/lib/analytic_filtered_regions.cpp",
         "regions_test": "tests/cpp/analytic_filtered_regions_test.cpp",
@@ -768,7 +768,7 @@ def test_filtered_solver_foundation_is_bounded_non_algebraic_and_not_dispatched(
         ),
         "regions_parity_validator": "scripts/validate_analytic_filtered_regions_parity.py",
         "regions_vector_bytes": 800,
-        "regions_vector_sha256": ("4c6ed1900d0b1e22829a5b826010221d535430102491590901fb5b0ea5fd643c"),
+        "regions_vector_sha256": ("3b3425af4e9e1885d421749cd98971535d6fb0b7bf3e4ee3989f2d60f7a2ad0e"),
         "lineage_header": "src/cpp/lib/geometer/analytic_filtered_lineage.h",
         "lineage_source": "src/cpp/lib/analytic_filtered_lineage.cpp",
         "lineage_test": "tests/cpp/analytic_filtered_lineage_test.cpp",
@@ -786,7 +786,7 @@ def test_filtered_solver_foundation_is_bounded_non_algebraic_and_not_dispatched(
         ),
         "lineage_parity_validator": "scripts/validate_analytic_filtered_lineage_parity.py",
         "lineage_vector_bytes": 3672,
-        "lineage_vector_sha256": ("40d352475f393218d937a8a2a4c08a2c8d295211bffb84a325f42f276765dc14"),
+        "lineage_vector_sha256": ("5eb7b9420a8e356c7d16805cdb3448100125765f367236486a224a347b0a75eb"),
         "outcomes_header": "src/cpp/lib/geometer/analytic_filtered_outcomes.h",
         "outcomes_source": "src/cpp/lib/analytic_filtered_outcomes.cpp",
         "outcomes_tracker_header": "src/cpp/lib/analytic_filtered_outcome_tracker.h",
@@ -806,38 +806,27 @@ def test_filtered_solver_foundation_is_bounded_non_algebraic_and_not_dispatched(
         ),
         "outcomes_parity_validator": "scripts/validate_analytic_filtered_outcomes_parity.py",
         "outcomes_vector_bytes": 1480,
-        "outcomes_vector_sha256": ("f1e998070384ff0096c5c88393951ce8e1a96e32f28f6e08a6006d89c7f1f035"),
+        "outcomes_vector_sha256": ("10d5cfe2167b77146387deb6478cdfdff6e630b53d1b8a57ec3f73b80df519ee"),
         "normalization_header": "src/cpp/lib/geometer/analytic_filtered_normalization.h",
         "normalization_source": "src/cpp/lib/analytic_filtered_normalization.cpp",
-        "normalization_replay_header": (
-            "src/cpp/lib/analytic_filtered_normalization_replay.h"
-        ),
-        "normalization_replay_source": (
-            "src/cpp/lib/analytic_filtered_normalization_replay.cpp"
-        ),
+        "normalization_replay_header": ("src/cpp/lib/analytic_filtered_normalization_replay.h"),
+        "normalization_replay_source": ("src/cpp/lib/analytic_filtered_normalization_replay.cpp"),
+        "normalization_reconstruction_header": ("src/cpp/lib/analytic_endpoint_arc_reconstruction.h"),
         "normalization_test": "tests/cpp/analytic_filtered_normalization_test.cpp",
-        "normalization_input": (
-            "owned_filtered_outcomes_with_retained_certified_arrangement_and_topology"
-        ),
+        "normalization_input": ("owned_filtered_outcomes_with_retained_certified_arrangement_and_topology"),
         "normalization_policy": (
             "one_time_global_1nm_endpoint_authoritative_publication_with_filtered_whole_arc_"
             "hausdorff_and_strict_zero_repair_topology_replay"
         ),
         "normalization_complexity_policy": (
-            "indexed_replay_candidates_and_boundary_to_ring_mapping_without_fragment_pair_or_"
-            "ring_pair_scans"
+            "indexed_replay_candidates_and_boundary_to_ring_mapping_without_fragment_pair_or_ring_pair_scans"
         ),
         "normalization_budget_policy": (
-            "candidate_bounded_pre_outcomes_reservation_then_exact_fixed_capacity_"
-            "normalization_and_replay_phases"
+            "candidate_bounded_pre_outcomes_reservation_then_exact_fixed_capacity_normalization_and_replay_phases"
         ),
-        "normalization_parity_validator": (
-            "scripts/validate_analytic_filtered_normalization_parity.py"
-        ),
-        "normalization_vector_bytes": 1968,
-        "normalization_vector_sha256": (
-            "899d588c79a4228ab4798ad9e14995850a6cc76f36238affbc8ee81767beb4c8"
-        ),
+        "normalization_parity_validator": ("scripts/validate_analytic_filtered_normalization_parity.py"),
+        "normalization_vector_bytes": 2360,
+        "normalization_vector_sha256": ("d0583806117975324f95a7572bc171853c61cae8202d811680f2c2fb1d6b6729"),
     }
     implementation_paths = [
         solver[key]
@@ -876,6 +865,7 @@ def test_filtered_solver_foundation_is_bounded_non_algebraic_and_not_dispatched(
             "normalization_source",
             "normalization_replay_header",
             "normalization_replay_source",
+            "normalization_reconstruction_header",
         )
     ]
     for relative_path in implementation_paths:
@@ -905,6 +895,7 @@ def test_filtered_solver_foundation_is_bounded_non_algebraic_and_not_dispatched(
             "outcomes_parity_validator",
             "normalization_test",
             "normalization_parity_validator",
+            "normalization_reconstruction_header",
         )
     )
 

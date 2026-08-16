@@ -37,6 +37,7 @@ struct AnalyticArrangementEdgeNm
     std::uint32_t membership_begin = 0;
     std::uint32_t membership_count = 0;
     AnalyticXMonotoneBranch x_monotone_branch = AnalyticXMonotoneBranch::none;
+    bool endpoint_authoritative_arc = false;
     bool has_construction_line_direction = false;
     std::int64_t construction_line_dx = 0;
     std::int64_t construction_line_dy = 0;

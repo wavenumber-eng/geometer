@@ -92,6 +92,17 @@ struct AnalyticAtomicCurveNm
     AnalyticIntegerPointNm integer_center;
     bool has_integer_radius_certificate = false;
     std::uint64_t integer_radius = 0;
+    // Normalization-replay-only construction fact. Integer endpoints/radius,
+    // direction, major flag, and the filtered center are bound to the exact
+    // endpoint-authoritative center branch reconstructed by the trusted
+    // normalizer. This allows a known endpoint root to be factored without
+    // storing its generally irrational center algebraically. Request inputs
+    // cannot mint this certificate.
+    bool has_endpoint_authoritative_arc_certificate = false;
+    // The same trusted certificate binds the already-partitioned normalized
+    // fragment to one x-monotone circle half. Generic overlay must not invent
+    // new cardinal seam vertices for this finite replay fragment.
+    bool endpoint_authoritative_upper_branch = false;
     // Nonzero construction ids are job-local proof tokens emitted by the
     // trusted lowering stage. Equal carrier ids mean the same infinite line
     // or circle; equal family ids mean parallel lines or concentric circles.
@@ -109,6 +120,10 @@ struct AnalyticAtomicCurveNm
     std::int64_t construction_line_dx = 0;
     std::int64_t construction_line_dy = 0;
 };
+
+// Target-independent logical charge for one retained atomic curve record.
+// The value deliberately covers native ABI padding as well as wasm32 layout.
+inline constexpr std::uint64_t kAnalyticAtomicCurveLogicalBytes = 272;
 
 enum class AnalyticPairRelation : std::uint8_t
 {

@@ -427,7 +427,7 @@ bool calculate_arrangement_minimum_requirements(const AnalyticFilteredGeometry& 
     work = checked_add(work, checked_multiply(curve_count, 6, valid), valid);
     work = checked_add(work, sort_units(curve_count), valid);
     work = checked_add(work, sort_units(checked_multiply(curve_count, 2, valid)), valid);
-    work = checked_add(work, checked_multiply(spans, 11, valid), valid);
+    work = checked_add(work, checked_multiply(spans, 13, valid), valid);
     work = checked_add(work, checked_multiply(sort_units(endpoints), 2, valid), valid);
     work = checked_add(work, checked_multiply(sort_units(spans), 2, valid), valid);
     work = checked_add(work, checked_multiply(collapsed_domains, 52, valid), valid);
@@ -519,6 +519,23 @@ Tangent outgoing_tangent(std::uint32_t half_edge_id,
         return {
             {negate(radial.y), radial.x}, 1, {edge.circle.radius.lower, edge.circle.radius.upper}};
     return {{radial.y, negate(radial.x)}, -1, {edge.circle.radius.lower, edge.circle.radius.upper}};
+}
+
+std::optional<std::int8_t>
+endpoint_authoritative_cycle_half(std::uint32_t half_edge_id,
+                                  const AnalyticFilteredArrangementResult& result) noexcept
+{
+    const AnalyticArrangementHalfEdge& half_edge = result.half_edges[half_edge_id];
+    const AnalyticArrangementEdgeNm& edge = result.edges[half_edge.edge];
+    if (!edge.endpoint_authoritative_arc || edge.x_monotone_branch == AnalyticXMonotoneBranch::none)
+        return std::nullopt;
+    const AnalyticFilteredPointNm& origin =
+        half_edge.forward ? edge.carrier_start : edge.carrier_end;
+    const AnalyticFilteredPointNm& target =
+        half_edge.forward ? edge.carrier_end : edge.carrier_start;
+    if (target.x.lower <= origin.x.upper)
+        return std::nullopt;
+    return edge.x_monotone_branch == AnalyticXMonotoneBranch::lower ? 0 : 1;
 }
 
 std::optional<std::int8_t> direction_half(const Tangent& tangent) noexcept
@@ -987,6 +1004,7 @@ class ArrangementBuilder
             edge.major_arc = span.major_arc;
             edge.membership_count = span.membership_count;
             edge.x_monotone_branch = span.x_monotone_branch;
+            edge.endpoint_authoritative_arc = carrier.has_endpoint_authoritative_arc_certificate;
             edge.has_construction_line_direction = carrier.has_construction_line_direction;
             edge.construction_line_dx = carrier.construction_line_dx;
             edge.construction_line_dy = carrier.construction_line_dy;
@@ -1155,8 +1173,17 @@ class ArrangementBuilder
             result_.half_edges[result_.outgoing_half_edges[begin]].origin_vertex;
         result_.vertices[vertex].outgoing_begin = static_cast<std::uint32_t>(begin);
         result_.vertices[vertex].outgoing_count = static_cast<std::uint32_t>(end - begin);
+        bool endpoint_authoritative_degree_two = false;
+        if (end - begin == 2)
+            endpoint_authoritative_degree_two =
+                result_.edges[result_.half_edges[result_.outgoing_half_edges[begin]].edge]
+                    .endpoint_authoritative_arc ||
+                result_.edges[result_.half_edges[result_.outgoing_half_edges[begin + 1]].edge]
+                    .endpoint_authoritative_arc;
         for (std::size_t index = begin + 1; index < end; ++index)
         {
+            if (endpoint_authoritative_degree_two)
+                break;
             if (!charge(1))
                 return false;
             ++result_.telemetry.angular_predicates;
@@ -1268,12 +1295,40 @@ class ArrangementBuilder
     {
         auto first = result_.cycle_half_edges.begin() + cycle_begin;
         auto last = result_.cycle_half_edges.end();
+        if (!charge(static_cast<std::uint64_t>(last - first)))
+            return false;
+        bool endpoint_authoritative_cycle = false;
+        bool authoritative_vertices_are_exact = true;
+        for (auto at = first; at != last; ++at)
+        {
+            const std::uint32_t half_edge = *at;
+            endpoint_authoritative_cycle =
+                endpoint_authoritative_cycle ||
+                result_.edges[result_.half_edges[half_edge].edge].endpoint_authoritative_arc;
+            const auto& vertex =
+                result_.vertices[result_.half_edges[half_edge].origin_vertex].point;
+            authoritative_vertices_are_exact = authoritative_vertices_are_exact &&
+                                               vertex.x.lower == vertex.x.upper &&
+                                               vertex.y.lower == vertex.y.upper;
+        }
+        if (endpoint_authoritative_cycle && !authoritative_vertices_are_exact)
+            return fail(AnalyticFilteredArrangementError::resource_limit_exceeded);
         auto canonical = std::min_element(
             first, last,
             [&](std::uint32_t left, std::uint32_t right)
             {
                 const std::uint32_t left_vertex = result_.half_edges[left].origin_vertex;
                 const std::uint32_t right_vertex = result_.half_edges[right].origin_vertex;
+                if (endpoint_authoritative_cycle)
+                {
+                    const auto& left_point = result_.vertices[left_vertex].point;
+                    const auto& right_point = result_.vertices[right_vertex].point;
+                    const auto left_key =
+                        std::tie(left_point.x.lower, left_point.y.lower, left_vertex, left);
+                    const auto right_key =
+                        std::tie(right_point.x.lower, right_point.y.lower, right_vertex, right);
+                    return left_key < right_key;
+                }
                 return left_vertex != right_vertex ? left_vertex < right_vertex : left < right;
             });
         std::rotate(first, canonical, last);
@@ -1283,8 +1338,23 @@ class ArrangementBuilder
         if (!charge(1))
             return false;
         ++result_.telemetry.angular_predicates;
-        const std::optional<std::int8_t> orientation = compare_cycle_germs(
+        std::optional<std::int8_t> orientation = compare_cycle_germs(
             outgoing_tangent(outgoing, result_), outgoing_tangent(reverse_incoming, result_));
+        if (!orientation)
+        {
+            auto outgoing_half = cycle_germ_half(outgoing_tangent(outgoing, result_));
+            auto incoming_half = cycle_germ_half(outgoing_tangent(reverse_incoming, result_));
+            if (!outgoing_half)
+                outgoing_half = endpoint_authoritative_cycle_half(outgoing, result_);
+            if (!incoming_half)
+                incoming_half = endpoint_authoritative_cycle_half(reverse_incoming, result_);
+            if (outgoing_half && incoming_half && *outgoing_half != *incoming_half)
+                orientation = *outgoing_half < *incoming_half ? -1 : 1;
+            else if (outgoing_half && incoming_half)
+                orientation =
+                    compare_or_defer_collinear(outgoing_tangent(outgoing, result_),
+                                               outgoing_tangent(reverse_incoming, result_));
+        }
         if (!orientation)
             return fail(AnalyticFilteredArrangementError::resource_limit_exceeded);
         if (*orientation == 0)

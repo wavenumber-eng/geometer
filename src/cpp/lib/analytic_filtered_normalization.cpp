@@ -1,5 +1,6 @@
 #include "geometer/analytic_filtered_normalization.h"
 
+#include "analytic_endpoint_arc_reconstruction.h"
 #include "analytic_filtered_interval.h"
 #include "analytic_filtered_normalization_replay.h"
 #include "analytic_wide_integer.h"
@@ -39,15 +40,15 @@ constexpr std::uint64_t kVertexLogicalBytes = 24;
 constexpr std::uint64_t kFragmentLogicalBytes = 32;
 constexpr std::uint64_t kRingLogicalBytes = 24;
 constexpr std::uint64_t kRegionLogicalBytes = 8;
-constexpr std::uint64_t kReplayCurveLogicalBytes = 256;
+constexpr std::uint64_t kReplayCurveLogicalBytes = kAnalyticAtomicCurveLogicalBytes;
 constexpr std::uint64_t kNormalizationVertexPhaseBytes = 128;
 constexpr std::uint64_t kNormalizationBoundaryPhaseBytes = 384;
 constexpr std::uint64_t kNormalizationRingPhaseBytes = 64;
 constexpr std::uint64_t kNormalizationRegionPhaseBytes = 32;
 constexpr std::uint64_t kNormalizationFixedPhaseBytes = 4096;
 constexpr std::uint64_t kNormalizationPossibleFragmentBytes = 4096;
-constexpr std::uint64_t kNormalizationPossibleFragmentBaseWork = 2048;
-constexpr std::uint64_t kNormalizationPossibleFragmentLevelWork = 256;
+constexpr std::uint64_t kNormalizationPossibleFragmentBaseWork = 128;
+constexpr std::uint64_t kNormalizationPossibleFragmentLevelWork = 32;
 constexpr double kResolutionSquared = 2500.0;
 
 Point point(const AnalyticFilteredPointNm& value) noexcept
@@ -326,41 +327,6 @@ Decision arcs_within(const Arc& left, const Arc& right, std::uint64_t& candidate
     return directed_arc_within(right, left, candidate_count);
 }
 
-bool reconstruct_center(std::int64_t start_x, std::int64_t start_y, std::int64_t end_x,
-                        std::int64_t end_y, std::uint64_t radius, bool counterclockwise,
-                        bool major_arc, Point& center) noexcept
-{
-    const std::int64_t dx = end_x - start_x;
-    const std::int64_t dy = end_y - start_y;
-    if ((dx == 0 && dy == 0) || radius == 0 || radius > 1'000'000'000'000ULL)
-        return false;
-    const WideInteger dx2 = analytic_detail::wide_multiply(dx, dx);
-    const WideInteger dy2 = analytic_detail::wide_multiply(dy, dy);
-    const WideInteger chord2 = analytic_detail::wide_add(dx2, dy2);
-    const auto radius_i = static_cast<std::int64_t>(radius);
-    const WideInteger radius2 = analytic_detail::wide_multiply(radius_i, radius_i);
-    const WideInteger four_radius2 = analytic_detail::wide_add(
-        analytic_detail::wide_add(radius2, radius2), analytic_detail::wide_add(radius2, radius2));
-    if (analytic_detail::wide_compare(chord2, four_radius2) > 0)
-        return false;
-    const Interval chord_squared =
-        add(square(exact(static_cast<double>(dx))), square(exact(static_cast<double>(dy))));
-    const Interval four_r_squared =
-        multiply(exact(4.0), square(exact(static_cast<double>(radius))));
-    const Interval root =
-        square_root(divide(subtract(four_r_squared, chord_squared), chord_squared));
-    if (!valid(root))
-        return false;
-    const Interval factor = multiply(exact(0.5), root);
-    const Point midpoint =
-        scale(add(exact_point(start_x, start_y), exact_point(end_x, end_y)), exact(0.5));
-    Point displacement = scale(perpendicular(exact_point(dx, dy)), factor);
-    if (counterclockwise == major_arc)
-        displacement = scale(displacement, exact(-1.0));
-    center = add(midpoint, displacement);
-    return valid(center.x) && valid(center.y);
-}
-
 std::int64_t floor_div_51(std::int64_t value) noexcept
 {
     std::int64_t quotient = value / 51;
@@ -389,6 +355,11 @@ class Builder
 
     AnalyticFilteredNormalizationResult build()
     {
+        if (!analytic_solver_limits_within_hard_ceilings(limits_))
+        {
+            result_.error = AnalyticFilteredNormalizationError::resource_limit_exceeded;
+            return failure();
+        }
         if (!reserve_before_outcomes())
             return failure();
         AnalyticSolverLimits execution_limits = limits_;
@@ -757,9 +728,10 @@ class Builder
             return false;
         }
         Point replay_center;
-        if (!reconstruct_center(local_start.x, local_start.y, local_end.x, local_end.y,
-                                static_cast<std::uint64_t>(radius_local), fragment.counterclockwise,
-                                fragment.major_arc, replay_center))
+        if (!analytic_detail::reconstruct_endpoint_authoritative_arc_center(
+                local_start.x, local_start.y, local_end.x, local_end.y,
+                static_cast<std::uint64_t>(radius_local), fragment.counterclockwise,
+                fragment.major_arc, replay_center))
         {
             result_.error = AnalyticFilteredNormalizationError::normalization_topology_collapse;
             return false;
@@ -768,6 +740,11 @@ class Builder
         replay.circle.radius = {static_cast<double>(radius_local),
                                 static_cast<double>(radius_local)};
         replay.has_integer_certificate = false;
+        replay.has_integer_radius_certificate = true;
+        replay.integer_radius = static_cast<std::uint64_t>(radius_local);
+        replay.has_endpoint_authoritative_arc_certificate = true;
+        replay.endpoint_authoritative_upper_branch =
+            edge.x_monotone_branch == AnalyticXMonotoneBranch::upper;
         replay.has_arc_sweep_certificate = true;
         fragment.radius_nm = static_cast<std::uint64_t>(radius_local);
         const Arc source{point(edge.circle.center),

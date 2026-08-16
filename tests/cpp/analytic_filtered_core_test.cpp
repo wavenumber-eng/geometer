@@ -3,6 +3,8 @@
 #include "geometer/analytic_numeric_filter.h"
 #include "geometer/analytic_solver_limits.h"
 
+#include "analytic_endpoint_arc_reconstruction.h"
+
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
@@ -103,6 +105,33 @@ AnalyticAtomicCurveNm arc(std::uint32_t index, std::int64_t x1, std::int64_t y1,
     return result;
 }
 
+AnalyticAtomicCurveNm endpoint_authoritative_arc(std::uint32_t index, std::int64_t x1,
+                                                 std::int64_t y1, std::int64_t x2, std::int64_t y2,
+                                                 std::uint64_t radius, bool counterclockwise,
+                                                 bool upper_branch)
+{
+    AnalyticAtomicCurveNm result;
+    result.curve_index = index;
+    result.kind = AnalyticAtomicCurveKind::circular_arc;
+    result.start = filtered_point(static_cast<double>(x1), static_cast<double>(y1));
+    result.end = filtered_point(static_cast<double>(x2), static_cast<double>(y2));
+    result.integer_start = {x1, y1};
+    result.integer_end = {x2, y2};
+    result.circle.radius = {static_cast<double>(radius), static_cast<double>(radius)};
+    result.counterclockwise = counterclockwise;
+    result.has_integer_radius_certificate = true;
+    result.integer_radius = radius;
+    result.has_arc_sweep_certificate = true;
+    result.has_endpoint_authoritative_arc_certificate = true;
+    result.endpoint_authoritative_upper_branch = upper_branch;
+    geometer::analytic_detail::Point center;
+    require(geometer::analytic_detail::reconstruct_endpoint_authoritative_arc_center(
+                x1, y1, x2, y2, radius, counterclockwise, false, center),
+            "test endpoint-authoritative center reconstruction failed");
+    result.circle.center = {{center.x.lower, center.x.upper}, {center.y.lower, center.y.upper}};
+    return result;
+}
+
 bool contains(AnalyticCoordinateIntervalNm interval, double value)
 {
     return interval.lower <= value && value <= interval.upper;
@@ -169,7 +198,47 @@ std::string narrow_phase_parity_vector()
         append_u64(static_cast<std::uint8_t>(intersection.relation));
         append_u64(intersection.resolution_collapsed ? 1U : 0U);
     }
+    const std::vector<AnalyticAtomicCurveNm> authoritative = {
+        endpoint_authoritative_arc(1, 0, 0, 1000, 0, 600, true, false),
+        endpoint_authoritative_arc(2, 0, 0, 0, 1000, 600, false, false),
+    };
+    const auto authoritative_result = intersect_analytic_curve_candidates(authoritative, {{1, 2}});
+    require(authoritative_result.error == AnalyticNarrowPhaseError::none &&
+                authoritative_result.intersections.size() == 1 &&
+                authoritative_result.intersections[0].point_count == 1,
+            "endpoint-authoritative parity fixture failed");
+    append_u64(static_cast<std::uint8_t>(authoritative_result.intersections[0].relation));
+    append_double(authoritative_result.intersections[0].points[0].x.lower);
+    append_double(authoritative_result.intersections[0].points[0].y.lower);
     return output.str();
+}
+
+void test_endpoint_authoritative_arc_certificate()
+{
+    std::vector<AnalyticAtomicCurveNm> curves = {
+        endpoint_authoritative_arc(1, 0, 0, 1000, 0, 600, true, false),
+        endpoint_authoritative_arc(2, 0, 0, 0, 1000, 600, false, false),
+    };
+    const auto result = intersect_analytic_curve_candidates(curves, {{1, 2}});
+    require(result.error == AnalyticNarrowPhaseError::none && result.intersections.size() == 1 &&
+                result.intersections[0].relation == AnalyticPairRelation::point &&
+                result.intersections[0].point_count == 1 &&
+                result.intersections[0].points[0].x.lower == 0.0 &&
+                result.intersections[0].points[0].y.lower == 0.0 &&
+                !result.intersections[0].resolution_collapsed,
+            "known-root factoring must retain the exact shared normalized endpoint: " +
+                std::to_string(static_cast<int>(result.error)) + "/" +
+                std::to_string(result.intersections.size()) + "/" +
+                (result.intersections.empty()
+                     ? std::string("empty")
+                     : std::to_string(static_cast<int>(result.intersections[0].relation)) + "/" +
+                           std::to_string(result.intersections[0].point_count)));
+
+    curves[0].circle.center.x.lower += 1.0;
+    curves[0].circle.center.x.upper += 1.0;
+    require(intersect_analytic_curve_candidates(curves, {{1, 2}}).error ==
+                AnalyticNarrowPhaseError::invalid_argument,
+            "a forged endpoint-authoritative center enclosure must be rejected");
 }
 
 void test_limits()
@@ -965,6 +1034,7 @@ int main()
     test_narrow_phase_candidate_driven_linear_work();
     test_narrow_phase_direct_dense_index_resolution();
     test_narrow_phase_rejects_noncanonical_or_invalid_input();
+    test_endpoint_authoritative_arc_certificate();
     std::cout << "ANALYTIC_FILTERED_CORE_VECTOR=" << narrow_phase_parity_vector() << '\n';
     return 0;
 }

@@ -1,10 +1,13 @@
 #include "geometer/analytic_curve_broad_phase.h"
 #include "geometer/analytic_filtered_normalization.h"
 
+#include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <cstdlib>
 #include <iomanip>
 #include <iostream>
+#include <limits>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -56,6 +59,17 @@ AnalyticRequestPacketRecords nested_records()
     records.operands.push_back({1, 2, 0});
     records.operands.push_back({2, 2, 0});
     records.operands.push_back({3, 2, 0});
+    return records;
+}
+
+AnalyticRequestPacketRecords difference_records()
+{
+    AnalyticRequestPacketRecords records;
+    records.jobs.push_back({1, 0, 2});
+    records.stages.push_back({1, 1, 0, 1});
+    records.stages.push_back({2, 2, 1, 1});
+    records.operands.push_back({1, 2, 0});
+    records.operands.push_back({2, 2, 0});
     return records;
 }
 
@@ -143,7 +157,7 @@ void append_arc(AnalyticFilteredGeometry& geometry, std::uint64_t operand, doubl
     AnalyticFilteredOccurrence occurrence;
     occurrence.occurrence_id = index;
     occurrence.coverage_id = operand;
-    occurrence.agrees_with_carrier = true;
+    occurrence.agrees_with_carrier = counterclockwise;
     occurrence.material_on_left = true;
     occurrence.source.kind = AnalyticFilteredSourceKind::compact_feature_role;
     occurrence.source.role = AnalyticFilteredSourceRole::primitive_outer_circle;
@@ -151,6 +165,19 @@ void append_arc(AnalyticFilteredGeometry& geometry, std::uint64_t operand, doubl
     occurrence.source.primary_id = 1;
     occurrence.source.secondary_id = 0;
     geometry.occurrences.push_back(occurrence);
+}
+
+void append_irrational_arc(AnalyticFilteredGeometry& geometry, std::uint64_t operand,
+                           bool counterclockwise)
+{
+    const double radius = std::sqrt(818.0);
+    append_arc(geometry, operand, 23, 17, -23, -17, 0, 0, radius, counterclockwise);
+    auto& curve = geometry.curves.back();
+    curve.has_integer_certificate = false;
+    curve.has_integer_radius_certificate = false;
+    curve.circle.radius = {std::nextafter(radius, -std::numeric_limits<double>::infinity()),
+                           std::nextafter(radius, std::numeric_limits<double>::infinity())};
+    geometry.bounds.back() = {curve.curve_index, -radius, -radius, radius, radius};
 }
 
 void append_disk(AnalyticFilteredGeometry& geometry, std::uint64_t operand, double center_x,
@@ -213,7 +240,11 @@ void test_rotated_semicircles_and_major_arc()
                 rotated_result.fragments[0].radius_nm == 500,
             "rotated semicircle normalization failed: " +
                 std::to_string(static_cast<std::uint32_t>(rotated_result.error)) + "/" +
-                std::to_string(rotated_result.fragments.size()));
+                std::to_string(rotated_result.fragments.size()) + "/" +
+                std::to_string(rotated_result.telemetry.arc_critical_candidates) + "/" +
+                std::to_string(rotated_result.telemetry.strict_replay_candidate_pairs) + "/" +
+                std::to_string(rotated_result.telemetry.outcomes_work_units) + "/" +
+                std::to_string(rotated_result.telemetry.normalization_work_units));
 
     AnalyticFilteredGeometry major;
     append_arc(major, 1, 1000, 0, 0, 1000, 1000, 1000, 1000, true, true);
@@ -229,7 +260,7 @@ void test_irrational_disk_crossings()
 {
     AnalyticFilteredGeometry geometry;
     append_disk(geometry, 1, 0, 0, 1000);
-    append_disk(geometry, 2, 1200, 0, 1000);
+    append_disk(geometry, 2, 1201, 0, 1000);
     const auto broad = build_analytic_curve_candidates(geometry.bounds);
     require(broad.error == AnalyticBroadPhaseError::none, "overlapping-disk broad phase failed");
     const auto result =
@@ -238,10 +269,119 @@ void test_irrational_disk_crossings()
             "irrational disk-crossing normalization failed: " +
                 std::to_string(static_cast<std::uint32_t>(result.error)) + "/" +
                 std::to_string(result.telemetry.arc_critical_candidates) + "/" +
-                std::to_string(result.telemetry.strict_replay_candidate_pairs));
+                std::to_string(result.telemetry.strict_replay_candidate_pairs) + "/" +
+                std::to_string(result.telemetry.outcomes_work_units) + "/" +
+                std::to_string(result.telemetry.normalization_work_units) + "/" +
+                std::to_string(result.telemetry.reserved_normalization_work_units));
     require(result.regions.size() == 1 && result.rings.size() == 1 && result.vertices.size() == 4 &&
                 result.fragments.size() == 4 && result.telemetry.algebraic_fallback_calls == 0,
             "irrational disk union topology drifted or used algebraic fallback");
+}
+
+void test_irrational_radius_arc_and_clockwise_hole()
+{
+    AnalyticFilteredGeometry half_disk;
+    append_irrational_arc(half_disk, 1, true);
+    append_line(half_disk, 1, -23, -17, 23, 17);
+    const auto half_result = normalize(half_disk);
+    require(half_result.error == AnalyticFilteredNormalizationError::none &&
+                half_result.fragments.size() >= 2 &&
+                half_result.telemetry.algebraic_fallback_calls == 0,
+            "irrational-radius authored arc normalization failed: " +
+                std::to_string(static_cast<std::uint32_t>(half_result.error)));
+
+    AnalyticFilteredGeometry annulus;
+    append_disk(annulus, 1, 0, 0, 2000);
+    append_disk(annulus, 2, 0, 0, 1000);
+    const auto broad = build_analytic_curve_candidates(annulus.bounds);
+    require(broad.error == AnalyticBroadPhaseError::none, "annulus broad phase failed");
+    const auto result =
+        build_analytic_filtered_normalization(difference_records(), 0, annulus, broad.pairs);
+    require(result.error == AnalyticFilteredNormalizationError::none && result.rings.size() == 2 &&
+                result.regions.size() == 1 && !result.rings[1].counterclockwise,
+            "clockwise hole strict replay failed: " +
+                std::to_string(static_cast<std::uint32_t>(result.error)));
+}
+
+void verify_maps_and_tagged_references(const AnalyticFilteredNormalizationResult& result)
+{
+    for (std::uint32_t normalized = 0; normalized < result.vertices.size(); ++normalized)
+    {
+        const std::uint32_t old = result.vertices[normalized].arrangement_vertex;
+        require(old < result.old_vertex_to_normalized.size() &&
+                    result.old_vertex_to_normalized[old] == normalized,
+                "vertex normalization map is not reciprocal");
+    }
+    for (std::uint32_t normalized = 0; normalized < result.fragments.size(); ++normalized)
+    {
+        const std::uint32_t old = result.fragments[normalized].old_boundary;
+        require(old < result.old_boundary_to_normalized.size() &&
+                    result.old_boundary_to_normalized[old] == normalized,
+                "boundary normalization map is not reciprocal");
+    }
+    for (std::uint32_t normalized = 0; normalized < result.rings.size(); ++normalized)
+    {
+        const std::uint32_t old = result.rings[normalized].old_ring;
+        require(old < result.old_ring_to_normalized.size() &&
+                    result.old_ring_to_normalized[old] == normalized,
+                "ring normalization map is not reciprocal");
+    }
+    for (std::uint32_t normalized = 0; normalized < result.regions.size(); ++normalized)
+    {
+        const std::uint32_t old = result.regions[normalized].old_region;
+        require(old < result.old_region_to_normalized.size() &&
+                    result.old_region_to_normalized[old] == normalized,
+                "region normalization map is not reciprocal");
+    }
+    for (const auto& event : result.outcomes.events)
+        for (std::uint32_t offset = 0; offset < event.result_references.count; ++offset)
+        {
+            const auto& reference =
+                result.outcomes.result_references[event.result_references.begin + offset];
+            const auto& map = reference.kind == AnalyticFilteredResultReferenceKind::ring
+                                  ? result.old_ring_to_normalized
+                                  : result.old_region_to_normalized;
+            require(reference.local_index < map.size() &&
+                        map[reference.local_index] != kNoAnalyticNormalizedIndex,
+                    "tagged outcome reference does not close through normalization maps");
+        }
+}
+
+void test_maps_and_unused_vertex_sentinel()
+{
+    AnalyticFilteredGeometry geometry;
+    append_box(geometry, 1, 0, 0, 1000, 1000);
+    append_line(geometry, 1, 2000, 0, 2030, 0);
+    const auto result = normalize(geometry);
+    require(result.error == AnalyticFilteredNormalizationError::none,
+            "normalization map fixture failed");
+    verify_maps_and_tagged_references(result);
+    require(std::find(result.old_vertex_to_normalized.begin(),
+                      result.old_vertex_to_normalized.end(),
+                      kNoAnalyticNormalizedIndex) != result.old_vertex_to_normalized.end(),
+            "unused collapsed vertex did not retain normalization sentinel");
+}
+
+void test_original_hard_limits_are_enforced()
+{
+    AnalyticFilteredGeometry geometry;
+    append_box(geometry, 1, 0, 0, 1000, 1000);
+    const auto broad = build_analytic_curve_candidates(geometry.bounds);
+    require(broad.error == AnalyticBroadPhaseError::none, "hard-limit broad fixture failed");
+    AnalyticSolverLimits limits;
+    ++limits.predicate_calls;
+    auto result =
+        build_analytic_filtered_normalization(records_for(1), 0, geometry, broad.pairs, limits);
+    require(result.error == AnalyticFilteredNormalizationError::resource_limit_exceeded &&
+                result.telemetry.outcomes_work_units == 0,
+            "over-hard predicate limit reached outcomes");
+    limits = {};
+    ++limits.working_memory_bytes;
+    result =
+        build_analytic_filtered_normalization(records_for(1), 0, geometry, broad.pairs, limits);
+    require(result.error == AnalyticFilteredNormalizationError::resource_limit_exceeded &&
+                result.telemetry.outcomes_work_units == 0,
+            "over-hard memory limit reached outcomes");
 }
 
 void test_vertex_collision_fails_closed()
@@ -391,6 +531,16 @@ void test_exact_limits_and_sparse_scaling()
             "one-byte-short normalization memory leaked publication");
 }
 
+void test_large_sparse_admission()
+{
+    const auto result = build_disjoint(513);
+    require(result.error == AnalyticFilteredNormalizationError::none &&
+                result.regions.size() == 513,
+            "representative sparse PCB artwork was rejected by normalization admission: " +
+                std::to_string(static_cast<std::uint32_t>(result.error)) + "/" +
+                std::to_string(result.telemetry.reserved_normalization_work_units));
+}
+
 void append_parity_result(std::ostringstream& output,
                           const AnalyticFilteredNormalizationResult& result)
 {
@@ -433,6 +583,16 @@ void append_parity_result(std::ostringstream& output,
         append(value.outer_ring);
         append(value.old_region);
     }
+    const auto append_map = [&append](const std::vector<std::uint32_t>& map)
+    {
+        append(map.size());
+        for (const std::uint32_t value : map)
+            append(value);
+    };
+    append_map(result.old_vertex_to_normalized);
+    append_map(result.old_boundary_to_normalized);
+    append_map(result.old_ring_to_normalized);
+    append_map(result.old_region_to_normalized);
     const auto& telemetry = result.telemetry;
     append(telemetry.outcomes_work_units);
     append(telemetry.outcomes_peak_working_memory_bytes);
@@ -454,7 +614,7 @@ std::string parity_vector()
 {
     AnalyticFilteredGeometry disks;
     append_disk(disks, 1, 0, 0, 1000);
-    append_disk(disks, 2, 1200, 0, 1000);
+    append_disk(disks, 2, 1201, 0, 1000);
     const auto disk_broad = build_analytic_curve_candidates(disks.bounds);
     require(disk_broad.error == AnalyticBroadPhaseError::none, "parity disk broad phase failed");
     const auto disk_result =
@@ -488,11 +648,15 @@ int main(int argc, char** argv)
     test_integer_disk();
     test_rotated_semicircles_and_major_arc();
     test_irrational_disk_crossings();
+    test_irrational_radius_arc_and_clockwise_hole();
+    test_maps_and_unused_vertex_sentinel();
+    test_original_hard_limits_are_enforced();
     test_vertex_collision_fails_closed();
     test_global_half_ties();
     test_nested_hole_and_island_replay();
     test_early_normalization_reservation();
     test_exact_limits_and_sparse_scaling();
+    test_large_sparse_admission();
     if (argc == 2 && std::string(argv[1]) == "--emit-parity")
         std::cout << "ANALYTIC_FILTERED_NORMALIZATION_VECTOR=" << parity_vector() << '\n';
     std::cout << "analytic filtered normalization tests passed\n";

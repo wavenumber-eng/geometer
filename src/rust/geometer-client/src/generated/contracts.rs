@@ -3,7 +3,7 @@
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
 pub const NORMALIZED_CATALOG_SHA256: &str =
-    "23fd3fdd95b69ff0d7393df79ba3917556e0bb3b50bbc1893468b339913b84c1";
+    "4910716ad1a9d3252b362ab726534782a06d1e00b0575d0fd6f1b8b62d178311";
 
 #[derive(Debug, thiserror::Error)]
 pub enum ContractError {
@@ -962,10 +962,26 @@ impl Validate for ModelBoundsOptionsA0 {
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(untagged)]
+pub enum IpcRequestValueA0 {
+    LogicalDto(ModelBoundsOptionsA0),
+    PackedAttachment(PackedAttachmentProjectionA0),
+}
+
+impl Validate for IpcRequestValueA0 {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        match self {
+            Self::LogicalDto(value) => value.validate_at(path),
+            Self::PackedAttachment(value) => value.validate_at(path),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct IpcRequestA0 {
     pub operation: String,
-    pub request: ModelBoundsOptionsA0,
+    pub request: IpcRequestValueA0,
 }
 
 impl Validate for IpcRequestA0 {

@@ -356,31 +356,6 @@ bool parse_request(Frame* frame, QueuedRequest* request, std::string* diagnostic
         *diagnostic_code = "geometer.contract.invalid_json";
         return false;
     }
-    const auto operation_member = document.FindMember("operation");
-    const auto request_member = document.FindMember("request");
-    if (document.MemberCount() == 2 && operation_member != document.MemberEnd() &&
-        operation_member->value.IsString() && request_member != document.MemberEnd() &&
-        request_member->value.IsObject() &&
-        std::string(operation_member->value.GetString(),
-                    operation_member->value.GetStringLength()) ==
-            "geometry.analytic_planar_boolean_batch.a0")
-    {
-        rapidjson::StringBuffer buffer;
-        rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
-        if (!request_member->value.Accept(writer))
-        {
-            *error = "The packed IPC request value could not be encoded.";
-            return false;
-        }
-        request->id = frame->request_id;
-        request->resident_bytes = encoded_size(*frame);
-        request->operation.assign(operation_member->value.GetString(),
-                                  operation_member->value.GetStringLength());
-        request->request_json.assign(buffer.GetString(), buffer.GetSize());
-        request->attachments = std::move(frame->attachments);
-        return true;
-    }
-
     contracts::IpcRequestA0 envelope;
     contracts::ContractError contract_error;
     if (!contracts::decode_json(reinterpret_cast<const unsigned char*>(frame->json.data()),
@@ -391,18 +366,20 @@ bool parse_request(Frame* frame, QueuedRequest* request, std::string* diagnostic
         *error = contract_error.message;
         return false;
     }
-    if (envelope.operation != "geometry.model_bounds.a0")
+    const auto request_member = document.FindMember("request");
+    if (request_member == document.MemberEnd())
     {
-        request->request_json = "{}";
+        *error = "The validated IPC request value is missing.";
+        return false;
     }
-    else
+    rapidjson::StringBuffer buffer;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+    if (!request_member->value.Accept(writer))
     {
-        if (!contracts::encode_json(envelope.request, &request->request_json, &contract_error))
-        {
-            *error = contract_error.message;
-            return false;
-        }
+        *error = "The validated IPC request value could not be encoded.";
+        return false;
     }
+    request->request_json.assign(buffer.GetString(), buffer.GetSize());
     request->id = frame->request_id;
     request->resident_bytes = encoded_size(*frame);
     request->operation = std::move(envelope.operation);

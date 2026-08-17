@@ -39,6 +39,12 @@ model IpcReasonA0 {
 }
 
 /** Strict generic request envelope for executable IPC A0. */
+@oneOf
+union IpcRequestValueA0 {
+  logical_dto: Wavenumber.Geometer.Contracts.ModelBoundsA0.ModelBoundsOptionsA0,
+  packed_attachment: Wavenumber.Geometer.Contracts.Common.PackedAttachmentProjectionA0,
+}
+
 @jsonSchema
 @id("urn:wavenumber:schema:geometer:geometer.ipc.request:a0")
 @contractIdentity("geometer.ipc.request.a0")
@@ -46,7 +52,7 @@ model IpcRequestA0 {
   @minLength(1)
   @maxLength(128)
   operation: string;
-  request: Wavenumber.Geometer.Contracts.ModelBoundsA0.ModelBoundsOptionsA0;
+  request: IpcRequestValueA0;
 }
 
 /** Named raw-attachment declaration in the negotiated operation catalog. */

@@ -401,9 +401,46 @@ function generateOperationCatalogSource() {
   const [beforeAbi, afterAbi] = afterReleaseMarker.split('"__WN_C_ABI_GENERATION__"');
   if (afterAbi === undefined) throw new Error("Could not place runtime catalog version markers.");
   const attachmentChecks = [];
+  const inputAttachmentChecks = [];
+  const inputAttachmentMaximums = [];
+  const inputAttachmentPrimaryMediaTypes = [];
+  const outputAttachmentMaximums = [];
+  const outputAttachmentPrimaryMediaTypes = [];
+  const requestContracts = [];
+  const requestProjections = [];
+  const resultContracts = [];
+  const resultProjections = [];
   const requiredAttachmentCounts = [];
   const requiredAttachmentNames = [];
+  const logicalResultChecks = [];
+  const rootsByContract = new Map(
+    catalog.roots.map((rootRecord) => [rootRecord.contract_identity, rootRecord]),
+  );
   for (const operation of catalog.operations) {
+    requestContracts.push(
+      `    if (operation_id == ${JSON.stringify(operation.identity)}) return ${JSON.stringify(operation.request_contract)};`,
+    );
+    if (operation.request_projection) {
+      requestProjections.push(
+        `    if (operation_id == ${JSON.stringify(operation.identity)}) { *attachment_name = ${JSON.stringify(operation.request_projection.attachment_name)}; *format = ${JSON.stringify(operation.request_projection.format)}; return true; }`,
+      );
+    }
+    resultContracts.push(
+      `    if (operation_id == ${JSON.stringify(operation.identity)}) return ${JSON.stringify(operation.result_contract)};`,
+    );
+    if (operation.result_projection) {
+      resultProjections.push(
+        `    if (operation_id == ${JSON.stringify(operation.identity)}) { *attachment_name = ${JSON.stringify(operation.result_projection.attachment_name)}; *format = ${JSON.stringify(operation.result_projection.format)}; return true; }`,
+      );
+    }
+    if (operation.runtime_dispatch === "logical_dto") {
+      const resultRoot = rootsByContract.get(operation.result_contract);
+      if (resultRoot === undefined)
+        throw new Error(`Logical operation ${operation.identity} has no generated result root.`);
+      logicalResultChecks.push(
+        `    if (operation_id == ${JSON.stringify(operation.identity)}) return std::holds_alternative<contracts::${shortName(resultRoot.name)}>(result);`,
+      );
+    }
     const required = operation.output_attachments.filter((attachment) => attachment.required);
     requiredAttachmentCounts.push(
       `    if (operation_id == ${JSON.stringify(operation.identity)}) return ${required.length}U;`,
@@ -414,8 +451,27 @@ function generateOperationCatalogSource() {
       );
     }
     for (const attachment of operation.output_attachments) {
+      outputAttachmentMaximums.push(
+        `    if (operation_id == ${JSON.stringify(operation.identity)} && attachment_name == ${JSON.stringify(attachment.name)}) return ${attachment.max_bytes}U;`,
+      );
+      outputAttachmentPrimaryMediaTypes.push(
+        `    if (operation_id == ${JSON.stringify(operation.identity)} && attachment_name == ${JSON.stringify(attachment.name)}) return ${JSON.stringify(attachment.media_types[0])};`,
+      );
       for (const mediaType of attachment.media_types) {
         attachmentChecks.push(
+          `    if (operation_id == ${JSON.stringify(operation.identity)} && attachment_name == ${JSON.stringify(attachment.name)} && media_type == ${JSON.stringify(mediaType)}) return true;`,
+        );
+      }
+    }
+    for (const attachment of operation.input_attachments) {
+      inputAttachmentMaximums.push(
+        `    if (operation_id == ${JSON.stringify(operation.identity)} && attachment_name == ${JSON.stringify(attachment.name)}) return ${attachment.max_bytes}U;`,
+      );
+      inputAttachmentPrimaryMediaTypes.push(
+        `    if (operation_id == ${JSON.stringify(operation.identity)} && attachment_name == ${JSON.stringify(attachment.name)}) return ${JSON.stringify(attachment.media_types[0])};`,
+      );
+      for (const mediaType of attachment.media_types) {
+        inputAttachmentChecks.push(
           `    if (operation_id == ${JSON.stringify(operation.identity)} && attachment_name == ${JSON.stringify(attachment.name)} && media_type == ${JSON.stringify(mediaType)}) return true;`,
         );
       }
@@ -452,6 +508,94 @@ function generateOperationCatalogSource() {
     "    (void)operation_id;",
     "    (void)attachment_name;",
     "    (void)media_type;",
+    "    return false;",
+    "}",
+    "",
+    "bool operation_input_attachment_declared(const std::string& operation_id,",
+    "                                         const std::string& attachment_name,",
+    "                                         const std::string& media_type)",
+    "{",
+    ...inputAttachmentChecks,
+    "    (void)operation_id;",
+    "    (void)attachment_name;",
+    "    (void)media_type;",
+    "    return false;",
+    "}",
+    "",
+    "std::size_t operation_input_attachment_max_bytes(const std::string& operation_id,",
+    "                                                 const std::string& attachment_name)",
+    "{",
+    ...inputAttachmentMaximums,
+    "    (void)operation_id;",
+    "    (void)attachment_name;",
+    "    return 0U;",
+    "}",
+    "",
+    "const char* operation_input_attachment_primary_media_type(const std::string& operation_id,",
+    "                                                          const std::string& attachment_name)",
+    "{",
+    ...inputAttachmentPrimaryMediaTypes,
+    "    (void)operation_id;",
+    "    (void)attachment_name;",
+    "    return nullptr;",
+    "}",
+    "",
+    "std::size_t operation_output_attachment_max_bytes(const std::string& operation_id,",
+    "                                                  const std::string& attachment_name)",
+    "{",
+    ...outputAttachmentMaximums,
+    "    (void)operation_id;",
+    "    (void)attachment_name;",
+    "    return 0U;",
+    "}",
+    "",
+    "const char* operation_output_attachment_primary_media_type(const std::string& operation_id,",
+    "                                                           const std::string& attachment_name)",
+    "{",
+    ...outputAttachmentPrimaryMediaTypes,
+    "    (void)operation_id;",
+    "    (void)attachment_name;",
+    "    return nullptr;",
+    "}",
+    "",
+    "const char* operation_request_contract(const std::string& operation_id)",
+    "{",
+    ...requestContracts,
+    "    return nullptr;",
+    "}",
+    "",
+    "bool operation_request_projection(const std::string& operation_id, const char** attachment_name,",
+    "                                  const char** format)",
+    "{",
+    "    if (attachment_name == nullptr || format == nullptr) return false;",
+    ...requestProjections,
+    "    *attachment_name = nullptr;",
+    "    *format = nullptr;",
+    "    return false;",
+    "}",
+    "",
+    "const char* operation_result_contract(const std::string& operation_id)",
+    "{",
+    ...resultContracts,
+    "    return nullptr;",
+    "}",
+    "",
+    "bool operation_result_projection(const std::string& operation_id, const char** attachment_name,",
+    "                                 const char** format)",
+    "{",
+    "    if (attachment_name == nullptr || format == nullptr) return false;",
+    ...resultProjections,
+    "    *attachment_name = nullptr;",
+    "    *format = nullptr;",
+    "    return false;",
+    "}",
+    "",
+    "bool operation_logical_result_matches(const std::string& operation_id,",
+    "                                      const contracts::OperationResultValueA0& result)",
+    "{",
+    ...logicalResultChecks,
+    "    (void)operation_id;",
+    "    (void)result;",
     "    return false;",
     "}",
     "",

@@ -2,11 +2,12 @@
 
 ## Status and authority
 
-The model-bounds pilot TypeScript projection is implemented. Authored TypeSpec
-and the normalized catalog own wire structure; this package is a deterministic
-projection plus a transport adapter. It does not move geometry behavior out of
-C++ or replace the separately distributed Emscripten JavaScript and WASM
-artifacts.
+The model-bounds JSON projection and analytic planar Boolean packed projection
+are implemented. Authored TypeSpec and the normalized catalog own logical wire
+structure; the separately governed analytic A0 packet owns its binary hot path.
+This package is a deterministic projection plus a transport adapter. It does
+not move geometry behavior out of C++ or replace the separately distributed
+Emscripten JavaScript and WASM artifacts.
 
 The package identity is `@wavenumber/geometer`, its module format is ESM, and
 the repository-built package artifact is `dist/wasm/npm/geometer/`. Package version
@@ -35,6 +36,12 @@ The TypeScript codec vector test replays every governed pilot vector. This is
 in addition to JSON Schema, C++, and generic transport tests, not a replacement
 for their distinct assertion lanes.
 
+Packed analytic roots deliberately do not use the JSON codec runtime. Their
+generated DTO identities and integer-nanometer coordinates use `bigint`, and
+`analytic-packet-a0.ts` performs bounded binary encoding/decoding against the
+frozen `GMABRQ01`/`GMABRS01` layout. JavaScript `number` is rejected for every
+64-bit analytic field.
+
 ## High-level browser client
 
 Normal browser consumers import `createGeometerWasmClient` from
@@ -56,6 +63,13 @@ patch. It returns `ModelBoundsResultA0` on success and throws
 transport integration, and operation-by-operation promotion; applications
 should prefer the typed method for a promoted operation.
 
+`analyticPlanarBooleanBatch()` accepts the generated logical request, encodes
+its packed request attachment, executes the production C++ solver, strictly
+decodes the packed result, and returns generated logical jobs, line/arc
+fragments, rings, regions, lineage, operand outcomes, relationships, and
+standalone job digests. The same typed method is available on the Worker
+client.
+
 The client verifies each promoted runtime operation against its generated
 request/result identities and exact input/output attachment inventory,
 including ordering, requiredness, media types, and byte limits. A module with
@@ -72,6 +86,7 @@ The ESM package has explicit exports:
 | --- | --- |
 | `@wavenumber/geometer` | Generated contracts plus high-level client |
 | `@wavenumber/geometer/contracts` | Generated DTOs, codecs, and operation metadata |
+| `@wavenumber/geometer/analytic-packet-a0` | Strict analytic request/result packet projection |
 | `@wavenumber/geometer/wasm` | Direct browser/Web Worker WASM transport adapter |
 | `@wavenumber/geometer/worker` | Correlated main-thread client for a dedicated Worker |
 | `@wavenumber/geometer/worker-host` | Worker-side host around the direct WASM adapter |
@@ -89,7 +104,8 @@ embed a second copy of the geometry kernel.
 
 ## Dedicated Worker client
 
-`createGeometerWorkerClient()` exposes the same typed `modelBounds()` operation
+`createGeometerWorkerClient()` exposes the same typed `modelBounds()` and
+`analyticPlanarBooleanBatch()` operations
 without running synchronous OCCT work on the window event loop. The A0 Worker
 protocol is package-local and has the identity
 `wn.geometer.wasm_worker.a0`. Initialization transfers an owned copy of the

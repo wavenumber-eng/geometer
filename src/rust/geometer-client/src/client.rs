@@ -12,8 +12,8 @@ use tokio::sync::{Mutex, oneshot};
 
 use crate::generated::contracts::{
     self, DiagnosticCategory, IpcCancelRejectedA0, IpcCancelledA0, IpcHelloA0, IpcReasonA0,
-    IpcRequestA0, IpcWelcomeA0, ModelBoundsOptionsA0, ModelBoundsResultA0, OperationOutcomeA0,
-    OperationResultValueA0,
+    IpcRequestA0, IpcRequestValueA0, IpcRuntimeDispatchA0, IpcWelcomeA0, ModelBoundsOptionsA0,
+    ModelBoundsResultA0, OperationOutcomeA0, OperationResultValueA0, PackedAttachmentProjectionA0,
 };
 use crate::ipc::{self, Attachment, Frame, FrameKind};
 use crate::{IPC_IDENTITY, NORMALIZED_CATALOG_SHA256};
@@ -284,7 +284,27 @@ impl GeometerClient {
         request_json: &[u8],
         attachments: Vec<Attachment>,
     ) -> Result<OperationCall, GeometerClientError> {
-        let request = contracts::decode_model_bounds_options_a0_json(request_json)?;
+        let declaration = self
+            .welcome
+            .operation_catalog
+            .operations
+            .iter()
+            .find(|candidate| candidate.identity == operation)
+            .ok_or_else(|| {
+                GeometerClientError::Protocol(format!(
+                    "operation {operation} is absent from the negotiated catalog"
+                ))
+            })?;
+        let request = match declaration.runtime_dispatch {
+            IpcRuntimeDispatchA0::LogicalDto => IpcRequestValueA0::LogicalDto(
+                contracts::decode_model_bounds_options_a0_json(request_json)?,
+            ),
+            IpcRuntimeDispatchA0::PackedAttachment => {
+                IpcRequestValueA0::PackedAttachment(contracts::decode_json::<
+                    PackedAttachmentProjectionA0,
+                >(request_json)?)
+            }
+        };
         let json = contracts::encode_ipc_request_a0_json(&IpcRequestA0 {
             operation: operation.to_owned(),
             request,

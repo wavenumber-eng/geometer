@@ -395,6 +395,9 @@ int main()
                 standalone_failure.value->records.diagnostics.size() == 1 &&
                 standalone_failure.value->digest_sha256.size() == 64,
             "failed standalone job did not close over its diagnostic-only result");
+    AnalyticStandaloneJobResult mixed_success = build_analytic_standalone_job(*canonical.value, 1);
+    require(mixed_success.error == AnalyticResultPacketLayoutError::none && mixed_success.value,
+            "mixed-batch successful job did not produce a standalone closure");
 
     AnalyticResultPacketLayoutResult canonical_layout = decode_analytic_result_packet_layout(
         canonical_bytes.value->data(), canonical_bytes.value->size());
@@ -426,6 +429,10 @@ int main()
               << '\n';
     std::cout << "ANALYTIC_RESULT_PACKET_STANDALONE_DIGEST="
               << standalone_forward.value->digest_sha256 << '\n';
+    std::cout << "ANALYTIC_RESULT_PACKET_MIXED_SUCCESS_STANDALONE_VECTOR="
+              << hex(mixed_success.value->bytes) << '\n';
+    std::cout << "ANALYTIC_RESULT_PACKET_MIXED_SUCCESS_STANDALONE_DIGEST="
+              << mixed_success.value->digest_sha256 << '\n';
     std::cout << "ANALYTIC_RESULT_PACKET_FAILED_STANDALONE_VECTOR="
               << hex(standalone_failure.value->bytes) << '\n';
     std::cout << "ANALYTIC_RESULT_PACKET_FAILED_STANDALONE_DIGEST="

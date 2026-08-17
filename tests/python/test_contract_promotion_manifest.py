@@ -321,7 +321,7 @@ def test_manifest_promoted_and_candidate_surfaces_are_complete() -> None:
     manifest = _manifest()
     toolchain = manifest["toolchain"]
     typescript = manifest["typescript_projection"]
-    assert typescript["status"] == "implemented_model_bounds_worker_pilot"
+    assert typescript["status"] == "implemented_model_bounds_and_analytic_worker_pilot"
     assert typescript["worker_protocol"] == "wn.geometer.wasm_worker.a0"
     assert typescript["runtime_dependency"] is False
     for key in (
@@ -336,6 +336,11 @@ def test_manifest_promoted_and_candidate_surfaces_are_complete() -> None:
         "example_page",
         "example_artifact",
         "example_worker_artifact",
+        "analytic_example_source",
+        "analytic_example_worker_source",
+        "analytic_example_page",
+        "analytic_example_artifact",
+        "analytic_example_worker_artifact",
         "viz_migration_guide",
     ):
         assert (ROOT / typescript[key]).exists(), key
@@ -417,7 +422,7 @@ def test_manifest_promoted_and_candidate_surfaces_are_complete() -> None:
     assert candidate["filtered_solver_foundation"] == (
         "direct_lowering_broad_narrow_overlay_arrangement_face_selection_material_regions_"
         "lineage_operand_outcomes_normalization_packet_assembly_batch_merge_strict_published_"
-        "geometry_policy_and_relationship_evaluation_implemented_not_dispatched"
+        "geometry_policy_and_relationship_evaluation_implemented_packed_dispatch"
     )
     assert candidate["request_contract"] == "geometry.analytic_planar_boolean_batch.request.a0"
     assert candidate["result_contract"] == "geometry.analytic_planar_boolean_batch.result.a0"
@@ -425,9 +430,16 @@ def test_manifest_promoted_and_candidate_surfaces_are_complete() -> None:
     assert candidate["result_contract"] in contract_ids
     assert candidate["input_attachments"] == ["analytic_planar_boolean_request"]
     assert candidate["output_attachments"] == ["analytic_planar_boolean_result"]
-    assert candidate["deferred_projections"] == ["cpp", "typescript", "rust", "python"]
+    assert candidate["deferred_projections"] == ["cpp", "rust", "python"]
+    assert candidate["packed_runtime_projections"] == ["cpp", "typescript", "rust"]
+    assert candidate["production_transport_status"] == ("native_c_abi_browser_wasm_executable_ipc_dispatched")
+    assert candidate["typescript_packed_projection"] == (
+        "bigint_logical_dtos_strict_packet_codec_direct_and_worker_clients"
+    )
     assert candidate["packed_format"] == "separately_governed_frozen_a0"
-    assert candidate["implementation_gate"] == "cpp_wasm_rust_python_implementation_slices_pending"
+    assert candidate["implementation_gate"] == (
+        "packed_runtime_and_typescript_projection_implemented_logical_dto_projections_deferred"
+    )
     assert candidate["transport"] == "generic_named_attachments"
     assert candidate["operation_specific_c_abi_symbol"] is False
     assert candidate["replaces_existing_operation"] is False
@@ -469,7 +481,13 @@ def test_manifest_promoted_and_candidate_surfaces_are_complete() -> None:
             assert (ROOT / demo["worker"]).is_file()
         if "entrypoint" in demo:
             assert (ROOT / demo["entrypoint"]).is_file()
-        assert demo["owning_operation"] in operation_ids
+        for key in ("fixture", "distribution", "asset_manifest", "headers"):
+            if key in demo:
+                assert (ROOT / demo[key]).is_file()
+        if "distribution_sha256" in demo:
+            static_manifest = json.loads((ROOT / demo["asset_manifest"]).read_text())
+            assert demo["distribution_sha256"] == static_manifest["sha256"]
+        assert demo["owning_operation"] in operation_ids + candidate_ids
 
     consumers = manifest["consumers"]
     consumer_ids = [item["id"] for item in consumers]
@@ -663,15 +681,15 @@ def test_exact_algebraic_backend_is_governed_and_non_primary() -> None:
     assert _sha256(ROOT / backend["design"]) == backend["design_sha256"]
 
 
-def test_filtered_solver_foundation_is_bounded_non_algebraic_and_not_dispatched() -> None:
+def test_filtered_solver_foundation_is_bounded_non_algebraic_and_packed_dispatched() -> None:
     solver = _manifest()["analytic_filtered_solver"]
     assert solver == {
-        "status": "implemented_filtered_batch_relationships_not_dispatched",
+        "status": "implemented_filtered_batch_relationships_packed_dispatch",
         "design": "docs/adr/013_filtered_resolution_bounded_planar_boolean.md",
         "coordinate_grid_nm": 1,
         "topology_resolution_nm": 50,
         "topology_resolution_caller_programmable": False,
-        "production_dispatch_allowed": False,
+        "production_dispatch_allowed": True,
         "algebraic_fallback_hard_limit": 0,
         "strict_policy_header": "src/cpp/lib/analytic_filtered_execution_policy.h",
         "strict_policy": (

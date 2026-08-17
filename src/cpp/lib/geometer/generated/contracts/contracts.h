@@ -206,10 +206,12 @@ struct ModelBoundsOptionsA0
     std::optional<Matrix4x4> model_transform{};
 };
 
+using IpcRequestValueA0 = std::variant<ModelBoundsOptionsA0, PackedAttachmentProjectionA0>;
+
 struct IpcRequestA0
 {
     std::string operation{};
-    ModelBoundsOptionsA0 request{};
+    IpcRequestValueA0 request{};
 };
 
 struct IpcShutdownAckA0

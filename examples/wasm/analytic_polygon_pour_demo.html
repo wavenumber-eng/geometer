@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="/examples/wasm/analytic_polygon_pour_demo.css" />
+    <title>Geometer · live analytic polygon pour</title>
+    <script type="importmap">
+      {"imports":{"@wavenumber/geometer/worker":"/dist/wasm/npm/geometer/worker.js"}}
+    </script>
+  </head>
+  <body>
+    <main id="pour-shell" data-state="booting">
+      <header>
+        <div><b>GEOMETER</b><span>ANALYTIC POUR / A0</span></div>
+        <div class="pipeline"><span>BIGINT DTO</span><i></i><span>WORKER</span><i></i><span>WASM C++17</span></div>
+        <div class="runtime"><em></em><span id="runtime-label">Starting kernel</span></div>
+      </header>
+      <section class="stage">
+        <div class="viewport">
+          <canvas id="pour-canvas" aria-label="Live exact analytic polygon-pour result"></canvas>
+          <div class="viewport-title"><small>CANONICAL PACKED RESULT</small><strong>Many-to-many disconnected pour</strong></div>
+          <div class="legend"><span><i class="copper"></i>surviving copper</span><span><i class="cut"></i>subtraction boundary</span></div>
+        </div>
+        <aside>
+          <section class="intro"><small>01 / LIVE CONTROL</small><h1>Move the keepout.<br />Watch the pour solve.</h1><p>Every input event updates a bigint TypeScript model. A latest-only scheduler sends only the newest pending request, preventing stale drag work from accumulating behind the Worker.</p></section>
+          <section class="control">
+            <label for="slot-position"><span>Vertical keepout center</span><output id="slot-value">10.00 mm</output></label>
+            <input id="slot-position" type="range" min="6" max="14" step="0.05" value="10" />
+            <button id="reset-demo" type="button">Center keepout</button>
+          </section>
+          <section class="metrics">
+            <small>02 / RESULT CLOSURE</small>
+            <dl>
+              <div><dt>Worker round trip</dt><dd id="latency">—</dd></div>
+              <div><dt>Result regions</dt><dd id="regions">—</dd></div>
+              <div><dt>Rings</dt><dd id="rings">—</dd></div>
+              <div><dt>Exact fragments</dt><dd id="fragments">—</dd></div>
+              <div><dt>Subtraction edges</dt><dd id="subtraction-edges">—</dd></div>
+            </dl>
+          </section>
+          <section class="closure"><small>03 / DETERMINISM</small><code id="digest">—</code><div><span>completed <b id="completed">0</b></span><span>stale replaced <b id="replaced">0</b></span></div></section>
+          <section class="lineage"><small>04 / SOURCE + LINEAGE</small><p id="source-incidence">—</p><ul id="lineage-events"></ul></section>
+          <section class="failure"><small>05 / ISOLATED FAILURE FIXTURE</small><strong id="failure-code">—</strong><span id="failure-path">—</span><p>A neighboring swept-path job deliberately exercises governed job-local failure without suppressing the successful pour.</p></section>
+        </aside>
+      </section>
+      <footer><span id="status" role="status">Loading browser solver…</span><b>GENERIC C ABI · PACKED ATTACHMENTS · C++ BOOLEAN KERNEL</b></footer>
+    </main>
+    <script type="module" src="/dist/wasm/demos/analytic_polygon_pour_demo.js"></script>
+  </body>
+</html>

@@ -1090,13 +1090,26 @@ DECLARATIONS: dict[str, dict[str, Any]] = {
             "request": {
                 "type": {
                     "kind": "reference",
-                    "target": "Wavenumber.Geometer.Contracts.ModelBoundsA0.ModelBoundsOptionsA0",
+                    "target": "Wavenumber.Geometer.Contracts.IpcA0.IpcRequestValueA0",
                 },
                 "optional": False,
                 "constraints": {},
                 "field": "request",
             },
         },
+    },
+    "Wavenumber.Geometer.Contracts.IpcA0.IpcRequestValueA0": {
+        "kind": "union",
+        "variants": [
+            {
+                "kind": "reference",
+                "target": "Wavenumber.Geometer.Contracts.ModelBoundsA0.ModelBoundsOptionsA0",
+            },
+            {
+                "kind": "reference",
+                "target": "Wavenumber.Geometer.Contracts.Common.PackedAttachmentProjectionA0",
+            },
+        ],
     },
     "Wavenumber.Geometer.Contracts.IpcA0.IpcRuntimeDispatchA0": {
         "kind": "enum",

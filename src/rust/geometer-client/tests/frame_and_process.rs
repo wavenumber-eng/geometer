@@ -67,6 +67,17 @@ async fn persistent_client_runs_model_bounds_twice_and_closes_cleanly() {
         panic!("generated request envelope accepted an unknown request field");
     };
     assert!(matches!(malformed, GeometerClientError::Contract(_)));
+    let malformed_packed = client
+        .start_execute(
+            "geometry.analytic_planar_boolean_batch.a0",
+            br#"{"schema":"geometry.analytic_planar_boolean_batch.request.a0","packet":{"attachment":"analytic_planar_boolean_request","format":"geometry.analytic_planar_boolean.packet.a0"},"extra":true}"#,
+            Vec::new(),
+        )
+        .await;
+    let Err(malformed_packed) = malformed_packed else {
+        panic!("generated packed request projection accepted an unknown field");
+    };
+    assert!(matches!(malformed_packed, GeometerClientError::Contract(_)));
     let options =
         contracts::encode_model_bounds_options_a0_json(&contracts::ModelBoundsOptionsA0 {
             format: None,
@@ -439,7 +450,7 @@ async fn packed_analytic_request_round_trips_through_executable_ipc() {
         "analytic_planar_boolean_request"
     );
 
-    let packet = empty_analytic_request_packet();
+    let packet = single_disk_analytic_request_packet();
     let request_json = br#"{"operation":"geometry.analytic_planar_boolean_batch.a0","request":{"schema":"geometry.analytic_planar_boolean_batch.request.a0","packet":{"attachment":"analytic_planar_boolean_request","format":"geometry.analytic_planar_boolean.packet.a0"}}}"#;
     ipc::write_frame(
         &mut stdin,
@@ -481,7 +492,42 @@ async fn packed_analytic_request_round_trips_through_executable_ipc() {
         "application/vnd.wavenumber.geometer.analytic-planar-boolean-result"
     );
     assert_eq!(&response.attachments[0].data[..8], b"GMABRS01");
-    assert_eq!(packet, empty_analytic_request_packet());
+    assert_eq!(
+        u32::from_le_bytes(response.attachments[0].data[36..40].try_into().unwrap()),
+        1
+    );
+    assert!(u64::from_le_bytes(response.attachments[0].data[48..56].try_into().unwrap()) > 0);
+    assert_eq!(packet, single_disk_analytic_request_packet());
+
+    let request_with_extra = br#"{"operation":"geometry.analytic_planar_boolean_batch.a0","request":{"schema":"geometry.analytic_planar_boolean_batch.request.a0","packet":{"attachment":"analytic_planar_boolean_request","format":"geometry.analytic_planar_boolean.packet.a0"},"extra":true}}"#;
+    ipc::write_frame(
+        &mut stdin,
+        &Frame {
+            kind: FrameKind::Request,
+            request_id: 92,
+            json: request_with_extra.to_vec(),
+            attachments: vec![ipc::Attachment {
+                name: "analytic_planar_boolean_request".to_owned(),
+                media_type: "application/vnd.wavenumber.geometer.analytic-planar-boolean-request"
+                    .to_owned(),
+                data: packet.clone(),
+            }],
+        },
+    )
+    .await
+    .unwrap();
+    let response = ipc::read_frame(&mut stdout).await.unwrap().unwrap();
+    assert_eq!(response.kind, FrameKind::Response);
+    assert_eq!(response.request_id, 92);
+    assert!(response.attachments.is_empty());
+    let outcome = contracts::decode_operation_outcome_a0_json(&response.json).unwrap();
+    let contracts::OperationOutcomeA0::Failure(failure) = outcome else {
+        panic!("extra packed request field unexpectedly passed server decoding");
+    };
+    assert_eq!(
+        failure.diagnostics[0].code,
+        "geometer.contract.union_mismatch"
+    );
 
     let mut malformed = packet;
     malformed[0] = b'X';
@@ -489,7 +535,7 @@ async fn packed_analytic_request_round_trips_through_executable_ipc() {
         &mut stdin,
         &Frame {
             kind: FrameKind::Request,
-            request_id: 92,
+            request_id: 93,
             json: request_json.to_vec(),
             attachments: vec![ipc::Attachment {
                 name: "analytic_planar_boolean_request".to_owned(),
@@ -558,9 +604,19 @@ fn model_attachment(data: Vec<u8>) -> ipc::Attachment {
     }
 }
 
-fn empty_analytic_request_packet() -> Vec<u8> {
+fn single_disk_analytic_request_packet() -> Vec<u8> {
     let record_bytes = [24_u32, 32, 24, 32, 4, 32, 24, 40, 32, 40, 48, 32, 24];
-    let packet_size = 64 + 32 * record_bytes.len();
+    let counts = [1_u64, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0];
+    let mut cursor = 64 + 32 * record_bytes.len();
+    let mut offsets = Vec::with_capacity(record_bytes.len());
+    for (index, bytes) in record_bytes.iter().enumerate() {
+        offsets.push(cursor);
+        cursor += *bytes as usize * counts[index] as usize;
+        if index + 1 != record_bytes.len() {
+            cursor = (cursor + 7) & !7;
+        }
+    }
+    let packet_size = cursor;
     let mut packet = vec![0_u8; packet_size];
     packet[..8].copy_from_slice(b"GMABRQ01");
     packet[8..10].copy_from_slice(&1_u16.to_le_bytes());
@@ -568,13 +624,27 @@ fn empty_analytic_request_packet() -> Vec<u8> {
     packet[16..24].copy_from_slice(&(packet_size as u64).to_le_bytes());
     packet[24..32].copy_from_slice(&64_u64.to_le_bytes());
     packet[32..36].copy_from_slice(&(record_bytes.len() as u32).to_le_bytes());
+    packet[36..40].copy_from_slice(&1_u32.to_le_bytes());
+    packet[48..56].copy_from_slice(&112_u64.to_le_bytes());
     for (index, bytes) in record_bytes.iter().enumerate() {
         let entry = 64 + index * 32;
         packet[entry..entry + 2].copy_from_slice(&((index + 1) as u16).to_le_bytes());
         packet[entry + 2..entry + 4].copy_from_slice(&1_u16.to_le_bytes());
         packet[entry + 4..entry + 8].copy_from_slice(&bytes.to_le_bytes());
-        packet[entry + 8..entry + 16].copy_from_slice(&(packet_size as u64).to_le_bytes());
+        packet[entry + 8..entry + 16].copy_from_slice(&(offsets[index] as u64).to_le_bytes());
+        packet[entry + 16..entry + 24]
+            .copy_from_slice(&(*bytes as u64 * counts[index]).to_le_bytes());
+        packet[entry + 24..entry + 32].copy_from_slice(&counts[index].to_le_bytes());
     }
+    packet[offsets[0]..offsets[0] + 8].copy_from_slice(&1_u64.to_le_bytes());
+    packet[offsets[0] + 12..offsets[0] + 16].copy_from_slice(&1_u32.to_le_bytes());
+    packet[offsets[1]..offsets[1] + 8].copy_from_slice(&1_u64.to_le_bytes());
+    packet[offsets[1] + 8] = 1;
+    packet[offsets[1] + 20..offsets[1] + 24].copy_from_slice(&1_u32.to_le_bytes());
+    packet[offsets[2]..offsets[2] + 8].copy_from_slice(&1_u64.to_le_bytes());
+    packet[offsets[2] + 8..offsets[2] + 10].copy_from_slice(&2_u16.to_le_bytes());
+    packet[offsets[8]..offsets[8] + 8].copy_from_slice(&1_u64.to_le_bytes());
+    packet[offsets[8] + 24..offsets[8] + 32].copy_from_slice(&1_000_000_u64.to_le_bytes());
     packet
 }
 

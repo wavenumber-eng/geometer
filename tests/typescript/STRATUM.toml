@@ -6,7 +6,9 @@ runner = "pytest"
 concerns = ["typescript", "contracts", "wasm", "package"]
 
 objectives = [
+    "Validate reflected Canvas arc-center and traversal branches used by the analytic polygon-pour demo.",
     "Replay governed contract vectors through generated strict TypeScript codecs.",
+    "Round-trip bigint analytic packet projections and reject malformed packed layouts.",
     "Install and typecheck the ESM package from a clean temporary consumer.",
     "Execute model bounds through the high-level generated client without direct pointer management.",
     "Execute correlated model bounds through a real Worker thread with transferable attachments and lifecycle checks.",

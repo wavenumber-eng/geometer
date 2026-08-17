@@ -323,7 +323,33 @@
         "request_projection": { "$ref": "#/definitions/packedProjection" },
         "result_projection": { "$ref": "#/definitions/packedProjection" },
         "doc": { "type": "string" }
-      }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "runtime_dispatch": { "const": "packed_attachment" } },
+            "required": ["runtime_dispatch"]
+          },
+          "then": {
+            "properties": { "request_projection": {}, "result_projection": {} },
+            "required": ["request_projection", "result_projection"]
+          },
+          "else": {
+            "not": {
+              "anyOf": [
+                {
+                  "properties": { "request_projection": {} },
+                  "required": ["request_projection"]
+                },
+                {
+                  "properties": { "result_projection": {} },
+                  "required": ["result_projection"]
+                }
+              ]
+            }
+          }
+        }
+      ]
     },
     "packedProjection": {
       "type": "object",

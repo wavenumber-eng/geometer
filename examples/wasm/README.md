@@ -1,5 +1,34 @@
 # WASM Examples
 
+## Live Analytic Polygon Pour
+
+`analytic_polygon_pour_demo.html` is the first high-level TypeScript client for
+the production-dispatched filtered solver behind the frozen A0 candidate. It
+continuously solves a board-like copper region with circular clearances and a
+draggable full-height keepout through a dedicated Worker. The canvas renders
+the solver's canonical line and circular-arc fragments; JavaScript performs no
+Boolean geometry.
+
+The interaction uses one active solve plus one replaceable pending request, so
+fast slider movement cannot accumulate stale work. The inspector reports the
+Worker round-trip, result closure counts, surviving subtraction boundaries,
+and the governed standalone-result digest.
+
+`http://127.0.0.1:8123/examples/wasm/analytic_polygon_pour_demo.html`
+
+Build the deterministic deploy-unchanged site after refreshing WASM and the
+TypeScript examples:
+
+```powershell
+python scripts\build_analytic_polygon_pour_site.py
+```
+
+Serve `dist/wasm/demos/analytic-polygon-pour/` as a static directory or deploy
+it unchanged to Cloudflare Pages. The directory contains its Worker, WASM,
+generated client package, redistribution-safe Cousine font, `_headers` policy,
+and a SHA-256 closure manifest; it has no service backend or network runtime
+dependency.
+
 ## Generated Model Bounds Client
 
 `model_bounds_demo.html` is the first TypeScript/generated-contract example.

@@ -4179,7 +4179,7 @@
     {
       "name": "Wavenumber.Geometer.Contracts.IpcA0.IpcRequestA0",
       "kind": "model",
-      "doc": "Strict generic request envelope for executable IPC A0.",
+      "doc": "",
       "annotations": {},
       "constraints": {},
       "model_kind": "object",
@@ -4206,10 +4206,38 @@
           "doc": "",
           "type": {
             "kind": "reference",
-            "target": "Wavenumber.Geometer.Contracts.ModelBoundsA0.ModelBoundsOptionsA0"
+            "target": "Wavenumber.Geometer.Contracts.IpcA0.IpcRequestValueA0"
           },
           "annotations": {},
           "constraints": {}
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.IpcA0.IpcRequestValueA0",
+      "kind": "union",
+      "doc": "Strict generic request envelope for executable IPC A0.",
+      "annotations": {},
+      "constraints": {},
+      "composition": "one_of",
+      "variants": [
+        {
+          "name": "logical_dto",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.ModelBoundsA0.ModelBoundsOptionsA0"
+          },
+          "doc": "",
+          "annotations": {}
+        },
+        {
+          "name": "packed_attachment",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.Common.PackedAttachmentProjectionA0"
+          },
+          "doc": "",
+          "annotations": {}
         }
       ]
     },

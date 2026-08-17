@@ -102,13 +102,13 @@ depends_on = ["analytic-synthetic-correctness"]
 [[steps]]
 id = "filtered-analytic-solver-design"
 title = "Select and implement the fast filtered 50 nm engine, assessing reusable line/arc Boolean kernels before further custom arrangement work"
-status = "active"
+status = "done"
 depends_on = ["analytic-synthetic-correctness"]
 
 [[steps]]
 id = "analytic-planar-boolean-promotion"
 title = "Promote analytic planar Boolean batch through every production client"
-status = "pending"
+status = "active"
 depends_on = ["filtered-analytic-solver-design", "occt-8-0-1-qualification"]
 
 [[steps]]
@@ -247,7 +247,7 @@ status = "pending"
 [[exit_criteria]]
 id = "analytic-planar-boolean-demo"
 title = "A polished static browser demo proves analytic Boolean stages, analytic lines and arcs, resolution-bounded topology, lineage, and generated TypeScript Worker/WASM integration"
-status = "pending"
+status = "met"
 
 [[exit_criteria]]
 id = "analytic-synthetic-correctness"
@@ -372,9 +372,13 @@ ADR-013. It keeps a 1 nm coordinate grid, uses a 50 nm topology-resolution
 envelope, requires spatial broad-phase pruning, and preserves analytic lines
 and arcs. The arbitrary-precision algebraic implementation is explicitly not
 the primary production path; it is retained only as an isolated conformance
-oracle, offline diagnostic tool, and optional bounded fallback. Production
-promotion pauses until this simpler architecture and its threshold/performance
-gates receive implementation review.
+oracle, offline diagnostic tool, and optional bounded fallback. The filtered
+architecture, relationship evaluator, deterministic packet publication,
+threshold behavior, and governed resource limits have completed implementation
+review. Production dispatch now runs through the generic named-attachment ABI
+and generated IPC request union. Analytic promotion remains active while
+deferred logical DTO projections, consumer compatibility, browser presentation
+smoke, and focused release evidence are completed.
 
 The plan adopts lessons from the ALX TypeSpec work in
 `C:/eli/wn-hw/appz/data_models`, while keeping Geometer generic and independently
@@ -1059,7 +1063,8 @@ Geometer proposal, not the original consumer packet.
   Production-neutral source types keep this path independent of the exact
   namespace.
 - Owned batch orchestration, canonical merge, and published-geometry
-  relationship evaluation are implemented but not dispatched. Each job owns
+  relationship evaluation are implemented and production-dispatched through
+  the generic packed operation transport. Each job owns
   lowering, indexed broad phase, and records-only
   publication under independent per-job and batch live budgets. Governed job
   failures remain isolated. Global source remapping and fixed-capacity sequence

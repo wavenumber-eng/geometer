@@ -16,6 +16,17 @@ DEFAULT_STEP = ROOT / "tests" / "fixtures" / "step" / "embedded_models" / "SOT-2
 DEFAULT_MACOS_DEPLOYMENT_TARGET = "11.0"
 
 
+def build_parallel_jobs() -> str:
+    value = os.environ.get("CMAKE_BUILD_PARALLEL_LEVEL", "4")
+    try:
+        jobs = int(value)
+    except ValueError as exc:
+        raise ValueError("CMAKE_BUILD_PARALLEL_LEVEL must be a positive integer") from exc
+    if jobs < 1:
+        raise ValueError("CMAKE_BUILD_PARALLEL_LEVEL must be a positive integer")
+    return str(jobs)
+
+
 def main() -> int:
     tag = platform_tag()
     parser = argparse.ArgumentParser(description="Validate the Geometer native build for this platform.")
@@ -39,9 +50,7 @@ def main() -> int:
     dist_root = args.dist_root.resolve()
     occt_dir = args.occt_dir.resolve() if args.occt_dir is not None else None
     validation_out = (
-        args.validation_out.resolve()
-        if args.validation_out is not None
-        else ROOT / "out" / "native-validation" / tag
+        args.validation_out.resolve() if args.validation_out is not None else ROOT / "out" / "native-validation" / tag
     )
     env = native_build_env()
     run(
@@ -53,7 +62,18 @@ def main() -> int:
         ),
         env=env,
     )
-    run(["cmake", "--build", str(build_dir), "--config", args.config], env=env)
+    run(
+        [
+            "cmake",
+            "--build",
+            str(build_dir),
+            "--config",
+            args.config,
+            "--parallel",
+            build_parallel_jobs(),
+        ],
+        env=env,
+    )
 
     exe = dist_root / "native" / tag / executable_name()
     if not exe.exists():

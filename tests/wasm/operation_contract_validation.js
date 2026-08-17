@@ -18,22 +18,47 @@ function allocateText(module, text) {
   return allocateBytes(module, Buffer.from(text, "utf8"));
 }
 
-function emptyAnalyticRequestPacket() {
+function singleDiskAnalyticRequestPacket() {
   const recordBytes = [24, 32, 24, 32, 4, 32, 24, 40, 32, 40, 48, 32, 24];
-  const packet = Buffer.alloc(64 + 32 * recordBytes.length);
+  const counts = [1, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0];
+  const headerBytes = 64 + 32 * recordBytes.length;
+  let cursor = headerBytes;
+  const offsets = [];
+  for (let index = 0; index < recordBytes.length; index += 1) {
+    offsets.push(cursor);
+    cursor += recordBytes[index] * counts[index];
+    if (index + 1 !== recordBytes.length) cursor = (cursor + 7) & ~7;
+  }
+  const packet = Buffer.alloc(cursor);
   packet.write("GMABRQ01", 0, "ascii");
   packet.writeUInt16LE(1, 8);
   packet.writeUInt16LE(64, 10);
   packet.writeBigUInt64LE(BigInt(packet.length), 16);
   packet.writeBigUInt64LE(64n, 24);
   packet.writeUInt32LE(recordBytes.length, 32);
+  packet.writeUInt32LE(1, 36);
+  packet.writeBigUInt64LE(112n, 48);
   for (let index = 0; index < recordBytes.length; index += 1) {
     const entry = 64 + index * 32;
     packet.writeUInt16LE(index + 1, entry);
     packet.writeUInt16LE(1, entry + 2);
     packet.writeUInt32LE(recordBytes[index], entry + 4);
-    packet.writeBigUInt64LE(BigInt(packet.length), entry + 8);
+    packet.writeBigUInt64LE(BigInt(offsets[index]), entry + 8);
+    packet.writeBigUInt64LE(BigInt(recordBytes[index] * counts[index]), entry + 16);
+    packet.writeBigUInt64LE(BigInt(counts[index]), entry + 24);
   }
+  packet.writeBigUInt64LE(1n, offsets[0]);
+  packet.writeUInt32LE(0, offsets[0] + 8);
+  packet.writeUInt32LE(1, offsets[0] + 12);
+  packet.writeBigUInt64LE(1n, offsets[1]);
+  packet.writeUInt8(1, offsets[1] + 8);
+  packet.writeUInt32LE(0, offsets[1] + 16);
+  packet.writeUInt32LE(1, offsets[1] + 20);
+  packet.writeBigUInt64LE(1n, offsets[2]);
+  packet.writeUInt16LE(2, offsets[2] + 8);
+  packet.writeUInt32LE(0, offsets[2] + 12);
+  packet.writeBigUInt64LE(1n, offsets[8]);
+  packet.writeBigUInt64LE(1_000_000n, offsets[8] + 24);
   return packet;
 }
 
@@ -162,7 +187,7 @@ async function main() {
   const analyticName = "analytic_planar_boolean_request";
   const analyticMediaType =
     "application/vnd.wavenumber.geometer.analytic-planar-boolean-request";
-  const analyticPacket = emptyAnalyticRequestPacket();
+  const analyticPacket = singleDiskAnalyticRequestPacket();
   const analyticPointers = [
     allocateText(module, analyticOperation),
     allocateText(module, analyticRequest),
@@ -256,10 +281,15 @@ async function main() {
   const resultMagic = Buffer.from(
     module.HEAPU8.subarray(resultDataPointer, resultDataPointer + 8),
   ).toString("ascii");
+  const resultHeader = Buffer.from(
+    module.HEAPU8.subarray(resultDataPointer, resultDataPointer + 64),
+  );
   if (
     resultName !== "analytic_planar_boolean_result" ||
     resultMedia !== "application/vnd.wavenumber.geometer.analytic-planar-boolean-result" ||
-    resultMagic !== "GMABRS01"
+    resultMagic !== "GMABRS01" ||
+    resultHeader.readUInt32LE(36) !== 1 ||
+    resultHeader.readBigUInt64LE(48) === 0n
   ) {
     throw new Error("Packed analytic result attachment metadata or magic drifted.");
   }

@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-
+import { makeAnalyticPolygonPourRequest } from "../../dist/wasm/demos/analytic_polygon_pour_fixture.js";
 import {
   createGeometerWasmClient,
   GeometerOperationError,
@@ -131,6 +131,74 @@ if (!client.capabilities.operations.includes("geometry.model_bounds.a0")) {
   throw new Error("Generated client did not negotiate model_bounds.");
 }
 
+const analytic = await client.analyticPlanarBooleanBatch({
+  jobs: [
+    {
+      job_id: 1n,
+      stages: [
+        {
+          stage_id: 1n,
+          operation: "union",
+          operands: [
+            {
+              operand_id: 1n,
+              kind: "disk",
+              feature_id: 1n,
+              center: { x: 0n, y: 0n },
+              radius_nm: 1_000_000n,
+            },
+          ],
+        },
+      ],
+    },
+  ],
+  relationship_queries: [],
+});
+const [analyticJob] = analytic.job_results;
+if (
+  analyticJob?.status !== "success" ||
+  analyticJob.result_regions.length !== 1 ||
+  analyticJob.rings.length !== 1 ||
+  analyticJob.directed_fragments.length !== 2 ||
+  !analyticJob.directed_fragments.every((fragment) => fragment.kind === "circular_arc") ||
+  !/^[0-9a-f]{64}$/u.test(analyticJob.digest_sha256)
+) {
+  throw new Error("Nonempty analytic disk solve did not decode to the expected logical result.");
+}
+
+const hero = await client.analyticPlanarBooleanBatch(makeAnalyticPolygonPourRequest(10));
+const heroJob = hero.job_results.find((job) => job.job_id === 7n);
+const failureJob = hero.job_results.find((job) => job.job_id === 8n);
+if (
+  hero.job_results.length !== 2 ||
+  heroJob?.status !== "success" ||
+  heroJob.result_regions.length !== 2 ||
+  heroJob.rings.length !== 6 ||
+  heroJob.rings.filter((ring) => ring.hole).length !== 4 ||
+  heroJob.directed_fragments.length !== 16 ||
+  heroJob.directed_fragments.filter((fragment) => fragment.kind === "line").length !== 8 ||
+  heroJob.directed_fragments.filter((fragment) => fragment.kind === "circular_arc").length !== 8 ||
+  heroJob.operand_outcomes.length !== 12 ||
+  !heroJob.operand_outcomes.some(
+    (outcome) => outcome.operand_id === 7002n && outcome.kind === "redundant_or_absorbed_coverage",
+  ) ||
+  !heroJob.operand_outcomes.some(
+    (outcome) => outcome.operand_id === 7005n && outcome.kind === "subtraction_effect_survives",
+  ) ||
+  heroJob.digest_sha256 !== "89190b783c4c82f1c46f2984c95c813c5d0b49677fd3120a3b295be1696c42fc"
+) {
+  throw new Error("Polygon-pour hero fixture drifted from its pinned analytic closure.");
+}
+if (
+  failureJob?.status !== "failure" ||
+  !failureJob.diagnostics.some(
+    (diagnostic) =>
+      diagnostic.code === "geometer.operation.analytic_planar_boolean.unsupported_geometry",
+  )
+) {
+  throw new Error("Polygon-pour structured-failure fixture was not job-local and governed.");
+}
+
 let rejected = false;
 try {
   client.execute("geometry.model_bounds.a0", "{}", []);
@@ -187,6 +255,11 @@ if (zeroAttachmentCall?.attachmentCount !== 0 || zeroAttachmentCall.descriptorPo
 const originalCatalog = module._geometer_operation_catalog_json;
 for (const [label, mutate] of [
   ["request contract", (catalog) => (catalog.operations[0].request_contract = "wrong.a0")],
+  ["runtime dispatch", (catalog) => (catalog.operations[0].runtime_dispatch = "logical_dto")],
+  [
+    "packed result format",
+    (catalog) => (catalog.operations[0].result_projection.format = "wrong.packet.a0"),
+  ],
   ["requiredness", (catalog) => (catalog.operations[0].input_attachments[0].required = false)],
   [
     "input inventory",

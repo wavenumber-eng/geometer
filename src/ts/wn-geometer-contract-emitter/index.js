@@ -206,6 +206,11 @@ function operationRecord(program, operation, identity) {
     outputAttachments,
     "result",
   );
+  if ((requestProjection === null) !== (resultProjection === null)) {
+    throw new Error(
+      `Operation ${qualifiedName(operation)} must declare both request and result packed projections or neither.`,
+    );
+  }
   const runtimeDispatch =
     requestProjection?.kind === "packed_attachment" &&
     resultProjection?.kind === "packed_attachment"

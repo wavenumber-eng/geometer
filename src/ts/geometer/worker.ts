@@ -1,5 +1,18 @@
-import type { DiagnosticA0, ModelBoundsResultA0 } from "./generated/index.js";
-import { decodeOperationOutcomeA0Json, encodeModelBoundsOptionsA0Json } from "./generated/index.js";
+import {
+  decodeAnalyticPlanarBooleanBatchResultA0Packet,
+  encodeAnalyticPlanarBooleanBatchRequestA0Packet,
+} from "./analytic-packet-a0.js";
+import type {
+  AnalyticPlanarBooleanBatchRequestA0,
+  AnalyticPlanarBooleanBatchResultA0,
+  DiagnosticA0,
+  ModelBoundsResultA0,
+} from "./generated/index.js";
+import {
+  decodeOperationOutcomeA0Json,
+  encodeModelBoundsOptionsA0Json,
+  operationCatalog,
+} from "./generated/index.js";
 import type {
   GeometerOperationAttachment,
   GeometerOperationResponse,
@@ -15,6 +28,23 @@ export interface GeometerWorkerClientOptions {
   readonly moduleOptions?: Readonly<Record<string, unknown>>;
   /** Browser WASM bytes. The client preserves the caller's buffer and transfers an owned copy. */
   readonly wasmBinary: ArrayBuffer | Uint8Array;
+}
+
+interface GeneratedWorkerOperationDeclaration {
+  readonly identity: string;
+  readonly outputAttachments: readonly {
+    readonly max_bytes: number;
+    readonly media_types: readonly string[];
+    readonly name: string;
+    readonly required: boolean;
+  }[];
+  readonly resultContract: string;
+  readonly resultProjection?: {
+    readonly attachment_name: string;
+    readonly format: string;
+    readonly kind: "packed_attachment";
+  };
+  readonly runtimeDispatch: "logical_dto" | "packed_attachment";
 }
 
 export interface GeometerWorkerAttachmentMessage {
@@ -121,6 +151,52 @@ export class GeometerWorkerClient {
     }
   }
 
+  async analyticPlanarBooleanBatch(
+    request: AnalyticPlanarBooleanBatchRequestA0,
+  ): Promise<AnalyticPlanarBooleanBatchResultA0> {
+    const declaration = operationCatalog["geometry.analytic_planar_boolean_batch.a0"];
+    const requestProjection = declaration.requestProjection;
+    const resultProjection = declaration.resultProjection;
+    const input = declaration.inputAttachments.find(
+      (item) => item.name === requestProjection.attachment_name,
+    );
+    const output = declaration.outputAttachments.find(
+      (item) => item.name === resultProjection.attachment_name,
+    );
+    if (input === undefined || output === undefined) {
+      throw new GeometerWorkerError("Generated analytic attachment declarations are incomplete.");
+    }
+    const inputMediaType = input.media_types[0];
+    if (inputMediaType === undefined) {
+      throw new GeometerWorkerError("Generated analytic request media type is missing.");
+    }
+    const response = await this.execute(
+      declaration.identity,
+      JSON.stringify({
+        schema: declaration.requestContract,
+        packet: {
+          attachment: requestProjection.attachment_name,
+          format: requestProjection.format,
+        },
+      }),
+      [
+        {
+          name: input.name,
+          mediaType: inputMediaType,
+          data: encodeAnalyticPlanarBooleanBatchRequestA0Packet(request),
+        },
+      ],
+    );
+    if (!response.outcome.ok) {
+      throw new GeometerOperationError(response.outcome.operation, response.outcome.diagnostics);
+    }
+    const attachment = response.attachments.find((item) => item.name === output.name);
+    if (attachment === undefined) {
+      throw new GeometerWorkerError("Packed analytic result attachment is missing.");
+    }
+    return decodeAnalyticPlanarBooleanBatchResultA0Packet(attachment.data);
+  }
+
   async modelBounds(request: ModelBoundsRequest): Promise<ModelBoundsResultA0> {
     const response = await this.execute(
       "geometry.model_bounds.a0",
@@ -173,7 +249,7 @@ export class GeometerWorkerClient {
       throw new GeometerWorkerError(`Expected operation_result, received ${response.kind}.`);
     }
     const outcome = decodeOperationOutcomeA0Json(response.outcomeJson);
-    return {
+    const result = {
       attachments: response.attachments.map((attachment) => ({
         data: new Uint8Array(attachment.data),
         mediaType: attachment.mediaType,
@@ -181,6 +257,8 @@ export class GeometerWorkerClient {
       })),
       outcome,
     };
+    validateWorkerOperationResponse(operation, result);
+    return result;
   }
 
   /** Gracefully shuts down the host and terminates the underlying Worker. */
@@ -410,4 +488,71 @@ function copyToArrayBuffer(value: ArrayBuffer | Uint8Array): ArrayBuffer {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function validateWorkerOperationResponse(
+  operation: string,
+  response: GeometerOperationResponse,
+): void {
+  if (response.outcome.operation !== operation) {
+    throw new GeometerWorkerError(
+      `Expected ${operation} response, received ${response.outcome.operation}.`,
+    );
+  }
+  if (!response.outcome.ok) {
+    if (response.attachments.length !== 0) {
+      throw new GeometerWorkerError("Failed operation returned unexpected attachments.");
+    }
+    return;
+  }
+
+  const declarations = operationCatalog as unknown as Readonly<
+    Record<string, GeneratedWorkerOperationDeclaration>
+  >;
+  const declaration = declarations[operation];
+  if (declaration === undefined) {
+    throw new GeometerWorkerError(`Worker returned an undeclared operation ${operation}.`);
+  }
+
+  const seen = new Set<string>();
+  for (const attachment of response.attachments) {
+    if (seen.has(attachment.name)) {
+      throw new GeometerWorkerError(`Worker returned duplicate attachment ${attachment.name}.`);
+    }
+    seen.add(attachment.name);
+    const expected = declaration.outputAttachments.find((item) => item.name === attachment.name);
+    if (expected === undefined) {
+      throw new GeometerWorkerError(`Worker returned unexpected attachment ${attachment.name}.`);
+    }
+    if (!expected.media_types.includes(attachment.mediaType)) {
+      throw new GeometerWorkerError(
+        `Worker returned incompatible media type ${attachment.mediaType} for ${attachment.name}.`,
+      );
+    }
+    if (attachment.data.byteLength > expected.max_bytes) {
+      throw new GeometerWorkerError(`Worker attachment ${attachment.name} exceeds its byte limit.`);
+    }
+  }
+  for (const expected of declaration.outputAttachments) {
+    if (expected.required && !seen.has(expected.name)) {
+      throw new GeometerWorkerError(
+        `Worker response is missing required attachment ${expected.name}.`,
+      );
+    }
+  }
+
+  if (declaration.runtimeDispatch === "packed_attachment") {
+    const projection = declaration.resultProjection;
+    const result = response.outcome.result;
+    if (
+      projection === undefined ||
+      !isRecord(result) ||
+      result.schema !== declaration.resultContract ||
+      !isRecord(result.packet) ||
+      result.packet.attachment !== projection.attachment_name ||
+      result.packet.format !== projection.format
+    ) {
+      throw new GeometerWorkerError("Worker returned an incompatible packed result projection.");
+    }
+  }
 }

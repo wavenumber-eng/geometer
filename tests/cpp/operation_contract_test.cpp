@@ -419,10 +419,58 @@ void response_limits_fail_closed_before_accessor_narrowing()
                                                   R"({"ok":true})", {}, &message) ==
                 geometer::OperationResponseValidationStatus::invalid,
             "packed analytic success should require its declared result attachment");
+    const std::string analytic_failure =
+        R"({"operation":"geometry.analytic_planar_boolean_batch.a0","ok":false,"diagnostics":[{"code":"geometer.operation.test","category":"operation","message":"failed","retryable":false}]})";
     require(geometer::validate_operation_response("geometry.analytic_planar_boolean_batch.a0",
-                                                  R"({"ok":false})", {}, &message) ==
+                                                  analytic_failure, {}, &message) ==
                 geometer::OperationResponseValidationStatus::ok,
             "packed analytic failure should remain attachment-free");
+    require(geometer::validate_operation_response("geometry.analytic_planar_boolean_batch.a0",
+                                                  "not-json", {}, &message) ==
+                geometer::OperationResponseValidationStatus::invalid,
+            "malformed outcome JSON should fail closed");
+    std::vector<geometer::OperationOutputAttachment> declared_analytic(1U);
+    declared_analytic[0].name = "analytic_planar_boolean_result";
+    declared_analytic[0].media_type =
+        "application/vnd.wavenumber.geometer.analytic-planar-boolean-result";
+    require(geometer::validate_operation_response("geometry.analytic_planar_boolean_batch.a0",
+                                                  analytic_failure, declared_analytic, &message) ==
+                geometer::OperationResponseValidationStatus::invalid,
+            "failure outcomes should reject all attachments");
+    const std::string analytic_success =
+        R"({"operation":"geometry.analytic_planar_boolean_batch.a0","ok":true,"result":{"schema":"geometry.analytic_planar_boolean_batch.result.a0","packet":{"attachment":"analytic_planar_boolean_result","format":"geometry.analytic_planar_boolean.packet.a0"}}})";
+    require(geometer::validate_operation_response("geometry.analytic_planar_boolean_batch.a0",
+                                                  analytic_success, {}, &message) ==
+                geometer::OperationResponseValidationStatus::invalid,
+            "valid packed success JSON should still require its result attachment");
+    require(geometer::validate_operation_response("geometry.analytic_planar_boolean_batch.a0",
+                                                  analytic_success, declared_analytic, &message) ==
+                geometer::OperationResponseValidationStatus::ok,
+            "catalog-correlated packed success should pass response validation");
+    const std::string wrong_projection =
+        R"({"operation":"geometry.analytic_planar_boolean_batch.a0","ok":true,"result":{"schema":"geometry.analytic_planar_boolean_batch.result.a0","packet":{"attachment":"wrong","format":"geometry.analytic_planar_boolean.packet.a0"}}})";
+    require(geometer::validate_operation_response("geometry.analytic_planar_boolean_batch.a0",
+                                                  wrong_projection, declared_analytic, &message) ==
+                geometer::OperationResponseValidationStatus::invalid,
+            "packed result JSON must name its catalog attachment");
+    const std::string wrong_format =
+        R"({"operation":"geometry.analytic_planar_boolean_batch.a0","ok":true,"result":{"schema":"geometry.analytic_planar_boolean_batch.result.a0","packet":{"attachment":"analytic_planar_boolean_result","format":"wrong.packet.a0"}}})";
+    require(geometer::validate_operation_response("geometry.analytic_planar_boolean_batch.a0",
+                                                  wrong_format, declared_analytic, &message) ==
+                geometer::OperationResponseValidationStatus::invalid,
+            "packed result JSON must name its catalog format");
+    const std::string wrong_schema =
+        R"({"operation":"geometry.analytic_planar_boolean_batch.a0","ok":true,"result":{"schema":"wrong.result.a0","packet":{"attachment":"analytic_planar_boolean_result","format":"geometry.analytic_planar_boolean.packet.a0"}}})";
+    require(geometer::validate_operation_response("geometry.analytic_planar_boolean_batch.a0",
+                                                  wrong_schema, declared_analytic, &message) ==
+                geometer::OperationResponseValidationStatus::invalid,
+            "packed result schema must match its catalog contract");
+    const std::string wrong_operation =
+        R"({"operation":"wrong.operation.a0","ok":true,"result":{"schema":"geometry.analytic_planar_boolean_batch.result.a0","packet":{"attachment":"analytic_planar_boolean_result","format":"geometry.analytic_planar_boolean.packet.a0"}}})";
+    require(geometer::validate_operation_response("geometry.analytic_planar_boolean_batch.a0",
+                                                  wrong_operation, declared_analytic, &message) ==
+                geometer::OperationResponseValidationStatus::invalid,
+            "packed result operation must match its request");
 }
 
 std::string result_json(const GeometerOperationResult* result)
@@ -573,9 +621,14 @@ void generic_c_abi_executes_model_bounds()
 
 void generic_c_abi_executes_packed_analytic_batch()
 {
-    const auto encoded = geometer::encode_analytic_request_packet({});
+    geometer::AnalyticRequestPacketRecords records;
+    records.jobs = {{1, 0, 1}};
+    records.stages = {{1, 1, 0, 1}};
+    records.operands = {{1, 2, 0}};
+    records.disks = {{1, 0, 0, 1'000'000}};
+    const auto encoded = geometer::encode_analytic_request_packet(records);
     require(encoded.error == geometer::AnalyticRequestPacketError::none && encoded.value,
-            "empty analytic request packet should encode");
+            "nonempty analytic request packet should encode");
     const std::string operation = "geometry.analytic_planar_boolean_batch.a0";
     const std::string request =
         "{\"schema\":\"geometry.analytic_planar_boolean_batch.request.a0\",\"packet\":{"
@@ -621,7 +674,11 @@ void generic_c_abi_executes_packed_analytic_batch()
     const unsigned char* output = geometer_operation_result_attachment_data(result, 0U, &size);
     const auto decoded = geometer::decode_analytic_result_packet_records(output, size);
     require(decoded.error == geometer::AnalyticResultPacketLayoutError::none && decoded.value &&
-                decoded.value->job_results.empty(),
+                decoded.value->job_results.size() == 1U &&
+                decoded.value->job_results.front().job_id == 1U &&
+                decoded.value->job_results.front().status == 0U &&
+                decoded.value->job_results.front().result_region_count == 1U &&
+                decoded.value->fragments.size() == 2U,
             "packed analytic result attachment did not decode canonically");
     require(*encoded.value == original_request,
             "packed analytic operation must not mutate caller-owned request bytes");

@@ -19,5 +19,11 @@
     "target": "ES2022",
     "verbatimModuleSyntax": true
   },
-  "include": ["model_bounds_demo.ts", "model_bounds_worker.ts"]
+  "include": [
+    "analytic_polygon_pour_demo.ts",
+    "analytic_polygon_pour_fixture.ts",
+    "analytic_polygon_pour_worker.ts",
+    "model_bounds_demo.ts",
+    "model_bounds_worker.ts"
+  ]
 }

@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="wn.geometer.contract_docs:a0">
-  <meta name="wn-catalog-sha256" content="126edc93c7fbb23b0e15da35966abe0145972586807be6b7fdbc46948adb175c">
+  <meta name="wn-catalog-sha256" content="4910716ad1a9d3252b362ab726534782a06d1e00b0575d0fd6f1b8b62d178311">
   <title>geometer.ipc.welcome.a0 — Geometer</title>
   <link rel="stylesheet" href="../../../design/styles.css">
 </head>
-<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="126edc93c7fbb23b0e15da35966abe0145972586807be6b7fdbc46948adb175c" data-page-kind="contract" data-contract-identity="geometer.ipc.welcome.a0" data-promotion-status="pilot_candidate">
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="4910716ad1a9d3252b362ab726534782a06d1e00b0575d0fd6f1b8b62d178311" data-page-kind="contract" data-contract-identity="geometer.ipc.welcome.a0" data-promotion-status="pilot_candidate">
 <main>
 <header>
   <p class="page-type">Contract root</p>
@@ -25,7 +25,7 @@
 <tr><th>Lifecycle</th><td><span class="status">pilot_candidate</span></td></tr>
 <tr><th>Current authority</th><td><code>typespec_candidate</code></td></tr>
 </tbody></table></section>
-<section class="model-section"><h2>Declarations <span class="tag">11</span></h2><details open id="declaration-wavenumber-geometer-contracts-ipca0-ipcwelcomea0"><summary><h2><code>IpcWelcomeA0</code> <span class="tag">model</span></h2></summary><p>Server handshake selecting executable IPC A0 and its effective limits.</p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>release_version</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=1</code> <code>max_length=32</code></td><td></td></tr>
+<section class="model-section"><h2>Declarations <span class="tag">13</span></h2><details open id="declaration-wavenumber-geometer-contracts-ipca0-ipcwelcomea0"><summary><h2><code>IpcWelcomeA0</code> <span class="tag">model</span></h2></summary><p>Server handshake selecting executable IPC A0 and its effective limits.</p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>release_version</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=1</code> <code>max_length=32</code></td><td></td></tr>
 <tr><td><code>c_abi_generation</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td>none</td><td></td></tr>
 <tr><td><code>ipc</code></td><td>required</td><td><code>&quot;a0&quot;</code></td><td>—</td><td>none</td><td></td></tr>
 <tr><td><code>catalog_sha256</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=64</code> <code>max_length=64</code></td><td></td></tr>
@@ -89,8 +89,16 @@
 <details open id="declaration-wavenumber-geometer-contracts-ipca0-ipcoperationdeclarationa0"><summary><h2><code>IpcOperationDeclarationA0</code> <span class="tag">model</span></h2></summary><p>One operation exposed by the negotiated generic transport.</p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>identity</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=1</code> <code>max_length=128</code></td><td></td></tr>
 <tr><td><code>request_contract</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=1</code> <code>max_length=128</code></td><td></td></tr>
 <tr><td><code>result_contract</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=1</code> <code>max_length=128</code></td><td></td></tr>
+<tr><td><code>runtime_dispatch</code></td><td>required</td><td><code>IpcRuntimeDispatchA0</code></td><td>—</td><td>none</td><td></td></tr>
 <tr><td><code>input_attachments</code></td><td>required</td><td><code>IpcAttachmentDeclarationA0[]</code></td><td>—</td><td><code>max_items=16</code></td><td></td></tr>
-<tr><td><code>output_attachments</code></td><td>required</td><td><code>IpcAttachmentDeclarationA0[]</code></td><td>—</td><td><code>max_items=16</code></td><td></td></tr></tbody></table></details></section>
+<tr><td><code>output_attachments</code></td><td>required</td><td><code>IpcAttachmentDeclarationA0[]</code></td><td>—</td><td><code>max_items=16</code></td><td></td></tr>
+<tr><td><code>request_projection</code></td><td>optional</td><td><code>IpcPackedProjectionA0</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>result_projection</code></td><td>optional</td><td><code>IpcPackedProjectionA0</code></td><td>—</td><td>none</td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-ipca0-ipcpackedprojectiona0"><summary><h2><code>IpcPackedProjectionA0</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>kind</code></td><td>required</td><td><code>&quot;packed_attachment&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>attachment_name</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=1</code> <code>max_length=128</code></td><td></td></tr>
+<tr><td><code>format</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=1</code> <code>max_length=128</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-ipca0-ipcruntimedispatcha0"><summary><h2><code>IpcRuntimeDispatchA0</code> <span class="tag">enum</span></h2></summary><p></p><table><thead><tr><th>Member</th><th>Wire value</th><th>Description</th></tr></thead><tbody><tr><td><code>logical_dto</code></td><td><code>logical_dto</code></td><td></td></tr>
+<tr><td><code>packed_attachment</code></td><td><code>packed_attachment</code></td><td></td></tr></tbody></table></details></section>
 </main>
 </body>
 </html>

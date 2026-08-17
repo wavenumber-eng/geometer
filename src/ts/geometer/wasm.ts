@@ -1,4 +1,10 @@
+import {
+  decodeAnalyticPlanarBooleanBatchResultA0Packet,
+  encodeAnalyticPlanarBooleanBatchRequestA0Packet,
+} from "./analytic-packet-a0.js";
 import type {
+  AnalyticPlanarBooleanBatchRequestA0,
+  AnalyticPlanarBooleanBatchResultA0,
   DiagnosticA0,
   ModelBoundsInputMediaType,
   ModelBoundsOptionsA0,
@@ -162,6 +168,43 @@ export class GeometerWasmClient {
     return new GeometerWasmClient(module, runtimeCatalog);
   }
 
+  async analyticPlanarBooleanBatch(
+    request: AnalyticPlanarBooleanBatchRequestA0,
+  ): Promise<AnalyticPlanarBooleanBatchResultA0> {
+    const declaration = operationCatalog["geometry.analytic_planar_boolean_batch.a0"];
+    const requestProjection = declaration.requestProjection;
+    const resultProjection = declaration.resultProjection;
+    const input = requiredAttachment(
+      declaration.inputAttachments,
+      requestProjection.attachment_name,
+    );
+    const output = requiredAttachment(
+      declaration.outputAttachments,
+      resultProjection.attachment_name,
+    );
+    const inputMediaType = requiredMediaType(input.media_types, input.name);
+    const packet = encodeAnalyticPlanarBooleanBatchRequestA0Packet(request);
+    const response = this.execute(
+      declaration.identity,
+      JSON.stringify({
+        schema: declaration.requestContract,
+        packet: {
+          attachment: requestProjection.attachment_name,
+          format: requestProjection.format,
+        },
+      }),
+      [{ name: input.name, mediaType: inputMediaType, data: packet }],
+    );
+    if (!response.outcome.ok) {
+      throw new GeometerOperationError(response.outcome.operation, response.outcome.diagnostics);
+    }
+    const attachment = response.attachments.find((item) => item.name === output.name);
+    if (attachment === undefined) {
+      throw new GeometerWasmTransportError(0, "Packed analytic result attachment is missing.");
+    }
+    return decodeAnalyticPlanarBooleanBatchResultA0Packet(attachment.data);
+  }
+
   async modelBounds(request: ModelBoundsRequest): Promise<ModelBoundsResultA0> {
     const response = this.execute(
       "geometry.model_bounds.a0",
@@ -284,6 +327,14 @@ function executeOperation(
     const jsonBytes = copyBytes(module, jsonPointer, jsonSize, "response JSON");
     const outcome = decodeOperationOutcomeA0Json(jsonBytes);
     const outputAttachments = copyResultAttachments(module, resultPointer, allocations);
+    const declaration = catalog.operations.find((item) => item.identity === operation);
+    if (declaration === undefined) {
+      throw new GeometerWasmTransportError(
+        0,
+        `Operation ${operation} disappeared during execution.`,
+      );
+    }
+    validateOutputAttachments(declaration, outputAttachments, outcome);
     return { attachments: outputAttachments, outcome };
   } finally {
     if (localErrorPointer) module._geometer_free_string(localErrorPointer);
@@ -410,7 +461,16 @@ function validateRuntimeCatalog(value: unknown): asserts value is RuntimeCatalog
     if (!actual) throw new GeometerWasmTransportError(0, `WASM module is missing ${identity}.`);
     if (
       actual.request_contract !== expected.requestContract ||
-      actual.result_contract !== expected.resultContract
+      actual.result_contract !== expected.resultContract ||
+      actual.runtime_dispatch !== expected.runtimeDispatch ||
+      !samePackedProjection(
+        actual.request_projection,
+        "requestProjection" in expected ? expected.requestProjection : undefined,
+      ) ||
+      !samePackedProjection(
+        actual.result_projection,
+        "resultProjection" in expected ? expected.resultProjection : undefined,
+      )
     ) {
       throw new GeometerWasmTransportError(
         0,
@@ -427,6 +487,20 @@ function validateRuntimeCatalog(value: unknown): asserts value is RuntimeCatalog
       );
     }
   }
+}
+
+function samePackedProjection(
+  actual: RuntimePackedProjection | undefined,
+  expected: RuntimePackedProjection | undefined,
+): boolean {
+  return (
+    (actual === undefined && expected === undefined) ||
+    (actual !== undefined &&
+      expected !== undefined &&
+      actual.kind === expected.kind &&
+      actual.attachment_name === expected.attachment_name &&
+      actual.format === expected.format)
+  );
 }
 
 function isRuntimeOperation(value: unknown): value is RuntimeCatalog["operations"][number] {
@@ -502,6 +576,28 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+function requiredAttachment<T extends { readonly name: string }>(
+  attachments: readonly T[],
+  name: string,
+): T {
+  const attachment = attachments.find((item) => item.name === name);
+  if (attachment === undefined) {
+    throw new GeometerWasmTransportError(0, `Generated attachment ${name} is missing.`);
+  }
+  return attachment;
+}
+
+function requiredMediaType(mediaTypes: readonly string[], attachment: string): string {
+  const mediaType = mediaTypes[0];
+  if (mediaType === undefined) {
+    throw new GeometerWasmTransportError(
+      0,
+      `Generated attachment ${attachment} has no media type.`,
+    );
+  }
+  return mediaType;
+}
+
 function validateInputAttachments(
   operation: RuntimeCatalog["operations"][number],
   attachments: readonly GeometerOperationAttachment[],
@@ -535,6 +631,65 @@ function validateInputAttachments(
         1001,
         `Required attachment ${declaration.name} is missing.`,
       );
+    }
+  }
+}
+
+function validateOutputAttachments(
+  operation: RuntimeCatalog["operations"][number],
+  attachments: readonly GeometerOperationAttachment[],
+  outcome: OperationOutcomeA0,
+): void {
+  if (outcome.operation !== operation.identity) {
+    throw new GeometerWasmTransportError(
+      0,
+      "Operation response identity does not match its request.",
+    );
+  }
+  if (!outcome.ok) {
+    if (attachments.length !== 0) {
+      throw new GeometerWasmTransportError(0, "A failed operation returned attachments.");
+    }
+    return;
+  }
+  const names = new Set<string>();
+  for (const attachment of attachments) {
+    if (names.has(attachment.name)) {
+      throw new GeometerWasmTransportError(0, `Duplicate output attachment ${attachment.name}.`);
+    }
+    names.add(attachment.name);
+    const declaration = operation.output_attachments.find((item) => item.name === attachment.name);
+    if (
+      declaration === undefined ||
+      !declaration.media_types.includes(attachment.mediaType) ||
+      attachment.data.byteLength > declaration.max_bytes
+    ) {
+      throw new GeometerWasmTransportError(
+        0,
+        `Output attachment ${attachment.name} is incompatible.`,
+      );
+    }
+  }
+  for (const declaration of operation.output_attachments) {
+    if (declaration.required && !names.has(declaration.name)) {
+      throw new GeometerWasmTransportError(
+        0,
+        `Required output attachment ${declaration.name} is missing.`,
+      );
+    }
+  }
+  if (operation.runtime_dispatch === "packed_attachment") {
+    const projection = operation.result_projection;
+    const result = outcome.result;
+    if (
+      projection === undefined ||
+      !("packet" in result) ||
+      result.schema !== operation.result_contract ||
+      result.packet.attachment !== projection.attachment_name ||
+      result.packet.format !== projection.format ||
+      !names.has(projection.attachment_name)
+    ) {
+      throw new GeometerWasmTransportError(0, "Packed result metadata does not match the catalog.");
     }
   }
 }

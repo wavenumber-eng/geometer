@@ -25,12 +25,22 @@ if (process.argv.slice(2).some((argument) => argument !== "--check")) {
   throw new Error("Usage: node scripts/generate-typescript-contracts.mjs [--check]");
 }
 
-const catalog = await applyProjectionDeferrals(
-  JSON.parse(await readFile(catalogPath, "utf8")),
-  "typescript",
+const contractCatalog = JSON.parse(await readFile(catalogPath, "utf8"));
+const codecCatalog = await applyProjectionDeferrals(contractCatalog, "typescript");
+const operationCatalogProjection = await applyProjectionDeferrals(contractCatalog, "typescript", {
+  retainRuntimeDispatch: true,
+});
+const declarations = new Map(contractCatalog.declarations.map((item) => [item.name, item]));
+const packedContracts = new Set(
+  contractCatalog.operations
+    .filter((operation) => operation.runtime_dispatch === "packed_attachment")
+    .flatMap((operation) => [operation.request_contract, operation.result_contract]),
 );
-const declarations = new Map(catalog.declarations.map((item) => [item.name, item]));
-assertUniqueShortNames(catalog.declarations);
+const jsonCodecRoots = codecCatalog.roots.filter(
+  (rootItem) => !packedContracts.has(rootItem.contract_identity),
+);
+const jsonCodecDeclarations = reachableDeclarationItems(jsonCodecRoots);
+assertUniqueShortNames(contractCatalog.declarations);
 
 await rm(stagingPath, { recursive: true, force: true });
 await rm(backupPath, { recursive: true, force: true });
@@ -61,7 +71,7 @@ try {
 
 function generateContracts() {
   const lines = [generatedHeader()];
-  for (const item of topologicalOrder(catalog.declarations)) {
+  for (const item of topologicalOrder(contractCatalog.declarations)) {
     if (item.doc) lines.push(docComment(item.doc));
     if (item.kind === "enum") {
       lines.push(
@@ -75,6 +85,10 @@ function generateContracts() {
         `export type ${shortName(item.name)} = ${item.variants.map((variant) => tsType(variant.type)).join(" | ")};`,
         "",
       );
+      continue;
+    }
+    if (item.kind === "scalar") {
+      lines.push(`export type ${shortName(item.name)} = ${tsType(item.base)};`, "");
       continue;
     }
     if (item.kind !== "model") unsupported(item);
@@ -99,7 +113,7 @@ function generateContracts() {
 }
 
 function generateCodecs() {
-  const roots = catalog.roots.map((rootItem) => ({
+  const roots = jsonCodecRoots.map((rootItem) => ({
     ...rootItem,
     typeName: shortName(rootItem.name),
   }));
@@ -111,7 +125,7 @@ function generateCodecs() {
     "",
     "const declarations: ContractDescriptorMap = {",
   ];
-  for (const item of catalog.declarations) {
+  for (const item of jsonCodecDeclarations) {
     lines.push(`  ${JSON.stringify(item.name)}: ${descriptor(item)},`);
   }
   lines.push("};", "");
@@ -132,11 +146,12 @@ function generateCodecs() {
 
 function generateOperations() {
   const lines = [generatedHeader(), "export const operationCatalog = {"];
-  for (const operation of catalog.operations) {
+  for (const operation of operationCatalogProjection.operations) {
     lines.push(`  ${JSON.stringify(operation.identity)}: {`);
     lines.push(`    identity: ${JSON.stringify(operation.identity)},`);
     lines.push(`    requestContract: ${JSON.stringify(operation.request_contract)},`);
     lines.push(`    resultContract: ${JSON.stringify(operation.result_contract)},`);
+    lines.push(`    runtimeDispatch: ${JSON.stringify(operation.runtime_dispatch)},`);
     lines.push(`    inputAttachments: ${JSON.stringify(operation.input_attachments)},`);
     lines.push(`    outputAttachments: ${JSON.stringify(operation.output_attachments)},`);
     if (operation.request_projection)
@@ -198,8 +213,9 @@ function tsType(type) {
       string: "string",
       boolean: "boolean",
       float64: "number",
+      int64: "bigint",
       uint32: "number",
-      uint64: "number",
+      uint64: "bigint",
     }[type.name];
     if (!mapped) unsupported(type);
     return mapped;
@@ -253,6 +269,20 @@ function dependencies(item) {
   for (const property of item.properties ?? []) scan(property.type);
   for (const variant of item.variants ?? []) scan(variant.type);
   return found;
+}
+
+function reachableDeclarationItems(roots) {
+  const found = new Set();
+  function visit(name) {
+    if (found.has(name)) return;
+    const item = declarations.get(name);
+    if (item === undefined)
+      throw new Error(`TypeScript catalog reference does not resolve: ${name}.`);
+    found.add(name);
+    for (const dependency of dependencies(item)) visit(dependency);
+  }
+  for (const rootItem of roots) visit(rootItem.name);
+  return contractCatalog.declarations.filter((item) => found.has(item.name));
 }
 
 function assertUniqueShortNames(items) {

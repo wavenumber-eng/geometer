@@ -40,9 +40,7 @@ OCCT_WASM_INSTALL = DEPS_DIR / "occt-wasm-install"
 # RapidJSON is header-only and vendored for OCCT's GLB export support.
 RAPIDJSON_SRC = ROOT / "third_party" / "rapidjson"
 RAPIDJSON_INCLUDE = RAPIDJSON_SRC / "include" / "rapidjson"
-RAPIDJSON_PATCH_SENTINEL = (
-    "    GenericStringRef& operator=(const GenericStringRef& rhs) = delete;"
-)
+RAPIDJSON_PATCH_SENTINEL = "    GenericStringRef& operator=(const GenericStringRef& rhs) = delete;"
 
 # Geometer WASM build
 GEOMETER_WASM_BUILD = ROOT / "build-wasm"
@@ -51,6 +49,17 @@ OCCT_REPO = dependency_versions.OCCT_REPO
 OCCT_TAG = dependency_versions.OCCT_TAG
 OCCT_WASM_PLATFORM_TAG = "wasm-emscripten"
 OCCT_STATE_ROOT = DEPS_DIR
+
+
+def build_parallel_jobs() -> str:
+    value = os.environ.get("CMAKE_BUILD_PARALLEL_LEVEL", "4")
+    try:
+        jobs = int(value)
+    except ValueError as exc:
+        raise ValueError("CMAKE_BUILD_PARALLEL_LEVEL must be a positive integer") from exc
+    if jobs < 1:
+        raise ValueError("CMAKE_BUILD_PARALLEL_LEVEL must be a positive integer")
+    return str(jobs)
 
 
 def configure_occt_variant(tag: str, state_root: Path | None) -> None:
@@ -152,6 +161,7 @@ def _emscripten_env() -> dict[str, str]:
 
 # ---- emsdk ----
 
+
 def install_emsdk() -> None:
     if (EMSDK_DIR / "emsdk.bat").exists() or (EMSDK_DIR / "emsdk").exists():
         print(f"emsdk already present at {EMSDK_DIR}")
@@ -183,6 +193,7 @@ def install_emsdk() -> None:
 
 # ---- shared sources ----
 
+
 def clone_source(name: str, dest: Path, repo: str, tag: str, check_path: str) -> None:
     check = dest / check_path
     if check.exists():
@@ -197,16 +208,10 @@ def clone_source(name: str, dest: Path, repo: str, tag: str, check_path: str) ->
 def verify_vendored_rapidjson() -> None:
     document_h = RAPIDJSON_INCLUDE / "document.h"
     if not document_h.exists():
-        raise RuntimeError(
-            "Vendored RapidJSON headers are missing. Expected "
-            f"{RAPIDJSON_INCLUDE}"
-        )
+        raise RuntimeError(f"Vendored RapidJSON headers are missing. Expected {RAPIDJSON_INCLUDE}")
     text = document_h.read_text(encoding="utf-8")
     if RAPIDJSON_PATCH_SENTINEL not in text:
-        raise RuntimeError(
-            "Vendored RapidJSON is missing Geometer's modern Clang "
-            "compatibility patch."
-    )
+        raise RuntimeError("Vendored RapidJSON is missing Geometer's modern Clang compatibility patch.")
     print(f"Using vendored RapidJSON at {RAPIDJSON_SRC}")
 
 
@@ -215,11 +220,11 @@ def patch_occt_wasm_install_rules() -> None:
     toolkit_cmake = OCCT_SRC / "adm" / "cmake" / "occt_toolkit.cmake"
     text = toolkit_cmake.read_text(encoding="utf-8")
     original = (
-        '    install(FILES ${CMAKE_BINARY_DIR}/${OS_WITH_BIT}/${COMPILER}/bin\\${OCCT_INSTALL_BIN_LETTER}/${PROJECT_NAME}.wasm '
+        "    install(FILES ${CMAKE_BINARY_DIR}/${OS_WITH_BIT}/${COMPILER}/bin\\${OCCT_INSTALL_BIN_LETTER}/${PROJECT_NAME}.wasm "
         'DESTINATION "${INSTALL_DIR_BIN}/${OCCT_INSTALL_BIN_LETTER}")'
     )
     patched = (
-        '    install(FILES ${CMAKE_BINARY_DIR}/${OS_WITH_BIT}/${COMPILER}/bin\\${OCCT_INSTALL_BIN_LETTER}/${PROJECT_NAME}.wasm '
+        "    install(FILES ${CMAKE_BINARY_DIR}/${OS_WITH_BIT}/${COMPILER}/bin\\${OCCT_INSTALL_BIN_LETTER}/${PROJECT_NAME}.wasm "
         'DESTINATION "${INSTALL_DIR_BIN}/${OCCT_INSTALL_BIN_LETTER}" OPTIONAL)'
     )
     if patched in text:
@@ -232,6 +237,7 @@ def patch_occt_wasm_install_rules() -> None:
 
 
 # ---- OCCT WASM build ----
+
 
 def occt_wasm_cache_profile() -> occt_binary_cache.OcctCacheProfile:
     recipe = occt_binary_cache.recipe_hash(
@@ -276,45 +282,65 @@ def build_occt_wasm() -> None:
 
     print("Configuring OCCT for WASM ...")
     OCCT_WASM_BUILD.mkdir(parents=True, exist_ok=True)
-    run([
-        "cmake",
-        "-G", "Ninja",
-        "-S", str(OCCT_SRC),
-        "-B", str(OCCT_WASM_BUILD),
-        f"-DCMAKE_TOOLCHAIN_FILE={toolchain}",
-        f"-DCMAKE_INSTALL_PREFIX={OCCT_WASM_INSTALL}",
-        "-DCMAKE_BUILD_TYPE=Release",
-        "-DBUILD_LIBRARY_TYPE=Static",
-        "-DBUILD_MODULE_Draw=OFF",
-        "-DBUILD_MODULE_Visualization=OFF",
-        "-DBUILD_MODULE_ApplicationFramework=OFF",
-        "-DBUILD_DOC_Overview=OFF",
-        "-DUSE_FREETYPE=OFF",
-        "-DUSE_TBB=OFF",
-        "-DUSE_FREEIMAGE=OFF",
-        "-DUSE_OPENVR=OFF",
-        "-DUSE_RAPIDJSON=ON",
-        f"-D3RDPARTY_RAPIDJSON_DIR={RAPIDJSON_SRC}",
-        "-DCMAKE_POLICY_VERSION_MINIMUM=3.5",
-    ], env=env)
+    run(
+        [
+            "cmake",
+            "-G",
+            "Ninja",
+            "-S",
+            str(OCCT_SRC),
+            "-B",
+            str(OCCT_WASM_BUILD),
+            f"-DCMAKE_TOOLCHAIN_FILE={toolchain}",
+            f"-DCMAKE_INSTALL_PREFIX={OCCT_WASM_INSTALL}",
+            "-DCMAKE_BUILD_TYPE=Release",
+            "-DBUILD_LIBRARY_TYPE=Static",
+            "-DBUILD_MODULE_Draw=OFF",
+            "-DBUILD_MODULE_Visualization=OFF",
+            "-DBUILD_MODULE_ApplicationFramework=OFF",
+            "-DBUILD_DOC_Overview=OFF",
+            "-DUSE_FREETYPE=OFF",
+            "-DUSE_TBB=OFF",
+            "-DUSE_FREEIMAGE=OFF",
+            "-DUSE_OPENVR=OFF",
+            "-DUSE_RAPIDJSON=ON",
+            f"-D3RDPARTY_RAPIDJSON_DIR={RAPIDJSON_SRC}",
+            "-DCMAKE_POLICY_VERSION_MINIMUM=3.5",
+        ],
+        env=env,
+    )
 
     print("Building OCCT for WASM ...")
-    run([
-        "cmake", "--build", str(OCCT_WASM_BUILD),
-        "--config", "Release",
-        "--parallel",
-    ], env=env)
+    run(
+        [
+            "cmake",
+            "--build",
+            str(OCCT_WASM_BUILD),
+            "--config",
+            "Release",
+            "--parallel",
+            build_parallel_jobs(),
+        ],
+        env=env,
+    )
 
     print("Installing OCCT WASM ...")
-    run([
-        "cmake", "--install", str(OCCT_WASM_BUILD),
-        "--config", "Release",
-    ], env=env)
+    run(
+        [
+            "cmake",
+            "--install",
+            str(OCCT_WASM_BUILD),
+            "--config",
+            "Release",
+        ],
+        env=env,
+    )
 
     print(f"OCCT WASM installed to {OCCT_WASM_INSTALL}")
 
 
 # ---- geometer WASM build ----
+
 
 def build_geometer_wasm() -> None:
     toolchain = _toolchain_file()
@@ -324,22 +350,40 @@ def build_geometer_wasm() -> None:
 
     print("Configuring geometer for WASM ...")
     GEOMETER_WASM_BUILD.mkdir(parents=True, exist_ok=True)
-    run([
-        "cmake",
-        "-G", "Ninja",
-        "-S", str(ROOT),
-        "-B", str(GEOMETER_WASM_BUILD),
-        f"-DCMAKE_TOOLCHAIN_FILE={toolchain}",
-        "-DCMAKE_BUILD_TYPE=Release",
-        f"-DOpenCASCADE_DIR={occt_cmake_dir}",
-        "-DCMAKE_POLICY_VERSION_MINIMUM=3.5",
-    ], env=env)
+    run(
+        [
+            "cmake",
+            "-G",
+            "Ninja",
+            "-S",
+            str(ROOT),
+            "-B",
+            str(GEOMETER_WASM_BUILD),
+            f"-DCMAKE_TOOLCHAIN_FILE={toolchain}",
+            "-DCMAKE_BUILD_TYPE=Release",
+            f"-DOpenCASCADE_DIR={occt_cmake_dir}",
+            "-DCMAKE_POLICY_VERSION_MINIMUM=3.5",
+        ],
+        env=env,
+    )
 
     print("Building geometer for WASM ...")
-    run([
-        "cmake", "--build", str(GEOMETER_WASM_BUILD),
-        "--config", "Release",
-    ], env=env)
+    run(
+        [
+            "cmake",
+            "--build",
+            str(GEOMETER_WASM_BUILD),
+            "--config",
+            "Release",
+            "--target",
+            "geometer",
+            "geometer_browser",
+            "geometer_planar_browser",
+            "--parallel",
+            build_parallel_jobs(),
+        ],
+        env=env,
+    )
 
     # Copy outputs to grouped dist/wasm target folders.
     DIST_DIR.mkdir(parents=True, exist_ok=True)
@@ -384,6 +428,7 @@ def build_geometer_wasm() -> None:
 
 # ---- clean ----
 
+
 def clean() -> None:
     targets = [OCCT_WASM_BUILD, OCCT_WASM_INSTALL]
     if OCCT_STATE_ROOT == DEPS_DIR:
@@ -402,6 +447,7 @@ def prepare_occt_source_build() -> None:
 
 
 # ---- main ----
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Build geometer for WASM via Emscripten.")

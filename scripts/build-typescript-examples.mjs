@@ -9,7 +9,14 @@ import { fileURLToPath } from "node:url";
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const outputRoot = join(root, "dist", "wasm", "demos");
 const stagingRoot = join(root, "dist", "wasm", `.typescript-demo-stage-${process.pid}`);
-const outputs = ["model_bounds_demo.js", "model_bounds_worker.js"];
+const outputs = [
+  "analytic_canvas_arc.js",
+  "analytic_polygon_pour_demo.js",
+  "analytic_polygon_pour_fixture.js",
+  "analytic_polygon_pour_worker.js",
+  "model_bounds_demo.js",
+  "model_bounds_worker.js",
+];
 const checkOnly = process.argv.slice(2).includes("--check");
 
 if (process.argv.slice(2).some((argument) => argument !== "--check")) {
@@ -51,12 +58,10 @@ try {
         !existsSync(output) ||
         (await readFile(stagedOutput)).compare(await readFile(output)) !== 0
       ) {
-        throw new Error(
-          `TypeScript model-bounds example ${filename} is stale. Run npm run generate:contracts.`,
-        );
+        throw new Error(`TypeScript example ${filename} is stale. Run npm run generate:contracts.`);
       }
     }
-    process.stdout.write("TypeScript model-bounds examples are current.\n");
+    process.stdout.write("TypeScript examples are current.\n");
   } else {
     await mkdir(outputRoot, { recursive: true });
     for (const filename of outputs) {
@@ -64,7 +69,7 @@ try {
       await rm(output, { force: true });
       await rename(join(stagingRoot, filename), output);
     }
-    process.stdout.write("Built TypeScript model-bounds browser examples.\n");
+    process.stdout.write("Built TypeScript browser examples.\n");
   }
 } finally {
   await rm(stagingRoot, { recursive: true, force: true });

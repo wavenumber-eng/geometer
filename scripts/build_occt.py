@@ -38,13 +38,22 @@ THIRD_PARTY_DIR = ROOT / "third_party"
 OCCT_SRC = DEPS_DIR / "occt-src"
 RAPIDJSON_SRC = THIRD_PARTY_DIR / "rapidjson"
 RAPIDJSON_INCLUDE = RAPIDJSON_SRC / "include" / "rapidjson"
-RAPIDJSON_PATCH_SENTINEL = (
-    "    GenericStringRef& operator=(const GenericStringRef& rhs) = delete;"
-)
+RAPIDJSON_PATCH_SENTINEL = "    GenericStringRef& operator=(const GenericStringRef& rhs) = delete;"
 
 OCCT_REPO = dependency_versions.OCCT_REPO
 OCCT_TAG = dependency_versions.OCCT_TAG
 DEFAULT_MACOS_DEPLOYMENT_TARGET = "11.0"
+
+
+def build_parallel_jobs() -> str:
+    value = os.environ.get("CMAKE_BUILD_PARALLEL_LEVEL", "4")
+    try:
+        jobs = int(value)
+    except ValueError as exc:
+        raise ValueError("CMAKE_BUILD_PARALLEL_LEVEL must be a positive integer") from exc
+    if jobs < 1:
+        raise ValueError("CMAKE_BUILD_PARALLEL_LEVEL must be a positive integer")
+    return str(jobs)
 
 
 def configure_occt_variant(tag: str, state_root: Path | None) -> None:
@@ -138,16 +147,10 @@ def verify_source_tag(dest: Path, expected_tag: str) -> None:
 def verify_vendored_rapidjson() -> None:
     document_h = RAPIDJSON_INCLUDE / "document.h"
     if not document_h.exists():
-        raise RuntimeError(
-            "Vendored RapidJSON headers are missing. Expected "
-            f"{RAPIDJSON_INCLUDE}"
-        )
+        raise RuntimeError(f"Vendored RapidJSON headers are missing. Expected {RAPIDJSON_INCLUDE}")
     text = document_h.read_text(encoding="utf-8")
     if RAPIDJSON_PATCH_SENTINEL not in text:
-        raise RuntimeError(
-            "Vendored RapidJSON is missing Geometer's modern Clang "
-            "compatibility patch."
-        )
+        raise RuntimeError("Vendored RapidJSON is missing Geometer's modern Clang compatibility patch.")
     print(f"Using vendored RapidJSON at {RAPIDJSON_SRC}")
 
 
@@ -158,13 +161,18 @@ def clone_occt() -> None:
         return
     print(f"Cloning OCCT {OCCT_TAG} ...")
     DEPS_DIR.mkdir(parents=True, exist_ok=True)
-    run([
-        "git", "clone",
-        "--depth", "1",
-        "--branch", OCCT_TAG,
-        OCCT_REPO,
-        str(OCCT_SRC),
-    ])
+    run(
+        [
+            "git",
+            "clone",
+            "--depth",
+            "1",
+            "--branch",
+            OCCT_TAG,
+            OCCT_REPO,
+            str(OCCT_SRC),
+        ]
+    )
 
 
 def occt_paths(platform_name: str, library_type: str) -> tuple[Path, Path]:
@@ -258,8 +266,10 @@ def configure_occt(
     cmd = [
         "cmake",
         *cmake_generator_args(),
-        "-S", str(OCCT_SRC),
-        "-B", str(build_dir),
+        "-S",
+        str(OCCT_SRC),
+        "-B",
+        str(build_dir),
         f"-DCMAKE_INSTALL_PREFIX={install_dir}",
         f"-DCMAKE_BUILD_TYPE={config}",
         f"-DBUILD_LIBRARY_TYPE={library_type}",
@@ -285,20 +295,31 @@ def configure_occt(
 def build_occt(platform_name: str, config: str, library_type: str) -> None:
     build_dir, _ = occt_paths(platform_name, library_type)
     print(f"Building OCCT ({config}, {library_type}) ...")
-    run([
-        "cmake", "--build", str(build_dir),
-        "--config", config,
-        "--parallel",
-    ])
+    run(
+        [
+            "cmake",
+            "--build",
+            str(build_dir),
+            "--config",
+            config,
+            "--parallel",
+            build_parallel_jobs(),
+        ]
+    )
 
 
 def install_occt(platform_name: str, config: str, library_type: str) -> None:
     build_dir, install_dir = occt_paths(platform_name, library_type)
     print(f"Installing OCCT to {install_dir} ...")
-    run([
-        "cmake", "--install", str(build_dir),
-        "--config", config,
-    ])
+    run(
+        [
+            "cmake",
+            "--install",
+            str(build_dir),
+            "--config",
+            config,
+        ]
+    )
 
 
 def clean(platform_name: str, *, include_source: bool) -> None:

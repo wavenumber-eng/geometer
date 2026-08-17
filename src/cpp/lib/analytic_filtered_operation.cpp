@@ -12,16 +12,18 @@ namespace geometer::analytic_operation_detail
 namespace
 {
 
-constexpr const char* kRequestAttachment = "analytic_planar_boolean_request";
-constexpr const char* kResultAttachment = "analytic_planar_boolean_result";
-constexpr const char* kRequestMediaType =
-    "application/vnd.wavenumber.geometer.analytic-planar-boolean-request";
-constexpr const char* kResultMediaType =
-    "application/vnd.wavenumber.geometer.analytic-planar-boolean-result";
-constexpr const char* kRequestSchema = "geometry.analytic_planar_boolean_batch.request.a0";
-constexpr const char* kResultSchema = "geometry.analytic_planar_boolean_batch.result.a0";
-constexpr const char* kPacketFormat = "geometry.analytic_planar_boolean.packet.a0";
-constexpr std::size_t kMaximumAttachmentBytes = 268'435'456U;
+struct PackedMetadata
+{
+    const char* request_schema = nullptr;
+    const char* request_attachment = nullptr;
+    const char* request_format = nullptr;
+    std::size_t request_max_bytes = 0;
+    const char* result_schema = nullptr;
+    const char* result_attachment = nullptr;
+    const char* result_format = nullptr;
+    const char* result_media_type = nullptr;
+    std::size_t result_max_bytes = 0;
+};
 
 contracts::DiagnosticA0 diagnostic(std::string code, contracts::DiagnosticCategory category,
                                    std::string message, std::string path = {})
@@ -46,6 +48,38 @@ void fail(OperationExecution* execution, contracts::DiagnosticA0 value)
     execution->attachments.clear();
 }
 
+bool load_metadata(PackedMetadata* metadata, OperationExecution* execution)
+{
+    metadata->request_schema = operation_request_contract(kOperationId);
+    metadata->result_schema = operation_result_contract(kOperationId);
+    if (metadata->request_schema == nullptr || metadata->result_schema == nullptr ||
+        !operation_request_projection(kOperationId, &metadata->request_attachment,
+                                      &metadata->request_format) ||
+        !operation_result_projection(kOperationId, &metadata->result_attachment,
+                                     &metadata->result_format))
+    {
+        fail(execution, diagnostic("geometer.contract.catalog_incompatible",
+                                   contracts::DiagnosticCategory::contract,
+                                   "The packed operation catalog metadata is incomplete."));
+        return false;
+    }
+    metadata->request_max_bytes =
+        operation_input_attachment_max_bytes(kOperationId, metadata->request_attachment);
+    metadata->result_max_bytes =
+        operation_output_attachment_max_bytes(kOperationId, metadata->result_attachment);
+    metadata->result_media_type =
+        operation_output_attachment_primary_media_type(kOperationId, metadata->result_attachment);
+    if (metadata->request_max_bytes == 0 || metadata->result_max_bytes == 0 ||
+        metadata->result_media_type == nullptr)
+    {
+        fail(execution, diagnostic("geometer.contract.catalog_incompatible",
+                                   contracts::DiagnosticCategory::contract,
+                                   "The packed operation attachment metadata is incomplete."));
+        return false;
+    }
+    return true;
+}
+
 bool exact_string_member(const rapidjson::Value& object, const char* name, const char* expected)
 {
     const auto member = object.FindMember(name);
@@ -53,8 +87,24 @@ bool exact_string_member(const rapidjson::Value& object, const char* name, const
            std::string(member->value.GetString(), member->value.GetStringLength()) == expected;
 }
 
+std::string attachment_path(const char* name, const char* suffix = "")
+{
+    std::string path = "/attachments/";
+    for (const char character : std::string(name))
+    {
+        if (character == '~')
+            path += "~0";
+        else if (character == '/')
+            path += "~1";
+        else
+            path += character;
+    }
+    path += suffix;
+    return path;
+}
+
 bool validate_projection_json(const unsigned char* data, std::size_t size,
-                              OperationExecution* execution)
+                              const PackedMetadata& metadata, OperationExecution* execution)
 {
     if (data == nullptr || size == 0)
     {
@@ -73,7 +123,8 @@ bool validate_projection_json(const unsigned char* data, std::size_t size,
                         "The packed operation request must be one strict UTF-8 JSON object."));
         return false;
     }
-    if (document.MemberCount() != 2 || !exact_string_member(document, "schema", kRequestSchema))
+    if (document.MemberCount() != 2 ||
+        !exact_string_member(document, "schema", metadata.request_schema))
     {
         fail(execution,
              diagnostic("geometer.contract.literal", contracts::DiagnosticCategory::contract,
@@ -90,7 +141,7 @@ bool validate_projection_json(const unsigned char* data, std::size_t size,
                         "The packed operation request packet reference is invalid.", "/packet"));
         return false;
     }
-    if (!exact_string_member(packet->value, "attachment", kRequestAttachment))
+    if (!exact_string_member(packet->value, "attachment", metadata.request_attachment))
     {
         fail(execution,
              diagnostic("geometer.contract.literal", contracts::DiagnosticCategory::contract,
@@ -98,7 +149,7 @@ bool validate_projection_json(const unsigned char* data, std::size_t size,
                         "/packet/attachment"));
         return false;
     }
-    if (!exact_string_member(packet->value, "format", kPacketFormat))
+    if (!exact_string_member(packet->value, "format", metadata.request_format))
     {
         fail(execution,
              diagnostic("geometer.contract.literal", contracts::DiagnosticCategory::contract,
@@ -110,12 +161,12 @@ bool validate_projection_json(const unsigned char* data, std::size_t size,
 
 const OperationAttachmentView*
 find_request_attachment(const std::vector<OperationAttachmentView>& attachments,
-                        OperationExecution* execution)
+                        const PackedMetadata& metadata, OperationExecution* execution)
 {
     const OperationAttachmentView* request = nullptr;
     for (const auto& attachment : attachments)
     {
-        if (attachment.name != kRequestAttachment)
+        if (attachment.name != metadata.request_attachment)
         {
             fail(execution,
                  diagnostic("geometer.contract.undeclared_attachment",
@@ -128,7 +179,7 @@ find_request_attachment(const std::vector<OperationAttachmentView>& attachments,
             fail(execution, diagnostic("geometer.contract.duplicate_attachment",
                                        contracts::DiagnosticCategory::contract,
                                        "The packed request attachment occurs more than once.",
-                                       "/attachments/analytic_planar_boolean_request"));
+                                       attachment_path(metadata.request_attachment)));
             return nullptr;
         }
         request = &attachment;
@@ -138,23 +189,23 @@ find_request_attachment(const std::vector<OperationAttachmentView>& attachments,
         fail(execution, diagnostic("geometer.contract.missing_attachment",
                                    contracts::DiagnosticCategory::contract,
                                    "The required packed request attachment is missing.",
-                                   "/attachments/analytic_planar_boolean_request"));
+                                   attachment_path(metadata.request_attachment)));
         return nullptr;
     }
-    if (request->media_type != kRequestMediaType)
+    if (!operation_input_attachment_declared(kOperationId, request->name, request->media_type))
     {
         fail(execution, diagnostic("geometer.contract.attachment_media_type_mismatch",
                                    contracts::DiagnosticCategory::contract,
                                    "The packed request attachment media type is not supported.",
-                                   "/attachments/analytic_planar_boolean_request/media_type"));
+                                   attachment_path(metadata.request_attachment, "/media_type")));
         return nullptr;
     }
-    if (request->size > kMaximumAttachmentBytes)
+    if (request->size > metadata.request_max_bytes)
     {
         fail(execution, diagnostic("geometer.contract.attachment_limit_exceeded",
                                    contracts::DiagnosticCategory::contract,
                                    "The packed request attachment exceeds its operation limit.",
-                                   "/attachments/analytic_planar_boolean_request/data"));
+                                   attachment_path(metadata.request_attachment, "/data")));
         return nullptr;
     }
     return request;
@@ -194,9 +245,12 @@ void fail_batch(OperationExecution* execution, AnalyticFilteredBatchError error)
 void execute(const unsigned char* request_json, std::size_t request_json_size,
              const std::vector<OperationAttachmentView>& attachments, OperationExecution* execution)
 {
-    if (!validate_projection_json(request_json, request_json_size, execution))
+    PackedMetadata metadata;
+    if (!load_metadata(&metadata, execution) ||
+        !validate_projection_json(request_json, request_json_size, metadata, execution))
         return;
-    const OperationAttachmentView* attachment = find_request_attachment(attachments, execution);
+    const OperationAttachmentView* attachment =
+        find_request_attachment(attachments, metadata, execution);
     if (attachment == nullptr)
         return;
 
@@ -207,7 +261,7 @@ void execute(const unsigned char* request_json, std::size_t request_json_size,
         fail(execution,
              diagnostic(packet_error_code(decoded.error), contracts::DiagnosticCategory::contract,
                         "The packed analytic planar Boolean request is invalid.",
-                        "/attachments/analytic_planar_boolean_request/data"));
+                        attachment_path(metadata.request_attachment, "/data")));
         return;
     }
 
@@ -217,22 +271,22 @@ void execute(const unsigned char* request_json, std::size_t request_json_size,
         fail_batch(execution, batch.error);
         return;
     }
-    if (batch.packet->bytes.size() > kMaximumAttachmentBytes)
+    if (batch.packet->bytes.size() > metadata.result_max_bytes)
     {
         fail_batch(execution, AnalyticFilteredBatchError::resource_limit_exceeded);
         return;
     }
 
     contracts::PackedAttachmentProjectionA0 result;
-    result.schema = kResultSchema;
-    result.packet.attachment = kResultAttachment;
-    result.packet.format = kPacketFormat;
+    result.schema = metadata.result_schema;
+    result.packet.attachment = metadata.result_attachment;
+    result.packet.format = metadata.result_format;
     contracts::OperationSuccessA0 success;
     success.operation = kOperationId;
     success.result = std::move(result);
     execution->outcome = std::move(success);
     execution->attachments = {
-        {kResultAttachment, kResultMediaType, std::move(batch.packet->bytes)}};
+        {metadata.result_attachment, metadata.result_media_type, std::move(batch.packet->bytes)}};
 }
 
 } // namespace geometer::analytic_operation_detail

@@ -14,6 +14,10 @@
       "types": "./generated/index.d.ts",
       "import": "./generated/index.js"
     },
+    "./analytic-packet-a0": {
+      "types": "./analytic-packet-a0.d.ts",
+      "import": "./analytic-packet-a0.js"
+    },
     "./wasm": {
       "types": "./wasm.d.ts",
       "import": "./wasm.js"

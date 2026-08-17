@@ -41,6 +41,17 @@ PARITY_TARGETS = (
 )
 
 
+def build_parallel_jobs() -> str:
+    value = os.environ.get("CMAKE_BUILD_PARALLEL_LEVEL", "4")
+    try:
+        jobs = int(value)
+    except ValueError as exc:
+        raise ValueError("CMAKE_BUILD_PARALLEL_LEVEL must be a positive integer") from exc
+    if jobs < 1:
+        raise ValueError("CMAKE_BUILD_PARALLEL_LEVEL must be a positive integer")
+    return str(jobs)
+
+
 @dataclass(frozen=True)
 class CommandEvidence:
     name: str
@@ -95,9 +106,7 @@ class QualificationRun:
         )
         if completed.returncode != 0:
             tail = "\n".join(output.splitlines()[-40:])
-            raise RuntimeError(
-                f"{name} failed with exit code {completed.returncode}; log={log_path}\n{tail}"
-            )
+            raise RuntimeError(f"{name} failed with exit code {completed.returncode}; log={log_path}\n{tail}")
         print(f"[{name}] passed in {elapsed:.2f}s", flush=True)
         return output
 
@@ -275,7 +284,15 @@ def prepare_native(
     )
     run.run(
         "build-native-geometer",
-        ["cmake", "--build", build_root, "--config", "Release", "--parallel"],
+        [
+            "cmake",
+            "--build",
+            build_root,
+            "--config",
+            "Release",
+            "--parallel",
+            build_parallel_jobs(),
+        ],
         env=native_env,
     )
     run.run(
@@ -313,8 +330,8 @@ def prepare_native(
             ],
             env=native_env,
         )
-        native_executable = dist_root / "native" / target_platform / (
-            "geometer.exe" if sys.platform == "win32" else "geometer"
+        native_executable = (
+            dist_root / "native" / target_platform / ("geometer.exe" if sys.platform == "win32" else "geometer")
         )
         evidence["consumer_validation"] = {
             "cli_python_glb_planar": "passed",
@@ -380,7 +397,15 @@ def prepare_wasm(
     )
     run.run(
         "build-wasm-geometer",
-        ["cmake", "--build", build_root, "--config", "Release", "--parallel"],
+        [
+            "cmake",
+            "--build",
+            build_root,
+            "--config",
+            "Release",
+            "--parallel",
+            build_parallel_jobs(),
+        ],
         env=wasm_env,
     )
     run.run(
@@ -513,16 +538,12 @@ def main() -> int:
             )
         source_root = state_root / "occt-src"
         evidence["occt_revision"] = git_output("rev-parse", "HEAD", cwd=source_root)
-        evidence["occt_tag_object"] = git_output(
-            "rev-parse", f"refs/tags/{args.tag}", cwd=source_root
-        )
+        evidence["occt_tag_object"] = git_output("rev-parse", f"refs/tags/{args.tag}", cwd=source_root)
         evidence["occt_exact_tag"] = git_output("describe", "--tags", "--exact-match", "HEAD", cwd=source_root)
         if args.lane == "all" and not args.prepare_only:
             native = evidence["lanes"]["native"]
             wasm = evidence["lanes"]["wasm"]
-            evidence["feasibility_native_wasm_equal"] = (
-                native["feasibility_sha256"] == wasm["feasibility_sha256"]
-            )
+            evidence["feasibility_native_wasm_equal"] = native["feasibility_sha256"] == wasm["feasibility_sha256"]
             if not evidence["feasibility_native_wasm_equal"]:
                 raise RuntimeError("native and WASM OCCT feasibility output differ")
             if not args.skip_parity:
@@ -538,11 +559,7 @@ def main() -> int:
         raise
     finally:
         evidence["commands"] = [asdict(command) for command in run.commands]
-        report_name = (
-            "qualification-report.json"
-            if args.lane == "all"
-            else f"qualification-report-{args.lane}.json"
-        )
+        report_name = "qualification-report.json" if args.lane == "all" else f"qualification-report-{args.lane}.json"
         report = output_root / report_name
         report.write_text(json.dumps(evidence, indent=2) + "\n", encoding="utf-8", newline="\n")
         print(f"qualification report: {report}", flush=True)

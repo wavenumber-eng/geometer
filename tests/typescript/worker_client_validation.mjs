@@ -77,6 +77,34 @@ if (
   throw new Error("Correlated Worker model_bounds results are invalid.");
 }
 
+const analytic = await client.analyticPlanarBooleanBatch({
+  jobs: [
+    {
+      job_id: 1n,
+      stages: [
+        {
+          stage_id: 1n,
+          operation: "union",
+          operands: [
+            {
+              operand_id: 1n,
+              kind: "disk",
+              feature_id: 1n,
+              center: { x: 0n, y: 0n },
+              radius_nm: 1_000_000n,
+            },
+          ],
+        },
+      ],
+    },
+  ],
+  relationship_queries: [],
+});
+const [analyticJob] = analytic.job_results;
+if (analyticJob?.status !== "success" || analyticJob.result_regions.length !== 1) {
+  throw new Error("Worker analytic packed round trip did not return one disk region.");
+}
+
 let emptyRejected = false;
 try {
   await client.modelBounds({ model: new Uint8Array() });

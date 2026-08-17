@@ -220,10 +220,13 @@ class ModelBoundsOptionsA0:
 
 
 # Strict generic request envelope for executable IPC A0.
+IpcRequestValueA0: TypeAlias = ModelBoundsOptionsA0 | PackedAttachmentProjectionA0
+
+
 @dataclass(frozen=True, slots=True, kw_only=True)
 class IpcRequestA0:
     operation: str
-    request: ModelBoundsOptionsA0
+    request: IpcRequestValueA0
 
 
 # Final acknowledgment after every accepted request is terminal and flushed.

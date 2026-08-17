@@ -8,7 +8,10 @@ import {
 const capabilities = Object.freeze({
   cAbiGeneration: 20260623,
   genericAbi: "a0",
-  operations: Object.freeze(["geometry.model_bounds.a0"]),
+  operations: Object.freeze([
+    "geometry.analytic_planar_boolean_batch.a0",
+    "geometry.model_bounds.a0",
+  ]),
   releaseVersion: "2026.6.23",
 });
 const outcomeJson = encodeOperationOutcomeA0Json({
@@ -23,6 +26,18 @@ const outcomeJson = encodeOperationOutcomeA0Json({
   ok: false,
   operation: "geometry.model_bounds.a0",
 });
+const analyticOutcome = (schema = "geometry.analytic_planar_boolean_batch.result.a0") =>
+  encodeOperationOutcomeA0Json({
+    ok: true,
+    operation: "geometry.analytic_planar_boolean_batch.a0",
+    result: {
+      schema,
+      packet: {
+        attachment: "analytic_planar_boolean_result",
+        format: "geometry.analytic_planar_boolean.packet.a0",
+      },
+    },
+  });
 
 class ManualWorker {
   constructor() {
@@ -110,6 +125,51 @@ async function waitFor(predicate, label) {
   if (!error.message.includes("unknown or completed request ID") || !worker.terminated) {
     throw new Error("Unknown response ID did not terminate the Worker connection.");
   }
+}
+
+{
+  const { client, worker } = await createManualClient();
+  const pending = client.execute("geometry.analytic_planar_boolean_batch.a0", "{}", []);
+  await waitFor(() => worker.messages.length === 2, "duplicate-attachment request");
+  const request = worker.messages[1];
+  const attachment = {
+    data: new ArrayBuffer(8),
+    mediaType: "application/vnd.wavenumber.geometer.analytic-planar-boolean-result",
+    name: "analytic_planar_boolean_result",
+  };
+  worker.respond({
+    attachments: [attachment, attachment],
+    kind: "operation_result",
+    outcomeJson: analyticOutcome(),
+    protocol: GEOMETER_WASM_WORKER_PROTOCOL,
+    requestId: request.requestId,
+  });
+  const error = await expectPromptWorkerRejection(pending, "duplicate-attachment request");
+  if (!error.message.includes("duplicate attachment"))
+    throw new Error("Worker duplicate output attachment was not rejected.");
+}
+
+{
+  const { client, worker } = await createManualClient();
+  const pending = client.execute("geometry.analytic_planar_boolean_batch.a0", "{}", []);
+  await waitFor(() => worker.messages.length === 2, "wrong-projection request");
+  const request = worker.messages[1];
+  worker.respond({
+    attachments: [
+      {
+        data: new ArrayBuffer(8),
+        mediaType: "application/vnd.wavenumber.geometer.analytic-planar-boolean-result",
+        name: "analytic_planar_boolean_result",
+      },
+    ],
+    kind: "operation_result",
+    outcomeJson: analyticOutcome("geometry.wrong.result.a0"),
+    protocol: GEOMETER_WASM_WORKER_PROTOCOL,
+    requestId: request.requestId,
+  });
+  const error = await expectPromptWorkerRejection(pending, "wrong-projection request");
+  if (!error.message.includes("incompatible packed result projection"))
+    throw new Error("Worker packed result projection mismatch was not rejected.");
 }
 
 {

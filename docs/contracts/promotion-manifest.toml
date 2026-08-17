@@ -21,7 +21,7 @@ python_import = "geometer"
 python_generated_visibility = "internal_compatible_boundary"
 
 [typescript_projection]
-status = "implemented_model_bounds_worker_pilot"
+status = "implemented_model_bounds_and_analytic_worker_pilot"
 design = "docs/design/typescript-client.md"
 source_root = "src/ts/geometer"
 generated_root = "src/ts/geometer/generated"
@@ -34,6 +34,12 @@ example_worker_source = "examples/wasm/model_bounds_worker.ts"
 example_page = "examples/wasm/model_bounds_demo.html"
 example_artifact = "dist/wasm/demos/model_bounds_demo.js"
 example_worker_artifact = "dist/wasm/demos/model_bounds_worker.js"
+analytic_example_source = "examples/wasm/analytic_polygon_pour_demo.ts"
+analytic_example_fixture_source = "examples/wasm/analytic_polygon_pour_fixture.ts"
+analytic_example_worker_source = "examples/wasm/analytic_polygon_pour_worker.ts"
+analytic_example_page = "examples/wasm/analytic_polygon_pour_demo.html"
+analytic_example_artifact = "dist/wasm/demos/analytic_polygon_pour_demo.js"
+analytic_example_worker_artifact = "dist/wasm/demos/analytic_polygon_pour_worker.js"
 viz_migration_guide = "docs/design/viz-typescript-migration.md"
 runtime_dependency = false
 
@@ -76,12 +82,12 @@ structural_vector_count = 20
 operation_vector_count = 2
 local_ctest_count = 10
 local_rack_passed = 66
-catalog_sha256 = "126edc93c7fbb23b0e15da35966abe0145972586807be6b7fdbc46948adb175c"
+catalog_sha256 = "4910716ad1a9d3252b362ab726534782a06d1e00b0575d0fd6f1b8b62d178311"
 vector_manifest_sha256 = "30f697bf63e6ca1ba28e0b9617a061b59a90115ea4ef06a06761d09ea68301a5"
-browser_js_sha256 = "abbd4a8864a438e7208cf59899c944085f88d92cdf1ffbcda81e8eaa888d8263"
+browser_js_sha256 = "a60ef4f4007fae9c8be7cce9ee55c7f869f8e30cba3636174845c03aad57b9a9"
 historical_reviewed_browser_js_sha256 = "5c9f0594465cdb5732911777e2ca38cc2814c1ef9cb52b7672022df6a50bf937"
 browser_js_lock_remediation = "historical_worktree_bytes_unretained_relocked_to_committed_distributable"
-browser_wasm_sha256 = "374da1b0db6ee56999a42754e226911553612d654a2799935957fc225c2fb299"
+browser_wasm_sha256 = "4f52835b7fcccdb56a1fcd2ef6699fb5cd4c63e0c8eb01051304f9edfad1a981"
 independent_review = "accepted"
 acceptance_packet = "reviewer-019ffcd8-e5bb-7531-934f-b9e50e73d2b2ab7"
 review_packet = "reviewer-019ffcc0-0b9f-73e9-85e9-928e32f54cfd"
@@ -111,12 +117,12 @@ catalog_identity = "wn.geometer.contract_catalog"
 catalog_generation = "a0"
 
 [analytic_filtered_solver]
-status = "implemented_filtered_batch_relationships_not_dispatched"
+status = "implemented_filtered_batch_relationships_packed_dispatch"
 design = "docs/adr/013_filtered_resolution_bounded_planar_boolean.md"
 coordinate_grid_nm = 1
 topology_resolution_nm = 50
 topology_resolution_caller_programmable = false
-production_dispatch_allowed = false
+production_dispatch_allowed = true
 algebraic_fallback_hard_limit = 0
 strict_policy_header = "src/cpp/lib/analytic_filtered_execution_policy.h"
 strict_policy = "private_published_geometry_mode_disables_50nm_topology_repair_and_fails_closed_on_unresolved_equality"
@@ -964,7 +970,7 @@ numeric_catalog_sha256 = "f0b52ef8a032dcf47d2083b1f843aeeb791d4bc477a36b10c8c590
 solver_adr = "docs/adr/013_filtered_resolution_bounded_planar_boolean.md"
 solver_adr_sha256 = "4a4976b71fef66a51e5a58794e4ca71fd640826350faa5cb2e56bf6051c06ee9"
 superseded_solver_adr = "docs/adr/012_exact_analytic_planar_boolean_arrangement.md"
-filtered_solver_foundation = "direct_lowering_broad_narrow_overlay_arrangement_face_selection_material_regions_lineage_operand_outcomes_normalization_packet_assembly_batch_merge_strict_published_geometry_policy_and_relationship_evaluation_implemented_not_dispatched"
+filtered_solver_foundation = "direct_lowering_broad_narrow_overlay_arrangement_face_selection_material_regions_lineage_operand_outcomes_normalization_packet_assembly_batch_merge_strict_published_geometry_policy_and_relationship_evaluation_implemented_packed_dispatch"
 feasibility_test = "tests/cpp/analytic_planar_boolean_feasibility_test.cpp"
 portable_fixture = "tests/fixtures/analytic_planar_boolean/matz_observations_a0.json"
 candidate_typespec_entrypoint = "src/tsp/geometer/analytic-candidate.tsp"
@@ -974,12 +980,15 @@ candidate_typespec_source_sha256 = "40ac3882ab92d45eb3b015789a15ec88468571dfd110
 candidate_operation_source = "src/tsp/geometer/operations/analytic-planar-boolean-operation-a0.tsp"
 candidate_operation_source_sha256 = "0300c6c303c09d8e4152e0b65018b9d80742dd401020d825074b989378f6a61f"
 candidate_check = "scripts/check-analytic-contract-candidate.mjs"
-candidate_check_sha256 = "ec3c41562a70020b54e1b8d2ef54c5f47f5526d7275d92988c70ec190c0effb4"
+candidate_check_sha256 = "e91f7c7788175a8fdfbf4b0c30a33df10a7a71318194ead5a4dd9d3c7a6e548e"
 request_contract = "geometry.analytic_planar_boolean_batch.request.a0"
 result_contract = "geometry.analytic_planar_boolean_batch.result.a0"
 input_attachments = ["analytic_planar_boolean_request"]
 output_attachments = ["analytic_planar_boolean_result"]
-deferred_projections = ["cpp", "typescript", "rust", "python"]
+deferred_projections = ["cpp", "rust", "python"]
+packed_runtime_projections = ["cpp", "typescript", "rust"]
+production_transport_status = "native_c_abi_browser_wasm_executable_ipc_dispatched"
+typescript_packed_projection = "bigint_logical_dtos_strict_packet_codec_direct_and_worker_clients"
 packed_format = "separately_governed_frozen_a0"
 transport = "generic_named_attachments"
 operation_specific_c_abi_symbol = false
@@ -990,7 +999,7 @@ independent_design_review_head = "b86a065c5926c35f1eee23a9ba1cef890689c7d7"
 independent_design_review_log = "docs/plans/geometer-typespec-contracts/logs/2026-08-12T194800-0400.md"
 typespec_projection_review_revision = "f4b6a9b87bf16f57ef29dae22150b16f2a742b64"
 typespec_projection_review_packet = "reviewer-019ffd0d-fa76-74b6-ac3e-c1c2642ba0de"
-implementation_gate = "cpp_wasm_rust_python_implementation_slices_pending"
+implementation_gate = "packed_runtime_and_typescript_projection_implemented_logical_dto_projections_deferred"
 
 [[demos]]
 id = "model_bounds"
@@ -998,6 +1007,19 @@ source = "examples/wasm/model_bounds_demo.html"
 entrypoint = "examples/wasm/model_bounds_demo.ts"
 owning_operation = "geometry.model_bounds.a0"
 status = "generated_typescript_client"
+
+[[demos]]
+id = "analytic_polygon_pour"
+source = "examples/wasm/analytic_polygon_pour_demo.html"
+entrypoint = "examples/wasm/analytic_polygon_pour_demo.ts"
+worker = "examples/wasm/analytic_polygon_pour_worker.ts"
+fixture = "examples/wasm/analytic_polygon_pour_fixture.ts"
+distribution = "dist/wasm/demos/analytic-polygon-pour/index.html"
+asset_manifest = "dist/wasm/demos/analytic-polygon-pour/asset-manifest.json"
+distribution_sha256 = "857b152e32cfadd7aee97458bff2487a77927de60574e4d99a093335e7f61c83"
+headers = "dist/wasm/demos/analytic-polygon-pour/_headers"
+owning_operation = "geometry.analytic_planar_boolean_batch.a0"
+status = "generated_typescript_worker_client_static_distribution_validated_local"
 
 [[demos]]
 id = "embedded_model_viewer"

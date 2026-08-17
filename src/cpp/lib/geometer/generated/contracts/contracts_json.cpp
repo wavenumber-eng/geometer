@@ -107,6 +107,10 @@ bool decode_ModelBoundsOptionsA0(const rapidjson::Value&, ModelBoundsOptionsA0*,
                                  ContractError*);
 bool write_ModelBoundsOptionsA0(rapidjson::Writer<rapidjson::StringBuffer>&,
                                 const ModelBoundsOptionsA0&, ContractError*);
+bool decode_IpcRequestValueA0(const rapidjson::Value&, IpcRequestValueA0*, const std::string&,
+                              ContractError*);
+bool write_IpcRequestValueA0(rapidjson::Writer<rapidjson::StringBuffer>&, const IpcRequestValueA0&,
+                             ContractError*);
 bool decode_IpcRequestA0(const rapidjson::Value&, IpcRequestA0*, const std::string&,
                          ContractError*);
 bool write_IpcRequestA0(rapidjson::Writer<rapidjson::StringBuffer>&, const IpcRequestA0&,
@@ -2088,6 +2092,50 @@ bool write_ModelBoundsOptionsA0(rapidjson::Writer<rapidjson::StringBuffer>& writ
     return true;
 }
 
+bool decode_IpcRequestValueA0(const rapidjson::Value& value, IpcRequestValueA0* out,
+                              const std::string& path, ContractError* error)
+{
+    int matches = 0;
+    IpcRequestValueA0 selected{};
+    {
+        ModelBoundsOptionsA0 candidate{};
+        ContractError ignored;
+        if (decode_ModelBoundsOptionsA0(value, &candidate, path, &ignored))
+        {
+            ++matches;
+            selected = IpcRequestValueA0(std::in_place_index<0>, std::move(candidate));
+        }
+    }
+    {
+        PackedAttachmentProjectionA0 candidate{};
+        ContractError ignored;
+        if (decode_PackedAttachmentProjectionA0(value, &candidate, path, &ignored))
+        {
+            ++matches;
+            selected = IpcRequestValueA0(std::in_place_index<1>, std::move(candidate));
+        }
+    }
+    if (matches != 1)
+        return fail(error, "geometer.contract.union_mismatch", path,
+                    "Expected exactly one union variant.");
+    *out = std::move(selected);
+    return true;
+}
+
+bool write_IpcRequestValueA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                             const IpcRequestValueA0& value, ContractError* error)
+{
+    switch (value.index())
+    {
+    case 0:
+        return write_ModelBoundsOptionsA0(writer, std::get<0>(value), error);
+    case 1:
+        return write_PackedAttachmentProjectionA0(writer, std::get<1>(value), error);
+    default:
+        return fail(error, "geometer.contract.union_mismatch", "", "Unknown union variant.");
+    }
+}
+
 bool decode_IpcRequestA0(const rapidjson::Value& value, IpcRequestA0* out, const std::string& path,
                          ContractError* error)
 {
@@ -2108,8 +2156,8 @@ bool decode_IpcRequestA0(const rapidjson::Value& value, IpcRequestA0* out, const
         if (member == value.MemberEnd())
             return fail(error, "geometer.contract.missing_field", child_path(path, "request"),
                         "Required field is missing.");
-        if (!decode_ModelBoundsOptionsA0(member->value, &out->request, child_path(path, "request"),
-                                         error))
+        if (!decode_IpcRequestValueA0(member->value, &out->request, child_path(path, "request"),
+                                      error))
             return false;
     }
     return true;
@@ -2123,7 +2171,7 @@ bool write_IpcRequestA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
     if (!write_string(writer, value.operation, error, 1U, 128U))
         return false;
     writer.Key("request");
-    if (!write_ModelBoundsOptionsA0(writer, value.request, error))
+    if (!write_IpcRequestValueA0(writer, value.request, error))
         return false;
     writer.EndObject();
     return true;

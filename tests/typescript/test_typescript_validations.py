@@ -14,6 +14,10 @@ NODE = shutil.which("node")
 @pytest.mark.parametrize(
     "script",
     [
+        "analytic_arc_render_validation.mjs",
+        "analytic_static_site_validation.mjs",
+        "analytic_packet_codec_validation.mjs",
+        "analytic_cpp_vector_validation.mjs",
         "contract_codec_validation.mjs",
         "package_consumer_validation.mjs",
         "wasm_client_validation.mjs",

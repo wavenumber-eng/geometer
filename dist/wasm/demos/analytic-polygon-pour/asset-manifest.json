@@ -1,0 +1,166 @@
+{
+  "files": [
+    {
+      "bytes": 733,
+      "path": "_headers",
+      "sha256": "a0e49c68d9da8d89214044ee52904352a40ecdd8540aae44a182f3b90b992fae"
+    },
+    {
+      "bytes": 1761,
+      "path": "analytic_canvas_arc.js",
+      "sha256": "65e48b2f76bedfcf362fcf5297ee2dc4903b1b35074f1577ee0d1e16d938982e"
+    },
+    {
+      "bytes": 4488,
+      "path": "analytic_polygon_pour_demo.css",
+      "sha256": "37279876eccbba612f788213a3cec312daac9e0895286e399bf72b3a0692d6d6"
+    },
+    {
+      "bytes": 11504,
+      "path": "analytic_polygon_pour_demo.js",
+      "sha256": "f3a83e2e2981f402996bab457bc9ef1140dde87c34f5812ceb69440cfedeb33f"
+    },
+    {
+      "bytes": 4158,
+      "path": "analytic_polygon_pour_fixture.js",
+      "sha256": "b2c8889cf90af8576c4f578275835e04398ea1aa5445f1577b31f8537e06e819"
+    },
+    {
+      "bytes": 616,
+      "path": "analytic_polygon_pour_worker.js",
+      "sha256": "e3829d924144cbe63ea63b1df47a91cbc2c40d07f6427dc30cea26fc4103d0bd"
+    },
+    {
+      "bytes": 296856,
+      "path": "Cousine-Regular.ttf",
+      "sha256": "1da22250675fc4c42fcf3a9736c44bc0570516105331443b663fd5cfbd1412fe"
+    },
+    {
+      "bytes": 163460,
+      "path": "geometer.js",
+      "sha256": "a60ef4f4007fae9c8be7cce9ee55c7f869f8e30cba3636174845c03aad57b9a9"
+    },
+    {
+      "bytes": 18427097,
+      "path": "geometer.wasm",
+      "sha256": "4f52835b7fcccdb56a1fcd2ef6699fb5cd4c63e0c8eb01051304f9edfad1a981"
+    },
+    {
+      "bytes": 3375,
+      "path": "index.html",
+      "sha256": "d44ac30338f82448736ce2ad7acea867fc5a124f38cafa89f66237e71d54a2c3"
+    },
+    {
+      "bytes": 661,
+      "path": "package/analytic-packet-a0.d.ts",
+      "sha256": "57d025287dca0e27ff2a33bbe05c6fe15dc9cbdff22355fb49a50c3635c7473f"
+    },
+    {
+      "bytes": 71286,
+      "path": "package/analytic-packet-a0.js",
+      "sha256": "b7ed3208b4b2bd63b04a55bafed0f1eefa6995c65c9bbe9e8368746d92e0388d"
+    },
+    {
+      "bytes": 1738,
+      "path": "package/codec-runtime.d.ts",
+      "sha256": "1aaaeccc921b4559321254b9f338d12a72487a27b24e99ef23d347b1eb6777f1"
+    },
+    {
+      "bytes": 12163,
+      "path": "package/codec-runtime.js",
+      "sha256": "920ccc3efa0f2e9b8ca8a7bd705c44ef71c5470af12edc0685f6349a14a23950"
+    },
+    {
+      "bytes": 2608,
+      "path": "package/generated/codecs.d.ts",
+      "sha256": "aad6192e1244ad508722f32e19f72614c9cfeeb1f21eb433a6dfafe948fd437b"
+    },
+    {
+      "bytes": 36559,
+      "path": "package/generated/codecs.js",
+      "sha256": "27ca58f7109a2695a6bde04932c4d96fedc35698e1b4ea0de4db22c84d628e3c"
+    },
+    {
+      "bytes": 18887,
+      "path": "package/generated/contracts.d.ts",
+      "sha256": "9c5f6db66761ace2642d0df046ec45f1573d47e9f219b4e59add79ea4cefe86d"
+    },
+    {
+      "bytes": 80,
+      "path": "package/generated/contracts.js",
+      "sha256": "be2d7fa9a067f2e7d0c58386dae375226b62769782457cada96a0118ec13d341"
+    },
+    {
+      "bytes": 94,
+      "path": "package/generated/index.d.ts",
+      "sha256": "e7205fa213f0066b84fe64471f74d16c1b0587595bf94770b6aa66134b0a9976"
+    },
+    {
+      "bytes": 163,
+      "path": "package/generated/index.js",
+      "sha256": "6e4731631af8b7473f72ecb2d014453cfa89d93f2b3d4b4b6a14f7d9be60145a"
+    },
+    {
+      "bytes": 2552,
+      "path": "package/generated/operations.d.ts",
+      "sha256": "4930a79ee8737f658c6a1f7f363c1ef1b3fd8a9037537717f1d807fe0f090a6a"
+    },
+    {
+      "bytes": 2152,
+      "path": "package/generated/operations.js",
+      "sha256": "7d220a9179f86099955ef7139fc693ea6f4405331b9ae2ff8ac1f3811811bae1"
+    },
+    {
+      "bytes": 135,
+      "path": "package/index.d.ts",
+      "sha256": "ecc10729481b0b93dff5cdc71dc427622fe784d2d902fe8658b215312106cb5e"
+    },
+    {
+      "bytes": 135,
+      "path": "package/index.js",
+      "sha256": "ecc10729481b0b93dff5cdc71dc427622fe784d2d902fe8658b215312106cb5e"
+    },
+    {
+      "bytes": 895,
+      "path": "package/package.json",
+      "sha256": "fe79bfe17d92c72a6e4ee873d440e700175829b8da3b46c39bdc3339d061bfff"
+    },
+    {
+      "bytes": 1934,
+      "path": "package/README.md",
+      "sha256": "01f5a2ed215a36795d69bc30becac11b8b72c183ce320dac2dad8bffd5e1c55f"
+    },
+    {
+      "bytes": 3329,
+      "path": "package/wasm.d.ts",
+      "sha256": "44ede92d71756c3e6646a08fe316147e291faf4742a78575894fcf505a5cbe28"
+    },
+    {
+      "bytes": 22303,
+      "path": "package/wasm.js",
+      "sha256": "18c6a675dbc0c3a7b3ceb02dfa97823b12b63e73f90e1dc2002371472b2979ed"
+    },
+    {
+      "bytes": 827,
+      "path": "package/worker-host.d.ts",
+      "sha256": "ffa3c1e5686bdab2b3e3236f1c3f97d0c755efc7f531cf3864d802b07e75b078"
+    },
+    {
+      "bytes": 6187,
+      "path": "package/worker-host.js",
+      "sha256": "46ea3572f5fa6217782b887bc9de706c75a0b3549a3f6baa975a4585b255ceca"
+    },
+    {
+      "bytes": 3606,
+      "path": "package/worker.d.ts",
+      "sha256": "5c8eaa0574102a43f2eb0a7ed18c1ae19c03cbca989bb600295c9b714ea440e3"
+    },
+    {
+      "bytes": 15062,
+      "path": "package/worker.js",
+      "sha256": "f3d3080343d4149dbfd2fd7945d4e628cd730e99890b9c3d9643d0371136cd7d"
+    }
+  ],
+  "schema": "wn.geometer.static_site.a0",
+  "sha256": "857b152e32cfadd7aee97458bff2487a77927de60574e4d99a093335e7f61c83"
+}

@@ -44,7 +44,7 @@ const char* operation_catalog_json()
 
 const char* normalized_contract_catalog_sha256()
 {
-    return "23fd3fdd95b69ff0d7393df79ba3917556e0bb3b50bbc1893468b339913b84c1";
+    return "4910716ad1a9d3252b362ab726534782a06d1e00b0575d0fd6f1b8b62d178311";
 }
 
 bool operation_output_attachment_declared(const std::string& operation_id,
@@ -58,6 +58,134 @@ bool operation_output_attachment_declared(const std::string& operation_id,
     (void)operation_id;
     (void)attachment_name;
     (void)media_type;
+    return false;
+}
+
+bool operation_input_attachment_declared(const std::string& operation_id,
+                                         const std::string& attachment_name,
+                                         const std::string& media_type)
+{
+    if (operation_id == "geometry.analytic_planar_boolean_batch.a0" &&
+        attachment_name == "analytic_planar_boolean_request" &&
+        media_type == "application/vnd.wavenumber.geometer.analytic-planar-boolean-request")
+        return true;
+    if (operation_id == "geometry.model_bounds.a0" && attachment_name == "model" &&
+        media_type == "application/step")
+        return true;
+    if (operation_id == "geometry.model_bounds.a0" && attachment_name == "model" &&
+        media_type == "model/step")
+        return true;
+    (void)operation_id;
+    (void)attachment_name;
+    (void)media_type;
+    return false;
+}
+
+std::size_t operation_input_attachment_max_bytes(const std::string& operation_id,
+                                                 const std::string& attachment_name)
+{
+    if (operation_id == "geometry.analytic_planar_boolean_batch.a0" &&
+        attachment_name == "analytic_planar_boolean_request")
+        return 268435456U;
+    if (operation_id == "geometry.model_bounds.a0" && attachment_name == "model")
+        return 268435456U;
+    (void)operation_id;
+    (void)attachment_name;
+    return 0U;
+}
+
+const char* operation_input_attachment_primary_media_type(const std::string& operation_id,
+                                                          const std::string& attachment_name)
+{
+    if (operation_id == "geometry.analytic_planar_boolean_batch.a0" &&
+        attachment_name == "analytic_planar_boolean_request")
+        return "application/vnd.wavenumber.geometer.analytic-planar-boolean-request";
+    if (operation_id == "geometry.model_bounds.a0" && attachment_name == "model")
+        return "application/step";
+    (void)operation_id;
+    (void)attachment_name;
+    return nullptr;
+}
+
+std::size_t operation_output_attachment_max_bytes(const std::string& operation_id,
+                                                  const std::string& attachment_name)
+{
+    if (operation_id == "geometry.analytic_planar_boolean_batch.a0" &&
+        attachment_name == "analytic_planar_boolean_result")
+        return 268435456U;
+    (void)operation_id;
+    (void)attachment_name;
+    return 0U;
+}
+
+const char* operation_output_attachment_primary_media_type(const std::string& operation_id,
+                                                           const std::string& attachment_name)
+{
+    if (operation_id == "geometry.analytic_planar_boolean_batch.a0" &&
+        attachment_name == "analytic_planar_boolean_result")
+        return "application/vnd.wavenumber.geometer.analytic-planar-boolean-result";
+    (void)operation_id;
+    (void)attachment_name;
+    return nullptr;
+}
+
+const char* operation_request_contract(const std::string& operation_id)
+{
+    if (operation_id == "geometry.analytic_planar_boolean_batch.a0")
+        return "geometry.analytic_planar_boolean_batch.request.a0";
+    if (operation_id == "geometry.model_bounds.a0")
+        return "geometry.model_bounds.options.a0";
+    return nullptr;
+}
+
+bool operation_request_projection(const std::string& operation_id, const char** attachment_name,
+                                  const char** format)
+{
+    if (attachment_name == nullptr || format == nullptr)
+        return false;
+    if (operation_id == "geometry.analytic_planar_boolean_batch.a0")
+    {
+        *attachment_name = "analytic_planar_boolean_request";
+        *format = "geometry.analytic_planar_boolean.packet.a0";
+        return true;
+    }
+    *attachment_name = nullptr;
+    *format = nullptr;
+    return false;
+}
+
+const char* operation_result_contract(const std::string& operation_id)
+{
+    if (operation_id == "geometry.analytic_planar_boolean_batch.a0")
+        return "geometry.analytic_planar_boolean_batch.result.a0";
+    if (operation_id == "geometry.model_bounds.a0")
+        return "geometry.model_bounds.a0";
+    return nullptr;
+}
+
+bool operation_result_projection(const std::string& operation_id, const char** attachment_name,
+                                 const char** format)
+{
+    if (attachment_name == nullptr || format == nullptr)
+        return false;
+    if (operation_id == "geometry.analytic_planar_boolean_batch.a0")
+    {
+        *attachment_name = "analytic_planar_boolean_result";
+        *format = "geometry.analytic_planar_boolean.packet.a0";
+        return true;
+    }
+    *attachment_name = nullptr;
+    *format = nullptr;
+    return false;
+}
+
+bool operation_logical_result_matches(const std::string& operation_id,
+                                      const contracts::OperationResultValueA0& result)
+{
+    if (operation_id == "geometry.model_bounds.a0")
+        return std::holds_alternative<contracts::ModelBoundsResultA0>(result);
+    (void)operation_id;
+    (void)result;
     return false;
 }
 

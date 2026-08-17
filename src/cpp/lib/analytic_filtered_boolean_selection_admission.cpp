@@ -33,7 +33,8 @@ std::uint64_t shared_exact_endpoints(const AnalyticAtomicCurveNm& left,
 SelectionAdmission prepare_boolean_selection_admission(
     const AnalyticRequestPacketRecords& records, std::uint32_t job_index,
     const AnalyticFilteredGeometry& geometry, const std::vector<AnalyticCurvePair>& candidate_pairs,
-    const AnalyticSolverLimits& limits, const SelectionAdmissionOptions& options)
+    const AnalyticSolverLimits& limits, const SelectionAdmissionOptions& options,
+    analytic_execution_detail::TopologyPolicy policy)
 {
     SelectionAdmission admission;
     AnalyticFilteredBooleanSelectionResult& preflight = admission.result;
@@ -173,8 +174,8 @@ SelectionAdmission prepare_boolean_selection_admission(
     }
 
     AnalyticFilteredArrangementMinimumRequirements arrangement_minimum;
-    if (!estimate_analytic_filtered_arrangement_minimum_requirements(
-            geometry, candidate_pairs.size(), arrangement_minimum))
+    if (!analytic_execution_detail::estimate_arrangement_minimum_requirements(
+            geometry, candidate_pairs.size(), arrangement_minimum, policy))
     {
         preflight.error = AnalyticFilteredBooleanSelectionError::invalid_argument;
         return admission;
@@ -669,8 +670,8 @@ SelectionAdmission prepare_boolean_selection_admission(
     AnalyticSolverLimits arrangement_limits = limits;
     arrangement_limits.predicate_calls =
         remaining_work - selection_work - material_regions_work - lineage_work - outcomes_work;
-    AnalyticFilteredArrangementResult arrangement =
-        build_analytic_filtered_arrangement(geometry, candidate_pairs, arrangement_limits);
+    AnalyticFilteredArrangementResult arrangement = analytic_execution_detail::build_arrangement(
+        geometry, candidate_pairs, arrangement_limits, policy);
     if (arrangement.error != AnalyticFilteredArrangementError::none)
     {
         preflight.error = arrangement.error == AnalyticFilteredArrangementError::invalid_argument

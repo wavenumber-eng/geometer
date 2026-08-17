@@ -1,6 +1,7 @@
 #include "geometer/analytic_filtered_arrangement.h"
 
 #include "analytic_filtered_capacity.h"
+#include "analytic_filtered_execution_policy.h"
 #include "analytic_filtered_interval.h"
 #include "analytic_interval_index.h"
 
@@ -294,9 +295,17 @@ bool same_singleton_point(const AnalyticFilteredPointNm& left,
            left.x.lower == right.x.lower && left.y.lower == right.y.lower;
 }
 
-bool endpoint_can_join_cluster(const VertexCluster& cluster,
-                               const EndpointRecord& endpoint) noexcept
+bool endpoint_can_join_cluster(const VertexCluster& cluster, const EndpointRecord& endpoint,
+                               analytic_execution_detail::TopologyPolicy policy) noexcept
 {
+    if (!analytic_execution_detail::allows_resolution_topology(policy))
+    {
+        if (same_singleton_point(cluster.hull, endpoint.point))
+            return true;
+        return cluster.endpoint_authoritative_curve != 0 &&
+               cluster.endpoint_authoritative_curve == endpoint.endpoint_authoritative_curve &&
+               same_point_enclosure(cluster.hull, endpoint.point);
+    }
     if (cluster.endpoint_authoritative_curve == 0 && endpoint.endpoint_authoritative_curve == 0)
         return complete_points_within_resolution(cluster.hull, endpoint.point);
     if (cluster.endpoint_authoritative_curve != 0 &&
@@ -306,12 +315,15 @@ bool endpoint_can_join_cluster(const VertexCluster& cluster,
     return same_singleton_point(cluster.hull, endpoint.point);
 }
 
-bool curve_guarantees_overlay_span(const AnalyticAtomicCurveNm& curve) noexcept
+bool curve_guarantees_overlay_span(const AnalyticAtomicCurveNm& curve,
+                                   analytic_execution_detail::TopologyPolicy policy) noexcept
 {
     if (!valid_point(curve.start) || !valid_point(curve.end))
         return false;
     return (curve.kind == AnalyticAtomicCurveKind::circular_arc && curve.major_arc) ||
-           !complete_points_within_resolution(curve.start, curve.end);
+           (!analytic_execution_detail::allows_resolution_topology(policy)
+                ? !same_singleton_point(curve.start, curve.end)
+                : !complete_points_within_resolution(curve.start, curve.end));
 }
 
 struct GuaranteedCarrierCounts
@@ -326,7 +338,8 @@ struct GuaranteedCarrierCounts
 };
 
 bool guaranteed_carrier_counts(const AnalyticFilteredGeometry& geometry,
-                               GuaranteedCarrierCounts& counts) noexcept
+                               GuaranteedCarrierCounts& counts,
+                               analytic_execution_detail::TopologyPolicy policy) noexcept
 {
     counts = {};
     if (geometry.curves.size() != geometry.bounds.size() ||
@@ -365,16 +378,21 @@ bool guaranteed_carrier_counts(const AnalyticFilteredGeometry& geometry,
         counts.possible_base_memberships =
             checked_add(counts.possible_base_memberships,
                         curve.kind == AnalyticAtomicCurveKind::circular_arc ? 3 : 1, count_valid);
-        counts.possible_collapsed_domains = checked_add(
-            counts.possible_collapsed_domains,
-            complete_points_within_resolution(curve.start, curve.end) ? 1 : 0, count_valid);
+        counts.possible_collapsed_domains =
+            checked_add(counts.possible_collapsed_domains,
+                        (analytic_execution_detail::allows_resolution_topology(policy)
+                             ? complete_points_within_resolution(curve.start, curve.end)
+                             : same_singleton_point(curve.start, curve.end))
+                            ? 1
+                            : 0,
+                        count_valid);
         counts.possible_circular_carrier_groups =
             checked_add(counts.possible_circular_carrier_groups,
                         curve.kind == AnalyticAtomicCurveKind::circular_arc ? 1 : 0, count_valid);
         if (!count_valid)
             return false;
         const std::uint64_t carrier = curve.construction_carrier_id;
-        const bool guarantees_span = curve_guarantees_overlay_span(curve);
+        const bool guarantees_span = curve_guarantees_overlay_span(curve, policy);
         if (dense)
         {
             if (carrier == dense_maximum + 1)
@@ -406,9 +424,12 @@ bool guaranteed_carrier_counts(const AnalyticFilteredGeometry& geometry,
                 separated_collapsed = false;
             else if (index != 0)
             {
-                const double separated = std::nextafter(
-                    previous_maximum_x + static_cast<double>(kAnalyticTopologyResolutionNm),
-                    std::numeric_limits<double>::infinity());
+                const double expansion =
+                    analytic_execution_detail::allows_resolution_topology(policy)
+                        ? static_cast<double>(kAnalyticTopologyResolutionNm)
+                        : 0.0;
+                const double separated = std::nextafter(previous_maximum_x + expansion,
+                                                        std::numeric_limits<double>::infinity());
                 if (!(separated < bounds.min_x))
                     separated_collapsed = false;
             }
@@ -477,16 +498,20 @@ AnalyticFilteredPointNm point_hull(const AnalyticFilteredPointNm& left,
             column};
 }
 
-double expanded_lower(double value) noexcept
+double expanded_lower(double value, analytic_execution_detail::TopologyPolicy policy) noexcept
 {
-    return std::nextafter(value - static_cast<double>(kAnalyticTopologyResolutionNm),
-                          -std::numeric_limits<double>::infinity());
+    const double expansion = analytic_execution_detail::allows_resolution_topology(policy)
+                                 ? static_cast<double>(kAnalyticTopologyResolutionNm)
+                                 : 0.0;
+    return std::nextafter(value - expansion, -std::numeric_limits<double>::infinity());
 }
 
-double expanded_upper(double value) noexcept
+double expanded_upper(double value, analytic_execution_detail::TopologyPolicy policy) noexcept
 {
-    return std::nextafter(value + static_cast<double>(kAnalyticTopologyResolutionNm),
-                          std::numeric_limits<double>::infinity());
+    const double expansion = analytic_execution_detail::allows_resolution_topology(policy)
+                                 ? static_cast<double>(kAnalyticTopologyResolutionNm)
+                                 : 0.0;
+    return std::nextafter(value + expansion, std::numeric_limits<double>::infinity());
 }
 
 double approximate_angle_key(double x, double y) noexcept
@@ -669,8 +694,9 @@ class ArrangementBuilder
   public:
     ArrangementBuilder(const AnalyticFilteredGeometry& geometry,
                        const AnalyticFilteredOverlayResult& overlay, AnalyticSolverLimits limits,
-                       std::uint64_t admission_work_units)
-        : geometry_(geometry), overlay_(overlay), limits_(limits)
+                       std::uint64_t admission_work_units,
+                       analytic_execution_detail::TopologyPolicy policy)
+        : geometry_(geometry), overlay_(overlay), limits_(limits), policy_(policy)
     {
         result_.telemetry.admission_work_units = admission_work_units;
         result_.telemetry.input_spans = overlay.spans.size();
@@ -904,8 +930,11 @@ class ArrangementBuilder
             {
                 const AnalyticAtomicCurveNm& curve = geometry_.curves[curve_offset];
                 const AnalyticFilteredPointNm representative = point_hull(curve.start, curve.end);
-                if (!complete_points_within_resolution(curve.start, curve.end) ||
-                    !valid_point(representative))
+                const bool collapsed =
+                    analytic_execution_detail::allows_resolution_topology(policy_)
+                        ? complete_points_within_resolution(curve.start, curve.end)
+                        : same_singleton_point(curve.start, curve.end);
+                if (!collapsed || !valid_point(representative))
                     return fail(AnalyticFilteredArrangementError::invalid_argument);
                 collapsed_curve_indices_.push_back(curve_offset);
             }
@@ -961,7 +990,7 @@ class ArrangementBuilder
         clusters_.reserve(endpoint_count);
         for (const EndpointRecord& endpoint : endpoints_)
         {
-            const double minimum_x = expanded_lower(endpoint.point.x.lower);
+            const double minimum_x = expanded_lower(endpoint.point.x.lower, policy_);
             while (expiry_size != 0 && expiry[0].maximum_x < minimum_x)
             {
                 std::pop_heap(expiry.get(), expiry.get() + expiry_size, ExpiryLater{});
@@ -972,12 +1001,13 @@ class ArrangementBuilder
             std::uint32_t selected = kNoIndex;
             const std::uint64_t visits_before = result_.telemetry.predicate_calls;
             const bool completed = index.query(
-                expanded_lower(endpoint.point.y.lower), expanded_upper(endpoint.point.y.upper),
-                result_.telemetry.predicate_calls, limits_.predicate_calls,
+                expanded_lower(endpoint.point.y.lower, policy_),
+                expanded_upper(endpoint.point.y.upper, policy_), result_.telemetry.predicate_calls,
+                limits_.predicate_calls,
                 [&](std::size_t payload, std::uint32_t)
                 {
                     const std::uint32_t cluster = static_cast<std::uint32_t>(payload);
-                    if (endpoint_can_join_cluster(clusters_[cluster], endpoint))
+                    if (endpoint_can_join_cluster(clusters_[cluster], endpoint, policy_))
                         selected = std::min(selected, cluster);
                     return true;
                 });
@@ -999,7 +1029,7 @@ class ArrangementBuilder
                 if (!index.insert(endpoint.point.y.lower, endpoint.point.y.upper, selected,
                                   selected + 1))
                     return fail(AnalyticFilteredArrangementError::resource_limit_exceeded);
-                expiry[expiry_size++] = {expanded_upper(endpoint.point.x.upper),
+                expiry[expiry_size++] = {expanded_upper(endpoint.point.x.upper, policy_),
                                          endpoint.point.y.lower, selected};
                 std::push_heap(expiry.get(), expiry.get() + expiry_size, ExpiryLater{});
             }
@@ -1451,6 +1481,7 @@ class ArrangementBuilder
     const AnalyticFilteredGeometry& geometry_;
     const AnalyticFilteredOverlayResult& overlay_;
     AnalyticSolverLimits limits_;
+    analytic_execution_detail::TopologyPolicy policy_;
     AnalyticFilteredArrangementResult result_;
     std::vector<EndpointRecord> endpoints_;
     std::vector<std::uint32_t> endpoint_vertices_;
@@ -1472,13 +1503,13 @@ static_assert(sizeof(AnalyticArrangementCycle) <= kCycleLogicalBytes);
 
 } // namespace
 
-bool estimate_analytic_filtered_arrangement_minimum_requirements(
+bool analytic_execution_detail::estimate_arrangement_minimum_requirements(
     const AnalyticFilteredGeometry& geometry, std::uint64_t pair_count,
-    AnalyticFilteredArrangementMinimumRequirements& requirements) noexcept
+    AnalyticFilteredArrangementMinimumRequirements& requirements, TopologyPolicy policy) noexcept
 {
     requirements = {};
     GuaranteedCarrierCounts guaranteed;
-    if (!guaranteed_carrier_counts(geometry, guaranteed))
+    if (!guaranteed_carrier_counts(geometry, guaranteed, policy))
         return false;
     requirements.guaranteed_spans = guaranteed.spans;
     requirements.guaranteed_collapsed_vertices = guaranteed.collapsed_vertices;
@@ -1489,6 +1520,14 @@ bool estimate_analytic_filtered_arrangement_minimum_requirements(
     return calculate_arrangement_minimum_requirements(geometry, pair_count, guaranteed,
                                                       requirements.working_memory_bytes,
                                                       requirements.predicate_calls);
+}
+
+bool estimate_analytic_filtered_arrangement_minimum_requirements(
+    const AnalyticFilteredGeometry& geometry, std::uint64_t pair_count,
+    AnalyticFilteredArrangementMinimumRequirements& requirements) noexcept
+{
+    return analytic_execution_detail::estimate_arrangement_minimum_requirements(
+        geometry, pair_count, requirements, analytic_execution_detail::kDefaultTopologyPolicy);
 }
 
 bool analytic_detail::estimate_analytic_filtered_arrangement_possible_memory(
@@ -1534,10 +1573,9 @@ bool analytic_detail::estimate_analytic_filtered_arrangement_possible_memory(
     return valid;
 }
 
-AnalyticFilteredArrangementResult
-build_analytic_filtered_arrangement(const AnalyticFilteredGeometry& geometry,
-                                    const std::vector<AnalyticCurvePair>& candidate_pairs,
-                                    const AnalyticSolverLimits& limits)
+AnalyticFilteredArrangementResult analytic_execution_detail::build_arrangement(
+    const AnalyticFilteredGeometry& geometry, const std::vector<AnalyticCurvePair>& candidate_pairs,
+    const AnalyticSolverLimits& limits, TopologyPolicy policy)
 {
     AnalyticFilteredArrangementResult preflight;
     if (!analytic_solver_limits_within_hard_ceilings(limits) ||
@@ -1562,7 +1600,7 @@ build_analytic_filtered_arrangement(const AnalyticFilteredGeometry& geometry,
     preflight.telemetry.admission_work_units = admission_work;
     preflight.telemetry.predicate_calls = admission_work;
     GuaranteedCarrierCounts guaranteed;
-    if (!guaranteed_carrier_counts(geometry, guaranteed))
+    if (!guaranteed_carrier_counts(geometry, guaranteed, policy))
     {
         preflight.error = AnalyticFilteredArrangementError::invalid_argument;
         return preflight;
@@ -1592,7 +1630,7 @@ build_analytic_filtered_arrangement(const AnalyticFilteredGeometry& geometry,
     AnalyticSolverLimits overlay_limits = limits;
     overlay_limits.predicate_calls = remaining_work;
     const AnalyticFilteredOverlayResult overlay =
-        build_analytic_filtered_overlay(geometry, candidate_pairs, overlay_limits);
+        build_overlay(geometry, candidate_pairs, overlay_limits, policy);
     if (overlay.error != AnalyticFilteredOverlayError::none)
     {
         AnalyticFilteredArrangementResult result;
@@ -1610,7 +1648,16 @@ build_analytic_filtered_arrangement(const AnalyticFilteredGeometry& geometry,
         result.telemetry.algebraic_fallback_calls = overlay.telemetry.algebraic_fallback_calls;
         return result;
     }
-    return ArrangementBuilder(geometry, overlay, limits, admission_work).build();
+    return ArrangementBuilder(geometry, overlay, limits, admission_work, policy).build();
+}
+
+AnalyticFilteredArrangementResult
+build_analytic_filtered_arrangement(const AnalyticFilteredGeometry& geometry,
+                                    const std::vector<AnalyticCurvePair>& candidate_pairs,
+                                    const AnalyticSolverLimits& limits)
+{
+    return analytic_execution_detail::build_arrangement(
+        geometry, candidate_pairs, limits, analytic_execution_detail::kDefaultTopologyPolicy);
 }
 
 } // namespace geometer

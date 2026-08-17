@@ -1068,6 +1068,13 @@ Geometer proposal, not the original consumer packet.
   indexed published-geometry relationship evaluator. Native/WASM parity and
   mixed success/failure, annular hierarchy, local-ID collision, exact/one-short,
   and many-job scaling fixtures gate this internal slice.
+- Private strict-published-geometry execution is implemented through broad
+  phase, narrow phase, overlay, arrangement, Boolean selection, and material
+  regions. It preserves public 50 nm behavior while disabling any second
+  topology repair for already normalized relationship inputs; exact singleton
+  or trusted construction-root identities still merge, and unresolved
+  equality/order fails closed. Policy-aware admission and exact/one-short
+  budgets plus native/WASM strict fixtures gate this infrastructure slice.
 - Native and WASM exact/algebraic sources now build only in the
   `geometer_exact_feasibility` test target. The production `geometer_lib` source
   list and include path exclude the exact backend while oracle and differential

@@ -60,6 +60,14 @@ engine.
   telemetry, and include sparse 1x/2x scaling tests. A genuinely dense output
   may require quadratic work in its reported examined-pair count; it must terminate
   at a job-local budget instead of degrading without a bound.
+- Relationship evaluation over already published result geometry uses a
+  private strict execution policy through broad phase, narrow phase, overlay,
+  arrangement, face selection, and material-region construction. That policy
+  does not spend the 50 nm topology-resolution allowance a second time: only
+  exact singleton endpoints or trusted equal construction roots merge, while
+  unresolved ordering, equality, or carrier predicates fail the invocation.
+  Existing public solver entry points retain the normal 50 nm policy, and the
+  strict policy is not caller programmable.
 - The narrow phase is a focused Geometer-owned C++17 module. It consumes only
   canonical pairs supplied by the broad phase and performs constant carrier
   and finite-domain work for each pair; it has no internal all-curves loop,

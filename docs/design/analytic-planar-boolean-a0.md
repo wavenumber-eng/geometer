@@ -675,6 +675,16 @@ transport projection remain subsequent stages. Exact/algebraic sources now
 build only in the `geometer_exact_feasibility` test oracle; ordinary
 `geometer_lib` no longer links them.
 
+The internal pipeline now also carries a private strict-published-geometry
+policy from broad phase through material-region construction. It disables the
+50 nm broad-phase expansion, near-root/domain collapse, overlay event merge,
+and arrangement endpoint reconciliation so relationship evaluation cannot
+spend a second topology-repair allowance on already normalized geometry.
+Exact singleton endpoints and trusted endpoint-authoritative construction
+roots still reconcile; unresolved equality or ordering fails closed. Public
+entry points continue to use the normal 50 nm policy. The relationship
+evaluator itself remains the next undispatched slice.
+
 Across ordered stages, the accumulator retains the resolved analytic
 arrangement and lineage. Publication to the governed nm grid occurs once after
 the final stage. Publishing an intermediate stage is forbidden because it

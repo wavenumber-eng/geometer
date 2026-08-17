@@ -710,15 +710,14 @@ static_assert(sizeof(AnalyticFilteredMaterialRegion) <= kLogicalRegionBytes);
 
 } // namespace
 
-AnalyticFilteredRegionsResult
-build_analytic_filtered_regions(const AnalyticRequestPacketRecords& records,
-                                std::uint32_t job_index, const AnalyticFilteredGeometry& geometry,
-                                const std::vector<AnalyticCurvePair>& candidate_pairs,
-                                const AnalyticSolverLimits& limits)
+AnalyticFilteredRegionsResult analytic_execution_detail::build_regions(
+    const AnalyticRequestPacketRecords& records, std::uint32_t job_index,
+    const AnalyticFilteredGeometry& geometry, const std::vector<AnalyticCurvePair>& candidate_pairs,
+    const AnalyticSolverLimits& limits, TopologyPolicy policy)
 {
     analytic_selection_detail::SelectionAdmission admission =
         analytic_selection_detail::prepare_boolean_selection_admission(
-            records, job_index, geometry, candidate_pairs, limits, {true, false});
+            records, job_index, geometry, candidate_pairs, limits, {true, false}, policy);
     const std::uint64_t reserved_work = admission.material_regions_reserved_work;
     AnalyticFilteredBooleanSelectionResult selection =
         analytic_selection_detail::finish_boolean_selection_from_admission(
@@ -743,6 +742,17 @@ build_analytic_filtered_regions(const AnalyticRequestPacketRecords& records,
         return result;
     }
     return RegionsBuilder(std::move(selection), limits, reserved_work).build();
+}
+
+AnalyticFilteredRegionsResult
+build_analytic_filtered_regions(const AnalyticRequestPacketRecords& records,
+                                std::uint32_t job_index, const AnalyticFilteredGeometry& geometry,
+                                const std::vector<AnalyticCurvePair>& candidate_pairs,
+                                const AnalyticSolverLimits& limits)
+{
+    return analytic_execution_detail::build_regions(
+        records, job_index, geometry, candidate_pairs, limits,
+        analytic_execution_detail::kDefaultTopologyPolicy);
 }
 
 namespace analytic_regions_detail

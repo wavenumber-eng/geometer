@@ -2,6 +2,7 @@
 #include "geometer/analytic_filtered_boolean_selection.h"
 #include "geometer/analytic_filtered_lowering.h"
 
+#include "analytic_filtered_execution_policy.h"
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -121,6 +122,18 @@ AnalyticFilteredBooleanSelectionResult select(const AnalyticRequestPacketRecords
     const AnalyticBroadPhaseResult broad = build_analytic_curve_candidates(geometry.bounds, limits);
     require(broad.error == AnalyticBroadPhaseError::none, "broad phase failed");
     return build_analytic_filtered_boolean_selection(records, 0, geometry, broad.pairs, limits);
+}
+
+AnalyticFilteredBooleanSelectionResult strict_select(const AnalyticRequestPacketRecords& records,
+                                                     const AnalyticFilteredGeometry& geometry,
+                                                     const AnalyticSolverLimits& limits = {})
+{
+    const AnalyticBroadPhaseResult broad = analytic_execution_detail::build_curve_candidates(
+        geometry.bounds, limits, analytic_execution_detail::kStrictPublishedGeometry);
+    require(broad.error == AnalyticBroadPhaseError::none, "strict selection broad phase failed");
+    return analytic_execution_detail::build_boolean_selection(
+        records, 0, geometry, broad.pairs, limits,
+        analytic_execution_detail::kStrictPublishedGeometry);
 }
 
 bool contains_operand(const AnalyticFilteredBooleanSelectionResult& result,
@@ -974,6 +987,50 @@ void test_collapsed_topology_is_reserved_before_arrangement()
                 " failure-admission=" + std::to_string(failure.telemetry.admission_work_units));
 }
 
+void test_strict_selection_policy_and_admission_boundaries()
+{
+    AnalyticFilteredGeometry geometry;
+    append_axis_rectangle(geometry, 1, -1000, 0, 0, 1000);
+    append_axis_rectangle(geometry, 2, 1, -1000, 1001, 0);
+    const AnalyticRequestPacketRecords records = records_for({{1, {1, 2}}});
+    const AnalyticFilteredBooleanSelectionResult baseline = strict_select(records, geometry);
+    require(baseline.error == AnalyticFilteredBooleanSelectionError::none &&
+                baseline.arrangement.vertices.size() == 8 && baseline.telemetry.material_faces == 2,
+            "strict selection policy did not preserve disjoint 1 nm geometry");
+
+    AnalyticSolverLimits exact_work = kAnalyticSolverHardLimits;
+    exact_work.predicate_calls = baseline.telemetry.predicate_calls;
+    require(strict_select(records, geometry, exact_work).error ==
+                AnalyticFilteredBooleanSelectionError::none,
+            "strict selection rejected its exact measured work boundary");
+    --exact_work.predicate_calls;
+    require(strict_select(records, geometry, exact_work).error ==
+                AnalyticFilteredBooleanSelectionError::resource_limit_exceeded,
+            "strict selection accepted a one-unit-short work boundary");
+
+    AnalyticSolverLimits exact_memory = kAnalyticSolverHardLimits;
+    exact_memory.working_memory_bytes = baseline.telemetry.peak_working_memory_bytes;
+    require(strict_select(records, geometry, exact_memory).error ==
+                AnalyticFilteredBooleanSelectionError::none,
+            "strict selection rejected its exact measured memory boundary");
+    --exact_memory.working_memory_bytes;
+    require(strict_select(records, geometry, exact_memory).error ==
+                AnalyticFilteredBooleanSelectionError::resource_limit_exceeded,
+            "strict selection accepted a one-byte-short memory boundary");
+
+    AnalyticFilteredGeometry thin;
+    append_axis_rectangle(thin, 3, 0, 0, 1, 1000);
+    AnalyticFilteredArrangementMinimumRequirements default_minimum;
+    AnalyticFilteredArrangementMinimumRequirements strict_minimum;
+    require(estimate_analytic_filtered_arrangement_minimum_requirements(thin, 0, default_minimum) &&
+                analytic_execution_detail::estimate_arrangement_minimum_requirements(
+                    thin, 0, strict_minimum, analytic_execution_detail::kStrictPublishedGeometry) &&
+                strict_minimum.guaranteed_spans > default_minimum.guaranteed_spans &&
+                strict_minimum.possible_collapsed_domains <
+                    default_minimum.possible_collapsed_domains,
+            "strict selection admission reused the default collapse estimate");
+}
+
 void test_empty_job()
 {
     const AnalyticRequestPacketRecords records = records_for({{1, {}}});
@@ -1140,6 +1197,7 @@ int main()
     test_noncanonical_candidate_pairs_are_invalid();
     test_zero_operand_stage_scans_are_metered();
     test_collapsed_topology_is_reserved_before_arrangement();
+    test_strict_selection_policy_and_admission_boundaries();
     test_empty_job();
     std::cout << "ANALYTIC_FILTERED_BOOLEAN_SELECTION_VECTOR=" << parity_vector() << '\n';
     return 0;

@@ -416,8 +416,8 @@ def test_manifest_promoted_and_candidate_surfaces_are_complete() -> None:
     assert candidate["solver_numeric_status"] == "reopened_filtered_50nm"
     assert candidate["filtered_solver_foundation"] == (
         "direct_lowering_broad_narrow_overlay_arrangement_face_selection_material_regions_"
-        "lineage_operand_outcomes_normalization_packet_assembly_and_query_free_batch_merge_"
-        "implemented_not_dispatched"
+        "lineage_operand_outcomes_normalization_packet_assembly_query_free_batch_merge_"
+        "and_strict_published_geometry_policy_implemented_not_dispatched"
     )
     assert candidate["request_contract"] == "geometry.analytic_planar_boolean_batch.request.a0"
     assert candidate["result_contract"] == "geometry.analytic_planar_boolean_batch.result.a0"
@@ -673,6 +673,10 @@ def test_filtered_solver_foundation_is_bounded_non_algebraic_and_not_dispatched(
         "topology_resolution_caller_programmable": False,
         "production_dispatch_allowed": False,
         "algebraic_fallback_hard_limit": 0,
+        "strict_policy_header": "src/cpp/lib/analytic_filtered_execution_policy.h",
+        "strict_policy": (
+            "private_published_geometry_mode_disables_50nm_topology_repair_and_fails_closed_on_unresolved_equality"
+        ),
         "limits_header": "src/cpp/lib/geometer/analytic_solver_limits.h",
         "limits_source": "src/cpp/lib/analytic_solver_limits.cpp",
         "numeric_filter_header": "src/cpp/lib/geometer/analytic_numeric_filter.h",
@@ -768,8 +772,8 @@ def test_filtered_solver_foundation_is_bounded_non_algebraic_and_not_dispatched(
             "candidate_bounded_pre_arrangement_region_phase_reservation_then_fixed_capacity_metered_traversals"
         ),
         "regions_parity_validator": "scripts/validate_analytic_filtered_regions_parity.py",
-        "regions_vector_bytes": 800,
-        "regions_vector_sha256": ("44f688506e969cbe272a608ba5f435b0bd20789884c8ae2679b0c53f7f0ac0f3"),
+        "regions_vector_bytes": 1160,
+        "regions_vector_sha256": ("835631e3af611513e05423e0b29705778e3a87fe2b53a56c4f37c3ca6bacbd9e"),
         "lineage_header": "src/cpp/lib/geometer/analytic_filtered_lineage.h",
         "lineage_source": "src/cpp/lib/analytic_filtered_lineage.cpp",
         "lineage_test": "tests/cpp/analytic_filtered_lineage_test.cpp",

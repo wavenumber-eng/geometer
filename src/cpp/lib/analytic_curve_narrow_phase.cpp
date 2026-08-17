@@ -1,6 +1,7 @@
 #include "geometer/analytic_curve_narrow_phase.h"
 
 #include "analytic_endpoint_arc_reconstruction.h"
+#include "analytic_filtered_execution_policy.h"
 #include "analytic_filtered_interval.h"
 #include "analytic_wide_integer.h"
 
@@ -459,6 +460,14 @@ bool interval_is_exact_point(Point candidate, Point endpoint) noexcept
            candidate.y.lower == endpoint.y.lower;
 }
 
+bool endpoint_is_topologically_equal(Point candidate, Point endpoint,
+                                     analytic_execution_detail::TopologyPolicy policy) noexcept
+{
+    return analytic_execution_detail::allows_resolution_topology(policy)
+               ? interval_within_resolution(candidate, endpoint)
+               : interval_is_exact_point(candidate, endpoint);
+}
+
 Interval measured_square_root(Interval value, AnalyticNarrowPhaseTelemetry& telemetry) noexcept
 {
     ++telemetry.square_root_calls;
@@ -486,7 +495,8 @@ bool circle_separation_within_resolution(Interval distance, Interval left_radius
 
 DomainResult line_domain(Point candidate, const AnalyticAtomicCurveNm& line,
                          AnalyticNarrowPhaseTelemetry& telemetry,
-                         const AnalyticSolverLimits& limits) noexcept
+                         const AnalyticSolverLimits& limits,
+                         analytic_execution_detail::TopologyPolicy policy) noexcept
 {
     if (!charge_predicate(telemetry, limits, true))
         return DomainResult::uncertain;
@@ -499,16 +509,17 @@ DomainResult line_domain(Point candidate, const AnalyticAtomicCurveNm& line,
         divide(dot(subtract(candidate, start), direction), dot(direction, direction));
     if (parameter.lower >= 0.0 && parameter.upper <= 1.0)
         return DomainResult::inside;
-    const bool within_endpoint = interval_within_resolution(candidate, point(line.start)) ||
-                                 interval_within_resolution(candidate, point(line.end));
+    const bool within_endpoint =
+        endpoint_is_topologically_equal(candidate, point(line.start), policy) ||
+        endpoint_is_topologically_equal(candidate, point(line.end), policy);
     if (parameter.upper < 0.0 || parameter.lower > 1.0)
         return within_endpoint ? DomainResult::inside_resolution : DomainResult::outside;
     return within_endpoint ? DomainResult::ambiguous_resolution : DomainResult::uncertain;
 }
 
 DomainResult arc_domain(Point candidate, const AnalyticAtomicCurveNm& arc,
-                        AnalyticNarrowPhaseTelemetry& telemetry,
-                        const AnalyticSolverLimits& limits) noexcept
+                        AnalyticNarrowPhaseTelemetry& telemetry, const AnalyticSolverLimits& limits,
+                        analytic_execution_detail::TopologyPolicy policy) noexcept
 {
     if (!charge_predicate(telemetry, limits, true))
         return DomainResult::uncertain;
@@ -530,8 +541,8 @@ DomainResult arc_domain(Point candidate, const AnalyticAtomicCurveNm& arc,
     if (!arc.major_arc)
     {
         if (from_start.upper < 0.0 || to_end.upper < 0.0)
-            return interval_within_resolution(candidate, point(arc.start)) ||
-                           interval_within_resolution(candidate, point(arc.end))
+            return endpoint_is_topologically_equal(candidate, point(arc.start), policy) ||
+                           endpoint_is_topologically_equal(candidate, point(arc.end), policy)
                        ? DomainResult::inside_resolution
                        : DomainResult::outside;
         if (from_start.lower > 0.0 && to_end.lower > 0.0)
@@ -542,24 +553,25 @@ DomainResult arc_domain(Point candidate, const AnalyticAtomicCurveNm& arc,
         if (from_start.lower > 0.0 || to_end.lower > 0.0)
             return DomainResult::inside;
         if (from_start.upper < 0.0 && to_end.upper < 0.0)
-            return interval_within_resolution(candidate, point(arc.start)) ||
-                           interval_within_resolution(candidate, point(arc.end))
+            return endpoint_is_topologically_equal(candidate, point(arc.start), policy) ||
+                           endpoint_is_topologically_equal(candidate, point(arc.end), policy)
                        ? DomainResult::inside_resolution
                        : DomainResult::outside;
     }
-    return interval_within_resolution(candidate, point(arc.start)) ||
-                   interval_within_resolution(candidate, point(arc.end))
+    return endpoint_is_topologically_equal(candidate, point(arc.start), policy) ||
+                   endpoint_is_topologically_equal(candidate, point(arc.end), policy)
                ? DomainResult::ambiguous_resolution
                : DomainResult::uncertain;
 }
 
 DomainResult curve_domain(Point candidate, const AnalyticAtomicCurveNm& curve,
                           AnalyticNarrowPhaseTelemetry& telemetry,
-                          const AnalyticSolverLimits& limits) noexcept
+                          const AnalyticSolverLimits& limits,
+                          analytic_execution_detail::TopologyPolicy policy) noexcept
 {
     return curve.kind == AnalyticAtomicCurveKind::line
-               ? line_domain(candidate, curve, telemetry, limits)
-               : arc_domain(candidate, curve, telemetry, limits);
+               ? line_domain(candidate, curve, telemetry, limits, policy)
+               : arc_domain(candidate, curve, telemetry, limits, policy);
 }
 
 AnalyticFilteredPointCurveStatus classify_point_on_valid_curve(const AnalyticAtomicCurveNm& curve,
@@ -596,8 +608,8 @@ AnalyticFilteredPointCurveStatus classify_point_on_valid_curve(const AnalyticAto
     }
 
     AnalyticNarrowPhaseTelemetry telemetry;
-    const DomainResult domain =
-        curve_domain(candidate, curve, telemetry, kAnalyticSolverHardLimits);
+    const DomainResult domain = curve_domain(candidate, curve, telemetry, kAnalyticSolverHardLimits,
+                                             analytic_execution_detail::kDefaultTopologyPolicy);
     if (domain == DomainResult::inside || domain == DomainResult::inside_resolution ||
         domain == DomainResult::ambiguous_resolution)
         return AnalyticFilteredPointCurveStatus::certified_on_domain;
@@ -699,7 +711,8 @@ ResolutionPairStatus certify_resolution_pair(Point candidate, const AnalyticAtom
 
 bool retain_point(PairWork& work, Point candidate, const AnalyticAtomicCurveNm& left,
                   const AnalyticAtomicCurveNm& right, AnalyticNarrowPhaseTelemetry& telemetry,
-                  const AnalyticSolverLimits& limits) noexcept
+                  const AnalyticSolverLimits& limits,
+                  analytic_execution_detail::TopologyPolicy policy) noexcept
 {
     if (!valid_interval(candidate.x) || !valid_interval(candidate.y) ||
         !point_interval_fits_resolution(candidate))
@@ -707,8 +720,8 @@ bool retain_point(PairWork& work, Point candidate, const AnalyticAtomicCurveNm& 
         work.uncertain = true;
         return false;
     }
-    const DomainResult left_domain = curve_domain(candidate, left, telemetry, limits);
-    const DomainResult right_domain = curve_domain(candidate, right, telemetry, limits);
+    const DomainResult left_domain = curve_domain(candidate, left, telemetry, limits, policy);
+    const DomainResult right_domain = curve_domain(candidate, right, telemetry, limits, policy);
     if (left_domain == DomainResult::uncertain || right_domain == DomainResult::uncertain)
     {
         work.uncertain = true;
@@ -807,13 +820,14 @@ bool append_authoritative_point(PairWork& work, Point candidate) noexcept
 bool append_strict_second_root(PairWork& work, Point candidate, const AnalyticAtomicCurveNm& left,
                                const AnalyticAtomicCurveNm& right,
                                AnalyticNarrowPhaseTelemetry& telemetry,
-                               const AnalyticSolverLimits& limits) noexcept
+                               const AnalyticSolverLimits& limits,
+                               analytic_execution_detail::TopologyPolicy policy) noexcept
 {
     if (!valid_interval(candidate.x) || !valid_interval(candidate.y) ||
         !point_interval_fits_resolution(candidate))
         return false;
-    const DomainResult left_domain = curve_domain(candidate, left, telemetry, limits);
-    const DomainResult right_domain = curve_domain(candidate, right, telemetry, limits);
+    const DomainResult left_domain = curve_domain(candidate, left, telemetry, limits, policy);
+    const DomainResult right_domain = curve_domain(candidate, right, telemetry, limits, policy);
     if (left_domain == DomainResult::outside || right_domain == DomainResult::outside)
         return true;
     if (left_domain == DomainResult::uncertain || right_domain == DomainResult::uncertain ||
@@ -829,7 +843,8 @@ bool append_strict_second_root(PairWork& work, Point candidate, const AnalyticAt
 PairWork intersect_endpoint_authoritative(const AnalyticAtomicCurveNm& left,
                                           const AnalyticAtomicCurveNm& right,
                                           AnalyticNarrowPhaseTelemetry& telemetry,
-                                          const AnalyticSolverLimits& limits) noexcept
+                                          const AnalyticSolverLimits& limits,
+                                          analytic_execution_detail::TopologyPolicy policy) noexcept
 {
     PairWork work;
     AnalyticIntegerPointNm shared[2]{};
@@ -901,7 +916,7 @@ PairWork intersect_endpoint_authoritative(const AnalyticAtomicCurveNm& left,
         finish_relation(work);
         return work;
     }
-    if (!append_strict_second_root(work, second, left, right, telemetry, limits))
+    if (!append_strict_second_root(work, second, left, right, telemetry, limits, policy))
     {
         work.uncertain = true;
     }
@@ -918,7 +933,8 @@ AnalyticIntegerPointNm endpoint_at_projection(const AnalyticAtomicCurveNm& curve
 
 PairWork intersect_lines(const AnalyticAtomicCurveNm& left, const AnalyticAtomicCurveNm& right,
                          AnalyticNarrowPhaseTelemetry& telemetry,
-                         const AnalyticSolverLimits& limits) noexcept
+                         const AnalyticSolverLimits& limits,
+                         analytic_execution_detail::TopologyPolicy policy) noexcept
 {
     PairWork work;
     if (!charge_predicate(telemetry, limits))
@@ -982,7 +998,8 @@ PairWork intersect_lines(const AnalyticAtomicCurveNm& left, const AnalyticAtomic
             for (const AnalyticIntegerPointNm& right_endpoint : right_endpoints)
                 if (same_point(left_endpoint, right_endpoint))
                 {
-                    retain_point(work, point(left_endpoint), left, right, telemetry, limits);
+                    retain_point(work, point(left_endpoint), left, right, telemetry, limits,
+                                 policy);
                     finish_relation(work);
                     return work;
                 }
@@ -995,7 +1012,7 @@ PairWork intersect_lines(const AnalyticAtomicCurveNm& left, const AnalyticAtomic
             const AnalyticIntegerPointNm intersection{
                 left_vertical ? left.integer_start.x : right.integer_start.x,
                 left_horizontal ? left.integer_start.y : right.integer_start.y};
-            retain_point(work, point(intersection), left, right, telemetry, limits);
+            retain_point(work, point(intersection), left, right, telemetry, limits, policy);
             finish_relation(work);
             return work;
         }
@@ -1021,14 +1038,15 @@ PairWork intersect_lines(const AnalyticAtomicCurveNm& left, const AnalyticAtomic
     }
     const Interval left_parameter = divide(cross(offset, right_direction), denominator);
     const Point intersection = add(first, scale(left_direction, left_parameter));
-    retain_point(work, intersection, left, right, telemetry, limits);
+    retain_point(work, intersection, left, right, telemetry, limits, policy);
     finish_relation(work);
     return work;
 }
 
 PairWork intersect_line_circle(const AnalyticAtomicCurveNm& line, const AnalyticAtomicCurveNm& arc,
                                AnalyticNarrowPhaseTelemetry& telemetry,
-                               const AnalyticSolverLimits& limits) noexcept
+                               const AnalyticSolverLimits& limits,
+                               analytic_execution_detail::TopologyPolicy policy) noexcept
 {
     PairWork work;
     if (!charge_predicate(telemetry, limits))
@@ -1064,6 +1082,11 @@ PairWork intersect_line_circle(const AnalyticAtomicCurveNm& line, const Analytic
     {
         const bool exact_tangent =
             certified_tangent || (height_squared.lower == 0.0 && height_squared.upper == 0.0);
+        if (!exact_tangent && !analytic_execution_detail::allows_resolution_topology(policy))
+        {
+            work.uncertain = true;
+            return work;
+        }
         const double maximum_height = measured_square_root(height_squared, telemetry).upper;
         if ((!exact_tangent &&
              2.0 * maximum_height > static_cast<double>(kAnalyticTopologyResolutionNm)) ||
@@ -1072,7 +1095,7 @@ PairWork intersect_line_circle(const AnalyticAtomicCurveNm& line, const Analytic
             work.uncertain = true;
             return work;
         }
-        retain_point(work, base, line, arc, telemetry, limits);
+        retain_point(work, base, line, arc, telemetry, limits, policy);
         if (work.value.point_count != 0)
         {
             work.value.resolution_collapsed = !exact_tangent;
@@ -1087,22 +1110,23 @@ PairWork intersect_line_circle(const AnalyticAtomicCurveNm& line, const Analytic
         measured_square_root(divide(height_squared, length_squared), telemetry);
     const Point displacement = scale(direction, scale_value);
     const double maximum_height = measured_square_root(height_squared, telemetry).upper;
-    if (2.0 * maximum_height <= static_cast<double>(kAnalyticTopologyResolutionNm))
+    if (analytic_execution_detail::allows_resolution_topology(policy) &&
+        2.0 * maximum_height <= static_cast<double>(kAnalyticTopologyResolutionNm))
     {
         if (!circle_boundary_within_resolution(base, arc.circle, telemetry))
         {
             work.uncertain = true;
             return work;
         }
-        retain_point(work, base, line, arc, telemetry, limits);
+        retain_point(work, base, line, arc, telemetry, limits, policy);
         if (work.value.point_count != 0)
             work.value.resolution_collapsed = true;
     }
     else
     {
-        retain_point(work, subtract(base, displacement), line, arc, telemetry, limits);
+        retain_point(work, subtract(base, displacement), line, arc, telemetry, limits, policy);
         if (!work.uncertain)
-            retain_point(work, add(base, displacement), line, arc, telemetry, limits);
+            retain_point(work, add(base, displacement), line, arc, telemetry, limits, policy);
     }
     work.points_share_x =
         (line.has_construction_line_direction && line.construction_line_dx == 0) ||
@@ -1114,7 +1138,8 @@ PairWork intersect_line_circle(const AnalyticAtomicCurveNm& line, const Analytic
 
 PairWork intersect_circles(const AnalyticAtomicCurveNm& left, const AnalyticAtomicCurveNm& right,
                            AnalyticNarrowPhaseTelemetry& telemetry,
-                           const AnalyticSolverLimits& limits) noexcept
+                           const AnalyticSolverLimits& limits,
+                           analytic_execution_detail::TopologyPolicy policy) noexcept
 {
     PairWork work;
     if (!charge_predicate(telemetry, limits))
@@ -1178,6 +1203,11 @@ PairWork intersect_circles(const AnalyticAtomicCurveNm& left, const AnalyticAtom
                                (height_squared.lower == 0.0 && height_squared.upper == 0.0);
     if (exact_tangent || height_squared.lower <= 0.0)
     {
+        if (!exact_tangent && !analytic_execution_detail::allows_resolution_topology(policy))
+        {
+            work.uncertain = true;
+            return work;
+        }
         const double maximum_height = measured_square_root(height_squared, telemetry).upper;
         if ((!exact_tangent &&
              (2.0 * maximum_height > static_cast<double>(kAnalyticTopologyResolutionNm) ||
@@ -1188,7 +1218,7 @@ PairWork intersect_circles(const AnalyticAtomicCurveNm& left, const AnalyticAtom
             work.uncertain = true;
             return work;
         }
-        retain_point(work, base, left, right, telemetry, limits);
+        retain_point(work, base, left, right, telemetry, limits, policy);
         if (work.value.point_count != 0)
         {
             work.value.resolution_collapsed = !exact_tangent;
@@ -1203,7 +1233,8 @@ PairWork intersect_circles(const AnalyticAtomicCurveNm& left, const AnalyticAtom
         measured_square_root(divide(height_squared, distance_squared), telemetry);
     const Point displacement = scale(perpendicular(center_delta), scale_value);
     const double maximum_height = measured_square_root(height_squared, telemetry).upper;
-    if (2.0 * maximum_height <= static_cast<double>(kAnalyticTopologyResolutionNm))
+    if (analytic_execution_detail::allows_resolution_topology(policy) &&
+        2.0 * maximum_height <= static_cast<double>(kAnalyticTopologyResolutionNm))
     {
         if (!circle_boundary_within_resolution(base, left.circle, telemetry) ||
             !circle_boundary_within_resolution(base, right.circle, telemetry))
@@ -1211,15 +1242,15 @@ PairWork intersect_circles(const AnalyticAtomicCurveNm& left, const AnalyticAtom
             work.uncertain = true;
             return work;
         }
-        retain_point(work, base, left, right, telemetry, limits);
+        retain_point(work, base, left, right, telemetry, limits, policy);
         if (work.value.point_count != 0)
             work.value.resolution_collapsed = true;
     }
     else
     {
-        retain_point(work, subtract(base, displacement), left, right, telemetry, limits);
+        retain_point(work, subtract(base, displacement), left, right, telemetry, limits, policy);
         if (!work.uncertain)
-            retain_point(work, add(base, displacement), left, right, telemetry, limits);
+            retain_point(work, add(base, displacement), left, right, telemetry, limits, policy);
     }
     work.points_share_x = (left.has_integer_certificate && right.has_integer_certificate &&
                            left.integer_center.y == right.integer_center.y) ||
@@ -1260,7 +1291,8 @@ bool valid_canonical_pair(AnalyticCurvePair pair, AnalyticCurvePair previous,
 
 PairWork dispatch_pair(const AnalyticAtomicCurveNm& left, const AnalyticAtomicCurveNm& right,
                        AnalyticCurvePair pair, AnalyticNarrowPhaseTelemetry& telemetry,
-                       const AnalyticSolverLimits& limits) noexcept
+                       const AnalyticSolverLimits& limits,
+                       analytic_execution_detail::TopologyPolicy policy) noexcept
 {
     PairWork work;
     const bool endpoint_authoritative = left.has_endpoint_authoritative_arc_certificate ||
@@ -1279,19 +1311,19 @@ PairWork dispatch_pair(const AnalyticAtomicCurveNm& left, const AnalyticAtomicCu
             ++telemetry.circle_circle_pairs;
         else
             ++telemetry.line_circle_pairs;
-        work = intersect_endpoint_authoritative(left, right, telemetry, limits);
+        work = intersect_endpoint_authoritative(left, right, telemetry, limits, policy);
     }
     else if (left.kind == AnalyticAtomicCurveKind::line &&
              right.kind == AnalyticAtomicCurveKind::line)
     {
         ++telemetry.line_line_pairs;
-        work = intersect_lines(left, right, telemetry, limits);
+        work = intersect_lines(left, right, telemetry, limits, policy);
     }
     else if (left.kind == AnalyticAtomicCurveKind::circular_arc &&
              right.kind == AnalyticAtomicCurveKind::circular_arc)
     {
         ++telemetry.circle_circle_pairs;
-        work = intersect_circles(left, right, telemetry, limits);
+        work = intersect_circles(left, right, telemetry, limits, policy);
     }
     else
     {
@@ -1300,7 +1332,7 @@ PairWork dispatch_pair(const AnalyticAtomicCurveNm& left, const AnalyticAtomicCu
             left.kind == AnalyticAtomicCurveKind::line ? left : right;
         const AnalyticAtomicCurveNm& arc =
             left.kind == AnalyticAtomicCurveKind::circular_arc ? left : right;
-        work = intersect_line_circle(line, arc, telemetry, limits);
+        work = intersect_line_circle(line, arc, telemetry, limits, policy);
     }
     work.value.pair = pair;
     if (work.value.point_count != 0)
@@ -1362,10 +1394,10 @@ classify_analytic_filtered_point_on_curve(const AnalyticAtomicCurveNm& curve,
     return classify_point_on_valid_curve(curve, point(candidate));
 }
 
-AnalyticNarrowPhaseResult
-intersect_analytic_curve_candidates(const std::vector<AnalyticAtomicCurveNm>& curves,
-                                    const std::vector<AnalyticCurvePair>& candidate_pairs,
-                                    const AnalyticSolverLimits& limits)
+AnalyticNarrowPhaseResult analytic_execution_detail::intersect_curve_candidates(
+    const std::vector<AnalyticAtomicCurveNm>& curves,
+    const std::vector<AnalyticCurvePair>& candidate_pairs, const AnalyticSolverLimits& limits,
+    TopologyPolicy policy)
 {
     AnalyticNarrowPhaseResult result;
     if (!analytic_solver_limits_within_hard_ceilings(limits))
@@ -1442,7 +1474,7 @@ intersect_analytic_curve_candidates(const std::vector<AnalyticAtomicCurveNm>& cu
         const AnalyticAtomicCurveNm& right = curves[pair.second - 1];
         result.telemetry.curve_references_resolved += 2;
         ++result.telemetry.candidate_pairs_consumed;
-        const PairWork work = dispatch_pair(left, right, pair, result.telemetry, limits);
+        const PairWork work = dispatch_pair(left, right, pair, result.telemetry, limits, policy);
         if (!append_pair_work(result, work, limits))
         {
             result.intersections.clear();
@@ -1450,6 +1482,15 @@ intersect_analytic_curve_candidates(const std::vector<AnalyticAtomicCurveNm>& cu
         }
     }
     return result;
+}
+
+AnalyticNarrowPhaseResult
+intersect_analytic_curve_candidates(const std::vector<AnalyticAtomicCurveNm>& curves,
+                                    const std::vector<AnalyticCurvePair>& candidate_pairs,
+                                    const AnalyticSolverLimits& limits)
+{
+    return analytic_execution_detail::intersect_curve_candidates(
+        curves, candidate_pairs, limits, analytic_execution_detail::kDefaultTopologyPolicy);
 }
 
 } // namespace geometer

@@ -1454,16 +1454,26 @@ analytic_selection_detail::finish_boolean_selection_from_admission(
         .build();
 }
 
+AnalyticFilteredBooleanSelectionResult analytic_execution_detail::build_boolean_selection(
+    const AnalyticRequestPacketRecords& records, std::uint32_t job_index,
+    const AnalyticFilteredGeometry& geometry, const std::vector<AnalyticCurvePair>& candidate_pairs,
+    const AnalyticSolverLimits& limits, TopologyPolicy policy)
+{
+    analytic_selection_detail::SelectionAdmission admission =
+        analytic_selection_detail::prepare_boolean_selection_admission(
+            records, job_index, geometry, candidate_pairs, limits, {}, policy);
+    return analytic_selection_detail::finish_boolean_selection_from_admission(
+        records, job_index, geometry, std::move(admission));
+}
+
 AnalyticFilteredBooleanSelectionResult build_analytic_filtered_boolean_selection(
     const AnalyticRequestPacketRecords& records, std::uint32_t job_index,
     const AnalyticFilteredGeometry& geometry, const std::vector<AnalyticCurvePair>& candidate_pairs,
     const AnalyticSolverLimits& limits)
 {
-    analytic_selection_detail::SelectionAdmission admission =
-        analytic_selection_detail::prepare_boolean_selection_admission(records, job_index, geometry,
-                                                                       candidate_pairs, limits);
-    return analytic_selection_detail::finish_boolean_selection_from_admission(
-        records, job_index, geometry, std::move(admission));
+    return analytic_execution_detail::build_boolean_selection(
+        records, job_index, geometry, candidate_pairs, limits,
+        analytic_execution_detail::kDefaultTopologyPolicy);
 }
 
 } // namespace geometer

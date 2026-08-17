@@ -2,6 +2,7 @@
 
 #include "geometer/analytic_filtered_boolean_selection.h"
 
+#include "analytic_filtered_execution_policy.h"
 #include "analytic_filtered_interval.h"
 
 #include <algorithm>
@@ -790,7 +791,9 @@ struct SelectionAdmissionOptions
 [[nodiscard]] SelectionAdmission prepare_boolean_selection_admission(
     const AnalyticRequestPacketRecords& records, std::uint32_t job_index,
     const AnalyticFilteredGeometry& geometry, const std::vector<AnalyticCurvePair>& candidate_pairs,
-    const AnalyticSolverLimits& limits, const SelectionAdmissionOptions& options = {});
+    const AnalyticSolverLimits& limits, const SelectionAdmissionOptions& options = {},
+    analytic_execution_detail::TopologyPolicy policy =
+        analytic_execution_detail::kDefaultTopologyPolicy);
 
 [[nodiscard]] AnalyticFilteredBooleanSelectionResult finish_boolean_selection_from_admission(
     const AnalyticRequestPacketRecords& records, std::uint32_t job_index,

@@ -1,6 +1,7 @@
 #include "geometer/analytic_filtered_overlay.h"
 
 #include "analytic_filtered_capacity.h"
+#include "analytic_filtered_execution_policy.h"
 #include "analytic_filtered_interval.h"
 
 #include <algorithm>
@@ -344,8 +345,9 @@ class OverlayBuilder
 {
   public:
     OverlayBuilder(const AnalyticFilteredGeometry& geometry,
-                   const AnalyticNarrowPhaseResult& narrow_phase, AnalyticSolverLimits limits)
-        : geometry_(geometry), narrow_(narrow_phase), limits_(limits)
+                   const AnalyticNarrowPhaseResult& narrow_phase, AnalyticSolverLimits limits,
+                   analytic_execution_detail::TopologyPolicy policy)
+        : geometry_(geometry), narrow_(narrow_phase), limits_(limits), policy_(policy)
     {
         result_.telemetry.narrow_phase_predicate_calls = narrow_.telemetry.predicate_calls;
         result_.telemetry.narrow_phase_peak_working_memory_bytes =
@@ -380,6 +382,14 @@ class OverlayBuilder
     }
 
   private:
+    bool event_points_are_equivalent(const AnalyticFilteredPointNm& left,
+                                     const AnalyticFilteredPointNm& right) const noexcept
+    {
+        return analytic_execution_detail::allows_resolution_topology(policy_)
+                   ? points_within_resolution(left, right)
+                   : same_singleton_point(left, right);
+    }
+
     bool fail(AnalyticFilteredOverlayError error)
     {
         result_.error = error;
@@ -950,8 +960,9 @@ class OverlayBuilder
                     if (!charge(2))
                         return false;
                     merge =
-                        points_within_resolution(unique_events_.back().proof_first, event.point) &&
-                        points_within_resolution(unique_events_.back().proof_last, event.point);
+                        event_points_are_equivalent(unique_events_.back().proof_first,
+                                                    event.point) &&
+                        event_points_are_equivalent(unique_events_.back().proof_last, event.point);
                     const bool seam_endpoint_pair =
                         (unique_events_.back().has_endpoint &&
                          (event.role == EventRole::circle_seam ||
@@ -1028,10 +1039,10 @@ class OverlayBuilder
                     geometry_.curves[group.representative_curve - 1]
                         .has_endpoint_authoritative_arc_certificate &&
                     seam_endpoint_pair && !same_singleton_point(first.point, last.point);
-                if (points_within_resolution(first.proof_first, last.proof_first) &&
-                    points_within_resolution(first.proof_first, last.proof_last) &&
-                    points_within_resolution(first.proof_last, last.proof_first) &&
-                    points_within_resolution(first.proof_last, last.proof_last) &&
+                if (event_points_are_equivalent(first.proof_first, last.proof_first) &&
+                    event_points_are_equivalent(first.proof_first, last.proof_last) &&
+                    event_points_are_equivalent(first.proof_last, last.proof_first) &&
+                    event_points_are_equivalent(first.proof_last, last.proof_last) &&
                     !retain_authoritative_seam)
                 {
                     AnalyticFilteredPointNm representative = point_hull(first.point, last.point);
@@ -1405,6 +1416,7 @@ class OverlayBuilder
     const AnalyticFilteredGeometry& geometry_;
     const AnalyticNarrowPhaseResult& narrow_;
     AnalyticSolverLimits limits_;
+    analytic_execution_detail::TopologyPolicy policy_;
     AnalyticFilteredOverlayResult result_;
     std::vector<std::uint32_t> curve_order_;
     std::vector<CarrierGroup> groups_;
@@ -1431,9 +1443,9 @@ static_assert(kCurveLogicalBytes + kGroupLogicalBytes == kAnalyticOverlayCurveGr
 } // namespace
 
 AnalyticFilteredOverlayResult
-build_analytic_filtered_overlay(const AnalyticFilteredGeometry& geometry,
-                                const std::vector<AnalyticCurvePair>& candidate_pairs,
-                                const AnalyticSolverLimits& limits)
+analytic_execution_detail::build_overlay(const AnalyticFilteredGeometry& geometry,
+                                         const std::vector<AnalyticCurvePair>& candidate_pairs,
+                                         const AnalyticSolverLimits& limits, TopologyPolicy policy)
 {
     AnalyticFilteredOverlayResult preflight;
     preflight.telemetry.input_curves = geometry.curves.size();
@@ -1478,7 +1490,7 @@ build_analytic_filtered_overlay(const AnalyticFilteredGeometry& geometry,
     }
 
     const AnalyticNarrowPhaseResult narrow_phase =
-        intersect_analytic_curve_candidates(geometry.curves, candidate_pairs, limits);
+        intersect_curve_candidates(geometry.curves, candidate_pairs, limits, policy);
     if (narrow_phase.error != AnalyticNarrowPhaseError::none)
     {
         AnalyticFilteredOverlayResult result;
@@ -1498,7 +1510,16 @@ build_analytic_filtered_overlay(const AnalyticFilteredGeometry& geometry,
         result.telemetry.algebraic_fallback_calls = narrow_phase.telemetry.algebraic_fallback_calls;
         return result;
     }
-    return OverlayBuilder(geometry, narrow_phase, limits).build();
+    return OverlayBuilder(geometry, narrow_phase, limits, policy).build();
+}
+
+AnalyticFilteredOverlayResult
+build_analytic_filtered_overlay(const AnalyticFilteredGeometry& geometry,
+                                const std::vector<AnalyticCurvePair>& candidate_pairs,
+                                const AnalyticSolverLimits& limits)
+{
+    return analytic_execution_detail::build_overlay(
+        geometry, candidate_pairs, limits, analytic_execution_detail::kDefaultTopologyPolicy);
 }
 
 } // namespace geometer

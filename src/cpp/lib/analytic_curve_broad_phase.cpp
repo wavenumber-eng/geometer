@@ -1,5 +1,6 @@
 #include "geometer/analytic_curve_broad_phase.h"
 
+#include "analytic_filtered_execution_policy.h"
 #include "analytic_interval_index.h"
 
 #include <algorithm>
@@ -105,16 +106,20 @@ double axis_max(const AnalyticCurveBoundsNm& bounds, std::uint8_t axis)
     return axis == 0 ? bounds.max_x : bounds.max_y;
 }
 
-double conservative_query_minimum(double minimum)
+double conservative_query_minimum(double minimum, analytic_execution_detail::TopologyPolicy policy)
 {
-    return std::nextafter(minimum - static_cast<double>(kAnalyticTopologyResolutionNm),
-                          -std::numeric_limits<double>::infinity());
+    const double expansion = analytic_execution_detail::allows_resolution_topology(policy)
+                                 ? static_cast<double>(kAnalyticTopologyResolutionNm)
+                                 : 0.0;
+    return std::nextafter(minimum - expansion, -std::numeric_limits<double>::infinity());
 }
 
-double conservative_query_maximum(double maximum)
+double conservative_query_maximum(double maximum, analytic_execution_detail::TopologyPolicy policy)
 {
-    return std::nextafter(maximum + static_cast<double>(kAnalyticTopologyResolutionNm),
-                          std::numeric_limits<double>::infinity());
+    const double expansion = analytic_execution_detail::allows_resolution_topology(policy)
+                                 ? static_cast<double>(kAnalyticTopologyResolutionNm)
+                                 : 0.0;
+    return std::nextafter(maximum + expansion, std::numeric_limits<double>::infinity());
 }
 
 std::vector<std::size_t> sorted_on_axis(const std::vector<AnalyticCurveBoundsNm>& bounds,
@@ -139,7 +144,8 @@ std::vector<std::size_t> sorted_on_axis(const std::vector<AnalyticCurveBoundsNm>
 }
 
 std::uint64_t axis_overlap_count(const std::vector<AnalyticCurveBoundsNm>& bounds,
-                                 const std::vector<std::size_t>& order, std::uint8_t axis)
+                                 const std::vector<std::size_t>& order, std::uint8_t axis,
+                                 analytic_execution_detail::TopologyPolicy policy)
 {
     std::vector<double> ordered_ends;
     ordered_ends.reserve(order.size());
@@ -152,7 +158,7 @@ std::uint64_t axis_overlap_count(const std::vector<AnalyticCurveBoundsNm>& bound
     for (std::size_t position = 0; position < order.size(); ++position)
     {
         const double query_minimum =
-            conservative_query_minimum(axis_min(bounds[order[position]], axis));
+            conservative_query_minimum(axis_min(bounds[order[position]], axis), policy);
         while (expired < position && ordered_ends[expired] < query_minimum)
             ++expired;
         const std::uint64_t active_count = position - expired;
@@ -265,8 +271,9 @@ AnalyticBroadPhaseResult failure(AnalyticBroadPhaseError error,
 } // namespace
 
 AnalyticBroadPhaseResult
-build_analytic_curve_candidates(const std::vector<AnalyticCurveBoundsNm>& bounds,
-                                const AnalyticSolverLimits& limits)
+analytic_execution_detail::build_curve_candidates(const std::vector<AnalyticCurveBoundsNm>& bounds,
+                                                  const AnalyticSolverLimits& limits,
+                                                  TopologyPolicy policy)
 {
     AnalyticBroadPhaseTelemetry telemetry;
     telemetry.input_curves = bounds.size();
@@ -309,8 +316,8 @@ build_analytic_curve_candidates(const std::vector<AnalyticCurveBoundsNm>& bounds
     {
         std::vector<std::size_t> x_order = sorted_on_axis(bounds, 0, telemetry.sort_comparisons);
         std::vector<std::size_t> y_order = sorted_on_axis(bounds, 1, telemetry.sort_comparisons);
-        const std::uint64_t x_pairs = axis_overlap_count(bounds, x_order, 0);
-        const std::uint64_t y_pairs = axis_overlap_count(bounds, y_order, 1);
+        const std::uint64_t x_pairs = axis_overlap_count(bounds, x_order, 0, policy);
+        const std::uint64_t y_pairs = axis_overlap_count(bounds, y_order, 1, policy);
         telemetry.primary_axis = y_pairs < x_pairs ? 1 : 0;
         telemetry.primary_axis_pairs = telemetry.primary_axis == 0 ? x_pairs : y_pairs;
         order = telemetry.primary_axis == 0 ? std::move(x_order) : std::move(y_order);
@@ -327,7 +334,7 @@ build_analytic_curve_candidates(const std::vector<AnalyticCurveBoundsNm>& bounds
     {
         const AnalyticCurveBoundsNm& current = bounds[current_index];
         const double primary_query_minimum =
-            conservative_query_minimum(axis_min(current, telemetry.primary_axis));
+            conservative_query_minimum(axis_min(current, telemetry.primary_axis), policy);
         while (expiry_size != 0 && expiry[0].primary_maximum < primary_query_minimum)
         {
             std::pop_heap(expiry.get(), expiry.get() + expiry_size, ExpiryLater{});
@@ -337,9 +344,9 @@ build_analytic_curve_candidates(const std::vector<AnalyticCurveBoundsNm>& bounds
 
         std::uint64_t query_node_visits = 0;
         const bool query_completed = secondary_index.query(
-            conservative_query_minimum(axis_min(current, secondary_axis)),
-            conservative_query_maximum(axis_max(current, secondary_axis)), query_node_visits,
-            work.remaining() / 2,
+            conservative_query_minimum(axis_min(current, secondary_axis), policy),
+            conservative_query_maximum(axis_max(current, secondary_axis), policy),
+            query_node_visits, work.remaining() / 2,
             [&](std::size_t other_index, std::uint32_t other_curve_index)
             {
                 if (telemetry.examined_curve_pairs == limits.examined_curve_pairs ||
@@ -392,6 +399,14 @@ build_analytic_curve_candidates(const std::vector<AnalyticCurveBoundsNm>& bounds
     result.pairs = std::move(pairs);
     result.telemetry = telemetry;
     return result;
+}
+
+AnalyticBroadPhaseResult
+build_analytic_curve_candidates(const std::vector<AnalyticCurveBoundsNm>& bounds,
+                                const AnalyticSolverLimits& limits)
+{
+    return analytic_execution_detail::build_curve_candidates(
+        bounds, limits, analytic_execution_detail::kDefaultTopologyPolicy);
 }
 
 } // namespace geometer

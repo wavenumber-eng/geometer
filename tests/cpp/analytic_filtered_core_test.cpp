@@ -1,5 +1,7 @@
 #include "geometer/analytic_curve_broad_phase.h"
 #include "geometer/analytic_curve_narrow_phase.h"
+
+#include "analytic_filtered_execution_policy.h"
 #include "geometer/analytic_numeric_filter.h"
 #include "geometer/analytic_solver_limits.h"
 
@@ -829,6 +831,24 @@ void test_narrow_phase_tangent_certificates_and_root_threshold()
                 circle_height_26.intersections[0].relation == AnalyticPairRelation::two_points &&
                 !circle_height_26.intersections[0].resolution_collapsed,
             "circle roots 50 nm apart may collapse but roots 52 nm apart must survive");
+
+    const AnalyticNarrowPhaseResult strict_line_height_25 =
+        analytic_execution_detail::intersect_curve_candidates(
+            {line(1, -100, 60, 100, 60), arc(2, 65, 0, -65, 0, 0, 0, 65, true)}, {{1, 2}},
+            kAnalyticSolverHardLimits, analytic_execution_detail::kStrictPublishedGeometry);
+    const AnalyticNarrowPhaseResult strict_circle_height_25 =
+        analytic_execution_detail::intersect_curve_candidates(
+            {arc(1, 0, -65, 0, 65, 0, 0, 65, true), arc(2, 120, 65, 120, -65, 120, 0, 65, true)},
+            {{1, 2}}, kAnalyticSolverHardLimits,
+            analytic_execution_detail::kStrictPublishedGeometry);
+    require(
+        strict_line_height_25.error == AnalyticNarrowPhaseError::none &&
+            strict_line_height_25.intersections[0].relation == AnalyticPairRelation::two_points &&
+            !strict_line_height_25.intersections[0].resolution_collapsed &&
+            strict_circle_height_25.error == AnalyticNarrowPhaseError::none &&
+            strict_circle_height_25.intersections[0].relation == AnalyticPairRelation::two_points &&
+            !strict_circle_height_25.intersections[0].resolution_collapsed,
+        "strict published geometry collapsed distinct near-tangent roots");
 }
 
 void test_narrow_phase_arc_domains_and_contacts()

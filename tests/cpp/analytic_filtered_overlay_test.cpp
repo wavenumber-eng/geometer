@@ -1,6 +1,7 @@
 #include "geometer/analytic_filtered_overlay.h"
 
 #include "analytic_endpoint_arc_reconstruction.h"
+#include "analytic_filtered_execution_policy.h"
 
 #include <algorithm>
 #include <cstdint>
@@ -204,11 +205,32 @@ void test_endpoint_partition_tokens_are_canonical()
     require(build_analytic_filtered_overlay(geometry, {}).error ==
                 AnalyticFilteredOverlayError::none,
             "canonical endpoint/cardinal correlation groups were rejected");
+    require(analytic_execution_detail::build_overlay(
+                geometry, {}, kAnalyticSolverHardLimits,
+                analytic_execution_detail::kStrictPublishedGeometry)
+                    .error == AnalyticFilteredOverlayError::none,
+            "strict overlay rejected trusted endpoint-authoritative construction roots");
 
     geometry.curves[0].start.construction_x_column_id = kAnalyticEndpointArcRightColumnTag;
     require(build_analytic_filtered_overlay(geometry, {}).error ==
                 AnalyticFilteredOverlayError::invalid_argument,
             "a zero-payload endpoint/cardinal token must be rejected");
+}
+
+void test_strict_unresolved_event_equality_fails_closed()
+{
+    AnalyticFilteredGeometry geometry;
+    AnalyticAtomicCurveNm first = line(1, 0, 0, 1000, 0, 10);
+    AnalyticAtomicCurveNm second = line(2, 1000, 0, 2000, 0, 10);
+    first.end = interval_point(1000, 0, 0.5);
+    second.start = interval_point(1000, 0, 0.5);
+    append_curve(geometry, first, occurrence(1));
+    append_curve(geometry, second, occurrence(2));
+    const AnalyticFilteredOverlayResult result = analytic_execution_detail::build_overlay(
+        geometry, {}, kAnalyticSolverHardLimits,
+        analytic_execution_detail::kStrictPublishedGeometry);
+    require(result.error == AnalyticFilteredOverlayError::resource_limit_exceeded,
+            "strict overlay guessed equality for unresolved filtered events");
 }
 
 AnalyticFilteredOverlayResult diagonal_endpoint_pair(double offset)
@@ -660,6 +682,7 @@ int main()
     test_partial_line_overlap_and_orientation();
     test_resolution_merge_threshold();
     test_endpoint_partition_tokens_are_canonical();
+    test_strict_unresolved_event_equality_fails_closed();
     test_integrated_pair_resolution_boundary();
     test_crossing_split_events();
     test_circle_seam_and_coincident_arcs();

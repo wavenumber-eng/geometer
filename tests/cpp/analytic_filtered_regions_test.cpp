@@ -1,6 +1,7 @@
 #include "geometer/analytic_curve_broad_phase.h"
 #include "geometer/analytic_filtered_regions.h"
 
+#include "analytic_filtered_execution_policy.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
@@ -125,6 +126,18 @@ AnalyticFilteredRegionsResult build(const AnalyticRequestPacketRecords& records,
     return build_analytic_filtered_regions(records, 0, geometry, broad.pairs, limits);
 }
 
+AnalyticFilteredRegionsResult strict_build(const AnalyticRequestPacketRecords& records,
+                                           const AnalyticFilteredGeometry& geometry,
+                                           const AnalyticSolverLimits& limits = {})
+{
+    const AnalyticBroadPhaseResult broad = analytic_execution_detail::build_curve_candidates(
+        geometry.bounds, limits, analytic_execution_detail::kStrictPublishedGeometry);
+    require(broad.error == AnalyticBroadPhaseError::none, "strict regions broad phase failed");
+    return analytic_execution_detail::build_regions(
+        records, 0, geometry, broad.pairs, limits,
+        analytic_execution_detail::kStrictPublishedGeometry);
+}
+
 double signed_line_ring_area_twice(const AnalyticFilteredRegionsResult& result,
                                    const AnalyticFilteredMaterialRing& ring)
 {
@@ -168,6 +181,31 @@ void test_single_and_disjoint_regions()
     require(disjoint.error == AnalyticFilteredRegionsError::none, "disjoint regions failed");
     require(disjoint.rings.size() == 2 && disjoint.regions.size() == 2,
             "disjoint material components were not retained");
+}
+
+AnalyticFilteredRegionsResult strict_gap_regions()
+{
+    AnalyticFilteredGeometry geometry;
+    append_line(geometry, 1, -1000, 0, 0, 0);
+    append_line(geometry, 1, 0, 0, 0, 1000);
+    append_line(geometry, 1, 0, 1000, -1000, 1000);
+    append_line(geometry, 1, -1000, 1000, -1000, 0);
+    append_line(geometry, 2, 1, -1000, 1001, -1000);
+    append_line(geometry, 2, 1001, -1000, 1001, 0);
+    append_line(geometry, 2, 1001, 0, 1, 0);
+    append_line(geometry, 2, 1, 0, 1, -1000);
+    return strict_build(records_for({{1, {1, 2}}}), geometry);
+}
+
+void test_strict_regions_policy_propagates()
+{
+    const AnalyticFilteredRegionsResult result = strict_gap_regions();
+    require(result.error == AnalyticFilteredRegionsError::none && result.regions.size() == 2 &&
+                result.rings.size() == 2 && result.selection.arrangement.vertices.size() == 8,
+            "strict regions did not preserve two components across a 1 nm gap: " +
+                std::to_string(static_cast<int>(result.error)) + "/" +
+                std::to_string(result.regions.size()) + "/" + std::to_string(result.rings.size()) +
+                "/" + std::to_string(result.selection.arrangement.vertices.size()));
 }
 
 void test_nested_annulus_and_island()
@@ -442,6 +480,7 @@ std::string parity_vector()
     append_rectangle(disjoint_geometry, 5, 1000, 2000);
     const AnalyticFilteredRegionsResult disjoint =
         build(records_for({{1, {4, 5}}}), disjoint_geometry);
+    const AnalyticFilteredRegionsResult strict_gap = strict_gap_regions();
     require(nested.error == AnalyticFilteredRegionsError::none &&
                 disjoint.error == AnalyticFilteredRegionsError::none,
             "regions parity fixtures failed");
@@ -492,6 +531,7 @@ std::string parity_vector()
     };
     append_result(nested);
     append_result(disjoint);
+    append_result(strict_gap);
     return output.str();
 }
 
@@ -500,6 +540,7 @@ std::string parity_vector()
 int main(int argc, char** argv)
 {
     test_single_and_disjoint_regions();
+    test_strict_regions_policy_propagates();
     test_nested_annulus_and_island();
     test_collapsed_tangent_and_arc_topology();
     test_shared_material_seam_is_suppressed();

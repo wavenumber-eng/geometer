@@ -1,6 +1,7 @@
 #include "geometer/analytic_curve_broad_phase.h"
 #include "geometer/analytic_filtered_arrangement.h"
 
+#include "analytic_filtered_execution_policy.h"
 #include "analytic_interval_index.h"
 
 #include <algorithm>
@@ -233,6 +234,43 @@ void test_global_resolution_threshold()
                 " merged=" + std::to_string(exact.telemetry.merged_endpoint_records));
     require(above.error == AnalyticFilteredArrangementError::none && above.vertices.size() == 8,
             "51 nm global endpoint gap was collapsed");
+}
+
+void test_strict_published_geometry_policy()
+{
+    AnalyticFilteredGeometry separated;
+    append_line(separated, -1000, 0, 0, 0);
+    append_line(separated, 0, 0, 0, 1000);
+    append_line(separated, 0, 1000, -1000, 1000);
+    append_line(separated, -1000, 1000, -1000, 0);
+    append_line(separated, 1, 0, 1001, 0);
+    append_line(separated, 1001, 0, 1001, -1000);
+    append_line(separated, 1001, -1000, 1, -1000);
+    append_line(separated, 1, -1000, 1, 0);
+    const AnalyticBroadPhaseResult strict_broad = analytic_execution_detail::build_curve_candidates(
+        separated.bounds, kAnalyticSolverHardLimits,
+        analytic_execution_detail::kStrictPublishedGeometry);
+    require(strict_broad.error == AnalyticBroadPhaseError::none &&
+                std::none_of(strict_broad.pairs.begin(), strict_broad.pairs.end(),
+                             [](const AnalyticCurvePair& pair)
+                             { return pair.first <= 4 && pair.second > 4; }),
+            "strict broad phase expanded across a 1 nm gap");
+    const AnalyticFilteredArrangementResult gap = analytic_execution_detail::build_arrangement(
+        separated, strict_broad.pairs, kAnalyticSolverHardLimits,
+        analytic_execution_detail::kStrictPublishedGeometry);
+    require(gap.error == AnalyticFilteredArrangementError::none && gap.vertices.size() == 8,
+            "strict published geometry merged a 1 nm endpoint gap");
+
+    const AnalyticFilteredGeometry shared = square();
+    const AnalyticBroadPhaseResult shared_broad = analytic_execution_detail::build_curve_candidates(
+        shared.bounds, kAnalyticSolverHardLimits,
+        analytic_execution_detail::kStrictPublishedGeometry);
+    const AnalyticFilteredArrangementResult exact = analytic_execution_detail::build_arrangement(
+        shared, shared_broad.pairs, kAnalyticSolverHardLimits,
+        analytic_execution_detail::kStrictPublishedGeometry);
+    require(exact.error == AnalyticFilteredArrangementError::none && exact.vertices.size() == 4 &&
+                exact.edges.size() == 4,
+            "strict published geometry did not merge exact shared endpoints");
 }
 
 void test_collapsed_span_lineage()
@@ -792,6 +830,7 @@ int main()
     test_circle_topology();
     test_nontransitive_resolution_chain();
     test_global_resolution_threshold();
+    test_strict_published_geometry_policy();
     test_collapsed_span_lineage();
     test_crossing_rectangles_pipeline();
     test_right_partition_makes_major_arc_x_monotone();

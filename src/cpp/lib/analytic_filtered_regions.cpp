@@ -182,6 +182,8 @@ class RegionsBuilder
         result_.telemetry.reserved_region_work_units = reserved_work;
         result_.telemetry.predicate_calls = selection.telemetry.predicate_calls + reserved_work;
         result_.telemetry.peak_working_memory_bytes = selection.telemetry.peak_working_memory_bytes;
+        result_.telemetry.required_working_memory_bytes =
+            selection.telemetry.required_working_memory_bytes;
         result_.telemetry.algebraic_fallback_calls = selection.telemetry.algebraic_fallback_calls;
         result_.selection = std::move(selection);
     }
@@ -200,6 +202,7 @@ class RegionsBuilder
         }
         catch (const std::bad_alloc&)
         {
+            result_.telemetry.required_working_memory_bytes = limits_.working_memory_bytes + 1;
             fail(AnalyticFilteredRegionsError::resource_limit_exceeded);
             clear_geometry();
         }
@@ -301,7 +304,11 @@ class RegionsBuilder
         const std::uint64_t retained = retained_selection_bytes(selection, valid);
         const std::uint64_t phase = checked_add(retained, scratch, valid);
         if (!valid || phase > limits_.working_memory_bytes)
+        {
+            if (valid)
+                result_.telemetry.required_working_memory_bytes = phase;
             return fail(AnalyticFilteredRegionsError::resource_limit_exceeded);
+        }
         result_.telemetry.peak_working_memory_bytes =
             std::max(result_.telemetry.peak_working_memory_bytes, phase);
 
@@ -727,6 +734,8 @@ build_analytic_filtered_regions(const AnalyticRequestPacketRecords& records,
             selection.telemetry.peak_working_memory_bytes;
         result.telemetry.predicate_calls = selection.telemetry.predicate_calls;
         result.telemetry.peak_working_memory_bytes = selection.telemetry.peak_working_memory_bytes;
+        result.telemetry.required_working_memory_bytes =
+            selection.telemetry.required_working_memory_bytes;
         result.telemetry.algebraic_fallback_calls = selection.telemetry.algebraic_fallback_calls;
         result.selection.origin_x_nm = geometry.origin_x_nm;
         result.selection.origin_y_nm = geometry.origin_y_nm;
@@ -767,6 +776,8 @@ build_regions_for_lineage(const AnalyticRequestPacketRecords& records, std::uint
         output.regions.telemetry.predicate_calls = selection.telemetry.predicate_calls;
         output.regions.telemetry.peak_working_memory_bytes =
             selection.telemetry.peak_working_memory_bytes;
+        output.regions.telemetry.required_working_memory_bytes =
+            selection.telemetry.required_working_memory_bytes;
         output.regions.telemetry.algebraic_fallback_calls =
             selection.telemetry.algebraic_fallback_calls;
         output.regions.selection.origin_x_nm = geometry.origin_x_nm;

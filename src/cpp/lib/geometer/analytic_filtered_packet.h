@@ -47,6 +47,8 @@ struct AnalyticFilteredPacketTelemetry
     std::uint64_t emitted_regions = 0;
     std::uint64_t emitted_events = 0;
     std::uint64_t emitted_packet_bytes = 0;
+    std::uint64_t retained_records_bytes = 0;
+    std::uint64_t required_working_memory_bytes = 0;
     std::uint64_t encoding_peak_working_memory_bytes = 0;
     std::uint64_t reserved_packet_work_units = 0;
     std::uint64_t reserved_packet_memory_bytes = 0;
@@ -65,6 +67,25 @@ struct AnalyticFilteredJobPacketResult
     AnalyticFilteredPacketTopologyMaps maps;
     AnalyticFilteredPacketTelemetry telemetry;
 };
+
+struct AnalyticFilteredJobRecordsResult
+{
+    AnalyticFilteredPacketError error = AnalyticFilteredPacketError::none;
+    AnalyticFilteredNormalizationError normalization_error =
+        AnalyticFilteredNormalizationError::none;
+    std::optional<AnalyticResultPacketRecords> records;
+    AnalyticFilteredPacketTopologyMaps maps;
+    AnalyticFilteredPacketTelemetry telemetry;
+};
+
+// Records-only owned publication path used by the batch orchestrator. It
+// performs the same normalization, provenance projection, source interning,
+// and canonical record construction as the standalone path, but deliberately
+// does not serialize or hash a per-job packet.
+[[nodiscard]] AnalyticFilteredJobRecordsResult build_analytic_filtered_job_records(
+    const AnalyticRequestPacketRecords& records, std::uint32_t job_index,
+    const AnalyticFilteredGeometry& geometry, const std::vector<AnalyticCurvePair>& candidate_pairs,
+    const AnalyticSolverLimits& limits = {});
 
 // Owned production publication stage. It invokes the complete filtered
 // normalization pipeline, projects lineage/outcomes through the explicit

@@ -111,7 +111,7 @@ catalog_identity = "wn.geometer.contract_catalog"
 catalog_generation = "a0"
 
 [analytic_filtered_solver]
-status = "implemented_filtered_normalization_not_dispatched"
+status = "implemented_query_free_filtered_batch_not_dispatched"
 design = "docs/adr/013_filtered_resolution_bounded_planar_boolean.md"
 coordinate_grid_nm = 1
 topology_resolution_nm = 50
@@ -242,6 +242,19 @@ packet_budget_policy = "candidate_bounded_pre_normalization_reservation_then_exa
 packet_parity_validator = "scripts/validate_analytic_filtered_packet_parity.py"
 packet_vector_bytes = 4288
 packet_vector_sha256 = "a47f82ad1ab38c9e38ea55f38b44849ebd477de31c465726cbd17f5c4047ccfb"
+batch_header = "src/cpp/lib/geometer/analytic_filtered_batch.h"
+batch_source = "src/cpp/lib/analytic_filtered_batch.cpp"
+batch_test = "tests/cpp/analytic_filtered_batch_test.cpp"
+batch_input = "validated_canonical_request_records_with_owned_lowering_broad_phase_and_job_packet_publication"
+batch_policy = "sequential_job_isolation_specialized_job_major_canonical_merge_and_single_batch_encode"
+batch_complexity_policy = "deterministic_sorted_id_validation_global_source_sort_and_fixed_capacity_sequence_interning_without_job_pair_or_variable_prefix_scans"
+batch_budget_policy = "separate_per_job_and_batch_live_limits_capacity_based_retained_records_and_precharged_validation_merge_and_encoding_phases"
+batch_relationship_policy = "explicit_outer_rejection_until_indexed_zero_repair_relationship_evaluator"
+batch_parity_validator = "scripts/validate_analytic_filtered_batch_parity.py"
+batch_vector_bytes = 1636
+batch_vector_sha256 = "a4b6a8c4a82f77c5de4e232e0a2e1520a57e7370422ddc7e4059951d192a05d9"
+production_exact_source_policy = "exact_oracle_sources_excluded_from_geometer_lib"
+exact_oracle_target = "geometer_exact_feasibility"
 
 [analytic_exact_backend]
 status = "implemented_non_primary_oracle"
@@ -935,15 +948,15 @@ solver_numeric_status = "reopened_filtered_50nm"
 named_consumer = "appz.data_models.pcb.matz"
 compatibility_snapshot = "docs/contracts/compatibility/data-models-geom-a0-2026-08-12.toml"
 design = "docs/design/analytic-planar-boolean-a0.md"
-design_sha256 = "ff7f01aa5608881bdc73cf3b0e900c7c6f21a9fa3c27a0c5246315bb3d75087b"
+design_sha256 = "0d7a2490bbe3d392b1ac32df47e3de14bbe98e214d34af4ac0921ef321775655"
 packet_spec = "docs/design/analytic-planar-boolean-packet-a0.md"
 packet_spec_sha256 = "5fb82f495b17b1c47536d6c0ade77aa3183bc6b7f342f70013c462fcaf469856"
 numeric_catalog = "docs/contracts/analytic-planar-boolean-a0-catalog.toml"
 numeric_catalog_sha256 = "f0b52ef8a032dcf47d2083b1f843aeeb791d4bc477a36b10c8c590474d47db7e"
 solver_adr = "docs/adr/013_filtered_resolution_bounded_planar_boolean.md"
-solver_adr_sha256 = "06745edab1dcd2342a2248f030c82ee665ab0f8b1d80d901c95f660a8a455e97"
+solver_adr_sha256 = "a06f8510869a3bccab20d5ee3332dc25f601effbf679d71c2db21bd240d8a661"
 superseded_solver_adr = "docs/adr/012_exact_analytic_planar_boolean_arrangement.md"
-filtered_solver_foundation = "direct_lowering_broad_narrow_overlay_arrangement_face_selection_material_regions_lineage_operand_outcomes_normalization_and_packet_assembly_implemented_not_dispatched"
+filtered_solver_foundation = "direct_lowering_broad_narrow_overlay_arrangement_face_selection_material_regions_lineage_operand_outcomes_normalization_packet_assembly_and_query_free_batch_merge_implemented_not_dispatched"
 feasibility_test = "tests/cpp/analytic_planar_boolean_feasibility_test.cpp"
 portable_fixture = "tests/fixtures/analytic_planar_boolean/matz_observations_a0.json"
 candidate_typespec_entrypoint = "src/tsp/geometer/analytic-candidate.tsp"

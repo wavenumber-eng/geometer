@@ -27,6 +27,8 @@ using analytic_packet_detail::canonicalize_sequences;
 using analytic_packet_detail::CanonicalSequences;
 using analytic_packet_detail::checked_add;
 using analytic_packet_detail::checked_multiply;
+using analytic_packet_detail::result_packet_records_logical_bytes;
+using analytic_packet_detail::result_packet_records_logical_capacity_bytes;
 using analytic_packet_detail::SequenceRange;
 using analytic_packet_detail::sort_units;
 using analytic_packet_detail::WorkBudget;
@@ -102,6 +104,9 @@ struct SourceTables
     std::vector<std::uint32_t> indices;
     std::vector<std::uint32_t> handles;
     std::uint64_t logical_bytes = 0;
+    std::uint64_t source_capacity = 0;
+    std::uint64_t set_capacity = 0;
+    std::uint64_t index_capacity = 0;
 };
 
 struct OperandInfo
@@ -392,9 +397,10 @@ class PacketBuilder
   public:
     PacketBuilder(const AnalyticRequestPacketRecords& records, std::uint32_t job_index,
                   const AnalyticFilteredGeometry& geometry,
-                  const std::vector<AnalyticCurvePair>& pairs, const AnalyticSolverLimits& limits)
+                  const std::vector<AnalyticCurvePair>& pairs, const AnalyticSolverLimits& limits,
+                  bool encode_output)
         : records_(records), job_index_(job_index), geometry_(geometry), pairs_(pairs),
-          limits_(limits)
+          limits_(limits), encode_output_(encode_output)
     {
         budget_.telemetry = &result_.telemetry;
     }
@@ -439,6 +445,17 @@ class PacketBuilder
             normalization.telemetry.algebraic_fallback_calls;
         if (normalization.error != AnalyticFilteredNormalizationError::none)
         {
+            if (normalization.error ==
+                    AnalyticFilteredNormalizationError::resource_limit_exceeded &&
+                normalization.telemetry.required_working_memory_bytes >
+                    normalization_limits.working_memory_bytes)
+            {
+                if (!checked_add(reserved_memory_,
+                                 normalization.telemetry.required_working_memory_bytes,
+                                 result_.telemetry.required_working_memory_bytes))
+                    result_.telemetry.required_working_memory_bytes =
+                        std::numeric_limits<std::uint64_t>::max();
+            }
             if (normalization.error == AnalyticFilteredNormalizationError::invalid_argument)
             {
                 result_.error = AnalyticFilteredPacketError::invalid_argument;
@@ -461,11 +478,20 @@ class PacketBuilder
         if (!add_array_bytes(normalization.outcomes.lineage.regions.rings.size(), 4,
                              compact_transfer_bytes) ||
             compact_transfer_bytes > limits_.working_memory_bytes)
+        {
+            result_.telemetry.required_working_memory_bytes =
+                compact_transfer_bytes > limits_.working_memory_bytes
+                    ? compact_transfer_bytes
+                    : std::numeric_limits<std::uint64_t>::max();
             return resource_failure();
+        }
         result_.telemetry.peak_working_memory_bytes =
             std::max(result_.telemetry.peak_working_memory_bytes, compact_transfer_bytes);
         if (!move_compact(normalization, input_))
+        {
+            result_.telemetry.required_working_memory_bytes = limits_.working_memory_bytes + 1;
             return resource_failure();
+        }
         compact_bytes_ = std::max(compact_logical_bytes(input_), compact_transfer_bytes);
         budget_.limit =
             limits_.predicate_calls - result_.telemetry.normalization_work_units - preflight_work_;
@@ -486,6 +512,7 @@ class PacketBuilder
         }
         catch (const std::bad_alloc&)
         {
+            result_.telemetry.required_working_memory_bytes = limits_.working_memory_bytes + 1;
             return resource_failure();
         }
         finish_telemetry();
@@ -512,7 +539,10 @@ class PacketBuilder
         std::uint64_t bytes = 0;
         if (!persistent_bytes(bytes) || !checked_add(bytes, scratch_bytes, bytes) ||
             bytes > limits_.working_memory_bytes)
+        {
+            result_.telemetry.required_working_memory_bytes = bytes;
             return fail_resource();
+        }
         result_.telemetry.peak_working_memory_bytes =
             std::max(result_.telemetry.peak_working_memory_bytes, bytes);
         return true;
@@ -618,9 +648,11 @@ class PacketBuilder
         reserved_memory_ = memory;
         result_.telemetry.reserved_packet_work_units = work;
         result_.telemetry.reserved_packet_memory_bytes = memory;
+        result_.telemetry.required_working_memory_bytes = memory;
         if (preflight_work_ > limits_.predicate_calls ||
-            work > limits_.predicate_calls - preflight_work_ ||
-            memory > limits_.working_memory_bytes)
+            work > limits_.predicate_calls - preflight_work_)
+            return fail_resource();
+        if (memory > limits_.working_memory_bytes)
             return fail_resource();
         return true;
     }
@@ -940,6 +972,7 @@ class PacketBuilder
             return fail_resource();
         occurrences.reserve(static_cast<std::size_t>(memberships));
         source_tables_.sources.reserve(static_cast<std::size_t>(memberships));
+        source_tables_.source_capacity = memberships;
         for (std::uint32_t descriptor_index = 0; descriptor_index < descriptors.size();
              ++descriptor_index)
         {
@@ -1009,6 +1042,8 @@ class PacketBuilder
             return fail_resource();
         source_tables_.sets = std::move(sequences.records);
         source_tables_.indices = std::move(sequences.indices);
+        source_tables_.set_capacity = descriptors.size();
+        source_tables_.index_capacity = memberships;
         source_tables_.handles.resize(source_uses_.size());
         for (std::uint32_t use = 0; use < source_uses_.size(); ++use)
             source_tables_.handles[use] = sequences.handles[descriptor_by_use[use]];
@@ -1669,6 +1704,23 @@ class PacketBuilder
              static_cast<std::uint32_t>(records_out_.regions.size()),
              records_out_.operand_events.empty() ? 0U : 0U,
              static_cast<std::uint32_t>(records_out_.operand_events.size())});
+        result_.telemetry.retained_records_bytes = result_packet_records_logical_capacity_bytes(
+            records_out_, source_tables_.source_capacity, source_tables_.set_capacity,
+            source_tables_.index_capacity);
+        if (result_.telemetry.retained_records_bytes == std::numeric_limits<std::uint64_t>::max())
+            return fail_resource();
+        AnalyticStandaloneJob standalone;
+        if (!encode_output_)
+        {
+            standalone.records = std::move(records_out_);
+            result_.telemetry.emitted_vertices = standalone.records.vertices.size();
+            result_.telemetry.emitted_fragments = standalone.records.fragments.size();
+            result_.telemetry.emitted_rings = standalone.records.rings.size();
+            result_.telemetry.emitted_regions = standalone.records.regions.size();
+            result_.telemetry.emitted_events = standalone.records.operand_events.size();
+            result_.standalone = std::move(standalone);
+            return true;
+        }
         std::uint64_t packet_bytes = 0;
         std::uint64_t encoding_peak = 0;
         std::uint64_t retained_bytes = 0;
@@ -1689,7 +1741,6 @@ class PacketBuilder
             result_.error = AnalyticFilteredPacketError::encoding_failed;
             return false;
         }
-        AnalyticStandaloneJob standalone;
         standalone.records = std::move(records_out_);
         standalone.bytes = std::move(*encoded.value);
         standalone.digest_sha256 = sha256_hex(standalone.bytes.data(), standalone.bytes.size());
@@ -1709,15 +1760,21 @@ class PacketBuilder
         const std::uint64_t job_id = records_.jobs[job_index_].job_id;
         failed.job_results.push_back({job_id, 1, 0, 1, 0, 0, 0, 0});
         failed.diagnostics.push_back({code, 1, 1, job_id, 0, 0, 0, 0});
+        result_.telemetry.retained_records_bytes = result_packet_records_logical_bytes(failed);
+        AnalyticStandaloneJob standalone;
+        standalone.records = std::move(failed);
+        if (!encode_output_)
+        {
+            result_.standalone = std::move(standalone);
+            return;
+        }
         AnalyticResultPacketEncodeResult encoded =
-            analytic_result_detail::encode_canonical_records_unchecked(failed);
+            analytic_result_detail::encode_canonical_records_unchecked(standalone.records);
         if (encoded.error != AnalyticResultPacketLayoutError::none || !encoded.value)
         {
             result_.error = AnalyticFilteredPacketError::encoding_failed;
             return;
         }
-        AnalyticStandaloneJob standalone;
-        standalone.records = std::move(failed);
         standalone.bytes = std::move(*encoded.value);
         standalone.digest_sha256 = sha256_hex(standalone.bytes.data(), standalone.bytes.size());
         result_.telemetry.emitted_packet_bytes = standalone.bytes.size();
@@ -1729,15 +1786,21 @@ class PacketBuilder
         AnalyticResultPacketRecords empty;
         const std::uint64_t job_id = records_.jobs[job_index_].job_id;
         empty.job_results.push_back({job_id, 0, 0, 0, 0, 0, 0, 0});
+        result_.telemetry.retained_records_bytes = result_packet_records_logical_bytes(empty);
+        AnalyticStandaloneJob standalone;
+        standalone.records = std::move(empty);
+        if (!encode_output_)
+        {
+            result_.standalone = std::move(standalone);
+            return;
+        }
         AnalyticResultPacketEncodeResult encoded =
-            analytic_result_detail::encode_canonical_records_unchecked(empty);
+            analytic_result_detail::encode_canonical_records_unchecked(standalone.records);
         if (encoded.error != AnalyticResultPacketLayoutError::none || !encoded.value)
         {
             result_.error = AnalyticFilteredPacketError::encoding_failed;
             return;
         }
-        AnalyticStandaloneJob standalone;
-        standalone.records = std::move(empty);
         standalone.bytes = std::move(*encoded.value);
         standalone.digest_sha256 = sha256_hex(standalone.bytes.data(), standalone.bytes.size());
         result_.telemetry.emitted_packet_bytes = standalone.bytes.size();
@@ -1766,6 +1829,7 @@ class PacketBuilder
     const AnalyticFilteredGeometry& geometry_;
     const std::vector<AnalyticCurvePair>& pairs_;
     AnalyticSolverLimits limits_;
+    bool encode_output_ = true;
     AnalyticFilteredJobPacketResult result_;
     WorkBudget budget_;
     std::uint64_t reserved_work_ = 0;
@@ -1800,7 +1864,24 @@ AnalyticFilteredJobPacketResult build_analytic_filtered_job_packet(
     const AnalyticFilteredGeometry& geometry, const std::vector<AnalyticCurvePair>& candidate_pairs,
     const AnalyticSolverLimits& limits)
 {
-    return PacketBuilder(records, job_index, geometry, candidate_pairs, limits).build();
+    return PacketBuilder(records, job_index, geometry, candidate_pairs, limits, true).build();
+}
+
+AnalyticFilteredJobRecordsResult build_analytic_filtered_job_records(
+    const AnalyticRequestPacketRecords& records, std::uint32_t job_index,
+    const AnalyticFilteredGeometry& geometry, const std::vector<AnalyticCurvePair>& candidate_pairs,
+    const AnalyticSolverLimits& limits)
+{
+    AnalyticFilteredJobPacketResult packet =
+        PacketBuilder(records, job_index, geometry, candidate_pairs, limits, false).build();
+    AnalyticFilteredJobRecordsResult result;
+    result.error = packet.error;
+    result.normalization_error = packet.normalization_error;
+    result.maps = std::move(packet.maps);
+    result.telemetry = packet.telemetry;
+    if (packet.standalone)
+        result.records = std::move(packet.standalone->records);
+    return result;
 }
 
 } // namespace geometer

@@ -45,6 +45,8 @@ struct AnalyticFilteredLoweringTelemetry
     std::uint64_t token_table_probes = 0;
     std::uint64_t work_units = 0;
     std::uint64_t square_root_calls = 0;
+    std::uint64_t retained_geometry_bytes = 0;
+    std::uint64_t required_working_memory_bytes = 0;
     std::uint64_t peak_working_memory_bytes = 0;
     std::uint64_t algebraic_fallback_calls = 0;
 };

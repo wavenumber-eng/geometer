@@ -372,6 +372,13 @@ class Builder
         result_.telemetry.outcomes_peak_working_memory_bytes = upstream.peak_working_memory_bytes;
         result_.telemetry.predicate_calls = upstream.predicate_calls;
         result_.telemetry.peak_working_memory_bytes = upstream.peak_working_memory_bytes;
+        if (upstream.required_working_memory_bytes > execution_limits.working_memory_bytes)
+        {
+            if (!checked_add_u64(reserved_memory_, upstream.required_working_memory_bytes,
+                                 result_.telemetry.required_working_memory_bytes))
+                result_.telemetry.required_working_memory_bytes =
+                    std::numeric_limits<std::uint64_t>::max();
+        }
         result_.telemetry.algebraic_fallback_calls = upstream.algebraic_fallback_calls;
         result_.telemetry.reserved_normalization_work_units = reserved_work_;
         result_.telemetry.reserved_normalization_memory_bytes = reserved_memory_;
@@ -391,6 +398,7 @@ class Builder
         }
         catch (const std::bad_alloc&)
         {
+            result_.telemetry.required_working_memory_bytes = limits_.working_memory_bytes + 1;
             result_.error = AnalyticFilteredNormalizationError::resource_limit_exceeded;
             return failure();
         }
@@ -419,6 +427,8 @@ class Builder
                                   reserved_memory_) ||
             !checked_add_u64(reserved_memory_, kNormalizationFixedPhaseBytes, reserved_memory_))
         {
+            result_.telemetry.required_working_memory_bytes =
+                std::numeric_limits<std::uint64_t>::max();
             result_.error = AnalyticFilteredNormalizationError::resource_limit_exceeded;
             return false;
         }
@@ -441,6 +451,8 @@ class Builder
         if (reserved_work_ > limits_.predicate_calls ||
             reserved_memory_ > limits_.working_memory_bytes)
         {
+            if (reserved_memory_ > limits_.working_memory_bytes)
+                result_.telemetry.required_working_memory_bytes = reserved_memory_;
             result_.error = AnalyticFilteredNormalizationError::resource_limit_exceeded;
             return false;
         }
@@ -470,6 +482,7 @@ class Builder
         const auto fallback = result_.outcomes.telemetry.algebraic_fallback_calls;
         const auto arc_candidates = result_.telemetry.arc_critical_candidates;
         const auto replay_pairs = result_.telemetry.strict_replay_candidate_pairs;
+        const auto required_memory = result_.telemetry.required_working_memory_bytes;
         result_.outcomes = {};
         result_.vertices.clear();
         result_.fragments.clear();
@@ -490,6 +503,7 @@ class Builder
         result_.telemetry.reserved_normalization_memory_bytes = reserved_memory_;
         result_.telemetry.predicate_calls = upstream_work + work_;
         result_.telemetry.peak_working_memory_bytes = std::max(upstream_memory, peak_memory);
+        result_.telemetry.required_working_memory_bytes = required_memory;
         result_.telemetry.algebraic_fallback_calls = fallback;
         return std::move(result_);
     }
@@ -523,6 +537,8 @@ class Builder
                       checked_add_u64(bytes, kNormalizationFixedPhaseBytes, bytes);
         if (!valid_count || bytes > limits_.working_memory_bytes)
         {
+            result_.telemetry.required_working_memory_bytes =
+                valid_count ? bytes : std::numeric_limits<std::uint64_t>::max();
             result_.error = AnalyticFilteredNormalizationError::resource_limit_exceeded;
             return false;
         }
@@ -533,6 +549,13 @@ class Builder
                              base_phase_bytes_) ||
             base_phase_bytes_ > limits_.working_memory_bytes)
         {
+            if (bytes > reserved_memory_)
+                result_.telemetry.required_working_memory_bytes = limits_.working_memory_bytes + 1;
+            else if (base_phase_bytes_ > limits_.working_memory_bytes)
+                result_.telemetry.required_working_memory_bytes = base_phase_bytes_;
+            else
+                result_.telemetry.required_working_memory_bytes =
+                    std::numeric_limits<std::uint64_t>::max();
             result_.error = AnalyticFilteredNormalizationError::resource_limit_exceeded;
             return false;
         }
@@ -978,7 +1001,11 @@ class Builder
         const std::uint64_t upstream = result_.outcomes.telemetry.predicate_calls;
         if (upstream > limits_.predicate_calls || work_ > limits_.predicate_calls - upstream ||
             base_phase_bytes_ > limits_.working_memory_bytes)
+        {
+            if (base_phase_bytes_ > limits_.working_memory_bytes)
+                result_.telemetry.required_working_memory_bytes = base_phase_bytes_;
             return false;
+        }
         AnalyticSolverLimits replay_limits = limits_;
         replay_limits.predicate_calls = limits_.predicate_calls - upstream - work_;
         replay_limits.working_memory_bytes = limits_.working_memory_bytes - base_phase_bytes_;
@@ -987,12 +1014,22 @@ class Builder
             regions.selection.origin_x_nm, regions.selection.origin_y_nm, replay_curves_,
             replay_bounds_, regions, replay_limits);
         result_.telemetry.strict_replay_candidate_pairs = replay.candidate_pairs;
+        if (replay.required_working_memory_bytes > replay_limits.working_memory_bytes)
+        {
+            if (!checked_add_u64(base_phase_bytes_, replay.required_working_memory_bytes,
+                                 result_.telemetry.required_working_memory_bytes))
+                result_.telemetry.required_working_memory_bytes =
+                    std::numeric_limits<std::uint64_t>::max();
+        }
         if (!charge(replay.work_units))
             return false;
         std::uint64_t peak = 0;
         if (!checked_add_u64(base_phase_bytes_, replay.peak_working_memory_bytes, peak) ||
             peak > limits_.working_memory_bytes)
         {
+            result_.telemetry.required_working_memory_bytes =
+                peak > limits_.working_memory_bytes ? peak
+                                                    : std::numeric_limits<std::uint64_t>::max();
             result_.error = AnalyticFilteredNormalizationError::resource_limit_exceeded;
             return false;
         }

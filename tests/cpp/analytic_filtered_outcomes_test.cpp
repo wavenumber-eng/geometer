@@ -600,7 +600,9 @@ void test_governance_and_sparse_scaling()
     require(short_memory.error == AnalyticFilteredOutcomesError::resource_limit_exceeded &&
                 short_memory.events.empty() && short_memory.result_references.empty() &&
                 short_memory.source_references.empty() && short_memory.lineage.boundaries.empty() &&
-                short_memory.lineage.region_lineage.empty(),
+                short_memory.lineage.region_lineage.empty() &&
+                short_memory.telemetry.required_working_memory_bytes >
+                    exact_memory.working_memory_bytes,
             "one-byte-short outcome memory leaked partial publication");
 
     low = 0;

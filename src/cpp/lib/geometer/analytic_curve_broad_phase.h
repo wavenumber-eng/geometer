@@ -38,6 +38,9 @@ struct AnalyticBroadPhaseTelemetry
     std::uint64_t spatial_index_node_visits = 0;
     std::uint64_t examined_curve_pairs = 0;
     std::uint64_t candidate_pairs = 0;
+    std::uint64_t work_units = 0;
+    std::uint64_t retained_pair_bytes = 0;
+    std::uint64_t required_working_memory_bytes = 0;
     std::uint64_t peak_working_memory_bytes = 0;
     std::uint64_t algebraic_fallback_calls = 0;
     std::uint8_t primary_axis = 0; // 0 = x, 1 = y

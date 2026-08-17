@@ -1,6 +1,7 @@
 set(GEOMETER_LIB_SOURCES
     analytic_curve_broad_phase.cpp
     analytic_curve_narrow_phase.cpp
+    analytic_filtered_batch.cpp
     analytic_filtered_boolean_selection.cpp
     analytic_filtered_boolean_selection_admission.cpp
     analytic_filtered_outcome_tracker.cpp
@@ -21,11 +22,9 @@ set(GEOMETER_LIB_SOURCES
     analytic_result_packet_layout.cpp
     analytic_result_packet_records.cpp
     analytic_result_packet_standalone.cpp
-    analytic_result_packet_topology.cpp
     analytic_solver_limits.cpp
     c_api.cpp
     clipper2_bytes.cpp
-    exact_rational.cpp
     hlr_projection.cpp
     mesh_shadow_outline.cpp
     model_bounds.cpp
@@ -88,9 +87,18 @@ set(GEOMETER_EXACT_SOURCES
     sha256.cpp
 )
 
-if(NOT EMSCRIPTEN)
-    list(APPEND GEOMETER_LIB_SOURCES analytic_operand_lowering.cpp exact_arc_distance.cpp exact_boolean_outcomes.cpp exact_boolean_provenance.cpp exact_boolean_regions.cpp exact_boolean_stages.cpp exact_arrangement.cpp exact_arrangement_classification.cpp exact_arrangement_faces.cpp exact_arrangement_order.cpp exact_arrangement_result.cpp exact_arrangement_validation.cpp exact_artifact.cpp exact_construction.cpp exact_construction_builder.cpp exact_curve_domain.cpp exact_expression.cpp exact_factorization.cpp exact_geometry.cpp exact_normalization.cpp exact_polynomial.cpp exact_resultant.cpp exact_result_normalization.cpp exact_source_sets.cpp exact_value.cpp exact_value_codec.cpp)
-endif()
+# The algebraic implementation is a test/promotion oracle, never part of the
+# production library. Keep this configure-time guard beside the source lists so
+# a future source addition cannot silently restore Boost-backed exact code to
+# the primary native target.
+foreach(_geometer_source IN LISTS GEOMETER_LIB_SOURCES)
+    if(_geometer_source MATCHES "^exact_" OR
+       _geometer_source STREQUAL "analytic_operand_lowering.cpp" OR
+       _geometer_source STREQUAL "analytic_result_packet_topology.cpp")
+        message(FATAL_ERROR
+            "Exact/oracle source '${_geometer_source}' is forbidden in GEOMETER_LIB_SOURCES")
+    endif()
+endforeach()
 
 if(NOT EMSCRIPTEN)
     list(APPEND GEOMETER_LIB_SOURCES
@@ -158,7 +166,6 @@ function(configure_geometer_native_target target_name)
         ${OpenCASCADE_INCLUDE_DIR}
         ${CMAKE_SOURCE_DIR}/third_party/rapidjson/include
         ${CMAKE_SOURCE_DIR}/third_party/clipper2/include
-        ${GEOMETER_BOOST_ROOT}
     )
 
     if(UNIX AND NOT APPLE AND NOT EMSCRIPTEN AND GEOMETER_OCCT_LIBRARY_TYPE STREQUAL "Static")
@@ -183,13 +190,17 @@ endfunction()
 
 configure_geometer_native_target(geometer_lib)
 
-if(EMSCRIPTEN)
+if(BUILD_TESTING)
     add_library(geometer_exact_feasibility STATIC ${GEOMETER_EXACT_SOURCES})
     target_include_directories(geometer_exact_feasibility PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}
         ${GEOMETER_BOOST_ROOT}
     )
-    target_compile_options(geometer_exact_feasibility PUBLIC -fexceptions)
+    if(EMSCRIPTEN)
+        target_compile_options(geometer_exact_feasibility PUBLIC -fexceptions)
+    elseif(MSVC)
+        target_compile_options(geometer_exact_feasibility PUBLIC /EHsc)
+    endif()
 endif()
 
 if(NOT EMSCRIPTEN)

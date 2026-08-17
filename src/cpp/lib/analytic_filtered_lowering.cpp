@@ -21,6 +21,16 @@ using namespace analytic_detail;
 
 constexpr std::uint64_t kMaximumSpanNm = 1'000'000'000'000;
 constexpr std::uint64_t kLogicalBytesPerCurve = 768;
+constexpr std::uint64_t kRetainedGeometryFixedBytes = 16;
+constexpr std::uint64_t kRetainedCurveBytes = 272;
+constexpr std::uint64_t kRetainedBoundsBytes = 48;
+constexpr std::uint64_t kRetainedOccurrenceBytes = 56;
+constexpr std::uint64_t kRetainedBytesPerCurve =
+    kRetainedCurveBytes + kRetainedBoundsBytes + kRetainedOccurrenceBytes;
+
+static_assert(sizeof(AnalyticAtomicCurveNm) <= kRetainedCurveBytes);
+static_assert(sizeof(AnalyticCurveBoundsNm) <= kRetainedBoundsBytes);
+static_assert(sizeof(AnalyticFilteredOccurrence) <= kRetainedOccurrenceBytes);
 
 struct LineFamilyKey
 {
@@ -254,6 +264,10 @@ class FilteredJobLowerer
         job_ = &records_.jobs[job_index];
         if (!preflight())
             return result(error_);
+        telemetry_.retained_geometry_bytes =
+            kRetainedGeometryFixedBytes + projected_curves_ * kRetainedBytesPerCurve;
+        telemetry_.peak_working_memory_bytes =
+            std::max(telemetry_.peak_working_memory_bytes, telemetry_.retained_geometry_bytes);
         if (projected_curves_ == 0)
             return {AnalyticFilteredLoweringError::none, std::move(out_), telemetry_};
         if (!choose_origin_and_validate_span())
@@ -271,6 +285,7 @@ class FilteredJobLowerer
         }
         catch (const std::bad_alloc&)
         {
+            telemetry_.required_working_memory_bytes = limits_.working_memory_bytes + 1;
             return result(AnalyticFilteredLoweringError::resource_limit_exceeded);
         }
         return {AnalyticFilteredLoweringError::none, std::move(out_), telemetry_};
@@ -385,6 +400,7 @@ class FilteredJobLowerer
         if (projected_curves_ > std::numeric_limits<std::uint64_t>::max() / kLogicalBytesPerCurve)
             return fail(AnalyticFilteredLoweringError::resource_limit_exceeded);
         const std::uint64_t bytes = projected_curves_ * kLogicalBytesPerCurve;
+        telemetry_.required_working_memory_bytes = bytes;
         if (bytes > limits_.working_memory_bytes)
             return fail(AnalyticFilteredLoweringError::resource_limit_exceeded);
         telemetry_.peak_working_memory_bytes = bytes;

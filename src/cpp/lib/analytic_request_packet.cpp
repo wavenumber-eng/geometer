@@ -5,7 +5,6 @@
 #include <exception>
 #include <limits>
 #include <stdexcept>
-#include <unordered_set>
 
 namespace geometer
 {
@@ -127,13 +126,20 @@ validate_analytic_request_packet_records(const AnalyticRequestPacketRecords& rec
         records.relationship_queries.size() > kMaximumQueries)
         return AnalyticRequestPacketError::limit_exceeded;
 
-    std::unordered_set<std::uint64_t> job_ids;
+    const auto unique_ids = [](std::vector<std::uint64_t>& ids)
+    {
+        std::sort(ids.begin(), ids.end());
+        return std::adjacent_find(ids.begin(), ids.end()) == ids.end();
+    };
+    std::vector<std::uint64_t> job_ids;
+    job_ids.reserve(records.jobs.size());
     std::uint64_t previous_job_id = 0;
     std::uint64_t stage_cursor = 0;
     for (const AnalyticRequestJobRecord& job : records.jobs)
     {
-        if (job.job_id == 0 || !job_ids.insert(job.job_id).second)
+        if (job.job_id == 0)
             return AnalyticRequestPacketError::invalid_id;
+        job_ids.push_back(job.job_id);
         if (job.job_id < previous_job_id)
             return AnalyticRequestPacketError::invalid_packet;
         previous_job_id = job.job_id;
@@ -145,13 +151,17 @@ validate_analytic_request_packet_records(const AnalyticRequestPacketRecords& rec
     }
     if (stage_cursor != records.stages.size())
         return AnalyticRequestPacketError::invalid_reference;
+    if (!unique_ids(job_ids))
+        return AnalyticRequestPacketError::invalid_id;
 
-    std::unordered_set<std::uint64_t> stage_ids;
+    std::vector<std::uint64_t> stage_ids;
+    stage_ids.reserve(records.stages.size());
     std::uint64_t operand_cursor = 0;
     for (const AnalyticRequestStageRecord& stage : records.stages)
     {
-        if (stage.stage_id == 0 || !stage_ids.insert(stage.stage_id).second)
+        if (stage.stage_id == 0)
             return AnalyticRequestPacketError::invalid_id;
+        stage_ids.push_back(stage.stage_id);
         if (stage.operation != 1 && stage.operation != 2)
             return AnalyticRequestPacketError::invalid_packet;
         if (stage.operand_begin != operand_cursor)
@@ -162,8 +172,11 @@ validate_analytic_request_packet_records(const AnalyticRequestPacketRecords& rec
     }
     if (operand_cursor != records.operands.size())
         return AnalyticRequestPacketError::invalid_reference;
+    if (!unique_ids(stage_ids))
+        return AnalyticRequestPacketError::invalid_id;
 
-    std::unordered_set<std::uint64_t> operand_ids;
+    std::vector<std::uint64_t> operand_ids;
+    operand_ids.reserve(records.operands.size());
     std::array<std::uint64_t, 5> geometry_cursor{};
     const std::array<std::uint64_t, 5> geometry_sizes{
         records.planar_regions.size(), records.disks.size(),       records.annuli.size(),
@@ -171,8 +184,9 @@ validate_analytic_request_packet_records(const AnalyticRequestPacketRecords& rec
     };
     for (const AnalyticRequestOperandRecord& operand : records.operands)
     {
-        if (operand.operand_id == 0 || !operand_ids.insert(operand.operand_id).second)
+        if (operand.operand_id == 0)
             return AnalyticRequestPacketError::invalid_id;
+        operand_ids.push_back(operand.operand_id);
         if (operand.geometry_kind < 1 || operand.geometry_kind > 5)
             return AnalyticRequestPacketError::invalid_packet;
         const std::size_t kind = static_cast<std::size_t>(operand.geometry_kind - 1U);
@@ -184,18 +198,22 @@ validate_analytic_request_packet_records(const AnalyticRequestPacketRecords& rec
     for (std::size_t kind = 0; kind < geometry_sizes.size(); ++kind)
         if (geometry_cursor[kind] != geometry_sizes[kind])
             return AnalyticRequestPacketError::invalid_reference;
+    if (!unique_ids(operand_ids))
+        return AnalyticRequestPacketError::invalid_id;
     for (const AnalyticRequestStageRecord& stage : records.stages)
         for (std::uint32_t index = 1; index < stage.operand_count; ++index)
             if (records.operands[stage.operand_begin + index - 1U].operand_id >
                 records.operands[stage.operand_begin + index].operand_id)
                 return AnalyticRequestPacketError::invalid_packet;
 
-    std::unordered_set<std::uint64_t> region_ids;
+    std::vector<std::uint64_t> region_ids;
+    region_ids.reserve(records.planar_regions.size());
     std::uint64_t hole_reference_cursor = 0;
     for (const AnalyticRequestPlanarRegionRecord& region : records.planar_regions)
     {
-        if (region.region_id == 0 || !region_ids.insert(region.region_id).second)
+        if (region.region_id == 0)
             return AnalyticRequestPacketError::invalid_id;
+        region_ids.push_back(region.region_id);
         if (region.hole_reference_count > kMaximumRegionHoles)
             return AnalyticRequestPacketError::limit_exceeded;
         if (region.hole_reference_begin != hole_reference_cursor)
@@ -206,6 +224,8 @@ validate_analytic_request_packet_records(const AnalyticRequestPacketRecords& rec
     }
     if (hole_reference_cursor != records.ring_references.size())
         return AnalyticRequestPacketError::invalid_reference;
+    if (!unique_ids(region_ids))
+        return AnalyticRequestPacketError::invalid_id;
 
     std::uint64_t ring_cursor = 0;
     for (const AnalyticRequestOperandRecord& operand : records.operands)
@@ -244,8 +264,10 @@ validate_analytic_request_packet_records(const AnalyticRequestPacketRecords& rec
     if (ring_cursor != records.rings.size())
         return AnalyticRequestPacketError::invalid_reference;
 
-    std::unordered_set<std::uint64_t> ring_ids;
-    std::unordered_set<std::uint64_t> path_ids;
+    std::vector<std::uint64_t> ring_ids;
+    std::vector<std::uint64_t> path_ids;
+    ring_ids.reserve(records.rings.size());
+    path_ids.reserve(records.rings.size());
     std::uint64_t vertex_cursor = 0;
     std::uint64_t segment_cursor = 0;
     for (const AnalyticRequestRingRecord& ring : records.rings)
@@ -253,8 +275,9 @@ validate_analytic_request_packet_records(const AnalyticRequestPacketRecords& rec
         if ((ring.flags & ~1U) != 0)
             return AnalyticRequestPacketError::invalid_packet;
         const bool open_path = (ring.flags & 1U) != 0;
-        if (ring.id == 0 || !(open_path ? path_ids : ring_ids).insert(ring.id).second)
+        if (ring.id == 0)
             return AnalyticRequestPacketError::invalid_id;
+        (open_path ? path_ids : ring_ids).push_back(ring.id);
         if (ring.vertex_begin != vertex_cursor)
             return AnalyticRequestPacketError::invalid_reference;
         vertex_cursor += ring.vertex_count;
@@ -283,17 +306,27 @@ validate_analytic_request_packet_records(const AnalyticRequestPacketRecords& rec
     }
     if (vertex_cursor != records.vertices.size() || segment_cursor != records.segments.size())
         return AnalyticRequestPacketError::invalid_reference;
+    if (!unique_ids(ring_ids) || !unique_ids(path_ids))
+        return AnalyticRequestPacketError::invalid_id;
 
-    std::unordered_set<std::uint64_t> vertex_ids;
+    std::vector<std::uint64_t> vertex_ids;
+    vertex_ids.reserve(records.vertices.size());
     for (const AnalyticRequestVertexRecord& vertex : records.vertices)
-        if (vertex.id == 0 || !vertex_ids.insert(vertex.id).second)
+    {
+        if (vertex.id == 0)
             return AnalyticRequestPacketError::invalid_id;
+        vertex_ids.push_back(vertex.id);
+    }
+    if (!unique_ids(vertex_ids))
+        return AnalyticRequestPacketError::invalid_id;
 
-    std::unordered_set<std::uint64_t> segment_ids;
+    std::vector<std::uint64_t> segment_ids;
+    segment_ids.reserve(records.segments.size());
     for (const AnalyticRequestSegmentRecord& segment : records.segments)
     {
-        if (segment.id == 0 || !segment_ids.insert(segment.id).second)
+        if (segment.id == 0)
             return AnalyticRequestPacketError::invalid_id;
+        segment_ids.push_back(segment.id);
         if (segment.curve_id == 0)
             return AnalyticRequestPacketError::invalid_id;
         if (segment.kind == 1)
@@ -312,12 +345,17 @@ validate_analytic_request_packet_records(const AnalyticRequestPacketRecords& rec
             return AnalyticRequestPacketError::invalid_packet;
         }
     }
+    if (!unique_ids(segment_ids))
+        return AnalyticRequestPacketError::invalid_id;
 
-    std::unordered_set<std::uint64_t> feature_ids;
+    std::vector<std::uint64_t> feature_ids;
+    feature_ids.reserve(records.disks.size() + records.annuli.size() + records.capsules.size() +
+                        records.swept_paths.size());
     for (const AnalyticRequestDiskRecord& disk : records.disks)
     {
-        if (disk.feature_id == 0 || !feature_ids.insert(disk.feature_id).second)
+        if (disk.feature_id == 0)
             return AnalyticRequestPacketError::invalid_id;
+        feature_ids.push_back(disk.feature_id);
         if (disk.radius_nm == 0)
             return AnalyticRequestPacketError::invalid_packet;
         if (disk.radius_nm > kMaximumLengthNm)
@@ -325,8 +363,9 @@ validate_analytic_request_packet_records(const AnalyticRequestPacketRecords& rec
     }
     for (const AnalyticRequestAnnulusRecord& annulus : records.annuli)
     {
-        if (annulus.feature_id == 0 || !feature_ids.insert(annulus.feature_id).second)
+        if (annulus.feature_id == 0)
             return AnalyticRequestPacketError::invalid_id;
+        feature_ids.push_back(annulus.feature_id);
         if (annulus.inner_radius_nm == 0 || annulus.inner_radius_nm >= annulus.outer_radius_nm)
             return AnalyticRequestPacketError::invalid_packet;
         if (annulus.outer_radius_nm > kMaximumLengthNm)
@@ -334,8 +373,9 @@ validate_analytic_request_packet_records(const AnalyticRequestPacketRecords& rec
     }
     for (const AnalyticRequestCapsuleRecord& capsule : records.capsules)
     {
-        if (capsule.feature_id == 0 || !feature_ids.insert(capsule.feature_id).second)
+        if (capsule.feature_id == 0)
             return AnalyticRequestPacketError::invalid_id;
+        feature_ids.push_back(capsule.feature_id);
         if (capsule.width_nm == 0)
             return AnalyticRequestPacketError::invalid_packet;
         if (capsule.width_nm > kMaximumLengthNm)
@@ -343,13 +383,16 @@ validate_analytic_request_packet_records(const AnalyticRequestPacketRecords& rec
     }
     for (const AnalyticRequestSweptPathRecord& swept : records.swept_paths)
     {
-        if (swept.feature_id == 0 || !feature_ids.insert(swept.feature_id).second)
+        if (swept.feature_id == 0)
             return AnalyticRequestPacketError::invalid_id;
+        feature_ids.push_back(swept.feature_id);
         if (swept.width_nm == 0)
             return AnalyticRequestPacketError::invalid_packet;
         if (swept.width_nm > kMaximumLengthNm)
             return AnalyticRequestPacketError::limit_exceeded;
     }
+    if (!unique_ids(feature_ids))
+        return AnalyticRequestPacketError::invalid_id;
 
     std::uint64_t previous_query_id = 0;
     for (const AnalyticRequestQueryRecord& query : records.relationship_queries)
@@ -359,8 +402,8 @@ validate_analytic_request_packet_records(const AnalyticRequestPacketRecords& rec
         if (query.query_id < previous_query_id)
             return AnalyticRequestPacketError::invalid_packet;
         previous_query_id = query.query_id;
-        if (job_ids.find(query.left_job_id) == job_ids.end() ||
-            job_ids.find(query.right_job_id) == job_ids.end())
+        if (!std::binary_search(job_ids.begin(), job_ids.end(), query.left_job_id) ||
+            !std::binary_search(job_ids.begin(), job_ids.end(), query.right_job_id))
             return AnalyticRequestPacketError::invalid_reference;
     }
 

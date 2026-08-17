@@ -657,9 +657,23 @@ work/memory envelope before normalization, applies exact fixed-capacity gates
 after the compact normalized counts are known, emits one structurally canonical
 standalone packet, and computes its SHA-256 closure without invoking the exact
 topology solver or algebraic normalization. Failed governed jobs contain no
-partial geometry and publish one job-only diagnostic. Batch merging,
-relationships, operation dispatch, and transport projection remain subsequent
-stages.
+partial geometry and publish one job-only diagnostic.
+
+The query-free owned batch continuation is also implemented, but is not public
+dispatch. It deterministically validates canonical request records, executes
+lowering, indexed broad phase, and records-only packet publication sequentially
+under separate per-job and whole-batch live limits, and isolates governed job
+failures. A specialized job-major merger globally reassigns source identities,
+interns source sets with the same fixed-capacity sequence trie, rebases topology
+and outcome references, validates the merged ranges, and encodes the batch
+once. Request-ID validation uses governed sorted arrays rather than hash tables;
+retained records are charged by requested capacity, including duplicate-heavy
+source inputs. The merger performs no job-pair or geometry-pair scan.
+Relationship-bearing requests are rejected outward until the indexed
+zero-repair relationship evaluator is implemented. Operation dispatch and
+transport projection remain subsequent stages. Exact/algebraic sources now
+build only in the `geometer_exact_feasibility` test oracle; ordinary
+`geometer_lib` no longer links them.
 
 Across ordered stages, the accumulator retains the resolved analytic
 arrangement and lineage. Publication to the governed nm grid occurs once after

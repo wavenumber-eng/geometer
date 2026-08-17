@@ -120,7 +120,7 @@ AnalyticFilteredRegionsResult build(const AnalyticRequestPacketRecords& records,
                                     const AnalyticFilteredGeometry& geometry,
                                     const AnalyticSolverLimits& limits = {})
 {
-    const AnalyticBroadPhaseResult broad = build_analytic_curve_candidates(geometry.bounds, limits);
+    const AnalyticBroadPhaseResult broad = build_analytic_curve_candidates(geometry.bounds);
     require(broad.error == AnalyticBroadPhaseError::none, "regions broad phase failed");
     return build_analytic_filtered_regions(records, 0, geometry, broad.pairs, limits);
 }

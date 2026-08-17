@@ -66,6 +66,7 @@ struct AnalyticFilteredOverlayTelemetry
     std::uint64_t emitted_spans = 0;
     std::uint64_t emitted_memberships = 0;
     std::uint64_t peak_working_memory_bytes = 0;
+    std::uint64_t required_working_memory_bytes = 0;
     std::uint64_t algebraic_fallback_calls = 0;
 };
 

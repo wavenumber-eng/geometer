@@ -14,6 +14,14 @@ namespace geometer::analytic_packet_detail
 [[nodiscard]] bool checked_multiply(std::uint64_t left, std::uint64_t right,
                                     std::uint64_t& output) noexcept;
 [[nodiscard]] std::uint64_t sort_units(std::uint64_t count) noexcept;
+[[nodiscard]] std::uint64_t canonical_sequence_scratch_bytes(std::uint64_t label_count,
+                                                             std::uint64_t range_count,
+                                                             bool serialize) noexcept;
+[[nodiscard]] std::uint64_t
+result_packet_records_logical_bytes(const AnalyticResultPacketRecords& records) noexcept;
+[[nodiscard]] std::uint64_t result_packet_records_logical_capacity_bytes(
+    const AnalyticResultPacketRecords& records, std::uint64_t source_reference_capacity,
+    std::uint64_t source_set_capacity, std::uint64_t source_index_capacity) noexcept;
 
 // Computes and admits the exact target-independent live phase for encoding
 // canonical packet records: retained records plus serialized table buffers

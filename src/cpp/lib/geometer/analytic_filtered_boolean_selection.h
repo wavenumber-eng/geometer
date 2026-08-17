@@ -84,6 +84,7 @@ struct AnalyticFilteredBooleanSelectionTelemetry
     std::uint64_t arrangement_peak_working_memory_bytes = 0;
     std::uint64_t predicate_calls = 0;
     std::uint64_t peak_working_memory_bytes = 0;
+    std::uint64_t required_working_memory_bytes = 0;
     std::uint64_t algebraic_fallback_calls = 0;
 };
 

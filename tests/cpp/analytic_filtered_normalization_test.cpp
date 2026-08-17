@@ -559,7 +559,9 @@ void test_exact_limits_and_sparse_scaling()
     --exact_memory.working_memory_bytes;
     const auto short_memory = build_disjoint(4, exact_memory);
     require(short_memory.error == AnalyticFilteredNormalizationError::resource_limit_exceeded &&
-                short_memory.vertices.empty() && short_memory.outcomes.events.empty(),
+                short_memory.vertices.empty() && short_memory.outcomes.events.empty() &&
+                short_memory.telemetry.required_working_memory_bytes >
+                    exact_memory.working_memory_bytes,
             "one-byte-short normalization memory leaked publication");
 }
 

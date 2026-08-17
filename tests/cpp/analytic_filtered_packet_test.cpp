@@ -111,10 +111,10 @@ AnalyticRequestPacketRecords disjoint_disk_records(std::uint32_t count)
 AnalyticFilteredJobPacketResult build(const AnalyticRequestPacketRecords& records,
                                       const AnalyticSolverLimits& limits = {})
 {
-    const auto lowered = lower_analytic_job_to_filtered_curves(records, 0, limits);
+    const auto lowered = lower_analytic_job_to_filtered_curves(records, 0);
     require(lowered.error == AnalyticFilteredLoweringError::none && lowered.value,
             "packet fixture lowering failed");
-    const auto broad = build_analytic_curve_candidates(lowered.value->bounds, limits);
+    const auto broad = build_analytic_curve_candidates(lowered.value->bounds);
     require(broad.error == AnalyticBroadPhaseError::none, "packet fixture broad phase failed");
     return build_analytic_filtered_job_packet(records, 0, *lowered.value, broad.pairs, limits);
 }
@@ -358,7 +358,8 @@ void test_exact_resource_boundaries()
     limits.working_memory_bytes = exact_memory - 1;
     const auto memory_short = build(job, limits);
     require(!successful(memory_short) && memory_short.standalone &&
-                memory_short.standalone->records.vertices.empty(),
+                memory_short.standalone->records.vertices.empty() &&
+                memory_short.telemetry.required_working_memory_bytes > limits.working_memory_bytes,
             "one-byte-short packet memory did not fail without partial geometry");
 }
 
@@ -504,7 +505,7 @@ void test_exact_sequence_memory_boundary()
         labels.push_back(100 + sequence);
         ranges.push_back({begin, 18});
     }
-    const auto succeeds = [&](std::uint64_t memory, std::uint64_t* peak)
+    const auto succeeds = [&](std::uint64_t memory, std::uint64_t* peak, std::uint64_t* required)
     {
         AnalyticFilteredPacketTelemetry telemetry;
         WorkBudget budget{std::numeric_limits<std::uint64_t>::max(), 0, &telemetry};
@@ -512,6 +513,8 @@ void test_exact_sequence_memory_boundary()
         const bool ok = canonicalize_sequences(labels, ranges, true, 4096, memory, budget, output);
         if (peak != nullptr)
             *peak = telemetry.peak_working_memory_bytes;
+        if (required != nullptr)
+            *required = telemetry.required_working_memory_bytes;
         return ok;
     };
     std::uint64_t low = 0;
@@ -519,15 +522,16 @@ void test_exact_sequence_memory_boundary()
     while (low < high)
     {
         const std::uint64_t middle = low + (high - low) / 2;
-        if (succeeds(middle, nullptr))
+        if (succeeds(middle, nullptr, nullptr))
             high = middle;
         else
             low = middle + 1;
     }
     std::uint64_t peak = 0;
-    require(low != 0 && succeeds(low, &peak) && peak == low,
+    require(low != 0 && succeeds(low, &peak, nullptr) && peak == low,
             "exact sequence logical-memory boundary did not succeed");
-    require(!succeeds(low - 1, nullptr),
+    std::uint64_t required = 0;
+    require(!succeeds(low - 1, nullptr, &required) && required > low - 1,
             "one-byte-short sequence logical-memory boundary did not fail");
 }
 

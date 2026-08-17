@@ -291,7 +291,11 @@ engine.
   governed probes and scalar ranks; record sorting never compares long vectors
   or replays every operand for every face. Predictable packet work and logical
   memory are reserved before normalization, followed by exact fixed-capacity
-  publication gates. Batch merging, relationships, and operation dispatch
+  publication gates. A non-dispatched query-free batch continuation now owns
+  sequential job isolation and a specialized canonical job-major merge with
+  global fixed-capacity source-set interning and one final encode. Its request
+  validation and all retained capacities are deterministic and governed; no
+  job-pair scan is introduced. Relationship evaluation and operation dispatch
   remain gated.
 - Solver resource limits are supplied through one internal limits value object
   rather than scattered production constants. The catalog values are governed
@@ -313,6 +317,10 @@ engine.
   algebraic engine as the primary solver.
 - OCCT and Clipper2 may remain differential or feasibility oracles. Neither is
   an independent structural authority for the public result.
+
+The production `geometer_lib` target excludes the exact/algebraic and exact
+topology-oracle sources; those compile only in the test-only
+`geometer_exact_feasibility` target on native and WASM builds.
 
 The generic TypeSpec shapes and packed A0 record layout remain frozen. The
 solver and numeric policy are reopened until the filtered implementation,

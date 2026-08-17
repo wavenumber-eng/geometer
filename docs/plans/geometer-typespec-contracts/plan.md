@@ -1057,13 +1057,21 @@ Geometer proposal, not the original consumer packet.
   closes it with SHA-256. Candidate-bounded admission precedes normalization;
   exact work/memory boundaries and shared-prefix scaling gate publication.
   Production-neutral source types keep this path independent of the exact
-  namespace. Batch merge, relationship projection, operation dispatch, and
-  transport remain pending.
-- Before filtered operation dispatch is enabled, move the retained native
-  exact/oracle sources out of the normal `geometer_lib` source list into an
-  explicit feasibility-oracle target, matching the separation already used by
-  WASM tests. Keep only dependencies required by live public operations in the
-  production link graph.
+  namespace.
+- Query-free owned batch orchestration and canonical merge are implemented but
+  not dispatched. Each job owns lowering, indexed broad phase, and records-only
+  publication under independent per-job and batch live budgets. Governed job
+  failures remain isolated. Global source remapping and fixed-capacity sequence
+  interning precede a single job-major encode; request validation, retained
+  capacities, merge traversal, and encoder peak are explicitly governed.
+  Relationship-bearing requests remain an explicit outer rejection pending the
+  indexed published-geometry relationship evaluator. Native/WASM parity and
+  mixed success/failure, annular hierarchy, local-ID collision, exact/one-short,
+  and many-job scaling fixtures gate this internal slice.
+- Native and WASM exact/algebraic sources now build only in the
+  `geometer_exact_feasibility` test target. The production `geometer_lib` source
+  list and include path exclude the exact backend while oracle and differential
+  tests remain available.
 - Keep integer nanometers on the wire and a 1 nm output grid, but apply one
   fixed 50 nm topology-resolution envelope. At-or-below-threshold gaps and
   features may bridge or collapse deterministically; above-threshold topology

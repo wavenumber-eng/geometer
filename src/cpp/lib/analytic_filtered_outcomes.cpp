@@ -172,6 +172,7 @@ class Builder
         result_.telemetry.reserved_outcomes_work_units = upstream.reserved_outcomes_work_units;
         result_.telemetry.predicate_calls = upstream.predicate_calls;
         result_.telemetry.peak_working_memory_bytes = upstream.peak_working_memory_bytes;
+        result_.telemetry.required_working_memory_bytes = upstream.required_working_memory_bytes;
         result_.telemetry.algebraic_fallback_calls = upstream.algebraic_fallback_calls;
         if (result_.lineage.error != AnalyticFilteredLineageError::none)
         {
@@ -188,6 +189,7 @@ class Builder
         }
         catch (const std::bad_alloc&)
         {
+            result_.telemetry.required_working_memory_bytes = limits_.working_memory_bytes + 1;
             result_.error = AnalyticFilteredOutcomesError::resource_limit_exceeded;
             return failure();
         }
@@ -268,9 +270,13 @@ class Builder
             checked_add(checked_multiply(ring_indices, kIndexLogicalBytes, valid),
                         association_bytes, valid),
             valid);
-        if (!valid || operand_count != evidence.size() ||
-            checked_add(retained, structural, valid) > limits_.working_memory_bytes)
+        const std::uint64_t phase = checked_add(retained, structural, valid);
+        if (!valid || operand_count != evidence.size() || phase > limits_.working_memory_bytes)
+        {
+            if (valid && phase > limits_.working_memory_bytes)
+                result_.telemetry.required_working_memory_bytes = phase;
             return resource();
+        }
         if (!charge(job.stage_count + operand_count))
             return false;
         states_.reserve(static_cast<std::size_t>(operand_count));
@@ -639,7 +645,11 @@ class Builder
         if (!valid || phase > limits_.working_memory_bytes || upstream > limits_.predicate_calls ||
             work_ > limits_.predicate_calls - upstream ||
             remaining_work > limits_.predicate_calls - upstream - work_)
+        {
+            if (valid && phase > limits_.working_memory_bytes)
+                result_.telemetry.required_working_memory_bytes = phase;
             return resource();
+        }
         if (!charge(remaining_work))
             return false;
         result_.telemetry.sort_work_units += source_sort;

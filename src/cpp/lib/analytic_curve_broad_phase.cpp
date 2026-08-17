@@ -37,10 +37,56 @@ struct ExpiryLater
 
 constexpr std::uint64_t kCanonicalOrderSlotBytes = 8;
 constexpr std::uint64_t kCanonicalExpiryEntryBytes = 32;
+constexpr std::uint64_t kCanonicalPairBytes = 8;
 static_assert(sizeof(std::size_t) <= kCanonicalOrderSlotBytes,
               "size_t exceeds the governed canonical memory charge");
 static_assert(sizeof(ExpiryEntry) <= kCanonicalExpiryEntryBytes,
               "expiry entry exceeds the governed canonical memory charge");
+static_assert(sizeof(AnalyticCurvePair) <= kCanonicalPairBytes,
+              "curve pair exceeds the governed canonical memory charge");
+
+struct BroadWorkBudget
+{
+    std::uint64_t limit = 0;
+    std::uint64_t used = 0;
+
+    bool charge(std::uint64_t units = 1) noexcept
+    {
+        if (units > limit - used)
+            return false;
+        used += units;
+        return true;
+    }
+
+    std::uint64_t remaining() const noexcept
+    {
+        return limit - used;
+    }
+};
+
+std::uint64_t ceil_log2(std::uint64_t count) noexcept
+{
+    std::uint64_t result = 0;
+    std::uint64_t value = count > 1 ? count - 1 : 0;
+    while (value != 0)
+    {
+        ++result;
+        value >>= 1U;
+    }
+    return result;
+}
+
+std::uint64_t fixed_work_upper_bound(std::uint64_t count) noexcept
+{
+    // Covers validation/dedup, four deterministic sorts, both axis-overlap
+    // scans, the primary sweep, and fixed-capacity heap/AVL updates. Dynamic
+    // interval-node visits, emitted candidates, and radix passes are charged
+    // separately at the point of use.
+    const std::uint64_t depth = ceil_log2(count) + 1;
+    if (count > std::numeric_limits<std::uint64_t>::max() / (24 * depth))
+        return std::numeric_limits<std::uint64_t>::max();
+    return count * 24 * depth;
+}
 
 bool valid_bounds(const AnalyticCurveBoundsNm& bounds)
 {
@@ -146,23 +192,30 @@ std::uint64_t sweep_base_bytes(std::size_t count)
 std::uint64_t pair_phase_bytes(std::uint64_t base, std::size_t pair_capacity,
                                std::size_t scratch_size)
 {
-    return sum_bytes({base, bytes_for(pair_capacity, sizeof(AnalyticCurvePair)),
-                      bytes_for(scratch_size, sizeof(AnalyticCurvePair))});
+    return sum_bytes({base, bytes_for(pair_capacity, kCanonicalPairBytes),
+                      bytes_for(scratch_size, kCanonicalPairBytes)});
 }
 
 bool reserve_next_pair(std::vector<AnalyticCurvePair>& pairs, std::uint64_t base_memory,
-                       const AnalyticSolverLimits& limits, AnalyticBroadPhaseTelemetry& telemetry)
+                       const AnalyticSolverLimits& limits, std::size_t& logical_capacity,
+                       AnalyticBroadPhaseTelemetry& telemetry)
 {
-    if (pairs.size() < pairs.capacity())
+    if (pairs.size() < logical_capacity)
         return true;
-    std::size_t requested = pairs.capacity() == 0 ? 64 : pairs.capacity() * 2;
+    std::size_t requested = logical_capacity == 0 ? 64 : logical_capacity * 2;
     requested =
         std::min<std::size_t>(requested, static_cast<std::size_t>(limits.examined_curve_pairs));
-    if (requested <= pairs.capacity() ||
-        pair_phase_bytes(base_memory, requested, requested) > limits.working_memory_bytes)
+    if (requested <= logical_capacity)
         return false;
+    const std::uint64_t required_bytes = pair_phase_bytes(base_memory, requested, requested);
+    if (required_bytes > limits.working_memory_bytes)
+    {
+        telemetry.required_working_memory_bytes = required_bytes;
+        return false;
+    }
     pairs.reserve(requested);
-    const std::uint64_t peak = pair_phase_bytes(base_memory, pairs.capacity(), pairs.capacity());
+    logical_capacity = requested;
+    const std::uint64_t peak = pair_phase_bytes(base_memory, logical_capacity, logical_capacity);
     if (peak > limits.working_memory_bytes)
         return false;
     telemetry.peak_working_memory_bytes = std::max(telemetry.peak_working_memory_bytes, peak);
@@ -221,6 +274,11 @@ build_analytic_curve_candidates(const std::vector<AnalyticCurveBoundsNm>& bounds
         bounds.size() > limits.boundary_occurrences)
         return failure(AnalyticBroadPhaseError::resource_limit_exceeded, telemetry);
 
+    BroadWorkBudget work{limits.predicate_calls, 0};
+    if (!work.charge(fixed_work_upper_bound(bounds.size())))
+        return failure(AnalyticBroadPhaseError::resource_limit_exceeded, telemetry);
+    telemetry.work_units = work.used;
+
     const std::uint64_t validation_memory = bytes_for(bounds.size(), sizeof(std::uint32_t));
     const std::uint64_t preindex_memory =
         sum_bytes({bytes_for(bounds.size(), 2 * kCanonicalOrderSlotBytes),
@@ -228,6 +286,7 @@ build_analytic_curve_candidates(const std::vector<AnalyticCurveBoundsNm>& bounds
     const std::uint64_t base_sweep_memory = sweep_base_bytes(bounds.size());
     const std::uint64_t base_memory =
         std::max({validation_memory, preindex_memory, base_sweep_memory});
+    telemetry.required_working_memory_bytes = base_memory;
     if (base_memory > limits.working_memory_bytes)
         return failure(AnalyticBroadPhaseError::resource_limit_exceeded, telemetry);
     telemetry.peak_working_memory_bytes = base_memory;
@@ -263,6 +322,7 @@ build_analytic_curve_candidates(const std::vector<AnalyticCurveBoundsNm>& bounds
         bounds.empty() ? nullptr : std::make_unique<ExpiryEntry[]>(bounds.size());
     std::size_t expiry_size = 0;
     std::vector<AnalyticCurvePair> pairs;
+    std::size_t logical_pair_capacity = 0;
     for (const std::size_t current_index : order)
     {
         const AnalyticCurveBoundsNm& current = bounds[current_index];
@@ -275,14 +335,17 @@ build_analytic_curve_candidates(const std::vector<AnalyticCurveBoundsNm>& bounds
             secondary_index.erase(expired.secondary_minimum, expired.curve_index);
         }
 
+        std::uint64_t query_node_visits = 0;
         const bool query_completed = secondary_index.query(
             conservative_query_minimum(axis_min(current, secondary_axis)),
-            conservative_query_maximum(axis_max(current, secondary_axis)),
-            telemetry.spatial_index_node_visits, limits.predicate_calls,
+            conservative_query_maximum(axis_max(current, secondary_axis)), query_node_visits,
+            work.remaining() / 2,
             [&](std::size_t other_index, std::uint32_t other_curve_index)
             {
                 if (telemetry.examined_curve_pairs == limits.examined_curve_pairs ||
-                    !reserve_next_pair(pairs, base_sweep_memory, limits, telemetry))
+                    !work.charge() ||
+                    !reserve_next_pair(pairs, base_sweep_memory, limits, logical_pair_capacity,
+                                       telemetry))
                 {
                     return false;
                 }
@@ -291,6 +354,10 @@ build_analytic_curve_candidates(const std::vector<AnalyticCurveBoundsNm>& bounds
                                  std::max(other_curve_index, current.curve_index)});
                 return true;
             });
+        if (!work.charge(query_node_visits))
+            return failure(AnalyticBroadPhaseError::resource_limit_exceeded, telemetry);
+        telemetry.spatial_index_node_visits += query_node_visits;
+        telemetry.work_units = work.used;
         if (!query_completed)
             return failure(AnalyticBroadPhaseError::resource_limit_exceeded, telemetry);
 
@@ -306,11 +373,21 @@ build_analytic_curve_candidates(const std::vector<AnalyticCurveBoundsNm>& bounds
 
     telemetry.peak_working_memory_bytes =
         std::max(telemetry.peak_working_memory_bytes,
-                 pair_phase_bytes(base_sweep_memory, pairs.capacity(), pairs.size()));
+                 pair_phase_bytes(base_sweep_memory, logical_pair_capacity, pairs.size()));
     if (telemetry.peak_working_memory_bytes > limits.working_memory_bytes)
+    {
+        telemetry.required_working_memory_bytes = telemetry.peak_working_memory_bytes;
+        return failure(AnalyticBroadPhaseError::resource_limit_exceeded, telemetry);
+    }
+    const std::uint64_t radix_work =
+        pairs.empty() ? 0 : static_cast<std::uint64_t>(pairs.size()) * 16 + 2'048;
+    if (!work.charge(radix_work))
         return failure(AnalyticBroadPhaseError::resource_limit_exceeded, telemetry);
     radix_sort_pairs(pairs);
     telemetry.candidate_pairs = pairs.size();
+    telemetry.work_units = work.used;
+    telemetry.retained_pair_bytes =
+        static_cast<std::uint64_t>(logical_pair_capacity) * kCanonicalPairBytes;
     AnalyticBroadPhaseResult result;
     result.pairs = std::move(pairs);
     result.telemetry = telemetry;

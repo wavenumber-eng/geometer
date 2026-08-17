@@ -77,6 +77,7 @@ class SelectionBuilder
         }
         catch (const std::bad_alloc&)
         {
+            result_.telemetry.required_working_memory_bytes = limits_.working_memory_bytes + 1;
             fail(AnalyticFilteredBooleanSelectionError::resource_limit_exceeded);
             clear_output();
         }
@@ -209,7 +210,11 @@ class SelectionBuilder
             valid);
         const std::uint64_t phase = checked_add(retained, scratch, valid);
         if (!valid || phase > limits_.working_memory_bytes)
+        {
+            if (valid)
+                result_.telemetry.required_working_memory_bytes = phase;
             return fail(AnalyticFilteredBooleanSelectionError::resource_limit_exceeded);
+        }
         result_.telemetry.peak_working_memory_bytes =
             std::max(result_.telemetry.peak_working_memory_bytes, phase);
         return true;

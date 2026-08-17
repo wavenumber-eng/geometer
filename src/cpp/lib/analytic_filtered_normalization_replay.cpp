@@ -325,7 +325,10 @@ class Validator
             !retained_pair_bytes(broad.pairs.size(), limits_.examined_curve_pairs, pair_bytes_))
             return fail(ReplayError::resource_limit_exceeded);
         if (broad.error != AnalyticBroadPhaseError::none)
+        {
+            result_.required_working_memory_bytes = broad.telemetry.required_working_memory_bytes;
             return fail(ReplayError::resource_limit_exceeded);
+        }
         if (!prepare_geometry())
             return result_;
         if (!validate_narrow(broad.pairs))
@@ -358,6 +361,7 @@ class Validator
         limits.predicate_calls -= result_.work_units;
         if (persistent_geometry_bytes_ > limits.working_memory_bytes)
         {
+            result_.required_working_memory_bytes = persistent_geometry_bytes_;
             result_.error = ReplayError::resource_limit_exceeded;
             return false;
         }
@@ -369,6 +373,9 @@ class Validator
                          narrow_peak) ||
             narrow_peak > limits_.working_memory_bytes)
         {
+            result_.required_working_memory_bytes = narrow_peak > limits_.working_memory_bytes
+                                                        ? narrow_peak
+                                                        : std::numeric_limits<std::uint64_t>::max();
             result_.error = ReplayError::resource_limit_exceeded;
             return false;
         }
@@ -378,6 +385,14 @@ class Validator
             return false;
         if (narrow.error != AnalyticNarrowPhaseError::none)
         {
+            if (narrow.telemetry.required_working_memory_bytes > limits.working_memory_bytes)
+            {
+                if (!checked_add(persistent_geometry_bytes_,
+                                 narrow.telemetry.required_working_memory_bytes,
+                                 result_.required_working_memory_bytes))
+                    result_.required_working_memory_bytes =
+                        std::numeric_limits<std::uint64_t>::max();
+            }
             result_.error = narrow.error == AnalyticNarrowPhaseError::invalid_argument
                                 ? ReplayError::invalid_argument
                                 : ReplayError::resource_limit_exceeded;
@@ -418,6 +433,9 @@ class Validator
             !checked_add(own_bytes_, kReplayFixedLogicalBytes, own_bytes_) ||
             own_bytes_ > limits_.working_memory_bytes)
         {
+            result_.required_working_memory_bytes = own_bytes_ > limits_.working_memory_bytes
+                                                        ? own_bytes_
+                                                        : std::numeric_limits<std::uint64_t>::max();
             result_.error = ReplayError::resource_limit_exceeded;
             return false;
         }
@@ -579,20 +597,35 @@ class Validator
         AnalyticSolverLimits limits = limits_;
         limits.predicate_calls -= result_.work_units;
         if (own_bytes_ > limits.working_memory_bytes)
+        {
+            result_.required_working_memory_bytes = own_bytes_;
             return fail(ReplayError::resource_limit_exceeded);
+        }
         limits.working_memory_bytes -= own_bytes_;
         AnalyticFilteredRegionsResult replay =
             build_analytic_filtered_regions(records, 0, geometry_, pairs, limits);
         std::uint64_t replay_peak = 0;
         if (!checked_add(own_bytes_, replay.telemetry.peak_working_memory_bytes, replay_peak) ||
             replay_peak > limits_.working_memory_bytes)
+        {
+            result_.required_working_memory_bytes = replay_peak > limits_.working_memory_bytes
+                                                        ? replay_peak
+                                                        : std::numeric_limits<std::uint64_t>::max();
             return fail(ReplayError::resource_limit_exceeded);
+        }
         result_.peak_working_memory_bytes =
             std::max(result_.peak_working_memory_bytes, replay_peak);
         if (!charge(replay.telemetry.predicate_calls))
             return result_;
         if (replay.error != AnalyticFilteredRegionsError::none)
         {
+            if (replay.telemetry.required_working_memory_bytes > limits.working_memory_bytes)
+            {
+                if (!checked_add(own_bytes_, replay.telemetry.required_working_memory_bytes,
+                                 result_.required_working_memory_bytes))
+                    result_.required_working_memory_bytes =
+                        std::numeric_limits<std::uint64_t>::max();
+            }
             return fail(replay.error == AnalyticFilteredRegionsError::resource_limit_exceeded
                             ? ReplayError::resource_limit_exceeded
                             : ReplayError::topology_collapse);

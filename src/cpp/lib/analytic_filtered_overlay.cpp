@@ -371,6 +371,7 @@ class OverlayBuilder
         }
         catch (const std::bad_alloc&)
         {
+            result_.telemetry.required_working_memory_bytes = limits_.working_memory_bytes + 1;
             result_.error = AnalyticFilteredOverlayError::resource_limit_exceeded;
             result_.spans.clear();
             result_.memberships.clear();
@@ -418,7 +419,11 @@ class OverlayBuilder
             bytes, checked_multiply(geometry_.curves.size() * 2, kActionLogicalBytes, valid),
             valid);
         if (!valid || bytes > limits_.working_memory_bytes)
+        {
+            if (valid)
+                result_.telemetry.required_working_memory_bytes = bytes;
             return fail(AnalyticFilteredOverlayError::resource_limit_exceeded);
+        }
         base_memory_bytes_ = bytes;
         result_.telemetry.peak_working_memory_bytes = bytes;
         return true;
@@ -442,7 +447,11 @@ class OverlayBuilder
                                          kCurveLogicalBytes + kGroupLogicalBytes, valid_memory),
                         valid_memory);
         if (!valid_memory || initial_memory > limits_.working_memory_bytes)
+        {
+            if (valid_memory)
+                result_.telemetry.required_working_memory_bytes = initial_memory;
             return fail(AnalyticFilteredOverlayError::resource_limit_exceeded);
+        }
         result_.telemetry.peak_working_memory_bytes = initial_memory;
         result_.telemetry.input_curves = geometry_.curves.size();
         result_.telemetry.input_pair_results = narrow_.intersections.size();
@@ -579,6 +588,7 @@ class OverlayBuilder
         }
         catch (const std::bad_alloc&)
         {
+            result_.telemetry.required_working_memory_bytes = limits_.working_memory_bytes + 1;
             return fail(AnalyticFilteredOverlayError::resource_limit_exceeded);
         }
         result_.telemetry.carrier_groups = groups_.size();
@@ -772,6 +782,7 @@ class OverlayBuilder
         }
         catch (const std::bad_alloc&)
         {
+            result_.telemetry.required_working_memory_bytes = limits_.working_memory_bytes + 1;
             return fail(AnalyticFilteredOverlayError::resource_limit_exceeded);
         }
         if (events_.size() != raw_count || !charge_sort(events_.size()))
@@ -1136,6 +1147,7 @@ class OverlayBuilder
         }
         catch (const std::bad_alloc&)
         {
+            result_.telemetry.required_working_memory_bytes = limits_.working_memory_bytes + 1;
             return fail(AnalyticFilteredOverlayError::resource_limit_exceeded);
         }
         return true;
@@ -1363,7 +1375,11 @@ class OverlayBuilder
         if (!valid || bytes > limits_.working_memory_bytes ||
             output_span_count_ > std::numeric_limits<std::uint32_t>::max() ||
             output_membership_count_ > std::numeric_limits<std::uint32_t>::max())
+        {
+            if (valid && bytes > limits_.working_memory_bytes)
+                result_.telemetry.required_working_memory_bytes = bytes;
             return fail(AnalyticFilteredOverlayError::resource_limit_exceeded);
+        }
         result_.telemetry.peak_working_memory_bytes = bytes;
         try
         {
@@ -1372,6 +1388,7 @@ class OverlayBuilder
         }
         catch (const std::bad_alloc&)
         {
+            result_.telemetry.required_working_memory_bytes = limits_.working_memory_bytes + 1;
             return fail(AnalyticFilteredOverlayError::resource_limit_exceeded);
         }
         return true;
@@ -1454,6 +1471,8 @@ build_analytic_filtered_overlay(const AnalyticFilteredGeometry& geometry,
     if (!valid || minimum_memory > limits.working_memory_bytes ||
         minimum_work > limits.predicate_calls)
     {
+        if (valid && minimum_memory > limits.working_memory_bytes)
+            preflight.telemetry.required_working_memory_bytes = minimum_memory;
         preflight.error = AnalyticFilteredOverlayError::resource_limit_exceeded;
         return preflight;
     }
@@ -1474,6 +1493,8 @@ build_analytic_filtered_overlay(const AnalyticFilteredGeometry& geometry,
         result.telemetry.predicate_calls = narrow_phase.telemetry.predicate_calls;
         result.telemetry.peak_working_memory_bytes =
             narrow_phase.telemetry.peak_working_memory_bytes;
+        result.telemetry.required_working_memory_bytes =
+            narrow_phase.telemetry.required_working_memory_bytes;
         result.telemetry.algebraic_fallback_calls = narrow_phase.telemetry.algebraic_fallback_calls;
         return result;
     }

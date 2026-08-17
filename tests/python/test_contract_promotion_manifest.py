@@ -416,7 +416,8 @@ def test_manifest_promoted_and_candidate_surfaces_are_complete() -> None:
     assert candidate["solver_numeric_status"] == "reopened_filtered_50nm"
     assert candidate["filtered_solver_foundation"] == (
         "direct_lowering_broad_narrow_overlay_arrangement_face_selection_material_regions_"
-        "lineage_operand_outcomes_normalization_and_packet_assembly_implemented_not_dispatched"
+        "lineage_operand_outcomes_normalization_packet_assembly_and_query_free_batch_merge_"
+        "implemented_not_dispatched"
     )
     assert candidate["request_contract"] == "geometry.analytic_planar_boolean_batch.request.a0"
     assert candidate["result_contract"] == "geometry.analytic_planar_boolean_batch.result.a0"
@@ -665,7 +666,7 @@ def test_exact_algebraic_backend_is_governed_and_non_primary() -> None:
 def test_filtered_solver_foundation_is_bounded_non_algebraic_and_not_dispatched() -> None:
     solver = _manifest()["analytic_filtered_solver"]
     assert solver == {
-        "status": "implemented_filtered_normalization_not_dispatched",
+        "status": "implemented_query_free_filtered_batch_not_dispatched",
         "design": "docs/adr/013_filtered_resolution_bounded_planar_boolean.md",
         "coordinate_grid_nm": 1,
         "topology_resolution_nm": 50,
@@ -833,25 +834,38 @@ def test_filtered_solver_foundation_is_bounded_non_algebraic_and_not_dispatched(
         "packet_sequences_source": "src/cpp/lib/analytic_filtered_packet_sequences.cpp",
         "source_reference_header": "src/cpp/lib/geometer/analytic_source_reference.h",
         "packet_test": "tests/cpp/analytic_filtered_packet_test.cpp",
-        "packet_input": (
-            "owned_filtered_normalization_with_lineage_outcomes_and_explicit_topology_maps"
-        ),
-        "packet_policy": (
-            "coordinate_preserving_canonical_source_set_topology_event_and_standalone_packet_assembly"
-        ),
+        "packet_input": ("owned_filtered_normalization_with_lineage_outcomes_and_explicit_topology_maps"),
+        "packet_policy": ("coordinate_preserving_canonical_source_set_topology_event_and_standalone_packet_assembly"),
         "packet_complexity_policy": (
-            "fixed_width_sort_keys_and_exact_prefix_trie_without_variable_length_comparators_"
-            "or_face_by_operand_replay"
+            "fixed_width_sort_keys_and_exact_prefix_trie_without_variable_length_comparators_or_face_by_operand_replay"
         ),
         "packet_budget_policy": (
-            "candidate_bounded_pre_normalization_reservation_then_exact_fixed_capacity_source_"
-            "and_packet_publication"
+            "candidate_bounded_pre_normalization_reservation_then_exact_fixed_capacity_source_and_packet_publication"
         ),
         "packet_parity_validator": "scripts/validate_analytic_filtered_packet_parity.py",
         "packet_vector_bytes": 4288,
-        "packet_vector_sha256": (
-            "a47f82ad1ab38c9e38ea55f38b44849ebd477de31c465726cbd17f5c4047ccfb"
+        "packet_vector_sha256": ("a47f82ad1ab38c9e38ea55f38b44849ebd477de31c465726cbd17f5c4047ccfb"),
+        "batch_header": "src/cpp/lib/geometer/analytic_filtered_batch.h",
+        "batch_source": "src/cpp/lib/analytic_filtered_batch.cpp",
+        "batch_test": "tests/cpp/analytic_filtered_batch_test.cpp",
+        "batch_input": (
+            "validated_canonical_request_records_with_owned_lowering_broad_phase_and_job_packet_publication"
         ),
+        "batch_policy": ("sequential_job_isolation_specialized_job_major_canonical_merge_and_single_batch_encode"),
+        "batch_complexity_policy": (
+            "deterministic_sorted_id_validation_global_source_sort_and_fixed_capacity_sequence_"
+            "interning_without_job_pair_or_variable_prefix_scans"
+        ),
+        "batch_budget_policy": (
+            "separate_per_job_and_batch_live_limits_capacity_based_retained_records_and_"
+            "precharged_validation_merge_and_encoding_phases"
+        ),
+        "batch_relationship_policy": ("explicit_outer_rejection_until_indexed_zero_repair_relationship_evaluator"),
+        "batch_parity_validator": "scripts/validate_analytic_filtered_batch_parity.py",
+        "batch_vector_bytes": 1636,
+        "batch_vector_sha256": ("a4b6a8c4a82f77c5de4e232e0a2e1520a57e7370422ddc7e4059951d192a05d9"),
+        "production_exact_source_policy": "exact_oracle_sources_excluded_from_geometer_lib",
+        "exact_oracle_target": "geometer_exact_feasibility",
     }
     implementation_paths = [
         solver[key]
@@ -895,6 +909,8 @@ def test_filtered_solver_foundation_is_bounded_non_algebraic_and_not_dispatched(
             "packet_source",
             "packet_sequences_header",
             "packet_sequences_source",
+            "batch_header",
+            "batch_source",
             "source_reference_header",
         )
     ]
@@ -928,6 +944,8 @@ def test_filtered_solver_foundation_is_bounded_non_algebraic_and_not_dispatched(
             "normalization_reconstruction_header",
             "packet_test",
             "packet_parity_validator",
+            "batch_test",
+            "batch_parity_validator",
         )
     )
 

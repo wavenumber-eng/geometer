@@ -21,6 +21,7 @@ struct ReplayResult
     ReplayError error = ReplayError::none;
     std::uint64_t work_units = 0;
     std::uint64_t peak_working_memory_bytes = 0;
+    std::uint64_t required_working_memory_bytes = 0;
     std::uint64_t candidate_pairs = 0;
 };
 

@@ -1393,6 +1393,9 @@ intersect_analytic_curve_candidates(const std::vector<AnalyticAtomicCurveNm>& cu
     if (!checked_memory(candidate_pairs.size(), logical_bytes) ||
         logical_bytes > limits.working_memory_bytes)
     {
+        result.telemetry.required_working_memory_bytes =
+            logical_bytes > limits.working_memory_bytes ? logical_bytes
+                                                        : std::numeric_limits<std::uint64_t>::max();
         result.error = AnalyticNarrowPhaseError::resource_limit_exceeded;
         return result;
     }
@@ -1405,12 +1408,14 @@ intersect_analytic_curve_candidates(const std::vector<AnalyticAtomicCurveNm>& cu
     }
     catch (const std::bad_alloc&)
     {
+        result.telemetry.required_working_memory_bytes = limits.working_memory_bytes + 1;
         result.error = AnalyticNarrowPhaseError::resource_limit_exceeded;
         return result;
     }
     if (result.intersections.capacity() >
         logical_bytes / static_cast<std::uint64_t>(sizeof(AnalyticPairIntersection)))
     {
+        result.telemetry.required_working_memory_bytes = limits.working_memory_bytes + 1;
         result.error = AnalyticNarrowPhaseError::resource_limit_exceeded;
         result.intersections.clear();
         return result;

@@ -1,6 +1,7 @@
 #include "analytic_filtered_packet_sequences.h"
 
 #include <algorithm>
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <limits>
@@ -12,6 +13,22 @@ namespace geometer::analytic_packet_detail
 {
 namespace
 {
+
+constexpr std::uint64_t kRecordsFixedBytes = 512;
+constexpr std::array<std::uint64_t, kAnalyticResultTableCount> kLogicalRecordBytes{
+    48, 56, 32, 48, 32, 4, 24, 8, 8, 32, 48, 32, 32, 4,
+};
+static_assert(sizeof(AnalyticJobResultRecord) <= kLogicalRecordBytes[0]);
+static_assert(sizeof(AnalyticDiagnosticRecord) <= kLogicalRecordBytes[1]);
+static_assert(sizeof(AnalyticResultVertexRecord) <= kLogicalRecordBytes[2]);
+static_assert(sizeof(AnalyticDirectedFragmentRecord) <= kLogicalRecordBytes[3]);
+static_assert(sizeof(AnalyticResultRingRecord) <= kLogicalRecordBytes[4]);
+static_assert(sizeof(AnalyticResultRegionRecord) <= kLogicalRecordBytes[6]);
+static_assert(sizeof(AnalyticPacketSourceSetRecord) <= kLogicalRecordBytes[8]);
+static_assert(sizeof(AnalyticSourceReference) <= kLogicalRecordBytes[9]);
+static_assert(sizeof(AnalyticOperandEventRecord) <= kLogicalRecordBytes[10]);
+static_assert(sizeof(AnalyticRelationshipResultRecord) <= kLogicalRecordBytes[11]);
+static_assert(sizeof(AnalyticRelationshipPairRecord) <= kLogicalRecordBytes[12]);
 
 constexpr std::uint32_t kNone = std::numeric_limits<std::uint32_t>::max();
 
@@ -95,6 +112,77 @@ std::uint64_t sort_units(std::uint64_t count) noexcept
     return count * levels;
 }
 
+std::uint64_t canonical_sequence_scratch_bytes(std::uint64_t label_count, std::uint64_t range_count,
+                                               bool serialize) noexcept
+{
+    std::uint64_t maximum_nodes = 0;
+    std::uint64_t table_capacity = 0;
+    std::uint64_t bytes = 0;
+    std::uint64_t term = 0;
+    if (!checked_add(label_count, 1, maximum_nodes) ||
+        maximum_nodes > std::numeric_limits<std::uint32_t>::max() ||
+        !next_table_capacity(maximum_nodes, table_capacity) ||
+        !checked_multiply(maximum_nodes, 64, bytes) || !checked_multiply(table_capacity, 4, term) ||
+        !checked_add(bytes, term, bytes) || !checked_multiply(range_count, 16, term) ||
+        !checked_add(bytes, term, bytes) ||
+        (serialize &&
+         (!checked_multiply(label_count, 4, term) || !checked_add(bytes, term, bytes))))
+        return std::numeric_limits<std::uint64_t>::max();
+    return bytes;
+}
+
+std::uint64_t
+result_packet_records_logical_bytes(const AnalyticResultPacketRecords& records) noexcept
+{
+    const std::array<std::uint64_t, kAnalyticResultTableCount> counts{
+        records.job_results.size(),
+        records.diagnostics.size(),
+        records.vertices.size(),
+        records.fragments.size(),
+        records.rings.size(),
+        records.fragment_references.size(),
+        records.regions.size(),
+        records.ring_region_references.size(),
+        records.source_sets.size(),
+        records.source_references.size(),
+        records.operand_events.size(),
+        records.relationship_results.size(),
+        records.relationship_pairs.size(),
+        records.source_reference_indices.size(),
+    };
+    std::uint64_t bytes = kRecordsFixedBytes;
+    for (std::size_t index = 0; index < counts.size(); ++index)
+    {
+        std::uint64_t term = 0;
+        if (!checked_multiply(counts[index], kLogicalRecordBytes[index], term) ||
+            !checked_add(bytes, term, bytes))
+            return std::numeric_limits<std::uint64_t>::max();
+    }
+    return bytes;
+}
+
+std::uint64_t result_packet_records_logical_capacity_bytes(
+    const AnalyticResultPacketRecords& records, std::uint64_t source_reference_capacity,
+    std::uint64_t source_set_capacity, std::uint64_t source_index_capacity) noexcept
+{
+    if (source_reference_capacity < records.source_references.size() ||
+        source_set_capacity < records.source_sets.size() ||
+        source_index_capacity < records.source_reference_indices.size())
+        return std::numeric_limits<std::uint64_t>::max();
+    std::uint64_t bytes = result_packet_records_logical_bytes(records);
+    std::uint64_t term = 0;
+    if (bytes == std::numeric_limits<std::uint64_t>::max() ||
+        !checked_multiply(source_reference_capacity - records.source_references.size(), 32, term) ||
+        !checked_add(bytes, term, bytes) ||
+        !checked_multiply(source_set_capacity - records.source_sets.size(), 8, term) ||
+        !checked_add(bytes, term, bytes) ||
+        !checked_multiply(source_index_capacity - records.source_reference_indices.size(), 4,
+                          term) ||
+        !checked_add(bytes, term, bytes))
+        return std::numeric_limits<std::uint64_t>::max();
+    return bytes;
+}
+
 bool admit_packet_encoding_memory(const AnalyticResultPacketRecords& records,
                                   std::uint64_t retained_bytes, std::uint64_t memory_limit,
                                   std::uint64_t& packet_bytes, std::uint64_t& peak_bytes) noexcept
@@ -161,22 +249,22 @@ bool canonicalize_sequences(const std::vector<std::uint32_t>& labels,
     std::uint64_t table_capacity = 0;
     if (!next_table_capacity(maximum_nodes, table_capacity))
         return false;
-    std::uint64_t logical_bytes = 0;
+    const std::uint64_t logical_bytes =
+        canonical_sequence_scratch_bytes(labels.size(), ranges.size(), serialize);
     std::uint64_t term = 0;
-    if (!checked_multiply(maximum_nodes, 64, logical_bytes) ||
-        !checked_multiply(table_capacity, 4, term) ||
-        !checked_add(logical_bytes, term, logical_bytes) ||
-        !checked_multiply(ranges.size(), 16, term) ||
-        !checked_add(logical_bytes, term, logical_bytes))
+    if (logical_bytes == std::numeric_limits<std::uint64_t>::max())
+    {
+        budget.telemetry->required_working_memory_bytes = std::numeric_limits<std::uint64_t>::max();
         return false;
-    if (serialize && (!checked_multiply(labels.size(), 4, term) ||
-                      !checked_add(logical_bytes, term, logical_bytes)))
-        return false;
+    }
     std::uint64_t persistent_bytes = 0;
     if (!checked_multiply(ranges.size(), 12, persistent_bytes) ||
         (serialize && (!checked_multiply(labels.size(), 4, term) ||
                        !checked_add(persistent_bytes, term, persistent_bytes))))
+    {
+        budget.telemetry->required_working_memory_bytes = std::numeric_limits<std::uint64_t>::max();
         return false;
+    }
     output.logical_bytes = persistent_bytes;
     std::uint64_t fixed_work = 0;
     std::uint64_t term_work = 0;
@@ -185,11 +273,19 @@ bool canonicalize_sequences(const std::vector<std::uint32_t>& labels,
         !checked_add(fixed_work, term_work, fixed_work) || !budget.charge(fixed_work))
         return false;
     std::uint64_t live_bytes = 0;
-    if (!checked_add(live_base_bytes, logical_bytes, live_bytes) || live_bytes > memory_limit)
+    if (!checked_add(live_base_bytes, logical_bytes, live_bytes))
+    {
+        budget.telemetry->required_working_memory_bytes = std::numeric_limits<std::uint64_t>::max();
         return false;
+    }
+    if (live_bytes > memory_limit)
+    {
+        budget.telemetry->required_working_memory_bytes =
+            std::max(budget.telemetry->required_working_memory_bytes, live_bytes);
+        return false;
+    }
     budget.telemetry->peak_working_memory_bytes =
         std::max(budget.telemetry->peak_working_memory_bytes, live_bytes);
-    try
     {
         output.records.reserve(ranges.size());
         if (serialize)
@@ -314,10 +410,6 @@ bool canonicalize_sequences(const std::vector<std::uint32_t>& labels,
             output.handles[index] =
                 ranges[index].count == 0 ? 0 : rank_by_node[terminal_by_range[index]];
         return true;
-    }
-    catch (const std::bad_alloc&)
-    {
-        return false;
     }
 }
 

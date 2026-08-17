@@ -323,6 +323,17 @@ void test_broad_phase_threshold_and_order()
     require(first.telemetry.peak_working_memory_bytes <=
                 kAnalyticSolverHardLimits.working_memory_bytes,
             "broad-phase working storage must remain inside the governed budget");
+    require(first.telemetry.work_units != 0 && first.telemetry.retained_pair_bytes == 64 * 8,
+            "broad phase did not expose its governed work and retained pair capacity");
+    AnalyticSolverLimits exact_work = kAnalyticSolverHardLimits;
+    exact_work.predicate_calls = first.telemetry.work_units;
+    require(build_analytic_curve_candidates(ordered, exact_work).error ==
+                AnalyticBroadPhaseError::none,
+            "exact broad-phase work boundary failed");
+    --exact_work.predicate_calls;
+    require(build_analytic_curve_candidates(ordered, exact_work).error ==
+                AnalyticBroadPhaseError::resource_limit_exceeded,
+            "one-short broad-phase work boundary did not fail closed");
 
     std::vector<AnalyticCurveBoundsNm> reversed(ordered.rbegin(), ordered.rend());
     AnalyticBroadPhaseResult second = build_analytic_curve_candidates(reversed);
@@ -457,6 +468,26 @@ void test_broad_phase_memory_charge_is_cross_runtime_canonical()
     require(build_analytic_curve_candidates(curves, one_byte_short).error ==
                 AnalyticBroadPhaseError::resource_limit_exceeded,
             "native and WASM must reject one byte below the canonical sweep charge");
+}
+
+void test_broad_phase_pair_capacity_growth_is_canonical()
+{
+    auto dense = [](std::uint32_t count)
+    {
+        std::vector<AnalyticCurveBoundsNm> curves;
+        curves.reserve(count);
+        for (std::uint32_t index = 0; index < count; ++index)
+            curves.push_back({index + 1, 0.0, 0.0, 1.0, 1.0});
+        return curves;
+    };
+    const auto below = build_analytic_curve_candidates(dense(11));
+    const auto above = build_analytic_curve_candidates(dense(12));
+    require(below.error == AnalyticBroadPhaseError::none && below.pairs.size() == 55 &&
+                below.telemetry.retained_pair_bytes == 64 * 8,
+            "below-growth broad pair capacity changed");
+    require(above.error == AnalyticBroadPhaseError::none && above.pairs.size() == 66 &&
+                above.telemetry.retained_pair_bytes == 128 * 8,
+            "above-growth broad pair capacity changed");
 }
 
 void test_narrow_phase_line_line()
@@ -1037,6 +1068,7 @@ int main()
     test_broad_phase_chooses_sparse_axis();
     test_broad_phase_avoids_crossed_projection_quadratic_work();
     test_broad_phase_memory_charge_is_cross_runtime_canonical();
+    test_broad_phase_pair_capacity_growth_is_canonical();
     test_narrow_phase_line_line();
     test_vertical_construction_column_tokens();
     test_narrow_phase_line_circle();

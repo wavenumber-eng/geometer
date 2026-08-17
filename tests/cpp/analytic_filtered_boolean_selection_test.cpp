@@ -712,7 +712,9 @@ void test_exact_resource_boundaries()
         build_analytic_filtered_boolean_selection(records, 0, geometry, broad.pairs, exact_memory);
     require(memory_failure.error ==
                     AnalyticFilteredBooleanSelectionError::resource_limit_exceeded &&
-                memory_failure.faces.empty() && memory_failure.arrangement.edges.empty(),
+                memory_failure.faces.empty() && memory_failure.arrangement.edges.empty() &&
+                memory_failure.telemetry.required_working_memory_bytes >
+                    exact_memory.working_memory_bytes,
             "one-byte-short face-selection memory budget did not fail closed");
 }
 

@@ -123,6 +123,8 @@ class Builder
         result_.telemetry.algebraic_fallback_calls = region_telemetry.algebraic_fallback_calls;
         result_.telemetry.predicate_calls = region_telemetry.predicate_calls;
         result_.telemetry.peak_working_memory_bytes = region_telemetry.peak_working_memory_bytes;
+        result_.telemetry.required_working_memory_bytes =
+            region_telemetry.required_working_memory_bytes;
         if (result_.regions.error != AnalyticFilteredRegionsError::none)
         {
             result_.error = result_.regions.error == AnalyticFilteredRegionsError::invalid_argument
@@ -147,6 +149,7 @@ class Builder
         }
         catch (const std::bad_alloc&)
         {
+            result_.telemetry.required_working_memory_bytes = limits_.working_memory_bytes + 1;
             result_.error = AnalyticFilteredLineageError::resource_limit_exceeded;
             return failure();
         }
@@ -229,6 +232,7 @@ class Builder
         const auto arrangement_work =
             result_.regions.selection.telemetry.arrangement_predicate_calls;
         const auto publication_capacity = result_.telemetry.publication_capacity_records;
+        const auto required_memory = result_.telemetry.required_working_memory_bytes;
         result_.regions = {};
         result_.boundaries.clear();
         result_.vertices.clear();
@@ -248,6 +252,7 @@ class Builder
         result_.telemetry.lineage_work_units = work_;
         result_.telemetry.predicate_calls = region_work + work_;
         result_.telemetry.peak_working_memory_bytes = region_memory;
+        result_.telemetry.required_working_memory_bytes = required_memory;
         result_.telemetry.algebraic_fallback_calls = fallback;
         return std::move(result_);
     }
@@ -867,6 +872,8 @@ class Builder
             valid);
         if (!valid || phase > limits_.working_memory_bytes)
         {
+            if (valid)
+                result_.telemetry.required_working_memory_bytes = phase;
             result_.error = AnalyticFilteredLineageError::resource_limit_exceeded;
             return false;
         }

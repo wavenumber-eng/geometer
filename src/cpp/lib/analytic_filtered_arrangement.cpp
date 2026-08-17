@@ -681,6 +681,8 @@ class ArrangementBuilder
         result_.telemetry.predicate_calls =
             admission_work_units + overlay.telemetry.predicate_calls;
         result_.telemetry.peak_working_memory_bytes = overlay.telemetry.peak_working_memory_bytes;
+        result_.telemetry.required_working_memory_bytes =
+            overlay.telemetry.required_working_memory_bytes;
         result_.telemetry.algebraic_fallback_calls = overlay.telemetry.algebraic_fallback_calls;
     }
 
@@ -697,6 +699,7 @@ class ArrangementBuilder
         }
         catch (const std::bad_alloc&)
         {
+            result_.telemetry.required_working_memory_bytes = limits_.working_memory_bytes + 1;
             result_.error = AnalyticFilteredArrangementError::resource_limit_exceeded;
             clear_output();
         }
@@ -790,7 +793,11 @@ class ArrangementBuilder
             memberships, endpoints, half_edges, overlay_.telemetry.peak_working_memory_bytes,
             valid);
         if (!valid || bytes > limits_.working_memory_bytes)
+        {
+            if (valid)
+                result_.telemetry.required_working_memory_bytes = bytes;
             return fail(AnalyticFilteredArrangementError::resource_limit_exceeded);
+        }
         result_.telemetry.peak_working_memory_bytes = bytes;
         return true;
     }
@@ -1576,6 +1583,8 @@ build_analytic_filtered_arrangement(const AnalyticFilteredGeometry& geometry,
     const std::uint64_t remaining_work = limits.predicate_calls - admission_work;
     if (!valid || minimum_memory > limits.working_memory_bytes || minimum_work > remaining_work)
     {
+        if (valid && minimum_memory > limits.working_memory_bytes)
+            preflight.telemetry.required_working_memory_bytes = minimum_memory;
         preflight.error = AnalyticFilteredArrangementError::resource_limit_exceeded;
         return preflight;
     }
@@ -1596,6 +1605,8 @@ build_analytic_filtered_arrangement(const AnalyticFilteredGeometry& geometry,
             overlay.telemetry.peak_working_memory_bytes;
         result.telemetry.predicate_calls = admission_work + overlay.telemetry.predicate_calls;
         result.telemetry.peak_working_memory_bytes = overlay.telemetry.peak_working_memory_bytes;
+        result.telemetry.required_working_memory_bytes =
+            overlay.telemetry.required_working_memory_bytes;
         result.telemetry.algebraic_fallback_calls = overlay.telemetry.algebraic_fallback_calls;
         return result;
     }

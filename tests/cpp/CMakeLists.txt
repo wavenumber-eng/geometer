@@ -119,6 +119,13 @@ target_link_libraries(geometer_analytic_filtered_packet_test PRIVATE geometer_li
 add_test(NAME geometer_analytic_filtered_packet_test
          COMMAND geometer_analytic_filtered_packet_test)
 
+add_executable(geometer_analytic_filtered_batch_test
+    analytic_filtered_batch_test.cpp
+)
+target_link_libraries(geometer_analytic_filtered_batch_test PRIVATE geometer_lib)
+add_test(NAME geometer_analytic_filtered_batch_test
+         COMMAND geometer_analytic_filtered_batch_test)
+
 add_executable(geometer_exact_rational_test
     exact_rational_test.cpp
 )
@@ -289,12 +296,7 @@ add_test(NAME geometer_exact_source_sets_test COMMAND geometer_exact_source_sets
 
 add_executable(geometer_analytic_request_packet_test
                analytic_request_packet_test.cpp)
-if(EMSCRIPTEN)
-    target_link_libraries(geometer_analytic_request_packet_test
-                          PRIVATE geometer_exact_feasibility)
-else()
-    target_link_libraries(geometer_analytic_request_packet_test PRIVATE geometer_lib)
-endif()
+target_link_libraries(geometer_analytic_request_packet_test PRIVATE geometer_lib)
 add_test(NAME geometer_analytic_request_packet_test
          COMMAND geometer_analytic_request_packet_test)
 
@@ -311,23 +313,13 @@ add_test(NAME geometer_analytic_operand_lowering_test
 
 add_executable(geometer_analytic_result_packet_layout_test
                analytic_result_packet_layout_test.cpp)
-if(EMSCRIPTEN)
-    target_link_libraries(geometer_analytic_result_packet_layout_test
-                          PRIVATE geometer_exact_feasibility)
-else()
-    target_link_libraries(geometer_analytic_result_packet_layout_test PRIVATE geometer_lib)
-endif()
+target_link_libraries(geometer_analytic_result_packet_layout_test PRIVATE geometer_lib)
 add_test(NAME geometer_analytic_result_packet_layout_test
          COMMAND geometer_analytic_result_packet_layout_test)
 
 add_executable(geometer_analytic_result_packet_records_test
                analytic_result_packet_records_test.cpp)
-if(EMSCRIPTEN)
-    target_link_libraries(geometer_analytic_result_packet_records_test
-                          PRIVATE geometer_exact_feasibility)
-else()
-    target_link_libraries(geometer_analytic_result_packet_records_test PRIVATE geometer_lib)
-endif()
+target_link_libraries(geometer_analytic_result_packet_records_test PRIVATE geometer_lib)
 add_test(NAME geometer_analytic_result_packet_records_test
          COMMAND geometer_analytic_result_packet_records_test)
 
@@ -408,6 +400,50 @@ endif()
 add_test(NAME geometer_exact_rectangle_enumeration_test
          COMMAND geometer_exact_rectangle_enumeration_test)
 
+# Exact/algebraic code is an oracle-only test target on every platform. The
+# legacy per-test branches above are retained for now to keep this block easy
+# to review against the WASM test list; replacing LINK_LIBRARIES here ensures
+# native tests cannot accidentally obtain exact symbols from geometer_lib.
+if(NOT EMSCRIPTEN)
+    set(_geometer_exact_oracle_tests
+        geometer_exact_rational_test
+        geometer_exact_polynomial_test
+        geometer_exact_resultant_test
+        geometer_exact_factorization_test
+        geometer_exact_value_test
+        geometer_exact_value_codec_test
+        geometer_exact_expression_test
+        geometer_exact_construction_test
+        geometer_exact_artifact_test
+        geometer_exact_geometry_test
+        geometer_exact_curve_domain_test
+        geometer_exact_arrangement_test
+        geometer_exact_boolean_stages_test
+        geometer_exact_boolean_regions_test
+        geometer_exact_boolean_provenance_test
+        geometer_exact_boolean_outcomes_test
+        geometer_exact_boolean_lineage_matrix_test
+        geometer_exact_result_normalization_test
+        geometer_exact_source_sets_test
+        geometer_analytic_operand_lowering_test
+        geometer_analytic_result_packet_topology_test
+        geometer_analytic_closed_form_invariants_test
+        geometer_exact_degeneracy_sweep_test
+        geometer_exact_boolean_identities_test
+        geometer_exact_boolean_metamorphic_test
+        geometer_exact_boolean_seeded_property_test
+        geometer_exact_rectangle_enumeration_test
+    )
+    foreach(_geometer_test IN LISTS _geometer_exact_oracle_tests)
+        set_property(TARGET ${_geometer_test} PROPERTY LINK_LIBRARIES
+                     geometer_exact_feasibility)
+    endforeach()
+    # This differential oracle intentionally compares exact rectangles with
+    # the existing Clipper-backed production implementation.
+    set_property(TARGET geometer_exact_rectangle_enumeration_test PROPERTY LINK_LIBRARIES
+                 "geometer_exact_feasibility;geometer_lib")
+endif()
+
 if(EMSCRIPTEN)
     set_target_properties(
         geometer_analytic_planar_boolean_feasibility_test
@@ -421,6 +457,7 @@ if(EMSCRIPTEN)
         geometer_analytic_filtered_outcomes_test
         geometer_analytic_filtered_normalization_test
         geometer_analytic_filtered_packet_test
+        geometer_analytic_filtered_batch_test
         geometer_exact_rational_test
         geometer_exact_polynomial_test
         geometer_exact_resultant_test

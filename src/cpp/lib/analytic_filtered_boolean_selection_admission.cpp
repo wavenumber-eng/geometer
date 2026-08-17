@@ -107,6 +107,8 @@ SelectionAdmission prepare_boolean_selection_admission(
         admission_peak_memory, checked_multiply(operands, kByteLogicalBytes, valid), valid);
     if (!valid || admission_peak_memory > limits.working_memory_bytes)
     {
+        if (valid)
+            preflight.telemetry.required_working_memory_bytes = admission_peak_memory;
         preflight.error = AnalyticFilteredBooleanSelectionError::resource_limit_exceeded;
         return admission;
     }
@@ -165,6 +167,7 @@ SelectionAdmission prepare_boolean_selection_admission(
     }
     catch (const std::bad_alloc&)
     {
+        preflight.telemetry.required_working_memory_bytes = limits.working_memory_bytes + 1;
         preflight.error = AnalyticFilteredBooleanSelectionError::resource_limit_exceeded;
         return admission;
     }
@@ -658,6 +661,8 @@ SelectionAdmission prepare_boolean_selection_admission(
     if (!valid || integrated_minimum_memory > limits.working_memory_bytes ||
         integrated_arrangement_work > remaining_work)
     {
+        if (valid && integrated_minimum_memory > limits.working_memory_bytes)
+            preflight.telemetry.required_working_memory_bytes = integrated_minimum_memory;
         preflight.error = AnalyticFilteredBooleanSelectionError::resource_limit_exceeded;
         return admission;
     }
@@ -678,6 +683,8 @@ SelectionAdmission prepare_boolean_selection_admission(
             admission_work + arrangement.telemetry.predicate_calls;
         preflight.telemetry.peak_working_memory_bytes =
             std::max(admission_peak_memory, arrangement.telemetry.peak_working_memory_bytes);
+        preflight.telemetry.required_working_memory_bytes =
+            arrangement.telemetry.required_working_memory_bytes;
         preflight.telemetry.algebraic_fallback_calls =
             arrangement.telemetry.algebraic_fallback_calls;
         return admission;

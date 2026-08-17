@@ -29,6 +29,14 @@ inline constexpr TopologyPolicy kStrictPublishedGeometry =
 build_curve_candidates(const std::vector<AnalyticCurveBoundsNm>& bounds,
                        const AnalyticSolverLimits& limits, TopologyPolicy policy);
 
+// Indexed two-color sweep used by published-geometry relationship evaluation.
+// Curves [0,left_curve_count) are queried only against the remaining curves;
+// no same-side candidate is examined or emitted.
+[[nodiscard]] AnalyticBroadPhaseResult
+build_bipartite_curve_candidates(const std::vector<AnalyticCurveBoundsNm>& bounds,
+                                 std::uint32_t left_curve_count, const AnalyticSolverLimits& limits,
+                                 TopologyPolicy policy);
+
 [[nodiscard]] AnalyticNarrowPhaseResult
 intersect_curve_candidates(const std::vector<AnalyticAtomicCurveNm>& curves,
                            const std::vector<AnalyticCurvePair>& candidate_pairs,

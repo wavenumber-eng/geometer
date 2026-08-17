@@ -396,6 +396,12 @@ class OverlayBuilder
         return false;
     }
 
+    bool fail_unresolved()
+    {
+        result_.telemetry.unresolved_predicate_failure = true;
+        return fail(AnalyticFilteredOverlayError::resource_limit_exceeded);
+    }
+
     bool charge(std::uint64_t units)
     {
         if (units > limits_.predicate_calls - result_.telemetry.predicate_calls)
@@ -551,7 +557,7 @@ class OverlayBuilder
                         geometry_.curves[value.pair.second - 1], value.points[point_index]);
                 if (left_status == AnalyticFilteredPointCurveStatus::uncertain ||
                     right_status == AnalyticFilteredPointCurveStatus::uncertain)
-                    return fail(AnalyticFilteredOverlayError::resource_limit_exceeded);
+                    return fail_unresolved();
                 if (left_status != AnalyticFilteredPointCurveStatus::certified_on_domain ||
                     right_status != AnalyticFilteredPointCurveStatus::certified_on_domain)
                     return fail(AnalyticFilteredOverlayError::invalid_argument);
@@ -929,7 +935,7 @@ class OverlayBuilder
         const int left_half = certified_half(left, curve);
         const int right_half = certified_half(right, curve);
         if (left_half < 0 || right_half < 0)
-            return fail(AnalyticFilteredOverlayError::resource_limit_exceeded);
+            return fail_unresolved();
         if (left_half != right_half)
             return left_half < right_half;
         const Point center = point(curve.circle.center);
@@ -993,7 +999,7 @@ class OverlayBuilder
                         representative =
                             circle_right_seam(geometry_.curves[group.representative_curve - 1]);
                     if (!valid_point(representative))
-                        return fail(AnalyticFilteredOverlayError::resource_limit_exceeded);
+                        return fail_unresolved();
                     unique_events_.back().point = representative;
                     unique_events_.back().proof_last = event.point;
                     ++result_.telemetry.resolution_merges;
@@ -1004,7 +1010,7 @@ class OverlayBuilder
                         !certified_order(unique_events_.back(), event, group))
                     {
                         if (result_.error == AnalyticFilteredOverlayError::none)
-                            return fail(AnalyticFilteredOverlayError::resource_limit_exceeded);
+                            return fail_unresolved();
                         return false;
                     }
                     unique_events_.push_back(
@@ -1051,7 +1057,7 @@ class OverlayBuilder
                     if (first.has_circle_right_partition || last.has_circle_right_partition)
                         representative = right_seam;
                     if (!valid_point(representative))
-                        return fail(AnalyticFilteredOverlayError::resource_limit_exceeded);
+                        return fail_unresolved();
                     first.point = representative;
                     first.proof_first = last.proof_first;
                     first.has_intersection = first.has_intersection || last.has_intersection;
@@ -1245,7 +1251,7 @@ class OverlayBuilder
                 return true;
             }
         }
-        return fail(AnalyticFilteredOverlayError::resource_limit_exceeded);
+        return fail_unresolved();
     }
 
     bool sweep_group(const CarrierGroup& group, std::size_t action_begin, std::size_t action_end,
@@ -1502,6 +1508,8 @@ analytic_execution_detail::build_overlay(const AnalyticFilteredGeometry& geometr
         result.telemetry.narrow_phase_predicate_calls = narrow_phase.telemetry.predicate_calls;
         result.telemetry.narrow_phase_peak_working_memory_bytes =
             narrow_phase.telemetry.peak_working_memory_bytes;
+        result.telemetry.unresolved_predicate_failure =
+            narrow_phase.telemetry.unresolved_predicate_failure;
         result.telemetry.predicate_calls = narrow_phase.telemetry.predicate_calls;
         result.telemetry.peak_working_memory_bytes =
             narrow_phase.telemetry.peak_working_memory_bytes;

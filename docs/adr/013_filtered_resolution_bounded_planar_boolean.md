@@ -299,12 +299,17 @@ engine.
   governed probes and scalar ranks; record sorting never compares long vectors
   or replays every operand for every face. Predictable packet work and logical
   memory are reserved before normalization, followed by exact fixed-capacity
-  publication gates. A non-dispatched query-free batch continuation now owns
+  publication gates. A non-dispatched batch continuation now owns
   sequential job isolation and a specialized canonical job-major merge with
   global fixed-capacity source-set interning and one final encode. Its request
   validation and all retained capacities are deterministic and governed; no
-  job-pair scan is introduced. Relationship evaluation and operation dispatch
-  remain gated.
+  job-pair scan is introduced. Relationship queries are evaluated from the
+  merged published geometry under the private strict policy. Distinct job
+  pairs use a two-color indexed broad phase, cached unordered job-pair
+  evaluation, strict face coverage, and edge/vertex incidence; all work,
+  logical memory, candidates, cache rows, output rows, and packet bytes are
+  admitted before use. Unresolved proofs fail closed as solver failures.
+  Operation dispatch remains gated.
 - Solver resource limits are supplied through one internal limits value object
   rather than scattered production constants. The catalog values are governed
   hard ceilings; a host may advertise and enforce lower effective limits, and

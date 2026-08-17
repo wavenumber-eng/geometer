@@ -1360,6 +1360,7 @@ bool append_pair_work(AnalyticNarrowPhaseResult& result, const PairWork& work,
     if (work.uncertain)
     {
         ++result.telemetry.uncertain_predicates;
+        result.telemetry.unresolved_predicate_failure = true;
         result.error = AnalyticNarrowPhaseError::resource_limit_exceeded;
         return false;
     }

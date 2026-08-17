@@ -416,8 +416,8 @@ def test_manifest_promoted_and_candidate_surfaces_are_complete() -> None:
     assert candidate["solver_numeric_status"] == "reopened_filtered_50nm"
     assert candidate["filtered_solver_foundation"] == (
         "direct_lowering_broad_narrow_overlay_arrangement_face_selection_material_regions_"
-        "lineage_operand_outcomes_normalization_packet_assembly_query_free_batch_merge_"
-        "and_strict_published_geometry_policy_implemented_not_dispatched"
+        "lineage_operand_outcomes_normalization_packet_assembly_batch_merge_strict_published_"
+        "geometry_policy_and_relationship_evaluation_implemented_not_dispatched"
     )
     assert candidate["request_contract"] == "geometry.analytic_planar_boolean_batch.request.a0"
     assert candidate["result_contract"] == "geometry.analytic_planar_boolean_batch.result.a0"
@@ -666,7 +666,7 @@ def test_exact_algebraic_backend_is_governed_and_non_primary() -> None:
 def test_filtered_solver_foundation_is_bounded_non_algebraic_and_not_dispatched() -> None:
     solver = _manifest()["analytic_filtered_solver"]
     assert solver == {
-        "status": "implemented_query_free_filtered_batch_not_dispatched",
+        "status": "implemented_filtered_batch_relationships_not_dispatched",
         "design": "docs/adr/013_filtered_resolution_bounded_planar_boolean.md",
         "coordinate_grid_nm": 1,
         "topology_resolution_nm": 50,
@@ -864,10 +864,23 @@ def test_filtered_solver_foundation_is_bounded_non_algebraic_and_not_dispatched(
             "separate_per_job_and_batch_live_limits_capacity_based_retained_records_and_"
             "precharged_validation_merge_and_encoding_phases"
         ),
-        "batch_relationship_policy": ("explicit_outer_rejection_until_indexed_zero_repair_relationship_evaluator"),
+        "batch_relationship_header": "src/cpp/lib/analytic_filtered_relationships.h",
+        "batch_relationship_source": "src/cpp/lib/analytic_filtered_relationships.cpp",
+        "batch_relationship_policy": (
+            "strict_published_geometry_face_coverage_and_incidence_with_fail_closed_unresolved_predicates"
+        ),
+        "batch_relationship_complexity_policy": (
+            "cached_unordered_job_pairs_with_two_color_indexed_broad_phase_and_output_sensitive_"
+            "region_pair_classification"
+        ),
+        "batch_relationship_budget_policy": (
+            "precharged_target_independent_work_memory_candidate_cache_and_remaining_packet_byte_limits"
+        ),
         "batch_parity_validator": "scripts/validate_analytic_filtered_batch_parity.py",
         "batch_vector_bytes": 1636,
         "batch_vector_sha256": ("a4b6a8c4a82f77c5de4e232e0a2e1520a57e7370422ddc7e4059951d192a05d9"),
+        "batch_relationship_vector_bytes": 5448,
+        "batch_relationship_vector_sha256": ("bddccaac7ac1f8b141e007574e08d282a03221b85cb684e9addaf49fa89be073"),
         "production_exact_source_policy": "exact_oracle_sources_excluded_from_geometer_lib",
         "exact_oracle_target": "geometer_exact_feasibility",
     }
@@ -950,6 +963,8 @@ def test_filtered_solver_foundation_is_bounded_non_algebraic_and_not_dispatched(
             "packet_parity_validator",
             "batch_test",
             "batch_parity_validator",
+            "batch_relationship_header",
+            "batch_relationship_source",
         )
     )
 

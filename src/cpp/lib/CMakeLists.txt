@@ -14,6 +14,7 @@ set(GEOMETER_LIB_SOURCES
     analytic_filtered_lowering.cpp
     analytic_filtered_overlay.cpp
     analytic_filtered_regions.cpp
+    analytic_filtered_relationships.cpp
     analytic_filtered_lineage.cpp
     analytic_interval_index.cpp
     analytic_numeric_filter.cpp

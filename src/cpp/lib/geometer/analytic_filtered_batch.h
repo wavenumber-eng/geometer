@@ -20,6 +20,7 @@ enum class AnalyticFilteredBatchError : std::uint8_t
     resource_limit_exceeded = 3,
     internal_error = 4,
     encoding_failed = 5,
+    solver_failed = 6,
 };
 
 struct AnalyticFilteredBatchLimits
@@ -73,10 +74,8 @@ struct AnalyticFilteredBatchResult
     AnalyticFilteredBatchTelemetry telemetry;
 };
 
-// Query-free owned batch implementation. Relationship queries remain an
-// explicit unsupported outer result until the separate zero-repair published
-// geometry evaluator is implemented and reviewed. This entry point is not yet
-// registered as a public operation.
+// Owned batch implementation. This entry point is not yet registered as a
+// public operation.
 [[nodiscard]] AnalyticFilteredBatchResult
 build_analytic_filtered_batch(const AnalyticRequestPacketRecords& records,
                               const AnalyticFilteredBatchLimits& limits = {});

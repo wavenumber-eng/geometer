@@ -229,7 +229,8 @@ void test_strict_unresolved_event_equality_fails_closed()
     const AnalyticFilteredOverlayResult result = analytic_execution_detail::build_overlay(
         geometry, {}, kAnalyticSolverHardLimits,
         analytic_execution_detail::kStrictPublishedGeometry);
-    require(result.error == AnalyticFilteredOverlayError::resource_limit_exceeded,
+    require(result.error == AnalyticFilteredOverlayError::resource_limit_exceeded &&
+                result.telemetry.unresolved_predicate_failure,
             "strict overlay guessed equality for unresolved filtered events");
 }
 

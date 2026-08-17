@@ -169,6 +169,43 @@ std::uint64_t axis_overlap_count(const std::vector<AnalyticCurveBoundsNm>& bound
     return count;
 }
 
+std::uint64_t bipartite_axis_overlap_count(const std::vector<AnalyticCurveBoundsNm>& bounds,
+                                           const std::vector<std::size_t>& order, std::uint8_t axis,
+                                           std::uint32_t left_curve_count,
+                                           analytic_execution_detail::TopologyPolicy policy)
+{
+    std::array<std::vector<double>, 2> ordered_ends;
+    const std::size_t left_count = std::min<std::size_t>(left_curve_count, order.size());
+    ordered_ends[0].reserve(left_count);
+    ordered_ends[1].reserve(order.size() - left_count);
+    for (const std::size_t index : order)
+    {
+        const std::uint32_t side = index < left_curve_count ? 0U : 1U;
+        ordered_ends[side].push_back(axis_max(bounds[index], axis));
+    }
+    std::sort(ordered_ends[0].begin(), ordered_ends[0].end());
+    std::sort(ordered_ends[1].begin(), ordered_ends[1].end());
+    std::array<std::size_t, 2> seen{};
+    std::array<std::size_t, 2> expired{};
+    std::uint64_t count = 0;
+    for (const std::size_t index : order)
+    {
+        const std::uint32_t side = index < left_curve_count ? 0U : 1U;
+        const std::uint32_t opposite = 1U - side;
+        const double query_minimum =
+            conservative_query_minimum(axis_min(bounds[index], axis), policy);
+        while (expired[opposite] < seen[opposite] &&
+               ordered_ends[opposite][expired[opposite]] < query_minimum)
+            ++expired[opposite];
+        const std::uint64_t active = seen[opposite] - expired[opposite];
+        if (active > std::numeric_limits<std::uint64_t>::max() - count)
+            return std::numeric_limits<std::uint64_t>::max();
+        count += active;
+        ++seen[side];
+    }
+    return count;
+}
+
 std::uint64_t bytes_for(std::size_t count, std::uint64_t item_size)
 {
     if (count > std::numeric_limits<std::uint64_t>::max() / item_size)
@@ -188,11 +225,12 @@ std::uint64_t sum_bytes(std::initializer_list<std::uint64_t> values)
     return result;
 }
 
-std::uint64_t sweep_base_bytes(std::size_t count)
+std::uint64_t sweep_base_bytes(std::size_t count, bool bipartite = false)
 {
-    return sum_bytes({bytes_for(count, kCanonicalOrderSlotBytes),
-                      detail::AnalyticIntervalIndex::canonical_storage_bytes(count),
-                      bytes_for(count, kCanonicalExpiryEntryBytes)});
+    return sum_bytes(
+        {bytes_for(count, kCanonicalOrderSlotBytes),
+         detail::AnalyticIntervalIndex::canonical_storage_bytes(count) * (bipartite ? 2 : 1),
+         bytes_for(count, kCanonicalExpiryEntryBytes)});
 }
 
 std::uint64_t pair_phase_bytes(std::uint64_t base, std::size_t pair_capacity,
@@ -270,15 +308,16 @@ AnalyticBroadPhaseResult failure(AnalyticBroadPhaseError error,
 
 } // namespace
 
-AnalyticBroadPhaseResult
-analytic_execution_detail::build_curve_candidates(const std::vector<AnalyticCurveBoundsNm>& bounds,
-                                                  const AnalyticSolverLimits& limits,
-                                                  TopologyPolicy policy)
+static AnalyticBroadPhaseResult build_curve_candidates_impl(
+    const std::vector<AnalyticCurveBoundsNm>& bounds, const AnalyticSolverLimits& limits,
+    analytic_execution_detail::TopologyPolicy policy, std::uint32_t left_curve_count)
 {
+    const bool bipartite = left_curve_count != std::numeric_limits<std::uint32_t>::max();
     AnalyticBroadPhaseTelemetry telemetry;
     telemetry.input_curves = bounds.size();
     if (!analytic_solver_limits_within_hard_ceilings(limits) ||
-        bounds.size() > limits.boundary_occurrences)
+        bounds.size() > limits.boundary_occurrences ||
+        (bipartite && left_curve_count > bounds.size()))
         return failure(AnalyticBroadPhaseError::resource_limit_exceeded, telemetry);
 
     BroadWorkBudget work{limits.predicate_calls, 0};
@@ -290,7 +329,7 @@ analytic_execution_detail::build_curve_candidates(const std::vector<AnalyticCurv
     const std::uint64_t preindex_memory =
         sum_bytes({bytes_for(bounds.size(), 2 * kCanonicalOrderSlotBytes),
                    bytes_for(bounds.size(), sizeof(double))});
-    const std::uint64_t base_sweep_memory = sweep_base_bytes(bounds.size());
+    const std::uint64_t base_sweep_memory = sweep_base_bytes(bounds.size(), bipartite);
     const std::uint64_t base_memory =
         std::max({validation_memory, preindex_memory, base_sweep_memory});
     telemetry.required_working_memory_bytes = base_memory;
@@ -316,15 +355,22 @@ analytic_execution_detail::build_curve_candidates(const std::vector<AnalyticCurv
     {
         std::vector<std::size_t> x_order = sorted_on_axis(bounds, 0, telemetry.sort_comparisons);
         std::vector<std::size_t> y_order = sorted_on_axis(bounds, 1, telemetry.sort_comparisons);
-        const std::uint64_t x_pairs = axis_overlap_count(bounds, x_order, 0, policy);
-        const std::uint64_t y_pairs = axis_overlap_count(bounds, y_order, 1, policy);
+        const std::uint64_t x_pairs =
+            bipartite ? bipartite_axis_overlap_count(bounds, x_order, 0, left_curve_count, policy)
+                      : axis_overlap_count(bounds, x_order, 0, policy);
+        const std::uint64_t y_pairs =
+            bipartite ? bipartite_axis_overlap_count(bounds, y_order, 1, left_curve_count, policy)
+                      : axis_overlap_count(bounds, y_order, 1, policy);
         telemetry.primary_axis = y_pairs < x_pairs ? 1 : 0;
         telemetry.primary_axis_pairs = telemetry.primary_axis == 0 ? x_pairs : y_pairs;
         order = telemetry.primary_axis == 0 ? std::move(x_order) : std::move(y_order);
     }
     const std::uint8_t secondary_axis = telemetry.primary_axis == 0 ? 1 : 0;
 
-    detail::AnalyticIntervalIndex secondary_index(bounds.size());
+    std::array<std::unique_ptr<detail::AnalyticIntervalIndex>, 2> secondary_indexes;
+    secondary_indexes[0] = std::make_unique<detail::AnalyticIntervalIndex>(bounds.size());
+    if (bipartite)
+        secondary_indexes[1] = std::make_unique<detail::AnalyticIntervalIndex>(bounds.size());
     std::unique_ptr<ExpiryEntry[]> expiry =
         bounds.empty() ? nullptr : std::make_unique<ExpiryEntry[]>(bounds.size());
     std::size_t expiry_size = 0;
@@ -339,11 +385,15 @@ analytic_execution_detail::build_curve_candidates(const std::vector<AnalyticCurv
         {
             std::pop_heap(expiry.get(), expiry.get() + expiry_size, ExpiryLater{});
             const ExpiryEntry expired = expiry[--expiry_size];
-            secondary_index.erase(expired.secondary_minimum, expired.curve_index);
+            const std::uint32_t expired_side =
+                bipartite && expired.payload >= left_curve_count ? 1U : 0U;
+            secondary_indexes[expired_side]->erase(expired.secondary_minimum, expired.curve_index);
         }
 
         std::uint64_t query_node_visits = 0;
-        const bool query_completed = secondary_index.query(
+        const std::uint32_t current_side = bipartite && current_index >= left_curve_count ? 1U : 0U;
+        const std::uint32_t query_side = bipartite ? 1U - current_side : 0U;
+        const bool query_completed = secondary_indexes[query_side]->query(
             conservative_query_minimum(axis_min(current, secondary_axis), policy),
             conservative_query_maximum(axis_max(current, secondary_axis), policy),
             query_node_visits, work.remaining() / 2,
@@ -368,9 +418,9 @@ analytic_execution_detail::build_curve_candidates(const std::vector<AnalyticCurv
         if (!query_completed)
             return failure(AnalyticBroadPhaseError::resource_limit_exceeded, telemetry);
 
-        if (!secondary_index.insert(axis_min(current, secondary_axis),
-                                    axis_max(current, secondary_axis), current_index,
-                                    current.curve_index))
+        if (!secondary_indexes[current_side]->insert(axis_min(current, secondary_axis),
+                                                     axis_max(current, secondary_axis),
+                                                     current_index, current.curve_index))
             return failure(AnalyticBroadPhaseError::resource_limit_exceeded, telemetry);
         expiry[expiry_size++] = {axis_max(current, telemetry.primary_axis),
                                  axis_min(current, secondary_axis), current_index,
@@ -399,6 +449,22 @@ analytic_execution_detail::build_curve_candidates(const std::vector<AnalyticCurv
     result.pairs = std::move(pairs);
     result.telemetry = telemetry;
     return result;
+}
+
+AnalyticBroadPhaseResult
+analytic_execution_detail::build_curve_candidates(const std::vector<AnalyticCurveBoundsNm>& bounds,
+                                                  const AnalyticSolverLimits& limits,
+                                                  TopologyPolicy policy)
+{
+    return build_curve_candidates_impl(bounds, limits, policy,
+                                       std::numeric_limits<std::uint32_t>::max());
+}
+
+AnalyticBroadPhaseResult analytic_execution_detail::build_bipartite_curve_candidates(
+    const std::vector<AnalyticCurveBoundsNm>& bounds, std::uint32_t left_curve_count,
+    const AnalyticSolverLimits& limits, TopologyPolicy policy)
+{
+    return build_curve_candidates_impl(bounds, limits, policy, left_curve_count);
 }
 
 AnalyticBroadPhaseResult

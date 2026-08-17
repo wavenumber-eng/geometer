@@ -1,6 +1,7 @@
 #include "geometer/analytic_filtered_batch.h"
 
 #include "analytic_filtered_packet_sequences.h"
+#include "analytic_filtered_relationships.h"
 #include "analytic_result_packet_records_internal.h"
 #include "geometer/analytic_curve_broad_phase.h"
 #include "geometer/analytic_filtered_lowering.h"
@@ -266,9 +267,14 @@ std::uint64_t merged_validation_visits(const Totals& totals) noexcept
 bool validate_merged_batch(const AnalyticResultPacketRecords& merged,
                            const AnalyticRequestPacketRecords& request) noexcept
 {
-    if (merged.job_results.size() != request.jobs.size() || !merged.relationship_results.empty() ||
-        !merged.relationship_pairs.empty())
+    if (merged.job_results.size() != request.jobs.size() ||
+        merged.relationship_results.size() != request.relationship_queries.size())
         return false;
+
+    for (std::size_t index = 0; index < merged.relationship_results.size(); ++index)
+        if (merged.relationship_results[index].query_id !=
+            request.relationship_queries[index].query_id)
+            return false;
 
     std::size_t diagnostic_cursor = 0;
     std::size_t region_cursor = 0;
@@ -406,6 +412,7 @@ enum class MergeError
 {
     none,
     resource,
+    solver,
     invalid,
     encoding,
 };
@@ -707,6 +714,39 @@ MergeError merge_jobs(std::vector<AnalyticResultPacketRecords>& jobs,
             region_base += static_cast<std::uint32_t>(local.regions.size());
         }
 
+        if (!request.relationship_queries.empty())
+        {
+            const std::uint64_t remaining_work = budget.used <= limits.assembly_work_units
+                                                     ? limits.assembly_work_units - budget.used
+                                                     : 0;
+            std::uint64_t base_packet_bytes = 0;
+            std::uint64_t base_encoding_peak = 0;
+            if (!admit_packet_encoding_memory(merged, 0, limits.working_memory_bytes,
+                                              base_packet_bytes, base_encoding_peak) ||
+                base_packet_bytes > kMaximumPacketBytes)
+                return MergeError::resource;
+            auto relationships = analytic_relationship_detail::evaluate(
+                request, merged, limits.per_job, remaining_work, limits.working_memory_bytes,
+                actual_publication_peak, kMaximumPacketBytes - base_packet_bytes);
+            result.telemetry.candidate_pairs += relationships.telemetry.candidate_pairs;
+            result.telemetry.algebraic_fallback_calls +=
+                relationships.telemetry.algebraic_fallback_calls;
+            result.telemetry.peak_working_memory_bytes =
+                std::max(result.telemetry.peak_working_memory_bytes,
+                         relationships.telemetry.peak_working_memory_bytes);
+            if (relationships.error ==
+                analytic_relationship_detail::EvaluationError::resource_limit_exceeded)
+                return MergeError::resource;
+            if (relationships.error == analytic_relationship_detail::EvaluationError::solver_failed)
+                return MergeError::solver;
+            if (relationships.error != analytic_relationship_detail::EvaluationError::none)
+                return MergeError::invalid;
+            if (!budget.charge(relationships.telemetry.work_units))
+                return MergeError::resource;
+            merged.relationship_results = std::move(relationships.results);
+            merged.relationship_pairs = std::move(relationships.pairs);
+        }
+
         if (!validate_merged_batch(merged, request))
             return MergeError::invalid;
 
@@ -789,12 +829,6 @@ build_analytic_filtered_batch(const AnalyticRequestPacketRecords& records,
     }
     result.telemetry.peak_working_memory_bytes = validation_bytes;
     result.telemetry.merge_work_units = validation_work;
-    if (!records.relationship_queries.empty())
-    {
-        result.error = AnalyticFilteredBatchError::relationships_not_implemented;
-        return result;
-    }
-
     try
     {
         std::vector<AnalyticResultPacketRecords> job_records;
@@ -1035,6 +1069,8 @@ build_analytic_filtered_batch(const AnalyticRequestPacketRecords& records,
         const MergeError merge = merge_jobs(job_records, records, limits, validation_work, result);
         if (merge == MergeError::resource)
             result.error = AnalyticFilteredBatchError::resource_limit_exceeded;
+        else if (merge == MergeError::solver)
+            result.error = AnalyticFilteredBatchError::solver_failed;
         else if (merge == MergeError::invalid)
             result.error = AnalyticFilteredBatchError::internal_error;
         else if (merge == MergeError::encoding)

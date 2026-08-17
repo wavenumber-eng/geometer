@@ -1,6 +1,9 @@
 #include "geometer/analytic_filtered_batch.h"
 #include "geometer/analytic_result_packet_records.h"
 
+#include "analytic_filtered_execution_policy.h"
+#include "analytic_filtered_relationships.h"
+
 #include <algorithm>
 #include <cstdint>
 #include <cstdlib>
@@ -9,6 +12,8 @@
 #include <limits>
 #include <sstream>
 #include <string>
+#include <tuple>
+#include <vector>
 
 namespace
 {
@@ -71,6 +76,425 @@ AnalyticRequestPacketRecords empty_jobs(std::uint32_t count)
     for (std::uint32_t index = 0; index < count; ++index)
         records.jobs.push_back({1000 + index, 0, 0});
     return records;
+}
+
+struct RectangleSpec
+{
+    std::int64_t minimum_x = 0;
+    std::int64_t minimum_y = 0;
+    std::int64_t maximum_x = 0;
+    std::int64_t maximum_y = 0;
+};
+
+AnalyticRequestPacketRecords rectangle_jobs(const std::vector<RectangleSpec>& rectangles)
+{
+    AnalyticRequestPacketRecords records;
+    for (std::uint32_t index = 0; index < rectangles.size(); ++index)
+    {
+        const std::uint64_t base = 1000 + static_cast<std::uint64_t>(index) * 100;
+        records.jobs.push_back({10 + index, index, 1});
+        records.stages.push_back({base, 1, index, 1});
+        records.operands.push_back({base + 1, 1, index});
+        records.planar_regions.push_back({base + 2, index, 0, 0});
+        const std::uint32_t vertex_begin = static_cast<std::uint32_t>(records.vertices.size());
+        const std::uint32_t segment_begin = static_cast<std::uint32_t>(records.segments.size());
+        const auto& value = rectangles[index];
+        records.vertices.push_back({base + 10, value.minimum_x, value.minimum_y});
+        records.vertices.push_back({base + 11, value.maximum_x, value.minimum_y});
+        records.vertices.push_back({base + 12, value.maximum_x, value.maximum_y});
+        records.vertices.push_back({base + 13, value.minimum_x, value.maximum_y});
+        for (std::uint32_t edge = 0; edge < 4; ++edge)
+            records.segments.push_back({base + 20 + edge, base + 30 + edge, 1, 0, false, 0, 0});
+        records.rings.push_back({base + 3, vertex_begin, 4, segment_begin, 4, 0});
+    }
+    return records;
+}
+
+const AnalyticRelationshipPairRecord& single_pair(const AnalyticFilteredBatchResult& result,
+                                                  std::uint8_t dimension)
+{
+    require(result.error == AnalyticFilteredBatchError::none && result.packet,
+            "relationship batch failed");
+    require(result.packet->records.relationship_results.size() == 1 &&
+                result.packet->records.relationship_results[0].status == 0 &&
+                result.packet->records.relationship_results[0].aggregate_dimension == dimension &&
+                result.packet->records.relationship_results[0].pair_count == 1 &&
+                result.packet->records.relationship_pairs.size() == 1,
+            "relationship cardinality or aggregate drifted");
+    return result.packet->records.relationship_pairs.front();
+}
+
+void test_rectangle_relationship_dimensions_and_containment()
+{
+    const auto evaluate = [](RectangleSpec left, RectangleSpec right)
+    {
+        auto records = rectangle_jobs({left, right});
+        records.relationship_queries = {{9000, 10, 11}};
+        require(validate_analytic_request_packet_records(records) ==
+                    AnalyticRequestPacketError::none,
+                "rectangle relationship request invalid");
+        return build_analytic_filtered_batch(records);
+    };
+
+    const auto point = evaluate({0, 0, 1000, 1000}, {1000, 1000, 2000, 2000});
+    require(single_pair(point, 1).dimension == 1, "point contact was not one-dimensional row 1");
+
+    const auto curve = evaluate({0, 0, 1000, 1000}, {1000, 0, 2000, 1000});
+    require(single_pair(curve, 2).dimension == 2, "shared edge was not curve contact");
+
+    const auto area = evaluate({0, 0, 1500, 1000}, {1000, 0, 2000, 1000});
+    const auto& area_pair = single_pair(area, 3);
+    require(area_pair.dimension == 3 && !area_pair.equality && !area_pair.left_contains_right &&
+                !area_pair.right_contains_left,
+            "partial area overlap flags drifted");
+
+    const auto contained = evaluate({0, 0, 2000, 2000}, {500, 500, 1500, 1500});
+    const auto& contained_pair = single_pair(contained, 3);
+    require(contained_pair.left_contains_right && !contained_pair.right_contains_left &&
+                !contained_pair.equality,
+            "strict containment flags drifted");
+
+    const auto equal = evaluate({0, 0, 1000, 1000}, {0, 0, 1000, 1000});
+    const auto& equal_pair = single_pair(equal, 3);
+    require(equal_pair.equality && equal_pair.left_contains_right && equal_pair.right_contains_left,
+            "equality flags drifted");
+}
+
+void test_relationship_query_orientation_and_strict_gap()
+{
+    auto records = rectangle_jobs({{0, 0, 1000, 1000}, {999, 0, 2000, 1000}});
+    records.relationship_queries = {{9000, 10, 11}, {9001, 11, 10}, {9002, 10, 11}};
+    const auto result = build_analytic_filtered_batch(records);
+    require(result.error == AnalyticFilteredBatchError::none && result.packet &&
+                result.packet->records.relationship_results.size() == 3 &&
+                result.packet->records.relationship_pairs.size() == 3,
+            "repeated/reverse relationship queries failed");
+    const auto& pairs = result.packet->records.relationship_pairs;
+    require(pairs[0].dimension == 3 && pairs[1].dimension == 3 && pairs[2].dimension == 3 &&
+                pairs[0].left_result_region_id == pairs[1].right_result_region_id &&
+                pairs[0].right_result_region_id == pairs[1].left_result_region_id,
+            "reverse relationship orientation drifted");
+
+    auto gap = rectangle_jobs({{0, 0, 1000, 1000}, {1001, 0, 2000, 1000}});
+    gap.relationship_queries = {{9000, 10, 11}};
+    const auto gap_result = build_analytic_filtered_batch(gap);
+    require(gap_result.error == AnalyticFilteredBatchError::none && gap_result.packet &&
+                gap_result.packet->records.relationship_results[0].aggregate_dimension == 0 &&
+                gap_result.packet->records.relationship_pairs.empty(),
+            "one-nanometre gap was repaired by relationship evaluation");
+}
+
+AnalyticRequestPacketRecords
+disk_jobs(const std::vector<std::tuple<std::int64_t, std::int64_t, std::uint64_t>>& disks)
+{
+    AnalyticRequestPacketRecords records;
+    for (std::uint32_t index = 0; index < disks.size(); ++index)
+    {
+        records.jobs.push_back({10 + index, index, 1});
+        records.stages.push_back({100 + index, 1, index, 1});
+        records.operands.push_back({1000 + index, 2, index});
+        const auto [x, y, radius] = disks[index];
+        records.disks.push_back({5000 + index, x, y, radius});
+    }
+    return records;
+}
+
+void test_arc_relationships_and_dependency_status()
+{
+    const auto evaluate = [](std::int64_t x, std::uint64_t left_radius, std::uint64_t right_radius)
+    {
+        auto records = disk_jobs({{0, 0, left_radius}, {x, 0, right_radius}});
+        records.relationship_queries = {{9000, 10, 11}};
+        return build_analytic_filtered_batch(records);
+    };
+    const auto gap = evaluate(2001, 1000, 1000);
+    require(gap.error == AnalyticFilteredBatchError::none && gap.packet &&
+                gap.packet->records.relationship_pairs.empty(),
+            "one-nanometre disk gap was repaired closed");
+    require(single_pair(evaluate(1999, 1000, 1000), 3).dimension == 3,
+            "one-nanometre disk overlap was not area");
+    require(single_pair(evaluate(2000, 1000, 1000), 1).dimension == 1,
+            "externally tangent disks were not point contact");
+    const auto& contained = single_pair(evaluate(0, 2000, 1000), 3);
+    require(contained.left_contains_right && !contained.right_contains_left,
+            "disk containment flags drifted");
+    require(single_pair(evaluate(0, 1000, 1000), 3).equality, "equal disks were not equal");
+
+    auto failed = unsupported_then_disk();
+    failed.relationship_queries = {{9000, 10, 20}};
+    const auto failed_result = build_analytic_filtered_batch(failed);
+    require(failed_result.error == AnalyticFilteredBatchError::none && failed_result.packet &&
+                failed_result.packet->records.relationship_results.size() == 1 &&
+                failed_result.packet->records.relationship_results[0].status == 1 &&
+                failed_result.packet->records.relationship_results[0].pair_begin == 0 &&
+                failed_result.packet->records.relationship_results[0].pair_count == 0,
+            "failed dependency was not query-locally skipped");
+
+    auto empty = empty_jobs(2);
+    empty.relationship_queries = {{9000, 1000, 1001}};
+    const auto empty_result = build_analytic_filtered_batch(empty);
+    require(empty_result.error == AnalyticFilteredBatchError::none && empty_result.packet &&
+                empty_result.packet->records.relationship_results[0].status == 0 &&
+                empty_result.packet->records.relationship_results[0].aggregate_dimension == 0 &&
+                empty_result.packet->records.relationship_pairs.empty(),
+            "empty successful jobs were not disjoint");
+}
+
+void test_self_query_multi_region_and_island()
+{
+    auto touching = rectangle_jobs({{0, 0, 1000, 1000}, {1000, 1000, 2000, 2000}});
+    touching.jobs = {{10, 0, 1}};
+    touching.stages = {{900, 1, 0, 2}};
+    touching.relationship_queries = {{9000, 10, 10}};
+    const auto touching_result = build_analytic_filtered_batch(touching);
+    require(touching_result.error == AnalyticFilteredBatchError::none && touching_result.packet &&
+                touching_result.packet->records.regions.size() == 2 &&
+                touching_result.packet->records.relationship_results[0].aggregate_dimension == 3 &&
+                touching_result.packet->records.relationship_pairs.size() == 4,
+            "self-query point-touching regions failed");
+    std::uint32_t diagonal = 0;
+    std::uint32_t ordered_points = 0;
+    for (const auto& pair : touching_result.packet->records.relationship_pairs)
+    {
+        if (pair.left_result_region_id == pair.right_result_region_id)
+            diagonal += pair.dimension == 3 && pair.equality ? 1U : 0U;
+        else
+            ordered_points += pair.dimension == 1 ? 1U : 0U;
+    }
+    require(diagonal == 2 && ordered_points == 2,
+            "self-query diagonal or ordered point rows drifted");
+
+    AnalyticRequestPacketRecords island;
+    island.jobs = {{10, 0, 1}};
+    island.stages = {{100, 1, 0, 2}};
+    island.operands = {{1000, 3, 0}, {1001, 2, 0}};
+    island.annuli = {{5000, 0, 0, 1000, 2000}};
+    island.disks = {{5001, 0, 0, 500}};
+    island.relationship_queries = {{9000, 10, 10}};
+    const auto island_result = build_analytic_filtered_batch(island);
+    require(island_result.error == AnalyticFilteredBatchError::none && island_result.packet &&
+                island_result.packet->records.regions.size() == 2 &&
+                island_result.packet->records.rings.size() == 3 &&
+                island_result.packet->records.relationship_pairs.size() == 2,
+            "hole/island self relationship failed");
+    for (const auto& pair : island_result.packet->records.relationship_pairs)
+        require(pair.left_result_region_id == pair.right_result_region_id && pair.dimension == 3 &&
+                    pair.equality,
+                "hole/island emitted a false cross-region relationship");
+}
+
+void test_relationship_resource_boundaries()
+{
+    auto records = rectangle_jobs({{0, 0, 1500, 1000}, {1000, 0, 2000, 1000}});
+    records.relationship_queries = {{9000, 10, 11}};
+    const auto baseline = build_analytic_filtered_batch(records);
+    require(baseline.error == AnalyticFilteredBatchError::none && baseline.packet &&
+                baseline.telemetry.algebraic_fallback_calls == 0,
+            "relationship resource baseline failed");
+    AnalyticFilteredBatchLimits exact;
+    exact.assembly_work_units = baseline.telemetry.merge_work_units;
+    const auto exact_result = build_analytic_filtered_batch(records, exact);
+    require(exact_result.error == AnalyticFilteredBatchError::none && exact_result.packet &&
+                exact_result.packet->bytes == baseline.packet->bytes,
+            "exact relationship work boundary failed");
+    --exact.assembly_work_units;
+    const auto short_result = build_analytic_filtered_batch(records, exact);
+    require(short_result.error == AnalyticFilteredBatchError::resource_limit_exceeded &&
+                !short_result.packet,
+            "one-short relationship work did not fail closed");
+
+    AnalyticFilteredBatchLimits memory;
+    std::uint64_t low = 0;
+    std::uint64_t high = memory.working_memory_bytes;
+    while (low < high)
+    {
+        const std::uint64_t middle = low + (high - low) / 2;
+        memory.working_memory_bytes = middle;
+        const auto candidate = build_analytic_filtered_batch(records, memory);
+        if (candidate.error == AnalyticFilteredBatchError::none && candidate.packet &&
+            candidate.packet->bytes == baseline.packet->bytes)
+            high = middle;
+        else
+            low = middle + 1;
+    }
+    memory.working_memory_bytes = low;
+    const auto exact_memory = build_analytic_filtered_batch(records, memory);
+    require(exact_memory.error == AnalyticFilteredBatchError::none && exact_memory.packet &&
+                exact_memory.packet->bytes == baseline.packet->bytes,
+            "exact relationship memory boundary failed");
+    require(memory.working_memory_bytes != 0, "relationship memory threshold was zero");
+    --memory.working_memory_bytes;
+    const auto short_memory = build_analytic_filtered_batch(records, memory);
+    require(short_memory.error == AnalyticFilteredBatchError::resource_limit_exceeded &&
+                !short_memory.packet,
+            "one-byte-short relationship memory did not fail closed");
+
+    auto arc_records = disk_jobs({{0, 0, 1000}, {1999, 0, 1000}});
+    arc_records.relationship_queries = {{9050, 10, 11}};
+    const auto arc_baseline = build_analytic_filtered_batch(arc_records);
+    require(arc_baseline.error == AnalyticFilteredBatchError::none && arc_baseline.packet,
+            "arc relationship work baseline failed");
+    AnalyticFilteredBatchLimits arc_work;
+    arc_work.assembly_work_units = arc_baseline.telemetry.merge_work_units;
+    const auto arc_exact = build_analytic_filtered_batch(arc_records, arc_work);
+    require(arc_exact.error == AnalyticFilteredBatchError::none && arc_exact.packet &&
+                arc_exact.packet->bytes == arc_baseline.packet->bytes,
+            "exact arc relationship work boundary failed");
+    --arc_work.assembly_work_units;
+    const auto arc_short = build_analytic_filtered_batch(arc_records, arc_work);
+    require(arc_short.error == AnalyticFilteredBatchError::resource_limit_exceeded &&
+                !arc_short.packet,
+            "one-short arc relationship work did not fail closed");
+}
+
+void test_relationship_bipartite_index_boundaries()
+{
+    const auto sparse = [](std::uint32_t count)
+    {
+        std::vector<AnalyticCurveBoundsNm> bounds;
+        bounds.reserve(count * 2);
+        for (std::uint32_t index = 0; index < count; ++index)
+            bounds.push_back({index + 1, 0.0, static_cast<double>(index), 1000.0,
+                              static_cast<double>(index + count)});
+        for (std::uint32_t index = 0; index < count; ++index)
+            bounds.push_back({count + index + 1, 10'000.0, static_cast<double>(index), 11'000.0,
+                              static_cast<double>(index + count)});
+        return analytic_execution_detail::build_bipartite_curve_candidates(
+            bounds, count, {}, analytic_execution_detail::kStrictPublishedGeometry);
+    };
+    const auto small = sparse(32);
+    const auto large = sparse(64);
+    require(small.error == AnalyticBroadPhaseError::none && small.pairs.empty() &&
+                large.error == AnalyticBroadPhaseError::none && large.pairs.empty(),
+            "bipartite index emitted same-side or disjoint cross-side candidates");
+    require(large.telemetry.work_units < small.telemetry.work_units * 3 &&
+                large.telemetry.peak_working_memory_bytes <
+                    small.telemetry.peak_working_memory_bytes * 3,
+            "sparse bipartite index exceeded the 2x scaling envelope");
+
+    std::vector<AnalyticCurveBoundsNm> dense;
+    for (std::uint32_t index = 0; index < 9; ++index)
+        dense.push_back({index + 1, 0.0, 0.0, 1000.0, 1000.0});
+    AnalyticSolverLimits limits;
+    limits.examined_curve_pairs = 19;
+    const auto short_result = analytic_execution_detail::build_bipartite_curve_candidates(
+        dense, 4, limits, analytic_execution_detail::kStrictPublishedGeometry);
+    require(short_result.error == AnalyticBroadPhaseError::resource_limit_exceeded,
+            "one-short bipartite candidate cap did not fail closed");
+    limits.examined_curve_pairs = 20;
+    const auto exact_result = analytic_execution_detail::build_bipartite_curve_candidates(
+        dense, 4, limits, analytic_execution_detail::kStrictPublishedGeometry);
+    require(exact_result.error == AnalyticBroadPhaseError::none && exact_result.pairs.size() == 20,
+            "exact bipartite candidate cap drifted");
+    limits.working_memory_bytes = exact_result.telemetry.peak_working_memory_bytes;
+    const auto exact_memory = analytic_execution_detail::build_bipartite_curve_candidates(
+        dense, 4, limits, analytic_execution_detail::kStrictPublishedGeometry);
+    require(exact_memory.error == AnalyticBroadPhaseError::none && exact_memory.pairs.size() == 20,
+            "exact bipartite index memory boundary failed");
+    --limits.working_memory_bytes;
+    const auto short_memory = analytic_execution_detail::build_bipartite_curve_candidates(
+        dense, 4, limits, analytic_execution_detail::kStrictPublishedGeometry);
+    require(short_memory.error == AnalyticBroadPhaseError::resource_limit_exceeded,
+            "one-short bipartite index memory did not fail closed");
+
+    std::vector<AnalyticCurveBoundsNm> sixty_five;
+    sixty_five.reserve(66);
+    for (std::uint32_t index = 0; index < 66; ++index)
+        sixty_five.push_back({index + 1, 0.0, 0.0, 1000.0, 1000.0});
+    AnalyticSolverLimits capacity_limits;
+    const auto capacity = analytic_execution_detail::build_bipartite_curve_candidates(
+        sixty_five, 1, capacity_limits, analytic_execution_detail::kStrictPublishedGeometry);
+    require(capacity.error == AnalyticBroadPhaseError::none && capacity.pairs.size() == 65 &&
+                capacity.telemetry.retained_pair_bytes == 128 * 8,
+            "65-candidate retained capacity drifted");
+    capacity_limits.working_memory_bytes = capacity.telemetry.peak_working_memory_bytes;
+    require(analytic_execution_detail::build_bipartite_curve_candidates(
+                sixty_five, 1, capacity_limits, analytic_execution_detail::kStrictPublishedGeometry)
+                    .error == AnalyticBroadPhaseError::none,
+            "65-candidate exact memory boundary failed");
+    --capacity_limits.working_memory_bytes;
+    require(analytic_execution_detail::build_bipartite_curve_candidates(
+                sixty_five, 1, capacity_limits, analytic_execution_detail::kStrictPublishedGeometry)
+                    .error == AnalyticBroadPhaseError::resource_limit_exceeded,
+            "65-candidate one-short memory did not fail closed");
+}
+
+void test_relationship_cache_and_failed_query_memory_boundaries()
+{
+    const auto verify = [](const AnalyticRequestPacketRecords& records, const char* exact_message,
+                           const char* short_message)
+    {
+        const auto baseline = build_analytic_filtered_batch(records);
+        require(baseline.error == AnalyticFilteredBatchError::none && baseline.packet,
+                "relationship memory fixture failed");
+        AnalyticFilteredBatchLimits limits;
+        std::uint64_t low = 0;
+        std::uint64_t high = limits.working_memory_bytes;
+        while (low < high)
+        {
+            const std::uint64_t middle = low + (high - low) / 2;
+            limits.working_memory_bytes = middle;
+            const auto candidate = build_analytic_filtered_batch(records, limits);
+            if (candidate.error == AnalyticFilteredBatchError::none && candidate.packet &&
+                candidate.packet->bytes == baseline.packet->bytes)
+                high = middle;
+            else
+                low = middle + 1;
+        }
+        limits.working_memory_bytes = low;
+        const auto exact = build_analytic_filtered_batch(records, limits);
+        require(exact.error == AnalyticFilteredBatchError::none && exact.packet &&
+                    exact.packet->bytes == baseline.packet->bytes,
+                exact_message);
+        require(low != 0, "relationship cache memory threshold was zero");
+        --limits.working_memory_bytes;
+        const auto one_short = build_analytic_filtered_batch(records, limits);
+        require(one_short.error == AnalyticFilteredBatchError::resource_limit_exceeded &&
+                    !one_short.packet,
+                short_message);
+    };
+
+    auto failed = unsupported_then_disk();
+    failed.relationship_queries = {{9000, 10, 20}, {9001, 20, 10}, {9002, 10, 10}, {9003, 10, 20}};
+    verify(failed, "exact all-failed query memory boundary failed",
+           "one-short all-failed query memory did not fail closed");
+
+    auto repeated = rectangle_jobs({{0, 0, 1500, 1000}, {1000, 0, 2000, 1000}});
+    repeated.relationship_queries = {
+        {9100, 10, 11}, {9101, 11, 10}, {9102, 10, 11}, {9103, 11, 10}};
+    verify(repeated, "exact repeated-query cache memory boundary failed",
+           "one-short repeated-query cache memory did not fail closed");
+
+    auto mixed = rectangle_jobs({{0, 0, 2000, 2000}});
+    mixed.jobs.push_back({11, 1, 1});
+    mixed.stages.push_back({200, 1, 1, 1});
+    mixed.operands.push_back({2000, 2, 0});
+    mixed.disks.push_back({5000, 1000, 1000, 750});
+    mixed.relationship_queries = {{9200, 10, 11}};
+    verify(mixed, "exact mixed line/arc relationship memory boundary failed",
+           "one-short mixed line/arc relationship memory did not fail closed");
+}
+
+void test_relationship_remaining_packet_boundary()
+{
+    auto request = rectangle_jobs({{0, 0, 1000, 1000}, {1000, 1000, 2000, 2000}});
+    const auto published = build_analytic_filtered_batch(request);
+    require(published.error == AnalyticFilteredBatchError::none && published.packet,
+            "relationship packet-boundary publication failed");
+    request.relationship_queries = {{9300, 10, 11}};
+    const auto exact = analytic_relationship_detail::evaluate(
+        request, published.packet->records, {}, std::numeric_limits<std::uint64_t>::max(),
+        std::numeric_limits<std::uint64_t>::max(), 0, 64);
+    require(exact.error == analytic_relationship_detail::EvaluationError::none &&
+                exact.results.size() == 1 && exact.pairs.size() == 1,
+            "exact remaining relationship packet bytes failed");
+    const auto one_short = analytic_relationship_detail::evaluate(
+        request, published.packet->records, {}, std::numeric_limits<std::uint64_t>::max(),
+        std::numeric_limits<std::uint64_t>::max(), 0, 63);
+    require(one_short.error ==
+                    analytic_relationship_detail::EvaluationError::resource_limit_exceeded &&
+                one_short.results.empty() && one_short.pairs.empty(),
+            "one-short remaining relationship packet bytes did not fail closed");
 }
 
 void test_empty_batch()
@@ -274,16 +698,23 @@ void test_per_job_nonmemory_limits_remain_job_local()
     }
 }
 
-void test_relationships_remain_gated()
+void test_disjoint_relationship()
 {
     auto records = two_disks();
     records.relationship_queries = {{9000, 10, 20}};
     require(validate_analytic_request_packet_records(records) == AnalyticRequestPacketError::none,
             "relationship request invalid");
     const auto result = build_analytic_filtered_batch(records);
-    require(result.error == AnalyticFilteredBatchError::relationships_not_implemented &&
-                !result.packet,
-            "query-free batch accepted relationships");
+    require(result.error == AnalyticFilteredBatchError::none && result.packet,
+            "disjoint relationship failed");
+    require(result.packet->records.relationship_results.size() == 1 &&
+                result.packet->records.relationship_results[0].query_id == 9000 &&
+                result.packet->records.relationship_results[0].status == 0 &&
+                result.packet->records.relationship_results[0].aggregate_dimension == 0 &&
+                result.packet->records.relationship_results[0].pair_begin == 0 &&
+                result.packet->records.relationship_results[0].pair_count == 0 &&
+                result.packet->records.relationship_pairs.empty(),
+            "disjoint relationship records drifted");
 }
 
 void test_merge_work_boundary()
@@ -398,6 +829,45 @@ std::string parity_vector()
     return output.str();
 }
 
+std::string relationship_parity_vector()
+{
+    std::vector<AnalyticRequestPacketRecords> cases;
+    auto rectangles = rectangle_jobs({{0, 0, 1000, 1000}, {1000, 1000, 2000, 2000}});
+    rectangles.relationship_queries = {{9000, 10, 11}, {9001, 11, 10}, {9002, 10, 10}};
+    cases.push_back(std::move(rectangles));
+    auto arcs = disk_jobs({{0, 0, 1000}, {1999, 0, 1000}, {4000, 0, 1000}});
+    arcs.relationship_queries = {{9100, 10, 11}, {9101, 11, 10}, {9102, 10, 12}};
+    cases.push_back(std::move(arcs));
+    auto failed = unsupported_then_disk();
+    failed.relationship_queries = {{9200, 10, 20}, {9201, 20, 10}};
+    cases.push_back(std::move(failed));
+
+    std::vector<std::uint8_t> bytes;
+    for (const auto& records : cases)
+    {
+        const auto result = build_analytic_filtered_batch(records);
+        require(result.error == AnalyticFilteredBatchError::none && result.packet,
+                "relationship parity batch failed");
+        append_u64(bytes, result.packet->bytes.size());
+        bytes.insert(bytes.end(), result.packet->bytes.begin(), result.packet->bytes.end());
+        for (const std::uint64_t value :
+             {result.telemetry.jobs_visited, result.telemetry.jobs_succeeded,
+              result.telemetry.jobs_failed, result.telemetry.lowering_work_units,
+              result.telemetry.broad_phase_work_units, result.telemetry.packet_work_units,
+              result.telemetry.broad_examined_pairs, result.telemetry.candidate_pairs,
+              result.telemetry.merge_work_units, result.telemetry.source_memberships,
+              result.telemetry.sequence_table_probes, result.telemetry.retained_job_records_bytes,
+              result.telemetry.emitted_packet_bytes, result.telemetry.peak_working_memory_bytes,
+              result.telemetry.algebraic_fallback_calls})
+            append_u64(bytes, value);
+    }
+    std::ostringstream output;
+    output << std::hex << std::setfill('0');
+    for (const std::uint8_t value : bytes)
+        output << std::setw(2) << static_cast<unsigned int>(value);
+    return output.str();
+}
+
 } // namespace
 
 int main(int argc, char** argv)
@@ -405,12 +875,24 @@ int main(int argc, char** argv)
     test_empty_batch();
     test_two_successful_jobs();
     test_job_local_failure_isolated();
-    test_relationships_remain_gated();
+    test_disjoint_relationship();
+    test_rectangle_relationship_dimensions_and_containment();
+    test_relationship_query_orientation_and_strict_gap();
+    test_arc_relationships_and_dependency_status();
+    test_self_query_multi_region_and_island();
+    test_relationship_resource_boundaries();
+    test_relationship_bipartite_index_boundaries();
+    test_relationship_cache_and_failed_query_memory_boundaries();
+    test_relationship_remaining_packet_boundary();
     test_per_job_memory_is_independent_of_prior_outputs();
     test_per_job_nonmemory_limits_remain_job_local();
     test_merge_work_boundary();
     test_memory_boundary_and_many_job_scaling();
     if (argc == 2 && std::string(argv[1]) == "--emit-parity")
+    {
         std::cout << "ANALYTIC_FILTERED_BATCH_VECTOR=" << parity_vector() << '\n';
+        std::cout << "ANALYTIC_FILTERED_RELATIONSHIP_VECTOR=" << relationship_parity_vector()
+                  << '\n';
+    }
     return 0;
 }

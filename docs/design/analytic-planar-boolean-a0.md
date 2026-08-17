@@ -659,8 +659,9 @@ standalone packet, and computes its SHA-256 closure without invoking the exact
 topology solver or algebraic normalization. Failed governed jobs contain no
 partial geometry and publish one job-only diagnostic.
 
-The query-free owned batch continuation is also implemented, but is not public
-dispatch. It deterministically validates canonical request records, executes
+The owned batch continuation, including relationship evaluation, is also
+implemented, but is not public dispatch. It deterministically validates
+canonical request records, executes
 lowering, indexed broad phase, and records-only packet publication sequentially
 under separate per-job and whole-batch live limits, and isolates governed job
 failures. A specialized job-major merger globally reassigns source identities,
@@ -668,12 +669,23 @@ interns source sets with the same fixed-capacity sequence trie, rebases topology
 and outcome references, validates the merged ranges, and encodes the batch
 once. Request-ID validation uses governed sorted arrays rather than hash tables;
 retained records are charged by requested capacity, including duplicate-heavy
-source inputs. The merger performs no job-pair or geometry-pair scan.
-Relationship-bearing requests are rejected outward until the indexed
-zero-repair relationship evaluator is implemented. Operation dispatch and
-transport projection remain subsequent stages. Exact/algebraic sources now
-build only in the `geometer_exact_feasibility` test oracle; ordinary
-`geometer_lib` no longer links them.
+source inputs.
+
+Relationship queries reconstruct trusted region-owned line and
+endpoint-authoritative arc occurrences from the merged published geometry.
+Distinct-job queries use an indexed two-color broad phase that examines only
+cross-job candidates; unordered job pairs are evaluated once and cached for
+reverse and repeated queries. Strict face coverage proves area contact,
+containment, and equality, while shared arrangement edges and vertices prove
+curve and point contact. Classification emits no disjoint pair rows. Failed
+dependencies publish skipped results, and empty successful jobs publish
+disjoint results. All traversal, candidate, cache, output, and remaining packet
+bytes are pre-admitted with target-independent logical charges. Unresolved
+predicate proofs fail the whole invocation as a solver failure rather than
+spending another topology-repair allowance. Operation dispatch and transport
+projection remain subsequent stages. Exact/algebraic sources build only in the
+`geometer_exact_feasibility` test oracle; ordinary `geometer_lib` does not link
+them.
 
 The internal pipeline now also carries a private strict-published-geometry
 policy from broad phase through material-region construction. It disables the
@@ -683,7 +695,8 @@ spend a second topology-repair allowance on already normalized geometry.
 Exact singleton endpoints and trusted endpoint-authoritative construction
 roots still reconcile; unresolved equality or ordering fails closed. Public
 entry points continue to use the normal 50 nm policy. The relationship
-evaluator itself remains the next undispatched slice.
+evaluator uses the private strict policy and remains internal until operation
+dispatch lands.
 
 Across ordered stages, the accumulator retains the resolved analytic
 arrangement and lineage. Publication to the governed nm grid occurs once after

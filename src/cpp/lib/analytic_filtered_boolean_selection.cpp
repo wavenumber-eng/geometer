@@ -91,6 +91,13 @@ class SelectionBuilder
         return false;
     }
 
+    bool fail_unresolved() noexcept
+    {
+        ++result_.telemetry.unresolved_predicates;
+        result_.telemetry.unresolved_predicate_failure = true;
+        return fail(AnalyticFilteredBooleanSelectionError::resource_limit_exceeded);
+    }
+
     void clear_output()
     {
         result_.arrangement.vertices.clear();
@@ -482,7 +489,7 @@ class SelectionBuilder
                         sweep.right_vertex = edge.end_vertex;
                     }
                     else
-                        return fail(AnalyticFilteredBooleanSelectionError::resource_limit_exceeded);
+                        return fail_unresolved();
                 }
             }
             else if (edge.kind == AnalyticAtomicCurveKind::circular_arc &&
@@ -558,7 +565,7 @@ class SelectionBuilder
                     minimum == maximum && value.lower == value.upper && value.lower == minimum;
                 const bool same_correlated = column_token != 0 && value_token == column_token;
                 if (!same_singleton && !same_correlated)
-                    return fail(AnalyticFilteredBooleanSelectionError::resource_limit_exceeded);
+                    return fail_unresolved();
                 minimum = std::min(minimum, value.lower);
                 maximum = std::max(maximum, value.upper);
                 correlated = correlated || same_correlated;
@@ -580,7 +587,7 @@ class SelectionBuilder
                     result_.arrangement.vertices[vertex_order_[index - 1]].point.y;
                 const auto& current = result_.arrangement.vertices[vertex_order_[index]].point.y;
                 if (previous.upper >= current.lower)
-                    return fail(AnalyticFilteredBooleanSelectionError::resource_limit_exceeded);
+                    return fail_unresolved();
             }
             columns_.push_back({begin, cursor - begin, minimum, maximum, correlated});
             result_.telemetry.resolution_event_columns += correlated ? 1 : 0;
@@ -720,7 +727,7 @@ class SelectionBuilder
                 continue;
             const std::optional<bool> is_lower = lower_tangent_group(edge);
             if (!is_lower)
-                return fail(AnalyticFilteredBooleanSelectionError::resource_limit_exceeded);
+                return fail_unresolved();
             (*is_lower ? lower : upper).push_back(edge);
         }
         ordered.insert(ordered.end(), lower.begin(), lower.end());
@@ -852,7 +859,7 @@ class SelectionBuilder
                     continue;
                 const std::optional<std::uint32_t> rank = insertion_rank(status, vertex);
                 if (!rank)
-                    return fail(AnalyticFilteredBooleanSelectionError::resource_limit_exceeded);
+                    return fail_unresolved();
                 for (std::uint32_t local = 0; local < block.size(); ++local)
                 {
                     if (!charge_status_operation(true) ||

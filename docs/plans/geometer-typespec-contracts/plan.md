@@ -1058,16 +1058,19 @@ Geometer proposal, not the original consumer packet.
   exact work/memory boundaries and shared-prefix scaling gate publication.
   Production-neutral source types keep this path independent of the exact
   namespace.
-- Query-free owned batch orchestration and canonical merge are implemented but
-  not dispatched. Each job owns lowering, indexed broad phase, and records-only
+- Owned batch orchestration, canonical merge, and published-geometry
+  relationship evaluation are implemented but not dispatched. Each job owns
+  lowering, indexed broad phase, and records-only
   publication under independent per-job and batch live budgets. Governed job
   failures remain isolated. Global source remapping and fixed-capacity sequence
   interning precede a single job-major encode; request validation, retained
   capacities, merge traversal, and encoder peak are explicitly governed.
-  Relationship-bearing requests remain an explicit outer rejection pending the
-  indexed published-geometry relationship evaluator. Native/WASM parity and
-  mixed success/failure, annular hierarchy, local-ID collision, exact/one-short,
-  and many-job scaling fixtures gate this internal slice.
+  Relationship queries use cached unordered job-pair evaluation, a two-color
+  indexed broad phase for distinct jobs, strict face coverage, and edge/vertex
+  incidence without a second topology repair. Native/WASM parity and mixed
+  success/failure, annular hierarchy, local-ID collision, exact/one-short,
+  many-job, arc-contact, cache, and sparse-candidate scaling fixtures gate this
+  internal slice.
 - Private strict-published-geometry execution is implemented through broad
   phase, narrow phase, overlay, arrangement, Boolean selection, and material
   regions. It preserves public 50 nm behavior while disabling any second

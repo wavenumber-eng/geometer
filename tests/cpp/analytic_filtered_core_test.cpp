@@ -713,6 +713,7 @@ void test_narrow_phase_near_tangent_displacement_guard()
     const AnalyticNarrowPhaseResult guarded_line_circle =
         intersect_analytic_curve_candidates(line_circle, {{1, 2}});
     require(guarded_line_circle.error == AnalyticNarrowPhaseError::resource_limit_exceeded &&
+                guarded_line_circle.telemetry.unresolved_predicate_failure &&
                 guarded_line_circle.telemetry.resolution_collapses == 0,
             "a small radial sagitta must not collapse line/circle points separated by 26 um");
 
@@ -727,6 +728,7 @@ void test_narrow_phase_near_tangent_displacement_guard()
     const AnalyticNarrowPhaseResult guarded_circle_circle =
         intersect_analytic_curve_candidates(circle_circle, {{1, 2}});
     require(guarded_circle_circle.error == AnalyticNarrowPhaseError::resource_limit_exceeded &&
+                guarded_circle_circle.telemetry.unresolved_predicate_failure &&
                 guarded_circle_circle.telemetry.resolution_collapses == 0,
             "a cancellation-heavy circle tangency must preserve intersections beyond 50 nm");
 

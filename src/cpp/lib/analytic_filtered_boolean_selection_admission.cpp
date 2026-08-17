@@ -680,6 +680,8 @@ SelectionAdmission prepare_boolean_selection_admission(
         preflight.telemetry.arrangement_predicate_calls = arrangement.telemetry.predicate_calls;
         preflight.telemetry.arrangement_peak_working_memory_bytes =
             arrangement.telemetry.peak_working_memory_bytes;
+        preflight.telemetry.unresolved_predicate_failure =
+            arrangement.telemetry.unresolved_predicate_failure;
         preflight.telemetry.predicate_calls =
             admission_work + arrangement.telemetry.predicate_calls;
         preflight.telemetry.peak_working_memory_bytes =

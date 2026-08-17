@@ -302,6 +302,10 @@ bool endpoint_can_join_cluster(const VertexCluster& cluster, const EndpointRecor
     {
         if (same_singleton_point(cluster.hull, endpoint.point))
             return true;
+        if (cluster.hull.construction_x_column_id != 0 &&
+            cluster.hull.construction_x_column_id == endpoint.point.construction_x_column_id &&
+            same_point_enclosure(cluster.hull, endpoint.point))
+            return true;
         return cluster.endpoint_authoritative_curve != 0 &&
                cluster.endpoint_authoritative_curve == endpoint.endpoint_authoritative_curve &&
                same_point_enclosure(cluster.hull, endpoint.point);
@@ -739,6 +743,12 @@ class ArrangementBuilder
         return false;
     }
 
+    bool fail_unresolved()
+    {
+        result_.telemetry.unresolved_predicate_failure = true;
+        return fail(AnalyticFilteredArrangementError::resource_limit_exceeded);
+    }
+
     void clear_output()
     {
         result_.vertices.clear();
@@ -867,7 +877,7 @@ class ArrangementBuilder
             classify_analytic_filtered_point_on_curve(carrier, span.end);
         if (start_status == AnalyticFilteredPointCurveStatus::uncertain ||
             end_status == AnalyticFilteredPointCurveStatus::uncertain)
-            return fail(AnalyticFilteredArrangementError::resource_limit_exceeded);
+            return fail_unresolved();
         if (span.kind != carrier.kind || span.major_arc ||
             start_status != AnalyticFilteredPointCurveStatus::certified_on_domain ||
             end_status != AnalyticFilteredPointCurveStatus::certified_on_domain)
@@ -1262,7 +1272,7 @@ class ArrangementBuilder
                 compare_tangents(outgoing_tangent(result_.outgoing_half_edges[index - 1], result_),
                                  outgoing_tangent(result_.outgoing_half_edges[index], result_));
             if (!order)
-                return fail(AnalyticFilteredArrangementError::resource_limit_exceeded);
+                return fail_unresolved();
             if (*order >= 0)
                 return fail(AnalyticFilteredArrangementError::invalid_argument);
         }
@@ -1435,7 +1445,7 @@ class ArrangementBuilder
             }
         }
         if (!orientation)
-            return fail(AnalyticFilteredArrangementError::resource_limit_exceeded);
+            return fail_unresolved();
         if (*orientation == 0)
             return fail(AnalyticFilteredArrangementError::invalid_argument);
         if (result_.cycles.size() == std::numeric_limits<std::uint32_t>::max())
@@ -1641,6 +1651,8 @@ AnalyticFilteredArrangementResult analytic_execution_detail::build_arrangement(
         result.telemetry.overlay_predicate_calls = overlay.telemetry.predicate_calls;
         result.telemetry.overlay_peak_working_memory_bytes =
             overlay.telemetry.peak_working_memory_bytes;
+        result.telemetry.unresolved_predicate_failure =
+            overlay.telemetry.unresolved_predicate_failure;
         result.telemetry.predicate_calls = admission_work + overlay.telemetry.predicate_calls;
         result.telemetry.peak_working_memory_bytes = overlay.telemetry.peak_working_memory_bytes;
         result.telemetry.required_working_memory_bytes =

@@ -99,6 +99,7 @@ struct AnalyticFilteredArrangementTelemetry
     std::uint64_t peak_working_memory_bytes = 0;
     std::uint64_t required_working_memory_bytes = 0;
     std::uint64_t algebraic_fallback_calls = 0;
+    bool unresolved_predicate_failure = false;
 };
 
 struct AnalyticFilteredArrangementResult

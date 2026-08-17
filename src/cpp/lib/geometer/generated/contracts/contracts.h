@@ -36,6 +36,18 @@ struct DiagnosticA0
     std::optional<std::string> request_id{};
 };
 
+struct PackedAttachmentReferenceA0
+{
+    std::string attachment{};
+    std::string format{};
+};
+
+struct PackedAttachmentProjectionA0
+{
+    std::string schema{};
+    PackedAttachmentReferenceA0 packet{};
+};
+
 struct IpcAttachmentDeclarationA0
 {
     std::string name{};
@@ -134,13 +146,29 @@ struct IpcHelloA0
     std::optional<std::vector<std::string>> capabilities{};
 };
 
+enum class IpcRuntimeDispatchA0
+{
+    logical_dto,
+    packed_attachment,
+};
+
+struct IpcPackedProjectionA0
+{
+    std::string kind = "packed_attachment";
+    std::string attachment_name{};
+    std::string format{};
+};
+
 struct IpcOperationDeclarationA0
 {
     std::string identity{};
     std::string request_contract{};
     std::string result_contract{};
+    IpcRuntimeDispatchA0 runtime_dispatch{};
     std::vector<IpcAttachmentDeclarationA0> input_attachments{};
     std::vector<IpcAttachmentDeclarationA0> output_attachments{};
+    std::optional<IpcPackedProjectionA0> request_projection{};
+    std::optional<IpcPackedProjectionA0> result_projection{};
 };
 
 struct IpcOperationCatalogA0
@@ -240,7 +268,7 @@ struct OperationFailureA0
     std::vector<DiagnosticA0> diagnostics{};
 };
 
-using OperationResultValueA0 = std::variant<ModelBoundsResultA0>;
+using OperationResultValueA0 = std::variant<ModelBoundsResultA0, PackedAttachmentProjectionA0>;
 
 struct OperationSuccessA0
 {

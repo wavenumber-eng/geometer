@@ -13,7 +13,7 @@ const manifestPath = join(repositoryRoot, "docs", "contracts", "promotion-manife
  * declarations no longer reachable from the remaining roots. The normalized
  * catalog itself stays complete; only the requested projection is narrowed.
  */
-export async function applyProjectionDeferrals(catalog, language) {
+export async function applyProjectionDeferrals(catalog, language, options = {}) {
   const deferred = (await readCandidateOperations()).filter(
     (candidate) =>
       candidate.status === "contract_frozen" &&
@@ -26,7 +26,10 @@ export async function applyProjectionDeferrals(catalog, language) {
   );
   const roots = catalog.roots.filter((root) => !deferredContracts.has(root.contract_identity));
   const operations = catalog.operations.filter(
-    (operation) => !deferredOperations.has(operation.identity),
+    (operation) =>
+      !deferredOperations.has(operation.identity) ||
+      (options.retainRuntimeDispatch === true &&
+        operation.runtime_dispatch === "packed_attachment"),
   );
   const keep = reachableNames(catalog, roots);
   return {

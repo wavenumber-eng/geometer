@@ -3,7 +3,7 @@
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
 pub const NORMALIZED_CATALOG_SHA256: &str =
-    "126edc93c7fbb23b0e15da35966abe0145972586807be6b7fdbc46948adb175c";
+    "23fd3fdd95b69ff0d7393df79ba3917556e0bb3b50bbc1893468b339913b84c1";
 
 #[derive(Debug, thiserror::Error)]
 pub enum ContractError {
@@ -100,6 +100,59 @@ impl Validate for DiagnosticA0 {
         }
         let field_path = child_path(path, "category");
         let value = &self.category;
+        value.validate_at(&field_path)?;
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct PackedAttachmentReferenceA0 {
+    pub attachment: String,
+    pub format: String,
+}
+
+impl Validate for PackedAttachmentReferenceA0 {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "attachment");
+        let value = &self.attachment;
+        if value.is_empty() {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 128 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "format");
+        let value = &self.format;
+        if value.is_empty() {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 128 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct PackedAttachmentProjectionA0 {
+    pub schema: String,
+    pub packet: PackedAttachmentReferenceA0,
+}
+
+impl Validate for PackedAttachmentProjectionA0 {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "schema");
+        let value = &self.schema;
+        if value.is_empty() {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 128 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "packet");
+        let value = &self.packet;
         value.validate_at(&field_path)?;
         Ok(())
     }
@@ -617,13 +670,78 @@ impl Validate for IpcHelloA0 {
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+pub enum IpcRuntimeDispatchA0 {
+    #[serde(rename = "logical_dto")]
+    LogicalDto,
+    #[serde(rename = "packed_attachment")]
+    PackedAttachment,
+}
+
+impl Validate for IpcRuntimeDispatchA0 {
+    fn validate_at(&self, _path: &str) -> Result<(), ContractError> {
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct IpcPackedProjectionA0 {
+    pub kind: String,
+    pub attachment_name: String,
+    pub format: String,
+}
+
+impl Validate for IpcPackedProjectionA0 {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "kind");
+        let value = &self.kind;
+        if value != "packed_attachment" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "attachment_name");
+        let value = &self.attachment_name;
+        if value.is_empty() {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 128 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "format");
+        let value = &self.format;
+        if value.is_empty() {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 128 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct IpcOperationDeclarationA0 {
     pub identity: String,
     pub request_contract: String,
     pub result_contract: String,
+    pub runtime_dispatch: IpcRuntimeDispatchA0,
     pub input_attachments: Vec<IpcAttachmentDeclarationA0>,
     pub output_attachments: Vec<IpcAttachmentDeclarationA0>,
+    #[serde(
+        default,
+        deserialize_with = "deserialize_optional_non_null",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub request_projection: Option<IpcPackedProjectionA0>,
+    #[serde(
+        default,
+        deserialize_with = "deserialize_optional_non_null",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub result_projection: Option<IpcPackedProjectionA0>,
 }
 
 impl Validate for IpcOperationDeclarationA0 {
@@ -652,6 +770,9 @@ impl Validate for IpcOperationDeclarationA0 {
         if value.len() > 128 {
             return Err(invalid(&field_path, "string exceeds its maximum"));
         }
+        let field_path = child_path(path, "runtime_dispatch");
+        let value = &self.runtime_dispatch;
+        value.validate_at(&field_path)?;
         let field_path = child_path(path, "input_attachments");
         let value = &self.input_attachments;
         if value.len() > 16 {
@@ -667,6 +788,14 @@ impl Validate for IpcOperationDeclarationA0 {
         }
         for (index, item) in value.iter().enumerate() {
             item.validate_at(&child_path(&field_path, &index.to_string()))?;
+        }
+        let field_path = child_path(path, "request_projection");
+        if let Some(value) = &self.request_projection {
+            value.validate_at(&field_path)?;
+        }
+        let field_path = child_path(path, "result_projection");
+        if let Some(value) = &self.result_projection {
+            value.validate_at(&field_path)?;
         }
         Ok(())
     }
@@ -1102,12 +1231,14 @@ impl Validate for OperationFailureA0 {
 #[serde(untagged)]
 pub enum OperationResultValueA0 {
     ModelBounds(ModelBoundsResultA0),
+    PackedAttachment(PackedAttachmentProjectionA0),
 }
 
 impl Validate for OperationResultValueA0 {
     fn validate_at(&self, path: &str) -> Result<(), ContractError> {
         match self {
             Self::ModelBounds(value) => value.validate_at(path),
+            Self::PackedAttachment(value) => value.validate_at(path),
         }
     }
 }

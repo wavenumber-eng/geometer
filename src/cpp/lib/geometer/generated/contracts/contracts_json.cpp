@@ -23,6 +23,14 @@ bool decode_DiagnosticA0(const rapidjson::Value&, DiagnosticA0*, const std::stri
                          ContractError*);
 bool write_DiagnosticA0(rapidjson::Writer<rapidjson::StringBuffer>&, const DiagnosticA0&,
                         ContractError*);
+bool decode_PackedAttachmentReferenceA0(const rapidjson::Value&, PackedAttachmentReferenceA0*,
+                                        const std::string&, ContractError*);
+bool write_PackedAttachmentReferenceA0(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                       const PackedAttachmentReferenceA0&, ContractError*);
+bool decode_PackedAttachmentProjectionA0(const rapidjson::Value&, PackedAttachmentProjectionA0*,
+                                         const std::string&, ContractError*);
+bool write_PackedAttachmentProjectionA0(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                        const PackedAttachmentProjectionA0&, ContractError*);
 bool decode_IpcAttachmentDeclarationA0(const rapidjson::Value&, IpcAttachmentDeclarationA0*,
                                        const std::string&, ContractError*);
 bool write_IpcAttachmentDeclarationA0(rapidjson::Writer<rapidjson::StringBuffer>&,
@@ -67,6 +75,14 @@ bool write_IpcGenericAbiLimitsA0(rapidjson::Writer<rapidjson::StringBuffer>&,
 bool decode_IpcHelloA0(const rapidjson::Value&, IpcHelloA0*, const std::string&, ContractError*);
 bool write_IpcHelloA0(rapidjson::Writer<rapidjson::StringBuffer>&, const IpcHelloA0&,
                       ContractError*);
+bool decode_IpcRuntimeDispatchA0(const rapidjson::Value&, IpcRuntimeDispatchA0*, const std::string&,
+                                 ContractError*);
+bool write_IpcRuntimeDispatchA0(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                const IpcRuntimeDispatchA0&, ContractError*);
+bool decode_IpcPackedProjectionA0(const rapidjson::Value&, IpcPackedProjectionA0*,
+                                  const std::string&, ContractError*);
+bool write_IpcPackedProjectionA0(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                 const IpcPackedProjectionA0&, ContractError*);
 bool decode_IpcOperationDeclarationA0(const rapidjson::Value&, IpcOperationDeclarationA0*,
                                       const std::string&, ContractError*);
 bool write_IpcOperationDeclarationA0(rapidjson::Writer<rapidjson::StringBuffer>&,
@@ -594,6 +610,92 @@ bool write_DiagnosticA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
                           std::numeric_limits<std::size_t>::max()))
             return false;
     }
+    writer.EndObject();
+    return true;
+}
+
+bool decode_PackedAttachmentReferenceA0(const rapidjson::Value& value,
+                                        PackedAttachmentReferenceA0* out, const std::string& path,
+                                        ContractError* error)
+{
+    static const char* const names[] = {"attachment", "format"};
+    if (!validate_object(value, names, 2U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("attachment");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "attachment"),
+                        "Required field is missing.");
+        if (!decode_string(member->value, &out->attachment, child_path(path, "attachment"), error,
+                           1U, 128U))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("format");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "format"),
+                        "Required field is missing.");
+        if (!decode_string(member->value, &out->format, child_path(path, "format"), error, 1U,
+                           128U))
+            return false;
+    }
+    return true;
+}
+
+bool write_PackedAttachmentReferenceA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                       const PackedAttachmentReferenceA0& value,
+                                       ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("attachment");
+    if (!write_string(writer, value.attachment, error, 1U, 128U))
+        return false;
+    writer.Key("format");
+    if (!write_string(writer, value.format, error, 1U, 128U))
+        return false;
+    writer.EndObject();
+    return true;
+}
+
+bool decode_PackedAttachmentProjectionA0(const rapidjson::Value& value,
+                                         PackedAttachmentProjectionA0* out, const std::string& path,
+                                         ContractError* error)
+{
+    static const char* const names[] = {"schema", "packet"};
+    if (!validate_object(value, names, 2U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("schema");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "schema"),
+                        "Required field is missing.");
+        if (!decode_string(member->value, &out->schema, child_path(path, "schema"), error, 1U,
+                           128U))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("packet");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "packet"),
+                        "Required field is missing.");
+        if (!decode_PackedAttachmentReferenceA0(member->value, &out->packet,
+                                                child_path(path, "packet"), error))
+            return false;
+    }
+    return true;
+}
+
+bool write_PackedAttachmentProjectionA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                        const PackedAttachmentProjectionA0& value,
+                                        ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("schema");
+    if (!write_string(writer, value.schema, error, 1U, 128U))
+        return false;
+    writer.Key("packet");
+    if (!write_PackedAttachmentReferenceA0(writer, value.packet, error))
+        return false;
     writer.EndObject();
     return true;
 }
@@ -1467,12 +1569,100 @@ bool write_IpcHelloA0(rapidjson::Writer<rapidjson::StringBuffer>& writer, const 
     return true;
 }
 
+bool decode_IpcRuntimeDispatchA0(const rapidjson::Value& value, IpcRuntimeDispatchA0* out,
+                                 const std::string& path, ContractError* error)
+{
+    if (!value.IsString())
+        return fail(error, "geometer.contract.type_mismatch", path, "Expected a string enum.");
+    const std::string text(value.GetString(), value.GetStringLength());
+    if (text == "logical_dto")
+    {
+        *out = IpcRuntimeDispatchA0::logical_dto;
+        return true;
+    }
+    if (text == "packed_attachment")
+    {
+        *out = IpcRuntimeDispatchA0::packed_attachment;
+        return true;
+    }
+    return fail(error, "geometer.contract.enum_mismatch", path, "Unknown enum value.");
+}
+
+bool write_IpcRuntimeDispatchA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                const IpcRuntimeDispatchA0& value, ContractError* error)
+{
+    switch (value)
+    {
+    case IpcRuntimeDispatchA0::logical_dto:
+        writer.String("logical_dto");
+        return true;
+    case IpcRuntimeDispatchA0::packed_attachment:
+        writer.String("packed_attachment");
+        return true;
+    }
+    return fail(error, "geometer.contract.enum_mismatch", "", "Unknown enum value.");
+}
+
+bool decode_IpcPackedProjectionA0(const rapidjson::Value& value, IpcPackedProjectionA0* out,
+                                  const std::string& path, ContractError* error)
+{
+    static const char* const names[] = {"kind", "attachment_name", "format"};
+    if (!validate_object(value, names, 3U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("kind");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "kind"),
+                        "Required field is missing.");
+        if (!decode_literal_string(member->value, &out->kind, child_path(path, "kind"), error,
+                                   "packed_attachment"))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("attachment_name");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "attachment_name"), "Required field is missing.");
+        if (!decode_string(member->value, &out->attachment_name,
+                           child_path(path, "attachment_name"), error, 1U, 128U))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("format");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "format"),
+                        "Required field is missing.");
+        if (!decode_string(member->value, &out->format, child_path(path, "format"), error, 1U,
+                           128U))
+            return false;
+    }
+    return true;
+}
+
+bool write_IpcPackedProjectionA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                 const IpcPackedProjectionA0& value, ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("kind");
+    if (!write_literal_string(writer, value.kind, error, "packed_attachment"))
+        return false;
+    writer.Key("attachment_name");
+    if (!write_string(writer, value.attachment_name, error, 1U, 128U))
+        return false;
+    writer.Key("format");
+    if (!write_string(writer, value.format, error, 1U, 128U))
+        return false;
+    writer.EndObject();
+    return true;
+}
+
 bool decode_IpcOperationDeclarationA0(const rapidjson::Value& value, IpcOperationDeclarationA0* out,
                                       const std::string& path, ContractError* error)
 {
-    static const char* const names[] = {"identity", "request_contract", "result_contract",
-                                        "input_attachments", "output_attachments"};
-    if (!validate_object(value, names, 5U, path, error))
+    static const char* const names[] = {
+        "identity",          "request_contract",   "result_contract",    "runtime_dispatch",
+        "input_attachments", "output_attachments", "request_projection", "result_projection"};
+    if (!validate_object(value, names, 8U, path, error))
         return false;
     {
         const auto member = value.FindMember("identity");
@@ -1502,6 +1692,15 @@ bool decode_IpcOperationDeclarationA0(const rapidjson::Value& value, IpcOperatio
             return false;
     }
     {
+        const auto member = value.FindMember("runtime_dispatch");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "runtime_dispatch"), "Required field is missing.");
+        if (!decode_IpcRuntimeDispatchA0(member->value, &out->runtime_dispatch,
+                                         child_path(path, "runtime_dispatch"), error))
+            return false;
+    }
+    {
         const auto member = value.FindMember("input_attachments");
         if (member == value.MemberEnd())
             return fail(error, "geometer.contract.missing_field",
@@ -1521,6 +1720,32 @@ bool decode_IpcOperationDeclarationA0(const rapidjson::Value& value, IpcOperatio
                           decode_IpcAttachmentDeclarationA0))
             return false;
     }
+    {
+        const auto member = value.FindMember("request_projection");
+        if (member != value.MemberEnd())
+        {
+            IpcPackedProjectionA0 decoded{};
+            if (!decode_IpcPackedProjectionA0(member->value, &decoded,
+                                              child_path(path, "request_projection"), error))
+                return false;
+            out->request_projection = std::move(decoded);
+        }
+        else
+            out->request_projection.reset();
+    }
+    {
+        const auto member = value.FindMember("result_projection");
+        if (member != value.MemberEnd())
+        {
+            IpcPackedProjectionA0 decoded{};
+            if (!decode_IpcPackedProjectionA0(member->value, &decoded,
+                                              child_path(path, "result_projection"), error))
+                return false;
+            out->result_projection = std::move(decoded);
+        }
+        else
+            out->result_projection.reset();
+    }
     return true;
 }
 
@@ -1537,6 +1762,9 @@ bool write_IpcOperationDeclarationA0(rapidjson::Writer<rapidjson::StringBuffer>&
     writer.Key("result_contract");
     if (!write_string(writer, value.result_contract, error, 1U, 128U))
         return false;
+    writer.Key("runtime_dispatch");
+    if (!write_IpcRuntimeDispatchA0(writer, value.runtime_dispatch, error))
+        return false;
     writer.Key("input_attachments");
     if (!write_array(writer, value.input_attachments, error, 0U, 16U,
                      write_IpcAttachmentDeclarationA0))
@@ -1545,6 +1773,18 @@ bool write_IpcOperationDeclarationA0(rapidjson::Writer<rapidjson::StringBuffer>&
     if (!write_array(writer, value.output_attachments, error, 0U, 16U,
                      write_IpcAttachmentDeclarationA0))
         return false;
+    if (value.request_projection.has_value())
+    {
+        writer.Key("request_projection");
+        if (!write_IpcPackedProjectionA0(writer, *value.request_projection, error))
+            return false;
+    }
+    if (value.result_projection.has_value())
+    {
+        writer.Key("result_projection");
+        if (!write_IpcPackedProjectionA0(writer, *value.result_projection, error))
+            return false;
+    }
     writer.EndObject();
     return true;
 }
@@ -2372,6 +2612,15 @@ bool decode_OperationResultValueA0(const rapidjson::Value& value, OperationResul
             selected = OperationResultValueA0(std::in_place_index<0>, std::move(candidate));
         }
     }
+    {
+        PackedAttachmentProjectionA0 candidate{};
+        ContractError ignored;
+        if (decode_PackedAttachmentProjectionA0(value, &candidate, path, &ignored))
+        {
+            ++matches;
+            selected = OperationResultValueA0(std::in_place_index<1>, std::move(candidate));
+        }
+    }
     if (matches != 1)
         return fail(error, "geometer.contract.union_mismatch", path,
                     "Expected exactly one union variant.");
@@ -2386,6 +2635,8 @@ bool write_OperationResultValueA0(rapidjson::Writer<rapidjson::StringBuffer>& wr
     {
     case 0:
         return write_ModelBoundsResultA0(writer, std::get<0>(value), error);
+    case 1:
+        return write_PackedAttachmentProjectionA0(writer, std::get<1>(value), error);
     default:
         return fail(error, "geometer.contract.union_mismatch", "", "Unknown union variant.");
     }

@@ -308,7 +308,7 @@
     "operation": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["name", "identity", "request_contract", "result_contract", "input_attachments", "output_attachments", "doc"],
+      "required": ["name", "identity", "request_contract", "result_contract", "input_attachments", "output_attachments", "runtime_dispatch", "doc"],
       "properties": {
         "name": { "$ref": "#/definitions/qualifiedName" },
         "identity": { "$ref": "#/definitions/stableIdentity" },
@@ -316,6 +316,10 @@
         "result_contract": { "$ref": "#/definitions/stableIdentity" },
         "input_attachments": { "type": "array", "items": { "$ref": "#/definitions/attachment" } },
         "output_attachments": { "type": "array", "items": { "$ref": "#/definitions/attachment" } },
+        "runtime_dispatch": {
+          "type": "string",
+          "enum": ["logical_dto", "packed_attachment"]
+        },
         "request_projection": { "$ref": "#/definitions/packedProjection" },
         "result_projection": { "$ref": "#/definitions/packedProjection" },
         "doc": { "type": "string" }

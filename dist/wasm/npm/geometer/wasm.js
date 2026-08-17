@@ -54,6 +54,9 @@ export class GeometerWasmClient {
         if (response.attachments.length !== 0) {
             throw new GeometerWasmTransportError(0, "model_bounds returned unexpected attachments.");
         }
+        if (!("units" in response.outcome.result)) {
+            throw new GeometerWasmTransportError(0, "model_bounds returned an incompatible result DTO.");
+        }
         return response.outcome.result;
     }
     execute(operation, requestJson, attachments) {
@@ -235,12 +238,24 @@ function isRuntimeOperation(value) {
         typeof value.identity !== "string" ||
         typeof value.request_contract !== "string" ||
         typeof value.result_contract !== "string" ||
+        (value.runtime_dispatch !== "logical_dto" && value.runtime_dispatch !== "packed_attachment") ||
         !Array.isArray(value.input_attachments) ||
         !Array.isArray(value.output_attachments)) {
         return false;
     }
+    if (value.runtime_dispatch === "packed_attachment" &&
+        (!isRuntimePackedProjection(value.request_projection) ||
+            !isRuntimePackedProjection(value.result_projection))) {
+        return false;
+    }
     return (value.input_attachments.every(isRuntimeAttachment) &&
         value.output_attachments.every(isRuntimeAttachment));
+}
+function isRuntimePackedProjection(value) {
+    return (isRecord(value) &&
+        value.kind === "packed_attachment" &&
+        typeof value.attachment_name === "string" &&
+        typeof value.format === "string");
 }
 function isRuntimeAttachment(value) {
     return (isRecord(value) &&

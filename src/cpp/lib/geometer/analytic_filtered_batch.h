@@ -74,8 +74,7 @@ struct AnalyticFilteredBatchResult
     AnalyticFilteredBatchTelemetry telemetry;
 };
 
-// Owned batch implementation. This entry point is not yet registered as a
-// public operation.
+// Owned batch implementation used by the packed generic operation adapter.
 [[nodiscard]] AnalyticFilteredBatchResult
 build_analytic_filtered_batch(const AnalyticRequestPacketRecords& records,
                               const AnalyticFilteredBatchLimits& limits = {});

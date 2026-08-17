@@ -46,6 +46,39 @@ const declarations: ContractDescriptorMap = {
     kind: "enum",
     values: ["transport", "contract", "operation"],
   },
+  "Wavenumber.Geometer.Contracts.Common.PackedAttachmentProjectionA0": {
+    kind: "object",
+    properties: {
+      schema: {
+        type: { kind: "primitive", name: "string" },
+        optional: false,
+        constraints: { min_length: 1, max_length: 128 },
+      },
+      packet: {
+        type: {
+          kind: "reference",
+          target: "Wavenumber.Geometer.Contracts.Common.PackedAttachmentReferenceA0",
+        },
+        optional: false,
+        constraints: {},
+      },
+    },
+  },
+  "Wavenumber.Geometer.Contracts.Common.PackedAttachmentReferenceA0": {
+    kind: "object",
+    properties: {
+      attachment: {
+        type: { kind: "primitive", name: "string" },
+        optional: false,
+        constraints: { min_length: 1, max_length: 128 },
+      },
+      format: {
+        type: { kind: "primitive", name: "string" },
+        optional: false,
+        constraints: { min_length: 1, max_length: 128 },
+      },
+    },
+  },
   "Wavenumber.Geometer.Contracts.IpcA0.IpcAttachmentDeclarationA0": {
     kind: "object",
     properties: {
@@ -449,6 +482,14 @@ const declarations: ContractDescriptorMap = {
         optional: false,
         constraints: { min_length: 1, max_length: 128 },
       },
+      runtime_dispatch: {
+        type: {
+          kind: "reference",
+          target: "Wavenumber.Geometer.Contracts.IpcA0.IpcRuntimeDispatchA0",
+        },
+        optional: false,
+        constraints: {},
+      },
       input_attachments: {
         type: {
           kind: "array",
@@ -470,6 +511,42 @@ const declarations: ContractDescriptorMap = {
         },
         optional: false,
         constraints: { max_items: 16 },
+      },
+      request_projection: {
+        type: {
+          kind: "reference",
+          target: "Wavenumber.Geometer.Contracts.IpcA0.IpcPackedProjectionA0",
+        },
+        optional: true,
+        constraints: {},
+      },
+      result_projection: {
+        type: {
+          kind: "reference",
+          target: "Wavenumber.Geometer.Contracts.IpcA0.IpcPackedProjectionA0",
+        },
+        optional: true,
+        constraints: {},
+      },
+    },
+  },
+  "Wavenumber.Geometer.Contracts.IpcA0.IpcPackedProjectionA0": {
+    kind: "object",
+    properties: {
+      kind: {
+        type: { kind: "literal", value_type: "string", value: "packed_attachment" },
+        optional: false,
+        constraints: {},
+      },
+      attachment_name: {
+        type: { kind: "primitive", name: "string" },
+        optional: false,
+        constraints: { min_length: 1, max_length: 128 },
+      },
+      format: {
+        type: { kind: "primitive", name: "string" },
+        optional: false,
+        constraints: { min_length: 1, max_length: 128 },
       },
     },
   },
@@ -515,6 +592,10 @@ const declarations: ContractDescriptorMap = {
         constraints: {},
       },
     },
+  },
+  "Wavenumber.Geometer.Contracts.IpcA0.IpcRuntimeDispatchA0": {
+    kind: "enum",
+    values: ["logical_dto", "packed_attachment"],
   },
   "Wavenumber.Geometer.Contracts.IpcA0.IpcShutdownAckA0": {
     kind: "object",
@@ -752,6 +833,10 @@ const declarations: ContractDescriptorMap = {
       {
         kind: "reference",
         target: "Wavenumber.Geometer.Contracts.ModelBoundsA0.ModelBoundsResultA0",
+      },
+      {
+        kind: "reference",
+        target: "Wavenumber.Geometer.Contracts.Common.PackedAttachmentProjectionA0",
       },
     ],
   },

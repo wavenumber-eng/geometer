@@ -12,6 +12,7 @@ namespace Wavenumber.Geometer.Contracts.OperationOutcomeA0;
 @oneOf
 union OperationResultValueA0 {
   model_bounds: Wavenumber.Geometer.Contracts.ModelBoundsA0.ModelBoundsResultA0,
+  packed_attachment: Wavenumber.Geometer.Contracts.Common.PackedAttachmentProjectionA0,
 }
 
 /** A completed operation with its operation-specific result. */

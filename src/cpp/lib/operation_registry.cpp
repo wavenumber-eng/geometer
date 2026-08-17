@@ -1,5 +1,6 @@
 #include "geometer/operation_registry.h"
 
+#include "analytic_filtered_operation.h"
 #include "geometer/model_bounds.h"
 
 #include <algorithm>
@@ -191,6 +192,11 @@ void execute_operation(const std::string& operation_id, const unsigned char* req
                             "/attachments"));
             return;
         }
+    }
+    if (operation_id == analytic_operation_detail::kOperationId)
+    {
+        analytic_operation_detail::execute(request_json, request_json_size, attachments, execution);
+        return;
     }
     if (operation_id != kModelBoundsOperation)
     {

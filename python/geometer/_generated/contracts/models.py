@@ -29,6 +29,20 @@ class DiagnosticA0:
     request_id: str | None = None
 
 
+# A named binary attachment carrying a separately governed packed projection.
+@dataclass(frozen=True, slots=True, kw_only=True)
+class PackedAttachmentReferenceA0:
+    attachment: str
+    format: str
+
+
+# Minimal JSON value used while an operation's logical DTO projection remains deferred.
+@dataclass(frozen=True, slots=True, kw_only=True)
+class PackedAttachmentProjectionA0:
+    schema: str
+    packet: PackedAttachmentReferenceA0
+
+
 # Named raw-attachment declaration in the negotiated operation catalog.
 @dataclass(frozen=True, slots=True, kw_only=True)
 class IpcAttachmentDeclarationA0:
@@ -135,14 +149,29 @@ class IpcHelloA0:
     capabilities: tuple[str, ...] | None = None
 
 
+class IpcRuntimeDispatchA0(str, Enum):
+    LOGICAL_DTO = "logical_dto"
+    PACKED_ATTACHMENT = "packed_attachment"
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class IpcPackedProjectionA0:
+    kind: Literal["packed_attachment"]
+    attachment_name: str
+    format: str
+
+
 # One operation exposed by the negotiated generic transport.
 @dataclass(frozen=True, slots=True, kw_only=True)
 class IpcOperationDeclarationA0:
     identity: str
     request_contract: str
     result_contract: str
+    runtime_dispatch: IpcRuntimeDispatchA0
     input_attachments: tuple[IpcAttachmentDeclarationA0, ...]
     output_attachments: tuple[IpcAttachmentDeclarationA0, ...]
+    request_projection: IpcPackedProjectionA0 | None = None
+    result_projection: IpcPackedProjectionA0 | None = None
 
 
 # Exact operation catalog embedded into the welcome frame.
@@ -263,7 +292,7 @@ class OperationFailureA0:
 
 
 # Results currently available through the generic operation transport.
-OperationResultValueA0: TypeAlias = ModelBoundsResultA0
+OperationResultValueA0: TypeAlias = ModelBoundsResultA0 | PackedAttachmentProjectionA0
 
 
 # A completed operation with its operation-specific result.
@@ -279,6 +308,8 @@ OperationOutcomeA0: TypeAlias = OperationSuccessA0 | OperationFailureA0
 
 MODEL_TYPES = {
     "Wavenumber.Geometer.Contracts.Common.DiagnosticA0": DiagnosticA0,
+    "Wavenumber.Geometer.Contracts.Common.PackedAttachmentProjectionA0": PackedAttachmentProjectionA0,
+    "Wavenumber.Geometer.Contracts.Common.PackedAttachmentReferenceA0": PackedAttachmentReferenceA0,
     "Wavenumber.Geometer.Contracts.IpcA0.IpcAttachmentDeclarationA0": IpcAttachmentDeclarationA0,
     "Wavenumber.Geometer.Contracts.IpcA0.IpcAttachmentDescriptorA0": IpcAttachmentDescriptorA0,
     "Wavenumber.Geometer.Contracts.IpcA0.IpcAttachmentLayoutPointer64A0": IpcAttachmentLayoutPointer64A0,
@@ -292,6 +323,7 @@ MODEL_TYPES = {
     "Wavenumber.Geometer.Contracts.IpcA0.IpcHelloA0": IpcHelloA0,
     "Wavenumber.Geometer.Contracts.IpcA0.IpcOperationCatalogA0": IpcOperationCatalogA0,
     "Wavenumber.Geometer.Contracts.IpcA0.IpcOperationDeclarationA0": IpcOperationDeclarationA0,
+    "Wavenumber.Geometer.Contracts.IpcA0.IpcPackedProjectionA0": IpcPackedProjectionA0,
     "Wavenumber.Geometer.Contracts.IpcA0.IpcProtocolErrorA0": IpcProtocolErrorA0,
     "Wavenumber.Geometer.Contracts.IpcA0.IpcReasonA0": IpcReasonA0,
     "Wavenumber.Geometer.Contracts.IpcA0.IpcRequestA0": IpcRequestA0,
@@ -308,5 +340,6 @@ MODEL_TYPES = {
 
 ENUM_TYPES = {
     "Wavenumber.Geometer.Contracts.Common.DiagnosticCategory": DiagnosticCategory,
+    "Wavenumber.Geometer.Contracts.IpcA0.IpcRuntimeDispatchA0": IpcRuntimeDispatchA0,
     "Wavenumber.Geometer.Contracts.ModelBoundsA0.ModelFormat": ModelFormat,
 }

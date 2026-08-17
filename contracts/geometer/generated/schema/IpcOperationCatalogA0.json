@@ -67,6 +67,9 @@
           "minLength": 1,
           "maxLength": 128
         },
+        "runtime_dispatch": {
+          "$ref": "#/$defs/IpcRuntimeDispatchA0"
+        },
         "input_attachments": {
           "type": "array",
           "items": {
@@ -80,12 +83,19 @@
             "$ref": "#/$defs/IpcAttachmentDeclarationA0"
           },
           "maxItems": 16
+        },
+        "request_projection": {
+          "$ref": "#/$defs/IpcPackedProjectionA0"
+        },
+        "result_projection": {
+          "$ref": "#/$defs/IpcPackedProjectionA0"
         }
       },
       "required": [
         "identity",
         "request_contract",
         "result_contract",
+        "runtime_dispatch",
         "input_attachments",
         "output_attachments"
       ],
@@ -177,6 +187,13 @@
       },
       "description": "Bounds shared by the generic C ABI operation catalog."
     },
+    "IpcRuntimeDispatchA0": {
+      "type": "string",
+      "enum": [
+        "logical_dto",
+        "packed_attachment"
+      ]
+    },
     "IpcAttachmentDeclarationA0": {
       "type": "object",
       "properties": {
@@ -212,6 +229,33 @@
         "not": {}
       },
       "description": "Named raw-attachment declaration in the negotiated operation catalog."
+    },
+    "IpcPackedProjectionA0": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "packed_attachment"
+        },
+        "attachment_name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "format": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        }
+      },
+      "required": [
+        "kind",
+        "attachment_name",
+        "format"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
     },
     "IpcAttachmentLayoutWasm32A0": {
       "type": "object",

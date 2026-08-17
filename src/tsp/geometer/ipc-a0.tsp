@@ -64,6 +64,17 @@ model IpcAttachmentDeclarationA0 {
   max_bytes: uint32;
 }
 
+enum IpcRuntimeDispatchA0 {
+  logical_dto: "logical_dto",
+  packed_attachment: "packed_attachment",
+}
+
+model IpcPackedProjectionA0 {
+  kind: "packed_attachment";
+  @minLength(1) @maxLength(128) attachment_name: string;
+  @minLength(1) @maxLength(128) format: string;
+}
+
 /** One operation exposed by the negotiated generic transport. */
 model IpcOperationDeclarationA0 {
   @minLength(1)
@@ -78,11 +89,16 @@ model IpcOperationDeclarationA0 {
   @maxLength(128)
   result_contract: string;
 
+  runtime_dispatch: IpcRuntimeDispatchA0;
+
   @maxItems(16)
   input_attachments: IpcAttachmentDeclarationA0[];
 
   @maxItems(16)
   output_attachments: IpcAttachmentDeclarationA0[];
+
+  request_projection?: IpcPackedProjectionA0;
+  result_projection?: IpcPackedProjectionA0;
 }
 
 /** wasm32 attachment-descriptor member offsets. */

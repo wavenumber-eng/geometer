@@ -10,6 +10,7 @@ set(GEOMETER_LIB_SOURCES
     analytic_filtered_packet_sequences.cpp
     analytic_filtered_normalization.cpp
     analytic_filtered_normalization_replay.cpp
+    analytic_filtered_operation.cpp
     analytic_filtered_arrangement.cpp
     analytic_filtered_lowering.cpp
     analytic_filtered_overlay.cpp

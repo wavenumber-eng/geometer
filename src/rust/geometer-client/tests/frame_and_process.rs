@@ -179,7 +179,9 @@ async fn governed_operation_vectors_match_executable_ipc() {
                     "{}",
                     vector.id
                 );
-                let contracts::OperationResultValueA0::ModelBounds(result) = success.result;
+                let contracts::OperationResultValueA0::ModelBounds(result) = success.result else {
+                    panic!("model-bounds vector returned a packed projection");
+                };
                 assert_eq!(vector.computed_fields.len(), 1, "{}", vector.id);
                 let computed = &vector.computed_fields[0];
                 assert_eq!(computed.path, "/result/source/hash", "{}", vector.id);
@@ -390,6 +392,145 @@ async fn duplicate_request_attachment_names_are_correlated_and_nonfatal() {
     assert!(child.wait().await.unwrap().success());
 }
 
+#[tokio::test]
+async fn packed_analytic_request_round_trips_through_executable_ipc() {
+    let root = repository_root();
+    let mut child = Command::new(native_executable(&root))
+        .args(["serve", "--stdio"])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+    let mut stdin = child.stdin.take().unwrap();
+    let mut stdout = child.stdout.take().unwrap();
+    ipc::write_frame(
+        &mut stdin,
+        &Frame {
+            kind: FrameKind::Hello,
+            request_id: 0,
+            json:
+                br#"{"client_name":"raw-analytic-test","client_version":"a0","protocols":["a0"]}"#
+                    .to_vec(),
+            attachments: Vec::new(),
+        },
+    )
+    .await
+    .unwrap();
+    let welcome = ipc::read_frame(&mut stdout).await.unwrap().unwrap();
+    assert_eq!(welcome.kind, FrameKind::Welcome);
+    let welcome = contracts::decode_ipc_welcome_a0_json(&welcome.json).unwrap();
+    let analytic = welcome
+        .operation_catalog
+        .operations
+        .iter()
+        .find(|operation| operation.identity == "geometry.analytic_planar_boolean_batch.a0")
+        .unwrap();
+    assert_eq!(
+        analytic.runtime_dispatch,
+        contracts::IpcRuntimeDispatchA0::PackedAttachment
+    );
+    assert_eq!(
+        analytic
+            .request_projection
+            .as_ref()
+            .unwrap()
+            .attachment_name,
+        "analytic_planar_boolean_request"
+    );
+
+    let packet = empty_analytic_request_packet();
+    let request_json = br#"{"operation":"geometry.analytic_planar_boolean_batch.a0","request":{"schema":"geometry.analytic_planar_boolean_batch.request.a0","packet":{"attachment":"analytic_planar_boolean_request","format":"geometry.analytic_planar_boolean.packet.a0"}}}"#;
+    ipc::write_frame(
+        &mut stdin,
+        &Frame {
+            kind: FrameKind::Request,
+            request_id: 91,
+            json: request_json.to_vec(),
+            attachments: vec![ipc::Attachment {
+                name: "analytic_planar_boolean_request".to_owned(),
+                media_type: "application/vnd.wavenumber.geometer.analytic-planar-boolean-request"
+                    .to_owned(),
+                data: packet.clone(),
+            }],
+        },
+    )
+    .await
+    .unwrap();
+    let response = ipc::read_frame(&mut stdout).await.unwrap().unwrap();
+    assert_eq!(response.kind, FrameKind::Response);
+    assert_eq!(response.request_id, 91);
+    let outcome = contracts::decode_operation_outcome_a0_json(&response.json).unwrap();
+    let contracts::OperationOutcomeA0::Success(success) = outcome else {
+        panic!("packed analytic IPC request unexpectedly failed");
+    };
+    let contracts::OperationResultValueA0::PackedAttachment(projection) = success.result else {
+        panic!("packed analytic IPC result used the wrong projection");
+    };
+    assert_eq!(
+        projection.schema,
+        "geometry.analytic_planar_boolean_batch.result.a0"
+    );
+    assert_eq!(response.attachments.len(), 1);
+    assert_eq!(
+        response.attachments[0].name,
+        "analytic_planar_boolean_result"
+    );
+    assert_eq!(
+        response.attachments[0].media_type,
+        "application/vnd.wavenumber.geometer.analytic-planar-boolean-result"
+    );
+    assert_eq!(&response.attachments[0].data[..8], b"GMABRS01");
+    assert_eq!(packet, empty_analytic_request_packet());
+
+    let mut malformed = packet;
+    malformed[0] = b'X';
+    ipc::write_frame(
+        &mut stdin,
+        &Frame {
+            kind: FrameKind::Request,
+            request_id: 92,
+            json: request_json.to_vec(),
+            attachments: vec![ipc::Attachment {
+                name: "analytic_planar_boolean_request".to_owned(),
+                media_type: "application/vnd.wavenumber.geometer.analytic-planar-boolean-request"
+                    .to_owned(),
+                data: malformed,
+            }],
+        },
+    )
+    .await
+    .unwrap();
+    let response = ipc::read_frame(&mut stdout).await.unwrap().unwrap();
+    assert_eq!(response.kind, FrameKind::Response);
+    assert!(response.attachments.is_empty());
+    let outcome = contracts::decode_operation_outcome_a0_json(&response.json).unwrap();
+    let contracts::OperationOutcomeA0::Failure(failure) = outcome else {
+        panic!("malformed packed analytic IPC request unexpectedly succeeded");
+    };
+    assert_eq!(
+        failure.diagnostics[0].code,
+        "geometer.contract.analytic_planar_boolean_packet.invalid_packet"
+    );
+
+    ipc::write_frame(
+        &mut stdin,
+        &Frame {
+            kind: FrameKind::Shutdown,
+            request_id: 0,
+            json: b"{}".to_vec(),
+            attachments: Vec::new(),
+        },
+    )
+    .await
+    .unwrap();
+    assert_eq!(
+        ipc::read_frame(&mut stdout).await.unwrap().unwrap().kind,
+        FrameKind::ShutdownAck
+    );
+    assert!(child.wait().await.unwrap().success());
+}
+
 fn native_executable(root: &Path) -> PathBuf {
     let platform = if cfg!(windows) {
         "windows-x64"
@@ -415,6 +556,26 @@ fn model_attachment(data: Vec<u8>) -> ipc::Attachment {
         media_type: "application/step".to_owned(),
         data,
     }
+}
+
+fn empty_analytic_request_packet() -> Vec<u8> {
+    let record_bytes = [24_u32, 32, 24, 32, 4, 32, 24, 40, 32, 40, 48, 32, 24];
+    let packet_size = 64 + 32 * record_bytes.len();
+    let mut packet = vec![0_u8; packet_size];
+    packet[..8].copy_from_slice(b"GMABRQ01");
+    packet[8..10].copy_from_slice(&1_u16.to_le_bytes());
+    packet[10..12].copy_from_slice(&64_u16.to_le_bytes());
+    packet[16..24].copy_from_slice(&(packet_size as u64).to_le_bytes());
+    packet[24..32].copy_from_slice(&64_u64.to_le_bytes());
+    packet[32..36].copy_from_slice(&(record_bytes.len() as u32).to_le_bytes());
+    for (index, bytes) in record_bytes.iter().enumerate() {
+        let entry = 64 + index * 32;
+        packet[entry..entry + 2].copy_from_slice(&((index + 1) as u16).to_le_bytes());
+        packet[entry + 2..entry + 4].copy_from_slice(&1_u16.to_le_bytes());
+        packet[entry + 4..entry + 8].copy_from_slice(&bytes.to_le_bytes());
+        packet[entry + 8..entry + 16].copy_from_slice(&(packet_size as u64).to_le_bytes());
+    }
+    packet
 }
 
 #[derive(Deserialize)]

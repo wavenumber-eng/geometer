@@ -6,6 +6,25 @@ using Wavenumber.Geometer.ContractMetadata;
 
 namespace Wavenumber.Geometer.Contracts.Common;
 
+/** A named binary attachment carrying a separately governed packed projection. */
+model PackedAttachmentReferenceA0 {
+  @minLength(1)
+  @maxLength(128)
+  attachment: string;
+
+  @minLength(1)
+  @maxLength(128)
+  format: string;
+}
+
+/** Minimal JSON value used while an operation's logical DTO projection remains deferred. */
+model PackedAttachmentProjectionA0 {
+  @minLength(1)
+  @maxLength(128)
+  schema: string;
+  packet: PackedAttachmentReferenceA0;
+}
+
 /** Stable diagnostic category with distinct transport, contract, and operation domains. */
 enum DiagnosticCategory {
   transport: "transport",

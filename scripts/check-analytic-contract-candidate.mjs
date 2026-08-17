@@ -65,6 +65,7 @@ try {
     (item) => item.identity === "geometry.analytic_planar_boolean_batch.a0",
   );
   if (!operation) throw new Error("Analytic candidate operation is missing.");
+  assertEqual(operation.runtime_dispatch, "packed_attachment", "runtime dispatch lane");
   assertEqual(operation.request_contract, expectedRoots[0], "request contract");
   assertEqual(operation.result_contract, expectedRoots[1], "result contract");
   assertEqual(

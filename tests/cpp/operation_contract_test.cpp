@@ -1,3 +1,5 @@
+#include "geometer/analytic_request_packet.h"
+#include "geometer/analytic_result_packet_records.h"
 #include "geometer/c_api.h"
 #include "geometer/generated/contracts/contracts.h"
 #include "geometer/operation_transport.h"
@@ -412,6 +414,15 @@ void response_limits_fail_closed_before_accessor_narrowing()
                                                   &message) ==
                 geometer::OperationResponseValidationStatus::limit_exceeded,
             "response JSON over 8 MiB should fail before accessor exposure");
+
+    require(geometer::validate_operation_response("geometry.analytic_planar_boolean_batch.a0",
+                                                  R"({"ok":true})", {}, &message) ==
+                geometer::OperationResponseValidationStatus::invalid,
+            "packed analytic success should require its declared result attachment");
+    require(geometer::validate_operation_response("geometry.analytic_planar_boolean_batch.a0",
+                                                  R"({"ok":false})", {}, &message) ==
+                geometer::OperationResponseValidationStatus::ok,
+            "packed analytic failure should remain attachment-free");
 }
 
 std::string result_json(const GeometerOperationResult* result)
@@ -438,8 +449,12 @@ void generic_c_abi_catalog_and_typed_failures()
     catalog_document.Parse(catalog_text.data(), catalog_text.size());
     require(!catalog_document.HasParseError() && catalog_document.IsObject(),
             "generated runtime catalog should be valid JSON");
-    require(catalog_document["operations"].Size() == 1U,
+    require(catalog_document["operations"].Size() == 2U,
             "runtime catalog should contain every generated operation exactly once");
+    require(catalog_text.find("geometry.analytic_planar_boolean_batch.a0") != std::string::npos &&
+                catalog_text.find("\"runtime_dispatch\":\"packed_attachment\"") !=
+                    std::string::npos,
+            "catalog should advertise packed analytic runtime dispatch");
     require(catalog_document["limits"]["response_json_bytes"].GetUint() == 8388608U,
             "runtime catalog should publish the response JSON limit");
     require(catalog_document["limits"]["attachment_count"].GetUint() == 16U,
@@ -556,6 +571,79 @@ void generic_c_abi_executes_model_bounds()
     geometer_operation_result_free(result);
 }
 
+void generic_c_abi_executes_packed_analytic_batch()
+{
+    const auto encoded = geometer::encode_analytic_request_packet({});
+    require(encoded.error == geometer::AnalyticRequestPacketError::none && encoded.value,
+            "empty analytic request packet should encode");
+    const std::string operation = "geometry.analytic_planar_boolean_batch.a0";
+    const std::string request =
+        "{\"schema\":\"geometry.analytic_planar_boolean_batch.request.a0\",\"packet\":{"
+        "\"attachment\":\"analytic_planar_boolean_request\",\"format\":"
+        "\"geometry.analytic_planar_boolean.packet.a0\"}}";
+    const std::string name = "analytic_planar_boolean_request";
+    const std::string media_type =
+        "application/vnd.wavenumber.geometer.analytic-planar-boolean-request";
+    GeometerAttachmentView attachment{};
+    attachment.struct_size = sizeof(GeometerAttachmentView);
+    attachment.name = name.data();
+    attachment.name_size = static_cast<std::uint32_t>(name.size());
+    attachment.media_type = media_type.data();
+    attachment.media_type_size = static_cast<std::uint32_t>(media_type.size());
+    attachment.data = encoded.value->data();
+    attachment.data_size = static_cast<std::uint32_t>(encoded.value->size());
+    const std::vector<unsigned char> original_request = *encoded.value;
+
+    GeometerOperationResult* result = nullptr;
+    char* error = nullptr;
+    const int code = geometer_operation_execute(
+        operation.data(), static_cast<std::uint32_t>(operation.size()),
+        reinterpret_cast<const unsigned char*>(request.data()),
+        static_cast<std::uint32_t>(request.size()), &attachment, 1U, &result, &error);
+    require(code == GEOMETER_OPERATION_ABI_OK && result != nullptr && error == nullptr,
+            "packed analytic generic invocation should succeed");
+    const std::string json = result_json(result);
+    require(json.find("\"ok\":true") != std::string::npos &&
+                json.find("geometry.analytic_planar_boolean_batch.result.a0") != std::string::npos,
+            "packed analytic success should reference its result projection");
+    require(geometer_operation_result_attachment_count(result) == 1U,
+            "packed analytic success should return one attachment");
+    std::uint32_t size = 0;
+    const char* output_name = geometer_operation_result_attachment_name(result, 0U, &size);
+    require(output_name != nullptr &&
+                std::string(output_name, size) == "analytic_planar_boolean_result",
+            "packed analytic result attachment name drifted");
+    const char* output_media = geometer_operation_result_attachment_media_type(result, 0U, &size);
+    require(output_media != nullptr &&
+                std::string(output_media, size) ==
+                    "application/vnd.wavenumber.geometer.analytic-planar-boolean-result",
+            "packed analytic result media type drifted");
+    const unsigned char* output = geometer_operation_result_attachment_data(result, 0U, &size);
+    const auto decoded = geometer::decode_analytic_result_packet_records(output, size);
+    require(decoded.error == geometer::AnalyticResultPacketLayoutError::none && decoded.value &&
+                decoded.value->job_results.empty(),
+            "packed analytic result attachment did not decode canonically");
+    require(*encoded.value == original_request,
+            "packed analytic operation must not mutate caller-owned request bytes");
+    geometer_operation_result_free(result);
+
+    std::vector<unsigned char> malformed = *encoded.value;
+    malformed[0] = 'X';
+    attachment.data = malformed.data();
+    result = nullptr;
+    const int malformed_code = geometer_operation_execute(
+        operation.data(), static_cast<std::uint32_t>(operation.size()),
+        reinterpret_cast<const unsigned char*>(request.data()),
+        static_cast<std::uint32_t>(request.size()), &attachment, 1U, &result, &error);
+    require(malformed_code == GEOMETER_OPERATION_ABI_OK && result != nullptr && error == nullptr &&
+                result_json(result).find(
+                    "geometer.contract.analytic_planar_boolean_packet.invalid_packet") !=
+                    std::string::npos &&
+                geometer_operation_result_attachment_count(result) == 0U,
+            "malformed analytic packet should be a typed attachment-free contract failure");
+    geometer_operation_result_free(result);
+}
+
 } // namespace
 
 int main()
@@ -571,6 +659,7 @@ int main()
         response_limits_fail_closed_before_accessor_narrowing();
         generic_c_abi_catalog_and_typed_failures();
         generic_c_abi_executes_model_bounds();
+        generic_c_abi_executes_packed_analytic_batch();
     }
     catch (const std::exception& error)
     {

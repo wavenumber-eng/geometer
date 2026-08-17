@@ -377,6 +377,9 @@ impl GeometerClient {
         match response.outcome {
             OperationOutcomeA0::Success(success) => match success.result {
                 OperationResultValueA0::ModelBounds(result) => Ok(result),
+                OperationResultValueA0::PackedAttachment(_) => Err(GeometerClientError::Protocol(
+                    "model_bounds returned an incompatible packed result".to_owned(),
+                )),
             },
             OperationOutcomeA0::Failure(failure) => Err(GeometerClientError::Operation {
                 operation: failure.operation,
@@ -774,9 +777,41 @@ fn expected_operation_catalog(welcome: &IpcWelcomeA0) -> Value {
         "release_version": welcome.release_version,
         "c_abi_generation": welcome.c_abi_generation,
         "operations": [{
+            "identity": "geometry.analytic_planar_boolean_batch.a0",
+            "request_contract": "geometry.analytic_planar_boolean_batch.request.a0",
+            "result_contract": "geometry.analytic_planar_boolean_batch.result.a0",
+            "runtime_dispatch": "packed_attachment",
+            "input_attachments": [{
+                "name": "analytic_planar_boolean_request",
+                "required": true,
+                "media_types": [
+                    "application/vnd.wavenumber.geometer.analytic-planar-boolean-request"
+                ],
+                "max_bytes": 268435456
+            }],
+            "output_attachments": [{
+                "name": "analytic_planar_boolean_result",
+                "required": true,
+                "media_types": [
+                    "application/vnd.wavenumber.geometer.analytic-planar-boolean-result"
+                ],
+                "max_bytes": 268435456
+            }],
+            "request_projection": {
+                "kind": "packed_attachment",
+                "attachment_name": "analytic_planar_boolean_request",
+                "format": "geometry.analytic_planar_boolean.packet.a0"
+            },
+            "result_projection": {
+                "kind": "packed_attachment",
+                "attachment_name": "analytic_planar_boolean_result",
+                "format": "geometry.analytic_planar_boolean.packet.a0"
+            }
+        }, {
             "identity": "geometry.model_bounds.a0",
             "request_contract": "geometry.model_bounds.options.a0",
             "result_contract": "geometry.model_bounds.a0",
+            "runtime_dispatch": "logical_dto",
             "input_attachments": [{
                 "name": "model",
                 "required": true,

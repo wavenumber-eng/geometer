@@ -19,6 +19,18 @@ export interface DiagnosticA0 {
   readonly request_id?: string;
 }
 
+/** A named binary attachment carrying a separately governed packed projection. */
+export interface PackedAttachmentReferenceA0 {
+  readonly attachment: string;
+  readonly format: string;
+}
+
+/** Minimal JSON value used while an operation's logical DTO projection remains deferred. */
+export interface PackedAttachmentProjectionA0 {
+  readonly schema: string;
+  readonly packet: PackedAttachmentReferenceA0;
+}
+
 /** Named raw-attachment declaration in the negotiated operation catalog. */
 export interface IpcAttachmentDeclarationA0 {
   readonly name: string;
@@ -114,13 +126,24 @@ export interface IpcHelloA0 {
   readonly capabilities?: readonly string[];
 }
 
+export type IpcRuntimeDispatchA0 = "logical_dto" | "packed_attachment";
+
+export interface IpcPackedProjectionA0 {
+  readonly kind: "packed_attachment";
+  readonly attachment_name: string;
+  readonly format: string;
+}
+
 /** One operation exposed by the negotiated generic transport. */
 export interface IpcOperationDeclarationA0 {
   readonly identity: string;
   readonly request_contract: string;
   readonly result_contract: string;
+  readonly runtime_dispatch: IpcRuntimeDispatchA0;
   readonly input_attachments: readonly IpcAttachmentDeclarationA0[];
   readonly output_attachments: readonly IpcAttachmentDeclarationA0[];
+  readonly request_projection?: IpcPackedProjectionA0;
+  readonly result_projection?: IpcPackedProjectionA0;
 }
 
 /** Exact operation catalog embedded into the welcome frame. */
@@ -240,7 +263,7 @@ export interface OperationFailureA0 {
 }
 
 /** Results currently available through the generic operation transport. */
-export type OperationResultValueA0 = ModelBoundsResultA0;
+export type OperationResultValueA0 = ModelBoundsResultA0 | PackedAttachmentProjectionA0;
 
 /** A completed operation with its operation-specific result. */
 export interface OperationSuccessA0 {

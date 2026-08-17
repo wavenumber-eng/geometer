@@ -1,5 +1,7 @@
 #include "geometer/operation_transport.h"
 
+#include <rapidjson/document.h>
+
 #include <cstddef>
 #include <unordered_set>
 
@@ -138,6 +140,26 @@ validate_operation_response(const std::string& operation_id, const std::string& 
         {
             return fail(OperationResponseValidationStatus::invalid, message,
                         "An output attachment is not declared by the operation catalog.");
+        }
+    }
+    rapidjson::Document outcome;
+    outcome.Parse<rapidjson::kParseValidateEncodingFlag>(json.data(), json.size());
+    if (outcome.IsObject())
+    {
+        const auto ok = outcome.FindMember("ok");
+        if (ok != outcome.MemberEnd() && ok->value.IsBool() && ok->value.GetBool())
+        {
+            const std::size_t required = operation_required_output_attachment_count(operation_id);
+            for (std::size_t index = 0; index < required; ++index)
+            {
+                const char* name = operation_required_output_attachment_name(operation_id, index);
+                if (name == nullptr || names.find(name) == names.end())
+                {
+                    return fail(
+                        OperationResponseValidationStatus::invalid, message,
+                        "A successful operation response is missing a required attachment.");
+                }
+            }
         }
     }
     return OperationResponseValidationStatus::ok;

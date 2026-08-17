@@ -50,6 +50,9 @@ export class GeometerWorkerClient {
         if (response.attachments.length !== 0) {
             throw new GeometerWorkerError("model_bounds returned unexpected attachments.");
         }
+        if (!("units" in response.outcome.result)) {
+            throw new GeometerWorkerError("model_bounds returned an incompatible result DTO.");
+        }
         return response.outcome.result;
     }
     async execute(operation, requestJson, attachments) {

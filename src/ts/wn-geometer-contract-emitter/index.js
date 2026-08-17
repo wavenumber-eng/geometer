@@ -206,6 +206,11 @@ function operationRecord(program, operation, identity) {
     outputAttachments,
     "result",
   );
+  const runtimeDispatch =
+    requestProjection?.kind === "packed_attachment" &&
+    resultProjection?.kind === "packed_attachment"
+      ? "packed_attachment"
+      : "logical_dto";
   return {
     name: qualifiedName(operation),
     identity,
@@ -213,6 +218,7 @@ function operationRecord(program, operation, identity) {
     result_contract: result,
     input_attachments: inputAttachments,
     output_attachments: outputAttachments,
+    runtime_dispatch: runtimeDispatch,
     ...(requestProjection ? { request_projection: requestProjection } : {}),
     ...(resultProjection ? { result_projection: resultProjection } : {}),
     doc: getDoc(program, operation) ?? "",

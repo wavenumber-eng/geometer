@@ -97,6 +97,61 @@ DECLARATIONS: dict[str, dict[str, Any]] = {
         "kind": "enum",
         "values": ["transport", "contract", "operation"],
     },
+    "Wavenumber.Geometer.Contracts.Common.PackedAttachmentProjectionA0": {
+        "kind": "object",
+        "properties": {
+            "schema": {
+                "type": {
+                    "kind": "primitive",
+                    "name": "string",
+                },
+                "optional": False,
+                "constraints": {
+                    "min_length": 1,
+                    "max_length": 128,
+                },
+                "field": "schema",
+            },
+            "packet": {
+                "type": {
+                    "kind": "reference",
+                    "target": "Wavenumber.Geometer.Contracts.Common.PackedAttachmentReferenceA0",
+                },
+                "optional": False,
+                "constraints": {},
+                "field": "packet",
+            },
+        },
+    },
+    "Wavenumber.Geometer.Contracts.Common.PackedAttachmentReferenceA0": {
+        "kind": "object",
+        "properties": {
+            "attachment": {
+                "type": {
+                    "kind": "primitive",
+                    "name": "string",
+                },
+                "optional": False,
+                "constraints": {
+                    "min_length": 1,
+                    "max_length": 128,
+                },
+                "field": "attachment",
+            },
+            "format": {
+                "type": {
+                    "kind": "primitive",
+                    "name": "string",
+                },
+                "optional": False,
+                "constraints": {
+                    "min_length": 1,
+                    "max_length": 128,
+                },
+                "field": "format",
+            },
+        },
+    },
     "Wavenumber.Geometer.Contracts.IpcA0.IpcAttachmentDeclarationA0": {
         "kind": "object",
         "properties": {
@@ -881,6 +936,15 @@ DECLARATIONS: dict[str, dict[str, Any]] = {
                 },
                 "field": "result_contract",
             },
+            "runtime_dispatch": {
+                "type": {
+                    "kind": "reference",
+                    "target": "Wavenumber.Geometer.Contracts.IpcA0.IpcRuntimeDispatchA0",
+                },
+                "optional": False,
+                "constraints": {},
+                "field": "runtime_dispatch",
+            },
             "input_attachments": {
                 "type": {
                     "kind": "array",
@@ -908,6 +972,63 @@ DECLARATIONS: dict[str, dict[str, Any]] = {
                     "max_items": 16,
                 },
                 "field": "output_attachments",
+            },
+            "request_projection": {
+                "type": {
+                    "kind": "reference",
+                    "target": "Wavenumber.Geometer.Contracts.IpcA0.IpcPackedProjectionA0",
+                },
+                "optional": True,
+                "constraints": {},
+                "field": "request_projection",
+            },
+            "result_projection": {
+                "type": {
+                    "kind": "reference",
+                    "target": "Wavenumber.Geometer.Contracts.IpcA0.IpcPackedProjectionA0",
+                },
+                "optional": True,
+                "constraints": {},
+                "field": "result_projection",
+            },
+        },
+    },
+    "Wavenumber.Geometer.Contracts.IpcA0.IpcPackedProjectionA0": {
+        "kind": "object",
+        "properties": {
+            "kind": {
+                "type": {
+                    "kind": "literal",
+                    "value_type": "string",
+                    "value": "packed_attachment",
+                },
+                "optional": False,
+                "constraints": {},
+                "field": "kind",
+            },
+            "attachment_name": {
+                "type": {
+                    "kind": "primitive",
+                    "name": "string",
+                },
+                "optional": False,
+                "constraints": {
+                    "min_length": 1,
+                    "max_length": 128,
+                },
+                "field": "attachment_name",
+            },
+            "format": {
+                "type": {
+                    "kind": "primitive",
+                    "name": "string",
+                },
+                "optional": False,
+                "constraints": {
+                    "min_length": 1,
+                    "max_length": 128,
+                },
+                "field": "format",
             },
         },
     },
@@ -976,6 +1097,10 @@ DECLARATIONS: dict[str, dict[str, Any]] = {
                 "field": "request",
             },
         },
+    },
+    "Wavenumber.Geometer.Contracts.IpcA0.IpcRuntimeDispatchA0": {
+        "kind": "enum",
+        "values": ["logical_dto", "packed_attachment"],
     },
     "Wavenumber.Geometer.Contracts.IpcA0.IpcShutdownAckA0": {
         "kind": "object",
@@ -1342,7 +1467,11 @@ DECLARATIONS: dict[str, dict[str, Any]] = {
             {
                 "kind": "reference",
                 "target": "Wavenumber.Geometer.Contracts.ModelBoundsA0.ModelBoundsResultA0",
-            }
+            },
+            {
+                "kind": "reference",
+                "target": "Wavenumber.Geometer.Contracts.Common.PackedAttachmentProjectionA0",
+            },
         ],
     },
     "Wavenumber.Geometer.Contracts.OperationOutcomeA0.OperationSuccessA0": {

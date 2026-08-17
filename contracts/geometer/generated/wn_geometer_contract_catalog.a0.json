@@ -2918,6 +2918,83 @@
       ]
     },
     {
+      "name": "Wavenumber.Geometer.Contracts.Common.PackedAttachmentProjectionA0",
+      "kind": "model",
+      "doc": "Minimal JSON value used while an operation's logical DTO projection remains deferred.",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "schema",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 1,
+            "max_length": 128
+          }
+        },
+        {
+          "name": "packet",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.Common.PackedAttachmentReferenceA0"
+          },
+          "annotations": {},
+          "constraints": {}
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.Common.PackedAttachmentReferenceA0",
+      "kind": "model",
+      "doc": "A named binary attachment carrying a separately governed packed projection.",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "attachment",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 1,
+            "max_length": 128
+          }
+        },
+        {
+          "name": "format",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 1,
+            "max_length": 128
+          }
+        }
+      ]
+    },
+    {
       "name": "Wavenumber.Geometer.Contracts.IpcA0.IpcAttachmentDeclarationA0",
       "kind": "model",
       "doc": "Named raw-attachment declaration in the negotiated operation catalog.",
@@ -3921,6 +3998,17 @@
           }
         },
         {
+          "name": "runtime_dispatch",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.IpcA0.IpcRuntimeDispatchA0"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
           "name": "input_attachments",
           "optional": false,
           "doc": "",
@@ -3950,6 +4038,80 @@
           "annotations": {},
           "constraints": {
             "max_items": 16
+          }
+        },
+        {
+          "name": "request_projection",
+          "optional": true,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.IpcA0.IpcPackedProjectionA0"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "result_projection",
+          "optional": true,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.IpcA0.IpcPackedProjectionA0"
+          },
+          "annotations": {},
+          "constraints": {}
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.IpcA0.IpcPackedProjectionA0",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "kind",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "packed_attachment"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "attachment_name",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 1,
+            "max_length": 128
+          }
+        },
+        {
+          "name": "format",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 1,
+            "max_length": 128
           }
         }
       ]
@@ -4048,6 +4210,25 @@
           },
           "annotations": {},
           "constraints": {}
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.IpcA0.IpcRuntimeDispatchA0",
+      "kind": "enum",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "members": [
+        {
+          "name": "logical_dto",
+          "value": "logical_dto",
+          "doc": ""
+        },
+        {
+          "name": "packed_attachment",
+          "value": "packed_attachment",
+          "doc": ""
         }
       ]
     },
@@ -4578,6 +4759,15 @@
           },
           "doc": "",
           "annotations": {}
+        },
+        {
+          "name": "packed_attachment",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.Common.PackedAttachmentProjectionA0"
+          },
+          "doc": "",
+          "annotations": {}
         }
       ]
     },
@@ -4657,6 +4847,7 @@
           "max_bytes": 268435456
         }
       ],
+      "runtime_dispatch": "packed_attachment",
       "request_projection": {
         "kind": "packed_attachment",
         "attachment_name": "analytic_planar_boolean_request",
@@ -4686,6 +4877,7 @@
         }
       ],
       "output_attachments": [],
+      "runtime_dispatch": "logical_dto",
       "doc": "Compute axis-aligned model bounds from the required raw model attachment."
     }
   ]

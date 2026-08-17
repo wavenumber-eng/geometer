@@ -7,6 +7,8 @@
 #include "geometer/version.h"
 
 #include <rapidjson/document.h>
+#include <rapidjson/stringbuffer.h>
+#include <rapidjson/writer.h>
 
 #include <algorithm>
 #include <atomic>
@@ -348,6 +350,37 @@ bool submit_terminal(const std::shared_ptr<SharedState>& shared, Frame frame)
 bool parse_request(Frame* frame, QueuedRequest* request, std::string* diagnostic_code,
                    std::string* diagnostic_path, std::string* error)
 {
+    JsonDocument document;
+    if (!parse_json(frame->json, &document, error))
+    {
+        *diagnostic_code = "geometer.contract.invalid_json";
+        return false;
+    }
+    const auto operation_member = document.FindMember("operation");
+    const auto request_member = document.FindMember("request");
+    if (document.MemberCount() == 2 && operation_member != document.MemberEnd() &&
+        operation_member->value.IsString() && request_member != document.MemberEnd() &&
+        request_member->value.IsObject() &&
+        std::string(operation_member->value.GetString(),
+                    operation_member->value.GetStringLength()) ==
+            "geometry.analytic_planar_boolean_batch.a0")
+    {
+        rapidjson::StringBuffer buffer;
+        rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+        if (!request_member->value.Accept(writer))
+        {
+            *error = "The packed IPC request value could not be encoded.";
+            return false;
+        }
+        request->id = frame->request_id;
+        request->resident_bytes = encoded_size(*frame);
+        request->operation.assign(operation_member->value.GetString(),
+                                  operation_member->value.GetStringLength());
+        request->request_json.assign(buffer.GetString(), buffer.GetSize());
+        request->attachments = std::move(frame->attachments);
+        return true;
+    }
+
     contracts::IpcRequestA0 envelope;
     contracts::ContractError contract_error;
     if (!contracts::decode_json(reinterpret_cast<const unsigned char*>(frame->json.data()),

@@ -11,7 +11,9 @@ import { applyProjectionDeferrals } from "./contract-projection-deferral.mjs";
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const catalogPath = join(root, "contracts/geometer/generated/wn_geometer_contract_catalog.a0.json");
 const catalogText = await readFile(catalogPath, "utf8");
-const catalog = await applyProjectionDeferrals(JSON.parse(catalogText), "cpp");
+const catalog = await applyProjectionDeferrals(JSON.parse(catalogText), "cpp", {
+  retainRuntimeDispatch: true,
+});
 const catalogSha256 = createHash("sha256").update(catalogText).digest("hex");
 const output = join(root, catalog.output_roots.cpp);
 const checkOnly = process.argv.includes("--check");
@@ -348,6 +350,7 @@ function generateOperationCatalogSource() {
       result_contract: operation.result_contract,
       input_attachments: operation.input_attachments,
       output_attachments: operation.output_attachments,
+      runtime_dispatch: operation.runtime_dispatch,
       ...(operation.request_projection ? { request_projection: operation.request_projection } : {}),
       ...(operation.result_projection ? { result_projection: operation.result_projection } : {}),
     })),
@@ -398,7 +401,18 @@ function generateOperationCatalogSource() {
   const [beforeAbi, afterAbi] = afterReleaseMarker.split('"__WN_C_ABI_GENERATION__"');
   if (afterAbi === undefined) throw new Error("Could not place runtime catalog version markers.");
   const attachmentChecks = [];
+  const requiredAttachmentCounts = [];
+  const requiredAttachmentNames = [];
   for (const operation of catalog.operations) {
+    const required = operation.output_attachments.filter((attachment) => attachment.required);
+    requiredAttachmentCounts.push(
+      `    if (operation_id == ${JSON.stringify(operation.identity)}) return ${required.length}U;`,
+    );
+    for (const [index, attachment] of required.entries()) {
+      requiredAttachmentNames.push(
+        `    if (operation_id == ${JSON.stringify(operation.identity)} && index == ${index}U) return ${JSON.stringify(attachment.name)};`,
+      );
+    }
     for (const attachment of operation.output_attachments) {
       for (const mediaType of attachment.media_types) {
         attachmentChecks.push(
@@ -439,6 +453,21 @@ function generateOperationCatalogSource() {
     "    (void)attachment_name;",
     "    (void)media_type;",
     "    return false;",
+    "}",
+    "",
+    "std::size_t operation_required_output_attachment_count(const std::string& operation_id)",
+    "{",
+    ...requiredAttachmentCounts,
+    "    return 0;",
+    "}",
+    "",
+    "const char* operation_required_output_attachment_name(const std::string& operation_id,",
+    "                                                      std::size_t index)",
+    "{",
+    ...requiredAttachmentNames,
+    "    (void)operation_id;",
+    "    (void)index;",
+    "    return nullptr;",
     "}",
     "",
     "} // namespace geometer",

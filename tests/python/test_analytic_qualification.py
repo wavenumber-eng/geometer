@@ -511,10 +511,17 @@ def test_governed_packet_replays_through_production_executable_ipc() -> None:
         require_solver_telemetry=helper is not None,
     )
     case = report["cases"][0]
-    assert report["qualification"]["status"] == "pass"
+    measurement = report["identity"]["process_rss_measurement"]
+    if measurement["source"] == "unavailable":
+        assert report["qualification"]["status"] == "fail"
+        assert report["qualification"]["process_envelope_hard_ceiling_gate"] == "fail"
+        assert measurement["transient_peak_can_be_missed"] is None
+    else:
+        assert report["qualification"]["status"] == "pass"
+        assert report["qualification"]["process_envelope_hard_ceiling_gate"] == "pass"
+        assert measurement["transient_peak_can_be_missed"] is False
     assert report["qualification"]["real_board_evidence_present"] is False
     assert report["qualification"]["real_board_promotion_gate"] == "incomplete"
-    assert report["identity"]["process_rss_measurement"]["transient_peak_can_be_missed"] is False
     assert len(report["identity"]["machine_profile_sha256"]) == 64
     assert len(report["identity"]["toolchain_profile_sha256"]) == 64
     toolchain = report["environment"]["toolchain"]["profile"]

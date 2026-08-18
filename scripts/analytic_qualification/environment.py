@@ -190,8 +190,11 @@ def _read_process_memory_windows(pid: int) -> tuple[int, int] | None:
             ("peak_pagefile_usage", ctypes.c_size_t),
         ]
 
-    kernel32 = ctypes.windll.kernel32
-    psapi = ctypes.windll.psapi
+    windll = getattr(ctypes, "windll", None)
+    if windll is None:
+        return None
+    kernel32 = windll.kernel32
+    psapi = windll.psapi
     kernel32.OpenProcess.argtypes = (ctypes.c_ulong, ctypes.c_int, ctypes.c_ulong)
     kernel32.OpenProcess.restype = ctypes.c_void_p
     kernel32.CloseHandle.argtypes = (ctypes.c_void_p,)

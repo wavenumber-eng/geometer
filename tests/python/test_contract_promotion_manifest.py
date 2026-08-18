@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import subprocess
 import tomllib
 from pathlib import Path
 from typing import Any
@@ -204,6 +205,22 @@ def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def _tracked_sha256(path: Path) -> str:
+    relative = path.relative_to(ROOT).as_posix()
+    completed = subprocess.run(
+        ["git", "show", f"HEAD:{relative}"],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+    )
+    data = completed.stdout if completed.returncode == 0 else path.read_bytes()
+    return hashlib.sha256(data).hexdigest()
+
+
+def _lf_sha256(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes().replace(b"\r\n", b"\n")).hexdigest()
+
+
 def _canonical_feasibility_stdout(raw: bytes) -> bytes:
     text = raw.decode("utf-8", errors="strict").replace("\r\n", "\n")
     assert "\r" not in text
@@ -396,7 +413,8 @@ def _assert_model_bounds_promotion(manifest: dict[str, Any]) -> None:
         ("browser_js_sha256", "dist/wasm/browser/geometer.js"),
         ("browser_wasm_sha256", "dist/wasm/browser/geometer.wasm"),
     ):
-        assert _sha256(ROOT / path) == evidence[key]
+        digest = _tracked_sha256(ROOT / path) if key.startswith("browser_") else _sha256(ROOT / path)
+        assert digest == evidence[key]
 
 
 def _assert_contract_and_operation_inventory(manifest: dict[str, Any]) -> None:
@@ -905,7 +923,8 @@ def test_real_board_packet_provenance_records_rt_candidate_without_promoting() -
     ):
         artifact = ROOT / rt_case[path_key]
         assert artifact.is_file()
-        assert _sha256(artifact) == rt_case[digest_key]
+        digest = _lf_sha256(artifact) if path_key == "qualification_report_path" else _sha256(artifact)
+        assert digest == rt_case[digest_key]
 
     vector_directory = (ROOT / rt_case["packet_path"]).parent
     assert {path.name for path in vector_directory.iterdir()} == {

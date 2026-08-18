@@ -1,3 +1,12 @@
++++
+type = "adr"
+id = "geometer-adr-002"
+domain = "geometer"
+status = "accepted"
+title = "Use dist For Distributable Binaries"
+created = "2026-08-18"
++++
+
 # ADR-002: dist/ directory for distributable binaries
 
 ## Status

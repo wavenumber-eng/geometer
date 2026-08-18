@@ -1,3 +1,12 @@
++++
+type = "adr"
+id = "geometer-adr-004"
+domain = "geometer"
+status = "accepted"
+title = "Vendor RapidJSON For OCCT glTF Export"
+created = "2026-08-18"
++++
+
 # ADR-004: Vendor RapidJSON for OCCT glTF export
 
 ## Status

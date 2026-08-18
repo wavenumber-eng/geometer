@@ -31,8 +31,8 @@ formats, start at [../design/README.md](../design/README.md).
 - `python/geometer/` - executable-backed Python package.
 - `examples/` - Python, C++, and WASM-facing examples.
 - `tests/` - stratified tests and C++ test sources.
-- `docs/adr/` - architecture decisions.
-- `docs/requirements/` - numbered requirements.
+- `docs/geometer/adr/` - architecture decisions.
+- `docs/geometer/requirements/` - numbered requirements.
 - `docs/design/` - maintained interface and format documentation.
 - `docs/developer/` - developer setup, validation, and release commands.
 - `scripts/` - dependency/build helper scripts.
@@ -588,7 +588,7 @@ date-based ABI generation, for example `20260818`.
 
 ## Versioning
 
-Geometer follows [ADR 006](docs/adr/006_date_based_versioning_policy.md).
+Geometer follows [ADR 006](../geometer/adr/geometer-adr-006-date_based_versioning_policy.md).
 The current release identity is `v2026-08-18`; the CMake/PyPI package version
 is `2026.8.18`; the C ABI generation is `20260818`.
 

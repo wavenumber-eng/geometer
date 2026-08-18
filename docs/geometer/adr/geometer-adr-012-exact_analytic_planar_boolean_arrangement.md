@@ -1,9 +1,18 @@
++++
+type = "adr"
+id = "geometer-adr-012"
+domain = "geometer"
+status = "accepted"
+title = "Use Exact Arrangement For Analytic Planar Booleans"
+created = "2026-08-18"
++++
+
 # ADR-012: Exact Arrangement For Analytic Planar Booleans
 
 ## Status
 
 Superseded for production implementation by
-[ADR-013](013_filtered_resolution_bounded_planar_boolean.md) on 2026-08-15.
+[ADR-013](geometer-adr-013-filtered_resolution_bounded_planar_boolean.md) on 2026-08-15.
 This ADR remains the historical record of the exact-first feasibility work.
 
 Independent technical review approved the analytic design at head

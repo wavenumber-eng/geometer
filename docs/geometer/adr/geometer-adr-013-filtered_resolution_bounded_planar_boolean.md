@@ -1,3 +1,12 @@
++++
+type = "adr"
+id = "geometer-adr-013"
+domain = "geometer"
+status = "accepted"
+title = "Use Filtered Resolution-Bounded Analytic Planar Booleans"
+created = "2026-08-18"
++++
+
 # ADR-013: Filtered, Resolution-Bounded Analytic Planar Booleans
 
 ## Status

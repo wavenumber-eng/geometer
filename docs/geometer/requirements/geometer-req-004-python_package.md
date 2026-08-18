@@ -1,3 +1,16 @@
++++
+type = "requirement"
+id = "geometer-req-004"
+domain = "geometer"
+status = "implemented"
+title = "Python Package"
+created = "2026-08-18"
+
+[[verification_refs]]
+kind = "local_file"
+target = "tests/python/STRATUM.toml"
++++
+
 # REQ-004: Python Package
 
 ## Summary

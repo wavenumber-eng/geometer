@@ -1,3 +1,12 @@
++++
+type = "adr"
+id = "geometer-adr-010"
+domain = "geometer"
+status = "accepted"
+title = "Use TypeSpec As Contract Authority"
+created = "2026-08-18"
++++
+
 # ADR-010: TypeSpec Contract Authority And Promotion
 
 ## Status

@@ -1,3 +1,16 @@
++++
+type = "requirement"
+id = "geometer-req-005"
+domain = "geometer"
+status = "implemented"
+title = "WASM Browser Interfaces"
+created = "2026-08-18"
+
+[[verification_refs]]
+kind = "local_file"
+target = "tests/wasm/STRATUM.toml"
++++
+
 # REQ-005: WASM Browser Interfaces
 
 ## Summary

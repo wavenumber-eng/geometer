@@ -10,7 +10,7 @@ Geometer's maintained interface contracts are currently documented in:
 - `docs/design/wasm.md`
 
 The TypeSpec contract program is governed by
-[ADR-010](../adr/010_typespec_contract_authority_and_promotion.md). Its current
+[ADR-010](../geometer/adr/geometer-adr-010-typespec_contract_authority_and_promotion.md). Its current
 implementation-backed baseline and promotion state are:
 
 - [current interface inventory](current-interface-inventory.md); and

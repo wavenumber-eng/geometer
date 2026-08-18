@@ -1,0 +1,35 @@
+[[vendors]]
+id = "third-party-index"
+kind = "source"
+name = "Geometer third-party dependency index"
+upstream_url = "https://github.com/wavenumber-eng/geometer/tree/main/third_party"
+version = "repository-tracked"
+license = "dependency-specific licenses cataloged by third_party/README.md"
+owner = "geometer-maintainers"
+update_command = "update third_party/README.md whenever a vendored dependency changes"
+paths = ["third_party/README.md"]
+consumers = ["docs/governance/vendors.toml", "src/cpp/lib/CMakeLists.txt"]
+
+[[vendors]]
+id = "clipper2"
+kind = "source"
+name = "Clipper2"
+upstream_url = "https://github.com/AngusJohnson/Clipper2"
+version = "2.0.1"
+license = "Boost Software License 1.0"
+owner = "geometer-native"
+update_command = "refresh from the pinned Clipper2 release and update third_party/clipper2/README.geometer.md"
+paths = ["third_party/clipper2/**"]
+consumers = ["src/cpp/lib/CMakeLists.txt", "native-planar-operations"]
+
+[[vendors]]
+id = "rapidjson"
+kind = "source"
+name = "RapidJSON"
+upstream_url = "https://github.com/Tencent/rapidjson"
+version = "1.1.0"
+license = "MIT"
+owner = "geometer-native"
+update_command = "refresh from the pinned RapidJSON release and reapply the governed OCCT compatibility patch"
+paths = ["third_party/rapidjson/**"]
+consumers = ["scripts/build_occt.py", "scripts/build_wasm.py", "occt-gltf-export"]

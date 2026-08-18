@@ -1,7 +1,7 @@
 manifest_version = 1
 baseline_date = "2026-08-12"
 tracking_issue = "https://github.com/wavenumber-eng/geometer/issues/18"
-authority_adr = "docs/adr/010_typespec_contract_authority_and_promotion.md"
+authority_adr = "docs/geometer/adr/geometer-adr-010-typespec_contract_authority_and_promotion.md"
 
 [policy]
 target_structural_authority = "typespec_normalized_catalog"
@@ -123,7 +123,7 @@ catalog_generation = "a0"
 
 [analytic_filtered_solver]
 status = "implemented_filtered_batch_relationships_packed_dispatch"
-design = "docs/adr/013_filtered_resolution_bounded_planar_boolean.md"
+design = "docs/geometer/adr/geometer-adr-013-filtered_resolution_bounded_planar_boolean.md"
 coordinate_grid_nm = 1
 topology_resolution_nm = 50
 topology_resolution_caller_programmable = false
@@ -469,7 +469,7 @@ generic_c_abi = "implemented_a0"
 generic_c_abi_spec = "docs/design/generic-operation-c-abi.md"
 executable_ipc = "implemented_model_bounds_pilot_a0"
 executable_ipc_spec = "docs/design/executable-ipc-a0.md"
-transport_adr = "docs/adr/011_generic_operation_transports.md"
+transport_adr = "docs/geometer/adr/geometer-adr-011-generic_operation_transports.md"
 implementation_allowed = true
 
 [transports.design_review]
@@ -479,7 +479,7 @@ review_head = "b86a065c5926c35f1eee23a9ba1cef890689c7d7"
 packet = "docs/design/transport-design-review.md"
 packet_sha256 = "865964402ff6258151b199f748ae0754c9fc4908021af01ffc6abdb47f2013ea"
 reviewed_adr_sha256 = "d4905bda88727fadeb221a3b6c5bfb392f5e062bb6033b0cded29f59fb492de0"
-adr_sha256 = "1dd4c1d6c4b7d6d30037d574f2a74608dcd56c2af0e4e38244ccb993622f79b7"
+adr_sha256 = "2a69d9e05baa7894be3677d2a9c250098bd45915a7cc9d083639650d3151d7d8"
 generic_c_abi_sha256 = "1b9d02d310110530cb62c82125613865a90bcb2f9da49397ae61dbc61abcd861"
 executable_ipc_sha256 = "c4d65cdcad36382e7fba83e1180f5e937194a5652f131b90f63e4f55a80dd339"
 reviewer = "independent-reviewer"
@@ -967,14 +967,14 @@ solver_numeric_status = "reopened_filtered_50nm"
 named_consumer = "appz.data_models.pcb.matz"
 compatibility_snapshot = "docs/contracts/compatibility/data-models-geom-a0-2026-08-12.toml"
 design = "docs/design/analytic-planar-boolean-a0.md"
-design_sha256 = "1a7249acd824d44a60074aea2004efe9cf4e31a84817a5ebc466b0c3e90d1ec5"
+design_sha256 = "35490658ee8b24bfce7912ced3017bad4064ec0fcf63f453c983715038482c8a"
 packet_spec = "docs/design/analytic-planar-boolean-packet-a0.md"
 packet_spec_sha256 = "efa659a73c413950a62f643a67863309e60fa02829652f4adf8138c2ea374a5c"
 numeric_catalog = "docs/contracts/analytic-planar-boolean-a0-catalog.toml"
 numeric_catalog_sha256 = "edb1a0b033b57f9d5e7f651c5c2562239a9fe2e6e2956de4fd06b2ff46e01870"
-solver_adr = "docs/adr/013_filtered_resolution_bounded_planar_boolean.md"
-solver_adr_sha256 = "df3336aea28b12f6775030acac16cabc41a2f2bd79d956a57e18b9a0d47c9bf9"
-superseded_solver_adr = "docs/adr/012_exact_analytic_planar_boolean_arrangement.md"
+solver_adr = "docs/geometer/adr/geometer-adr-013-filtered_resolution_bounded_planar_boolean.md"
+solver_adr_sha256 = "09418b57b030fd82fdbb6c28e297bb42169f250b15a5708900ba5ea5bffb20ac"
+superseded_solver_adr = "docs/geometer/adr/geometer-adr-012-exact_analytic_planar_boolean_arrangement.md"
 filtered_solver_foundation = "direct_lowering_broad_narrow_overlay_arrangement_face_selection_material_regions_lineage_operand_outcomes_normalization_packet_assembly_batch_merge_strict_published_geometry_policy_and_relationship_evaluation_implemented_packed_dispatch"
 feasibility_test = "tests/cpp/analytic_planar_boolean_feasibility_test.cpp"
 portable_fixture = "tests/fixtures/analytic_planar_boolean/matz_observations_a0.json"
@@ -1041,7 +1041,7 @@ performance_qualification_default_request = "tests/contracts/vectors/analytic/cr
 real_board_packet_provenance = "docs/contracts/analytic-real-board-packet-provenance.toml"
 real_board_packet_provenance_sha256 = "f5bfe38221dd4452946a4fcc74e09f1a05a1f4b960c291cd18b29995c8a51d4c"
 real_board_packet_provenance_test = "tests/python/test_contract_promotion_manifest.py"
-real_board_packet_provenance_test_sha256 = "31b412cd384b6fbe5ade74b53e556ab097daa9e0f8cbccc6c3bc91b39ab5dc7a"
+real_board_packet_provenance_test_sha256 = "8b228eec23019c30a2080658f3771ae99929dc0b47d462a3d02c0689e3a3d14e"
 real_board_packet_provenance_status = "public_mit_redistribution_authorized_rt_generated_local_qualified_loz_pending"
 real_board_packet_case_ids = ["rt_super_c1_pwr4", "loz_old_man_curved_copper"]
 real_board_packet_source_sha256 = ["90545409b6ce16e0b636fce3176c90b73be301d03f0a9e32c4ab21a42ad14aca", "377d5a05ed24137ea603d11c663d52ae48849b378534b346010936b826eb2375"]
@@ -1091,8 +1091,8 @@ replaces_existing_operation = false
 browser_target = "full_browser"
 independent_design_review_revision = "529c768e559b4c88874264748d4186e775c8a4dd"
 independent_design_review_head = "b86a065c5926c35f1eee23a9ba1cef890689c7d7"
-independent_design_review_record = "docs/adr/012_exact_analytic_planar_boolean_arrangement.md"
-independent_design_review_record_sha256 = "dfd6d4f968a4d2bbe9fb13169347ef823cf12e09342dc6f21a1cb788415c34cd"
+independent_design_review_record = "docs/geometer/adr/geometer-adr-012-exact_analytic_planar_boolean_arrangement.md"
+independent_design_review_record_sha256 = "dc62cb32fb1ac91e7f0700fe599152d37a65920216be4c8df3c8e1c6eb02b80f"
 typespec_projection_review_revision = "f4b6a9b87bf16f57ef29dae22150b16f2a742b64"
 typespec_projection_review_packet = "reviewer-019ffd0d-fa76-74b6-ac3e-c1c2642ba0de"
 implementation_gate = "packed_runtime_typescript_rust_python_projections_and_cpp_rust_python_logical_dtos_implemented_python_production_replay_matching_subset_1_3_4_5_6_7_8_9_10_cross_transport_exact_parity_case_2_blocked_missing_authoritative_integer_endpoints"

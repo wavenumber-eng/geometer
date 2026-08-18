@@ -1,0 +1,28 @@
+[[artifacts]]
+id = "committed-distribution-artifacts"
+kind = "runtime_binary"
+paths = ["dist/**"]
+tracked = "required"
+produced_by = "CMake native builds, scripts/build_wasm.py, and deterministic demo/package builders"
+included_in_release = "native, Python, WASM, and browser release surfaces as selected by the release packager"
+retention = "committed under the grouped dist policy"
+
+[[artifacts]]
+id = "generated-contract-sources"
+kind = "generated_source"
+paths = ["src/**/generated/**", "python/**/generated/**"]
+tracked = "required"
+produced_by = "the deterministic cross-language contract generators under scripts/"
+included_in_release = "native, Rust, and Python source distributions"
+retention = "committed and regenerated whenever the TypeSpec authority changes"
+source_of_truth = "src/tsp/geometer/main.tsp"
+regeneration_command = "npm run generate:contracts"
+
+[[artifacts]]
+id = "governed-packet-vector-fixtures"
+kind = "fixture_data"
+paths = ["tests/contracts/vectors/**/*.hex"]
+tracked = "required"
+produced_by = "scripts/write_analytic_packet_vectors.py and governed contract-vector writers"
+included_in_release = "source and test distributions"
+retention = "committed as deterministic cross-language regression evidence"

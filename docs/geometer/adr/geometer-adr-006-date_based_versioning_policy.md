@@ -1,3 +1,12 @@
++++
+type = "adr"
+id = "geometer-adr-006"
+domain = "geometer"
+status = "accepted"
+title = "Use Date-Based Versioning"
+created = "2026-08-18"
++++
+
 # ADR 006: Date-Based Versioning Policy
 
 ## Status

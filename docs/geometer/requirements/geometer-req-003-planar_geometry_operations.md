@@ -1,3 +1,16 @@
++++
+type = "requirement"
+id = "geometer-req-003"
+domain = "geometer"
+status = "implemented"
+title = "Planar Geometry Operations"
+created = "2026-08-18"
+
+[[verification_refs]]
+kind = "local_file"
+target = "tests/L0_cpp_foundation/STRATUM.toml"
++++
+
 # REQ-003: Planar Geometry Operations
 
 ## Summary

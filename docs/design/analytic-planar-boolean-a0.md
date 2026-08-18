@@ -4,7 +4,7 @@
 
 The logical TypeSpec shapes and packed A0 record layout are accepted and
 frozen. The solver and numeric policy are reopened under
-[ADR-013](../adr/013_filtered_resolution_bounded_planar_boolean.md) for a
+[ADR-013](../geometer/adr/geometer-adr-013-filtered_resolution_bounded_planar_boolean.md) for a
 speed-first filtered implementation with a 50 nm topology-resolution envelope.
 The arbitrary-precision algebraic engine is explicitly non-primary. MATZ
 accepted the original

@@ -1,0 +1,62 @@
+[domain_governance]
+owned_roots = [
+  "AGENTS.md",
+  "CMakeLists.txt",
+  "Cargo.lock",
+  "Cargo.toml",
+  "LICENSE",
+  "README.md",
+  "THIRD_PARTY_NOTICES.md",
+  "cmake",
+  "contracts",
+  "dist",
+  "docs",
+  "examples",
+  "package-lock.json",
+  "package.json",
+  "pyproject.toml",
+  "python",
+  "rust",
+  "scripts",
+  "src",
+  "tests",
+  "third_party",
+  "typespec",
+  "uv.lock",
+  "wn-dev-std.toml",
+]
+ignore = ["out/**"]
+
+[[domains]]
+id = "geometer"
+title = "Geometer"
+status = "active"
+purpose = "Provide generic native, Python, and WASM geometry operations and governed cross-language contracts."
+html = "docs/design/index.html"
+
+[[file_groups]]
+primary_domain = "geometer"
+paths = [
+  "AGENTS.md",
+  "CMakeLists.txt",
+  "Cargo.*",
+  "LICENSE",
+  "README.md",
+  "THIRD_PARTY_NOTICES.md",
+  "cmake/**",
+  "contracts/**",
+  "dist/**",
+  "docs/**",
+  "examples/**",
+  "package*.json",
+  "pyproject.toml",
+  "python/**",
+  "rust/**",
+  "scripts/**",
+  "src/**",
+  "tests/**",
+  "third_party/**",
+  "typespec/**",
+  "uv.lock",
+  "wn-dev-std.toml",
+]

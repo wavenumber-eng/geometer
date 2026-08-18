@@ -1,3 +1,16 @@
++++
+type = "requirement"
+id = "geometer-req-006"
+domain = "geometer"
+status = "implemented"
+title = "Release Quality Gates"
+created = "2026-08-18"
+
+[[verification_refs]]
+kind = "local_file"
+target = "tests/L99_release/STRATUM.toml"
++++
+
 # REQ-006: Release Quality Gates
 
 ## Summary

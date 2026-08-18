@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Geometer Test Strategy</title>
+</head>
+<body data-doc="test-strategy" data-doc-status="accepted">
+  <main>
+    <h1>Geometer Test Strategy</h1>
+    <p>The test strategy covers native, Python, TypeScript, Rust, WASM, contract, package, and release surfaces.</p>
+    <h2>Rack And Signoff</h2>
+    <p>Rack strata are the test index of record. L99 signoff checks formatting, types, complexity, locks, versions, and repository hygiene.</p>
+    <h2>Lanes And Parity</h2>
+    <p>Native C++ and Python lanes validate the executable and bindings. Browser and Node lanes validate WASM behavior and cross-transport byte parity.</p>
+    <h2>Fixtures, Assets, And Oracles</h2>
+    <p>Governed packet fixtures, contract vectors, demo assets, and expected-result oracles provide deterministic regression evidence.</p>
+    <h2>Coverage And Evidence</h2>
+    <p>CTest, pytest, Rack, package validation, and qualification reports provide coverage evidence. Missing or deferred surfaces remain explicit in governed records.</p>
+  </main>
+</body>
+</html>

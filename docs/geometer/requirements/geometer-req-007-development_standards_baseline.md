@@ -1,3 +1,16 @@
++++
+type = "requirement"
+id = "geometer-req-007"
+domain = "geometer"
+status = "implemented"
+title = "Development Standards Baseline"
+created = "2026-08-18"
+
+[[verification_refs]]
+kind = "local_file"
+target = "tests/L99_release/STRATUM.toml"
++++
+
 # REQ-007: Development Standards Baseline
 
 ## Summary

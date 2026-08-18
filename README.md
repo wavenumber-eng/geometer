@@ -11,9 +11,9 @@ contouring, and packed planar boolean work.
 - [Setup](docs/setup.html)
 - [Architecture](docs/architecture.html)
 - [Design and interface docs](docs/design/README.md)
-- [Requirements](docs/requirements/README.md)
+- [Requirements](docs/geometer/requirements/README.md)
 - [Contracts](docs/contracts/README.md)
-- [ADRs](docs/adr/README.md)
+- [ADRs](docs/geometer/adr/README.md)
 - [Release notes](docs/releases/README.md)
 - [Examples](examples/README.md)
 

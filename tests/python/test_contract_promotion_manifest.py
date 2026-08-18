@@ -1144,7 +1144,7 @@ def test_exact_algebraic_backend_is_governed_and_non_primary() -> None:
 
 _EXPECTED_FILTERED_SOLVER: dict[str, Any] = {
     "status": "implemented_filtered_batch_relationships_packed_dispatch",
-    "design": "docs/adr/013_filtered_resolution_bounded_planar_boolean.md",
+    "design": "docs/geometer/adr/geometer-adr-013-filtered_resolution_bounded_planar_boolean.md",
     "coordinate_grid_nm": 1,
     "topology_resolution_nm": 50,
     "topology_resolution_caller_programmable": False,

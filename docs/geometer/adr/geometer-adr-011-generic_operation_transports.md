@@ -1,3 +1,12 @@
++++
+type = "adr"
+id = "geometer-adr-011"
+domain = "geometer"
+status = "accepted"
+title = "Use Generic Operation Transports"
+created = "2026-08-18"
++++
+
 # ADR-011: Generic Operation Transports
 
 ## Status
@@ -35,8 +44,8 @@ Add two transports over the same generated operation catalog:
 
 The exact A0 specifications are:
 
-- [Generic Operation C ABI](../design/generic-operation-c-abi.md); and
-- [Executable IPC A0](../design/executable-ipc-a0.md).
+- [Generic Operation C ABI](../../design/generic-operation-c-abi.md); and
+- [Executable IPC A0](../../design/executable-ipc-a0.md).
 
 Both carry generated JSON values plus named raw byte attachments. The C ABI
 passes operation identity as a separate argument and accepts the

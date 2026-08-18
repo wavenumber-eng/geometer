@@ -1,3 +1,16 @@
++++
+type = "requirement"
+id = "geometer-req-008"
+domain = "geometer"
+status = "implemented"
+title = "Generated Cross-Language Contracts"
+created = "2026-08-18"
+
+[[verification_refs]]
+kind = "local_file"
+target = "tests/typespec/STRATUM.toml"
++++
+
 # REQ-008: Generated Cross-Language Contracts
 
 ## Summary

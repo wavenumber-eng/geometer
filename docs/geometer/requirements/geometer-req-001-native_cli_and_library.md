@@ -1,3 +1,16 @@
++++
+type = "requirement"
+id = "geometer-req-001"
+domain = "geometer"
+status = "implemented"
+title = "Native CLI And Library"
+created = "2026-08-18"
+
+[[verification_refs]]
+kind = "local_file"
+target = "tests/L0_cpp_foundation/STRATUM.toml"
++++
+
 # REQ-001: Native CLI And Library
 
 ## Summary

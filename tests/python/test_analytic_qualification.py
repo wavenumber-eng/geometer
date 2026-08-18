@@ -516,10 +516,12 @@ def test_governed_packet_replays_through_production_executable_ipc() -> None:
         assert report["qualification"]["status"] == "fail"
         assert report["qualification"]["process_envelope_hard_ceiling_gate"] == "fail"
         assert measurement["transient_peak_can_be_missed"] is None
+        assert case["runs"][0]["process_peak_rss_bytes"] is None
     else:
         assert report["qualification"]["status"] == "pass"
         assert report["qualification"]["process_envelope_hard_ceiling_gate"] == "pass"
         assert measurement["transient_peak_can_be_missed"] is False
+        assert case["runs"][0]["process_peak_rss_bytes"] is not None
     assert report["qualification"]["real_board_evidence_present"] is False
     assert report["qualification"]["real_board_promotion_gate"] == "incomplete"
     assert len(report["identity"]["machine_profile_sha256"]) == 64
@@ -544,4 +546,3 @@ def test_governed_packet_replays_through_production_executable_ipc() -> None:
         assert counters["batch"]["failures"] == 0
         assert report["qualification"]["solver_telemetry_gate"] == "pass"
     assert case["runs"][0]["result_sha256"] == corpus.DEFAULT_RESULT_SHA256
-    assert case["runs"][0]["process_peak_rss_bytes"] is not None

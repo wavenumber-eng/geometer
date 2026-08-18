@@ -205,7 +205,7 @@ def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def _tracked_sha256(path: Path) -> str:
+def _tracked_bytes(path: Path) -> bytes:
     relative = path.relative_to(ROOT).as_posix()
     completed = subprocess.run(
         ["git", "show", f"HEAD:{relative}"],
@@ -213,8 +213,11 @@ def _tracked_sha256(path: Path) -> str:
         check=False,
         capture_output=True,
     )
-    data = completed.stdout if completed.returncode == 0 else path.read_bytes()
-    return hashlib.sha256(data).hexdigest()
+    return completed.stdout if completed.returncode == 0 else path.read_bytes()
+
+
+def _tracked_sha256(path: Path) -> str:
+    return hashlib.sha256(_tracked_bytes(path)).hexdigest()
 
 
 def _lf_sha256(path: Path) -> str:
@@ -725,10 +728,10 @@ def _assert_demo_inventory(manifest: dict[str, Any]) -> None:
             if key in demo:
                 assert (ROOT / demo[key]).is_file()
         if "distribution_sha256" in demo:
-            static_manifest = json.loads((ROOT / demo["asset_manifest"]).read_text())
+            static_manifest = json.loads(_tracked_bytes(ROOT / demo["asset_manifest"]))
             assert demo["distribution_sha256"] == static_manifest["sha256"]
         if "standalone_sha256" in demo:
-            assert _sha256(ROOT / demo["standalone_distribution"]) == demo["standalone_sha256"]
+            assert _tracked_sha256(ROOT / demo["standalone_distribution"]) == demo["standalone_sha256"]
         for key in ("font_regular", "font_bold", "font_license"):
             if key in demo:
                 asset = ROOT / demo[key]

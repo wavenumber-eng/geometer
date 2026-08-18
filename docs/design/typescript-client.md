@@ -175,7 +175,9 @@ Verification includes:
   model-bounds example.
 
 HLR and planar demos remain on their existing JavaScript interfaces until
-those operations are individually promoted. Viz remains frozen at its recorded
-2026.6.10 compatibility snapshot until its separate TypeScript migration passes.
-The concrete operation-by-operation adoption path is documented in
-[Viz TypeScript migration](viz-typescript-migration.md).
+those operations are individually promoted. The
+[Viz 2026.6.10 compatibility snapshot](../contracts/compatibility/viz-2026.6.10.toml)
+records the Geometer surfaces that consumer currently requires; it is a
+compatibility record, not a consumer migration plan. Application-specific
+adoption sequencing, rollout gates, worker-pool policy, and cache migration
+belong in the consuming repository.

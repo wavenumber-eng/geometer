@@ -359,7 +359,6 @@ def _assert_projection_surfaces(manifest: dict[str, Any]) -> None:
         "analytic_example_page",
         "analytic_example_artifact",
         "analytic_example_worker_artifact",
-        "viz_migration_guide",
     ):
         assert (ROOT / typescript[key]).exists(), key
     package_json = json.loads((ROOT / typescript["package_root"] / "package.json").read_text(encoding="utf-8"))

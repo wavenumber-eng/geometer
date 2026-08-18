@@ -19,7 +19,6 @@ durable record belongs here, in ADRs, and in requirements.
 - [Generated contract reference](generated-contract-reference.md)
 - [TypeScript contracts and browser WASM client](typescript-client.md)
 - [Rust contracts and executable IPC client](rust-client.md)
-- [Viz TypeScript migration](viz-typescript-migration.md)
 - [Browse generated contracts](../generated/contracts/index.html)
 - [Geom A0 contract alignment](geom-a0-contract-alignment.md)
 - [Analytic planar Boolean A0](analytic-planar-boolean-a0.md)

@@ -169,7 +169,9 @@ def test_analytic_polygon_pour_standalone_file_url() -> None:
         pytest.skip("Node.js is unavailable.")
     assert DEMO.is_file()
 
-    with tempfile.TemporaryDirectory(prefix="geometer-analytic-demo-chrome-") as profile:
+    with tempfile.TemporaryDirectory(
+        prefix="geometer-analytic-demo-chrome-", ignore_cleanup_errors=True
+    ) as profile:
         port = _free_port()
         url = DEMO.resolve().as_uri()
         browser = subprocess.Popen(

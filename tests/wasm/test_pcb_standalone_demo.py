@@ -256,7 +256,9 @@ def test_pcb_polygon_pour_standalone_interactions() -> None:
             pytest.fail("Chrome and Node.js are required in CI for the PCB demo gate.")
         pytest.skip("Chrome or Node.js is unavailable.")
     assert DEMO.is_file()
-    with tempfile.TemporaryDirectory(prefix="geometer-pcb-demo-chrome-") as profile:
+    with tempfile.TemporaryDirectory(
+        prefix="geometer-pcb-demo-chrome-", ignore_cleanup_errors=True
+    ) as profile:
         port = _free_port()
         url = DEMO.resolve().as_uri()
         browser = subprocess.Popen(

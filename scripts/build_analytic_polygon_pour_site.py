@@ -108,9 +108,10 @@ def main() -> None:
             ROOT / "docs" / "design" / "assets" / "fonts" / "JetBrainsMono" / "JetBrainsMono-Bold.woff2",
             staging / "JetBrainsMono-Bold.woff2",
         )
-        shutil.copy2(
-            ROOT / "docs" / "design" / "assets" / "fonts" / "JetBrainsMono" / "OFL.txt",
-            staging / "JetBrainsMono-OFL.txt",
+        (staging / "JetBrainsMono-OFL.txt").write_text(
+            (ROOT / "docs" / "design" / "assets" / "fonts" / "JetBrainsMono" / "OFL.txt").read_text(encoding="utf-8"),
+            encoding="utf-8",
+            newline="\n",
         )
         shutil.copy2(
             ROOT / "docs" / "design" / "assets" / "wn_logo_w_text__for_light.svg",

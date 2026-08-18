@@ -138,11 +138,12 @@ def build_html() -> str:
             worker_bundle.read_text(encoding="utf-8"),
             (BROWSER / "geometer.js").read_bytes(),
         ).encode("utf-8")
+        font_license = FONT_LICENSE.read_text(encoding="utf-8").replace("\r\n", "\n").replace("\r", "\n")
         application = "\n".join(
             [
                 '<script id="jetbrains-mono-license" type="text/plain" '
-                f'data-sha256="{hashlib.sha256(FONT_LICENSE.read_bytes()).hexdigest()}">'
-                f"{FONT_LICENSE.read_text(encoding='utf-8')}</script>",
+                f'data-sha256="{hashlib.sha256(font_license.encode("utf-8")).hexdigest()}">'
+                f"{font_license}</script>",
                 script_carrier("geometer-pcb-wasm", (BROWSER / "geometer.wasm").read_bytes()),
                 script_carrier("geometer-pcb-worker", worker_source),
                 f"<script>\n{inline_script(main_bundle.read_text(encoding='utf-8'))}\n</script>",

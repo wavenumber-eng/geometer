@@ -713,7 +713,13 @@ def _assert_demo_inventory(manifest: dict[str, Any]) -> None:
             assert _sha256(ROOT / demo["standalone_distribution"]) == demo["standalone_sha256"]
         for key in ("font_regular", "font_bold", "font_license"):
             if key in demo:
-                assert _sha256(ROOT / demo[key]) == demo[f"{key}_sha256"]
+                asset = ROOT / demo[key]
+                digest = (
+                    hashlib.sha256(asset.read_text(encoding="utf-8").replace("\r\n", "\n").encode("utf-8")).hexdigest()
+                    if key == "font_license"
+                    else _sha256(asset)
+                )
+                assert digest == demo[f"{key}_sha256"]
         assert demo["owning_operation"] in operation_ids + candidate_ids
 
 
@@ -789,9 +795,7 @@ def test_analytic_performance_qualification_harness_is_governed_without_overclai
     assert candidate["performance_qualification_reference_machine_policy"] == (
         "optional_comparative_observation_not_release_gate"
     )
-    assert candidate["performance_qualification_target_policy"] == (
-        "one_second_512_mib_observation_not_release_gate"
-    )
+    assert candidate["performance_qualification_target_policy"] == ("one_second_512_mib_observation_not_release_gate")
     assert candidate["performance_qualification_release_ceiling_policy"] == (
         "five_seconds_1_gib_process_and_solver_hard_gate"
     )
@@ -868,9 +872,7 @@ def test_real_board_packet_provenance_records_rt_candidate_without_promoting() -
     assert provenance["packet_generation_status"] == "rt_generated_loz_pending"
     assert provenance["exporter_provenance_status"] == "rt_complete_loz_pending"
     assert provenance["expected_result_authority_status"] == "rt_governed_loz_pending"
-    assert provenance["promotion_status"] == (
-        "rt_local_candidate_clean_build_attestation_pending"
-    )
+    assert provenance["promotion_status"] == ("rt_local_candidate_clean_build_attestation_pending")
 
     fixture = json.loads((ROOT / candidate["portable_fixture"]).read_text(encoding="utf-8"))
     audited_cases = {item["fixture_id"]: item for item in fixture["real_board_cases"]}

@@ -22,15 +22,7 @@ from standalone_html import (
 
 SOURCE = ROOT / "examples" / "wasm" / "analytic_polygon_pour_demo.html"
 STYLE = ROOT / "examples" / "wasm" / "geometer_demo.css"
-FONT_REGULAR = (
-    ROOT
-    / "docs"
-    / "design"
-    / "assets"
-    / "fonts"
-    / "JetBrainsMono"
-    / "JetBrainsMono-Regular.woff2"
-)
+FONT_REGULAR = ROOT / "docs" / "design" / "assets" / "fonts" / "JetBrainsMono" / "JetBrainsMono-Regular.woff2"
 FONT_BOLD = FONT_REGULAR.with_name("JetBrainsMono-Bold.woff2")
 FONT_LICENSE = FONT_REGULAR.with_name("OFL.txt")
 LOGO = ROOT / "docs" / "design" / "assets" / "wn_logo_w_text__for_light.svg"
@@ -40,18 +32,13 @@ PACKAGE = ROOT / "dist" / "wasm" / "npm" / "geometer"
 OUTPUT = DEMOS / "analytic_polygon_pour_demo.html"
 
 STYLE_LINK = '    <link rel="stylesheet" href="/examples/wasm/geometer_demo.css" />'
-GUARD_SCRIPT = (
-    '    <script src="/dist/wasm/demos/analytic_polygon_pour_bootstrap_guard.js"></script>\n'
-)
+GUARD_SCRIPT = '    <script src="/dist/wasm/demos/analytic_polygon_pour_bootstrap_guard.js"></script>\n'
 IMPORT_MAP = (
     '    <script type="importmap">\n'
     '      {"imports":{"@wavenumber/geometer/worker":"/dist/wasm/npm/geometer/worker.js"}}\n'
     "    </script>\n"
 )
-APP_SCRIPT = (
-    '    <script type="module" '
-    'src="/dist/wasm/demos/analytic_polygon_pour_demo.js"></script>'
-)
+APP_SCRIPT = '    <script type="module" src="/dist/wasm/demos/analytic_polygon_pour_demo.js"></script>'
 
 
 def parse_args() -> argparse.Namespace:
@@ -123,7 +110,7 @@ def build_html() -> str:
                     "} catch (error) {",
                     "  scope.postMessage({",
                     '    kind: "error",',
-                    '    message: error instanceof Error ? error.message : String(error),',
+                    "    message: error instanceof Error ? error.message : String(error),",
                     '    protocol: "wn.geometer.worker_bootstrap.a0",',
                     "  });",
                     "}",
@@ -163,11 +150,12 @@ def build_html() -> str:
             worker_bundle.read_text(encoding="utf-8"),
             (BROWSER / "geometer.js").read_bytes(),
         ).encode("utf-8")
+        font_license = FONT_LICENSE.read_text(encoding="utf-8").replace("\r\n", "\n").replace("\r", "\n")
         application = "\n".join(
             [
                 '<script id="jetbrains-mono-license" type="text/plain" '
-                f'data-sha256="{hashlib.sha256(FONT_LICENSE.read_bytes()).hexdigest()}">'
-                f"{FONT_LICENSE.read_text(encoding='utf-8')}</script>",
+                f'data-sha256="{hashlib.sha256(font_license.encode("utf-8")).hexdigest()}">'
+                f"{font_license}</script>",
                 script_carrier("geometer-analytic-wasm", (BROWSER / "geometer.wasm").read_bytes()),
                 script_carrier("geometer-analytic-worker", worker_source),
                 f"<script>\n{inline_script(main_bundle.read_text(encoding='utf-8'))}\n</script>",

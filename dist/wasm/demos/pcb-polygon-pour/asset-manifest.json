@@ -81,9 +81,9 @@
       "sha256": "c503cc5ec5f8b2c7666b7ecda1adf44bd45f2e6579b2eba0fc292150416588a2"
     },
     {
-      "bytes": 4399,
+      "bytes": 4398,
       "path": "JetBrainsMono-OFL.txt",
-      "sha256": "30f0c136e3c88e422d0791acd97238870f9054a9729bc34cf2ff0d4ed8cac4ad"
+      "sha256": "60d55f23c6ce05a81099a762cb67ca2c9b6ea251c7912720998b4c89ebfd4faa"
     },
     {
       "bytes": 92164,
@@ -262,5 +262,5 @@
     }
   ],
   "schema": "wn.geometer.static_site.a0",
-  "sha256": "3c62fd8fdf9173237d28096fd874e5c7031ec90ab1645ce8f431fefeb094a3b3"
+  "sha256": "f129b482d4d99705e749c1d7619333fd87c13f246c69be91796814e227c06a3f"
 }

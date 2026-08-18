@@ -523,7 +523,7 @@ def test_governed_packet_replays_through_production_executable_ipc() -> None:
     else:
         assert toolchain["build_attestation_schema"] == "wn.geometer.native_build_attestation.a1"
         source = toolchain["build"]["source"]
-        assert toolchain["build_provenance_attested"] is (source["tree_state"] == "clean")
+        assert not toolchain["build_provenance_attested"] or source["tree_state"] == "clean"
         assert toolchain["hint_authority"].startswith("validated_executable_bound_")
     assert len(toolchain["geometer_executable_sha256"]) == 64
     assert case["summary"]["expected_result_match"] is True

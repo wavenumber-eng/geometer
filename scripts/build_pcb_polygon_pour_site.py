@@ -42,8 +42,14 @@ def main() -> None:
         "pcb_polygon_pour_worker.js",
     ]
     tooling_files = [
-        "animation.js", "camera2d.js", "commands.js", "geometry.js",
-        "history.js", "index.js", "input.js", "tool-controller.js",
+        "animation.js",
+        "camera2d.js",
+        "commands.js",
+        "geometry.js",
+        "history.js",
+        "index.js",
+        "input.js",
+        "tool-controller.js",
     ]
     required = [browser / "geometer.js", browser / "geometer.wasm", package / "worker.js"]
     required += [demos / item for item in demo_files]
@@ -96,7 +102,11 @@ def main() -> None:
         shutil.copy2(browser / "geometer.wasm", staging / "geometer.wasm")
         for name in ["JetBrainsMono-Regular.woff2", "JetBrainsMono-Bold.woff2"]:
             shutil.copy2(ROOT / "docs" / "design" / "assets" / "fonts" / "JetBrainsMono" / name, staging / name)
-        shutil.copy2(ROOT / "docs" / "design" / "assets" / "fonts" / "JetBrainsMono" / "OFL.txt", staging / "JetBrainsMono-OFL.txt")
+        (staging / "JetBrainsMono-OFL.txt").write_text(
+            (ROOT / "docs" / "design" / "assets" / "fonts" / "JetBrainsMono" / "OFL.txt").read_text(encoding="utf-8"),
+            encoding="utf-8",
+            newline="\n",
+        )
         shutil.copy2(ROOT / "docs" / "design" / "assets" / "wn_logo_w_text__for_light.svg", staging / "wn-logo.svg")
         shutil.copytree(package, staging / "package")
 
@@ -129,10 +139,18 @@ def main() -> None:
             newline="\n",
         )
         files = sorted(path for path in staging.rglob("*") if path.is_file())
-        entries = [{"path": path.relative_to(staging).as_posix(), "bytes": path.stat().st_size, "sha256": digest(path)} for path in files]
-        closure = hashlib.sha256("".join(f"{item['path']}\0{item['sha256']}\n" for item in entries).encode()).hexdigest()
+        entries = [
+            {"path": path.relative_to(staging).as_posix(), "bytes": path.stat().st_size, "sha256": digest(path)}
+            for path in files
+        ]
+        closure = hashlib.sha256(
+            "".join(f"{item['path']}\0{item['sha256']}\n" for item in entries).encode()
+        ).hexdigest()
         (staging / "asset-manifest.json").write_text(
-            json.dumps({"schema": "wn.geometer.static_site.a0", "sha256": closure, "files": entries}, indent=2, sort_keys=True) + "\n",
+            json.dumps(
+                {"schema": "wn.geometer.static_site.a0", "sha256": closure, "files": entries}, indent=2, sort_keys=True
+            )
+            + "\n",
             encoding="utf-8",
             newline="\n",
         )

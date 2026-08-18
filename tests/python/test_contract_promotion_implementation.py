@@ -3,10 +3,15 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import sys
 import tomllib
+from pathlib import Path
 from typing import Any
 
 import test_contract_promotion_manifest as support
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "scripts"))
+from standalone_html import _esbuild_command  # noqa: E402
 
 
 ROOT = support.ROOT
@@ -16,6 +21,17 @@ _sha256 = support._sha256
 _canonical_feasibility_stdout = support._canonical_feasibility_stdout
 _assert_nonzero_uint64 = support._assert_nonzero_uint64
 _collect_explicit_source_ids = support._collect_explicit_source_ids
+
+
+def test_esbuild_launcher_matches_installed_platform_artifact() -> None:
+    executable = ROOT / "node_modules" / "esbuild" / "bin" / "esbuild"
+    assert _esbuild_command("node", executable, platform_name="nt") == (
+        "node",
+        str(executable),
+    )
+    assert _esbuild_command("node", executable, platform_name="posix") == (
+        str(executable),
+    )
 
 
 def test_exact_algebraic_backend_paths_exist() -> None:

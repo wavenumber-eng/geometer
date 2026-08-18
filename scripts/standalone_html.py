@@ -5,6 +5,7 @@ from __future__ import annotations
 import base64
 import hashlib
 import json
+import os
 import shutil
 import subprocess
 from html.parser import HTMLParser
@@ -14,6 +15,14 @@ from urllib.parse import urlsplit
 
 ROOT = Path(__file__).resolve().parents[1]
 ESBUILD_VERSION = "0.27.2"
+
+
+def _esbuild_command(
+    node: str, executable: Path, *, platform_name: str = os.name
+) -> tuple[str, ...]:
+    if platform_name == "nt":
+        return (node, str(executable))
+    return (str(executable),)
 
 
 def b64(data: bytes) -> str:
@@ -44,7 +53,7 @@ def script_carrier(carrier_id: str, data: bytes) -> str:
     )
 
 
-def ensure_esbuild() -> tuple[str, Path]:
+def ensure_esbuild() -> tuple[str, ...]:
     node = shutil.which("node")
     if node is None:
         raise RuntimeError("Node.js is required to bundle standalone browser demos.")
@@ -53,8 +62,9 @@ def ensure_esbuild() -> tuple[str, Path]:
         raise RuntimeError(
             f"esbuild {ESBUILD_VERSION} is unavailable; run npm install from the repository root."
         )
+    command = _esbuild_command(node, executable)
     version = subprocess.run(
-        [node, str(executable), "--version"],
+        [*command, "--version"],
         cwd=ROOT,
         check=True,
         capture_output=True,
@@ -62,7 +72,7 @@ def ensure_esbuild() -> tuple[str, Path]:
     ).stdout.strip()
     if version != ESBUILD_VERSION:
         raise RuntimeError(f"Expected esbuild {ESBUILD_VERSION}, found {version}.")
-    return node, executable
+    return command
 
 
 def bundle_es_module(
@@ -73,12 +83,11 @@ def bundle_es_module(
     defines: dict[str, str] | None = None,
     target: str = "es2022",
 ) -> None:
-    node, executable = ensure_esbuild()
+    esbuild = ensure_esbuild()
     output.parent.mkdir(parents=True, exist_ok=True)
     metafile = output.with_suffix(output.suffix + ".meta.json")
     command = [
-        node,
-        str(executable),
+        *esbuild,
         str(entry),
         "--bundle",
         "--format=iife",

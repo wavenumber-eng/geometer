@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="d88c4f7d1a487c34d7654c886b79b608bcbd53469b2b3e3d6acd9d9617b00f19">
+  <title>geometer.operation.outcome.a0 — Geometer</title>
+  <link rel="stylesheet" href="../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="d88c4f7d1a487c34d7654c886b79b608bcbd53469b2b3e3d6acd9d9617b00f19" data-page-kind="contract" data-contract-identity="geometer.operation.outcome.a0" data-promotion-status="promoted">
+<main>
+<header>
+  <p class="page-type">Contract root</p>
+  <h1><code>geometer.operation.outcome.a0</code></h1>
+  <p class="lede">Transport-neutral typed outcome shared by the generic C ABI and executable IPC.</p>
+</header>
+<nav class="nav" aria-label="Contract navigation"><a href="../index.html">All contracts</a><a href="../../../../contracts/geometer/generated/schema/OperationOutcomeA0.json">JSON Schema</a><a href="../../../../src/tsp/geometer/main.tsp">TypeSpec entry point</a><a href="../../../design/contract-semantics.md">Compatibility policy</a></nav>
+<aside class="callout"><strong>Generated, not authored.</strong> Edit TypeSpec and regenerate. Lifecycle evidence remains in the promotion manifest.</aside>
+
+<section><h2>Identity</h2><table><tbody>
+<tr><th>Contract</th><td><code>geometer.operation.outcome.a0</code></td></tr>
+<tr><th>Schema</th><td><code>urn:wavenumber:schema:geometer:geometer.operation.outcome:a0</code></td></tr>
+<tr><th>Declaration</th><td><code>Wavenumber.Geometer.Contracts.OperationOutcomeA0.OperationOutcomeA0</code></td></tr>
+<tr><th>Lifecycle</th><td><span class="status">promoted</span></td></tr>
+<tr><th>Current authority</th><td><code>typespec_normalized_catalog</code></td></tr>
+</tbody></table></section>
+<section class="model-section"><h2>Declarations <span class="tag">14</span></h2><details open id="declaration-wavenumber-geometer-contracts-operationoutcomea0-operationoutcomea0"><summary><h2><code>OperationOutcomeA0</code> <span class="tag">union</span></h2></summary><p>Transport-neutral typed outcome shared by the generic C ABI and executable IPC.</p><ul><li><code>success</code>: <code>OperationSuccessA0</code></li><li><code>failure</code>: <code>OperationFailureA0</code></li></ul></details>
+<details open id="declaration-wavenumber-geometer-contracts-common-diagnostica0"><summary><h2><code>DiagnosticA0</code> <span class="tag">model</span></h2></summary><p>A strict cross-transport diagnostic; message text is informative rather than identity.</p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>code</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=1</code></td><td>Stable namespaced diagnostic identity.</td></tr>
+<tr><td><code>category</code></td><td>required</td><td><code>DiagnosticCategory</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>message</code></td><td>required</td><td><code>string</code></td><td>—</td><td>none</td><td>Human-readable non-normative detail.</td></tr>
+<tr><td><code>retryable</code></td><td>required</td><td><code>boolean</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>path</code></td><td>optional</td><td><code>string</code></td><td>—</td><td>none</td><td>RFC 6901 JSON Pointer when a document location is meaningful.</td></tr>
+<tr><td><code>operation</code></td><td>optional</td><td><code>string</code></td><td>—</td><td>none</td><td>Stable operation identity when the diagnostic is operation-scoped.</td></tr>
+<tr><td><code>request_id</code></td><td>optional</td><td><code>string</code></td><td>—</td><td>none</td><td>Transport correlation identifier when available.</td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-common-diagnosticcategory"><summary><h2><code>DiagnosticCategory</code> <span class="tag">enum</span></h2></summary><p>Stable diagnostic category with distinct transport, contract, and operation domains.</p><table><thead><tr><th>Member</th><th>Wire value</th><th>Description</th></tr></thead><tbody><tr><td><code>transport</code></td><td><code>transport</code></td><td></td></tr>
+<tr><td><code>contract</code></td><td><code>contract</code></td><td></td></tr>
+<tr><td><code>operation</code></td><td><code>operation</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-common-packedattachmentprojectiona0"><summary><h2><code>PackedAttachmentProjectionA0</code> <span class="tag">model</span></h2></summary><p>Minimal JSON value used while an operation&#39;s logical DTO projection remains deferred.</p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>schema</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=1</code> <code>max_length=128</code></td><td></td></tr>
+<tr><td><code>packet</code></td><td>required</td><td><code>PackedAttachmentReferenceA0</code></td><td>—</td><td>none</td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-common-packedattachmentreferencea0"><summary><h2><code>PackedAttachmentReferenceA0</code> <span class="tag">model</span></h2></summary><p>A named binary attachment carrying a separately governed packed projection.</p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>attachment</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=1</code> <code>max_length=128</code></td><td></td></tr>
+<tr><td><code>format</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=1</code> <code>max_length=128</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-modelboundsa0-modelboundsresulta0"><summary><h2><code>ModelBoundsResultA0</code> <span class="tag">model</span></h2></summary><p>Successful model-bounds result matching the compatible public JSON shape.</p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>schema</code></td><td>required</td><td><code>&quot;geometry.model_bounds.a0&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>units</code></td><td>required</td><td><code>&quot;mm&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>source</code></td><td>required</td><td><code>ModelBoundsSource</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>bounds</code></td><td>required</td><td><code>ModelBoundsValues</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>timings</code></td><td>required</td><td><code>ModelBoundsTimings</code></td><td>—</td><td>none</td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-modelboundsa0-modelboundssource"><summary><h2><code>ModelBoundsSource</code> <span class="tag">model</span></h2></summary><p>Source identity included in a successful model-bounds result.</p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>format</code></td><td>required</td><td><code>ModelFormat</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>hash</code></td><td>required</td><td><code>string</code></td><td>—</td><td>none</td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-modelboundsa0-modelboundstimings"><summary><h2><code>ModelBoundsTimings</code> <span class="tag">model</span></h2></summary><p>Nondeterministic timings excluded only by explicit conformance projection.</p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>model_read_ms</code></td><td>required</td><td><code>float64</code></td><td>—</td><td><code>min_value=0</code></td><td></td></tr>
+<tr><td><code>bounds_ms</code></td><td>required</td><td><code>float64</code></td><td>—</td><td><code>min_value=0</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-modelboundsa0-modelboundsvalues"><summary><h2><code>ModelBoundsValues</code> <span class="tag">model</span></h2></summary><p>Axis-aligned bounds in millimeters.</p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>min</code></td><td>required</td><td><code>Vector3</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>max</code></td><td>required</td><td><code>Vector3</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>size</code></td><td>required</td><td><code>Vector3</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>center</code></td><td>required</td><td><code>Vector3</code></td><td>—</td><td>none</td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-modelboundsa0-modelformat"><summary><h2><code>ModelFormat</code> <span class="tag">enum</span></h2></summary><p>Canonical model source format. Compatibility readers may additionally accept STEP.</p><table><thead><tr><th>Member</th><th>Wire value</th><th>Description</th></tr></thead><tbody><tr><td><code>step</code></td><td><code>step</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-modelboundsa0-vector3"><summary><h2><code>Vector3</code> <span class="tag">model</span></h2></summary><p>Exactly three finite millimeter coordinates.</p><p><span class="tag">array</span> element <code>float64</code>; <code>min_items=3</code> <code>max_items=3</code></p></details>
+<details open id="declaration-wavenumber-geometer-contracts-operationoutcomea0-operationfailurea0"><summary><h2><code>OperationFailureA0</code> <span class="tag">model</span></h2></summary><p>A rejected or failed operation with governed diagnostics.</p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>operation</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=1</code> <code>max_length=128</code></td><td></td></tr>
+<tr><td><code>ok</code></td><td>required</td><td><code>false</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>diagnostics</code></td><td>required</td><td><code>DiagnosticA0[]</code></td><td>—</td><td><code>min_items=1</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-operationoutcomea0-operationresultvaluea0"><summary><h2><code>OperationResultValueA0</code> <span class="tag">union</span></h2></summary><p>Results currently available through the generic operation transport.</p><ul><li><code>model_bounds</code>: <code>ModelBoundsResultA0</code></li><li><code>packed_attachment</code>: <code>PackedAttachmentProjectionA0</code></li></ul></details>
+<details open id="declaration-wavenumber-geometer-contracts-operationoutcomea0-operationsuccessa0"><summary><h2><code>OperationSuccessA0</code> <span class="tag">model</span></h2></summary><p>A completed operation with its operation-specific result.</p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>operation</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=1</code> <code>max_length=128</code></td><td></td></tr>
+<tr><td><code>ok</code></td><td>required</td><td><code>true</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>result</code></td><td>required</td><td><code>OperationResultValueA0</code></td><td>—</td><td>none</td><td></td></tr></tbody></table></details></section>
+</main>
+</body>
+</html>

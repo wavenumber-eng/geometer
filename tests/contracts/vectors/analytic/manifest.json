@@ -1,0 +1,92 @@
+{
+  "manifest_identity": "wn.geometer.analytic_packet_vectors",
+  "generation": "a0",
+  "encoding": "lowercase_hex",
+  "vectors": [
+    {
+      "id": "request.empty",
+      "file": "request-empty.hex",
+      "bytes": 480,
+      "sha256": "03fdd7b7448a26f79c0ed042713b39e92a7d05a5c69a8ed1376fc6bf25d27e7c",
+      "expected": "accept",
+      "comparison": "exact_bytes"
+    },
+    {
+      "id": "request.exemplar",
+      "file": "request-exemplar.hex",
+      "bytes": 1608,
+      "sha256": "b8c3f605f8f5c03d3d68f2dbb2b333483492e53c46749b21aa544b544de3c011",
+      "expected": "accept",
+      "comparison": "exact_bytes"
+    },
+    {
+      "id": "result.canonical-mixed",
+      "file": "result-canonical-mixed.hex",
+      "bytes": 1220,
+      "sha256": "07019a4c2f94f8066db90b6f57bb3e5ea7801bb6b8bda63d8c7268dcad5bcb72",
+      "expected": "accept",
+      "comparison": "exact_bytes"
+    },
+    {
+      "id": "result.success-standalone",
+      "file": "result-success-standalone.hex",
+      "bytes": 996,
+      "sha256": "a934acefb39e7b397516b4ba948e3ded16f2d30c989a43271ee90883191f4f63",
+      "expected": "accept",
+      "comparison": "exact_bytes"
+    },
+    {
+      "id": "result.mixed-success-standalone",
+      "file": "result-mixed-success-standalone.hex",
+      "bytes": 1052,
+      "sha256": "efea77545331219e62e187228f7fcd73be961549b48ee439464aa161d61c90a3",
+      "expected": "accept",
+      "comparison": "exact_bytes"
+    },
+    {
+      "id": "result.failure-standalone",
+      "file": "result-failure-standalone.hex",
+      "bytes": 616,
+      "sha256": "87f193938f0c1d60d8d196eb256adf0fa423f56175be63a61f0ef6cc8bebd46e",
+      "expected": "accept",
+      "comparison": "exact_bytes"
+    }
+  ],
+  "job_digests": {
+    "success_standalone": "a934acefb39e7b397516b4ba948e3ded16f2d30c989a43271ee90883191f4f63",
+    "success_in_mixed_batch": "efea77545331219e62e187228f7fcd73be961549b48ee439464aa161d61c90a3",
+    "failure_standalone": "87f193938f0c1d60d8d196eb256adf0fa423f56175be63a61f0ef6cc8bebd46e"
+  },
+  "cross_transport_parity": {
+    "id": "analytic_primitive_family_self_query",
+    "vector_count": 2,
+    "source_fixture": "tests/fixtures/analytic_planar_boolean/matz_observations_a0.json",
+    "source_fixture_id": "analytic_primitive_family",
+    "comparison": "exact_bytes",
+    "runtimes": [
+      "native_executable_ipc",
+      "browser_wasm_generic_c_abi"
+    ],
+    "request_file": "cross-transport-primitive-family-self-request.hex",
+    "request_bytes": 1152,
+    "request_sha256": "106a949162d3091a5892f66bad4cdf0af764315cd1a51936461b237c2b073375",
+    "result_file": "cross-transport-primitive-family-self-result.hex",
+    "result_bytes": 4936,
+    "result_sha256": "7947d3850dafcd6d897aba2f4f6353d5afb61892349247c436a6e44f370ba183",
+    "job_id": 3,
+    "standalone_job_result_sha256": "841a653ae0b0294d4458e29d18b9997f3f392f1211cfe69341faaa9e11444114",
+    "self_query_id": 30001,
+    "self_query_expected_status": "success",
+    "self_query_expected_dimension": "area",
+    "validator": "tests/wasm/test_analytic_cross_transport_parity.py",
+    "wasm_runner": "tests/wasm/analytic_cross_transport_runner.js"
+  },
+  "mutation_requirements": [
+    "bad_magic",
+    "truncated_payload",
+    "nonzero_reserved_or_padding",
+    "duplicate_job_id",
+    "noncanonical_fragment_order",
+    "invalid_authored_source_occurrence"
+  ]
+}

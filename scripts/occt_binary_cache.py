@@ -29,6 +29,7 @@ SHA256_NAME = "occt-install.zip.sha256"
 VALID_MODES = {"auto", "off", "only"}
 PUBLIC_CACHE_DISABLE_VALUES = {"0", "false", "no", "off"}
 DOWNLOAD_USER_AGENT = "wn-geometer-cache/1.0"
+INSTALL_PROFILE_NAME = ".geometer-occt-profile.json"
 
 
 class CacheReadError(RuntimeError):
@@ -52,6 +53,20 @@ class PublicCacheConfig:
 
 
 @dataclasses.dataclass(frozen=True)
+class CMakeDefinition:
+    """One emitted CMake definition and its path-independent recipe value."""
+
+    name: str
+    value: str
+    include_in_recipe: bool = True
+    recipe_value: str | None = None
+
+    @property
+    def semantic_value(self) -> str:
+        return self.recipe_value if self.recipe_value is not None else self.value
+
+
+@dataclasses.dataclass(frozen=True)
 class OcctCacheProfile:
     kind: str
     platform_tag: str
@@ -60,6 +75,7 @@ class OcctCacheProfile:
     occt_repo: str
     occt_tag: str
     recipe_hash: str
+    toolchain_abi: str | None = None
     macos_deployment_target: str | None = None
     emsdk_version: str | None = None
 
@@ -77,8 +93,104 @@ class OcctCacheProfile:
             parts.append(f"macos-{self.macos_deployment_target}")
         if self.emsdk_version:
             parts.append(f"emsdk-{self.emsdk_version}")
+        if self.toolchain_abi:
+            parts.append(f"abi-{self.toolchain_abi}")
         parts.append(f"recipe-{self.recipe_hash[:16]}")
         return "-".join(_slug(part) for part in parts)
+
+
+@dataclasses.dataclass(frozen=True)
+class AcceptedCacheAlias:
+    kind: str
+    platform_tag: str
+    config: str
+    library_type: str
+    occt_repo: str
+    occt_tag: str
+    recipe_hash: str
+    archive_sha256: str
+    compatible_recipe_hashes: tuple[str, ...]
+    requested_toolchain_abi: str | None = None
+    source_toolchain_abi: str | None = None
+    macos_deployment_target: str | None = None
+    emsdk_version: str | None = None
+
+
+@dataclasses.dataclass(frozen=True)
+class LocalInstallMigration:
+    target_profile: OcctCacheProfile
+    predecessor_recipe_hashes: tuple[str, ...]
+
+
+# These aliases name archives whose exact profiles and bytes received
+# independent review. They bridge reviewed semantic-recipe transitions while
+# retaining an independently pinned archive checksum. They are deliberately
+# not a general stale-cache fallback.
+ACCEPTED_CACHE_ALIASES = (
+    AcceptedCacheAlias(
+        kind="native",
+        platform_tag="windows-x64",
+        config="Release",
+        library_type="Static",
+        occt_repo="https://github.com/Open-Cascade-SAS/OCCT.git",
+        occt_tag="V8_0_1",
+        recipe_hash="02d3ac07fe672579f1d5d97249964248a36e4b3982b3195c4fe7bd0d1dece46d",
+        archive_sha256="255ad723184c62ef4e6dc82c20c1acd5b0aa43407cbefc6e26e484eb74a05df9",
+        compatible_recipe_hashes=("afddffde43bb0288a99269de68220cc973eb3212551045a0f779e964a912231b",),
+        requested_toolchain_abi="msvc-v143",
+    ),
+    AcceptedCacheAlias(
+        kind="wasm",
+        platform_tag="wasm-emscripten",
+        config="Release",
+        library_type="Static",
+        occt_repo="https://github.com/Open-Cascade-SAS/OCCT.git",
+        occt_tag="V8_0_1",
+        recipe_hash="a15818c33b508d24f66702e3834be2d25fce89031a00a58f6391c0d702bb95f4",
+        archive_sha256="44fe6d6294c7a26ac77cfa17e1fd4a312578638a5669b7032c227750d032614e",
+        compatible_recipe_hashes=("c48157a47af466d1793739f4022457f0f53f88f5c63ddc1ea86cf7149fe9542b",),
+        emsdk_version="3.1.56",
+    ),
+)
+
+
+# A local install may be relabeled only across these reviewed, one-way recipe
+# transitions. Every other profile field and the installed OCCT version must
+# already match exactly. The target hashes are populated by the semantic
+# configure recipes in build_occt.py and build_wasm.py.
+LOCAL_INSTALL_MIGRATIONS = (
+    LocalInstallMigration(
+        target_profile=OcctCacheProfile(
+            kind="native",
+            platform_tag="windows-x64",
+            config="Release",
+            library_type="Static",
+            occt_repo="https://github.com/Open-Cascade-SAS/OCCT.git",
+            occt_tag="V8_0_1",
+            recipe_hash="afddffde43bb0288a99269de68220cc973eb3212551045a0f779e964a912231b",
+            toolchain_abi="msvc-v143",
+        ),
+        predecessor_recipe_hashes=(
+            "45aee960e6bad68c5f26c67335b82b6cbd539922aaefcf96003f20d7193485d9",
+        ),
+    ),
+    LocalInstallMigration(
+        target_profile=OcctCacheProfile(
+            kind="wasm",
+            platform_tag="wasm-emscripten",
+            config="Release",
+            library_type="Static",
+            occt_repo="https://github.com/Open-Cascade-SAS/OCCT.git",
+            occt_tag="V8_0_1",
+            recipe_hash="c48157a47af466d1793739f4022457f0f53f88f5c63ddc1ea86cf7149fe9542b",
+            emsdk_version="3.1.56",
+        ),
+        predecessor_recipe_hashes=(
+            "be4fe9173cdb53703d60a169b0833ac2c9141ec480046ba2d040a9e02f610c89",
+            "d71a27bcf279d9cabdd3d9f012867a0d419b0ffcfeee7036d5ed6fdc269e70fc",
+        ),
+    ),
+)
 
 
 def load_dotenv(root: Path) -> None:
@@ -100,7 +212,11 @@ def load_dotenv(root: Path) -> None:
 
 
 def mode_from_value(value: str | None) -> str:
-    mode = (value or os.environ.get("GEOMETER_OCCT_BINARY") or os.environ.get("GEOMETER_OCCT_BINARY_CACHE") or "auto").strip().lower()
+    mode = (
+        (value or os.environ.get("GEOMETER_OCCT_BINARY") or os.environ.get("GEOMETER_OCCT_BINARY_CACHE") or "auto")
+        .strip()
+        .lower()
+    )
     if mode not in VALID_MODES:
         raise ValueError(f"Unsupported OCCT binary cache mode {mode!r}; expected one of {sorted(VALID_MODES)}")
     return mode
@@ -142,27 +258,69 @@ def public_config_from_env() -> PublicCacheConfig | None:
     return PublicCacheConfig(base_url=base_url.rstrip("/"), prefix=prefix)
 
 
-def recipe_hash(paths: list[Path], extra: dict[str, str]) -> str:
+def cmake_definition_args(definitions: tuple[CMakeDefinition, ...]) -> list[str]:
+    _validated_cmake_definitions(definitions)
+    return [f"-D{definition.name}={definition.value}" for definition in definitions]
+
+
+def semantic_recipe_hash(
+    recipe_schema: str,
+    definitions: tuple[CMakeDefinition, ...],
+    inputs: dict[str, str],
+) -> str:
+    """Hash only byte-relevant configure choices and explicit semantic inputs."""
+
+    _validated_cmake_definitions(definitions)
+    recipe_definitions = {
+        definition.name: definition.semantic_value
+        for definition in definitions
+        if definition.include_in_recipe
+    }
+    payload = {
+        "schema": "geometer-occt-cache-recipe-a1",
+        "recipe_schema": recipe_schema,
+        "cmake_definitions": dict(sorted(recipe_definitions.items())),
+        "inputs": dict(sorted(inputs.items())),
+    }
     digest = hashlib.sha256()
-    digest.update(b"geometer-occt-cache-recipe-a0\n")
-    for key, value in sorted(extra.items()):
-        digest.update(f"extra:{key}={value}\n".encode("utf-8"))
-    for path in sorted(paths, key=lambda item: item.as_posix()):
-        if path.is_dir():
-            for child in sorted((p for p in path.rglob("*") if p.is_file()), key=lambda item: item.as_posix()):
-                _hash_file(digest, child, path.parent)
-        elif path.exists():
-            _hash_file(digest, path, path.parent)
-        else:
-            digest.update(f"missing:{path.as_posix()}\n".encode("utf-8"))
+    digest.update(json.dumps(payload, separators=(",", ":"), sort_keys=True).encode("utf-8"))
+    digest.update(b"\n")
     return digest.hexdigest()
 
 
+def directory_content_hash(path: Path) -> str:
+    """Return a deterministic digest of relative names and bytes in a tree."""
+
+    if not path.is_dir():
+        raise RuntimeError(f"Recipe content directory is missing: {path}")
+    digest = hashlib.sha256()
+    digest.update(b"geometer-recipe-directory-content-a0\n")
+    for child in sorted((candidate for candidate in path.rglob("*") if candidate.is_file()), key=lambda p: p.as_posix()):
+        relative = child.relative_to(path).as_posix().encode("utf-8")
+        digest.update(len(relative).to_bytes(8, "big"))
+        digest.update(relative)
+        size = child.stat().st_size
+        digest.update(size.to_bytes(8, "big"))
+        with child.open("rb") as handle:
+            for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+                digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _validated_cmake_definitions(definitions: tuple[CMakeDefinition, ...]) -> None:
+    names = [definition.name for definition in definitions]
+    if any(not name or "=" in name for name in names):
+        raise ValueError("CMake definition names must be non-empty and cannot contain '='")
+    if len(names) != len(set(names)):
+        raise ValueError("CMake definitions must have unique names")
+    if any(not definition.include_in_recipe and definition.recipe_value is not None for definition in definitions):
+        raise ValueError("Excluded CMake definitions cannot provide a recipe value")
+
+
 def install_ready(install_dir: Path) -> bool:
-    return (
-        (install_dir / "lib" / "cmake" / "opencascade" / "OpenCASCADEConfig.cmake").exists()
-        or (install_dir / "cmake" / "OpenCASCADEConfig.cmake").exists()
-    )
+    return (install_dir / "lib" / "cmake" / "opencascade" / "OpenCASCADEConfig.cmake").exists() or (
+        install_dir / "cmake" / "OpenCASCADEConfig.cmake"
+    ).exists()
 
 
 def occt_version_from_tag(tag: str) -> str:
@@ -190,7 +348,76 @@ def install_matches_profile(install_dir: Path, profile: OcctCacheProfile) -> boo
         return False
     expected = occt_version_from_tag(profile.occt_tag)
     actual = installed_occt_version(install_dir)
-    return actual == expected
+    if actual != expected:
+        return False
+    return _read_install_profile(install_dir) == install_profile_identity(profile)
+
+
+def install_matches_or_migrates_profile(install_dir: Path, profile: OcctCacheProfile) -> bool:
+    """Accept an exact profile or relabel one explicitly reviewed predecessor."""
+
+    if install_matches_profile(install_dir, profile):
+        return True
+    if not install_ready(install_dir) or installed_occt_version(install_dir) != occt_version_from_tag(profile.occt_tag):
+        return False
+    predecessors = next(
+        (
+            migration.predecessor_recipe_hashes
+            for migration in LOCAL_INSTALL_MIGRATIONS
+            if migration.target_profile == profile
+        ),
+        (),
+    )
+    marker = _read_install_profile(install_dir)
+    if marker is None or marker.get("recipe_hash") not in predecessors:
+        return False
+    expected = install_profile_identity(profile)
+    predecessor = dict(expected)
+    predecessor["recipe_hash"] = marker["recipe_hash"]
+    if marker != predecessor:
+        return False
+    write_install_profile(install_dir, profile)
+    print(f"Migrated local OCCT install recipe marker at {install_dir} to {profile.recipe_hash}")
+    return True
+
+
+def install_profile_identity(profile: OcctCacheProfile) -> dict[str, str | None]:
+    return {
+        "kind": profile.kind,
+        "platform_tag": profile.platform_tag,
+        "config": profile.config,
+        "library_type": profile.library_type,
+        "occt_repo": profile.occt_repo,
+        "occt_tag": profile.occt_tag,
+        "recipe_hash": profile.recipe_hash,
+        "toolchain_abi": profile.toolchain_abi,
+        "macos_deployment_target": profile.macos_deployment_target,
+        "emsdk_version": profile.emsdk_version,
+    }
+
+
+def write_install_profile(install_dir: Path, profile: OcctCacheProfile) -> None:
+    if not install_ready(install_dir):
+        raise RuntimeError(f"OCCT install is not ready for a profile marker: {install_dir}")
+    (install_dir / INSTALL_PROFILE_NAME).write_text(
+        json.dumps(install_profile_identity(profile), indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+
+
+def _read_install_profile(install_dir: Path) -> dict[str, str | None] | None:
+    marker_path = install_dir / INSTALL_PROFILE_NAME
+    if not marker_path.exists():
+        return None
+    try:
+        marker = json.loads(marker_path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return None
+    if not isinstance(marker, dict):
+        return None
+    if any(not isinstance(key, str) for key in marker):
+        return None
+    return marker
 
 
 def restore_prebuilt_install(profile: OcctCacheProfile, install_dir: Path, *, mode: str | None = None) -> bool:
@@ -214,23 +441,51 @@ def restore_prebuilt_install(profile: OcctCacheProfile, install_dir: Path, *, mo
         print(message)
         return False
 
+    aliases = accepted_cache_aliases(profile)
+    pinned_current_sha = next(
+        (
+            alias.archive_sha256
+            for alias in aliases
+            if alias.recipe_hash == profile.recipe_hash and alias.source_toolchain_abi == profile.toolchain_abi
+        ),
+        None,
+    )
+    candidates: list[tuple[OcctCacheProfile, str | None]] = [(profile, pinned_current_sha)]
+    for alias in aliases:
+        alias_profile = dataclasses.replace(
+            profile,
+            recipe_hash=alias.recipe_hash,
+            toolchain_abi=alias.source_toolchain_abi,
+        )
+        if alias_profile.cache_key != profile.cache_key:
+            candidates.append((alias_profile, alias.archive_sha256))
+
     prefix = ""
     selected_config: PublicCacheConfig | CacheConfig | None = None
+    selected_profile: OcctCacheProfile | None = None
+    selected_archive_sha256: str | None = None
     manifest_bytes = None
     read_errors: list[str] = []
     for config in configs:
-        for candidate_prefix in object_prefix_candidates(config, profile):
-            manifest_key = f"{candidate_prefix}/{MANIFEST_NAME}"
-            print(f"Checking OCCT binary cache: {_cache_location(config, manifest_key)}")
-            try:
-                candidate_manifest = _get_cache_object(config, manifest_key)
-            except CacheReadError as exc:
-                read_errors.append(f"{_cache_kind(config)}: {exc}")
-                break
-            if candidate_manifest is not None:
-                prefix = candidate_prefix
-                selected_config = config
-                manifest_bytes = candidate_manifest
+        cache_read_failed = False
+        for candidate_profile, accepted_archive_sha256 in candidates:
+            for candidate_prefix in object_prefix_candidates(config, candidate_profile):
+                manifest_key = f"{candidate_prefix}/{MANIFEST_NAME}"
+                print(f"Checking OCCT binary cache: {_cache_location(config, manifest_key)}")
+                try:
+                    candidate_manifest = _get_cache_object(config, manifest_key)
+                except CacheReadError as exc:
+                    read_errors.append(f"{_cache_kind(config)}: {exc}")
+                    cache_read_failed = True
+                    break
+                if candidate_manifest is not None:
+                    prefix = candidate_prefix
+                    selected_config = config
+                    selected_profile = candidate_profile
+                    selected_archive_sha256 = accepted_archive_sha256
+                    manifest_bytes = candidate_manifest
+                    break
+            if manifest_bytes is not None or cache_read_failed:
                 break
         if manifest_bytes is not None:
             break
@@ -245,14 +500,14 @@ def restore_prebuilt_install(profile: OcctCacheProfile, install_dir: Path, *, mo
         return False
 
     assert selected_config is not None
+    assert selected_profile is not None
     manifest = json.loads(manifest_bytes.decode("utf-8"))
-    validate_manifest(manifest, profile)
+    validate_manifest(manifest, selected_profile)
     archive_key = f"{prefix}/{ARCHIVE_NAME}"
     archive_bytes = _get_cache_object(selected_config, archive_key)
     if archive_bytes is None:
         raise RuntimeError(
-            "OCCT binary cache manifest exists but archive is missing: "
-            f"{_cache_location(selected_config, archive_key)}"
+            f"OCCT binary cache manifest exists but archive is missing: {_cache_location(selected_config, archive_key)}"
         )
 
     archive_sha256 = hashlib.sha256(archive_bytes).hexdigest()
@@ -261,19 +516,42 @@ def restore_prebuilt_install(profile: OcctCacheProfile, install_dir: Path, *, mo
             "OCCT binary cache archive checksum mismatch: "
             f"expected {manifest['archive']['sha256']}, got {archive_sha256}"
         )
+    if selected_archive_sha256 is not None and archive_sha256 != selected_archive_sha256:
+        raise RuntimeError(
+            "Accepted OCCT binary cache archive checksum mismatch: "
+            f"expected {selected_archive_sha256}, got {archive_sha256}"
+        )
 
     with tempfile.TemporaryDirectory(prefix="geometer-occt-cache-") as tmp_name:
         archive_path = Path(tmp_name) / ARCHIVE_NAME
         archive_path.write_bytes(archive_bytes)
         extract_install_archive(archive_path, install_dir)
+    write_install_profile(install_dir, profile)
 
-    print(f"Restored OCCT binary cache {profile.cache_key} to {install_dir}")
+    print(f"Restored OCCT binary cache {selected_profile.cache_key} to {install_dir}")
     return True
 
 
+def accepted_cache_aliases(profile: OcctCacheProfile) -> tuple[AcceptedCacheAlias, ...]:
+    return tuple(
+        alias
+        for alias in ACCEPTED_CACHE_ALIASES
+        if alias.kind == profile.kind
+        and alias.platform_tag == profile.platform_tag
+        and alias.config == profile.config
+        and alias.library_type == profile.library_type
+        and alias.occt_repo == profile.occt_repo
+        and alias.occt_tag == profile.occt_tag
+        and profile.recipe_hash in alias.compatible_recipe_hashes
+        and alias.requested_toolchain_abi == profile.toolchain_abi
+        and alias.macos_deployment_target == profile.macos_deployment_target
+        and alias.emsdk_version == profile.emsdk_version
+    )
+
+
 def upload_prebuilt_install(profile: OcctCacheProfile, install_dir: Path, *, out_dir: Path) -> Path:
-    if not install_ready(install_dir):
-        raise RuntimeError(f"OCCT install is not ready and cannot be cached: {install_dir}")
+    if not install_matches_profile(install_dir, profile):
+        raise RuntimeError(f"OCCT install does not match its cache profile: {install_dir}")
     config = config_from_env()
     if config is None:
         raise RuntimeError("OCCT binary cache upload requires R2/GEOMETER_OCCT_CACHE credentials in the environment.")
@@ -338,7 +616,7 @@ def build_manifest(profile: OcctCacheProfile, archive_path: Path, archive_sha256
         "target": {
             "kind": profile.kind,
             "platform_tag": profile.platform_tag,
-            "toolchain": "emscripten" if profile.kind == "wasm" else None,
+            "toolchain": "emscripten" if profile.kind == "wasm" else profile.toolchain_abi,
         },
         "build": {
             "config": profile.config,
@@ -356,6 +634,7 @@ def build_manifest(profile: OcctCacheProfile, archive_path: Path, archive_sha256
             "tag": profile.occt_tag,
         },
         "recipe_hash": profile.recipe_hash,
+        "toolchain_abi": profile.toolchain_abi,
         "macos_deployment_target": profile.macos_deployment_target,
         "emsdk_version": profile.emsdk_version,
         "archive": {
@@ -382,6 +661,7 @@ def validate_manifest(manifest: dict[str, Any], profile: OcctCacheProfile) -> No
         "config": profile.config,
         "library_type": profile.library_type,
         "recipe_hash": profile.recipe_hash,
+        "toolchain_abi": profile.toolchain_abi,
     }
     for key, value in expected.items():
         if manifest.get(key) != value:
@@ -418,14 +698,6 @@ def sha256_file(path: Path) -> str:
         for chunk in iter(lambda: handle.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
-
-
-def _hash_file(digest: Any, path: Path, relative_to: Path) -> None:
-    digest.update(f"file:{path.relative_to(relative_to).as_posix()}\n".encode("utf-8"))
-    with path.open("rb") as handle:
-        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
-            digest.update(chunk)
-    digest.update(b"\n")
 
 
 def _env_value(*names: str) -> str | None:
@@ -507,7 +779,9 @@ def _r2_put_object(config: CacheConfig, key: str, body: bytes, content_type: str
     _r2_request(config, "PUT", key, body=body, content_type=content_type)
 
 
-def _r2_request(config: CacheConfig, method: str, key: str, *, body: bytes = b"", content_type: str | None = None) -> bytes:
+def _r2_request(
+    config: CacheConfig, method: str, key: str, *, body: bytes = b"", content_type: str | None = None
+) -> bytes:
     parsed = urllib.parse.urlparse(config.endpoint_url)
     if not parsed.scheme or not parsed.netloc:
         raise RuntimeError(f"Invalid R2 endpoint URL: {config.endpoint_url}")

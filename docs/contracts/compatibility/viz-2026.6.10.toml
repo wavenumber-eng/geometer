@@ -1,0 +1,102 @@
+snapshot_version = 1
+consumer = "appz/viz"
+consumer_revision = "27548a16e23a8bc225fc81c047bbef8c325fb4ae"
+captured = "2026-08-12"
+geometer_release = "2026.6.10"
+geometer_c_abi = 20260610
+geometer_source_commit = "a3e0a03ec674e5c1dc05daad585071c251d9b779"
+status = "legacy_javascript_compatibility_required"
+
+[python]
+requirement = "wn-geometer==2026.6.10"
+compatibility = "Keep the published Python surface compatible; Viz may advance the exact pin independently."
+
+[artifacts]
+source_paths = [
+  "dist/wasm/browser/geometer.js",
+  "dist/wasm/browser/geometer.wasm",
+  "dist/wasm/planar-browser/geometer-planar-browser.js",
+  "dist/wasm/planar-browser/geometer-planar-browser.wasm",
+]
+vendored_names = [
+  "geometer-browser.js",
+  "geometer-browser.wasm",
+  "geometer-planar-browser.js",
+  "geometer-planar-browser.wasm",
+]
+factory_names = ["createGeometerModule", "createGeometerPlanarModule"]
+
+[[artifact_mappings]]
+target = "full_browser"
+kind = "javascript"
+source = "dist/wasm/browser/geometer.js"
+vendored = "geometer-browser.js"
+factory = "createGeometerModule"
+
+[[artifact_mappings]]
+target = "full_browser"
+kind = "wasm"
+source = "dist/wasm/browser/geometer.wasm"
+vendored = "geometer-browser.wasm"
+
+[[artifact_mappings]]
+target = "planar_browser"
+kind = "javascript"
+source = "dist/wasm/planar-browser/geometer-planar-browser.js"
+vendored = "geometer-planar-browser.js"
+factory = "createGeometerPlanarModule"
+
+[[artifact_mappings]]
+target = "planar_browser"
+kind = "wasm"
+source = "dist/wasm/planar-browser/geometer-planar-browser.wasm"
+vendored = "geometer-planar-browser.wasm"
+
+[wasm]
+required_runtime_methods = [
+  "ccall",
+  "cwrap",
+  "UTF8ToString",
+  "stringToUTF8",
+  "lengthBytesUTF8",
+  "getValue",
+]
+required_memory_views = ["HEAPU8", "HEAPU32"]
+required_c_abi_symbols = [
+  "geometer_step_hlr_projection_json",
+  "geometer_step_hlr_projection_json_bytes",
+  "geometer_step_to_glb",
+  "geometer_step_to_glb_bytes",
+  "geometer_planar_batch_solve_bytes",
+  "geometer_planar_triangulate_bytes",
+  "geometer_clipper2_boolean_bytes",
+  "geometer_clipper2_inflate_open_bytes",
+  "geometer_version_string",
+  "geometer_abi_version",
+  "geometer_free_string",
+  "geometer_free_bytes",
+]
+manifest_schema = "wn.viz.vendor.geometer.browser.a0"
+manifest_capabilities = [
+  "version",
+  "step_hlr_projection_json",
+  "step_hlr_projection_json_bytes",
+  "step_to_glb",
+  "step_to_glb_bytes",
+  "planar_batch_solve_bytes",
+  "planar_triangulate_bytes",
+  "clipper2_boolean_bytes",
+  "clipper2_inflate_open_bytes",
+]
+
+[packed_formats]
+planar_batch_version = 2
+planar_triangulate_version = 1
+clipper2_boolean_version = 1
+clipper2_inflate_open_version = 1
+
+[migration]
+current_language = "javascript"
+target_language = "typescript"
+target_package = "@wavenumber/geometer"
+policy = "Keep this snapshot passing until Viz explicitly adopts the generated TypeScript client and replaces it with a new compatibility snapshot."

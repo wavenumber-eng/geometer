@@ -1,0 +1,14 @@
+{
+  "operation": "geometry.model_bounds.a0",
+  "ok": false,
+  "diagnostics": [
+    {
+      "code": "geometer.contract.missing_attachment",
+      "category": "contract",
+      "message": "The required model attachment is missing.",
+      "retryable": false,
+      "path": "/attachments/model",
+      "operation": "geometry.model_bounds.a0"
+    }
+  ]
+}

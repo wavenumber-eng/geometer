@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "declaration": true,
+    "exactOptionalPropertyTypes": true,
+    "lib": ["ES2022", "DOM"],
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "noEmitOnError": true,
+    "noUncheckedIndexedAccess": true,
+    "rootDir": ".",
+    "strict": true,
+    "target": "ES2022",
+    "types": [],
+    "verbatimModuleSyntax": true
+  },
+  "include": ["**/*.ts"],
+  "exclude": ["generated-stage-*", "generated-backup-*"]
+}

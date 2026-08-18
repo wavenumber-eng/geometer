@@ -1,0 +1,22 @@
+name = "TypeSpec Contracts"
+order = 2
+description = "Verify the promoted normalized catalog and isolated analytic candidate are valid and current."
+enabled = true
+runner = "pytest"
+concerns = ["typespec", "contracts", "generation"]
+
+objectives = [
+    "Compile authored Geometer TypeSpec with the pinned toolchain.",
+    "Validate exact pilot contract and operation agreement with the promotion manifest.",
+    "Reject stale, missing, or unexpected generated contract artifacts.",
+    "Reject stale or unsupported generated C++17 DTO and strict-codec output.",
+    "Replay governed raw JSON, generated-schema, and presence vectors.",
+    "Compile and validate the isolated analytic logical contract and packed-projection candidate.",
+]
+
+[[subtests]]
+id = "TSP_001"
+file = "test_contract_generation.py"
+name = "Generated Contract Freshness"
+description = "Runs pinned catalog/schema generation checks and governed pilot vectors."
+test_case_type = "contract"

@@ -9,5 +9,19 @@ Geometer's maintained interface contracts are currently documented in:
 - `docs/design/python-package.md`
 - `docs/design/wasm.md`
 
-Machine-readable JSON schemas can be added here as the public wire contracts
-are promoted from prose to schema files.
+The TypeSpec contract program is governed by
+[ADR-010](../geometer/adr/geometer-adr-010-typespec_contract_authority_and_promotion.md). Its current
+implementation-backed baseline and promotion state are:
+
+- [current interface inventory](current-interface-inventory.md); and
+- [`promotion-manifest.toml`](promotion-manifest.toml).
+
+Named downstream compatibility snapshots live under `compatibility/`. The
+current Viz snapshot is
+[`viz-2026.6.10.toml`](compatibility/viz-2026.6.10.toml).
+
+The manifest does not make an inventoried contract authoritative. A contract
+becomes TypeSpec-authoritative only after its status and required evidence are
+promoted under ADR-010. Generated JSON Schemas and contract references live
+under this tree. `geometry.model_bounds.a0` is the first promoted operation;
+its manifest entry links the accepted cross-language and hosted evidence.

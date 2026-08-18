@@ -11,9 +11,9 @@ contouring, and packed planar boolean work.
 - [Setup](docs/setup.html)
 - [Architecture](docs/architecture.html)
 - [Design and interface docs](docs/design/README.md)
-- [Requirements](docs/requirements/README.md)
+- [Requirements](docs/geometer/requirements/README.md)
 - [Contracts](docs/contracts/README.md)
-- [ADRs](docs/adr/README.md)
+- [ADRs](docs/geometer/adr/README.md)
 - [Release notes](docs/releases/README.md)
 - [Examples](examples/README.md)
 
@@ -49,6 +49,19 @@ WASM artifacts are copied to:
 - `dist/wasm/node-test/`
 - `dist/wasm/planar-browser/`
 
+Generate the TypeSpec projections, `@wavenumber/geometer` ESM package, and
+TypeScript browser example with:
+
+```bash
+npm ci
+npm run generate:contracts
+npm run check:contracts
+```
+
+The package artifact is `dist/wasm/npm/geometer/`. It exposes direct and dedicated
+Worker WASM clients; the current repository artifact is a release input, not a
+claim that the package has been published to npm.
+
 ## Python Package
 
 PyPI distribution: `wn-geometer`
@@ -58,7 +71,7 @@ Import package: `geometer`
 Install the current release:
 
 ```bash
-python -m pip install wn-geometer==2026.6.23
+python -m pip install wn-geometer==2026.8.18
 ```
 
 Basic Python use:
@@ -118,8 +131,12 @@ geometer.write_planar_step(
 ```
 
 The package is executable-backed. Wheels bundle the platform executable under
-`geometer/native/<platform>/`, expose a `geometer` console command in the
-install environment, and call the executable through the JSON batch CLI.
+`geometer/native/<platform>/` and expose a `geometer` console command in the
+install environment. Existing file-oriented helpers use the JSON batch CLI;
+the candidate analytic API exports generated integer DTOs and a synchronous
+`GeometerClient` that uses the persistent binary `serve --stdio` protocol with
+strict packed request/result validation. This is implemented pilot evidence,
+not a claim that the analytic contract has been promoted or released.
 
 ## CLI
 
@@ -140,9 +157,14 @@ geometer run request.json response.json
 - `examples/python/pyvista_hlr_viewer.py` - PyVista/Qt STEP 3D + HLR preview.
 - `examples/wasm/embedded_model_viewer.html` - browser viewer using prepared GLB
   fixtures and the WASM HLR worker.
-- `dist/wasm/demos/hlr_demo.html` and
+- `examples/wasm/model_bounds_demo.html` - TypeScript/generated-client pilot
+  that computes STEP model bounds in a dedicated Worker and visualizes them
+  through browser WASM and Three.js.
+- `dist/wasm/demos/analytic_polygon_pour_demo.html`,
+  `dist/wasm/demos/hlr_demo.html`, and
   `dist/wasm/demos/planar_ring_solver_demo.html` - one-file standalone browser
-  demos for release review.
+  demos for release review. Build them through
+  `python scripts/build_standalone_demos.py all`.
 - `examples/cpp/` - native Dear ImGui + SDL3 + OpenGL HLR preview.
 
 Serve browser examples from the repo root:

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stddef.h>
+#include <stdint.h>
 
 #if defined(_WIN32) && defined(GEOMETER_BUILD_SHARED)
 #define GEOMETER_C_API __declspec(dllexport)
@@ -33,6 +34,55 @@ extern "C"
         size_t size;
         char* error;
     } GeometerByteResult;
+
+    typedef struct GeometerAttachmentView
+    {
+        uint32_t struct_size;
+        uint32_t flags;
+        const char* name;
+        uint32_t name_size;
+        const char* media_type;
+        uint32_t media_type_size;
+        const unsigned char* data;
+        uint32_t data_size;
+        uint32_t reserved0;
+    } GeometerAttachmentView;
+
+    typedef struct GeometerOperationResult GeometerOperationResult;
+
+    enum
+    {
+        GEOMETER_OPERATION_ABI_OK = 0,
+        GEOMETER_OPERATION_ABI_INVALID_ARGUMENT = 1001,
+        GEOMETER_OPERATION_ABI_LIMIT_EXCEEDED = 1002,
+        GEOMETER_OPERATION_ABI_NO_MEMORY = 1003,
+        GEOMETER_OPERATION_ABI_INTERNAL = 1004,
+    };
+
+    GEOMETER_C_API int geometer_operation_catalog_json(char** value, char** error);
+
+    GEOMETER_C_API int
+    geometer_operation_execute(const char* operation_id, uint32_t operation_id_size,
+                               const unsigned char* request_json, uint32_t request_json_size,
+                               const GeometerAttachmentView* attachments, uint32_t attachment_count,
+                               GeometerOperationResult** result, char** error);
+
+    GEOMETER_C_API const unsigned char*
+    geometer_operation_result_json_data(const GeometerOperationResult* result);
+    GEOMETER_C_API uint32_t
+    geometer_operation_result_json_size(const GeometerOperationResult* result);
+    GEOMETER_C_API uint32_t
+    geometer_operation_result_attachment_count(const GeometerOperationResult* result);
+    GEOMETER_C_API const char*
+    geometer_operation_result_attachment_name(const GeometerOperationResult* result, uint32_t index,
+                                              uint32_t* size);
+    GEOMETER_C_API const char*
+    geometer_operation_result_attachment_media_type(const GeometerOperationResult* result,
+                                                    uint32_t index, uint32_t* size);
+    GEOMETER_C_API const unsigned char*
+    geometer_operation_result_attachment_data(const GeometerOperationResult* result, uint32_t index,
+                                              uint32_t* size);
+    GEOMETER_C_API void geometer_operation_result_free(GeometerOperationResult* result);
 
     GEOMETER_C_API GeometerStringResult geometer_step_hlr_projection_json(GeometerBuffer step_data,
                                                                           const char* options_json);
@@ -92,6 +142,28 @@ extern "C"
 
 #ifdef __cplusplus
 }
+
+static_assert(offsetof(GeometerAttachmentView, struct_size) == 0);
+static_assert(offsetof(GeometerAttachmentView, flags) == 4);
+#if INTPTR_MAX == INT64_MAX
+static_assert(offsetof(GeometerAttachmentView, name) == 8);
+static_assert(offsetof(GeometerAttachmentView, name_size) == 16);
+static_assert(offsetof(GeometerAttachmentView, media_type) == 24);
+static_assert(offsetof(GeometerAttachmentView, media_type_size) == 32);
+static_assert(offsetof(GeometerAttachmentView, data) == 40);
+static_assert(offsetof(GeometerAttachmentView, data_size) == 48);
+static_assert(offsetof(GeometerAttachmentView, reserved0) == 52);
+static_assert(sizeof(GeometerAttachmentView) == 56);
+#else
+static_assert(offsetof(GeometerAttachmentView, name) == 8);
+static_assert(offsetof(GeometerAttachmentView, name_size) == 12);
+static_assert(offsetof(GeometerAttachmentView, media_type) == 16);
+static_assert(offsetof(GeometerAttachmentView, media_type_size) == 20);
+static_assert(offsetof(GeometerAttachmentView, data) == 24);
+static_assert(offsetof(GeometerAttachmentView, data_size) == 28);
+static_assert(offsetof(GeometerAttachmentView, reserved0) == 32);
+static_assert(sizeof(GeometerAttachmentView) == 36);
+#endif
 #endif
 
 #undef GEOMETER_C_API

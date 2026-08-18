@@ -1,0 +1,9 @@
+standard_version = "2026.8.12"
+profile = "rust-app"
+distribution = "none"
+
+[rust]
+source_root = "src"
+
+[rust.hygiene]
+config = "rust-hygiene.toml"

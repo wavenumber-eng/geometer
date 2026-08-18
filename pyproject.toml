@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "wn-geometer"
-version = "2026.6.23"
+version = "2026.8.18"
 description = "Python bindings for Geometer CAD geometry operations"
 requires-python = ">=3.10"
 readme = "README.md"
@@ -51,11 +51,19 @@ where = ["python"]
 geometer = ["native/*", "native/*/*"]
 
 [tool.wn_dev_std]
+standard_version = "2026.8.12"
 profile = "python-native-wasm"
 distribution = "pypi"
-languages = ["python", "cpp", "wasm"]
+languages = ["python", "cpp", "wasm", "typescript", "rust"]
 strict = true
 artifact_policy = "committed-grouped-dist"
+
+[tool.wn_dev_std.documentation.plans]
+ignore = [".deps"]
+
+[tool.wn_dev_std.tests]
+roots = ["tests"]
+signoff_strata = ["L99_release"]
 
 [tool.uv]
 package = true
@@ -70,7 +78,7 @@ include = [
     "scripts",
     "tests/python",
 ]
-extraPaths = ["python"]
+extraPaths = ["python", "scripts"]
 pythonVersion = "3.10"
 typeCheckingMode = "basic"
 reportMissingTypeStubs = false

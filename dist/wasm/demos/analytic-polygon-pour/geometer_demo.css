@@ -1,0 +1,1368 @@
+/*
+ * The visual authority for new and migrated Geometer browser demos.
+ * Tokens derive from docs/design/styles.css. Every maintained demo owns a
+ * namespaced layout section below this common token and element foundation.
+ */
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("./JetBrainsMono-Regular.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("./JetBrainsMono-Bold.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+}
+
+:root {
+  color-scheme: light;
+  --wn-bg: #eeeeea;
+  --wn-paper: #ffffff;
+  --wn-bg-alt: #f7f7f3;
+  --wn-fg: #181818;
+  --wn-fg-muted: #555555;
+  --wn-line: #bdbdb7;
+  --wn-line-light: #d8d8d1;
+  --wn-accent: #006c67;
+  --wn-accent-bg: #e5f3f0;
+  --wn-warn: #8a6200;
+  --wn-warn-bg: #fff4bf;
+  --wn-code-bg: #e8e8df;
+  --wn-error: #8f1d18;
+  --wn-paper-muted: var(--wn-bg-alt);
+  --wn-ink: var(--wn-fg);
+  --wn-ink-soft: var(--wn-fg-muted);
+  --wn-muted: var(--wn-fg-muted);
+  --wn-success: var(--wn-accent);
+  --wn-warning: var(--wn-warn);
+  --wn-failure: var(--wn-error);
+  --wn-geometry-result: var(--wn-accent);
+  --wn-geometry-result-fill: rgb(0 108 103 / 16%);
+  --wn-geometry-subtract: var(--wn-error);
+  --wn-geometry-grid: rgb(85 85 85 / 10%);
+  --wn-font: "JetBrains Mono", "Cascadia Mono", Consolas, monospace;
+  --wn-watermark-width: 89px;
+  --wn-watermark-max-width: 11vw;
+  --wn-watermark-right: 18px;
+  --wn-watermark-bottom: 14px;
+  --wn-watermark-opacity: 0.16;
+  --wn-space-1: 4px;
+  --wn-space-2: 8px;
+  --wn-space-3: 12px;
+  --wn-space-4: 16px;
+  --wn-space-5: 24px;
+  --wn-space-6: 32px;
+  font-family: var(--wn-font);
+  background: var(--wn-bg);
+  color: var(--wn-fg);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  border-radius: 0 !important;
+}
+
+html,
+body {
+  min-width: 320px;
+  min-height: 100%;
+  margin: 0;
+  background: var(--wn-bg);
+  color: var(--wn-fg);
+  font-family: var(--wn-font);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+body[data-wn-watermark="true"]::after {
+  position: fixed;
+  right: var(--wn-watermark-right);
+  bottom: var(--wn-watermark-bottom);
+  z-index: 1000;
+  width: var(--wn-watermark-width);
+  max-width: var(--wn-watermark-max-width);
+  aspect-ratio: 1114.7 / 864;
+  background-image: url("./wn-logo.svg");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  content: "";
+  pointer-events: none;
+  opacity: var(--wn-watermark-opacity);
+  mix-blend-mode: multiply;
+}
+
+#pour-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-rows: 58px 1fr 34px;
+  background: var(--wn-bg);
+}
+
+#pour-shell > header,
+#pour-shell > footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 22px;
+  padding: 0 24px;
+  background: var(--wn-bg);
+  color: var(--wn-muted);
+}
+
+#pour-shell > header {
+  border-bottom: 1px solid var(--wn-line-light);
+  letter-spacing: 0.08em;
+  font-size: 11px;
+}
+
+#pour-shell > header > div:first-child {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+}
+
+#pour-shell > header b {
+  color: var(--wn-ink);
+  font-size: 16px;
+  letter-spacing: 0.14em;
+}
+
+#pour-shell > header span {
+  color: var(--wn-muted);
+}
+
+#pour-shell .pipeline,
+#pour-shell .runtime {
+  display: flex;
+  align-items: center;
+}
+
+#pour-shell .pipeline {
+  gap: 10px;
+}
+
+#pour-shell .pipeline i {
+  position: relative;
+  width: 34px;
+  height: 1px;
+  background: var(--wn-line);
+}
+
+#pour-shell .pipeline i::after {
+  position: absolute;
+  top: -2px;
+  right: 0;
+  border-top: 2px solid transparent;
+  border-bottom: 2px solid transparent;
+  border-left: 4px solid var(--wn-line);
+  content: "";
+}
+
+#pour-shell .runtime {
+  gap: 9px;
+}
+
+#pour-shell .runtime em {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--wn-warning);
+}
+
+#pour-shell[data-state="ready"] .runtime em {
+  background: var(--wn-success);
+}
+
+#pour-shell[data-state="error"] .runtime em {
+  background: var(--wn-failure);
+}
+
+#pour-shell .stage {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 370px;
+}
+
+#pour-shell .viewport {
+  position: relative;
+  min-height: 560px;
+  overflow: hidden;
+  border-right: 1px solid var(--wn-line-light);
+  background: var(--wn-paper);
+}
+
+#pour-shell canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+#pour-shell .viewport-title {
+  position: absolute;
+  top: 26px;
+  left: 28px;
+  display: grid;
+  gap: 5px;
+  pointer-events: none;
+}
+
+#pour-shell .viewport-title small,
+#pour-shell aside small {
+  color: var(--wn-muted);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+}
+
+#pour-shell .viewport-title strong {
+  color: var(--wn-ink);
+  font-size: 17px;
+  font-weight: 400;
+}
+
+#pour-shell .legend {
+  position: absolute;
+  bottom: 24px;
+  left: 28px;
+  display: flex;
+  gap: 18px;
+  color: var(--wn-muted);
+  font-size: 10px;
+}
+
+#pour-shell .legend span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+#pour-shell .legend i {
+  width: 24px;
+  height: 3px;
+}
+
+#pour-shell .legend .copper {
+  background: var(--wn-success);
+}
+
+#pour-shell .legend .cut {
+  background: #bf4f45;
+}
+
+#pour-shell aside {
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  background: var(--wn-bg);
+}
+
+#pour-shell aside section {
+  padding: 25px 27px;
+  border-bottom: 1px solid var(--wn-line-light);
+  background: var(--wn-paper);
+}
+
+#pour-shell h1 {
+  margin: 10px 0 13px;
+  color: var(--wn-ink);
+  font: 400 26px/1.2 system-ui, sans-serif;
+  letter-spacing: -0.03em;
+}
+
+#pour-shell p {
+  margin: 0;
+  color: var(--wn-muted);
+  font: 13px/1.65 system-ui, sans-serif;
+}
+
+#pour-shell .control label {
+  display: flex;
+  justify-content: space-between;
+  color: var(--wn-ink-soft);
+  font-size: 11px;
+}
+
+#pour-shell .control output {
+  color: var(--wn-accent);
+}
+
+#pour-shell .control input {
+  width: 100%;
+  margin: 20px 0 16px;
+  accent-color: var(--wn-accent);
+}
+
+#pour-shell .control button {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--wn-line);
+  background: var(--wn-paper);
+  color: var(--wn-ink-soft);
+  cursor: pointer;
+}
+
+#pour-shell .control button:hover {
+  border-color: var(--wn-accent);
+  color: var(--wn-accent);
+}
+
+#pour-shell dl {
+  margin: 14px 0 0;
+}
+
+#pour-shell dl div {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--wn-line-light);
+}
+
+#pour-shell dt {
+  color: var(--wn-muted);
+  font-size: 11px;
+}
+
+#pour-shell dd {
+  margin: 0;
+  color: var(--wn-ink);
+  font-size: 12px;
+}
+
+#pour-shell .closure code {
+  display: block;
+  overflow: hidden;
+  margin: 14px 0;
+  color: var(--wn-warning);
+  font-size: 11px;
+}
+
+#pour-shell .closure > div {
+  display: flex;
+  justify-content: space-between;
+  color: var(--wn-muted);
+  font-size: 10px;
+}
+
+#pour-shell .closure b {
+  color: var(--wn-ink);
+}
+
+#pour-shell .lineage p {
+  margin-top: 12px;
+  color: var(--wn-success);
+  font: 11px var(--wn-font);
+}
+
+#pour-shell .lineage ul {
+  margin: 13px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+#pour-shell .lineage li {
+  padding: 5px 0;
+  border-bottom: 1px solid var(--wn-line-light);
+  color: var(--wn-muted);
+  font-size: 10px;
+}
+
+#pour-shell .failure strong,
+#pour-shell .failure span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#pour-shell .failure strong {
+  margin-top: 13px;
+  color: var(--wn-failure);
+  font-size: 10px;
+}
+
+#pour-shell .failure span {
+  margin: 7px 0 10px;
+  color: var(--wn-ink-soft);
+  font-size: 10px;
+}
+
+#pour-shell .failure p {
+  font-size: 11px;
+}
+
+#pour-shell > footer {
+  border-top: 1px solid var(--wn-line-light);
+  font-size: 10px;
+}
+
+#pour-shell > footer b {
+  color: var(--wn-muted);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+}
+
+@media (max-width: 850px) {
+  #pour-shell {
+    grid-template-rows: auto 1fr auto;
+  }
+
+  #pour-shell > header {
+    min-height: 58px;
+  }
+
+  #pour-shell .pipeline {
+    display: none;
+  }
+
+  #pour-shell .stage {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  #pour-shell .viewport {
+    min-height: 58vh;
+    border-right: 0;
+    border-bottom: 1px solid var(--wn-line-light);
+  }
+
+  #pour-shell aside {
+    overflow: visible;
+  }
+
+  #pour-shell > footer {
+    min-height: 44px;
+  }
+
+  #pour-shell > footer b {
+    display: none;
+  }
+}
+
+/* Interactive PCB polygon-pour demo. */
+#pcb-shell {
+  --pcb-copper-fill: var(--wn-accent);
+  --pcb-copper-edge: var(--wn-accent);
+  --pcb-composite-mask: #000000;
+  --pcb-thermal-fill: var(--pcb-copper-fill);
+  --pcb-trace: var(--pcb-copper-fill);
+  --pcb-clearance: var(--wn-paper);
+  --pcb-via-fill: var(--pcb-copper-fill);
+  --pcb-via-edge: var(--pcb-copper-fill);
+  --pcb-drill: var(--wn-paper);
+  --pcb-footprint: #786388;
+  --pcb-pad-fill: var(--pcb-copper-fill);
+  --pcb-handle: var(--wn-paper);
+  --pcb-handle-edge: var(--wn-accent);
+  --pcb-route-preview: var(--pcb-copper-fill);
+  --pcb-grid-major: rgb(85 85 85 / 14%);
+  --pcb-grid-minor: rgb(85 85 85 / 6%);
+  min-height: 100vh;
+  display: grid;
+  grid-template-rows: 58px minmax(0, 1fr) 34px;
+  background: var(--wn-bg);
+}
+
+#pcb-shell > header,
+#pcb-shell > footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--wn-space-4);
+  padding: 0 var(--wn-space-5);
+  color: var(--wn-muted);
+}
+
+#pcb-shell > header {
+  border-bottom: 1px solid var(--wn-line-light);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+}
+
+#pcb-shell > header > div:first-child {
+  display: flex;
+  align-items: baseline;
+  gap: var(--wn-space-3);
+  white-space: nowrap;
+}
+
+#pcb-shell > header b {
+  color: var(--wn-ink);
+  font-size: 15px;
+  letter-spacing: 0.14em;
+}
+
+#pcb-shell .runtime {
+  display: flex;
+  align-items: center;
+  gap: var(--wn-space-2);
+  white-space: nowrap;
+}
+
+#pcb-shell .runtime em {
+  width: 8px;
+  height: 8px;
+  background: var(--wn-warning);
+}
+
+#pcb-shell[data-state="ready"] .runtime em {
+  background: var(--wn-success);
+}
+
+#pcb-shell[data-state="error"] .runtime em {
+  background: var(--wn-failure);
+}
+
+#pcb-shell .pcb-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  border: 1px solid var(--wn-line-light);
+  background: var(--wn-line-light);
+}
+
+#pcb-shell button {
+  min-height: 28px;
+  padding: 0 var(--wn-space-3);
+  border: 0;
+  background: var(--wn-paper);
+  color: var(--wn-muted);
+  font-size: 9px;
+  cursor: pointer;
+}
+
+#pcb-shell button:hover,
+#pcb-shell button:focus-visible,
+#pcb-shell button[data-active="true"] {
+  background: var(--wn-accent-bg);
+  color: var(--wn-accent);
+  outline: 0;
+}
+
+#pcb-shell button:disabled {
+  color: var(--wn-line);
+  cursor: default;
+}
+
+#pcb-shell .pcb-stage {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 350px;
+}
+
+#pcb-shell .pcb-viewport {
+  position: relative;
+  min-height: 590px;
+  overflow: hidden;
+  border-right: 1px solid var(--wn-line-light);
+  background: var(--wn-paper);
+}
+
+#pcb-shell canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  cursor: crosshair;
+}
+
+#pcb-shell[data-tool="select"] canvas {
+  cursor: default;
+}
+
+#pcb-shell .pcb-title {
+  position: absolute;
+  top: var(--wn-space-5);
+  left: var(--wn-space-5);
+  display: grid;
+  gap: var(--wn-space-1);
+  pointer-events: none;
+}
+
+#pcb-shell .pcb-title small,
+#pcb-shell aside small {
+  color: var(--wn-muted);
+  font-size: 9px;
+  letter-spacing: 0.15em;
+}
+
+#pcb-shell .pcb-title strong {
+  color: var(--wn-ink);
+  font-size: 17px;
+  font-weight: 400;
+}
+
+#pcb-shell .pcb-hint {
+  position: absolute;
+  right: var(--wn-space-5);
+  bottom: var(--wn-space-4);
+  color: var(--wn-muted);
+  font-size: 9px;
+  pointer-events: none;
+}
+
+#pcb-shell aside {
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  background: var(--wn-bg);
+}
+
+#pcb-shell aside section {
+  padding: var(--wn-space-5);
+  border-bottom: 1px solid var(--wn-line-light);
+  background: var(--wn-paper);
+}
+
+#pcb-shell h1 {
+  margin: var(--wn-space-3) 0;
+  color: var(--wn-ink);
+  font: 400 25px/1.2 system-ui, sans-serif;
+  letter-spacing: -0.03em;
+}
+
+#pcb-shell p {
+  margin: 0;
+  color: var(--wn-muted);
+  font: 12px/1.6 system-ui, sans-serif;
+}
+
+#pcb-shell dl {
+  margin: var(--wn-space-3) 0 0;
+}
+
+#pcb-shell dl div {
+  display: flex;
+  justify-content: space-between;
+  padding: var(--wn-space-2) 0;
+  border-bottom: 1px solid var(--wn-line-light);
+}
+
+#pcb-shell dt,
+#pcb-shell dd {
+  margin: 0;
+  font-size: 10px;
+}
+
+#pcb-shell dt {
+  color: var(--wn-muted);
+}
+
+#pcb-shell dd {
+  color: var(--wn-ink);
+}
+
+#pcb-shell .pcb-closure code {
+  display: block;
+  overflow: hidden;
+  margin: var(--wn-space-3) 0;
+  color: var(--wn-accent);
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#pcb-shell .pcb-corners p {
+  font-size: 11px;
+}
+
+#pcb-shell > footer {
+  border-top: 1px solid var(--wn-line-light);
+  font-size: 9px;
+}
+
+#pcb-shell > footer b {
+  color: var(--wn-muted);
+  font-size: 8px;
+  letter-spacing: 0.08em;
+}
+
+@media (max-width: 980px) {
+  #pcb-shell {
+    grid-template-rows: auto minmax(0, 1fr) auto;
+  }
+
+  #pcb-shell > header {
+    min-height: 58px;
+    flex-wrap: wrap;
+    padding-block: var(--wn-space-2);
+  }
+
+  #pcb-shell .runtime {
+    display: none;
+  }
+
+  #pcb-shell .pcb-stage {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  #pcb-shell .pcb-viewport {
+    min-height: 62vh;
+    border-right: 0;
+    border-bottom: 1px solid var(--wn-line-light);
+  }
+
+  #pcb-shell aside {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    overflow: visible;
+  }
+
+  #pcb-shell > footer {
+    min-height: 38px;
+  }
+}
+
+@media (max-width: 620px) {
+  #pcb-shell .pcb-toolbar {
+    order: 3;
+    width: 100%;
+  }
+
+  #pcb-shell .pcb-toolbar button {
+    flex: 1;
+    padding-inline: var(--wn-space-1);
+  }
+
+  #pcb-shell aside {
+    display: block;
+  }
+
+  #pcb-shell .pcb-hint,
+  #pcb-shell > footer b {
+    display: none;
+  }
+}
+
+/* Model-bounds generated-client demo. */
+.bounds-app {
+  --bounds-axis-x: #a43832;
+  --bounds-axis-y: var(--wn-accent);
+  --bounds-axis-z: var(--wn-warn);
+  --bounds-viewport-bg: #f2f4f1;
+  --bounds-model: #65747a;
+  --bounds-model-light: #c9d0d4;
+  --bounds-model-dark: #2b3036;
+  --bounds-grid-major: #7b8582;
+  --bounds-grid-minor: #c8ceca;
+  --bounds-light-sky: #e8f5ff;
+  --bounds-light-ground: #d7ddd9;
+  --bounds-light-fill: #78a9a5;
+  width: 100%;
+  height: 100%;
+  min-height: max(620px, 100vh);
+  display: grid;
+  grid-template-rows: 54px minmax(0, 1fr) 30px;
+  overflow: hidden;
+  background: var(--wn-bg);
+}
+
+.bounds-app .app-bar,
+.bounds-app .status-bar {
+  position: relative;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  border-color: var(--wn-line-light);
+  background: var(--wn-bg);
+}
+
+.bounds-app .app-bar {
+  justify-content: space-between;
+  gap: var(--wn-space-5);
+  padding: 0 var(--wn-space-4);
+  border-bottom: 1px solid var(--wn-line-light);
+}
+
+.bounds-app .brand-block,
+.bounds-app .runtime-state,
+.bounds-app .pipeline,
+.bounds-app .pipeline span,
+.bounds-app .status-bar {
+  display: flex;
+  align-items: center;
+}
+
+.bounds-app .brand-block {
+  gap: 13px;
+  white-space: nowrap;
+}
+
+.bounds-app .product-mark {
+  color: var(--wn-ink);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.bounds-app .product-context,
+.bounds-app .runtime-state,
+.bounds-app .pipeline,
+.bounds-app .status-bar,
+.bounds-app .section-number,
+.bounds-app .unit-badge,
+.bounds-app .view-hint,
+.bounds-app .legend {
+  color: var(--wn-muted);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.bounds-app .product-context {
+  padding-left: 13px;
+  border-left: 1px solid var(--wn-line);
+}
+
+.bounds-app .pipeline {
+  gap: var(--wn-space-2);
+}
+
+.bounds-app .pipeline i {
+  position: relative;
+  width: 22px;
+  height: 1px;
+  background: var(--wn-line);
+}
+
+.bounds-app .pipeline i::after {
+  position: absolute;
+  top: -2px;
+  right: 0;
+  border-top: 2px solid transparent;
+  border-bottom: 2px solid transparent;
+  border-left: 4px solid var(--wn-line);
+  content: "";
+}
+
+.bounds-app .runtime-state {
+  min-width: 150px;
+  justify-content: flex-end;
+  gap: var(--wn-space-2);
+}
+
+.bounds-app .state-light {
+  width: 7px;
+  height: 7px;
+  background: var(--wn-warning);
+  box-shadow: 0 0 0 3px var(--wn-warn-bg);
+}
+
+.bounds-app[data-state="complete"] .state-light {
+  background: var(--wn-success);
+  box-shadow: 0 0 0 3px var(--wn-accent-bg);
+}
+
+.bounds-app[data-state="error"] .state-light {
+  background: var(--wn-failure);
+}
+
+.bounds-app .workspace {
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 346px;
+}
+
+.bounds-app .viewport-shell {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  border-right: 1px solid var(--wn-line-light);
+  background: var(--bounds-viewport-bg);
+}
+
+.bounds-app #model-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+
+.bounds-app .viewport-heading {
+  position: absolute;
+  top: 18px;
+  left: 20px;
+  z-index: 4;
+  pointer-events: none;
+}
+
+.bounds-app .viewport-heading span,
+.bounds-app .viewport-heading strong {
+  display: block;
+}
+
+.bounds-app .overline {
+  margin-bottom: 6px;
+  color: var(--wn-accent);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.bounds-app .viewport-heading strong {
+  max-width: 300px;
+  color: var(--wn-ink);
+  font: 600 clamp(18px, 2.3vw, 30px) / 1.05 system-ui, sans-serif;
+  letter-spacing: -0.04em;
+}
+
+.bounds-app .view-hint {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 4;
+  pointer-events: none;
+}
+
+.bounds-app .dimension-label {
+  position: absolute;
+  z-index: 5;
+  min-width: 66px;
+  padding: 4px 7px 3px;
+  transform: translate(-50%, -50%);
+  border: 1px solid currentcolor;
+  background: var(--wn-paper);
+  font-size: 10px;
+  line-height: 1.2;
+  text-align: center;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 160ms ease;
+}
+
+.bounds-app[data-state="complete"] .dimension-label {
+  opacity: 1;
+}
+
+.bounds-app .dimension-x,
+.bounds-app .extent-x .axis-name {
+  color: var(--bounds-axis-x);
+}
+
+.bounds-app .dimension-y,
+.bounds-app .extent-y .axis-name {
+  color: var(--bounds-axis-y);
+}
+
+.bounds-app .dimension-z,
+.bounds-app .extent-z .axis-name {
+  color: var(--bounds-axis-z);
+}
+
+.bounds-app .legend {
+  position: absolute;
+  left: 20px;
+  bottom: 18px;
+  z-index: 4;
+  display: flex;
+  gap: 18px;
+  pointer-events: none;
+}
+
+.bounds-app .legend span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.bounds-app .legend-swatch {
+  width: 17px;
+  height: 7px;
+  border: 1px solid var(--wn-line);
+}
+
+.bounds-app .model-swatch {
+  background: var(--bounds-model);
+}
+
+.bounds-app .bounds-swatch {
+  border-color: var(--wn-accent);
+  background: var(--wn-accent-bg);
+}
+
+.bounds-app .loading-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 12;
+  display: grid;
+  place-items: center;
+  padding: var(--wn-space-5);
+  background: rgb(238 238 234 / 88%);
+  transition: opacity 180ms ease, visibility 180ms ease;
+}
+
+.bounds-app[data-state="complete"] .loading-overlay {
+  visibility: hidden;
+  opacity: 0;
+}
+
+.bounds-app .loading-panel {
+  width: min(430px, 92vw);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid var(--wn-line);
+  background: var(--wn-paper);
+}
+
+.bounds-app .loading-panel strong,
+.bounds-app .loading-panel span {
+  display: block;
+}
+
+.bounds-app .loading-panel strong {
+  margin-bottom: var(--wn-space-1);
+  color: var(--wn-ink);
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.bounds-app .loading-panel span {
+  color: var(--wn-muted);
+  font-size: 10px;
+}
+
+.bounds-app .loader-mark {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  border: 1px solid var(--wn-line);
+  border-top-color: var(--wn-accent);
+  animation: spin 0.8s linear infinite;
+}
+
+.bounds-app .inspector {
+  min-height: 0;
+  overflow-y: auto;
+  background: var(--wn-bg);
+  scrollbar-width: thin;
+}
+
+.bounds-app .inspector-section {
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--wn-line-light);
+  background: var(--wn-paper);
+}
+
+.bounds-app .intro-section {
+  padding-top: 22px;
+}
+
+.bounds-app .intro-section h1 {
+  margin: 9px 0 10px;
+  color: var(--wn-ink);
+  font: 600 24px/1.08 system-ui, sans-serif;
+  letter-spacing: -0.045em;
+}
+
+.bounds-app .intro-section p {
+  margin: 0;
+  color: var(--wn-muted);
+  font: 11px/1.55 system-ui, sans-serif;
+}
+
+.bounds-app .section-number {
+  color: var(--wn-accent);
+}
+
+.bounds-app .controls-section,
+.bounds-app .control-row,
+.bounds-app .button-row {
+  display: grid;
+  gap: 10px;
+}
+
+.bounds-app .control-row {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.bounds-app .control-row label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--wn-muted);
+  font-size: 10px;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.bounds-app .control-row input[type="checkbox"] {
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  margin: 0;
+  border: 1px solid var(--wn-line);
+  background: var(--wn-paper);
+}
+
+.bounds-app .control-row input[type="checkbox"]:checked {
+  border-color: var(--wn-accent);
+  background: var(--wn-accent);
+  box-shadow: inset 0 0 0 2px var(--wn-paper);
+}
+
+.bounds-app .button-row {
+  grid-template-columns: 1fr auto;
+}
+
+.bounds-app button {
+  min-height: 34px;
+  padding: 8px 10px;
+  border: 1px solid var(--wn-line);
+  background: var(--wn-paper);
+  color: var(--wn-ink);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.bounds-app button:hover,
+.bounds-app button:focus-visible {
+  border-color: var(--wn-accent);
+  color: var(--wn-accent);
+}
+
+.bounds-app button:focus-visible {
+  outline: 1px solid var(--wn-accent);
+  outline-offset: 2px;
+}
+
+.bounds-app button:disabled {
+  opacity: 0.52;
+  cursor: progress;
+}
+
+.bounds-app .primary-action {
+  border-color: var(--wn-accent);
+  background: var(--wn-accent);
+  color: var(--wn-paper);
+}
+
+.bounds-app .primary-action:hover,
+.bounds-app .primary-action:focus-visible {
+  color: var(--wn-paper);
+}
+
+.bounds-app .section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 7px;
+}
+
+.bounds-app .unit-badge {
+  padding: 2px 5px;
+  border: 1px solid var(--wn-line);
+}
+
+.bounds-app .extent-row {
+  display: grid;
+  grid-template-columns: 26px 1fr;
+  align-items: baseline;
+  gap: var(--wn-space-2);
+  padding: 10px 0;
+  border-top: 1px solid var(--wn-line-light);
+}
+
+.bounds-app .extent-row:first-of-type {
+  border-top: 0;
+}
+
+.bounds-app .extent-row .axis-name {
+  grid-row: 1 / span 2;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.bounds-app .extent-row strong {
+  color: var(--wn-ink);
+  font-size: 20px;
+  letter-spacing: -0.04em;
+}
+
+.bounds-app .extent-row > span:last-child {
+  color: var(--wn-muted);
+  font-size: 9px;
+}
+
+.bounds-app dl {
+  margin: 9px 0 0;
+}
+
+.bounds-app dl div {
+  display: grid;
+  grid-template-columns: 82px minmax(0, 1fr);
+  gap: 10px;
+  padding: 7px 0;
+  border-top: 1px solid var(--wn-line-light);
+}
+
+.bounds-app dt,
+.bounds-app dd {
+  margin: 0;
+  font-size: 10px;
+}
+
+.bounds-app dt {
+  color: var(--wn-muted);
+}
+
+.bounds-app dd {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--wn-ink);
+  text-align: right;
+}
+
+.bounds-app .status-bar {
+  justify-content: space-between;
+  gap: 20px;
+  padding: 0 12px;
+  border-top: 1px solid var(--wn-line-light);
+  white-space: nowrap;
+}
+
+.bounds-app #status {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bounds-app .transport-badge {
+  color: var(--wn-accent);
+}
+
+.bounds-app[data-state="error"] .loading-overlay {
+  background: var(--wn-warn-bg);
+}
+
+.bounds-app[data-state="error"] .loading-panel {
+  border-color: var(--wn-failure);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 880px) {
+  .bounds-app {
+    height: auto;
+    min-height: 100vh;
+    grid-template-rows: auto auto 34px;
+    overflow: visible;
+  }
+
+  .bounds-app .app-bar {
+    min-height: 58px;
+    flex-wrap: wrap;
+    gap: 8px 16px;
+    padding: 9px 12px;
+  }
+
+  .bounds-app .pipeline {
+    order: 3;
+    width: 100%;
+  }
+
+  .bounds-app .pipeline i {
+    flex: 1;
+  }
+
+  .bounds-app .product-context {
+    display: none;
+  }
+
+  .bounds-app .runtime-state {
+    min-width: 0;
+  }
+
+  .bounds-app .workspace {
+    display: block;
+  }
+
+  .bounds-app .viewport-shell {
+    height: 58vh;
+    min-height: 390px;
+    border-right: 0;
+    border-bottom: 1px solid var(--wn-line-light);
+  }
+
+  .bounds-app .inspector {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    overflow: visible;
+  }
+
+  .bounds-app .inspector-section {
+    border-right: 1px solid var(--wn-line-light);
+  }
+
+  .bounds-app .intro-section {
+    grid-column: 1 / -1;
+  }
+
+  .bounds-app .source-section {
+    border-right: 0;
+  }
+}
+
+@media (max-width: 560px) {
+  .bounds-app .viewport-shell {
+    height: 54vh;
+    min-height: 350px;
+  }
+
+  .bounds-app .view-hint {
+    display: none;
+  }
+
+  .bounds-app .viewport-heading {
+    top: 14px;
+    left: 14px;
+  }
+
+  .bounds-app .legend {
+    bottom: 14px;
+    left: 14px;
+    gap: 10px;
+    font-size: 8px;
+  }
+
+  .bounds-app .inspector {
+    display: block;
+  }
+
+  .bounds-app .inspector-section {
+    border-right: 0;
+  }
+
+  .bounds-app .status-bar {
+    font-size: 8px;
+  }
+
+  .bounds-app .transport-badge {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bounds-app .loader-mark {
+    animation-duration: 1.8s;
+  }
+}

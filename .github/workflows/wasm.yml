@@ -4,23 +4,49 @@ name: WASM
 
 "on":
   workflow_dispatch:
+    inputs:
+      extended_synthetic:
+        description: Run the extended exact synthetic-correctness profile
+        required: false
+        default: false
+        type: boolean
   pull_request:
     paths:
       - ".github/workflows/wasm.yml"
       - "CMakeLists.txt"
       - "CMakePresets.json"
       - "scripts/build_wasm.py"
+      - "scripts/write_analytic_packet_vectors.py"
+      - "scripts/build_analytic_polygon_pour_site.py"
+      - "scripts/build_standalone_demos.py"
+      - "scripts/build_self_contained_analytic_polygon_pour_demo.py"
       - "scripts/build_self_contained_hlr_demo.py"
       - "scripts/build_self_contained_planar_ring_solver_demo.py"
+      - "scripts/standalone_html.py"
+      - "package.json"
+      - "package-lock.json"
+      - "pyproject.toml"
+      - "uv.lock"
       - "src/cpp/**"
+      - "python/geometer/**"
       - "tests/wasm/**"
+      - "tests/typescript/**"
+      - "tests/contracts/vectors/analytic/**"
+      - "tests/fixtures/analytic_planar_boolean/**"
       - "examples/wasm/**"
+      - "docs/design/assets/**"
+      - "docs/contracts/promotion-manifest.toml"
       - "third_party/**"
   schedule:
-    - cron: "18 8 * * 1"
+    - cron: "18 8 1 * *"
 
 permissions:
   contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+  CARGO_BUILD_JOBS: "1"
+  CMAKE_BUILD_PARALLEL_LEVEL: "2"
 
 concurrency:
   group: wasm-${{ github.ref }}
@@ -47,6 +73,12 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: "24"
+
+      - name: Install Node toolchain
+        run: |
+          npm install --global npm@11.16.0
+          test "$(npm --version)" = "11.16.0"
+          npm ci
 
       - name: Install build tools
         run: |
@@ -82,13 +114,27 @@ jobs:
 
       - name: Build browser demos
         run: |
-          uv run python scripts/build_self_contained_hlr_demo.py
-          uv run python scripts/build_self_contained_planar_ring_solver_demo.py
+          google-chrome --version
+          npm run check:typescript
+          uv run python scripts/build_analytic_polygon_pour_site.py
+          uv run python scripts/build_standalone_demos.py all
+          node tests/typescript/analytic_static_site_validation.mjs
+          node tests/typescript/analytic_self_contained_demo_validation.mjs
+          uv run pytest tests/wasm/test_analytic_standalone_demo.py -q
+          uv run pytest tests/python/test_contract_promotion_manifest.py -q
 
       - name: Run WASM validation tests
         run: |
           node tests/wasm/planar_batch_solve_bytes_validation.js
           node tests/wasm/step_to_glb_bytes_validation.js
+
+      - name: Upload extended synthetic-correctness harness
+        if: github.event_name == 'schedule' || inputs.extended_synthetic
+        uses: actions/upload-artifact@v7
+        with:
+          name: analytic-synthetic-wasm
+          path: build-wasm/tests/cpp/geometer_exact_boolean_seeded_property_test.*
+          if-no-files-found: error
 
       - name: Upload WASM artifacts
         uses: actions/upload-artifact@v7
@@ -96,3 +142,111 @@ jobs:
           name: wasm-dist
           path: dist/wasm/**
           if-no-files-found: error
+
+  extended-synthetic:
+    name: Extended exact synthetic correctness
+    if: github.event_name == 'schedule' || inputs.extended_synthetic
+    needs: wasm
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - uses: astral-sh/setup-uv@v8.2.0
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+
+      - name: Read dependency versions
+        id: dependency_versions
+        run: uv run --no-project python scripts/dependency_versions.py --github-output
+
+      - name: Install native build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential ninja-build libgl1-mesa-dev libdbus-1-dev libudev-dev libx11-dev libxcursor-dev libxext-dev libxi-dev libxinerama-dev libxkbcommon-dev libxrandr-dev libwayland-dev wayland-protocols
+
+      - name: Cache native OCCT
+        uses: actions/cache@v5
+        with:
+          path: |
+            .deps/occt-src
+            .deps/native/linux-x64/occt-build
+            .deps/native/linux-x64/occt-install
+          key: occt-nightly-${{ runner.os }}-${{ runner.arch }}-${{ steps.dependency_versions.outputs.occt_tag }}-${{ hashFiles('scripts/build_occt.py', 'scripts/dependency_versions.py', 'scripts/occt_binary_cache.py', 'third_party/rapidjson/**') }}
+          restore-keys: |
+            occt-nightly-${{ runner.os }}-${{ runner.arch }}-${{ steps.dependency_versions.outputs.occt_tag }}-
+
+      - name: Download Emscripten harness
+        uses: actions/download-artifact@v8
+        with:
+          name: analytic-synthetic-wasm
+          path: out/analytic-synthetic-wasm
+
+      - name: Build and test native code
+        run: uv run --group dev python scripts/validate_native.py --skip-examples --skip-python --skip-ldd
+
+      - name: Run extended native/WASM seeded properties
+        run: uv run python scripts/validate_exact_boolean_seeded_property_parity.py --profile nightly --wasm out/analytic-synthetic-wasm/geometer_exact_boolean_seeded_property_test.cjs
+
+      - name: Run non-authoritative Clipper2 differential warnings
+        run: build-native-linux-x64/tests/cpp/geometer_exact_rectangle_enumeration_test --differential-only
+
+  cross-transport:
+    name: Analytic executable IPC/browser WASM parity
+    needs: wasm
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - uses: astral-sh/setup-uv@v8.2.0
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+
+      - name: Read dependency versions
+        id: dependency_versions
+        run: uv run --no-project python scripts/dependency_versions.py --github-output
+
+      - name: Install native build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential ninja-build libgl1-mesa-dev libdbus-1-dev libudev-dev libx11-dev libxcursor-dev libxext-dev libxi-dev libxinerama-dev libxkbcommon-dev libxrandr-dev libwayland-dev wayland-protocols
+
+      - name: Cache native OCCT
+        uses: actions/cache@v5
+        with:
+          path: |
+            .deps/occt-src
+            .deps/native/linux-x64/occt-build
+            .deps/native/linux-x64/occt-install
+          key: occt-cross-transport-${{ runner.os }}-${{ runner.arch }}-${{ steps.dependency_versions.outputs.occt_tag }}-${{ hashFiles('scripts/build_occt.py', 'scripts/dependency_versions.py', 'scripts/occt_binary_cache.py', 'third_party/rapidjson/**') }}
+          restore-keys: |
+            occt-cross-transport-${{ runner.os }}-${{ runner.arch }}-${{ steps.dependency_versions.outputs.occt_tag }}-
+            occt-${{ runner.os }}-${{ runner.arch }}-gcc-${{ steps.dependency_versions.outputs.occt_tag }}-
+
+      - name: Download current browser WASM artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: wasm-dist
+          path: out/wasm-dist
+
+      - name: Build and test current native executable
+        run: uv run --group dev python scripts/validate_native.py --skip-examples --skip-python --skip-ldd
+
+      - name: Require canonical executable IPC/browser WASM parity
+        env:
+          GEOMETER_EXE: dist/native/linux-x64/geometer
+          GEOMETER_WASM_BROWSER_DIST: out/wasm-dist/browser
+        run: uv run pytest tests/wasm/test_analytic_cross_transport_parity.py -q

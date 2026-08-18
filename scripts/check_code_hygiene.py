@@ -18,7 +18,7 @@ SCAN_ROOTS = [
     ROOT / "examples" / "wasm",
 ]
 
-CODE_SUFFIXES = {".py", ".cpp", ".h", ".hpp", ".js", ".html"}
+CODE_SUFFIXES = {".py", ".cpp", ".h", ".hpp", ".js", ".mjs", ".ts", ".html"}
 SKIP_PARTS = {
     ".git",
     ".deps",
@@ -30,6 +30,8 @@ SKIP_PARTS = {
     "build-wasm",
     "dist",
     "out",
+    "rack_results",
+    "target",
     "third_party",
 }
 
@@ -39,8 +41,15 @@ MAX_PY_CLASS_LINES = 450
 MAX_PY_FUNCTION_COMPLEXITY = 25
 MAX_PY_CLASS_COMPLEXITY = 35
 
+LINE_LENGTH_EXEMPT_ROOTS = {
+    ROOT / "python" / "geometer" / "_generated",
+    ROOT / "src" / "cpp" / "lib" / "geometer" / "generated",
+    ROOT / "src" / "rust" / "geometer-client" / "src" / "generated",
+    ROOT / "src" / "ts" / "geometer" / "generated",
+}
+
 ALLOWED_DIST_ROOT_FILES = {".gitkeep", "README.md"}
-ALLOWED_DIST_ROOT_DIRS = {"native", "wasm"}
+ALLOWED_DIST_ROOT_DIRS = {"native", "npm", "wasm"}
 
 
 @dataclass(slots=True)
@@ -73,6 +82,11 @@ def iter_code_files() -> list[Path]:
     return sorted(files)
 
 
+def is_line_length_exempt(path: Path) -> bool:
+    resolved_path = path.resolve()
+    return any(resolved_path.is_relative_to(root.resolve()) for root in LINE_LENGTH_EXEMPT_ROOTS)
+
+
 def decision_count(node: ast.AST) -> int:
     decision_nodes = (
         ast.If,
@@ -91,6 +105,8 @@ def decision_count(node: ast.AST) -> int:
 def check_file_lengths(files: list[Path]) -> list[Violation]:
     violations: list[Violation] = []
     for path in files:
+        if is_line_length_exempt(path):
+            continue
         line_count = len(path.read_text(encoding="utf-8").splitlines())
         if line_count > MAX_FILE_LINES:
             violations.append(Violation(path, f"{line_count} lines exceeds limit {MAX_FILE_LINES}"))

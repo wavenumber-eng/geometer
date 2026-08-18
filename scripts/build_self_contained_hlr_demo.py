@@ -13,12 +13,11 @@ Run after `python scripts/build_wasm.py`:
 
 from __future__ import annotations
 
-import base64
 import json
 import re
-import shutil
-import subprocess
 from pathlib import Path
+
+from standalone_html import b64, bundle_es_module, data_uri
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -33,9 +32,6 @@ OUT = ROOT / "dist" / "wasm" / "demos" / "hlr_demo.html"
 JS_DEPS_DIR = ROOT / ".deps" / "js" / "hlr-demo"
 THREE_BUNDLE = JS_DEPS_DIR / "three_hlr_bundle.js"
 
-THREE_VERSION = "0.161.0"
-ESBUILD_VERSION = "0.27.2"
-
 LOGO_ATTR = 'src="/tests/wasm/vendor/wn/logo.svg"'
 DEMO_MODEL_NAMES = {
     "BGA90-8X13mm.step",
@@ -46,42 +42,9 @@ DEMO_MODEL_NAMES = {
 }
 
 
-def b64(data: bytes) -> str:
-    return base64.b64encode(data).decode("ascii")
-
-
-def data_uri(path: Path, mime: str) -> str:
-    return f"data:{mime};base64,{b64(path.read_bytes())}"
-
-
-def run(cmd: list[str], cwd: Path) -> None:
-    print("> " + " ".join(cmd))
-    subprocess.run(cmd, cwd=cwd, check=True)
-
-
 def ensure_three_bundle() -> str:
-    npm = shutil.which("npm")
-    if npm is None:
-        raise SystemExit("npm is required to bundle the self-contained HLR demo.")
-
     JS_DEPS_DIR.mkdir(parents=True, exist_ok=True)
-    package_json = JS_DEPS_DIR / "package.json"
     entry_js = JS_DEPS_DIR / "entry.js"
-    package_json.write_text(
-        json.dumps(
-            {
-                "private": True,
-                "type": "module",
-                "dependencies": {
-                    "esbuild": ESBUILD_VERSION,
-                    "three": THREE_VERSION,
-                },
-            },
-            indent=2,
-        ),
-        encoding="utf-8",
-        newline="\n",
-    )
     entry_js.write_text(
         "\n".join(
             [
@@ -95,23 +58,10 @@ def ensure_three_bundle() -> str:
         encoding="utf-8",
         newline="\n",
     )
-    run([npm, "install", "--no-audit", "--no-fund", "--save-exact"], cwd=JS_DEPS_DIR)
-    run(
-        [
-            npm,
-            "exec",
-            "--",
-            "esbuild",
-            "entry.js",
-            "--bundle",
-            "--format=iife",
-            "--target=es2020",
-            "--log-level=warning",
-            f"--outfile={THREE_BUNDLE.name}",
-        ],
-        cwd=JS_DEPS_DIR,
-    )
-    return THREE_BUNDLE.read_text(encoding="utf-8")
+    bundle_es_module(entry_js, THREE_BUNDLE, target="es2020")
+    return "\n".join(
+        line.rstrip() for line in THREE_BUNDLE.read_text(encoding="utf-8").splitlines()
+    ) + "\n"
 
 
 def embedded_manifest() -> list[dict[str, object]]:

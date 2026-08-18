@@ -1,0 +1,336 @@
+catalog_version = 1
+catalog_identity = "geometry.analytic_planar_boolean.catalog.a0"
+status = "structural_frozen_numeric_reopened"
+operation_identity = "geometry.analytic_planar_boolean_batch.a0"
+packet_generation = 1
+request_magic = "GMABRQ01"
+result_magic = "GMABRS01"
+
+[enum.stage_operation]
+underlying = "u8"
+union = 1
+difference = 2
+
+[enum.operand_geometry_kind]
+underlying = "u16"
+planar_region = 1
+disk = 2
+annulus = 3
+capsule = 4
+swept_path = 5
+
+[enum.authored_segment_kind]
+underlying = "u8"
+line = 1
+circular_arc = 2
+
+[enum.fragment_kind]
+underlying = "u8"
+line = 1
+circular_arc = 2
+
+[enum.arc_direction]
+underlying = "u8"
+not_applicable = 0
+ccw = 1
+cw = 2
+
+[enum.job_status]
+underlying = "u8"
+success = 0
+failure = 1
+
+[enum.diagnostic_severity]
+underlying = "u8"
+error = 1
+warning = 2
+
+[enum.diagnostic_scope]
+underlying = "u8"
+job = 1
+
+[enum.reference_kind]
+underlying = "u32_high_half"
+ring = 1
+result_region = 2
+
+[enum.source_kind]
+underlying = "u16"
+authored_segment_curve = 1
+compact_feature_role = 2
+subtractive_operand_effect = 3
+
+[enum.source_role]
+underlying = "u16"
+none = 0
+authored_line = 1
+authored_circular_arc = 2
+primitive_outer_circle = 16
+primitive_inner_circle = 17
+capsule_left_line = 32
+capsule_end_cap = 33
+capsule_right_line = 34
+capsule_start_cap = 35
+swept_left_offset_line = 48
+swept_left_offset_arc = 49
+swept_right_offset_line = 50
+swept_right_offset_arc = 51
+swept_round_join = 52
+swept_start_cap = 53
+swept_end_cap = 54
+
+[enum.operand_event]
+underlying = "u16"
+contributes_final_material = 1
+redundant_or_absorbed_coverage = 2
+partially_removed_later = 3
+completely_removed_later = 4
+subtraction_effect_survives = 5
+subtraction_effect_overwritten_later = 6
+no_effect = 7
+
+[operand_event_semantics.subtraction_effect_survives]
+required_for_unfilled_attributed_removal = true
+result_references = "all_attributed_final_boundary_ring_region_references"
+empty_result_reference_case = "unfilled_attributed_removal_without_final_material_boundary"
+
+[enum.relationship_status]
+underlying = "u8"
+success = 0
+skipped_dependency_failed = 1
+
+[enum.intersection_dimension]
+underlying = "u8"
+disjoint = 0
+point = 1
+curve = 2
+area = 3
+
+[flags.packet_header]
+underlying = "u32"
+allowed_mask = 0
+
+[flags.operand]
+underlying = "u16"
+allowed_mask = 0
+
+[flags.authored_ring]
+underlying = "u32"
+allowed_mask = 1
+open_path = 1
+
+[flags.diagnostic_presence]
+underlying = "u16"
+allowed_mask = 15
+job_id = 1
+stage_id = 2
+operand_id = 4
+geometry_source_id = 8
+
+[flags.result_vertex]
+underlying = "u32"
+allowed_mask = 1
+intersection = 1
+
+[flags.result_ring]
+underlying = "u32"
+allowed_mask = 1
+hole = 1
+
+[flags.result_region]
+underlying = "u32"
+allowed_mask = 0
+
+[flags.source_reference]
+underlying = "u32"
+allowed_mask = 0
+
+[flags.operand_event]
+underlying = "u16"
+allowed_mask = 0
+
+[flags.relationship_result]
+underlying = "u16"
+allowed_mask = 0
+
+[table_kind.request]
+jobs = 1
+stages = 2
+operands = 3
+planar_regions = 4
+ring_references = 5
+rings = 6
+authored_vertices = 7
+authored_segments = 8
+disks = 9
+annuli = 10
+capsules = 11
+swept_paths = 12
+relationship_queries = 13
+
+[table_kind.result]
+job_results = 101
+diagnostics = 102
+result_vertices = 103
+directed_fragments = 104
+result_rings = 105
+fragment_references = 106
+result_regions = 107
+ring_region_references = 108
+source_sets = 109
+source_references = 110
+operand_outcome_events = 111
+relationship_results = 112
+relationship_region_pairs = 113
+source_reference_indices = 114
+
+[required_table_kinds]
+request = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
+result = [101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114]
+
+[record_size.request]
+jobs = 24
+stages = 32
+operands = 24
+planar_regions = 32
+ring_references = 4
+rings = 32
+authored_vertices = 24
+authored_segments = 40
+disks = 32
+annuli = 40
+capsules = 48
+swept_paths = 32
+relationship_queries = 24
+
+[record_size.result]
+job_results = 48
+diagnostics = 56
+result_vertices = 32
+directed_fragments = 48
+result_rings = 32
+fragment_references = 4
+result_regions = 24
+ring_region_references = 8
+source_sets = 8
+source_references = 32
+operand_outcome_events = 48
+relationship_results = 32
+relationship_region_pairs = 32
+source_reference_indices = 4
+
+[operation_diagnostic]
+invalid_topology = 65539
+invalid_arc = 65540
+unsupported_geometry = 65541
+normalization_error_exceeded = 65543
+normalization_topology_collapse = 65544
+nonanalytic_result = 65545
+solver_failed = 65546
+resource_limit_exceeded = 65547
+
+[reserved.operation_diagnostic]
+normalization_ambiguous_tie = 65542
+
+[operation_diagnostic_identity]
+invalid_topology = "geometer.operation.analytic_planar_boolean.invalid_topology"
+invalid_arc = "geometer.operation.analytic_planar_boolean.invalid_arc"
+unsupported_geometry = "geometer.operation.analytic_planar_boolean.unsupported_geometry"
+normalization_error_exceeded = "geometer.operation.analytic_planar_boolean.normalization_error_exceeded"
+normalization_topology_collapse = "geometer.operation.analytic_planar_boolean.normalization_topology_collapse"
+nonanalytic_result = "geometer.operation.analytic_planar_boolean.nonanalytic_result"
+solver_failed = "geometer.operation.analytic_planar_boolean.solver_failed"
+resource_limit_exceeded = "geometer.operation.analytic_planar_boolean.resource_limit_exceeded"
+
+[source_reference_mapping.authored_segment_curve]
+primary_id = "authored_segment_id"
+secondary_id = "authored_curve_id"
+allowed_roles = [1, 2]
+
+[source_reference_mapping.compact_feature_role]
+primary_id = "compact_feature_id"
+secondary_id = "boundary_occurrence_key"
+allowed_roles = [16, 17, 32, 33, 34, 35, 48, 49, 50, 51, 52, 53, 54]
+
+[source_reference_mapping.subtractive_operand_effect]
+primary_id = "stage_id"
+secondary_id = "zero"
+allowed_roles = [0]
+
+[boundary_occurrence_key]
+whole_feature = 0
+offset_encoding = "high_u32=centerline_segment_ordinal_1_based;low_u32=0"
+join_encoding = "high_u32=incoming_segment_ordinal_1_based;low_u32=outgoing_segment_ordinal_1_based"
+start_cap_encoding = "high_u32=1;low_u32=0"
+end_cap_encoding = "high_u32=centerline_vertex_count;low_u32=0"
+
+[contract_diagnostic]
+invalid_packet = "geometer.contract.analytic_planar_boolean_packet.invalid_packet"
+invalid_id = "geometer.contract.analytic_planar_boolean_packet.invalid_id"
+invalid_reference = "geometer.contract.analytic_planar_boolean_packet.invalid_reference"
+limit_exceeded = "geometer.contract.analytic_planar_boolean_packet.limit_exceeded"
+
+[path_token]
+none = 0
+request_jobs = 1
+job_id = 2
+job_stages = 3
+stage_id = 4
+stage_operation = 5
+stage_operands = 6
+operand_id = 7
+operand_geometry = 8
+region_outer = 9
+region_holes = 10
+ring_vertices = 11
+ring_segments = 12
+path_vertices = 13
+path_segments = 14
+segment_curve = 15
+disk_radius = 16
+annulus_inner_radius = 17
+annulus_outer_radius = 18
+capsule_start = 19
+capsule_end = 20
+capsule_width = 21
+swept_path_centerline = 22
+swept_path_width = 23
+relationship_queries = 24
+relationship_left_job_id = 25
+relationship_right_job_id = 26
+
+[limit]
+jobs = 65535
+stages_per_batch = 1048576
+operands_per_batch = 4194304
+relationship_queries = 1048576
+job_local_coordinate_span_nm = 1000000000000
+job_local_radius_width_nm = 1000000000000
+coordinate_grid_nm = 1
+topology_resolution_nm = 50
+filtered_algebraic_fallback_calls_per_job = 0
+certified_interval_initial_bits = 256
+certified_interval_max_bits = 4096
+analytic_boundary_occurrences_per_job = 131072
+examined_curve_pairs_per_job = 8388608
+exact_intersections_per_job = 1048576
+arrangement_vertices_per_job = 1048576
+arrangement_half_edges_per_job = 2097152
+arrangement_faces_per_job = 1048576
+algebraic_scalars_per_job = 4194304
+algebraic_polynomial_degree = 64
+algebraic_coefficient_bits = 16384
+algebraic_storage_bytes_per_job = 268435456
+algebraic_work_units_per_job = 1000000000
+provenance_references_per_job = 8388608
+source_reference_index_memberships_per_job = 8388608
+logical_source_reference_expansions_per_batch = 1048576
+exact_predicate_calls_per_job = 100000000
+interval_refinement_steps_per_job = 100000000
+solver_working_memory_bytes_per_job = 1073741824
+vertex_squared_error_nm2_numerator = 2500
+vertex_squared_error_nm2_denominator = 1
+radius_error_nm_numerator = 50
+radius_error_nm_denominator = 1
+arc_hausdorff_error_nm_numerator = 50
+arc_hausdorff_error_nm_denominator = 1

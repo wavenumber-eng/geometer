@@ -1,0 +1,673 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:wavenumber:schema:geometer:geometry.analytic_planar_boolean_batch.result:a0",
+  "type": "object",
+  "properties": {
+    "job_results": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/AnalyticPlanarBooleanJobResult"
+      }
+    },
+    "relationship_results": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/PlanarRelationshipResult"
+      }
+    }
+  },
+  "required": [
+    "job_results",
+    "relationship_results"
+  ],
+  "unevaluatedProperties": {
+    "not": {}
+  },
+  "description": "Logical result projected from the governed packed result attachment.",
+  "x-wn-max-logical-source-reference-expansions": 1048576,
+  "x-wn-production-wire": "packed_attachment",
+  "$defs": {
+    "AnalyticPlanarBooleanJobResult": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/SuccessfulJobResult"
+        },
+        {
+          "$ref": "#/$defs/FailedJobResult"
+        }
+      ]
+    },
+    "PlanarRelationshipResult": {
+      "type": "object",
+      "properties": {
+        "query_id": {
+          "$ref": "#/$defs/QueryId"
+        },
+        "status": {
+          "$ref": "#/$defs/RelationshipStatus"
+        },
+        "aggregate_dimension": {
+          "$ref": "#/$defs/IntersectionDimension"
+        },
+        "pairs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RelationshipRegionPair"
+          }
+        }
+      },
+      "required": [
+        "query_id",
+        "status",
+        "aggregate_dimension",
+        "pairs"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "SuccessfulJobResult": {
+      "type": "object",
+      "properties": {
+        "job_id": {
+          "$ref": "#/$defs/JobId"
+        },
+        "status": {
+          "type": "string",
+          "const": "success"
+        },
+        "diagnostics": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/JobDiagnostic"
+          }
+        },
+        "vertices": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ResultVertex"
+          },
+          "maxItems": 1048576
+        },
+        "directed_fragments": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DirectedFragment"
+          },
+          "maxItems": 2097152
+        },
+        "rings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ResultRing"
+          },
+          "maxItems": 1048576
+        },
+        "result_regions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ResultRegion"
+          },
+          "maxItems": 1048576
+        },
+        "operand_outcomes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/OperandOutcomeEvent"
+          },
+          "maxItems": 4194304
+        },
+        "digest_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "Derived from the canonical standalone job-result packet; not an encoded record field.",
+          "x-wn-derived-field": "standalone_job_result_sha256"
+        }
+      },
+      "required": [
+        "job_id",
+        "status",
+        "diagnostics",
+        "vertices",
+        "directed_fragments",
+        "rings",
+        "result_regions",
+        "operand_outcomes",
+        "digest_sha256"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "FailedJobResult": {
+      "type": "object",
+      "properties": {
+        "job_id": {
+          "$ref": "#/$defs/JobId"
+        },
+        "status": {
+          "type": "string",
+          "const": "failure"
+        },
+        "diagnostics": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/JobDiagnostic"
+          },
+          "minItems": 1
+        },
+        "digest_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "Derived from the canonical standalone job-result packet; not an encoded record field.",
+          "x-wn-derived-field": "standalone_job_result_sha256"
+        }
+      },
+      "required": [
+        "job_id",
+        "status",
+        "diagnostics",
+        "digest_sha256"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "QueryId": {
+      "type": "string",
+      "minimum": 1
+    },
+    "RelationshipStatus": {
+      "type": "string",
+      "enum": [
+        "success",
+        "skipped_dependency_failed"
+      ]
+    },
+    "IntersectionDimension": {
+      "type": "string",
+      "enum": [
+        "disjoint",
+        "point",
+        "curve",
+        "area"
+      ]
+    },
+    "RelationshipRegionPair": {
+      "type": "object",
+      "properties": {
+        "left_result_region_id": {
+          "$ref": "#/$defs/ResultRegionId"
+        },
+        "right_result_region_id": {
+          "$ref": "#/$defs/ResultRegionId"
+        },
+        "dimension": {
+          "$ref": "#/$defs/IntersectionDimension"
+        },
+        "equality": {
+          "type": "boolean"
+        },
+        "left_contains_right": {
+          "type": "boolean"
+        },
+        "right_contains_left": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "left_result_region_id",
+        "right_result_region_id",
+        "dimension",
+        "equality",
+        "left_contains_right",
+        "right_contains_left"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "JobId": {
+      "type": "string",
+      "minimum": 1
+    },
+    "JobDiagnostic": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "$ref": "#/$defs/JobDiagnosticCode"
+        },
+        "severity": {
+          "$ref": "#/$defs/DiagnosticSeverity"
+        },
+        "job_id": {
+          "$ref": "#/$defs/JobId"
+        },
+        "stage_id": {
+          "$ref": "#/$defs/StageId"
+        },
+        "operand_id": {
+          "$ref": "#/$defs/OperandId"
+        },
+        "geometry_id": {
+          "type": "string",
+          "minimum": 1
+        },
+        "path_identity": {
+          "$ref": "#/$defs/JobDiagnosticPath",
+          "description": "Governed standalone location identity; token zero projects to absence.",
+          "x-wn-packed-field": "path_token"
+        }
+      },
+      "required": [
+        "code",
+        "severity",
+        "job_id"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "ResultVertex": {
+      "type": "object",
+      "properties": {
+        "vertex_id": {
+          "$ref": "#/$defs/ResultVertexId"
+        },
+        "point": {
+          "$ref": "#/$defs/PointNm"
+        },
+        "intersection_sources": {
+          "$ref": "#/$defs/SourceSet"
+        }
+      },
+      "required": [
+        "vertex_id",
+        "point",
+        "intersection_sources"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "DirectedFragment": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/ResultLineFragment"
+        },
+        {
+          "$ref": "#/$defs/ResultCircularArcFragment"
+        }
+      ]
+    },
+    "ResultRing": {
+      "type": "object",
+      "properties": {
+        "ring_id": {
+          "$ref": "#/$defs/ResultRingId"
+        },
+        "fragment_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ResultFragmentId"
+          },
+          "minItems": 2,
+          "maxItems": 2097152
+        },
+        "parent_ring_id": {
+          "$ref": "#/$defs/ResultRingId"
+        },
+        "depth": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        },
+        "hole": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "ring_id",
+        "fragment_ids",
+        "depth",
+        "hole"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "ResultRegion": {
+      "type": "object",
+      "properties": {
+        "result_region_id": {
+          "$ref": "#/$defs/ResultRegionId"
+        },
+        "outer_ring_id": {
+          "$ref": "#/$defs/ResultRingId"
+        },
+        "positive_contributors": {
+          "$ref": "#/$defs/SourceSet"
+        }
+      },
+      "required": [
+        "result_region_id",
+        "outer_ring_id",
+        "positive_contributors"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "OperandOutcomeEvent": {
+      "type": "object",
+      "properties": {
+        "operand_id": {
+          "$ref": "#/$defs/OperandId"
+        },
+        "kind": {
+          "$ref": "#/$defs/OperandOutcomeKind"
+        },
+        "result_ring_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ResultRingId"
+          }
+        },
+        "result_region_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ResultRegionId"
+          }
+        },
+        "sources": {
+          "$ref": "#/$defs/SourceSet"
+        }
+      },
+      "required": [
+        "operand_id",
+        "kind",
+        "result_ring_ids",
+        "result_region_ids",
+        "sources"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "ResultRegionId": {
+      "type": "string",
+      "minimum": 1
+    },
+    "JobDiagnosticCode": {
+      "type": "string",
+      "enum": [
+        "geometer.operation.analytic_planar_boolean.invalid_topology",
+        "geometer.operation.analytic_planar_boolean.invalid_arc",
+        "geometer.operation.analytic_planar_boolean.unsupported_geometry",
+        "geometer.operation.analytic_planar_boolean.normalization_error_exceeded",
+        "geometer.operation.analytic_planar_boolean.normalization_topology_collapse",
+        "geometer.operation.analytic_planar_boolean.nonanalytic_result",
+        "geometer.operation.analytic_planar_boolean.solver_failed",
+        "geometer.operation.analytic_planar_boolean.resource_limit_exceeded"
+      ]
+    },
+    "DiagnosticSeverity": {
+      "type": "string",
+      "enum": [
+        "error",
+        "warning"
+      ]
+    },
+    "StageId": {
+      "type": "string",
+      "minimum": 1
+    },
+    "OperandId": {
+      "type": "string",
+      "minimum": 1
+    },
+    "JobDiagnosticPath": {
+      "type": "string",
+      "enum": [
+        "request_jobs",
+        "job_id",
+        "job_stages",
+        "stage_id",
+        "stage_operation",
+        "stage_operands",
+        "operand_id",
+        "operand_geometry",
+        "region_outer",
+        "region_holes",
+        "ring_vertices",
+        "ring_segments",
+        "path_vertices",
+        "path_segments",
+        "segment_curve",
+        "disk_radius",
+        "annulus_inner_radius",
+        "annulus_outer_radius",
+        "capsule_start",
+        "capsule_end",
+        "capsule_width",
+        "swept_path_centerline",
+        "swept_path_width",
+        "relationship_queries",
+        "relationship_left_job_id",
+        "relationship_right_job_id"
+      ],
+      "description": "Standalone logical identities projected one-to-one from nonzero packed path tokens."
+    },
+    "ResultVertexId": {
+      "type": "string",
+      "minimum": 1
+    },
+    "PointNm": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "string"
+        },
+        "y": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "x",
+        "y"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "SourceSet": {
+      "type": "object",
+      "properties": {
+        "sources": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SourceReference"
+          },
+          "maxItems": 1048576
+        }
+      },
+      "required": [
+        "sources"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "ResultLineFragment": {
+      "type": "object",
+      "properties": {
+        "fragment_id": {
+          "$ref": "#/$defs/ResultFragmentId"
+        },
+        "kind": {
+          "type": "string",
+          "const": "line"
+        },
+        "start_vertex_id": {
+          "$ref": "#/$defs/ResultVertexId"
+        },
+        "end_vertex_id": {
+          "$ref": "#/$defs/ResultVertexId"
+        },
+        "coincident_positive_sources": {
+          "$ref": "#/$defs/SourceSet"
+        },
+        "surviving_subtraction_sources": {
+          "$ref": "#/$defs/SourceSet"
+        }
+      },
+      "required": [
+        "fragment_id",
+        "kind",
+        "start_vertex_id",
+        "end_vertex_id",
+        "coincident_positive_sources",
+        "surviving_subtraction_sources"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "ResultCircularArcFragment": {
+      "type": "object",
+      "properties": {
+        "fragment_id": {
+          "$ref": "#/$defs/ResultFragmentId"
+        },
+        "kind": {
+          "type": "string",
+          "const": "circular_arc"
+        },
+        "start_vertex_id": {
+          "$ref": "#/$defs/ResultVertexId"
+        },
+        "end_vertex_id": {
+          "$ref": "#/$defs/ResultVertexId"
+        },
+        "radius_nm": {
+          "type": "string",
+          "minimum": 1,
+          "maximum": 1000000000000
+        },
+        "direction": {
+          "$ref": "#/$defs/ArcDirection"
+        },
+        "major_arc": {
+          "type": "boolean"
+        },
+        "coincident_positive_sources": {
+          "$ref": "#/$defs/SourceSet"
+        },
+        "surviving_subtraction_sources": {
+          "$ref": "#/$defs/SourceSet"
+        }
+      },
+      "required": [
+        "fragment_id",
+        "kind",
+        "start_vertex_id",
+        "end_vertex_id",
+        "radius_nm",
+        "direction",
+        "major_arc",
+        "coincident_positive_sources",
+        "surviving_subtraction_sources"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "ResultRingId": {
+      "type": "string",
+      "minimum": 1
+    },
+    "ResultFragmentId": {
+      "type": "string",
+      "minimum": 1
+    },
+    "OperandOutcomeKind": {
+      "type": "string",
+      "enum": [
+        "contributes_final_material",
+        "redundant_or_absorbed_coverage",
+        "partially_removed_later",
+        "completely_removed_later",
+        "subtraction_effect_survives",
+        "subtraction_effect_overwritten_later",
+        "no_effect"
+      ]
+    },
+    "SourceReference": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "$ref": "#/$defs/SourceKind"
+        },
+        "role": {
+          "$ref": "#/$defs/SourceRole"
+        },
+        "operand_id": {
+          "$ref": "#/$defs/OperandId"
+        },
+        "primary_id": {
+          "type": "string",
+          "minimum": 1
+        },
+        "secondary_id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "role",
+        "operand_id",
+        "primary_id",
+        "secondary_id"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "ArcDirection": {
+      "type": "string",
+      "enum": [
+        "ccw",
+        "cw"
+      ]
+    },
+    "SourceKind": {
+      "type": "string",
+      "enum": [
+        "authored_segment_curve",
+        "compact_feature_role",
+        "subtractive_operand_effect"
+      ]
+    },
+    "SourceRole": {
+      "type": "string",
+      "enum": [
+        "none",
+        "authored_line",
+        "authored_circular_arc",
+        "primitive_outer_circle",
+        "primitive_inner_circle",
+        "capsule_left_line",
+        "capsule_end_cap",
+        "capsule_right_line",
+        "capsule_start_cap",
+        "swept_left_offset_line",
+        "swept_left_offset_arc",
+        "swept_right_offset_line",
+        "swept_right_offset_arc",
+        "swept_round_join",
+        "swept_start_cap",
+        "swept_end_cap"
+      ]
+    }
+  }
+}

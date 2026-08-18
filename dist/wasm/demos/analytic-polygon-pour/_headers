@@ -1,0 +1,21 @@
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: no-referrer
+  Permissions-Policy: camera=(), geolocation=(), microphone=()
+  Cache-Control: no-cache
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'sha256-dsUzDZq1VCZ4G6XSL+hlGsiBlKenQ+HFQf8SQ3JwrBo='; worker-src 'self'; style-src 'self'; font-src 'self'; connect-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'
+
+/geometer.wasm
+  Cache-Control: no-cache
+  Content-Type: application/wasm
+
+/*.js
+  Cache-Control: no-cache
+  Content-Type: text/javascript; charset=utf-8
+
+/package/*.js
+  Cache-Control: no-cache
+  Content-Type: text/javascript; charset=utf-8
+
+/index.html
+  Cache-Control: no-cache

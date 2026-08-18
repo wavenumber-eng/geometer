@@ -4,6 +4,38 @@ All notable changes to geometer are documented here.
 
 ## [Unreleased]
 
+## [2026.8.18] - 2026-08-18
+
+### Added
+
+- Added the release-candidate analytic planar Boolean A0 request/result API with ordered
+  add, subtract, and add stages; analytic line/arc output; topology; effective
+  contribution and subtraction lineage; and deterministic packed packets.
+- Added executable IPC, Python DTO/client, TypeScript, Rust, native C++, C ABI,
+  and browser WASM surfaces for the generated operation contracts.
+- Added deterministic native build attestations and governed analytic
+  qualification tooling, including redistributable real-board request evidence.
+
+  The analytic solver remains a candidate until the tag-bound clean 9950X
+  qualification gate passes; this source record does not claim promotion.
+
+### Changed
+
+- Updated the pinned OCCT dependency to `V8_0_1` after exact-tag native,
+  WASM, browser, generated-client, and cross-tag qualification.
+- Hardened OCCT binary-cache identity and retained exact reviewed cache
+  transitions without rebuilding compatible cached installs.
+- Updated release automation to Node 24-capable action majors and added
+  native/browser cross-transport parity before publishing artifacts.
+- Updated the release identity to `v2026-08-18`,
+  `wn-geometer==2026.8.18`, and C ABI generation `20260818`.
+
+### Fixed
+
+- Closed exact filtered-arrangement, tangent identity, event-column,
+  normalization replay, bounded-work accounting, and swept-path overlap issues
+  exposed by the governed RT PWR4 real-board request.
+
 ## [2026.6.23] - 2026-06-23
 
 ### Fixed

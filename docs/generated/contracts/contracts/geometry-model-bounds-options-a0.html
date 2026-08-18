@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="d88c4f7d1a487c34d7654c886b79b608bcbd53469b2b3e3d6acd9d9617b00f19">
+  <title>geometry.model_bounds.options.a0 — Geometer</title>
+  <link rel="stylesheet" href="../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="d88c4f7d1a487c34d7654c886b79b608bcbd53469b2b3e3d6acd9d9617b00f19" data-page-kind="contract" data-contract-identity="geometry.model_bounds.options.a0" data-promotion-status="promoted">
+<main>
+<header>
+  <p class="page-type">Contract root</p>
+  <h1><code>geometry.model_bounds.options.a0</code></h1>
+  <p class="lede">Presence-preserving patch applied over focused C++ defaults.</p>
+</header>
+<nav class="nav" aria-label="Contract navigation"><a href="../index.html">All contracts</a><a href="../../../../contracts/geometer/generated/schema/ModelBoundsOptionsA0.json">JSON Schema</a><a href="../../../../src/tsp/geometer/main.tsp">TypeSpec entry point</a><a href="../../../design/model-bounds-contract-compatibility.md">Compatibility analysis</a></nav>
+<aside class="callout"><strong>Generated, not authored.</strong> Edit TypeSpec and regenerate. Lifecycle evidence remains in the promotion manifest.</aside>
+<aside class="callout"><strong>Presence-preserving patch.</strong> Absent fields do not materialize defaults and do not replace inherited values.</aside>
+<section><h2>Identity</h2><table><tbody>
+<tr><th>Contract</th><td><code>geometry.model_bounds.options.a0</code></td></tr>
+<tr><th>Schema</th><td><code>urn:wavenumber:schema:geometer:geometry.model_bounds.options:a0</code></td></tr>
+<tr><th>Declaration</th><td><code>Wavenumber.Geometer.Contracts.ModelBoundsA0.ModelBoundsOptionsA0</code></td></tr>
+<tr><th>Lifecycle</th><td><span class="status">promoted</span></td></tr>
+<tr><th>Current authority</th><td><code>typespec_normalized_catalog</code></td></tr>
+</tbody></table></section>
+<section class="model-section"><h2>Declarations <span class="tag">3</span></h2><details open id="declaration-wavenumber-geometer-contracts-modelboundsa0-modelboundsoptionsa0"><summary><h2><code>ModelBoundsOptionsA0</code> <span class="tag">model</span></h2></summary><p>Presence-preserving patch applied over focused C++ defaults.</p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>format</code></td><td>optional</td><td><code>ModelFormat</code></td><td><code>&quot;step&quot;</code></td><td>none</td><td>Absent preserves the inherited value; canonical default intent is step.</td></tr>
+<tr><td><code>model_transform</code></td><td>optional</td><td><code>Matrix4x4</code></td><td><code>identity_4x4</code></td><td>none</td><td>Absent preserves the inherited transform; canonical default intent is identity.</td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-modelboundsa0-matrix4x4"><summary><h2><code>Matrix4x4</code> <span class="tag">model</span></h2></summary><p>Row-major affine 4x4 matrix. Semantic validation requires final row [0,0,0,1].</p><p><span class="tag">array</span> element <code>float64</code>; <code>min_items=16</code> <code>max_items=16</code></p></details>
+<details open id="declaration-wavenumber-geometer-contracts-modelboundsa0-modelformat"><summary><h2><code>ModelFormat</code> <span class="tag">enum</span></h2></summary><p>Canonical model source format. Compatibility readers may additionally accept STEP.</p><table><thead><tr><th>Member</th><th>Wire value</th><th>Description</th></tr></thead><tbody><tr><td><code>step</code></td><td><code>step</code></td><td></td></tr></tbody></table></details></section>
+</main>
+</body>
+</html>

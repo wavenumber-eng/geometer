@@ -1,0 +1,34 @@
+{
+  "compilerOptions": {
+    "exactOptionalPropertyTypes": true,
+    "lib": ["ES2022", "DOM"],
+    "module": "ES2022",
+    "moduleResolution": "Bundler",
+    "noEmitOnError": true,
+    "noUncheckedIndexedAccess": true,
+    "outDir": "../../dist/wasm/demos",
+    "paths": {
+      "@wavenumber/geometer": ["../../dist/wasm/npm/geometer/index.d.ts"],
+      "@wavenumber/geometer/wasm": ["../../dist/wasm/npm/geometer/wasm.d.ts"],
+      "@wavenumber/geometer/worker": ["../../dist/wasm/npm/geometer/worker.d.ts"],
+      "@wavenumber/geometer/worker-host": ["../../dist/wasm/npm/geometer/worker-host.d.ts"],
+      "/dist/wasm/npm/geometer/worker-host.js": ["../../dist/wasm/npm/geometer/worker-host.d.ts"]
+    },
+    "rootDir": ".",
+    "strict": true,
+    "target": "ES2022",
+    "verbatimModuleSyntax": true
+  },
+  "include": [
+    "analytic_polygon_pour_bootstrap_guard.ts",
+    "analytic_polygon_pour_demo.ts",
+    "analytic_polygon_pour_fixture.ts",
+    "analytic_polygon_pour_worker.ts",
+    "demo-tooling/**/*.ts",
+    "model_bounds_demo.ts",
+    "model_bounds_worker.ts",
+    "pcb_polygon_pour_demo.ts",
+    "pcb_polygon_pour_model.ts",
+    "pcb_polygon_pour_worker.ts"
+  ]
+}

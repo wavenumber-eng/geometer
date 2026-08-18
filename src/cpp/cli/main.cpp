@@ -1,4 +1,7 @@
 #include "geometer.h"
+#ifndef __EMSCRIPTEN__
+#include "geometer/ipc_a0_server.h"
+#endif
 
 #include <rapidjson/document.h>
 #include <rapidjson/error/en.h>
@@ -47,6 +50,9 @@ static void print_usage()
                  "  init-request <request.json> --step <path>   Write a starter JSON request\n"
                  "  planar-batch-solve <request.bin> <response.bin>\n"
                  "                                               Solve packed planar batch bytes\n"
+#ifndef __EMSCRIPTEN__
+                 "  serve --stdio                                Serve framed executable IPC A0\n"
+#endif
                  "\n"
                  "Options:\n"
                  "  --deflection <value>   Absolute linear deflection (forces absolute mode)\n"
@@ -1093,6 +1099,18 @@ int main(int argc, char* argv[])
         std::printf("geometer %s (abi %d)\n", geometer::version_string(), geometer::abi_version());
         clean_exit(0);
     }
+
+#ifndef __EMSCRIPTEN__
+    if (std::strcmp(argv[1], "serve") == 0)
+    {
+        if (argc != 3 || std::strcmp(argv[2], "--stdio") != 0)
+        {
+            std::fprintf(stderr, "serve requires exactly --stdio.\n");
+            return 1;
+        }
+        clean_exit(geometer::ipc_a0::serve_stdio());
+    }
+#endif
 
     if (std::strcmp(argv[1], "run") == 0)
     {

@@ -26,11 +26,11 @@ deps/v1/<project>/<dependency>/<dependency-version>/<target-kind>/<platform-tag>
 For Geometer OCCT:
 
 ```text
-deps/v1/geometer/occt/V8_0_0/native/windows-x64/<cache-key>/
-deps/v1/geometer/occt/V8_0_0/native/linux-x64/<cache-key>/
-deps/v1/geometer/occt/V8_0_0/native/linux-arm64/<cache-key>/
-deps/v1/geometer/occt/V8_0_0/native/macos-arm64/<cache-key>/
-deps/v1/geometer/occt/V8_0_0/wasm/wasm-emscripten/<cache-key>/
+deps/v1/geometer/occt/V8_0_1/native/windows-x64/<cache-key>/
+deps/v1/geometer/occt/V8_0_1/native/linux-x64/<cache-key>/
+deps/v1/geometer/occt/V8_0_1/native/linux-arm64/<cache-key>/
+deps/v1/geometer/occt/V8_0_1/native/macos-arm64/<cache-key>/
+deps/v1/geometer/occt/V8_0_1/wasm/wasm-emscripten/<cache-key>/
 ```
 
 The Geometer OCCT cache also checks the legacy prefix

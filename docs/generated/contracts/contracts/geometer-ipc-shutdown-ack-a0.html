@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="d88c4f7d1a487c34d7654c886b79b608bcbd53469b2b3e3d6acd9d9617b00f19">
+  <title>geometer.ipc.shutdown_ack.a0 — Geometer</title>
+  <link rel="stylesheet" href="../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="d88c4f7d1a487c34d7654c886b79b608bcbd53469b2b3e3d6acd9d9617b00f19" data-page-kind="contract" data-contract-identity="geometer.ipc.shutdown_ack.a0" data-promotion-status="pilot_candidate">
+<main>
+<header>
+  <p class="page-type">Contract root</p>
+  <h1><code>geometer.ipc.shutdown_ack.a0</code></h1>
+  <p class="lede">Final acknowledgment after every accepted request is terminal and flushed.</p>
+</header>
+<nav class="nav" aria-label="Contract navigation"><a href="../index.html">All contracts</a><a href="../../../../contracts/geometer/generated/schema/IpcShutdownAckA0.json">JSON Schema</a><a href="../../../../src/tsp/geometer/main.tsp">TypeSpec entry point</a><a href="../../../design/contract-semantics.md">Compatibility policy</a></nav>
+<aside class="callout"><strong>Generated, not authored.</strong> Edit TypeSpec and regenerate. Lifecycle evidence remains in the promotion manifest.</aside>
+
+<section><h2>Identity</h2><table><tbody>
+<tr><th>Contract</th><td><code>geometer.ipc.shutdown_ack.a0</code></td></tr>
+<tr><th>Schema</th><td><code>urn:wavenumber:schema:geometer:geometer.ipc.shutdown_ack:a0</code></td></tr>
+<tr><th>Declaration</th><td><code>Wavenumber.Geometer.Contracts.IpcA0.IpcShutdownAckA0</code></td></tr>
+<tr><th>Lifecycle</th><td><span class="status">pilot_candidate</span></td></tr>
+<tr><th>Current authority</th><td><code>typespec_candidate</code></td></tr>
+</tbody></table></section>
+<section class="model-section"><h2>Declarations <span class="tag">1</span></h2><details open id="declaration-wavenumber-geometer-contracts-ipca0-ipcshutdownacka0"><summary><h2><code>IpcShutdownAckA0</code> <span class="tag">model</span></h2></summary><p>Final acknowledgment after every accepted request is terminal and flushed.</p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>status</code></td><td>required</td><td><code>&quot;complete&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>activeRequestCompleted</code></td><td>required</td><td><code>boolean</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>rejectedQueuedRequestCount</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td>none</td><td></td></tr></tbody></table></details></section>
+</main>
+</body>
+</html>

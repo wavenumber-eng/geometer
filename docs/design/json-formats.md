@@ -23,7 +23,9 @@ Required top-level fields:
 - `source`: object containing `format` and `hash`.
 - `bounds`: object containing `min`, `max`, `size`, and `center` XYZ arrays.
 
-Optional timing fields are emitted when available:
+The current model-bounds writer always emits these nondeterministic timing
+fields; semantic conformance excludes them only through an explicit vector
+projection:
 
 - `model_read_ms`
 - `bounds_ms`
@@ -202,8 +204,8 @@ The native CLI batch command accepts `geometer.batch.request.a0`:
 ```json
 {
   "schema": "geometer.batch.request.a0",
-  "version": "2026.6.23",
-  "abi": 20260623,
+  "version": "2026.8.18",
+  "abi": 20260818,
   "options": {
     "curve_mode": "polyline"
   },
@@ -252,8 +254,8 @@ The native CLI writes `geometer.batch.response.a0`:
 ```json
 {
   "schema": "geometer.batch.response.a0",
-  "version": "2026.6.23",
-  "abi": 20260623,
+  "version": "2026.8.18",
+  "abi": 20260818,
   "ok": true,
   "jobs": [
     {

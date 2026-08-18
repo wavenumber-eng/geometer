@@ -1,0 +1,125 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:wavenumber:schema:geometer:geometer.ipc.welcome:a0",
+  "type": "object",
+  "properties": {
+    "release_version": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 32
+    },
+    "c_abi_generation": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 4294967295
+    },
+    "ipc": {
+      "type": "string",
+      "const": "a0"
+    },
+    "catalog_sha256": {
+      "type": "string",
+      "minLength": 64,
+      "maxLength": 64
+    },
+    "operation_catalog": {
+      "$ref": "urn:wavenumber:schema:geometer:geometer.ipc.operation_catalog:a0"
+    },
+    "limits": {
+      "$ref": "#/$defs/IpcEffectiveLimitsA0"
+    },
+    "capabilities": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 64
+    }
+  },
+  "required": [
+    "release_version",
+    "c_abi_generation",
+    "ipc",
+    "catalog_sha256",
+    "operation_catalog",
+    "limits",
+    "capabilities"
+  ],
+  "unevaluatedProperties": {
+    "not": {}
+  },
+  "description": "Server handshake selecting executable IPC A0 and its effective limits.",
+  "$defs": {
+    "IpcEffectiveLimitsA0": {
+      "type": "object",
+      "properties": {
+        "json_bytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 8388608
+        },
+        "attachment_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 16
+        },
+        "attachment_name_bytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 128
+        },
+        "attachment_media_type_bytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 128
+        },
+        "attachment_bytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 268435456
+        },
+        "frame_bytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 536870912
+        },
+        "queued_requests": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 8
+        },
+        "queued_bytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 536870912
+        },
+        "resident_request_bytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 536870912
+        },
+        "pending_writer_bytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 536870912
+        }
+      },
+      "required": [
+        "json_bytes",
+        "attachment_count",
+        "attachment_name_bytes",
+        "attachment_media_type_bytes",
+        "attachment_bytes",
+        "frame_bytes",
+        "queued_requests",
+        "queued_bytes",
+        "resident_request_bytes",
+        "pending_writer_bytes"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      },
+      "description": "Effective executable IPC A0 limits selected by the server."
+    }
+  }
+}

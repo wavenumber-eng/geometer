@@ -1,0 +1,37 @@
+{
+  "artifact": {
+    "name": "geometer.exe",
+    "sha256": "913feaad76e618f2d965cf61e6b4fb541408d6b7769bba34f0a8342f1b0a30bc"
+  },
+  "build": {
+    "arch": "x64",
+    "build_type": "Release",
+    "c_abi_version": 20260818,
+    "compiler": {
+      "authority": "cmake_compiler_id_and_version",
+      "id": "MSVC",
+      "version": "19.44.35228.0"
+    },
+    "generator": "Ninja",
+    "geometer_version": "2026.8.18",
+    "occt": {
+      "authority": "geometer_occt_profile_verified",
+      "profile_sha256": "ea7f8ee34be29ac8d46f00e6a2d8a989a6c47fd8df6fcfa44c93a2488518f525",
+      "repo": "https://github.com/Open-Cascade-SAS/OCCT.git",
+      "tag": "V8_0_1",
+      "version": "8.0.1"
+    },
+    "platform": "windows",
+    "source": {
+      "authority": "git_head_and_source_worktree_excluding_dist_build_deps_out",
+      "revision": "0f5d1fd49a63440af4835586450decd0551c9117",
+      "tree_state": "dirty"
+    }
+  },
+  "producer": {
+    "identity": "wn.geometer.native_build_attestation_generator.a1",
+    "source": "scripts/native_build_attestation.py",
+    "source_sha256": "904c7f558e1168eb497ff073080705795904db26530014e38b6342594f050fc1"
+  },
+  "schema": "wn.geometer.native_build_attestation.a1"
+}

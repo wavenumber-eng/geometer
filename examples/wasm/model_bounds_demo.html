@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="data:," />
+    <title>Geometer · STEP model bounds</title>
+    <link rel="stylesheet" href="/examples/wasm/geometer_demo.css" />
+    <script type="importmap">
+      {
+        "imports": {
+          "@wavenumber/geometer/worker": "/dist/wasm/npm/geometer/worker.js",
+          "three": "https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/"
+        }
+      }
+    </script>
+  </head>
+  <body data-wn-watermark="true">
+    <div id="three_d_viz-root" class="bounds-app" data-state="loading">
+      <header class="app-bar">
+        <div class="brand-block">
+          <span class="product-mark">GEOMETER</span>
+          <span class="product-context">CONTRACT LAB / MODEL BOUNDS A0</span>
+        </div>
+        <div class="pipeline" aria-label="Execution path">
+          <span>STEP</span><i aria-hidden="true"></i><span>TypeScript</span><i aria-hidden="true"></i><span>Worker / WASM</span>
+        </div>
+        <div class="runtime-state"><span class="state-light" aria-hidden="true"></span><span id="runtime-label">Starting kernel</span></div>
+      </header>
+
+      <main class="workspace">
+        <section id="viewport-shell" class="viewport-shell" aria-label="Three-dimensional STEP model and computed bounds">
+          <canvas id="model-canvas"></canvas>
+          <div class="viewport-heading">
+            <span class="overline">Authoritative OCCT result</span>
+            <strong>Axis-aligned model bounds</strong>
+          </div>
+          <div class="view-hint">Drag to orbit · wheel to zoom · right-drag to pan</div>
+          <div id="dimension-x" class="dimension-label dimension-x">X —</div>
+          <div id="dimension-y" class="dimension-label dimension-y">Y —</div>
+          <div id="dimension-z" class="dimension-label dimension-z">Z —</div>
+          <div class="legend" aria-label="Visualization legend">
+            <span><i class="legend-swatch model-swatch"></i>display mesh</span>
+            <span><i class="legend-swatch bounds-swatch"></i>STEP bounds</span>
+          </div>
+          <div id="loading-overlay" class="loading-overlay" aria-live="polite" aria-busy="true">
+            <div class="loading-panel">
+              <span class="loader-mark" aria-hidden="true"></span>
+              <div><strong>Preparing geometry</strong><span id="loading-detail">Loading browser kernel and STEP fixture</span></div>
+            </div>
+          </div>
+        </section>
+
+        <aside class="inspector" aria-label="Computed bounds inspector">
+          <section class="inspector-section intro-section">
+            <span class="section-number">01 / RESULT</span>
+            <h1>Measured in the browser.</h1>
+            <p>The box is computed from the STEP source by Geometer’s generated TypeScript client. The shaded model is its display companion.</p>
+          </section>
+
+          <section class="inspector-section controls-section">
+            <div class="control-row">
+              <label><input id="show-model" type="checkbox" checked /><span>Model</span></label>
+              <label><input id="show-bounds" type="checkbox" checked /><span>Bounds</span></label>
+              <label><input id="auto-rotate" type="checkbox" /><span>Rotate</span></label>
+            </div>
+            <div class="button-row">
+              <button id="run-bounds" class="primary-action" type="button">Run generated client</button>
+              <button id="reset-camera" class="secondary-action" type="button">Reset view</button>
+            </div>
+          </section>
+
+          <section class="inspector-section dimensions-section">
+            <div class="section-heading"><span class="section-number">02 / EXTENTS</span><span class="unit-badge">mm</span></div>
+            <div class="extent-row extent-x"><span class="axis-name">X</span><strong id="axis-x">—</strong><span id="range-x">—</span></div>
+            <div class="extent-row extent-y"><span class="axis-name">Y</span><strong id="axis-y">—</strong><span id="range-y">—</span></div>
+            <div class="extent-row extent-z"><span class="axis-name">Z</span><strong id="axis-z">—</strong><span id="range-z">—</span></div>
+          </section>
+
+          <section class="inspector-section vector-section">
+            <span class="section-number">03 / VECTORS</span>
+            <dl>
+              <div><dt>Minimum</dt><dd id="value-min">—</dd></div>
+              <div><dt>Maximum</dt><dd id="value-max">—</dd></div>
+              <div><dt>Center</dt><dd id="value-center">—</dd></div>
+            </dl>
+          </section>
+
+          <section class="inspector-section source-section">
+            <span class="section-number">04 / SOURCE</span>
+            <dl>
+              <div><dt>Fixture</dt><dd>SOT-23.STEP</dd></div>
+              <div><dt>Kernel</dt><dd id="kernel-version">—</dd></div>
+              <div><dt>SHA-256</dt><dd id="source-hash">—</dd></div>
+              <div><dt>Kernel time</dt><dd id="timing">—</dd></div>
+            </dl>
+          </section>
+        </aside>
+      </main>
+
+      <footer class="status-bar">
+        <span id="status" role="status">Preparing browser geometry…</span>
+        <span class="transport-badge">GENERIC C ABI / A0</span>
+      </footer>
+    </div>
+    <script type="module" src="/dist/wasm/demos/model_bounds_demo.js"></script>
+  </body>
+</html>

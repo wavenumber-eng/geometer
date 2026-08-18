@@ -1,30 +1,128 @@
 set(GEOMETER_LIB_SOURCES
+    analytic_curve_broad_phase.cpp
+    analytic_curve_narrow_phase.cpp
+    analytic_curve_narrow_phase_resolution.h
+    analytic_filtered_batch.cpp
+    analytic_filtered_boolean_selection.cpp
+    analytic_filtered_boolean_selection_admission.cpp
+    analytic_filtered_outcome_tracker.cpp
+    analytic_filtered_outcomes.cpp
+    analytic_filtered_packet.cpp
+    analytic_filtered_packet_builder.h
+    analytic_filtered_packet_sequences.cpp
+    analytic_filtered_normalization.cpp
+    analytic_filtered_normalization_replay.cpp
+    analytic_filtered_operation.cpp
+    analytic_filtered_arrangement.cpp
+    analytic_filtered_arrangement_builder.h
+    analytic_filtered_lowering.cpp
+    analytic_filtered_lowering_support.h
+    analytic_filtered_swept_path.cpp
+    analytic_filtered_swept_path_geometry.h
+    analytic_filtered_swept_path_setup.h
+    analytic_filtered_overlay.cpp
+    analytic_filtered_overlay_builder.h
+    analytic_filtered_regions.cpp
+    analytic_filtered_relationships.cpp
+    analytic_filtered_relationship_geometry.h
+    analytic_filtered_lineage.cpp
+    analytic_interval_index.cpp
+    analytic_numeric_filter.cpp
+    analytic_request_packet.cpp
+    analytic_result_packet_canonical.cpp
+    analytic_result_packet_layout.cpp
+    analytic_result_packet_records.cpp
+    analytic_result_packet_standalone.cpp
+    analytic_solver_limits.cpp
     c_api.cpp
     clipper2_bytes.cpp
     hlr_projection.cpp
     mesh_shadow_outline.cpp
     model_bounds.cpp
     model_bounds_options_json.cpp
+    operation_c_api.cpp
+    operation_registry.cpp
+    operation_transport.cpp
     planar_contours.cpp
     planar_solve.cpp
     planar_step.cpp
     planar_triangulate.cpp
     projection.cpp
     projection_options_json.cpp
+    sha256.cpp
     step_to_glb.cpp
     step_to_glb_options_json.cpp
     version.cpp
+    geometer/generated/contracts/contracts_json.cpp
+    geometer/generated/contracts/operation_catalog.cpp
     ${CMAKE_SOURCE_DIR}/third_party/clipper2/src/clipper.engine.cpp
     ${CMAKE_SOURCE_DIR}/third_party/clipper2/src/clipper.offset.cpp
     ${CMAKE_SOURCE_DIR}/third_party/clipper2/src/clipper.rectclip.cpp
     ${CMAKE_SOURCE_DIR}/third_party/clipper2/src/clipper.triangulation.cpp
 )
 
+set(GEOMETER_EXACT_SOURCES
+    analytic_operand_lowering.cpp
+    analytic_request_packet.cpp
+    analytic_result_packet_canonical.cpp
+    analytic_result_packet_layout.cpp
+    analytic_result_packet_records.cpp
+    analytic_result_packet_standalone.cpp
+    analytic_result_packet_topology.cpp
+    exact_arc_distance.cpp
+    exact_boolean_outcomes.cpp
+    exact_boolean_provenance.cpp
+    exact_boolean_regions.cpp
+    exact_boolean_stages.cpp
+    exact_arrangement.cpp
+    exact_arrangement_classification.cpp
+    exact_arrangement_faces.cpp
+    exact_arrangement_order.cpp
+    exact_arrangement_result.cpp
+    exact_arrangement_validation.cpp
+    exact_artifact.cpp
+    exact_construction.cpp
+    exact_construction_builder.cpp
+    exact_curve_domain.cpp
+    exact_expression.cpp
+    exact_factorization.cpp
+    exact_geometry.cpp
+    exact_normalization.cpp
+    exact_polynomial.cpp
+    exact_rational.cpp
+    exact_resultant.cpp
+    exact_result_normalization.cpp
+    exact_source_sets.cpp
+    exact_value.cpp
+    exact_value_codec.cpp
+    sha256.cpp
+)
+
+# The algebraic implementation is a test/promotion oracle, never part of the
+# production library. Keep this configure-time guard beside the source lists so
+# a future source addition cannot silently restore Boost-backed exact code to
+# the primary native target.
+foreach(_geometer_source IN LISTS GEOMETER_LIB_SOURCES)
+    if(_geometer_source MATCHES "^exact_" OR
+       _geometer_source STREQUAL "analytic_operand_lowering.cpp" OR
+       _geometer_source STREQUAL "analytic_result_packet_topology.cpp")
+        message(FATAL_ERROR
+            "Exact/oracle source '${_geometer_source}' is forbidden in GEOMETER_LIB_SOURCES")
+    endif()
+endforeach()
+
+if(NOT EMSCRIPTEN)
+    list(APPEND GEOMETER_LIB_SOURCES
+        ipc_a0_frame.cpp
+        ipc_a0_server.cpp
+    )
+endif()
+
 add_library(geometer_lib STATIC ${GEOMETER_LIB_SOURCES})
 set_target_properties(geometer_lib PROPERTIES OUTPUT_NAME geometer)
 
 if(NOT DEFINED GEOMETER_ABI_VERSION)
-    set(GEOMETER_ABI_VERSION "20260623" CACHE STRING "Geometer C ABI generation date")
+    set(GEOMETER_ABI_VERSION "20260818" CACHE STRING "Geometer C ABI generation date")
 endif()
 configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/geometer/version_config.h.in"
@@ -103,6 +201,19 @@ endfunction()
 
 configure_geometer_native_target(geometer_lib)
 
+if(BUILD_TESTING)
+    add_library(geometer_exact_feasibility STATIC ${GEOMETER_EXACT_SOURCES})
+    target_include_directories(geometer_exact_feasibility PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        ${GEOMETER_BOOST_ROOT}
+    )
+    if(EMSCRIPTEN)
+        target_compile_options(geometer_exact_feasibility PUBLIC -fexceptions)
+    elseif(MSVC)
+        target_compile_options(geometer_exact_feasibility PUBLIC /EHsc)
+    endif()
+endif()
+
 if(NOT EMSCRIPTEN)
     add_library(geometer_shared SHARED ${GEOMETER_LIB_SOURCES})
     configure_geometer_native_target(geometer_shared)
@@ -125,7 +236,7 @@ if(EMSCRIPTEN)
         -sMODULARIZE=1
         -sEXPORT_NAME=createGeometerModule
         -sNO_EXIT_RUNTIME=1
-        "-sEXPORTED_FUNCTIONS=['_malloc','_free','_geometer_version_string','_geometer_version_major','_geometer_version_minor','_geometer_version_patch','_geometer_abi_version','_geometer_step_hlr_projection_json','_geometer_step_hlr_projection_json_bytes','_geometer_step_to_glb','_geometer_step_to_glb_bytes','_geometer_planar_batch_solve','_geometer_planar_batch_solve_bytes','_geometer_planar_batch_solve_json','_geometer_planar_batch_solve_json_bytes','_geometer_planar_triangulate','_geometer_planar_triangulate_bytes','_geometer_clipper2_boolean','_geometer_clipper2_boolean_bytes','_geometer_clipper2_inflate_open','_geometer_clipper2_inflate_open_bytes','_geometer_free_string','_geometer_free_bytes']"
+        "-sEXPORTED_FUNCTIONS=['_malloc','_free','_geometer_version_string','_geometer_version_major','_geometer_version_minor','_geometer_version_patch','_geometer_abi_version','_geometer_step_hlr_projection_json','_geometer_step_hlr_projection_json_bytes','_geometer_step_to_glb','_geometer_step_to_glb_bytes','_geometer_planar_batch_solve','_geometer_planar_batch_solve_bytes','_geometer_planar_batch_solve_json','_geometer_planar_batch_solve_json_bytes','_geometer_planar_triangulate','_geometer_planar_triangulate_bytes','_geometer_clipper2_boolean','_geometer_clipper2_boolean_bytes','_geometer_clipper2_inflate_open','_geometer_clipper2_inflate_open_bytes','_geometer_operation_catalog_json','_geometer_operation_execute','_geometer_operation_result_json_data','_geometer_operation_result_json_size','_geometer_operation_result_attachment_count','_geometer_operation_result_attachment_name','_geometer_operation_result_attachment_media_type','_geometer_operation_result_attachment_data','_geometer_operation_result_free','_geometer_free_string','_geometer_free_bytes']"
         "-sEXPORTED_RUNTIME_METHODS=['ccall','cwrap','UTF8ToString','stringToUTF8','lengthBytesUTF8','getValue']"
     )
     set_target_properties(geometer_browser PROPERTIES

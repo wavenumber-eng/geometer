@@ -1,9 +1,12 @@
 const fs = require("fs");
 const path = require("path");
+const loadGeneratedModule = require("./load_generated_module.cjs");
 
 const root = path.resolve(__dirname, "..", "..");
-const browserDist = path.join(root, "dist", "wasm", "browser");
-const createGeometerModule = require(path.join(browserDist, "geometer.js"));
+const browserDist = process.env.GEOMETER_WASM_BROWSER_DIST
+  ? path.resolve(process.env.GEOMETER_WASM_BROWSER_DIST)
+  : path.join(root, "dist", "wasm", "browser");
+const createGeometerModule = loadGeneratedModule(path.join(browserDist, "geometer.js"));
 
 const requestMagic = Buffer.from("GMPBRQ01", "ascii");
 const responseMagic = Buffer.from("GMPBRS01", "ascii");
@@ -154,8 +157,8 @@ async function main() {
 
   const version = module.ccall("geometer_version_string", "string", [], []);
   const abi = module.ccall("geometer_abi_version", "number", [], []);
-  if (version !== "2026.6.23" || abi !== 20260623) {
-    throw new Error(`Expected geometer 2026.6.23 ABI 20260623, got ${version} ABI ${abi}`);
+  if (version !== "2026.8.18" || abi !== 20260818) {
+    throw new Error(`Expected geometer 2026.8.18 ABI 20260818, got ${version} ABI ${abi}`);
   }
   if (typeof module._geometer_planar_batch_solve_bytes !== "function") {
     throw new Error("geometer_planar_batch_solve_bytes is not exported.");

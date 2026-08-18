@@ -1,0 +1,92 @@
+from __future__ import annotations
+
+import argparse
+import hashlib
+import subprocess
+import sys
+import tomllib
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+MANIFEST = ROOT / "docs" / "contracts" / "promotion-manifest.toml"
+VECTOR_PREFIX = "EXACT_BOOLEAN_OUTCOMES_VECTOR="
+WORK_PREFIX = "EXACT_BOOLEAN_OUTCOMES_WORK="
+STORAGE_PREFIX = "EXACT_BOOLEAN_OUTCOMES_STORAGE="
+COEXISTENCE_PREFIX = "EXACT_BOOLEAN_OUTCOMES_COEXISTENCE="
+
+
+def _discover_native() -> Path:
+    names = ("geometer_exact_boolean_outcomes_test.exe", "geometer_exact_boolean_outcomes_test")
+    platform_fragment = {"win32": "windows", "linux": "linux", "darwin": "macos"}.get(
+        sys.platform, "*"
+    )
+    for build in sorted(ROOT.glob(f"build-native-{platform_fragment}-*")):
+        for name in names:
+            candidate = build / "tests" / "cpp" / name
+            if candidate.is_file():
+                return candidate
+    raise FileNotFoundError("build the native exact Boolean outcomes test before validation")
+
+
+def _run(command: list[str]) -> dict[str, str]:
+    completed = subprocess.run(
+        command, cwd=ROOT, check=True, capture_output=True, text=True
+    )
+    fields: dict[str, str] = {}
+    for line in completed.stdout.splitlines():
+        if "=" in line:
+            key, value = line.split("=", 1)
+            fields[key + "="] = value
+    return fields
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(
+        description="Verify identical native/Emscripten exact Boolean outcome vectors."
+    )
+    parser.add_argument("--native", type=Path)
+    parser.add_argument(
+        "--wasm",
+        type=Path,
+        default=(
+            ROOT / "build-wasm" / "tests" / "cpp" / "geometer_exact_boolean_outcomes_test.cjs"
+        ),
+    )
+    args = parser.parse_args()
+    native = args.native.resolve() if args.native else _discover_native()
+    wasm = args.wasm.resolve()
+    if not wasm.is_file():
+        raise FileNotFoundError("build the Emscripten exact Boolean outcomes test first")
+
+    native_fields = _run([str(native)])
+    wasm_fields = _run(["node", str(wasm)])
+    if native_fields != wasm_fields:
+        raise RuntimeError("native and Emscripten exact Boolean outcome outputs differ")
+    required = (VECTOR_PREFIX, WORK_PREFIX, STORAGE_PREFIX, COEXISTENCE_PREFIX)
+    if any(field not in native_fields for field in required):
+        raise RuntimeError("exact Boolean outcomes test omitted a governed output field")
+
+    digest = hashlib.sha256(native_fields[VECTOR_PREFIX].encode("ascii")).hexdigest()
+    work = int(native_fields[WORK_PREFIX])
+    storage = int(native_fields[STORAGE_PREFIX])
+    coexistence_digest = hashlib.sha256(
+        native_fields[COEXISTENCE_PREFIX].encode("ascii")
+    ).hexdigest()
+    expected = tomllib.loads(MANIFEST.read_text(encoding="utf-8"))["analytic_exact_backend"]
+    if digest != expected["boolean_outcomes_vector_sha256"]:
+        raise RuntimeError("exact Boolean outcomes vector SHA-256 differs from the manifest")
+    if work != expected["boolean_outcomes_vector_success_work_units"]:
+        raise RuntimeError("exact Boolean outcomes work boundary differs from the manifest")
+    if storage != expected["boolean_outcomes_vector_storage_bytes"]:
+        raise RuntimeError("exact Boolean outcomes storage boundary differs from the manifest")
+    if coexistence_digest != expected["boolean_outcomes_coexistence_sha256"]:
+        raise RuntimeError("exact Boolean outcome coexistence SHA-256 differs from the manifest")
+    print(
+        f"exact Boolean outcomes parity: sha256={digest} "
+        f"coexistence_sha256={coexistence_digest} work={work} storage={storage}"
+    )
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

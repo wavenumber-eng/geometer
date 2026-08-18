@@ -1,0 +1,126 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:wavenumber:schema:geometer:geometer.operation.outcome:a0",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/OperationSuccessA0"
+    },
+    {
+      "$ref": "#/$defs/OperationFailureA0"
+    }
+  ],
+  "description": "Transport-neutral typed outcome shared by the generic C ABI and executable IPC.",
+  "$defs": {
+    "OperationSuccessA0": {
+      "type": "object",
+      "properties": {
+        "operation": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "ok": {
+          "type": "boolean",
+          "const": true
+        },
+        "result": {
+          "$ref": "#/$defs/OperationResultValueA0"
+        }
+      },
+      "required": [
+        "operation",
+        "ok",
+        "result"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      },
+      "description": "A completed operation with its operation-specific result."
+    },
+    "OperationFailureA0": {
+      "type": "object",
+      "properties": {
+        "operation": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "ok": {
+          "type": "boolean",
+          "const": false
+        },
+        "diagnostics": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:wavenumber:schema:geometer:geometry.common.diagnostic:a0"
+          },
+          "minItems": 1
+        }
+      },
+      "required": [
+        "operation",
+        "ok",
+        "diagnostics"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      },
+      "description": "A rejected or failed operation with governed diagnostics."
+    },
+    "OperationResultValueA0": {
+      "oneOf": [
+        {
+          "$ref": "urn:wavenumber:schema:geometer:geometry.model_bounds:a0"
+        },
+        {
+          "$ref": "#/$defs/PackedAttachmentProjectionA0"
+        }
+      ],
+      "description": "Results currently available through the generic operation transport."
+    },
+    "PackedAttachmentProjectionA0": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "packet": {
+          "$ref": "#/$defs/PackedAttachmentReferenceA0"
+        }
+      },
+      "required": [
+        "schema",
+        "packet"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      },
+      "description": "Minimal JSON value used while an operation's logical DTO projection remains deferred."
+    },
+    "PackedAttachmentReferenceA0": {
+      "type": "object",
+      "properties": {
+        "attachment": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "format": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        }
+      },
+      "required": [
+        "attachment",
+        "format"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      },
+      "description": "A named binary attachment carrying a separately governed packed projection."
+    }
+  }
+}

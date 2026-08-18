@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="d88c4f7d1a487c34d7654c886b79b608bcbd53469b2b3e3d6acd9d9617b00f19">
+  <title>Geometer Contract Reference</title>
+  <link rel="stylesheet" href="../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="d88c4f7d1a487c34d7654c886b79b608bcbd53469b2b3e3d6acd9d9617b00f19" data-page-kind="index">
+<main>
+<header>
+  <p class="page-type">Generated contract reference</p>
+  <h1>Geometer Contracts</h1>
+  <p class="lede">Typed operation structures for native, browser/WASM, executable IPC, and generated clients.</p>
+</header>
+<nav class="nav" aria-label="Reference navigation">
+  <a href="../../design/typespec-toolchain.md">TypeSpec toolchain</a>
+  <a href="../../design/contract-semantics.md">Contract semantics</a>
+  <a href="../../design/generic-operation-c-abi.md">Generic C ABI</a>
+  <a href="../../design/typescript-client.md">TypeScript client</a>
+  <a href="../../design/executable-ipc-a0.md">Executable IPC A0</a>
+</nav>
+<aside class="callout"><strong>Generated reference.</strong> Authored TypeSpec owns promoted structure; this site is a deterministic navigation and review artifact.</aside>
+<section>
+  <h2>Contract roots <span class="tag">15</span></h2>
+  <div class="grid"><article class="panel">
+  <h3><a href="contracts/geometry-analytic-planar-boolean-batch-request-a0.html"><code>geometry.analytic_planar_boolean_batch.request.a0</code></a></h3>
+  <p>Logical request projected to the governed packed request attachment.</p>
+  <p><span class="tag">model</span> <span class="status">candidate_frozen</span></p>
+</article>
+<article class="panel">
+  <h3><a href="contracts/geometry-analytic-planar-boolean-batch-result-a0.html"><code>geometry.analytic_planar_boolean_batch.result.a0</code></a></h3>
+  <p>Logical result projected from the governed packed result attachment.</p>
+  <p><span class="tag">model</span> <span class="status">candidate_frozen</span></p>
+</article>
+<article class="panel">
+  <h3><a href="contracts/geometry-common-diagnostic-a0.html"><code>geometry.common.diagnostic.a0</code></a></h3>
+  <p>A strict cross-transport diagnostic; message text is informative rather than identity.</p>
+  <p><span class="tag">model</span> <span class="status">promoted</span></p>
+</article>
+<article class="panel">
+  <h3><a href="contracts/geometer-ipc-cancelled-a0.html"><code>geometer.ipc.cancelled.a0</code></a></h3>
+  <p>Successful queue-only cancellation outcome.</p>
+  <p><span class="tag">model</span> <span class="status">pilot_candidate</span></p>
+</article>
+<article class="panel">
+  <h3><a href="contracts/geometer-ipc-cancel-rejected-a0.html"><code>geometer.ipc.cancel_rejected.a0</code></a></h3>
+  <p>Nonterminal cancellation rejection for an active or unknown request.</p>
+  <p><span class="tag">model</span> <span class="status">pilot_candidate</span></p>
+</article>
+<article class="panel">
+  <h3><a href="contracts/geometer-ipc-hello-a0.html"><code>geometer.ipc.hello.a0</code></a></h3>
+  <p>Client handshake for executable IPC A0.</p>
+  <p><span class="tag">model</span> <span class="status">pilot_candidate</span></p>
+</article>
+<article class="panel">
+  <h3><a href="contracts/geometer-ipc-operation-catalog-a0.html"><code>geometer.ipc.operation_catalog.a0</code></a></h3>
+  <p>Exact operation catalog embedded into the welcome frame.</p>
+  <p><span class="tag">model</span> <span class="status">pilot_candidate</span></p>
+</article>
+<article class="panel">
+  <h3><a href="contracts/geometer-ipc-protocol-error-a0.html"><code>geometer.ipc.protocol_error.a0</code></a></h3>
+  <p>Fatal connection-level protocol diagnostic.</p>
+  <p><span class="tag">model</span> <span class="status">pilot_candidate</span></p>
+</article>
+<article class="panel">
+  <h3><a href="contracts/geometer-ipc-reason-a0.html"><code>geometer.ipc.reason.a0</code></a></h3>
+  <p>Optional human-readable reason used by cancel and shutdown controls.</p>
+  <p><span class="tag">model</span> <span class="status">pilot_candidate</span></p>
+</article>
+<article class="panel">
+  <h3><a href="contracts/geometer-ipc-request-a0.html"><code>geometer.ipc.request.a0</code></a></h3>
+  <p></p>
+  <p><span class="tag">model</span> <span class="status">pilot_candidate</span></p>
+</article>
+<article class="panel">
+  <h3><a href="contracts/geometer-ipc-shutdown-ack-a0.html"><code>geometer.ipc.shutdown_ack.a0</code></a></h3>
+  <p>Final acknowledgment after every accepted request is terminal and flushed.</p>
+  <p><span class="tag">model</span> <span class="status">pilot_candidate</span></p>
+</article>
+<article class="panel">
+  <h3><a href="contracts/geometer-ipc-welcome-a0.html"><code>geometer.ipc.welcome.a0</code></a></h3>
+  <p>Server handshake selecting executable IPC A0 and its effective limits.</p>
+  <p><span class="tag">model</span> <span class="status">pilot_candidate</span></p>
+</article>
+<article class="panel">
+  <h3><a href="contracts/geometry-model-bounds-options-a0.html"><code>geometry.model_bounds.options.a0</code></a></h3>
+  <p>Presence-preserving patch applied over focused C++ defaults.</p>
+  <p><span class="tag">model</span> <span class="status">promoted</span></p>
+</article>
+<article class="panel">
+  <h3><a href="contracts/geometry-model-bounds-a0.html"><code>geometry.model_bounds.a0</code></a></h3>
+  <p>Successful model-bounds result matching the compatible public JSON shape.</p>
+  <p><span class="tag">model</span> <span class="status">promoted</span></p>
+</article>
+<article class="panel">
+  <h3><a href="contracts/geometer-operation-outcome-a0.html"><code>geometer.operation.outcome.a0</code></a></h3>
+  <p>Transport-neutral typed outcome shared by the generic C ABI and executable IPC.</p>
+  <p><span class="tag">union</span> <span class="status">promoted</span></p>
+</article></div>
+</section>
+<section>
+  <h2>Operations <span class="tag">2</span></h2>
+  <table><thead><tr><th>Identity</th><th>Request</th><th>Result</th><th>Lifecycle</th></tr></thead><tbody><tr><td><a href="operations/geometry-analytic-planar-boolean-batch-a0.html"><code>geometry.analytic_planar_boolean_batch.a0</code></a></td><td>geometry.analytic_planar_boolean_batch.request.a0</td><td>geometry.analytic_planar_boolean_batch.result.a0</td><td>contract_frozen</td></tr>
+<tr><td><a href="operations/geometry-model-bounds-a0.html"><code>geometry.model_bounds.a0</code></a></td><td>geometry.model_bounds.options.a0</td><td>geometry.model_bounds.a0</td><td>promoted</td></tr></tbody></table>
+</section>
+<section>
+  <h2>Generated inputs</h2>
+  <div class="panel"><p>Catalog <code>wn.geometer.contract_catalog:a0</code></p><p>SHA-256 <code>d88c4f7d1a487c34d7654c886b79b608bcbd53469b2b3e3d6acd9d9617b00f19</code></p><p><a href="../../../contracts/geometer/generated/wn_geometer_contract_catalog.a0.json">Normalized catalog JSON</a></p></div>
+</section>
+</main>
+</body>
+</html>

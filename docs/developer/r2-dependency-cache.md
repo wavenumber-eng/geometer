@@ -34,9 +34,14 @@ Read-only credentials should not be allowed to:
 
 Trusted GitHub producer workflows use separate upload-capable credentials.
 
-When the OCCT recipe changes, run the GitHub `OCCT Dependency Cache` workflow
-with `target=all` to build and upload the current platform keys before relying
-on fast fresh CI restores.
+Recipe identities are derived from the structured CMake definitions that the
+build scripts emit plus explicit platform/toolchain inputs. Local paths,
+orchestration-script edits, build parallelism, and compiler patch releases do
+not rotate the key. Compiler family/major and C++ runtime ABI changes do.
+
+When a byte-relevant OCCT recipe changes, run the GitHub
+`OCCT Dependency Cache` workflow with `target=all` to build and upload the
+current platform keys before relying on fast fresh CI restores.
 
 ## Object Layout
 
@@ -53,11 +58,11 @@ deps/v1/<project>/<dependency>/<dependency-version>/<target-kind>/<platform-tag>
 For Geometer's OCCT cache:
 
 ```text
-deps/v1/geometer/occt/V8_0_0/native/windows-x64/<cache-key>/
-deps/v1/geometer/occt/V8_0_0/native/linux-x64/<cache-key>/
-deps/v1/geometer/occt/V8_0_0/native/linux-arm64/<cache-key>/
-deps/v1/geometer/occt/V8_0_0/native/macos-arm64/<cache-key>/
-deps/v1/geometer/occt/V8_0_0/wasm/wasm-emscripten/<cache-key>/
+deps/v1/geometer/occt/V8_0_1/native/windows-x64/<cache-key>/
+deps/v1/geometer/occt/V8_0_1/native/linux-x64/<cache-key>/
+deps/v1/geometer/occt/V8_0_1/native/linux-arm64/<cache-key>/
+deps/v1/geometer/occt/V8_0_1/native/macos-arm64/<cache-key>/
+deps/v1/geometer/occt/V8_0_1/wasm/wasm-emscripten/<cache-key>/
 ```
 
 ## Local Environment

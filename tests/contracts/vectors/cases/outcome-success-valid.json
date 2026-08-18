@@ -1,0 +1,16 @@
+{
+  "operation": "geometry.model_bounds.a0",
+  "ok": true,
+  "result": {
+    "schema": "geometry.model_bounds.a0",
+    "units": "mm",
+    "source": { "format": "step", "hash": "0123456789abcdef" },
+    "bounds": {
+      "min": [0, 0, 0],
+      "max": [1, 2, 3],
+      "size": [1, 2, 3],
+      "center": [0.5, 1, 1.5]
+    },
+    "timings": { "model_read_ms": 1, "bounds_ms": 2 }
+  }
+}

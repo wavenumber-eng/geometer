@@ -1,0 +1,1 @@
+{"schema":"geometry.model_bounds.a0","units":"mm","source":{"format":"step","hash":"sha256:example"},"bounds":{"min":[0,0,0],"max":[2,4,6],"size":[2,4,6],"center":[1,2,3]},"timings":{"model_read_ms":1.25,"bounds_ms":0.5}}

@@ -1,0 +1,289 @@
+{
+  "manifest_identity": "wn.geometer.contract_vectors",
+  "generation": "a0",
+  "vectors": [
+    {
+      "id": "schema.outcome-success.accept",
+      "contract_identity": "geometer.operation.outcome.a0",
+      "file": "cases/outcome-success-valid.json",
+      "lane": "schema",
+      "oracle": "generated_schema",
+      "expected": "accept",
+      "comparison": "exact",
+      "excluded_fields": ["/result/timings/model_read_ms", "/result/timings/bounds_ms"],
+      "tolerance": null
+    },
+    {
+      "id": "schema.outcome-failure.accept",
+      "contract_identity": "geometer.operation.outcome.a0",
+      "file": "cases/outcome-failure-valid.json",
+      "lane": "schema",
+      "oracle": "generated_schema",
+      "expected": "accept",
+      "comparison": "exact",
+      "excluded_fields": [],
+      "tolerance": null
+    },
+    {
+      "id": "schema.outcome-mixed.reject",
+      "contract_identity": "geometer.operation.outcome.a0",
+      "file": "cases/outcome-mixed-invalid.json",
+      "lane": "schema",
+      "oracle": "generated_schema",
+      "expected": "reject",
+      "comparison": "exact",
+      "excluded_fields": [],
+      "tolerance": null
+    },
+    {
+      "id": "strict.invalid-utf8.reject",
+      "contract_identity": "geometry.model_bounds.options.a0",
+      "file": "cases/options-invalid-utf8.hex",
+      "lane": "strict_json",
+      "oracle": "strict_parser_hex",
+      "expected": "reject",
+      "comparison": "exact",
+      "excluded_fields": [],
+      "tolerance": null
+    },
+    {
+      "id": "strict.empty-options.accept",
+      "contract_identity": "geometry.model_bounds.options.a0",
+      "file": "cases/options-empty.json",
+      "lane": "strict_json",
+      "oracle": "strict_parser",
+      "expected": "accept",
+      "comparison": "exact",
+      "excluded_fields": [],
+      "tolerance": null
+    },
+    {
+      "id": "strict.duplicate-format.reject",
+      "contract_identity": "geometry.model_bounds.options.a0",
+      "file": "cases/options-duplicate-format.json",
+      "lane": "strict_json",
+      "oracle": "strict_parser",
+      "expected": "reject",
+      "comparison": "exact",
+      "excluded_fields": [],
+      "tolerance": null
+    },
+    {
+      "id": "strict.trailing-data.reject",
+      "contract_identity": "geometry.model_bounds.options.a0",
+      "file": "cases/options-trailing-data.json",
+      "lane": "strict_json",
+      "oracle": "strict_parser",
+      "expected": "reject",
+      "comparison": "exact",
+      "excluded_fields": [],
+      "tolerance": null
+    },
+    {
+      "id": "schema.options-canonical.accept",
+      "contract_identity": "geometry.model_bounds.options.a0",
+      "file": "cases/options-canonical.json",
+      "lane": "schema",
+      "oracle": "generated_schema",
+      "expected": "accept",
+      "comparison": "exact",
+      "excluded_fields": [],
+      "tolerance": null
+    },
+    {
+      "id": "schema.options-alias.reject",
+      "contract_identity": "geometry.model_bounds.options.a0",
+      "file": "cases/options-compatibility-alias.json",
+      "lane": "schema",
+      "oracle": "generated_schema",
+      "expected": "reject",
+      "comparison": "exact",
+      "excluded_fields": [],
+      "tolerance": null
+    },
+    {
+      "id": "schema.options-null.reject",
+      "contract_identity": "geometry.model_bounds.options.a0",
+      "file": "cases/options-null-format.json",
+      "lane": "schema",
+      "oracle": "generated_schema",
+      "expected": "reject",
+      "comparison": "exact",
+      "excluded_fields": [],
+      "tolerance": null
+    },
+    {
+      "id": "schema.options-short-transform.reject",
+      "contract_identity": "geometry.model_bounds.options.a0",
+      "file": "cases/options-short-transform.json",
+      "lane": "schema",
+      "oracle": "generated_schema",
+      "expected": "reject",
+      "comparison": "exact",
+      "excluded_fields": [],
+      "tolerance": null
+    },
+    {
+      "id": "schema.options-uppercase-format.reject",
+      "contract_identity": "geometry.model_bounds.options.a0",
+      "file": "cases/options-uppercase-format.json",
+      "lane": "schema",
+      "oracle": "generated_schema",
+      "expected": "reject",
+      "comparison": "exact",
+      "excluded_fields": [],
+      "tolerance": null
+    },
+    {
+      "id": "schema.options-nested-transform.reject",
+      "contract_identity": "geometry.model_bounds.options.a0",
+      "file": "cases/options-nested-transform.json",
+      "lane": "schema",
+      "oracle": "generated_schema",
+      "expected": "reject",
+      "comparison": "exact",
+      "excluded_fields": [],
+      "tolerance": null
+    },
+    {
+      "id": "schema.result.accept",
+      "contract_identity": "geometry.model_bounds.a0",
+      "file": "cases/result-valid.json",
+      "lane": "schema",
+      "oracle": "generated_schema",
+      "expected": "accept",
+      "comparison": "exact",
+      "excluded_fields": ["/timings/model_read_ms", "/timings/bounds_ms"],
+      "tolerance": null
+    },
+    {
+      "id": "schema.result-unknown-field.reject",
+      "contract_identity": "geometry.model_bounds.a0",
+      "file": "cases/result-unknown-field.json",
+      "lane": "schema",
+      "oracle": "generated_schema",
+      "expected": "reject",
+      "comparison": "exact",
+      "excluded_fields": ["/timings/model_read_ms", "/timings/bounds_ms"],
+      "tolerance": null
+    },
+    {
+      "id": "schema.diagnostic.accept",
+      "contract_identity": "geometry.common.diagnostic.a0",
+      "file": "cases/diagnostic-valid.json",
+      "lane": "schema",
+      "oracle": "generated_schema",
+      "expected": "accept",
+      "comparison": "exact",
+      "excluded_fields": [],
+      "tolerance": null
+    },
+    {
+      "id": "schema.diagnostic-empty-code.reject",
+      "contract_identity": "geometry.common.diagnostic.a0",
+      "file": "cases/diagnostic-empty-code.json",
+      "lane": "schema",
+      "oracle": "generated_schema",
+      "expected": "reject",
+      "comparison": "exact",
+      "excluded_fields": [],
+      "tolerance": null
+    },
+    {
+      "id": "semantic.options-empty-presence",
+      "contract_identity": "geometry.model_bounds.options.a0",
+      "file": "cases/options-empty.json",
+      "lane": "semantic",
+      "oracle": "presence_projection",
+      "fields": ["format", "model_transform"],
+      "expected": "accept",
+      "expected_value": { "format": "absent", "model_transform": "absent" },
+      "comparison": "exact",
+      "excluded_fields": [],
+      "tolerance": null
+    },
+    {
+      "id": "semantic.options-explicit-default-presence",
+      "contract_identity": "geometry.model_bounds.options.a0",
+      "file": "cases/options-explicit-default.json",
+      "lane": "semantic",
+      "oracle": "presence_projection",
+      "fields": ["format", "model_transform"],
+      "expected": "accept",
+      "expected_value": { "format": "present", "model_transform": "absent" },
+      "comparison": "exact",
+      "excluded_fields": [],
+      "tolerance": null
+    },
+    {
+      "id": "semantic.options-transform-presence",
+      "contract_identity": "geometry.model_bounds.options.a0",
+      "file": "cases/options-canonical.json",
+      "lane": "semantic",
+      "oracle": "presence_projection",
+      "fields": ["format", "model_transform"],
+      "expected": "accept",
+      "expected_value": { "format": "present", "model_transform": "present" },
+      "comparison": "exact",
+      "excluded_fields": [],
+      "tolerance": null
+    }
+  ],
+  "operation_vectors": [
+    {
+      "id": "operation.model-bounds.sot23.identity",
+      "operation": "geometry.model_bounds.a0",
+      "request_file": "cases/operation-model-bounds-identity-request.json",
+      "attachments": [
+        {
+          "name": "model",
+          "media_type": "application/step",
+          "repository_file": "tests/fixtures/step/embedded_models/SOT-23.STEP"
+        }
+      ],
+      "lane": "operation_semantic",
+      "oracle": "shared_expected_projection",
+      "expected": "success",
+      "expected_result_file": "cases/operation-model-bounds-identity-result.json",
+      "comparison": "structural_numeric_tolerance",
+      "excluded_fields": ["/result/timings/model_read_ms", "/result/timings/bounds_ms"],
+      "computed_fields": [
+        {
+          "path": "/result/source/hash",
+          "oracle": "fnv1a64_attachment",
+          "attachment": "model",
+          "comparison": "exact"
+        }
+      ],
+      "tolerance": { "absolute": 1e-9, "relative": 1e-12 },
+      "equivalence_group": "model_bounds.sot23.identity",
+      "runtimes": ["native_c_abi", "browser_wasm", "executable_ipc", "python_compat"]
+    },
+    {
+      "id": "diagnostic.model-bounds.non-affine-transform",
+      "operation": "geometry.model_bounds.a0",
+      "request_file": "cases/operation-model-bounds-non-affine-request.json",
+      "attachments": [
+        {
+          "name": "model",
+          "media_type": "application/step",
+          "repository_file": "tests/fixtures/step/embedded_models/SOT-23.STEP"
+        }
+      ],
+      "lane": "diagnostic",
+      "oracle": "governed_diagnostic_fields",
+      "expected": "failure",
+      "expected_diagnostic": {
+        "code": "geometer.operation.model_bounds.execution_failed",
+        "category": "operation",
+        "path": "absent",
+        "retryable": false
+      },
+      "comparison": "exact",
+      "excluded_fields": ["/diagnostics/0/message"],
+      "computed_fields": [],
+      "tolerance": null,
+      "runtimes": ["native_c_abi", "browser_wasm", "executable_ipc"]
+    }
+  ]
+}

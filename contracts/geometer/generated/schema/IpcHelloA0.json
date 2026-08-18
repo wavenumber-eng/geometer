@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:wavenumber:schema:geometer:geometer.ipc.hello:a0",
+  "type": "object",
+  "properties": {
+    "client_name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "client_version": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "protocols": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "maxItems": 16
+    },
+    "capabilities": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 64
+    }
+  },
+  "required": [
+    "client_name",
+    "client_version",
+    "protocols"
+  ],
+  "unevaluatedProperties": {
+    "not": {}
+  },
+  "description": "Client handshake for executable IPC A0."
+}

@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:wavenumber:schema:geometer:geometer.ipc.request:a0",
+  "type": "object",
+  "properties": {
+    "operation": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "request": {
+      "$ref": "#/$defs/IpcRequestValueA0"
+    }
+  },
+  "required": [
+    "operation",
+    "request"
+  ],
+  "unevaluatedProperties": {
+    "not": {}
+  },
+  "$defs": {
+    "IpcRequestValueA0": {
+      "oneOf": [
+        {
+          "$ref": "urn:wavenumber:schema:geometer:geometry.model_bounds.options:a0"
+        },
+        {
+          "$ref": "#/$defs/PackedAttachmentProjectionA0"
+        }
+      ],
+      "description": "Strict generic request envelope for executable IPC A0."
+    },
+    "PackedAttachmentProjectionA0": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "packet": {
+          "$ref": "#/$defs/PackedAttachmentReferenceA0"
+        }
+      },
+      "required": [
+        "schema",
+        "packet"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      },
+      "description": "Minimal JSON value used while an operation's logical DTO projection remains deferred."
+    },
+    "PackedAttachmentReferenceA0": {
+      "type": "object",
+      "properties": {
+        "attachment": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "format": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        }
+      },
+      "required": [
+        "attachment",
+        "format"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      },
+      "description": "A named binary attachment carrying a separately governed packed projection."
+    }
+  }
+}

@@ -1,0 +1,26 @@
+name = "TypeScript Contracts And WASM Client"
+order = 5
+description = "Verify generated TypeScript codecs, packaged consumption, and direct plus Worker browser WASM clients."
+enabled = true
+runner = "pytest"
+concerns = ["typescript", "contracts", "wasm", "package"]
+
+objectives = [
+    "Validate reflected Canvas arc-center and traversal branches used by the analytic polygon-pour demo.",
+    "Validate generic clean-room TypeScript editor tooling for deterministic input, camera, tool, animation, shortcut, and history behavior.",
+    "Verify the analytic polygon-pour demo is a deterministic single HTML file with embedded theme, fonts, logo, Worker, and governed WASM bytes.",
+    "Verify migrated analytic and model-bounds pages use the one shared variable-driven demo theme without inline visual styles.",
+    "Replay governed contract vectors through generated strict TypeScript codecs.",
+    "Round-trip bigint analytic packet projections and reject malformed packed layouts.",
+    "Install and typecheck the ESM package from a clean temporary consumer.",
+    "Execute model bounds through the high-level generated client without direct pointer management.",
+    "Execute correlated model bounds through a real Worker thread with transferable attachments and lifecycle checks.",
+    "Fail closed on unknown/duplicate Worker correlations and wrong response kinds, and reject every request on immediate termination.",
+]
+
+[[subtests]]
+id = "TS_001"
+file = "test_typescript_validations.py"
+name = "Generated TypeScript Package"
+description = "Runs codec, clean-consumer, direct WASM, and real Worker/WASM client validation."
+test_case_type = "integration"

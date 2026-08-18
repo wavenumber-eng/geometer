@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:wavenumber:schema:geometer:geometer.ipc.reason:a0",
+  "type": "object",
+  "properties": {
+    "reason": {
+      "type": "string",
+      "maxLength": 1024
+    }
+  },
+  "unevaluatedProperties": {
+    "not": {}
+  },
+  "description": "Optional human-readable reason used by cancel and shutdown controls."
+}

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import struct
 from pathlib import Path
 
@@ -11,6 +12,34 @@ ROOT = Path(__file__).resolve().parents[2]
 SOT23_STEP = ROOT / "tests" / "fixtures" / "step" / "embedded_models" / "SOT-23.STEP"
 
 
+def _assert_json_close(actual: object, expected: object, tolerance: dict[str, float]) -> None:
+    if isinstance(expected, dict):
+        assert isinstance(actual, dict) and actual.keys() == expected.keys()
+        for key, value in expected.items():
+            _assert_json_close(actual[key], value, tolerance)
+    elif isinstance(expected, list):
+        assert isinstance(actual, list) and len(actual) == len(expected)
+        for actual_item, expected_item in zip(actual, expected, strict=True):
+            _assert_json_close(actual_item, expected_item, tolerance)
+    elif isinstance(expected, (int, float)) and not isinstance(expected, bool):
+        assert isinstance(actual, (int, float))
+        assert actual == pytest.approx(
+            expected,
+            abs=tolerance["absolute"],
+            rel=tolerance["relative"],
+        )
+    else:
+        assert actual == expected
+
+
+def _fnv1a64(data: bytes) -> str:
+    value = 14_695_981_039_346_656_037
+    for byte in data:
+        value ^= byte
+        value = (value * 1_099_511_628_211) & 0xFFFF_FFFF_FFFF_FFFF
+    return f"fnv1a64:{value:016x}"
+
+
 def test_executable_path_finds_dist_cli() -> None:
     assert geometer.executable_path().name in {"geometer", "geometer.exe"}
 
@@ -18,11 +47,11 @@ def test_executable_path_finds_dist_cli() -> None:
 def test_version_reports_geometer_abi() -> None:
     version = geometer.version()
 
-    assert version.string == "2026.6.23"
+    assert version.string == "2026.8.18"
     assert version.major == 2026
-    assert version.minor == 6
-    assert version.patch == 23
-    assert version.abi == 20260623
+    assert version.minor == 8
+    assert version.patch == 18
+    assert version.abi == 20260818
 
 
 def test_project_step_hlr_returns_projection_result() -> None:
@@ -94,6 +123,59 @@ def test_model_bounds_returns_transformed_bounds() -> None:
     assert result.bounds["min"][0] - base.bounds["min"][0] == pytest.approx(1.0)
     assert result.bounds["min"][1] - base.bounds["min"][1] == pytest.approx(2.0)
     assert result.bounds["min"][2] - base.bounds["min"][2] == pytest.approx(3.0)
+
+
+def test_model_bounds_generated_boundary_preserves_legacy_mapping_inputs() -> None:
+    base = geometer.model_bounds(SOT23_STEP)
+    result = geometer.model_bounds(
+        SOT23_STEP,
+        options={
+            "model_format": "STEP",
+            "modelTransform": [
+                [1.0, 0.0, 0.0, 1.0],
+                [0.0, 1.0, 0.0, 2.0],
+                [0.0, 0.0, 1.0, 3.0],
+                [0.0, 0.0, 0.0, 1.0],
+            ],
+            "legacy_unknown_field": "ignored",
+        },
+    )
+
+    assert result.bounds["min"][0] - base.bounds["min"][0] == pytest.approx(1.0)
+    assert result.bounds["min"][1] - base.bounds["min"][1] == pytest.approx(2.0)
+    assert result.bounds["min"][2] - base.bounds["min"][2] == pytest.approx(3.0)
+
+
+def test_model_bounds_matches_governed_operation_projection() -> None:
+    vector_root = ROOT / "tests" / "contracts" / "vectors"
+    manifest = json.loads((vector_root / "manifest.json").read_text(encoding="utf-8"))
+    vectors = [vector for vector in manifest["operation_vectors"] if "python_compat" in vector["runtimes"]]
+    assert len(vectors) == 1
+    vector = vectors[0]
+    request = json.loads((vector_root / vector["request_file"]).read_text(encoding="utf-8"))
+    assert request == {}
+    model_path = ROOT / vector["attachments"][0]["repository_file"]
+    result = geometer.model_bounds(model_path)
+    actual = dict(result.data)
+    expected = json.loads((vector_root / vector["expected_result_file"]).read_text(encoding="utf-8"))
+    assert vector["excluded_fields"] == [
+        "/result/timings/model_read_ms",
+        "/result/timings/bounds_ms",
+    ]
+    assert vector["computed_fields"] == [
+        {
+            "path": "/result/source/hash",
+            "oracle": "fnv1a64_attachment",
+            "attachment": "model",
+            "comparison": "exact",
+        }
+    ]
+    assert actual["source"]["hash"] == _fnv1a64(model_path.read_bytes())
+    assert expected["source"]["hash"] == "computed:fnv1a64:model"
+    expected["source"]["hash"] = actual["source"]["hash"]
+    actual.pop("timings")
+    expected.pop("timings")
+    _assert_json_close(actual, expected, vector["tolerance"])
 
 
 def test_step_to_glb_returns_glb_bytes() -> None:

@@ -47,6 +47,15 @@ The full browser target exports:
 - `_geometer_clipper2_boolean_bytes`
 - `_geometer_clipper2_inflate_open`
 - `_geometer_clipper2_inflate_open_bytes`
+- `_geometer_operation_catalog_json`
+- `_geometer_operation_execute`
+- `_geometer_operation_result_json_data`
+- `_geometer_operation_result_json_size`
+- `_geometer_operation_result_attachment_count`
+- `_geometer_operation_result_attachment_name`
+- `_geometer_operation_result_attachment_media_type`
+- `_geometer_operation_result_attachment_data`
+- `_geometer_operation_result_free`
 - `_geometer_free_string`
 - `_geometer_free_bytes`
 
@@ -79,8 +88,53 @@ Use this target for browser workers that only need packed planar geometry
 operations and should not pay the full OCCT/STEP WASM size, startup, and
 worker-memory cost. The full browser target also exports these planar APIs, so
 the planar-only target is an optimization, not a separate semantic API.
+The generic operation ABI is intentionally exported only by the full browser
+target because the pilot `model_bounds` operation requires OCCT STEP support.
+Existing full-browser and planar-only symbols are unchanged.
 
-Minimal browser-worker shape:
+## Generated TypeScript client
+
+Promoted operations use the ESM package under `dist/wasm/npm/geometer/`. Normal
+consumers should use `@wavenumber/geometer/wasm`; it negotiates the generated
+operation catalog and owns allocation, copying, descriptor layout, pointer-out
+handling, decoding, and freeing. Direct calls to the generic C ABI remain a
+focused transport-test and advanced-integration surface.
+
+```ts
+import { createGeometerWasmClient } from "@wavenumber/geometer/wasm";
+
+const client = await createGeometerWasmClient(createGeometerModule, {
+  wasmBinary: await fetch("/dist/wasm/browser/geometer.wasm").then((value) =>
+    value.arrayBuffer(),
+  ),
+});
+const result = await client.modelBounds({ model: stepBytes });
+console.log(result.bounds.size);
+```
+
+Window applications should keep synchronous OCCT work off the UI event loop:
+
+```ts
+import { createGeometerWorkerClient } from "@wavenumber/geometer/worker";
+
+const worker = new Worker("./geometer-worker.js");
+const client = await createGeometerWorkerClient(worker, {
+  wasmBinary: await fetch("/dist/wasm/browser/geometer.wasm").then((value) =>
+    value.arrayBuffer(),
+  ),
+});
+const result = await client.modelBounds({ model: stepBytes });
+```
+
+The Worker entry loads the classic `geometer.js` factory and installs
+`startGeometerWorkerHost` from `@wavenumber/geometer/worker-host`. See the
+TypeScript client design for transfer, serialization, and lifecycle rules.
+
+See [TypeScript contracts and browser WASM client](typescript-client.md) for
+the package, codec, capability, and compatibility rules. The runnable pilot is
+`examples/wasm/model_bounds_demo.html`.
+
+Legacy low-level browser-worker shape for operations not yet promoted:
 
 ```js
 importScripts("/dist/wasm/browser/geometer.js");
@@ -105,4 +159,6 @@ module.ccall(
 );
 ```
 
-The browser-worker example lives at `examples/wasm/hlr_projection_worker.js`.
+The legacy HLR browser-worker example lives at
+`examples/wasm/hlr_projection_worker.js` until HLR is promoted. The generated
+model-bounds Worker entry is `examples/wasm/model_bounds_worker.ts`.

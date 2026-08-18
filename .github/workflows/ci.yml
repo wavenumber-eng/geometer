@@ -13,6 +13,8 @@ permissions:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+  CARGO_BUILD_JOBS: "1"
+  CMAKE_BUILD_PARALLEL_LEVEL: "2"
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -27,6 +29,18 @@ jobs:
       - uses: astral-sh/setup-uv@v8.2.0
       - name: Set up Python
         run: uv python install 3.12
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+      - name: Verify generated contracts
+        run: |
+          npm install --global npm@11.16.0
+          test "$(npm --version)" = "11.16.0"
+          npm ci
+          npm run check:contracts
+      - name: Run TypeScript Rack stratum
+        run: uv run --group dev rack run typescript
       - name: Run release signoff gate
         run: uv run --group dev rack run L99_release
       - name: Run standards check
@@ -83,10 +97,15 @@ jobs:
             occt-${{ matrix.os }}-${{ runner.arch }}-${{ matrix.compiler }}-${{ steps.dependency_versions.outputs.occt_tag }}-
       - name: Build and test native code
         run: uv run --group dev python scripts/validate_native.py
+      - name: Run Python and Rust Rack strata against the native build
+        env:
+          GEOMETER_REQUIRE_NATIVE_TEST_SERVERS: "1"
+        run: |
+          uv tool install git+https://github.com/wavenumber-eng/wn-dev-std
+          uv run --group dev rack run python
+          uv run --group dev rack run rust
       - name: Test Python package
-        run: uv run --group dev python scripts/validate_python_package.py
-      - name: Build wheel
-        run: uv run --group dev python -m build --wheel --outdir out/wheelhouse
+        run: uv run --group dev python scripts/validate_python_package.py --skip-native-validation --wheelhouse out/wheelhouse
       - name: Check wheel
         run: uv run --group dev twine check out/wheelhouse/*.whl
       - name: Upload wheel artifact

@@ -4,14 +4,44 @@ if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Darwin" AND NOT CMAKE_OSX_DEPLOYMENT_TARGET)
     set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0" CACHE STRING "Minimum macOS deployment target")
 endif()
 
-set(GEOMETER_RELEASE_DATE "2026-06-23" CACHE STRING "Geometer UTC release date" FORCE)
-set(GEOMETER_RELEASE_VERSION "2026.6.23" CACHE STRING "Geometer package/build version" FORCE)
-set(GEOMETER_ABI_VERSION "20260623" CACHE STRING "Geometer C ABI generation date" FORCE)
-
+set(GEOMETER_RELEASE_DATE "2026-08-18" CACHE STRING "Geometer UTC release date" FORCE)
+set(GEOMETER_RELEASE_VERSION "2026.8.18" CACHE STRING "Geometer package/build version" FORCE)
+set(GEOMETER_ABI_VERSION "20260818" CACHE STRING "Geometer C ABI generation date" FORCE)
 project(geometer VERSION ${GEOMETER_RELEASE_VERSION} LANGUAGES CXX)
+
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+set(GEOMETER_BOOST_ROOT "${CMAKE_SOURCE_DIR}/.deps/boost_1_92_0"
+    CACHE PATH "Pinned header-only Boost source root")
+if(GEOMETER_BOOST_ROOT STREQUAL "${CMAKE_SOURCE_DIR}/.deps/boost_1_92_0")
+    find_package(Python3 REQUIRED COMPONENTS Interpreter)
+    execute_process(
+        COMMAND ${Python3_EXECUTABLE} "${CMAKE_SOURCE_DIR}/scripts/build_boost.py"
+        RESULT_VARIABLE _boost_restore_result
+        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    )
+    if(NOT _boost_restore_result EQUAL 0)
+        message(FATAL_ERROR "Failed to restore pinned Boost headers with scripts/build_boost.py")
+    endif()
+    execute_process(
+        COMMAND ${Python3_EXECUTABLE} "${CMAKE_SOURCE_DIR}/scripts/build_boost.py" --verify
+        RESULT_VARIABLE _boost_verify_result
+        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    )
+    if(NOT _boost_verify_result EQUAL 0)
+        message(FATAL_ERROR "Pinned Boost source/archive verification failed")
+    endif()
+elseif(NOT EXISTS "${GEOMETER_BOOST_ROOT}/boost/multiprecision/cpp_int.hpp")
+    message(FATAL_ERROR "GEOMETER_BOOST_ROOT does not contain boost/multiprecision/cpp_int.hpp")
+endif()
+file(STRINGS "${GEOMETER_BOOST_ROOT}/boost/version.hpp" _geometer_boost_version
+    REGEX "^#define BOOST_VERSION [0-9]+$" LIMIT_COUNT 1)
+if(NOT _geometer_boost_version STREQUAL "#define BOOST_VERSION 109200")
+    message(FATAL_ERROR "GEOMETER_BOOST_ROOT must contain pinned Boost 1.92.0 headers")
+endif()
 
 if(WIN32)
     set(_geometer_dist_os "windows")
@@ -34,17 +64,19 @@ endif()
 
 set(GEOMETER_NATIVE_DIST_PLATFORM "${_geometer_dist_os}-${_geometer_dist_arch}"
     CACHE STRING "Geometer native dist platform directory")
+set(GEOMETER_DIST_ROOT "${CMAKE_SOURCE_DIR}/dist"
+    CACHE PATH "Root directory for generated Geometer distribution artifacts")
 set(GEOMETER_NATIVE_DIST_DIR
-    "${CMAKE_SOURCE_DIR}/dist/native/${GEOMETER_NATIVE_DIST_PLATFORM}"
+    "${GEOMETER_DIST_ROOT}/native/${GEOMETER_NATIVE_DIST_PLATFORM}"
     CACHE PATH "Geometer platform-specific native dist directory")
 set(GEOMETER_WASM_BROWSER_DIST_DIR
-    "${CMAKE_SOURCE_DIR}/dist/wasm/browser"
+    "${GEOMETER_DIST_ROOT}/wasm/browser"
     CACHE PATH "Geometer full browser WASM dist directory")
 set(GEOMETER_WASM_NODE_TEST_DIST_DIR
-    "${CMAKE_SOURCE_DIR}/dist/wasm/node-test"
+    "${GEOMETER_DIST_ROOT}/wasm/node-test"
     CACHE PATH "Geometer Node CLI test WASM dist directory")
 set(GEOMETER_WASM_PLANAR_BROWSER_DIST_DIR
-    "${CMAKE_SOURCE_DIR}/dist/wasm/planar-browser"
+    "${GEOMETER_DIST_ROOT}/wasm/planar-browser"
     CACHE PATH "Geometer planar browser WASM dist directory")
 
 # ---------------------------------------------------------------------------
@@ -123,6 +155,15 @@ if(NOT OpenCASCADE_FOUND)
 endif()
 
 message(STATUS "OpenCASCADE ${OpenCASCADE_VERSION} found at ${OpenCASCADE_INSTALL_PREFIX}")
+
+if(WIN32 AND EXISTS "${OpenCASCADE_INSTALL_PREFIX}/win64/vc14/lib" AND NOT MSVC)
+    message(FATAL_ERROR
+        "The restored Windows OCCT install uses the MSVC ABI, but CMake selected "
+        "${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER}. Reconfigure from a Visual Studio "
+        "Developer PowerShell/Command Prompt, or build a separate OCCT install from source "
+        "with the selected compiler. Do not link the MSVC cache with MinGW."
+    )
+endif()
 
 set(GEOMETER_OCCT_RUNTIME_FILES "")
 if(WIN32 AND GEOMETER_OCCT_LIBRARY_TYPE STREQUAL "Shared")

@@ -15,11 +15,16 @@ from setuptools.dist import Distribution
 try:
     from setuptools.command.bdist_wheel import bdist_wheel as _bdist_wheel
 except ImportError:
-    from wheel.bdist_wheel import bdist_wheel as _bdist_wheel
+    from wheel.bdist_wheel import bdist_wheel as _bdist_wheel  # type: ignore[import-not-found]
 
 
 ROOT = Path(__file__).resolve().parent
 DEFAULT_MACOS_DEPLOYMENT_TARGET = "11.0"
+SCRIPTS = ROOT / "scripts"
+if str(SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS))
+
+from release_licenses import release_license_sources  # noqa: E402
 
 
 class build_py(_build_py):
@@ -37,9 +42,17 @@ class build_py(_build_py):
         target_dir = native_root / _platform_tag()
         target_dir.mkdir(parents=True, exist_ok=True)
         self.copy_file(str(executable), str(target_dir / executable.name))
+        sidecar = _source_attestation(executable)
+        self.copy_file(str(sidecar), str(target_dir / sidecar.name))
+        license_dir = package_build_dir / "licenses"
+        license_dir.mkdir(parents=True, exist_ok=True)
+        for name, source in _license_sources().items():
+            if not source.is_file():
+                raise FileNotFoundError(f"Missing release license source: {source}")
+            self.copy_file(str(source), str(license_dir / name))
 
 
-class bdist_wheel(_bdist_wheel):
+class bdist_wheel(_bdist_wheel):  # type: ignore[reportGeneralTypeIssues]
     def finalize_options(self) -> None:
         super().finalize_options()
         self.root_is_pure = False
@@ -69,6 +82,32 @@ def _source_executable() -> Path:
         "Missing geometer executable. Build the native CLI before building the "
         f"Python wheel. Looked under dist/native/{_platform_tag()}/."
     )
+
+
+def _source_attestation(executable: Path) -> Path:
+    path = executable.with_name("geometer.build-attestation.json")
+    scripts_path = ROOT / "scripts"
+    if str(scripts_path) not in sys.path:
+        sys.path.insert(0, str(scripts_path))
+    from native_build_attestation import (  # type: ignore[import-not-found]
+        BuildAttestationError,
+        load_and_validate_attestation,
+    )
+
+    try:
+        value = load_and_validate_attestation(executable, path)
+    except BuildAttestationError as error:
+        raise RuntimeError(f"Native executable build attestation is invalid: {error}") from error
+    if value is None:
+        raise FileNotFoundError(
+            "Missing geometer.build-attestation.json beside the native executable. "
+            "Rebuild the native distribution target before building the Python wheel."
+        )
+    return path
+
+
+def _license_sources() -> dict[str, Path]:
+    return release_license_sources(ROOT, _platform_tag())
 
 
 def _platform_tag() -> str:
@@ -111,7 +150,9 @@ def _macos_wheel_platform_tag() -> str:
 def _linux_wheel_platform_tag() -> str:
     libc_name, libc_version = platform.libc_ver()
     if libc_name != "glibc" or not libc_version:
-        raise RuntimeError(f"Linux wheels require glibc for PyPI publishing, got {libc_name or 'unknown'} {libc_version}")
+        raise RuntimeError(
+            f"Linux wheels require glibc for PyPI publishing, got {libc_name or 'unknown'} {libc_version}"
+        )
     major, minor = _version_pair(libc_version)
     return f"manylinux_{major}_{minor}_{_linux_wheel_arch()}"
 

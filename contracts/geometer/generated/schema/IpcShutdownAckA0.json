@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:wavenumber:schema:geometer:geometer.ipc.shutdown_ack:a0",
+  "type": "object",
+  "properties": {
+    "status": {
+      "type": "string",
+      "const": "complete"
+    },
+    "activeRequestCompleted": {
+      "type": "boolean"
+    },
+    "rejectedQueuedRequestCount": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 4294967295
+    }
+  },
+  "required": [
+    "status",
+    "activeRequestCompleted",
+    "rejectedQueuedRequestCount"
+  ],
+  "unevaluatedProperties": {
+    "not": {}
+  },
+  "description": "Final acknowledgment after every accepted request is terminal and flushed."
+}

@@ -1,0 +1,241 @@
+{
+  "cases": [
+    {
+      "classification": "external_real_board",
+      "id": "wavenumber-rt-super-c1-pwr4-bb52c537-provenance-fixed",
+      "request": {
+        "annulus_count": 0,
+        "capsule_count": 16,
+        "disk_count": 290,
+        "input_segment_count": 5079,
+        "job_count": 1,
+        "operand_count": 632,
+        "planar_region_count": 292,
+        "relationship_query_count": 0,
+        "ring_count": 454,
+        "stage_count": 3,
+        "swept_path_count": 34
+      },
+      "request_sha256": "bb52c537d109e782e4f24337dd57caf6a70bfae469a99a3e7ae58db1c4532413",
+      "runs": [
+        {
+          "failed_job_count": 0,
+          "job_count": 1,
+          "job_digests": [
+            {
+              "job_id": 1,
+              "sha256": "17477a9d1b7005a9bc8a097687fe1a0bf0453f1d8230bf260a8628330af997ad"
+            }
+          ],
+          "normalization_failure_count": 0,
+          "process_baseline_rss_bytes": 7901184,
+          "process_peak_rss_bytes": 25292800,
+          "result_bytes": 932852,
+          "result_region_count": 265,
+          "result_segment_count": 5601,
+          "result_sha256": "17477a9d1b7005a9bc8a097687fe1a0bf0453f1d8230bf260a8628330af997ad",
+          "solver_diagnostics": [],
+          "solver_telemetry_sha256": "43a5157f4420741af018fbb5907d0c60442e839fff0c04b07d0fbd6f57bc4523",
+          "wall_time_ns": 506769900
+        },
+        {
+          "failed_job_count": 0,
+          "job_count": 1,
+          "job_digests": [
+            {
+              "job_id": 1,
+              "sha256": "17477a9d1b7005a9bc8a097687fe1a0bf0453f1d8230bf260a8628330af997ad"
+            }
+          ],
+          "normalization_failure_count": 0,
+          "process_baseline_rss_bytes": 7929856,
+          "process_peak_rss_bytes": 25350144,
+          "result_bytes": 932852,
+          "result_region_count": 265,
+          "result_segment_count": 5601,
+          "result_sha256": "17477a9d1b7005a9bc8a097687fe1a0bf0453f1d8230bf260a8628330af997ad",
+          "solver_diagnostics": [],
+          "solver_telemetry_sha256": "43a5157f4420741af018fbb5907d0c60442e839fff0c04b07d0fbd6f57bc4523",
+          "wall_time_ns": 516477700
+        }
+      ],
+      "solver_telemetry": {
+        "available": true,
+        "counters": {
+          "batch": {
+            "candidate_pairs": 9574,
+            "emitted_bytes": 932852,
+            "failures": 0,
+            "fallback_count": 0,
+            "peak_working_memory_bytes": 33146812,
+            "work_units": 43162761
+          },
+          "jobs": [
+            {
+              "candidate_pairs": 9574,
+              "emitted_bytes": 932848,
+              "failures": 0,
+              "fallback_count": 0,
+              "job_id": 1,
+              "peak_working_memory_bytes": 33145748,
+              "work_units": 42200895
+            }
+          ]
+        },
+        "deterministic": true,
+        "observation_count": 2,
+        "production_result_packet_match": true,
+        "reason": null,
+        "target_met": true
+      },
+      "summary": {
+        "deterministic_result": true,
+        "expected_result_match": true,
+        "maximum_process_peak_rss_bytes": 25350144,
+        "median_wall_time_ns": 511623800,
+        "no_job_failures": true,
+        "process_envelope_bring_up_ceiling_met": true,
+        "process_envelope_target_observation_met": true,
+        "result_observation_count": 3
+      }
+    }
+  ],
+  "environment": {
+    "machine": {
+      "profile": {
+        "installed_ram_bytes": 68635979776,
+        "logical_cpu_count": 32,
+        "machine": "AMD64",
+        "physical_core_count": 16,
+        "processor": "AMD Ryzen 9 5950X 16-Core Processor",
+        "release": "11",
+        "system": "Windows",
+        "version": "10.0.26200"
+      },
+      "sha256": "1d64935967540e319649f352c73bc8136cb1f71027e53b73ab44d53756116822"
+    },
+    "reference_machine": {
+      "installed_ram_bytes": 66125668352,
+      "match": false,
+      "processor": "AMD-Ryzen-9-9950X",
+      "system": "Windows-11-Pro-build-26200"
+    },
+    "telemetry_helper": {
+      "profile": {
+        "executable_sha256": "5e966d77625ca2491f1db66ed89b37d0b0d334de816a02d9befa242894984706",
+        "identity": {
+          "implementation": "decode_analytic_request_packet+build_analytic_filtered_batch",
+          "request_magic": "GMABRQ01",
+          "schema": "wn.geometer.analytic_solver_telemetry.a0"
+        },
+        "selection_path": "C:\\eli\\wn-hw-workspace\\geometer\\build\\tests\\cpp\\geometer_analytic_solver_telemetry_helper.exe"
+      },
+      "sha256": "26350ea6541215be9a191ce8e992d571749e03b0e90656e455ea03ad9b08a688"
+    },
+    "toolchain": {
+      "profile": {
+        "build": {
+          "arch": "x64",
+          "build_type": "Release",
+          "c_abi_version": 20260623,
+          "compiler": {
+            "authority": "cmake_compiler_id_and_version",
+            "id": "MSVC",
+            "version": "19.44.35228.0"
+          },
+          "generator": "Ninja",
+          "geometer_version": "2026.6.23",
+          "occt": {
+            "authority": "geometer_occt_profile_verified",
+            "profile_sha256": "ea7f8ee34be29ac8d46f00e6a2d8a989a6c47fd8df6fcfa44c93a2488518f525",
+            "repo": "https://github.com/Open-Cascade-SAS/OCCT.git",
+            "tag": "V8_0_1",
+            "version": "8.0.1"
+          },
+          "platform": "windows",
+          "source": {
+            "authority": "git_head_and_source_worktree_excluding_dist_build_deps_out",
+            "revision": "0f5d1fd49a63440af4835586450decd0551c9117",
+            "tree_state": "dirty"
+          }
+        },
+        "build_attestation_producer": {
+          "identity": "wn.geometer.native_build_attestation_generator.a1",
+          "source": "scripts/native_build_attestation.py",
+          "source_sha256": "904c7f558e1168eb497ff073080705795904db26530014e38b6342594f050fc1"
+        },
+        "build_attestation_schema": "wn.geometer.native_build_attestation.a1",
+        "build_attestation_sha256": "fd201377258ee48e1a9beec5efd5ca9337f3acca9cf3f0b430abe3295b0db99a",
+        "build_provenance_attested": false,
+        "geometer_executable_sha256": "08d0a85c8dde6f3694dcc64776eb6c9e6420db71744fd87f3b14d006094a73a0",
+        "geometer_version": "geometer 2026.6.23 (abi 20260623)",
+        "hint_authority": "validated_executable_bound_nonpromotable_source_attestation",
+        "python": "3.14.6"
+      },
+      "sha256": "ac8bbe75a82c5765608eb8e9df65b260aebde7c3b56ef40467f777085f91c3ce"
+    }
+  },
+  "identity": {
+    "bring_up_ceiling": {
+      "solver_peak_working_memory_bytes": 1073741824,
+      "wall_seconds": 5.0
+    },
+    "cases": [
+      {
+        "classification": "external_real_board",
+        "expected_result_sha256": "17477a9d1b7005a9bc8a097687fe1a0bf0453f1d8230bf260a8628330af997ad",
+        "id": "wavenumber-rt-super-c1-pwr4-bb52c537-provenance-fixed",
+        "request_bytes": 377160,
+        "request_sha256": "bb52c537d109e782e4f24337dd57caf6a70bfae469a99a3e7ae58db1c4532413",
+        "source_provenance": {
+          "exporter_identity": "pcb_cruncher.pcb_cruncher_cmd_matz_analytic_packets.export_real_board_packets",
+          "exporter_revision": "appz-head:edfac72b6db4625a1c52ed667589d02298fd01d3;appz-worktree-sha256:dbfe508907b67e5a0c25f824fe745f70dabdd1e4e27571ef948a8d53de823f42;manifest-sha256:0f8ad9bcdc19d2644ad4e12f525b69af7c8ead11ba188139a81f9378eb2f57df;exporter-sha256:902f40a5457514c28e8b773c064100832e42bba3036fd4fc24fa4200f7636c86;bridge-sha256:dbb902051c9c06f500d0882bd6b3d26dbddb7633d790e18fc0790d7be8cd0b8a",
+          "license_scope": "MIT geometry-only GMABRQ01 request packet and manifest; Copyright (c) Wavenumber LLC; source CAD excluded",
+          "redistribution_authorization": "authorized_for_qualification",
+          "source_identity": "wavenumber:appz:viz/tests/cases/projects/rt_super_c1/RT_SUPER_C1.PCBdoc#pcb.copper.inner.3:PWR4;source-checkout-head:e4e58aec01fe76b9a4e9d699eea9aea18734fc0f",
+          "source_sha256": "90545409b6ce16e0b636fce3176c90b73be301d03f0a9e32c4ab21a42ad14aca"
+        }
+      }
+    ],
+    "machine_profile_sha256": "1d64935967540e319649f352c73bc8136cb1f71027e53b73ab44d53756116822",
+    "operation": "geometry.analytic_planar_boolean_batch.a0",
+    "power_mode": "unrecorded",
+    "process_rss_measurement": {
+      "includes_solver_internal_allocations_only": false,
+      "metric": "os_process_lifetime_peak_resident_set_bytes",
+      "sample_interval_seconds": 0.001,
+      "scope": "process_lifetime; later cases conservatively include earlier process peaks",
+      "source": "GetProcessMemoryInfo.PeakWorkingSetSize",
+      "transient_peak_can_be_missed": false
+    },
+    "repeat_count": 2,
+    "solver_telemetry_required": true,
+    "target": {
+      "solver_peak_working_memory_bytes": 536870912,
+      "wall_seconds": 1.0
+    },
+    "telemetry_helper_sha256": "5e966d77625ca2491f1db66ed89b37d0b0d334de816a02d9befa242894984706",
+    "telemetry_schema": "wn.geometer.analytic_solver_telemetry.a0",
+    "toolchain_profile_sha256": "ac8bbe75a82c5765608eb8e9df65b260aebde7c3b56ef40467f777085f91c3ce",
+    "transport": "native_executable_ipc_a0",
+    "warmup_count": 1
+  },
+  "identity_sha256": "704f26576e7d652a5c15ec5168ede9038edcbe0501950e8f38daf5f07de0f271",
+  "qualification": {
+    "build_provenance_gate": "fail",
+    "correctness_gate": "pass",
+    "process_envelope_bring_up_ceiling_gate": "pass",
+    "process_envelope_target_observation": "met",
+    "process_envelope_target_required": true,
+    "promotion_repeat_evidence_gate": "pass",
+    "real_board_evidence_present": true,
+    "real_board_expected_result_authority_gate": "pass",
+    "real_board_promotion_gate": "incomplete",
+    "real_board_promotion_gate_reason": "one or more expected-result authority, repeat-evidence, correctness, process-envelope, solver, reference-machine, or build-provenance gates failed",
+    "reference_machine_gate": "fail",
+    "solver_telemetry_gate": "pass",
+    "solver_telemetry_required": true,
+    "status": "pass"
+  },
+  "schema": "wn.geometer.analytic_planar_boolean_qualification.a1"
+}

@@ -1,6 +1,18 @@
 name = "C++ Foundation"
 order = 0
-description = "Verify OCCT links and basic geometry operations work."
+description = "Verify OCCT links, basic geometry operations, and analytic planar Boolean feasibility."
 enabled = true
-runner = "ctest"
-concerns = ["build", "occt"]
+runner = "pytest"
+concerns = ["build", "occt", "cpp"]
+
+objectives = [
+    "Run the complete registered native CTest suite from the governed default build tree.",
+    "Keep exact analytic feasibility, generic operation, IPC, and retained geometry tests visible in Rack.",
+]
+
+[[subtests]]
+id = "L0_001"
+file = "test_native_ctest.py"
+name = "Native CTest Foundation"
+description = "Validates canonical build discovery and runs every registered native CTest with failure output enabled."
+test_case_type = "integration"

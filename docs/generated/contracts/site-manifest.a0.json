@@ -1,0 +1,28 @@
+{
+  "generator_identity": "wn.geometer.contract_docs",
+  "generation": "a0",
+  "catalog_identity": "wn.geometer.contract_catalog",
+  "catalog_generation": "a0",
+  "catalog_sha256": "d88c4f7d1a487c34d7654c886b79b608bcbd53469b2b3e3d6acd9d9617b00f19",
+  "contracts": {
+    "geometry.analytic_planar_boolean_batch.request.a0": "contracts/geometry-analytic-planar-boolean-batch-request-a0.html",
+    "geometry.analytic_planar_boolean_batch.result.a0": "contracts/geometry-analytic-planar-boolean-batch-result-a0.html",
+    "geometry.common.diagnostic.a0": "contracts/geometry-common-diagnostic-a0.html",
+    "geometer.ipc.cancelled.a0": "contracts/geometer-ipc-cancelled-a0.html",
+    "geometer.ipc.cancel_rejected.a0": "contracts/geometer-ipc-cancel-rejected-a0.html",
+    "geometer.ipc.hello.a0": "contracts/geometer-ipc-hello-a0.html",
+    "geometer.ipc.operation_catalog.a0": "contracts/geometer-ipc-operation-catalog-a0.html",
+    "geometer.ipc.protocol_error.a0": "contracts/geometer-ipc-protocol-error-a0.html",
+    "geometer.ipc.reason.a0": "contracts/geometer-ipc-reason-a0.html",
+    "geometer.ipc.request.a0": "contracts/geometer-ipc-request-a0.html",
+    "geometer.ipc.shutdown_ack.a0": "contracts/geometer-ipc-shutdown-ack-a0.html",
+    "geometer.ipc.welcome.a0": "contracts/geometer-ipc-welcome-a0.html",
+    "geometry.model_bounds.options.a0": "contracts/geometry-model-bounds-options-a0.html",
+    "geometry.model_bounds.a0": "contracts/geometry-model-bounds-a0.html",
+    "geometer.operation.outcome.a0": "contracts/geometer-operation-outcome-a0.html"
+  },
+  "operations": {
+    "geometry.analytic_planar_boolean_batch.a0": "operations/geometry-analytic-planar-boolean-batch-a0.html",
+    "geometry.model_bounds.a0": "operations/geometry-model-bounds-a0.html"
+  }
+}

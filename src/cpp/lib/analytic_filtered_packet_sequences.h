@@ -1,0 +1,67 @@
+#pragma once
+
+#include "geometer/analytic_filtered_packet.h"
+#include "geometer/analytic_result_packet_records.h"
+
+#include <cstdint>
+#include <vector>
+
+namespace geometer::analytic_packet_detail
+{
+
+[[nodiscard]] bool checked_add(std::uint64_t left, std::uint64_t right,
+                               std::uint64_t& output) noexcept;
+[[nodiscard]] bool checked_multiply(std::uint64_t left, std::uint64_t right,
+                                    std::uint64_t& output) noexcept;
+[[nodiscard]] std::uint64_t sort_units(std::uint64_t count) noexcept;
+[[nodiscard]] std::uint64_t canonical_sequence_scratch_bytes(std::uint64_t label_count,
+                                                             std::uint64_t range_count,
+                                                             bool serialize) noexcept;
+[[nodiscard]] std::uint64_t
+result_packet_records_logical_bytes(const AnalyticResultPacketRecords& records) noexcept;
+[[nodiscard]] std::uint64_t result_packet_records_logical_capacity_bytes(
+    const AnalyticResultPacketRecords& records, std::uint64_t source_reference_capacity,
+    std::uint64_t source_set_capacity, std::uint64_t source_index_capacity) noexcept;
+
+// Computes and admits the exact target-independent live phase for encoding
+// canonical packet records: retained records plus serialized table buffers
+// plus the final aligned packet.
+[[nodiscard]] bool admit_packet_encoding_memory(const AnalyticResultPacketRecords& records,
+                                                std::uint64_t retained_bytes,
+                                                std::uint64_t memory_limit,
+                                                std::uint64_t& packet_bytes,
+                                                std::uint64_t& peak_bytes) noexcept;
+
+struct WorkBudget
+{
+    std::uint64_t limit = 0;
+    std::uint64_t used = 0;
+    AnalyticFilteredPacketTelemetry* telemetry = nullptr;
+
+    [[nodiscard]] bool charge(std::uint64_t units) noexcept;
+    [[nodiscard]] bool charge_sort(std::uint64_t count) noexcept;
+};
+
+struct SequenceRange
+{
+    std::uint32_t begin = 0;
+    std::uint32_t count = 0;
+};
+
+struct CanonicalSequences
+{
+    std::vector<std::uint32_t> handles;
+    std::vector<AnalyticPacketSourceSetRecord> records;
+    std::vector<std::uint32_t> indices;
+    std::uint64_t logical_bytes = 0;
+};
+
+// Interns fixed-width label sequences through a fixed-capacity exact
+// transition table. Lexicographic ranks come from one sorted-child DFS, so
+// long common prefixes are traversed once rather than inside sort comparators.
+[[nodiscard]] bool canonicalize_sequences(const std::vector<std::uint32_t>& labels,
+                                          const std::vector<SequenceRange>& ranges, bool serialize,
+                                          std::uint64_t live_base_bytes, std::uint64_t memory_limit,
+                                          WorkBudget& budget, CanonicalSequences& output);
+
+} // namespace geometer::analytic_packet_detail

@@ -1,0 +1,1177 @@
+manifest_version = 1
+baseline_date = "2026-08-12"
+tracking_issue = "https://github.com/wavenumber-eng/geometer/issues/18"
+authority_adr = "docs/geometer/adr/geometer-adr-010-typespec_contract_authority_and_promotion.md"
+
+[policy]
+target_structural_authority = "typespec_normalized_catalog"
+behavioral_authority = "focused_cpp_geometry_implementation"
+canonical_objects_closed_by_default = true
+required_projections = ["json_schema", "cpp", "typescript", "rust", "python"]
+required_transports = ["native", "browser_wasm", "exe_ipc"]
+promotion_requires_all_evidence = true
+
+[packages]
+typescript = "@wavenumber/geometer"
+typescript_module_format = "esm"
+rust = "geometer-client"
+rust_async_runtime = "tokio"
+python_distribution = "wn-geometer"
+python_import = "geometer"
+python_generated_visibility = "internal_compatible_boundary"
+
+[typescript_projection]
+status = "implemented_model_bounds_and_analytic_worker_pilot"
+design = "docs/design/typescript-client.md"
+source_root = "src/ts/geometer"
+generated_root = "src/ts/geometer/generated"
+package_root = "dist/wasm/npm/geometer"
+worker_client_source = "src/ts/geometer/worker.ts"
+worker_host_source = "src/ts/geometer/worker-host.ts"
+worker_protocol = "wn.geometer.wasm_worker.a0"
+example_source = "examples/wasm/model_bounds_demo.ts"
+example_worker_source = "examples/wasm/model_bounds_worker.ts"
+example_page = "examples/wasm/model_bounds_demo.html"
+example_artifact = "dist/wasm/demos/model_bounds_demo.js"
+example_worker_artifact = "dist/wasm/demos/model_bounds_worker.js"
+analytic_example_source = "examples/wasm/analytic_polygon_pour_demo.ts"
+analytic_example_fixture_source = "examples/wasm/analytic_polygon_pour_fixture.ts"
+analytic_example_worker_source = "examples/wasm/analytic_polygon_pour_worker.ts"
+analytic_example_page = "examples/wasm/analytic_polygon_pour_demo.html"
+analytic_example_artifact = "dist/wasm/demos/analytic_polygon_pour_demo.js"
+analytic_example_worker_artifact = "dist/wasm/demos/analytic_polygon_pour_worker.js"
+viz_migration_guide = "docs/design/viz-typescript-migration.md"
+runtime_dependency = false
+
+[rust_projection]
+status = "implemented_model_bounds_and_analytic_ipc_pilot"
+design = "docs/design/rust-client.md"
+crate = "geometer-client"
+source_root = "src/rust/geometer-client"
+generated_root = "src/rust/geometer-client/src/generated"
+generator = "scripts/generate-rust-contracts.mjs"
+async_runtime = "tokio"
+ipc_identity = "a0"
+live_operation = "geometry.model_bounds.a0"
+analytic_live_operation = "geometry.analytic_planar_boolean_batch.a0"
+analytic_packet_codec = "src/rust/geometer-client/src/analytic_packet_a0"
+runtime_dependency = false
+
+[python_projection]
+status = "implemented_model_bounds_compatible_boundary_and_analytic_ipc_pilot"
+design = "docs/design/python-package.md"
+distribution = "wn-geometer"
+import = "geometer"
+generated_root = "python/geometer/_generated/contracts"
+runtime = "python/geometer/_contract_runtime.py"
+generator = "scripts/generate-python-contracts.mjs"
+visibility = "internal_compatible_boundary"
+live_operation = "geometry.model_bounds.a0"
+analytic_live_operation = "geometry.analytic_planar_boolean_batch.a0"
+analytic_packet_codec = "python/geometer/_analytic_packet_a0.py"
+ipc_client = "python/geometer/_ipc_client.py"
+runtime_dependency = false
+
+[promotion_evidence.model_bounds]
+status = "accepted_promoted"
+candidate_revision = "e035bcd348cf0d8aa3db1812d907c19a36690ea0"
+hosted_workflow_run = 31741067434
+hosted_workflow_url = "https://github.com/wavenumber-eng/geometer/actions/runs/31741067434"
+hosted_native_jobs = [94584293053, 94584293148, 94584293062, 94584293143]
+hosted_platforms = ["windows-x64", "macos-arm64", "linux-x64", "linux-arm64"]
+hosted_native_conclusion = "success"
+standards_job = 94584292990
+standards_expected_failure = "active_temporary_plan_only"
+governed_vector_count = 22
+structural_vector_count = 20
+operation_vector_count = 2
+local_ctest_count = 10
+local_rack_passed = 66
+catalog_sha256 = "d88c4f7d1a487c34d7654c886b79b608bcbd53469b2b3e3d6acd9d9617b00f19"
+vector_manifest_sha256 = "30f697bf63e6ca1ba28e0b9617a061b59a90115ea4ef06a06761d09ea68301a5"
+browser_js_sha256 = "1869c4d1f9f5ee6fd716a6924a602664d53e37e8bcb38ee7d6ba21b657b59826"
+historical_reviewed_browser_js_sha256 = "5c9f0594465cdb5732911777e2ca38cc2814c1ef9cb52b7672022df6a50bf937"
+browser_js_lock_remediation = "historical_worktree_bytes_unretained_relocked_to_committed_distributable"
+browser_wasm_sha256 = "4008bc89246a7652cc7ae13d346a4733ea9eea158f43ea772471199a14d2f77f"
+independent_review = "accepted"
+acceptance_packet = "reviewer-019ffcd8-e5bb-7531-934f-b9e50e73d2b2ab7"
+review_packet = "reviewer-019ffcc0-0b9f-73e9-85e9-928e32f54cfd"
+review_finding = "missing_governed_operation_semantics_and_numeric_equivalence"
+remediation_probe_workflow_run = 31740395395
+remediation_probe_revision = "ebf08048449740e43d8489f05e2fa1365b8f50d1"
+remediation_probe_disposition = "rejected_cross_platform_source_hash_literal"
+
+[toolchain]
+status = "implemented"
+design = "docs/design/typespec-toolchain.md"
+runtime_dependency = false
+node_major = 24
+package_manager = "npm@11.16.0"
+npm_provision_command = "npm install --global npm@11.16.0"
+npm_version_check_command = "npm --version"
+typespec_compiler = "1.14.0"
+typespec_json_schema = "1.14.0"
+typescript = "5.9.3"
+biome = "2.5.7"
+source_root = "src/tsp/geometer"
+emitter_root = "src/ts/wn-geometer-contract-emitter"
+catalog_schema = "contracts/geometer/catalog-schema.a0.json"
+catalog = "contracts/geometer/generated/wn_geometer_contract_catalog.a0.json"
+schema_root = "contracts/geometer/generated/schema"
+catalog_identity = "wn.geometer.contract_catalog"
+catalog_generation = "a0"
+
+[analytic_filtered_solver]
+status = "implemented_filtered_batch_relationships_packed_dispatch"
+design = "docs/geometer/adr/geometer-adr-013-filtered_resolution_bounded_planar_boolean.md"
+coordinate_grid_nm = 1
+topology_resolution_nm = 50
+topology_resolution_caller_programmable = false
+production_dispatch_allowed = true
+algebraic_fallback_hard_limit = 0
+strict_policy_header = "src/cpp/lib/analytic_filtered_execution_policy.h"
+strict_policy = "private_published_geometry_mode_disables_50nm_topology_repair_and_fails_closed_on_unresolved_equality"
+limits_header = "src/cpp/lib/geometer/analytic_solver_limits.h"
+limits_source = "src/cpp/lib/analytic_solver_limits.cpp"
+numeric_filter_header = "src/cpp/lib/geometer/analytic_numeric_filter.h"
+numeric_filter_source = "src/cpp/lib/analytic_numeric_filter.cpp"
+broad_phase_header = "src/cpp/lib/geometer/analytic_curve_broad_phase.h"
+broad_phase_source = "src/cpp/lib/analytic_curve_broad_phase.cpp"
+interval_index_header = "src/cpp/lib/analytic_interval_index.h"
+interval_index_source = "src/cpp/lib/analytic_interval_index.cpp"
+foundation_test = "tests/cpp/analytic_filtered_core_test.cpp"
+broad_phase_policy = "deterministic_sparser_axis_sweep_with_secondary_interval_index"
+narrow_phase_header = "src/cpp/lib/geometer/analytic_curve_narrow_phase.h"
+narrow_phase_source = "src/cpp/lib/analytic_curve_narrow_phase.cpp"
+narrow_phase_policy = "canonical_candidate_pairs_only_constant_work_per_pair"
+narrow_phase_input = "job_local_filtered_nm_line_and_arc_carriers_with_validated_integer_and_construction_certificates"
+narrow_phase_uncertain_policy = "job_local_resource_limit_exceeded"
+narrow_phase_resolution_policy = "pair_witness_at_or_below_50nm_no_independent_tolerance_composition"
+narrow_phase_pair_logical_bytes = 256
+narrow_phase_parity_validator = "scripts/validate_analytic_filtered_core_parity.py"
+narrow_phase_vector_bytes = 304
+narrow_phase_vector_sha256 = "6cb876823564bb996984851003e0160306365f4ae2700e5566d7bbb112177824"
+interval_arithmetic_header = "src/cpp/lib/analytic_filtered_interval.h"
+fixed_width_integer_header = "src/cpp/lib/analytic_wide_integer.h"
+lowering_header = "src/cpp/lib/geometer/analytic_filtered_lowering.h"
+lowering_source = "src/cpp/lib/analytic_filtered_lowering.cpp"
+lowering_test = "tests/cpp/analytic_filtered_lowering_test.cpp"
+lowering_policy = "direct_job_local_integer_origin_outward_intervals_and_lowering_only_proof_tokens"
+lowering_supported_geometry = "authored_regions_disks_annuli_capsules_constant_width_open_swept_paths"
+lowering_swept_path_policy = "filtered_indexed_piece_union_zero_algebraic_fallback"
+lowering_bounds_policy = "finite_arc_endpoints_plus_contained_cardinal_extrema"
+lowering_token_policy = "fixed_capacity_open_addressed_exact_construction_keys_and_vertical_column_identities_with_metered_probes"
+lowering_logical_bytes_per_curve = 768
+lowering_parity_validator = "scripts/validate_analytic_filtered_lowering_parity.py"
+lowering_vector_bytes = 3952
+lowering_vector_sha256 = "9c3dada9b6df8c7e219620a31e5effb363ef0c3468f5db7ae1555852b94ce02d"
+overlay_header = "src/cpp/lib/geometer/analytic_filtered_overlay.h"
+overlay_source = "src/cpp/lib/analytic_filtered_overlay.cpp"
+overlay_test = "tests/cpp/analytic_filtered_overlay_test.cpp"
+overlay_input = "canonical_broad_phase_pairs_with_internal_narrow_phase_execution"
+overlay_policy = "carrier_grouped_sorted_events_indexed_active_memberships"
+overlay_resolution_policy = "complete_same_carrier_clusters_at_or_below_50nm_without_independent_circle_seam_snaps"
+overlay_budget_policy = "allocation_free_combined_minimum_preflight_then_fully_metered_complete_cluster_narrow_and_overlay_work_and_live_logical_memory"
+overlay_parity_validator = "scripts/validate_analytic_filtered_overlay_parity.py"
+overlay_vector_bytes = 1048
+overlay_vector_sha256 = "8c1162b7e14b6a58a2dd8f50c4c4b87767a223632c6393a3a8ace3d0244ac352"
+arrangement_header = "src/cpp/lib/geometer/analytic_filtered_arrangement.h"
+arrangement_source = "src/cpp/lib/analytic_filtered_arrangement.cpp"
+arrangement_test = "tests/cpp/analytic_filtered_arrangement_test.cpp"
+arrangement_input = "filtered_geometry_and_canonical_broad_pairs_with_internal_narrow_overlay"
+arrangement_policy = "indexed_complete_diameter_vertex_clusters_and_fixed_width_certified_half_edge_germs"
+arrangement_resolution_policy = "inclusive_50nm_nontransitive_global_vertex_reconciliation"
+arrangement_budget_policy = "single_validated_bulk_metered_allocation_free_downstream_minimum_preflight_then_phase_accurate_target_independent_memory_and_shared_upstream_work"
+arrangement_parity_validator = "scripts/validate_analytic_filtered_arrangement_parity.py"
+arrangement_vector_bytes = 13032
+arrangement_vector_sha256 = "8cc7fc278c73aefcd9f480b52e1ab4445e37c972538a1672a23a4d422e8bd1df"
+boolean_selection_header = "src/cpp/lib/geometer/analytic_filtered_boolean_selection.h"
+boolean_selection_source = "src/cpp/lib/analytic_filtered_boolean_selection.cpp"
+boolean_selection_admission_source = "src/cpp/lib/analytic_filtered_boolean_selection_admission.cpp"
+boolean_selection_support_header = "src/cpp/lib/analytic_filtered_boolean_selection_support.h"
+boolean_selection_test = "tests/cpp/analytic_filtered_boolean_selection_test.cpp"
+boolean_selection_input = "ordered_request_records_and_trusted_filtered_geometry_with_canonical_broad_pairs"
+boolean_selection_policy = "certified_vertical_slab_face_ownership_canonical_persistent_coverage_and_incremental_ordered_stage_state"
+boolean_selection_complexity_policy = "indexed_sweep_and_sparse_edge_transitions_without_cycle_pair_containment_or_face_by_operand_copies"
+boolean_selection_budget_policy = "metered_multi_pass_admission_fixed_capacity_distinct_phase_memory_o1_membership_ordinals_and_candidate_bounded_split_coverage_reservation"
+boolean_selection_parity_validator = "scripts/validate_analytic_filtered_boolean_selection_parity.py"
+boolean_selection_vector_bytes = 12744
+boolean_selection_vector_sha256 = "4590aa7d11918f8db25f657d6e5027ffed1c1c0737aff40a3a8cb92ebd252e27"
+regions_header = "src/cpp/lib/geometer/analytic_filtered_regions.h"
+regions_source = "src/cpp/lib/analytic_filtered_regions.cpp"
+regions_test = "tests/cpp/analytic_filtered_regions_test.cpp"
+regions_input = "ordered_request_records_and_trusted_filtered_geometry_with_canonical_broad_pairs"
+regions_policy = "rotation_indexed_selected_boundary_successors_and_component_graph_material_rings"
+regions_complexity_policy = "linear_boundary_tracing_and_component_graph_without_seam_walk_or_cycle_pair_containment"
+regions_budget_policy = "candidate_bounded_pre_arrangement_region_phase_reservation_then_fixed_capacity_metered_traversals"
+regions_parity_validator = "scripts/validate_analytic_filtered_regions_parity.py"
+regions_vector_bytes = 1160
+regions_vector_sha256 = "835631e3af611513e05423e0b29705778e3a87fe2b53a56c4f37c3ca6bacbd9e"
+lineage_header = "src/cpp/lib/geometer/analytic_filtered_lineage.h"
+lineage_source = "src/cpp/lib/analytic_filtered_lineage.cpp"
+lineage_test = "tests/cpp/analytic_filtered_lineage_test.cpp"
+lineage_input = "owned_filtered_regions_with_stage_order_coverage_roots"
+lineage_policy = "coordinate_free_transition_driven_region_boundary_vertex_and_empty_face_subtraction_projection"
+lineage_complexity_policy = "indexed_material_component_transitions_and_actual_membership_incidence_without_dense_root_union_or_face_by_operand_scans"
+lineage_budget_policy = "candidate_bounded_pre_arrangement_structural_reservation_then_allocation_free_exact_source_count_and_fixed_capacity_publication"
+lineage_parity_validator = "scripts/validate_analytic_filtered_lineage_parity.py"
+lineage_vector_bytes = 3672
+lineage_vector_sha256 = "6cab24e409b59bb6b27ec4142ab2cd6d2cb6f765561a915d7c01ecbf1bb4b74b"
+outcomes_header = "src/cpp/lib/geometer/analytic_filtered_outcomes.h"
+outcomes_source = "src/cpp/lib/analytic_filtered_outcomes.cpp"
+outcomes_tracker_header = "src/cpp/lib/analytic_filtered_outcome_tracker.h"
+outcomes_tracker_source = "src/cpp/lib/analytic_filtered_outcome_tracker.cpp"
+outcomes_test = "tests/cpp/analytic_filtered_outcomes_test.cpp"
+outcomes_input = "owned_filtered_lineage_with_selection_integrated_sparse_positive_area_history"
+outcomes_policy = "coordinate_free_nonexclusive_operand_events_with_complete_original_sources_and_tagged_pre_normalization_topology_handles"
+outcomes_complexity_policy = "active_unseen_stage_reporters_and_incidence_projection_without_face_by_operand_replay"
+outcomes_budget_policy = "candidate_bounded_pre_arrangement_history_reservation_then_exact_count_fixed_capacity_reference_and_event_publication"
+outcomes_parity_validator = "scripts/validate_analytic_filtered_outcomes_parity.py"
+outcomes_vector_bytes = 1480
+outcomes_vector_sha256 = "98a322779493361e0a9fd1175017ecff7473aa230d3542c63f70692a93081604"
+normalization_header = "src/cpp/lib/geometer/analytic_filtered_normalization.h"
+normalization_source = "src/cpp/lib/analytic_filtered_normalization.cpp"
+normalization_replay_header = "src/cpp/lib/analytic_filtered_normalization_replay.h"
+normalization_replay_source = "src/cpp/lib/analytic_filtered_normalization_replay.cpp"
+normalization_reconstruction_header = "src/cpp/lib/analytic_endpoint_arc_reconstruction.h"
+normalization_test = "tests/cpp/analytic_filtered_normalization_test.cpp"
+normalization_input = "owned_filtered_outcomes_with_retained_certified_arrangement_and_topology"
+normalization_policy = "one_time_global_1nm_endpoint_authoritative_publication_with_filtered_whole_arc_hausdorff_and_strict_zero_repair_topology_replay"
+normalization_complexity_policy = "indexed_replay_candidates_and_boundary_to_ring_mapping_without_fragment_pair_or_ring_pair_scans"
+normalization_budget_policy = "candidate_bounded_pre_outcomes_reservation_then_exact_fixed_capacity_normalization_and_replay_phases"
+normalization_parity_validator = "scripts/validate_analytic_filtered_normalization_parity.py"
+normalization_vector_bytes = 2360
+normalization_vector_sha256 = "ea874451d9f86f3c30eae894562a68510f0b99e5fac194c856399d137d437252"
+packet_header = "src/cpp/lib/geometer/analytic_filtered_packet.h"
+packet_source = "src/cpp/lib/analytic_filtered_packet.cpp"
+packet_sequences_header = "src/cpp/lib/analytic_filtered_packet_sequences.h"
+packet_sequences_source = "src/cpp/lib/analytic_filtered_packet_sequences.cpp"
+source_reference_header = "src/cpp/lib/geometer/analytic_source_reference.h"
+packet_test = "tests/cpp/analytic_filtered_packet_test.cpp"
+packet_input = "owned_filtered_normalization_with_lineage_outcomes_and_explicit_topology_maps"
+packet_policy = "coordinate_preserving_canonical_source_set_topology_event_and_standalone_packet_assembly"
+packet_complexity_policy = "fixed_width_sort_keys_and_exact_prefix_trie_without_variable_length_comparators_or_face_by_operand_replay"
+packet_budget_policy = "candidate_bounded_pre_normalization_reservation_then_exact_fixed_capacity_source_and_packet_publication"
+packet_parity_validator = "scripts/validate_analytic_filtered_packet_parity.py"
+packet_vector_bytes = 4288
+packet_vector_sha256 = "a47f82ad1ab38c9e38ea55f38b44849ebd477de31c465726cbd17f5c4047ccfb"
+batch_header = "src/cpp/lib/geometer/analytic_filtered_batch.h"
+batch_source = "src/cpp/lib/analytic_filtered_batch.cpp"
+batch_test = "tests/cpp/analytic_filtered_batch_test.cpp"
+batch_input = "validated_canonical_request_records_with_owned_lowering_broad_phase_and_job_packet_publication"
+batch_policy = "sequential_job_isolation_specialized_job_major_canonical_merge_and_single_batch_encode"
+batch_complexity_policy = "deterministic_sorted_id_validation_global_source_sort_and_fixed_capacity_sequence_interning_without_job_pair_or_variable_prefix_scans"
+batch_budget_policy = "separate_per_job_and_batch_live_limits_capacity_based_retained_records_and_precharged_validation_merge_and_encoding_phases"
+batch_relationship_header = "src/cpp/lib/analytic_filtered_relationships.h"
+batch_relationship_source = "src/cpp/lib/analytic_filtered_relationships.cpp"
+batch_relationship_policy = "strict_published_geometry_face_coverage_and_incidence_with_fail_closed_unresolved_predicates"
+batch_relationship_complexity_policy = "cached_unordered_job_pairs_with_two_color_indexed_broad_phase_and_output_sensitive_region_pair_classification"
+batch_relationship_budget_policy = "precharged_target_independent_work_memory_candidate_cache_and_remaining_packet_byte_limits"
+batch_parity_validator = "scripts/validate_analytic_filtered_batch_parity.py"
+batch_vector_bytes = 1636
+batch_vector_sha256 = "a4b6a8c4a82f77c5de4e232e0a2e1520a57e7370422ddc7e4059951d192a05d9"
+batch_relationship_vector_bytes = 5448
+batch_relationship_vector_sha256 = "bddccaac7ac1f8b141e007574e08d282a03221b85cb684e9addaf49fa89be073"
+production_exact_source_policy = "exact_oracle_sources_excluded_from_geometer_lib"
+exact_oracle_target = "geometer_exact_feasibility"
+
+[analytic_exact_backend]
+status = "implemented_non_primary_oracle"
+design = "docs/design/exact-real-algebraic-a0.md"
+design_sha256 = "71139fbe41e98fd1c4bab70916fb4fc3f9e720f948d2629815a61bba1433fb8e"
+conformance_identity = "geometry.exact_real_algebraic.feasibility.a0"
+magic = "GEXPA001"
+generation = 1
+implementation_allowed = true
+boost_version = "1.92.0"
+boost_archive_url = "https://archives.boost.io/release/1.92.0/source/boost_1_92_0.tar.gz"
+boost_archive_sha256 = "c4a3b310ddd2472416e091067166b0713be97c63f38c212c484ada022fd296ce"
+boost_upstream_commit = "afdfa32505af73e3d208144b3f623f0096cb62b6"
+generated_dependency_root = ".deps/boost_1_92_0"
+production_solver_allowed = false
+normal_production_path_allowed = false
+production_role = "conformance_oracle_offline_diagnostics_optional_bounded_fallback"
+design_review_revision = "a8c9604de280e2a67018e1106fd1b430b34fcf50"
+design_review_packet = "reviewer-019ffd1f-3c67-7001-87a5-200b6cda10d8"
+implemented_surface = "budgeted_exact_intersections_nm_normalization_curve_domain_half_edge_face_classification_stage_lineage_result_region_provenance_operand_outcome_certified_arc_result_normalization_canonical_source_set_result_packet_layout_typed_record_graph_semantic_canonical_projection_standalone_closure_digest_decoder_enforcement_exact_topology_replay_mutation_sentinels_closed_form_invariants_degeneracy_sweeps_boolean_identities_metamorphic_relations_bounded_enumeration_seeded_property_many_to_many_lineage_monthly_extended_seed_quarter_arc_swept_path_clipper_warning_and_swept_area_self_overlap_feasibility"
+arc_distance_source = "src/cpp/lib/exact_arc_distance.cpp"
+result_normalization_source = "src/cpp/lib/exact_result_normalization.cpp"
+source_sets_source = "src/cpp/lib/exact_source_sets.cpp"
+boolean_outcomes_source = "src/cpp/lib/exact_boolean_outcomes.cpp"
+boolean_provenance_source = "src/cpp/lib/exact_boolean_provenance.cpp"
+boolean_regions_source = "src/cpp/lib/exact_boolean_regions.cpp"
+boolean_stages_source = "src/cpp/lib/exact_boolean_stages.cpp"
+rational_source = "src/cpp/lib/exact_rational.cpp"
+polynomial_source = "src/cpp/lib/exact_polynomial.cpp"
+resultant_source = "src/cpp/lib/exact_resultant.cpp"
+factorization_source = "src/cpp/lib/exact_factorization.cpp"
+value_source = "src/cpp/lib/exact_value.cpp"
+value_codec_source = "src/cpp/lib/exact_value_codec.cpp"
+expression_source = "src/cpp/lib/exact_expression.cpp"
+construction_source = "src/cpp/lib/exact_construction.cpp"
+construction_builder_source = "src/cpp/lib/exact_construction_builder.cpp"
+artifact_source = "src/cpp/lib/exact_artifact.cpp"
+geometry_source = "src/cpp/lib/exact_geometry.cpp"
+normalization_source = "src/cpp/lib/exact_normalization.cpp"
+curve_domain_source = "src/cpp/lib/exact_curve_domain.cpp"
+arrangement_source = "src/cpp/lib/exact_arrangement.cpp"
+arrangement_classification_source = "src/cpp/lib/exact_arrangement_classification.cpp"
+arrangement_faces_source = "src/cpp/lib/exact_arrangement_faces.cpp"
+arrangement_order_source = "src/cpp/lib/exact_arrangement_order.cpp"
+arrangement_result_source = "src/cpp/lib/exact_arrangement_result.cpp"
+arrangement_validation_source = "src/cpp/lib/exact_arrangement_validation.cpp"
+rational_test = "tests/cpp/exact_rational_test.cpp"
+polynomial_test = "tests/cpp/exact_polynomial_test.cpp"
+resultant_test = "tests/cpp/exact_resultant_test.cpp"
+factorization_test = "tests/cpp/exact_factorization_test.cpp"
+value_test = "tests/cpp/exact_value_test.cpp"
+value_codec_test = "tests/cpp/exact_value_codec_test.cpp"
+expression_test = "tests/cpp/exact_expression_test.cpp"
+construction_test = "tests/cpp/exact_construction_test.cpp"
+artifact_test = "tests/cpp/exact_artifact_test.cpp"
+geometry_test = "tests/cpp/exact_geometry_test.cpp"
+geometry_parity_validator = "scripts/validate_exact_geometry_parity.py"
+geometry_vector_artifact_bytes = 1248
+geometry_vector_artifact_sha256 = "0af1965a293c1b7a90ec633d35ee98f2d53098350e86e922e8c18751ea15a5e0"
+geometry_vector_success_work_units = 41182568
+curve_domain_test = "tests/cpp/exact_curve_domain_test.cpp"
+curve_domain_parity_validator = "scripts/validate_exact_curve_domain_parity.py"
+curve_domain_vector_sha256 = "56a531c6731e01d518f85bfdb046becc44d42a52dd81c0e1aab1f1aab917fcd8"
+curve_domain_vector_success_work_units = 710842
+arrangement_test = "tests/cpp/exact_arrangement_test.cpp"
+arrangement_parity_validator = "scripts/validate_exact_arrangement_parity.py"
+arrangement_vector_sha256 = "b134a245f7d3daa6d4f8e03db1871ec8e99565a500e87ba4c452090951046c23"
+arrangement_vector_success_work_units = 3051260
+arrangement_vector_storage_bytes = 8608
+boolean_stages_test = "tests/cpp/exact_boolean_stages_test.cpp"
+boolean_stages_parity_validator = "scripts/validate_exact_boolean_stages_parity.py"
+boolean_stages_vector_sha256 = "2fb0a89e6226f01bddde8cdb920ec3e2c22f9f3f09b3681fe0f884d64c33a8a5"
+boolean_stages_vector_success_work_units = 416
+boolean_stages_vector_storage_bytes = 4560
+boolean_regions_test = "tests/cpp/exact_boolean_regions_test.cpp"
+boolean_regions_parity_validator = "scripts/validate_exact_boolean_regions_parity.py"
+boolean_regions_vector_sha256 = "b33cc58943c8346a8bc54232fbe7cc4a55ca35d10f9e4038be9be3e88cbacc2f"
+boolean_regions_vector_success_work_units = 904
+boolean_regions_vector_storage_bytes = 5760
+boolean_provenance_test = "tests/cpp/exact_boolean_provenance_test.cpp"
+boolean_provenance_parity_validator = "scripts/validate_exact_boolean_provenance_parity.py"
+boolean_provenance_vector_sha256 = "3e996f29bfeca09f584dc6412670302d92edbd4f3282bc921829b23dd79108e5"
+boolean_provenance_vector_success_work_units = 4208
+boolean_provenance_vector_storage_bytes = 26528
+boolean_outcomes_test = "tests/cpp/exact_boolean_outcomes_test.cpp"
+boolean_outcomes_parity_validator = "scripts/validate_exact_boolean_outcomes_parity.py"
+boolean_outcomes_vector_sha256 = "e8cfe16cf62b1f074537415eb9a8ddfe2d9d7d6bdebb70abe152d8b3d82744af"
+boolean_outcomes_coexistence_sha256 = "08684e05441cfc3af24d33f26747a34b913ee8a7d85b2a92abf2dbb4f637564f"
+boolean_outcomes_vector_success_work_units = 1600
+boolean_outcomes_vector_storage_bytes = 11584
+boolean_lineage_matrix_test = "tests/cpp/exact_boolean_lineage_matrix_test.cpp"
+boolean_lineage_matrix_parity_validator = "scripts/validate_exact_boolean_lineage_matrix_parity.py"
+boolean_lineage_matrix_cases = ["two_contributors_two_disconnected_results", "same_stage_permutation", "omitted_association_mutation"]
+boolean_lineage_matrix_sha256 = "6f084826be2bf3b34ce13e4b392dd0f81d3de40ed97b8245ab05d18ae4fa6ae4"
+result_normalization_test = "tests/cpp/exact_result_normalization_test.cpp"
+result_normalization_parity_validator = "scripts/validate_exact_result_normalization_parity.py"
+result_normalization_vector_sha256 = "db3be0a6e7bfc88bde2435bc603569d9dac18d8d320a32e2d0e48a8e00e469ea"
+result_normalization_mutation_sentinels = ["between_stage_normalization"]
+normalization_collapse_cases = ["hole_x_below_tie", "hole_x_above_tie", "hole_y_below_tie", "hole_y_above_tie", "notch_below_tie", "notch_above_tie"]
+normalization_collapse_sha256 = "761350eccf99d53336aa8c99903b62cc5906eab29ebdd2b0b3a1c3bd17654ede"
+source_sets_test = "tests/cpp/exact_source_sets_test.cpp"
+source_sets_parity_validator = "scripts/validate_exact_source_sets_parity.py"
+source_sets_vector_sha256 = "dc19f5249a91d159f0ed1dff4ff78617315c157050f1df09fe47d834986daffc"
+source_sets_vector_success_work_units = 5760
+source_sets_vector_storage_bytes = 6272
+result_packet_layout_source = "src/cpp/lib/analytic_result_packet_layout.cpp"
+result_packet_layout_test = "tests/cpp/analytic_result_packet_layout_test.cpp"
+result_packet_layout_parity_validator = "scripts/validate_analytic_result_packet_layout_parity.py"
+result_packet_empty_bytes = 512
+result_packet_empty_sha256 = "6098488722c00c2959df6e16d1381cbdcacf79c5bd4d8b9ae2cebdd5a0de8638"
+result_packet_layout_vector_bytes = 924
+result_packet_layout_vector_sha256 = "4bce719a8da4fe334ea1bc758a7d726a77deec90976aab62b81e205e4a3f493c"
+result_packet_records_source = "src/cpp/lib/analytic_result_packet_records.cpp"
+result_packet_records_test = "tests/cpp/analytic_result_packet_records_test.cpp"
+result_packet_records_parity_validator = "scripts/validate_analytic_result_packet_records_parity.py"
+result_packet_record_vector_bytes = 1220
+result_packet_record_vector_sha256 = "07019a4c2f94f8066db90b6f57bb3e5ea7801bb6b8bda63d8c7268dcad5bcb72"
+result_packet_canonical_source = "src/cpp/lib/analytic_result_packet_canonical.cpp"
+result_packet_canonical_vector_bytes = 1220
+result_packet_canonical_vector_sha256 = "07019a4c2f94f8066db90b6f57bb3e5ea7801bb6b8bda63d8c7268dcad5bcb72"
+result_packet_batch_owner_key = "owner_job_id_then_existing_complete_semantic_key"
+result_packet_batch_owner_key_review = "reviewer-01a000c8-8fb8-73b2-93b0-505315c71f09"
+result_packet_standalone_source = "src/cpp/lib/analytic_result_packet_standalone.cpp"
+result_packet_sha256_source = "src/cpp/lib/sha256.cpp"
+result_packet_standalone_vector_bytes = 996
+result_packet_standalone_vector_sha256 = "a934acefb39e7b397516b4ba948e3ded16f2d30c989a43271ee90883191f4f63"
+result_packet_failed_standalone_vector_bytes = 616
+result_packet_failed_standalone_vector_sha256 = "87f193938f0c1d60d8d196eb256adf0fa423f56175be63a61f0ef6cc8bebd46e"
+result_packet_topology_source = "src/cpp/lib/analytic_result_packet_topology.cpp"
+result_packet_topology_test = "tests/cpp/analytic_result_packet_topology_test.cpp"
+result_packet_topology_parity_validator = "scripts/validate_analytic_mutation_sentinels_parity.py"
+mutation_sentinels = ["reversed_line", "reversed_arc", "non_containing_parent", "point_tangent_merge", "nested_island_ownership", "omitted_lineage", "ties_to_even", "deep_hierarchy_bound", "many_empty_jobs"]
+closed_form_invariants_test = "tests/cpp/analytic_closed_form_invariants_test.cpp"
+closed_form_invariants_parity_validator = "scripts/validate_analytic_closed_form_invariants_parity.py"
+closed_form_invariants = ["rectangle", "circle", "annulus", "capsule", "nested_island", "swept_l_path"]
+closed_form_arc_classes = ["semicircle", "quarter_circle"]
+closed_form_invariants_sha256 = "0f9ec222d05e077277e2356e4a4f1b247946d0a6b7f9e2d6b2f11d0113bf33f6"
+metamorphic_invariants = ["translation", "rotation_90", "reflection", "integer_scaling", "source_id_renaming"]
+metamorphic_invariants_sha256 = "0907fe0bcc8b6d14989dceefa3cd8029405a09a493d91ea7434180b856ab80ea"
+degeneracy_sweep_test = "tests/cpp/exact_degeneracy_sweep_test.cpp"
+degeneracy_sweep_parity_validator = "scripts/validate_exact_degeneracy_sweep_parity.py"
+degeneracy_sweep_cases = ["external_tangency", "internal_tangency", "concentric_coincidence", "near_collinearity", "half_grid_ties", "arc_0_360_boundary", "arc_180_boundary", "closed_arc_rejection", "permitted_swept_area_self_overlap"]
+degeneracy_swept_path_width_nm = 10
+degeneracy_swept_path_leg_length_nm = 12
+degeneracy_swept_path_separations_nm = [9, 10, 11]
+degeneracy_swept_path_classifications = ["overlap_allowed", "contact_allowed", "disjoint_allowed"]
+degeneracy_swept_path_end_cap_relations = ["two_points", "point", "disjoint"]
+degeneracy_swept_path_signed_witness_areas_nm2 = [12, 0, -12]
+degeneracy_sweep_sha256 = "f9a5f27116e098ef333f676f2420cca9dd217b022ef2fc7af19dd58e23a07540"
+boolean_identity_test = "tests/cpp/exact_boolean_identities_test.cpp"
+boolean_identity_parity_validator = "scripts/validate_exact_boolean_identities_parity.py"
+boolean_identity_cases = ["union_self", "difference_self", "union_empty", "difference_empty"]
+boolean_identity_sha256 = "bf0c289c99026044bfcb6b8d990fbc33306ec61a50763cab1158d312f656027e"
+boolean_metamorphic_test = "tests/cpp/exact_boolean_metamorphic_test.cpp"
+boolean_metamorphic_parity_validator = "scripts/validate_exact_boolean_metamorphic_parity.py"
+boolean_union_permutations = 6
+boolean_difference_permutations = 2
+boolean_metamorphic_sentinels = ["split:union,difference", "mutation:ordered_stage_swap"]
+boolean_metamorphic_sha256 = "3572a4fcd40cc212a542d5dc8a166ce372404e058b01c819baa1b102e818bb6f"
+seeded_property_test = "tests/cpp/exact_boolean_seeded_property_test.cpp"
+seeded_property_parity_validator = "scripts/validate_exact_boolean_seeded_property_parity.py"
+seeded_property_generator = "splitmix64"
+seeded_property_grid = "4x4_integer_unit_cells"
+seeded_property_seeds = ["0000000000000001", "0123456789abcdef", "9e3779b97f4a7c15", "ffffffffffffffff"]
+seeded_property_cases_per_seed = 8
+seeded_property_cases = 32
+seeded_property_reducer = "greedy_one_minimal_stage_operand_rectangle_extent"
+seeded_property_reducer_sentinel = "reducer:seed=0x0,case=0,stages=U[0,0,1,1;]"
+seeded_property_reducer_multistage_sentinel = "reducer_multistage:seed=0x0,case=1,stages=D[]U[0,0,1,1;]"
+seeded_property_sha256 = "60945d8695701d82457c8aad4f47d225b0b66a2759dd4bac43f4dacf23d0b01e"
+nightly_seeded_property_profile = "nightly"
+nightly_seeded_property_schedule = "monthly_and_manual_release"
+nightly_seeded_property_workflow = ".github/workflows/wasm.yml"
+nightly_seeded_property_seeds = ["0000000000000000", "0000000000000001", "0123456789abcdef", "3141592653589793", "9e3779b97f4a7c15", "c0ffeec0ffeec0ff", "deadbeefcafebabe", "ffffffffffffffff"]
+nightly_seeded_property_cases_per_seed = 16
+nightly_seeded_property_cases = 128
+nightly_seeded_property_sha256 = "0cc922aca1bd2718b330cf1d0d080882181aed861fb5edf6601ee5c5d96f56a5"
+rectangle_enumeration_test = "tests/cpp/exact_rectangle_enumeration_test.cpp"
+rectangle_enumeration_parity_validator = "scripts/validate_exact_rectangle_enumeration_parity.py"
+rectangle_enumeration_grid = "2x2_integer_unit_cells"
+rectangle_enumeration_cases = 558
+rectangle_enumeration_sha256 = "db0ebca47a53585d7d52312b128a1c77fd345c282481b5415b061401cd5deb74"
+rectangle_differential_engine = "clipper2_existing_planar_solve"
+rectangle_differential_policy = "warning_only_non_authoritative"
+rectangle_differential_schedule = "monthly_and_manual_release"
+rectangle_differential_eligible_cases = 117
+rectangle_differential_baseline_warnings = 2
+rectangle_differential_baseline_sha256 = "4d5bb7b6302424bbf6621fc4a0a611d8fb17981710c95b617edd3b5fe4762a80"
+rectangle_differential_warning_identities = ["case_433_point_contact_component_merge", "case_465_point_contact_component_merge"]
+
+[transports]
+generic_c_abi = "implemented_a0"
+generic_c_abi_spec = "docs/design/generic-operation-c-abi.md"
+executable_ipc = "implemented_model_bounds_pilot_a0"
+executable_ipc_spec = "docs/design/executable-ipc-a0.md"
+transport_adr = "docs/geometer/adr/geometer-adr-011-generic_operation_transports.md"
+implementation_allowed = true
+
+[transports.design_review]
+status = "approved"
+requested_revision = "529c768e559b4c88874264748d4186e775c8a4dd"
+review_head = "b86a065c5926c35f1eee23a9ba1cef890689c7d7"
+packet = "docs/design/transport-design-review.md"
+packet_sha256 = "865964402ff6258151b199f748ae0754c9fc4908021af01ffc6abdb47f2013ea"
+reviewed_adr_sha256 = "d4905bda88727fadeb221a3b6c5bfb392f5e062bb6033b0cded29f59fb492de0"
+adr_sha256 = "2a69d9e05baa7894be3677d2a9c250098bd45915a7cc9d083639650d3151d7d8"
+generic_c_abi_sha256 = "1b9d02d310110530cb62c82125613865a90bcb2f9da49397ae61dbc61abcd861"
+executable_ipc_sha256 = "c4d65cdcad36382e7fba83e1180f5e937194a5652f131b90f63e4f55a80dd339"
+reviewer = "independent-reviewer"
+review_date = "2026-08-12"
+reviewed_revision = "529c768e559b4c88874264748d4186e775c8a4dd"
+
+[documentation]
+generated_html_root = "docs/generated/contracts"
+design = "docs/design/generated-contract-reference.md"
+source_revision = "27548a16e23a8bc225fc81c047bbef8c325fb4ae"
+runtime_sibling_dependency = false
+
+[documentation.font_redistribution]
+completion_gate = true
+status = "approved_open_license"
+selected_font = "Cousine"
+license_spdx = "OFL-1.1"
+source_revision = "038b637da7b3fd956a4ed93ffc607c3d5e4ce172"
+license_url = "https://github.com/google/fonts/blob/038b637da7b3fd956a4ed93ffc607c3d5e4ce172/ofl/cousine/OFL.txt"
+resolution = "Use Cousine from Google Fonts; vendor its OFL license with the font files. Do not distribute the internally licensed Berkeley Mono files from this public repository."
+
+[[documentation.assets]]
+id = "stylesheet"
+role = "stylesheet"
+source = "appz/data_models/docs/core/design/styles.css"
+destination = "docs/design/styles.css"
+source_sha256 = "b0452e403db12c3fca581866b0953dbca45d751bcc83c137f0da16674859d151"
+sha256 = "39b9b7fd997a1707e9743ebcff6a21200e1d35ad6f629c8a5799d56192ab019d"
+status = "vendored"
+adaptation = "Replace internally licensed Berkeley Mono declarations with OFL-1.1 Cousine; preserve the reviewed layout and component rules; add narrow generated-code wrapping verified in a real browser."
+
+[[documentation.assets]]
+id = "cousine_regular"
+role = "font"
+source = "https://raw.githubusercontent.com/google/fonts/038b637da7b3fd956a4ed93ffc607c3d5e4ce172/ofl/cousine/Cousine-Regular.ttf"
+destination = "docs/design/assets/fonts/Cousine/Cousine-Regular.ttf"
+sha256 = "1da22250675fc4c42fcf3a9736c44bc0570516105331443b663fd5cfbd1412fe"
+status = "vendored"
+redistribution_status = "approved_open_license"
+license_evidence = "docs/design/assets/fonts/Cousine/OFL.txt"
+
+[[documentation.assets]]
+id = "cousine_bold"
+role = "font"
+source = "https://raw.githubusercontent.com/google/fonts/038b637da7b3fd956a4ed93ffc607c3d5e4ce172/ofl/cousine/Cousine-Bold.ttf"
+destination = "docs/design/assets/fonts/Cousine/Cousine-Bold.ttf"
+sha256 = "17c8a7245156d2253531c9e529474937b09d9f641c5ae7695c5e33f22822eef4"
+status = "vendored"
+redistribution_status = "approved_open_license"
+license_evidence = "docs/design/assets/fonts/Cousine/OFL.txt"
+
+[[documentation.assets]]
+id = "cousine_license"
+role = "license"
+source = "https://raw.githubusercontent.com/google/fonts/038b637da7b3fd956a4ed93ffc607c3d5e4ce172/ofl/cousine/OFL.txt"
+destination = "docs/design/assets/fonts/Cousine/OFL.txt"
+sha256 = "b81c4d4dc0a9f72c9155e78187316e016e2012a8102468804173dc61468b906d"
+status = "vendored"
+
+[[documentation.assets]]
+id = "wavenumber_light_watermark"
+role = "watermark"
+source = "appz/data_models/docs/core/design/assets/wn_logo_w_text__for_light.svg"
+destination = "docs/design/assets/wn_logo_w_text__for_light.svg"
+sha256 = "87e16b5b2453ad1f9263d92953d5741a30780db02eeea0d59d61f10967c4537b"
+status = "vendored"
+
+[c_abi]
+generation = 20260818
+source = "src/cpp/lib/geometer/c_api.h"
+symbols = [
+  "geometer_operation_catalog_json",
+  "geometer_operation_execute",
+  "geometer_operation_result_json_data",
+  "geometer_operation_result_json_size",
+  "geometer_operation_result_attachment_count",
+  "geometer_operation_result_attachment_name",
+  "geometer_operation_result_attachment_media_type",
+  "geometer_operation_result_attachment_data",
+  "geometer_operation_result_free",
+  "geometer_step_hlr_projection_json",
+  "geometer_step_hlr_projection_json_bytes",
+  "geometer_step_to_glb",
+  "geometer_step_to_glb_bytes",
+  "geometer_planar_batch_solve",
+  "geometer_planar_batch_solve_bytes",
+  "geometer_planar_batch_solve_json",
+  "geometer_planar_batch_solve_json_bytes",
+  "geometer_planar_triangulate",
+  "geometer_planar_triangulate_bytes",
+  "geometer_clipper2_boolean",
+  "geometer_clipper2_boolean_bytes",
+  "geometer_clipper2_inflate_open",
+  "geometer_clipper2_inflate_open_bytes",
+  "geometer_version_string",
+  "geometer_version_major",
+  "geometer_version_minor",
+  "geometer_version_patch",
+  "geometer_abi_version",
+  "geometer_free_string",
+  "geometer_free_bytes",
+]
+
+[wasm.full_browser]
+source = "src/cpp/lib/CMakeLists.txt"
+exports = [
+  "_malloc",
+  "_free",
+  "_geometer_version_string",
+  "_geometer_version_major",
+  "_geometer_version_minor",
+  "_geometer_version_patch",
+  "_geometer_abi_version",
+  "_geometer_step_hlr_projection_json",
+  "_geometer_step_hlr_projection_json_bytes",
+  "_geometer_step_to_glb",
+  "_geometer_step_to_glb_bytes",
+  "_geometer_planar_batch_solve",
+  "_geometer_planar_batch_solve_bytes",
+  "_geometer_planar_batch_solve_json",
+  "_geometer_planar_batch_solve_json_bytes",
+  "_geometer_planar_triangulate",
+  "_geometer_planar_triangulate_bytes",
+  "_geometer_clipper2_boolean",
+  "_geometer_clipper2_boolean_bytes",
+  "_geometer_clipper2_inflate_open",
+  "_geometer_clipper2_inflate_open_bytes",
+  "_geometer_operation_catalog_json",
+  "_geometer_operation_execute",
+  "_geometer_operation_result_json_data",
+  "_geometer_operation_result_json_size",
+  "_geometer_operation_result_attachment_count",
+  "_geometer_operation_result_attachment_name",
+  "_geometer_operation_result_attachment_media_type",
+  "_geometer_operation_result_attachment_data",
+  "_geometer_operation_result_free",
+  "_geometer_free_string",
+  "_geometer_free_bytes",
+]
+
+[wasm.planar_browser]
+source = "src/cpp/lib/CMakeLists.txt"
+exports = [
+  "_malloc",
+  "_free",
+  "_geometer_version_string",
+  "_geometer_version_major",
+  "_geometer_version_minor",
+  "_geometer_version_patch",
+  "_geometer_abi_version",
+  "_geometer_planar_batch_solve",
+  "_geometer_planar_batch_solve_bytes",
+  "_geometer_planar_batch_solve_json",
+  "_geometer_planar_batch_solve_json_bytes",
+  "_geometer_planar_triangulate",
+  "_geometer_planar_triangulate_bytes",
+  "_geometer_clipper2_boolean",
+  "_geometer_clipper2_boolean_bytes",
+  "_geometer_clipper2_inflate_open",
+  "_geometer_clipper2_inflate_open_bytes",
+  "_geometer_free_string",
+  "_geometer_free_bytes",
+]
+
+[[contracts]]
+id = "geometry.common.diagnostic.a0"
+kind = "shared"
+status = "promoted"
+current_authority = "typespec_normalized_catalog"
+source = "src/tsp/geometer/common.tsp"
+pilot_required = true
+compatibility = "Map local integer statuses through adapters; do not promote numeric codes."
+promoted_revision = "e035bcd348cf0d8aa3db1812d907c19a36690ea0"
+
+[[contracts]]
+id = "geometry.model_bounds.options.a0"
+kind = "option_patch"
+status = "promoted"
+current_authority = "typespec_normalized_catalog"
+source = "src/tsp/geometer/operations/model-bounds-a0.tsp"
+pilot_required = true
+compatibility = "Retain model_format and modelTransform as input aliases outside the canonical DTO."
+promoted_revision = "e035bcd348cf0d8aa3db1812d907c19a36690ea0"
+
+[[contracts]]
+id = "geometry.model_bounds.a0"
+kind = "result"
+status = "promoted"
+current_authority = "typespec_normalized_catalog"
+source = "src/tsp/geometer/operations/model-bounds-a0.tsp"
+pilot_required = true
+compatibility = "Preserve the current JSON shape and exclude timings from deterministic semantic comparison."
+promoted_revision = "e035bcd348cf0d8aa3db1812d907c19a36690ea0"
+
+[[contracts]]
+id = "geometer.operation.outcome.a0"
+kind = "transport_envelope"
+status = "promoted"
+current_authority = "typespec_normalized_catalog"
+source = "src/tsp/geometer/operation-outcome-a0.tsp"
+pilot_required = true
+compatibility = "Shared additive envelope for the generic C ABI and executable IPC; it does not replace legacy per-operation return shapes."
+promoted_revision = "e035bcd348cf0d8aa3db1812d907c19a36690ea0"
+
+[[contracts]]
+id = "geometer.ipc.hello.a0"
+kind = "transport_envelope"
+status = "pilot_candidate"
+current_authority = "typespec_candidate"
+source = "src/tsp/geometer/ipc-a0.tsp"
+pilot_required = true
+compatibility = "Additive executable IPC A0 control; no file-oriented CLI behavior changes."
+
+[[contracts]]
+id = "geometer.ipc.reason.a0"
+kind = "transport_envelope"
+status = "pilot_candidate"
+current_authority = "typespec_candidate"
+source = "src/tsp/geometer/ipc-a0.tsp"
+pilot_required = true
+compatibility = "Shared optional reason object for cancel and shutdown controls."
+
+[[contracts]]
+id = "geometer.ipc.request.a0"
+kind = "transport_envelope"
+status = "pilot_candidate"
+current_authority = "typespec_candidate"
+source = "src/tsp/geometer/ipc-a0.tsp"
+pilot_required = true
+compatibility = "Additive executable IPC request envelope; operation payloads retain their own identities."
+
+[[contracts]]
+id = "geometer.ipc.operation_catalog.a0"
+kind = "transport_envelope"
+status = "pilot_candidate"
+current_authority = "typespec_candidate"
+source = "src/tsp/geometer/ipc-a0.tsp"
+pilot_required = true
+compatibility = "Structural projection of the already additive generic-operation catalog."
+
+[[contracts]]
+id = "geometer.ipc.welcome.a0"
+kind = "transport_envelope"
+status = "pilot_candidate"
+current_authority = "typespec_candidate"
+source = "src/tsp/geometer/ipc-a0.tsp"
+pilot_required = true
+compatibility = "Additive executable IPC A0 handshake response."
+
+[[contracts]]
+id = "geometer.ipc.cancelled.a0"
+kind = "transport_envelope"
+status = "pilot_candidate"
+current_authority = "typespec_candidate"
+source = "src/tsp/geometer/ipc-a0.tsp"
+pilot_required = true
+compatibility = "Additive executable IPC A0 queue-cancellation response."
+
+[[contracts]]
+id = "geometer.ipc.cancel_rejected.a0"
+kind = "transport_envelope"
+status = "pilot_candidate"
+current_authority = "typespec_candidate"
+source = "src/tsp/geometer/ipc-a0.tsp"
+pilot_required = true
+compatibility = "Additive executable IPC A0 nonterminal cancellation response."
+
+[[contracts]]
+id = "geometer.ipc.protocol_error.a0"
+kind = "transport_envelope"
+status = "pilot_candidate"
+current_authority = "typespec_candidate"
+source = "src/tsp/geometer/ipc-a0.tsp"
+pilot_required = true
+compatibility = "Additive executable IPC A0 fatal diagnostic response."
+
+[[contracts]]
+id = "geometer.ipc.shutdown_ack.a0"
+kind = "transport_envelope"
+status = "pilot_candidate"
+current_authority = "typespec_candidate"
+source = "src/tsp/geometer/ipc-a0.tsp"
+pilot_required = true
+compatibility = "Additive executable IPC A0 graceful-shutdown acknowledgment."
+
+[[contracts]]
+id = "geometry.analytic_planar_boolean_batch.request.a0"
+kind = "request"
+status = "candidate_frozen"
+current_authority = "typespec_normalized_catalog"
+source = "src/tsp/geometer/operations/analytic-planar-boolean-a0.tsp"
+pilot_required = true
+compatibility = "Frozen candidate request; nanometer integer geometry aligned with the MATZ observation manifest and dispatched through the governed packed attachment; no logical JSON wire is defined."
+
+[[contracts]]
+id = "geometry.analytic_planar_boolean_batch.result.a0"
+kind = "result"
+status = "candidate_frozen"
+current_authority = "typespec_normalized_catalog"
+source = "src/tsp/geometer/operations/analytic-planar-boolean-a0.tsp"
+pilot_required = true
+compatibility = "Frozen candidate result; typed outcomes reference the separately governed packed attachment format."
+
+[[contracts]]
+id = "geometry.projection.options.b0"
+kind = "option_patch"
+status = "inventory_only"
+current_authority = "handwritten_cpp"
+source = "src/cpp/lib/projection_options_json.cpp"
+pilot_required = false
+compatibility = "Retain documented snake/camel aliases and legacy include toggles in an adapter."
+
+[[contracts]]
+id = "geometry.projection.b0"
+kind = "result"
+status = "inventory_only"
+current_authority = "handwritten_cpp"
+source = "src/cpp/lib/projection.cpp"
+pilot_required = false
+compatibility = "Preserve current result fields; timing fields are nondeterministic."
+
+[[contracts]]
+id = "geometry.step_to_glb.options.a0"
+kind = "option_patch"
+status = "inventory_only"
+current_authority = "handwritten_cpp"
+source = "src/cpp/lib/step_to_glb_options_json.cpp"
+pilot_required = false
+compatibility = "Retain documented deflection and angular aliases in an adapter."
+
+[[contracts]]
+id = "geometry.planar_step.request.a0"
+kind = "request"
+status = "inventory_only"
+current_authority = "handwritten_cpp"
+source = "src/cpp/lib/planar_step.cpp"
+pilot_required = false
+compatibility = "Retain unit suffixes, transitional contour input, and fuse aliases in an adapter."
+
+[[contracts]]
+id = "geometry.planar_batch_solve.a0"
+kind = "result"
+status = "inventory_only"
+current_authority = "handwritten_cpp"
+source = "src/cpp/lib/planar_solve.cpp"
+pilot_required = false
+compatibility = "Preserve Python outer/outline normalization until separately retired."
+
+[[contracts]]
+id = "geometer.batch.request.a0"
+kind = "request"
+status = "inventory_only"
+current_authority = "handwritten_cli"
+source = "src/cpp/cli/main.cpp"
+pilot_required = false
+compatibility = "Preserve file-based run, layered patches, STEP operation aliases, and step_path."
+
+[[contracts]]
+id = "geometer.batch.response.a0"
+kind = "result"
+status = "inventory_only"
+current_authority = "handwritten_cli"
+source = "src/cpp/cli/main.cpp"
+pilot_required = false
+compatibility = "Preserve current job result fields; elapsed_ms is nondeterministic."
+
+[[binary_formats]]
+id = "geometry.planar_batch.packet"
+status = "separately_governed"
+source = "src/cpp/lib/planar_solve.cpp"
+request_magic = "GMPBRQ01"
+response_magic = "GMPBRS01"
+version = 2
+
+[[binary_formats]]
+id = "geometry.planar_triangulate.packet"
+status = "separately_governed"
+source = "src/cpp/lib/planar_triangulate.cpp"
+request_magic = "GMTRRQ01"
+response_magic = "GMTRRS01"
+version = 1
+
+[[binary_formats]]
+id = "geometry.clipper2_boolean.packet"
+status = "separately_governed"
+source = "src/cpp/lib/clipper2_bytes.cpp"
+request_magic = "GMC2BQ01"
+response_magic = "GMC2BS01"
+version = 1
+
+[[binary_formats]]
+id = "geometry.clipper2_inflate_open.packet"
+status = "separately_governed"
+source = "src/cpp/lib/clipper2_bytes.cpp"
+request_magic = "GMC2IQ01"
+response_magic = "GMC2IS01"
+version = 1
+
+[[operations]]
+id = "geometry.model_bounds.a0"
+status = "promoted"
+request_contract = "geometry.model_bounds.options.a0"
+result_contract = "geometry.model_bounds.a0"
+input_attachments = ["model"]
+output_attachments = []
+cli_names = ["model_bounds_json"]
+compatibility_cli_names = []
+promoted_revision = "e035bcd348cf0d8aa3db1812d907c19a36690ea0"
+promotion_review_packet = "reviewer-019ffcd8-e5bb-7531-934f-b9e50e73d2b2ab7"
+
+[[operations]]
+id = "geometry.model_hlr_projection.a0"
+status = "inventory_only"
+request_contract = "geometry.projection.options.b0"
+result_contract = "geometry.projection.b0"
+input_attachments = ["model"]
+output_attachments = []
+cli_names = ["model_hlr_projection_json", "model_hlr_projection_svg"]
+compatibility_cli_names = ["step_hlr_projection_json", "step_hlr_projection_svg"]
+
+[[operations]]
+id = "geometry.model_to_glb.a0"
+status = "inventory_only"
+request_contract = "geometry.step_to_glb.options.a0"
+result_contract = "none"
+input_attachments = ["model"]
+output_attachments = ["glb"]
+cli_names = ["model_to_glb"]
+compatibility_cli_names = ["step_to_glb"]
+
+[[operations]]
+id = "geometry.planar_step.a0"
+status = "inventory_only"
+request_contract = "geometry.planar_step.request.a0"
+result_contract = "none"
+input_attachments = []
+output_attachments = ["step"]
+cli_names = ["planar_step"]
+compatibility_cli_names = []
+
+[[operations]]
+id = "geometry.planar_batch_solve.a0"
+status = "inventory_only"
+request_contract = "geometry.planar_batch.packet"
+result_contract = "geometry.planar_batch_solve.a0"
+input_attachments = ["planar_batch_request"]
+output_attachments = ["planar_batch_response"]
+cli_names = []
+compatibility_cli_names = []
+
+[[operations]]
+id = "geometry.planar_triangulate.a0"
+status = "inventory_only"
+request_contract = "geometry.planar_triangulate.packet"
+result_contract = "geometry.planar_triangulate.packet"
+input_attachments = ["triangulate_request"]
+output_attachments = ["triangulate_response"]
+cli_names = []
+compatibility_cli_names = []
+
+[[operations]]
+id = "geometry.clipper2_boolean.a0"
+status = "inventory_only"
+request_contract = "geometry.clipper2_boolean.packet"
+result_contract = "geometry.clipper2_boolean.packet"
+input_attachments = ["boolean_request"]
+output_attachments = ["boolean_response"]
+cli_names = []
+compatibility_cli_names = []
+
+[[operations]]
+id = "geometry.clipper2_inflate_open.a0"
+status = "inventory_only"
+request_contract = "geometry.clipper2_inflate_open.packet"
+result_contract = "geometry.clipper2_inflate_open.packet"
+input_attachments = ["inflate_request"]
+output_attachments = ["inflate_response"]
+cli_names = []
+compatibility_cli_names = []
+
+[[candidate_operations]]
+id = "geometry.analytic_planar_boolean_batch.a0"
+status = "contract_frozen"
+solver_numeric_status = "reopened_filtered_50nm"
+named_consumer = "appz.data_models.pcb.matz"
+compatibility_snapshot = "docs/contracts/compatibility/data-models-geom-a0-2026-08-12.toml"
+design = "docs/design/analytic-planar-boolean-a0.md"
+design_sha256 = "35490658ee8b24bfce7912ced3017bad4064ec0fcf63f453c983715038482c8a"
+packet_spec = "docs/design/analytic-planar-boolean-packet-a0.md"
+packet_spec_sha256 = "efa659a73c413950a62f643a67863309e60fa02829652f4adf8138c2ea374a5c"
+numeric_catalog = "docs/contracts/analytic-planar-boolean-a0-catalog.toml"
+numeric_catalog_sha256 = "edb1a0b033b57f9d5e7f651c5c2562239a9fe2e6e2956de4fd06b2ff46e01870"
+solver_adr = "docs/geometer/adr/geometer-adr-013-filtered_resolution_bounded_planar_boolean.md"
+solver_adr_sha256 = "09418b57b030fd82fdbb6c28e297bb42169f250b15a5708900ba5ea5bffb20ac"
+superseded_solver_adr = "docs/geometer/adr/geometer-adr-012-exact_analytic_planar_boolean_arrangement.md"
+filtered_solver_foundation = "direct_lowering_broad_narrow_overlay_arrangement_face_selection_material_regions_lineage_operand_outcomes_normalization_packet_assembly_batch_merge_strict_published_geometry_policy_and_relationship_evaluation_implemented_packed_dispatch"
+feasibility_test = "tests/cpp/analytic_planar_boolean_feasibility_test.cpp"
+portable_fixture = "tests/fixtures/analytic_planar_boolean/matz_observations_a0.json"
+matz_case_2_handoff = "docs/contracts/matz-case-2-handoff-a0.json"
+matz_case_2_handoff_sha256 = "0a0643971962de89cd2095bd3de23e057df7d38a3bfd9271c8c791c88ec49fcb"
+matz_case_2_handoff_status = "blocked_awaiting_authoritative_integer_endpoints"
+candidate_typespec_entrypoint = "src/tsp/geometer/analytic-candidate.tsp"
+candidate_typespec_entrypoint_sha256 = "0af5747692c74a9c428d7daee3685bd358aa896c64bb9dcf0ee0242d11b3dc1f"
+candidate_typespec_source = "src/tsp/geometer/operations/analytic-planar-boolean-a0.tsp"
+candidate_typespec_source_sha256 = "ca499b482b7447262de305d69ced1a481f2eace8314ebb774ac9c88998038179"
+candidate_operation_source = "src/tsp/geometer/operations/analytic-planar-boolean-operation-a0.tsp"
+candidate_operation_source_sha256 = "0300c6c303c09d8e4152e0b65018b9d80742dd401020d825074b989378f6a61f"
+candidate_check = "scripts/check-analytic-contract-candidate.mjs"
+candidate_check_sha256 = "3d54f8790d16a74284cb12dc13304495adffb4113166208279e2fa58fc8ae2a1"
+request_contract = "geometry.analytic_planar_boolean_batch.request.a0"
+result_contract = "geometry.analytic_planar_boolean_batch.result.a0"
+input_attachments = ["analytic_planar_boolean_request"]
+output_attachments = ["analytic_planar_boolean_result"]
+deferred_projections = []
+logical_dto_projections = ["cpp", "typescript", "rust", "python"]
+packed_runtime_projections = ["cpp", "typescript", "rust", "python"]
+logical_source_reference_expansions_per_batch = 1048576
+packet_vector_manifest = "tests/contracts/vectors/analytic/manifest.json"
+packet_vector_manifest_sha256 = "092a7889843e14c1852aaac78bbb7bd507807f96e02dc5ca047e07b10c574ee8"
+packet_vector_manifest_identity = "wn.geometer.analytic_packet_vectors"
+packet_vector_generation = "a0"
+packet_vector_count = 6
+packet_vector_writer = "scripts/write_analytic_packet_vectors.py"
+packet_vector_writer_sha256 = "a3535666c1ee53ea10213c8a7e058b5fd98f0bf97066323fdec66233321acde1"
+packet_vector_producer_targets = ["geometer_analytic_request_packet_test", "geometer_analytic_result_packet_records_test"]
+packet_vector_producer_sources = ["tests/cpp/analytic_request_packet_test.cpp", "tests/cpp/analytic_result_packet_records_test.cpp"]
+packet_vector_producer_source_sha256 = ["7c2c6a960182271688a87f64747b52e0b63391295c27c68247829878293f6966", "886473dec4add537f99a15465a0cd78474a4f19f2cecf78a090c798360e7af71"]
+cross_transport_parity_fixture_id = "analytic_primitive_family_self_query"
+cross_transport_parity_vector_count = 2
+cross_transport_parity_request = "tests/contracts/vectors/analytic/cross-transport-primitive-family-self-request.hex"
+cross_transport_parity_request_sha256 = "106a949162d3091a5892f66bad4cdf0af764315cd1a51936461b237c2b073375"
+cross_transport_parity_result = "tests/contracts/vectors/analytic/cross-transport-primitive-family-self-result.hex"
+cross_transport_parity_result_sha256 = "7947d3850dafcd6d897aba2f4f6353d5afb61892349247c436a6e44f370ba183"
+cross_transport_parity_standalone_job_sha256 = "841a653ae0b0294d4458e29d18b9997f3f392f1211cfe69341faaa9e11444114"
+cross_transport_parity_validator = "tests/wasm/test_analytic_cross_transport_parity.py"
+cross_transport_parity_validator_sha256 = "c278242a78002f55ee34e0c653a8e16f95ed0bff7889a5454c5b5d6f873a0e34"
+cross_transport_parity_wasm_runner = "tests/wasm/analytic_cross_transport_runner.js"
+cross_transport_parity_wasm_runner_sha256 = "e31123caaacbfc405bc8ab1fcd77ce509863aeda2f50d203dfe245660708b6fc"
+cross_transport_parity_status = "exact_native_executable_ipc_browser_wasm_result_bytes_and_standalone_job_digest_governed"
+performance_qualification_harness = "scripts/qualify_analytic_planar_boolean.py"
+performance_qualification_harness_sha256 = "33fb62524db6a9f9ec3cdcc2caebe34eb83ef901e4d6a1fc91240137b0d698bf"
+performance_qualification_modules = ["scripts/analytic_qualification/__init__.py", "scripts/analytic_qualification/corpus.py", "scripts/analytic_qualification/environment.py", "scripts/analytic_qualification/replay.py", "scripts/analytic_qualification/runner.py", "scripts/analytic_qualification/telemetry.py"]
+performance_qualification_module_sha256 = ["bf7457786a4376c2112402e12947fa527ac7752911a8216abee9e544f3ee6366", "737b6ea92c26b5ecf6d7350d69e6c0738d625dbd78dd2d214fbec06a8c5e6cc6", "ba482fc2073e7e4fafcb8fd689c3b17f4ec0a320c62c3a19260802054e8876a9", "a497e76c135ac3eb7e0b73161d9d1dc322b8da4897a21f275ef930b4bd8ef05c", "6b7a7880c37ccdca7a9c8760d1bf4e086113bd92c0d80a01c4f0300a61a171d6", "886f57982bce4af377708cea6f1bfc6dba528f57312b9bb91000cf201dde74cd"]
+performance_qualification_test = "tests/python/test_analytic_qualification.py"
+performance_qualification_test_sha256 = "6332da005bf2113bd99590d042f05a482d4d9147daca43d4ede191f1f52a3ade"
+performance_qualification_native_helper = "tests/cpp/analytic_solver_telemetry_helper.cpp"
+performance_qualification_native_helper_sha256 = "654b566758f3884687c67b0a272466eb58ed8901b4768f5ea3bf3cd08bcb4a8f"
+performance_qualification_telemetry_schema = "wn.geometer.analytic_solver_telemetry.a0"
+performance_qualification_build_attestation_schema = "wn.geometer.native_build_attestation.a1"
+performance_qualification_build_attestation_sidecar = "dist/native/<platform>/geometer.build-attestation.json"
+performance_qualification_build_attestation_source_policy = "authoritative_clean_git_source_only_dirty_or_unavailable_is_diagnostic_unattested"
+performance_qualification_build_attestation_generator = "scripts/native_build_attestation.py"
+performance_qualification_build_attestation_generator_identity = "wn.geometer.native_build_attestation_generator.a1"
+performance_qualification_build_attestation_generator_sha256 = "904c7f558e1168eb497ff073080705795904db26530014e38b6342594f050fc1"
+performance_qualification_build_attestation_test = "tests/python/test_native_build_attestation.py"
+performance_qualification_build_attestation_test_sha256 = "87d60c92a695538329ddec333a028f425236f7b10e86bf3ba02458fe6dccb979"
+performance_qualification_default_fixture_classification = "synthetic"
+performance_qualification_default_request = "tests/contracts/vectors/analytic/cross-transport-primitive-family-self-request.hex"
+real_board_packet_provenance = "docs/contracts/analytic-real-board-packet-provenance.toml"
+real_board_packet_provenance_sha256 = "3e465a113fb4edb7667b9b76e684337f1062f76e3456b7a5ef0404f82034d7c2"
+real_board_packet_provenance_test = "tests/python/test_contract_promotion_manifest.py"
+real_board_packet_provenance_test_sha256 = "d50c558c5a6477c879637ab697489e5a3cbceda036cfe6b3ea3f4bfb48cef323"
+real_board_packet_provenance_status = "public_mit_redistribution_authorized_rt_generated_local_qualified_loz_pending"
+real_board_packet_case_ids = ["rt_super_c1_pwr4", "loz_old_man_curved_copper"]
+real_board_packet_source_sha256 = ["90545409b6ce16e0b636fce3176c90b73be301d03f0a9e32c4ab21a42ad14aca", "377d5a05ed24137ea603d11c663d52ae48849b378534b346010936b826eb2375"]
+real_board_packet_license_spdx = "MIT"
+real_board_packet_required_attribution = "Copyright (c) Wavenumber LLC"
+real_board_source_cad_redistribution = "excluded"
+real_board_rt_packet = "tests/contracts/vectors/analytic/real-board/rt_super_c1_pwr4/rt_super_c1_pwr4.gmabrq01"
+real_board_rt_packet_bytes = 377160
+real_board_rt_packet_sha256 = "bb52c537d109e782e4f24337dd57caf6a70bfae469a99a3e7ae58db1c4532413"
+real_board_rt_exporter_manifest = "tests/contracts/vectors/analytic/real-board/rt_super_c1_pwr4/rt_super_c1_pwr4.exporter-manifest.json"
+real_board_rt_exporter_manifest_bytes = 20411
+real_board_rt_exporter_manifest_sha256 = "0f8ad9bcdc19d2644ad4e12f525b69af7c8ead11ba188139a81f9378eb2f57df"
+real_board_rt_corpus = "tests/contracts/vectors/analytic/real-board/rt_super_c1_pwr4/corpus.json"
+real_board_rt_corpus_sha256 = "0636dd1feedcd746417bced237f6677d81a07876a623b7193862eacd811d0388"
+real_board_rt_local_qualification_report = "tests/contracts/vectors/analytic/real-board/rt_super_c1_pwr4/qualification.local-5950x-dirty-build.json"
+real_board_rt_local_qualification_report_sha256 = "3e2573ef58017918fc10fbe24433cec859c65d921d09b4ef6621ad51194beed9"
+real_board_rt_expected_result_sha256 = "17477a9d1b7005a9bc8a097687fe1a0bf0453f1d8230bf260a8628330af997ad"
+real_board_rt_result_bytes = 932852
+real_board_rt_result_regions = 265
+real_board_rt_result_segments = 5601
+real_board_rt_solver_telemetry_sha256 = "43a5157f4420741af018fbb5907d0c60442e839fff0c04b07d0fbd6f57bc4523"
+real_board_rt_failed_jobs = 0
+real_board_rt_fallback_count = 0
+real_board_rt_status = "generated_publicly_redistributable_deterministic_production_qualified_local_candidate"
+real_board_rt_promotion_status = "incomplete_clean_build_attestation_pending"
+real_board_loz_status = "pending_blocked_governed_exact_copper_selector_and_exporter_case"
+performance_qualification_target_wall_seconds = 1
+performance_qualification_target_solver_peak_working_memory_bytes = 536870912
+performance_qualification_hard_ceiling_wall_seconds = 5
+performance_qualification_hard_ceiling_solver_peak_working_memory_bytes = 1073741824
+performance_qualification_status = "production_ipc_replay_and_byte_matched_internal_solver_telemetry_and_portable_hard_ceiling_passed_for_rt_local_candidate_clean_build_attestation_pending_loz_pending"
+performance_qualification_reference_machine_policy = "optional_comparative_observation_not_release_gate"
+performance_qualification_target_policy = "one_second_512_mib_observation_not_release_gate"
+performance_qualification_release_ceiling_policy = "five_seconds_1_gib_process_and_solver_hard_gate"
+production_transport_status = "native_c_abi_browser_wasm_executable_ipc_dispatched"
+typescript_packed_projection = "bigint_logical_dtos_strict_packet_codec_direct_and_worker_clients"
+rust_packed_projection = "integer_logical_dtos_strict_packet_codec_and_friendly_persistent_client"
+python_packed_projection = "generated_integer_logical_dtos_strict_packet_codec_and_friendly_bounded_persistent_client"
+python_production_replay_test = "tests/python/test_matz_observation_replay.py"
+python_production_replay_matching_cases = ["1", "3", "4", "5", "6", "7", "8", "9", "10"]
+python_production_replay_blocked_cases = ["2_missing_authoritative_integer_endpoints"]
+python_production_replay_mismatched_cases = []
+packed_format = "separately_governed_frozen_a0"
+transport = "generic_named_attachments"
+operation_specific_c_abi_symbol = false
+replaces_existing_operation = false
+browser_target = "full_browser"
+independent_design_review_revision = "529c768e559b4c88874264748d4186e775c8a4dd"
+independent_design_review_head = "b86a065c5926c35f1eee23a9ba1cef890689c7d7"
+independent_design_review_record = "docs/geometer/adr/geometer-adr-012-exact_analytic_planar_boolean_arrangement.md"
+independent_design_review_record_sha256 = "dc62cb32fb1ac91e7f0700fe599152d37a65920216be4c8df3c8e1c6eb02b80f"
+typespec_projection_review_revision = "f4b6a9b87bf16f57ef29dae22150b16f2a742b64"
+typespec_projection_review_packet = "reviewer-019ffd0d-fa76-74b6-ac3e-c1c2642ba0de"
+implementation_gate = "packed_runtime_typescript_rust_python_projections_and_cpp_rust_python_logical_dtos_implemented_python_production_replay_matching_subset_1_3_4_5_6_7_8_9_10_cross_transport_exact_parity_case_2_blocked_missing_authoritative_integer_endpoints"
+
+[[demos]]
+id = "model_bounds"
+source = "examples/wasm/model_bounds_demo.html"
+entrypoint = "examples/wasm/model_bounds_demo.ts"
+theme = "examples/wasm/geometer_demo.css"
+owning_operation = "geometry.model_bounds.a0"
+status = "generated_typescript_client"
+
+[[demos]]
+id = "analytic_polygon_pour"
+source = "examples/wasm/analytic_polygon_pour_demo.html"
+entrypoint = "examples/wasm/analytic_polygon_pour_demo.ts"
+worker = "examples/wasm/analytic_polygon_pour_worker.ts"
+fixture = "examples/wasm/analytic_polygon_pour_fixture.ts"
+theme = "examples/wasm/geometer_demo.css"
+font_regular = "docs/design/assets/fonts/JetBrainsMono/JetBrainsMono-Regular.woff2"
+font_regular_sha256 = "a9cb1cd82332b23a47e3a1239d25d13c86d16c4220695e34b243effa999f45f2"
+font_bold = "docs/design/assets/fonts/JetBrainsMono/JetBrainsMono-Bold.woff2"
+font_bold_sha256 = "c503cc5ec5f8b2c7666b7ecda1adf44bd45f2e6579b2eba0fc292150416588a2"
+font_license = "docs/design/assets/fonts/JetBrainsMono/OFL.txt"
+font_license_sha256 = "60d55f23c6ce05a81099a762cb67ca2c9b6ea251c7912720998b4c89ebfd4faa"
+distribution = "dist/wasm/demos/analytic-polygon-pour/index.html"
+asset_manifest = "dist/wasm/demos/analytic-polygon-pour/asset-manifest.json"
+distribution_sha256 = "3f0e45dcba8362192a66f581881baa0dc5977e422992f8d514ae36808d863929"
+headers = "dist/wasm/demos/analytic-polygon-pour/_headers"
+standalone_distribution = "dist/wasm/demos/analytic_polygon_pour_demo.html"
+standalone_sha256 = "7f232e145902a58745dfe37a27ed66ed6919c2a9c511424e0bd034f968b1e2f5"
+owning_operation = "geometry.analytic_planar_boolean_batch.a0"
+status = "generated_typescript_worker_client_static_and_single_html_file_url_validated_local"
+
+[[demos]]
+id = "pcb_polygon_pour"
+source = "examples/wasm/pcb_polygon_pour_demo.html"
+entrypoint = "examples/wasm/pcb_polygon_pour_demo.ts"
+worker = "examples/wasm/pcb_polygon_pour_worker.ts"
+fixture = "examples/wasm/pcb_polygon_pour_model.ts"
+theme = "examples/wasm/geometer_demo.css"
+font_regular = "docs/design/assets/fonts/JetBrainsMono/JetBrainsMono-Regular.woff2"
+font_regular_sha256 = "a9cb1cd82332b23a47e3a1239d25d13c86d16c4220695e34b243effa999f45f2"
+font_bold = "docs/design/assets/fonts/JetBrainsMono/JetBrainsMono-Bold.woff2"
+font_bold_sha256 = "c503cc5ec5f8b2c7666b7ecda1adf44bd45f2e6579b2eba0fc292150416588a2"
+font_license = "docs/design/assets/fonts/JetBrainsMono/OFL.txt"
+font_license_sha256 = "60d55f23c6ce05a81099a762cb67ca2c9b6ea251c7912720998b4c89ebfd4faa"
+distribution = "dist/wasm/demos/pcb-polygon-pour/index.html"
+asset_manifest = "dist/wasm/demos/pcb-polygon-pour/asset-manifest.json"
+distribution_sha256 = "f129b482d4d99705e749c1d7619333fd87c13f246c69be91796814e227c06a3f"
+headers = "dist/wasm/demos/pcb-polygon-pour/_headers"
+standalone_distribution = "dist/wasm/demos/pcb_polygon_pour_demo.html"
+standalone_sha256 = "66ca0ad8e0df96bdc6d8c9ed311d60b5dcec638a768f4e845c78b84447f60e33"
+owning_operation = "geometry.analytic_planar_boolean_batch.a0"
+status = "generated_typescript_worker_client_static_and_single_html_file_url_validated_local"
+
+[[demos]]
+id = "embedded_model_viewer"
+source = "examples/wasm/embedded_model_viewer.html"
+worker = "examples/wasm/hlr_projection_worker.js"
+owning_operation = "geometry.model_hlr_projection.a0"
+status = "handwritten_javascript"
+
+[[consumers]]
+id = "appz.viz"
+status = "legacy_compatibility_required"
+snapshot = "docs/contracts/compatibility/viz-2026.6.10.toml"
+upgrade_target = "@wavenumber/geometer"
+upgrade_language = "typescript"
+
+[[consumers]]
+id = "appz.data_models.pcb.matz"
+status = "requirements_alignment"
+snapshot = "docs/contracts/compatibility/data-models-geom-a0-2026-08-12.toml"
+upgrade_target = "@wavenumber/geometer"
+upgrade_language = "typescript_python"
+
+[[demos]]
+id = "planar_ring_solver"
+source = "examples/wasm/planar_ring_solver_demo.html"
+owning_operation = "geometry.planar_batch_solve.a0"
+status = "handwritten_javascript"

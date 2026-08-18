@@ -1,0 +1,431 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:wavenumber:schema:geometer:geometer.ipc.operation_catalog:a0",
+  "type": "object",
+  "properties": {
+    "catalog": {
+      "type": "string",
+      "const": "wn.geometer.operation_catalog.a0"
+    },
+    "generic_abi": {
+      "type": "string",
+      "const": "a0"
+    },
+    "release_version": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 32
+    },
+    "c_abi_generation": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 4294967295
+    },
+    "operations": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/IpcOperationDeclarationA0"
+      },
+      "minItems": 1
+    },
+    "attachment_descriptor": {
+      "$ref": "#/$defs/IpcAttachmentDescriptorA0"
+    },
+    "limits": {
+      "$ref": "#/$defs/IpcGenericAbiLimitsA0"
+    }
+  },
+  "required": [
+    "catalog",
+    "generic_abi",
+    "release_version",
+    "c_abi_generation",
+    "operations",
+    "attachment_descriptor",
+    "limits"
+  ],
+  "unevaluatedProperties": {
+    "not": {}
+  },
+  "description": "Exact operation catalog embedded into the welcome frame.",
+  "$defs": {
+    "IpcOperationDeclarationA0": {
+      "type": "object",
+      "properties": {
+        "identity": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "request_contract": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "result_contract": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "runtime_dispatch": {
+          "$ref": "#/$defs/IpcRuntimeDispatchA0"
+        },
+        "input_attachments": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/IpcAttachmentDeclarationA0"
+          },
+          "maxItems": 16
+        },
+        "output_attachments": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/IpcAttachmentDeclarationA0"
+          },
+          "maxItems": 16
+        },
+        "request_projection": {
+          "$ref": "#/$defs/IpcPackedProjectionA0"
+        },
+        "result_projection": {
+          "$ref": "#/$defs/IpcPackedProjectionA0"
+        }
+      },
+      "required": [
+        "identity",
+        "request_contract",
+        "result_contract",
+        "runtime_dispatch",
+        "input_attachments",
+        "output_attachments"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      },
+      "description": "One operation exposed by the negotiated generic transport."
+    },
+    "IpcAttachmentDescriptorA0": {
+      "type": "object",
+      "properties": {
+        "wasm32": {
+          "$ref": "#/$defs/IpcAttachmentLayoutWasm32A0"
+        },
+        "pointer64": {
+          "$ref": "#/$defs/IpcAttachmentLayoutPointer64A0"
+        }
+      },
+      "required": [
+        "wasm32",
+        "pointer64"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "IpcGenericAbiLimitsA0": {
+      "type": "object",
+      "properties": {
+        "operation_id_bytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 128
+        },
+        "request_json_bytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 8388608
+        },
+        "response_json_bytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 8388608
+        },
+        "attachment_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 16
+        },
+        "attachment_name_bytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 128
+        },
+        "attachment_media_type_bytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 128
+        },
+        "attachment_bytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 268435456
+        },
+        "aggregate_attachment_bytes_native": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 536870912
+        },
+        "aggregate_attachment_bytes_wasm": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 268435456
+        }
+      },
+      "required": [
+        "operation_id_bytes",
+        "request_json_bytes",
+        "response_json_bytes",
+        "attachment_count",
+        "attachment_name_bytes",
+        "attachment_media_type_bytes",
+        "attachment_bytes",
+        "aggregate_attachment_bytes_native",
+        "aggregate_attachment_bytes_wasm"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      },
+      "description": "Bounds shared by the generic C ABI operation catalog."
+    },
+    "IpcRuntimeDispatchA0": {
+      "type": "string",
+      "enum": [
+        "logical_dto",
+        "packed_attachment"
+      ]
+    },
+    "IpcAttachmentDeclarationA0": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "media_types": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "maxItems": 16
+        },
+        "max_bytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 268435456
+        }
+      },
+      "required": [
+        "name",
+        "required",
+        "media_types",
+        "max_bytes"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      },
+      "description": "Named raw-attachment declaration in the negotiated operation catalog."
+    },
+    "IpcPackedProjectionA0": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "packed_attachment"
+        },
+        "attachment_name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "format": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        }
+      },
+      "required": [
+        "kind",
+        "attachment_name",
+        "format"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "IpcAttachmentLayoutWasm32A0": {
+      "type": "object",
+      "properties": {
+        "size": {
+          "type": "integer",
+          "minimum": 36,
+          "maximum": 36
+        },
+        "offsets": {
+          "$ref": "#/$defs/IpcAttachmentOffsetsWasm32A0"
+        }
+      },
+      "required": [
+        "size",
+        "offsets"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "IpcAttachmentLayoutPointer64A0": {
+      "type": "object",
+      "properties": {
+        "size": {
+          "type": "integer",
+          "minimum": 56,
+          "maximum": 56
+        },
+        "offsets": {
+          "$ref": "#/$defs/IpcAttachmentOffsetsPointer64A0"
+        }
+      },
+      "required": [
+        "size",
+        "offsets"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "IpcAttachmentOffsetsWasm32A0": {
+      "type": "object",
+      "properties": {
+        "struct_size": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 0
+        },
+        "flags": {
+          "type": "integer",
+          "minimum": 4,
+          "maximum": 4
+        },
+        "name": {
+          "type": "integer",
+          "minimum": 8,
+          "maximum": 8
+        },
+        "name_size": {
+          "type": "integer",
+          "minimum": 12,
+          "maximum": 12
+        },
+        "media_type": {
+          "type": "integer",
+          "minimum": 16,
+          "maximum": 16
+        },
+        "media_type_size": {
+          "type": "integer",
+          "minimum": 20,
+          "maximum": 20
+        },
+        "data": {
+          "type": "integer",
+          "minimum": 24,
+          "maximum": 24
+        },
+        "data_size": {
+          "type": "integer",
+          "minimum": 28,
+          "maximum": 28
+        },
+        "reserved0": {
+          "type": "integer",
+          "minimum": 32,
+          "maximum": 32
+        }
+      },
+      "required": [
+        "struct_size",
+        "flags",
+        "name",
+        "name_size",
+        "media_type",
+        "media_type_size",
+        "data",
+        "data_size",
+        "reserved0"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      },
+      "description": "wasm32 attachment-descriptor member offsets."
+    },
+    "IpcAttachmentOffsetsPointer64A0": {
+      "type": "object",
+      "properties": {
+        "struct_size": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 0
+        },
+        "flags": {
+          "type": "integer",
+          "minimum": 4,
+          "maximum": 4
+        },
+        "name": {
+          "type": "integer",
+          "minimum": 8,
+          "maximum": 8
+        },
+        "name_size": {
+          "type": "integer",
+          "minimum": 16,
+          "maximum": 16
+        },
+        "media_type": {
+          "type": "integer",
+          "minimum": 24,
+          "maximum": 24
+        },
+        "media_type_size": {
+          "type": "integer",
+          "minimum": 32,
+          "maximum": 32
+        },
+        "data": {
+          "type": "integer",
+          "minimum": 40,
+          "maximum": 40
+        },
+        "data_size": {
+          "type": "integer",
+          "minimum": 48,
+          "maximum": 48
+        },
+        "reserved0": {
+          "type": "integer",
+          "minimum": 52,
+          "maximum": 52
+        }
+      },
+      "required": [
+        "struct_size",
+        "flags",
+        "name",
+        "name_size",
+        "media_type",
+        "media_type_size",
+        "data",
+        "data_size",
+        "reserved0"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      },
+      "description": "64-bit attachment-descriptor member offsets."
+    }
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "name": "@wavenumber/geometer-contract-toolchain",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "packageManager": "npm@11.16.0",
+  "scripts": {
+    "check:node-toolchain": "node scripts/check-node-toolchain.mjs",
+    "generate:contracts": "npm run check:node-toolchain && node scripts/generate-contracts.mjs && node scripts/generate-cpp-contracts.mjs && node scripts/generate-typescript-contracts.mjs && node scripts/generate-rust-contracts.mjs && node scripts/generate-python-contracts.mjs && node scripts/generate-contract-docs.mjs && node scripts/build-typescript-package.mjs && node scripts/build-typescript-examples.mjs",
+    "generate:docs": "npm run check:node-toolchain && node scripts/generate-contract-docs.mjs",
+    "check:contract-vectors": "node scripts/check-contract-vectors.mjs",
+    "check:analytic-candidate": "npm run check:node-toolchain && node scripts/check-analytic-contract-candidate.mjs",
+    "check:docs": "npm run check:node-toolchain && node scripts/generate-contract-docs.mjs --check",
+    "check:typescript": "node scripts/generate-typescript-contracts.mjs --check && node scripts/build-typescript-package.mjs --check && node scripts/build-typescript-examples.mjs --check",
+    "check:contracts": "npm run check:node-toolchain && biome check src/ts/wn-geometer-contract-emitter src/ts/geometer scripts && node scripts/generate-contracts.mjs --check && node scripts/generate-cpp-contracts.mjs --check && npm run check:typescript && node scripts/generate-rust-contracts.mjs --check && node scripts/generate-python-contracts.mjs --check && node scripts/generate-contract-docs.mjs --check && npm run check:contract-vectors && node scripts/check-analytic-contract-candidate.mjs"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.7",
+    "@types/three": "0.161.2",
+    "@typespec/compiler": "1.14.0",
+    "@typespec/json-schema": "1.14.0",
+    "@wavenumber/wn-geometer-contract-emitter": "file:src/ts/wn-geometer-contract-emitter",
+    "ajv": "8.20.0",
+    "esbuild": "0.27.2",
+    "three": "0.161.0",
+    "typescript": "5.9.3"
+  },
+  "allowScripts": {
+    "esbuild@0.27.2": true
+  }
+}

@@ -1,5 +1,7 @@
 * text=auto
 
+.gitattributes text eol=lf
+
 *.bat text eol=crlf
 *.ps1 text eol=crlf
 
@@ -11,10 +13,16 @@
 *.html text eol=lf
 *.js text eol=lf
 *.json text eol=lf
+*.mjs text eol=lf
 *.md text eol=lf
 *.py text eol=lf
+*.rs text eol=lf
 *.sh text eol=lf
+*.svg text eol=lf
 *.toml text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.tsp text eol=lf
 *.txt text eol=lf
 *.yaml text eol=lf
 *.yml text eol=lf
@@ -27,4 +35,11 @@
 *.lib binary
 *.png binary
 *.so binary
+*.ttf binary
 *.wasm binary
+
+# Preserve the upstream OFL text byte-for-byte, including its authored spacing.
+docs/design/assets/fonts/Cousine/OFL.txt whitespace=-blank-at-eol
+
+# Emscripten's generated modular loader retains an indented blank template line.
+dist/wasm/browser/geometer.js whitespace=-blank-at-eol

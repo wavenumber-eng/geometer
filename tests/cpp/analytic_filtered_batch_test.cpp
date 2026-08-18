@@ -215,7 +215,8 @@ void test_arc_relationships_and_dependency_status()
             "one-nanometre disk overlap was not area");
     require(single_pair(evaluate(2000, 1000, 1000), 1).dimension == 1,
             "externally tangent disks were not point contact");
-    const auto& contained = single_pair(evaluate(0, 2000, 1000), 3);
+    const auto contained_result = evaluate(0, 2000, 1000);
+    const auto& contained = single_pair(contained_result, 3);
     require(contained.left_contains_right && !contained.right_contains_left,
             "disk containment flags drifted");
     require(single_pair(evaluate(0, 1000, 1000), 3).equality, "equal disks were not equal");

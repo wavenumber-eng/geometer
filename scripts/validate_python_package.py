@@ -19,6 +19,8 @@ DEFAULT_MACOS_DEPLOYMENT_TARGET = "11.0"
 PACKAGE_VALIDATION_CODE = r"""
 import json
 import os
+import hashlib
+import re
 from pathlib import Path
 
 import geometer
@@ -32,11 +34,100 @@ package_dir = Path(geometer.__file__).resolve().parent
 exe = geometer.executable_path().resolve()
 if package_dir not in exe.parents:
     raise RuntimeError(f"expected bundled package executable under {package_dir}, got {exe}")
+attestation_path = exe.with_name("geometer.build-attestation.json")
+if not attestation_path.is_file():
+    raise RuntimeError("bundled native executable is missing its build attestation")
+attestation_bytes = attestation_path.read_bytes()
+attestation = json.loads(attestation_bytes)
+canonical_attestation = (json.dumps(attestation, indent=2, sort_keys=True, ensure_ascii=True) + "\n").encode("utf-8")
+if attestation_bytes != canonical_attestation:
+    raise RuntimeError("bundled native build attestation is not canonical deterministic JSON")
+if set(attestation) != {"artifact", "build", "producer", "schema"}:
+    raise RuntimeError("bundled native build attestation has unexpected root fields")
+if attestation.get("schema") != "wn.geometer.native_build_attestation.a1":
+    raise RuntimeError("bundled native build attestation has an unexpected schema")
+artifact = attestation.get("artifact", {})
+build = attestation.get("build", {})
+producer = attestation.get("producer", {})
+if set(artifact) != {"name", "sha256"}:
+    raise RuntimeError("bundled native build attestation has unexpected artifact fields")
+if set(build) != {"arch", "build_type", "c_abi_version", "compiler", "generator", "geometer_version", "occt", "platform", "source"}:
+    raise RuntimeError("bundled native build attestation has unexpected build fields")
+if set(producer) != {"identity", "source", "source_sha256"}:
+    raise RuntimeError("bundled native build attestation has unexpected producer fields")
+if producer.get("identity") != "wn.geometer.native_build_attestation_generator.a1":
+    raise RuntimeError("bundled native build attestation has an unexpected producer")
+if producer.get("source") != "scripts/native_build_attestation.py":
+    raise RuntimeError("bundled native build attestation has an unexpected producer source")
+if re.fullmatch(r"[0-9a-f]{64}", str(producer.get("source_sha256"))) is None:
+    raise RuntimeError("bundled native build attestation has an invalid producer source digest")
+compiler = build.get("compiler", {})
+occt = build.get("occt", {})
+source = build.get("source", {})
+if set(compiler) != {"authority", "id", "version"} or compiler.get("authority") != "cmake_compiler_id_and_version":
+    raise RuntimeError("bundled native build attestation has invalid compiler provenance")
+if set(occt) != {"authority", "profile_sha256", "repo", "tag", "version"}:
+    raise RuntimeError("bundled native build attestation has invalid OCCT provenance")
+if occt.get("authority") not in {"geometer_occt_profile_verified", "occt_profile_unverified"}:
+    raise RuntimeError("bundled native build attestation has unsupported OCCT authority")
+if set(source) != {"authority", "revision", "tree_state"}:
+    raise RuntimeError("bundled native build attestation has invalid source provenance")
+if artifact.get("name") != exe.name:
+    raise RuntimeError("bundled native build attestation names a different executable")
+if artifact.get("sha256") != hashlib.sha256(exe.read_bytes()).hexdigest():
+    raise RuntimeError("bundled native build attestation SHA-256 does not match the executable")
 
 version = geometer.version()
+if build.get("geometer_version") != version.string or build.get("c_abi_version") != version.abi:
+    raise RuntimeError("bundled native build attestation version/C ABI does not match the executable")
 generated_options = decode_model_bounds_options_a0_json(b'{"format":"step"}')
 if generated_options.format.value != "step":
     raise RuntimeError("generated contract internals were not installed correctly")
+
+empty_analytic_request = geometer.AnalyticPlanarBooleanBatchRequestA0(
+    jobs=(),
+    relationship_queries=(),
+)
+disk_analytic_request = geometer.AnalyticPlanarBooleanBatchRequestA0(
+    jobs=(
+        geometer.AnalyticPlanarBooleanJob(
+            job_id=1,
+            stages=(
+                geometer.AnalyticPlanarBooleanStage(
+                    stage_id=1,
+                    operation=geometer.StageOperation.UNION_STAGE,
+                    operands=(
+                        geometer.DiskOperand(
+                            operand_id=1,
+                            kind="disk",
+                            feature_id=1,
+                            center=geometer.AnalyticPointNm(x=0, y=0),
+                            radius_nm=1_000_000,
+                        ),
+                    ),
+                ),
+            ),
+        ),
+    ),
+    relationship_queries=(),
+)
+with geometer.GeometerClient(exe, client_name="python-wheel-validation") as analytic_client:
+    empty_analytic_result = analytic_client.analytic_planar_boolean_batch(
+        empty_analytic_request,
+        timeout=10,
+    )
+    disk_analytic_result = analytic_client.analytic_planar_boolean_batch(
+        disk_analytic_request,
+        timeout=10,
+    )
+if empty_analytic_result.job_results or empty_analytic_result.relationship_results:
+    raise RuntimeError("empty analytic batch did not return an empty result")
+if len(disk_analytic_result.job_results) != 1:
+    raise RuntimeError("nontrivial analytic batch did not return one job result")
+disk_job = disk_analytic_result.job_results[0]
+if disk_job.status != "success" or not disk_job.result_regions or len(disk_job.digest_sha256) != 64:
+    raise RuntimeError("nontrivial analytic batch did not return canonical disk geometry")
+
 bounds = geometer.model_bounds(step)
 if bounds.schema != "geometry.model_bounds.a0" or not bounds.source_hash:
     raise RuntimeError("generated model-bounds boundary did not return a validated result")
@@ -104,6 +195,8 @@ print(json.dumps({
     "detail_edges": detail_count,
     "outline_edges": outline_count,
     "model_bounds_hash": bounds.source_hash,
+    "analytic_disk_regions": len(disk_job.result_regions),
+    "analytic_disk_digest": disk_job.digest_sha256,
     "glb_bytes": len(glb),
     "planar_step_bytes": len(planar_step),
     "svg": str(svg_path),

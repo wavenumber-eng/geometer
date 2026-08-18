@@ -11,25 +11,35 @@ import { applyProjectionDeferrals } from "./contract-projection-deferral.mjs";
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const catalogPath = join(root, "contracts/geometer/generated/wn_geometer_contract_catalog.a0.json");
 const catalogText = await readFile(catalogPath, "utf8");
-const catalog = await applyProjectionDeferrals(JSON.parse(catalogText), "cpp", {
+const contractCatalog = JSON.parse(catalogText);
+const projectionCatalog = await applyProjectionDeferrals(contractCatalog, "cpp", {
   retainRuntimeDispatch: true,
 });
+const packedContracts = new Set(
+  projectionCatalog.operations
+    .filter((operation) => operation.runtime_dispatch === "packed_attachment")
+    .flatMap((operation) => [operation.request_contract, operation.result_contract]),
+);
+const jsonCodecRoots = projectionCatalog.roots.filter(
+  (rootRecord) => !packedContracts.has(rootRecord.contract_identity),
+);
 const catalogSha256 = createHash("sha256").update(catalogText).digest("hex");
-const output = join(root, catalog.output_roots.cpp);
+const output = join(root, contractCatalog.output_roots.cpp);
 const checkOnly = process.argv.includes("--check");
 if (process.argv.some((value, index) => index > 1 && value !== "--check")) {
   throw new Error("Usage: node scripts/generate-cpp-contracts.mjs [--check]");
 }
 
-const declarations = new Map(catalog.declarations.map((item) => [item.name, item]));
+const declarations = new Map(projectionCatalog.declarations.map((item) => [item.name, item]));
 const shortNames = new Map();
-for (const declaration of catalog.declarations) {
+for (const declaration of projectionCatalog.declarations) {
   const name = shortName(declaration.name);
   if (shortNames.has(name)) throw new Error(`Duplicate C++ declaration name ${name}.`);
   shortNames.set(name, declaration.name);
 }
 
-const ordered = topologicalOrder(catalog.declarations);
+const ordered = topologicalOrder(projectionCatalog.declarations);
+const codecOrdered = topologicalOrder(reachableDeclarationItems(jsonCodecRoots));
 const header = formatCpp(generateHeader(), "contracts.h");
 const source = formatCpp(generateSource(), "contracts_json.cpp");
 const operationCatalogSource = formatCpp(generateOperationCatalogSource(), "operation_catalog.cpp");
@@ -81,7 +91,7 @@ function generateHeader() {
     "",
   ];
   for (const declaration of ordered) lines.push(...headerDeclaration(declaration), "");
-  for (const rootRecord of catalog.roots) {
+  for (const rootRecord of jsonCodecRoots) {
     const type = shortName(rootRecord.name);
     lines.push(
       `bool decode_json(const unsigned char* data, std::size_t size, ${type}* value,`,
@@ -109,6 +119,7 @@ function headerDeclaration(item) {
       `using ${name} = std::variant<${item.variants.map((variant) => cppType(variant.type)).join(", ")}>;`,
     ];
   }
+  if (item.kind === "scalar") return [`using ${name} = ${cppType(item.base)};`];
   if (item.kind !== "model") throw new Error(`Unsupported declaration kind ${item.kind}.`);
   if (item.model_kind === "array")
     return [`using ${name} = std::vector<${cppType(item.index_value)}>;`];
@@ -144,7 +155,7 @@ function generateSource() {
     "namespace",
     "{",
     "",
-    ...ordered.flatMap((item) => [
+    ...codecOrdered.flatMap((item) => [
       `bool decode_${shortName(item.name)}(const rapidjson::Value&, ${shortName(item.name)}*, const std::string&, ContractError*);`,
       `bool write_${shortName(item.name)}(rapidjson::Writer<rapidjson::StringBuffer>&, const ${shortName(item.name)}&, ContractError*);`,
     ]),
@@ -293,7 +304,7 @@ function generateSource() {
     "}",
     "",
   ];
-  for (const item of ordered) lines.push(...decoder(item), "", ...writer(item), "");
+  for (const item of codecOrdered) lines.push(...decoder(item), "", ...writer(item), "");
   lines.push(
     "bool parse_document(const unsigned char* data, std::size_t size, rapidjson::Document* document, ContractError* error)",
     "{",
@@ -316,7 +327,7 @@ function generateSource() {
     "} // namespace",
     "",
   );
-  for (const rootRecord of catalog.roots) {
+  for (const rootRecord of jsonCodecRoots) {
     const type = shortName(rootRecord.name);
     lines.push(
       `bool decode_json(const unsigned char* data, std::size_t size, ${type}* value, ContractError* error)`,
@@ -344,7 +355,7 @@ function generateOperationCatalogSource() {
     generic_abi: "a0",
     release_version: "__WN_RELEASE_VERSION__",
     c_abi_generation: "__WN_C_ABI_GENERATION__",
-    operations: catalog.operations.map((operation) => ({
+    operations: projectionCatalog.operations.map((operation) => ({
       identity: operation.identity,
       request_contract: operation.request_contract,
       result_contract: operation.result_contract,
@@ -414,9 +425,9 @@ function generateOperationCatalogSource() {
   const requiredAttachmentNames = [];
   const logicalResultChecks = [];
   const rootsByContract = new Map(
-    catalog.roots.map((rootRecord) => [rootRecord.contract_identity, rootRecord]),
+    projectionCatalog.roots.map((rootRecord) => [rootRecord.contract_identity, rootRecord]),
   );
-  for (const operation of catalog.operations) {
+  for (const operation of projectionCatalog.operations) {
     requestContracts.push(
       `    if (operation_id == ${JSON.stringify(operation.identity)}) return ${JSON.stringify(operation.request_contract)};`,
     );
@@ -818,6 +829,7 @@ function cppType(type) {
         string: "std::string",
         boolean: "bool",
         float64: "double",
+        int64: "std::int64_t",
         uint32: "std::uint32_t",
         uint64: "std::uint64_t",
       }[type.name] ?? unsupported(type)
@@ -893,4 +905,17 @@ function dependencies(item) {
   for (const property of item.properties ?? []) scan(property.type);
   for (const variant of item.variants ?? []) scan(variant.type);
   return found;
+}
+
+function reachableDeclarationItems(roots) {
+  const reachable = new Set();
+  function visit(name) {
+    if (reachable.has(name)) return;
+    const declaration = declarations.get(name);
+    if (!declaration) throw new Error(`Catalog reference does not resolve: ${name}.`);
+    reachable.add(name);
+    for (const dependency of dependencies(declaration)) visit(dependency);
+  }
+  for (const rootRecord of roots) visit(rootRecord.name);
+  return projectionCatalog.declarations.filter((declaration) => reachable.has(declaration.name));
 }

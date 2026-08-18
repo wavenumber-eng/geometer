@@ -256,14 +256,20 @@ GEOMETER_OCCT_CACHE_PUBLIC_BASE_URL=https://artifacts.wavenumber.net
 - `off` - ignore binary caches and build from source.
 - `only` - require a binary cache hit and fail otherwise.
 
-Cache recipe keys cover files and explicit values that can change the installed
-OCCT bytes. Cache transport code and the indirect dependency-version file are
-not hashed: the selected OCCT repository/tag, platform, configuration, library
-type, Emscripten version when applicable, and platform baselines are already
-included directly.
+Cache recipe keys cover structured CMake definitions and explicit semantic
+values that can change the installed OCCT bytes. The same definition records
+emit the CMake `-D` arguments and feed the recipe hash. Workspace paths, build
+parallelism, orchestration scripts, cache transport code, and the indirect
+dependency-version file are not hashed. The selected OCCT repository/tag,
+platform, configuration, library type, Emscripten version when applicable, and
+platform baselines are included directly. Native profiles also identify the
+compiler family, ABI-relevant major version, and C++ runtime/ABI selection;
+compiler patch releases do not rotate the key.
 Previously accepted OCCT 8.0.1 archives may be reached only through exact
 profile, destination-recipe, and SHA aliases; there is no generic stale-cache
-fallback.
+fallback. Reviewed local marker-only recipe transitions are also exact and
+one-way: all non-recipe profile fields and the installed OCCT version must
+already match, and the install tree is retained without a rebuild.
 
 R2 credentials are only needed for producer uploads or explicit private fallback
 testing. Copy `.env.example` to `.env` for those cases and fill the `R2_*`
@@ -277,7 +283,19 @@ The vendored RapidJSON v1.1.0 copy includes Geometer's small modern Clang
 compatibility patch so OCCT's GLTF toolkit compiles in native and WASM builds.
 
 Build outputs are copied into `dist/native/<platform>/` after a successful
-native build.
+native build. The CLI post-build step also writes
+`geometer.build-attestation.json` beside the build-tree executable and copies
+it beside the distributed executable. The deterministic sidecar binds the
+exact executable SHA-256 and version/C ABI to compiler, platform, build type,
+OCCT tag, CMake generator, and Git source state. Validate it directly with:
+
+```powershell
+uv run python scripts/native_build_attestation.py validate --executable dist/native/windows-x64/geometer.exe
+```
+
+Dirty worktrees produce diagnostic sidecars but cannot set the qualification
+promotion field `build_provenance_attested` to true. Release qualification
+therefore requires a rebuild from a clean authoritative Git worktree.
 Current platform directory names use `windows-x64`, `linux-x64`, `linux-arm64`,
 and `macos-arm64`.
 
@@ -311,8 +329,10 @@ python -m twine check out\wheelhouse\*.whl
 
 The package validation script builds the local wheel, installs it into a clean
 temporary environment, verifies that Python resolves the bundled executable from
-inside the installed package, verifies the generated `geometer` console script,
-and runs the headless package example:
+inside the installed package, imports the public analytic DTO/client surface,
+executes empty and nontrivial analytic IPC calls against that bundled
+executable, verifies the generated `geometer` console script, and runs the
+headless package example:
 
 ```powershell
 uv run python scripts\validate_python_package.py
@@ -349,7 +369,7 @@ Before uploading, verify both the filename and the bundled executable:
 
 ```bash
 otool -l dist/native/macos-arm64/geometer | rg -A5 'LC_BUILD_VERSION|LC_VERSION_MIN_MACOSX'
-python -m twine check out/wheelhouse/macos-arm64/wn_geometer-2026.6.23-py3-none-macosx_11_0_arm64.whl
+python -m twine check out/wheelhouse/macos-arm64/wn_geometer-2026.8.18-py3-none-macosx_11_0_arm64.whl
 ```
 
 The Mach-O `minos` value must not be newer than the wheel platform tag. Do not
@@ -381,21 +401,21 @@ PyPI upload commands:
 
 ```powershell
 # Preflight metadata.
-python -m twine check out\wheelhouse\windows-x64\wn_geometer-2026.6.23-py3-none-win_amd64.whl out\wheelhouse\linux-x64\wn_geometer-2026.6.23-py3-none-manylinux_2_35_x86_64.whl out\wheelhouse\macos-arm64\wn_geometer-2026.6.23-py3-none-macosx_11_0_arm64.whl
+python -m twine check out\wheelhouse\windows-x64\wn_geometer-2026.8.18-py3-none-win_amd64.whl out\wheelhouse\linux-x64\wn_geometer-2026.8.18-py3-none-manylinux_2_35_x86_64.whl out\wheelhouse\macos-arm64\wn_geometer-2026.8.18-py3-none-macosx_11_0_arm64.whl
 
 # Optional dry-run project on TestPyPI.
-python -m twine upload --repository testpypi out\wheelhouse\windows-x64\wn_geometer-2026.6.23-py3-none-win_amd64.whl out\wheelhouse\linux-x64\wn_geometer-2026.6.23-py3-none-manylinux_2_35_x86_64.whl out\wheelhouse\macos-arm64\wn_geometer-2026.6.23-py3-none-macosx_11_0_arm64.whl
+python -m twine upload --repository testpypi out\wheelhouse\windows-x64\wn_geometer-2026.8.18-py3-none-win_amd64.whl out\wheelhouse\linux-x64\wn_geometer-2026.8.18-py3-none-manylinux_2_35_x86_64.whl out\wheelhouse\macos-arm64\wn_geometer-2026.8.18-py3-none-macosx_11_0_arm64.whl
 
 # Public PyPI release.
-python -m twine upload --repository pypi out\wheelhouse\windows-x64\wn_geometer-2026.6.23-py3-none-win_amd64.whl out\wheelhouse\linux-x64\wn_geometer-2026.6.23-py3-none-manylinux_2_35_x86_64.whl out\wheelhouse\macos-arm64\wn_geometer-2026.6.23-py3-none-macosx_11_0_arm64.whl
+python -m twine upload --repository pypi out\wheelhouse\windows-x64\wn_geometer-2026.8.18-py3-none-win_amd64.whl out\wheelhouse\linux-x64\wn_geometer-2026.8.18-py3-none-manylinux_2_35_x86_64.whl out\wheelhouse\macos-arm64\wn_geometer-2026.8.18-py3-none-macosx_11_0_arm64.whl
 ```
 
 For token-based upload, set `TWINE_USERNAME=__token__` and put the PyPI or
 TestPyPI API token in `TWINE_PASSWORD`, or use an equivalent `.pypirc`/keyring
 setup. Do not write upload tokens into the repository.
 
-The current release target is `wn-geometer==2026.6.23`; callers install
-`wn-geometer==2026.6.23` and import `geometer`.
+The current release target is `wn-geometer==2026.8.18`; callers install
+`wn-geometer==2026.8.18` and import `geometer`.
 
 For local token setup, copy `.env.example` to `.env`, fill the token values,
 and keep `.env` out of version control.
@@ -440,6 +460,88 @@ The public Python package uses the executable backend only. Keep ctypes/native
 loading experiments out of the normal wheel and application path unless a future
 ADR explicitly reopens that backend.
 
+## Analytic Production Qualification
+
+Use an existing Release executable to replay the governed analytic request
+through production IPC without rebuilding OCCT:
+
+```powershell
+uv run python scripts\qualify_analytic_planar_boolean.py --power-mode balanced
+```
+
+The default governed request is synthetic cross-transport evidence. Supply an
+external corpus with `--corpus`; its `external_real_board` cases require source
+and exporter identity, source digest, exporter revision, explicit qualification
+redistribution authorization, and license scope. Reports are written below
+`out/analytic-qualification/` by default. Process RSS remains a separately
+labelled external envelope.
+
+Corpus request paths are contained relative paths. Canonical lowercase `.hex`
+files and exact raw `.gmabrq01` files are supported; the suffix selects the
+decoder, and magic/accounting mismatches fail closed. Replay the governed RT
+local candidate without duplicating its raw bytes as hex:
+
+```powershell
+uv run python scripts\qualify_analytic_planar_boolean.py `
+  --corpus tests\contracts\vectors\analytic\real-board\rt_super_c1_pwr4\corpus.json `
+  --executable build\src\cpp\cli\geometer.exe `
+  --telemetry-helper build\tests\cpp\geometer_analytic_solver_telemetry_helper.exe `
+  --warmup-count 1 --repeat-count 2 --require-target --require-solver-telemetry
+```
+
+The checked-in report is a local Ryzen 9 5950X, dirty-build observation. It is
+not a clean-build promotion record. Its machine identity and the 1-second/
+512-MiB target remain comparative observations rather than release gates.
+
+Native builds also produce the test/qualification-only
+`geometer_analytic_solver_telemetry_helper` target. The harness discovers it
+only from `--telemetry-helper`, `GEOMETER_ANALYTIC_TELEMETRY_HELPER`, or the
+canonical current-workspace native build paths. Use the required gate explicitly:
+
+```powershell
+uv run python scripts\qualify_analytic_planar_boolean.py --require-solver-telemetry
+```
+
+Release runs must additionally pass
+`--require-promotion-attested`; the command then exits unsuccessfully unless
+the executable sidecar matches the current authoritative clean source and a
+verified resolved OCCT install profile, and any external real-board case passes
+the portable expected-result, repeat, byte-equality, zero-failure/fallback, and
+5-second/1-GiB hard-ceiling gates.
+
+An external real-board corpus enables this requirement automatically. Missing,
+unexecutable, or incompatible helpers fail closed. For every measured run the
+helper consumes the identical `GMABRQ01` bytes through
+`decode_analytic_request_packet` and `build_analytic_filtered_batch`; the
+harness rejects its counters unless its complete result packet is byte-for-byte
+equal to the production executable IPC result.
+
+Auto-discovered helpers must also be newer than their adjacent `geometer_lib`
+artifact, and that library must be newer than the current native solver source
+closure. A stale build is rejected with the exact helper target to rebuild.
+
+The report schema is
+`wn.geometer.analytic_planar_boolean_qualification.a2`; the internal counter
+schema is `wn.geometer.analytic_solver_telemetry.a0`. Report identity binds the
+request and expected-result digests, production executable/toolchain profile,
+helper executable SHA-256, telemetry schema, machine profile, run counts, power
+mode, and target policy. Runtime timing, RSS, and counter observations are not
+identity inputs. Per-job `emitted_bytes` is the logical encoded footprint of
+that isolated job before canonical batch merging and shared-table
+deduplication; batch `emitted_bytes` is the exact canonical result-packet size.
+The helper is neither distributed nor a public operation/API, and it does not
+change the A0 request/result wire. Internal telemetry alone cannot claim the
+real-board promotion gate: build-attested executable provenance is a separate
+required gate. Machine identity is recorded for comparison but does not affect
+portable production eligibility. Missing
+sidecars fall back to explicitly un-attested workspace hints; invalid or stale
+adjacent sidecars fail closed. Every external real-board
+case also needs a governed expected-result SHA-256; deterministic self-output
+without that authority remains comparative evidence only. Promotion also needs
+at least two production-result and byte-matched telemetry observations; a
+single run is permitted for smoke/diagnostic use but cannot establish the
+promotion determinism gate.
+
 ## WASM Build
 
 From the repository root:
@@ -458,7 +560,9 @@ This script:
    `geometer.wasm` into `dist/wasm/browser/`. This is the official application
    integration WASM and includes OCCT-backed STEP/HLR/GLB plus planar byte APIs.
 6. Copies the Node CLI parity/test outputs `geometer-node-test.js` /
-   `geometer-node-test.wasm` into `dist/wasm/node-test/`.
+   `geometer-node-test.wasm` into `dist/wasm/node-test/` and writes its local
+   CommonJS package boundary for direct execution beneath the repository's ESM
+   root.
 7. Copies the planar-only browser C ABI outputs `geometer-planar-browser.js` /
    `geometer-planar-browser.wasm` into `dist/wasm/planar-browser/`. This
    smaller build intentionally excludes OCCT/STEP and is retained for
@@ -480,13 +584,13 @@ The full browser target also exports `geometer_version_string` and
 `geometer_abi_version`. Downstream browser consumers should check those before
 depending on a specific ABI. Earlier pre-date ABI integers tracked planar batch,
 diagnostic, and triangulation additions; current releases use the ADR 006
-date-based ABI generation, for example `20260623`.
+date-based ABI generation, for example `20260818`.
 
 ## Versioning
 
 Geometer follows [ADR 006](docs/adr/006_date_based_versioning_policy.md).
-The current release identity is `v2026-06-23`; the CMake/PyPI package version
-is `2026.6.23`; the C ABI generation is `20260623`.
+The current release identity is `v2026-08-18`; the CMake/PyPI package version
+is `2026.8.18`; the C ABI generation is `20260818`.
 
 The root `CMakeLists.txt` declares `GEOMETER_RELEASE_DATE`,
 `GEOMETER_RELEASE_VERSION`, and `GEOMETER_ABI_VERSION`. The root
@@ -560,7 +664,8 @@ uv run pytest tests\typescript -q
 ```
 
 Validate generated Rust codecs, formatting/lints, exact A0 framing, a clean
-crate consumer, and live persistent native-process model bounds:
+packaged-crate consumer running friendly analytic IPC against the platform
+`dist` executable, and live persistent native-process model bounds:
 
 ```powershell
 node scripts\generate-rust-contracts.mjs --check

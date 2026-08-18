@@ -593,7 +593,10 @@ void test_governance_and_sparse_scaling()
     exact_memory.working_memory_bytes = low;
     const auto exact_memory_result = build_disjoint(8, exact_memory);
     require(exact_memory_result.error == AnalyticFilteredOutcomesError::none &&
-                exact_memory_result.telemetry.peak_working_memory_bytes == low,
+                exact_memory_result.telemetry.peak_working_memory_bytes == low &&
+                exact_memory_result.telemetry.predicate_calls ==
+                    exact_memory_result.telemetry.lineage_work_units +
+                        exact_memory_result.telemetry.outcome_work_units,
             "exact outcome memory boundary failed");
     --exact_memory.working_memory_bytes;
     const auto short_memory = build_disjoint(8, exact_memory);

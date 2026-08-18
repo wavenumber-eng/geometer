@@ -13,6 +13,10 @@ namespace geometer::analytic_execution_detail
 enum class TopologyPolicy
 {
     resolution_50nm,
+    // Swept local-union only: ordinary 50 nm behavior remains in force, but
+    // mathematically proven singleton-integer construction endpoints preserve
+    // distinct exact points instead of merging them by proximity.
+    resolution_50nm_preserve_integer_construction_endpoints,
     strict_published_geometry,
 };
 
@@ -22,7 +26,14 @@ inline constexpr TopologyPolicy kStrictPublishedGeometry =
 
 [[nodiscard]] inline constexpr bool allows_resolution_topology(TopologyPolicy policy) noexcept
 {
-    return policy == TopologyPolicy::resolution_50nm;
+    return policy == TopologyPolicy::resolution_50nm ||
+           policy == TopologyPolicy::resolution_50nm_preserve_integer_construction_endpoints;
+}
+
+[[nodiscard]] inline constexpr bool
+preserves_integer_construction_endpoints(TopologyPolicy policy) noexcept
+{
+    return policy == TopologyPolicy::resolution_50nm_preserve_integer_construction_endpoints;
 }
 
 [[nodiscard]] AnalyticBroadPhaseResult

@@ -10,7 +10,7 @@ use geometer_client::{
 use serde::Deserialize;
 use serde_json::Value;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tokio::process::Command;
+use tokio::process::{ChildStdin, ChildStdout, Command};
 
 #[tokio::test]
 async fn shutdown_frame_matches_the_governed_exact_bytes() {
@@ -133,6 +133,49 @@ async fn persistent_client_runs_model_bounds_twice_and_closes_cleanly() {
         .unwrap();
     assert_eq!(first.source.hash, second.source.hash);
     assert_eq!(first.bounds, second.bounds);
+    client.close().await.unwrap();
+}
+
+#[tokio::test]
+async fn persistent_client_runs_typed_analytic_batch_twice() {
+    let root = repository_root();
+    let executable = native_executable(&root);
+    let client = GeometerClient::spawn(&executable, "analytic-client-test", "a0")
+        .await
+        .unwrap();
+    let request = contracts::AnalyticPlanarBooleanBatchRequestA0 {
+        jobs: vec![contracts::AnalyticPlanarBooleanJob {
+            job_id: contracts::JobId::new(1).unwrap(),
+            stages: vec![contracts::AnalyticPlanarBooleanStage {
+                stage_id: contracts::StageId::new(1).unwrap(),
+                operation: contracts::StageOperation::UnionStage,
+                operands: vec![contracts::AnalyticPlanarOperand::Disk(
+                    contracts::DiskOperand {
+                        operand_id: contracts::OperandId::new(1).unwrap(),
+                        kind: "disk".to_owned(),
+                        feature_id: contracts::FeatureId::new(1).unwrap(),
+                        center: contracts::PointNm { x: 0, y: 0 },
+                        radius_nm: 1_000_000,
+                    },
+                )],
+            }],
+        }],
+        relationship_queries: Vec::new(),
+    };
+    let first = client
+        .analytic_planar_boolean_batch(&request)
+        .await
+        .unwrap();
+    let second = client
+        .analytic_planar_boolean_batch(&request)
+        .await
+        .unwrap();
+    assert_eq!(first, second);
+    let contracts::AnalyticPlanarBooleanJobResult::Success(success) = &first.job_results[0] else {
+        panic!("single-disk analytic batch returned a job-local failure");
+    };
+    assert_eq!(success.digest_sha256.len(), 64);
+    assert!(!success.result_regions.is_empty());
     client.close().await.unwrap();
 }
 
@@ -404,6 +447,10 @@ async fn duplicate_request_attachment_names_are_correlated_and_nonfatal() {
 }
 
 #[tokio::test]
+#[allow(
+    clippy::too_many_lines,
+    reason = "one raw IPC lifecycle intentionally covers negotiation, strict request decoding, packet rejection, and shutdown"
+)]
 async fn packed_analytic_request_round_trips_through_executable_ipc() {
     let root = repository_root();
     let mut child = Command::new(native_executable(&root))
@@ -499,65 +546,7 @@ async fn packed_analytic_request_round_trips_through_executable_ipc() {
     assert!(u64::from_le_bytes(response.attachments[0].data[48..56].try_into().unwrap()) > 0);
     assert_eq!(packet, single_disk_analytic_request_packet());
 
-    let request_with_extra = br#"{"operation":"geometry.analytic_planar_boolean_batch.a0","request":{"schema":"geometry.analytic_planar_boolean_batch.request.a0","packet":{"attachment":"analytic_planar_boolean_request","format":"geometry.analytic_planar_boolean.packet.a0"},"extra":true}}"#;
-    ipc::write_frame(
-        &mut stdin,
-        &Frame {
-            kind: FrameKind::Request,
-            request_id: 92,
-            json: request_with_extra.to_vec(),
-            attachments: vec![ipc::Attachment {
-                name: "analytic_planar_boolean_request".to_owned(),
-                media_type: "application/vnd.wavenumber.geometer.analytic-planar-boolean-request"
-                    .to_owned(),
-                data: packet.clone(),
-            }],
-        },
-    )
-    .await
-    .unwrap();
-    let response = ipc::read_frame(&mut stdout).await.unwrap().unwrap();
-    assert_eq!(response.kind, FrameKind::Response);
-    assert_eq!(response.request_id, 92);
-    assert!(response.attachments.is_empty());
-    let outcome = contracts::decode_operation_outcome_a0_json(&response.json).unwrap();
-    let contracts::OperationOutcomeA0::Failure(failure) = outcome else {
-        panic!("extra packed request field unexpectedly passed server decoding");
-    };
-    assert_eq!(
-        failure.diagnostics[0].code,
-        "geometer.contract.union_mismatch"
-    );
-
-    let mut malformed = packet;
-    malformed[0] = b'X';
-    ipc::write_frame(
-        &mut stdin,
-        &Frame {
-            kind: FrameKind::Request,
-            request_id: 93,
-            json: request_json.to_vec(),
-            attachments: vec![ipc::Attachment {
-                name: "analytic_planar_boolean_request".to_owned(),
-                media_type: "application/vnd.wavenumber.geometer.analytic-planar-boolean-request"
-                    .to_owned(),
-                data: malformed,
-            }],
-        },
-    )
-    .await
-    .unwrap();
-    let response = ipc::read_frame(&mut stdout).await.unwrap().unwrap();
-    assert_eq!(response.kind, FrameKind::Response);
-    assert!(response.attachments.is_empty());
-    let outcome = contracts::decode_operation_outcome_a0_json(&response.json).unwrap();
-    let contracts::OperationOutcomeA0::Failure(failure) = outcome else {
-        panic!("malformed packed analytic IPC request unexpectedly succeeded");
-    };
-    assert_eq!(
-        failure.diagnostics[0].code,
-        "geometer.contract.analytic_planar_boolean_packet.invalid_packet"
-    );
+    reject_invalid_analytic_requests(&mut stdin, &mut stdout, packet, request_json).await;
 
     ipc::write_frame(
         &mut stdin,
@@ -575,6 +564,72 @@ async fn packed_analytic_request_round_trips_through_executable_ipc() {
         FrameKind::ShutdownAck
     );
     assert!(child.wait().await.unwrap().success());
+}
+
+async fn reject_invalid_analytic_requests(
+    stdin: &mut ChildStdin,
+    stdout: &mut ChildStdout,
+    packet: Vec<u8>,
+    request_json: &[u8],
+) {
+    let request_with_extra = br#"{"operation":"geometry.analytic_planar_boolean_batch.a0","request":{"schema":"geometry.analytic_planar_boolean_batch.request.a0","packet":{"attachment":"analytic_planar_boolean_request","format":"geometry.analytic_planar_boolean.packet.a0"},"extra":true}}"#;
+    ipc::write_frame(
+        stdin,
+        &Frame {
+            kind: FrameKind::Request,
+            request_id: 92,
+            json: request_with_extra.to_vec(),
+            attachments: vec![analytic_request_attachment(packet.clone())],
+        },
+    )
+    .await
+    .unwrap();
+    let response = ipc::read_frame(stdout).await.unwrap().unwrap();
+    assert_eq!(response.kind, FrameKind::Response);
+    assert_eq!(response.request_id, 92);
+    assert!(response.attachments.is_empty());
+    let outcome = contracts::decode_operation_outcome_a0_json(&response.json).unwrap();
+    let contracts::OperationOutcomeA0::Failure(failure) = outcome else {
+        panic!("extra packed request field unexpectedly passed server decoding");
+    };
+    assert_eq!(
+        failure.diagnostics[0].code,
+        "geometer.contract.union_mismatch"
+    );
+
+    let mut malformed = packet;
+    malformed[0] = b'X';
+    ipc::write_frame(
+        stdin,
+        &Frame {
+            kind: FrameKind::Request,
+            request_id: 93,
+            json: request_json.to_vec(),
+            attachments: vec![analytic_request_attachment(malformed)],
+        },
+    )
+    .await
+    .unwrap();
+    let response = ipc::read_frame(stdout).await.unwrap().unwrap();
+    assert_eq!(response.kind, FrameKind::Response);
+    assert!(response.attachments.is_empty());
+    let outcome = contracts::decode_operation_outcome_a0_json(&response.json).unwrap();
+    let contracts::OperationOutcomeA0::Failure(failure) = outcome else {
+        panic!("malformed packed analytic IPC request unexpectedly succeeded");
+    };
+    assert_eq!(
+        failure.diagnostics[0].code,
+        "geometer.contract.analytic_planar_boolean_packet.invalid_packet"
+    );
+}
+
+fn analytic_request_attachment(data: Vec<u8>) -> ipc::Attachment {
+    ipc::Attachment {
+        name: "analytic_planar_boolean_request".to_owned(),
+        media_type: "application/vnd.wavenumber.geometer.analytic-planar-boolean-request"
+            .to_owned(),
+        data,
+    }
 }
 
 fn native_executable(root: &Path) -> PathBuf {

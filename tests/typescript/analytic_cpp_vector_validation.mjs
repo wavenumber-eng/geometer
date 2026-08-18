@@ -1,11 +1,32 @@
 import { spawnSync } from "node:child_process";
-import { existsSync } from "node:fs";
-import { resolve } from "node:path";
+import { createHash } from "node:crypto";
+import { existsSync, readFileSync } from "node:fs";
+import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { decodeAnalyticPlanarBooleanBatchResultA0Packet } from "../../dist/wasm/npm/geometer/analytic-packet-a0.js";
 
 const root = resolve(fileURLToPath(new URL("../..", import.meta.url)));
+const vectorRoot = join(root, "tests", "contracts", "vectors", "analytic");
+const manifest = JSON.parse(readFileSync(join(vectorRoot, "manifest.json"), "utf8"));
+if (
+  manifest.manifest_identity !== "wn.geometer.analytic_packet_vectors" ||
+  manifest.generation !== "a0"
+) {
+  throw new Error("The governed analytic packet vector manifest is incompatible.");
+}
+
+function committedVector(id) {
+  const declaration = manifest.vectors.find((candidate) => candidate.id === id);
+  if (declaration === undefined) throw new Error(`Committed analytic vector ${id} is absent.`);
+  const hex = readFileSync(join(vectorRoot, declaration.file), "ascii").trim();
+  const bytes = Uint8Array.from(Buffer.from(hex, "hex"));
+  const digest = createHash("sha256").update(bytes).digest("hex");
+  if (bytes.byteLength !== declaration.bytes || digest !== declaration.sha256) {
+    throw new Error(`Committed analytic vector ${id} does not match its manifest.`);
+  }
+  return { bytes, hex };
+}
 const executable = resolve(
   root,
   "build",
@@ -28,7 +49,10 @@ const vectors = new Map(
 );
 const canonicalHex = vectors.get("ANALYTIC_RESULT_PACKET_CANONICAL_VECTOR");
 if (canonicalHex === undefined) throw new Error("Native canonical result vector is absent.");
-const canonical = Uint8Array.from(Buffer.from(canonicalHex, "hex"));
+const canonicalVector = committedVector("result.canonical-mixed");
+if (canonicalHex !== canonicalVector.hex)
+  throw new Error("Native canonical result bytes differ from the committed corpus.");
+const canonical = canonicalVector.bytes;
 if (canonical.byteLength !== 1220)
   throw new Error(`Canonical result vector is ${canonical.byteLength}, expected 1220.`);
 const decoded = await decodeAnalyticPlanarBooleanBatchResultA0Packet(canonical);
@@ -36,23 +60,29 @@ const success = decoded.job_results.find((job) => job.status === "success");
 const failure = decoded.job_results.find((job) => job.status === "failure");
 const standaloneHex = vectors.get("ANALYTIC_RESULT_PACKET_STANDALONE_VECTOR");
 if (standaloneHex === undefined) throw new Error("Native standalone result vector is absent.");
+const standaloneVector = committedVector("result.success-standalone");
+if (standaloneHex !== standaloneVector.hex)
+  throw new Error("Native standalone result bytes differ from the committed corpus.");
 const standalone = await decodeAnalyticPlanarBooleanBatchResultA0Packet(
-  Uint8Array.from(Buffer.from(standaloneHex, "hex")),
+  standaloneVector.bytes,
 );
 const [standaloneSuccess] = standalone.job_results;
 const mixedStandaloneHex = vectors.get("ANALYTIC_RESULT_PACKET_MIXED_SUCCESS_STANDALONE_VECTOR");
 if (mixedStandaloneHex === undefined) throw new Error("Native mixed success closure is absent.");
+const mixedStandaloneVector = committedVector("result.mixed-success-standalone");
+if (mixedStandaloneHex !== mixedStandaloneVector.hex)
+  throw new Error("Native mixed-success result bytes differ from the committed corpus.");
 const mixedStandalone = await decodeAnalyticPlanarBooleanBatchResultA0Packet(
-  Uint8Array.from(Buffer.from(mixedStandaloneHex, "hex")),
+  mixedStandaloneVector.bytes,
 );
 const [mixedStandaloneSuccess] = mixedStandalone.job_results;
 if (
   standaloneSuccess?.status !== "success" ||
-  standaloneSuccess.digest_sha256 !== vectors.get("ANALYTIC_RESULT_PACKET_STANDALONE_DIGEST") ||
-  failure?.digest_sha256 !== vectors.get("ANALYTIC_RESULT_PACKET_FAILED_STANDALONE_DIGEST") ||
+  standaloneSuccess.digest_sha256 !== manifest.job_digests.success_standalone ||
+  failure?.digest_sha256 !== manifest.job_digests.failure_standalone ||
   mixedStandaloneSuccess?.status !== "success" ||
   mixedStandaloneSuccess.digest_sha256 !== success?.digest_sha256 ||
-  success.digest_sha256 !== vectors.get("ANALYTIC_RESULT_PACKET_MIXED_SUCCESS_STANDALONE_DIGEST")
+  success.digest_sha256 !== manifest.job_digests.success_in_mixed_batch
 ) {
   throw new Error("TypeScript standalone job digests differ from governed native vectors.");
 }

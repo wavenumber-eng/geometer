@@ -11,6 +11,8 @@ permissions:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+  CARGO_BUILD_JOBS: "1"
+  CMAKE_BUILD_PARALLEL_LEVEL: "2"
 
 jobs:
   verify:
@@ -25,6 +27,7 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: "24"
+
       - name: Verify generated contracts
         run: |
           npm install --global npm@11.16.0
@@ -39,6 +42,8 @@ jobs:
         run: uv run python scripts/ci_release_metadata.py check-notes
       - name: Run release signoff gate
         run: uv run --group dev rack run L99_release
+      - name: Run TypeScript Rack stratum
+        run: uv run --group dev rack run typescript
       - name: Run standards check
         run: uvx --from git+https://github.com/wavenumber-eng/wn-dev-std wn-dev-std check . --format json
 
@@ -104,15 +109,16 @@ jobs:
       - name: Build and test native code
         run: uv run --group dev python scripts/validate_native.py
 
-      - name: Test generated Rust executable client
-        working-directory: src/rust/geometer-client
-        run: cargo test --locked
+      - name: Run Python and Rust Rack strata against the native build
+        env:
+          GEOMETER_REQUIRE_NATIVE_TEST_SERVERS: "1"
+        run: |
+          uv tool install git+https://github.com/wavenumber-eng/wn-dev-std
+          uv run --group dev rack run python
+          uv run --group dev rack run rust
 
       - name: Test Python package
-        run: uv run --group dev python scripts/validate_python_package.py
-
-      - name: Build wheel
-        run: uv run --group dev python -m build --wheel --outdir out/wheelhouse
+        run: uv run --group dev python scripts/validate_python_package.py --skip-native-validation --wheelhouse out/wheelhouse
 
       - name: Check wheel metadata
         run: uv run --group dev twine check out/wheelhouse/*.whl
@@ -156,6 +162,12 @@ jobs:
         with:
           node-version: "24"
 
+      - name: Install Node toolchain
+        run: |
+          npm install --global npm@11.16.0
+          test "$(npm --version)" = "11.16.0"
+          npm ci
+
       - name: Install build tools
         run: |
           sudo apt-get update
@@ -190,8 +202,14 @@ jobs:
 
       - name: Build browser demos
         run: |
-          uv run python scripts/build_self_contained_hlr_demo.py
-          uv run python scripts/build_self_contained_planar_ring_solver_demo.py
+          google-chrome --version
+          npm run check:typescript
+          uv run python scripts/build_analytic_polygon_pour_site.py
+          uv run python scripts/build_standalone_demos.py all
+          node tests/typescript/analytic_static_site_validation.mjs
+          node tests/typescript/analytic_self_contained_demo_validation.mjs
+          uv run pytest tests/wasm/test_analytic_standalone_demo.py -q
+          uv run pytest tests/python/test_contract_promotion_manifest.py -q
 
       - name: Run WASM validation tests
         run: |
@@ -208,9 +226,51 @@ jobs:
           path: out/wasm-dist.zip
           if-no-files-found: error
 
+  cross-transport:
+    name: Analytic executable IPC/browser WASM parity
+    needs: [build, wasm]
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - uses: astral-sh/setup-uv@v8.2.0
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+
+      - name: Download current Linux native artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: native-dist-linux-x64
+          path: out/native-artifact
+
+      - name: Download current browser WASM artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: wasm-dist
+          path: out/wasm-artifact
+
+      - name: Extract current transport artifacts
+        run: |
+          unzip out/native-artifact/native-linux-x64.zip -d out/native-dist
+          unzip out/wasm-artifact/wasm-dist.zip -d out/wasm-dist
+          chmod +x out/native-dist/geometer
+
+      - name: Require canonical executable IPC/browser WASM parity
+        env:
+          GEOMETER_EXE: out/native-dist/geometer
+          GEOMETER_WASM_BROWSER_DIST: out/wasm-dist/browser
+        run: uv run pytest tests/wasm/test_analytic_cross_transport_parity.py -q
+
   github-assets:
     name: GitHub release assets
-    needs: [build, wasm]
+    needs: [build, wasm, cross-transport]
     runs-on: ubuntu-24.04
     permissions:
       contents: write
@@ -229,7 +289,7 @@ jobs:
 
   pypi:
     name: PyPI trusted publish
-    needs: [build, wasm]
+    needs: [build, wasm, cross-transport]
     runs-on: ubuntu-24.04
     environment:
       name: pypi

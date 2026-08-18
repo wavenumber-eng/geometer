@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "wn-geometer"
-version = "2026.6.23"
+version = "2026.8.18"
 description = "Python bindings for Geometer CAD geometry operations"
 requires-python = ">=3.10"
 readme = "README.md"
@@ -78,7 +78,7 @@ include = [
     "scripts",
     "tests/python",
 ]
-extraPaths = ["python"]
+extraPaths = ["python", "scripts"]
 pythonVersion = "3.10"
 typeCheckingMode = "basic"
 reportMissingTypeStubs = false

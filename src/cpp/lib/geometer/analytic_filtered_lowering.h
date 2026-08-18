@@ -73,10 +73,11 @@ struct AnalyticFilteredLoweringResult
 // origin before conversion. Proof tokens are minted only here from exact
 // integer construction facts; they are not request fields.
 //
-// A0 authored regions, disks, annuli, and capsules are supported. Swept paths
-// remain fail-closed until their piece union is implemented by the filtered
-// indexed arrangement; this path never invokes the algebraic construction
-// arena or performs an implicit curve-pair scan.
+// A0 authored regions, disks, annuli, capsules, and constant-width open swept
+// paths are supported. Swept paths validate their centerline and union their
+// disk/strip pieces through the filtered indexed pipeline. This path never
+// invokes the algebraic construction arena or performs an implicit curve-pair
+// scan.
 [[nodiscard]] AnalyticFilteredLoweringResult
 lower_analytic_job_to_filtered_curves(const AnalyticRequestPacketRecords& records,
                                       std::uint32_t job_index,

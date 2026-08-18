@@ -167,6 +167,7 @@
       "kind": "model",
       "doc": "Logical result projected from the governed packed result attachment.",
       "annotations": {
+        "x-wn-max-logical-source-reference-expansions": 1048576,
         "x-wn-production-wire": "packed_attachment"
       },
       "constraints": {},
@@ -2513,7 +2514,7 @@
           },
           "annotations": {},
           "constraints": {
-            "max_items": 8388608
+            "max_items": 1048576
           }
         }
       ]

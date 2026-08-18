@@ -17,13 +17,28 @@ const rotateToggle = requireElement("auto-rotate");
 const status = requireElement("status");
 const runtimeLabel = requireElement("runtime-label");
 const loadingDetail = requireElement("loading-detail");
+const theme = {
+    accent: themeColor("--wn-accent"),
+    axisX: themeColor("--bounds-axis-x"),
+    axisY: themeColor("--bounds-axis-y"),
+    axisZ: themeColor("--bounds-axis-z"),
+    fillLight: themeColor("--bounds-light-fill"),
+    gridMajor: themeColor("--bounds-grid-major"),
+    gridMinor: themeColor("--bounds-grid-minor"),
+    groundLight: themeColor("--bounds-light-ground"),
+    modelDark: themeColor("--bounds-model-dark"),
+    modelLight: themeColor("--bounds-model-light"),
+    paper: themeColor("--wn-paper"),
+    skyLight: themeColor("--bounds-light-sky"),
+    viewport: themeColor("--bounds-viewport-bg"),
+};
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
 renderer.outputColorSpace = THREE.SRGBColorSpace;
-renderer.setClearColor(0x111318, 1);
+renderer.setClearColor(theme.viewport, 1);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x111318);
-scene.fog = new THREE.FogExp2(0x111318, 0.035);
+scene.background = new THREE.Color(theme.viewport);
+scene.fog = new THREE.FogExp2(theme.viewport, 0.035);
 const camera = new THREE.PerspectiveCamera(38, 1, 0.01, 10000);
 camera.up.set(0, 0, 1);
 const controls = new OrbitControls(camera, renderer.domElement);
@@ -31,14 +46,14 @@ controls.enableDamping = true;
 controls.dampingFactor = 0.06;
 controls.screenSpacePanning = true;
 controls.autoRotateSpeed = 1.25;
-scene.add(new THREE.HemisphereLight(0xe8f5ff, 0x28313b, 2.35));
-const keyLight = new THREE.DirectionalLight(0xffffff, 3.4);
+scene.add(new THREE.HemisphereLight(theme.skyLight, theme.groundLight, 2.35));
+const keyLight = new THREE.DirectionalLight(theme.paper, 3.4);
 keyLight.position.set(3.5, -4.5, 6);
 scene.add(keyLight);
-const fillLight = new THREE.DirectionalLight(0x78cde8, 1.25);
+const fillLight = new THREE.DirectionalLight(theme.fillLight, 1.25);
 fillLight.position.set(-4, 2, 1.5);
 scene.add(fillLight);
-const rimLight = new THREE.DirectionalLight(0xffbf00, 0.7);
+const rimLight = new THREE.DirectionalLight(theme.accent, 0.7);
 rimLight.position.set(1, 4, 2);
 scene.add(rimLight);
 const modelGroup = new THREE.Group();
@@ -216,7 +231,7 @@ function buildBoundsGraphics(result) {
     const center = new THREE.Vector3(...result.bounds.center);
     const geometry = new THREE.BoxGeometry(size.x, size.y, size.z);
     const volume = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({
-        color: 0xffbf00,
+        color: theme.accent,
         depthWrite: false,
         opacity: 0.055,
         side: THREE.DoubleSide,
@@ -226,7 +241,7 @@ function buildBoundsGraphics(result) {
     volume.renderOrder = 2;
     boundsGroup.add(volume);
     const edges = new THREE.LineSegments(new THREE.EdgesGeometry(geometry), new THREE.LineBasicMaterial({
-        color: 0xffbf00,
+        color: theme.accent,
         depthTest: false,
         transparent: true,
         opacity: 0.96,
@@ -236,11 +251,11 @@ function buildBoundsGraphics(result) {
     boundsGroup.add(edges);
     const span = Math.max(size.x, size.y, size.z);
     const offset = Math.max(span * 0.12, 0.18);
-    addDimensionLine(new THREE.Vector3(minimum.x, minimum.y - offset, minimum.z), new THREE.Vector3(maximum.x, minimum.y - offset, minimum.z), 0xff665d, offset * 0.28);
-    addDimensionLine(new THREE.Vector3(minimum.x - offset, minimum.y, minimum.z), new THREE.Vector3(minimum.x - offset, maximum.y, minimum.z), 0x4ed5af, offset * 0.28);
-    addDimensionLine(new THREE.Vector3(maximum.x + offset, maximum.y, minimum.z), new THREE.Vector3(maximum.x + offset, maximum.y, maximum.z), 0xffbf00, offset * 0.28);
+    addDimensionLine(new THREE.Vector3(minimum.x, minimum.y - offset, minimum.z), new THREE.Vector3(maximum.x, minimum.y - offset, minimum.z), theme.axisX, offset * 0.28);
+    addDimensionLine(new THREE.Vector3(minimum.x - offset, minimum.y, minimum.z), new THREE.Vector3(minimum.x - offset, maximum.y, minimum.z), theme.axisY, offset * 0.28);
+    addDimensionLine(new THREE.Vector3(maximum.x + offset, maximum.y, minimum.z), new THREE.Vector3(maximum.x + offset, maximum.y, maximum.z), theme.axisZ, offset * 0.28);
     const gridSize = Math.max(span * 2.6, 6);
-    const grid = new THREE.GridHelper(gridSize, 16, 0x4a525c, 0x2b3037);
+    const grid = new THREE.GridHelper(gridSize, 16, theme.gridMajor, theme.gridMinor);
     grid.rotation.x = Math.PI / 2;
     grid.position.set(center.x, center.y, minimum.z - Math.max(span * 0.02, 0.025));
     grid.material.transparent = true;
@@ -285,7 +300,7 @@ async function loadDisplayModel() {
                 return material;
             const clone = material.clone();
             const isDarkSurface = material.name === "mat_1";
-            clone.color.setHex(isDarkSurface ? 0x2b3036 : 0xc9d0d4);
+            clone.color.set(isDarkSurface ? theme.modelDark : theme.modelLight);
             clone.metalness = isDarkSurface ? 0.08 : 0.72;
             clone.roughness = isDarkSurface ? 0.74 : 0.34;
             displayMaterials.set(material, clone);
@@ -374,6 +389,12 @@ function copyToArrayBuffer(bytes) {
 }
 function isRecord(value) {
     return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+function themeColor(property) {
+    const value = getComputedStyle(root).getPropertyValue(property).trim();
+    if (!value)
+        throw new Error(`Shared demo theme is missing ${property}.`);
+    return value;
 }
 function requireElement(id) {
     const element = document.getElementById(id);

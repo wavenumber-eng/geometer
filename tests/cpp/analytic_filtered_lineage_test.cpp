@@ -350,6 +350,12 @@ void test_governed_admission_and_publication()
             "one-unit-short lineage admission was late");
 
     const auto success = run(limits);
+    require(success.regions.telemetry.predicate_calls ==
+                    success.regions.telemetry.selection_predicate_calls +
+                        success.regions.telemetry.region_work_units &&
+                success.telemetry.reserved_lineage_work_units >=
+                    success.telemetry.lineage_work_units,
+            "staged lineage reservation did not release region slack or bound actual work");
     low = 0;
     high = limits.predicate_calls;
     while (low < high)

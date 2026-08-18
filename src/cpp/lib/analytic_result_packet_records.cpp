@@ -132,7 +132,7 @@ bool valid_source(const AnalyticSourceReference& source)
     case Role::swept_end_cap:
         return high != 0 && low == 0;
     case Role::swept_round_join:
-        return high != 0 && low != 0;
+        return high != 0 && low == high + 1U;
     case Role::swept_start_cap:
         return high == 1 && low == 0;
     default:
@@ -625,7 +625,98 @@ LayoutError validate_relationships(const AnalyticResultPacketRecords& records)
     return LayoutError::none;
 }
 
+LayoutError preflight_logical_source_reference_expansions(
+    const std::uint8_t* data,
+    const std::array<AnalyticResultTableView, kAnalyticResultTableCount>& views)
+{
+    std::uint64_t total = 0;
+    const auto& source_sets = views[8];
+    const auto charge = [&](std::uint32_t handle)
+    {
+        if (handle == 0)
+            return LayoutError::none;
+        if (handle > source_sets.record_count)
+            return LayoutError::invalid_packet;
+        const Reader source_set{data, source_sets.offset + (handle - 1) * 8};
+        const std::uint64_t count = source_set.u32(4);
+        if (total > kAnalyticMaximumLogicalSourceReferenceExpansions ||
+            count > kAnalyticMaximumLogicalSourceReferenceExpansions - total)
+            return LayoutError::limit_exceeded;
+        total += count;
+        return LayoutError::none;
+    };
+    const auto charge_table = [&](std::size_t table_index, std::uint64_t field_offset)
+    {
+        const auto& view = views[table_index];
+        for (std::uint64_t index = 0; index < view.record_count; ++index)
+            if (const LayoutError error =
+                    charge(Reader{data, view.offset + index * view.record_bytes}.u32(field_offset));
+                error != LayoutError::none)
+                return error;
+        return LayoutError::none;
+    };
+    if (const LayoutError error = charge_table(2, 24); error != LayoutError::none)
+        return error;
+    const auto& fragments = views[3];
+    for (std::uint64_t index = 0; index < fragments.record_count; ++index)
+    {
+        const Reader fragment{data, fragments.offset + index * fragments.record_bytes};
+        if (const LayoutError error = charge(fragment.u32(32)); error != LayoutError::none)
+            return error;
+        if (const LayoutError error = charge(fragment.u32(36)); error != LayoutError::none)
+            return error;
+    }
+    if (const LayoutError error = charge_table(6, 12); error != LayoutError::none)
+        return error;
+    return charge_table(10, 20);
+}
+
 } // namespace
+
+namespace analytic_result_detail
+{
+
+AnalyticResultPacketLayoutError
+charge_logical_source_reference_expansions(const AnalyticResultPacketRecords& records,
+                                           std::uint64_t& total) noexcept
+{
+    const auto charge = [&](std::uint32_t handle)
+    {
+        if (handle == 0)
+            return LayoutError::none;
+        if (handle > records.source_sets.size())
+            return LayoutError::invalid_packet;
+        const std::uint64_t count = records.source_sets[handle - 1].source_reference_index_count;
+        if (total > kAnalyticMaximumLogicalSourceReferenceExpansions ||
+            count > kAnalyticMaximumLogicalSourceReferenceExpansions - total)
+            return LayoutError::limit_exceeded;
+        total += count;
+        return LayoutError::none;
+    };
+    for (const auto& vertex : records.vertices)
+        if (const LayoutError error = charge(vertex.intersection_source_set);
+            error != LayoutError::none)
+            return error;
+    for (const auto& fragment : records.fragments)
+    {
+        if (const LayoutError error = charge(fragment.positive_source_set);
+            error != LayoutError::none)
+            return error;
+        if (const LayoutError error = charge(fragment.subtraction_source_set);
+            error != LayoutError::none)
+            return error;
+    }
+    for (const auto& region : records.regions)
+        if (const LayoutError error = charge(region.positive_source_set);
+            error != LayoutError::none)
+            return error;
+    for (const auto& event : records.operand_events)
+        if (const LayoutError error = charge(event.source_set); error != LayoutError::none)
+            return error;
+    return LayoutError::none;
+}
+
+} // namespace analytic_result_detail
 
 AnalyticResultPacketLayoutError
 validate_analytic_result_packet_records(const AnalyticResultPacketRecords& records)
@@ -636,6 +727,12 @@ validate_analytic_result_packet_records(const AnalyticResultPacketRecords& recor
             records.relationship_results.size() > 1'048'576 ||
             records.source_sets.size() > std::numeric_limits<std::uint32_t>::max())
             return LayoutError::limit_exceeded;
+        std::uint64_t logical_source_expansions = 0;
+        if (const LayoutError error =
+                analytic_result_detail::charge_logical_source_reference_expansions(
+                    records, logical_source_expansions);
+            error != LayoutError::none)
+            return error;
         const auto validators = {validate_sources, validate_geometry, validate_owners,
                                  validate_source_uses, validate_relationships};
         for (const auto validator : validators)
@@ -846,6 +943,10 @@ AnalyticResultPacketRecordsResult decode_analytic_result_packet_records(const st
         decode_analytic_result_packet_layout(data, size);
     if (decoded_layout.error != LayoutError::none || !decoded_layout.value)
         return {decoded_layout.error, std::nullopt};
+    if (const LayoutError error =
+            preflight_logical_source_reference_expansions(data, decoded_layout.value->tables);
+        error != LayoutError::none)
+        return {error, std::nullopt};
     try
     {
         const auto& views = decoded_layout.value->tables;

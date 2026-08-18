@@ -1,6 +1,7 @@
 // @ts-check
 
 import { spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
 import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { dirname, join, relative, resolve, sep } from "node:path";
@@ -9,16 +10,25 @@ import { fileURLToPath } from "node:url";
 import { applyProjectionDeferrals } from "./contract-projection-deferral.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const catalog = await applyProjectionDeferrals(
-  JSON.parse(
-    await readFile(
-      join(root, "contracts/geometer/generated/wn_geometer_contract_catalog.a0.json"),
-      "utf8",
-    ),
-  ),
-  "python",
+const catalogText = await readFile(
+  join(root, "contracts/geometer/generated/wn_geometer_contract_catalog.a0.json"),
+  "utf8",
 );
-const outputPath = join(root, catalog.output_roots.python);
+const contractCatalog = JSON.parse(catalogText);
+const catalogSha256 = createHash("sha256").update(catalogText).digest("hex");
+const modelCatalog = await applyProjectionDeferrals(contractCatalog, "python", {
+  retainLogicalDtos: true,
+});
+const codecCatalog = await applyProjectionDeferrals(contractCatalog, "python");
+const packedContracts = new Set(
+  contractCatalog.operations
+    .filter((operation) => operation.runtime_dispatch === "packed_attachment")
+    .flatMap((operation) => [operation.request_contract, operation.result_contract]),
+);
+const codecRoots = codecCatalog.roots.filter(
+  (rootRecord) => !packedContracts.has(rootRecord.contract_identity),
+);
+const outputPath = join(root, contractCatalog.output_roots.python);
 const stagingPath = join(dirname(outputPath), `contracts-stage-${process.pid}`);
 const backupPath = join(dirname(outputPath), `contracts-backup-${process.pid}`);
 const checkOnly = process.argv.slice(2).includes("--check");
@@ -26,8 +36,9 @@ if (process.argv.slice(2).some((argument) => argument !== "--check")) {
   throw new Error("Usage: node scripts/generate-python-contracts.mjs [--check]");
 }
 
-const declarations = new Map(catalog.declarations.map((item) => [item.name, item]));
-assertUniqueShortNames(catalog.declarations);
+const declarations = new Map(modelCatalog.declarations.map((item) => [item.name, item]));
+const codecDeclarationNames = reachableNames(codecRoots);
+assertUniqueShortNames(modelCatalog.declarations);
 await rm(stagingPath, { recursive: true, force: true });
 await rm(backupPath, { recursive: true, force: true });
 await mkdir(stagingPath, { recursive: true });
@@ -35,6 +46,7 @@ await mkdir(stagingPath, { recursive: true });
 try {
   await emit("models.py", generateModels());
   await emit("codecs.py", generateCodecs());
+  await emit("operations.py", generateOperations());
   await emit("__init__.py", generateIndex());
   formatGeneratedState();
   if (checkOnly) {
@@ -61,8 +73,10 @@ function generateModels() {
     "from enum import Enum",
     "from typing import Literal, TypeAlias",
     "",
+    `NORMALIZED_CATALOG_SHA256 = ${pythonLiteral(catalogSha256)}`,
+    "",
   ];
-  for (const item of topologicalOrder(catalog.declarations)) {
+  for (const item of topologicalOrder(modelCatalog.declarations)) {
     if (item.doc) lines.push(docComment(item.doc));
     if (item.kind === "enum") {
       lines.push(`class ${shortName(item.name)}(str, Enum):`);
@@ -79,6 +93,10 @@ function generateModels() {
         `${shortName(item.name)}: TypeAlias = ${item.variants.map((variant) => pythonType(variant.type)).join(" | ")}`,
         "",
       );
+      continue;
+    }
+    if (item.kind === "scalar") {
+      lines.push(`${shortName(item.name)}: TypeAlias = ${pythonType(item.base)}`, "");
       continue;
     }
     if (item.kind !== "model") unsupported(item);
@@ -104,13 +122,18 @@ function generateModels() {
     lines.push("");
   }
   lines.push("MODEL_TYPES = {");
-  for (const item of catalog.declarations.filter(
-    (value) => value.kind === "model" && value.model_kind === "object",
+  for (const item of modelCatalog.declarations.filter(
+    (value) =>
+      codecDeclarationNames.has(value.name) &&
+      value.kind === "model" &&
+      value.model_kind === "object",
   )) {
     lines.push(`    ${pythonLiteral(item.name)}: ${shortName(item.name)},`);
   }
   lines.push("}", "", "ENUM_TYPES = {");
-  for (const item of catalog.declarations.filter((value) => value.kind === "enum")) {
+  for (const item of modelCatalog.declarations.filter(
+    (value) => codecDeclarationNames.has(value.name) && value.kind === "enum",
+  )) {
     lines.push(`    ${pythonLiteral(item.name)}: ${shortName(item.name)},`);
   }
   lines.push("}", "");
@@ -118,10 +141,12 @@ function generateModels() {
 }
 
 function generateCodecs() {
-  const roots = catalog.roots.map((item) => ({ ...item, typeName: shortName(item.name) }));
+  const roots = codecRoots.map((item) => ({ ...item, typeName: shortName(item.name) }));
   const rootTypes = [...new Set(roots.map((item) => item.typeName))];
   const descriptorMap = Object.fromEntries(
-    catalog.declarations.map((item) => [item.name, descriptor(item)]),
+    modelCatalog.declarations
+      .filter((item) => codecDeclarationNames.has(item.name))
+      .map((item) => [item.name, descriptor(item)]),
   );
   const lines = [
     generatedHeader(),
@@ -156,7 +181,82 @@ function generateCodecs() {
 }
 
 function generateIndex() {
-  return `${generatedHeader()}from .codecs import *  # noqa: F403\nfrom .models import *  # noqa: F403\n`;
+  return `${generatedHeader()}from .codecs import *  # noqa: F403\nfrom .models import *  # noqa: F403\nfrom .operations import *  # noqa: F403\n`;
+}
+
+function generateOperations() {
+  const template = {
+    catalog: "wn.geometer.operation_catalog.a0",
+    generic_abi: "a0",
+    release_version: "",
+    c_abi_generation: 0,
+    operations: contractCatalog.operations.map((operation) => ({
+      identity: operation.identity,
+      request_contract: operation.request_contract,
+      result_contract: operation.result_contract,
+      input_attachments: operation.input_attachments,
+      output_attachments: operation.output_attachments,
+      runtime_dispatch: operation.runtime_dispatch,
+      ...(operation.request_projection ? { request_projection: operation.request_projection } : {}),
+      ...(operation.result_projection ? { result_projection: operation.result_projection } : {}),
+    })),
+    attachment_descriptor: {
+      wasm32: {
+        size: 36,
+        offsets: {
+          struct_size: 0,
+          flags: 4,
+          name: 8,
+          name_size: 12,
+          media_type: 16,
+          media_type_size: 20,
+          data: 24,
+          data_size: 28,
+          reserved0: 32,
+        },
+      },
+      pointer64: {
+        size: 56,
+        offsets: {
+          struct_size: 0,
+          flags: 4,
+          name: 8,
+          name_size: 16,
+          media_type: 24,
+          media_type_size: 32,
+          data: 40,
+          data_size: 48,
+          reserved0: 52,
+        },
+      },
+    },
+    limits: {
+      operation_id_bytes: 128,
+      request_json_bytes: 8 * 1024 * 1024,
+      response_json_bytes: 8 * 1024 * 1024,
+      attachment_count: 16,
+      attachment_name_bytes: 128,
+      attachment_media_type_bytes: 128,
+      attachment_bytes: 256 * 1024 * 1024,
+      aggregate_attachment_bytes_native: 512 * 1024 * 1024,
+      aggregate_attachment_bytes_wasm: 256 * 1024 * 1024,
+    },
+  };
+  return `${generatedHeader()}import json
+
+from .codecs import decode_ipc_operation_catalog_a0_json
+from .models import IpcOperationCatalogA0
+
+_OPERATION_CATALOG_TEMPLATE = ${pythonLiteral(JSON.stringify(template))}
+
+
+def expected_operation_catalog(release_version: str, c_abi_generation: int) -> IpcOperationCatalogA0:
+    """Return the exact generated runtime catalog for release-varying metadata."""
+    value = json.loads(_OPERATION_CATALOG_TEMPLATE)
+    value["release_version"] = release_version
+    value["c_abi_generation"] = c_abi_generation
+    return decode_ipc_operation_catalog_a0_json(json.dumps(value, separators=(",", ":")))
+`;
 }
 
 function descriptor(item) {
@@ -207,6 +307,7 @@ function pythonType(type) {
       string: "str",
       boolean: "bool",
       float64: "float",
+      int64: "int",
       uint32: "int",
       uint64: "int",
     }[type.name];
@@ -263,6 +364,23 @@ function dependencies(item) {
   return found;
 }
 
+function reachableNames(roots) {
+  const found = new Set();
+
+  function visit(name) {
+    if (found.has(name)) return;
+    const declaration = declarations.get(name);
+    if (!declaration) {
+      throw new Error(`Unknown Python DTO dependency ${name}.`);
+    }
+    found.add(name);
+    for (const dependency of dependencies(declaration)) visit(dependency);
+  }
+
+  for (const root of roots) visit(root.name);
+  return found;
+}
+
 function pythonLiteral(value, level = 0) {
   if (value === null) return "None";
   if (value === true) return "True";
@@ -316,7 +434,7 @@ function formatGeneratedState() {
 
 async function compareGeneratedFiles() {
   const differences = [];
-  for (const filename of ["__init__.py", "codecs.py", "models.py"]) {
+  for (const filename of ["__init__.py", "codecs.py", "models.py", "operations.py"]) {
     const actual = join(stagingPath, filename);
     const expected = join(outputPath, filename);
     if (!existsSync(expected)) differences.push(`missing ${repositoryRelative(expected)}`);

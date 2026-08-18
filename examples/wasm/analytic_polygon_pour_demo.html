@@ -4,13 +4,14 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" href="data:," />
-    <link rel="stylesheet" href="/examples/wasm/analytic_polygon_pour_demo.css" />
+    <link rel="stylesheet" href="/examples/wasm/geometer_demo.css" />
     <title>Geometer · live analytic polygon pour</title>
+    <script src="/dist/wasm/demos/analytic_polygon_pour_bootstrap_guard.js"></script>
     <script type="importmap">
       {"imports":{"@wavenumber/geometer/worker":"/dist/wasm/npm/geometer/worker.js"}}
     </script>
   </head>
-  <body>
+  <body data-wn-watermark="true">
     <main id="pour-shell" data-state="booting">
       <header>
         <div><b>GEOMETER</b><span>ANALYTIC POUR / A0</span></div>
@@ -42,7 +43,7 @@
           </section>
           <section class="closure"><small>03 / DETERMINISM</small><code id="digest">—</code><div><span>completed <b id="completed">0</b></span><span>stale replaced <b id="replaced">0</b></span></div></section>
           <section class="lineage"><small>04 / SOURCE + LINEAGE</small><p id="source-incidence">—</p><ul id="lineage-events"></ul></section>
-          <section class="failure"><small>05 / ISOLATED FAILURE FIXTURE</small><strong id="failure-code">—</strong><span id="failure-path">—</span><p>A neighboring swept-path job deliberately exercises governed job-local failure without suppressing the successful pour.</p></section>
+          <section class="failure"><small>05 / ISOLATED FAILURE FIXTURE</small><strong id="failure-code">—</strong><span id="failure-path">—</span><p>A neighboring self-crossing swept path deliberately exercises governed job-local failure without suppressing the successful pour.</p></section>
         </aside>
       </section>
       <footer><span id="status" role="status">Loading browser solver…</span><b>GENERIC C ABI · PACKED ATTACHMENTS · C++ BOOLEAN KERNEL</b></footer>

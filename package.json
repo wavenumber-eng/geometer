@@ -21,6 +21,7 @@
     "@typespec/json-schema": "1.14.0",
     "@wavenumber/wn-geometer-contract-emitter": "file:src/ts/wn-geometer-contract-emitter",
     "ajv": "8.20.0",
+    "esbuild": "0.27.2",
     "three": "0.161.0",
     "typescript": "5.9.3"
   }

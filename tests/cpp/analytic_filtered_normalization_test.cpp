@@ -2,9 +2,11 @@
 #include "geometer/analytic_filtered_normalization.h"
 
 #include "analytic_endpoint_arc_reconstruction.h"
+#include "analytic_filtered_normalization_arc_certificate.h"
 #include "analytic_filtered_normalization_replay.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
@@ -26,6 +28,52 @@ void require(bool condition, const std::string& message)
         std::cerr << message << '\n';
         std::exit(1);
     }
+}
+
+void test_near_coincident_arc_certificate_guards()
+{
+    using analytic_detail::exact;
+    using analytic_detail::Point;
+    using analytic_normalization_detail::ArcConstruction;
+    using analytic_normalization_detail::certifies_near_coincident_arc;
+    const auto point = [](double x, double y) -> Point { return {exact(x), exact(y)}; };
+
+    const ArcConstruction source{point(0.0, 0.0),
+                                 exact(500'000.0),
+                                 point(-500'000.0, 0.0),
+                                 point(0.0, -500'000.0),
+                                 true,
+                                 false};
+    require(certifies_near_coincident_arc(source, source),
+            "exact matching arc construction was not certified");
+    ArcConstruction target = source;
+    target.center = point(0.25, -0.25);
+    target.radius = exact(500'000.5);
+    target.start = point(-499'999.5, 0.0);
+    target.end = point(0.0, -499'999.5);
+    require(certifies_near_coincident_arc(source, target),
+            "near-coincident capsule arc was not certified");
+
+    ArcConstruction invalid = target;
+    invalid.center = point(17.0, 0.0);
+    require(!certifies_near_coincident_arc(source, invalid),
+            "displaced arc center was incorrectly certified");
+    invalid = target;
+    invalid.radius = exact(500'017.0);
+    require(!certifies_near_coincident_arc(source, invalid),
+            "wrong arc radius was incorrectly certified");
+    invalid = target;
+    invalid.counterclockwise = false;
+    require(!certifies_near_coincident_arc(source, invalid),
+            "wrong arc direction was incorrectly certified");
+    invalid = target;
+    invalid.major_arc = true;
+    require(!certifies_near_coincident_arc(source, invalid),
+            "wrong arc branch was incorrectly certified");
+    invalid = target;
+    invalid.start = point(-499'983.0, 0.0);
+    require(!certifies_near_coincident_arc(source, invalid),
+            "displaced arc endpoint was incorrectly certified");
 }
 
 AnalyticFilteredPointNm exact_point(double x, double y)
@@ -60,6 +108,22 @@ AnalyticAtomicCurveNm endpoint_authoritative_arc(std::uint32_t index, std::int64
             "replay test center reconstruction failed");
     curve.circle.center = {{center.x.lower, center.x.upper}, {center.y.lower, center.y.upper}};
     return curve;
+}
+
+AnalyticCurveBoundsNm circle_bounds(const AnalyticAtomicCurveNm& curve)
+{
+    return {curve.curve_index, curve.circle.center.x.lower - curve.circle.radius.upper,
+            curve.circle.center.y.lower - curve.circle.radius.upper,
+            curve.circle.center.x.upper + curve.circle.radius.upper,
+            curve.circle.center.y.upper + curve.circle.radius.upper};
+}
+
+void reverse_arc(AnalyticAtomicCurveNm& curve)
+{
+    std::swap(curve.start, curve.end);
+    std::swap(curve.integer_start, curve.integer_end);
+    std::swap(curve.construction_start_tangent_id, curve.construction_end_tangent_id);
+    curve.counterclockwise = !curve.counterclockwise;
 }
 
 AnalyticRequestPacketRecords records_for(std::uint64_t operand)
@@ -308,6 +372,45 @@ void test_irrational_disk_crossings()
     require(result.regions.size() == 1 && result.rings.size() == 1 && result.vertices.size() == 4 &&
                 result.fragments.size() == 4 && result.telemetry.algebraic_fallback_calls == 0,
             "irrational disk union topology drifted or used algebraic fallback");
+}
+
+void test_successful_empty_difference_skips_geometry_replay()
+{
+    AnalyticFilteredGeometry geometry;
+    append_disk(geometry, 1, 0, 0, 1'000);
+    append_disk(geometry, 2, 0, 0, 1'200);
+    const auto broad = build_analytic_curve_candidates(geometry.bounds);
+    require(broad.error == AnalyticBroadPhaseError::none, "empty-difference broad phase failed");
+    const auto result =
+        build_analytic_filtered_normalization(difference_records(), 0, geometry, broad.pairs);
+    require(result.error == AnalyticFilteredNormalizationError::none && result.vertices.empty() &&
+                result.fragments.empty() && result.rings.empty() && result.regions.empty() &&
+                result.outcomes.lineage.boundaries.empty() &&
+                result.outcomes.lineage.regions.rings.empty() &&
+                result.outcomes.lineage.regions.regions.empty() &&
+                result.outcomes.result_references.empty(),
+            "successful empty difference was rejected by strict replay");
+    require(result.outcomes.events.size() == 2 &&
+                result.outcomes.events[0].kind ==
+                    AnalyticOperandOutcomeKind::completely_removed_later &&
+                result.outcomes.events[1].kind ==
+                    AnalyticOperandOutcomeKind::subtraction_effect_survives,
+            "successful empty difference lost its operand outcomes");
+}
+
+void test_collapsed_only_empty_output_fails_closed()
+{
+    AnalyticFilteredGeometry geometry;
+    append_line(geometry, 1, 0, 0, 30, 40);
+    const auto broad = build_analytic_curve_candidates(geometry.bounds);
+    require(broad.error == AnalyticBroadPhaseError::none,
+            "collapsed-only empty-output broad phase failed");
+    const auto result =
+        build_analytic_filtered_normalization(records_for(1), 0, geometry, broad.pairs);
+    require(result.error == AnalyticFilteredNormalizationError::normalization_topology_collapse &&
+                result.vertices.empty() && result.fragments.empty() && result.rings.empty() &&
+                result.regions.empty(),
+            "collapsed-only topology was mistaken for an exact successful empty result");
 }
 
 void test_irrational_radius_arc_and_clockwise_hole()
@@ -630,6 +733,238 @@ void test_strict_replay_rejects_nearby_residual_root()
             "strict replay accepted a distinct residual root within 50 nm");
 }
 
+void test_replay_composite_arc_carrier_identity()
+{
+    const auto run = [](bool reverse_first, bool reverse_second, bool swap_order, bool same_source,
+                        bool same_descriptor)
+    {
+        std::vector<AnalyticAtomicCurveNm> curves;
+        if (same_descriptor)
+        {
+            curves = {
+                endpoint_authoritative_arc(1, 11'290'300, 15'978'500, 11'299'882, 16'015'493,
+                                           76'200, false, false, false),
+                endpoint_authoritative_arc(2, 11'299'882, 16'015'493, 11'442'700, 15'978'500,
+                                           76'200, false, false, false),
+            };
+        }
+        else
+        {
+            curves = {
+                endpoint_authoritative_arc(1, 11'442'700, 15'978'500, 11'304'131, 15'934'721,
+                                           76'200, false, false, false),
+                endpoint_authoritative_arc(2, 11'304'131, 15'934'721, 11'290'300, 15'978'500,
+                                           76'200, false, false, false),
+            };
+        }
+        if (reverse_first)
+            reverse_arc(curves[0]);
+        if (reverse_second)
+            reverse_arc(curves[1]);
+        if (swap_order)
+            std::swap(curves[0], curves[1]);
+        for (std::uint32_t index = 0; index < curves.size(); ++index)
+        {
+            curves[index].curve_index = index + 1;
+            curves[index].construction_carrier_id = same_source ? 4'073 : 4'073 + index;
+        }
+        return curves;
+    };
+
+    for (const bool reverse_first : {false, true})
+        for (const bool reverse_second : {false, true})
+            for (const bool swap_order : {false, true})
+            {
+                const auto transported = run(reverse_first, reverse_second, swap_order, true, true);
+                require(
+                    analytic_normalization_detail::normalized_replay_arc_carrier_identity_matches(
+                        transported[0], transported[1]),
+                    "same-source byte-identical arc carrier was not transported");
+            }
+
+    const auto distinct_source = run(false, false, false, false, true);
+    require(!analytic_normalization_detail::normalized_replay_arc_carrier_identity_matches(
+                distinct_source[0], distinct_source[1]),
+            "distinct source carriers were merged from identical filtered enclosures");
+    const auto distinct_descriptor = run(false, false, false, true, false);
+    require(!analytic_normalization_detail::normalized_replay_arc_carrier_identity_matches(
+                distinct_descriptor[0], distinct_descriptor[1]),
+            "same-source arcs with distinct normalized descriptors were falsely merged");
+    std::vector<AnalyticCurveBoundsNm> distinct_bounds;
+    for (const auto& curve : distinct_descriptor)
+        distinct_bounds.push_back(circle_bounds(curve));
+    const auto distinct_descriptor_replay =
+        analytic_normalization_detail::validate_normalized_replay(
+            0, 0, distinct_descriptor, distinct_bounds, AnalyticFilteredRegionsResult{}, {});
+    require(distinct_descriptor_replay.error ==
+                analytic_normalization_detail::ReplayError::topology_collapse,
+            "distinct normalized siblings did not survive strict finite-domain replay");
+
+    std::vector<AnalyticAtomicCurveNm> mixed = {
+        endpoint_authoritative_arc(1, -100, 0, 100, 0, 100, false, false, false),
+    };
+    AnalyticAtomicCurveNm line;
+    line.curve_index = 2;
+    line.start = exact_point(-100.0, 0.0);
+    line.end = exact_point(100.0, 0.0);
+    line.has_integer_certificate = true;
+    line.integer_start = {-100, 0};
+    line.integer_end = {100, 0};
+    mixed[0].construction_carrier_id = 77;
+    line.construction_carrier_id = 77;
+    mixed.push_back(line);
+    const std::vector<AnalyticCurveBoundsNm> mixed_bounds = {circle_bounds(mixed[0]),
+                                                             {2, -100.0, 0.0, 100.0, 0.0}};
+    const auto mixed_result = analytic_normalization_detail::validate_normalized_replay(
+        0, 0, mixed, mixed_bounds, AnalyticFilteredRegionsResult{}, {});
+    require(mixed_result.error == analytic_normalization_detail::ReplayError::invalid_argument,
+            "mixed-kind source carrier group was admitted");
+}
+
+void test_strict_replay_discards_broad_circle_residual_outside_domains()
+{
+    const auto make = []
+    {
+        std::array<AnalyticAtomicCurveNm, 2> curves = {
+            endpoint_authoritative_arc(1, 11'442'700, 15'978'500, 11'304'131, 15'934'721, 76'200,
+                                       false, false, false),
+            endpoint_authoritative_arc(2, 11'304'131, 15'934'721, 11'290'300, 15'978'500, 76'200,
+                                       false, false, false),
+        };
+        curves[0].construction_carrier_id = 10;
+        curves[1].construction_carrier_id = 11;
+        return curves;
+    };
+    for (const bool reverse_first : {false, true})
+        for (const bool reverse_second : {false, true})
+            for (const bool swap_order : {false, true})
+            {
+                auto curves = make();
+                if (reverse_first)
+                    reverse_arc(curves[0]);
+                if (reverse_second)
+                    reverse_arc(curves[1]);
+                if (swap_order)
+                    std::swap(curves[0], curves[1]);
+                curves[0].curve_index = 1;
+                curves[1].curve_index = 2;
+                const std::vector<AnalyticAtomicCurveNm> input = {curves[0], curves[1]};
+                const auto narrow = intersect_analytic_curve_candidates(input, {{1, 2}});
+                require(narrow.error == AnalyticNarrowPhaseError::none &&
+                            narrow.intersections.size() == 1 &&
+                            narrow.intersections[0].relation == AnalyticPairRelation::point &&
+                            narrow.intersections[0].point_count == 1,
+                        "strict replay retained a broad residual root outside both finite arcs");
+            }
+}
+
+void test_vertex_tangent_classes_are_source_order_invariant()
+{
+    const auto run_permutations = [](const std::array<AnalyticRequestCapsuleRecord, 3>& capsules)
+    {
+        std::array<std::uint32_t, 3> order = {0, 1, 2};
+        do
+        {
+            AnalyticRequestPacketRecords records;
+            records.jobs = {{1, 0, 1}};
+            records.stages = {{100, 1, 0, 3}};
+            for (std::uint32_t index = 0; index < order.size(); ++index)
+            {
+                AnalyticRequestCapsuleRecord capsule = capsules[order[index]];
+                capsule.feature_id = capsules[index].feature_id;
+                records.capsules.push_back(capsule);
+                records.operands.push_back({2001 + index * 2, 4, index});
+            }
+            require(validate_analytic_request_packet_records(records) ==
+                        AnalyticRequestPacketError::none,
+                    "vertex tangent-class permutation is not packet-valid");
+            const auto lowered = lower_analytic_job_to_filtered_curves(records, 0);
+            require(lowered.error == AnalyticFilteredLoweringError::none && lowered.value,
+                    "vertex tangent-class permutation did not lower");
+            const auto broad = build_analytic_curve_candidates(lowered.value->bounds);
+            require(broad.error == AnalyticBroadPhaseError::none,
+                    "vertex tangent-class permutation broad phase failed");
+            const auto normalized =
+                build_analytic_filtered_normalization(records, 0, *lowered.value, broad.pairs);
+            require(normalized.error == AnalyticFilteredNormalizationError::none &&
+                        normalized.telemetry.algebraic_fallback_calls == 0,
+                    "vertex tangent-class permutation failed normalization: " +
+                        std::to_string(static_cast<unsigned>(normalized.error)) +
+                        " order=" + std::to_string(order[0]) + std::to_string(order[1]) +
+                        std::to_string(order[2]));
+        } while (std::next_permutation(order.begin(), order.end()));
+    };
+    run_permutations({
+        AnalyticRequestCapsuleRecord{1001, 0, 415801, 1450327, 415801, 254000},
+        AnalyticRequestCapsuleRecord{1003, 1605082, 9718, 1614800, 0, 254000},
+        AnalyticRequestCapsuleRecord{1009, 1614800, 0, 1624518, 9718, 254000},
+    });
+    run_permutations({
+        AnalyticRequestCapsuleRecord{1001, 0, 406083, 1450327, 406083, 254000},
+        AnalyticRequestCapsuleRecord{1003, 1450327, 406083, 1624518, 231892, 254000},
+        AnalyticRequestCapsuleRecord{1009, 1624518, 0, 1624518, 231892, 254000},
+    });
+    run_permutations({
+        AnalyticRequestCapsuleRecord{1001, 0, 9718, 9718, 0, 254000},
+        AnalyticRequestCapsuleRecord{1003, 9718, 0, 19436, 9718, 254000},
+        AnalyticRequestCapsuleRecord{1009, 19436, 9718, 19436, 241610, 254000},
+    });
+    run_permutations({
+        AnalyticRequestCapsuleRecord{1001, 0, 0, 300000, 0, 254000},
+        AnalyticRequestCapsuleRecord{1003, 1000000, 0, 1490281, 490281, 254000},
+        AnalyticRequestCapsuleRecord{1009, 1490281, 490281, 1665279, 490281, 254000},
+    });
+}
+
+void test_strict_replay_discards_residual_root_strictly_outside_finite_domain()
+{
+    AnalyticAtomicCurveNm arc =
+        endpoint_authoritative_arc(1, -80085, -89803, 99521, -89803, 127000, true, false);
+    arc.construction_carrier_id = 10;
+
+    AnalyticAtomicCurveNm line;
+    line.curve_index = 2;
+    line.start = exact_point(99521.0, -89803.0);
+    line.end = exact_point(109239.0, -80085.0);
+    line.has_integer_certificate = true;
+    line.integer_start = {99521, -89803};
+    line.integer_end = {109239, -80085};
+    line.construction_carrier_id = 4;
+    line.has_construction_line_direction = true;
+    line.construction_line_dx = 1;
+    line.construction_line_dy = 1;
+
+    const std::vector<AnalyticAtomicCurveNm> curves = {arc, line};
+    const auto outside = intersect_analytic_curve_candidates(curves, {{1, 2}});
+    require(outside.error == AnalyticNarrowPhaseError::none && outside.intersections.size() == 1 &&
+                outside.intersections[0].relation == AnalyticPairRelation::point &&
+                outside.intersections[0].point_count == 1,
+            "endpoint-authoritative replay retained a residual carrier root wholly before the "
+            "finite line");
+
+    line.start = exact_point(99519.0, -89805.0);
+    line.end = exact_point(99521.0, -89803.0);
+    line.integer_start = {99519, -89805};
+    line.integer_end = {99521, -89803};
+    const std::vector<AnalyticAtomicCurveNm> entering_curves = {arc, line};
+    const auto entering_narrow = intersect_analytic_curve_candidates(entering_curves, {{1, 2}});
+    require(entering_narrow.error == AnalyticNarrowPhaseError::none &&
+                entering_narrow.intersections.size() == 1 &&
+                entering_narrow.intersections[0].relation == AnalyticPairRelation::two_points &&
+                entering_narrow.intersections[0].point_count == 2,
+            "endpoint-authoritative replay discarded a residual root inside the finite line");
+    const std::vector<AnalyticCurveBoundsNm> entering_bounds = {
+        {1, arc.circle.center.x.lower - arc.circle.radius.upper,
+         arc.circle.center.y.lower - arc.circle.radius.upper,
+         arc.circle.center.x.upper + arc.circle.radius.upper,
+         arc.circle.center.y.upper + arc.circle.radius.upper},
+        {2, 99519.0, -89805.0, 99521.0, -89803.0}};
+    const auto entering = analytic_normalization_detail::validate_normalized_replay(
+        0, 0, entering_curves, entering_bounds, AnalyticFilteredRegionsResult{}, {});
+    require(entering.error == analytic_normalization_detail::ReplayError::topology_collapse,
+            "strict replay discarded a residual root that enters the finite line domain");
+}
+
 void test_strict_replay_retains_near_cardinal_partition()
 {
     std::vector<AnalyticAtomicCurveNm> curves = {
@@ -761,10 +1096,13 @@ std::string parity_vector()
 
 int main(int argc, char** argv)
 {
+    test_near_coincident_arc_certificate_guards();
     test_integer_box();
     test_integer_disk();
     test_rotated_semicircles_and_major_arc();
     test_irrational_disk_crossings();
+    test_successful_empty_difference_skips_geometry_replay();
+    test_collapsed_only_empty_output_fails_closed();
     test_irrational_radius_arc_and_clockwise_hole();
     test_maps_and_unused_vertex_sentinel();
     test_original_hard_limits_are_enforced();
@@ -776,6 +1114,10 @@ int main(int argc, char** argv)
     test_large_sparse_admission();
     test_direct_replay_narrow_memory_boundary();
     test_strict_replay_rejects_nearby_residual_root();
+    test_replay_composite_arc_carrier_identity();
+    test_strict_replay_discards_broad_circle_residual_outside_domains();
+    test_vertex_tangent_classes_are_source_order_invariant();
+    test_strict_replay_discards_residual_root_strictly_outside_finite_domain();
     test_strict_replay_retains_near_cardinal_partition();
     if (argc == 2 && std::string(argv[1]) == "--emit-parity")
         std::cout << "ANALYTIC_FILTERED_NORMALIZATION_VECTOR=" << parity_vector() << '\n';

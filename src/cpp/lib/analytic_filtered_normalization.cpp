@@ -2,7 +2,9 @@
 
 #include "analytic_endpoint_arc_reconstruction.h"
 #include "analytic_filtered_interval.h"
+#include "analytic_filtered_normalization_arc_certificate.h"
 #include "analytic_filtered_normalization_replay.h"
+
 #include "analytic_wide_integer.h"
 
 #include <algorithm>
@@ -787,6 +789,15 @@ class Builder
                          point(replay.end),
                          fragment.counterclockwise,
                          fragment.major_arc};
+        const analytic_normalization_detail::ArcConstruction source_construction{
+            source.center, source.radius,           source.start,
+            source.end,    source.counterclockwise, source.major_arc};
+        const analytic_normalization_detail::ArcConstruction target_construction{
+            target.center, target.radius,           target.start,
+            target.end,    target.counterclockwise, target.major_arc};
+        if (analytic_normalization_detail::certifies_near_coincident_arc(source_construction,
+                                                                         target_construction))
+            return charge(16);
         const Decision certification =
             arcs_within(source, target, result_.telemetry.arc_critical_candidates);
         const std::uint64_t candidate_work =
@@ -843,6 +854,25 @@ class Builder
         replay.has_integer_certificate = true;
         replay.integer_start = local_start;
         replay.integer_end = local_end;
+        const auto tangent_binds_carrier = [&](std::uint64_t token)
+        {
+            return token == 0 ||
+                   analytic_endpoint_tangent_matches(token, edge.kind, edge.construction_carrier_id,
+                                                     true) ||
+                   analytic_endpoint_tangent_matches(token, edge.kind, edge.construction_carrier_id,
+                                                     false);
+        };
+        if (!tangent_binds_carrier(edge.construction_start_tangent_id) ||
+            !tangent_binds_carrier(edge.construction_end_tangent_id))
+        {
+            result_.error = AnalyticFilteredNormalizationError::invalid_argument;
+            return false;
+        }
+        replay.construction_start_tangent_id =
+            half.forward ? edge.construction_start_tangent_id : edge.construction_end_tangent_id;
+        replay.construction_end_tangent_id =
+            half.forward ? edge.construction_end_tangent_id : edge.construction_start_tangent_id;
+        replay.construction_carrier_id = edge.construction_carrier_id;
         const bool certified =
             edge.kind == AnalyticAtomicCurveKind::line
                 ? certify_line_fragment(edge, half, local_start, local_end)
@@ -998,6 +1028,16 @@ class Builder
 
     bool strict_replay()
     {
+        const auto& lineage = result_.outcomes.lineage;
+        const auto& regions = lineage.regions;
+        if (replay_curves_.empty() && replay_bounds_.empty() && result_.vertices.empty() &&
+            result_.fragments.empty() && result_.ring_fragments.empty() && result_.rings.empty() &&
+            result_.regions.empty() && regions.rings.empty() && regions.ring_half_edges.empty() &&
+            regions.regions.empty() && regions.selection.arrangement.collapsed_spans.empty() &&
+            lineage.boundaries.empty() && lineage.vertices.empty() &&
+            lineage.region_lineage.empty() && lineage.source_references.empty() &&
+            result_.outcomes.result_references.empty())
+            return true;
         const std::uint64_t upstream = result_.outcomes.telemetry.predicate_calls;
         if (upstream > limits_.predicate_calls || work_ > limits_.predicate_calls - upstream ||
             base_phase_bytes_ > limits_.working_memory_bytes)
@@ -1009,7 +1049,6 @@ class Builder
         AnalyticSolverLimits replay_limits = limits_;
         replay_limits.predicate_calls = limits_.predicate_calls - upstream - work_;
         replay_limits.working_memory_bytes = limits_.working_memory_bytes - base_phase_bytes_;
-        const auto& regions = result_.outcomes.lineage.regions;
         const auto replay = analytic_normalization_detail::validate_normalized_replay(
             regions.selection.origin_x_nm, regions.selection.origin_y_nm, replay_curves_,
             replay_bounds_, regions, replay_limits);

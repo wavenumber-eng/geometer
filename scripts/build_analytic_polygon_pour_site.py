@@ -38,10 +38,12 @@ def main() -> None:
         browser / "geometer.js",
         browser / "geometer.wasm",
         demos / "analytic_canvas_arc.js",
+        demos / "analytic_polygon_pour_bootstrap_guard.js",
         demos / "analytic_polygon_pour_demo.js",
         demos / "analytic_polygon_pour_fixture.js",
         demos / "analytic_polygon_pour_worker.js",
         package / "worker.js",
+        ROOT / "docs" / "design" / "assets" / "fonts" / "JetBrainsMono" / "OFL.txt",
     ]
     missing = [path for path in required if not path.is_file()]
     if missing:
@@ -56,16 +58,19 @@ def main() -> None:
             source / "analytic_polygon_pour_demo.html",
             staging / "index.html",
             {
-                "/examples/wasm/analytic_polygon_pour_demo.css": "./analytic_polygon_pour_demo.css",
+                "/examples/wasm/geometer_demo.css": "./geometer_demo.css",
                 "/dist/wasm/npm/geometer/worker.js": "./package/worker.js",
+                "/dist/wasm/demos/analytic_polygon_pour_bootstrap_guard.js": "./analytic_polygon_pour_bootstrap_guard.js",
                 "/dist/wasm/demos/analytic_polygon_pour_demo.js": "./analytic_polygon_pour_demo.js",
             },
         )
         rewrite(
-            source / "analytic_polygon_pour_demo.css",
-            staging / "analytic_polygon_pour_demo.css",
+            source / "geometer_demo.css",
+            staging / "geometer_demo.css",
             {
-                "/docs/design/assets/fonts/Cousine/Cousine-Regular.ttf": "./Cousine-Regular.ttf",
+                "/docs/design/assets/fonts/JetBrainsMono/JetBrainsMono-Regular.woff2": "./JetBrainsMono-Regular.woff2",
+                "/docs/design/assets/fonts/JetBrainsMono/JetBrainsMono-Bold.woff2": "./JetBrainsMono-Bold.woff2",
+                "/docs/design/assets/wn_logo_w_text__for_light.svg": "./wn-logo.svg",
             },
         )
         rewrite(
@@ -86,14 +91,30 @@ def main() -> None:
         )
         shutil.copy2(demos / "analytic_canvas_arc.js", staging / "analytic_canvas_arc.js")
         shutil.copy2(
+            demos / "analytic_polygon_pour_bootstrap_guard.js",
+            staging / "analytic_polygon_pour_bootstrap_guard.js",
+        )
+        shutil.copy2(
             demos / "analytic_polygon_pour_fixture.js",
             staging / "analytic_polygon_pour_fixture.js",
         )
         shutil.copy2(browser / "geometer.js", staging / "geometer.js")
         shutil.copy2(browser / "geometer.wasm", staging / "geometer.wasm")
         shutil.copy2(
-            ROOT / "docs" / "design" / "assets" / "fonts" / "Cousine" / "Cousine-Regular.ttf",
-            staging / "Cousine-Regular.ttf",
+            ROOT / "docs" / "design" / "assets" / "fonts" / "JetBrainsMono" / "JetBrainsMono-Regular.woff2",
+            staging / "JetBrainsMono-Regular.woff2",
+        )
+        shutil.copy2(
+            ROOT / "docs" / "design" / "assets" / "fonts" / "JetBrainsMono" / "JetBrainsMono-Bold.woff2",
+            staging / "JetBrainsMono-Bold.woff2",
+        )
+        shutil.copy2(
+            ROOT / "docs" / "design" / "assets" / "fonts" / "JetBrainsMono" / "OFL.txt",
+            staging / "JetBrainsMono-OFL.txt",
+        )
+        shutil.copy2(
+            ROOT / "docs" / "design" / "assets" / "wn_logo_w_text__for_light.svg",
+            staging / "wn-logo.svg",
         )
         shutil.copytree(package, staging / "package")
         index_text = (staging / "index.html").read_text(encoding="utf-8")

@@ -10,8 +10,8 @@ contract. The machine-readable promotion state lives in
 
 | Concern | Current value | Authority |
 | --- | --- | --- |
-| Release/package | `2026.6.23` | `CMakeLists.txt`, `pyproject.toml`, ADR-006 |
-| C ABI generation | `20260623` | `CMakeLists.txt`, generated `version_config.h` |
+| Release/package | `2026.8.18` | `CMakeLists.txt`, `pyproject.toml`, ADR-006 |
+| C ABI generation | `20260818` | `CMakeLists.txt`, generated `version_config.h` |
 | Executable IPC | none | No persistent pipe exists; the first contract will be `a0` |
 | Planar batch packet | version `2` | `src/cpp/lib/planar_solve.cpp` |
 | Triangulation packet | version `1` | `src/cpp/lib/planar_triangulate.cpp` |

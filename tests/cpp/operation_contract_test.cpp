@@ -12,9 +12,11 @@
 #include <fstream>
 #include <iostream>
 #include <iterator>
+#include <limits>
 #include <rapidjson/document.h>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 namespace
@@ -28,6 +30,26 @@ void require(bool condition, const std::string& message)
     {
         throw std::runtime_error(message);
     }
+}
+
+void generated_analytic_logical_dtos_cover_integer_domain()
+{
+    using namespace geometer::contracts;
+    static_assert(std::is_same_v<JobId, std::uint64_t>);
+    static_assert(std::is_same_v<decltype(PointNm::x), std::int64_t>);
+    static_assert(std::variant_size_v<AuthoredSegment> == 2U);
+    static_assert(std::variant_size_v<AnalyticPlanarBooleanJobResult> == 2U);
+    static_assert(std::variant_size_v<AnalyticPlanarOperand> == 5U);
+    static_assert(std::variant_size_v<DirectedFragment> == 2U);
+
+    const PointNm point{std::numeric_limits<std::int64_t>::min(),
+                        std::numeric_limits<std::int64_t>::max()};
+    require(point.x == INT64_MIN && point.y == INT64_MAX,
+            "generated analytic coordinates lost the signed int64 domain");
+    SourceReference source{};
+    source.primary_id = std::numeric_limits<std::uint64_t>::max();
+    require(source.primary_id == UINT64_MAX,
+            "generated analytic source identity lost the uint64 domain");
 }
 
 std::vector<unsigned char> read_bytes(const std::string& path)
@@ -708,6 +730,7 @@ int main()
     int result = 0;
     try
     {
+        generated_analytic_logical_dtos_cover_integer_domain();
         generated_options_codec_preserves_presence_and_is_strict();
         generated_cpp_replays_all_governed_contract_vectors();
         generated_cpp_replays_governed_operation_vectors();

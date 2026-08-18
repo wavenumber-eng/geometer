@@ -72,9 +72,15 @@ export function makeAnalyticPolygonPourRequest(
                   path_id: 8701n,
                   vertices: [
                     { vertex_id: 8801n, point: { x: 1_000_000n, y: 1_000_000n } },
-                    { vertex_id: 8802n, point: { x: 2_000_000n, y: 1_000_000n } },
+                    { vertex_id: 8802n, point: { x: 2_000_000n, y: 2_000_000n } },
+                    { vertex_id: 8803n, point: { x: 1_000_000n, y: 2_000_000n } },
+                    { vertex_id: 8804n, point: { x: 2_000_000n, y: 1_000_000n } },
                   ],
-                  segments: [{ segment_id: 8901n, curve_id: 8951n, kind: "line" }],
+                  segments: [
+                    { segment_id: 8901n, curve_id: 8951n, kind: "line" },
+                    { segment_id: 8902n, curve_id: 8952n, kind: "line" },
+                    { segment_id: 8903n, curve_id: 8953n, kind: "line" },
+                  ],
                 },
                 width_nm: 100_000n,
                 cap: "round",

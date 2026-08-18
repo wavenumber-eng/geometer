@@ -20,10 +20,15 @@
     "verbatimModuleSyntax": true
   },
   "include": [
+    "analytic_polygon_pour_bootstrap_guard.ts",
     "analytic_polygon_pour_demo.ts",
     "analytic_polygon_pour_fixture.ts",
     "analytic_polygon_pour_worker.ts",
+    "demo-tooling/**/*.ts",
     "model_bounds_demo.ts",
-    "model_bounds_worker.ts"
+    "model_bounds_worker.ts",
+    "pcb_polygon_pour_demo.ts",
+    "pcb_polygon_pour_model.ts",
+    "pcb_polygon_pour_worker.ts"
   ]
 }

@@ -18,6 +18,400 @@ struct ContractError
     std::string message;
 };
 
+using JobId = std::uint64_t;
+
+using StageId = std::uint64_t;
+
+enum class StageOperation
+{
+    union_stage,
+    difference,
+};
+
+using OperandId = std::uint64_t;
+
+using RegionId = std::uint64_t;
+
+using RingId = std::uint64_t;
+
+using VertexId = std::uint64_t;
+
+struct PointNm
+{
+    std::int64_t x{};
+    std::int64_t y{};
+};
+
+struct AuthoredVertex
+{
+    VertexId vertex_id{};
+    PointNm point{};
+};
+
+using SegmentId = std::uint64_t;
+
+using CurveId = std::uint64_t;
+
+struct AuthoredLineSegment
+{
+    SegmentId segment_id{};
+    CurveId curve_id{};
+    std::string kind = "line";
+};
+
+enum class ArcDirection
+{
+    ccw,
+    cw,
+};
+
+struct AuthoredCircularArcSegment
+{
+    SegmentId segment_id{};
+    CurveId curve_id{};
+    std::string kind = "circular_arc";
+    PointNm center{};
+    ArcDirection direction{};
+    bool major_arc{};
+};
+
+using AuthoredSegment = std::variant<AuthoredLineSegment, AuthoredCircularArcSegment>;
+
+struct PlanarRing
+{
+    RingId ring_id{};
+    std::vector<AuthoredVertex> vertices{};
+    std::vector<AuthoredSegment> segments{};
+};
+
+struct PlanarRegionOperand
+{
+    OperandId operand_id{};
+    std::string kind = "planar_region";
+    RegionId region_id{};
+    PlanarRing outer{};
+    std::vector<PlanarRing> holes{};
+};
+
+using FeatureId = std::uint64_t;
+
+struct DiskOperand
+{
+    OperandId operand_id{};
+    std::string kind = "disk";
+    FeatureId feature_id{};
+    PointNm center{};
+    std::uint64_t radius_nm{};
+};
+
+struct AnnulusOperand
+{
+    OperandId operand_id{};
+    std::string kind = "annulus";
+    FeatureId feature_id{};
+    PointNm center{};
+    std::uint64_t inner_radius_nm{};
+    std::uint64_t outer_radius_nm{};
+};
+
+struct CapsuleOperand
+{
+    OperandId operand_id{};
+    std::string kind = "capsule";
+    FeatureId feature_id{};
+    PointNm start{};
+    PointNm end{};
+    std::uint64_t width_nm{};
+};
+
+using PathId = std::uint64_t;
+
+struct PlanarPath
+{
+    PathId path_id{};
+    std::vector<AuthoredVertex> vertices{};
+    std::vector<AuthoredSegment> segments{};
+};
+
+struct SweptPathOperand
+{
+    OperandId operand_id{};
+    std::string kind = "swept_path";
+    FeatureId feature_id{};
+    PlanarPath centerline{};
+    std::uint64_t width_nm{};
+    std::string cap = "round";
+    std::string join = "round";
+};
+
+using AnalyticPlanarOperand = std::variant<PlanarRegionOperand, DiskOperand, AnnulusOperand,
+                                           CapsuleOperand, SweptPathOperand>;
+
+struct AnalyticPlanarBooleanStage
+{
+    StageId stage_id{};
+    StageOperation operation{};
+    std::vector<AnalyticPlanarOperand> operands{};
+};
+
+struct AnalyticPlanarBooleanJob
+{
+    JobId job_id{};
+    std::vector<AnalyticPlanarBooleanStage> stages{};
+};
+
+using QueryId = std::uint64_t;
+
+struct PlanarRelationshipQuery
+{
+    QueryId query_id{};
+    JobId left_job_id{};
+    JobId right_job_id{};
+};
+
+struct AnalyticPlanarBooleanBatchRequestA0
+{
+    std::vector<AnalyticPlanarBooleanJob> jobs{};
+    std::vector<PlanarRelationshipQuery> relationship_queries{};
+};
+
+enum class JobDiagnosticCode
+{
+    invalid_topology,
+    invalid_arc,
+    unsupported_geometry,
+    normalization_error_exceeded,
+    normalization_topology_collapse,
+    nonanalytic_result,
+    solver_failed,
+    resource_limit_exceeded,
+};
+
+enum class DiagnosticSeverity
+{
+    error,
+    warning,
+};
+
+enum class JobDiagnosticPath
+{
+    request_jobs,
+    job_id,
+    job_stages,
+    stage_id,
+    stage_operation,
+    stage_operands,
+    operand_id,
+    operand_geometry,
+    region_outer,
+    region_holes,
+    ring_vertices,
+    ring_segments,
+    path_vertices,
+    path_segments,
+    segment_curve,
+    disk_radius,
+    annulus_inner_radius,
+    annulus_outer_radius,
+    capsule_start,
+    capsule_end,
+    capsule_width,
+    swept_path_centerline,
+    swept_path_width,
+    relationship_queries,
+    relationship_left_job_id,
+    relationship_right_job_id,
+};
+
+struct JobDiagnostic
+{
+    JobDiagnosticCode code{};
+    DiagnosticSeverity severity{};
+    JobId job_id{};
+    std::optional<StageId> stage_id{};
+    std::optional<OperandId> operand_id{};
+    std::optional<std::uint64_t> geometry_id{};
+    std::optional<JobDiagnosticPath> path_identity{};
+};
+
+using ResultVertexId = std::uint64_t;
+
+enum class SourceKind
+{
+    authored_segment_curve,
+    compact_feature_role,
+    subtractive_operand_effect,
+};
+
+enum class SourceRole
+{
+    none,
+    authored_line,
+    authored_circular_arc,
+    primitive_outer_circle,
+    primitive_inner_circle,
+    capsule_left_line,
+    capsule_end_cap,
+    capsule_right_line,
+    capsule_start_cap,
+    swept_left_offset_line,
+    swept_left_offset_arc,
+    swept_right_offset_line,
+    swept_right_offset_arc,
+    swept_round_join,
+    swept_start_cap,
+    swept_end_cap,
+};
+
+struct SourceReference
+{
+    SourceKind kind{};
+    SourceRole role{};
+    OperandId operand_id{};
+    std::uint64_t primary_id{};
+    std::uint64_t secondary_id{};
+};
+
+struct SourceSet
+{
+    std::vector<SourceReference> sources{};
+};
+
+struct ResultVertex
+{
+    ResultVertexId vertex_id{};
+    PointNm point{};
+    SourceSet intersection_sources{};
+};
+
+using ResultFragmentId = std::uint64_t;
+
+struct ResultLineFragment
+{
+    ResultFragmentId fragment_id{};
+    std::string kind = "line";
+    ResultVertexId start_vertex_id{};
+    ResultVertexId end_vertex_id{};
+    SourceSet coincident_positive_sources{};
+    SourceSet surviving_subtraction_sources{};
+};
+
+struct ResultCircularArcFragment
+{
+    ResultFragmentId fragment_id{};
+    std::string kind = "circular_arc";
+    ResultVertexId start_vertex_id{};
+    ResultVertexId end_vertex_id{};
+    std::uint64_t radius_nm{};
+    ArcDirection direction{};
+    bool major_arc{};
+    SourceSet coincident_positive_sources{};
+    SourceSet surviving_subtraction_sources{};
+};
+
+using DirectedFragment = std::variant<ResultLineFragment, ResultCircularArcFragment>;
+
+using ResultRingId = std::uint64_t;
+
+struct ResultRing
+{
+    ResultRingId ring_id{};
+    std::vector<ResultFragmentId> fragment_ids{};
+    std::optional<ResultRingId> parent_ring_id{};
+    std::uint32_t depth{};
+    bool hole{};
+};
+
+using ResultRegionId = std::uint64_t;
+
+struct ResultRegion
+{
+    ResultRegionId result_region_id{};
+    ResultRingId outer_ring_id{};
+    SourceSet positive_contributors{};
+};
+
+enum class OperandOutcomeKind
+{
+    contributes_final_material,
+    redundant_or_absorbed_coverage,
+    partially_removed_later,
+    completely_removed_later,
+    subtraction_effect_survives,
+    subtraction_effect_overwritten_later,
+    no_effect,
+};
+
+struct OperandOutcomeEvent
+{
+    OperandId operand_id{};
+    OperandOutcomeKind kind{};
+    std::vector<ResultRingId> result_ring_ids{};
+    std::vector<ResultRegionId> result_region_ids{};
+    SourceSet sources{};
+};
+
+struct SuccessfulJobResult
+{
+    JobId job_id{};
+    std::string status = "success";
+    std::vector<JobDiagnostic> diagnostics{};
+    std::vector<ResultVertex> vertices{};
+    std::vector<DirectedFragment> directed_fragments{};
+    std::vector<ResultRing> rings{};
+    std::vector<ResultRegion> result_regions{};
+    std::vector<OperandOutcomeEvent> operand_outcomes{};
+    std::string digest_sha256{};
+};
+
+struct FailedJobResult
+{
+    JobId job_id{};
+    std::string status = "failure";
+    std::vector<JobDiagnostic> diagnostics{};
+    std::string digest_sha256{};
+};
+
+using AnalyticPlanarBooleanJobResult = std::variant<SuccessfulJobResult, FailedJobResult>;
+
+enum class RelationshipStatus
+{
+    success,
+    skipped_dependency_failed,
+};
+
+enum class IntersectionDimension
+{
+    disjoint,
+    point,
+    curve,
+    area,
+};
+
+struct RelationshipRegionPair
+{
+    ResultRegionId left_result_region_id{};
+    ResultRegionId right_result_region_id{};
+    IntersectionDimension dimension{};
+    bool equality{};
+    bool left_contains_right{};
+    bool right_contains_left{};
+};
+
+struct PlanarRelationshipResult
+{
+    QueryId query_id{};
+    RelationshipStatus status{};
+    IntersectionDimension aggregate_dimension{};
+    std::vector<RelationshipRegionPair> pairs{};
+};
+
+struct AnalyticPlanarBooleanBatchResultA0
+{
+    std::vector<AnalyticPlanarBooleanJobResult> job_results{};
+    std::vector<PlanarRelationshipResult> relationship_results{};
+};
+
 enum class DiagnosticCategory
 {
     transport,

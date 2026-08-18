@@ -324,6 +324,7 @@ algebraic_storage_bytes_per_job = 268435456
 algebraic_work_units_per_job = 1000000000
 provenance_references_per_job = 8388608
 source_reference_index_memberships_per_job = 8388608
+logical_source_reference_expansions_per_batch = 1048576
 exact_predicate_calls_per_job = 100000000
 interval_refinement_steps_per_job = 100000000
 solver_working_memory_bytes_per_job = 1073741824

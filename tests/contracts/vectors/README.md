@@ -33,5 +33,10 @@ The operation corpus adds:
 Compatibility aliases such as `model_format` and `modelTransform` are rejected
 by canonical schemas. Existing handwritten readers may continue to accept them
 only at an explicit compatibility boundary. Canonical serialization and
-transport-framing vectors remain separately added when a promoted surface
+transport-framing vectors remain separately governed when a promoted surface
 requires exact bytes; they do not change the meaning of these frozen cases.
+
+The [`analytic/`](analytic/) subdirectory is that separately governed binary
+corpus for analytic planar Boolean A0. Its native-produced lowercase-hex files
+pin canonical request/result bytes and standalone job digests independently of
+the logical JSON-vector manifest in this directory.

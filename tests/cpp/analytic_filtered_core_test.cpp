@@ -2,6 +2,7 @@
 #include "geometer/analytic_curve_narrow_phase.h"
 
 #include "analytic_filtered_execution_policy.h"
+#include "analytic_filtered_interval.h"
 #include "geometer/analytic_numeric_filter.h"
 #include "geometer/analytic_solver_limits.h"
 
@@ -29,6 +30,19 @@ void require(bool condition, const std::string& message)
         std::cerr << message << '\n';
         std::exit(1);
     }
+}
+
+void test_exact_zero_interval_multiplication()
+{
+    using analytic_detail::exact;
+    using analytic_detail::Interval;
+    using analytic_detail::multiply;
+
+    const Interval range{-17.0, 23.0};
+    const Interval left = multiply(exact(0.0), range);
+    const Interval right = multiply(range, exact(-0.0));
+    require(left.lower == 0.0 && left.upper == 0.0 && right.lower == 0.0 && right.upper == 0.0,
+            "exact zero times a valid interval must remain exact zero");
 }
 
 bool same_pairs(const std::vector<AnalyticCurvePair>& actual,
@@ -236,6 +250,94 @@ void test_endpoint_authoritative_arc_certificate()
                      ? std::string("empty")
                      : std::to_string(static_cast<int>(result.intersections[0].relation)) + "/" +
                            std::to_string(result.intersections[0].point_count)));
+
+    std::vector<AnalyticAtomicCurveNm> near_tangent = {
+        endpoint_authoritative_arc(1, 0, 0, 1000, 0, 600, true, false),
+        line(2, 0, 0, 3330, -5000),
+    };
+    const auto uncertified_near_tangent =
+        intersect_analytic_curve_candidates(near_tangent, {{1, 2}});
+    require(uncertified_near_tangent.error == AnalyticNarrowPhaseError::none &&
+                uncertified_near_tangent.intersections.size() == 1 &&
+                uncertified_near_tangent.intersections[0].point_count == 2,
+            "a distinct on-domain near-tangent root was suppressed without construction identity");
+    near_tangent[0].construction_carrier_id = 1;
+    near_tangent[1].construction_carrier_id = 2;
+    const std::uint64_t tangent = analytic_endpoint_tangent_token(2, true, 1, true);
+    near_tangent[0].construction_start_tangent_id = tangent;
+    near_tangent[1].construction_start_tangent_id = tangent;
+    const auto certified_near_tangent = intersect_analytic_curve_candidates(near_tangent, {{1, 2}});
+    require(certified_near_tangent.error == AnalyticNarrowPhaseError::none &&
+                certified_near_tangent.intersections.size() == 1 &&
+                certified_near_tangent.intersections[0].point_count == 1,
+            "matching endpoint tangent construction identity did not factor the phantom root");
+    near_tangent[1].construction_start_tangent_id =
+        analytic_endpoint_tangent_token(3, true, 1, true);
+    require(intersect_analytic_curve_candidates(near_tangent, {{1, 2}}).error ==
+                AnalyticNarrowPhaseError::invalid_argument,
+            "a tangent token naming a different line carrier was accepted");
+    near_tangent[1].construction_start_tangent_id = 0;
+    near_tangent[1].construction_end_tangent_id = tangent;
+    require(intersect_analytic_curve_candidates(near_tangent, {{1, 2}}).error ==
+                AnalyticNarrowPhaseError::invalid_argument,
+            "a start tangent token migrated to the line end was accepted");
+    near_tangent[1].construction_end_tangent_id = 0;
+    near_tangent[1].construction_start_tangent_id = tangent;
+    near_tangent[1].construction_carrier_id = 3;
+    require(intersect_analytic_curve_candidates(near_tangent, {{1, 2}}).error ==
+                AnalyticNarrowPhaseError::invalid_argument,
+            "a matching tangent token was trusted after carrier migration");
+
+    std::vector<AnalyticAtomicCurveNm> near_circle_tangent = {
+        endpoint_authoritative_arc(1, 0, 0, 50, 0, 25, false, false),
+        endpoint_authoritative_arc(2, 0, 0, 48, 14, 25, true, false),
+    };
+    near_circle_tangent[0].has_endpoint_authoritative_x_monotone_certificate = false;
+    near_circle_tangent[1].has_endpoint_authoritative_x_monotone_certificate = false;
+    const auto two_circle_roots =
+        intersect_analytic_curve_candidates(near_circle_tangent, {{1, 2}});
+    require(two_circle_roots.error == AnalyticNarrowPhaseError::none &&
+                two_circle_roots.intersections.size() == 1 &&
+                two_circle_roots.intersections[0].point_count == 2,
+            "circle endpoint fixture did not expose its strict second root error=" +
+                std::to_string(static_cast<int>(two_circle_roots.error)) + " count=" +
+                std::to_string(two_circle_roots.intersections.empty()
+                                   ? 0
+                                   : two_circle_roots.intersections[0].point_count));
+    near_circle_tangent[0].construction_carrier_id = 1;
+    near_circle_tangent[1].construction_carrier_id = 2;
+    const std::uint64_t circle_tangent =
+        analytic_circle_endpoint_tangent_token(1, true, 2, true, 17);
+    near_circle_tangent[0].construction_start_tangent_id = circle_tangent;
+    near_circle_tangent[1].construction_start_tangent_id = circle_tangent;
+    const auto certified_circle_tangent =
+        intersect_analytic_curve_candidates(near_circle_tangent, {{1, 2}});
+    require(certified_circle_tangent.error == AnalyticNarrowPhaseError::none &&
+                certified_circle_tangent.intersections.size() == 1 &&
+                certified_circle_tangent.intersections[0].point_count == 1 &&
+                analytic_circle_endpoint_tangent_identity(circle_tangent) == 17,
+            "matching circle endpoint construction identity did not suppress the phantom root");
+    near_circle_tangent[1].construction_start_tangent_id =
+        analytic_circle_endpoint_tangent_token(1, true, 2, true, 18);
+    const auto mismatched_circle_identity =
+        intersect_analytic_curve_candidates(near_circle_tangent, {{1, 2}});
+    require(mismatched_circle_identity.error == AnalyticNarrowPhaseError::none &&
+                mismatched_circle_identity.intersections[0].point_count == 2,
+            "different circle construction identities suppressed a strict second root");
+    near_circle_tangent[1].construction_start_tangent_id = 0;
+    near_circle_tangent[1].construction_end_tangent_id = circle_tangent;
+    const auto migrated_circle_endpoint =
+        intersect_analytic_curve_candidates(near_circle_tangent, {{1, 2}});
+    require(migrated_circle_endpoint.error == AnalyticNarrowPhaseError::invalid_argument ||
+                (migrated_circle_endpoint.error == AnalyticNarrowPhaseError::none &&
+                 migrated_circle_endpoint.intersections[0].point_count == 2),
+            "a circle tangent token migrated to the wrong endpoint suppressed a root");
+    near_circle_tangent[1].construction_end_tangent_id = 0;
+    near_circle_tangent[1].construction_start_tangent_id = circle_tangent;
+    near_circle_tangent[1].construction_carrier_id = 3;
+    require(intersect_analytic_curve_candidates(near_circle_tangent, {{1, 2}}).error ==
+                AnalyticNarrowPhaseError::invalid_argument,
+            "a circle tangent token was trusted after carrier migration");
 
     curves[0].circle.center.x.lower += 1.0;
     curves[0].circle.center.x.upper += 1.0;
@@ -520,6 +622,135 @@ void test_narrow_phase_line_line()
             "line/line telemetry changed");
 }
 
+void test_exact_construction_line_domain_rejection()
+{
+    auto certified =
+        [](AnalyticAtomicCurveNm value, std::uint64_t carrier, std::int64_t dx, std::int64_t dy)
+    {
+        value.construction_carrier_id = carrier;
+        value.has_construction_line_direction = true;
+        value.construction_line_dx = dx;
+        value.construction_line_dy = dy;
+        return value;
+    };
+    auto reverse = [](AnalyticAtomicCurveNm value)
+    {
+        std::swap(value.start, value.end);
+        std::swap(value.integer_start, value.integer_end);
+        return value;
+    };
+    const auto ordered_pair =
+        [](AnalyticAtomicCurveNm left, AnalyticAtomicCurveNm right, bool swap_order)
+    {
+        std::array<AnalyticAtomicCurveNm, 2> curves = {left, right};
+        if (swap_order)
+            std::swap(curves[0], curves[1]);
+        curves[0].curve_index = 1;
+        curves[1].curve_index = 2;
+        return std::vector<AnalyticAtomicCurveNm>{curves.begin(), curves.end()};
+    };
+
+    const AnalyticAtomicCurveNm far_left =
+        certified(line(1, 12'259'406, 15'717'310, 12'604'719, 16'062'623), 101, 1, 1);
+    const AnalyticAtomicCurveNm far_right =
+        certified(line(2, 12'061'472, 15'224'577, 12'294'263, 15'457'371), 102, 77'597, 77'598);
+    for (std::uint8_t permutation = 0; permutation != 8; ++permutation)
+    {
+        const AnalyticAtomicCurveNm left = (permutation & 1U) != 0 ? reverse(far_left) : far_left;
+        const AnalyticAtomicCurveNm right =
+            (permutation & 2U) != 0 ? reverse(far_right) : far_right;
+        const AnalyticNarrowPhaseResult result = intersect_analytic_curve_candidates(
+            ordered_pair(left, right, (permutation & 4U) != 0), {{1, 2}});
+        require(result.error == AnalyticNarrowPhaseError::none &&
+                    result.intersections.size() == 1 &&
+                    result.intersections[0].relation == AnalyticPairRelation::disjoint &&
+                    result.telemetry.domain_predicates == 1,
+                "an exact far-off line intersection was not rejected independently of direction");
+    }
+
+    const AnalyticAtomicCurveNm near_left = certified(line(1, -1000, 0, 0, 0), 111, 1, 0);
+    const AnalyticAtomicCurveNm near_right = certified(line(2, 35, 35, 35, 1000), 112, 0, 1);
+    for (std::uint8_t permutation = 0; permutation != 8; ++permutation)
+    {
+        const AnalyticAtomicCurveNm left = (permutation & 1U) != 0 ? reverse(near_left) : near_left;
+        const AnalyticAtomicCurveNm right =
+            (permutation & 2U) != 0 ? reverse(near_right) : near_right;
+        const std::vector<AnalyticAtomicCurveNm> curves =
+            ordered_pair(left, right, (permutation & 4U) != 0);
+        const AnalyticNarrowPhaseResult normal =
+            intersect_analytic_curve_candidates(curves, {{1, 2}});
+        const AnalyticNarrowPhaseResult strict =
+            analytic_execution_detail::intersect_curve_candidates(
+                curves, {{1, 2}}, kAnalyticSolverHardLimits,
+                analytic_execution_detail::kStrictPublishedGeometry);
+        require(normal.error == AnalyticNarrowPhaseError::none &&
+                    normal.intersections[0].relation == AnalyticPairRelation::point &&
+                    normal.intersections[0].resolution_collapsed &&
+                    strict.error == AnalyticNarrowPhaseError::none &&
+                    strict.intersections[0].relation == AnalyticPairRelation::disjoint,
+                "strict finite domains must discard any outside root while normal policy may "
+                "bridge 35/35 nm");
+    }
+
+    const AnalyticAtomicCurveNm crossing_left = certified(line(1, 0, 0, 10, 10), 201, 1, 1);
+    const AnalyticAtomicCurveNm crossing_right = certified(line(2, 0, 10, 10, 0), 202, 1, -1);
+    const AnalyticNarrowPhaseResult crossing =
+        intersect_analytic_curve_candidates({crossing_left, crossing_right}, {{1, 2}});
+    require(crossing.error == AnalyticNarrowPhaseError::none &&
+                crossing.intersections[0].relation == AnalyticPairRelation::point &&
+                contains(crossing.intersections[0].points[0].x, 5.0) &&
+                contains(crossing.intersections[0].points[0].y, 5.0),
+            "an in-domain exact line intersection was discarded");
+
+    const AnalyticAtomicCurveNm endpoint_left = certified(line(1, 0, 0, 10, 10), 301, 1, 1);
+    const AnalyticAtomicCurveNm endpoint_right = certified(line(2, 5, 15, 15, 5), 302, 1, -1);
+    const AnalyticNarrowPhaseResult endpoint =
+        intersect_analytic_curve_candidates({endpoint_left, endpoint_right}, {{1, 2}});
+    require(endpoint.error == AnalyticNarrowPhaseError::none &&
+                endpoint.intersections[0].relation == AnalyticPairRelation::point &&
+                contains(endpoint.intersections[0].points[0].x, 10.0) &&
+                contains(endpoint.intersections[0].points[0].y, 10.0),
+            "an exact endpoint line intersection was discarded");
+
+    AnalyticAtomicCurveNm untrusted_integer_left = far_left;
+    untrusted_integer_left.has_construction_line_direction = false;
+    untrusted_integer_left.construction_line_dx = 0;
+    untrusted_integer_left.construction_line_dy = 0;
+    const AnalyticNarrowPhaseResult untrusted_integer =
+        intersect_analytic_curve_candidates({untrusted_integer_left, far_right}, {{1, 2}});
+    require(untrusted_integer.error == AnalyticNarrowPhaseError::none &&
+                untrusted_integer.intersections[0].relation == AnalyticPairRelation::disjoint &&
+                untrusted_integer.telemetry.domain_predicates == 1,
+            "an integer line without construction authority missed interval-domain rejection");
+
+    AnalyticAtomicCurveNm noninteger_left = far_left;
+    noninteger_left.has_integer_certificate = false;
+    for (std::uint8_t permutation = 0; permutation != 8; ++permutation)
+    {
+        const AnalyticAtomicCurveNm left =
+            (permutation & 1U) != 0 ? reverse(noninteger_left) : noninteger_left;
+        const AnalyticAtomicCurveNm right =
+            (permutation & 2U) != 0 ? reverse(far_right) : far_right;
+        const AnalyticNarrowPhaseResult noninteger = intersect_analytic_curve_candidates(
+            ordered_pair(left, right, (permutation & 4U) != 0), {{1, 2}});
+        require(noninteger.error == AnalyticNarrowPhaseError::none &&
+                    noninteger.intersections[0].relation == AnalyticPairRelation::disjoint &&
+                    noninteger.telemetry.domain_predicates == 1,
+                "a noninteger offset line missed interval-domain rejection under reversal/order");
+    }
+
+    AnalyticAtomicCurveNm boundary_left = filtered_line(1, 0.0, 0.0, 100.0, 0.0);
+    AnalyticAtomicCurveNm boundary_right = filtered_line(2, 100.0, -100.0, 100.0, 100.0);
+    boundary_right.start.x = {99.0, 101.0};
+    boundary_right.end.x = {99.0, 101.0};
+    const AnalyticNarrowPhaseResult uncertain_boundary =
+        intersect_analytic_curve_candidates({boundary_left, boundary_right}, {{1, 2}});
+    require(uncertain_boundary.error == AnalyticNarrowPhaseError::none &&
+                uncertain_boundary.intersections[0].relation == AnalyticPairRelation::point &&
+                uncertain_boundary.intersections[0].resolution_collapsed,
+            "an interval parameter straddling the finite-domain boundary was discarded");
+}
+
 void test_vertical_construction_column_tokens()
 {
     std::vector<AnalyticAtomicCurveNm> curves = {line(1, 100, -1000, 100, 1000),
@@ -580,6 +811,94 @@ void test_narrow_phase_line_circle()
                 result.telemetry.tangent_contacts == 1 &&
                 !result.intersections[1].resolution_collapsed,
             "line/circle work telemetry changed");
+}
+
+void test_horizontal_mirror_line_circle_root_tokens()
+{
+    const std::uint64_t mirror = analytic_horizontal_mirror_construction_id(10, 11);
+    require(mirror != 0 && analytic_horizontal_mirror_contains_carrier(mirror, 10) &&
+                analytic_horizontal_mirror_contains_carrier(mirror, 11) &&
+                !analytic_horizontal_mirror_contains_carrier(mirror, 12),
+            "horizontal mirror construction identity packing drifted");
+
+    auto certified_line = [&](std::uint32_t index, std::int64_t y, std::uint64_t carrier)
+    {
+        AnalyticAtomicCurveNm value = line(index, -200, y, 200, y);
+        value.construction_carrier_id = carrier;
+        value.construction_family_id = 20;
+        value.has_construction_line_direction = true;
+        value.construction_line_dx = 1;
+        value.construction_horizontal_mirror_id = mirror;
+        return value;
+    };
+    auto certified_arc =
+        [&](std::uint32_t index, std::int64_t center_y, bool upper, std::uint64_t carrier)
+    {
+        AnalyticAtomicCurveNm value =
+            upper ? arc(index, 100, center_y, -100, center_y, 0, center_y, 100, true)
+                  : arc(index, -100, center_y, 100, center_y, 0, center_y, 100, true);
+        value.construction_carrier_id = carrier;
+        value.construction_family_id = 30;
+        return value;
+    };
+
+    AnalyticAtomicCurveNm upper_line = certified_line(1, 50, 10);
+    AnalyticAtomicCurveNm upper_arc = certified_arc(2, 0, true, 30);
+    AnalyticAtomicCurveNm lower_line = certified_line(1, -50, 11);
+    AnalyticAtomicCurveNm lower_arc = certified_arc(2, 0, false, 30);
+    const AnalyticNarrowPhaseResult upper =
+        intersect_analytic_curve_candidates({upper_line, upper_arc}, {{1, 2}});
+    const AnalyticNarrowPhaseResult lower =
+        intersect_analytic_curve_candidates({lower_line, lower_arc}, {{1, 2}});
+    require(upper.error == AnalyticNarrowPhaseError::none &&
+                lower.error == AnalyticNarrowPhaseError::none &&
+                upper.intersections[0].point_count == 2 && lower.intersections[0].point_count == 2,
+            "certified horizontal mirror intersections failed");
+    const std::uint64_t left_token = upper.intersections[0].points[0].construction_x_column_id;
+    const std::uint64_t right_token = upper.intersections[0].points[1].construction_x_column_id;
+    require(left_token != 0 && right_token != 0 && left_token != right_token &&
+                analytic_is_symmetric_line_circle_root_x_column_token(left_token) &&
+                analytic_is_symmetric_line_circle_root_x_column_token(right_token) &&
+                lower.intersections[0].points[0].construction_x_column_id == left_token &&
+                lower.intersections[0].points[1].construction_x_column_id == right_token,
+            "corresponding roots from one mirror/circle construction were not correlated");
+
+    AnalyticAtomicCurveNm unrelated_line = upper_line;
+    unrelated_line.construction_horizontal_mirror_id = 0;
+    const auto unrelated =
+        intersect_analytic_curve_candidates({unrelated_line, upper_arc}, {{1, 2}});
+    require(unrelated.error == AnalyticNarrowPhaseError::none &&
+                unrelated.intersections[0].points[0].construction_x_column_id == 0 &&
+                unrelated.intersections[0].points[1].construction_x_column_id == 0,
+            "an unrelated horizontal line acquired a mirror-root token");
+
+    AnalyticAtomicCurveNm off_axis_arc = certified_arc(2, 1, true, 30);
+    const auto off_axis = intersect_analytic_curve_candidates({upper_line, off_axis_arc}, {{1, 2}});
+    require(off_axis.error == AnalyticNarrowPhaseError::none &&
+                off_axis.intersections[0].points[0].construction_x_column_id == 0 &&
+                off_axis.intersections[0].points[1].construction_x_column_id == 0,
+            "an off-axis circle acquired a mirror-root token");
+
+    const std::uint64_t other_mirror = analytic_horizontal_mirror_construction_id(10, 12);
+    AnalyticAtomicCurveNm other_line = upper_line;
+    other_line.construction_horizontal_mirror_id = other_mirror;
+    const auto other_construction =
+        intersect_analytic_curve_candidates({other_line, upper_arc}, {{1, 2}});
+    require(
+        other_construction.error == AnalyticNarrowPhaseError::none &&
+            other_construction.intersections[0].points[0].construction_x_column_id != left_token &&
+            other_construction.intersections[0].points[1].construction_x_column_id != right_token,
+        "different mirror constructions shared root tokens");
+
+    AnalyticAtomicCurveNm other_circle = upper_arc;
+    other_circle.construction_carrier_id = 31;
+    const auto other_circle_result =
+        intersect_analytic_curve_candidates({upper_line, other_circle}, {{1, 2}});
+    require(
+        other_circle_result.error == AnalyticNarrowPhaseError::none &&
+            other_circle_result.intersections[0].points[0].construction_x_column_id != left_token &&
+            other_circle_result.intersections[0].points[1].construction_x_column_id != right_token,
+        "different circle constructions shared mirror-root tokens");
 }
 
 void test_narrow_phase_circle_circle_and_irrational_output()
@@ -1083,6 +1402,7 @@ void test_narrow_phase_rejects_noncanonical_or_invalid_input()
 
 int main()
 {
+    test_exact_zero_interval_multiplication();
     test_limits();
     test_resolution_filter();
     test_broad_phase_threshold_and_order();
@@ -1092,8 +1412,10 @@ int main()
     test_broad_phase_memory_charge_is_cross_runtime_canonical();
     test_broad_phase_pair_capacity_growth_is_canonical();
     test_narrow_phase_line_line();
+    test_exact_construction_line_domain_rejection();
     test_vertical_construction_column_tokens();
     test_narrow_phase_line_circle();
+    test_horizontal_mirror_line_circle_root_tokens();
     test_narrow_phase_circle_circle_and_irrational_output();
     test_narrow_phase_filtered_authored_arcs();
     test_narrow_phase_near_tangent_displacement_guard();

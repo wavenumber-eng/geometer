@@ -440,8 +440,24 @@ MergeError merge_jobs(std::vector<AnalyticResultPacketRecords>& jobs,
     Totals totals;
     if (!collect_totals(jobs, totals))
         return MergeError::invalid;
-    if (!budget.charge(jobs.size()))
+    std::uint64_t expansion_visits = 0;
+    std::uint64_t twice_fragments = 0;
+    if (!checked_multiply(totals.fragments, 2, twice_fragments) ||
+        !checked_add(totals.vertices, twice_fragments, expansion_visits) ||
+        !checked_add(expansion_visits, totals.regions, expansion_visits) ||
+        !checked_add(expansion_visits, totals.events, expansion_visits) ||
+        !budget.charge(jobs.size()) || !budget.charge(expansion_visits))
         return MergeError::resource;
+    std::uint64_t logical_source_expansions = 0;
+    for (const auto& job : jobs)
+    {
+        const auto expansion = analytic_result_detail::charge_logical_source_reference_expansions(
+            job, logical_source_expansions);
+        if (expansion == AnalyticResultPacketLayoutError::limit_exceeded)
+            return MergeError::resource;
+        if (expansion != AnalyticResultPacketLayoutError::none)
+            return MergeError::invalid;
+    }
 
     std::uint64_t retained_jobs = result.telemetry.retained_job_records_bytes;
     std::uint64_t term = 0;
@@ -869,6 +885,14 @@ build_analytic_filtered_batch(const AnalyticRequestPacketRecords& records,
             job_telemetry.lowering_work_units = lowered.telemetry.work_units;
             job_peak = lowered.telemetry.peak_working_memory_bytes;
             result.telemetry.algebraic_fallback_calls += lowered.telemetry.algebraic_fallback_calls;
+            if (lowered.telemetry.algebraic_fallback_calls >
+                std::numeric_limits<std::uint32_t>::max())
+            {
+                result.error = AnalyticFilteredBatchError::internal_error;
+                return result;
+            }
+            job_telemetry.algebraic_fallback_calls =
+                static_cast<std::uint32_t>(lowered.telemetry.algebraic_fallback_calls);
             if (lowered.error == AnalyticFilteredLoweringError::none && !lowered.value)
             {
                 result.error = AnalyticFilteredBatchError::internal_error;
@@ -921,6 +945,15 @@ build_analytic_filtered_batch(const AnalyticRequestPacketRecords& records,
                     result.telemetry.candidate_pairs += broad.telemetry.candidate_pairs;
                     result.telemetry.algebraic_fallback_calls +=
                         broad.telemetry.algebraic_fallback_calls;
+                    if (broad.telemetry.algebraic_fallback_calls >
+                        std::numeric_limits<std::uint32_t>::max() -
+                            job_telemetry.algebraic_fallback_calls)
+                    {
+                        result.error = AnalyticFilteredBatchError::internal_error;
+                        return result;
+                    }
+                    job_telemetry.algebraic_fallback_calls +=
+                        static_cast<std::uint32_t>(broad.telemetry.algebraic_fallback_calls);
                     job_peak = std::max(job_peak,
                                         geometry_bytes + broad.telemetry.peak_working_memory_bytes);
                     if (broad.error != AnalyticBroadPhaseError::none)
@@ -975,6 +1008,15 @@ build_analytic_filtered_batch(const AnalyticRequestPacketRecords& records,
                             job_telemetry.packet_work_units = packet.telemetry.predicate_calls;
                             result.telemetry.algebraic_fallback_calls +=
                                 packet.telemetry.algebraic_fallback_calls;
+                            if (packet.telemetry.algebraic_fallback_calls >
+                                std::numeric_limits<std::uint32_t>::max() -
+                                    job_telemetry.algebraic_fallback_calls)
+                            {
+                                result.error = AnalyticFilteredBatchError::internal_error;
+                                return result;
+                            }
+                            job_telemetry.algebraic_fallback_calls += static_cast<std::uint32_t>(
+                                packet.telemetry.algebraic_fallback_calls);
                             job_peak = std::max(
                                 job_peak, geometry_bytes + broad.telemetry.retained_pair_bytes +
                                               packet.telemetry.peak_working_memory_bytes);
@@ -1045,6 +1087,7 @@ build_analytic_filtered_batch(const AnalyticRequestPacketRecords& records,
                 return result;
             }
             job_telemetry.peak_working_memory_bytes = job_peak;
+            job_telemetry.emitted_record_bytes = result_packet_records_logical_bytes(published);
             result.telemetry.peak_working_memory_bytes =
                 std::max(result.telemetry.peak_working_memory_bytes, retained_records);
             const bool failed = published.job_results.front().status != 0;

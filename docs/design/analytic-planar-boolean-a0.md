@@ -64,8 +64,9 @@ The nonproduction CTest spike
 - normalized boundary signatures are independent of operand order within a
   union stage;
 - circle-intersection vertices can be classified to both source curves;
-- the exact MATZ arbitrary-angle, signed-sweep, round-cap case succeeds and
-  retains unique nm-grid representatives within the point error bound;
+- the historical MATZ angle-form arbitrary-angle, signed-sweep, round-cap
+  spike succeeds under its nonproduction trigonometric expansion and retains
+  unique nm-grid representatives within the point error bound;
 - the 1.25/1.4 nm collision probe maps two distinct required vertices to one
   representative and is therefore rejectable; and
 - OCCT modification/generation history alone does not retain absorbed-positive
@@ -73,15 +74,17 @@ The nonproduction CTest spike
 
 The same test passes natively and under Emscripten/Node. After decoding stdout
 as UTF-8, normalizing CRLF to LF, and removing exactly one final LF, its current
-five-line canonical feasibility signature, including the twelve exact case-2
-endpoint/radius/direction/branch fragments, has SHA-256
+five-line canonical feasibility signature, including the twelve historical
+angle-form case-2 endpoint/radius/direction/branch fragments, has SHA-256
 `c21b03c1b42a6cb3212cec5b3051987f645e21062eddecc82d3e3b0e0fd6dfc7`.
 Raw console bytes are not compared because Windows text mode emits CRLF. The
 canonical-byte construction and digest must be tested directly. This is
-feasibility evidence, not the eventual packet golden.
+historical nonproduction feasibility evidence, not an A0 request/result oracle
+or the eventual packet golden.
 
-The case-2 success oracle is the following lexicographically sorted fragment
-list. `A:radius:direction:branch:start:end` uses integer nanometers:
+The historical angle-form case-2 feasibility oracle is the following
+lexicographically sorted fragment list. `A:radius:direction:branch:start:end`
+uses integer nanometers:
 
 ```text
 A:2600000:cw:minor:4213333,2299527:5560500,451485
@@ -98,10 +101,17 @@ A:800000:ccw:minor:-4510525,1641697:-3007016,1094464
 A:800000:ccw:minor:3007016,1094464:4510525,1641697
 ```
 
-The committed feasibility test asserts this list on both targets. The packet
-implementation must later add ring order, provenance/source-set indices,
-generated ids, and the standalone job-result digest without changing these
-normalized analytic fragments.
+The committed feasibility test asserts this historical list on both targets.
+It expanded microdegree angles with a spike-local trigonometric policy; the A0
+request has no angle fields and does not adopt that rounding. Production case
+2 is therefore blocked until MATZ supplies authoritative integer-nanometer
+`start`/`end`, `direction`, and `major_arc` values for operands 2001 and 2002 as
+specified by the
+[machine-actionable handoff](../contracts/matz-case-2-handoff-a0.json). The
+canonical A0 request, native/WASM result bytes, standalone job digest, and
+fragment oracle must then be regenerated from that revised input. The
+historical fragment list must not be copied forward or treated as a required
+production result.
 
 The 1.25/1.4 nm collision probe above is retained as historical feasibility
 evidence. Under ADR-013 it is inside the 50 nm topology-resolution envelope and
@@ -247,8 +257,9 @@ Every circular centerline segment must have radius strictly greater than half
 the sweep width so both analytic offsets remain positive-radius curves. The
 regularized swept area is the Minkowski sum of the accepted centerline with a
 closed disk of radius `width / 2`; overlap between nonadjacent parts of that
-swept area is allowed and is resolved by the exact arrangement. Inputs outside
-these A0 rules fail the isolated job with `invalid_topology` or `invalid_arc`.
+swept area is allowed and is resolved by the filtered indexed arrangement.
+Inputs outside these A0 rules fail the isolated job with `invalid_topology` or
+`invalid_arc`.
 
 ### Relationship Queries
 
@@ -312,7 +323,16 @@ circle-circle carrier construction followed by trig-free segment/arc-domain
 tests. Ordinary irrational circle crossings remain small binary64 coordinate
 intervals; they do not construct algebraic roots. Exact integer signs decide
 bounded parallel/collinear, circle separation/tangency, and authored arc
-validity cases. Square-root endpoints are adjusted outward until FMA residuals
+validity cases. Before a nonparallel line-line pair constructs its coordinate
+enclosure, fixed-width rational parameters from validated integer construction
+lines, or conservative interval parameters otherwise, may reject it only when
+at least one complete parameter is strictly outside `[0,1]`. Strict replay can
+discard that finite-domain root immediately. Under the normal resolution
+policy, the parameter's complete along-carrier distance must additionally be
+strictly greater than 50 nm; a closer outside root continues through the
+existing pairwise endpoint witness. A parameter that touches or straddles `0`
+or `1` stays on the existing finite-domain path; this early rejection neither
+moves a point nor spends resolution. Square-root endpoints are adjusted outward until FMA residuals
 verify the enclosure. A result interval wider than the 50 nm publication
 radius, an unprovable domain decision, or an unprovable resolution collapse
 returns the job-local resource failure with algebraic fallback still at zero.
@@ -356,10 +376,42 @@ expanded geometry must remain representable after restoring the signed 64-bit
 global origin. The aggregate sweep-tight emitted bounds, including finite-arc
 cardinal extrema, must also remain inside the governed job-local coordinate
 span.
-Swept paths currently return job-local `unsupported_geometry` on this path;
-their old exact piece-union and quadratic centerline validation are not used as
-a production fallback. They become supported when the filtered indexed
-arrangement can resolve the piece union under the same work budgets.
+Constant-width open swept paths use the production filtered path. Their
+centerlines are validated by indexed broad/narrow phases, then one disk per
+path vertex and one closed strip per line/arc segment are partitioned by the
+filtered overlay at the governed 50 nm topology resolution. A local classifier
+admits ordinary noncollapsed intersections between disks at consecutive
+authored vertices. Repeated vertex centers and any overlap or contact between
+nonconsecutive vertex disks remain invalid centerline topology, so this
+adjacency authority cannot hide a path self-contact.
+It retains an atomic span only when coincident memberships and strict disk or
+finite line/arc-strip containment prove union material on exactly one side;
+the projected union boundary is then independently revalidated by the ordinary
+filtered arrangement and selection pipeline.
+Surviving material boundaries retain deterministic cap, join, or offset source
+roles; a surviving construction chord is an invalid topology. Integer offset
+circles canonicalize to rational carrier keys, while overlapping concentric
+symbolic offsets without a proof of distinct radii fail closed. This slice
+does not allocate the exact/algebraic construction arena and reports zero
+algebraic fallback calls.
+
+The local classifier preserves distinct singleton-integer construction
+endpoints and fixed-width line-line construction intersections only when their
+exact carrier certificates prove those identities. The sole line-circle and
+circle-circle exceptions are private lowering-issued endpoint relations bound
+to the authored path vertex, incident normal ray, both construction carriers,
+both finite-domain endpoint names, and the swept source roles. These relations
+preserve an exact constructed root; they do not promote a nearby event. A
+split same-carrier line or circle seam is accepted only when exact finite-domain
+predicates prove disjoint open interiors, including canonical semicircle and
+major/minor arc sequences; source identities remain split. All other collapsed
+line-circle or circle-circle events fail closed. If the 50 nm policy collapses
+nearby circle-circle roots so an open atomic span no longer has a proven
+constant material state, swept lowering fails closed. In particular, endpoint-cap
+overlap or contact at 1 nm/0 nm may fail, including rotations and reflections;
+a separated boundary gap greater than 50 nm remains supported. This is a
+production filtered-resolution limitation, not a change to the mathematical
+regularized swept-area definition.
 
 The implemented filtered split/overlay boundary groups exact lowering-issued
 carrier ids, accepts only canonical broad-phase pairs, and runs the
@@ -431,7 +483,15 @@ first receive a strict scalar total key, including the clockwise positive-x
 arc case, and every adjacent pair is then certified by outward tangent,
 cross/dot, curvature, and radius predicates. The certified rotation system
 builds `next`/`previous` links and enumerates components and directed cycles in
-linear traversal work after sorting. Arc cycle orientation is valid because
+linear traversal work after sorting. Before sorting, a tokenless incident span
+can join a vertex-local tangent class only through a frozen coincident
+membership on the same nonzero construction carrier and complete endpoint/x
+column, a unique lowering-issued tangent token, and a tokenful line authority
+on the same positive ray. One immutable authority angle key is applied to the
+class; a metered all-pairs audit rejects asymmetric or inconsistent resolved
+ordering. If the canonical cycle germ is uncertain, a metered full-cycle scan
+accepts orientation only when every certified nonzero leftmost germ agrees;
+zero, conflict, or no certificate fails closed. Arc cycle orientation is valid because
 the overlay has partitioned interior x extrema. No cycle-pair containment or
 face/operand winding scan occurs in this boundary.
 
@@ -467,9 +527,14 @@ stores only branches crossing the open slab. A disjoint-set structure joins
 the cycle sides that border the same open gap. Vertical edges are resolved by
 the rotation system rather than inserted into an open slab. Lowering-issued
 vertical construction-column identities preserve exact shared x coordinates
-for non-integral capsule offsets; unrelated overlapping x intervals remain an
-uncertain predicate and fail the job. Circle events use canonical left/right
-seam identities and x-monotone branch certificates. The stage does not run a
+for non-integral capsule offsets. Event vertices with a non-empty common x
+enclosure may also share one atomic column when their complete y enclosures
+are strictly ordered. The running common intersection prevents transitive
+overlap chains; the y proof makes the column updates commute without merging
+vertices, changing coordinates, or spending another resolution allowance.
+Overlapping y enclosures remain an uncertain predicate and fail the job.
+Circle events use canonical left/right seam identities and x-monotone branch
+certificates. The stage does not run a
 cycle-by-cycle containment test and does not spend a second 50 nm repair
 allowance: it preserves the arrangement coordinates and accepts only certified
 ordering decisions.
@@ -537,9 +602,13 @@ The selection admission pass uses its existing `O(curves + candidates)` split
 envelope to reserve the possible narrow result table, overlay event/output and
 arrangement phases, and the complete retained-selection plus material-region
 live phase before arrangement begins. Endpoint-coincident major/full-circle
-domains participate in that bound. It also reserves a conservative downstream
-work allowance; selection executes against the remaining ceiling and region
-traversals consume the reservation with actual work reported separately. A
+domains participate in that bound. It reserves conservative material-region
+work before arrangement while retaining the complete worst-case lineage and
+outcome memory preflight. After transactional region construction succeeds,
+unused region work is released and lineage/outcome work is bounded again from
+the actual retained edges, half-edges, faces, coverage nodes, memberships, and
+regions before either continuation can publish. Region traversals consume
+their reservation with actual work reported separately. A
 known-doomed region job therefore performs no arrangement work. Every
 half-edge, rotation, component, ring, adjacency, output, and sort traversal is
 precharged, known arrays are fixed-capacity, and native/WASM topology and
@@ -565,8 +634,9 @@ responsible noncoincident and same-stage subtractors. Result-vertex lineage
 visits only incident edge and attached collapsed-span memberships.
 
 Source identities are validated against their authored or connected compact
-curve role before arrangement. Swept-path roles are rejected until filtered
-swept lowering owns and validates their governed occurrence keys. Lineage
+curve role before arrangement. Filtered swept lowering owns and validates
+swept-path cap, join, and offset roles against their governed occurrence keys.
+Lineage
 structural work and target-independent logical memory are reserved before
 arrangement; after regions exist, an allocation-free count pass checks the exact
 raw source-incidence ceilings, second-pass work, sort work, and publication live
@@ -630,10 +700,20 @@ that endpoint as a verified construction root and factors only the possible
 second line/circle or circle/circle root with outward interval arithmetic. It
 does not take another square root, snap a point, or construct an algebraic
 value. Every distinct on-domain second root rejects the replay, including one
-within 50 nm of the known endpoint; an uncertain root fails closed. Already
+within 50 nm of the known endpoint; an uncertain or domain-straddling root
+fails closed. A complete root enclosure proved strictly outside either finite
+domain is discarded exactly, without using its endpoint distance or spending
+the repair allowance. This complete finite-domain proof occurs before the
+50 nm width gate, which applies only to a root that can survive on both finite
+curves. Already
 x-monotone replay arcs need no internal cardinal partition, and only an
 identical normalized construction key or identical
-singleton center/radius can prove coincident carriers. This closes ordinary
+singleton center/radius can prove coincident carriers. Split normalized arcs
+may transport production-owned carrier identity only through the composite key
+of nonzero validated source carrier, curve kind, and byte-identical full
+normalized center/radius descriptor. Independently rounded siblings with
+different descriptors and identical enclosures from different source carriers
+remain distinct. This closes ordinary
 irrational circle-intersection normalization without calling the algebraic
 backend. Outcome history and projection perform no numeric predicate, snapping,
 or additional 50 nm repair.
@@ -659,9 +739,9 @@ standalone packet, and computes its SHA-256 closure without invoking the exact
 topology solver or algebraic normalization. Failed governed jobs contain no
 partial geometry and publish one job-only diagnostic.
 
-The owned batch continuation, including relationship evaluation, is also
-implemented, but is not public dispatch. It deterministically validates
-canonical request records, executes
+The owned batch continuation, including relationship evaluation, is implemented
+and production-dispatched through the generic packed operation transport. It
+deterministically validates canonical request records, executes
 lowering, indexed broad phase, and records-only packet publication sequentially
 under separate per-job and whole-batch live limits, and isolates governed job
 failures. A specialized job-major merger globally reassigns source identities,
@@ -682,8 +762,7 @@ dependencies publish skipped results, and empty successful jobs publish
 disjoint results. All traversal, candidate, cache, output, and remaining packet
 bytes are pre-admitted with target-independent logical charges. Unresolved
 predicate proofs fail the whole invocation as a solver failure rather than
-spending another topology-repair allowance. Operation dispatch and transport
-projection remain subsequent stages. Exact/algebraic sources build only in the
+spending another topology-repair allowance. Exact/algebraic sources build only in the
 `geometer_exact_feasibility` test oracle; ordinary `geometer_lib` does not link
 them.
 
@@ -695,8 +774,8 @@ spend a second topology-repair allowance on already normalized geometry.
 Exact singleton endpoints and trusted endpoint-authoritative construction
 roots still reconcile; unresolved equality or ordering fails closed. Public
 entry points continue to use the normal 50 nm policy. The relationship
-evaluator uses the private strict policy and remains internal until operation
-dispatch lands.
+evaluator remains an internal implementation detail invoked behind the packed
+production dispatch.
 
 Across ordered stages, the accumulator retains the resolved analytic
 arrangement and lineage. Publication to the governed nm grid occurs once after
@@ -933,8 +1012,10 @@ Under the historical exact-first policy, any violation failed the isolated job
 with a stable normalization diagnostic. The MATZ 1.25/1.4 nm notch was its
 topology-collapse sentinel. ADR-013 places that notch below the production
 resolution envelope, so it may now collapse deterministically. The
-arbitrary-angle arc fixture remains a required successful non-grid-intersection
-case.
+arbitrary-angle arc fixture remains a required successful
+non-grid-intersection production case, but its A0 replay remains blocked on the
+authoritative integer endpoint and branch fields in the
+[case-2 handoff](../contracts/matz-case-2-handoff-a0.json).
 
 ## Canonical Result
 
@@ -1012,7 +1093,12 @@ derived field. Encoders verify a supplied logical digest against the same bytes
 and never serialize it as an independent value. Logical source-set values are
 inline at their use sites; the packed projector interns their complete content
 into the source-set and source-reference tables without changing their logical
-meaning.
+meaning. Projection in the other direction is bounded by a batch-wide maximum
+of 1,048,576 logical source-reference expansions. The checked count sums a
+set's members at every vertex, fragment source-set field, region, and operand
+event that exposes it, including repeated uses of one interned packed handle.
+Native and WASM enforce the same bound before publishing a successful packet,
+so every production result remains projectable by the generated clients.
 
 ## Provenance And Outcomes
 
@@ -1233,41 +1319,148 @@ factory details.
 ## Performance And Telemetry
 
 Speed within the 50 nm correctness envelope is the primary production goal.
-The initial real-board acceptance target is at most 1 second and 512 MiB peak
-working memory per all-copper batch on the recorded reference machine. A
-5-second/1-GiB ceiling remains a temporary bring-up limit, not the desired
-steady-state performance.
+The initial real-board performance target is at most 1 second and 512 MiB peak
+working memory per all-copper batch. It is recorded as an observation, not a
+release gate. The portable production gate is the 5-second/1-GiB hard ceiling
+for both the process envelope and solver telemetry.
 
-The A0 qualification reference is a single serialized worker in a Release
-build on Windows 11 Pro build 26200, AMD Ryzen 9 9950X (16 physical/32 logical
-cores), and 66,125,668,352 bytes installed RAM. Native compiler, browser,
+The comparative A0 qualification reference is a single serialized worker in a
+Release build on Windows 11 Pro build 26200, AMD Ryzen 9 9950X (16 physical/32
+logical cores), and 66,125,668,352 bytes installed RAM. Native compiler, browser,
 Emscripten, OCCT tag, Geometer revision, fixture digest, power mode, warmup
 count, repeat count, median, and peak-memory measurement method are recorded
-with every accepted benchmark. A different machine may supply comparative
-telemetry but cannot silently replace this release target.
+with every accepted benchmark. Machine identity remains explicit comparative
+telemetry and does not control portable production eligibility.
 
 Wall time, peak memory, operand/input-segment/result-region/result-segment
 counts, broad-phase candidate pairs, narrow-phase predicates, exact-fallback
 count, and normalization-failure count are noncanonical telemetry. They are
 reported outside canonical job-result bytes.
 
+The generic qualification harness is
+`scripts/qualify_analytic_planar_boolean.py`. It replays exact `GMABRQ01`
+attachments through the production executable IPC operation, strictly decodes
+the returned `GMABRS01` packet, and writes a deterministic JSON structure. Its
+governed identity includes machine, toolchain, request, corpus, warmup, repeat,
+power-mode, and threshold identities; wall-clock and memory observations remain
+outside that identity. The always-available default is the governed
+cross-transport primitive-family request and is explicitly synthetic evidence,
+not a real board.
+
+The executable SHA-256 and reported version are authoritative for the measured
+binary. Native builds place deterministic `geometer.build-attestation.json`
+beside the executable. Schema `wn.geometer.native_build_attestation.a1` binds
+the exact executable digest and reported version/C ABI to the Git revision and
+source-tree state, compiler identity/version, platform/architecture, build
+type, pinned OCCT tag, CMake generator, and governed attestation-generator
+identity. It contains no timestamp, absolute path, environment value, or
+secret. Qualification accepts it only when its key set and canonical JSON
+bytes are exact and its artifact digest and version/C ABI match the measured
+executable. Missing metadata remains un-attested; malformed, noncanonical,
+stale, or mismatched metadata fails qualification. A dirty or
+source-control-unavailable build may carry a diagnostic sidecar but always
+reports `build_provenance_attested=false`; only an authoritative clean Git
+source state and a verified resolved OCCT install profile may pass the
+promotion provenance gate. Release runs use
+`--require-promotion-attested` to fail closed on that gate.
+
+An external corpus manifest may classify a packet as `external_real_board`
+only when it supplies the source identity and digest, exporter identity and
+revision, explicit `authorized_for_qualification` redistribution authority,
+and license scope. This records provenance without requiring proprietary source
+bytes to be vendored. The classification does not by itself satisfy promotion.
+
+The repository provenance record
+`docs/contracts/analytic-real-board-packet-provenance.toml` authorizes public
+redistribution under MIT, with Wavenumber attribution, of geometry-only
+`GMABRQ01` packets derived from the two exact RT/LOZ source hashes pinned there.
+That authority excludes the source CAD. The RT `PWR4` packet, corrected Appz
+exporter manifest, external-real-board corpus, and bound local qualification
+report are now governed under
+`tests/contracts/vectors/analytic/real-board/rt_super_c1_pwr4/`. The raw request
+is publicly redistributable and locally production-qualified; LOZ remains
+pending. Neither case is promoted by redistribution authority alone.
+
+```json
+{
+  "schema": "wn.geometer.analytic_planar_boolean_qualification_corpus.a0",
+  "cases": [{
+    "id": "owner-board-revision",
+    "request": "board-request.gmabrq01",
+    "classification": "external_real_board",
+    "source_provenance": {
+      "source_identity": "owner:board:revision",
+      "source_sha256": "<lowercase SHA-256>",
+      "exporter_identity": "owner-exporter",
+      "exporter_revision": "<revision>",
+      "redistribution_authorization": "authorized_for_qualification",
+      "license_scope": "<authorized scope>"
+    }
+  }]
+}
+```
+
+Corpus requests use either canonical lowercase hexadecimal `.hex` text or exact
+raw `.gmabrq01` bytes. The suffix selects the decoder; absolute paths, corpus
+directory escapes, unknown suffixes, malformed magic, and noncanonical packet
+accounting fail closed. A raw request is not also vendored as hex.
+
+The harness reads the operating system's process-lifetime RSS high-water mark
+for its owned executable (`PeakWorkingSetSize` on Windows and `VmHWM` on
+Linux). This is labeled `process_peak_rss_bytes`: it is a conservative
+process-envelope observation, not the solver's internal
+`peak_working_memory_bytes`. Later cases in one serialized worker conservatively
+inherit earlier peaks. A platform without an exact high-water source reports
+memory unavailable and cannot pass the process-envelope gate. A0 IPC does not
+expose internal counters. Native qualification therefore uses a separate
+test-only helper that accepts the identical `GMABRQ01` bytes through the
+production decoder and filtered-batch builder. Its working-memory, work,
+candidate, fallback, emitted-byte, and failure counters are accepted only when
+the helper's complete result packet is byte-for-byte equal to the production
+executable IPC result. The helper identity, source freshness, output shape,
+job identities, and counter invariants also fail closed.
+
+The RT packet has complete exporter provenance, a governed expected-result
+digest, and repeated production/helper byte-equality evidence on a local AMD
+Ryzen 9 5950X. That local report passes correctness, determinism, telemetry,
+the 5-second/1-GiB ceiling, and the 1-second/512-MiB observation. Its promotion
+gate remains incomplete because the measured Geometer executable came from a
+dirty, unattested worktree. A clean, attested build from the exact release
+commit must rerun the portable qualification; no exact CPU model is required.
+At least two production-result and matched internal-telemetry observations are
+required to establish determinism for promotion; singleton smoke runs are
+comparative only.
+An executable without the validated clean-source sidecar falls back to clearly
+labelled current-workspace hints and cannot attest promotion. The
+5-second/1-GiB process and solver envelopes are enforced by default;
+`--require-target` additionally gates the run on the conservative
+1-second/512-MiB process observation for comparative performance work. External
+real-board corpora also require production-equivalent internal telemetry
+automatically.
+
 ## Promotion Gates
 
 Before design freeze:
 
-- MATZ must ratchet the arbitrary-angle fixture from provisional to successful;
+- MATZ must ratchet the historical arbitrary-angle observation from
+  provisional to a successful feasibility expectation;
 - this design, the packet specification, diagnostic assignments, capability
   table, and generated API shapes must receive joint review;
 - portable logical fixtures must be imported into Geometer with digests and
   structural expectations; and
 - raw-byte goldens must be generated only after the packet layout freezes.
 
-These conditions are met. The vendored MATZ manifest records the
-arbitrary-angle case as successful with the reviewed twelve-fragment native/
-WASM feasibility signature; the consumer/provider and independent architecture
-reviews are recorded in the compatibility snapshot and plan log; the isolated
-TypeSpec API shapes received focused independent review; and the ten portable
-plus two real-board observation cases are digest-locked in this repository.
+These historical design-input conditions are met. The vendored MATZ manifest
+records the historical angle-form arbitrary-angle observation, while the RT
+`PWR4` real-board vector now provides a separate replayable production request
+and local qualification report. The
+[case-2 handoff](../contracts/matz-case-2-handoff-a0.json) remains historical
+design evidence rather than the RT request authority. The
+consumer/provider and independent architecture reviews are recorded in the
+compatibility snapshot and ADR-012; the isolated TypeSpec API shapes received
+focused independent review. Ten portable cases and metadata observations for RT
+and LOZ remain digest-locked. RT is now replayable from the governed geometry
+packet; LOZ remains metadata-only and blocked. No source CAD is vendored.
 Raw-byte goldens deliberately remain the first post-freeze codec artifact.
 
 ### Filtered Production Gates
@@ -1282,8 +1475,8 @@ ADR-013 adds gates that supersede exact-first production acceptance:
   sparse, dense, and adversarial inputs;
 - native and WASM produce equivalent topology, canonical bytes, threshold
   decisions, and diagnostics; and
-- the 1-second/512-MiB target and 5-second/1-GiB temporary ceiling are measured
-  on the recorded reference corpus.
+- the 1-second/512-MiB comparative target is recorded, while the portable
+  5-second/1-GiB hard ceiling is enforced on the governed corpus.
 
 The exact-focused sections below describe retained conformance evidence from
 the prototype. They remain valuable oracle and mutation lanes, but their
@@ -1413,7 +1606,12 @@ remain valid: A0 permits overlap between nonadjacent parts of the swept area
 even though it forbids centerline retracing and self-intersection. The
 classifications are `overlap_allowed`, `contact_allowed`, and
 `disjoint_allowed`; no tolerance or solver-generated geometry decides the
-boundary.
+boundary. These 9/10/11 nm rows govern the historical exact oracle only. They
+do not assert that the resolution-bounded production swept lowerer can publish
+the same sub-50 nm topology: production may fail closed for the overlap and
+contact rows when its filtered circle-circle partition cannot prove constant
+open-span material state. A production boundary gap proven greater than 50 nm
+remains required to succeed, as specified above.
 
 ### Exact Boolean Identities
 
@@ -1575,8 +1773,8 @@ acceptance in review packet
 difference was found, the repeated browser heap remained flat at 64 MiB, and
 the exact feasibility signature remained unchanged. This selects the exact
 `V8_0_1` production dependency pin. Cache publication and restore verification
-remain part of the pin-integration gate; production operation dispatch remains
-disabled.
+remain part of the pin-integration gate. Packed production dispatch is present,
+but candidate promotion and release remain gated by the qualification below.
 
 Before release, Geometer must pass native/full-browser/executable parity,
 generated TypeScript/Rust/Python consumption, malformed/resource tests,

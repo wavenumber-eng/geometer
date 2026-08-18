@@ -65,8 +65,10 @@ batch = runner.run(
 )
 ```
 
-The Python package intentionally uses the executable backend only for now. It
-looks for the Geometer CLI in this order:
+The Python package intentionally uses the executable backend only for now.
+Existing file-oriented helpers use the JSON batch CLI, while `GeometerClient`
+holds one `geometer serve --stdio` process for typed analytic packed requests.
+Both paths discover the Geometer executable in this order:
 
 - `GEOMETER_EXE`;
 - the package directory;
@@ -78,9 +80,11 @@ looks for the Geometer CLI in this order:
 ## Generated contract boundary
 
 The package contains generated dependency-free dataclasses, enums, and strict
-JSON codecs under `geometer._generated.contracts`. They are internal structural
-authority, not a new public import surface. The generator reads the normalized
-TypeSpec catalog and is part of the ordinary freshness gate.
+JSON codecs under `geometer._generated.contracts`. They are the structural
+authority. Most generated declarations remain an internal compatibility
+boundary; the selected analytic request/result construction types are
+re-exported from `geometer` for the typed packed client. The generator reads
+the normalized TypeSpec catalog and is part of the ordinary freshness gate.
 
 `model_bounds` is the first operation integrated through this boundary. The
 public compatibility adapter continues to accept `model_format`,
@@ -91,10 +95,41 @@ validates its result before the existing public `ModelBoundsResult` convenience
 wrapper is constructed. Public names, signatures, return attributes,
 executable discovery, and all other CLI-backed operations remain unchanged.
 
+The analytic planar Boolean candidate is integrated through a second
+executable-backed lane:
+
+```python
+import geometer
+
+request = geometer.AnalyticPlanarBooleanBatchRequestA0(jobs=(), relationship_queries=())
+with geometer.GeometerClient() as client:
+    result = client.analytic_planar_boolean_batch(request, timeout=10)
+```
+
+Consumers that need a governed artifact rather than an immediate solve may
+call `encode_analytic_planar_boolean_batch_request_a0_packet(request)`. The
+matching `decode_analytic_planar_boolean_batch_result_a0_packet(packet)`
+strictly validates and projects a packed result. These are the same codec
+functions used by `GeometerClient`; they do not create a second JSON or binary
+authority.
+
+`GeometerClient` performs the A0 handshake, validates the generated operation
+catalog and negotiated limits, and sends raw named attachments over binary
+frames. `_analytic_packet_a0.py` is the strict little-endian codec for the
+logical analytic DTOs; no JSON geometry is placed on the hot path. It enforces
+the canonical packet graph and the batch-wide 1,048,576 logical
+source-reference expansion limit before materializing result DTOs. Protocol,
+process, timeout, and typed operation failures have distinct public exception
+classes. The client is synchronous and serialized, uses queue-only
+cancellation after a local timeout, drains terminal responses before reuse,
+and treats malformed negotiated responses as connection-fatal.
+
 The runtime uses only the Python standard library. This adds no wheel runtime
 dependency and supports the package's existing Python 3.10 floor. Generated
-source is included by normal setuptools package discovery; clean wheel tests
-prove internal imports and a live public model-bounds round trip.
+source is included by normal setuptools package discovery. Clean-wheel tests
+prove public analytic DTO/client imports, empty and nontrivial packed analytic
+IPC calls against the bundled executable, and a live public model-bounds round
+trip.
 
 Published wheels are platform wheels because they bundle the native executable.
 Linux wheels must be repaired/tagged with `auditwheel` before PyPI upload; the
@@ -126,13 +161,16 @@ Compatibility wrappers remain available:
 - `project_step_hlr(...)`
 - `hlr_projection_json(...)`
 
-The executable backend writes temporary STEP/request/output files, calls:
+The file-oriented executable backend writes temporary STEP/request/output
+files and calls:
 
 ```powershell
 geometer run request.json response.json
 ```
 
-and returns the requested JSON text or GLB bytes to the Python caller.
+and returns the requested JSON text or GLB bytes to the Python caller. The
+analytic client instead uses the persistent binary `serve --stdio` protocol;
+it does not write geometry packets to temporary files.
 
 `GEOMETER_BACKEND=exe` and `GEOMETER_BACKEND=cli` are accepted explicit names.
 Other backend names are rejected by the public Python API.

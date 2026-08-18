@@ -11,26 +11,40 @@ const catalogText = await readFile(
   join(root, "contracts/geometer/generated/wn_geometer_contract_catalog.a0.json"),
   "utf8",
 );
-const catalog = await applyProjectionDeferrals(JSON.parse(catalogText), "rust");
+const contractCatalog = JSON.parse(catalogText);
+const modelCatalog = await applyProjectionDeferrals(contractCatalog, "rust", {
+  retainLogicalDtos: true,
+});
+const codecCatalog = await applyProjectionDeferrals(contractCatalog, "rust");
+const packedContracts = new Set(
+  contractCatalog.operations
+    .filter((operation) => operation.runtime_dispatch === "packed_attachment")
+    .flatMap((operation) => [operation.request_contract, operation.result_contract]),
+);
+const codecRoots = codecCatalog.roots.filter(
+  (rootRecord) => !packedContracts.has(rootRecord.contract_identity),
+);
 const catalogSha256 = createHash("sha256").update(catalogText).digest("hex");
-const output = join(root, catalog.output_roots.rust);
+const output = join(root, contractCatalog.output_roots.rust);
 const check = process.argv.slice(2).includes("--check");
 if (process.argv.length > (check ? 3 : 2)) {
   throw new Error("Usage: node scripts/generate-rust-contracts.mjs [--check]");
 }
 
-const declarations = new Map(catalog.declarations.map((item) => [item.name, item]));
-const roots = new Set(catalog.roots.map((item) => item.name));
-const ordered = topologicalOrder(catalog.declarations);
+const declarations = new Map(modelCatalog.declarations.map((item) => [item.name, item]));
+const codecDeclarations = reachableNames(codecRoots);
+const roots = new Set(codecRoots.map((item) => item.name));
+const ordered = topologicalOrder(modelCatalog.declarations);
 const source = formatRust(
-  `${generateHeader()}\n${ordered.map(generateDeclaration).join("\n\n")}\n\n${generateRootCodecs()}\n`,
+  `${generateHeader()}\n${ordered.map((item) => generateDeclaration(item, codecDeclarations.has(item.name))).join("\n\n")}\n\n${generateRootCodecs()}\n`,
 );
 
 await emit("contracts.rs", source);
+await emit("operations.rs", formatRust(generateOperations()));
 await emit(
   "mod.rs",
   formatRust(
-    "// Generated from wn_geometer_contract_catalog.a0.json. Do not edit.\n\npub mod contracts;\n",
+    "// Generated from wn_geometer_contract_catalog.a0.json. Do not edit.\n\npub mod contracts;\npub mod operations;\n",
   ),
 );
 
@@ -99,22 +113,112 @@ where
 }`;
 }
 
-function generateDeclaration(item) {
-  if (item.kind === "enum") return generateEnum(item);
-  if (item.kind === "union") return generateUnion(item);
+function generateOperations() {
+  const runtimeCatalog = operationCatalogTemplate();
+  const analytic = contractCatalog.operations.find(
+    (operation) => operation.identity === "geometry.analytic_planar_boolean_batch.a0",
+  );
+  if (!analytic) throw new Error("Analytic operation is absent from the normalized catalog.");
+  return `// Generated from wn_geometer_contract_catalog.a0.json. Do not edit.
+
+use super::contracts::{self, IpcOperationCatalogA0};
+
+pub const ANALYTIC_PLANAR_BOOLEAN_BATCH_A0_IDENTITY: &str = ${JSON.stringify(analytic.identity)};
+
+const OPERATION_CATALOG_TEMPLATE: &str = r#"${JSON.stringify(runtimeCatalog)}"#;
+
+pub fn expected_operation_catalog(
+    release_version: &str,
+    c_abi_generation: u32,
+) -> IpcOperationCatalogA0 {
+    let mut value: serde_json::Value = serde_json::from_str(OPERATION_CATALOG_TEMPLATE)
+        .expect("generated operation catalog template must be valid JSON");
+    value["release_version"] = serde_json::Value::String(release_version.to_owned());
+    value["c_abi_generation"] = serde_json::Value::Number(c_abi_generation.into());
+    let bytes = serde_json::to_vec(&value)
+        .expect("generated operation catalog value must serialize");
+    contracts::decode_ipc_operation_catalog_a0_json(&bytes)
+        .expect("generated operation catalog must satisfy its contract")
+}`;
+}
+
+function operationCatalogTemplate() {
+  return {
+    catalog: "wn.geometer.operation_catalog.a0",
+    generic_abi: "a0",
+    release_version: "",
+    c_abi_generation: 0,
+    operations: contractCatalog.operations.map((operation) => ({
+      identity: operation.identity,
+      request_contract: operation.request_contract,
+      result_contract: operation.result_contract,
+      input_attachments: operation.input_attachments,
+      output_attachments: operation.output_attachments,
+      runtime_dispatch: operation.runtime_dispatch,
+      ...(operation.request_projection ? { request_projection: operation.request_projection } : {}),
+      ...(operation.result_projection ? { result_projection: operation.result_projection } : {}),
+    })),
+    attachment_descriptor: {
+      wasm32: {
+        size: 36,
+        offsets: {
+          struct_size: 0,
+          flags: 4,
+          name: 8,
+          name_size: 12,
+          media_type: 16,
+          media_type_size: 20,
+          data: 24,
+          data_size: 28,
+          reserved0: 32,
+        },
+      },
+      pointer64: {
+        size: 56,
+        offsets: {
+          struct_size: 0,
+          flags: 4,
+          name: 8,
+          name_size: 16,
+          media_type: 24,
+          media_type_size: 32,
+          data: 40,
+          data_size: 48,
+          reserved0: 52,
+        },
+      },
+    },
+    limits: {
+      operation_id_bytes: 128,
+      request_json_bytes: 8 * 1024 * 1024,
+      response_json_bytes: 8 * 1024 * 1024,
+      attachment_count: 16,
+      attachment_name_bytes: 128,
+      attachment_media_type_bytes: 128,
+      attachment_bytes: 256 * 1024 * 1024,
+      aggregate_attachment_bytes_native: 512 * 1024 * 1024,
+      aggregate_attachment_bytes_wasm: 256 * 1024 * 1024,
+    },
+  };
+}
+
+function generateDeclaration(item, jsonWire) {
+  if (item.kind === "enum") return generateEnum(item, jsonWire);
+  if (item.kind === "union") return generateUnion(item, jsonWire);
+  if (item.kind === "scalar") return generateScalar(item, jsonWire);
   if (item.kind === "model" && item.model_kind === "array") return generateArrayModel(item);
-  if (item.kind === "model" && item.model_kind === "object") return generateObject(item);
+  if (item.kind === "model" && item.model_kind === "object") return generateObject(item, jsonWire);
   throw new Error(`Unsupported Rust declaration ${JSON.stringify(item)}`);
 }
 
-function generateEnum(item) {
+function generateEnum(item, jsonWire) {
   const variants = item.members
     .map(
       (member) =>
-        `    #[serde(rename = ${JSON.stringify(member.value)})]\n    ${pascal(member.name)},`,
+        `${jsonWire ? `    #[serde(rename = ${JSON.stringify(member.value)})]\n` : ""}    ${pascal(member.name)},`,
     )
     .join("\n");
-  return `#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+  return `#[derive(Clone, Debug, ${jsonWire ? "Deserialize, " : ""}PartialEq${jsonWire ? ", Serialize" : ""})]
 pub enum ${shortName(item.name)} {
 ${variants}
 }
@@ -124,7 +228,7 @@ impl Validate for ${shortName(item.name)} {
 }`;
 }
 
-function generateUnion(item) {
+function generateUnion(item, jsonWire) {
   const variants = item.variants
     .map((variant) => `    ${pascal(variant.name)}(${rustType(variant.type)}),`)
     .join("\n");
@@ -133,9 +237,8 @@ function generateUnion(item) {
       (variant) => `            Self::${pascal(variant.name)}(value) => value.validate_at(path),`,
     )
     .join("\n");
-  return `#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
-#[serde(untagged)]
-pub enum ${shortName(item.name)} {
+  return `#[derive(Clone, Debug, ${jsonWire ? "Deserialize, " : ""}PartialEq${jsonWire ? ", Serialize" : ""})]
+${jsonWire ? "#[serde(untagged)]\n" : ""}pub enum ${shortName(item.name)} {
 ${variants}
 }
 
@@ -145,6 +248,49 @@ impl Validate for ${shortName(item.name)} {
 ${validation}
         }
     }
+}`;
+}
+
+function generateScalar(item, jsonWire) {
+  const name = shortName(item.name);
+  if (
+    jsonWire ||
+    item.base?.kind !== "primitive" ||
+    item.base.name !== "uint64" ||
+    item.constraints?.min_value !== 1 ||
+    item.constraints?.max_value !== undefined
+  ) {
+    throw new Error(`Unsupported Rust scalar declaration ${JSON.stringify(item)}`);
+  }
+  return `#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[repr(transparent)]
+pub struct ${name}(std::num::NonZeroU64);
+
+impl ${name} {
+    pub const fn new(value: u64) -> Option<Self> {
+        match std::num::NonZeroU64::new(value) {
+            Some(value) => Some(Self(value)),
+            None => None,
+        }
+    }
+
+    pub const fn get(self) -> u64 { self.0.get() }
+}
+
+impl TryFrom<u64> for ${name} {
+    type Error = ContractError;
+
+    fn try_from(value: u64) -> Result<Self, Self::Error> {
+        Self::new(value).ok_or_else(|| invalid("", "identity must be nonzero"))
+    }
+}
+
+impl From<${name}> for u64 {
+    fn from(value: ${name}) -> Self { value.get() }
+}
+
+impl Validate for ${name} {
+    fn validate_at(&self, _path: &str) -> Result<(), ContractError> { Ok(()) }
 }`;
 }
 
@@ -168,7 +314,7 @@ ${itemValidation.map((line) => `            ${line}`).join("\n")}
 }`;
 }
 
-function generateObject(item) {
+function generateObject(item, jsonWire) {
   const name = shortName(item.name);
   const fields = item.properties
     .map((property) => {
@@ -182,7 +328,8 @@ function generateObject(item) {
           'deserialize_with = "deserialize_optional_non_null"',
           'skip_serializing_if = "Option::is_none"',
         );
-      const attributes = serdeOptions.length ? `    #[serde(${serdeOptions.join(", ")})]\n` : "";
+      const attributes =
+        jsonWire && serdeOptions.length ? `    #[serde(${serdeOptions.join(", ")})]\n` : "";
       const type = property.optional
         ? `Option<${rustType(property.type)}>`
         : rustType(property.type);
@@ -190,9 +337,8 @@ function generateObject(item) {
     })
     .join("\n");
   const checks = item.properties.flatMap((property) => validationLines(property));
-  return `#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
-#[serde(deny_unknown_fields)]
-pub struct ${name} {
+  return `#[derive(Clone, Debug, ${jsonWire ? "Deserialize, " : ""}PartialEq${jsonWire ? ", Serialize" : ""})]
+${jsonWire ? "#[serde(deny_unknown_fields)]\n" : ""}pub struct ${name} {
 ${fields}
 }
 
@@ -324,6 +470,7 @@ function rustType(type) {
       string: "String",
       boolean: "bool",
       float64: "f64",
+      int64: "i64",
       uint32: "u32",
       uint64: "u64",
     }[type.name];
@@ -367,6 +514,19 @@ function dependencies(item) {
   if (item.index_value) scan(item.index_value);
   for (const property of item.properties ?? []) scan(property.type);
   for (const variant of item.variants ?? []) scan(variant.type);
+  return found;
+}
+
+function reachableNames(rootRecords) {
+  const found = new Set();
+  const visit = (name) => {
+    if (found.has(name)) return;
+    const declaration = declarations.get(name);
+    if (!declaration) throw new Error(`Catalog reference does not resolve: ${name}.`);
+    found.add(name);
+    for (const dependency of dependencies(declaration)) visit(dependency);
+  };
+  for (const rootRecord of rootRecords) visit(rootRecord.name);
   return found;
 }
 

@@ -126,6 +126,15 @@ target_link_libraries(geometer_analytic_filtered_batch_test PRIVATE geometer_lib
 add_test(NAME geometer_analytic_filtered_batch_test
          COMMAND geometer_analytic_filtered_batch_test)
 
+if(NOT EMSCRIPTEN)
+    add_executable(geometer_analytic_solver_telemetry_helper
+        analytic_solver_telemetry_helper.cpp
+    )
+    target_link_libraries(geometer_analytic_solver_telemetry_helper PRIVATE geometer_lib)
+    add_test(NAME geometer_analytic_solver_telemetry_helper_identity
+             COMMAND geometer_analytic_solver_telemetry_helper --identity)
+endif()
+
 add_executable(geometer_exact_rational_test
     exact_rational_test.cpp
 )

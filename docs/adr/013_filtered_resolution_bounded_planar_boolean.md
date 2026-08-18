@@ -78,12 +78,20 @@ engine.
   Constructed coordinates use outward interval operations, and a square-root
   enclosure is accepted only after an FMA residual verifies both endpoints.
   Any point interval or resolution collapse that cannot prove the 50 nm
-  displacement bound fails the isolated job. Finite-domain repairs are
+  displacement bound fails the isolated job. A line parameter strictly outside
+  its finite domain is discarded immediately in strict replay; under the normal
+  policy its complete along-carrier overshoot must also exceed 50 nm so the
+  existing pairwise endpoint witness remains authoritative. Finite-domain repairs are
   certified pairwise: when both carrier intersections lie beyond their finite
   curves, actual endpoint witnesses must be at most 50 nm apart. Two
   independently sub-50-nm endpoint distances may not compose into a bridge
   above the envelope, and a domain predicate that merely straddles an endpoint
-  fails closed. Its internal curves carry bounded
+  fails closed. For nonparallel line pairs, the kernel may reject before
+  constructing the point enclosure only when a fixed-width rational parameter
+  from validated integer construction lines, or a conservative interval
+  parameter otherwise, lies strictly outside `[0,1]`; boundary-touching or
+  straddling parameters continue through the existing fail-closed domain path.
+  This exact/interval exclusion is metered and spends no tolerance. Its internal curves carry bounded
   point and radius intervals plus optional integer certificates, so irrational
   authored radii and non-integral offset geometry do not require an integer-only
   side representation. Radial sagitta alone never certifies a near-tangent
@@ -110,9 +118,12 @@ engine.
   a later origin translation could leave signed 64-bit public coordinates.
   Aggregate sweep-tight output bounds, including finite-arc cardinal extrema,
   must remain inside the governed job-local coordinate span.
-  Swept paths fail job-locally as unsupported until their piece union is
-  implemented by the filtered indexed arrangement; the exact swept
-  pre-arrangement is not a production fallback.
+  Swept paths use the filtered indexed arrangement for their bounded local
+  piece union; the exact swept pre-arrangement is not a production fallback.
+  Ordinary noncollapsed intersections between disks at consecutive authored
+  vertices are admitted by exact path adjacency. Repeated vertex centers and
+  any overlap or contact between nonconsecutive vertex disks fail as invalid
+  centerline topology, preserving the conservative self-contact boundary.
 - The filtered split/overlay stage groups only lowering-issued exact carrier
   ids, accepts only canonical broad-phase pairs, and invokes the narrow phase
   internally. No API accepts caller-constructed intersection records, so an
@@ -174,7 +185,17 @@ engine.
   a cycle-pair scan. A strict total binary64 key is used only to satisfy the
   sort contract; adjacent outgoing germs are then certified with outward
   tangent, cross, dot, curvature, and radius predicates. Uncertain angular
-  order fails the isolated job. Endpoint-index visits, balanced-tree/heap
+  order fails the isolated job. A lowering-issued endpoint-tangent identity
+  may be projected ephemerally across incident spans only through the same
+  nonzero construction carrier, byte-identical full endpoint enclosure and x
+  column, a unique validated tangent token, and a tokenful line on the same
+  strictly positive outgoing ray. The resulting vertex-local class receives
+  one immutable angle key before sorting; all resolved pair comparisons are
+  audited afterward for antisymmetry and order consistency. Published tokens
+  and coordinates are never mutated. If the canonical cycle germ is
+  unresolved, one metered full-cycle scan may collect other certified
+  right-half-plane leftmost germs; every nonzero result must agree and a
+  conflict, zero, or absence fails closed. Endpoint-index visits, balanced-tree/heap
   updates, sorts, traversals, angular predicates, and phase-specific logical
   memory are governed, and the stage inherits the overlay's already consumed
   work. A direct adversarial interval-index fixture forces all earlier
@@ -189,8 +210,12 @@ engine.
   same open gap with a governed disjoint set. This assigns nested and
   disconnected boundary components without cycle-pair containment tests.
   Lowering-issued construction-column identities prove correlated non-integral
-  vertical coordinates; unrelated overlapping coordinate enclosures fail
-  closed. Circle branches retain the left/right seam and x-monotone
+  vertical coordinates. Independently produced event vertices may share an
+  atomic column only while their x enclosures retain a non-empty common
+  intersection and their complete y enclosures remain strictly ordered. This
+  admits commuting, y-separated events without a coordinate merge or another
+  repair allowance, rejects transitive x-overlap chains, and still fails closed
+  on ambiguous y order. Circle branches retain the left/right seam and x-monotone
   certificates issued by overlay. Face assignment performs no coordinate
   merge and consumes no additional 50 nm allowance.
 - Face coverage is sparse. Sorted edge-membership transitions propagate from
@@ -243,12 +268,15 @@ engine.
   area region; point-tangent material components remain separate.
 - The candidate-derived selection admission envelope also reserves the full
   possible narrow-result, overlay-event/output, arrangement, and
-  material-region live-memory phases plus a conservative downstream work
-  budget before arrangement starts. The envelope is linear in curves plus
+  material-region live-memory phases plus complete worst-case downstream
+  memory before arrangement starts. The envelope is linear in curves plus
   canonical candidates and counts endpoint-coincident full-circle domains.
-  Selection consumes only the remaining work;
-  fixed-capacity region, lineage, and operand-history traversals consume their reservations
-  and report actual work separately. Lineage follows only material-component
+  Selection consumes only the remaining work; material-region work is reserved
+  conservatively, then its unused remainder is released after transactional
+  success. Lineage and outcome work are subsequently bounded from the actual
+  retained topology before publication. Fixed-capacity region, lineage, and
+  operand-history traversals consume their reservations and report actual work
+  separately. Lineage follows only material-component
   dual transitions, then performs an allocation-free source-incidence count
   before fixed-capacity publication; it never unions every face's coverage set
   or scans every operand per face. Every rotation, ring, component, adjacency,
@@ -275,8 +303,16 @@ engine.
   verified endpoint/radius/center-branch certificate. At a certified shared
   endpoint, replay factors the possible second line/circle or circle/circle
   root directly with outward intervals instead of rediscovering the known root
-  through a square root. A distinct residual root always rejects, even within
-  50 nm. The reconstruction certificate is separate from the x-monotone-half
+  through a square root. A residual root whose complete parameter enclosure is
+  strictly outside either finite curve domain is discarded without spending a
+  tolerance. Complete domain exclusion precedes the enclosure-width gate,
+  which remains mandatory for a root that may survive on both domains; every
+  root that enters or straddles both domains rejects, even within 50 nm.
+  Production-owned split arcs transport carrier identity only when the
+  validated nonzero source carrier, curve kind, and byte-identical full
+  normalized center/radius descriptor all match. Differing normalized
+  descriptors or distinct source carriers remain separate. The reconstruction
+  certificate is separate from the x-monotone-half
   refinement: arcs that remain on their named half need no internal seam;
   others retain distinct internal cardinal partitions while mapping all such
   spans back to the one published fragment. Replay arrangement reconciles

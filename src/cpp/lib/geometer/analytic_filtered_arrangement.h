@@ -11,7 +11,7 @@ namespace geometer
 
 inline constexpr std::uint64_t kAnalyticOverlayMembershipLogicalBytes = 8;
 inline constexpr std::uint64_t kAnalyticArrangementVertexLogicalBytes = 48;
-inline constexpr std::uint64_t kAnalyticArrangementEdgeLogicalBytes = 192;
+inline constexpr std::uint64_t kAnalyticArrangementEdgeLogicalBytes = 216;
 inline constexpr std::uint64_t kAnalyticArrangementHalfEdgeLogicalBytes = 32;
 inline constexpr std::uint64_t kAnalyticArrangementCollapsedSpanLogicalBytes = 24;
 inline constexpr std::uint64_t kAnalyticArrangementCycleLogicalBytes = 24;
@@ -41,6 +41,9 @@ struct AnalyticArrangementEdgeNm
     bool has_construction_line_direction = false;
     std::int64_t construction_line_dx = 0;
     std::int64_t construction_line_dy = 0;
+    std::uint64_t construction_carrier_id = 0;
+    std::uint64_t construction_start_tangent_id = 0;
+    std::uint64_t construction_end_tangent_id = 0;
 };
 
 struct AnalyticArrangementHalfEdge

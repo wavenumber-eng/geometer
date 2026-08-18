@@ -15,7 +15,7 @@ from setuptools.dist import Distribution
 try:
     from setuptools.command.bdist_wheel import bdist_wheel as _bdist_wheel
 except ImportError:
-    from wheel.bdist_wheel import bdist_wheel as _bdist_wheel
+    from wheel.bdist_wheel import bdist_wheel as _bdist_wheel  # type: ignore[import-not-found]
 
 
 ROOT = Path(__file__).resolve().parent
@@ -37,9 +37,17 @@ class build_py(_build_py):
         target_dir = native_root / _platform_tag()
         target_dir.mkdir(parents=True, exist_ok=True)
         self.copy_file(str(executable), str(target_dir / executable.name))
+        sidecar = _source_attestation(executable)
+        self.copy_file(str(sidecar), str(target_dir / sidecar.name))
+        license_dir = package_build_dir / "licenses"
+        license_dir.mkdir(parents=True, exist_ok=True)
+        for name, source in _license_sources().items():
+            if not source.is_file():
+                raise FileNotFoundError(f"Missing release license source: {source}")
+            self.copy_file(str(source), str(license_dir / name))
 
 
-class bdist_wheel(_bdist_wheel):
+class bdist_wheel(_bdist_wheel):  # type: ignore[reportGeneralTypeIssues]
     def finalize_options(self) -> None:
         super().finalize_options()
         self.root_is_pure = False
@@ -69,6 +77,39 @@ def _source_executable() -> Path:
         "Missing geometer executable. Build the native CLI before building the "
         f"Python wheel. Looked under dist/native/{_platform_tag()}/."
     )
+
+
+def _source_attestation(executable: Path) -> Path:
+    path = executable.with_name("geometer.build-attestation.json")
+    scripts_path = ROOT / "scripts"
+    if str(scripts_path) not in sys.path:
+        sys.path.insert(0, str(scripts_path))
+    from native_build_attestation import (  # type: ignore[import-not-found]
+        BuildAttestationError,
+        load_and_validate_attestation,
+    )
+
+    try:
+        value = load_and_validate_attestation(executable, path)
+    except BuildAttestationError as error:
+        raise RuntimeError(f"Native executable build attestation is invalid: {error}") from error
+    if value is None:
+        raise FileNotFoundError(
+            "Missing geometer.build-attestation.json beside the native executable. "
+            "Rebuild the native distribution target before building the Python wheel."
+        )
+    return path
+
+
+def _license_sources() -> dict[str, Path]:
+    return {
+        "WN_GEOMETER_LICENSE.txt": ROOT / "LICENSE",
+        "THIRD_PARTY_NOTICES.md": ROOT / "THIRD_PARTY_NOTICES.md",
+        "CLIPPER2_LICENSE.txt": ROOT / "third_party" / "clipper2" / "LICENSE",
+        "RAPIDJSON_LICENSE.txt": ROOT / "third_party" / "rapidjson" / "license.txt",
+        "OCCT_LICENSE_LGPL_21.txt": ROOT / ".deps" / "occt-src" / "LICENSE_LGPL_21.txt",
+        "OCCT_LGPL_EXCEPTION.txt": ROOT / ".deps" / "occt-src" / "OCCT_LGPL_EXCEPTION.txt",
+    }
 
 
 def _platform_tag() -> str:

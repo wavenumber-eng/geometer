@@ -2,6 +2,7 @@
 #include "geometer/analytic_filtered_boolean_selection.h"
 #include "geometer/analytic_filtered_lowering.h"
 
+#include "analytic_filtered_boolean_selection_support.h"
 #include "analytic_filtered_execution_policy.h"
 #include <algorithm>
 #include <array>
@@ -113,6 +114,18 @@ void append_rectangle(AnalyticFilteredGeometry& geometry, std::uint64_t operand,
                       double maximum, bool material_inside = true)
 {
     append_axis_rectangle(geometry, operand, minimum, minimum, maximum, maximum, material_inside);
+}
+
+void append_polygon(AnalyticFilteredGeometry& geometry, std::uint64_t operand,
+                    const std::vector<std::array<double, 2>>& vertices)
+{
+    require(vertices.size() >= 3, "polygon fixture requires at least three vertices");
+    for (std::size_t index = 0; index < vertices.size(); ++index)
+    {
+        const auto& start = vertices[index];
+        const auto& end = vertices[(index + 1) % vertices.size()];
+        append_line(geometry, operand, start[0], start[1], end[0], end[1], true);
+    }
 }
 
 AnalyticFilteredBooleanSelectionResult select(const AnalyticRequestPacketRecords& records,
@@ -510,6 +523,154 @@ void test_annulus_and_irrational_capsule()
                 " columns=" + std::to_string(vertical.telemetry.event_columns) +
                 " correlated=" + std::to_string(vertical.telemetry.resolution_event_columns) +
                 " stages=" + std::to_string(vertical.telemetry.input_stages));
+}
+
+void test_symmetric_capsule_disk_intersections_share_bounded_columns()
+{
+    AnalyticRequestPacketRecords records;
+    records.jobs = {{7, 0, 1}};
+    records.stages = {{701, 1, 0, 3}};
+    records.operands = {{7001, 2, 0}, {7002, 2, 1}, {7003, 4, 0}};
+    records.disks = {{7101, 5'000'000, 5'000'000, 1'000'000},
+                     {7102, 5'000'000, 5'000'000, 1'000'000}};
+    records.capsules = {{7201, -1'000'000, 5'000'000, 21'000'000, 5'000'000, 1'000'000}};
+    const AnalyticFilteredLoweringResult lowered =
+        lower_analytic_job_to_filtered_curves(records, 0);
+    require(lowered.error == AnalyticFilteredLoweringError::none && lowered.value,
+            "symmetric capsule/disk fixture did not lower");
+    const AnalyticFilteredBooleanSelectionResult result = select(records, *lowered.value);
+    require(result.error == AnalyticFilteredBooleanSelectionError::none &&
+                result.telemetry.resolution_event_columns >= 2 &&
+                !result.telemetry.unresolved_predicate_failure,
+            "symmetric capsule/disk roots were not admitted as bounded event columns");
+}
+
+void test_unrelated_overlapping_x_enclosures_share_a_safe_event_column()
+{
+    const auto solve =
+        [](double short_x_lower, double short_x_upper, bool reflect_x, bool reflect_y)
+    {
+        std::vector<std::array<double, 2>> vertices{
+            {0, 0},
+            {1000, 0},
+            {1000, 1000},
+            {500, 1000},
+            {short_x_lower, 800},
+            {short_x_upper, 788},
+            {0, 788},
+        };
+        for (auto& vertex : vertices)
+        {
+            if (reflect_x)
+                vertex[0] = 1000 - vertex[0];
+            if (reflect_y)
+                vertex[1] = 1000 - vertex[1];
+        }
+        if (reflect_x != reflect_y)
+            std::reverse(vertices.begin(), vertices.end());
+        AnalyticFilteredGeometry geometry;
+        append_polygon(geometry, 1, vertices);
+        return select(records_for({{1, {1}}}), geometry);
+    };
+
+    // The 12.37 nm span collapses to a non-singleton vertex whose x enclosure
+    // touches the exact x=500 vertex 200 nm away in y. Both vertices retain two
+    // incident edges, matching the isolated real-board failure mechanism.
+    const AnalyticFilteredBooleanSelectionResult result = solve(500, 503, false, false);
+    require(
+        result.error == AnalyticFilteredBooleanSelectionError::none &&
+            result.telemetry.material_faces == 1 &&
+            result.arrangement.collapsed_spans.size() == 1 && result.telemetry.event_columns == 3 &&
+            result.telemetry.resolution_event_columns >= 1 &&
+            !result.telemetry.unresolved_predicate_failure,
+        "y-separated overlapping x enclosures did not share a safe event column: error=" +
+            std::to_string(static_cast<int>(result.error)) +
+            " collapsed=" + std::to_string(result.arrangement.collapsed_spans.size()) +
+            " faces=" + std::to_string(result.faces.size()) +
+            " material=" + std::to_string(result.telemetry.material_faces) +
+            " columns=" + std::to_string(result.telemetry.event_columns) +
+            " unresolved=" + std::to_string(result.telemetry.unresolved_predicate_failure ? 1 : 0));
+
+    // Reflecting x maps the enclosure to [497,500], so it sorts before the
+    // exact x=500 event while preserving the geometric configuration.
+    // Telemetry must still identify the column as resolution-dependent.
+    const AnalyticFilteredBooleanSelectionResult non_singleton_first = solve(500, 503, true, false);
+    require(non_singleton_first.error == AnalyticFilteredBooleanSelectionError::none &&
+                non_singleton_first.arrangement.collapsed_spans.size() == 1 &&
+                non_singleton_first.telemetry.event_columns == 3 &&
+                non_singleton_first.telemetry.resolution_event_columns ==
+                    result.telemetry.resolution_event_columns,
+            "event-column telemetry depended on singleton/non-singleton sort order: error=" +
+                std::to_string(static_cast<int>(non_singleton_first.error)) + " columns=" +
+                std::to_string(non_singleton_first.telemetry.event_columns) + " correlated=" +
+                std::to_string(non_singleton_first.telemetry.resolution_event_columns));
+
+    const AnalyticFilteredBooleanSelectionResult empty_intersection = solve(501, 504, false, false);
+    require(empty_intersection.error == AnalyticFilteredBooleanSelectionError::none &&
+                empty_intersection.telemetry.event_columns == 4,
+            "empty x-enclosure intersection was incorrectly folded into an event column: error=" +
+                std::to_string(static_cast<int>(empty_intersection.error)) + " columns=" +
+                std::to_string(empty_intersection.telemetry.event_columns) + " correlated=" +
+                std::to_string(empty_intersection.telemetry.resolution_event_columns));
+
+    for (const bool reflect_x : {false, true})
+        for (const bool reflect_y : {false, true})
+        {
+            const AnalyticFilteredBooleanSelectionResult transformed =
+                solve(500, 503, reflect_x, reflect_y);
+            require(transformed.error == AnalyticFilteredBooleanSelectionError::none &&
+                        transformed.arrangement.collapsed_spans.size() == 1 &&
+                        transformed.telemetry.event_columns == 3 &&
+                        !transformed.telemetry.unresolved_predicate_failure,
+                    "reflected safe event column changed classification");
+        }
+}
+
+void test_event_columns_require_one_common_x_intersection()
+{
+    using analytic_selection_detail::event_column_x_requires_resolution;
+    using analytic_selection_detail::event_column_y_is_strictly_ordered;
+    using analytic_selection_detail::extend_event_column_x_intersection;
+    using analytic_selection_detail::Interval;
+    const std::array<Interval, 3> spans{{{0, 2}, {1, 3}, {2.5, 4}}};
+    std::array<std::uint32_t, 3> order{0, 1, 2};
+    do
+    {
+        std::array<Interval, 3> sorted{spans[order[0]], spans[order[1]], spans[order[2]]};
+        std::sort(
+            sorted.begin(), sorted.end(), [](Interval left, Interval right)
+            { return std::tie(left.lower, left.upper) < std::tie(right.lower, right.upper); });
+        double common_lower = sorted[0].lower;
+        double common_upper = sorted[0].upper;
+        require(extend_event_column_x_intersection(sorted[1], common_lower, common_upper) &&
+                    common_lower == 1 && common_upper == 2 &&
+                    !extend_event_column_x_intersection(sorted[2], common_lower, common_upper),
+                "transitive x-overlap chain changed common intersection under permutation");
+    } while (std::next_permutation(order.begin(), order.end()));
+
+    double boundary_lower = 500;
+    double boundary_upper = 500;
+    require(
+        extend_event_column_x_intersection(Interval{500, 503}, boundary_lower, boundary_upper) &&
+            boundary_lower == 500 && boundary_upper == 500,
+        "boundary-touching x enclosures did not retain their common point");
+    double empty_lower = 500;
+    double empty_upper = 500;
+    require(!extend_event_column_x_intersection(Interval{501, 504}, empty_lower, empty_upper),
+            "empty x-enclosure intersection was accepted");
+    require(event_column_y_is_strictly_ordered(Interval{200, 212}, Interval{800, 800}) &&
+                !event_column_y_is_strictly_ordered(Interval{200, 240}, Interval{240, 280}),
+            "event-column y ordering did not fail closed at enclosure contact");
+
+    double reflected_lower = -503;
+    double reflected_upper = -500;
+    require(extend_event_column_x_intersection(Interval{-500, -500}, reflected_lower,
+                                               reflected_upper) &&
+                reflected_lower == -500 && reflected_upper == -500,
+            "reflected boundary-touching x enclosures changed classification");
+    require(event_column_x_requires_resolution(Interval{499, 501}) &&
+                !event_column_x_requires_resolution(Interval{500, 500}),
+            "resolution-dependent event-column telemetry depended on interval sort order");
 }
 
 AnalyticFilteredBooleanSelectionResult nested_rectangles(std::uint32_t count)
@@ -1187,6 +1348,9 @@ int main()
     test_tangent_disks_do_not_join_faces();
     test_coincident_and_difference_only_disks();
     test_annulus_and_irrational_capsule();
+    test_symmetric_capsule_disk_intersections_share_bounded_columns();
+    test_unrelated_overlapping_x_enclosures_share_a_safe_event_column();
+    test_event_columns_require_one_common_x_intersection();
     test_nested_scaling_is_not_face_by_operand();
     test_sibling_island_ownership();
     test_ordered_stage_area_oracle();

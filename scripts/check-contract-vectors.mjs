@@ -32,6 +32,11 @@ async function main() {
   ajv.addKeyword({ keyword: "x-wn-production-wire", schemaType: "string" });
   ajv.addKeyword({ keyword: "x-wn-derived-field", schemaType: "string" });
   ajv.addKeyword({ keyword: "x-wn-packed-field", schemaType: "string" });
+  ajv.addKeyword({
+    keyword: "x-wn-max-logical-source-reference-expansions",
+    schemaType: "number",
+    metaSchema: { type: "integer", minimum: 1 },
+  });
   const schemaDocuments = [];
   for (const root of catalog.roots) {
     const filename = `${root.name.slice(root.name.lastIndexOf(".") + 1)}.json`;

@@ -2,7 +2,9 @@
 
 #include <cstdint>
 #include <cstdlib>
+#include <iomanip>
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -18,6 +20,15 @@ void require(bool condition, const std::string& message)
         std::cerr << message << '\n';
         std::exit(1);
     }
+}
+
+std::string hex(const std::vector<std::uint8_t>& bytes)
+{
+    std::ostringstream stream;
+    stream << std::hex << std::setfill('0');
+    for (const std::uint8_t byte : bytes)
+        stream << std::setw(2) << static_cast<unsigned>(byte);
+    return stream.str();
 }
 
 std::uint64_t read_u64(const std::vector<std::uint8_t>& bytes, std::size_t offset)
@@ -325,6 +336,8 @@ int main()
     require_encode_error(mutated, AnalyticRequestPacketError::invalid_reference,
                          "gapped operand partition was accepted");
 
+    std::cout << "ANALYTIC_REQUEST_PACKET_EMPTY_VECTOR=" << hex(*empty.value) << '\n';
+    std::cout << "ANALYTIC_REQUEST_PACKET_EXEMPLAR_VECTOR=" << hex(*encoded.value) << '\n';
     std::cout << "analytic request packet codec tests passed" << '\n';
     return 0;
 }

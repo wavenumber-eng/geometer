@@ -1,5 +1,9 @@
+#include "geometer/analytic_curve_broad_phase.h"
 #include "geometer/analytic_filtered_lowering.h"
+#include "geometer/analytic_filtered_normalization.h"
+#include "geometer/analytic_filtered_packet.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
@@ -229,6 +233,16 @@ void test_capsule_carrier_proofs()
                 duplicates.curves[2].construction_carrier_id ==
                     duplicates.curves[6].construction_carrier_id,
             "duplicate capsule offset carriers did not reuse proof tokens");
+    require(duplicates.curves[0].construction_horizontal_mirror_id != 0 &&
+                duplicates.curves[0].construction_horizontal_mirror_id ==
+                    duplicates.curves[2].construction_horizontal_mirror_id &&
+                duplicates.curves[0].construction_horizontal_mirror_id ==
+                    duplicates.curves[4].construction_horizontal_mirror_id &&
+                duplicates.curves[0].construction_horizontal_mirror_id ==
+                    duplicates.curves[6].construction_horizontal_mirror_id &&
+                duplicates.curves[0].construction_horizontal_mirror_axis_y == 0 &&
+                duplicates.curves[2].construction_horizontal_mirror_axis_y == 0,
+            "duplicate horizontal capsules did not reuse one certified mirror construction");
     const AnalyticNarrowPhaseResult duplicate_intersections =
         intersect_analytic_curve_candidates(duplicates.curves, {{1, 5}, {3, 7}});
     require(
@@ -247,6 +261,9 @@ void test_capsule_carrier_proofs()
                 irrational_duplicates.curves[2].construction_carrier_id ==
                     irrational_duplicates.curves[6].construction_carrier_id,
             "duplicate irrational capsule carriers did not reuse exact proof tokens");
+    require(irrational_duplicates.curves[0].construction_horizontal_mirror_id == 0 &&
+                irrational_duplicates.curves[2].construction_horizontal_mirror_id == 0,
+            "a nonhorizontal capsule minted a horizontal mirror certificate");
     const AnalyticNarrowPhaseResult irrational_intersections =
         intersect_analytic_curve_candidates(irrational_duplicates.curves, {{1, 5}, {3, 7}});
     require(irrational_intersections.error == AnalyticNarrowPhaseError::none &&
@@ -480,13 +497,534 @@ void test_fail_closed_limits_and_swept_path()
     swept.stages = {{100, 1, 0, 1}};
     swept.operands = {{1000, 5, 0}};
     swept.rings = {{600, 0, 2, 0, 1, 1}};
-    swept.vertices = {{1, 0, 0}, {2, 100, 0}};
+    swept.vertices = {{1, 0, 0}, {2, 1'000, 0}};
     swept.segments = {{3, 4, 1, 0, false, 0, 0}};
-    swept.swept_paths = {{8000, 0, 20}};
+    swept.swept_paths = {{8000, 0, 200}};
     result = lower_analytic_job_to_filtered_curves(swept, 0);
-    require(result.error == AnalyticFilteredLoweringError::unsupported_geometry &&
-                !result.value.has_value() && result.telemetry.algebraic_fallback_calls == 0,
-            "swept paths must fail closed without entering the exact arena");
+    require(result.error == AnalyticFilteredLoweringError::none && result.value.has_value() &&
+                result.value->curves.size() == 6 && result.telemetry.algebraic_fallback_calls == 0,
+            "single-line swept path did not lower to its capsule boundary error=" +
+                std::to_string(static_cast<int>(result.error)) +
+                " curves=" + std::to_string(result.value ? result.value->curves.size() : 0));
+
+    swept.rings = {{600, 0, 3, 0, 2, 1}};
+    swept.vertices = {{1, 0, 0}, {2, 3'000'000, 0}, {3, 5'000'000, 2'000'000}};
+    swept.segments = {{3, 4, 1, 0, false, 0, 0}, {5, 6, 2, 1, false, 3'000'000, 2'000'000}};
+    swept.swept_paths = {{8000, 0, 1'200'000}};
+    result = lower_analytic_job_to_filtered_curves(swept, 0);
+    require(result.error == AnalyticFilteredLoweringError::none && result.value.has_value() &&
+                result.telemetry.algebraic_fallback_calls == 0,
+            "MATZ line/quarter-arc swept path failed filtered lowering error=" +
+                std::to_string(static_cast<int>(result.error)));
+    const auto broad = build_analytic_curve_candidates(result.value->bounds);
+    require(broad.error == AnalyticBroadPhaseError::none,
+            "MATZ line/quarter-arc broad phase failed");
+    const auto packet = build_analytic_filtered_job_records(swept, 0, *result.value, broad.pairs);
+    require(packet.error == AnalyticFilteredPacketError::none && packet.records.has_value(),
+            "MATZ line/quarter-arc production packet failed");
+}
+
+AnalyticRequestPacketRecords swept_lines(std::initializer_list<AnalyticIntegerPointNm> points,
+                                         std::uint64_t width = 200, std::uint64_t feature = 8000)
+{
+    AnalyticRequestPacketRecords records;
+    records.jobs = {{10, 0, 1}};
+    records.stages = {{100, 1, 0, 1}};
+    records.operands = {{1000, 5, 0}};
+    records.rings = {{600, 0, static_cast<std::uint32_t>(points.size()), 0,
+                      static_cast<std::uint32_t>(points.size() - 1), 1}};
+    std::uint64_t id = 1;
+    for (const auto point : points)
+        records.vertices.push_back({id++, point.x, point.y});
+    for (std::uint32_t index = 0; index + 1 < points.size(); ++index)
+        records.segments.push_back({id++, id + 100, 1, 0, false, 0, 0});
+    records.swept_paths = {{feature, 0, width}};
+    return records;
+}
+
+AnalyticFilteredNormalizationResult normalize_lowered(const AnalyticRequestPacketRecords& records)
+{
+    const auto lowered = lower_analytic_job_to_filtered_curves(records, 0);
+    require(lowered.error == AnalyticFilteredLoweringError::none && lowered.value.has_value(),
+            "normalization fixture failed swept/primitive lowering");
+    const auto broad = build_analytic_curve_candidates(lowered.value->bounds);
+    require(broad.error == AnalyticBroadPhaseError::none,
+            "normalization fixture failed broad phase");
+    return build_analytic_filtered_normalization(records, 0, *lowered.value, broad.pairs);
+}
+
+void require_swept_production_success(const AnalyticRequestPacketRecords& records,
+                                      const std::string& label)
+{
+    const auto lowered = lower_analytic_job_to_filtered_curves(records, 0);
+    require(lowered.error == AnalyticFilteredLoweringError::none && lowered.value,
+            label + " lowering failed error=" + std::to_string(static_cast<int>(lowered.error)));
+    const auto broad = build_analytic_curve_candidates(lowered.value->bounds);
+    require(broad.error == AnalyticBroadPhaseError::none, label + " broad phase failed");
+    const auto normalized =
+        build_analytic_filtered_normalization(records, 0, *lowered.value, broad.pairs);
+    require(normalized.error == AnalyticFilteredNormalizationError::none,
+            label + " normalization failed error=" +
+                std::to_string(static_cast<int>(normalized.error)) + " strict_pairs=" +
+                std::to_string(normalized.telemetry.strict_replay_candidate_pairs) +
+                " fragments=" + std::to_string(normalized.fragments.size()));
+    const auto packet =
+        build_analytic_filtered_job_records(records, 0, *lowered.value, broad.pairs);
+    require(packet.error == AnalyticFilteredPacketError::none && packet.records &&
+                packet.records->job_results.size() == 1 &&
+                packet.records->job_results[0].status == 0,
+            label + " production packet failed error=" +
+                std::to_string(static_cast<int>(packet.error)) + " status=" +
+                std::to_string(packet.records ? packet.records->job_results[0].status : 99) +
+                " diagnostic=" +
+                std::to_string(packet.records && !packet.records->diagnostics.empty()
+                                   ? packet.records->diagnostics[0].code
+                                   : 0));
+}
+
+void test_swept_path_staged_contracts()
+{
+    const auto swept = swept_lines({{0, 0}, {1000, 0}});
+    AnalyticRequestPacketRecords capsule;
+    capsule.jobs = {{10, 0, 1}};
+    capsule.stages = {{100, 1, 0, 1}};
+    capsule.operands = {{1000, 4, 0}};
+    capsule.capsules = {{8000, 0, 0, 1000, 0, 200}};
+    auto swept_normalized = normalize_lowered(swept);
+    auto capsule_normalized = normalize_lowered(capsule);
+    require(swept_normalized.error == AnalyticFilteredNormalizationError::none &&
+                capsule_normalized.error == AnalyticFilteredNormalizationError::none,
+            "single-line swept/capsule differential did not normalize swept=" +
+                std::to_string(static_cast<int>(swept_normalized.error)) +
+                " capsule=" + std::to_string(static_cast<int>(capsule_normalized.error)));
+    const auto vertex_coordinates = [](const AnalyticFilteredNormalizationResult& value)
+    {
+        std::vector<std::pair<std::int64_t, std::int64_t>> result;
+        for (const auto& vertex : value.vertices)
+            result.emplace_back(vertex.x_nm, vertex.y_nm);
+        std::sort(result.begin(), result.end());
+        return result;
+    };
+    require(vertex_coordinates(swept_normalized) == vertex_coordinates(capsule_normalized) &&
+                swept_normalized.fragments.size() == capsule_normalized.fragments.size() &&
+                swept_normalized.rings.size() == capsule_normalized.rings.size() &&
+                swept_normalized.regions.size() == capsule_normalized.regions.size(),
+            "single-line swept boundary differs from the production capsule boundary");
+    const auto fragment_signature = [](const AnalyticFilteredNormalizationResult& value)
+    {
+        std::vector<std::tuple<std::int64_t, std::int64_t, std::int64_t, std::int64_t,
+                               AnalyticAtomicCurveKind, std::uint64_t, bool, bool>>
+            result;
+        for (const auto& fragment : value.fragments)
+        {
+            const auto& start_vertex = value.vertices[fragment.start_vertex];
+            const auto& end_vertex = value.vertices[fragment.end_vertex];
+            result.emplace_back(start_vertex.x_nm, start_vertex.y_nm, end_vertex.x_nm,
+                                end_vertex.y_nm, fragment.kind, fragment.radius_nm,
+                                fragment.counterclockwise, fragment.major_arc);
+        }
+        std::sort(result.begin(), result.end());
+        return result;
+    };
+    require(fragment_signature(swept_normalized) == fragment_signature(capsule_normalized),
+            "single-line swept/capsule directed fragment topology differs");
+    for (std::size_t index = 0; index < swept_normalized.rings.size(); ++index)
+    {
+        const auto& left = swept_normalized.rings[index];
+        const auto& right = capsule_normalized.rings[index];
+        require(left.fragment_count == right.fragment_count && left.depth == right.depth &&
+                    left.counterclockwise == right.counterclockwise,
+                "single-line swept/capsule ring topology differs");
+    }
+
+    const auto l_path = swept_lines({{0, 0}, {1000, 0}, {1000, 1000}}, 200, 8123);
+    auto lowered = lower_analytic_job_to_filtered_curves(l_path, 0);
+    require(lowered.error == AnalyticFilteredLoweringError::none && lowered.value &&
+                lowered.telemetry.algebraic_fallback_calls == 0,
+            "L swept path did not union with zero algebraic fallback");
+    bool start = false;
+    bool end = false;
+    bool join = false;
+    bool first_segment = false;
+    bool second_segment = false;
+    for (const auto& occurrence : lowered.value->occurrences)
+    {
+        const auto& source = occurrence.source;
+        require(source.kind == AnalyticFilteredSourceKind::compact_feature_role &&
+                    source.operand_id == 1000 && source.primary_id == 8123,
+                "swept output source did not bind compact feature/operand identity");
+        start = start || (source.role == AnalyticFilteredSourceRole::swept_start_cap &&
+                          source.secondary_id == (std::uint64_t{1} << 32U));
+        end = end || (source.role == AnalyticFilteredSourceRole::swept_end_cap &&
+                      source.secondary_id == (std::uint64_t{3} << 32U));
+        join = join || (source.role == AnalyticFilteredSourceRole::swept_round_join &&
+                        source.secondary_id == ((std::uint64_t{1} << 32U) | 2U));
+        const bool offset = source.role == AnalyticFilteredSourceRole::swept_left_offset_line ||
+                            source.role == AnalyticFilteredSourceRole::swept_right_offset_line;
+        first_segment =
+            first_segment || (offset && source.secondary_id == (std::uint64_t{1} << 32U));
+        second_segment =
+            second_segment || (offset && source.secondary_id == (std::uint64_t{2} << 32U));
+    }
+    require(start && end && join && first_segment && second_segment,
+            "swept output did not publish the reviewed cap/join/segment source tuples");
+    require_swept_production_success(
+        swept_lines({{0, 525'000}, {24'999, 549'999}, {24'999, 1'325'001}}, 254'000),
+        "short joined RT capsule path");
+    AnalyticFilteredGeometry forged_source = *lowered.value;
+    forged_source.occurrences[0].source.secondary_id = std::uint64_t{99} << 32U;
+    const auto l_broad = build_analytic_curve_candidates(forged_source.bounds);
+    require(build_analytic_filtered_job_records(l_path, 0, forged_source, l_broad.pairs).error ==
+                AnalyticFilteredPacketError::invalid_argument,
+            "packet binding accepted a swept source ordinal outside its path");
+
+    auto mixed_path = swept_lines({{0, 0}, {1000, 0}, {2000, 1000}}, 200);
+    mixed_path.segments[1].kind = 2;
+    mixed_path.segments[1].direction = 1;
+    mixed_path.segments[1].center_x_nm = 1000;
+    mixed_path.segments[1].center_y_nm = 1000;
+    const auto mixed_lowered = lower_analytic_job_to_filtered_curves(mixed_path, 0);
+    require(mixed_lowered.error == AnalyticFilteredLoweringError::none && mixed_lowered.value,
+            "mixed line/arc swept source-binding fixture failed");
+    AnalyticFilteredGeometry forged_kind = *mixed_lowered.value;
+    auto forged_arc = std::find_if(
+        forged_kind.occurrences.begin(), forged_kind.occurrences.end(),
+        [](const auto& occurrence)
+        {
+            return occurrence.source.role == AnalyticFilteredSourceRole::swept_left_offset_arc ||
+                   occurrence.source.role == AnalyticFilteredSourceRole::swept_right_offset_arc;
+        });
+    require(forged_arc != forged_kind.occurrences.end(),
+            "mixed swept fixture emitted no arc offset source");
+    forged_arc->source.secondary_id = std::uint64_t{1} << 32U;
+    const auto mixed_broad = build_analytic_curve_candidates(forged_kind.bounds);
+    require(
+        build_analytic_filtered_job_records(mixed_path, 0, forged_kind, mixed_broad.pairs).error ==
+            AnalyticFilteredPacketError::invalid_argument,
+        "packet binding accepted an arc role naming a line segment ordinal");
+
+    for (const auto [gap, expected] : {std::pair<std::int64_t, AnalyticFilteredLoweringError>{
+                                           251, AnalyticFilteredLoweringError::none},
+                                       {250, AnalyticFilteredLoweringError::invalid_topology},
+                                       {249, AnalyticFilteredLoweringError::invalid_topology}})
+    {
+        const auto u_path = swept_lines({{0, 0}, {1000, 0}, {1000, gap}, {0, gap}}, 200);
+        const auto u_result = lower_analytic_job_to_filtered_curves(u_path, 0);
+        require(u_result.error == expected && u_result.telemetry.algebraic_fallback_calls == 0,
+                "U swept path drifted at the 49/50/51 nm fail-closed boundary gap=" +
+                    std::to_string(gap) +
+                    " error=" + std::to_string(static_cast<int>(u_result.error)));
+    }
+    const auto separated_u = lower_analytic_job_to_filtered_curves(
+        swept_lines({{0, 0}, {1000, 0}, {1000, 1000}, {0, 1000}}, 200), 0);
+    require(separated_u.error == AnalyticFilteredLoweringError::none && separated_u.value,
+            "separated U swept path did not preserve its gap error=" +
+                std::to_string(static_cast<int>(separated_u.error)));
+    for (const auto [separation, expected] :
+         {std::pair<std::int64_t, AnalyticFilteredLoweringError>{
+              199, AnalyticFilteredLoweringError::invalid_topology},
+          {200, AnalyticFilteredLoweringError::invalid_topology},
+          {251, AnalyticFilteredLoweringError::none}})
+    {
+        for (const auto& path : {
+                 swept_lines({{0, 0}, {1000, 0}, {1000, separation}, {0, separation}}, 200),
+                 swept_lines({{0, 0}, {0, 1000}, {-separation, 1000}, {-separation, 0}}, 200),
+             })
+        {
+            const auto result = lower_analytic_job_to_filtered_curves(path, 0);
+            require(result.error == expected &&
+                        (expected != AnalyticFilteredLoweringError::none || result.value) &&
+                        result.telemetry.algebraic_fallback_calls == 0,
+                    "U swept overlap/contact/gap transform drifted at boundary delta=" +
+                        std::to_string(separation - 200) +
+                        " error=" + std::to_string(static_cast<int>(result.error)));
+        }
+    }
+
+    for (const auto& invalid : {
+             swept_lines({{0, 0}, {1000, 0}, {0, 0}}),
+             swept_lines({{0, 0}, {1000, 1000}, {0, 1000}, {1000, 0}}),
+         })
+        require(lower_analytic_job_to_filtered_curves(invalid, 0).error ==
+                    AnalyticFilteredLoweringError::invalid_topology,
+                "invalid swept centerline topology was accepted");
+    auto narrow_arc = swept_lines({{0, 0}, {100, 0}}, 200);
+    narrow_arc.segments[0].kind = 2;
+    narrow_arc.segments[0].direction = 1;
+    narrow_arc.segments[0].center_x_nm = 50;
+    narrow_arc.segments[0].center_y_nm = 0;
+    require(lower_analytic_job_to_filtered_curves(narrow_arc, 0).error ==
+                AnalyticFilteredLoweringError::invalid_arc,
+            "swept arc radius at or below half width was accepted");
+    auto wrong_major = mixed_path;
+    wrong_major.segments[1].major_arc = true;
+    require(lower_analytic_job_to_filtered_curves(wrong_major, 0).error ==
+                AnalyticFilteredLoweringError::invalid_arc,
+            "swept arc accepted a noncanonical direction/major combination");
+    auto unequal_radius = mixed_path;
+    unequal_radius.vertices[2].x_nm = 2100;
+    require(lower_analytic_job_to_filtered_curves(unequal_radius, 0).error ==
+                AnalyticFilteredLoweringError::invalid_arc,
+            "swept arc accepted unequal endpoint radii");
+    auto clockwise_minor = swept_lines({{0, 1000}, {1000, 0}}, 200);
+    clockwise_minor.segments[0].kind = 2;
+    clockwise_minor.segments[0].direction = 2;
+    clockwise_minor.segments[0].center_x_nm = 0;
+    clockwise_minor.segments[0].center_y_nm = 0;
+    require(lower_analytic_job_to_filtered_curves(clockwise_minor, 0).error ==
+                AnalyticFilteredLoweringError::none,
+            "canonical clockwise minor swept arc failed");
+    require_swept_production_success(clockwise_minor,
+                                     "canonical clockwise minor production swept arc");
+    auto counterclockwise_major = clockwise_minor;
+    counterclockwise_major.segments[0].direction = 1;
+    counterclockwise_major.segments[0].major_arc = true;
+    require(lower_analytic_job_to_filtered_curves(counterclockwise_major, 0).error ==
+                AnalyticFilteredLoweringError::none,
+            "canonical counterclockwise major swept arc failed");
+    require_swept_production_success(counterclockwise_major,
+                                     "canonical counterclockwise major production swept arc");
+
+    require_swept_production_success(swept_lines({{0, 0}, {1'000'000, 0}, {2'000'000, 0}}, 150'001),
+                                     "split same-carrier straight swept path");
+
+    const auto arc_path =
+        [](std::initializer_list<AnalyticIntegerPointNm> points, std::initializer_list<bool> major)
+    {
+        auto records = swept_lines(points, 150'000);
+        std::size_t index = 0;
+        for (const bool is_major : major)
+        {
+            records.segments[index].kind = 2;
+            records.segments[index].direction = 1;
+            records.segments[index].major_arc = is_major;
+            records.segments[index].center_x_nm = 0;
+            records.segments[index].center_y_nm = 0;
+            ++index;
+        }
+        return records;
+    };
+    require_swept_production_success(
+        arc_path({{1'000'000, 0}, {0, 1'000'000}, {-1'000'000, 0}}, {false, false}),
+        "split same-circle CCW arc swept path");
+    require_swept_production_success(arc_path({{1'000'000, 0}, {-1'000'000, 0}}, {false}),
+                                     "CCW semicircle swept path");
+    auto clockwise_semicircle = arc_path({{1'000'000, 0}, {-1'000'000, 0}}, {false});
+    clockwise_semicircle.segments[0].direction = 2;
+    require_swept_production_success(clockwise_semicircle, "clockwise semicircle swept path");
+    auto clockwise_major = arc_path({{1'000'000, 0}, {0, 1'000'000}}, {true});
+    clockwise_major.segments[0].direction = 2;
+    require_swept_production_success(clockwise_major, "clockwise major swept path");
+    require_swept_production_success(
+        arc_path({{1'000'000, 0}, {0, -1'000'000}, {600'000, -800'000}}, {true, false}),
+        "legal major-to-minor same-circle swept path");
+    require_swept_production_success(
+        arc_path({{1'000'000, 0}, {600'000, 800'000}, {600'000, -800'000}}, {false, true}),
+        "legal minor-to-major same-circle swept path");
+    const auto overlapping_same_circle =
+        arc_path({{1'000'000, 0}, {0, -1'000'000}, {0, 1'000'000}}, {true, false});
+    require(lower_analytic_job_to_filtered_curves(overlapping_same_circle, 0).error ==
+                AnalyticFilteredLoweringError::invalid_topology,
+            "overlapping adjacent same-circle arc domains were accepted");
+
+    auto line_arc_kink = swept_lines({{0, 0}, {1'000'000, 0}, {3'000'000, 0}}, 150'001);
+    line_arc_kink.segments[1].kind = 2;
+    line_arc_kink.segments[1].direction = 2;
+    line_arc_kink.segments[1].center_x_nm = 2'000'000;
+    line_arc_kink.segments[1].center_y_nm = -1'000'000;
+    require_swept_production_success(line_arc_kink, "line-to-arc kink swept path");
+    auto arc_arc_tangent =
+        arc_path({{1'000'000, 0}, {0, 1'000'000}, {-2'000'000, -1'000'000}}, {false, false});
+    arc_arc_tangent.segments[1].center_y_nm = -1'000'000;
+    require_swept_production_success(arc_arc_tangent,
+                                     "distinct-carrier tangent arc-to-arc swept path");
+    auto arc_arc_kink =
+        arc_path({{1'000'000, 0}, {0, 1'000'000}, {1'000'000, 2'000'000}}, {false, false});
+    arc_arc_kink.segments[1].direction = 2;
+    arc_arc_kink.segments[1].center_x_nm = 1'000'000;
+    arc_arc_kink.segments[1].center_y_nm = 1'000'000;
+    require_swept_production_success(arc_arc_kink, "arc-to-arc kink swept path");
+
+    auto symbolic_concentric = swept_lines({{1000, 1}, {-1, 1000}, {-1, 1100}, {1100, 1}}, 200);
+    symbolic_concentric.segments[0] = {10, 110, 2, 1, false, 0, 0};
+    symbolic_concentric.segments[2] = {12, 112, 2, 2, false, 0, 0};
+    const auto symbolic_result = lower_analytic_job_to_filtered_curves(symbolic_concentric, 0);
+    require(symbolic_result.error != AnalyticFilteredLoweringError::none &&
+                !symbolic_result.value && symbolic_result.telemetry.algebraic_fallback_calls == 0,
+            "overlapping concentric symbolic offset radii did not fail closed error=" +
+                std::to_string(static_cast<int>(symbolic_result.error)));
+
+    const auto horizontal = lower_analytic_job_to_filtered_curves(swept, 0);
+    require(horizontal.error == AnalyticFilteredLoweringError::none && horizontal.value,
+            "horizontal singleton-certificate fixture failed");
+    bool has_certified_line = false;
+    for (const auto& curve : horizontal.value->curves)
+        has_certified_line = has_certified_line || (curve.kind == AnalyticAtomicCurveKind::line &&
+                                                    curve.has_integer_certificate);
+    require(has_certified_line,
+            "mathematically singleton integer swept endpoints were not certified");
+
+    const auto diagonal = swept_lines({{0, 0}, {1000, 1000}}, 201);
+    const auto diagonal_result = lower_analytic_job_to_filtered_curves(diagonal, 0);
+    require(diagonal_result.error == AnalyticFilteredLoweringError::none && diagonal_result.value &&
+                diagonal_result.telemetry.algebraic_fallback_calls == 0 &&
+                std::none_of(diagonal_result.value->curves.begin(),
+                             diagonal_result.value->curves.end(),
+                             [](const auto& curve) { return curve.has_integer_certificate; }),
+            "non-singleton swept construction was rounded/promoted to an integer certificate");
+
+    require_swept_production_success(swept_lines({{0, 0}, {2'000'000, 2'000'000}}, 150'000),
+                                     "150000 nm diagonal swept path");
+    require_swept_production_success(
+        swept_lines({{0, 0}, {2'000'000, 0}, {4'000'000, 2'000'000}}, 150'001),
+        "150001 nm horizontal-to-45 swept path");
+    require_swept_production_success(
+        swept_lines({{0, 0}, {2'000'000, 2'000'000}, {4'000'000, 2'000'000}}, 550'000),
+        "550000 nm 45-to-horizontal swept path");
+
+    const std::uint64_t exact_work = horizontal.telemetry.work_units;
+    AnalyticSolverLimits limits = kAnalyticSolverHardLimits;
+    limits.predicate_calls = exact_work;
+    auto limited = lower_analytic_job_to_filtered_curves(swept, 0, limits);
+    require(limited.error == AnalyticFilteredLoweringError::none,
+            "exact swept work budget was rejected");
+    --limits.predicate_calls;
+    limited = lower_analytic_job_to_filtered_curves(swept, 0, limits);
+    require(limited.error == AnalyticFilteredLoweringError::resource_limit_exceeded,
+            "one-unit-short swept work budget was accepted");
+    std::uint64_t memory_low = 0;
+    std::uint64_t memory_high = 1'000'000;
+    while (memory_low < memory_high)
+    {
+        const std::uint64_t middle = memory_low + (memory_high - memory_low) / 2;
+        limits = kAnalyticSolverHardLimits;
+        limits.working_memory_bytes = middle;
+        limited = lower_analytic_job_to_filtered_curves(swept, 0, limits);
+        if (limited.error == AnalyticFilteredLoweringError::resource_limit_exceeded)
+            memory_low = middle + 1;
+        else
+            memory_high = middle;
+    }
+    limits = kAnalyticSolverHardLimits;
+    limits.working_memory_bytes = memory_low;
+    limited = lower_analytic_job_to_filtered_curves(swept, 0, limits);
+    require(limited.error == AnalyticFilteredLoweringError::none,
+            "exact swept memory boundary was rejected");
+    --limits.working_memory_bytes;
+    limited = lower_analytic_job_to_filtered_curves(swept, 0, limits);
+    require(limited.error == AnalyticFilteredLoweringError::resource_limit_exceeded,
+            "one-byte-short swept memory budget was accepted");
+    require(limited.telemetry.required_working_memory_bytes == memory_low,
+            "one-byte-short swept memory telemetry did not report the exact admitted boundary");
+
+    auto mixed_memory = swept;
+    mixed_memory.stages[0].operand_count = 4;
+    mixed_memory.operands = {{997, 4, 0}, {998, 4, 1}, {999, 4, 2}, {1000, 5, 0}};
+    mixed_memory.capsules = {{7997, -3000, 0, -2000, 0, 100},
+                             {7998, 2000, 0, 3000, 0, 100},
+                             {7999, 4000, 0, 5000, 0, 100}};
+    const auto mixed_unlimited = lower_analytic_job_to_filtered_curves(mixed_memory, 0);
+    require(mixed_unlimited.error == AnalyticFilteredLoweringError::none && mixed_unlimited.value,
+            "mixed primitive/swept allocation fixture failed");
+    memory_low = 0;
+    memory_high = 1'000'000;
+    while (memory_low < memory_high)
+    {
+        const std::uint64_t middle = memory_low + (memory_high - memory_low) / 2;
+        limits = kAnalyticSolverHardLimits;
+        limits.working_memory_bytes = middle;
+        limited = lower_analytic_job_to_filtered_curves(mixed_memory, 0, limits);
+        if (limited.error == AnalyticFilteredLoweringError::resource_limit_exceeded)
+            memory_low = middle + 1;
+        else
+            memory_high = middle;
+    }
+    limits = kAnalyticSolverHardLimits;
+    limits.working_memory_bytes = memory_low - 1;
+    limited = lower_analytic_job_to_filtered_curves(mixed_memory, 0, limits);
+    require(limited.error == AnalyticFilteredLoweringError::resource_limit_exceeded &&
+                limited.telemetry.required_working_memory_bytes == memory_low,
+            "mixed primitive/swept parent-child overlap was not exactly pre-admitted");
+
+    memory_low = 0;
+    memory_high = 2'000'000;
+    while (memory_low < memory_high)
+    {
+        const std::uint64_t middle = memory_low + (memory_high - memory_low) / 2;
+        limits = kAnalyticSolverHardLimits;
+        limits.working_memory_bytes = middle;
+        limited = lower_analytic_job_to_filtered_curves(l_path, 0, limits);
+        if (limited.error == AnalyticFilteredLoweringError::resource_limit_exceeded)
+            memory_low = middle + 1;
+        else
+            memory_high = middle;
+    }
+    limits = kAnalyticSolverHardLimits;
+    limits.working_memory_bytes = memory_low - 1;
+    limited = lower_analytic_job_to_filtered_curves(l_path, 0, limits);
+    require(limited.error == AnalyticFilteredLoweringError::resource_limit_exceeded &&
+                limited.telemetry.required_working_memory_bytes == memory_low,
+            "high-discard swept child capacity did not report its exact one-byte-short boundary");
+}
+
+void test_matz_primitive_family_production()
+{
+    AnalyticRequestPacketRecords records;
+    records.jobs = {{3, 0, 2}};
+    records.stages = {{301, 1, 0, 4}, {302, 2, 4, 2}};
+    records.operands = {{3001, 2, 0}, {3002, 3, 0}, {3003, 4, 0},
+                        {3004, 5, 0}, {3005, 2, 1}, {3006, 4, 1}};
+    records.disks = {{3101, 0, 0, 1'500'000}, {3501, 0, 0, 500'000}};
+    records.annuli = {{3201, 5'000'000, 0, 900'000, 1'800'000}};
+    records.capsules = {{3301, 8'000'000, -1'000'000, 12'000'000, 1'000'000, 1'800'000},
+                        {3601, 9'500'000, -500'000, 10'500'000, 500'000, 600'000}};
+    records.swept_paths = {{3401, 0, 1'200'000}};
+    records.rings = {{3402, 0, 3, 0, 2, 1}};
+    records.vertices = {
+        {34'001, 14'000'000, 0}, {34'002, 17'000'000, 0}, {34'003, 19'000'000, 2'000'000}};
+    records.segments = {{34'101, 34'201, 1, 0, false, 0, 0},
+                        {34'102, 34'202, 2, 1, false, 17'000'000, 2'000'000}};
+    require(validate_analytic_request_packet_records(records) == AnalyticRequestPacketError::none,
+            "MATZ primitive-family request is not packet-valid");
+    AnalyticRequestPacketRecords without_swept = records;
+    without_swept.stages = {{301, 1, 0, 3}, {302, 2, 3, 2}};
+    without_swept.operands.erase(without_swept.operands.begin() + 3);
+    without_swept.swept_paths.clear();
+    without_swept.rings.clear();
+    without_swept.vertices.clear();
+    without_swept.segments.clear();
+    require(validate_analytic_request_packet_records(without_swept) ==
+                AnalyticRequestPacketError::none,
+            "MATZ primitive-family control is not packet-valid");
+    const auto control_lowered = lower_analytic_job_to_filtered_curves(without_swept, 0);
+    require(control_lowered.error == AnalyticFilteredLoweringError::none &&
+                control_lowered.value.has_value(),
+            "MATZ primitive-family control lowering failed");
+    const auto control_broad = build_analytic_curve_candidates(control_lowered.value->bounds);
+    const auto control_normalization = build_analytic_filtered_normalization(
+        without_swept, 0, *control_lowered.value, control_broad.pairs);
+    require(control_normalization.error == AnalyticFilteredNormalizationError::none,
+            "MATZ primitive-family no-swept control normalization failed error=" +
+                std::to_string(static_cast<int>(control_normalization.error)) + " strict_pairs=" +
+                std::to_string(control_normalization.telemetry.strict_replay_candidate_pairs) +
+                " fragments=" + std::to_string(control_normalization.fragments.size()) +
+                " required=" +
+                std::to_string(control_normalization.telemetry.required_working_memory_bytes) +
+                " work=" + std::to_string(control_normalization.telemetry.predicate_calls));
+    const auto lowered = lower_analytic_job_to_filtered_curves(records, 0);
+    require(lowered.error == AnalyticFilteredLoweringError::none && lowered.value.has_value() &&
+                lowered.telemetry.algebraic_fallback_calls == 0,
+            "MATZ primitive-family production lowering failed");
+    const auto broad = build_analytic_curve_candidates(lowered.value->bounds);
+    require(broad.error == AnalyticBroadPhaseError::none,
+            "MATZ primitive-family production broad phase failed");
+    const auto packet =
+        build_analytic_filtered_job_records(records, 0, *lowered.value, broad.pairs);
+    require(packet.error == AnalyticFilteredPacketError::none && packet.records.has_value() &&
+                packet.records->job_results.size() == 1 &&
+                packet.records->job_results[0].status == 0 &&
+                packet.telemetry.algebraic_fallback_calls == 0,
+            "MATZ primitive-family production packet failed");
 }
 
 std::string lowering_parity_vector()
@@ -600,6 +1138,8 @@ int main()
     test_arc_tight_bounds_and_sparse_scaling();
     test_empty_jobs_radius_domain_and_global_expansion();
     test_fail_closed_limits_and_swept_path();
+    test_swept_path_staged_contracts();
+    test_matz_primitive_family_production();
     std::cout << "ANALYTIC_FILTERED_LOWERING_VECTOR=" << lowering_parity_vector() << '\n';
     return 0;
 }

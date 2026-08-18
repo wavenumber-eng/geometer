@@ -55,9 +55,15 @@ export function makeAnalyticPolygonPourRequest(slotCenterMm) {
                                     path_id: 8701n,
                                     vertices: [
                                         { vertex_id: 8801n, point: { x: 1000000n, y: 1000000n } },
-                                        { vertex_id: 8802n, point: { x: 2000000n, y: 1000000n } },
+                                        { vertex_id: 8802n, point: { x: 2000000n, y: 2000000n } },
+                                        { vertex_id: 8803n, point: { x: 1000000n, y: 2000000n } },
+                                        { vertex_id: 8804n, point: { x: 2000000n, y: 1000000n } },
                                     ],
-                                    segments: [{ segment_id: 8901n, curve_id: 8951n, kind: "line" }],
+                                    segments: [
+                                        { segment_id: 8901n, curve_id: 8951n, kind: "line" },
+                                        { segment_id: 8902n, curve_id: 8952n, kind: "line" },
+                                        { segment_id: 8903n, curve_id: 8953n, kind: "line" },
+                                    ],
                                 },
                                 width_nm: 100000n,
                                 cap: "round",

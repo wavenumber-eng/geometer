@@ -317,9 +317,7 @@ def test_manifest_sources_and_identities_are_complete() -> None:
     _assert_documentation_manifest(manifest)
 
 
-def test_manifest_promoted_and_candidate_surfaces_are_complete() -> None:
-    manifest = _manifest()
-    toolchain = manifest["toolchain"]
+def _assert_projection_surfaces(manifest: dict[str, Any]) -> None:
     typescript = manifest["typescript_projection"]
     assert typescript["status"] == "implemented_model_bounds_and_analytic_worker_pilot"
     assert typescript["worker_protocol"] == "wn.geometer.wasm_worker.a0"
@@ -349,6 +347,24 @@ def test_manifest_promoted_and_candidate_surfaces_are_complete() -> None:
     assert manifest["packages"]["typescript_module_format"] == "esm"
     assert package_json["type"] == "module"
 
+    python_projection = manifest["python_projection"]
+    assert python_projection["status"] == ("implemented_model_bounds_compatible_boundary_and_analytic_ipc_pilot")
+    assert python_projection["live_operation"] == "geometry.model_bounds.a0"
+    assert python_projection["analytic_live_operation"] == ("geometry.analytic_planar_boolean_batch.a0")
+    for key in (
+        "design",
+        "generated_root",
+        "runtime",
+        "generator",
+        "analytic_packet_codec",
+        "ipc_client",
+    ):
+        assert (ROOT / python_projection[key]).exists(), key
+    assert python_projection["runtime_dependency"] is False
+
+
+def _assert_model_bounds_promotion(manifest: dict[str, Any]) -> None:
+    toolchain = manifest["toolchain"]
     evidence = manifest["promotion_evidence"]["model_bounds"]
     assert evidence["status"] == "accepted_promoted"
     assert evidence["independent_review"] == "accepted"
@@ -382,6 +398,8 @@ def test_manifest_promoted_and_candidate_surfaces_are_complete() -> None:
     ):
         assert _sha256(ROOT / path) == evidence[key]
 
+
+def _assert_contract_and_operation_inventory(manifest: dict[str, Any]) -> None:
     contracts = manifest["contracts"]
     contract_ids = [item["id"] for item in contracts]
     _unique(contract_ids, "contract id")
@@ -430,20 +448,117 @@ def test_manifest_promoted_and_candidate_surfaces_are_complete() -> None:
     assert candidate["result_contract"] in contract_ids
     assert candidate["input_attachments"] == ["analytic_planar_boolean_request"]
     assert candidate["output_attachments"] == ["analytic_planar_boolean_result"]
-    assert candidate["deferred_projections"] == ["cpp", "rust", "python"]
-    assert candidate["packed_runtime_projections"] == ["cpp", "typescript", "rust"]
+    assert candidate["deferred_projections"] == []
+    assert candidate["logical_dto_projections"] == ["cpp", "typescript", "rust", "python"]
+    assert candidate["packed_runtime_projections"] == ["cpp", "typescript", "rust", "python"]
+    assert candidate["logical_source_reference_expansions_per_batch"] == 1_048_576
+
+
+def _assert_candidate_packet_vectors(manifest: dict[str, Any]) -> None:
+    candidate = manifest["candidate_operations"][0]
+    vector_manifest_path = ROOT / candidate["packet_vector_manifest"]
+    vector_manifest = json.loads(vector_manifest_path.read_text(encoding="utf-8"))
+    assert hashlib.sha256(vector_manifest_path.read_bytes()).hexdigest() == candidate["packet_vector_manifest_sha256"]
+    assert vector_manifest["manifest_identity"] == candidate["packet_vector_manifest_identity"]
+    assert vector_manifest["generation"] == candidate["packet_vector_generation"]
+    assert len(vector_manifest["vectors"]) == candidate["packet_vector_count"] == 6
+    for vector in vector_manifest["vectors"]:
+        encoded = (vector_manifest_path.parent / vector["file"]).read_text(encoding="ascii").strip()
+        data = bytes.fromhex(encoded)
+        assert len(data) == vector["bytes"]
+        assert hashlib.sha256(data).hexdigest() == vector["sha256"]
+    vector_writer_path = ROOT / candidate["packet_vector_writer"]
+    vector_writer = vector_writer_path.read_text(encoding="utf-8")
+    assert hashlib.sha256(vector_writer_path.read_bytes()).hexdigest() == candidate["packet_vector_writer_sha256"]
+    assert candidate["packet_vector_producer_targets"] == [
+        "geometer_analytic_request_packet_test",
+        "geometer_analytic_result_packet_records_test",
+    ]
+    assert candidate["packet_vector_producer_sources"] == [
+        "tests/cpp/analytic_request_packet_test.cpp",
+        "tests/cpp/analytic_result_packet_records_test.cpp",
+    ]
+    assert candidate["packet_vector_producer_source_sha256"] == [
+        "7c2c6a960182271688a87f64747b52e0b63391295c27c68247829878293f6966",
+        "886473dec4add537f99a15465a0cd78474a4f19f2cecf78a090c798360e7af71",
+    ]
+    for source, digest in zip(
+        candidate["packet_vector_producer_sources"],
+        candidate["packet_vector_producer_source_sha256"],
+        strict=True,
+    ):
+        source_path = ROOT / source
+        assert source_path.is_file()
+        assert hashlib.sha256(source_path.read_bytes()).hexdigest() == digest
+    assert all(target in vector_writer for target in candidate["packet_vector_producer_targets"])
+
+
+def _assert_candidate_projection_surfaces(manifest: dict[str, Any]) -> None:
+    candidate = manifest["candidate_operations"][0]
     assert candidate["production_transport_status"] == ("native_c_abi_browser_wasm_executable_ipc_dispatched")
     assert candidate["typescript_packed_projection"] == (
         "bigint_logical_dtos_strict_packet_codec_direct_and_worker_clients"
     )
+    assert candidate["rust_packed_projection"] == (
+        "integer_logical_dtos_strict_packet_codec_and_friendly_persistent_client"
+    )
+    assert candidate["python_packed_projection"] == (
+        "generated_integer_logical_dtos_strict_packet_codec_and_friendly_bounded_persistent_client"
+    )
+    assert candidate["python_production_replay_test"] == "tests/python/test_matz_observation_replay.py"
+    assert (ROOT / candidate["python_production_replay_test"]).is_file()
+    assert candidate["python_production_replay_matching_cases"] == [
+        "1",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+    ]
+    assert candidate["python_production_replay_blocked_cases"] == ["2_missing_authoritative_integer_endpoints"]
+    assert candidate["python_production_replay_mismatched_cases"] == []
     assert candidate["packed_format"] == "separately_governed_frozen_a0"
     assert candidate["implementation_gate"] == (
-        "packed_runtime_and_typescript_projection_implemented_logical_dto_projections_deferred"
+        "packed_runtime_typescript_rust_python_projections_and_cpp_rust_python_logical_dtos_"
+        "implemented_python_production_replay_matching_subset_1_3_4_5_6_7_8_9_10_cross_transport_"
+        "exact_parity_case_2_"
+        "blocked_missing_authoritative_integer_endpoints"
     )
     assert candidate["transport"] == "generic_named_attachments"
     assert candidate["operation_specific_c_abi_symbol"] is False
     assert candidate["replaces_existing_operation"] is False
     assert candidate["browser_target"] == "full_browser"
+    cpp_contract_header = (ROOT / "src/cpp/lib/geometer/generated/contracts/contracts.h").read_text(encoding="utf-8")
+    cpp_contract_json = (ROOT / "src/cpp/lib/geometer/generated/contracts/contracts_json.cpp").read_text(
+        encoding="utf-8"
+    )
+    cpp_operation_catalog = (ROOT / "src/cpp/lib/geometer/generated/contracts/operation_catalog.cpp").read_text(
+        encoding="utf-8"
+    )
+    assert "struct AnalyticPlanarBooleanBatchRequestA0" in cpp_contract_header
+    assert "struct AnalyticPlanarBooleanBatchResultA0" in cpp_contract_header
+    assert "decode_AnalyticPlanarBoolean" not in cpp_contract_json
+    assert "write_AnalyticPlanarBoolean" not in cpp_contract_json
+    assert (
+        "using OperationResultValueA0 = std::variant<ModelBoundsResultA0, PackedAttachmentProjectionA0>;"
+    ) in cpp_contract_header
+    assert "holds_alternative<contracts::AnalyticPlanarBoolean" not in cpp_operation_catalog
+    rust_contracts = (ROOT / "src/rust/geometer-client/src/generated/contracts.rs").read_text(encoding="utf-8")
+    first_analytic_type = rust_contracts.index("pub struct JobId")
+    analytic_rust_start = rust_contracts.rindex("#[derive", 0, first_analytic_type)
+    first_json_enum = rust_contracts.index("pub enum DiagnosticCategory")
+    analytic_rust_end = rust_contracts.rindex("#[derive", analytic_rust_start, first_json_enum)
+    analytic_rust = rust_contracts[analytic_rust_start:analytic_rust_end]
+    assert "pub struct JobId" in analytic_rust
+    assert "pub struct AnalyticPlanarBooleanBatchResultA0" in analytic_rust
+    assert "#[serde" not in analytic_rust
+    assert "Deserialize" not in analytic_rust
+    assert "Serialize" not in analytic_rust
+    assert "decode_analytic_planar_boolean" not in rust_contracts
+    assert "encode_analytic_planar_boolean" not in rust_contracts
     assert (ROOT / candidate["compatibility_snapshot"]).is_file()
     assert (ROOT / candidate["design"]).is_file()
     assert (ROOT / candidate["packet_spec"]).is_file()
@@ -451,11 +566,104 @@ def test_manifest_promoted_and_candidate_surfaces_are_complete() -> None:
     assert (ROOT / candidate["superseded_solver_adr"]).is_file()
     assert (ROOT / candidate["feasibility_test"]).is_file()
     assert (ROOT / candidate["portable_fixture"]).is_file()
-    assert (ROOT / candidate["independent_design_review_log"]).is_file()
+    review_record = ROOT / candidate["independent_design_review_record"]
+    assert review_record.is_file()
+    assert _sha256(review_record) == candidate["independent_design_review_record_sha256"]
     assert candidate["independent_design_review_revision"] == "529c768e559b4c88874264748d4186e775c8a4dd"
     assert candidate["independent_design_review_head"] == "b86a065c5926c35f1eee23a9ba1cef890689c7d7"
     assert candidate["typespec_projection_review_revision"] == "f4b6a9b87bf16f57ef29dae22150b16f2a742b64"
     assert candidate["typespec_projection_review_packet"] == "reviewer-019ffd0d-fa76-74b6-ac3e-c1c2642ba0de"
+
+
+def _assert_matz_case_2_handoff(manifest: dict[str, Any]) -> None:
+    candidate = manifest["candidate_operations"][0]
+    handoff_path = ROOT / candidate["matz_case_2_handoff"]
+    handoff = json.loads(handoff_path.read_text(encoding="utf-8"))
+    assert _sha256(handoff_path) == candidate["matz_case_2_handoff_sha256"]
+    assert handoff["identity"] == "wn.geometer.matz_case_2_handoff"
+    assert handoff["generation"] == "a0"
+    assert (
+        handoff["status"]
+        == candidate["matz_case_2_handoff_status"]
+        == ("blocked_awaiting_authoritative_integer_endpoints")
+    )
+
+    upstream = handoff["upstream_fixture"]
+    assert upstream == {
+        "repository": "wavenumber-eng/appz",
+        "ref": "4c688e46729015d21dc140dbe274e396e3717c18",
+        "path": "data_models/tests/fixtures/pcb_materialization/geometer_analytic_planar_boolean_observations_a0.json",
+        "content_sha256": "10a97f0eed4a4f6852917c4fb6abd35854142bf5d148b8320c60a44f765414c4",
+        "git_blob_sha1": "45c5a648fc0b167c8a887006cb14d3e62229e360",
+        "vendored_path": candidate["portable_fixture"],
+        "fixture_id": "intersecting_arbitrary_angle_arcs",
+        "job_id": 2,
+        "stage_id": 201,
+    }
+    vendored_bytes = (ROOT / upstream["vendored_path"]).read_bytes()
+    assert hashlib.sha256(vendored_bytes).hexdigest() == upstream["content_sha256"]
+    git_blob = f"blob {len(vendored_bytes)}\0".encode() + vendored_bytes
+    assert hashlib.sha1(git_blob).hexdigest() == upstream["git_blob_sha1"]
+
+    fixture = json.loads((ROOT / upstream["vendored_path"]).read_text(encoding="utf-8"))
+    arc_case = next(item for item in fixture["portable_cases"] if item["fixture_id"] == upstream["fixture_id"])
+    operands = arc_case["stages"][0]["operands"]
+    updates = handoff["required_operand_updates"]
+    assert [item["operand_id"] for item in operands] == [item["operand_id"] for item in updates] == [2001, 2002]
+    required_fields = {"start", "end", "direction", "major_arc"}
+    for operand, update in zip(operands, updates, strict=True):
+        assert set(update["required_fields"]) == required_fields
+        assert required_fields.isdisjoint(operand["geometry"])
+        assert update["required_fields"]["start"] == {
+            "type": "tuple_int64_int64",
+            "unit": "nm",
+            "authority": "matz",
+        }
+        assert update["required_fields"]["end"] == update["required_fields"]["start"]
+        assert update["required_fields"]["direction"] == {
+            "type": "enum",
+            "allowed": ["ccw", "cw"],
+            "authority": "matz",
+        }
+        assert update["required_fields"]["major_arc"] == {"type": "boolean", "authority": "matz"}
+
+    projection = handoff["a0_projection"]
+    assert projection["operand_kind"] == "swept_path"
+    assert projection["centerline_vertices_per_operand"] == 2
+    assert projection["centerline_segments_per_operand"] == 1
+    assert projection["centerline_segment_kind"] == "circular_arc"
+    assert projection["derived_from_angles"] == []
+    assert (
+        "the exact integer squared distances center-to-start and center-to-end are equal and nonzero"
+        in (projection["validation_constraints"])
+    )
+    assert (
+        "no angle, trigonometric value, or Geometer-selected rounding enters the A0 request"
+        in (projection["validation_constraints"])
+    )
+
+    evidence = handoff["regeneration"]["required_evidence"]
+    assert evidence == [
+        "revised_upstream_ref",
+        "revised_upstream_git_blob_sha1",
+        "revised_upstream_content_sha256",
+        "vendored_fixture_content_sha256",
+        "canonical_a0_request_sha256",
+        "native_result_packet_sha256",
+        "browser_wasm_result_packet_sha256",
+        "standalone_job_2_result_sha256",
+        "canonical_fragment_oracle_sha256",
+        "independent_review_identity",
+    ]
+    design = (ROOT / candidate["design"]).read_text(encoding="utf-8")
+    assert "historical angle-form case-2 feasibility oracle" in design
+    assert "[machine-actionable handoff](../contracts/matz-case-2-handoff-a0.json)" in design
+    assert "historical fragment list must not be copied forward" in design
+    assert "The case-2 success oracle" not in design
+
+
+def _assert_candidate_reviewed_paths(manifest: dict[str, Any]) -> None:
+    candidate = manifest["candidate_operations"][0]
     for path_key in (
         "design",
         "packet_spec",
@@ -475,25 +683,276 @@ def test_manifest_promoted_and_candidate_surfaces_are_complete() -> None:
     ):
         assert (ROOT / candidate[key]).is_file()
 
+
+def _assert_demo_inventory(manifest: dict[str, Any]) -> None:
+    operation_ids = [item["id"] for item in manifest["operations"]]
+    candidate_ids = [item["id"] for item in manifest["candidate_operations"]]
     for demo in manifest["demos"]:
         assert (ROOT / demo["source"]).is_file()
         if "worker" in demo:
             assert (ROOT / demo["worker"]).is_file()
         if "entrypoint" in demo:
             assert (ROOT / demo["entrypoint"]).is_file()
-        for key in ("fixture", "distribution", "asset_manifest", "headers"):
+        for key in (
+            "fixture",
+            "theme",
+            "font_regular",
+            "font_bold",
+            "font_license",
+            "distribution",
+            "asset_manifest",
+            "headers",
+            "standalone_distribution",
+        ):
             if key in demo:
                 assert (ROOT / demo[key]).is_file()
         if "distribution_sha256" in demo:
             static_manifest = json.loads((ROOT / demo["asset_manifest"]).read_text())
             assert demo["distribution_sha256"] == static_manifest["sha256"]
+        if "standalone_sha256" in demo:
+            assert _sha256(ROOT / demo["standalone_distribution"]) == demo["standalone_sha256"]
+        for key in ("font_regular", "font_bold", "font_license"):
+            if key in demo:
+                assert _sha256(ROOT / demo[key]) == demo[f"{key}_sha256"]
         assert demo["owning_operation"] in operation_ids + candidate_ids
 
+
+def _assert_consumer_inventory(manifest: dict[str, Any]) -> None:
     consumers = manifest["consumers"]
     consumer_ids = [item["id"] for item in consumers]
     _unique(consumer_ids, "consumer id")
     assert consumer_ids == ["appz.viz", "appz.data_models.pcb.matz"]
     assert all((ROOT / item["snapshot"]).is_file() for item in consumers)
+
+
+def test_manifest_promoted_and_candidate_surfaces_are_complete() -> None:
+    manifest = _manifest()
+    _assert_projection_surfaces(manifest)
+    _assert_model_bounds_promotion(manifest)
+    _assert_contract_and_operation_inventory(manifest)
+    _assert_candidate_packet_vectors(manifest)
+    _assert_candidate_projection_surfaces(manifest)
+    _assert_matz_case_2_handoff(manifest)
+    _assert_candidate_reviewed_paths(manifest)
+    _assert_demo_inventory(manifest)
+    _assert_consumer_inventory(manifest)
+
+
+def test_analytic_cross_transport_parity_pair_is_governed_separately_from_codec_vectors() -> None:
+    candidate = _manifest()["candidate_operations"][0]
+    vector_manifest_path = ROOT / candidate["packet_vector_manifest"]
+    vector_manifest = json.loads(vector_manifest_path.read_text(encoding="utf-8"))
+    cross_transport = vector_manifest["cross_transport_parity"]
+    assert len(vector_manifest["vectors"]) == candidate["packet_vector_count"] == 6
+    assert cross_transport["id"] == candidate["cross_transport_parity_fixture_id"]
+    assert cross_transport["vector_count"] == candidate["cross_transport_parity_vector_count"] == 2
+    assert cross_transport["comparison"] == "exact_bytes"
+    assert cross_transport["runtimes"] == ["native_executable_ipc", "browser_wasm_generic_c_abi"]
+    for vector_key, candidate_path_key, candidate_digest_key in (
+        ("request_file", "cross_transport_parity_request", "cross_transport_parity_request_sha256"),
+        ("result_file", "cross_transport_parity_result", "cross_transport_parity_result_sha256"),
+    ):
+        path = vector_manifest_path.parent / cross_transport[vector_key]
+        data = bytes.fromhex(path.read_text(encoding="ascii"))
+        assert path == ROOT / candidate[candidate_path_key]
+        assert hashlib.sha256(data).hexdigest() == candidate[candidate_digest_key]
+    assert (
+        cross_transport["standalone_job_result_sha256"] == (candidate["cross_transport_parity_standalone_job_sha256"])
+    )
+    assert cross_transport["validator"] == candidate["cross_transport_parity_validator"]
+    assert cross_transport["wasm_runner"] == candidate["cross_transport_parity_wasm_runner"]
+    for path_key, digest_key in (
+        ("cross_transport_parity_validator", "cross_transport_parity_validator_sha256"),
+        ("cross_transport_parity_wasm_runner", "cross_transport_parity_wasm_runner_sha256"),
+    ):
+        path = ROOT / candidate[path_key]
+        assert path.is_file()
+        assert hashlib.sha256(path.read_bytes()).hexdigest() == candidate[digest_key]
+    assert candidate["cross_transport_parity_status"] == (
+        "exact_native_executable_ipc_browser_wasm_result_bytes_and_standalone_job_digest_governed"
+    )
+
+
+def test_analytic_performance_qualification_harness_is_governed_without_overclaiming() -> None:
+    candidate = _manifest()["candidate_operations"][0]
+    assert candidate["performance_qualification_default_fixture_classification"] == "synthetic"
+    assert candidate["performance_qualification_default_request"] == candidate["cross_transport_parity_request"]
+    assert candidate["performance_qualification_target_wall_seconds"] == 1
+    assert candidate["performance_qualification_target_solver_peak_working_memory_bytes"] == 536_870_912
+    assert candidate["performance_qualification_hard_ceiling_wall_seconds"] == 5
+    assert candidate["performance_qualification_hard_ceiling_solver_peak_working_memory_bytes"] == 1_073_741_824
+    assert candidate["performance_qualification_status"] == (
+        "production_ipc_replay_and_byte_matched_internal_solver_telemetry_and_portable_hard_ceiling_"
+        "passed_for_rt_local_"
+        "candidate_clean_build_attestation_pending_loz_pending"
+    )
+    assert candidate["performance_qualification_reference_machine_policy"] == (
+        "optional_comparative_observation_not_release_gate"
+    )
+    assert candidate["performance_qualification_target_policy"] == (
+        "one_second_512_mib_observation_not_release_gate"
+    )
+    assert candidate["performance_qualification_release_ceiling_policy"] == (
+        "five_seconds_1_gib_process_and_solver_hard_gate"
+    )
+    assert candidate["performance_qualification_build_attestation_schema"] == (
+        "wn.geometer.native_build_attestation.a1"
+    )
+    assert candidate["performance_qualification_build_attestation_generator_identity"] == (
+        "wn.geometer.native_build_attestation_generator.a1"
+    )
+    assert candidate["performance_qualification_build_attestation_source_policy"] == (
+        "authoritative_clean_git_source_only_dirty_or_unavailable_is_diagnostic_unattested"
+    )
+    assert candidate["performance_qualification_build_attestation_sidecar"] == (
+        "dist/native/<platform>/geometer.build-attestation.json"
+    )
+    governed = [
+        (candidate["performance_qualification_harness"], candidate["performance_qualification_harness_sha256"]),
+        (candidate["performance_qualification_test"], candidate["performance_qualification_test_sha256"]),
+        (
+            candidate["performance_qualification_native_helper"],
+            candidate["performance_qualification_native_helper_sha256"],
+        ),
+        (
+            candidate["performance_qualification_build_attestation_generator"],
+            candidate["performance_qualification_build_attestation_generator_sha256"],
+        ),
+        (
+            candidate["performance_qualification_build_attestation_test"],
+            candidate["performance_qualification_build_attestation_test_sha256"],
+        ),
+        *zip(
+            candidate["performance_qualification_modules"],
+            candidate["performance_qualification_module_sha256"],
+            strict=True,
+        ),
+    ]
+    for relative, expected_sha256 in governed:
+        path = ROOT / relative
+        assert path.is_file()
+        assert _sha256(path) == expected_sha256
+
+
+def test_real_board_packet_provenance_records_rt_candidate_without_promoting() -> None:
+    candidate = _manifest()["candidate_operations"][0]
+    provenance_path = ROOT / candidate["real_board_packet_provenance"]
+    assert _sha256(provenance_path) == candidate["real_board_packet_provenance_sha256"]
+    assert candidate["real_board_packet_provenance_test"] == "tests/python/test_contract_promotion_manifest.py"
+    assert (
+        _sha256(ROOT / candidate["real_board_packet_provenance_test"])
+        == (candidate["real_board_packet_provenance_test_sha256"])
+    )
+    with provenance_path.open("rb") as stream:
+        provenance = tomllib.load(stream)
+
+    assert (
+        candidate["real_board_packet_provenance_status"]
+        == provenance["record_status"]
+        == ("public_mit_redistribution_authorized_rt_generated_local_qualified_loz_pending")
+    )
+    assert provenance["artifact_scope"].startswith("Geometry-only GMABRQ01 request packets")
+    assert provenance["packet_format_magic"] == "GMABRQ01"
+    assert provenance["public_redistribution_authorization"] == "authorized_for_public_redistribution"
+    assert provenance["qualification_redistribution_authorization"] == "authorized_for_qualification"
+    assert candidate["real_board_packet_license_spdx"] == provenance["license_spdx"] == "MIT"
+    assert provenance["license_file"] == "LICENSE"
+    assert (
+        candidate["real_board_packet_required_attribution"]
+        == provenance["required_attribution"]
+        == ("Copyright (c) Wavenumber LLC")
+    )
+    assert provenance["required_attribution"] in (ROOT / provenance["license_file"]).read_text(encoding="utf-8")
+    assert candidate["real_board_source_cad_redistribution"] == provenance["source_cad_redistribution"] == ("excluded")
+    assert provenance["source_cad_repository_status"] == "not_committed"
+    assert provenance["packet_generation_status"] == "rt_generated_loz_pending"
+    assert provenance["exporter_provenance_status"] == "rt_complete_loz_pending"
+    assert provenance["expected_result_authority_status"] == "rt_governed_loz_pending"
+    assert provenance["promotion_status"] == (
+        "rt_local_candidate_clean_build_attestation_pending"
+    )
+
+    fixture = json.loads((ROOT / candidate["portable_fixture"]).read_text(encoding="utf-8"))
+    audited_cases = {item["fixture_id"]: item for item in fixture["real_board_cases"]}
+    cases = provenance["cases"]
+    assert [item["fixture_id"] for item in cases] == candidate["real_board_packet_case_ids"]
+    assert [item["source_sha256"] for item in cases] == candidate["real_board_packet_source_sha256"]
+    for item in cases:
+        audit = audited_cases[item["fixture_id"]]
+        assert item["source_audit_locator"] == audit["source_path"]
+        assert item["source_sha256"] == audit["source_sha256"]
+        assert item["source_bytes"] == audit["source_bytes"]
+        assert not (ROOT / item["source_audit_locator"]).exists()
+
+    rt_case, loz_case = cases
+    assert rt_case["packet_status"] == (
+        "generated_publicly_redistributable_deterministic_production_qualified_local_candidate"
+    )
+    assert rt_case["source_checkout_clean"] is True
+    assert rt_case["producer_clean"] is False
+    assert rt_case["expected_result_sha256"] == ("17477a9d1b7005a9bc8a097687fe1a0bf0453f1d8230bf260a8628330af997ad")
+    assert rt_case["result_regions"] == 265
+    assert rt_case["result_segments"] == 5601
+    assert rt_case["failed_jobs"] == rt_case["fallback_count"] == 0
+    assert rt_case["promotion_status"] == "incomplete_clean_build_attestation_pending"
+    for path_key, digest_key in (
+        ("packet_path", "packet_sha256"),
+        ("exporter_manifest_path", "exporter_manifest_sha256"),
+        ("corpus_path", "corpus_sha256"),
+        ("qualification_report_path", "qualification_report_sha256"),
+    ):
+        artifact = ROOT / rt_case[path_key]
+        assert artifact.is_file()
+        assert _sha256(artifact) == rt_case[digest_key]
+
+    vector_directory = (ROOT / rt_case["packet_path"]).parent
+    assert {path.name for path in vector_directory.iterdir()} == {
+        "README.md",
+        "corpus.json",
+        "qualification.local-5950x-dirty-build.json",
+        "rt_super_c1_pwr4.exporter-manifest.json",
+        "rt_super_c1_pwr4.gmabrq01",
+    }
+    assert all(path.is_file() for path in vector_directory.iterdir())
+    assert not tuple(vector_directory.rglob("*.hex"))
+    assert not any(path.suffix.lower() in {".pcbdoc", ".gmabrs01"} for path in vector_directory.rglob("*"))
+
+    assert candidate["real_board_rt_packet"] == rt_case["packet_path"]
+    assert candidate["real_board_rt_packet_bytes"] == rt_case["packet_bytes"] == 377_160
+    assert candidate["real_board_rt_packet_sha256"] == rt_case["packet_sha256"]
+    assert candidate["real_board_rt_exporter_manifest"] == rt_case["exporter_manifest_path"]
+    assert candidate["real_board_rt_exporter_manifest_bytes"] == (rt_case["exporter_manifest_bytes"])
+    assert candidate["real_board_rt_exporter_manifest_sha256"] == (rt_case["exporter_manifest_sha256"])
+    assert candidate["real_board_rt_corpus"] == rt_case["corpus_path"]
+    assert candidate["real_board_rt_corpus_sha256"] == rt_case["corpus_sha256"]
+    assert candidate["real_board_rt_local_qualification_report"] == (rt_case["qualification_report_path"])
+    assert candidate["real_board_rt_local_qualification_report_sha256"] == (rt_case["qualification_report_sha256"])
+    assert candidate["real_board_rt_expected_result_sha256"] == (rt_case["expected_result_sha256"])
+    assert candidate["real_board_rt_result_bytes"] == rt_case["result_bytes"]
+    assert candidate["real_board_rt_result_regions"] == rt_case["result_regions"]
+    assert candidate["real_board_rt_result_segments"] == rt_case["result_segments"]
+    assert candidate["real_board_rt_solver_telemetry_sha256"] == (rt_case["solver_telemetry_sha256"])
+    assert candidate["real_board_rt_failed_jobs"] == rt_case["failed_jobs"] == 0
+    assert candidate["real_board_rt_fallback_count"] == rt_case["fallback_count"] == 0
+    assert candidate["real_board_rt_status"] == rt_case["packet_status"]
+    assert candidate["real_board_rt_promotion_status"] == rt_case["promotion_status"]
+
+    assert loz_case["packet_status"] == "pending_blocked"
+    assert loz_case["packet_blocker"] == ("governed_exact_copper_selector_and_exporter_case_not_complete")
+    assert loz_case["exporter_identity_status"] == "pending"
+    assert loz_case["exporter_revision_status"] == "pending"
+    assert candidate["real_board_loz_status"] == ("pending_blocked_governed_exact_copper_selector_and_exporter_case")
+    assert not any(
+        key in loz_case
+        for key in (
+            "packet_path",
+            "packet_sha256",
+            "exporter_identity",
+            "producer_revision",
+        )
+    )
+
+    assert candidate["python_production_replay_blocked_cases"] == ["2_missing_authoritative_integer_endpoints"]
 
 
 def test_c_abi_manifest_matches_header_exactly() -> None:
@@ -681,227 +1140,227 @@ def test_exact_algebraic_backend_is_governed_and_non_primary() -> None:
     assert _sha256(ROOT / backend["design"]) == backend["design_sha256"]
 
 
+_EXPECTED_FILTERED_SOLVER: dict[str, Any] = {
+    "status": "implemented_filtered_batch_relationships_packed_dispatch",
+    "design": "docs/adr/013_filtered_resolution_bounded_planar_boolean.md",
+    "coordinate_grid_nm": 1,
+    "topology_resolution_nm": 50,
+    "topology_resolution_caller_programmable": False,
+    "production_dispatch_allowed": True,
+    "algebraic_fallback_hard_limit": 0,
+    "strict_policy_header": "src/cpp/lib/analytic_filtered_execution_policy.h",
+    "strict_policy": (
+        "private_published_geometry_mode_disables_50nm_topology_repair_and_fails_closed_on_unresolved_equality"
+    ),
+    "limits_header": "src/cpp/lib/geometer/analytic_solver_limits.h",
+    "limits_source": "src/cpp/lib/analytic_solver_limits.cpp",
+    "numeric_filter_header": "src/cpp/lib/geometer/analytic_numeric_filter.h",
+    "numeric_filter_source": "src/cpp/lib/analytic_numeric_filter.cpp",
+    "broad_phase_header": "src/cpp/lib/geometer/analytic_curve_broad_phase.h",
+    "broad_phase_source": "src/cpp/lib/analytic_curve_broad_phase.cpp",
+    "interval_index_header": "src/cpp/lib/analytic_interval_index.h",
+    "interval_index_source": "src/cpp/lib/analytic_interval_index.cpp",
+    "foundation_test": "tests/cpp/analytic_filtered_core_test.cpp",
+    "broad_phase_policy": "deterministic_sparser_axis_sweep_with_secondary_interval_index",
+    "narrow_phase_header": "src/cpp/lib/geometer/analytic_curve_narrow_phase.h",
+    "narrow_phase_source": "src/cpp/lib/analytic_curve_narrow_phase.cpp",
+    "narrow_phase_policy": "canonical_candidate_pairs_only_constant_work_per_pair",
+    "narrow_phase_input": "job_local_filtered_nm_line_and_arc_carriers_with_validated_integer_and_construction_certificates",
+    "narrow_phase_uncertain_policy": "job_local_resource_limit_exceeded",
+    "narrow_phase_resolution_policy": ("pair_witness_at_or_below_50nm_no_independent_tolerance_composition"),
+    "narrow_phase_pair_logical_bytes": 256,
+    "narrow_phase_parity_validator": "scripts/validate_analytic_filtered_core_parity.py",
+    "narrow_phase_vector_bytes": 304,
+    "narrow_phase_vector_sha256": ("6cb876823564bb996984851003e0160306365f4ae2700e5566d7bbb112177824"),
+    "interval_arithmetic_header": "src/cpp/lib/analytic_filtered_interval.h",
+    "fixed_width_integer_header": "src/cpp/lib/analytic_wide_integer.h",
+    "lowering_header": "src/cpp/lib/geometer/analytic_filtered_lowering.h",
+    "lowering_source": "src/cpp/lib/analytic_filtered_lowering.cpp",
+    "lowering_test": "tests/cpp/analytic_filtered_lowering_test.cpp",
+    "lowering_policy": ("direct_job_local_integer_origin_outward_intervals_and_lowering_only_proof_tokens"),
+    "lowering_supported_geometry": "authored_regions_disks_annuli_capsules_constant_width_open_swept_paths",
+    "lowering_swept_path_policy": ("filtered_indexed_piece_union_zero_algebraic_fallback"),
+    "lowering_bounds_policy": "finite_arc_endpoints_plus_contained_cardinal_extrema",
+    "lowering_token_policy": (
+        "fixed_capacity_open_addressed_exact_construction_keys_and_vertical_column_identities_with_metered_probes"
+    ),
+    "lowering_logical_bytes_per_curve": 768,
+    "lowering_parity_validator": "scripts/validate_analytic_filtered_lowering_parity.py",
+    "lowering_vector_bytes": 3952,
+    "lowering_vector_sha256": ("9c3dada9b6df8c7e219620a31e5effb363ef0c3468f5db7ae1555852b94ce02d"),
+    "overlay_header": "src/cpp/lib/geometer/analytic_filtered_overlay.h",
+    "overlay_source": "src/cpp/lib/analytic_filtered_overlay.cpp",
+    "overlay_test": "tests/cpp/analytic_filtered_overlay_test.cpp",
+    "overlay_input": "canonical_broad_phase_pairs_with_internal_narrow_phase_execution",
+    "overlay_policy": "carrier_grouped_sorted_events_indexed_active_memberships",
+    "overlay_resolution_policy": (
+        "complete_same_carrier_clusters_at_or_below_50nm_without_independent_circle_seam_snaps"
+    ),
+    "overlay_budget_policy": (
+        "allocation_free_combined_minimum_preflight_then_fully_metered_complete_cluster_"
+        "narrow_and_overlay_work_and_live_logical_memory"
+    ),
+    "overlay_parity_validator": "scripts/validate_analytic_filtered_overlay_parity.py",
+    "overlay_vector_bytes": 1048,
+    "overlay_vector_sha256": ("8c1162b7e14b6a58a2dd8f50c4c4b87767a223632c6393a3a8ace3d0244ac352"),
+    "arrangement_header": "src/cpp/lib/geometer/analytic_filtered_arrangement.h",
+    "arrangement_source": "src/cpp/lib/analytic_filtered_arrangement.cpp",
+    "arrangement_test": "tests/cpp/analytic_filtered_arrangement_test.cpp",
+    "arrangement_input": ("filtered_geometry_and_canonical_broad_pairs_with_internal_narrow_overlay"),
+    "arrangement_policy": ("indexed_complete_diameter_vertex_clusters_and_fixed_width_certified_half_edge_germs"),
+    "arrangement_resolution_policy": ("inclusive_50nm_nontransitive_global_vertex_reconciliation"),
+    "arrangement_budget_policy": (
+        "single_validated_bulk_metered_allocation_free_downstream_minimum_preflight_then_"
+        "phase_accurate_target_independent_memory_and_shared_upstream_work"
+    ),
+    "arrangement_parity_validator": ("scripts/validate_analytic_filtered_arrangement_parity.py"),
+    "arrangement_vector_bytes": 13032,
+    "arrangement_vector_sha256": ("8cc7fc278c73aefcd9f480b52e1ab4445e37c972538a1672a23a4d422e8bd1df"),
+    "boolean_selection_header": ("src/cpp/lib/geometer/analytic_filtered_boolean_selection.h"),
+    "boolean_selection_source": "src/cpp/lib/analytic_filtered_boolean_selection.cpp",
+    "boolean_selection_admission_source": ("src/cpp/lib/analytic_filtered_boolean_selection_admission.cpp"),
+    "boolean_selection_support_header": ("src/cpp/lib/analytic_filtered_boolean_selection_support.h"),
+    "boolean_selection_test": ("tests/cpp/analytic_filtered_boolean_selection_test.cpp"),
+    "boolean_selection_input": ("ordered_request_records_and_trusted_filtered_geometry_with_canonical_broad_pairs"),
+    "boolean_selection_policy": (
+        "certified_vertical_slab_face_ownership_canonical_persistent_coverage_and_incremental_ordered_stage_state"
+    ),
+    "boolean_selection_complexity_policy": (
+        "indexed_sweep_and_sparse_edge_transitions_without_cycle_pair_containment_or_face_by_operand_copies"
+    ),
+    "boolean_selection_budget_policy": (
+        "metered_multi_pass_admission_fixed_capacity_distinct_phase_memory_o1_membership_"
+        "ordinals_and_candidate_bounded_split_coverage_reservation"
+    ),
+    "boolean_selection_parity_validator": ("scripts/validate_analytic_filtered_boolean_selection_parity.py"),
+    "boolean_selection_vector_bytes": 12744,
+    "boolean_selection_vector_sha256": ("4590aa7d11918f8db25f657d6e5027ffed1c1c0737aff40a3a8cb92ebd252e27"),
+    "regions_header": "src/cpp/lib/geometer/analytic_filtered_regions.h",
+    "regions_source": "src/cpp/lib/analytic_filtered_regions.cpp",
+    "regions_test": "tests/cpp/analytic_filtered_regions_test.cpp",
+    "regions_input": ("ordered_request_records_and_trusted_filtered_geometry_with_canonical_broad_pairs"),
+    "regions_policy": ("rotation_indexed_selected_boundary_successors_and_component_graph_material_rings"),
+    "regions_complexity_policy": (
+        "linear_boundary_tracing_and_component_graph_without_seam_walk_or_cycle_pair_containment"
+    ),
+    "regions_budget_policy": (
+        "candidate_bounded_pre_arrangement_region_phase_reservation_then_fixed_capacity_metered_traversals"
+    ),
+    "regions_parity_validator": "scripts/validate_analytic_filtered_regions_parity.py",
+    "regions_vector_bytes": 1160,
+    "regions_vector_sha256": ("835631e3af611513e05423e0b29705778e3a87fe2b53a56c4f37c3ca6bacbd9e"),
+    "lineage_header": "src/cpp/lib/geometer/analytic_filtered_lineage.h",
+    "lineage_source": "src/cpp/lib/analytic_filtered_lineage.cpp",
+    "lineage_test": "tests/cpp/analytic_filtered_lineage_test.cpp",
+    "lineage_input": "owned_filtered_regions_with_stage_order_coverage_roots",
+    "lineage_policy": (
+        "coordinate_free_transition_driven_region_boundary_vertex_and_empty_face_subtraction_projection"
+    ),
+    "lineage_complexity_policy": (
+        "indexed_material_component_transitions_and_actual_membership_incidence_without_"
+        "dense_root_union_or_face_by_operand_scans"
+    ),
+    "lineage_budget_policy": (
+        "candidate_bounded_pre_arrangement_structural_reservation_then_allocation_free_"
+        "exact_source_count_and_fixed_capacity_publication"
+    ),
+    "lineage_parity_validator": "scripts/validate_analytic_filtered_lineage_parity.py",
+    "lineage_vector_bytes": 3672,
+    "lineage_vector_sha256": ("6cab24e409b59bb6b27ec4142ab2cd6d2cb6f765561a915d7c01ecbf1bb4b74b"),
+    "outcomes_header": "src/cpp/lib/geometer/analytic_filtered_outcomes.h",
+    "outcomes_source": "src/cpp/lib/analytic_filtered_outcomes.cpp",
+    "outcomes_tracker_header": "src/cpp/lib/analytic_filtered_outcome_tracker.h",
+    "outcomes_tracker_source": "src/cpp/lib/analytic_filtered_outcome_tracker.cpp",
+    "outcomes_test": "tests/cpp/analytic_filtered_outcomes_test.cpp",
+    "outcomes_input": ("owned_filtered_lineage_with_selection_integrated_sparse_positive_area_history"),
+    "outcomes_policy": (
+        "coordinate_free_nonexclusive_operand_events_with_complete_original_sources_and_"
+        "tagged_pre_normalization_topology_handles"
+    ),
+    "outcomes_complexity_policy": (
+        "active_unseen_stage_reporters_and_incidence_projection_without_face_by_operand_replay"
+    ),
+    "outcomes_budget_policy": (
+        "candidate_bounded_pre_arrangement_history_reservation_then_exact_count_fixed_"
+        "capacity_reference_and_event_publication"
+    ),
+    "outcomes_parity_validator": "scripts/validate_analytic_filtered_outcomes_parity.py",
+    "outcomes_vector_bytes": 1480,
+    "outcomes_vector_sha256": ("98a322779493361e0a9fd1175017ecff7473aa230d3542c63f70692a93081604"),
+    "normalization_header": "src/cpp/lib/geometer/analytic_filtered_normalization.h",
+    "normalization_source": "src/cpp/lib/analytic_filtered_normalization.cpp",
+    "normalization_replay_header": ("src/cpp/lib/analytic_filtered_normalization_replay.h"),
+    "normalization_replay_source": ("src/cpp/lib/analytic_filtered_normalization_replay.cpp"),
+    "normalization_reconstruction_header": ("src/cpp/lib/analytic_endpoint_arc_reconstruction.h"),
+    "normalization_test": "tests/cpp/analytic_filtered_normalization_test.cpp",
+    "normalization_input": ("owned_filtered_outcomes_with_retained_certified_arrangement_and_topology"),
+    "normalization_policy": (
+        "one_time_global_1nm_endpoint_authoritative_publication_with_filtered_whole_arc_"
+        "hausdorff_and_strict_zero_repair_topology_replay"
+    ),
+    "normalization_complexity_policy": (
+        "indexed_replay_candidates_and_boundary_to_ring_mapping_without_fragment_pair_or_ring_pair_scans"
+    ),
+    "normalization_budget_policy": (
+        "candidate_bounded_pre_outcomes_reservation_then_exact_fixed_capacity_normalization_and_replay_phases"
+    ),
+    "normalization_parity_validator": ("scripts/validate_analytic_filtered_normalization_parity.py"),
+    "normalization_vector_bytes": 2360,
+    "normalization_vector_sha256": ("ea874451d9f86f3c30eae894562a68510f0b99e5fac194c856399d137d437252"),
+    "packet_header": "src/cpp/lib/geometer/analytic_filtered_packet.h",
+    "packet_source": "src/cpp/lib/analytic_filtered_packet.cpp",
+    "packet_sequences_header": "src/cpp/lib/analytic_filtered_packet_sequences.h",
+    "packet_sequences_source": "src/cpp/lib/analytic_filtered_packet_sequences.cpp",
+    "source_reference_header": "src/cpp/lib/geometer/analytic_source_reference.h",
+    "packet_test": "tests/cpp/analytic_filtered_packet_test.cpp",
+    "packet_input": ("owned_filtered_normalization_with_lineage_outcomes_and_explicit_topology_maps"),
+    "packet_policy": ("coordinate_preserving_canonical_source_set_topology_event_and_standalone_packet_assembly"),
+    "packet_complexity_policy": (
+        "fixed_width_sort_keys_and_exact_prefix_trie_without_variable_length_comparators_or_face_by_operand_replay"
+    ),
+    "packet_budget_policy": (
+        "candidate_bounded_pre_normalization_reservation_then_exact_fixed_capacity_source_and_packet_publication"
+    ),
+    "packet_parity_validator": "scripts/validate_analytic_filtered_packet_parity.py",
+    "packet_vector_bytes": 4288,
+    "packet_vector_sha256": ("a47f82ad1ab38c9e38ea55f38b44849ebd477de31c465726cbd17f5c4047ccfb"),
+    "batch_header": "src/cpp/lib/geometer/analytic_filtered_batch.h",
+    "batch_source": "src/cpp/lib/analytic_filtered_batch.cpp",
+    "batch_test": "tests/cpp/analytic_filtered_batch_test.cpp",
+    "batch_input": ("validated_canonical_request_records_with_owned_lowering_broad_phase_and_job_packet_publication"),
+    "batch_policy": ("sequential_job_isolation_specialized_job_major_canonical_merge_and_single_batch_encode"),
+    "batch_complexity_policy": (
+        "deterministic_sorted_id_validation_global_source_sort_and_fixed_capacity_sequence_"
+        "interning_without_job_pair_or_variable_prefix_scans"
+    ),
+    "batch_budget_policy": (
+        "separate_per_job_and_batch_live_limits_capacity_based_retained_records_and_"
+        "precharged_validation_merge_and_encoding_phases"
+    ),
+    "batch_relationship_header": "src/cpp/lib/analytic_filtered_relationships.h",
+    "batch_relationship_source": "src/cpp/lib/analytic_filtered_relationships.cpp",
+    "batch_relationship_policy": (
+        "strict_published_geometry_face_coverage_and_incidence_with_fail_closed_unresolved_predicates"
+    ),
+    "batch_relationship_complexity_policy": (
+        "cached_unordered_job_pairs_with_two_color_indexed_broad_phase_and_output_sensitive_region_pair_classification"
+    ),
+    "batch_relationship_budget_policy": (
+        "precharged_target_independent_work_memory_candidate_cache_and_remaining_packet_byte_limits"
+    ),
+    "batch_parity_validator": "scripts/validate_analytic_filtered_batch_parity.py",
+    "batch_vector_bytes": 1636,
+    "batch_vector_sha256": ("a4b6a8c4a82f77c5de4e232e0a2e1520a57e7370422ddc7e4059951d192a05d9"),
+    "batch_relationship_vector_bytes": 5448,
+    "batch_relationship_vector_sha256": ("bddccaac7ac1f8b141e007574e08d282a03221b85cb684e9addaf49fa89be073"),
+    "production_exact_source_policy": "exact_oracle_sources_excluded_from_geometer_lib",
+    "exact_oracle_target": "geometer_exact_feasibility",
+}
+
+
 def test_filtered_solver_foundation_is_bounded_non_algebraic_and_packed_dispatched() -> None:
     solver = _manifest()["analytic_filtered_solver"]
-    assert solver == {
-        "status": "implemented_filtered_batch_relationships_packed_dispatch",
-        "design": "docs/adr/013_filtered_resolution_bounded_planar_boolean.md",
-        "coordinate_grid_nm": 1,
-        "topology_resolution_nm": 50,
-        "topology_resolution_caller_programmable": False,
-        "production_dispatch_allowed": True,
-        "algebraic_fallback_hard_limit": 0,
-        "strict_policy_header": "src/cpp/lib/analytic_filtered_execution_policy.h",
-        "strict_policy": (
-            "private_published_geometry_mode_disables_50nm_topology_repair_and_fails_closed_on_unresolved_equality"
-        ),
-        "limits_header": "src/cpp/lib/geometer/analytic_solver_limits.h",
-        "limits_source": "src/cpp/lib/analytic_solver_limits.cpp",
-        "numeric_filter_header": "src/cpp/lib/geometer/analytic_numeric_filter.h",
-        "numeric_filter_source": "src/cpp/lib/analytic_numeric_filter.cpp",
-        "broad_phase_header": "src/cpp/lib/geometer/analytic_curve_broad_phase.h",
-        "broad_phase_source": "src/cpp/lib/analytic_curve_broad_phase.cpp",
-        "interval_index_header": "src/cpp/lib/analytic_interval_index.h",
-        "interval_index_source": "src/cpp/lib/analytic_interval_index.cpp",
-        "foundation_test": "tests/cpp/analytic_filtered_core_test.cpp",
-        "broad_phase_policy": "deterministic_sparser_axis_sweep_with_secondary_interval_index",
-        "narrow_phase_header": "src/cpp/lib/geometer/analytic_curve_narrow_phase.h",
-        "narrow_phase_source": "src/cpp/lib/analytic_curve_narrow_phase.cpp",
-        "narrow_phase_policy": "canonical_candidate_pairs_only_constant_work_per_pair",
-        "narrow_phase_input": "job_local_filtered_nm_line_and_arc_carriers_with_validated_integer_and_construction_certificates",
-        "narrow_phase_uncertain_policy": "job_local_resource_limit_exceeded",
-        "narrow_phase_resolution_policy": ("pair_witness_at_or_below_50nm_no_independent_tolerance_composition"),
-        "narrow_phase_pair_logical_bytes": 256,
-        "narrow_phase_parity_validator": "scripts/validate_analytic_filtered_core_parity.py",
-        "narrow_phase_vector_bytes": 304,
-        "narrow_phase_vector_sha256": ("6cb876823564bb996984851003e0160306365f4ae2700e5566d7bbb112177824"),
-        "interval_arithmetic_header": "src/cpp/lib/analytic_filtered_interval.h",
-        "fixed_width_integer_header": "src/cpp/lib/analytic_wide_integer.h",
-        "lowering_header": "src/cpp/lib/geometer/analytic_filtered_lowering.h",
-        "lowering_source": "src/cpp/lib/analytic_filtered_lowering.cpp",
-        "lowering_test": "tests/cpp/analytic_filtered_lowering_test.cpp",
-        "lowering_policy": ("direct_job_local_integer_origin_outward_intervals_and_lowering_only_proof_tokens"),
-        "lowering_supported_geometry": "authored_regions_disks_annuli_capsules",
-        "lowering_swept_path_policy": ("job_local_unsupported_until_filtered_indexed_piece_union"),
-        "lowering_bounds_policy": "finite_arc_endpoints_plus_contained_cardinal_extrema",
-        "lowering_token_policy": (
-            "fixed_capacity_open_addressed_exact_construction_keys_and_vertical_column_identities_with_metered_probes"
-        ),
-        "lowering_logical_bytes_per_curve": 768,
-        "lowering_parity_validator": "scripts/validate_analytic_filtered_lowering_parity.py",
-        "lowering_vector_bytes": 3952,
-        "lowering_vector_sha256": ("9c3dada9b6df8c7e219620a31e5effb363ef0c3468f5db7ae1555852b94ce02d"),
-        "overlay_header": "src/cpp/lib/geometer/analytic_filtered_overlay.h",
-        "overlay_source": "src/cpp/lib/analytic_filtered_overlay.cpp",
-        "overlay_test": "tests/cpp/analytic_filtered_overlay_test.cpp",
-        "overlay_input": "canonical_broad_phase_pairs_with_internal_narrow_phase_execution",
-        "overlay_policy": "carrier_grouped_sorted_events_indexed_active_memberships",
-        "overlay_resolution_policy": (
-            "complete_same_carrier_clusters_at_or_below_50nm_without_independent_circle_seam_snaps"
-        ),
-        "overlay_budget_policy": (
-            "allocation_free_combined_minimum_preflight_then_fully_metered_complete_cluster_"
-            "narrow_and_overlay_work_and_live_logical_memory"
-        ),
-        "overlay_parity_validator": "scripts/validate_analytic_filtered_overlay_parity.py",
-        "overlay_vector_bytes": 1048,
-        "overlay_vector_sha256": ("8c1162b7e14b6a58a2dd8f50c4c4b87767a223632c6393a3a8ace3d0244ac352"),
-        "arrangement_header": "src/cpp/lib/geometer/analytic_filtered_arrangement.h",
-        "arrangement_source": "src/cpp/lib/analytic_filtered_arrangement.cpp",
-        "arrangement_test": "tests/cpp/analytic_filtered_arrangement_test.cpp",
-        "arrangement_input": ("filtered_geometry_and_canonical_broad_pairs_with_internal_narrow_overlay"),
-        "arrangement_policy": ("indexed_complete_diameter_vertex_clusters_and_fixed_width_certified_half_edge_germs"),
-        "arrangement_resolution_policy": ("inclusive_50nm_nontransitive_global_vertex_reconciliation"),
-        "arrangement_budget_policy": (
-            "single_validated_bulk_metered_allocation_free_downstream_minimum_preflight_then_"
-            "phase_accurate_target_independent_memory_and_shared_upstream_work"
-        ),
-        "arrangement_parity_validator": ("scripts/validate_analytic_filtered_arrangement_parity.py"),
-        "arrangement_vector_bytes": 13032,
-        "arrangement_vector_sha256": ("8cc7fc278c73aefcd9f480b52e1ab4445e37c972538a1672a23a4d422e8bd1df"),
-        "boolean_selection_header": ("src/cpp/lib/geometer/analytic_filtered_boolean_selection.h"),
-        "boolean_selection_source": "src/cpp/lib/analytic_filtered_boolean_selection.cpp",
-        "boolean_selection_admission_source": ("src/cpp/lib/analytic_filtered_boolean_selection_admission.cpp"),
-        "boolean_selection_support_header": ("src/cpp/lib/analytic_filtered_boolean_selection_support.h"),
-        "boolean_selection_test": ("tests/cpp/analytic_filtered_boolean_selection_test.cpp"),
-        "boolean_selection_input": ("ordered_request_records_and_trusted_filtered_geometry_with_canonical_broad_pairs"),
-        "boolean_selection_policy": (
-            "certified_vertical_slab_face_ownership_canonical_persistent_coverage_and_incremental_ordered_stage_state"
-        ),
-        "boolean_selection_complexity_policy": (
-            "indexed_sweep_and_sparse_edge_transitions_without_cycle_pair_containment_or_face_by_operand_copies"
-        ),
-        "boolean_selection_budget_policy": (
-            "metered_multi_pass_admission_fixed_capacity_distinct_phase_memory_o1_membership_"
-            "ordinals_and_candidate_bounded_split_coverage_reservation"
-        ),
-        "boolean_selection_parity_validator": ("scripts/validate_analytic_filtered_boolean_selection_parity.py"),
-        "boolean_selection_vector_bytes": 12744,
-        "boolean_selection_vector_sha256": ("4590aa7d11918f8db25f657d6e5027ffed1c1c0737aff40a3a8cb92ebd252e27"),
-        "regions_header": "src/cpp/lib/geometer/analytic_filtered_regions.h",
-        "regions_source": "src/cpp/lib/analytic_filtered_regions.cpp",
-        "regions_test": "tests/cpp/analytic_filtered_regions_test.cpp",
-        "regions_input": ("ordered_request_records_and_trusted_filtered_geometry_with_canonical_broad_pairs"),
-        "regions_policy": ("rotation_indexed_selected_boundary_successors_and_component_graph_material_rings"),
-        "regions_complexity_policy": (
-            "linear_boundary_tracing_and_component_graph_without_seam_walk_or_cycle_pair_containment"
-        ),
-        "regions_budget_policy": (
-            "candidate_bounded_pre_arrangement_region_phase_reservation_then_fixed_capacity_metered_traversals"
-        ),
-        "regions_parity_validator": "scripts/validate_analytic_filtered_regions_parity.py",
-        "regions_vector_bytes": 1160,
-        "regions_vector_sha256": ("835631e3af611513e05423e0b29705778e3a87fe2b53a56c4f37c3ca6bacbd9e"),
-        "lineage_header": "src/cpp/lib/geometer/analytic_filtered_lineage.h",
-        "lineage_source": "src/cpp/lib/analytic_filtered_lineage.cpp",
-        "lineage_test": "tests/cpp/analytic_filtered_lineage_test.cpp",
-        "lineage_input": "owned_filtered_regions_with_stage_order_coverage_roots",
-        "lineage_policy": (
-            "coordinate_free_transition_driven_region_boundary_vertex_and_empty_face_subtraction_projection"
-        ),
-        "lineage_complexity_policy": (
-            "indexed_material_component_transitions_and_actual_membership_incidence_without_"
-            "dense_root_union_or_face_by_operand_scans"
-        ),
-        "lineage_budget_policy": (
-            "candidate_bounded_pre_arrangement_structural_reservation_then_allocation_free_"
-            "exact_source_count_and_fixed_capacity_publication"
-        ),
-        "lineage_parity_validator": "scripts/validate_analytic_filtered_lineage_parity.py",
-        "lineage_vector_bytes": 3672,
-        "lineage_vector_sha256": ("6cab24e409b59bb6b27ec4142ab2cd6d2cb6f765561a915d7c01ecbf1bb4b74b"),
-        "outcomes_header": "src/cpp/lib/geometer/analytic_filtered_outcomes.h",
-        "outcomes_source": "src/cpp/lib/analytic_filtered_outcomes.cpp",
-        "outcomes_tracker_header": "src/cpp/lib/analytic_filtered_outcome_tracker.h",
-        "outcomes_tracker_source": "src/cpp/lib/analytic_filtered_outcome_tracker.cpp",
-        "outcomes_test": "tests/cpp/analytic_filtered_outcomes_test.cpp",
-        "outcomes_input": ("owned_filtered_lineage_with_selection_integrated_sparse_positive_area_history"),
-        "outcomes_policy": (
-            "coordinate_free_nonexclusive_operand_events_with_complete_original_sources_and_"
-            "tagged_pre_normalization_topology_handles"
-        ),
-        "outcomes_complexity_policy": (
-            "active_unseen_stage_reporters_and_incidence_projection_without_face_by_operand_replay"
-        ),
-        "outcomes_budget_policy": (
-            "candidate_bounded_pre_arrangement_history_reservation_then_exact_count_fixed_"
-            "capacity_reference_and_event_publication"
-        ),
-        "outcomes_parity_validator": "scripts/validate_analytic_filtered_outcomes_parity.py",
-        "outcomes_vector_bytes": 1480,
-        "outcomes_vector_sha256": ("98a322779493361e0a9fd1175017ecff7473aa230d3542c63f70692a93081604"),
-        "normalization_header": "src/cpp/lib/geometer/analytic_filtered_normalization.h",
-        "normalization_source": "src/cpp/lib/analytic_filtered_normalization.cpp",
-        "normalization_replay_header": ("src/cpp/lib/analytic_filtered_normalization_replay.h"),
-        "normalization_replay_source": ("src/cpp/lib/analytic_filtered_normalization_replay.cpp"),
-        "normalization_reconstruction_header": ("src/cpp/lib/analytic_endpoint_arc_reconstruction.h"),
-        "normalization_test": "tests/cpp/analytic_filtered_normalization_test.cpp",
-        "normalization_input": ("owned_filtered_outcomes_with_retained_certified_arrangement_and_topology"),
-        "normalization_policy": (
-            "one_time_global_1nm_endpoint_authoritative_publication_with_filtered_whole_arc_"
-            "hausdorff_and_strict_zero_repair_topology_replay"
-        ),
-        "normalization_complexity_policy": (
-            "indexed_replay_candidates_and_boundary_to_ring_mapping_without_fragment_pair_or_ring_pair_scans"
-        ),
-        "normalization_budget_policy": (
-            "candidate_bounded_pre_outcomes_reservation_then_exact_fixed_capacity_normalization_and_replay_phases"
-        ),
-        "normalization_parity_validator": ("scripts/validate_analytic_filtered_normalization_parity.py"),
-        "normalization_vector_bytes": 2360,
-        "normalization_vector_sha256": ("ea874451d9f86f3c30eae894562a68510f0b99e5fac194c856399d137d437252"),
-        "packet_header": "src/cpp/lib/geometer/analytic_filtered_packet.h",
-        "packet_source": "src/cpp/lib/analytic_filtered_packet.cpp",
-        "packet_sequences_header": "src/cpp/lib/analytic_filtered_packet_sequences.h",
-        "packet_sequences_source": "src/cpp/lib/analytic_filtered_packet_sequences.cpp",
-        "source_reference_header": "src/cpp/lib/geometer/analytic_source_reference.h",
-        "packet_test": "tests/cpp/analytic_filtered_packet_test.cpp",
-        "packet_input": ("owned_filtered_normalization_with_lineage_outcomes_and_explicit_topology_maps"),
-        "packet_policy": ("coordinate_preserving_canonical_source_set_topology_event_and_standalone_packet_assembly"),
-        "packet_complexity_policy": (
-            "fixed_width_sort_keys_and_exact_prefix_trie_without_variable_length_comparators_or_face_by_operand_replay"
-        ),
-        "packet_budget_policy": (
-            "candidate_bounded_pre_normalization_reservation_then_exact_fixed_capacity_source_and_packet_publication"
-        ),
-        "packet_parity_validator": "scripts/validate_analytic_filtered_packet_parity.py",
-        "packet_vector_bytes": 4288,
-        "packet_vector_sha256": ("a47f82ad1ab38c9e38ea55f38b44849ebd477de31c465726cbd17f5c4047ccfb"),
-        "batch_header": "src/cpp/lib/geometer/analytic_filtered_batch.h",
-        "batch_source": "src/cpp/lib/analytic_filtered_batch.cpp",
-        "batch_test": "tests/cpp/analytic_filtered_batch_test.cpp",
-        "batch_input": (
-            "validated_canonical_request_records_with_owned_lowering_broad_phase_and_job_packet_publication"
-        ),
-        "batch_policy": ("sequential_job_isolation_specialized_job_major_canonical_merge_and_single_batch_encode"),
-        "batch_complexity_policy": (
-            "deterministic_sorted_id_validation_global_source_sort_and_fixed_capacity_sequence_"
-            "interning_without_job_pair_or_variable_prefix_scans"
-        ),
-        "batch_budget_policy": (
-            "separate_per_job_and_batch_live_limits_capacity_based_retained_records_and_"
-            "precharged_validation_merge_and_encoding_phases"
-        ),
-        "batch_relationship_header": "src/cpp/lib/analytic_filtered_relationships.h",
-        "batch_relationship_source": "src/cpp/lib/analytic_filtered_relationships.cpp",
-        "batch_relationship_policy": (
-            "strict_published_geometry_face_coverage_and_incidence_with_fail_closed_unresolved_predicates"
-        ),
-        "batch_relationship_complexity_policy": (
-            "cached_unordered_job_pairs_with_two_color_indexed_broad_phase_and_output_sensitive_"
-            "region_pair_classification"
-        ),
-        "batch_relationship_budget_policy": (
-            "precharged_target_independent_work_memory_candidate_cache_and_remaining_packet_byte_limits"
-        ),
-        "batch_parity_validator": "scripts/validate_analytic_filtered_batch_parity.py",
-        "batch_vector_bytes": 1636,
-        "batch_vector_sha256": ("a4b6a8c4a82f77c5de4e232e0a2e1520a57e7370422ddc7e4059951d192a05d9"),
-        "batch_relationship_vector_bytes": 5448,
-        "batch_relationship_vector_sha256": ("bddccaac7ac1f8b141e007574e08d282a03221b85cb684e9addaf49fa89be073"),
-        "production_exact_source_policy": "exact_oracle_sources_excluded_from_geometer_lib",
-        "exact_oracle_target": "geometer_exact_feasibility",
-    }
+    assert solver == _EXPECTED_FILTERED_SOLVER
     implementation_paths = [
         solver[key]
         for key in (
@@ -985,641 +1444,3 @@ def test_filtered_solver_foundation_is_bounded_non_algebraic_and_packed_dispatch
             "batch_relationship_source",
         )
     )
-
-
-def test_exact_algebraic_backend_paths_exist() -> None:
-    backend = _manifest()["analytic_exact_backend"]
-    for key in (
-        "rational_source",
-        "polynomial_source",
-        "expression_source",
-        "construction_source",
-        "construction_builder_source",
-        "artifact_source",
-        "geometry_source",
-        "normalization_source",
-        "curve_domain_source",
-        "arc_distance_source",
-        "source_sets_source",
-        "result_packet_layout_source",
-        "result_packet_records_source",
-        "result_packet_canonical_source",
-        "result_packet_standalone_source",
-        "result_packet_sha256_source",
-        "result_packet_topology_source",
-        "boolean_outcomes_source",
-        "result_normalization_source",
-        "boolean_provenance_source",
-        "boolean_regions_source",
-        "boolean_stages_source",
-        "arrangement_source",
-        "arrangement_classification_source",
-        "arrangement_faces_source",
-        "arrangement_order_source",
-        "arrangement_result_source",
-        "arrangement_validation_source",
-        "rational_test",
-        "polynomial_test",
-        "expression_test",
-        "construction_test",
-        "artifact_test",
-        "geometry_test",
-        "geometry_parity_validator",
-        "curve_domain_test",
-        "curve_domain_parity_validator",
-        "arrangement_test",
-        "arrangement_parity_validator",
-        "boolean_stages_test",
-        "boolean_stages_parity_validator",
-        "boolean_regions_test",
-        "boolean_regions_parity_validator",
-        "boolean_provenance_test",
-        "boolean_provenance_parity_validator",
-        "boolean_outcomes_test",
-        "boolean_outcomes_parity_validator",
-        "boolean_lineage_matrix_test",
-        "boolean_lineage_matrix_parity_validator",
-        "result_normalization_test",
-        "result_normalization_parity_validator",
-        "source_sets_test",
-        "source_sets_parity_validator",
-        "result_packet_layout_test",
-        "result_packet_layout_parity_validator",
-        "result_packet_records_test",
-        "result_packet_records_parity_validator",
-        "result_packet_topology_test",
-        "result_packet_topology_parity_validator",
-        "closed_form_invariants_test",
-        "closed_form_invariants_parity_validator",
-        "degeneracy_sweep_test",
-        "degeneracy_sweep_parity_validator",
-        "boolean_identity_test",
-        "boolean_identity_parity_validator",
-        "boolean_metamorphic_test",
-        "boolean_metamorphic_parity_validator",
-        "seeded_property_test",
-        "seeded_property_parity_validator",
-        "nightly_seeded_property_workflow",
-        "rectangle_enumeration_test",
-        "rectangle_enumeration_parity_validator",
-    ):
-        assert (ROOT / backend[key]).is_file()
-
-
-def test_exact_geometry_contains_binary_allocation_failures() -> None:
-    geometry = (ROOT / "src/cpp/lib/exact_geometry.cpp").read_text(encoding="utf-8")
-    construction = (ROOT / "src/cpp/lib/exact_construction.cpp").read_text(encoding="utf-8")
-    assert "make_sum({left, right})" not in geometry
-    assert "make_product({left, right})" not in geometry
-    assert geometry.count("catch (const std::exception&)") == 3
-    assert "children.reserve(2);" in construction
-    assert "return make_associative(kind, children);" in construction
-
-
-def test_wasm_export_inventory_matches_cmake_exactly() -> None:
-    manifest = _manifest()
-    cmake = (ROOT / "src" / "cpp" / "lib" / "CMakeLists.txt").read_text(encoding="utf-8")
-    export_lists = re.findall(r'-sEXPORTED_FUNCTIONS=\[(.*?)\]"', cmake)
-    assert len(export_lists) == 2
-    actual = [[item.strip("'") for item in value.split(",")] for value in export_lists]
-    assert actual[0] == manifest["wasm"]["full_browser"]["exports"]
-    assert actual[1] == manifest["wasm"]["planar_browser"]["exports"]
-
-
-def test_packet_inventory_matches_implementation_constants() -> None:
-    manifest = _manifest()
-    for packet in manifest["binary_formats"]:
-        source = (ROOT / packet["source"]).read_text(encoding="utf-8")
-        request_chars = ", ".join(f"'{value}'" for value in packet["request_magic"])
-        response_chars = ", ".join(f"'{value}'" for value in packet["response_magic"])
-        assert "{" + request_chars + "}" in source
-        assert "{" + response_chars + "}" in source
-        assert f"FORMAT_VERSION = {packet['version']};" in source
-
-
-def test_cli_compatibility_names_are_still_dispatched() -> None:
-    manifest = _manifest()
-    cli = (ROOT / "src" / "cpp" / "cli" / "main.cpp").read_text(encoding="utf-8")
-    names = {
-        name
-        for operation in manifest["operations"]
-        for key in ("cli_names", "compatibility_cli_names")
-        for name in operation[key]
-    }
-    for name in names:
-        assert f'"{name}"' in cli
-
-
-def test_viz_2026_6_10_compatibility_snapshot_is_preserved() -> None:
-    manifest = _manifest()
-    viz = next(item for item in manifest["consumers"] if item["id"] == "appz.viz")
-    snapshot_path = ROOT / viz["snapshot"]
-    with snapshot_path.open("rb") as stream:
-        snapshot = tomllib.load(stream)
-
-    assert snapshot["consumer"] == "appz/viz"
-    assert snapshot["geometer_release"] == "2026.6.10"
-    assert snapshot["migration"]["target_package"] == manifest["packages"]["typescript"]
-
-    expected_artifact_pairs = {
-        "dist/wasm/browser/geometer.js": "geometer-browser.js",
-        "dist/wasm/browser/geometer.wasm": "geometer-browser.wasm",
-        "dist/wasm/planar-browser/geometer-planar-browser.js": ("geometer-planar-browser.js"),
-        "dist/wasm/planar-browser/geometer-planar-browser.wasm": ("geometer-planar-browser.wasm"),
-    }
-    assert (
-        dict(
-            zip(
-                snapshot["artifacts"]["source_paths"],
-                snapshot["artifacts"]["vendored_names"],
-                strict=True,
-            )
-        )
-        == expected_artifact_pairs
-    )
-
-    mappings = snapshot["artifact_mappings"]
-    assert {item["source"]: item["vendored"] for item in mappings} == (expected_artifact_pairs)
-    assert {(item["target"], item["kind"]) for item in mappings} == {
-        ("full_browser", "javascript"),
-        ("full_browser", "wasm"),
-        ("planar_browser", "javascript"),
-        ("planar_browser", "wasm"),
-    }
-    for item in mappings:
-        artifact = ROOT / item["source"]
-        assert artifact.is_file()
-        assert artifact.stat().st_size > 0
-
-    required_symbols = set(snapshot["wasm"]["required_c_abi_symbols"])
-    assert required_symbols <= set(manifest["c_abi"]["symbols"])
-
-    cmake = (ROOT / "src" / "cpp" / "lib" / "CMakeLists.txt").read_text(encoding="utf-8")
-    for factory in snapshot["artifacts"]["factory_names"]:
-        assert f"-sEXPORT_NAME={factory}" in cmake
-
-    javascript_mappings = [item for item in mappings if item["kind"] == "javascript"]
-    assert [item["factory"] for item in javascript_mappings] == snapshot["artifacts"]["factory_names"]
-    required_memory_views = snapshot["wasm"]["required_memory_views"]
-    assert required_memory_views == ["HEAPU8", "HEAPU32"]
-    for item in javascript_mappings:
-        loader = (ROOT / item["source"]).read_text(encoding="utf-8")
-        assert item["factory"] in loader
-        for view in required_memory_views:
-            assert view in loader
-
-    runtime_lists = re.findall(r'-sEXPORTED_RUNTIME_METHODS=\[(.*?)\]"', cmake)
-    assert len(runtime_lists) == 2
-    runtime_methods = [{item.strip("'") for item in value.split(",")} for value in runtime_lists]
-    required_methods = set(snapshot["wasm"]["required_runtime_methods"])
-    assert all(required_methods <= methods for methods in runtime_methods)
-
-    assert snapshot["wasm"]["manifest_schema"] == "wn.viz.vendor.geometer.browser.a0"
-    capabilities = snapshot["wasm"]["manifest_capabilities"]
-    _unique(capabilities, "Viz manifest capability")
-    expected_capabilities = ["version"] + [
-        symbol.removeprefix("geometer_")
-        for symbol in snapshot["wasm"]["required_c_abi_symbols"]
-        if symbol
-        not in {
-            "geometer_version_string",
-            "geometer_abi_version",
-            "geometer_free_string",
-            "geometer_free_bytes",
-        }
-    ]
-    assert capabilities == expected_capabilities
-    assert {"geometer_version_string", "geometer_abi_version"} <= required_symbols
-
-    versions = {item["id"]: item["version"] for item in manifest["binary_formats"]}
-    assert snapshot["packed_formats"] == {
-        "planar_batch_version": versions["geometry.planar_batch.packet"],
-        "planar_triangulate_version": versions["geometry.planar_triangulate.packet"],
-        "clipper2_boolean_version": versions["geometry.clipper2_boolean.packet"],
-        "clipper2_inflate_open_version": versions["geometry.clipper2_inflate_open.packet"],
-    }
-
-
-def test_data_models_geom_a0_requirements_snapshot_is_frozen() -> None:
-    manifest = _manifest()
-    matz = next(item for item in manifest["consumers"] if item["id"] == "appz.data_models.pcb.matz")
-    snapshot_path = ROOT / matz["snapshot"]
-    with snapshot_path.open("rb") as stream:
-        snapshot = tomllib.load(stream)
-
-    assert snapshot["snapshot_status"] == "requirements_input"
-    assert snapshot["consumer"] == "appz/data_models/pcb/matz"
-    assert snapshot["source_repository"] == "wavenumber-eng/appz"
-    assert snapshot["source_component"] == "data_models"
-    assert snapshot["source_branch"] == "pcb-matz-viz-data-models"
-    assert snapshot["source_revision_publication"] == "published_origin_branch"
-    assert snapshot["source_revision"] == "fabbf70e1970adb7fa74f3be64c4ef45e2b89154"
-    assert snapshot["runtime_sibling_dependency"] is False
-    assert snapshot["geom_contract"]["schema_identity"] == ("urn:wavenumber:schema:geom_a0")
-    geom_contract = snapshot["geom_contract"]
-    assert geom_contract["mapping_status"] == "accepted"
-    assert geom_contract["mapping_review_commit"] == "433bad5"
-    assert geom_contract["mapping_review_packet"] == ("reviewer-019ffce8-ac66-76c0-877d-3fcb5c1aa6c5")
-    assert geom_contract["consumer_confirmation"] == ("joint_semantic_and_fixture_review_complete_no_known_blocker")
-    mapping_report = ROOT / geom_contract["mapping_report"]
-    assert mapping_report.is_file()
-    assert _sha256(mapping_report) == geom_contract["mapping_report_sha256"]
-    mapping_text = mapping_report.read_text(encoding="utf-8")
-    for required_boundary in (
-        "PointNm",
-        "packet-local uint64",
-        "two-half-arc",
-        "round caps and joins only",
-        "minor arc or semicircle",
-        "requested directed sweep",
-        "length - width",
-        "A^T A = s^2 I",
-        "W' = s W",
-        "one-nanometer grid",
-        "fail closed",
-        "PCB source semantics",
-        "tagged Geometer release",
-        geom_contract["mapping_review_packet"],
-    ):
-        assert required_boundary in mapping_text
-
-    source_files = snapshot["source_files"]
-    source_paths = [item["path"] for item in source_files]
-    _unique(source_paths, "Geom A0 snapshot source path")
-    assert source_paths == [
-        "contracts/geom/geom_a0.schema.json",
-        "docs/geom/adr/geom-adr-0003-topology-first-ring-path-geometry-contract.md",
-        "docs/geom/adr/geom-adr-0004-analytic-circle-disk-annulus-geometry-contract.md",
-        "docs/geom/adr/geom-adr-0005-topology-preservation-and-late-flattening-policy.md",
-        "docs/pcb/plans/auxiliary/matz-geometer-analytic-planar-boolean-requirements-2026-08-12.md",
-    ]
-    assert {item["path"]: item["sha256"] for item in source_files} == {
-        "contracts/geom/geom_a0.schema.json": ("acd688d81c5445445c6ee3f324000009e3976b4bbaa19895d6f2d52fc0d0ef3b"),
-        "docs/geom/adr/geom-adr-0003-topology-first-ring-path-geometry-contract.md": (
-            "8ccf5623941dc2ed21a58268021acf88bc5d90bedabb93ada31d6bb5a93e2482"
-        ),
-        "docs/geom/adr/geom-adr-0004-analytic-circle-disk-annulus-geometry-contract.md": (
-            "95d6e23a8a5fd63ee8f17a14b65a44eac2cb8f02d980d00a0bf26720b97e5fb9"
-        ),
-        "docs/geom/adr/geom-adr-0005-topology-preservation-and-late-flattening-policy.md": (
-            "b6c39d4485abffcab8d110365e17fe0510596aaf26b492f3d2b850aa4392e05b"
-        ),
-        "docs/pcb/plans/auxiliary/matz-geometer-analytic-planar-boolean-requirements-2026-08-12.md": (
-            "cfc06ccd6fe9ddef7a590a02984f58235d260f4303de71cfea00bf8b654a44ec"
-        ),
-    }
-    assert {item["id"] for item in source_files if item["role"] == "accepted_adr"} == {
-        "geom-adr-0003",
-        "geom-adr-0004",
-        "geom-adr-0005",
-    }
-
-    operation = snapshot["operation_candidate"]
-    candidate = manifest["candidate_operations"][0]
-    assert operation["id"] == candidate["id"]
-    assert operation["request_contract"] == "unfrozen"
-    assert operation["result_contract"] == "unfrozen"
-    assert operation["transport"] == "generic_named_attachments"
-    assert operation["operation_specific_c_abi_symbol"] is False
-    assert snapshot["solver_feasibility"] == {
-        "initial_candidate": "occt",
-        "clipper2_role": "sampled_non_authoritative_oracle_only",
-        "status": "prototype_complete_joint_reviewed",
-    }
-    assert snapshot["adoption"]["production_switch_requires_tagged_release"] is True
-
-    fixture_input = snapshot["portable_fixture_input"]
-    assert fixture_input == {
-        "status": "joint_reviewed_design_input",
-        "source_revision": "4c688e46729015d21dc140dbe274e396e3717c18",
-        "source_path": "tests/fixtures/pcb_materialization/geometer_analytic_planar_boolean_observations_a0.json",
-        "sha256": "10a97f0eed4a4f6852917c4fb6abd35854142bf5d148b8320c60a44f765414c4",
-        "vendored_path": "tests/fixtures/analytic_planar_boolean/matz_observations_a0.json",
-        "vendored_sha256": "10a97f0eed4a4f6852917c4fb6abd35854142bf5d148b8320c60a44f765414c4",
-        "portable_case_count": 10,
-        "real_board_case_count": 2,
-        "case_2_oracle": "success",
-        "case_2_oracle_evidence": "native_wasm_occt_feasibility_signature",
-        "case_2_geometer_design_revision": ("182f5f2163e4085200adec779f98b6d3cc7c0e13"),
-        "case_2_oracle_signature_sha256": ("c21b03c1b42a6cb3212cec5b3051987f645e21062eddecc82d3e3b0e0fd6dfc7"),
-        "case_2_canonical_fragment_count": 12,
-        "normalization_policy": "certified_once_after_final_stage",
-        "normalization_collapse_case": "job_local_failure",
-        "normal_build_sibling_dependency": False,
-    }
-    vendored_fixture = ROOT / fixture_input["vendored_path"]
-    assert candidate["portable_fixture"] == fixture_input["vendored_path"]
-    assert _sha256(vendored_fixture) == fixture_input["vendored_sha256"] == fixture_input["sha256"]
-
-    plan = (ROOT / "docs" / "plans" / "geometer-typespec-contracts" / "plan.md").read_text(encoding="utf-8")
-    assert operation["id"] in plan
-    assert matz["snapshot"] in plan or snapshot_path.name in plan
-
-
-def test_vendored_matz_analytic_boolean_observations_are_structurally_closed() -> None:
-    manifest = _manifest()
-    candidate = manifest["candidate_operations"][0]
-    fixture = json.loads((ROOT / candidate["portable_fixture"]).read_text(encoding="utf-8"))
-
-    assert fixture["type"] == "matz.geometer.analytic_planar_boolean_observation_manifest"
-    assert fixture["version"] == "a0"
-    assert fixture["capability"] == candidate["id"]
-    assert fixture["status"] == "consumer_observations_pre_typespec"
-    assert fixture["coordinate_unit"] == "nm"
-    assert fixture["angle_unit"] == "microdegree"
-    assert fixture["id_policy"] == {
-        "storage": "nonzero_uint64",
-        "scope": "per_declared_id_space_per_batch",
-        "typescript": "bigint_or_BigUint64Array_never_number",
-        "stable_identity": False,
-    }
-    assert fixture["batch_failure_policy"] == {
-        "untrusted_frame": "reject_batch",
-        "isolated_geometry_or_normalization_failure": "fail_job_continue_batch",
-        "dependent_relationship_query": "skipped_dependency_failed",
-    }
-
-    cases = fixture["portable_cases"]
-    assert len(cases) == 10
-    assert [item["fixture_id"] for item in cases] == [
-        "line_add_subtract_add",
-        "intersecting_arbitrary_angle_arcs",
-        "analytic_primitive_family",
-        "nested_holes_and_islands",
-        "tangent_coincident_overlap_matrix",
-        "normalization_collision",
-        "many_to_many_disconnected_results",
-        "conductive_domain_contact_queries",
-        "successful_requested_empty",
-        "mixed_batch_equivalence",
-    ]
-
-    all_jobs: list[dict[str, Any]] = []
-    all_queries: list[dict[str, Any]] = []
-    stage_ids: list[int] = []
-    operand_ids: list[int] = []
-    source_ids: dict[str, list[int]] = {
-        "ring": [],
-        "path": [],
-        "segment": [],
-        "curve": [],
-        "feature": [],
-        "vertex": [],
-    }
-    geometry_kinds: set[str] = set()
-    stage_operations: set[str] = set()
-    for case in cases:
-        jobs = case.get("jobs", [case] if "job_id" in case else [])
-        all_jobs.extend(jobs)
-        all_queries.extend(case.get("relationship_queries", []))
-        for job in jobs:
-            _assert_nonzero_uint64(job["job_id"], "job id")
-            for stage in job["stages"]:
-                _assert_nonzero_uint64(stage["stage_id"], "stage id")
-                stage_ids.append(stage["stage_id"])
-                stage_operations.add(stage["operation"])
-                assert stage["operation"] in {"union", "difference"}
-                for operand in stage["operands"]:
-                    _assert_nonzero_uint64(operand["operand_id"], "operand id")
-                    operand_ids.append(operand["operand_id"])
-                    geometry_kinds.add(operand["geometry"]["kind"])
-                    if "source_topology" in operand:
-                        _collect_explicit_source_ids(operand["source_topology"], source_ids)
-
-    job_ids = [job["job_id"] for job in all_jobs]
-    _unique(job_ids, "portable job id")
-    _unique(stage_ids, "portable stage id")
-    _unique(operand_ids, "portable operand id")
-    for label, values in source_ids.items():
-        _unique(values, f"portable authored {label} id")
-        for value in values:
-            _assert_nonzero_uint64(value, f"authored {label} id")
-    assert {label: len(values) for label, values in source_ids.items()} == {
-        "ring": 12,
-        "path": 1,
-        "segment": 28,
-        "curve": 28,
-        "feature": 0,
-        "vertex": 0,
-    }
-    assert stage_operations == {"union", "difference"}
-    assert geometry_kinds == {
-        "rectangle",
-        "region",
-        "disk",
-        "annulus",
-        "capsule",
-        "arc_sweep",
-        "line_arc_swept_path",
-    }
-
-    query_ids = [query["query_id"] for query in all_queries]
-    _unique(query_ids, "portable relationship query id")
-    known_job_ids = set(job_ids)
-    for query in all_queries:
-        _assert_nonzero_uint64(query["query_id"], "relationship query id")
-        _assert_nonzero_uint64(query["left_job_id"], "relationship left job reference")
-        _assert_nonzero_uint64(query["right_job_id"], "relationship right job reference")
-    assert all(query[side] in known_job_ids for query in all_queries for side in ("left_job_id", "right_job_id"))
-
-    arc_case = next(item for item in cases if item["fixture_id"] == "intersecting_arbitrary_angle_arcs")
-    arc_expected = arc_case["expected"]
-    assert len(arc_expected["canonical_fragments"]) == 12
-    assert arc_expected["native_wasm_feasibility_signature_sha256"] == (
-        "c21b03c1b42a6cb3212cec5b3051987f645e21062eddecc82d3e3b0e0fd6dfc7"
-    )
-    signature = (ROOT / "tests/fixtures/analytic_planar_boolean/feasibility_signature_a0.txt").read_text(
-        encoding="utf-8"
-    )
-    assert "matz_endpoint_fragments|" + "|".join(arc_expected["canonical_fragments"]) in signature
-
-    real_board_cases = fixture["real_board_cases"]
-    assert len(real_board_cases) == 2
-    assert [item["fixture_id"] for item in real_board_cases] == [
-        "rt_super_c1_pwr4",
-        "loz_old_man_curved_copper",
-    ]
-    for item in real_board_cases:
-        assert re.fullmatch(r"[0-9a-f]{64}", item["source_sha256"])
-        assert item["source_bytes"] > 0
-        assert set(item["applicable_geometry_preflight"]["forbidden_count"].values()) == {0}
-
-    budget = fixture["performance_budget"]
-    assert budget["correctness_precedence"] is True
-    assert budget["design_target_wall_seconds"] == 5
-    assert budget["design_target_peak_bytes"] == 1_073_741_824
-
-
-def test_analytic_planar_boolean_numeric_catalog_is_closed() -> None:
-    manifest = _manifest()
-    candidate = manifest["candidate_operations"][0]
-    assert (ROOT / candidate["solver_adr"]).is_file()
-    with (ROOT / candidate["numeric_catalog"]).open("rb") as stream:
-        catalog = tomllib.load(stream)
-
-    assert catalog["catalog_version"] == 1
-    assert catalog["status"] == "structural_frozen_numeric_reopened"
-    assert catalog["operation_identity"] == candidate["id"]
-    assert catalog["request_magic"] == "GMABRQ01"
-    assert catalog["result_magic"] == "GMABRS01"
-
-    assert catalog["table_kind"]["request"] == {
-        "jobs": 1,
-        "stages": 2,
-        "operands": 3,
-        "planar_regions": 4,
-        "ring_references": 5,
-        "rings": 6,
-        "authored_vertices": 7,
-        "authored_segments": 8,
-        "disks": 9,
-        "annuli": 10,
-        "capsules": 11,
-        "swept_paths": 12,
-        "relationship_queries": 13,
-    }
-    assert catalog["table_kind"]["result"] == {
-        "job_results": 101,
-        "diagnostics": 102,
-        "result_vertices": 103,
-        "directed_fragments": 104,
-        "result_rings": 105,
-        "fragment_references": 106,
-        "result_regions": 107,
-        "ring_region_references": 108,
-        "source_sets": 109,
-        "source_references": 110,
-        "operand_outcome_events": 111,
-        "relationship_results": 112,
-        "relationship_region_pairs": 113,
-        "source_reference_indices": 114,
-    }
-    assert catalog["record_size"]["request"]["operands"] == 24
-    assert catalog["record_size"]["result"]["directed_fragments"] == 48
-    assert catalog["record_size"]["result"]["result_regions"] == 24
-    assert catalog["record_size"]["result"]["source_sets"] == 8
-    assert catalog["record_size"]["result"]["source_reference_indices"] == 4
-    assert catalog["record_size"]["result"]["operand_outcome_events"] == 48
-    assert catalog["required_table_kinds"] == {
-        "request": list(range(1, 14)),
-        "result": list(range(101, 115)),
-    }
-    assert catalog["enum"]["diagnostic_scope"] == {
-        "underlying": "u8",
-        "job": 1,
-    }
-    assert catalog["enum"]["source_kind"] == {
-        "underlying": "u16",
-        "authored_segment_curve": 1,
-        "compact_feature_role": 2,
-        "subtractive_operand_effect": 3,
-    }
-    assert catalog["enum"]["source_role"] == {
-        "underlying": "u16",
-        "none": 0,
-        "authored_line": 1,
-        "authored_circular_arc": 2,
-        "primitive_outer_circle": 16,
-        "primitive_inner_circle": 17,
-        "capsule_left_line": 32,
-        "capsule_end_cap": 33,
-        "capsule_right_line": 34,
-        "capsule_start_cap": 35,
-        "swept_left_offset_line": 48,
-        "swept_left_offset_arc": 49,
-        "swept_right_offset_line": 50,
-        "swept_right_offset_arc": 51,
-        "swept_round_join": 52,
-        "swept_start_cap": 53,
-        "swept_end_cap": 54,
-    }
-
-    for flag_set in catalog["flags"].values():
-        allowed_mask = flag_set["allowed_mask"]
-        for name, value in flag_set.items():
-            if name not in {"underlying", "allowed_mask"}:
-                assert value != 0, name
-                assert value & ~allowed_mask == 0, name
-
-    operation_codes = catalog["operation_diagnostic"]
-    _unique(list(operation_codes.values()), "analytic Boolean operation diagnostic")
-    assert set(catalog["operation_diagnostic_identity"]) == set(operation_codes)
-    assert all(
-        identity.startswith("geometer.operation.analytic_planar_boolean.")
-        for identity in catalog["operation_diagnostic_identity"].values()
-    )
-    assert "invalid_id" not in operation_codes
-    assert "invalid_reference" not in operation_codes
-    assert "normalization_ambiguous_tie" not in operation_codes
-    assert catalog["reserved"]["operation_diagnostic"] == {
-        "normalization_ambiguous_tie": 65542,
-    }
-    assert catalog["contract_diagnostic"]["invalid_id"].startswith("geometer.contract.")
-    assert catalog["contract_diagnostic"]["invalid_reference"].startswith("geometer.contract.")
-    assert catalog["source_reference_mapping"] == {
-        "authored_segment_curve": {
-            "primary_id": "authored_segment_id",
-            "secondary_id": "authored_curve_id",
-            "allowed_roles": [1, 2],
-        },
-        "compact_feature_role": {
-            "primary_id": "compact_feature_id",
-            "secondary_id": "boundary_occurrence_key",
-            "allowed_roles": [16, 17, 32, 33, 34, 35, 48, 49, 50, 51, 52, 53, 54],
-        },
-        "subtractive_operand_effect": {
-            "primary_id": "stage_id",
-            "secondary_id": "zero",
-            "allowed_roles": [0],
-        },
-    }
-    assert catalog["operand_event_semantics"]["subtraction_effect_survives"] == {
-        "required_for_unfilled_attributed_removal": True,
-        "result_references": "all_attributed_final_boundary_ring_region_references",
-        "empty_result_reference_case": ("unfilled_attributed_removal_without_final_material_boundary"),
-    }
-    assert catalog["path_token"]["none"] == 0
-    assert sorted(catalog["path_token"].values()) == list(range(27))
-
-    solver_limits = catalog["limit"]
-    assert solver_limits["coordinate_grid_nm"] == 1
-    assert solver_limits["topology_resolution_nm"] == 50
-    assert solver_limits["filtered_algebraic_fallback_calls_per_job"] == 0
-    assert solver_limits["vertex_squared_error_nm2_numerator"] == 2_500
-    assert solver_limits["vertex_squared_error_nm2_denominator"] == 1
-    assert solver_limits["radius_error_nm_numerator"] == 50
-    assert solver_limits["radius_error_nm_denominator"] == 1
-    assert solver_limits["arc_hausdorff_error_nm_numerator"] == 50
-    assert solver_limits["arc_hausdorff_error_nm_denominator"] == 1
-    assert solver_limits["algebraic_work_units_per_job"] == 1_000_000_000
-    for name in (
-        "examined_curve_pairs_per_job",
-        "exact_intersections_per_job",
-        "arrangement_half_edges_per_job",
-        "algebraic_polynomial_degree",
-        "algebraic_coefficient_bits",
-        "algebraic_storage_bytes_per_job",
-        "algebraic_work_units_per_job",
-        "provenance_references_per_job",
-        "source_reference_index_memberships_per_job",
-        "exact_predicate_calls_per_job",
-        "solver_working_memory_bytes_per_job",
-    ):
-        assert solver_limits[name] > 0
-
-    packet_spec = (ROOT / candidate["packet_spec"]).read_text(encoding="utf-8")
-    assert "| Fallback/oracle algebraic work units per job | 1,000,000,000 |" in packet_spec
-    for magic in (catalog["request_magic"], catalog["result_magic"]):
-        assert magic in packet_spec
-    assert "normalized curves" not in packet_spec
-    assert "content key" not in packet_spec
-    assert "geometry.analytic_planar_boolean.invalid_topology" not in packet_spec
-    assert "geometer.operation.analytic_planar_boolean.invalid_topology" in packet_spec
-
-
-def test_analytic_planar_boolean_feasibility_signature_has_canonical_bytes() -> None:
-    fixture = (ROOT / "tests" / "fixtures" / "analytic_planar_boolean" / "feasibility_signature_a0.txt").read_bytes()
-    canonical = _canonical_feasibility_stdout(fixture)
-    assert canonical.count(b"\n") == 4
-    assert hashlib.sha256(canonical).hexdigest() == ("c21b03c1b42a6cb3212cec5b3051987f645e21062eddecc82d3e3b0e0fd6dfc7")
-    assert _canonical_feasibility_stdout(canonical.replace(b"\n", b"\r\n") + b"\r\n") == canonical

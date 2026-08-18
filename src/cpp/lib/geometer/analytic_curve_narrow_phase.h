@@ -35,14 +35,22 @@ struct AnalyticFilteredPointNm
 // Fixed-width proof-token namespaces used only inside the trusted filtered
 // pipeline. A vertical carrier token proves every point on that line has one
 // exact x coordinate; a pair token proves the two roots produced by one
-// carrier pair share an exact x coordinate. An endpoint-arc partition token
+// carrier pair share an exact x coordinate. A symmetric-root token proves one
+// named left/right line-circle root is shared by a lowering-certified pair of
+// horizontal mirror lines around the circle's exact integer y coordinate. An
+// endpoint-arc partition token
 // correlates overlapping event enclosures around one normalized endpoint and
 // one cardinal side so the face sweep handles them in one atomic column; it
 // does not prove coordinate equality and may never merge vertices. No token
 // stores an algebraic expression or coordinate.
 inline constexpr std::uint64_t kAnalyticVerticalXColumnTag = std::uint64_t{1} << 63U;
+inline constexpr std::uint64_t kAnalyticSymmetricRootXColumnTag = std::uint64_t{5} << 61U;
 inline constexpr std::uint64_t kAnalyticEndpointArcLeftColumnTag = std::uint64_t{3} << 62U;
 inline constexpr std::uint64_t kAnalyticEndpointArcRightColumnTag = std::uint64_t{7} << 61U;
+inline constexpr std::uint64_t kAnalyticEndpointTangentTag = std::uint64_t{0xA1} << 56U;
+inline constexpr std::uint64_t kAnalyticCircleEndpointTangentTag = std::uint64_t{0xC4} << 56U;
+inline constexpr std::uint64_t kAnalyticIntegerLineIntersectionTag = std::uint64_t{0xB2} << 48U;
+inline constexpr std::uint64_t kAnalyticConstructionCarrierCount = std::uint64_t{1} << 17U;
 
 [[nodiscard]] inline constexpr std::uint64_t
 analytic_vertical_x_column_token(std::uint64_t carrier_id) noexcept
@@ -63,6 +71,161 @@ analytic_pair_x_column_token(std::uint64_t first_carrier_id,
     return first != 0 && first < (std::uint64_t{1} << 31U) && second < (std::uint64_t{1} << 32U)
                ? (first << 32U) | second
                : 0;
+}
+
+[[nodiscard]] inline constexpr std::uint64_t
+analytic_integer_line_intersection_token(std::uint64_t first_carrier_id,
+                                         std::uint64_t second_carrier_id) noexcept
+{
+    const std::uint64_t first =
+        first_carrier_id < second_carrier_id ? first_carrier_id : second_carrier_id;
+    const std::uint64_t second =
+        first_carrier_id < second_carrier_id ? second_carrier_id : first_carrier_id;
+    if (first == 0 || first == second || first > kAnalyticConstructionCarrierCount ||
+        second > kAnalyticConstructionCarrierCount)
+        return 0;
+    return kAnalyticIntegerLineIntersectionTag | ((first - 1U) << 17U) | (second - 1U);
+}
+
+[[nodiscard]] inline constexpr bool
+analytic_is_integer_line_intersection_token(std::uint64_t token) noexcept
+{
+    return (token >> 48U) == 0xB2U;
+}
+
+[[nodiscard]] inline constexpr bool
+analytic_integer_line_intersection_contains_carrier(std::uint64_t token,
+                                                    std::uint64_t carrier_id) noexcept
+{
+    if (!analytic_is_integer_line_intersection_token(token) || carrier_id == 0 ||
+        carrier_id > kAnalyticConstructionCarrierCount)
+        return false;
+    const std::uint64_t payload = token & ((std::uint64_t{1} << 34U) - 1U);
+    return ((payload >> 17U) + 1U) == carrier_id ||
+           ((payload & ((std::uint64_t{1} << 17U) - 1U)) + 1U) == carrier_id;
+}
+
+// A horizontal-mirror construction id is internal-only. It binds the two
+// distinct exact line carriers emitted by one horizontal capsule construction;
+// duplicate constructions reuse the same carrier pair and therefore the same
+// id. Carrier ids are bounded by the governed boundary-occurrence ceiling.
+[[nodiscard]] inline constexpr std::uint64_t
+analytic_horizontal_mirror_construction_id(std::uint64_t first_carrier_id,
+                                           std::uint64_t second_carrier_id) noexcept
+{
+    const std::uint64_t first =
+        first_carrier_id < second_carrier_id ? first_carrier_id : second_carrier_id;
+    const std::uint64_t second =
+        first_carrier_id < second_carrier_id ? second_carrier_id : first_carrier_id;
+    if (first == 0 || first == second || first > kAnalyticConstructionCarrierCount ||
+        second > kAnalyticConstructionCarrierCount)
+        return 0;
+    return ((first - 1U) << 17U) | (second - 1U) | (std::uint64_t{1} << 34U);
+}
+
+[[nodiscard]] inline constexpr bool
+analytic_horizontal_mirror_contains_carrier(std::uint64_t construction_id,
+                                            std::uint64_t carrier_id) noexcept
+{
+    if ((construction_id >> 34U) != 1U || carrier_id == 0 ||
+        carrier_id > kAnalyticConstructionCarrierCount)
+        return false;
+    const std::uint64_t payload = construction_id & ((std::uint64_t{1} << 34U) - 1U);
+    return ((payload >> 17U) + 1U) == carrier_id ||
+           ((payload & ((std::uint64_t{1} << 17U) - 1U)) + 1U) == carrier_id;
+}
+
+// Internal-only identity for one lowering-proven tangent line/arc endpoint.
+// The payload binds both exact carrier identities and the named endpoint on
+// each carrier. It never promotes proximity to tangency.
+[[nodiscard]] inline constexpr std::uint64_t
+analytic_endpoint_tangent_token(std::uint64_t line_carrier_id, bool line_start,
+                                std::uint64_t arc_carrier_id, bool arc_start) noexcept
+{
+    if (line_carrier_id == 0 || line_carrier_id > kAnalyticConstructionCarrierCount ||
+        arc_carrier_id == 0 || arc_carrier_id > kAnalyticConstructionCarrierCount)
+        return 0;
+    return kAnalyticEndpointTangentTag | ((line_start ? std::uint64_t{1} : 0) << 34U) |
+           ((arc_start ? std::uint64_t{1} : 0) << 35U) | ((line_carrier_id - 1U) << 17U) |
+           (arc_carrier_id - 1U);
+}
+
+[[nodiscard]] inline constexpr bool analytic_is_endpoint_tangent_token(std::uint64_t token) noexcept
+{
+    return (token >> 56U) == 0xA1U;
+}
+
+[[nodiscard]] inline constexpr bool
+analytic_endpoint_tangent_line_starts(std::uint64_t token) noexcept
+{
+    return analytic_is_endpoint_tangent_token(token) && ((token >> 34U) & 1U) != 0;
+}
+
+[[nodiscard]] inline constexpr bool
+analytic_endpoint_tangent_arc_starts(std::uint64_t token) noexcept
+{
+    return analytic_is_endpoint_tangent_token(token) && ((token >> 35U) & 1U) != 0;
+}
+
+// Internal-only identity for a lowering-proven tangent endpoint on two
+// distinct circle carriers. The construction identity is minted from the
+// authored swept-path vertex and its exact incident tangent ray; it is not a
+// proximity or carrier-coincidence rule.
+[[nodiscard]] inline constexpr std::uint64_t
+analytic_circle_endpoint_tangent_token(std::uint64_t first_carrier_id, bool first_start,
+                                       std::uint64_t second_carrier_id, bool second_start,
+                                       std::uint64_t construction_identity) noexcept
+{
+    if (first_carrier_id == 0 || second_carrier_id == 0 || first_carrier_id == second_carrier_id ||
+        first_carrier_id > kAnalyticConstructionCarrierCount ||
+        second_carrier_id > kAnalyticConstructionCarrierCount || construction_identity == 0 ||
+        construction_identity >= (std::uint64_t{1} << 20U))
+        return 0;
+    if (second_carrier_id < first_carrier_id)
+    {
+        const std::uint64_t carrier = first_carrier_id;
+        first_carrier_id = second_carrier_id;
+        second_carrier_id = carrier;
+        const bool start = first_start;
+        first_start = second_start;
+        second_start = start;
+    }
+    return kAnalyticCircleEndpointTangentTag | (construction_identity << 36U) |
+           ((first_start ? std::uint64_t{1} : 0) << 34U) |
+           ((second_start ? std::uint64_t{1} : 0) << 35U) | ((first_carrier_id - 1U) << 17U) |
+           (second_carrier_id - 1U);
+}
+
+[[nodiscard]] inline constexpr bool
+analytic_is_circle_endpoint_tangent_token(std::uint64_t token) noexcept
+{
+    return (token >> 56U) == 0xC4U;
+}
+
+[[nodiscard]] inline constexpr std::uint64_t
+analytic_circle_endpoint_tangent_identity(std::uint64_t token) noexcept
+{
+    return analytic_is_circle_endpoint_tangent_token(token)
+               ? (token >> 36U) & ((std::uint64_t{1} << 20U) - 1U)
+               : 0;
+}
+
+[[nodiscard]] inline constexpr std::uint64_t analytic_symmetric_line_circle_root_x_column_token(
+    std::uint64_t mirror_construction_id, std::uint64_t circle_carrier_id, bool right_root) noexcept
+{
+    if ((mirror_construction_id >> 34U) != 1U || circle_carrier_id == 0 ||
+        circle_carrier_id > kAnalyticConstructionCarrierCount)
+        return 0;
+    const std::uint64_t mirror_payload = mirror_construction_id & ((std::uint64_t{1} << 34U) - 1U);
+    const std::uint64_t payload =
+        (mirror_payload << 18U) | ((circle_carrier_id - 1U) << 1U) | (right_root ? 1U : 0U);
+    return kAnalyticSymmetricRootXColumnTag | payload;
+}
+
+[[nodiscard]] inline constexpr bool
+analytic_is_symmetric_line_circle_root_x_column_token(std::uint64_t token) noexcept
+{
+    return (token >> 61U) == 5U;
 }
 
 [[nodiscard]] inline constexpr std::uint64_t
@@ -113,6 +276,33 @@ enum class AnalyticAtomicCurveKind : std::uint8_t
     circular_arc = 1,
 };
 
+[[nodiscard]] inline constexpr bool analytic_endpoint_tangent_matches(std::uint64_t token,
+                                                                      AnalyticAtomicCurveKind kind,
+                                                                      std::uint64_t carrier_id,
+                                                                      bool endpoint_start) noexcept
+{
+    if (!analytic_is_endpoint_tangent_token(token) || carrier_id == 0 ||
+        carrier_id > kAnalyticConstructionCarrierCount)
+    {
+        if (!analytic_is_circle_endpoint_tangent_token(token) ||
+            kind != AnalyticAtomicCurveKind::circular_arc || carrier_id == 0 ||
+            carrier_id > kAnalyticConstructionCarrierCount)
+            return false;
+        const std::uint64_t first = ((token >> 17U) & ((std::uint64_t{1} << 17U) - 1U)) + 1U;
+        const std::uint64_t second = (token & ((std::uint64_t{1} << 17U) - 1U)) + 1U;
+        if (carrier_id == first)
+            return (((token >> 34U) & 1U) != 0) == endpoint_start;
+        return carrier_id == second && (((token >> 35U) & 1U) != 0) == endpoint_start;
+    }
+    if (kind == AnalyticAtomicCurveKind::line)
+        return ((token >> 17U) & ((std::uint64_t{1} << 17U) - 1U)) + 1U == carrier_id &&
+               (((token >> 34U) & 1U) != 0) == endpoint_start;
+    if (kind == AnalyticAtomicCurveKind::circular_arc)
+        return (token & ((std::uint64_t{1} << 17U) - 1U)) + 1U == carrier_id &&
+               (((token >> 35U) & 1U) != 0) == endpoint_start;
+    return false;
+}
+
 struct AnalyticAtomicCurveNm
 {
     std::uint32_t curve_index = 0;
@@ -145,6 +335,11 @@ struct AnalyticAtomicCurveNm
     // or circle; equal family ids mean parallel lines or concentric circles.
     std::uint64_t construction_carrier_id = 0;
     std::uint64_t construction_family_id = 0;
+    // Lowering-only certificate for the two exact horizontal line carriers of
+    // one capsule. Both lines carry the same nonzero id and exact integer
+    // mirror-axis y. Request records cannot mint this identity.
+    std::uint64_t construction_horizontal_mirror_id = 0;
+    std::int64_t construction_horizontal_mirror_axis_y = 0;
     // Certifies the authored minor/major and direction flags when correlated
     // filtered endpoint expressions make an exact zero cross product appear
     // as a non-singleton interval (notably arbitrary-angle offset caps).
@@ -156,11 +351,16 @@ struct AnalyticAtomicCurveNm
     bool has_construction_line_direction = false;
     std::int64_t construction_line_dx = 0;
     std::int64_t construction_line_dy = 0;
+    // Trusted lowering-only endpoint identities. Equal nonzero values on one
+    // line and one arc prove that their named construction endpoints are the
+    // same exact tangent contact before normalization.
+    std::uint64_t construction_start_tangent_id = 0;
+    std::uint64_t construction_end_tangent_id = 0;
 };
 
 // Target-independent logical charge for one retained atomic curve record.
 // The value deliberately covers native ABI padding as well as wasm32 layout.
-inline constexpr std::uint64_t kAnalyticAtomicCurveLogicalBytes = 272;
+inline constexpr std::uint64_t kAnalyticAtomicCurveLogicalBytes = 304;
 
 enum class AnalyticPairRelation : std::uint8_t
 {

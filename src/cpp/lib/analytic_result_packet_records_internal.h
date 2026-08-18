@@ -5,6 +5,10 @@
 namespace geometer::analytic_result_detail
 {
 
+[[nodiscard]] AnalyticResultPacketLayoutError
+charge_logical_source_reference_expansions(const AnalyticResultPacketRecords& records,
+                                           std::uint64_t& total) noexcept;
+
 // Internal fast path for records constructed and governed by the owned
 // filtered packet builder. External inputs must use the validating public
 // encoder.

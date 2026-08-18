@@ -226,6 +226,23 @@ try {
     ],
     SweptPathOperand: ["operand_id", "kind", "feature_id", "centerline", "width_nm", "cap", "join"],
   });
+  assertEqual(
+    declarationByName.get("AnalyticPlanarBooleanBatchResultA0").annotations[
+      "x-wn-max-logical-source-reference-expansions"
+    ],
+    1048576,
+    "logical source-reference expansion budget",
+  );
+  assertEqual(
+    modelProperty(declarationByName, "SourceSet", "sources").constraints.max_items,
+    1048576,
+    "logical source-set member maximum",
+  );
+  assertEqual(
+    numericCatalog.limit.logical_source_reference_expansions_per_batch,
+    1048576,
+    "numeric logical source-reference expansion budget",
+  );
 
   assertUnions(declarationByName, {
     AnalyticPlanarBooleanJobResult: {
@@ -516,6 +533,16 @@ try {
     resultSchema.$id,
     "urn:wavenumber:schema:geometer:geometry.analytic_planar_boolean_batch.result:a0",
     "result schema id",
+  );
+  assertEqual(
+    resultSchema["x-wn-max-logical-source-reference-expansions"],
+    1048576,
+    "result schema logical source-reference expansion budget",
+  );
+  assertEqual(
+    resultSchema.$defs.SourceSet.properties.sources.maxItems,
+    1048576,
+    "result schema source-set member maximum",
   );
 
   process.stdout.write("Analytic planar Boolean TypeSpec candidate is valid and isolated.\n");

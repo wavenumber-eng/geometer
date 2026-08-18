@@ -80,6 +80,16 @@ AnalyticRequestPacketRecords difference_records()
     return records;
 }
 
+AnalyticRequestPacketRecords covering_difference_records()
+{
+    AnalyticRequestPacketRecords records;
+    records.jobs = {{17, 0, 2}};
+    records.stages = {{108, 1, 0, 1}, {109, 2, 1, 1}};
+    records.operands = {{1001, 2, 0}, {1002, 2, 1}};
+    records.disks = {{5001, 0, 0, 1000}, {5002, 0, 0, 1200}};
+    return records;
+}
+
 AnalyticRequestPacketRecords authored_arc_records()
 {
     AnalyticRequestPacketRecords records;
@@ -263,6 +273,17 @@ void test_irrational_union_and_subtraction()
                         [](const AnalyticSourceReference& source)
                         { return source.kind == AnalyticSourceKind::subtractive_operand_effect; }),
             "surviving subtraction source was not published");
+}
+
+void test_successful_empty_packet()
+{
+    const auto empty = build(covering_difference_records());
+    require_success(empty, 17);
+    require(
+        empty.standalone->records.vertices.empty() && empty.standalone->records.fragments.empty() &&
+            empty.standalone->records.rings.empty() && empty.standalone->records.regions.empty() &&
+            empty.standalone->records.operand_events.size() == 2,
+        "successful covering subtraction packet lost empty topology or outcomes");
 }
 
 void test_failed_normalization_packet()
@@ -585,6 +606,7 @@ int main(int argc, char** argv)
     test_authored_square();
     test_compact_disk_and_determinism();
     test_irrational_union_and_subtraction();
+    test_successful_empty_packet();
     test_failed_normalization_packet();
     test_empty_success_and_early_resource_packet();
     test_exact_resource_boundaries();

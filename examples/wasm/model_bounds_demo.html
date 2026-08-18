@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" href="data:," />
     <title>Geometer · STEP model bounds</title>
-    <link rel="stylesheet" href="/examples/wasm/model_bounds_demo.css" />
+    <link rel="stylesheet" href="/examples/wasm/geometer_demo.css" />
     <script type="importmap">
       {
         "imports": {
@@ -16,7 +16,7 @@
       }
     </script>
   </head>
-  <body data-theme="dark">
+  <body data-wn-watermark="true">
     <div id="three_d_viz-root" class="bounds-app" data-state="loading">
       <header class="app-bar">
         <div class="brand-block">
@@ -43,9 +43,6 @@
           <div class="legend" aria-label="Visualization legend">
             <span><i class="legend-swatch model-swatch"></i>display mesh</span>
             <span><i class="legend-swatch bounds-swatch"></i>STEP bounds</span>
-          </div>
-          <div id="three_d_viz-watermark" aria-hidden="true">
-            <img id="three_d_viz-watermark-img" alt="" src="/docs/design/assets/wn_logo_w_text__for_light.svg" />
           </div>
           <div id="loading-overlay" class="loading-overlay" aria-live="polite" aria-busy="true">
             <div class="loading-panel">

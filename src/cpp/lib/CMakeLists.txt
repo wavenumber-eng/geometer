@@ -1,21 +1,30 @@
 set(GEOMETER_LIB_SOURCES
     analytic_curve_broad_phase.cpp
     analytic_curve_narrow_phase.cpp
+    analytic_curve_narrow_phase_resolution.h
     analytic_filtered_batch.cpp
     analytic_filtered_boolean_selection.cpp
     analytic_filtered_boolean_selection_admission.cpp
     analytic_filtered_outcome_tracker.cpp
     analytic_filtered_outcomes.cpp
     analytic_filtered_packet.cpp
+    analytic_filtered_packet_builder.h
     analytic_filtered_packet_sequences.cpp
     analytic_filtered_normalization.cpp
     analytic_filtered_normalization_replay.cpp
     analytic_filtered_operation.cpp
     analytic_filtered_arrangement.cpp
+    analytic_filtered_arrangement_builder.h
     analytic_filtered_lowering.cpp
+    analytic_filtered_lowering_support.h
+    analytic_filtered_swept_path.cpp
+    analytic_filtered_swept_path_geometry.h
+    analytic_filtered_swept_path_setup.h
     analytic_filtered_overlay.cpp
+    analytic_filtered_overlay_builder.h
     analytic_filtered_regions.cpp
     analytic_filtered_relationships.cpp
+    analytic_filtered_relationship_geometry.h
     analytic_filtered_lineage.cpp
     analytic_interval_index.cpp
     analytic_numeric_filter.cpp
@@ -113,7 +122,7 @@ add_library(geometer_lib STATIC ${GEOMETER_LIB_SOURCES})
 set_target_properties(geometer_lib PROPERTIES OUTPUT_NAME geometer)
 
 if(NOT DEFINED GEOMETER_ABI_VERSION)
-    set(GEOMETER_ABI_VERSION "20260623" CACHE STRING "Geometer C ABI generation date")
+    set(GEOMETER_ABI_VERSION "20260818" CACHE STRING "Geometer C ABI generation date")
 endif()
 configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/geometer/version_config.h.in"

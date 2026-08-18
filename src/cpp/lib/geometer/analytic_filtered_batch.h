@@ -34,11 +34,15 @@ struct AnalyticFilteredBatchJobTelemetry
 {
     std::uint64_t job_id = 0;
     std::uint32_t diagnostic_code = 0;
+    std::uint32_t algebraic_fallback_calls = 0;
     std::uint64_t lowering_work_units = 0;
     std::uint64_t broad_phase_work_units = 0;
     std::uint64_t packet_work_units = 0;
     std::uint64_t candidate_pairs = 0;
     std::uint64_t peak_working_memory_bytes = 0;
+    // Logical encoded footprint of the isolated job records before the
+    // canonical batch merge and shared-table deduplication.
+    std::uint64_t emitted_record_bytes = 0;
 };
 
 struct AnalyticFilteredBatchTelemetry

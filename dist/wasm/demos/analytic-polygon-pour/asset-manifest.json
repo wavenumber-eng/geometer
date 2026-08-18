@@ -11,19 +11,19 @@
       "sha256": "65e48b2f76bedfcf362fcf5297ee2dc4903b1b35074f1577ee0d1e16d938982e"
     },
     {
-      "bytes": 4488,
-      "path": "analytic_polygon_pour_demo.css",
-      "sha256": "37279876eccbba612f788213a3cec312daac9e0895286e399bf72b3a0692d6d6"
+      "bytes": 1071,
+      "path": "analytic_polygon_pour_bootstrap_guard.js",
+      "sha256": "585da84e70232b18e2f17944a204af3d553268448df2164c095e1fff012bdaca"
     },
     {
-      "bytes": 11504,
+      "bytes": 13288,
       "path": "analytic_polygon_pour_demo.js",
-      "sha256": "f3a83e2e2981f402996bab457bc9ef1140dde87c34f5812ceb69440cfedeb33f"
+      "sha256": "77707e68e095416173f4cac72b7d312f80aad2838eef1585f4c26fb49c11b51f"
     },
     {
-      "bytes": 4158,
+      "bytes": 4623,
       "path": "analytic_polygon_pour_fixture.js",
-      "sha256": "b2c8889cf90af8576c4f578275835e04398ea1aa5445f1577b31f8537e06e819"
+      "sha256": "eb8ee02139745583f39e57b37863fb57a4cb08920633fe1b122d0c8e9339fa7f"
     },
     {
       "bytes": 616,
@@ -31,34 +31,89 @@
       "sha256": "e3829d924144cbe63ea63b1df47a91cbc2c40d07f6427dc30cea26fc4103d0bd"
     },
     {
-      "bytes": 296856,
-      "path": "Cousine-Regular.ttf",
-      "sha256": "1da22250675fc4c42fcf3a9736c44bc0570516105331443b663fd5cfbd1412fe"
-    },
-    {
       "bytes": 163460,
       "path": "geometer.js",
-      "sha256": "a60ef4f4007fae9c8be7cce9ee55c7f869f8e30cba3636174845c03aad57b9a9"
+      "sha256": "1869c4d1f9f5ee6fd716a6924a602664d53e37e8bcb38ee7d6ba21b657b59826"
     },
     {
-      "bytes": 18427097,
+      "bytes": 18643332,
       "path": "geometer.wasm",
-      "sha256": "4f52835b7fcccdb56a1fcd2ef6699fb5cd4c63e0c8eb01051304f9edfad1a981"
+      "sha256": "4008bc89246a7652cc7ae13d346a4733ea9eea158f43ea772471199a14d2f77f"
     },
     {
-      "bytes": 3375,
+      "bytes": 25371,
+      "path": "geometer_demo.css",
+      "sha256": "fca1402133ee944fda1554738df44ae175ea8d6077b516a18a1e86128ee1b753"
+    },
+    {
+      "bytes": 3468,
       "path": "index.html",
-      "sha256": "d44ac30338f82448736ce2ad7acea867fc5a124f38cafa89f66237e71d54a2c3"
+      "sha256": "13320a8b241c0b812722ed87cc0c56b5f0ea2e0be16c98af2e4796a96a8f85fd"
     },
     {
-      "bytes": 661,
+      "bytes": 94588,
+      "path": "JetBrainsMono-Bold.woff2",
+      "sha256": "c503cc5ec5f8b2c7666b7ecda1adf44bd45f2e6579b2eba0fc292150416588a2"
+    },
+    {
+      "bytes": 4399,
+      "path": "JetBrainsMono-OFL.txt",
+      "sha256": "30f0c136e3c88e422d0791acd97238870f9054a9729bc34cf2ff0d4ed8cac4ad"
+    },
+    {
+      "bytes": 92164,
+      "path": "JetBrainsMono-Regular.woff2",
+      "sha256": "a9cb1cd82332b23a47e3a1239d25d13c86d16c4220695e34b243effa999f45f2"
+    },
+    {
+      "bytes": 4160,
+      "path": "package/analytic-packet-a0-common.d.ts",
+      "sha256": "aec09b5430040d1d5bd8e63fd45c9f4a563f0ba3b3a232bd4cb23e1307abe0c8"
+    },
+    {
+      "bytes": 12907,
+      "path": "package/analytic-packet-a0-common.js",
+      "sha256": "ed48e6c976324508e65970263245f0b334454b79b1ed4fe1221323347bc46cf0"
+    },
+    {
+      "bytes": 315,
+      "path": "package/analytic-packet-a0-request.d.ts",
+      "sha256": "66bd1b73b19f4854f702339346f75b52d0bac9041fc13929b342e47003aa5130"
+    },
+    {
+      "bytes": 11522,
+      "path": "package/analytic-packet-a0-request.js",
+      "sha256": "278b66f6f1196d117203e1f954444dde4203739fcf1b1cb3d10d09238b8bdca0"
+    },
+    {
+      "bytes": 2749,
+      "path": "package/analytic-packet-a0-result.d.ts",
+      "sha256": "12d189efc4be17fdcac6026c72516d9708d7ef6f5093f4a15eb35ca8af512499"
+    },
+    {
+      "bytes": 13816,
+      "path": "package/analytic-packet-a0-result.js",
+      "sha256": "5b13ced87dc536dd44a18870c87cd97388d8656306f12e9caa62e486a521cd4c"
+    },
+    {
+      "bytes": 590,
+      "path": "package/analytic-packet-a0-validation.d.ts",
+      "sha256": "02298e79ad5a0cbdc969cd6d9805ce647cee15af42885461261b98af43179e5a"
+    },
+    {
+      "bytes": 36495,
+      "path": "package/analytic-packet-a0-validation.js",
+      "sha256": "38eae6b01d04431e8ebcf737b74878fab725f9e8365bbb577e0c84b9b317af31"
+    },
+    {
+      "bytes": 266,
       "path": "package/analytic-packet-a0.d.ts",
-      "sha256": "57d025287dca0e27ff2a33bbe05c6fe15dc9cbdff22355fb49a50c3635c7473f"
+      "sha256": "cd230c4323769673de5402fc9303e489246008edc4d0b0ba6bf4ebfd2f043efa"
     },
     {
-      "bytes": 71286,
+      "bytes": 266,
       "path": "package/analytic-packet-a0.js",
-      "sha256": "b7ed3208b4b2bd63b04a55bafed0f1eefa6995c65c9bbe9e8368746d92e0388d"
+      "sha256": "cd230c4323769673de5402fc9303e489246008edc4d0b0ba6bf4ebfd2f043efa"
     },
     {
       "bytes": 1738,
@@ -123,7 +178,7 @@
     {
       "bytes": 895,
       "path": "package/package.json",
-      "sha256": "fe79bfe17d92c72a6e4ee873d440e700175829b8da3b46c39bdc3339d061bfff"
+      "sha256": "90ef1e284f5a31f9c726b0b016f063caa99c2bf01b89608c325f440086e1332e"
     },
     {
       "bytes": 1934,
@@ -159,8 +214,13 @@
       "bytes": 15062,
       "path": "package/worker.js",
       "sha256": "f3d3080343d4149dbfd2fd7945d4e628cd730e99890b9c3d9643d0371136cd7d"
+    },
+    {
+      "bytes": 5112,
+      "path": "wn-logo.svg",
+      "sha256": "87e16b5b2453ad1f9263d92953d5741a30780db02eeea0d59d61f10967c4537b"
     }
   ],
   "schema": "wn.geometer.static_site.a0",
-  "sha256": "857b152e32cfadd7aee97458bff2487a77927de60574e4d99a093335e7f61c83"
+  "sha256": "b3616b8a62c6ca039d349bac63d5bce27cb1391995e7544acb309c499820cd7f"
 }

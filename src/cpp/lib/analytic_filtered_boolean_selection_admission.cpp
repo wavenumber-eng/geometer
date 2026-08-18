@@ -30,209 +30,29 @@ std::uint64_t shared_exact_endpoints(const AnalyticAtomicCurveNm& left,
 }
 } // namespace
 
-SelectionAdmission prepare_boolean_selection_admission(
-    const AnalyticRequestPacketRecords& records, std::uint32_t job_index,
-    const AnalyticFilteredGeometry& geometry, const std::vector<AnalyticCurvePair>& candidate_pairs,
-    const AnalyticSolverLimits& limits, const SelectionAdmissionOptions& options,
-    analytic_execution_detail::TopologyPolicy policy)
+namespace
 {
-    SelectionAdmission admission;
-    AnalyticFilteredBooleanSelectionResult& preflight = admission.result;
-    if (!analytic_solver_limits_within_hard_ceilings(limits) || job_index >= records.jobs.size() ||
-        geometry.curves.size() != geometry.bounds.size() ||
-        geometry.curves.size() != geometry.occurrences.size())
-    {
-        preflight.error = AnalyticFilteredBooleanSelectionError::invalid_argument;
-        return admission;
-    }
-    const AnalyticRequestJobRecord& job = records.jobs[job_index];
-    if (job.stage_begin > records.stages.size() ||
-        job.stage_count > records.stages.size() - job.stage_begin)
-    {
-        preflight.error = AnalyticFilteredBooleanSelectionError::invalid_argument;
-        return admission;
-    }
-    if (geometry.curves.size() > limits.boundary_occurrences ||
-        candidate_pairs.size() > limits.examined_curve_pairs)
-    {
-        preflight.error = AnalyticFilteredBooleanSelectionError::resource_limit_exceeded;
-        return admission;
-    }
-    bool valid = true;
-    std::uint64_t admission_work =
-        checked_add(geometry.curves.size(), geometry.occurrences.size(), valid);
-    admission_work = checked_add(admission_work, job.stage_count, valid);
-    if (!valid || admission_work > limits.predicate_calls)
-    {
-        preflight.error = AnalyticFilteredBooleanSelectionError::resource_limit_exceeded;
-        return admission;
-    }
-    preflight.telemetry.admission_work_units = admission_work;
-    preflight.telemetry.predicate_calls = admission_work;
-    std::uint64_t operands = 0;
-    for (std::uint32_t local = 0; local < job.stage_count; ++local)
-    {
-        const AnalyticRequestStageRecord& stage = records.stages[job.stage_begin + local];
-        if (stage.stage_id == 0 || (stage.operation != 1 && stage.operation != 2) ||
-            stage.operand_begin > records.operands.size() ||
-            stage.operand_count > records.operands.size() - stage.operand_begin)
-        {
-            preflight.error = AnalyticFilteredBooleanSelectionError::invalid_argument;
-            return admission;
-        }
-        if (operands > limits.boundary_occurrences ||
-            stage.operand_count > limits.boundary_occurrences - operands)
-        {
-            preflight.error = AnalyticFilteredBooleanSelectionError::resource_limit_exceeded;
-            return admission;
-        }
-        operands += stage.operand_count;
-    }
-    admission_work = checked_add(admission_work, job.stage_count, valid);
-    admission_work = checked_add(admission_work, operands, valid);
-    admission_work = checked_add(admission_work, sort_units(operands), valid);
-    admission_work = checked_add(
-        admission_work,
-        checked_multiply(geometry.occurrences.size(), tree_operation_units(operands), valid),
-        valid);
-    if (!valid || admission_work > limits.predicate_calls)
-    {
-        preflight.error = AnalyticFilteredBooleanSelectionError::resource_limit_exceeded;
-        return admission;
-    }
-    preflight.telemetry.admission_work_units = admission_work;
-    preflight.telemetry.predicate_calls = admission_work;
 
-    std::uint64_t admission_peak_memory = checked_multiply(operands, kIndexLogicalBytes, valid);
-    admission_peak_memory = checked_add(
-        admission_peak_memory, checked_multiply(operands, kByteLogicalBytes, valid), valid);
-    if (!valid || admission_peak_memory > limits.working_memory_bytes)
-    {
-        if (valid)
-            preflight.telemetry.required_working_memory_bytes = admission_peak_memory;
-        preflight.error = AnalyticFilteredBooleanSelectionError::resource_limit_exceeded;
-        return admission;
-    }
-    preflight.telemetry.peak_working_memory_bytes = admission_peak_memory;
-    try
-    {
-        std::vector<std::uint64_t> operand_ids;
-        operand_ids.reserve(static_cast<std::size_t>(operands));
-        for (std::uint32_t local = 0; local < job.stage_count; ++local)
-        {
-            const AnalyticRequestStageRecord& stage = records.stages[job.stage_begin + local];
-            for (std::uint32_t offset = 0; offset < stage.operand_count; ++offset)
-            {
-                const AnalyticRequestOperandRecord& operand =
-                    records.operands[stage.operand_begin + offset];
-                if (operand.operand_id == 0 ||
-                    (offset != 0 && records.operands[stage.operand_begin + offset - 1].operand_id >=
-                                        operand.operand_id))
-                {
-                    preflight.error = AnalyticFilteredBooleanSelectionError::invalid_argument;
-                    return admission;
-                }
-                operand_ids.push_back(operand.operand_id);
-            }
-        }
-        std::sort(operand_ids.begin(), operand_ids.end());
-        if (std::adjacent_find(operand_ids.begin(), operand_ids.end()) != operand_ids.end())
-        {
-            preflight.error = AnalyticFilteredBooleanSelectionError::invalid_argument;
-            return admission;
-        }
-        std::vector<std::uint8_t> used(operand_ids.size());
-        for (std::uint32_t index = 0; index < geometry.occurrences.size(); ++index)
-        {
-            const AnalyticFilteredOccurrence& occurrence = geometry.occurrences[index];
-            const auto found =
-                std::lower_bound(operand_ids.begin(), operand_ids.end(), occurrence.coverage_id);
-            if (occurrence.occurrence_id != static_cast<std::uint64_t>(index) + 1 ||
-                occurrence.coverage_id == 0 ||
-                occurrence.source.operand_id != occurrence.coverage_id ||
-                ((options.reserve_lineage || options.reserve_outcomes) &&
-                 !valid_occurrence_source_for_curve(occurrence.source,
-                                                    geometry.curves[index].kind)) ||
-                found == operand_ids.end() || *found != occurrence.coverage_id)
-            {
-                preflight.error = AnalyticFilteredBooleanSelectionError::invalid_argument;
-                return admission;
-            }
-            used[static_cast<std::size_t>(found - operand_ids.begin())] = 1;
-        }
-        if (std::find(used.begin(), used.end(), 0) != used.end())
-        {
-            preflight.error = AnalyticFilteredBooleanSelectionError::invalid_argument;
-            return admission;
-        }
-    }
-    catch (const std::bad_alloc&)
-    {
-        preflight.telemetry.required_working_memory_bytes = limits.working_memory_bytes + 1;
-        preflight.error = AnalyticFilteredBooleanSelectionError::resource_limit_exceeded;
-        return admission;
-    }
+struct SelectionCapacityEstimate
+{
+    std::uint64_t guaranteed_spans = 0;
+    std::uint64_t guaranteed_vertex_reservation = 0;
+    std::uint64_t stage_tree_nodes = 0;
+    std::uint64_t face_reservation = 0;
+    std::uint64_t coverage_table = 0;
+    std::uint64_t integrated_minimum_memory = 0;
+    std::uint64_t material_regions_work = 0;
+    std::uint64_t lineage_work = 0;
+    std::uint64_t outcomes_work = 0;
+};
 
-    AnalyticFilteredArrangementMinimumRequirements arrangement_minimum;
-    if (!analytic_execution_detail::estimate_arrangement_minimum_requirements(
-            geometry, candidate_pairs.size(), arrangement_minimum, policy))
-    {
-        preflight.error = AnalyticFilteredBooleanSelectionError::invalid_argument;
-        return admission;
-    }
-    admission_work =
-        checked_add(admission_work, checked_multiply(candidate_pairs.size(), 6, valid), valid);
-    if (!valid || admission_work > limits.predicate_calls)
-    {
-        preflight.error = AnalyticFilteredBooleanSelectionError::resource_limit_exceeded;
-        return admission;
-    }
-    preflight.telemetry.admission_work_units = admission_work;
-    preflight.telemetry.predicate_calls = admission_work;
-
-    std::uint64_t possible_spans = arrangement_minimum.possible_base_spans;
-    std::uint64_t possible_transitions = arrangement_minimum.possible_base_memberships;
-    std::uint64_t possible_point_intersections = 0;
-    AnalyticCurvePair previous_pair{};
-    bool has_previous_pair = false;
-    for (const AnalyticCurvePair& pair : candidate_pairs)
-    {
-        if (pair.first == 0 || pair.first >= pair.second || pair.second > geometry.curves.size())
-        {
-            preflight.error = AnalyticFilteredBooleanSelectionError::invalid_argument;
-            return admission;
-        }
-        if (has_previous_pair &&
-            (pair.first < previous_pair.first ||
-             (pair.first == previous_pair.first && pair.second <= previous_pair.second)))
-        {
-            preflight.error = AnalyticFilteredBooleanSelectionError::invalid_argument;
-            return admission;
-        }
-        previous_pair = pair;
-        has_previous_pair = true;
-        const AnalyticAtomicCurveNm& left = geometry.curves[pair.first - 1];
-        const AnalyticAtomicCurveNm& right = geometry.curves[pair.second - 1];
-        const std::uint64_t maximum_points = left.kind == AnalyticAtomicCurveKind::line &&
-                                                     right.kind == AnalyticAtomicCurveKind::line
-                                                 ? 1
-                                                 : 2;
-        const std::uint64_t existing =
-            std::min(maximum_points, shared_exact_endpoints(left, right));
-        possible_point_intersections =
-            checked_add(possible_point_intersections, maximum_points, valid);
-        possible_spans = checked_add(possible_spans,
-                                     checked_multiply(maximum_points - existing, 2, valid), valid);
-        possible_transitions = checked_add(
-            possible_transitions, checked_multiply(maximum_points - existing, 2, valid), valid);
-        if (left.construction_carrier_id == right.construction_carrier_id)
-            possible_transitions = checked_add(possible_transitions, 4, valid);
-    }
-    if (!valid)
-    {
-        preflight.error = AnalyticFilteredBooleanSelectionError::resource_limit_exceeded;
-        return admission;
-    }
+SelectionCapacityEstimate estimate_selection_capacity(
+    const AnalyticFilteredGeometry& geometry, const AnalyticRequestJobRecord& job,
+    const AnalyticFilteredArrangementMinimumRequirements& arrangement_minimum,
+    std::uint64_t possible_spans, std::uint64_t possible_transitions,
+    std::uint64_t possible_point_intersections, std::uint64_t operands,
+    std::uint64_t candidate_pair_count, const SelectionAdmissionOptions& options, bool& valid)
+{
     std::uint64_t selection_memory =
         checked_multiply(geometry.occurrences.size(), kOccurrenceLogicalBytes, valid);
     selection_memory = checked_add(
@@ -370,7 +190,7 @@ SelectionAdmission prepare_boolean_selection_admission(
     std::uint64_t possible_arrangement_memory = 0;
     const analytic_detail::AnalyticFilteredArrangementCapacityEnvelope arrangement_envelope{
         geometry.curves.size(),
-        candidate_pairs.size(),
+        candidate_pair_count,
         possible_point_intersections,
         arrangement_minimum.possible_circular_carrier_groups,
         possible_spans,
@@ -612,6 +432,229 @@ SelectionAdmission prepare_boolean_selection_admission(
             }
         }
     }
+    return {
+        guaranteed_spans, guaranteed_vertex_reservation, stage_tree_nodes,      face_reservation,
+        coverage_table,   integrated_minimum_memory,     material_regions_work, lineage_work,
+        outcomes_work};
+}
+
+} // namespace
+
+SelectionAdmission prepare_boolean_selection_admission(
+    const AnalyticRequestPacketRecords& records, std::uint32_t job_index,
+    const AnalyticFilteredGeometry& geometry, const std::vector<AnalyticCurvePair>& candidate_pairs,
+    const AnalyticSolverLimits& limits, const SelectionAdmissionOptions& options,
+    analytic_execution_detail::TopologyPolicy policy)
+{
+    SelectionAdmission admission;
+    AnalyticFilteredBooleanSelectionResult& preflight = admission.result;
+    if (!analytic_solver_limits_within_hard_ceilings(limits) || job_index >= records.jobs.size() ||
+        geometry.curves.size() != geometry.bounds.size() ||
+        geometry.curves.size() != geometry.occurrences.size())
+    {
+        preflight.error = AnalyticFilteredBooleanSelectionError::invalid_argument;
+        return admission;
+    }
+    const AnalyticRequestJobRecord& job = records.jobs[job_index];
+    if (job.stage_begin > records.stages.size() ||
+        job.stage_count > records.stages.size() - job.stage_begin)
+    {
+        preflight.error = AnalyticFilteredBooleanSelectionError::invalid_argument;
+        return admission;
+    }
+    if (geometry.curves.size() > limits.boundary_occurrences ||
+        candidate_pairs.size() > limits.examined_curve_pairs)
+    {
+        preflight.error = AnalyticFilteredBooleanSelectionError::resource_limit_exceeded;
+        return admission;
+    }
+    bool valid = true;
+    std::uint64_t admission_work =
+        checked_add(geometry.curves.size(), geometry.occurrences.size(), valid);
+    admission_work = checked_add(admission_work, job.stage_count, valid);
+    if (!valid || admission_work > limits.predicate_calls)
+    {
+        preflight.error = AnalyticFilteredBooleanSelectionError::resource_limit_exceeded;
+        return admission;
+    }
+    preflight.telemetry.admission_work_units = admission_work;
+    preflight.telemetry.predicate_calls = admission_work;
+    std::uint64_t operands = 0;
+    for (std::uint32_t local = 0; local < job.stage_count; ++local)
+    {
+        const AnalyticRequestStageRecord& stage = records.stages[job.stage_begin + local];
+        if (stage.stage_id == 0 || (stage.operation != 1 && stage.operation != 2) ||
+            stage.operand_begin > records.operands.size() ||
+            stage.operand_count > records.operands.size() - stage.operand_begin)
+        {
+            preflight.error = AnalyticFilteredBooleanSelectionError::invalid_argument;
+            return admission;
+        }
+        if (operands > limits.boundary_occurrences ||
+            stage.operand_count > limits.boundary_occurrences - operands)
+        {
+            preflight.error = AnalyticFilteredBooleanSelectionError::resource_limit_exceeded;
+            return admission;
+        }
+        operands += stage.operand_count;
+    }
+    admission_work = checked_add(admission_work, job.stage_count, valid);
+    admission_work = checked_add(admission_work, operands, valid);
+    admission_work = checked_add(admission_work, sort_units(operands), valid);
+    admission_work = checked_add(
+        admission_work,
+        checked_multiply(geometry.occurrences.size(), tree_operation_units(operands), valid),
+        valid);
+    if (!valid || admission_work > limits.predicate_calls)
+    {
+        preflight.error = AnalyticFilteredBooleanSelectionError::resource_limit_exceeded;
+        return admission;
+    }
+    preflight.telemetry.admission_work_units = admission_work;
+    preflight.telemetry.predicate_calls = admission_work;
+
+    std::uint64_t admission_peak_memory = checked_multiply(operands, kIndexLogicalBytes, valid);
+    admission_peak_memory = checked_add(
+        admission_peak_memory, checked_multiply(operands, kByteLogicalBytes, valid), valid);
+    if (!valid || admission_peak_memory > limits.working_memory_bytes)
+    {
+        if (valid)
+            preflight.telemetry.required_working_memory_bytes = admission_peak_memory;
+        preflight.error = AnalyticFilteredBooleanSelectionError::resource_limit_exceeded;
+        return admission;
+    }
+    preflight.telemetry.peak_working_memory_bytes = admission_peak_memory;
+    try
+    {
+        std::vector<std::uint64_t> operand_ids;
+        operand_ids.reserve(static_cast<std::size_t>(operands));
+        for (std::uint32_t local = 0; local < job.stage_count; ++local)
+        {
+            const AnalyticRequestStageRecord& stage = records.stages[job.stage_begin + local];
+            for (std::uint32_t offset = 0; offset < stage.operand_count; ++offset)
+            {
+                const AnalyticRequestOperandRecord& operand =
+                    records.operands[stage.operand_begin + offset];
+                if (operand.operand_id == 0 ||
+                    (offset != 0 && records.operands[stage.operand_begin + offset - 1].operand_id >=
+                                        operand.operand_id))
+                {
+                    preflight.error = AnalyticFilteredBooleanSelectionError::invalid_argument;
+                    return admission;
+                }
+                operand_ids.push_back(operand.operand_id);
+            }
+        }
+        std::sort(operand_ids.begin(), operand_ids.end());
+        if (std::adjacent_find(operand_ids.begin(), operand_ids.end()) != operand_ids.end())
+        {
+            preflight.error = AnalyticFilteredBooleanSelectionError::invalid_argument;
+            return admission;
+        }
+        std::vector<std::uint8_t> used(operand_ids.size());
+        for (std::uint32_t index = 0; index < geometry.occurrences.size(); ++index)
+        {
+            const AnalyticFilteredOccurrence& occurrence = geometry.occurrences[index];
+            const auto found =
+                std::lower_bound(operand_ids.begin(), operand_ids.end(), occurrence.coverage_id);
+            if (occurrence.occurrence_id != static_cast<std::uint64_t>(index) + 1 ||
+                occurrence.coverage_id == 0 ||
+                occurrence.source.operand_id != occurrence.coverage_id ||
+                ((options.reserve_lineage || options.reserve_outcomes) &&
+                 !valid_occurrence_source_for_curve(occurrence.source,
+                                                    geometry.curves[index].kind)) ||
+                found == operand_ids.end() || *found != occurrence.coverage_id)
+            {
+                preflight.error = AnalyticFilteredBooleanSelectionError::invalid_argument;
+                return admission;
+            }
+            used[static_cast<std::size_t>(found - operand_ids.begin())] = 1;
+        }
+        if (std::find(used.begin(), used.end(), 0) != used.end())
+        {
+            preflight.error = AnalyticFilteredBooleanSelectionError::invalid_argument;
+            return admission;
+        }
+    }
+    catch (const std::bad_alloc&)
+    {
+        preflight.telemetry.required_working_memory_bytes = limits.working_memory_bytes + 1;
+        preflight.error = AnalyticFilteredBooleanSelectionError::resource_limit_exceeded;
+        return admission;
+    }
+
+    AnalyticFilteredArrangementMinimumRequirements arrangement_minimum;
+    if (!analytic_execution_detail::estimate_arrangement_minimum_requirements(
+            geometry, candidate_pairs.size(), arrangement_minimum, policy))
+    {
+        preflight.error = AnalyticFilteredBooleanSelectionError::invalid_argument;
+        return admission;
+    }
+    admission_work =
+        checked_add(admission_work, checked_multiply(candidate_pairs.size(), 6, valid), valid);
+    if (!valid || admission_work > limits.predicate_calls)
+    {
+        preflight.error = AnalyticFilteredBooleanSelectionError::resource_limit_exceeded;
+        return admission;
+    }
+    preflight.telemetry.admission_work_units = admission_work;
+    preflight.telemetry.predicate_calls = admission_work;
+
+    std::uint64_t possible_spans = arrangement_minimum.possible_base_spans;
+    std::uint64_t possible_transitions = arrangement_minimum.possible_base_memberships;
+    std::uint64_t possible_point_intersections = 0;
+    AnalyticCurvePair previous_pair{};
+    bool has_previous_pair = false;
+    for (const AnalyticCurvePair& pair : candidate_pairs)
+    {
+        if (pair.first == 0 || pair.first >= pair.second || pair.second > geometry.curves.size())
+        {
+            preflight.error = AnalyticFilteredBooleanSelectionError::invalid_argument;
+            return admission;
+        }
+        if (has_previous_pair &&
+            (pair.first < previous_pair.first ||
+             (pair.first == previous_pair.first && pair.second <= previous_pair.second)))
+        {
+            preflight.error = AnalyticFilteredBooleanSelectionError::invalid_argument;
+            return admission;
+        }
+        previous_pair = pair;
+        has_previous_pair = true;
+        const AnalyticAtomicCurveNm& left = geometry.curves[pair.first - 1];
+        const AnalyticAtomicCurveNm& right = geometry.curves[pair.second - 1];
+        const std::uint64_t maximum_points = left.kind == AnalyticAtomicCurveKind::line &&
+                                                     right.kind == AnalyticAtomicCurveKind::line
+                                                 ? 1
+                                                 : 2;
+        const std::uint64_t existing =
+            std::min(maximum_points, shared_exact_endpoints(left, right));
+        possible_point_intersections =
+            checked_add(possible_point_intersections, maximum_points, valid);
+        possible_spans = checked_add(possible_spans,
+                                     checked_multiply(maximum_points - existing, 2, valid), valid);
+        possible_transitions = checked_add(
+            possible_transitions, checked_multiply(maximum_points - existing, 2, valid), valid);
+        if (left.construction_carrier_id == right.construction_carrier_id)
+            possible_transitions = checked_add(possible_transitions, 4, valid);
+    }
+    if (!valid)
+    {
+        preflight.error = AnalyticFilteredBooleanSelectionError::resource_limit_exceeded;
+        return admission;
+    }
+    const SelectionCapacityEstimate capacity = estimate_selection_capacity(
+        geometry, job, arrangement_minimum, possible_spans, possible_transitions,
+        possible_point_intersections, operands, candidate_pairs.size(), options, valid);
+    const std::uint64_t guaranteed_spans = capacity.guaranteed_spans;
+    const std::uint64_t guaranteed_vertex_reservation = capacity.guaranteed_vertex_reservation;
+    const std::uint64_t stage_tree_nodes = capacity.stage_tree_nodes;
+    const std::uint64_t face_reservation = capacity.face_reservation;
+    const std::uint64_t coverage_table = capacity.coverage_table;
+    const std::uint64_t integrated_minimum_memory = capacity.integrated_minimum_memory;
+    const std::uint64_t material_regions_work = capacity.material_regions_work;
+    const std::uint64_t lineage_work = options.defer_downstream_work ? 0 : capacity.lineage_work;
+    const std::uint64_t outcomes_work = options.defer_downstream_work ? 0 : capacity.outcomes_work;
 
     std::uint64_t selection_work = sort_units(operands);
     selection_work = checked_add(selection_work,

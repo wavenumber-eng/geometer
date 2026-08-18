@@ -1,5 +1,36 @@
 # WASM Examples
 
+## Shared demo system
+
+`geometer_demo.css` is the visual-system authority for new and migrated browser
+demos. It derives the Wavenumber light palette, flat 0 px geometry, and
+watermark treatment from `docs/design/styles.css`, and uses the locally
+vendored OFL-1.1 JetBrains Mono 2.304 webfonts. Demo-specific layout selectors
+belong in this single stylesheet under a demo root; HTML must not contain
+visual values or inline style declarations. The analytic polygon-pour and
+model-bounds pages are migrated consumers; HLR and planar-ring still require
+selector/markup migration before this styling requirement is complete.
+
+All portable demos use the same standalone packaging entry point:
+
+```powershell
+python scripts\build_standalone_demos.py analytic-polygon-pour
+python scripts\build_standalone_demos.py all
+```
+
+The compiler bundles module graphs to classic IIFEs, embeds binary assets,
+constructs Workers from Blob URLs, and produces directly openable HTML under
+`dist/wasm/demos/`. Hosted directory builds remain separate because their CSP
+and cache behavior differ from direct `file://` artifacts.
+
+## Editor-tooling foundation
+
+`demo-tooling/` contains runtime-dependency-free strict TypeScript building
+blocks for future interactive examples: camera/grid math, normalized input and
+intent resolution, pointer-capturing tools, scoped commands, named animation,
+and transactional undo/redo. It is intentionally generic and is not yet wired
+into the analytic demo. Its README records the clean-room provenance boundary.
+
 ## Live Analytic Polygon Pour
 
 `analytic_polygon_pour_demo.html` is the first high-level TypeScript client for
@@ -25,9 +56,48 @@ python scripts\build_analytic_polygon_pour_site.py
 
 Serve `dist/wasm/demos/analytic-polygon-pour/` as a static directory or deploy
 it unchanged to Cloudflare Pages. The directory contains its Worker, WASM,
-generated client package, redistribution-safe Cousine font, `_headers` policy,
+generated client package, redistribution-safe JetBrains Mono fonts, `_headers` policy,
 and a SHA-256 closure manifest; it has no service backend or network runtime
 dependency.
+
+Build the literal one-file version and open it directly from disk:
+
+```powershell
+python scripts\build_standalone_demos.py analytic-polygon-pour
+```
+
+`dist/wasm/demos/analytic_polygon_pour_demo.html` contains its stylesheet,
+JetBrains Mono fonts, Wavenumber watermark, TypeScript client, Worker host,
+Emscripten glue, and WASM bytes. It performs no runtime file or network loads.
+
+## Interactive PCB Polygon Pour
+
+`pcb_polygon_pour_demo.html` is an application-shaped example layered on the
+generic analytic operation. It uses the generated TypeScript Worker client and
+the clean-room `demo-tooling/` camera, input, command, tool-controller, and
+history modules. Board semantics remain outside Geometer core.
+
+The board-minus-pad job is composed with independent exact 0.55 mm capsule
+clearance jobs for 0.15 mm traces under a 0.20 mm clearance rule, same-net via
+clearance jobs, and exact via/spoke copper overlay jobs. The browser applies
+the layers in deterministic subtract-then-add order and reports a SHA-256 over
+the ordered job-ID/digest pairs; it does not claim one fused result topology.
+Via placement/movement, deterministic
+45-degree routing, polygon-vertex movement, pan/zoom, undo, and redo are
+interactive. Chamfer, fillet, and shove routing are explicitly deferred.
+
+Build the hosted offline directory and directly openable single HTML after
+refreshing the TypeScript and browser-WASM artifacts:
+
+```powershell
+python scripts\build_pcb_polygon_pour_site.py
+python scripts\build_standalone_demos.py pcb-polygon-pour
+```
+
+Outputs:
+
+- `dist/wasm/demos/pcb-polygon-pour/index.html`
+- `dist/wasm/demos/pcb_polygon_pour_demo.html`
 
 ## Generated Model Bounds Client
 
@@ -39,11 +109,12 @@ Three.js model. The prepared GLB for the same fixture is a display companion;
 the box and every reported number come from the STEP/OCCT result. The
 TypeScript source contains no pointer or Emscripten heap management.
 
-The page projects the Viz 3D visual language into a focused demo stylesheet,
-uses the repository-vendored Cousine font and Wavenumber watermark, and pins
-the same Three.js 0.161.0 browser import used by the existing embedded-model
-viewer. Serving the page requires network access to that pinned Three.js CDN
-module.
+The page uses the shared light Wavenumber demo stylesheet, locally vendored
+JetBrains Mono font, flat component geometry, and common watermark. Its Three.js
+scene colors resolve from that stylesheet instead of maintaining another theme.
+The hosted source page still pins the same Three.js 0.161.0 browser import used
+by the existing embedded-model viewer, so serving that source page requires
+network access to the pinned Three.js CDN module.
 
 The maintained page runs the synchronous OCCT operation in a dedicated Worker.
 `model_bounds_demo.ts` owns the Three.js UI and uses

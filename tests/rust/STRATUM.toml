@@ -7,10 +7,13 @@ concerns = ["rust", "contracts", "ipc", "package"]
 
 objectives = [
     "Replay all governed contract vectors through generated strict Rust codecs.",
+    "Compile and validate analytic logical DTOs while proving they are not exposed as JSON wire codecs.",
+    "Match native-produced analytic request/result packets, reject mutation families, and verify normative standalone job digests.",
     "Match the governed exact shutdown frame bytes.",
     "Negotiate A0 and execute repeated model-bounds work through one persistent native process.",
+    "Execute repeated typed analytic batches through the friendly persistent-client method.",
     "Exercise nonfatal unknown cancellation, local timeout cancellation, and graceful shutdown.",
-    "Compile the packaged crate from a clean external Rust consumer.",
+    "Run the packaged crate from a clean external Rust consumer against the platform dist executable.",
     "Enforce the wn-dev-std 2026.8.12 Rust toolchain, lint, command-surface, and Tree-sitter source-shape policy.",
 ]
 
@@ -18,5 +21,5 @@ objectives = [
 id = "RUST_001"
 file = "test_rust_validations.py"
 name = "Generated Rust And Executable IPC"
-description = "Runs format, lint, contract-vector, framing, live-process, and clean-consumer checks."
+description = "Runs format, lint, contract-vector, framing, live-process, and packaged-consumer analytic IPC checks."
 test_case_type = "integration"

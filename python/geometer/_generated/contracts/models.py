@@ -4,6 +4,411 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Literal, TypeAlias
 
+NORMALIZED_CATALOG_SHA256 = "d88c4f7d1a487c34d7654c886b79b608bcbd53469b2b3e3d6acd9d9617b00f19"
+
+JobId: TypeAlias = int
+
+StageId: TypeAlias = int
+
+
+class StageOperation(str, Enum):
+    UNION_STAGE = "union"
+    DIFFERENCE = "difference"
+
+
+OperandId: TypeAlias = int
+
+RegionId: TypeAlias = int
+
+RingId: TypeAlias = int
+
+VertexId: TypeAlias = int
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class PointNm:
+    x: int
+    y: int
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class AuthoredVertex:
+    vertex_id: VertexId
+    point: PointNm
+
+
+SegmentId: TypeAlias = int
+
+CurveId: TypeAlias = int
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class AuthoredLineSegment:
+    segment_id: SegmentId
+    curve_id: CurveId
+    kind: Literal["line"]
+
+
+class ArcDirection(str, Enum):
+    CCW = "ccw"
+    CW = "cw"
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class AuthoredCircularArcSegment:
+    segment_id: SegmentId
+    curve_id: CurveId
+    kind: Literal["circular_arc"]
+    center: PointNm
+    direction: ArcDirection
+    major_arc: bool
+
+
+AuthoredSegment: TypeAlias = AuthoredLineSegment | AuthoredCircularArcSegment
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class PlanarRing:
+    ring_id: RingId
+    vertices: tuple[AuthoredVertex, ...]
+    segments: tuple[AuthoredSegment, ...]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class PlanarRegionOperand:
+    operand_id: OperandId
+    kind: Literal["planar_region"]
+    region_id: RegionId
+    outer: PlanarRing
+    holes: tuple[PlanarRing, ...]
+
+
+FeatureId: TypeAlias = int
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class DiskOperand:
+    operand_id: OperandId
+    kind: Literal["disk"]
+    feature_id: FeatureId
+    center: PointNm
+    radius_nm: int
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class AnnulusOperand:
+    operand_id: OperandId
+    kind: Literal["annulus"]
+    feature_id: FeatureId
+    center: PointNm
+    inner_radius_nm: int
+    outer_radius_nm: int
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class CapsuleOperand:
+    operand_id: OperandId
+    kind: Literal["capsule"]
+    feature_id: FeatureId
+    start: PointNm
+    end: PointNm
+    width_nm: int
+
+
+PathId: TypeAlias = int
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class PlanarPath:
+    path_id: PathId
+    vertices: tuple[AuthoredVertex, ...]
+    segments: tuple[AuthoredSegment, ...]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class SweptPathOperand:
+    operand_id: OperandId
+    kind: Literal["swept_path"]
+    feature_id: FeatureId
+    centerline: PlanarPath
+    width_nm: int
+    cap: Literal["round"]
+    join: Literal["round"]
+
+
+AnalyticPlanarOperand: TypeAlias = (
+    PlanarRegionOperand | DiskOperand | AnnulusOperand | CapsuleOperand | SweptPathOperand
+)
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class AnalyticPlanarBooleanStage:
+    stage_id: StageId
+    operation: StageOperation
+    operands: tuple[AnalyticPlanarOperand, ...]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class AnalyticPlanarBooleanJob:
+    job_id: JobId
+    stages: tuple[AnalyticPlanarBooleanStage, ...]
+
+
+QueryId: TypeAlias = int
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class PlanarRelationshipQuery:
+    query_id: QueryId
+    left_job_id: JobId
+    right_job_id: JobId
+
+
+# Logical request projected to the governed packed request attachment.
+@dataclass(frozen=True, slots=True, kw_only=True)
+class AnalyticPlanarBooleanBatchRequestA0:
+    jobs: tuple[AnalyticPlanarBooleanJob, ...]
+    relationship_queries: tuple[PlanarRelationshipQuery, ...]
+
+
+class JobDiagnosticCode(str, Enum):
+    INVALID_TOPOLOGY = "geometer.operation.analytic_planar_boolean.invalid_topology"
+    INVALID_ARC = "geometer.operation.analytic_planar_boolean.invalid_arc"
+    UNSUPPORTED_GEOMETRY = "geometer.operation.analytic_planar_boolean.unsupported_geometry"
+    NORMALIZATION_ERROR_EXCEEDED = "geometer.operation.analytic_planar_boolean.normalization_error_exceeded"
+    NORMALIZATION_TOPOLOGY_COLLAPSE = "geometer.operation.analytic_planar_boolean.normalization_topology_collapse"
+    NONANALYTIC_RESULT = "geometer.operation.analytic_planar_boolean.nonanalytic_result"
+    SOLVER_FAILED = "geometer.operation.analytic_planar_boolean.solver_failed"
+    RESOURCE_LIMIT_EXCEEDED = "geometer.operation.analytic_planar_boolean.resource_limit_exceeded"
+
+
+class DiagnosticSeverity(str, Enum):
+    ERROR = "error"
+    WARNING = "warning"
+
+
+# Standalone logical identities projected one-to-one from nonzero packed path tokens.
+class JobDiagnosticPath(str, Enum):
+    REQUEST_JOBS = "request_jobs"
+    JOB_ID = "job_id"
+    JOB_STAGES = "job_stages"
+    STAGE_ID = "stage_id"
+    STAGE_OPERATION = "stage_operation"
+    STAGE_OPERANDS = "stage_operands"
+    OPERAND_ID = "operand_id"
+    OPERAND_GEOMETRY = "operand_geometry"
+    REGION_OUTER = "region_outer"
+    REGION_HOLES = "region_holes"
+    RING_VERTICES = "ring_vertices"
+    RING_SEGMENTS = "ring_segments"
+    PATH_VERTICES = "path_vertices"
+    PATH_SEGMENTS = "path_segments"
+    SEGMENT_CURVE = "segment_curve"
+    DISK_RADIUS = "disk_radius"
+    ANNULUS_INNER_RADIUS = "annulus_inner_radius"
+    ANNULUS_OUTER_RADIUS = "annulus_outer_radius"
+    CAPSULE_START = "capsule_start"
+    CAPSULE_END = "capsule_end"
+    CAPSULE_WIDTH = "capsule_width"
+    SWEPT_PATH_CENTERLINE = "swept_path_centerline"
+    SWEPT_PATH_WIDTH = "swept_path_width"
+    RELATIONSHIP_QUERIES = "relationship_queries"
+    RELATIONSHIP_LEFT_JOB_ID = "relationship_left_job_id"
+    RELATIONSHIP_RIGHT_JOB_ID = "relationship_right_job_id"
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class JobDiagnostic:
+    code: JobDiagnosticCode
+    severity: DiagnosticSeverity
+    job_id: JobId
+    stage_id: StageId | None = None
+    operand_id: OperandId | None = None
+    geometry_id: int | None = None
+    # Governed standalone location identity; token zero projects to absence.
+    path_identity: JobDiagnosticPath | None = None
+
+
+ResultVertexId: TypeAlias = int
+
+
+class SourceKind(str, Enum):
+    AUTHORED_SEGMENT_CURVE = "authored_segment_curve"
+    COMPACT_FEATURE_ROLE = "compact_feature_role"
+    SUBTRACTIVE_OPERAND_EFFECT = "subtractive_operand_effect"
+
+
+class SourceRole(str, Enum):
+    NONE = "none"
+    AUTHORED_LINE = "authored_line"
+    AUTHORED_CIRCULAR_ARC = "authored_circular_arc"
+    PRIMITIVE_OUTER_CIRCLE = "primitive_outer_circle"
+    PRIMITIVE_INNER_CIRCLE = "primitive_inner_circle"
+    CAPSULE_LEFT_LINE = "capsule_left_line"
+    CAPSULE_END_CAP = "capsule_end_cap"
+    CAPSULE_RIGHT_LINE = "capsule_right_line"
+    CAPSULE_START_CAP = "capsule_start_cap"
+    SWEPT_LEFT_OFFSET_LINE = "swept_left_offset_line"
+    SWEPT_LEFT_OFFSET_ARC = "swept_left_offset_arc"
+    SWEPT_RIGHT_OFFSET_LINE = "swept_right_offset_line"
+    SWEPT_RIGHT_OFFSET_ARC = "swept_right_offset_arc"
+    SWEPT_ROUND_JOIN = "swept_round_join"
+    SWEPT_START_CAP = "swept_start_cap"
+    SWEPT_END_CAP = "swept_end_cap"
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class SourceReference:
+    kind: SourceKind
+    role: SourceRole
+    operand_id: OperandId
+    primary_id: int
+    secondary_id: int
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class SourceSet:
+    sources: tuple[SourceReference, ...]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class ResultVertex:
+    vertex_id: ResultVertexId
+    point: PointNm
+    intersection_sources: SourceSet
+
+
+ResultFragmentId: TypeAlias = int
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class ResultLineFragment:
+    fragment_id: ResultFragmentId
+    kind: Literal["line"]
+    start_vertex_id: ResultVertexId
+    end_vertex_id: ResultVertexId
+    coincident_positive_sources: SourceSet
+    surviving_subtraction_sources: SourceSet
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class ResultCircularArcFragment:
+    fragment_id: ResultFragmentId
+    kind: Literal["circular_arc"]
+    start_vertex_id: ResultVertexId
+    end_vertex_id: ResultVertexId
+    radius_nm: int
+    direction: ArcDirection
+    major_arc: bool
+    coincident_positive_sources: SourceSet
+    surviving_subtraction_sources: SourceSet
+
+
+DirectedFragment: TypeAlias = ResultLineFragment | ResultCircularArcFragment
+
+ResultRingId: TypeAlias = int
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class ResultRing:
+    ring_id: ResultRingId
+    fragment_ids: tuple[ResultFragmentId, ...]
+    parent_ring_id: ResultRingId | None = None
+    depth: int
+    hole: bool
+
+
+ResultRegionId: TypeAlias = int
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class ResultRegion:
+    result_region_id: ResultRegionId
+    outer_ring_id: ResultRingId
+    positive_contributors: SourceSet
+
+
+class OperandOutcomeKind(str, Enum):
+    CONTRIBUTES_FINAL_MATERIAL = "contributes_final_material"
+    REDUNDANT_OR_ABSORBED_COVERAGE = "redundant_or_absorbed_coverage"
+    PARTIALLY_REMOVED_LATER = "partially_removed_later"
+    COMPLETELY_REMOVED_LATER = "completely_removed_later"
+    SUBTRACTION_EFFECT_SURVIVES = "subtraction_effect_survives"
+    SUBTRACTION_EFFECT_OVERWRITTEN_LATER = "subtraction_effect_overwritten_later"
+    NO_EFFECT = "no_effect"
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class OperandOutcomeEvent:
+    operand_id: OperandId
+    kind: OperandOutcomeKind
+    result_ring_ids: tuple[ResultRingId, ...]
+    result_region_ids: tuple[ResultRegionId, ...]
+    sources: SourceSet
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class SuccessfulJobResult:
+    job_id: JobId
+    status: Literal["success"]
+    diagnostics: tuple[JobDiagnostic, ...]
+    vertices: tuple[ResultVertex, ...]
+    directed_fragments: tuple[DirectedFragment, ...]
+    rings: tuple[ResultRing, ...]
+    result_regions: tuple[ResultRegion, ...]
+    operand_outcomes: tuple[OperandOutcomeEvent, ...]
+    # Derived from the canonical standalone job-result packet; not an encoded record field.
+    digest_sha256: str
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class FailedJobResult:
+    job_id: JobId
+    status: Literal["failure"]
+    diagnostics: tuple[JobDiagnostic, ...]
+    # Derived from the canonical standalone job-result packet; not an encoded record field.
+    digest_sha256: str
+
+
+AnalyticPlanarBooleanJobResult: TypeAlias = SuccessfulJobResult | FailedJobResult
+
+
+class RelationshipStatus(str, Enum):
+    SUCCESS = "success"
+    SKIPPED_DEPENDENCY_FAILED = "skipped_dependency_failed"
+
+
+class IntersectionDimension(str, Enum):
+    DISJOINT = "disjoint"
+    POINT = "point"
+    CURVE = "curve"
+    AREA = "area"
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class RelationshipRegionPair:
+    left_result_region_id: ResultRegionId
+    right_result_region_id: ResultRegionId
+    dimension: IntersectionDimension
+    equality: bool
+    left_contains_right: bool
+    right_contains_left: bool
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class PlanarRelationshipResult:
+    query_id: QueryId
+    status: RelationshipStatus
+    aggregate_dimension: IntersectionDimension
+    pairs: tuple[RelationshipRegionPair, ...]
+
+
+# Logical result projected from the governed packed result attachment.
+@dataclass(frozen=True, slots=True, kw_only=True)
+class AnalyticPlanarBooleanBatchResultA0:
+    job_results: tuple[AnalyticPlanarBooleanJobResult, ...]
+    relationship_results: tuple[PlanarRelationshipResult, ...]
+
 
 # Stable diagnostic category with distinct transport, contract, and operation domains.
 class DiagnosticCategory(str, Enum):

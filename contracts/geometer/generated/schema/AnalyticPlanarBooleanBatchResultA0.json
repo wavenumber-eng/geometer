@@ -24,6 +24,7 @@
     "not": {}
   },
   "description": "Logical result projected from the governed packed result attachment.",
+  "x-wn-max-logical-source-reference-expansions": 1048576,
   "x-wn-production-wire": "packed_attachment",
   "$defs": {
     "AnalyticPlanarBooleanJobResult": {
@@ -487,7 +488,7 @@
           "items": {
             "$ref": "#/$defs/SourceReference"
           },
-          "maxItems": 8388608
+          "maxItems": 1048576
         }
       },
       "required": [

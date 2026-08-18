@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="./geometer_demo.css" />
+    <title>Geometer · interactive PCB polygon pour</title>
+    <script src="./analytic_polygon_pour_bootstrap_guard.js"></script>
+    <script type="importmap">
+      {"imports":{"@wavenumber/geometer/worker":"./package/worker.js"}}
+    </script>
+  </head>
+  <body data-wn-watermark="true">
+    <main id="pcb-shell" data-state="booting" data-tool="select">
+      <header>
+        <div><b>GEOMETER</b><span>PCB POUR / INTERACTIVE A0</span></div>
+        <div class="pcb-toolbar" aria-label="Editor tools">
+          <button id="select-tool" type="button" data-active="true">SELECT [ESC]</button>
+          <button id="route-tool" type="button">ROUTE [R]</button>
+          <button id="add-via" type="button">VIA [V]</button>
+          <button id="undo" type="button">UNDO</button>
+          <button id="redo" type="button">REDO</button>
+        </div>
+        <div class="runtime"><em></em><span id="runtime-label">Starting kernel</span></div>
+      </header>
+      <section class="pcb-stage">
+        <div class="pcb-viewport">
+          <canvas id="pcb-canvas" aria-label="Interactive PCB polygon pour editor"></canvas>
+          <div class="pcb-title"><small>LIVE WORKER BOOLEAN</small><strong>Move copper. Route. Repour.</strong></div>
+          <div class="pcb-hint">WHEEL ZOOM · SHIFT+DRAG PAN · V VIA · R ROUTE · ENTER COMMIT · CTRL+Z UNDO</div>
+        </div>
+        <aside>
+          <section><small>01 / BOARD EDITOR</small><h1>Exact pour,<br />at pointer speed.</h1><p>Drag a via or polygon vertex. Route 0.15 mm traces on deterministic 45° segments. The latest edit replaces stale queued work.</p></section>
+          <section class="pcb-rules"><small>02 / ACTIVE RULES</small><dl><div><dt>Trace width</dt><dd>0.15 mm</dd></div><div><dt>Clearance</dt><dd>0.20 mm</dd></div><div><dt>Subtract envelope</dt><dd>0.55 mm capsule</dd></div><div><dt>Same-net vias</dt><dd>4-spoke thermal</dd></div></dl></section>
+          <section class="pcb-metrics"><small>03 / LIVE RESULT</small><dl><div><dt>Round trip</dt><dd id="latency">—</dd></div><div><dt>Regions</dt><dd id="regions">—</dd></div><div><dt>Fragments</dt><dd id="fragments">—</dd></div><div><dt>Vias / traces</dt><dd id="object-count">—</dd></div><div><dt>Completed / replaced</dt><dd id="solve-count">0 / 0</dd></div></dl></section>
+          <section class="pcb-closure"><small>04 / EXACT LAYER COMPOSITION DIGEST</small><code id="digest">—</code><p id="tool-status">Select: drag vias or white polygon vertices.</p><p>Board-minus-pad copper, exact trace/via clearance layers, and same-net via/spoke copper are composited in deterministic order. This is not one fused result topology.</p></section>
+          <section class="pcb-corners"><small>05 / NEXT TOOL SLICE</small><p>Vertex dragging is active. Validated chamfer, fillet, and shove-router gestures are intentionally deferred; this demo does not approximate them.</p></section>
+        </aside>
+      </section>
+      <footer><span id="status" role="status">Loading browser solver…</span><b>GENERATED TYPESCRIPT CLIENT · WORKER · WASM C++17</b></footer>
+    </main>
+    <script type="module" src="./pcb_polygon_pour_demo.js"></script>
+  </body>
+</html>

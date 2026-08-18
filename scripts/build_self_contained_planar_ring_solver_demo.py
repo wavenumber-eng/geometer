@@ -11,8 +11,9 @@ Run:  python scripts/build_self_contained_planar_ring_solver_demo.py
 
 from __future__ import annotations
 
-import base64
 from pathlib import Path
+
+from standalone_html import b64
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -25,10 +26,6 @@ OUT = ROOT / "dist" / "wasm" / "demos" / "planar_ring_solver_demo.html"
 
 APP_TAG = '  <script id="planarDemoApp">'
 LOGO_ATTR = 'src="/tests/wasm/vendor/wn/logo.svg"'
-
-
-def b64(data: bytes) -> str:
-    return base64.b64encode(data).decode("ascii")
 
 
 def script_carrier(carrier_id: str, text: str) -> str:

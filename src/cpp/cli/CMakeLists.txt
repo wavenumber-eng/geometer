@@ -34,12 +34,31 @@ if(EMSCRIPTEN)
         COMMENT "Copying geometer-node-test outputs to dist/wasm/node-test/"
     )
 else()
-    # Copy native CLI to the platform-aware native dist folder.
-    add_custom_command(TARGET geometer POST_BUILD
+    # This phony target always refreshes source identity, even when the executable
+    # itself did not relink (for example after a documentation-only revision).
+    add_custom_target(geometer_native_distribution ALL
         COMMAND ${CMAKE_COMMAND} -E make_directory "${GEOMETER_NATIVE_DIST_DIR}"
+        COMMAND ${Python3_EXECUTABLE}
+            "${CMAKE_SOURCE_DIR}/scripts/native_build_attestation.py" write
+            --executable "$<TARGET_FILE:geometer>"
+            --output "$<TARGET_FILE_DIR:geometer>/geometer.build-attestation.json"
+            --geometer-version "${PROJECT_VERSION}"
+            --c-abi-version "${GEOMETER_ABI_VERSION}"
+            --compiler-id "${CMAKE_CXX_COMPILER_ID}"
+            --compiler-version "${CMAKE_CXX_COMPILER_VERSION}"
+            --platform "${_geometer_dist_os}"
+            --arch "${_geometer_dist_arch}"
+            --build-type "$<CONFIG>"
+            --occt-profile "${OpenCASCADE_INSTALL_PREFIX}/.geometer-occt-profile.json"
+            --occt-version "${OpenCASCADE_VERSION}"
+            --generator "${CMAKE_GENERATOR}"
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
             "$<TARGET_FILE:geometer>"
             "${GEOMETER_NATIVE_DIST_DIR}/"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "$<TARGET_FILE_DIR:geometer>/geometer.build-attestation.json"
+            "${GEOMETER_NATIVE_DIST_DIR}/geometer.build-attestation.json"
+        DEPENDS geometer "${CMAKE_SOURCE_DIR}/scripts/native_build_attestation.py"
         COMMENT "Copying geometer to dist/native/${GEOMETER_NATIVE_DIST_PLATFORM}/"
     )
     geometer_copy_occt_runtime_to_native_dist(geometer)

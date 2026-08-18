@@ -173,8 +173,9 @@ class RegionsBuilder
 {
   public:
     RegionsBuilder(AnalyticFilteredBooleanSelectionResult selection, AnalyticSolverLimits limits,
-                   std::uint64_t reserved_work)
-        : limits_(limits), reserved_work_remaining_(reserved_work)
+                   std::uint64_t reserved_work, bool release_unused_work = false)
+        : limits_(limits), reserved_work_remaining_(reserved_work),
+          release_unused_work_(release_unused_work)
     {
         result_.telemetry.selection_predicate_calls = selection.telemetry.predicate_calls;
         result_.telemetry.selection_peak_working_memory_bytes =
@@ -674,11 +675,22 @@ class RegionsBuilder
                   { return left.outer_ring < right.outer_ring; });
         result_.telemetry.emitted_rings = result_.rings.size();
         result_.telemetry.emitted_regions = result_.regions.size();
+        if (release_unused_work_)
+        {
+            // The conservative region reservation protects arrangement and
+            // selection from starting work that cannot finish this phase. An
+            // owning downstream pipeline can release the unused remainder
+            // after success and reserve its next transactional phase from the
+            // exact retained topology.
+            result_.telemetry.predicate_calls =
+                result_.telemetry.selection_predicate_calls + result_.telemetry.region_work_units;
+        }
         return true;
     }
 
     AnalyticSolverLimits limits_;
     std::uint64_t reserved_work_remaining_ = 0;
+    bool release_unused_work_ = false;
     AnalyticFilteredRegionsResult result_;
     std::uint32_t edge_count_ = 0;
     std::uint32_t half_edge_count_ = 0;
@@ -702,6 +714,96 @@ class RegionsBuilder
     std::vector<std::uint8_t> ring_seen_;
     std::vector<std::uint32_t> queue_;
 };
+
+bool actual_lineage_outcomes_work(const AnalyticRequestPacketRecords& records,
+                                  std::uint32_t job_index, const AnalyticFilteredGeometry& geometry,
+                                  const AnalyticFilteredRegionsResult& regions,
+                                  bool reserve_outcomes, std::uint64_t& lineage_work,
+                                  std::uint64_t& outcomes_work) noexcept
+{
+    if (job_index >= records.jobs.size())
+        return false;
+    const AnalyticRequestJobRecord& job = records.jobs[job_index];
+    if (job.stage_begin > records.stages.size() ||
+        job.stage_count > records.stages.size() - job.stage_begin)
+        return false;
+    bool valid = true;
+    std::uint64_t operands = 0;
+    for (std::uint32_t local = 0; local < job.stage_count; ++local)
+        operands =
+            checked_add(operands, records.stages[job.stage_begin + local].operand_count, valid);
+    const auto& selection = regions.selection;
+    const auto& arrangement = selection.arrangement;
+    const std::uint64_t edges = arrangement.edges.size();
+    const std::uint64_t half_edges = arrangement.half_edges.size();
+    const std::uint64_t faces = selection.faces.size();
+    const std::uint64_t material_regions = regions.regions.size();
+    const std::uint64_t vertices = arrangement.vertices.size();
+    const std::uint64_t transitions = arrangement.memberships.size();
+    const std::uint64_t collapsed = arrangement.collapsed_spans.size();
+    const std::uint64_t coverage_nodes = selection.coverage_state_nodes.size();
+    const std::uint64_t occurrence_count = geometry.occurrences.size();
+    std::uint64_t operand_leaf_capacity = 1;
+    while (operand_leaf_capacity < std::max<std::uint64_t>(1, operands))
+    {
+        if (operand_leaf_capacity > std::numeric_limits<std::uint64_t>::max() / 2)
+            return false;
+        operand_leaf_capacity *= 2;
+    }
+    const std::uint64_t reporter_nodes = checked_multiply(operand_leaf_capacity, 2, valid);
+    const std::uint64_t operand_tree = analytic_selection_detail::tree_operation_units(operands);
+
+    lineage_work = checked_add(checked_multiply(job.stage_count, 2, valid),
+                               checked_multiply(operands, 5, valid), valid);
+    lineage_work = checked_add(lineage_work, sort_units(operands), valid);
+    lineage_work =
+        checked_add(lineage_work, checked_multiply(occurrence_count, operand_tree, valid), valid);
+    lineage_work = checked_add(lineage_work, occurrence_count, valid);
+    lineage_work = checked_add(lineage_work, coverage_nodes, valid);
+    lineage_work = checked_add(lineage_work,
+                               checked_add(checked_add(checked_multiply(transitions, 3, valid),
+                                                       sort_units(transitions), valid),
+                                           edges, valid),
+                               valid);
+    lineage_work = checked_add(
+        lineage_work, checked_add(checked_multiply(reporter_nodes, 2, valid), operands, valid),
+        valid);
+    std::uint64_t contributor_pass =
+        checked_add(half_edges, checked_multiply(edges, 4, valid), valid);
+    contributor_pass = checked_add(contributor_pass, checked_multiply(faces, 3, valid), valid);
+    contributor_pass = checked_add(contributor_pass, material_regions, valid);
+    std::uint64_t incidence_pass = checked_add(checked_multiply(half_edges, 2, valid),
+                                               checked_multiply(vertices, 2, valid), valid);
+    incidence_pass = checked_add(incidence_pass, checked_multiply(edges, 3, valid), valid);
+    incidence_pass = checked_add(incidence_pass, collapsed, valid);
+    incidence_pass = checked_add(incidence_pass, material_regions, valid);
+    lineage_work = checked_add(
+        lineage_work,
+        checked_multiply(checked_add(contributor_pass, incidence_pass, valid), 2, valid), valid);
+    lineage_work = checked_add(lineage_work, checked_multiply(transitions, 4, valid), valid);
+    lineage_work = checked_add(
+        lineage_work, checked_multiply(checked_add(faces, half_edges, valid), operand_tree, valid),
+        valid);
+    lineage_work = checked_add(lineage_work,
+                               checked_multiply(checked_multiply(transitions, 2, valid),
+                                                checked_add(operand_tree, 1, valid), valid),
+                               valid);
+
+    outcomes_work = 0;
+    if (reserve_outcomes)
+    {
+        outcomes_work = checked_multiply(operands, 16, valid);
+        outcomes_work = checked_add(
+            outcomes_work,
+            checked_multiply(occurrence_count, checked_add(operand_tree, 4, valid), valid), valid);
+        outcomes_work =
+            checked_add(outcomes_work, checked_multiply(material_regions, 4, valid), valid);
+        outcomes_work = checked_add(outcomes_work, checked_multiply(half_edges, 4, valid), valid);
+        outcomes_work = checked_add(outcomes_work, checked_multiply(transitions, 2, valid), valid);
+        outcomes_work = checked_add(outcomes_work, sort_units(occurrence_count), valid);
+    }
+    return valid;
+}
 
 static_assert(sizeof(RawRing) <= kLogicalRawRingBytes);
 static_assert(sizeof(ComponentAdjacency) <= kLogicalAdjacencyBytes);
@@ -767,7 +869,8 @@ build_regions_for_lineage(const AnalyticRequestPacketRecords& records, std::uint
     LineageRegionsAdmission output;
     analytic_selection_detail::SelectionAdmission admission =
         analytic_selection_detail::prepare_boolean_selection_admission(
-            records, job_index, geometry, candidate_pairs, limits, {true, true, reserve_outcomes});
+            records, job_index, geometry, candidate_pairs, limits,
+            {true, true, reserve_outcomes, true});
     const std::uint64_t region_work = admission.material_regions_reserved_work;
     output.reserved_lineage_work = admission.lineage_reserved_work;
     output.reserved_outcomes_work = admission.outcomes_reserved_work;
@@ -795,7 +898,37 @@ build_regions_for_lineage(const AnalyticRequestPacketRecords& records, std::uint
         output.regions.selection.telemetry = selection.telemetry;
         return output;
     }
-    output.regions = RegionsBuilder(std::move(selection), limits, region_work).build();
+    output.regions = RegionsBuilder(std::move(selection), limits, region_work, true).build();
+    if (output.regions.error != AnalyticFilteredRegionsError::none)
+        return output;
+
+    std::uint64_t lineage_work = 0;
+    std::uint64_t outcomes_work = 0;
+    bool valid = actual_lineage_outcomes_work(records, job_index, geometry, output.regions,
+                                              reserve_outcomes, lineage_work, outcomes_work);
+    std::uint64_t downstream_work = checked_add(lineage_work, outcomes_work, valid);
+    const std::uint64_t completed_work = output.regions.telemetry.predicate_calls;
+    if (!valid || completed_work > limits.predicate_calls ||
+        downstream_work > limits.predicate_calls - completed_work)
+    {
+        const auto selection_telemetry = output.regions.selection.telemetry;
+        const std::int64_t origin_x = output.regions.selection.origin_x_nm;
+        const std::int64_t origin_y = output.regions.selection.origin_y_nm;
+        output.regions.error = AnalyticFilteredRegionsError::resource_limit_exceeded;
+        output.regions.selection = {};
+        output.regions.selection.origin_x_nm = origin_x;
+        output.regions.selection.origin_y_nm = origin_y;
+        output.regions.selection.telemetry = selection_telemetry;
+        output.regions.rings.clear();
+        output.regions.ring_half_edges.clear();
+        output.regions.regions.clear();
+        output.regions.face_components.clear();
+        output.reserved_lineage_work = 0;
+        output.reserved_outcomes_work = 0;
+        return output;
+    }
+    output.reserved_lineage_work = lineage_work;
+    output.reserved_outcomes_work = outcomes_work;
     return output;
 }
 

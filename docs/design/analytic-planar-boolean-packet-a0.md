@@ -653,6 +653,7 @@ Additional A0 maxima are:
 | Fallback/oracle algebraic work units per job | 1,000,000,000 |
 | Provenance source references per job | 8,388,608 |
 | Source-reference-index memberships per job | 8,388,608 |
+| Logical source-reference expansions per decoded batch | 1,048,576 |
 | Narrow-phase predicate calls per job | 100,000,000 |
 | Fallback/oracle interval-refinement steps per job | 100,000,000 |
 | Solver working memory per job | 1 GiB |
@@ -660,7 +661,13 @@ Additional A0 maxima are:
 Implementations advertise smaller effective limits when required by available
 memory. Every multiplication, addition, alignment, index/range, signed-origin
 subtraction, and native-size conversion is checked before allocation. The
-decoder validates the full structural graph before invoking OCCT.
+decoder validates the full structural graph before invoking the analytic
+production solver.
+Before materializing logical DTOs, a decoder also sums each referenced source
+set's member count once for every vertex, fragment source-set field, region,
+and operand event that projects it. The checked batch-wide sum must not exceed
+1,048,576. This deliberately counts repeated handles repeatedly: packed
+source-set interning cannot authorize unbounded logical object expansion.
 The filtered arrangement and any isolated fallback charge each counter before performing the work
 or allocation that would exceed it. Hitting any solver counter is the stable
 job-local `resource_limit_exceeded` outcome. Native and WASM use the same hard
@@ -674,7 +681,13 @@ fallback cases.
 
 ## Generated Codec Tests
 
-Before freeze, C++, TypeScript, Rust, and Python codecs must share vectors for:
+The governed native-produced corpus at
+`tests/contracts/vectors/analytic/manifest.json` currently contains six exact
+accepted vectors: empty and exemplar requests, a canonical mixed result, and
+success, mixed-success, and failure standalone result closures. Its manifest,
+writer, and the two native producer identities are digest-pinned in the
+candidate promotion manifest. C++, TypeScript, Rust, and Python consume those
+same bytes; their focused suites additionally cover:
 
 - empty/minimal packets and every record kind;
 - exact uint64 maximum handling and JavaScript `bigint` enforcement;
@@ -687,5 +700,15 @@ Before freeze, C++, TypeScript, Rust, and Python codecs must share vectors for:
 - standalone versus mixed-batch canonical job-result digests; and
 - unknown magic/generation/kind/code behavior.
 
-Raw-byte goldens are created only after this layout and the logical TypeSpec
-model receive joint and independent implementation review.
+The same manifest separately governs a production-boundary cross-transport
+vector derived from MATZ `analytic_primitive_family` case 3 with a self
+relationship query. Its validator sends the exact request bytes through the
+native executable IPC framing and the distributed full-browser WASM generic C
+ABI. Both result attachments must equal the pinned 4,936-byte result packet,
+and strict decoding must recompute the pinned standalone job digest. The
+required WASM and release workflows supply freshly built artifacts explicitly;
+the validator does not skip or fall back to an unrelated executable.
+
+The corpus is candidate evidence, not a promotion or release claim. Complete
+multi-platform qualification and release gates remain required before
+promotion.

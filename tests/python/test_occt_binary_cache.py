@@ -12,12 +12,27 @@ from pytest import MonkeyPatch
 
 
 ROOT = Path(__file__).resolve().parents[2]
+SCRIPTS = ROOT / "scripts"
+if str(SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS))
 SPEC = importlib.util.spec_from_file_location("occt_binary_cache", ROOT / "scripts" / "occt_binary_cache.py")
 if SPEC is None or SPEC.loader is None:
     raise RuntimeError("Could not load scripts/occt_binary_cache.py")
 occt_binary_cache: Any = importlib.util.module_from_spec(SPEC)
 sys.modules[SPEC.name] = occt_binary_cache
 SPEC.loader.exec_module(occt_binary_cache)
+
+BUILD_OCCT_SPEC = importlib.util.spec_from_file_location("build_occt_cache_test", SCRIPTS / "build_occt.py")
+if BUILD_OCCT_SPEC is None or BUILD_OCCT_SPEC.loader is None:
+    raise RuntimeError("Could not load scripts/build_occt.py")
+build_occt: Any = importlib.util.module_from_spec(BUILD_OCCT_SPEC)
+BUILD_OCCT_SPEC.loader.exec_module(build_occt)
+
+BUILD_WASM_SPEC = importlib.util.spec_from_file_location("build_wasm_cache_test", SCRIPTS / "build_wasm.py")
+if BUILD_WASM_SPEC is None or BUILD_WASM_SPEC.loader is None:
+    raise RuntimeError("Could not load scripts/build_wasm.py")
+build_wasm: Any = importlib.util.module_from_spec(BUILD_WASM_SPEC)
+BUILD_WASM_SPEC.loader.exec_module(build_wasm)
 
 COMPARE_SPEC = importlib.util.spec_from_file_location(
     "compare_occt_qualification", ROOT / "scripts" / "compare_occt_qualification.py"
@@ -75,6 +90,123 @@ def test_cache_key_includes_platform_recipe_and_abi() -> None:
     assert profile.cache_key == ("occt-native-v7-8-1-linux-arm64-release-static-abi-gnu-recipe-aaaaaaaaaaaaaaaa")
 
 
+def test_semantic_recipe_is_invariant_to_definition_order_and_local_paths() -> None:
+    definition = occt_binary_cache.CMakeDefinition
+    first = (
+        definition("CMAKE_INSTALL_PREFIX", "C:/first/occt-install", include_in_recipe=False),
+        definition("CMAKE_BUILD_TYPE", "Release"),
+        definition("3RDPARTY_RAPIDJSON_DIR", "C:/first/rapidjson", recipe_value="vendored-rapidjson"),
+    )
+    second = (
+        definition("3RDPARTY_RAPIDJSON_DIR", "D:/other/rapidjson", recipe_value="vendored-rapidjson"),
+        definition("CMAKE_BUILD_TYPE", "Release"),
+        definition("CMAKE_INSTALL_PREFIX", "D:/other/occt-install", include_in_recipe=False),
+    )
+
+    assert occt_binary_cache.semantic_recipe_hash("test-a0", first, {"occt_tag": "V8_0_1"}) == (
+        occt_binary_cache.semantic_recipe_hash("test-a0", second, {"occt_tag": "V8_0_1"})
+    )
+    assert occt_binary_cache.cmake_definition_args(first) == [
+        "-DCMAKE_INSTALL_PREFIX=C:/first/occt-install",
+        "-DCMAKE_BUILD_TYPE=Release",
+        "-D3RDPARTY_RAPIDJSON_DIR=C:/first/rapidjson",
+    ]
+
+
+def test_semantic_recipe_invalidates_on_byte_relevant_configure_change() -> None:
+    definition = occt_binary_cache.CMakeDefinition
+    disabled = (definition("BUILD_MODULE_Draw", "OFF"),)
+    enabled = (definition("BUILD_MODULE_Draw", "ON"),)
+
+    assert occt_binary_cache.semantic_recipe_hash("test-a0", disabled, {}) != (
+        occt_binary_cache.semantic_recipe_hash("test-a0", enabled, {})
+    )
+
+
+def test_directory_content_hash_invalidates_on_vendored_byte_change(tmp_path: Path) -> None:
+    source = tmp_path / "rapidjson"
+    (source / "include").mkdir(parents=True)
+    header = source / "include" / "document.h"
+    header.write_bytes(b"first bytes\n")
+    first = occt_binary_cache.directory_content_hash(source)
+
+    header.write_bytes(b"second bytes\n")
+    second = occt_binary_cache.directory_content_hash(source)
+
+    assert first != second
+
+
+@pytest.mark.parametrize("attribute", ["OCCT_WASM_INSTALL_RULE_ORIGINAL", "OCCT_WASM_INSTALL_RULE_PATCHED"])
+def test_wasm_recipe_hashes_exact_install_patch_before_and_after(
+    monkeypatch: MonkeyPatch,
+    attribute: str,
+) -> None:
+    baseline = build_wasm.occt_wasm_cache_profile().recipe_hash
+    monkeypatch.setattr(build_wasm, attribute, getattr(build_wasm, attribute) + " ")
+
+    assert build_wasm.occt_wasm_cache_profile().recipe_hash != baseline
+
+
+@pytest.mark.parametrize(
+    ("version_output", "expected"),
+    [
+        ("g++ (Ubuntu 13.2.0-4ubuntu3) 13.2.0\n", "gcc-13-libstdcxx-abi-default"),
+        ("g++ (Ubuntu 14.1.1) 14.1.1\n", "gcc-14-libstdcxx-abi-default"),
+        ("Ubuntu clang version 18.1.3\n", "clang-18-libstdcxx-abi-default"),
+    ],
+)
+def test_nonwindows_compiler_family_and_major_rotate_cache_abi(
+    monkeypatch: MonkeyPatch,
+    version_output: str,
+    expected: str,
+) -> None:
+    monkeypatch.setenv("CXX", "/toolchain/c++")
+    monkeypatch.delenv("CXXFLAGS", raising=False)
+    monkeypatch.setattr(build_occt.subprocess, "check_output", lambda *_args, **_kwargs: version_output)
+
+    assert build_occt.nonwindows_toolchain_abi("linux-x64") == expected
+
+
+def test_nonwindows_compiler_patch_version_and_parallelism_do_not_rotate_cache_abi(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    output = {"value": "Ubuntu clang version 18.1.3\n"}
+    monkeypatch.setenv("CXX", "/toolchain/clang++")
+    monkeypatch.setenv("CMAKE_BUILD_PARALLEL_LEVEL", "1")
+    monkeypatch.setattr(build_occt.subprocess, "check_output", lambda *_args, **_kwargs: output["value"])
+    first = build_occt.nonwindows_toolchain_abi("linux-x64")
+
+    output["value"] = "Ubuntu clang version 18.1.8\n"
+    monkeypatch.setenv("CMAKE_BUILD_PARALLEL_LEVEL", "64")
+
+    assert build_occt.nonwindows_toolchain_abi("linux-x64") == first
+
+
+def test_nonwindows_compiler_runtime_and_abi_flag_rotate_cache_abi(monkeypatch: MonkeyPatch) -> None:
+    monkeypatch.setenv("CXX", "/toolchain/clang++")
+    monkeypatch.setattr(
+        build_occt.subprocess,
+        "check_output",
+        lambda *_args, **_kwargs: "Ubuntu clang version 18.1.3\n",
+    )
+    default = build_occt.nonwindows_toolchain_abi("linux-x64")
+    monkeypatch.setenv("CXXFLAGS", "-stdlib=libc++ -D_LIBCPP_ABI_VERSION=2")
+
+    assert build_occt.nonwindows_toolchain_abi("linux-x64") != default
+    assert build_occt.nonwindows_toolchain_abi("linux-x64") == "clang-18-libcxx-abi-2"
+
+
+def test_cmake_definition_names_must_be_unique() -> None:
+    definition = occt_binary_cache.CMakeDefinition
+    duplicates = (
+        definition("USE_TBB", "OFF"),
+        definition("USE_TBB", "ON"),
+    )
+
+    with pytest.raises(ValueError, match="unique"):
+        occt_binary_cache.semantic_recipe_hash("test-a0", duplicates, {})
+
+
 def test_accepted_v801_native_cache_alias_is_exactly_pinned() -> None:
     profile = occt_binary_cache.OcctCacheProfile(
         kind="native",
@@ -83,7 +215,7 @@ def test_accepted_v801_native_cache_alias_is_exactly_pinned() -> None:
         library_type="Static",
         occt_repo="https://github.com/Open-Cascade-SAS/OCCT.git",
         occt_tag="V8_0_1",
-        recipe_hash="45aee960e6bad68c5f26c67335b82b6cbd539922aaefcf96003f20d7193485d9",
+        recipe_hash="afddffde43bb0288a99269de68220cc973eb3212551045a0f779e964a912231b",
         toolchain_abi="msvc-v143",
     )
 
@@ -97,7 +229,7 @@ def test_accepted_v801_native_cache_alias_is_exactly_pinned() -> None:
             occt_tag="V8_0_1",
             recipe_hash="02d3ac07fe672579f1d5d97249964248a36e4b3982b3195c4fe7bd0d1dece46d",
             archive_sha256="255ad723184c62ef4e6dc82c20c1acd5b0aa43407cbefc6e26e484eb74a05df9",
-            compatible_recipe_hashes=("45aee960e6bad68c5f26c67335b82b6cbd539922aaefcf96003f20d7193485d9",),
+            compatible_recipe_hashes=("afddffde43bb0288a99269de68220cc973eb3212551045a0f779e964a912231b",),
             requested_toolchain_abi="msvc-v143",
         ),
     )
@@ -106,6 +238,147 @@ def test_accepted_v801_native_cache_alias_is_exactly_pinned() -> None:
     changed_abi = occt_binary_cache.dataclasses.replace(profile, toolchain_abi="mingw")
     assert occt_binary_cache.accepted_cache_aliases(changed_recipe) == ()
     assert occt_binary_cache.accepted_cache_aliases(changed_abi) == ()
+
+
+def test_accepted_v801_wasm_cache_alias_targets_canonical_recipe() -> None:
+    profile = occt_binary_cache.OcctCacheProfile(
+        kind="wasm",
+        platform_tag="wasm-emscripten",
+        config="Release",
+        library_type="Static",
+        occt_repo="https://github.com/Open-Cascade-SAS/OCCT.git",
+        occt_tag="V8_0_1",
+        recipe_hash="c48157a47af466d1793739f4022457f0f53f88f5c63ddc1ea86cf7149fe9542b",
+        emsdk_version="3.1.56",
+    )
+
+    aliases = occt_binary_cache.accepted_cache_aliases(profile)
+
+    assert len(aliases) == 1
+    assert aliases[0].recipe_hash == "a15818c33b508d24f66702e3834be2d25fce89031a00a58f6391c0d702bb95f4"
+    assert aliases[0].archive_sha256 == "44fe6d6294c7a26ac77cfa17e1fd4a312578638a5669b7032c227750d032614e"
+
+
+@pytest.mark.parametrize(
+    ("current_profile", "predecessor_hash"),
+    [
+        (
+            occt_binary_cache.OcctCacheProfile(
+                kind="native",
+                platform_tag="windows-x64",
+                config="Release",
+                library_type="Static",
+                occt_repo="https://github.com/Open-Cascade-SAS/OCCT.git",
+                occt_tag="V8_0_1",
+                recipe_hash="afddffde43bb0288a99269de68220cc973eb3212551045a0f779e964a912231b",
+                toolchain_abi="msvc-v143",
+            ),
+            "45aee960e6bad68c5f26c67335b82b6cbd539922aaefcf96003f20d7193485d9",
+        ),
+        (
+            occt_binary_cache.OcctCacheProfile(
+                kind="wasm",
+                platform_tag="wasm-emscripten",
+                config="Release",
+                library_type="Static",
+                occt_repo="https://github.com/Open-Cascade-SAS/OCCT.git",
+                occt_tag="V8_0_1",
+                recipe_hash="c48157a47af466d1793739f4022457f0f53f88f5c63ddc1ea86cf7149fe9542b",
+                emsdk_version="3.1.56",
+            ),
+            "be4fe9173cdb53703d60a169b0833ac2c9141ec480046ba2d040a9e02f610c89",
+        ),
+        (
+            occt_binary_cache.OcctCacheProfile(
+                kind="wasm",
+                platform_tag="wasm-emscripten",
+                config="Release",
+                library_type="Static",
+                occt_repo="https://github.com/Open-Cascade-SAS/OCCT.git",
+                occt_tag="V8_0_1",
+                recipe_hash="c48157a47af466d1793739f4022457f0f53f88f5c63ddc1ea86cf7149fe9542b",
+                emsdk_version="3.1.56",
+            ),
+            "d71a27bcf279d9cabdd3d9f012867a0d419b0ffcfeee7036d5ed6fdc269e70fc",
+        ),
+    ],
+)
+def test_exact_local_predecessor_migration_is_nondestructive_and_idempotent(
+    monkeypatch: MonkeyPatch,
+    tmp_path: Path,
+    current_profile: Any,
+    predecessor_hash: str,
+) -> None:
+    install_dir = tmp_path / "occt-install"
+    make_install_tree(install_dir, "8.0.1")
+    retained_build_output = install_dir / "lib" / "retained-build-output.a"
+    retained_build_output.write_bytes(b"must survive marker migration")
+    predecessor = occt_binary_cache.dataclasses.replace(current_profile, recipe_hash=predecessor_hash)
+    occt_binary_cache.write_install_profile(install_dir, predecessor)
+
+    assert occt_binary_cache.install_matches_or_migrates_profile(install_dir, current_profile)
+    assert occt_binary_cache.install_matches_profile(install_dir, current_profile)
+    assert retained_build_output.read_bytes() == b"must survive marker migration"
+
+    monkeypatch.setattr(
+        occt_binary_cache,
+        "write_install_profile",
+        lambda *_args, **_kwargs: pytest.fail("an exact current marker must not be rewritten"),
+    )
+    assert occt_binary_cache.install_matches_or_migrates_profile(install_dir, current_profile)
+
+
+def test_local_predecessor_migration_requires_every_nonrecipe_field_and_version(tmp_path: Path) -> None:
+    install_dir = tmp_path / "occt-install"
+    make_install_tree(install_dir, "8.0.1")
+    current = occt_binary_cache.OcctCacheProfile(
+        kind="native",
+        platform_tag="windows-x64",
+        config="Release",
+        library_type="Static",
+        occt_repo="https://github.com/Open-Cascade-SAS/OCCT.git",
+        occt_tag="V8_0_1",
+        recipe_hash="afddffde43bb0288a99269de68220cc973eb3212551045a0f779e964a912231b",
+        toolchain_abi="msvc-v143",
+    )
+    predecessor = occt_binary_cache.dataclasses.replace(
+        current,
+        recipe_hash="45aee960e6bad68c5f26c67335b82b6cbd539922aaefcf96003f20d7193485d9",
+        toolchain_abi="mingw",
+    )
+    occt_binary_cache.write_install_profile(install_dir, predecessor)
+
+    assert not occt_binary_cache.install_matches_or_migrates_profile(install_dir, current)
+    assert not occt_binary_cache.install_matches_profile(install_dir, current)
+
+    version_file = install_dir / "lib" / "cmake" / "opencascade" / "OpenCASCADEConfigVersion.cmake"
+    version_file.write_text('set(PACKAGE_VERSION "8.0.0")\n', encoding="utf-8")
+    exact_predecessor = occt_binary_cache.dataclasses.replace(predecessor, toolchain_abi=current.toolchain_abi)
+    occt_binary_cache.write_install_profile(install_dir, exact_predecessor)
+    assert not occt_binary_cache.install_matches_or_migrates_profile(install_dir, current)
+
+
+def test_local_recipe_migration_is_one_way(tmp_path: Path) -> None:
+    install_dir = tmp_path / "occt-install"
+    make_install_tree(install_dir, "8.0.1")
+    current = occt_binary_cache.OcctCacheProfile(
+        kind="native",
+        platform_tag="windows-x64",
+        config="Release",
+        library_type="Static",
+        occt_repo="https://github.com/Open-Cascade-SAS/OCCT.git",
+        occt_tag="V8_0_1",
+        recipe_hash="afddffde43bb0288a99269de68220cc973eb3212551045a0f779e964a912231b",
+        toolchain_abi="msvc-v143",
+    )
+    predecessor = occt_binary_cache.dataclasses.replace(
+        current,
+        recipe_hash="45aee960e6bad68c5f26c67335b82b6cbd539922aaefcf96003f20d7193485d9",
+    )
+    occt_binary_cache.write_install_profile(install_dir, current)
+
+    assert not occt_binary_cache.install_matches_or_migrates_profile(install_dir, predecessor)
+    assert occt_binary_cache.install_matches_profile(install_dir, current)
 
 
 def test_restore_uses_only_an_exact_pinned_compatible_alias(
@@ -230,6 +503,8 @@ def test_exact_tag_qualification_uses_isolated_native_and_wasm_profiles() -> Non
         [
             sys.executable,
             "scripts/build_occt.py",
+            "--platform-tag",
+            "windows-x64",
             "--occt-tag",
             "V8_0_1",
             "--occt-state-root",
@@ -257,12 +532,18 @@ def test_exact_tag_qualification_uses_isolated_native_and_wasm_profiles() -> Non
         text=True,
     ).stdout.strip()
 
-    assert native.startswith("occt-native-v8-0-1-")
-    assert wasm.startswith("occt-wasm-v8-0-1-")
+    assert native == (
+        "occt-native-v8-0-1-windows-x64-release-static-abi-msvc-v143-"
+        "recipe-afddffde43bb0288"
+    )
+    assert wasm == (
+        "occt-wasm-v8-0-1-wasm-emscripten-release-static-emsdk-3.1.56-"
+        "recipe-c48157a47af466d1"
+    )
     assert (ROOT / state_root).exists() == existed_before
 
 
-def test_occt_recipe_keys_exclude_cache_transport_and_indirect_pin_files() -> None:
+def test_occt_recipe_keys_use_structured_semantic_definitions() -> None:
     native_source = (ROOT / "scripts" / "build_occt.py").read_text(encoding="utf-8")
     wasm_source = (ROOT / "scripts" / "build_wasm.py").read_text(encoding="utf-8")
 
@@ -271,10 +552,19 @@ def test_occt_recipe_keys_exclude_cache_transport_and_indirect_pin_files() -> No
     wasm_recipe = wasm_source[wasm_source.index("def occt_wasm_cache_profile(") :]
     wasm_recipe = wasm_recipe[: wasm_recipe.index("def build_occt_wasm(")]
     for recipe in (native_recipe, wasm_recipe):
-        assert '"dependency_versions.py"' not in recipe
-        assert '"occt_binary_cache.py"' not in recipe
-    assert '"recipe_schema": "native-install-a1"' in native_recipe
-    assert '"recipe_schema": "wasm-install-a1"' in wasm_recipe
+        assert "Path(__file__)" not in recipe
+        assert "build_parallel_jobs" not in recipe
+        assert "semantic_recipe_hash" in recipe
+    assert '"native-install-a2"' in native_recipe
+    assert '"wasm-install-a2"' in wasm_recipe
+
+    native_configure = native_source[native_source.index("def configure_occt(") :]
+    native_configure = native_configure[: native_configure.index("def build_occt(")]
+    wasm_configure = wasm_source[wasm_source.index("def build_occt_wasm(") :]
+    wasm_configure = wasm_configure[: wasm_configure.index("def build_geometer_wasm(")]
+    for configure in (native_configure, wasm_configure):
+        assert "cmake_definition_args" in configure
+        assert '"-D' not in configure
 
 
 def test_windows_cached_occt_abi_is_guarded_at_configure_time() -> None:

@@ -7,7 +7,12 @@ concerns = ["python", "package", "scripts"]
 
 objectives = [
     "Verify executable-backed Python helpers and package behavior.",
+    "Verify strict executable IPC A0 framing, handshake, attachments, and graceful shutdown.",
+    "Require native fake-server timeout and crash coverage in post-build qualification lanes.",
     "Replay governed contracts through generated dependency-free Python models and strict codecs.",
+    "Validate canonical analytic A0 packed requests and strictly project governed result packets.",
+    "Replay the vendored MATZ production subset through the public persistent Python client without importing consumer policy.",
+    "Replay pinned and externally supplied analytic request packets through production IPC with governed performance reporting.",
     "Verify build-script helper logic that is practical to test without native rebuilds.",
     "Verify the contract promotion manifest remains aligned with implemented interfaces.",
 ]
@@ -44,7 +49,7 @@ test_case_type = "unit"
 id = "PY_005"
 file = "test_generated_contracts.py"
 name = "Generated Python Contracts"
-description = "Checks generated Python freshness, governed-vector replay, strict JSON, and presence-aware model-bounds codecs."
+description = "Checks generated Python freshness, governed-vector replay, strict JSON, presence-aware model-bounds codecs, and analytic logical DTO isolation from JSON wire codecs."
 test_case_type = "unit"
 
 [[subtests]]
@@ -52,4 +57,46 @@ id = "PY_006"
 file = "test_build_boost.py"
 name = "Boost Restore Provenance"
 description = "Checks pinned Boost readiness requires the exact provenance sentinel, version header, and archive digest."
+test_case_type = "unit"
+
+[[subtests]]
+id = "PY_007"
+file = "test_ipc_client.py"
+name = "Persistent Executable IPC Client"
+description = "Checks bounded threaded IPC A0 framing, generated welcome/catalog validation, strict named attachments, analytic dispatch, required native fake-server timeout/crash coverage, cancellation/draining, poisoning, and graceful shutdown."
+test_case_type = "integration"
+
+[[subtests]]
+id = "PY_008"
+file = "test_analytic_packet_a0.py"
+name = "Analytic A0 Packed Codec"
+description = "Checks canonical request encoding and strict generated-model projection of governed C++ result vectors."
+test_case_type = "unit"
+
+[[subtests]]
+id = "PY_009"
+file = "test_matz_observation_replay.py"
+name = "MATZ Production Observation Replay"
+description = "Adapts vendored MATZ observations to public generated DTOs, locks the filtered executable's matching subset and current mismatches, and explicitly blocks missing authoritative endpoint policy."
+test_case_type = "integration"
+
+[[subtests]]
+id = "PY_010"
+file = "test_analytic_qualification.py"
+name = "Analytic Production Qualification Harness"
+description = "Checks deterministic report identity, corpus provenance, packet accounting, RSS semantics, governed production IPC replay, and fail-closed production-equivalent native solver telemetry."
+test_case_type = "integration"
+
+[[subtests]]
+id = "PY_011"
+file = "test_contract_promotion_implementation.py"
+name = "Contract Promotion Implementation Inventory"
+description = "Checks promoted backend paths, compatibility snapshots, external analytic observations, and numeric catalog closure."
+test_case_type = "unit"
+
+[[subtests]]
+id = "PY_012"
+file = "test_native_build_attestation.py"
+name = "Native Build Attestation"
+description = "Checks deterministic executable-bound native build sidecars, clean-source promotion authority, and fail-closed stale or malformed provenance."
 test_case_type = "unit"

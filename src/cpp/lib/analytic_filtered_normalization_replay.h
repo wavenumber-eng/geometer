@@ -25,6 +25,10 @@ struct ReplayResult
     std::uint64_t candidate_pairs = 0;
 };
 
+[[nodiscard]] bool
+normalized_replay_arc_carrier_identity_matches(const AnalyticAtomicCurveNm& left,
+                                               const AnalyticAtomicCurveNm& right) noexcept;
+
 [[nodiscard]] ReplayResult
 validate_normalized_replay(std::int64_t origin_x_nm, std::int64_t origin_y_nm,
                            const std::vector<AnalyticAtomicCurveNm>& curves,

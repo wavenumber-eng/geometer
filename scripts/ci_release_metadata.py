@@ -4,6 +4,8 @@
 from __future__ import annotations
 
 import argparse
+import json
+import re
 import tomllib
 from pathlib import Path
 
@@ -43,6 +45,49 @@ def check_notes() -> None:
         raise SystemExit(f"release doc does not mention `{version}`")
 
 
+def check_surfaces() -> None:
+    version = package_version()
+    date = release_date(version)
+    abi = date.replace("-", "")
+    cmake = (ROOT / "CMakeLists.txt").read_text(encoding="utf-8")
+    expected_cmake = {
+        "GEOMETER_RELEASE_DATE": date,
+        "GEOMETER_RELEASE_VERSION": version,
+        "GEOMETER_ABI_VERSION": abi,
+    }
+    for name, expected in expected_cmake.items():
+        match = re.search(rf'^set\({name} "([^"]+)"', cmake, re.MULTILINE)
+        actual = None if match is None else match.group(1)
+        if actual != expected:
+            raise SystemExit(f"{name} mismatch: expected {expected}, got {actual}")
+
+    with (ROOT / "scripts" / "pyproject.toml").open("rb") as handle:
+        script_version = tomllib.load(handle)["project"]["version"]
+    ts_version = json.loads((ROOT / "src" / "ts" / "geometer" / "package.json").read_text(encoding="utf-8"))[
+        "version"
+    ]
+    with (ROOT / "src" / "rust" / "geometer-client" / "Cargo.toml").open("rb") as handle:
+        rust_version = tomllib.load(handle)["package"]["version"]
+    with (ROOT / "src" / "rust" / "geometer-client" / "Cargo.lock").open("rb") as handle:
+        lock = tomllib.load(handle)
+    rust_lock_version = next(
+        package["version"] for package in lock["package"] if package["name"] == "geometer-client"
+    )
+    with (ROOT / "docs" / "contracts" / "promotion-manifest.toml").open("rb") as handle:
+        manifest_abi = str(tomllib.load(handle)["c_abi"]["generation"])
+    observed = {
+        "scripts/pyproject.toml": script_version,
+        "src/ts/geometer/package.json": ts_version,
+        "src/rust/geometer-client/Cargo.toml": rust_version,
+        "src/rust/geometer-client/Cargo.lock": rust_lock_version,
+    }
+    mismatches = [f"{path}={actual}" for path, actual in observed.items() if actual != version]
+    if manifest_abi != abi:
+        mismatches.append(f"docs/contracts/promotion-manifest.toml c_abi={manifest_abi}")
+    if mismatches:
+        raise SystemExit("release version surfaces disagree: " + ", ".join(mismatches))
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -51,6 +96,7 @@ def main() -> None:
     tag_parser = subparsers.add_parser("check-tag")
     tag_parser.add_argument("tag")
     subparsers.add_parser("check-notes")
+    subparsers.add_parser("check-surfaces")
     args = parser.parse_args()
 
     version = package_version()
@@ -62,6 +108,8 @@ def main() -> None:
         check_tag(args.tag)
     elif args.command == "check-notes":
         check_notes()
+    elif args.command == "check-surfaces":
+        check_surfaces()
     else:
         raise AssertionError(args.command)
 

@@ -4,9 +4,11 @@
 
 `src/rust/geometer-client` is the Tokio-based `geometer-client` crate. Its
 operation DTOs and strict Serde codecs are generated from the normalized
-TypeSpec catalog. The first live vertical spawns one persistent native
-`geometer(.exe) serve --stdio` process and executes
-`geometry.model_bounds.a0` with raw STEP bytes.
+TypeSpec catalog. The live client spawns one persistent native
+`geometer(.exe) serve --stdio` process and executes both
+`geometry.model_bounds.a0` with raw STEP bytes and
+`geometry.analytic_planar_boolean_batch.a0` through its governed packed A0
+attachments.
 
 The executable implementation preserves every file-oriented CLI command. Its
 stdin and stdout are switched to binary mode on Windows; stdout is reserved for
@@ -40,6 +42,14 @@ All 20 governed contract vectors replay through this projection. Generation is
 part of `npm run generate:contracts` and freshness is part of
 `npm run check:contracts`.
 
+The generated operation catalog is also the Rust client's negotiation
+authority. Packed request/result roots are deliberately excluded from generated
+JSON codecs: their logical DTOs remain generated, while
+`analytic_packet_a0` owns the strict little-endian wire codec. The public
+encoder accepts `AnalyticPlanarBooleanBatchRequestA0`; the public decoder
+returns `AnalyticPlanarBooleanBatchResultA0` and computes each job's SHA-256
+over its exact rebased standalone packet closure.
+
 ## Client lifecycle
 
 `GeometerClient::spawn()` starts an explicit executable path, sends `hello`,
@@ -53,6 +63,14 @@ reader task routes responses exclusively by identifier and verifies that the
 generated outcome operation matches the pending operation. Unknown,
 completed, malformed, or wrong-direction frames fail the connection and every
 pending call.
+
+`GeometerClient::analytic_planar_boolean_batch()` derives attachment names,
+media types, schema identities, and packet format from the negotiated generated
+catalog. Generic request and response validation rejects missing, duplicate,
+undeclared, oversized, or media-incompatible attachments and projection
+metadata drift. Fatal response ID/kind/JSON/attachment violations poison the
+connection and resolve every pending call. Negotiated response frame limits are
+checked before payload allocation.
 
 `OperationCall::cancel()` requests queue-only cancellation. `wait_timeout()` is
 a local timeout: it sends a cancellation request and reports whether the server
@@ -89,7 +107,11 @@ round trips, fixed-header rejection before payload allocation, strict malformed
 request recovery, unknown and queued cancellation, local timeout behavior,
 duplicate-attachment correlation, wrong-direction fatal handling,
 close/request race resolution, repeated real STEP work through one child,
-graceful shutdown, and compilation from a clean packaged-crate consumer.
+repeated nonempty typed analytic work through one child, native-produced packet
+corpus parity, mutation rejection, normative standalone job digests, graceful
+shutdown, and empty plus nontrivial friendly analytic IPC calls from a clean
+packaged-crate consumer against the platform executable in
+`dist/native/<platform>/`.
 The failure-path matrix additionally covers incompatible negotiation,
 oversized fixed headers before payload reads, broken stdout, explicit forced
 termination with pending requests, the server shutdown deadline, and an

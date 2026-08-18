@@ -16,11 +16,16 @@ let running = false;
 let pendingPosition;
 let completedSolves = 0;
 let replacedSolves = 0;
-const wasmBinaryPromise = fetch("./geometer.wasm").then((response) => {
-    if (!response.ok)
-        throw new Error(`geometer.wasm returned HTTP ${response.status}.`);
-    return response.arrayBuffer();
-});
+const embeddedRuntime = readEmbeddedRuntime();
+if (GEOMETER_STANDALONE_BUILD && embeddedRuntime === undefined)
+    throw new Error("Standalone Geometer runtime carriers are missing.");
+const wasmBinaryPromise = GEOMETER_STANDALONE_BUILD
+    ? Promise.resolve(decodeBase64(embeddedRuntime.wasmBase64).buffer)
+    : fetch("./geometer.wasm").then((response) => {
+        if (!response.ok)
+            throw new Error(`geometer.wasm returned HTTP ${response.status}.`);
+        return response.arrayBuffer();
+    });
 const clientPromise = createClient();
 new ResizeObserver(resize).observe(canvas.parentElement ?? canvas);
 slotSlider.addEventListener("input", () => {
@@ -38,9 +43,16 @@ resize();
 scheduleSolve(Number(slotSlider.value));
 async function createClient() {
     const wasmBinary = await wasmBinaryPromise;
-    const worker = new Worker("./analytic_polygon_pour_worker.js", {
+    const workerUrl = GEOMETER_STANDALONE_BUILD
+        ? URL.createObjectURL(new Blob([new TextDecoder().decode(decodeBase64(embeddedRuntime.workerBase64))], {
+            type: "text/javascript",
+        }))
+        : "./analytic_polygon_pour_worker.js";
+    const worker = new Worker(workerUrl, {
         name: "geometer-analytic-polygon-pour-a0",
     });
+    if (GEOMETER_STANDALONE_BUILD)
+        URL.revokeObjectURL(workerUrl);
     try {
         await waitForWorkerBootstrap(worker);
         return await createGeometerWorkerClient(worker, { wasmBinary });
@@ -79,8 +91,8 @@ async function drainLatest() {
                 throw new Error(job?.diagnostics.map((item) => item.code).join(", ") || "Solver returned no job.");
             }
             if (failureProbe?.status !== "failure" ||
-                !failureProbe.diagnostics.some((diagnostic) => diagnostic.code === "geometer.operation.analytic_planar_boolean.unsupported_geometry"))
-                throw new Error("The governed job-local failure probe did not return unsupported_geometry.");
+                !failureProbe.diagnostics.some((diagnostic) => diagnostic.code === "geometer.operation.analytic_planar_boolean.invalid_topology"))
+                throw new Error("The governed self-crossing path probe did not return invalid_topology.");
             if (pendingPosition !== undefined)
                 continue;
             latestResult = job;
@@ -127,13 +139,13 @@ function render(job) {
     context.beginPath();
     for (const ring of job.rings)
         appendRing(ring.fragment_ids, vertices, fragments);
-    context.fillStyle = "rgba(35, 219, 167, 0.27)";
+    context.fillStyle = themeColor("--wn-geometry-result-fill");
     context.fill("evenodd");
     for (const fragment of job.directed_fragments) {
         context.beginPath();
         appendFragment(fragment, vertices, true);
         const subtractive = fragment.surviving_subtraction_sources.sources.length > 0;
-        context.strokeStyle = subtractive ? "#ffb547" : "#44e0c1";
+        context.strokeStyle = themeColor(subtractive ? "--wn-geometry-subtract" : "--wn-geometry-result");
         context.lineWidth = (subtractive ? 2.8 : 1.7) / scale;
         context.stroke();
     }
@@ -180,7 +192,7 @@ function appendArc(fragment, sx, sy, ex, ey) {
 }
 function drawGrid(width, height, scale, originX, originY) {
     context.save();
-    context.strokeStyle = "rgba(103, 130, 145, 0.12)";
+    context.strokeStyle = themeColor("--wn-geometry-grid");
     context.lineWidth = 1;
     for (let mm = -2; mm <= 22; mm += 1) {
         const x = originX + mm * NM_PER_MM * scale;
@@ -236,6 +248,12 @@ function resize() {
 function setText(id, value) {
     requireElement(id).textContent = value;
 }
+function themeColor(name) {
+    const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    if (!value)
+        throw new Error(`The shared demo theme omits ${name}.`);
+    return value;
+}
 function waitForWorkerBootstrap(worker) {
     return new Promise((resolve, reject) => {
         const timeout = window.setTimeout(() => {
@@ -278,4 +296,24 @@ function requireCanvasContext(element) {
 }
 function isRecord(value) {
     return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+function readEmbeddedRuntime() {
+    const wasm = document.getElementById("geometer-analytic-wasm");
+    const worker = document.getElementById("geometer-analytic-worker");
+    if (wasm === null && worker === null)
+        return undefined;
+    if (wasm?.dataset.encoding !== "base64" || worker?.dataset.encoding !== "base64")
+        throw new Error("Embedded Geometer runtime carriers are malformed.");
+    const wasmBase64 = wasm.textContent?.trim();
+    const workerBase64 = worker.textContent?.trim();
+    if (!wasmBase64 || !workerBase64)
+        throw new Error("Embedded Geometer runtime carriers are empty.");
+    return { wasmBase64, workerBase64 };
+}
+function decodeBase64(value) {
+    const binary = atob(value);
+    const bytes = new Uint8Array(binary.length);
+    for (let index = 0; index < binary.length; index += 1)
+        bytes[index] = binary.charCodeAt(index);
+    return bytes;
 }

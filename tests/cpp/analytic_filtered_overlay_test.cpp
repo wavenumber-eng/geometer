@@ -94,6 +94,36 @@ AnalyticAtomicCurveNm endpoint_authoritative_arc(std::uint32_t index, std::int64
     return curve;
 }
 
+AnalyticAtomicCurveNm endpoint_authoritative_half(std::uint32_t index, bool counterclockwise,
+                                                  bool upper, std::uint64_t carrier)
+{
+    const std::int64_t start_x = (counterclockwise == upper) ? 100 : -100;
+    const std::int64_t end_x = -start_x;
+    AnalyticAtomicCurveNm curve;
+    curve.curve_index = index;
+    curve.kind = AnalyticAtomicCurveKind::circular_arc;
+    curve.start = exact_point(static_cast<double>(start_x), 0.0);
+    curve.end = exact_point(static_cast<double>(end_x), 0.0);
+    curve.integer_start = {start_x, 0};
+    curve.integer_end = {end_x, 0};
+    curve.circle.radius = {100.0, 100.0};
+    curve.counterclockwise = counterclockwise;
+    curve.has_integer_radius_certificate = true;
+    curve.integer_radius = 100;
+    curve.has_arc_sweep_certificate = true;
+    curve.has_endpoint_authoritative_arc_certificate = true;
+    curve.has_endpoint_authoritative_x_monotone_certificate = true;
+    curve.endpoint_authoritative_upper_branch = upper;
+    analytic_detail::Point center;
+    require(analytic_detail::reconstruct_endpoint_authoritative_arc_center(
+                start_x, 0, end_x, 0, 100, counterclockwise, false, center),
+            "endpoint-authoritative half-circle reconstruction failed");
+    curve.circle.center = {{center.x.lower, center.x.upper}, {center.y.lower, center.y.upper}};
+    curve.construction_carrier_id = carrier;
+    curve.construction_family_id = carrier;
+    return curve;
+}
+
 AnalyticFilteredOccurrence occurrence(std::uint32_t index, bool agrees = true,
                                       bool material_left = true)
 {
@@ -303,6 +333,25 @@ void test_crossing_split_events()
     require_span(result, 3, 500, 0, 500, 500, 1);
 }
 
+void test_endpoint_representative_precedes_nearby_split()
+{
+    AnalyticFilteredGeometry geometry;
+    append_curve(geometry, line(1, 0, 0, 1000, 0, 10), occurrence(1));
+    append_curve(geometry, line(2, 25, -500, 25, 500, 20), occurrence(2));
+    const AnalyticFilteredOverlayResult result =
+        build_analytic_filtered_overlay(geometry, {{1, 2}});
+    require(result.error == AnalyticFilteredOverlayError::none && result.spans.size() == 3 &&
+                result.telemetry.resolution_merges != 0,
+            "near-endpoint split did not resolve through the overlay");
+    const auto horizontal =
+        std::find_if(result.spans.begin(), result.spans.end(), [](const AnalyticAtomicSpanNm& span)
+                     { return span.carrier_curve_index == 1; });
+    require(horizontal != result.spans.end() && horizontal->start.x.lower == 0.0 &&
+                horizontal->start.x.upper == 0.0 && horizontal->start.y.lower == 0.0 &&
+                horizontal->start.y.upper == 0.0,
+            "a nearby split displaced the authoritative finite-domain endpoint");
+}
+
 void test_circle_seam_and_coincident_arcs()
 {
     AnalyticFilteredGeometry geometry;
@@ -424,6 +473,26 @@ void test_circular_preorder_is_total_and_fails_closed()
                 " spans=" + std::to_string(result.spans.size()) +
                 " raw=" + std::to_string(result.telemetry.raw_events) +
                 " unique=" + std::to_string(result.telemetry.unique_events));
+}
+
+void test_endpoint_authoritative_monotone_travel_orders()
+{
+    AnalyticFilteredGeometry geometry;
+    std::uint32_t index = 1;
+    for (const bool counterclockwise : {false, true})
+        for (const bool upper : {false, true})
+        {
+            AnalyticAtomicCurveNm curve =
+                endpoint_authoritative_half(index, counterclockwise, upper, 100 + index);
+            append_curve(geometry, curve, occurrence(index, counterclockwise));
+            ++index;
+        }
+    const auto result = analytic_execution_detail::build_overlay(
+        geometry, {}, kAnalyticSolverHardLimits,
+        analytic_execution_detail::kStrictPublishedGeometry);
+    require(result.error == AnalyticFilteredOverlayError::none && result.spans.size() == 4 &&
+                result.telemetry.unresolved_predicate_failure == false,
+            "strict overlay did not honor certified CW/CCW upper/lower monotone arc travel");
 }
 
 void test_lowered_irrational_capsule_pipeline()
@@ -686,9 +755,11 @@ int main()
     test_strict_unresolved_event_equality_fails_closed();
     test_integrated_pair_resolution_boundary();
     test_crossing_split_events();
+    test_endpoint_representative_precedes_nearby_split();
     test_circle_seam_and_coincident_arcs();
     test_invalid_pipeline_inputs_fail_closed();
     test_circular_preorder_is_total_and_fails_closed();
+    test_endpoint_authoritative_monotone_travel_orders();
     test_lowered_irrational_capsule_pipeline();
     test_limits_and_sparse_scaling();
     test_endpoint_column_work_precedes_event_allocation();

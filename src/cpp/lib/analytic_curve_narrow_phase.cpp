@@ -205,6 +205,20 @@ bool point_equals_certificate(AnalyticFilteredPointNm point_value,
            interval_equals_integer(point_value.y, certificate.y);
 }
 
+bool singleton_integer_point(const AnalyticFilteredPointNm& point_value) noexcept
+{
+    if (point_value.x.lower != point_value.x.upper || point_value.y.lower != point_value.y.upper ||
+        !std::isfinite(point_value.x.lower) || !std::isfinite(point_value.y.lower))
+        return false;
+    const double x = std::nearbyint(point_value.x.lower);
+    const double y = std::nearbyint(point_value.y.lower);
+    return x == point_value.x.lower && y == point_value.y.lower &&
+           x >= -static_cast<double>(kLocalCoordinateSpanNm) &&
+           x <= static_cast<double>(kLocalCoordinateSpanNm) &&
+           y >= -static_cast<double>(kLocalCoordinateSpanNm) &&
+           y <= static_cast<double>(kLocalCoordinateSpanNm);
+}
+
 Interval absolute(Interval value) noexcept
 {
     if (value.lower >= 0.0)
@@ -247,9 +261,28 @@ bool valid_common_curve(const AnalyticAtomicCurveNm& curve) noexcept
                                (curve.kind == AnalyticAtomicCurveKind::circular_arc &&
                                 curve.has_endpoint_authoritative_arc_certificate &&
                                 valid_arc_column(start_column) && valid_arc_column(end_column));
+    const bool valid_horizontal_mirror =
+        curve.construction_horizontal_mirror_id == 0
+            ? curve.construction_horizontal_mirror_axis_y == 0
+            : curve.kind == AnalyticAtomicCurveKind::line &&
+                  curve.has_construction_line_direction && curve.construction_line_dx > 0 &&
+                  curve.construction_line_dy == 0 &&
+                  coordinate_in_span(curve.construction_horizontal_mirror_axis_y) &&
+                  analytic_horizontal_mirror_contains_carrier(
+                      curve.construction_horizontal_mirror_id, curve.construction_carrier_id);
+    const auto valid_tangent = [&](std::uint64_t token, bool start)
+    {
+        return token == 0 || analytic_endpoint_tangent_matches(
+                                 token, curve.kind, curve.construction_carrier_id, start);
+    };
+    const bool distinct_tangent_endpoints =
+        curve.construction_start_tangent_id == 0 || curve.construction_end_tangent_id == 0 ||
+        curve.construction_start_tangent_id != curve.construction_end_tangent_id;
     if (curve.curve_index == 0 || !coordinate_in_span(curve.start.x) ||
         !coordinate_in_span(curve.start.y) || !coordinate_in_span(curve.end.x) ||
-        !coordinate_in_span(curve.end.y) || !valid_columns ||
+        !coordinate_in_span(curve.end.y) || !valid_columns || !valid_horizontal_mirror ||
+        !valid_tangent(curve.construction_start_tangent_id, true) ||
+        !valid_tangent(curve.construction_end_tangent_id, false) || !distinct_tangent_endpoints ||
         !point_interval_fits_resolution(point(curve.start)) ||
         !point_interval_fits_resolution(point(curve.end)) ||
         (curve.endpoint_authoritative_upper_branch &&
@@ -625,310 +658,44 @@ enum class ResolutionPairStatus : std::uint8_t
     uncertain,
 };
 
-ResolutionPairStatus compare_point_distance(Point left, Point right) noexcept
-{
-    constexpr double resolution_squared =
-        static_cast<double>(kAnalyticTopologyResolutionNm * kAnalyticTopologyResolutionNm);
-    const Point delta = subtract(left, right);
-    const Interval distance_squared = add(square(delta.x), square(delta.y));
-    if (distance_squared.upper <= resolution_squared)
-        return ResolutionPairStatus::within;
-    if (distance_squared.lower > resolution_squared)
-        return ResolutionPairStatus::outside;
-    return ResolutionPairStatus::uncertain;
-}
-
-std::uint8_t resolution_endpoints(Point candidate, const AnalyticAtomicCurveNm& curve,
-                                  Point (&endpoints)[2]) noexcept
-{
-    std::uint8_t count = 0;
-    for (const Point endpoint : {point(curve.start), point(curve.end)})
-        if (interval_within_resolution(candidate, endpoint))
-            endpoints[count++] = endpoint;
-    return count;
-}
-
-ResolutionPairStatus certify_resolution_pair(Point candidate, const AnalyticAtomicCurveNm& left,
-                                             const AnalyticAtomicCurveNm& right,
-                                             DomainResult left_domain, DomainResult right_domain,
-                                             AnalyticNarrowPhaseTelemetry& telemetry,
-                                             const AnalyticSolverLimits& limits) noexcept
-{
-    const bool left_resolution = left_domain == DomainResult::inside_resolution ||
-                                 left_domain == DomainResult::ambiguous_resolution;
-    const bool right_resolution = right_domain == DomainResult::inside_resolution ||
-                                  right_domain == DomainResult::ambiguous_resolution;
-    if (!left_resolution && !right_resolution)
-        return ResolutionPairStatus::within;
-
-    Point left_endpoints[2]{};
-    Point right_endpoints[2]{};
-    if ((left_resolution && !charge_predicate(telemetry, limits, true)) ||
-        (right_resolution && !charge_predicate(telemetry, limits, true)))
-        return ResolutionPairStatus::uncertain;
-    const std::uint8_t left_count =
-        left_resolution ? resolution_endpoints(candidate, left, left_endpoints) : 0;
-    const std::uint8_t right_count =
-        right_resolution ? resolution_endpoints(candidate, right, right_endpoints) : 0;
-    if ((left_resolution && left_count == 0) || (right_resolution && right_count == 0))
-        return ResolutionPairStatus::uncertain;
-
-    bool saw_uncertain = false;
-    if (left_resolution && right_resolution)
-    {
-        for (std::uint8_t left_index = 0; left_index < left_count; ++left_index)
-            for (std::uint8_t right_index = 0; right_index < right_count; ++right_index)
-            {
-                if (!charge_predicate(telemetry, limits, true))
-                    return ResolutionPairStatus::uncertain;
-                const ResolutionPairStatus status = compare_point_distance(
-                    left_endpoints[left_index], right_endpoints[right_index]);
-                if (status == ResolutionPairStatus::within)
-                    return status;
-                saw_uncertain = saw_uncertain || status == ResolutionPairStatus::uncertain;
-            }
-    }
-    else
-    {
-        const Point* endpoints = left_resolution ? left_endpoints : right_endpoints;
-        const std::uint8_t count = left_resolution ? left_count : right_count;
-        const AnalyticAtomicCurveNm& other = left_resolution ? right : left;
-        for (std::uint8_t index = 0; index < count; ++index)
-        {
-            if (!charge_predicate(telemetry, limits, true))
-                return ResolutionPairStatus::uncertain;
-            const AnalyticFilteredPointCurveStatus status =
-                classify_point_on_valid_curve(other, endpoints[index]);
-            if (status == AnalyticFilteredPointCurveStatus::certified_on_domain)
-                return ResolutionPairStatus::within;
-            saw_uncertain = saw_uncertain ||
-                            status == AnalyticFilteredPointCurveStatus::uncertain ||
-                            status == AnalyticFilteredPointCurveStatus::invalid_argument;
-        }
-    }
-    return saw_uncertain ? ResolutionPairStatus::uncertain : ResolutionPairStatus::outside;
-}
-
-bool retain_point(PairWork& work, Point candidate, const AnalyticAtomicCurveNm& left,
-                  const AnalyticAtomicCurveNm& right, AnalyticNarrowPhaseTelemetry& telemetry,
-                  const AnalyticSolverLimits& limits,
-                  analytic_execution_detail::TopologyPolicy policy) noexcept
-{
-    if (!valid_interval(candidate.x) || !valid_interval(candidate.y) ||
-        !point_interval_fits_resolution(candidate))
-    {
-        work.uncertain = true;
-        return false;
-    }
-    const DomainResult left_domain = curve_domain(candidate, left, telemetry, limits, policy);
-    const DomainResult right_domain = curve_domain(candidate, right, telemetry, limits, policy);
-    if (left_domain == DomainResult::uncertain || right_domain == DomainResult::uncertain)
-    {
-        work.uncertain = true;
-        return false;
-    }
-    if (left_domain == DomainResult::outside || right_domain == DomainResult::outside)
-        return true;
-    const ResolutionPairStatus pair_status = certify_resolution_pair(
-        candidate, left, right, left_domain, right_domain, telemetry, limits);
-    if (pair_status == ResolutionPairStatus::uncertain)
-    {
-        work.uncertain = true;
-        return false;
-    }
-    if (pair_status == ResolutionPairStatus::outside)
-    {
-        if (left_domain == DomainResult::ambiguous_resolution ||
-            right_domain == DomainResult::ambiguous_resolution)
-        {
-            work.uncertain = true;
-            return false;
-        }
-        return true;
-    }
-    if (left_domain == DomainResult::inside_resolution ||
-        left_domain == DomainResult::ambiguous_resolution ||
-        right_domain == DomainResult::inside_resolution ||
-        right_domain == DomainResult::ambiguous_resolution)
-        work.value.resolution_collapsed = true;
-    if (work.value.point_count == work.value.points.size())
-    {
-        work.uncertain = true;
-        return false;
-    }
-    work.value.points[work.value.point_count++] = public_point(candidate);
-    return true;
-}
-
-void finish_relation(PairWork& work) noexcept
-{
-    if (work.value.point_count == 2)
-    {
-        const AnalyticFilteredPointNm& first = work.value.points[0];
-        const AnalyticFilteredPointNm& second = work.value.points[1];
-        const bool already_ordered =
-            first.x.upper < second.x.lower ||
-            (!(second.x.upper < first.x.lower) && first.y.upper < second.y.lower);
-        const bool reverse_ordered =
-            second.x.upper < first.x.lower ||
-            (!(first.x.upper < second.x.lower) && second.y.upper < first.y.lower);
-        if (reverse_ordered)
-            std::swap(work.value.points[0], work.value.points[1]);
-        else if (!already_ordered)
-        {
-            work.uncertain = true;
-            return;
-        }
-    }
-    work.value.relation = work.value.point_count == 0   ? AnalyticPairRelation::disjoint
-                          : work.value.point_count == 1 ? AnalyticPairRelation::point
-                                                        : AnalyticPairRelation::two_points;
-}
-
-std::uint8_t shared_authoritative_endpoints(const AnalyticAtomicCurveNm& left,
-                                            const AnalyticAtomicCurveNm& right,
-                                            AnalyticIntegerPointNm (&output)[2]) noexcept
-{
-    const bool left_has_exact_endpoints =
-        left.has_integer_certificate || left.has_endpoint_authoritative_arc_certificate;
-    const bool right_has_exact_endpoints =
-        right.has_integer_certificate || right.has_endpoint_authoritative_arc_certificate;
-    if (!left_has_exact_endpoints || !right_has_exact_endpoints)
-        return 0;
-    std::uint8_t count = 0;
-    const AnalyticIntegerPointNm left_points[] = {left.integer_start, left.integer_end};
-    const AnalyticIntegerPointNm right_points[] = {right.integer_start, right.integer_end};
-    for (const AnalyticIntegerPointNm& a : left_points)
-        for (const AnalyticIntegerPointNm& b : right_points)
-            if (same_point(a, b))
-            {
-                if (count == 0 || !same_point(output[0], a))
-                    output[count++] = a;
-                break;
-            }
-    return count;
-}
-
-bool append_authoritative_point(PairWork& work, Point candidate) noexcept
-{
-    if (work.value.point_count == work.value.points.size())
-        return false;
-    work.value.points[work.value.point_count++] = public_point(candidate);
-    return true;
-}
-
-bool append_strict_second_root(PairWork& work, Point candidate, const AnalyticAtomicCurveNm& left,
-                               const AnalyticAtomicCurveNm& right,
-                               AnalyticNarrowPhaseTelemetry& telemetry,
-                               const AnalyticSolverLimits& limits,
-                               analytic_execution_detail::TopologyPolicy policy) noexcept
-{
-    if (!valid_interval(candidate.x) || !valid_interval(candidate.y) ||
-        !point_interval_fits_resolution(candidate))
-        return false;
-    const DomainResult left_domain = curve_domain(candidate, left, telemetry, limits, policy);
-    const DomainResult right_domain = curve_domain(candidate, right, telemetry, limits, policy);
-    if (left_domain == DomainResult::outside || right_domain == DomainResult::outside)
-        return true;
-    if (left_domain == DomainResult::uncertain || right_domain == DomainResult::uncertain ||
-        left_domain == DomainResult::inside_resolution ||
-        right_domain == DomainResult::inside_resolution ||
-        left_domain == DomainResult::ambiguous_resolution ||
-        right_domain == DomainResult::ambiguous_resolution)
-        return false;
-    return left_domain == DomainResult::inside && right_domain == DomainResult::inside &&
-           append_authoritative_point(work, candidate);
-}
-
-PairWork intersect_endpoint_authoritative(const AnalyticAtomicCurveNm& left,
-                                          const AnalyticAtomicCurveNm& right,
-                                          AnalyticNarrowPhaseTelemetry& telemetry,
-                                          const AnalyticSolverLimits& limits,
-                                          analytic_execution_detail::TopologyPolicy policy) noexcept
-{
-    PairWork work;
-    AnalyticIntegerPointNm shared[2]{};
-    const std::uint8_t shared_count = shared_authoritative_endpoints(left, right, shared);
-    if (shared_count == 0)
-    {
-        work.uncertain = true;
-        return work;
-    }
-    for (std::uint8_t index = 0; index < shared_count; ++index)
-        if (!append_authoritative_point(work, point(shared[index])))
-        {
-            work.uncertain = true;
-            return work;
-        }
-    if (shared_count == 2)
-    {
-        finish_relation(work);
-        return work;
-    }
-    if (!charge_predicate(telemetry, limits))
-    {
-        work.uncertain = true;
-        return work;
-    }
-
-    const Point anchor = point(shared[0]);
-    Point direction;
-    Point center;
-    if (left.kind == AnalyticAtomicCurveKind::line || right.kind == AnalyticAtomicCurveKind::line)
-    {
-        const AnalyticAtomicCurveNm& line =
-            left.kind == AnalyticAtomicCurveKind::line ? left : right;
-        const AnalyticAtomicCurveNm& arc =
-            left.kind == AnalyticAtomicCurveKind::circular_arc ? left : right;
-        direction = subtract(point(line.end), point(line.start));
-        center = point(arc.circle.center);
-    }
-    else
-    {
-        const Point first_center = point(left.circle.center);
-        const Point second_center = point(right.circle.center);
-        direction = perpendicular(subtract(second_center, first_center));
-        center = first_center;
-    }
-    const Interval denominator = dot(direction, direction);
-    if (denominator.lower <= 0.0)
-    {
-        work.uncertain = true;
-        return work;
-    }
-    const Interval parameter =
-        divide(multiply(exact(-2.0), dot(direction, subtract(anchor, center))), denominator);
-    if (!valid(parameter))
-    {
-        work.uncertain = true;
-        return work;
-    }
-    const Point second = add(anchor, scale(direction, parameter));
-    const Point delta = subtract(second, anchor);
-    const Interval separation_squared = dot(delta, delta);
-    if (!valid(separation_squared))
-    {
-        work.uncertain = true;
-        return work;
-    }
-    if (separation_squared.lower == 0.0 && separation_squared.upper == 0.0)
-    {
-        finish_relation(work);
-        return work;
-    }
-    if (!append_strict_second_root(work, second, left, right, telemetry, limits, policy))
-    {
-        work.uncertain = true;
-    }
-    finish_relation(work);
-    return work;
-}
+#include "analytic_curve_narrow_phase_resolution.h"
 
 AnalyticIntegerPointNm endpoint_at_projection(const AnalyticAtomicCurveNm& curve,
                                               std::int64_t projection, bool use_x) noexcept
 {
     const std::int64_t first = use_x ? curve.integer_start.x : curve.integer_start.y;
     return first == projection ? curve.integer_start : curve.integer_end;
+}
+
+bool rational_parameter_strictly_outside(SignedWide numerator, SignedWide denominator) noexcept
+{
+    const int denominator_sign = wide_sign(denominator);
+    if (denominator_sign > 0)
+        return wide_sign(numerator) < 0 || wide_compare(numerator, denominator) > 0;
+    if (denominator_sign < 0)
+        return wide_sign(numerator) > 0 || wide_compare(numerator, denominator) < 0;
+    return false;
+}
+
+bool has_exact_construction_line(const AnalyticAtomicCurveNm& curve) noexcept
+{
+    return curve.has_integer_certificate && curve.has_construction_line_direction &&
+           curve.construction_carrier_id != 0;
+}
+
+bool parameter_is_strictly_beyond_resolution(Interval parameter, Point direction) noexcept
+{
+    Interval overshoot;
+    if (parameter.upper < 0.0)
+        overshoot = {-parameter.upper, -parameter.lower};
+    else if (parameter.lower > 1.0)
+        overshoot = {parameter.lower - 1.0, parameter.upper - 1.0};
+    else
+        return false;
+    constexpr double kResolutionSquared =
+        static_cast<double>(kAnalyticTopologyResolutionNm * kAnalyticTopologyResolutionNm);
+    const Interval distance_squared = multiply(square(overshoot), dot(direction, direction));
+    return distance_squared.lower > kResolutionSquared;
 }
 
 PairWork intersect_lines(const AnalyticAtomicCurveNm& left, const AnalyticAtomicCurveNm& right,
@@ -952,6 +719,7 @@ PairWork intersect_lines(const AnalyticAtomicCurveNm& left, const AnalyticAtomic
         left.construction_family_id != 0 &&
         left.construction_family_id == right.construction_family_id)
         return work;
+    bool charged_domain_precheck = false;
     if (left.has_integer_certificate && right.has_integer_certificate)
     {
         const AnalyticIntegerPointNm left_direction{
@@ -960,7 +728,8 @@ PairWork intersect_lines(const AnalyticAtomicCurveNm& left, const AnalyticAtomic
         const AnalyticIntegerPointNm right_direction{
             difference(right.integer_end.x, right.integer_start.x),
             difference(right.integer_end.y, right.integer_start.y)};
-        if (wide_sign(exact_cross({0, 0}, left_direction, right_direction)) == 0)
+        const SignedWide exact_denominator = exact_cross({0, 0}, left_direction, right_direction);
+        if (wide_sign(exact_denominator) == 0)
         {
             if (wide_sign(exact_cross(left.integer_start, left.integer_end, right.integer_start)) !=
                 0)
@@ -1003,6 +772,25 @@ PairWork intersect_lines(const AnalyticAtomicCurveNm& left, const AnalyticAtomic
                     finish_relation(work);
                     return work;
                 }
+        if (has_exact_construction_line(left) && has_exact_construction_line(right))
+        {
+            if (!charge_predicate(telemetry, limits, true))
+            {
+                work.uncertain = true;
+                return work;
+            }
+            charged_domain_precheck = true;
+            const SignedWide left_numerator =
+                exact_cross(left.integer_start, right.integer_start, right.integer_end);
+            const SignedWide right_numerator =
+                exact_cross(left.integer_start, right.integer_start, left.integer_end);
+            if (rational_parameter_strictly_outside(left_numerator, exact_denominator) ||
+                rational_parameter_strictly_outside(right_numerator, exact_denominator))
+            {
+                if (!analytic_execution_detail::allows_resolution_topology(policy))
+                    return work;
+            }
+        }
         const bool left_vertical = left_direction.x == 0;
         const bool left_horizontal = left_direction.y == 0;
         const bool right_vertical = right_direction.x == 0;
@@ -1037,6 +825,17 @@ PairWork intersect_lines(const AnalyticAtomicCurveNm& left, const AnalyticAtomic
         return work;
     }
     const Interval left_parameter = divide(cross(offset, right_direction), denominator);
+    const Interval right_parameter = divide(cross(offset, left_direction), denominator);
+    if (left_parameter.upper < 0.0 || left_parameter.lower > 1.0 || right_parameter.upper < 0.0 ||
+        right_parameter.lower > 1.0)
+    {
+        if (!charged_domain_precheck && !charge_predicate(telemetry, limits, true))
+            work.uncertain = true;
+        if (work.uncertain || !analytic_execution_detail::allows_resolution_topology(policy) ||
+            parameter_is_strictly_beyond_resolution(left_parameter, left_direction) ||
+            parameter_is_strictly_beyond_resolution(right_parameter, right_direction))
+            return work;
+    }
     const Point intersection = add(first, scale(left_direction, left_parameter));
     retain_point(work, intersection, left, right, telemetry, limits, policy);
     finish_relation(work);
@@ -1052,6 +851,46 @@ PairWork intersect_line_circle(const AnalyticAtomicCurveNm& line, const Analytic
     if (!charge_predicate(telemetry, limits))
     {
         work.uncertain = true;
+        return work;
+    }
+    const auto same_endpoint =
+        [](const AnalyticFilteredPointNm& left, const AnalyticFilteredPointNm& right)
+    {
+        return left.x.lower == right.x.lower && left.x.upper == right.x.upper &&
+               left.y.lower == right.y.lower && left.y.upper == right.y.upper &&
+               left.construction_x_column_id == right.construction_x_column_id;
+    };
+    const AnalyticFilteredPointNm* certified_endpoint = nullptr;
+    const AnalyticFilteredPointNm* line_endpoints[] = {&line.start, &line.end};
+    const AnalyticFilteredPointNm* arc_endpoints[] = {&arc.start, &arc.end};
+    const std::uint64_t line_tokens[] = {line.construction_start_tangent_id,
+                                         line.construction_end_tangent_id};
+    const std::uint64_t arc_tokens[] = {arc.construction_start_tangent_id,
+                                        arc.construction_end_tangent_id};
+    for (std::uint8_t line_index = 0; line_index < 2; ++line_index)
+        for (std::uint8_t arc_index = 0; arc_index < 2; ++arc_index)
+        {
+            const std::uint64_t token = line_tokens[line_index];
+            if (token == 0 || token != arc_tokens[arc_index] ||
+                !same_endpoint(*line_endpoints[line_index], *arc_endpoints[arc_index]) ||
+                !analytic_endpoint_tangent_matches(token, line.kind, line.construction_carrier_id,
+                                                   line_index == 0) ||
+                !analytic_endpoint_tangent_matches(token, arc.kind, arc.construction_carrier_id,
+                                                   arc_index == 0))
+                continue;
+            if (certified_endpoint != nullptr)
+            {
+                work.uncertain = true;
+                return work;
+            }
+            certified_endpoint = line_endpoints[line_index];
+        }
+    if (certified_endpoint != nullptr)
+    {
+        work.value.points[0] = *certified_endpoint;
+        work.value.point_count = 1;
+        work.value.relation = AnalyticPairRelation::point;
+        ++telemetry.tangent_contacts;
         return work;
     }
     const Point start = point(line.start);
@@ -1338,8 +1177,15 @@ PairWork dispatch_pair(const AnalyticAtomicCurveNm& left, const AnalyticAtomicCu
     if (work.value.point_count != 0)
     {
         std::uint64_t token = 0;
-        if (left.kind == AnalyticAtomicCurveKind::line && left.has_construction_line_direction &&
-            left.construction_line_dx == 0)
+        if (policy == analytic_execution_detail::TopologyPolicy::
+                          resolution_50nm_preserve_integer_construction_endpoints &&
+            work.value.point_count == 1 && left.kind == AnalyticAtomicCurveKind::line &&
+            right.kind == AnalyticAtomicCurveKind::line && left.has_construction_line_direction &&
+            right.has_construction_line_direction && singleton_integer_point(work.value.points[0]))
+            token = analytic_integer_line_intersection_token(left.construction_carrier_id,
+                                                             right.construction_carrier_id);
+        if (token == 0 && left.kind == AnalyticAtomicCurveKind::line &&
+            left.has_construction_line_direction && left.construction_line_dx == 0)
             token = analytic_vertical_x_column_token(left.construction_carrier_id);
         if (token == 0 && right.kind == AnalyticAtomicCurveKind::line &&
             right.has_construction_line_direction && right.construction_line_dx == 0)
@@ -1350,6 +1196,39 @@ PairWork dispatch_pair(const AnalyticAtomicCurveNm& left, const AnalyticAtomicCu
         if (token != 0)
             for (std::uint8_t index = 0; index < work.value.point_count; ++index)
                 work.value.points[index].construction_x_column_id = token;
+    }
+    if (work.value.point_count == 2 && ((left.kind == AnalyticAtomicCurveKind::line &&
+                                         right.kind == AnalyticAtomicCurveKind::circular_arc) ||
+                                        (left.kind == AnalyticAtomicCurveKind::circular_arc &&
+                                         right.kind == AnalyticAtomicCurveKind::line)))
+    {
+        const AnalyticAtomicCurveNm& line =
+            left.kind == AnalyticAtomicCurveKind::line ? left : right;
+        const AnalyticAtomicCurveNm& arc =
+            left.kind == AnalyticAtomicCurveKind::circular_arc ? left : right;
+        if (line.construction_horizontal_mirror_id != 0 && arc.has_integer_certificate &&
+            arc.integer_center.y == line.construction_horizontal_mirror_axis_y)
+        {
+            const auto& first_x = work.value.points[0].x;
+            const auto& second_x = work.value.points[1].x;
+            const bool first_is_left = first_x.upper < second_x.lower;
+            const bool second_is_left = second_x.upper < first_x.lower;
+            if (first_is_left || second_is_left)
+            {
+                const std::uint8_t left_index = first_is_left ? 0 : 1;
+                const std::uint8_t right_index = first_is_left ? 1 : 0;
+                const std::uint64_t left_token = analytic_symmetric_line_circle_root_x_column_token(
+                    line.construction_horizontal_mirror_id, arc.construction_carrier_id, false);
+                const std::uint64_t right_token =
+                    analytic_symmetric_line_circle_root_x_column_token(
+                        line.construction_horizontal_mirror_id, arc.construction_carrier_id, true);
+                if (left_token != 0 && right_token != 0)
+                {
+                    work.value.points[left_index].construction_x_column_id = left_token;
+                    work.value.points[right_index].construction_x_column_id = right_token;
+                }
+            }
+        }
     }
     return work;
 }

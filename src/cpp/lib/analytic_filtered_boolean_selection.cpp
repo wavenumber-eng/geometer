@@ -551,12 +551,12 @@ class SelectionBuilder
             double maximum = first.upper;
             std::uint64_t column_token =
                 result_.arrangement.vertices[vertex_order_[cursor]].point.construction_x_column_id;
-            bool correlated = false;
+            bool correlated = event_column_x_requires_resolution(first);
             ++cursor;
             while (cursor < vertex_order_.size())
             {
                 const auto& value = result_.arrangement.vertices[vertex_order_[cursor]].point.x;
-                if (maximum < value.lower)
+                if (!extend_event_column_x_intersection(value, minimum, maximum))
                     break;
                 const std::uint64_t value_token =
                     result_.arrangement.vertices[vertex_order_[cursor]]
@@ -564,11 +564,7 @@ class SelectionBuilder
                 const bool same_singleton =
                     minimum == maximum && value.lower == value.upper && value.lower == minimum;
                 const bool same_correlated = column_token != 0 && value_token == column_token;
-                if (!same_singleton && !same_correlated)
-                    return fail_unresolved();
-                minimum = std::min(minimum, value.lower);
-                maximum = std::max(maximum, value.upper);
-                correlated = correlated || same_correlated;
+                correlated = correlated || same_correlated || !same_singleton;
                 ++cursor;
             }
             if (!charge_sort(cursor - begin))
@@ -586,7 +582,7 @@ class SelectionBuilder
                 const auto& previous =
                     result_.arrangement.vertices[vertex_order_[index - 1]].point.y;
                 const auto& current = result_.arrangement.vertices[vertex_order_[index]].point.y;
-                if (previous.upper >= current.lower)
+                if (!event_column_y_is_strictly_ordered(previous, current))
                     return fail_unresolved();
             }
             columns_.push_back({begin, cursor - begin, minimum, maximum, correlated});

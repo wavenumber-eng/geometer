@@ -8,6 +8,10 @@ name: macOS Wheel
 permissions:
   contents: read
 
+env:
+  CARGO_BUILD_JOBS: "1"
+  CMAKE_BUILD_PARALLEL_LEVEL: "2"
+
 jobs:
   macos-arm64:
     runs-on: macos-15

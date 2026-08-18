@@ -1,12 +1,14 @@
 #include "analytic_filtered_normalization_replay.h"
 
 #include "analytic_filtered_interval.h"
+#include "analytic_wide_integer.h"
 
 #include "geometer/analytic_curve_broad_phase.h"
 #include "geometer/analytic_curve_narrow_phase.h"
 
 #include <algorithm>
 #include <cstdint>
+#include <cstring>
 #include <limits>
 #include <tuple>
 #include <utility>
@@ -26,7 +28,7 @@ using analytic_detail::Point;
 using analytic_detail::subtract;
 
 constexpr std::uint64_t kIndexLogicalBytes = 8;
-constexpr std::uint64_t kReplayGeometryLogicalBytesPerCurve = 480;
+constexpr std::uint64_t kReplayGeometryLogicalBytesPerCurve = 512;
 constexpr std::uint64_t kPersistentReplayGeometryLogicalBytesPerCurve =
     kAnalyticAtomicCurveLogicalBytes + 48 + 56;
 constexpr std::uint64_t kReplayRingScratchLogicalBytes = 16;
@@ -37,6 +39,14 @@ constexpr std::uint32_t kNoIndex = std::numeric_limits<std::uint32_t>::max();
 
 struct ArcCarrierEntry
 {
+    bool has_source_identity = false;
+    std::uint64_t source_carrier = 0;
+    std::uint64_t source_center_x_lower = 0;
+    std::uint64_t source_center_x_upper = 0;
+    std::uint64_t source_center_y_lower = 0;
+    std::uint64_t source_center_y_upper = 0;
+    std::uint64_t source_radius_lower = 0;
+    std::uint64_t source_radius_upper = 0;
     bool exact_center = false;
     double center_x = 0.0;
     double center_y = 0.0;
@@ -50,10 +60,48 @@ struct ArcCarrierEntry
 
     auto key() const noexcept
     {
-        return std::tie(exact_center, center_x, center_y, first_x, first_y, second_x, second_y,
-                        radius, center_on_positive_side);
+        return std::tie(has_source_identity, source_carrier, source_center_x_lower,
+                        source_center_x_upper, source_center_y_lower, source_center_y_upper,
+                        source_radius_lower, source_radius_upper, exact_center, center_x, center_y,
+                        first_x, first_y, second_x, second_y, radius, center_on_positive_side);
     }
 };
+
+struct SourceCarrierEntry
+{
+    std::uint64_t source_carrier = 0;
+    std::uint32_t curve = 0;
+
+    auto key() const noexcept
+    {
+        return std::tie(source_carrier, curve);
+    }
+};
+
+std::uint64_t double_bits(double value) noexcept
+{
+    std::uint64_t output = 0;
+    std::memcpy(&output, &value, sizeof(output));
+    return output;
+}
+
+bool valid_source_line_direction(const AnalyticAtomicCurveNm& curve) noexcept
+{
+    if (curve.kind != AnalyticAtomicCurveKind::line || !curve.has_integer_certificate ||
+        (curve.integer_start.x == curve.integer_end.x &&
+         curve.integer_start.y == curve.integer_end.y))
+        return false;
+    if (!curve.has_construction_line_direction)
+        return true;
+    if (curve.construction_line_dx == 0 && curve.construction_line_dy == 0)
+        return false;
+    const std::int64_t dx = curve.integer_end.x - curve.integer_start.x;
+    const std::int64_t dy = curve.integer_end.y - curve.integer_start.y;
+    const auto cross = analytic_detail::wide_subtract(
+        analytic_detail::wide_multiply(dx, curve.construction_line_dy),
+        analytic_detail::wide_multiply(dy, curve.construction_line_dx));
+    return analytic_detail::wide_sign(cross) == 0;
+}
 
 struct EndpointColumnEntry
 {
@@ -71,6 +119,18 @@ struct EndpointColumnEntry
     auto group_key() const noexcept
     {
         return std::tie(right, x, y);
+    }
+};
+
+struct ReplayTangentEndpoint
+{
+    std::uint64_t token = 0;
+    std::uint32_t curve = 0;
+    bool start = false;
+
+    auto key() const noexcept
+    {
+        return std::tie(token, curve, start);
     }
 };
 
@@ -442,7 +502,8 @@ class Validator
         std::uint64_t traversal_work = 0;
         std::uint64_t endpoint_count = 0;
         if (!checked_multiply(curves_.size(), 2, endpoint_count) ||
-            !checked_multiply(curves_.size(), 7, traversal_work) ||
+            !checked_multiply(curves_.size(), 10, traversal_work) ||
+            !checked_add(traversal_work, sort_units(curves_.size()), traversal_work) ||
             !checked_add(traversal_work, sort_units(curves_.size()), traversal_work) ||
             !checked_add(traversal_work, sort_units(endpoint_count), traversal_work) ||
             !charge(traversal_work))
@@ -452,6 +513,8 @@ class Validator
         geometry_.curves = curves_;
         geometry_.bounds = bounds_;
         geometry_.occurrences.reserve(curves_.size());
+        if (!validate_and_remint_source_carriers())
+            return false;
         std::vector<ArcCarrierEntry> arc_carriers;
         arc_carriers.reserve(curves_.size());
         for (std::uint32_t index = 0; index < geometry_.curves.size(); ++index)
@@ -464,16 +527,29 @@ class Validator
                 std::tie(curve.integer_end.x, curve.integer_end.y);
             const auto& first = canonical_direction ? curve.integer_start : curve.integer_end;
             const auto& second = canonical_direction ? curve.integer_end : curve.integer_start;
+            const std::uint64_t source_carrier = curves_[index].construction_carrier_id;
+            const bool has_source_identity = source_carrier != 0;
             const bool exact_center = curve.circle.center.x.lower == curve.circle.center.x.upper &&
                                       curve.circle.center.y.lower == curve.circle.center.y.upper;
-            arc_carriers.push_back({exact_center, exact_center ? curve.circle.center.x.lower : 0.0,
-                                    exact_center ? curve.circle.center.y.lower : 0.0,
-                                    exact_center ? 0 : first.x, exact_center ? 0 : first.y,
-                                    exact_center ? 0 : second.x, exact_center ? 0 : second.y,
-                                    curve.integer_radius,
-                                    !exact_center && (curve.counterclockwise != curve.major_arc) ==
-                                                         canonical_direction,
-                                    index});
+            arc_carriers.push_back(
+                {has_source_identity, has_source_identity ? source_carrier : 0,
+                 has_source_identity ? double_bits(curve.circle.center.x.lower) : 0,
+                 has_source_identity ? double_bits(curve.circle.center.x.upper) : 0,
+                 has_source_identity ? double_bits(curve.circle.center.y.lower) : 0,
+                 has_source_identity ? double_bits(curve.circle.center.y.upper) : 0,
+                 has_source_identity ? double_bits(curve.circle.radius.lower) : 0,
+                 has_source_identity ? double_bits(curve.circle.radius.upper) : 0,
+                 !has_source_identity && exact_center,
+                 !has_source_identity && exact_center ? curve.circle.center.x.lower : 0.0,
+                 !has_source_identity && exact_center ? curve.circle.center.y.lower : 0.0,
+                 !has_source_identity && !exact_center ? first.x : 0,
+                 !has_source_identity && !exact_center ? first.y : 0,
+                 !has_source_identity && !exact_center ? second.x : 0,
+                 !has_source_identity && !exact_center ? second.y : 0,
+                 !has_source_identity ? curve.integer_radius : 0,
+                 !has_source_identity && !exact_center &&
+                     (curve.counterclockwise != curve.major_arc) == canonical_direction,
+                 index});
         }
         std::sort(arc_carriers.begin(), arc_carriers.end(),
                   [](const ArcCarrierEntry& left, const ArcCarrierEntry& right)
@@ -481,7 +557,16 @@ class Validator
         std::uint64_t group = 0;
         for (std::size_t index = 0; index < arc_carriers.size(); ++index)
         {
-            if (index == 0 || arc_carriers[index - 1].key() != arc_carriers[index].key())
+            const bool same_key =
+                index != 0 && arc_carriers[index - 1].key() == arc_carriers[index].key();
+            if (same_key && arc_carriers[index].has_source_identity &&
+                !normalized_replay_arc_carrier_identity_matches(
+                    curves_[arc_carriers[index - 1].curve], curves_[arc_carriers[index].curve]))
+            {
+                result_.error = ReplayError::invalid_argument;
+                return false;
+            }
+            if (!same_key)
                 ++group;
             auto& curve = geometry_.curves[arc_carriers[index].curve];
             curve.construction_carrier_id = curves_.size() + group;
@@ -544,6 +629,167 @@ class Validator
         }
         for (std::uint32_t index = 0; index < geometry_.curves.size(); ++index)
             append_occurrence(index);
+        return remint_tangent_tokens();
+    }
+
+    bool validate_and_remint_source_carriers()
+    {
+        std::vector<SourceCarrierEntry> entries;
+        entries.reserve(geometry_.curves.size());
+        for (std::uint32_t curve = 0; curve < geometry_.curves.size(); ++curve)
+            if (geometry_.curves[curve].construction_carrier_id != 0)
+                entries.push_back({geometry_.curves[curve].construction_carrier_id, curve});
+        std::sort(entries.begin(), entries.end(),
+                  [](const SourceCarrierEntry& left, const SourceCarrierEntry& right)
+                  { return left.key() < right.key(); });
+
+        std::uint64_t line_group = 0;
+        for (std::size_t begin = 0; begin < entries.size();)
+        {
+            std::size_t end = begin + 1;
+            while (end < entries.size() &&
+                   entries[end].source_carrier == entries[begin].source_carrier)
+                ++end;
+            const auto& reference = geometry_.curves[entries[begin].curve];
+            for (std::size_t index = begin + 1; index < end; ++index)
+            {
+                const auto& candidate = geometry_.curves[entries[index].curve];
+                if (candidate.kind != reference.kind)
+                {
+                    result_.error = ReplayError::invalid_argument;
+                    return false;
+                }
+            }
+            if (reference.kind == AnalyticAtomicCurveKind::line)
+            {
+                for (std::size_t index = begin; index < end; ++index)
+                {
+                    auto& curve = geometry_.curves[entries[index].curve];
+                    if (!valid_source_line_direction(curve))
+                    {
+                        result_.error = ReplayError::invalid_argument;
+                        return false;
+                    }
+                    // Normalized sibling line fragments are not assumed to
+                    // remain one exact carrier after independent endpoint
+                    // rounding. They retain deterministic, separate replay
+                    // identities unless a future exact normalized line key is
+                    // transported explicitly.
+                    curve.construction_carrier_id = ++line_group;
+                    curve.construction_family_id = curve.construction_carrier_id;
+                }
+            }
+            begin = end;
+        }
+        for (std::uint32_t index = 0; index < geometry_.curves.size(); ++index)
+        {
+            auto& curve = geometry_.curves[index];
+            if (curve.kind != AnalyticAtomicCurveKind::line ||
+                curves_[index].construction_carrier_id != 0)
+                continue;
+            if (!valid_source_line_direction(curve))
+            {
+                result_.error = ReplayError::invalid_argument;
+                return false;
+            }
+            ++line_group;
+            curve.construction_carrier_id = line_group;
+            curve.construction_family_id = line_group;
+        }
+        return true;
+    }
+
+    bool remint_tangent_tokens()
+    {
+        std::vector<ReplayTangentEndpoint> endpoints;
+        endpoints.reserve(geometry_.curves.size() * 2);
+        for (std::uint32_t curve = 0; curve < geometry_.curves.size(); ++curve)
+        {
+            const auto& value = geometry_.curves[curve];
+            if (value.construction_start_tangent_id != 0)
+                endpoints.push_back({value.construction_start_tangent_id, curve, true});
+            if (value.construction_end_tangent_id != 0)
+                endpoints.push_back({value.construction_end_tangent_id, curve, false});
+        }
+        if (!charge(endpoints.size() + sort_units(endpoints.size())))
+            return false;
+        std::sort(endpoints.begin(), endpoints.end(),
+                  [](const ReplayTangentEndpoint& left, const ReplayTangentEndpoint& right)
+                  { return left.key() < right.key(); });
+        for (std::size_t begin = 0; begin < endpoints.size();)
+        {
+            std::size_t end = begin + 1;
+            while (end < endpoints.size() && endpoints[end].token == endpoints[begin].token)
+                ++end;
+            const auto clear = [&](const ReplayTangentEndpoint& endpoint)
+            {
+                auto& curve = geometry_.curves[endpoint.curve];
+                (endpoint.start ? curve.construction_start_tangent_id
+                                : curve.construction_end_tangent_id) = 0;
+            };
+            if (end - begin == 1)
+            {
+                clear(endpoints[begin]);
+                begin = end;
+                continue;
+            }
+            if (end - begin != 2)
+            {
+                result_.error = ReplayError::invalid_argument;
+                return false;
+            }
+            ReplayTangentEndpoint& first_endpoint = endpoints[begin];
+            ReplayTangentEndpoint& second_endpoint = endpoints[begin + 1U];
+            auto& first_curve = geometry_.curves[first_endpoint.curve];
+            auto& second_curve = geometry_.curves[second_endpoint.curve];
+            const auto first_point =
+                first_endpoint.start ? first_curve.integer_start : first_curve.integer_end;
+            const auto second_point =
+                second_endpoint.start ? second_curve.integer_start : second_curve.integer_end;
+            if (first_point.x != second_point.x || first_point.y != second_point.y)
+            {
+                result_.error = ReplayError::invalid_argument;
+                return false;
+            }
+            std::uint64_t reminted = 0;
+            if (first_curve.kind != second_curve.kind)
+            {
+                auto& line_curve =
+                    first_curve.kind == AnalyticAtomicCurveKind::line ? first_curve : second_curve;
+                auto& arc_curve = first_curve.kind == AnalyticAtomicCurveKind::circular_arc
+                                      ? first_curve
+                                      : second_curve;
+                const bool line_start = first_curve.kind == AnalyticAtomicCurveKind::line
+                                            ? first_endpoint.start
+                                            : second_endpoint.start;
+                const bool arc_start = first_curve.kind == AnalyticAtomicCurveKind::circular_arc
+                                           ? first_endpoint.start
+                                           : second_endpoint.start;
+                reminted =
+                    analytic_endpoint_tangent_token(line_curve.construction_carrier_id, line_start,
+                                                    arc_curve.construction_carrier_id, arc_start);
+            }
+            else if (first_curve.kind == AnalyticAtomicCurveKind::circular_arc)
+                reminted = analytic_circle_endpoint_tangent_token(
+                    first_curve.construction_carrier_id, first_endpoint.start,
+                    second_curve.construction_carrier_id, second_endpoint.start,
+                    analytic_circle_endpoint_tangent_identity(first_endpoint.token));
+            else
+            {
+                result_.error = ReplayError::invalid_argument;
+                return false;
+            }
+            if (reminted == 0)
+            {
+                result_.error = ReplayError::resource_limit_exceeded;
+                return false;
+            }
+            (first_endpoint.start ? first_curve.construction_start_tangent_id
+                                  : first_curve.construction_end_tangent_id) = reminted;
+            (second_endpoint.start ? second_curve.construction_start_tangent_id
+                                   : second_curve.construction_end_tangent_id) = reminted;
+            begin = end;
+        }
         return true;
     }
 
@@ -553,8 +799,6 @@ class Validator
         bool agrees = true;
         if (curve.kind == AnalyticAtomicCurveKind::line)
         {
-            curve.construction_carrier_id = index + 1;
-            curve.construction_family_id = index + 1;
             const std::int64_t dx = curve.integer_end.x - curve.integer_start.x;
             const std::int64_t dy = curve.integer_end.y - curve.integer_start.y;
             agrees = dx > 0 || (dx == 0 && dy > 0);
@@ -780,6 +1024,20 @@ class Validator
 };
 } // namespace
 
+bool normalized_replay_arc_carrier_identity_matches(const AnalyticAtomicCurveNm& left,
+                                                    const AnalyticAtomicCurveNm& right) noexcept
+{
+    return left.kind == AnalyticAtomicCurveKind::circular_arc && right.kind == left.kind &&
+           left.construction_carrier_id != 0 &&
+           left.construction_carrier_id == right.construction_carrier_id &&
+           double_bits(left.circle.center.x.lower) == double_bits(right.circle.center.x.lower) &&
+           double_bits(left.circle.center.x.upper) == double_bits(right.circle.center.x.upper) &&
+           double_bits(left.circle.center.y.lower) == double_bits(right.circle.center.y.lower) &&
+           double_bits(left.circle.center.y.upper) == double_bits(right.circle.center.y.upper) &&
+           double_bits(left.circle.radius.lower) == double_bits(right.circle.radius.lower) &&
+           double_bits(left.circle.radius.upper) == double_bits(right.circle.radius.upper);
+}
+
 ReplayResult validate_normalized_replay(std::int64_t origin_x_nm, std::int64_t origin_y_nm,
                                         const std::vector<AnalyticAtomicCurveNm>& curves,
                                         const std::vector<AnalyticCurveBoundsNm>& bounds,
@@ -791,8 +1049,10 @@ ReplayResult validate_normalized_replay(std::int64_t origin_x_nm, std::int64_t o
 
 static_assert(sizeof(AnalyticAtomicCurveNm) <= kAnalyticAtomicCurveLogicalBytes);
 static_assert(sizeof(EndpointColumnEntry) <= 32);
+static_assert(sizeof(ReplayTangentEndpoint) <= 16);
+static_assert(sizeof(SourceCarrierEntry) <= 16);
 static_assert(sizeof(AnalyticCurveBoundsNm) <= 48);
 static_assert(sizeof(AnalyticFilteredOccurrence) <= 56);
-static_assert(sizeof(ArcCarrierEntry) <= 80);
+static_assert(sizeof(ArcCarrierEntry) <= 144);
 
 } // namespace geometer::analytic_normalization_detail

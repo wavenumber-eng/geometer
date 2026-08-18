@@ -24,7 +24,18 @@ const closure = createHash("sha256")
 if (closure !== manifest.sha256) throw new Error("Analytic static-site closure digest drifted.");
 
 const manifestPaths = new Set(manifest.files.map((item) => item.path));
+if (!manifestPaths.has("JetBrainsMono-OFL.txt"))
+  throw new Error("Analytic static site omits the JetBrains Mono OFL notice.");
+const fontLicense = await readFile(join(site, "JetBrainsMono-OFL.txt"), "utf8");
+const governedFontLicense = await readFile(
+  join(root, "docs", "design", "assets", "fonts", "JetBrainsMono", "OFL.txt"),
+  "utf8",
+);
+if (fontLicense !== governedFontLicense) throw new Error("Analytic static-site font license drifted.");
 const indexText = await readFile(join(site, "index.html"), "utf8");
+if ([...indexText.matchAll(/<link\b[^>]*rel="stylesheet"/gu)].length !== 1)
+  throw new Error("Analytic demo must consume exactly one stylesheet.");
+if (/\sstyle=/u.test(indexText)) throw new Error("Analytic demo contains inline style values.");
 const importMapMatch = indexText.match(/<script type="importmap">([\s\S]*?)<\/script>/u);
 if (importMapMatch === null) throw new Error("Analytic static site has no import map.");
 const importMap = JSON.parse(importMapMatch[1]).imports;
@@ -68,7 +79,7 @@ while (pending.length > 0) {
 
 for (const filename of [
   "index.html",
-  "analytic_polygon_pour_demo.css",
+  "geometer_demo.css",
   "analytic_polygon_pour_demo.js",
   "analytic_polygon_pour_fixture.js",
   "analytic_polygon_pour_worker.js",

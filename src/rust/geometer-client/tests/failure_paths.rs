@@ -58,7 +58,7 @@ async fn raw_invalid_request_remains_a_correlated_operation_failure() {
     };
     assert_eq!(
         failure.diagnostics[0].code,
-        "geometer.contract.unknown_field"
+        "geometer.contract.union_mismatch"
     );
     write_control(&mut stdin, FrameKind::Shutdown, 0, b"{}").await;
     assert_eq!(
@@ -141,10 +141,7 @@ async fn shutdown_deadline_forces_exit_and_resolves_pending_work() {
     let close = tokio::time::timeout(Duration::from_secs(5), client.close())
         .await
         .expect("deadline test server did not terminate");
-    assert!(matches!(
-        close,
-        Err(GeometerClientError::Process(_) | GeometerClientError::Protocol(_))
-    ));
+    assert!(matches!(close, Err(GeometerClientError::Process(_))));
     assert!(matches!(
         call.wait().await,
         Err(GeometerClientError::Process(_))

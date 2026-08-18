@@ -1,16 +1,20 @@
 #include "geometer/analytic_curve_broad_phase.h"
 #include "geometer/analytic_filtered_arrangement.h"
 
+#include "analytic_filtered_arrangement_cycle_orientation.h"
+#include "analytic_filtered_arrangement_tangent_identity.h"
 #include "analytic_filtered_execution_policy.h"
 #include "analytic_interval_index.h"
 
 #include <algorithm>
+#include <array>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
 #include <iomanip>
 #include <iostream>
 #include <limits>
+#include <optional>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -103,6 +107,72 @@ AnalyticFilteredArrangementResult arrange(const AnalyticFilteredGeometry& geomet
                                           const AnalyticSolverLimits& limits = {})
 {
     return build_analytic_filtered_arrangement(geometry, {}, limits);
+}
+
+void test_certified_cycle_orientation_consistency()
+{
+    using analytic_arrangement_detail::merge_certified_cycle_orientation;
+    std::array<std::optional<std::int8_t>, 4> agreeing = {std::nullopt, std::nullopt,
+                                                          std::int8_t{-1}, std::int8_t{-1}};
+    do
+    {
+        std::optional<std::int8_t> orientation;
+        for (const auto candidate : agreeing)
+            require(merge_certified_cycle_orientation(candidate, orientation),
+                    "agreeing multiple-left-extrema cycle was rejected");
+        require(orientation && *orientation == -1,
+                "agreeing multiple-left-extrema cycle lost its orientation");
+    } while (std::next_permutation(agreeing.begin(), agreeing.end()));
+
+    for (const std::array<std::int8_t, 2> conflict :
+         {std::array<std::int8_t, 2>{-1, 1}, std::array<std::int8_t, 2>{1, -1}})
+    {
+        std::optional<std::int8_t> orientation;
+        require(merge_certified_cycle_orientation(conflict[0], orientation) &&
+                    !merge_certified_cycle_orientation(conflict[1], orientation),
+                "conflicting cycle orientations were accepted");
+    }
+    std::optional<std::int8_t> orientation;
+    require(!merge_certified_cycle_orientation(std::int8_t{0}, orientation),
+            "zero cycle orientation was accepted");
+    require(merge_certified_cycle_orientation(std::nullopt, orientation) && !orientation,
+            "uncertified cycle germ minted an orientation");
+}
+
+void test_cycle_tangent_class_requires_one_exact_identity()
+{
+    using analytic_arrangement_detail::compare_canonical_tangent_class;
+    using analytic_arrangement_detail::shares_canonical_tangent_class;
+    using analytic_arrangement_detail::TangentEndpointIdentity;
+    const AnalyticFilteredPointNm endpoint = exact_point(17.0, 23.0);
+    const std::uint64_t first_token = analytic_endpoint_tangent_token(1, true, 2, false);
+    const std::uint64_t conflicting_token = analytic_endpoint_tangent_token(3, true, 2, false);
+    const TangentEndpointIdentity line{AnalyticAtomicCurveKind::line, 1, first_token, endpoint};
+    const TangentEndpointIdentity arc{AnalyticAtomicCurveKind::circular_arc, 2, first_token,
+                                      endpoint};
+    const TangentEndpointIdentity conflicting_arc{AnalyticAtomicCurveKind::circular_arc, 2,
+                                                  conflicting_token, endpoint};
+    require(shares_canonical_tangent_class(line, arc, 1.0, 0.25, 0.25),
+            "matching canonical tangent class was rejected");
+    require(!shares_canonical_tangent_class(line, conflicting_arc, 1.0, 0.25, 0.25),
+            "cycle germ admitted a conflicting tangent identity");
+    require(!shares_canonical_tangent_class(line, arc, 1.0, 0.25, 0.5),
+            "cycle germ admitted a different canonical angle class");
+    require(!shares_canonical_tangent_class(line, arc, 0.0, 0.25, 0.25),
+            "cycle germ admitted a nonpositive tangent ray");
+    const auto line_before_arc =
+        compare_canonical_tangent_class(line, arc, 1.0, 0.25, 0.25, 0, 1, 0.0, -85.0, 4, 7, 8, 13);
+    const auto arc_after_line =
+        compare_canonical_tangent_class(arc, line, 1.0, 0.25, 0.25, 1, 0, -85.0, 0.0, 7, 4, 13, 8);
+    require(line_before_arc && arc_after_line && *line_before_arc == -1 && *arc_after_line == 1,
+            "canonical class consumers disagreed on curvature order");
+    const auto source_order =
+        compare_canonical_tangent_class(line, line, 1.0, 0.25, 0.25, 0, 0, 0.0, 0.0, 4, 7, 8, 13);
+    require(source_order && *source_order == -1,
+            "canonical class lost its deterministic source tie-break");
+    require(!compare_canonical_tangent_class(line, conflicting_arc, 1.0, 0.25, 0.25, 0, 1, 0.0,
+                                             -85.0, 4, 7, 8, 13),
+            "canonical class comparator admitted conflicting identities");
 }
 
 void append_triangle(AnalyticFilteredGeometry& geometry, double anchor_x, double ax, double ay,
@@ -392,6 +462,33 @@ void test_lowered_irrational_capsule_arrangement()
                 " vertices=" + std::to_string(result.vertices.size()) +
                 " edges=" + std::to_string(result.edges.size()) +
                 " cycles=" + std::to_string(result.cycles.size()));
+}
+
+void test_horizontal_capsule_exact_zero_offset_arrangement()
+{
+    AnalyticRequestPacketRecords records;
+    records.jobs = {{11, 0, 1}};
+    records.stages = {{101, 1, 0, 1}};
+    records.operands = {{1002, 4, 0}};
+    records.capsules = {{8002, -1'000'000, 5'000'000, 21'000'000, 5'000'000, 1'000'000}};
+    const AnalyticFilteredLoweringResult lowered =
+        lower_analytic_job_to_filtered_curves(records, 0);
+    require(lowered.error == AnalyticFilteredLoweringError::none && lowered.value,
+            "horizontal capsule did not lower");
+    const auto& curves = lowered.value->curves;
+    require(curves.size() == 4 && curves[1].start.x.lower == curves[1].start.x.upper &&
+                curves[1].start.x.lower == curves[1].circle.center.x.lower &&
+                curves[3].start.x.lower == curves[3].start.x.upper &&
+                curves[3].start.x.lower == curves[3].circle.center.x.lower,
+            "horizontal capsule exact-zero offset widened its cap junction");
+    const AnalyticBroadPhaseResult broad = build_analytic_curve_candidates(lowered.value->bounds);
+    require(broad.error == AnalyticBroadPhaseError::none, "horizontal capsule broad phase failed");
+    const AnalyticFilteredArrangementResult arrangement =
+        build_analytic_filtered_arrangement(*lowered.value, broad.pairs);
+    require(arrangement.error == AnalyticFilteredArrangementError::none &&
+                arrangement.cycles.size() == 2 &&
+                !arrangement.telemetry.unresolved_predicate_failure,
+            "horizontal capsule cap/line tangent was not certified");
 }
 
 AnalyticFilteredArrangementResult overlapping_disks_arrangement()
@@ -826,6 +923,8 @@ std::string parity_vector()
 
 int main()
 {
+    test_certified_cycle_orientation_consistency();
+    test_cycle_tangent_class_requires_one_exact_identity();
     test_square_topology();
     test_circle_topology();
     test_nontransitive_resolution_chain();
@@ -835,6 +934,7 @@ int main()
     test_crossing_rectangles_pipeline();
     test_right_partition_makes_major_arc_x_monotone();
     test_lowered_irrational_capsule_arrangement();
+    test_horizontal_capsule_exact_zero_offset_arrangement();
     test_covering_span_carriers();
     test_downstream_preflight_stops_before_overlay();
     test_limits_and_malformed_inputs();

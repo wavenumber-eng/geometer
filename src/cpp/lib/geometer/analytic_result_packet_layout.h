@@ -10,6 +10,7 @@ namespace geometer
 {
 
 inline constexpr std::size_t kAnalyticResultTableCount = 14;
+inline constexpr std::uint64_t kAnalyticMaximumLogicalSourceReferenceExpansions = 1'048'576;
 
 enum class AnalyticResultPacketLayoutError : std::uint8_t
 {

@@ -1,22 +1,37 @@
 use std::collections::HashMap;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::process::Stdio;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::time::Duration;
 
-use serde_json::Value;
 use tokio::io::AsyncReadExt;
 use tokio::process::{Child, ChildStdin, Command};
 use tokio::sync::{Mutex, oneshot};
 
 use crate::generated::contracts::{
-    self, DiagnosticCategory, IpcCancelRejectedA0, IpcCancelledA0, IpcHelloA0, IpcReasonA0,
-    IpcRequestA0, IpcRequestValueA0, IpcRuntimeDispatchA0, IpcWelcomeA0, ModelBoundsOptionsA0,
+    self, AnalyticPlanarBooleanBatchRequestA0, AnalyticPlanarBooleanBatchResultA0,
+    DiagnosticCategory, IpcCancelRejectedA0, IpcCancelledA0, IpcHelloA0, IpcRequestA0,
+    IpcRequestValueA0, IpcRuntimeDispatchA0, IpcWelcomeA0, ModelBoundsOptionsA0,
     ModelBoundsResultA0, OperationOutcomeA0, OperationResultValueA0, PackedAttachmentProjectionA0,
+    PackedAttachmentReferenceA0,
 };
+use crate::generated::operations::ANALYTIC_PLANAR_BOOLEAN_BATCH_A0_IDENTITY;
 use crate::ipc::{self, Attachment, Frame, FrameKind};
-use crate::{IPC_IDENTITY, NORMALIZED_CATALOG_SHA256};
+use crate::operation_validation::{
+    operation_declaration, validate_operation_request, validate_operation_response,
+};
+use crate::session_validation::{
+    discover_executable, encode_reason, validate_effective_request, validate_welcome,
+};
+use crate::{
+    AnalyticPacketError, IPC_IDENTITY, decode_analytic_planar_boolean_batch_result_a0_packet,
+    encode_analytic_planar_boolean_batch_request_a0_packet,
+};
+
+#[cfg(test)]
+#[path = "client_tests.rs"]
+mod tests;
 
 const STDERR_CAPTURE_LIMIT: usize = 1024 * 1024;
 
@@ -29,6 +44,8 @@ pub enum GeometerClientError {
     Contract(#[from] contracts::ContractError),
     #[error(transparent)]
     Frame(#[from] ipc::FrameError),
+    #[error(transparent)]
+    AnalyticPacket(#[from] AnalyticPacketError),
     #[error("Geometer IPC protocol failed: {0}")]
     Protocol(String),
     #[error("Geometer process failed: {0}")]
@@ -77,19 +94,42 @@ pub struct OperationResponse {
 struct PendingRequest {
     operation: String,
     resident_bytes: usize,
-    sender: oneshot::Sender<Result<Frame, String>>,
+    sender: oneshot::Sender<Result<Frame, PendingFailure>>,
+}
+
+#[derive(Clone)]
+enum PendingFailure {
+    Protocol(String),
+    Process(String),
+}
+
+impl PendingFailure {
+    fn into_client(self) -> GeometerClientError {
+        match self {
+            Self::Protocol(message) => GeometerClientError::Protocol(message),
+            Self::Process(message) => GeometerClientError::Process(message),
+        }
+    }
+}
+
+struct ShutdownWaiter {
+    sender: oneshot::Sender<Result<(), PendingFailure>>,
+    pending_at_request: usize,
+    rejected_queued: u32,
+    active_eligible: bool,
 }
 
 struct Inner {
     stdin: Mutex<Option<ChildStdin>>,
     child: Mutex<Child>,
     pending: Mutex<HashMap<u64, PendingRequest>>,
-    cancellation: Mutex<HashMap<u64, oneshot::Sender<Result<bool, String>>>>,
-    shutdown: Mutex<Option<oneshot::Sender<Result<(), String>>>>,
+    cancellation: Mutex<HashMap<u64, oneshot::Sender<Result<bool, PendingFailure>>>>,
+    shutdown: Mutex<Option<ShutdownWaiter>>,
     stderr: Mutex<Vec<u8>>,
     next_request_id: AtomicU64,
     closing: AtomicBool,
     closed: AtomicBool,
+    welcome: Arc<IpcWelcomeA0>,
 }
 
 #[derive(Clone)]
@@ -102,7 +142,7 @@ pub struct OperationCall {
     client: GeometerClient,
     operation: String,
     request_id: u64,
-    receiver: oneshot::Receiver<Result<Frame, String>>,
+    receiver: oneshot::Receiver<Result<Frame, PendingFailure>>,
 }
 
 impl OperationCall {
@@ -120,8 +160,8 @@ impl OperationCall {
             .receiver
             .await
             .map_err(|_| GeometerClientError::Process("response channel closed".to_owned()))?
-            .map_err(GeometerClientError::Process)?;
-        decode_operation_response(&operation, frame)
+            .map_err(PendingFailure::into_client)?;
+        decode_operation_response(&self.client.welcome, &operation, frame)
     }
 
     pub async fn wait_timeout(
@@ -134,8 +174,8 @@ impl OperationCall {
                     .map_err(|_| {
                         GeometerClientError::Process("response channel closed".to_owned())
                     })?
-                    .map_err(GeometerClientError::Process)?;
-                decode_operation_response(&self.operation, frame)
+                    .map_err(PendingFailure::into_client)?;
+                decode_operation_response(&self.client.welcome, &self.operation, frame)
             }
             Err(_) => {
                 let queued_cancelled = self
@@ -149,6 +189,7 @@ impl OperationCall {
 }
 
 fn decode_operation_response(
+    welcome: &IpcWelcomeA0,
     operation: &str,
     frame: Frame,
 ) -> Result<OperationResponse, GeometerClientError> {
@@ -167,6 +208,7 @@ fn decode_operation_response(
             "response operation does not match its request".to_owned(),
         ));
     }
+    validate_operation_response(welcome, operation, &outcome, &frame.attachments)?;
     Ok(OperationResponse {
         outcome,
         attachments: frame.attachments,
@@ -226,6 +268,7 @@ impl GeometerClient {
         }
         let welcome = contracts::decode_ipc_welcome_a0_json(&welcome_frame.json)?;
         validate_welcome(&welcome)?;
+        let welcome = Arc::new(welcome);
         let inner = Arc::new(Inner {
             stdin: Mutex::new(Some(stdin)),
             child: Mutex::new(child),
@@ -236,10 +279,11 @@ impl GeometerClient {
             next_request_id: AtomicU64::new(1),
             closing: AtomicBool::new(false),
             closed: AtomicBool::new(false),
+            welcome: Arc::clone(&welcome),
         });
         let client = Self {
             inner: Arc::clone(&inner),
-            welcome: Arc::new(welcome),
+            welcome,
         };
         tokio::spawn(reader_task(Arc::clone(&inner), stdout));
         tokio::spawn(async move {
@@ -305,6 +349,7 @@ impl GeometerClient {
                 >(request_json)?)
             }
         };
+        validate_operation_request(declaration, &request, &attachments)?;
         let json = contracts::encode_ipc_request_a0_json(&IpcRequestA0 {
             operation: operation.to_owned(),
             request,
@@ -349,7 +394,11 @@ impl GeometerClient {
         );
         if let Err(error) = ipc::write_frame(stdin, &frame).await {
             pending.remove(&request_id);
-            return Err(error.into());
+            drop(pending);
+            drop(stdin_guard);
+            let failure = frame_failure("request write", &error);
+            fail_connection(&self.inner, failure.clone()).await;
+            return Err(failure.into_client());
         }
         drop(pending);
         drop(stdin_guard);
@@ -408,27 +457,103 @@ impl GeometerClient {
         }
     }
 
+    pub async fn analytic_planar_boolean_batch(
+        &self,
+        request: &AnalyticPlanarBooleanBatchRequestA0,
+    ) -> Result<AnalyticPlanarBooleanBatchResultA0, GeometerClientError> {
+        let declaration =
+            operation_declaration(&self.welcome, ANALYTIC_PLANAR_BOOLEAN_BATCH_A0_IDENTITY)?;
+        let request_projection = declaration.request_projection.as_ref().ok_or_else(|| {
+            GeometerClientError::Protocol(
+                "analytic request projection is absent from the negotiated catalog".to_owned(),
+            )
+        })?;
+        let result_attachment_name = declaration
+            .result_projection
+            .as_ref()
+            .ok_or_else(|| {
+                GeometerClientError::Protocol(
+                    "analytic result projection is absent from the negotiated catalog".to_owned(),
+                )
+            })?
+            .attachment_name
+            .clone();
+        let input = declaration
+            .input_attachments
+            .iter()
+            .find(|value| value.name == request_projection.attachment_name)
+            .ok_or_else(|| {
+                GeometerClientError::Protocol(
+                    "analytic request attachment declaration is absent".to_owned(),
+                )
+            })?;
+        let media_type = input.media_types.first().cloned().ok_or_else(|| {
+            GeometerClientError::Protocol(
+                "analytic request media type is absent from the catalog".to_owned(),
+            )
+        })?;
+        let projection = PackedAttachmentProjectionA0 {
+            schema: declaration.request_contract.clone(),
+            packet: PackedAttachmentReferenceA0 {
+                attachment: request_projection.attachment_name.clone(),
+                format: request_projection.format.clone(),
+            },
+        };
+        let request_json = contracts::encode_json(&projection)?;
+        let packet = encode_analytic_planar_boolean_batch_request_a0_packet(request)?;
+        let response = self
+            .execute(
+                ANALYTIC_PLANAR_BOOLEAN_BATCH_A0_IDENTITY,
+                &request_json,
+                vec![Attachment {
+                    name: input.name.clone(),
+                    media_type,
+                    data: packet,
+                }],
+            )
+            .await?;
+        match response.outcome {
+            OperationOutcomeA0::Failure(failure) => Err(GeometerClientError::Operation {
+                operation: failure.operation,
+                diagnostics: failure.diagnostics,
+            }),
+            OperationOutcomeA0::Success(_) => {
+                let attachment = response
+                    .attachments
+                    .iter()
+                    .find(|value| value.name == result_attachment_name)
+                    .ok_or_else(|| {
+                        GeometerClientError::Protocol(
+                            "analytic result attachment is missing after validation".to_owned(),
+                        )
+                    })?;
+                self.decode_analytic_result(&attachment.data).await
+            }
+        }
+    }
+
+    async fn decode_analytic_result(
+        &self,
+        bytes: &[u8],
+    ) -> Result<AnalyticPlanarBooleanBatchResultA0, GeometerClientError> {
+        match decode_analytic_planar_boolean_batch_result_a0_packet(bytes) {
+            Ok(result) => Ok(result),
+            Err(error) => {
+                let message = format!("invalid analytic result packet: {error}");
+                fail_connection(&self.inner, PendingFailure::Protocol(message.clone())).await;
+                Err(GeometerClientError::Protocol(message))
+            }
+        }
+    }
+
     pub async fn cancel(
         &self,
         request_id: u64,
         reason: Option<&str>,
     ) -> Result<bool, GeometerClientError> {
-        let mut stdin_guard = self.inner.stdin.lock().await;
-        if self.inner.closing.load(Ordering::SeqCst) || self.inner.closed.load(Ordering::SeqCst) {
-            return Err(GeometerClientError::Closed);
-        }
-        let stdin = stdin_guard.as_mut().ok_or(GeometerClientError::Closed)?;
-        let (sender, receiver) = oneshot::channel();
-        if self
-            .inner
-            .cancellation
-            .lock()
-            .await
-            .insert(request_id, sender)
-            .is_some()
-        {
+        if request_id == 0 {
             return Err(GeometerClientError::Protocol(
-                "a cancellation is already pending for this request".to_owned(),
+                "cancellation requires a nonzero request id".to_owned(),
             ));
         }
         let frame = Frame {
@@ -437,28 +562,61 @@ impl GeometerClient {
             json: encode_reason(reason)?,
             attachments: Vec::new(),
         };
+        let mut stdin_guard = self.inner.stdin.lock().await;
+        if self.inner.closing.load(Ordering::SeqCst) || self.inner.closed.load(Ordering::SeqCst) {
+            return Err(GeometerClientError::Closed);
+        }
+        let stdin = stdin_guard.as_mut().ok_or(GeometerClientError::Closed)?;
+        let (sender, receiver) = oneshot::channel();
+        {
+            let mut cancellation = self.inner.cancellation.lock().await;
+            match cancellation.entry(request_id) {
+                std::collections::hash_map::Entry::Vacant(entry) => {
+                    entry.insert(sender);
+                }
+                std::collections::hash_map::Entry::Occupied(_) => {
+                    return Err(GeometerClientError::Protocol(
+                        "a cancellation is already pending for this request".to_owned(),
+                    ));
+                }
+            }
+        }
         if let Err(error) = ipc::write_frame(stdin, &frame).await {
             self.inner.cancellation.lock().await.remove(&request_id);
-            return Err(error.into());
+            drop(stdin_guard);
+            let failure = frame_failure("cancellation write", &error);
+            fail_connection(&self.inner, failure.clone()).await;
+            return Err(failure.into_client());
         }
         drop(stdin_guard);
         receiver
             .await
             .map_err(|_| GeometerClientError::Process("cancellation channel closed".to_owned()))?
-            .map_err(GeometerClientError::Protocol)
+            .map_err(PendingFailure::into_client)
     }
 
     pub async fn close(&self) -> Result<(), GeometerClientError> {
+        self.close_with_timeout(Duration::from_secs(31)).await
+    }
+
+    async fn close_with_timeout(&self, timeout: Duration) -> Result<(), GeometerClientError> {
         if self.inner.closed.load(Ordering::SeqCst) {
             return Ok(());
         }
         if self.inner.closing.swap(true, Ordering::SeqCst) {
             return Err(GeometerClientError::Closed);
         }
+        let deadline = tokio::time::Instant::now() + timeout;
         let (sender, receiver) = oneshot::channel();
         let mut stdin_guard = self.inner.stdin.lock().await;
         let stdin = stdin_guard.as_mut().ok_or(GeometerClientError::Closed)?;
-        *self.inner.shutdown.lock().await = Some(sender);
+        let pending_at_request = self.inner.pending.lock().await.len();
+        *self.inner.shutdown.lock().await = Some(ShutdownWaiter {
+            sender,
+            pending_at_request,
+            rejected_queued: 0,
+            active_eligible: false,
+        });
         let shutdown_frame = Frame {
             kind: FrameKind::Shutdown,
             request_id: 0,
@@ -467,30 +625,58 @@ impl GeometerClient {
         };
         if let Err(error) = ipc::write_frame(stdin, &shutdown_frame).await {
             self.inner.shutdown.lock().await.take();
-            fail_connection(&self.inner, "failed to write graceful shutdown").await;
-            return Err(error.into());
+            drop(stdin_guard);
+            let failure = frame_failure("graceful shutdown write", &error);
+            fail_connection(&self.inner, failure.clone()).await;
+            return Err(failure.into_client());
         }
         drop(stdin_guard);
-        tokio::time::timeout(Duration::from_secs(31), receiver)
-            .await
-            .map_err(|_| GeometerClientError::Process("graceful shutdown timed out".to_owned()))?
-            .map_err(|_| GeometerClientError::Process("shutdown channel closed".to_owned()))?
-            .map_err(GeometerClientError::Protocol)?;
-        let status = self
-            .inner
-            .child
-            .lock()
-            .await
-            .wait()
-            .await
-            .map_err(|error| GeometerClientError::Process(error.to_string()))?;
-        self.inner.closed.store(true, Ordering::SeqCst);
+        self.await_shutdown_ack(deadline, receiver).await?;
+        let status = self.await_child_exit(deadline).await?;
         if !status.success() {
-            return Err(GeometerClientError::Process(format!(
-                "Geometer exited with {status}"
-            )));
+            let failure = PendingFailure::Process(format!("Geometer exited with {status}"));
+            fail_connection(&self.inner, failure.clone()).await;
+            return Err(failure.into_client());
         }
+        self.inner.closed.store(true, Ordering::SeqCst);
         Ok(())
+    }
+
+    async fn await_shutdown_ack(
+        &self,
+        deadline: tokio::time::Instant,
+        receiver: oneshot::Receiver<Result<(), PendingFailure>>,
+    ) -> Result<(), GeometerClientError> {
+        let failure = match tokio::time::timeout_at(deadline, receiver).await {
+            Ok(Ok(Ok(()))) => return Ok(()),
+            Ok(Ok(Err(failure))) => failure,
+            Ok(Err(_)) => PendingFailure::Process("shutdown channel closed".to_owned()),
+            Err(_) => PendingFailure::Process("graceful shutdown timed out".to_owned()),
+        };
+        fail_connection(&self.inner, failure.clone()).await;
+        Err(failure.into_client())
+    }
+
+    async fn await_child_exit(
+        &self,
+        deadline: tokio::time::Instant,
+    ) -> Result<std::process::ExitStatus, GeometerClientError> {
+        let wait = async { self.inner.child.lock().await.wait().await };
+        match tokio::time::timeout_at(deadline, wait).await {
+            Ok(Ok(status)) => Ok(status),
+            Ok(Err(error)) => {
+                let failure = PendingFailure::Process(format!("child wait failed: {error}"));
+                fail_connection(&self.inner, failure.clone()).await;
+                Err(failure.into_client())
+            }
+            Err(_) => {
+                let failure = PendingFailure::Process(
+                    "Geometer did not exit before the shutdown deadline".to_owned(),
+                );
+                fail_connection(&self.inner, failure.clone()).await;
+                Err(failure.into_client())
+            }
+        }
     }
 
     pub async fn terminate(&self) -> Result<(), GeometerClientError> {
@@ -502,7 +688,11 @@ impl GeometerClient {
             .kill()
             .await
             .map_err(|error| GeometerClientError::Process(error.to_string()))?;
-        fail_connection(&self.inner, "Geometer process was terminated by the client").await;
+        fail_connection(
+            &self.inner,
+            PendingFailure::Process("Geometer process was terminated by the client".to_owned()),
+        )
+        .await;
         Ok(())
     }
 
@@ -518,27 +708,54 @@ impl GeometerClient {
 }
 
 async fn reader_task(inner: Arc<Inner>, mut stdout: tokio::process::ChildStdout) {
+    let read_limits = ipc::ReadLimits {
+        json_bytes: inner.welcome.limits.json_bytes as usize,
+        attachment_count: inner.welcome.limits.attachment_count as usize,
+        attachment_name_bytes: inner.welcome.limits.attachment_name_bytes as usize,
+        attachment_media_type_bytes: inner.welcome.limits.attachment_media_type_bytes as usize,
+        attachment_bytes: inner.welcome.limits.attachment_bytes as usize,
+        frame_bytes: inner.welcome.limits.frame_bytes as usize,
+    };
     loop {
-        let frame = match ipc::read_frame(&mut stdout).await {
+        let frame = match ipc::read_frame_with_limits(&mut stdout, Some(read_limits)).await {
             Ok(Some(frame)) => frame,
             Ok(None) => {
                 if inner.closing.load(Ordering::SeqCst) {
-                    finish_connection(&inner, "Geometer stdout closed during shutdown", false)
-                        .await;
+                    finish_connection(
+                        &inner,
+                        PendingFailure::Process(
+                            "Geometer stdout closed during shutdown".to_owned(),
+                        ),
+                        false,
+                    )
+                    .await;
                     return;
                 }
-                fail_connection(&inner, "Geometer stdout closed unexpectedly").await;
+                fail_connection(
+                    &inner,
+                    PendingFailure::Process("Geometer stdout closed unexpectedly".to_owned()),
+                )
+                .await;
                 return;
             }
             Err(error) => {
-                fail_connection(&inner, &error.to_string()).await;
+                let failure = frame_failure("response read", &error);
+                fail_connection(&inner, failure).await;
                 return;
             }
         };
         if let Err(message) = dispatch_frame(&inner, frame).await {
-            fail_connection(&inner, &message).await;
+            fail_connection(&inner, PendingFailure::Protocol(message)).await;
             return;
         }
+    }
+}
+
+fn frame_failure(context: &str, error: &ipc::FrameError) -> PendingFailure {
+    let message = format!("{context} failed: {error}");
+    match error {
+        ipc::FrameError::Io(_) => PendingFailure::Process(message),
+        ipc::FrameError::Protocol(_) => PendingFailure::Protocol(message),
     }
 }
 
@@ -562,20 +779,64 @@ async fn handle_response(inner: &Arc<Inner>, frame: Frame) -> Result<(), String>
         .ok_or_else(|| "response used an unknown or completed request id".to_owned())?;
     match contracts::decode_operation_outcome_a0_json(&frame.json) {
         Ok(outcome) if outcome_operation(&outcome) == pending.operation => {
-            let _ = pending.sender.send(Ok(frame));
-            Ok(())
+            match validate_operation_response(
+                &inner.welcome,
+                &pending.operation,
+                &outcome,
+                &frame.attachments,
+            ) {
+                Ok(()) => {
+                    observe_shutdown_response(inner, &outcome).await?;
+                    let _ = pending.sender.send(Ok(frame));
+                    Ok(())
+                }
+                Err(error) => {
+                    let message = error.to_string();
+                    let _ = pending
+                        .sender
+                        .send(Err(PendingFailure::Protocol(message.clone())));
+                    Err(message)
+                }
+            }
         }
         Ok(_) => {
-            let _ = pending
-                .sender
-                .send(Err("response operation mismatch".to_owned()));
+            let _ = pending.sender.send(Err(PendingFailure::Protocol(
+                "response operation mismatch".to_owned(),
+            )));
             Err("response operation does not match its request".to_owned())
         }
         Err(error) => {
-            let _ = pending.sender.send(Err(error.to_string()));
+            let _ = pending
+                .sender
+                .send(Err(PendingFailure::Protocol(error.to_string())));
             Err("response contains an invalid generated outcome".to_owned())
         }
     }
+}
+
+async fn observe_shutdown_response(
+    inner: &Arc<Inner>,
+    outcome: &OperationOutcomeA0,
+) -> Result<(), String> {
+    if !inner.closing.load(Ordering::SeqCst) {
+        return Ok(());
+    }
+    let mut shutdown = inner.shutdown.lock().await;
+    let Some(waiter) = shutdown.as_mut() else {
+        return Ok(());
+    };
+    let rejected = matches!(outcome, OperationOutcomeA0::Failure(value)
+        if value.diagnostics.iter().any(|diagnostic|
+            diagnostic.code == "geometer.transport.server_shutting_down"));
+    if rejected {
+        waiter.rejected_queued = waiter
+            .rejected_queued
+            .checked_add(1)
+            .ok_or_else(|| "shutdown rejection count overflow".to_owned())?;
+    } else {
+        waiter.active_eligible = true;
+    }
+    Ok(())
 }
 
 async fn handle_cancelled(inner: &Arc<Inner>, frame: Frame) -> Result<(), String> {
@@ -592,12 +853,14 @@ async fn handle_cancelled(inner: &Arc<Inner>, frame: Frame) -> Result<(), String
         (Some(pending), Some(cancellation)) => (pending, cancellation),
         (pending, cancellation) => {
             if let Some(pending) = pending {
-                let _ = pending
-                    .sender
-                    .send(Err("invalid cancellation correlation".to_owned()));
+                let _ = pending.sender.send(Err(PendingFailure::Protocol(
+                    "invalid cancellation correlation".to_owned(),
+                )));
             }
             if let Some(cancellation) = cancellation {
-                let _ = cancellation.send(Err("invalid cancellation correlation".to_owned()));
+                let _ = cancellation.send(Err(PendingFailure::Protocol(
+                    "invalid cancellation correlation".to_owned(),
+                )));
             }
             return Err("cancelled used an unknown request id".to_owned());
         }
@@ -637,11 +900,15 @@ fn valid_rejected_control(control: &IpcCancelRejectedA0, request_id: u64) -> boo
 }
 
 async fn handle_shutdown_ack(inner: &Arc<Inner>, frame: Frame) -> Result<(), String> {
-    if frame.request_id != 0
-        || !frame.attachments.is_empty()
-        || !inner.pending.lock().await.is_empty()
-        || !inner.cancellation.lock().await.is_empty()
-    {
+    let frame_valid = [
+        frame.request_id == 0,
+        frame.attachments.is_empty(),
+        inner.pending.lock().await.is_empty(),
+        inner.cancellation.lock().await.is_empty(),
+    ]
+    .into_iter()
+    .all(std::convert::identity);
+    if !frame_valid {
         return Err("shutdown_ack arrived before all requests were terminal".to_owned());
     }
     let control = contracts::decode_ipc_shutdown_ack_a0_json(&frame.json)
@@ -649,18 +916,27 @@ async fn handle_shutdown_ack(inner: &Arc<Inner>, frame: Frame) -> Result<(), Str
     if control.status != "complete" {
         return Err("invalid shutdown_ack JSON body".to_owned());
     }
-    let _ = (
-        control.active_request_completed,
-        control.rejected_queued_request_count,
-    );
-    let sender = inner
-        .shutdown
-        .lock()
-        .await
-        .take()
+    let mut shutdown = inner.shutdown.lock().await;
+    let waiter = shutdown
+        .as_ref()
         .ok_or_else(|| "unexpected shutdown_ack".to_owned())?;
-    let _ = sender.send(Ok(()));
+    if !shutdown_ack_matches(&control, waiter) {
+        return Err("shutdown_ack contradicts observed client state".to_owned());
+    }
+    let waiter = shutdown.take().expect("checked shutdown waiter");
+    let _ = waiter.sender.send(Ok(()));
     Ok(())
+}
+
+fn shutdown_ack_matches(control: &contracts::IpcShutdownAckA0, waiter: &ShutdownWaiter) -> bool {
+    [
+        control.rejected_queued_request_count == waiter.rejected_queued,
+        waiter.rejected_queued as usize <= waiter.pending_at_request,
+        !control.active_request_completed || waiter.pending_at_request > 0,
+        !control.active_request_completed || waiter.active_eligible,
+    ]
+    .into_iter()
+    .all(std::convert::identity)
 }
 
 fn protocol_error_message(frame: &Frame) -> String {
@@ -676,24 +952,27 @@ fn protocol_error_message(frame: &Frame) -> String {
     format!("server protocol error: {}", control.diagnostic.message)
 }
 
-async fn fail_connection(inner: &Arc<Inner>, message: &str) {
-    finish_connection(inner, message, true).await;
+async fn fail_connection(inner: &Arc<Inner>, failure: PendingFailure) {
+    finish_connection(inner, failure, true).await;
 }
 
-async fn finish_connection(inner: &Arc<Inner>, message: &str, kill_child: bool) {
+async fn finish_connection(inner: &Arc<Inner>, failure: PendingFailure, kill_child: bool) {
     if inner.closed.swap(true, Ordering::SeqCst) {
+        if kill_child {
+            let _ = inner.child.lock().await.start_kill();
+        }
         return;
     }
     inner.closing.store(true, Ordering::SeqCst);
     inner.stdin.lock().await.take();
     for (_, pending) in inner.pending.lock().await.drain() {
-        let _ = pending.sender.send(Err(message.to_owned()));
+        let _ = pending.sender.send(Err(failure.clone()));
     }
     for (_, cancellation) in inner.cancellation.lock().await.drain() {
-        let _ = cancellation.send(Err(message.to_owned()));
+        let _ = cancellation.send(Err(failure.clone()));
     }
     if let Some(shutdown) = inner.shutdown.lock().await.take() {
-        let _ = shutdown.send(Err(message.to_owned()));
+        let _ = shutdown.sender.send(Err(failure.clone()));
     }
     if kill_child {
         let _ = inner.child.lock().await.start_kill();
@@ -705,219 +984,4 @@ fn outcome_operation(outcome: &OperationOutcomeA0) -> String {
         OperationOutcomeA0::Success(value) => value.operation.clone(),
         OperationOutcomeA0::Failure(value) => value.operation.clone(),
     }
-}
-
-fn validate_welcome(welcome: &IpcWelcomeA0) -> Result<(), GeometerClientError> {
-    if welcome.ipc != IPC_IDENTITY || welcome.catalog_sha256 != NORMALIZED_CATALOG_SHA256 {
-        return Err(GeometerClientError::Protocol(
-            "welcome selected an unsupported IPC or contract catalog".to_owned(),
-        ));
-    }
-    if !valid_effective_limits(&welcome.limits) {
-        return Err(GeometerClientError::Protocol(
-            "welcome advertises an effective limit above the A0 maximum".to_owned(),
-        ));
-    }
-    if serde_json::to_value(&welcome.operation_catalog)
-        .map_err(|error| GeometerClientError::Protocol(error.to_string()))?
-        != expected_operation_catalog(welcome)
-    {
-        return Err(GeometerClientError::Protocol(
-            "welcome operation catalog differs from the generated model-bounds catalog".to_owned(),
-        ));
-    }
-    for capability in [
-        "serialized_execution",
-        "queue_only_cancellation",
-        "raw_attachments",
-    ] {
-        if !welcome.capabilities.iter().any(|value| value == capability) {
-            return Err(GeometerClientError::Protocol(format!(
-                "welcome is missing required capability {capability}"
-            )));
-        }
-    }
-    Ok(())
-}
-
-fn valid_effective_limits(limits: &contracts::IpcEffectiveLimitsA0) -> bool {
-    let bounded = [
-        (limits.json_bytes, ipc::MAX_JSON_BYTES as u32),
-        (limits.attachment_count, ipc::MAX_ATTACHMENT_COUNT as u32),
-        (
-            limits.attachment_name_bytes,
-            ipc::MAX_ATTACHMENT_TEXT_BYTES as u32,
-        ),
-        (
-            limits.attachment_media_type_bytes,
-            ipc::MAX_ATTACHMENT_TEXT_BYTES as u32,
-        ),
-        (limits.attachment_bytes, ipc::MAX_ATTACHMENT_BYTES as u32),
-        (limits.frame_bytes, ipc::MAX_FRAME_BYTES as u32),
-        (limits.queued_requests, 8),
-        (limits.queued_bytes, ipc::MAX_FRAME_BYTES as u32),
-        (limits.resident_request_bytes, ipc::MAX_FRAME_BYTES as u32),
-        (limits.pending_writer_bytes, ipc::MAX_FRAME_BYTES as u32),
-    ];
-    bounded
-        .iter()
-        .all(|(value, maximum)| *value > 0 && value <= maximum)
-}
-
-fn validate_effective_request(
-    frame: &Frame,
-    limits: &contracts::IpcEffectiveLimitsA0,
-) -> Result<(), GeometerClientError> {
-    let invalid = frame.json.len() > limits.json_bytes as usize
-        || frame.attachments.len() > limits.attachment_count as usize
-        || frame.encoded_size()? > limits.frame_bytes as usize
-        || frame.attachments.iter().any(|attachment| {
-            attachment.name.len() > limits.attachment_name_bytes as usize
-                || attachment.media_type.len() > limits.attachment_media_type_bytes as usize
-                || attachment.data.len() > limits.attachment_bytes as usize
-        });
-    if invalid {
-        return Err(GeometerClientError::Protocol(
-            "request exceeds an effective limit advertised by welcome".to_owned(),
-        ));
-    }
-    Ok(())
-}
-
-fn encode_reason(reason: Option<&str>) -> Result<Vec<u8>, GeometerClientError> {
-    Ok(contracts::encode_ipc_reason_a0_json(&IpcReasonA0 {
-        reason: reason.map(str::to_owned),
-    })?)
-}
-
-fn expected_operation_catalog(welcome: &IpcWelcomeA0) -> Value {
-    serde_json::json!({
-        "catalog": "wn.geometer.operation_catalog.a0",
-        "generic_abi": "a0",
-        "release_version": welcome.release_version,
-        "c_abi_generation": welcome.c_abi_generation,
-        "operations": [{
-            "identity": "geometry.analytic_planar_boolean_batch.a0",
-            "request_contract": "geometry.analytic_planar_boolean_batch.request.a0",
-            "result_contract": "geometry.analytic_planar_boolean_batch.result.a0",
-            "runtime_dispatch": "packed_attachment",
-            "input_attachments": [{
-                "name": "analytic_planar_boolean_request",
-                "required": true,
-                "media_types": [
-                    "application/vnd.wavenumber.geometer.analytic-planar-boolean-request"
-                ],
-                "max_bytes": 268435456
-            }],
-            "output_attachments": [{
-                "name": "analytic_planar_boolean_result",
-                "required": true,
-                "media_types": [
-                    "application/vnd.wavenumber.geometer.analytic-planar-boolean-result"
-                ],
-                "max_bytes": 268435456
-            }],
-            "request_projection": {
-                "kind": "packed_attachment",
-                "attachment_name": "analytic_planar_boolean_request",
-                "format": "geometry.analytic_planar_boolean.packet.a0"
-            },
-            "result_projection": {
-                "kind": "packed_attachment",
-                "attachment_name": "analytic_planar_boolean_result",
-                "format": "geometry.analytic_planar_boolean.packet.a0"
-            }
-        }, {
-            "identity": "geometry.model_bounds.a0",
-            "request_contract": "geometry.model_bounds.options.a0",
-            "result_contract": "geometry.model_bounds.a0",
-            "runtime_dispatch": "logical_dto",
-            "input_attachments": [{
-                "name": "model",
-                "required": true,
-                "media_types": ["application/step", "model/step"],
-                "max_bytes": 268435456
-            }],
-            "output_attachments": []
-        }],
-        "attachment_descriptor": {
-            "wasm32": {
-                "size": 36,
-                "offsets": {
-                    "struct_size": 0,
-                    "flags": 4,
-                    "name": 8,
-                    "name_size": 12,
-                    "media_type": 16,
-                    "media_type_size": 20,
-                    "data": 24,
-                    "data_size": 28,
-                    "reserved0": 32
-                }
-            },
-            "pointer64": {
-                "size": 56,
-                "offsets": {
-                    "struct_size": 0,
-                    "flags": 4,
-                    "name": 8,
-                    "name_size": 16,
-                    "media_type": 24,
-                    "media_type_size": 32,
-                    "data": 40,
-                    "data_size": 48,
-                    "reserved0": 52
-                }
-            }
-        },
-        "limits": {
-            "operation_id_bytes": 128,
-            "request_json_bytes": 8388608,
-            "response_json_bytes": 8388608,
-            "attachment_count": 16,
-            "attachment_name_bytes": 128,
-            "attachment_media_type_bytes": 128,
-            "attachment_bytes": 268435456,
-            "aggregate_attachment_bytes_native": 536870912,
-            "aggregate_attachment_bytes_wasm": 268435456
-        }
-    })
-}
-
-fn discover_executable() -> Option<PathBuf> {
-    if let Some(path) = std::env::var_os("GEOMETER_EXECUTABLE") {
-        let path = PathBuf::from(path);
-        if path.is_file() {
-            return Some(path);
-        }
-    }
-    let name = if cfg!(windows) {
-        "geometer.exe"
-    } else {
-        "geometer"
-    };
-    if let Some(sibling) = std::env::current_exe()
-        .ok()
-        .and_then(|current| current.parent().map(|parent| parent.join(name)))
-        .filter(|path| path.is_file())
-    {
-        return Some(sibling);
-    }
-    let platform = format!(
-        "{}-{}",
-        if cfg!(windows) {
-            "windows"
-        } else if cfg!(target_os = "macos") {
-            "macos"
-        } else {
-            "linux"
-        },
-        match std::env::consts::ARCH {
-            "x86_64" => "x64",
-            "aarch64" => "arm64",
-            value => value,
-        }
-    );
-    let candidate = PathBuf::from("dist/native").join(platform).join(name);
-    candidate.is_file().then_some(candidate)
 }

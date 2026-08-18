@@ -10,14 +10,20 @@ const manifestPath = join(repositoryRoot, "docs", "contracts", "promotion-manife
 /**
  * Remove frozen candidate operations whose language projection is deferred by
  * the promotion manifest, together with their contract roots and any
- * declarations no longer reachable from the remaining roots. The normalized
- * catalog itself stays complete; only the requested projection is narrowed.
+ * declarations no longer reachable from the remaining roots. A model-only
+ * generator may retain explicitly implemented logical DTO projections while
+ * a separate codec projection remains deferred. The normalized catalog itself
+ * stays complete; only the requested projection is narrowed.
  */
 export async function applyProjectionDeferrals(catalog, language, options = {}) {
   const deferred = (await readCandidateOperations()).filter(
     (candidate) =>
       candidate.status === "contract_frozen" &&
-      (candidate.deferred_projections ?? []).includes(language),
+      (candidate.deferred_projections ?? []).includes(language) &&
+      !(
+        options.retainLogicalDtos === true &&
+        (candidate.logical_dto_projections ?? []).includes(language)
+      ),
   );
   if (deferred.length === 0) return catalog;
   const deferredOperations = new Set(deferred.map((candidate) => candidate.id));

@@ -193,7 +193,7 @@ if (
   failureJob?.status !== "failure" ||
   !failureJob.diagnostics.some(
     (diagnostic) =>
-      diagnostic.code === "geometer.operation.analytic_planar_boolean.unsupported_geometry",
+      diagnostic.code === "geometer.operation.analytic_planar_boolean.invalid_topology",
   )
 ) {
   throw new Error("Polygon-pour structured-failure fixture was not job-local and governed.");

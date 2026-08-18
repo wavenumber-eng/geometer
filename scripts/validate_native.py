@@ -10,6 +10,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from native_build_attestation import BuildAttestationError, load_and_validate_attestation
+
 
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_STEP = ROOT / "tests" / "fixtures" / "step" / "embedded_models" / "SOT-23.STEP"
@@ -78,6 +80,7 @@ def main() -> int:
     exe = dist_root / "native" / tag / executable_name()
     if not exe.exists():
         raise FileNotFoundError(f"Expected native executable was not produced: {exe}")
+    validate_build_attestation(exe)
     if not args.skip_examples:
         preview_exe = dist_root / "native" / tag / preview_executable_name()
         if not preview_exe.exists():
@@ -99,6 +102,21 @@ def main() -> int:
 
     print(f"Native validation complete for {tag}")
     return 0
+
+
+def validate_build_attestation(exe: Path) -> None:
+    try:
+        value = load_and_validate_attestation(exe)
+    except BuildAttestationError as error:
+        raise RuntimeError(f"Native build attestation validation failed: {error}") from error
+    if value is None:
+        raise RuntimeError(f"Native build attestation is missing beside {exe.name}")
+    source = value["build"]["source"]
+    print(
+        "Native build attestation ok: "
+        f"sha256={value['artifact']['sha256']} source={source['tree_state']} "
+        f"promotion_attested={value['build_provenance_attested']}"
+    )
 
 
 def validate_cli_outputs(exe: Path, step_path: Path, out_dir: Path) -> None:

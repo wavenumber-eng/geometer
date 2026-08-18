@@ -86,6 +86,36 @@ inline std::uint64_t sort_units(std::uint64_t count) noexcept
     return count * levels;
 }
 
+// Face-sweep event vertices may be processed atomically without asserting an
+// exact shared x coordinate. The entire column must retain one common x value;
+// updating the intersection (rather than the union) prevents transitive
+// overlap chains from consuming an uncertified ordering decision.
+template <typename IntervalType>
+inline bool extend_event_column_x_intersection(const IntervalType& next, double& common_lower,
+                                               double& common_upper) noexcept
+{
+    const double narrowed_lower = std::max(common_lower, next.lower);
+    const double narrowed_upper = std::min(common_upper, next.upper);
+    if (narrowed_lower > narrowed_upper)
+        return false;
+    common_lower = narrowed_lower;
+    common_upper = narrowed_upper;
+    return true;
+}
+
+template <typename IntervalType>
+inline bool event_column_x_requires_resolution(const IntervalType& value) noexcept
+{
+    return value.lower != value.upper;
+}
+
+template <typename IntervalType>
+inline bool event_column_y_is_strictly_ordered(const IntervalType& lower,
+                                               const IntervalType& upper) noexcept
+{
+    return lower.upper < upper.lower;
+}
+
 inline std::uint64_t tree_operation_units(std::uint64_t capacity) noexcept
 {
     std::uint64_t levels = 1;
@@ -159,15 +189,25 @@ inline bool valid_occurrence_source_for_curve(const AnalyticFilteredSourceRefere
         return curve == AnalyticAtomicCurveKind::line && source.secondary_id == 0;
     case AnalyticFilteredSourceRole::swept_left_offset_line:
     case AnalyticFilteredSourceRole::swept_right_offset_line:
+        return curve == AnalyticAtomicCurveKind::line &&
+               static_cast<std::uint32_t>(source.secondary_id >> 32U) != 0 &&
+               static_cast<std::uint32_t>(source.secondary_id) == 0;
     case AnalyticFilteredSourceRole::swept_left_offset_arc:
     case AnalyticFilteredSourceRole::swept_right_offset_arc:
-    case AnalyticFilteredSourceRole::swept_round_join:
-    case AnalyticFilteredSourceRole::swept_start_cap:
     case AnalyticFilteredSourceRole::swept_end_cap:
-        // Filtered swept-path lowering is not connected yet. Do not admit
-        // caller-minted source tuples for a producer this pipeline does not
-        // own; role-specific governed keys land with that lowering slice.
-        return false;
+        return curve == AnalyticAtomicCurveKind::circular_arc &&
+               static_cast<std::uint32_t>(source.secondary_id >> 32U) != 0 &&
+               static_cast<std::uint32_t>(source.secondary_id) == 0;
+    case AnalyticFilteredSourceRole::swept_round_join:
+    {
+        const std::uint32_t incoming = static_cast<std::uint32_t>(source.secondary_id >> 32U);
+        const std::uint32_t outgoing = static_cast<std::uint32_t>(source.secondary_id);
+        return curve == AnalyticAtomicCurveKind::circular_arc && incoming != 0 &&
+               outgoing == incoming + 1U;
+    }
+    case AnalyticFilteredSourceRole::swept_start_cap:
+        return curve == AnalyticAtomicCurveKind::circular_arc &&
+               source.secondary_id == (std::uint64_t{1} << 32U);
     default:
         return false;
     }
@@ -786,6 +826,9 @@ struct SelectionAdmissionOptions
     // owned face-dual traversal and reserve the later coordinate-free outcome
     // projection. This implies regions and lineage.
     bool reserve_outcomes = false;
+    // Preserve full downstream memory preflight and outcome collection, but
+    // defer lineage/outcome work reservation until exact region counts exist.
+    bool defer_downstream_work = false;
 };
 
 [[nodiscard]] SelectionAdmission prepare_boolean_selection_admission(

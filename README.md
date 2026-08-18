@@ -71,7 +71,7 @@ Import package: `geometer`
 Install the current release:
 
 ```bash
-python -m pip install wn-geometer==2026.6.23
+python -m pip install wn-geometer==2026.8.18
 ```
 
 Basic Python use:
@@ -131,8 +131,12 @@ geometer.write_planar_step(
 ```
 
 The package is executable-backed. Wheels bundle the platform executable under
-`geometer/native/<platform>/`, expose a `geometer` console command in the
-install environment, and call the executable through the JSON batch CLI.
+`geometer/native/<platform>/` and expose a `geometer` console command in the
+install environment. Existing file-oriented helpers use the JSON batch CLI;
+the candidate analytic API exports generated integer DTOs and a synchronous
+`GeometerClient` that uses the persistent binary `serve --stdio` protocol with
+strict packed request/result validation. This is implemented pilot evidence,
+not a claim that the analytic contract has been promoted or released.
 
 ## CLI
 
@@ -156,9 +160,11 @@ geometer run request.json response.json
 - `examples/wasm/model_bounds_demo.html` - TypeScript/generated-client pilot
   that computes STEP model bounds in a dedicated Worker and visualizes them
   through browser WASM and Three.js.
-- `dist/wasm/demos/hlr_demo.html` and
+- `dist/wasm/demos/analytic_polygon_pour_demo.html`,
+  `dist/wasm/demos/hlr_demo.html`, and
   `dist/wasm/demos/planar_ring_solver_demo.html` - one-file standalone browser
-  demos for release review.
+  demos for release review. Build them through
+  `python scripts/build_standalone_demos.py all`.
 - `examples/cpp/` - native Dear ImGui + SDL3 + OpenGL HLR preview.
 
 Serve browser examples from the repo root:

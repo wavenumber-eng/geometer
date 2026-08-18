@@ -80,6 +80,9 @@ inline Interval multiply_singletons(double left, double right) noexcept
 
 inline Interval multiply(Interval left, Interval right) noexcept
 {
+    if (valid(left) && valid(right) &&
+        ((singleton(left) && left.lower == 0.0) || (singleton(right) && right.lower == 0.0)))
+        return exact(0.0);
     if (singleton(left) && singleton(right))
         return multiply_singletons(left.lower, right.lower);
     const double products[] = {left.lower * right.lower, left.lower * right.upper,

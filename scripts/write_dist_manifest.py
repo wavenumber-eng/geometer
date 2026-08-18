@@ -12,6 +12,11 @@ README = DIST_DIR / "README.md"
 
 ROWS = [
     (
+        "`native/<platform>/geometer.build-attestation.json`",
+        "Native executable build attestation",
+        "Deterministic executable-bound metadata for version/C ABI, authoritative source state, compiler, platform, build type, OCCT tag, and CMake generator. Dirty or unavailable source state is diagnostic only and cannot attest promotion.",
+    ),
+    (
         "`native/<platform>/geometer(.exe)`",
         "Native CLI",
         "Command-line STEP/HLR/planar tool for source checkouts. Current release platform names use `windows-x64`, `linux-x64`, `linux-arm64`, and `macos-arm64`.",
@@ -27,9 +32,9 @@ ROWS = [
         "Official application integration build. Exports `createGeometerModule` and the full C ABI, including OCCT-backed STEP-to-GLB, HLR, and planar byte APIs.",
     ),
     (
-        "`wasm/node-test/geometer-node-test.js`, `wasm/node-test/geometer-node-test.wasm`",
+        "`wasm/node-test/geometer-node-test.js`, `wasm/node-test/geometer-node-test.wasm`, `wasm/node-test/package.json`",
         "Node CLI parity/test WASM",
-        "Node-only command-line build with real filesystem access. Use for tests and diagnostics, not browser integration.",
+        "Node-only CommonJS command-line build with real filesystem access. The local package boundary permits direct execution from this repository's ESM root. Use for tests and diagnostics, not browser integration.",
     ),
     (
         "`wasm/planar-browser/geometer-planar-browser.js`, `wasm/planar-browser/geometer-planar-browser.wasm`",
@@ -37,9 +42,14 @@ ROWS = [
         "Smaller optional build exporting `createGeometerPlanarModule` and planar byte APIs only. Use when STEP/OCCT operations are not needed and startup, download size, or worker memory matter.",
     ),
     (
-        "`wasm/demos/hlr_demo.html`, `wasm/demos/planar_ring_solver_demo.html`",
+        "`wasm/demos/analytic_polygon_pour_demo.html`, `wasm/demos/hlr_demo.html`, `wasm/demos/planar_ring_solver_demo.html`",
         "Standalone browser demos",
         "One-file HTML demos with their runtime assets embedded. They may be opened directly from disk and must not depend on separate demo workers, model fixtures, CDN modules, or WASM files.",
+    ),
+    (
+        "`wasm/demos/*.js`, `wasm/demos/demo-tooling/*.js`",
+        "Compiled TypeScript example modules",
+        "Generated ESM used by source examples, standalone-demo packaging, and focused tests. These JavaScript modules are not standalone demo entry points.",
     ),
 ]
 
@@ -58,7 +68,7 @@ def main() -> None:
         "- `wasm/browser/` for the full browser integration target.",
         "- `wasm/node-test/` for the Node CLI parity/test target.",
         "- `wasm/planar-browser/` for the smaller planar-only browser target.",
-        "- `wasm/demos/` for one-file standalone browser demos.",
+        "- `wasm/demos/` for standalone browser demos and compiled TypeScript example modules.",
         "",
         "`wasm/browser/geometer.js` / `geometer.wasm` is the official browser integration target.",
         "`wasm/planar-browser/geometer-planar-browser.js` / `geometer-planar-browser.wasm` is retained as",

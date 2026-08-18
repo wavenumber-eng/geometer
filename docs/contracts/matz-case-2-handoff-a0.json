@@ -1,0 +1,133 @@
+{
+  "identity": "wn.geometer.matz_case_2_handoff",
+  "generation": "a0",
+  "status": "blocked_awaiting_authoritative_integer_endpoints",
+  "consumer": "appz.data_models.pcb.matz",
+  "upstream_fixture": {
+    "repository": "wavenumber-eng/appz",
+    "ref": "4c688e46729015d21dc140dbe274e396e3717c18",
+    "path": "data_models/tests/fixtures/pcb_materialization/geometer_analytic_planar_boolean_observations_a0.json",
+    "content_sha256": "10a97f0eed4a4f6852917c4fb6abd35854142bf5d148b8320c60a44f765414c4",
+    "git_blob_sha1": "45c5a648fc0b167c8a887006cb14d3e62229e360",
+    "vendored_path": "tests/fixtures/analytic_planar_boolean/matz_observations_a0.json",
+    "fixture_id": "intersecting_arbitrary_angle_arcs",
+    "job_id": 2,
+    "stage_id": 201
+  },
+  "required_operand_updates": [
+    {
+      "operand_id": 2001,
+      "geometry_pointer": "/portable_cases/1/stages/0/operands/0/geometry",
+      "required_fields": {
+        "start": {
+          "type": "tuple_int64_int64",
+          "unit": "nm",
+          "authority": "matz"
+        },
+        "end": {
+          "type": "tuple_int64_int64",
+          "unit": "nm",
+          "authority": "matz"
+        },
+        "direction": {
+          "type": "enum",
+          "allowed": [
+            "ccw",
+            "cw"
+          ],
+          "authority": "matz"
+        },
+        "major_arc": {
+          "type": "boolean",
+          "authority": "matz"
+        }
+      }
+    },
+    {
+      "operand_id": 2002,
+      "geometry_pointer": "/portable_cases/1/stages/0/operands/1/geometry",
+      "required_fields": {
+        "start": {
+          "type": "tuple_int64_int64",
+          "unit": "nm",
+          "authority": "matz"
+        },
+        "end": {
+          "type": "tuple_int64_int64",
+          "unit": "nm",
+          "authority": "matz"
+        },
+        "direction": {
+          "type": "enum",
+          "allowed": [
+            "ccw",
+            "cw"
+          ],
+          "authority": "matz"
+        },
+        "major_arc": {
+          "type": "boolean",
+          "authority": "matz"
+        }
+      }
+    }
+  ],
+  "a0_projection": {
+    "operand_kind": "swept_path",
+    "centerline_vertices_per_operand": 2,
+    "centerline_segments_per_operand": 1,
+    "centerline_segment_kind": "circular_arc",
+    "preserved_fields": [
+      "operand_id",
+      "center",
+      "width",
+      "cap"
+    ],
+    "authored_fields": [
+      "start",
+      "end",
+      "direction",
+      "major_arc"
+    ],
+    "derived_from_angles": [],
+    "validation_constraints": [
+      "start and end each contain exactly two signed int64 nanometer coordinates",
+      "start and end are distinct",
+      "the exact integer squared distances center-to-start and center-to-end are equal and nonzero",
+      "direction is exactly ccw or cw and major_arc is exactly boolean",
+      "the topology-indexed arc is not a full circle",
+      "the centerline has two vertices and one segment",
+      "all authored ids are nonzero uint64 values unique in their declared batch id space",
+      "width_nm is in the inclusive range 1 through 1000000000000",
+      "cap and join are round",
+      "no angle, trigonometric value, or Geometer-selected rounding enters the A0 request"
+    ]
+  },
+  "regeneration": {
+    "hash_algorithm": "sha256",
+    "canonical_fragment_format": "A:radius_nm:direction:branch:start_x_nm,start_y_nm:end_x_nm,end_y_nm",
+    "canonical_fragment_bytes": "lexicographically sorted UTF-8 records joined by LF with no trailing LF",
+    "steps": [
+      "MATZ commits both operand updates and supplies the revised upstream ref, Git blob SHA-1, and fixture-content SHA-256",
+      "Geometer vendors the revised fixture byte-for-byte and updates the compatibility snapshot source ref, Git blob SHA-1, and both content SHA-256 values",
+      "Geometer projects case 2 to one A0 swept-path circular-arc segment per operand without consulting start_angle or sweep_angle",
+      "Geometer encodes the canonical GMABRQ01 request and records SHA-256 over the exact request attachment bytes",
+      "native executable IPC and browser WASM execute the identical request bytes and must return byte-identical successful result packets with no diagnostics",
+      "the strict decoder recomputes and records the standalone job-result SHA-256 for job 2",
+      "the case-2 fragment oracle and its SHA-256 are regenerated from the revised endpoint-authoritative input; the historical angle-form fragment list is not copied forward",
+      "an independent review confirms request identity, exact native-WASM parity, source lineage for operands 2001 and 2002, and the regenerated fragment oracle before case 2 is unblocked"
+    ],
+    "required_evidence": [
+      "revised_upstream_ref",
+      "revised_upstream_git_blob_sha1",
+      "revised_upstream_content_sha256",
+      "vendored_fixture_content_sha256",
+      "canonical_a0_request_sha256",
+      "native_result_packet_sha256",
+      "browser_wasm_result_packet_sha256",
+      "standalone_job_2_result_sha256",
+      "canonical_fragment_oracle_sha256",
+      "independent_review_identity"
+    ]
+  }
+}

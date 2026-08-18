@@ -3,6 +3,8 @@
 #include "geometer/analytic_result_packet_standalone.h"
 #include "geometer/sha256.h"
 
+#include "analytic_result_packet_records_internal.h"
+
 #include <cstdlib>
 #include <iomanip>
 #include <iostream>
@@ -323,6 +325,144 @@ int main()
     require(validate_analytic_result_packet_records(unused_source_set) ==
                 AnalyticResultPacketLayoutError::invalid_packet,
             "unreferenced source set was accepted into canonical bytes");
+    constexpr std::uint64_t authoritative_logical_expansion_limit = 1'048'576;
+    static_assert(kAnalyticMaximumLogicalSourceReferenceExpansions ==
+                  authoritative_logical_expansion_limit);
+    const auto compact_expansion = [](std::uint32_t count, std::uint32_t use)
+    {
+        AnalyticResultPacketRecords value;
+        value.source_sets = {{0, count}};
+        switch (use)
+        {
+        case 0:
+            value.vertices.resize(1);
+            value.vertices[0].intersection_source_set = 1;
+            break;
+        case 1:
+            value.fragments.resize(1);
+            value.fragments[0].positive_source_set = 1;
+            break;
+        case 2:
+            value.fragments.resize(1);
+            value.fragments[0].subtraction_source_set = 1;
+            break;
+        case 3:
+            value.regions.resize(1);
+            value.regions[0].positive_source_set = 1;
+            break;
+        case 4:
+            value.operand_events.resize(1);
+            value.operand_events[0].source_set = 1;
+            break;
+        default:
+            break;
+        }
+        return value;
+    };
+    for (std::uint32_t use = 0; use != 5; ++use)
+    {
+        AnalyticResultPacketRecords exact = compact_expansion(
+            static_cast<std::uint32_t>(authoritative_logical_expansion_limit), use);
+        std::uint64_t total = 0;
+        require(analytic_result_detail::charge_logical_source_reference_expansions(exact, total) ==
+                        AnalyticResultPacketLayoutError::none &&
+                    total == authoritative_logical_expansion_limit,
+                "a logical source-set use did not charge the exact independent limit");
+        exact.source_sets[0].source_reference_index_count++;
+        total = 0;
+        require(analytic_result_detail::charge_logical_source_reference_expansions(exact, total) ==
+                    AnalyticResultPacketLayoutError::limit_exceeded,
+                "a logical source-set use accepted the independent limit plus one");
+    }
+    AnalyticResultPacketRecords repeated =
+        compact_expansion(static_cast<std::uint32_t>(authoritative_logical_expansion_limit / 2), 0);
+    repeated.operand_events.resize(1);
+    repeated.operand_events[0].source_set = 1;
+    std::uint64_t aggregate_expansions = 0;
+    require(analytic_result_detail::charge_logical_source_reference_expansions(
+                repeated, aggregate_expansions) == AnalyticResultPacketLayoutError::none &&
+                aggregate_expansions == authoritative_logical_expansion_limit,
+            "repeated source-set handles were not charged once per occurrence");
+    repeated.source_sets[0].source_reference_index_count++;
+    aggregate_expansions = 0;
+    require(analytic_result_detail::charge_logical_source_reference_expansions(
+                repeated, aggregate_expansions) == AnalyticResultPacketLayoutError::limit_exceeded,
+            "repeated source-set handles accepted an aggregate over the limit");
+    AnalyticResultPacketRecords invalid_handle = compact_expansion(1, 0);
+    invalid_handle.vertices[0].intersection_source_set = 2;
+    aggregate_expansions = 0;
+    require(analytic_result_detail::charge_logical_source_reference_expansions(
+                invalid_handle, aggregate_expansions) ==
+                AnalyticResultPacketLayoutError::invalid_packet,
+            "an invalid nonzero logical source-set handle was not rejected");
+    const auto compact_packet_for_use =
+        [](std::uint32_t count, std::uint32_t use, bool repeat_handle, std::uint32_t handle)
+    {
+        AnalyticResultTableBytes tables;
+        const auto set_use = [&](std::uint32_t selected_use)
+        {
+            switch (selected_use)
+            {
+            case 0:
+                tables[2].resize(32);
+                write_u32(tables[2], 24, handle);
+                break;
+            case 1:
+                tables[3].resize(48);
+                write_u32(tables[3], 32, handle);
+                break;
+            case 2:
+                tables[3].resize(48);
+                write_u32(tables[3], 36, handle);
+                break;
+            case 3:
+                tables[6].resize(24);
+                write_u32(tables[6], 12, handle);
+                break;
+            case 4:
+                tables[10].resize(48);
+                write_u32(tables[10], 20, handle);
+                break;
+            default:
+                break;
+            }
+        };
+        set_use(use);
+        if (repeat_handle)
+            set_use(4);
+        tables[8].resize(8);
+        write_u32(tables[8], 4, count);
+        return encode_analytic_result_packet_layout(tables);
+    };
+    const auto decode_compact = [](const AnalyticResultPacketEncodeResult& packet)
+    {
+        require(packet.error == AnalyticResultPacketLayoutError::none && packet.value,
+                "compact public-decoder expansion fixture did not encode");
+        return decode_analytic_result_packet_records(packet.value->data(), packet.value->size());
+    };
+    for (std::uint32_t use = 0; use != 5; ++use)
+    {
+        AnalyticResultPacketRecordsResult exact_decoded = decode_compact(compact_packet_for_use(
+            static_cast<std::uint32_t>(authoritative_logical_expansion_limit), use, false, 1));
+        require(exact_decoded.error == AnalyticResultPacketLayoutError::invalid_packet,
+                "a raw logical source-set use failed the exact public decoder preflight");
+        AnalyticResultPacketRecordsResult excessive_decoded = decode_compact(compact_packet_for_use(
+            static_cast<std::uint32_t>(authoritative_logical_expansion_limit + 1), use, false, 1));
+        require(excessive_decoded.error == AnalyticResultPacketLayoutError::limit_exceeded,
+                "a raw logical source-set use escaped the public decoder expansion preflight");
+    }
+    AnalyticResultPacketRecordsResult repeated_exact = decode_compact(compact_packet_for_use(
+        static_cast<std::uint32_t>(authoritative_logical_expansion_limit / 2), 0, true, 1));
+    require(repeated_exact.error == AnalyticResultPacketLayoutError::invalid_packet,
+            "repeated raw handles failed the exact public decoder preflight");
+    AnalyticResultPacketRecordsResult repeated_excessive = decode_compact(compact_packet_for_use(
+        static_cast<std::uint32_t>(authoritative_logical_expansion_limit / 2 + 1), 0, true, 1));
+    require(repeated_excessive.error == AnalyticResultPacketLayoutError::limit_exceeded,
+            "repeated raw handles were deduplicated by the public decoder preflight");
+    AnalyticResultPacketRecordsResult invalid_handle_decoded =
+        decode_compact(compact_packet_for_use(1, 0, false, 2));
+    require(invalid_handle_decoded.error == AnalyticResultPacketLayoutError::invalid_packet,
+            "public decoder accepted an invalid nonzero logical source-set handle");
     require(validate_analytic_result_packet_records(deeply_nested_records(16'384)) ==
                 AnalyticResultPacketLayoutError::none,
             "materially deep ring hierarchy failed bounded ownership validation");

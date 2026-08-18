@@ -53,6 +53,20 @@ class PublicCacheConfig:
 
 
 @dataclasses.dataclass(frozen=True)
+class CMakeDefinition:
+    """One emitted CMake definition and its path-independent recipe value."""
+
+    name: str
+    value: str
+    include_in_recipe: bool = True
+    recipe_value: str | None = None
+
+    @property
+    def semantic_value(self) -> str:
+        return self.recipe_value if self.recipe_value is not None else self.value
+
+
+@dataclasses.dataclass(frozen=True)
 class OcctCacheProfile:
     kind: str
     platform_tag: str
@@ -102,10 +116,16 @@ class AcceptedCacheAlias:
     emsdk_version: str | None = None
 
 
+@dataclasses.dataclass(frozen=True)
+class LocalInstallMigration:
+    target_profile: OcctCacheProfile
+    predecessor_recipe_hashes: tuple[str, ...]
+
+
 # These aliases name archives whose exact profiles and bytes received
-# independent review. They bridge recipe-key churn caused solely by changing
-# dependency_versions.py from the qualification baseline pin to the accepted
-# production pin. They are deliberately not a general stale-cache fallback.
+# independent review. They bridge reviewed semantic-recipe transitions while
+# retaining an independently pinned archive checksum. They are deliberately
+# not a general stale-cache fallback.
 ACCEPTED_CACHE_ALIASES = (
     AcceptedCacheAlias(
         kind="native",
@@ -116,7 +136,7 @@ ACCEPTED_CACHE_ALIASES = (
         occt_tag="V8_0_1",
         recipe_hash="02d3ac07fe672579f1d5d97249964248a36e4b3982b3195c4fe7bd0d1dece46d",
         archive_sha256="255ad723184c62ef4e6dc82c20c1acd5b0aa43407cbefc6e26e484eb74a05df9",
-        compatible_recipe_hashes=("45aee960e6bad68c5f26c67335b82b6cbd539922aaefcf96003f20d7193485d9",),
+        compatible_recipe_hashes=("afddffde43bb0288a99269de68220cc973eb3212551045a0f779e964a912231b",),
         requested_toolchain_abi="msvc-v143",
     ),
     AcceptedCacheAlias(
@@ -128,8 +148,47 @@ ACCEPTED_CACHE_ALIASES = (
         occt_tag="V8_0_1",
         recipe_hash="a15818c33b508d24f66702e3834be2d25fce89031a00a58f6391c0d702bb95f4",
         archive_sha256="44fe6d6294c7a26ac77cfa17e1fd4a312578638a5669b7032c227750d032614e",
-        compatible_recipe_hashes=("d71a27bcf279d9cabdd3d9f012867a0d419b0ffcfeee7036d5ed6fdc269e70fc",),
+        compatible_recipe_hashes=("c48157a47af466d1793739f4022457f0f53f88f5c63ddc1ea86cf7149fe9542b",),
         emsdk_version="3.1.56",
+    ),
+)
+
+
+# A local install may be relabeled only across these reviewed, one-way recipe
+# transitions. Every other profile field and the installed OCCT version must
+# already match exactly. The target hashes are populated by the semantic
+# configure recipes in build_occt.py and build_wasm.py.
+LOCAL_INSTALL_MIGRATIONS = (
+    LocalInstallMigration(
+        target_profile=OcctCacheProfile(
+            kind="native",
+            platform_tag="windows-x64",
+            config="Release",
+            library_type="Static",
+            occt_repo="https://github.com/Open-Cascade-SAS/OCCT.git",
+            occt_tag="V8_0_1",
+            recipe_hash="afddffde43bb0288a99269de68220cc973eb3212551045a0f779e964a912231b",
+            toolchain_abi="msvc-v143",
+        ),
+        predecessor_recipe_hashes=(
+            "45aee960e6bad68c5f26c67335b82b6cbd539922aaefcf96003f20d7193485d9",
+        ),
+    ),
+    LocalInstallMigration(
+        target_profile=OcctCacheProfile(
+            kind="wasm",
+            platform_tag="wasm-emscripten",
+            config="Release",
+            library_type="Static",
+            occt_repo="https://github.com/Open-Cascade-SAS/OCCT.git",
+            occt_tag="V8_0_1",
+            recipe_hash="c48157a47af466d1793739f4022457f0f53f88f5c63ddc1ea86cf7149fe9542b",
+            emsdk_version="3.1.56",
+        ),
+        predecessor_recipe_hashes=(
+            "be4fe9173cdb53703d60a169b0833ac2c9141ec480046ba2d040a9e02f610c89",
+            "d71a27bcf279d9cabdd3d9f012867a0d419b0ffcfeee7036d5ed6fdc269e70fc",
+        ),
     ),
 )
 
@@ -199,20 +258,63 @@ def public_config_from_env() -> PublicCacheConfig | None:
     return PublicCacheConfig(base_url=base_url.rstrip("/"), prefix=prefix)
 
 
-def recipe_hash(paths: list[Path], extra: dict[str, str]) -> str:
+def cmake_definition_args(definitions: tuple[CMakeDefinition, ...]) -> list[str]:
+    _validated_cmake_definitions(definitions)
+    return [f"-D{definition.name}={definition.value}" for definition in definitions]
+
+
+def semantic_recipe_hash(
+    recipe_schema: str,
+    definitions: tuple[CMakeDefinition, ...],
+    inputs: dict[str, str],
+) -> str:
+    """Hash only byte-relevant configure choices and explicit semantic inputs."""
+
+    _validated_cmake_definitions(definitions)
+    recipe_definitions = {
+        definition.name: definition.semantic_value
+        for definition in definitions
+        if definition.include_in_recipe
+    }
+    payload = {
+        "schema": "geometer-occt-cache-recipe-a1",
+        "recipe_schema": recipe_schema,
+        "cmake_definitions": dict(sorted(recipe_definitions.items())),
+        "inputs": dict(sorted(inputs.items())),
+    }
     digest = hashlib.sha256()
-    digest.update(b"geometer-occt-cache-recipe-a0\n")
-    for key, value in sorted(extra.items()):
-        digest.update(f"extra:{key}={value}\n".encode("utf-8"))
-    for path in sorted(paths, key=lambda item: item.as_posix()):
-        if path.is_dir():
-            for child in sorted((p for p in path.rglob("*") if p.is_file()), key=lambda item: item.as_posix()):
-                _hash_file(digest, child, path.parent)
-        elif path.exists():
-            _hash_file(digest, path, path.parent)
-        else:
-            digest.update(f"missing:{path.as_posix()}\n".encode("utf-8"))
+    digest.update(json.dumps(payload, separators=(",", ":"), sort_keys=True).encode("utf-8"))
+    digest.update(b"\n")
     return digest.hexdigest()
+
+
+def directory_content_hash(path: Path) -> str:
+    """Return a deterministic digest of relative names and bytes in a tree."""
+
+    if not path.is_dir():
+        raise RuntimeError(f"Recipe content directory is missing: {path}")
+    digest = hashlib.sha256()
+    digest.update(b"geometer-recipe-directory-content-a0\n")
+    for child in sorted((candidate for candidate in path.rglob("*") if candidate.is_file()), key=lambda p: p.as_posix()):
+        relative = child.relative_to(path).as_posix().encode("utf-8")
+        digest.update(len(relative).to_bytes(8, "big"))
+        digest.update(relative)
+        size = child.stat().st_size
+        digest.update(size.to_bytes(8, "big"))
+        with child.open("rb") as handle:
+            for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+                digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _validated_cmake_definitions(definitions: tuple[CMakeDefinition, ...]) -> None:
+    names = [definition.name for definition in definitions]
+    if any(not name or "=" in name for name in names):
+        raise ValueError("CMake definition names must be non-empty and cannot contain '='")
+    if len(names) != len(set(names)):
+        raise ValueError("CMake definitions must have unique names")
+    if any(not definition.include_in_recipe and definition.recipe_value is not None for definition in definitions):
+        raise ValueError("Excluded CMake definitions cannot provide a recipe value")
 
 
 def install_ready(install_dir: Path) -> bool:
@@ -248,14 +350,35 @@ def install_matches_profile(install_dir: Path, profile: OcctCacheProfile) -> boo
     actual = installed_occt_version(install_dir)
     if actual != expected:
         return False
-    marker_path = install_dir / INSTALL_PROFILE_NAME
-    if not marker_path.exists():
+    return _read_install_profile(install_dir) == install_profile_identity(profile)
+
+
+def install_matches_or_migrates_profile(install_dir: Path, profile: OcctCacheProfile) -> bool:
+    """Accept an exact profile or relabel one explicitly reviewed predecessor."""
+
+    if install_matches_profile(install_dir, profile):
+        return True
+    if not install_ready(install_dir) or installed_occt_version(install_dir) != occt_version_from_tag(profile.occt_tag):
         return False
-    try:
-        marker = json.loads(marker_path.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError):
+    predecessors = next(
+        (
+            migration.predecessor_recipe_hashes
+            for migration in LOCAL_INSTALL_MIGRATIONS
+            if migration.target_profile == profile
+        ),
+        (),
+    )
+    marker = _read_install_profile(install_dir)
+    if marker is None or marker.get("recipe_hash") not in predecessors:
         return False
-    return marker == install_profile_identity(profile)
+    expected = install_profile_identity(profile)
+    predecessor = dict(expected)
+    predecessor["recipe_hash"] = marker["recipe_hash"]
+    if marker != predecessor:
+        return False
+    write_install_profile(install_dir, profile)
+    print(f"Migrated local OCCT install recipe marker at {install_dir} to {profile.recipe_hash}")
+    return True
 
 
 def install_profile_identity(profile: OcctCacheProfile) -> dict[str, str | None]:
@@ -280,6 +403,21 @@ def write_install_profile(install_dir: Path, profile: OcctCacheProfile) -> None:
         json.dumps(install_profile_identity(profile), indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
+
+
+def _read_install_profile(install_dir: Path) -> dict[str, str | None] | None:
+    marker_path = install_dir / INSTALL_PROFILE_NAME
+    if not marker_path.exists():
+        return None
+    try:
+        marker = json.loads(marker_path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return None
+    if not isinstance(marker, dict):
+        return None
+    if any(not isinstance(key, str) for key in marker):
+        return None
+    return marker
 
 
 def restore_prebuilt_install(profile: OcctCacheProfile, install_dir: Path, *, mode: str | None = None) -> bool:
@@ -560,14 +698,6 @@ def sha256_file(path: Path) -> str:
         for chunk in iter(lambda: handle.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
-
-
-def _hash_file(digest: Any, path: Path, relative_to: Path) -> None:
-    digest.update(f"file:{path.relative_to(relative_to).as_posix()}\n".encode("utf-8"))
-    with path.open("rb") as handle:
-        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
-            digest.update(chunk)
-    digest.update(b"\n")
 
 
 def _env_value(*names: str) -> str | None:

@@ -61,7 +61,7 @@ AnalyticRequestPacketRecords unsupported_then_disk()
     records.stages = {{100, 1, 0, 1}, {200, 1, 1, 1}};
     records.operands = {{1000, 5, 0}, {2000, 2, 0}};
     records.planar_regions = {};
-    records.vertices = {{7000, 0, 0}, {7001, 1000, 0}};
+    records.vertices = {{7000, 0, 0}, {7001, 0, 0}};
     records.segments = {{7100, 7200, 1, 0, false, 0, 0}};
     records.rings = {{7300, 0, 2, 0, 1, 1}};
     records.swept_paths = {{7400, 0, 100}};
@@ -619,6 +619,11 @@ void test_two_successful_jobs()
     require(first.telemetry.jobs_succeeded == 2 && first.telemetry.jobs_failed == 0 &&
                 first.telemetry.algebraic_fallback_calls == 0,
             "batch telemetry wrong");
+    require(first.jobs.size() == 2 && first.jobs[0].emitted_record_bytes > 0 &&
+                first.jobs[1].emitted_record_bytes > 0 &&
+                first.jobs[0].algebraic_fallback_calls == 0 &&
+                first.jobs[1].algebraic_fallback_calls == 0,
+            "per-job qualification telemetry wrong");
 }
 
 void test_job_local_failure_isolated()
@@ -633,8 +638,8 @@ void test_job_local_failure_isolated()
     require(output.job_results.size() == 2 && output.job_results[0].status == 1 &&
                 output.job_results[1].status == 0,
             "job-local failure isolation failed");
-    require(output.diagnostics.size() == 1 && output.diagnostics[0].code == 65'541,
-            "unsupported geometry diagnostic wrong");
+    require(output.diagnostics.size() == 1 && output.diagnostics[0].code == 65'539,
+            "invalid swept topology diagnostic wrong");
     require(output.job_results[0].result_region_begin == 0 &&
                 output.job_results[0].result_region_count == 0 &&
                 output.job_results[0].operand_event_begin == 0 &&
@@ -645,6 +650,9 @@ void test_job_local_failure_isolated()
             "mixed batch records invalid");
     require(result.telemetry.jobs_failed == 1 && result.telemetry.jobs_succeeded == 1,
             "mixed batch telemetry wrong");
+    require(result.jobs.size() == 2 && result.jobs[0].diagnostic_code == 65'539 &&
+                result.jobs[0].emitted_record_bytes > 0 && result.jobs[1].emitted_record_bytes > 0,
+            "failed-job qualification telemetry wrong");
 }
 
 void test_per_job_memory_is_independent_of_prior_outputs()

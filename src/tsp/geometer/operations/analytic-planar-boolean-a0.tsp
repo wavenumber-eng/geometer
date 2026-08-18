@@ -281,7 +281,7 @@ model SourceReference {
 }
 
 model SourceSet {
-  @maxItems(8388608)
+  @maxItems(1048576)
   sources: SourceReference[];
 }
 
@@ -415,6 +415,7 @@ model PlanarRelationshipResult {
 @id("urn:wavenumber:schema:geometer:geometry.analytic_planar_boolean_batch.result:a0")
 @contractIdentity("geometry.analytic_planar_boolean_batch.result.a0")
 @extension("x-wn-production-wire", "packed_attachment")
+@extension("x-wn-max-logical-source-reference-expansions", 1048576)
 model AnalyticPlanarBooleanBatchResultA0 {
   job_results: AnalyticPlanarBooleanJobResult[];
   relationship_results: PlanarRelationshipResult[];

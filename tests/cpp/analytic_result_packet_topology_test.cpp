@@ -53,9 +53,10 @@ void add_line_ring(AnalyticResultPacketRecords& records,
         add_vertex(records, x, y);
     for (std::uint32_t index = 0; index < points.size(); ++index)
     {
-        records.fragments.push_back(
-            {static_cast<std::uint64_t>(records.fragments.size()) + 1, vertex_begin + index,
-             vertex_begin + (index + 1) % points.size(), 1, 0, false, 0, 1, 0});
+        const auto next_index = static_cast<std::uint32_t>((index + 1U) % points.size());
+        records.fragments.push_back({static_cast<std::uint64_t>(records.fragments.size()) + 1,
+                                     vertex_begin + index, vertex_begin + next_index, 1, 0, false,
+                                     0, 1, 0});
         records.fragment_references.push_back(fragment_begin + index);
     }
     records.rings.push_back({static_cast<std::uint64_t>(records.rings.size()) + 1, fragment_begin,

@@ -798,7 +798,7 @@ wheels = [
 
 [[package]]
 name = "wn-geometer"
-version = "2026.8.18"
+version = "2026.8.18.1"
 source = { editable = "." }
 
 [package.dev-dependencies]

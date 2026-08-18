@@ -225,8 +225,15 @@ engine.
   admits commuting, y-separated events without a coordinate merge or another
   repair allowance, rejects transitive x-overlap chains, and still fails closed
   on ambiguous y order. Circle branches retain the left/right seam and x-monotone
-  certificates issued by overlay. Face assignment performs no coordinate
-  merge and consumes no additional 50 nm allowance.
+  certificates issued by overlay. A replay-only endpoint-authoritative arc may
+  remain local to one atomic column only when its partition token names the
+  filtered cardinal enclosure, its opposite endpoint is the named singleton
+  carrier endpoint, x enclosures intersect, and complete y order is strict;
+  it is omitted from open-slab status while remaining in the arrangement cycle.
+  Vertical-column tokens, carrierless arcs, unnamed endpoints, conflicting
+  partition identities, and ambiguous y order cannot use this rule. Face
+  assignment performs no coordinate merge and consumes no additional 50 nm
+  allowance.
 - Face coverage is sparse. Sorted edge-membership transitions propagate from
   the unbounded face through a fixed dual adjacency structure. Canonical
   persistent binary-set roots represent complete active-operand states without

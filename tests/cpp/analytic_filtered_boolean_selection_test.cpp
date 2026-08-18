@@ -673,6 +673,55 @@ void test_event_columns_require_one_common_x_intersection()
             "resolution-dependent event-column telemetry depended on interval sort order");
 }
 
+void test_endpoint_partition_column_local_arc_authority()
+{
+    using analytic_selection_detail::endpoint_partition_arc_is_column_local;
+    AnalyticArrangementEdgeNm edge;
+    edge.kind = AnalyticAtomicCurveKind::circular_arc;
+    edge.endpoint_authoritative_arc = true;
+    edge.construction_carrier_id = 7;
+    edge.circle.center = {{0, 0}, {0.1, 0.1}};
+    edge.circle.radius = {100, 100};
+    const std::uint64_t token = analytic_endpoint_arc_partition_column_token(1, true);
+    AnalyticFilteredPointNm seam = {{100, 100}, {0.1, 0.1}, token};
+    AnalyticFilteredPointNm endpoint = exact_point(100, 0);
+    edge.carrier_start = endpoint;
+    edge.carrier_end = seam;
+    require(endpoint_partition_arc_is_column_local(edge, seam, endpoint) &&
+                endpoint_partition_arc_is_column_local(edge, endpoint, seam),
+            "authenticated endpoint/cardinal arc was not classified as column-local");
+
+    AnalyticArrangementEdgeNm invalid = edge;
+    invalid.endpoint_authoritative_arc = false;
+    require(!endpoint_partition_arc_is_column_local(invalid, seam, endpoint),
+            "unauthenticated arc was classified as column-local");
+    invalid = edge;
+    invalid.construction_carrier_id = 0;
+    require(!endpoint_partition_arc_is_column_local(invalid, seam, endpoint),
+            "carrierless arc was classified as column-local");
+    AnalyticFilteredPointNm forged = seam;
+    forged.construction_x_column_id = analytic_vertical_x_column_token(7);
+    require(!endpoint_partition_arc_is_column_local(edge, forged, endpoint),
+            "non-partition column identity authorized a local arc");
+    AnalyticFilteredPointNm wrong_seam = seam;
+    wrong_seam.x = {99, 99};
+    require(!endpoint_partition_arc_is_column_local(edge, wrong_seam, endpoint),
+            "non-cardinal endpoint authorized a local arc");
+    AnalyticFilteredPointNm conflicting_endpoint = endpoint;
+    conflicting_endpoint.construction_x_column_id =
+        analytic_endpoint_arc_partition_column_token(2, true);
+    require(!endpoint_partition_arc_is_column_local(edge, seam, conflicting_endpoint),
+            "conflicting endpoint partition identities authorized a local arc");
+    AnalyticFilteredPointNm unnamed_endpoint = endpoint;
+    unnamed_endpoint.y = {-0.1, -0.1};
+    require(!endpoint_partition_arc_is_column_local(edge, seam, unnamed_endpoint),
+            "an unnamed integer endpoint authorized a local arc");
+    AnalyticFilteredPointNm overlapping_y = endpoint;
+    overlapping_y.y = {0.1, 0.1};
+    require(!endpoint_partition_arc_is_column_local(edge, seam, overlapping_y),
+            "non-strict endpoint y ordering authorized a local arc");
+}
+
 AnalyticFilteredBooleanSelectionResult nested_rectangles(std::uint32_t count)
 {
     AnalyticFilteredGeometry geometry;
@@ -1351,6 +1400,7 @@ int main()
     test_symmetric_capsule_disk_intersections_share_bounded_columns();
     test_unrelated_overlapping_x_enclosures_share_a_safe_event_column();
     test_event_columns_require_one_common_x_intersection();
+    test_endpoint_partition_column_local_arc_authority();
     test_nested_scaling_is_not_face_by_operand();
     test_sibling_island_ownership();
     test_ordered_stage_area_oracle();

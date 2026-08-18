@@ -23,9 +23,22 @@ def release_date(version: str) -> str:
     return f"{year:04d}-{month:02d}-{day:02d}"
 
 
+def release_tag(version: str) -> str:
+    parts = version.split(".")
+    tag = f"v{release_date(version)}"
+    if len(parts) == 4:
+        tag = f"{tag}-{int(parts[3])}"
+    return tag
+
+
+def client_package_version(version: str) -> str:
+    """Return the SemVer-compatible client version for a runtime release."""
+    return ".".join(version.split(".")[:3])
+
+
 def check_tag(tag: str) -> None:
     version = package_version()
-    expected = f"v{release_date(version)}"
+    expected = release_tag(version)
     if tag != expected:
         raise SystemExit(f"expected release tag {expected}, got {tag}")
 
@@ -77,11 +90,19 @@ def check_surfaces() -> None:
         manifest_abi = str(tomllib.load(handle)["c_abi"]["generation"])
     observed = {
         "scripts/pyproject.toml": script_version,
+    }
+    expected_client_version = client_package_version(version)
+    client_observed = {
         "src/ts/geometer/package.json": ts_version,
         "src/rust/geometer-client/Cargo.toml": rust_version,
         "src/rust/geometer-client/Cargo.lock": rust_lock_version,
     }
     mismatches = [f"{path}={actual}" for path, actual in observed.items() if actual != version]
+    mismatches.extend(
+        f"{path}={actual}"
+        for path, actual in client_observed.items()
+        if actual != expected_client_version
+    )
     if manifest_abi != abi:
         mismatches.append(f"docs/contracts/promotion-manifest.toml c_abi={manifest_abi}")
     if mismatches:

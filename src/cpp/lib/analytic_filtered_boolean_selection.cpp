@@ -507,6 +507,12 @@ class SelectionBuilder
             else
                 return fail(AnalyticFilteredBooleanSelectionError::invalid_argument);
 
+            if (edge.kind == AnalyticAtomicCurveKind::circular_arc &&
+                endpoint_partition_arc_is_column_local(
+                    edge, arrangement.vertices[edge.start_vertex].point,
+                    arrangement.vertices[edge.end_vertex].point))
+                sweep.vertical = true;
+
             if (sweep.vertical)
                 continue;
             const std::uint32_t east_half =

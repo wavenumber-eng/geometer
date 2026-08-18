@@ -12,7 +12,7 @@ const capabilities = Object.freeze({
     "geometry.analytic_planar_boolean_batch.a0",
     "geometry.model_bounds.a0",
   ]),
-  releaseVersion: "2026.8.18",
+  releaseVersion: "2026.8.18.1",
 });
 const outcomeJson = encodeOperationOutcomeA0Json({
   diagnostics: [

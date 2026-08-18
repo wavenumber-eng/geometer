@@ -78,6 +78,26 @@ def test_canonical_sidecar_binds_exact_executable_and_clean_source(
     assert "timestamp" not in raw
 
 
+def test_same_day_runtime_serial_is_valid(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    executable = tmp_path / "geometer.exe"
+    executable.write_bytes(b"native-geometer")
+    values = metadata()
+    values["geometer_version"] = "2026.6.23.1"
+    monkeypatch.setattr(attestation, "source_identity", clean_source)
+    monkeypatch.setattr(
+        attestation,
+        "_executable_version",
+        lambda _path: "geometer 2026.6.23.1 (abi 20260623)",
+    )
+    sidecar = attestation.sidecar_path(executable)
+    attestation.write_attestation(executable, sidecar, **values)
+    loaded = attestation.load_and_validate_attestation(executable)
+    assert loaded is not None
+    assert loaded["build"]["geometer_version"] == "2026.6.23.1"
+
+
 @pytest.mark.parametrize("tree_state", ["dirty", "unavailable"])
 def test_nonclean_source_sidecar_is_valid_but_never_promotion_attested(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, tree_state: str

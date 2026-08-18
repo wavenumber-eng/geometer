@@ -4,6 +4,14 @@ All notable changes to geometer are documented here.
 
 ## [Unreleased]
 
+## [2026.8.18.1] - 2026-08-18
+
+### Fixed
+
+- Preserved endpoint/cardinal partition authority for normalized arc spans that
+  are local to one atomic filtered event column, preventing valid MATZ copper
+  topology from being rejected during strict normalization replay.
+
 ## [2026.8.18] - 2026-08-18
 
 ### Added

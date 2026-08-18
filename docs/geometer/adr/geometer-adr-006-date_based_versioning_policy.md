@@ -61,6 +61,12 @@ Same-day follow-up releases use:
 YYYY.M.D.N
 ```
 
+This four-component identity applies to the CMake/runtime and Python package.
+Strict SemVer client packages such as npm and Cargo retain `YYYY.M.D` when a
+same-day runtime-only follow-up does not change their client API. If either
+client API changes, publish it under the next UTC date instead of inventing an
+invalid four-component SemVer.
+
 For example, the release tag `v2026-05-23` maps to package/build version
 `2026.5.23`.
 

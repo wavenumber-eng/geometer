@@ -24,7 +24,7 @@ OCCT_AUTHORITY = "geometer_occt_profile_verified"
 OCCT_UNVERIFIED_AUTHORITY = "occt_profile_unverified"
 SHA256_RE = re.compile(r"[0-9a-f]{64}")
 REVISION_RE = re.compile(r"[0-9a-f]{40}")
-VERSION_RE = re.compile(r"[0-9]+\.[0-9]+\.[0-9]+")
+VERSION_RE = re.compile(r"[0-9]+\.[0-9]+\.[0-9]+(?:\.[0-9]+)?")
 TOKEN_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._+-]*")
 PLATFORM_RE = re.compile(r"[a-z0-9][a-z0-9-]*")
 

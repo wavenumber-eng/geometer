@@ -694,7 +694,12 @@ canonical group table ordered by cardinal side and exact integer endpoint;
 zero-payload tokens, skipped groups, split equal keys, and cross-endpoint token
 reuse are invalid input. The check reuses fixed-capacity overlay scratch and is
 linear after the lowering-issued order, so the correlation proof introduces no
-pair scan.
+pair scan. An endpoint-authoritative arc span wholly inside such a column is
+excluded from open-slab status only when one span endpoint is the certified
+cardinal enclosure, the other is its named singleton carrier endpoint, their
+complete y enclosures are strictly ordered, and their x enclosures intersect.
+The arrangement cycle still carries the span; this rule does not flatten the
+arc, merge either endpoint, or admit ordinary same-column edges.
 When two replay curves share a normalized endpoint, the narrow phase treats
 that endpoint as a verified construction root and factors only the possible
 second line/circle or circle/circle root with outward interval arithmetic. It

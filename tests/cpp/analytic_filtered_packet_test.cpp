@@ -118,6 +118,40 @@ AnalyticRequestPacketRecords disjoint_disk_records(std::uint32_t count)
     return records;
 }
 
+AnalyticRequestPacketRecords disjoint_capsule_and_rounded_region_records()
+{
+    AnalyticRequestPacketRecords records;
+    records.jobs = {{18, 0, 1}};
+    records.stages = {{110, 1, 0, 2}};
+    records.operands = {{1100, 4, 0}, {1101, 1, 0}};
+    records.capsules = {{5100, 3'048'000, 12'192'000, 77'470'000, 11'836'400, 152'400}};
+    records.planar_regions = {{5101, 0, 0, 0}};
+    records.vertices = {{6100, 19'177'000, 11'455'400},
+                        {6101, 17'399'000, 11'455'400},
+                        {6102, 17'399'000, 11'404'600},
+                        {6103, 19'177'000, 11'404'600}};
+    records.segments = {{7100, 8100, 2, 1, false, 18'288'000, 11'455'400},
+                        {7101, 8101, 1, 0, false, 0, 0},
+                        {7102, 8102, 2, 1, false, 18'288'000, 11'404'600},
+                        {7103, 8103, 1, 0, false, 0, 0}};
+    records.rings = {{9100, 0, 4, 0, 4, 0}};
+    return records;
+}
+
+AnalyticRequestPacketRecords arc_stroke_and_capsule_records()
+{
+    AnalyticRequestPacketRecords records;
+    records.jobs = {{19, 0, 1}};
+    records.stages = {{111, 1, 0, 2}};
+    records.operands = {{1110, 5, 0}, {1111, 4, 0}};
+    records.rings = {{9110, 0, 2, 0, 1, 1}};
+    records.vertices = {{6110, 31'216'600, 36'830'000}, {6111, 27'203'400, 36'830'000}};
+    records.segments = {{7110, 8110, 2, 1, false, 29'210'000, 36'830'000}};
+    records.swept_paths = {{5110, 0, 203'200}};
+    records.capsules = {{5111, 3'048'000, 37'338'000, 77'470'000, 36'982'400, 304'800}};
+    return records;
+}
+
 AnalyticFilteredJobPacketResult build(const AnalyticRequestPacketRecords& records,
                                       const AnalyticSolverLimits& limits = {})
 {
@@ -252,6 +286,22 @@ void test_compact_disk_and_determinism()
                 first.standalone->records.source_references.size() == 1 &&
                 first.standalone->records.source_sets.size() == 1,
             "disk packet did not intern its repeated compact source");
+}
+
+void test_disjoint_capsule_and_rounded_region_normalize()
+{
+    const auto result = build(disjoint_capsule_and_rounded_region_records());
+    require(result.error == AnalyticFilteredPacketError::none && result.standalone &&
+                result.normalization_error == AnalyticFilteredNormalizationError::none,
+            "disjoint capsule/rounded-region normalization failed");
+}
+
+void test_arc_stroke_and_capsule_normalize()
+{
+    const auto result = build(arc_stroke_and_capsule_records());
+    require(result.error == AnalyticFilteredPacketError::none && result.standalone &&
+                result.normalization_error == AnalyticFilteredNormalizationError::none,
+            "arc-stroke/capsule normalization failed");
 }
 
 void test_irrational_union_and_subtraction()
@@ -605,6 +655,8 @@ int main(int argc, char** argv)
 {
     test_authored_square();
     test_compact_disk_and_determinism();
+    test_disjoint_capsule_and_rounded_region_normalize();
+    test_arc_stroke_and_capsule_normalize();
     test_irrational_union_and_subtraction();
     test_successful_empty_packet();
     test_failed_normalization_packet();

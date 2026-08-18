@@ -1,7 +1,7 @@
 {
   "artifact": {
     "name": "geometer.exe",
-    "sha256": "913feaad76e618f2d965cf61e6b4fb541408d6b7769bba34f0a8342f1b0a30bc"
+    "sha256": "71c3ce7a1115ed4444ac85c3181658f0880fb45ab3a4c7fc5351a1dde8071292"
   },
   "build": {
     "arch": "x64",
@@ -13,7 +13,7 @@
       "version": "19.44.35228.0"
     },
     "generator": "Ninja",
-    "geometer_version": "2026.8.18",
+    "geometer_version": "2026.8.18.1",
     "occt": {
       "authority": "geometer_occt_profile_verified",
       "profile_sha256": "ea7f8ee34be29ac8d46f00e6a2d8a989a6c47fd8df6fcfa44c93a2488518f525",
@@ -24,14 +24,14 @@
     "platform": "windows",
     "source": {
       "authority": "git_head_and_source_worktree_excluding_dist_build_deps_out",
-      "revision": "0f5d1fd49a63440af4835586450decd0551c9117",
+      "revision": "56a6c397870433cf110a2e058e829a006450998e",
       "tree_state": "dirty"
     }
   },
   "producer": {
     "identity": "wn.geometer.native_build_attestation_generator.a1",
     "source": "scripts/native_build_attestation.py",
-    "source_sha256": "904c7f558e1168eb497ff073080705795904db26530014e38b6342594f050fc1"
+    "source_sha256": "2907109513ccf73f488c50bf50f9e9861d24e03adf53593d5ef7e1b34bd09a85"
   },
   "schema": "wn.geometer.native_build_attestation.a1"
 }

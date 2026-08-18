@@ -76,8 +76,8 @@ async function main() {
   const initialMemoryBytes = module.HEAPU8.byteLength;
 
   const version = module.ccall("geometer_version_string", "string", [], []);
-  if (version !== "2026.8.18") {
-    throw new Error(`Expected geometer 2026.8.18, got ${version}`);
+  if (version !== "2026.8.18.1") {
+    throw new Error(`Expected geometer 2026.8.18.1, got ${version}`);
   }
   if (typeof module._geometer_step_to_glb_bytes !== "function") {
     throw new Error("geometer_step_to_glb_bytes is not exported.");

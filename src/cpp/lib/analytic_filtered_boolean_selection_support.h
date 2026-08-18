@@ -116,6 +116,59 @@ inline bool event_column_y_is_strictly_ordered(const IntervalType& lower,
     return lower.upper < upper.lower;
 }
 
+inline bool endpoint_partition_arc_is_column_local(const AnalyticArrangementEdgeNm& edge,
+                                                   const AnalyticFilteredPointNm& start,
+                                                   const AnalyticFilteredPointNm& end) noexcept
+{
+    if (edge.kind != AnalyticAtomicCurveKind::circular_arc || !edge.endpoint_authoritative_arc ||
+        edge.construction_carrier_id == 0)
+        return false;
+    const std::uint64_t start_token = start.construction_x_column_id;
+    const std::uint64_t end_token = end.construction_x_column_id;
+    const std::uint64_t token = start_token != 0 ? start_token : end_token;
+    if (!analytic_is_endpoint_arc_partition_column_token(token))
+        return false;
+    const Interval center_x{edge.circle.center.x.lower, edge.circle.center.x.upper};
+    const Interval radius{edge.circle.radius.lower, edge.circle.radius.upper};
+    const Interval seam_x = analytic_endpoint_arc_partition_column_is_right(token)
+                                ? add(center_x, radius)
+                                : subtract(center_x, radius);
+    const AnalyticFilteredPointNm seam = {
+        {seam_x.lower, seam_x.upper}, edge.circle.center.y, token};
+    const auto same_coordinates =
+        [](const AnalyticFilteredPointNm& left, const AnalyticFilteredPointNm& right)
+    {
+        return left.x.lower == right.x.lower && left.x.upper == right.x.upper &&
+               left.y.lower == right.y.lower && left.y.upper == right.y.upper;
+    };
+    const auto is_certified_seam = [&](const AnalyticFilteredPointNm& point)
+    {
+        return same_coordinates(point, seam) ||
+               (point.x.lower == point.x.upper && point.y.lower == point.y.upper &&
+                point.x.lower >= seam.x.lower && point.x.upper <= seam.x.upper &&
+                point.y.lower >= seam.y.lower && point.y.upper <= seam.y.upper);
+    };
+    const bool start_is_seam = is_certified_seam(start);
+    const bool end_is_seam = is_certified_seam(end);
+    if (start_is_seam == end_is_seam)
+        return false;
+    const AnalyticFilteredPointNm& seam_endpoint = start_is_seam ? start : end;
+    const AnalyticFilteredPointNm& integer_endpoint = start_is_seam ? end : start;
+    if (seam_endpoint.construction_x_column_id != token ||
+        (integer_endpoint.construction_x_column_id != 0 &&
+         integer_endpoint.construction_x_column_id != token) ||
+        integer_endpoint.x.lower != integer_endpoint.x.upper ||
+        integer_endpoint.y.lower != integer_endpoint.y.upper ||
+        (!same_coordinates(integer_endpoint, edge.carrier_start) &&
+         !same_coordinates(integer_endpoint, edge.carrier_end)))
+        return false;
+    double common_lower = start.x.lower;
+    double common_upper = start.x.upper;
+    return extend_event_column_x_intersection(end.x, common_lower, common_upper) &&
+           (event_column_y_is_strictly_ordered(start.y, end.y) ||
+            event_column_y_is_strictly_ordered(end.y, start.y));
+}
+
 inline std::uint64_t tree_operation_units(std::uint64_t capacity) noexcept
 {
     std::uint64_t levels = 1;

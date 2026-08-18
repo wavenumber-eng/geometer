@@ -7,25 +7,16 @@ import hashlib
 import zipfile
 from pathlib import Path
 
+from release_licenses import release_license_sources
+
 
 ROOT = Path(__file__).resolve().parents[1]
 DIST = ROOT / "dist"
 FIXED_ZIP_TIME = (1980, 1, 1, 0, 0, 0)
 
 
-def license_sources() -> dict[str, Path]:
-    return {
-        "WN_GEOMETER_LICENSE.txt": ROOT / "LICENSE",
-        "THIRD_PARTY_NOTICES.md": ROOT / "THIRD_PARTY_NOTICES.md",
-        "CLIPPER2_LICENSE.txt": ROOT / "third_party" / "clipper2" / "LICENSE",
-        "RAPIDJSON_LICENSE.txt": ROOT / "third_party" / "rapidjson" / "license.txt",
-        "OCCT_LICENSE_LGPL_21.txt": ROOT / ".deps" / "occt-src" / "LICENSE_LGPL_21.txt",
-        "OCCT_LGPL_EXCEPTION.txt": ROOT / ".deps" / "occt-src" / "OCCT_LGPL_EXCEPTION.txt",
-    }
-
-
-def require_license_sources() -> dict[str, Path]:
-    sources = license_sources()
+def require_license_sources(platform: str | None) -> dict[str, Path]:
+    sources = release_license_sources(ROOT, platform)
     missing = [str(path) for path in sources.values() if not path.is_file()]
     if missing:
         raise FileNotFoundError("Missing release license sources: " + ", ".join(missing))
@@ -47,11 +38,9 @@ def runtime_files(kind: str, platform: str | None) -> list[tuple[Path, str]]:
             if not source.is_dir():
                 raise FileNotFoundError(f"Missing WASM distribution directory: {source}")
             files.extend(
-                (path, path.relative_to(DIST / "wasm").as_posix())
-                for path in source.rglob("*")
-                if path.is_file()
+                (path, path.relative_to(DIST / "wasm").as_posix()) for path in source.rglob("*") if path.is_file()
             )
-    for name, source in require_license_sources().items():
+    for name, source in require_license_sources(platform).items():
         files.append((source, f"licenses/{name}"))
     return sorted(files, key=lambda item: item[1])
 

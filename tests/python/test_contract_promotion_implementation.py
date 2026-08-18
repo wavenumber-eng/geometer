@@ -12,6 +12,7 @@ import test_contract_promotion_manifest as support
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "scripts"))
 from standalone_html import _esbuild_command  # noqa: E402
+from release_licenses import release_license_sources  # noqa: E402
 
 
 ROOT = support.ROOT
@@ -29,9 +30,17 @@ def test_esbuild_launcher_matches_installed_platform_artifact() -> None:
         "node",
         str(executable),
     )
-    assert _esbuild_command("node", executable, platform_name="posix") == (
-        str(executable),
-    )
+    assert _esbuild_command("node", executable, platform_name="posix") == (str(executable),)
+
+
+def test_release_licenses_fall_back_to_the_cache_restored_occt_install(tmp_path: Path) -> None:
+    install = tmp_path / ".deps" / "native" / "windows-x64" / "occt-install"
+    install.mkdir(parents=True)
+    for name in ("LICENSE_LGPL_21.txt", "OCCT_LGPL_EXCEPTION.txt"):
+        (install / name).write_text(name, encoding="utf-8")
+    sources = release_license_sources(tmp_path, "windows-x64")
+    assert sources["OCCT_LICENSE_LGPL_21.txt"] == install / "LICENSE_LGPL_21.txt"
+    assert sources["OCCT_LGPL_EXCEPTION.txt"] == install / "OCCT_LGPL_EXCEPTION.txt"
 
 
 def test_exact_algebraic_backend_paths_exist() -> None:
@@ -340,8 +349,7 @@ def test_data_models_geom_a0_requirements_snapshot_is_frozen() -> None:
         "status": "joint_reviewed_design_input",
         "source_revision": "4c688e46729015d21dc140dbe274e396e3717c18",
         "source_path": (
-            "data_models/tests/fixtures/pcb_materialization/"
-            "geometer_analytic_planar_boolean_observations_a0.json"
+            "data_models/tests/fixtures/pcb_materialization/geometer_analytic_planar_boolean_observations_a0.json"
         ),
         "git_blob_sha1": "45c5a648fc0b167c8a887006cb14d3e62229e360",
         "content_sha256": "10a97f0eed4a4f6852917c4fb6abd35854142bf5d148b8320c60a44f765414c4",
@@ -365,11 +373,7 @@ def test_data_models_geom_a0_requirements_snapshot_is_frozen() -> None:
     assert fixture_input["case_2_handoff"] == candidate["matz_case_2_handoff"]
     assert fixture_input["case_2_production_status"] == "blocked_missing_authoritative_integer_endpoints"
     assert candidate["python_production_replay_blocked_cases"] == ["2_missing_authoritative_integer_endpoints"]
-    assert (
-        _sha256(vendored_fixture)
-        == fixture_input["vendored_content_sha256"]
-        == fixture_input["content_sha256"]
-    )
+    assert _sha256(vendored_fixture) == fixture_input["vendored_content_sha256"] == fixture_input["content_sha256"]
 
     review_record = ROOT / candidate["independent_design_review_record"]
     review_text = review_record.read_text(encoding="utf-8")

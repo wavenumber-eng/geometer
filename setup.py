@@ -20,6 +20,11 @@ except ImportError:
 
 ROOT = Path(__file__).resolve().parent
 DEFAULT_MACOS_DEPLOYMENT_TARGET = "11.0"
+SCRIPTS = ROOT / "scripts"
+if str(SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS))
+
+from release_licenses import release_license_sources  # noqa: E402
 
 
 class build_py(_build_py):
@@ -102,14 +107,7 @@ def _source_attestation(executable: Path) -> Path:
 
 
 def _license_sources() -> dict[str, Path]:
-    return {
-        "WN_GEOMETER_LICENSE.txt": ROOT / "LICENSE",
-        "THIRD_PARTY_NOTICES.md": ROOT / "THIRD_PARTY_NOTICES.md",
-        "CLIPPER2_LICENSE.txt": ROOT / "third_party" / "clipper2" / "LICENSE",
-        "RAPIDJSON_LICENSE.txt": ROOT / "third_party" / "rapidjson" / "license.txt",
-        "OCCT_LICENSE_LGPL_21.txt": ROOT / ".deps" / "occt-src" / "LICENSE_LGPL_21.txt",
-        "OCCT_LGPL_EXCEPTION.txt": ROOT / ".deps" / "occt-src" / "OCCT_LGPL_EXCEPTION.txt",
-    }
+    return release_license_sources(ROOT, _platform_tag())
 
 
 def _platform_tag() -> str:
@@ -152,7 +150,9 @@ def _macos_wheel_platform_tag() -> str:
 def _linux_wheel_platform_tag() -> str:
     libc_name, libc_version = platform.libc_ver()
     if libc_name != "glibc" or not libc_version:
-        raise RuntimeError(f"Linux wheels require glibc for PyPI publishing, got {libc_name or 'unknown'} {libc_version}")
+        raise RuntimeError(
+            f"Linux wheels require glibc for PyPI publishing, got {libc_name or 'unknown'} {libc_version}"
+        )
     major, minor = _version_pair(libc_version)
     return f"manylinux_{major}_{minor}_{_linux_wheel_arch()}"
 

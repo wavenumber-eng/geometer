@@ -224,11 +224,12 @@ def test_vendored_rt_real_board_evidence_is_exact_and_nonpromotional() -> None:
     assert case.source_provenance["exporter_revision"].find("manifest-sha256:0f8ad9bcdc19d264") >= 0
 
     report_bytes = report_path.read_bytes()
-    assert hashlib.sha256(report_bytes).hexdigest() == (
-        "3abb84f0b083fdcb6530d01a2c1e5ae4097b6cfe3ff37fc331610f5036e52de6"
+    canonical_report_bytes = report_bytes.replace(b"\r\n", b"\n")
+    assert hashlib.sha256(canonical_report_bytes).hexdigest() == (
+        "3e2573ef58017918fc10fbe24433cec859c65d921d09b4ef6621ad51194beed9"
     )
     report = json.loads(report_bytes)
-    assert report_bytes.decode("utf-8").replace("\r\n", "\n") == (json.dumps(report, indent=2, sort_keys=True) + "\n")
+    assert canonical_report_bytes.decode("utf-8") == (json.dumps(report, indent=2, sort_keys=True) + "\n")
     assert report["identity_sha256"] == corpus.identity_sha256(report["identity"])
     environment_evidence = report["environment"]
     for field in ("machine", "toolchain", "telemetry_helper"):

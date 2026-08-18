@@ -127,7 +127,7 @@ async function main() {
   if (!result) throw new Error("Standalone demo evaluation did not produce a result.");
   if (result.exceptionDetails) throw new Error(result.exceptionDetails.exception?.description || "Evaluation failed.");
   process.stdout.write(JSON.stringify(result.result.value));
-  socket.close();
+  await send("Browser.close");
 }
 
 main().catch((error) => {
@@ -197,11 +197,13 @@ def test_analytic_polygon_pour_standalone_file_url() -> None:
                 check=False,
             )
         finally:
-            browser.terminate()
+            if browser.poll() is None:
+                browser.terminate()
             try:
                 browser.wait(timeout=10)
             except subprocess.TimeoutExpired:
                 browser.kill()
+                browser.wait(timeout=10)
         assert completed.returncode == 0, completed.stdout + completed.stderr
         result = json.loads(completed.stdout)
 

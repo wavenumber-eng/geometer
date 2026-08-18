@@ -223,7 +223,7 @@ async function main() {
     thermalPixel, previewPixels,
     network: requests.filter((url) => /^https?:/u.test(url)),
   }));
-  socket.close();
+  await send("Browser.close");
 }
 main().catch((error) => { console.error(error?.stack || error); process.exit(1); });
 """
@@ -284,11 +284,13 @@ def test_pcb_polygon_pour_standalone_interactions() -> None:
                 check=False,
             )
         finally:
-            browser.terminate()
+            if browser.poll() is None:
+                browser.terminate()
             try:
                 browser.wait(timeout=10)
             except subprocess.TimeoutExpired:
                 browser.kill()
+                browser.wait(timeout=10)
         output = completed.stdout + completed.stderr
         assert completed.returncode == 0, output
         result = json.loads(completed.stdout)

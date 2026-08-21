@@ -204,8 +204,8 @@ The native CLI batch command accepts `geometer.batch.request.a0`:
 ```json
 {
   "schema": "geometer.batch.request.a0",
-  "version": "2026.8.18.1",
-  "abi": 20260818,
+  "version": "2026.8.21",
+  "abi": 20260821,
   "options": {
     "curve_mode": "polyline"
   },
@@ -254,8 +254,8 @@ The native CLI writes `geometer.batch.response.a0`:
 ```json
 {
   "schema": "geometer.batch.response.a0",
-  "version": "2026.8.18.1",
-  "abi": 20260818,
+  "version": "2026.8.21",
+  "abi": 20260821,
   "ok": true,
   "jobs": [
     {

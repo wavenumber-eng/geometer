@@ -4,6 +4,27 @@ All notable changes to geometer are documented here.
 
 ## [Unreleased]
 
+## [2026.8.21] - 2026-08-21
+
+### Added
+
+- Added exact endpoint/radius authored circular arcs for analytic planar-region
+  requests across the generated C++, Python, TypeScript, and Rust contracts,
+  executable IPC, native solver, and browser WASM runtime.
+- Added deterministic minor/major arc lowering, exact result publication with
+  source lineage, and native/browser byte-parity coverage.
+- Added browser build attestations that bind generated TypeScript and WASM
+  artifacts to one source revision and governed dependency profile.
+
+### Changed
+
+- Kept the existing analytic A0 packet layout while admitting the new
+  planar-region-only authored segment kind. Constant-width swept paths retain
+  their existing line and integer-center arc subset.
+- Documented the bounded fail-closed limitation for coincident circles authored
+  through different endpoint pairs or mixed center/radius carriers; no
+  approximate geometry is substituted.
+
 ## [2026.8.18.1] - 2026-08-18
 
 ### Fixed

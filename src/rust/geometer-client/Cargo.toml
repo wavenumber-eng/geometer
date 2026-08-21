@@ -1,6 +1,6 @@
 [package]
 name = "geometer-client"
-version = "2026.8.18"
+version = "2026.8.21"
 edition = "2024"
 rust-version = "1.85"
 description = "Generated contracts and persistent executable IPC client for Geometer"

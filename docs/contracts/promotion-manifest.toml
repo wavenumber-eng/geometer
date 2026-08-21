@@ -91,7 +91,7 @@ vector_manifest_sha256 = "30f697bf63e6ca1ba28e0b9617a061b59a90115ea4ef06a06761d0
 browser_js_sha256 = "1869c4d1f9f5ee6fd716a6924a602664d53e37e8bcb38ee7d6ba21b657b59826"
 historical_reviewed_browser_js_sha256 = "5c9f0594465cdb5732911777e2ca38cc2814c1ef9cb52b7672022df6a50bf937"
 browser_js_lock_remediation = "historical_worktree_bytes_unretained_relocked_to_committed_distributable"
-browser_wasm_sha256 = "c7a749c0b6de05f31f3fd47c98b4331a540e6d7fb03cabe4d6fbc4adaca6e248"
+browser_wasm_sha256 = "f9fe0ae49085337787585d9da973ad237f003296bca3705e8bdfa52bd5232ee7"
 independent_review = "accepted"
 acceptance_packet = "reviewer-019ffcd8-e5bb-7531-934f-b9e50e73d2b2ab7"
 review_packet = "reviewer-019ffcc0-0b9f-73e9-85e9-928e32f54cfd"
@@ -547,7 +547,7 @@ sha256 = "87e16b5b2453ad1f9263d92953d5741a30780db02eeea0d59d61f10967c4537b"
 status = "vendored"
 
 [c_abi]
-generation = 20260818
+generation = 20260821
 source = "src/cpp/lib/geometer/c_api.h"
 symbols = [
   "geometer_operation_catalog_json",
@@ -1119,10 +1119,10 @@ font_license = "docs/design/assets/fonts/JetBrainsMono/OFL.txt"
 font_license_sha256 = "60d55f23c6ce05a81099a762cb67ca2c9b6ea251c7912720998b4c89ebfd4faa"
 distribution = "dist/wasm/demos/analytic-polygon-pour/index.html"
 asset_manifest = "dist/wasm/demos/analytic-polygon-pour/asset-manifest.json"
-distribution_sha256 = "dcbbce9588a57c0597ea39865d2a3e193a9694ab4512a1640c5dec74217b9fe8"
+distribution_sha256 = "dcf830bbea0a5c33b796dbbfcdd8641127d26fc88d8ff81fa1375f35995a98a0"
 headers = "dist/wasm/demos/analytic-polygon-pour/_headers"
 standalone_distribution = "dist/wasm/demos/analytic_polygon_pour_demo.html"
-standalone_sha256 = "4cc76a43b5092eb8134948f35b30b52bf4a3ae05423cd5cfd90a7c4e3553e56d"
+standalone_sha256 = "c8e8ba7b596aeb204e90bece1a437121542bf4d6d9fa310781c73490eab9ef89"
 owning_operation = "geometry.analytic_planar_boolean_batch.a0"
 status = "generated_typescript_worker_client_static_and_single_html_file_url_validated_local"
 
@@ -1141,10 +1141,10 @@ font_license = "docs/design/assets/fonts/JetBrainsMono/OFL.txt"
 font_license_sha256 = "60d55f23c6ce05a81099a762cb67ca2c9b6ea251c7912720998b4c89ebfd4faa"
 distribution = "dist/wasm/demos/pcb-polygon-pour/index.html"
 asset_manifest = "dist/wasm/demos/pcb-polygon-pour/asset-manifest.json"
-distribution_sha256 = "61c599c69d71b23c5415738df875c3fe015735f069b8e9067a4f1fc879079234"
+distribution_sha256 = "789adeb1574f2221b964915acfb775836d85347b00e890ac03d5e4bdef2a4bfe"
 headers = "dist/wasm/demos/pcb-polygon-pour/_headers"
 standalone_distribution = "dist/wasm/demos/pcb_polygon_pour_demo.html"
-standalone_sha256 = "d5380e06417eb4ef00c3b7df152751ccd217c85a93f7edfe3d9e0cf25f4697d2"
+standalone_sha256 = "86f2978c0ceda295a6d3ad1a8cb5f2ad4012553d1343b76337ecc47ee499b964"
 owning_operation = "geometry.analytic_planar_boolean_batch.a0"
 status = "generated_typescript_worker_client_static_and_single_html_file_url_validated_local"
 

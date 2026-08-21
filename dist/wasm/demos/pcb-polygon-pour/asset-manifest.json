@@ -61,9 +61,9 @@
       "sha256": "1869c4d1f9f5ee6fd716a6924a602664d53e37e8bcb38ee7d6ba21b657b59826"
     },
     {
-      "bytes": 18644239,
+      "bytes": 18652181,
       "path": "geometer.wasm",
-      "sha256": "4f66d7335194f84f4ca775bd672a826ad101d861ed51fd1392d522f1bda71603"
+      "sha256": "f9fe0ae49085337787585d9da973ad237f003296bca3705e8bdfa52bd5232ee7"
     },
     {
       "bytes": 25371,
@@ -101,14 +101,14 @@
       "sha256": "ed48e6c976324508e65970263245f0b334454b79b1ed4fe1221323347bc46cf0"
     },
     {
-      "bytes": 315,
+      "bytes": 320,
       "path": "package/analytic-packet-a0-request.d.ts",
-      "sha256": "66bd1b73b19f4854f702339346f75b52d0bac9041fc13929b342e47003aa5130"
+      "sha256": "bd81e8c2d480926c448114a4a6b0d500072bbae521303d5bc6b58078c9355b55"
     },
     {
-      "bytes": 11522,
+      "bytes": 12084,
       "path": "package/analytic-packet-a0-request.js",
-      "sha256": "278b66f6f1196d117203e1f954444dde4203739fcf1b1cb3d10d09238b8bdca0"
+      "sha256": "75c90762eab9f500e96adcc81976097693f61dcfa6cda6c1cfe7edb30a42042c"
     },
     {
       "bytes": 2749,
@@ -161,9 +161,9 @@
       "sha256": "27ca58f7109a2695a6bde04932c4d96fedc35698e1b4ea0de4db22c84d628e3c"
     },
     {
-      "bytes": 18887,
+      "bytes": 19455,
       "path": "package/generated/contracts.d.ts",
-      "sha256": "9c5f6db66761ace2642d0df046ec45f1573d47e9f219b4e59add79ea4cefe86d"
+      "sha256": "e960440406cd8aedb18bf5c7f23a2bc166cc7bf5a92640d35aba86ef64545d35"
     },
     {
       "bytes": 80,
@@ -203,7 +203,7 @@
     {
       "bytes": 895,
       "path": "package/package.json",
-      "sha256": "90ef1e284f5a31f9c726b0b016f063caa99c2bf01b89608c325f440086e1332e"
+      "sha256": "5194385caeb68f138fdd92ef57549fab088fc2389ae249c98b1214188b5ffde0"
     },
     {
       "bytes": 1934,
@@ -262,5 +262,5 @@
     }
   ],
   "schema": "wn.geometer.static_site.a0",
-  "sha256": "61c599c69d71b23c5415738df875c3fe015735f069b8e9067a4f1fc879079234"
+  "sha256": "789adeb1574f2221b964915acfb775836d85347b00e890ac03d5e4bdef2a4bfe"
 }

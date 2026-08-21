@@ -40,7 +40,7 @@ for their distinct assertion lanes.
 Packed analytic roots deliberately do not use the JSON codec runtime. Their
 generated DTO identities and integer-nanometer coordinates use `bigint`, and
 `analytic-packet-a0.ts` performs bounded binary encoding/decoding against the
-frozen `GMABRQ01`/`GMABRS01` layout. JavaScript `number` is rejected for every
+pre-release `GMABRQ01`/`GMABRS01` layout. JavaScript `number` is rejected for every
 64-bit analytic field.
 
 ## High-level browser client

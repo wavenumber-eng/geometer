@@ -28,6 +28,62 @@ fn full_logical_request_matches_the_governed_exemplar_bytes() {
 }
 
 #[test]
+fn endpoint_radius_arc_uses_kind_three_and_exact_radius_payload() {
+    use geometer_client::contracts as c;
+    let segment = |id: u64, major_arc: bool| {
+        c::AuthoredSegment::CircularArcByRadius(c::AuthoredCircularArcByRadiusSegment {
+            segment_id: c::SegmentId::new(id).unwrap(),
+            curve_id: c::CurveId::new(id).unwrap(),
+            kind: "circular_arc_by_radius".to_owned(),
+            radius_nm: 3,
+            direction: c::ArcDirection::Ccw,
+            major_arc,
+        })
+    };
+    let request = c::AnalyticPlanarBooleanBatchRequestA0 {
+        jobs: vec![c::AnalyticPlanarBooleanJob {
+            job_id: c::JobId::new(1).unwrap(),
+            stages: vec![c::AnalyticPlanarBooleanStage {
+                stage_id: c::StageId::new(1).unwrap(),
+                operation: c::StageOperation::UnionStage,
+                operands: vec![c::AnalyticPlanarOperand::PlanarRegion(
+                    c::PlanarRegionOperand {
+                        operand_id: c::OperandId::new(1).unwrap(),
+                        kind: "planar_region".to_owned(),
+                        region_id: c::RegionId::new(1).unwrap(),
+                        outer: c::PlanarRing {
+                            ring_id: c::RingId::new(1).unwrap(),
+                            vertices: vec![vertex(1, 0, 0), vertex(2, 4, 0)],
+                            segments: vec![segment(1, false), segment(2, true)],
+                        },
+                        holes: vec![],
+                    },
+                )],
+            }],
+        }],
+        relationship_queries: vec![],
+    };
+    let encoded = encode_analytic_planar_boolean_batch_request_a0_packet(&request).unwrap();
+    let directory_offset = 64 + 7 * 32 + 8;
+    let segment_offset = usize::try_from(u64::from_le_bytes(
+        encoded[directory_offset..directory_offset + 8]
+            .try_into()
+            .unwrap(),
+    ))
+    .unwrap();
+    assert_eq!(encoded[segment_offset + 16], 3);
+    assert_eq!(
+        u64::from_le_bytes(
+            encoded[segment_offset + 24..segment_offset + 32]
+                .try_into()
+                .unwrap()
+        ),
+        3
+    );
+    assert_eq!(&encoded[segment_offset + 32..segment_offset + 40], &[0; 8]);
+}
+
+#[test]
 fn governed_result_vectors_decode_with_normative_job_digests() {
     let canonical = decode_analytic_planar_boolean_batch_result_a0_packet(&vector(
         "result-canonical-mixed.hex",
@@ -350,7 +406,10 @@ fn exemplar_geometry() -> (
     let path = c::PlanarPath {
         path_id: c::PathId::new(602).unwrap(),
         vertices: vec![vertex(706, 20_000, 20_000), vertex(707, 30_000, 20_000)],
-        segments: vec![line(806, 906)],
+        segments: vec![match line(806, 906) {
+            c::AuthoredSegment::Line(value) => c::AuthoredPathSegment::Line(value),
+            _ => unreachable!(),
+        }],
     };
     (outer, hole, path)
 }

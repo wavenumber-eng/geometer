@@ -103,6 +103,20 @@ AnalyticRequestPacketRecords authored_arc_records()
     return records;
 }
 
+AnalyticRequestPacketRecords endpoint_radius_arc_records()
+{
+    AnalyticRequestPacketRecords records;
+    records.jobs = {{20, 0, 1}};
+    records.stages = {{112, 1, 0, 1}};
+    records.operands = {{1004, 1, 0}};
+    records.planar_regions = {{504, 0, 0, 0}};
+    records.vertices = {{6020, 0, 0}, {6021, 4000, 0}};
+    records.segments = {{7020, 8020, 3, 1, false, 0, 0, 3000},
+                        {7021, 8021, 3, 1, true, 0, 0, 3000}};
+    records.rings = {{9020, 0, 2, 0, 2, 0}};
+    return records;
+}
+
 AnalyticRequestPacketRecords disjoint_disk_records(std::uint32_t count)
 {
     AnalyticRequestPacketRecords records;
@@ -450,6 +464,19 @@ void test_authored_source_role_binding()
             "authored arc source was accepted for a line request segment");
 }
 
+void test_endpoint_radius_arc_packet_publication()
+{
+    const auto prepared = prepare(endpoint_radius_arc_records());
+    const auto result = build(prepared, {});
+    require_success(result, 20);
+    require(result.standalone->records.fragments.size() == 4 &&
+                std::all_of(result.standalone->records.fragments.begin(),
+                            result.standalone->records.fragments.end(),
+                            [](const AnalyticDirectedFragmentRecord& fragment)
+                            { return fragment.kind == 2 && fragment.radius_nm == 3000; }),
+            "endpoint/radius packet fragment count drifted");
+}
+
 void test_sparse_packet_scaling()
 {
     const auto one = build(disjoint_disk_records(32));
@@ -663,6 +690,7 @@ int main(int argc, char** argv)
     test_empty_success_and_early_resource_packet();
     test_exact_resource_boundaries();
     test_authored_source_role_binding();
+    test_endpoint_radius_arc_packet_publication();
     test_sparse_packet_scaling();
     test_encoding_memory_boundary();
     test_shared_prefix_sequence_scaling();

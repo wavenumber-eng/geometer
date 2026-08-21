@@ -1,8 +1,8 @@
 use std::collections::{HashMap, HashSet};
 
 use crate::generated::contracts::{
-    AnalyticPlanarBooleanBatchRequestA0, AnalyticPlanarOperand, ArcDirection, AuthoredSegment,
-    PlanarPath, PlanarRing, StageOperation, Validate,
+    AnalyticPlanarBooleanBatchRequestA0, AnalyticPlanarOperand, ArcDirection, AuthoredPathSegment,
+    AuthoredSegment, PlanarPath, PlanarRing, StageOperation, Validate,
 };
 
 use super::error::{
@@ -15,7 +15,7 @@ const RECORD_BYTES: [usize; 13] = [24, 32, 24, 32, 4, 32, 24, 40, 32, 40, 48, 32
 const MAX_STAGES: usize = 1_048_576;
 const MAX_OPERANDS: usize = 4_194_304;
 
-/// Encode the canonical frozen GMABRQ01 packed request projection.
+/// Encode the canonical pre-release GMABRQ01 packed request projection.
 pub fn encode_analytic_planar_boolean_batch_request_a0_packet(
     request: &AnalyticPlanarBooleanBatchRequestA0,
 ) -> Result<Vec<u8>, AnalyticPacketError> {
@@ -223,7 +223,17 @@ impl RequestEncoder {
 
     fn add_path(&mut self, path: &PlanarPath) -> Result<usize, AnalyticPacketError> {
         self.unique("path", path.path_id.get())?;
-        self.add_ring_parts(path.path_id.get(), &path.vertices, &path.segments, true)
+        let segments = path
+            .segments
+            .iter()
+            .map(|segment| match segment {
+                AuthoredPathSegment::Line(value) => AuthoredSegment::Line(value.clone()),
+                AuthoredPathSegment::CircularArc(value) => {
+                    AuthoredSegment::CircularArc(value.clone())
+                }
+            })
+            .collect::<Vec<_>>();
+        self.add_ring_parts(path.path_id.get(), &path.vertices, &segments, true)
     }
 
     fn add_ring_parts(
@@ -267,6 +277,9 @@ impl RequestEncoder {
         let (segment_id, curve_id) = match segment {
             AuthoredSegment::Line(value) => (value.segment_id.get(), value.curve_id.get()),
             AuthoredSegment::CircularArc(value) => (value.segment_id.get(), value.curve_id.get()),
+            AuthoredSegment::CircularArcByRadius(value) => {
+                (value.segment_id.get(), value.curve_id.get())
+            }
         };
         self.unique("segment", segment_id)?;
         let index = self.reserve(8)?;
@@ -284,6 +297,15 @@ impl RequestEncoder {
                 record[18] = u8::from(value.major_arc);
                 put_i64(record, 24, value.center.x)?;
                 put_i64(record, 32, value.center.y)?;
+            }
+            AuthoredSegment::CircularArcByRadius(value) => {
+                record[16] = 3;
+                record[17] = match value.direction {
+                    ArcDirection::Ccw => 1,
+                    ArcDirection::Cw => 2,
+                };
+                record[18] = u8::from(value.major_arc);
+                put_u64(record, 24, value.radius_nm)?;
             }
         }
         Ok(())

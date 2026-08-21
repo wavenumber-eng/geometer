@@ -55,6 +55,118 @@ requireValue(
   "int64 coordinates lost precision.",
 );
 
+const radiusArc = encodeAnalyticPlanarBooleanBatchRequestA0Packet({
+  jobs: [
+    {
+      job_id: 1n,
+      stages: [
+        {
+          stage_id: 1n,
+          operation: "union",
+          operands: [
+            {
+              operand_id: 1n,
+              kind: "planar_region",
+              region_id: 1n,
+              outer: {
+                ring_id: 1n,
+                vertices: [
+                  { vertex_id: 1n, point: { x: 0n, y: 0n } },
+                  { vertex_id: 2n, point: { x: 4n, y: 0n } },
+                ],
+                segments: [
+                  {
+                    segment_id: 1n,
+                    curve_id: 1n,
+                    kind: "circular_arc_by_radius",
+                    radius_nm: 3n,
+                    direction: "ccw",
+                    major_arc: false,
+                  },
+                  {
+                    segment_id: 2n,
+                    curve_id: 2n,
+                    kind: "circular_arc_by_radius",
+                    radius_nm: 3n,
+                    direction: "ccw",
+                    major_arc: true,
+                  },
+                ],
+              },
+              holes: [],
+            },
+          ],
+        },
+      ],
+    },
+  ],
+  relationship_queries: [],
+});
+const radiusView = new DataView(
+  radiusArc.buffer,
+  radiusArc.byteOffset,
+  radiusArc.byteLength,
+);
+const radiusSegmentOffset = Number(radiusView.getBigUint64(64 + 7 * 32 + 8, true));
+requireValue(radiusView.getUint8(radiusSegmentOffset + 16) === 3, "radius arc kind drifted.");
+requireValue(
+  radiusView.getBigUint64(radiusSegmentOffset + 24, true) === 3n,
+  "radius arc value drifted.",
+);
+requireValue(
+  radiusView.getBigUint64(radiusSegmentOffset + 32, true) === 0n,
+  "radius arc reserved bytes drifted.",
+);
+
+let pathRadiusRejected = false;
+try {
+  encodeAnalyticPlanarBooleanBatchRequestA0Packet({
+    jobs: [
+      {
+        job_id: 1n,
+        stages: [
+          {
+            stage_id: 1n,
+            operation: "union",
+            operands: [
+              {
+                operand_id: 1n,
+                kind: "swept_path",
+                feature_id: 1n,
+                centerline: {
+                  path_id: 1n,
+                  vertices: [
+                    { vertex_id: 1n, point: { x: 0n, y: 0n } },
+                    { vertex_id: 2n, point: { x: 4n, y: 0n } },
+                  ],
+                  segments: [
+                    {
+                      segment_id: 1n,
+                      curve_id: 1n,
+                      kind: "circular_arc_by_radius",
+                      radius_nm: 3n,
+                      direction: "ccw",
+                      major_arc: false,
+                    },
+                  ],
+                },
+                width_nm: 2n,
+                cap: "round",
+                join: "round",
+              },
+            ],
+          },
+        ],
+      },
+    ],
+    relationship_queries: [],
+  });
+} catch (error) {
+  pathRadiusRejected =
+    error instanceof AnalyticPacketError && error.message.includes("not supported in swept paths");
+}
+requireValue(pathRadiusRejected, "An endpoint/radius arc was accepted in a swept path.");
+
 let numberRejected = false;
 try {
   encodeAnalyticPlanarBooleanBatchRequestA0Packet({

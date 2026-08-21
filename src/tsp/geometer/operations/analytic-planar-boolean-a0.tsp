@@ -150,8 +150,28 @@ model AuthoredCircularArcSegment {
   major_arc: boolean;
 }
 
+/** A circular arc selected exactly by its topology-owned endpoints, radius, direction, and branch. */
+model AuthoredCircularArcByRadiusSegment {
+  segment_id: SegmentId;
+  curve_id: CurveId;
+  kind: "circular_arc_by_radius";
+  @minValue(1)
+  @maxValue(1000000000000)
+  radius_nm: uint64;
+  direction: ArcDirection;
+  major_arc: boolean;
+}
+
 @oneOf
 union AuthoredSegment {
+  line: AuthoredLineSegment,
+  circular_arc: AuthoredCircularArcSegment,
+  circular_arc_by_radius: AuthoredCircularArcByRadiusSegment,
+}
+
+/** Segment forms supported by constant-width swept centerlines. */
+@oneOf
+union AuthoredPathSegment {
   line: AuthoredLineSegment,
   circular_arc: AuthoredCircularArcSegment,
 }
@@ -173,7 +193,7 @@ model PlanarPath {
   vertices: AuthoredVertex[];
   @minItems(1)
   @maxItems(131072)
-  segments: AuthoredSegment[];
+  segments: AuthoredPathSegment[];
 }
 
 model PlanarRegionOperand {

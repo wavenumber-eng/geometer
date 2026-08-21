@@ -18,7 +18,7 @@ const manifestPath = join(repositoryRoot, "docs", "contracts", "promotion-manife
 export async function applyProjectionDeferrals(catalog, language, options = {}) {
   const deferred = (await readCandidateOperations()).filter(
     (candidate) =>
-      candidate.status === "contract_frozen" &&
+      candidate.status === "pre_release_matz_candidate" &&
       (candidate.deferred_projections ?? []).includes(language) &&
       !(
         options.retainLogicalDtos === true &&

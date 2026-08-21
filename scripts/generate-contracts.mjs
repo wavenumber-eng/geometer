@@ -133,7 +133,9 @@ async function validateGeneratedState(manifest, catalog) {
     ...manifest.operations.filter((operation) =>
       ["pilot_candidate", "promoted"].includes(operation.status),
     ),
-    ...manifest.candidateOperations.filter((operation) => operation.status === "contract_frozen"),
+    ...manifest.candidateOperations.filter(
+      (operation) => operation.status === "pre_release_matz_candidate",
+    ),
   ].sort((left, right) => left.id.localeCompare(right.id));
   assertEqual(
     catalog.operations.map((operation) => operation.identity).sort(),

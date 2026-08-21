@@ -1113,8 +1113,10 @@ class JobLowerer
     {
         if (segment.sx == segment.ex && segment.sy == segment.ey)
             return fail(AnalyticOperandLoweringError::invalid_topology);
-        if (record.kind != 2)
+        if (record.kind == 1)
             return true;
+        if (record.kind != 2)
+            return fail(AnalyticOperandLoweringError::unsupported_geometry);
         segment.is_arc = true;
         segment.ccw = record.direction == 1;
         segment.cx = record.center_x_nm;

@@ -529,7 +529,7 @@ def _assert_numeric_packet_spec(candidate: dict[str, Any], catalog: dict[str, An
 
 def _assert_numeric_catalog_identity(candidate: dict[str, Any], catalog: dict[str, Any]) -> None:
     assert catalog["catalog_version"] == 1
-    assert catalog["status"] == "structural_frozen_numeric_reopened"
+    assert catalog["status"] == "pre_release_contract_evolution"
     assert catalog["operation_identity"] == candidate["id"]
     assert catalog["request_magic"] == "GMABRQ01"
     assert catalog["result_magic"] == "GMABRS01"

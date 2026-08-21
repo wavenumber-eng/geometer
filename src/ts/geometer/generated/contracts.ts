@@ -45,7 +45,20 @@ export interface AuthoredCircularArcSegment {
   readonly major_arc: boolean;
 }
 
-export type AuthoredSegment = AuthoredLineSegment | AuthoredCircularArcSegment;
+/** A circular arc selected exactly by its topology-owned endpoints, radius, direction, and branch. */
+export interface AuthoredCircularArcByRadiusSegment {
+  readonly segment_id: SegmentId;
+  readonly curve_id: CurveId;
+  readonly kind: "circular_arc_by_radius";
+  readonly radius_nm: bigint;
+  readonly direction: ArcDirection;
+  readonly major_arc: boolean;
+}
+
+export type AuthoredSegment =
+  | AuthoredLineSegment
+  | AuthoredCircularArcSegment
+  | AuthoredCircularArcByRadiusSegment;
 
 export interface PlanarRing {
   readonly ring_id: RingId;
@@ -91,10 +104,13 @@ export interface CapsuleOperand {
 
 export type PathId = bigint;
 
+/** Segment forms supported by constant-width swept centerlines. */
+export type AuthoredPathSegment = AuthoredLineSegment | AuthoredCircularArcSegment;
+
 export interface PlanarPath {
   readonly path_id: PathId;
   readonly vertices: readonly AuthoredVertex[];
-  readonly segments: readonly AuthoredSegment[];
+  readonly segments: readonly AuthoredPathSegment[];
 }
 
 export interface SweptPathOperand {

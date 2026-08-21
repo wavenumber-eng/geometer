@@ -39,6 +39,7 @@ struct SegmentSpec
     bool major_arc = false;
     std::int64_t center_x_nm = 0;
     std::int64_t center_y_nm = 0;
+    std::uint64_t radius_nm = 0;
 };
 
 std::uint32_t add_ring(AnalyticRequestPacketRecords& records, std::uint64_t ring_id,
@@ -53,7 +54,8 @@ std::uint32_t add_ring(AnalyticRequestPacketRecords& records, std::uint64_t ring
         records.vertices.push_back({vertex_id++, x, y});
     for (const SegmentSpec& segment : segments)
         records.segments.push_back({segment.id, segment.curve_id, segment.kind, segment.direction,
-                                    segment.major_arc, segment.center_x_nm, segment.center_y_nm});
+                                    segment.major_arc, segment.center_x_nm, segment.center_y_nm,
+                                    segment.radius_nm});
     records.rings.push_back({ring_id, vertex_begin, static_cast<std::uint32_t>(vertices.size()),
                              segment_begin, static_cast<std::uint32_t>(segments.size()), flags});
     return ring_index;
@@ -149,6 +151,46 @@ void test_irrational_authored_arc()
                     AnalyticFilteredSourceRole::authored_circular_arc,
             "authored arc winding or source metadata drifted");
     require_narrow_accepts(geometry, "sqrt(2) authored arc");
+}
+
+void test_endpoint_radius_authored_minor_and_major_arcs()
+{
+    const AnalyticRequestPacketRecords records =
+        region_records({{0, 0}, {4000, 0}},
+                       {{800, 900, 3, 1, false, 0, 0, 3000}, {801, 901, 3, 1, true, 0, 0, 3000}});
+    const AnalyticFilteredGeometry geometry =
+        lower(records, "endpoint/radius irrational-center circle");
+    require(geometry.curves.size() == 2,
+            "endpoint/radius circle did not preserve two authored arcs");
+    const AnalyticAtomicCurveNm& minor = geometry.curves[0];
+    const AnalyticAtomicCurveNm& major = geometry.curves[1];
+    require(!minor.has_integer_certificate && !major.has_integer_certificate &&
+                minor.has_integer_radius_certificate && major.has_integer_radius_certificate &&
+                minor.has_endpoint_authoritative_arc_certificate &&
+                major.has_endpoint_authoritative_arc_certificate &&
+                minor.has_arc_sweep_certificate && major.has_arc_sweep_certificate &&
+                minor.integer_radius == 3000 && major.integer_radius == 3000 && !minor.major_arc &&
+                major.major_arc,
+            "endpoint/radius proof certificates or branch selection drifted");
+    const double local_center_y = 6000.0 + std::sqrt(5'000'000.0);
+    require(minor.circle.center.x.lower <= 8000.0 && minor.circle.center.x.upper >= 8000.0 &&
+                minor.circle.center.y.lower <= local_center_y &&
+                minor.circle.center.y.upper >= local_center_y &&
+                minor.construction_carrier_id == major.construction_carrier_id &&
+                minor.construction_family_id == major.construction_family_id,
+            "endpoint/radius irrational center or shared carrier identity drifted");
+    require_narrow_accepts(geometry, "endpoint/radius irrational-center circle");
+
+    AnalyticRequestPacketRecords chord_too_long = records;
+    chord_too_long.vertices[1].x_nm = 6001;
+    require(lower_analytic_job_to_filtered_curves(chord_too_long, 0).error ==
+                AnalyticFilteredLoweringError::invalid_arc,
+            "endpoint/radius chord longer than the diameter was accepted");
+    AnalyticRequestPacketRecords major_semicircle = records;
+    major_semicircle.vertices[1].x_nm = 6000;
+    require(lower_analytic_job_to_filtered_curves(major_semicircle, 0).error ==
+                AnalyticFilteredLoweringError::invalid_arc,
+            "endpoint/radius major semicircle ambiguity was accepted");
 }
 
 void test_disks_annuli_and_tokens()
@@ -427,15 +469,15 @@ void test_fail_closed_limits_and_swept_path()
             "curve count limit was not enforced before allocation");
 
     limits = kAnalyticSolverHardLimits;
-    limits.working_memory_bytes = 2 * 768 - 1;
+    limits.working_memory_bytes = 2 * 800 - 1;
     result = lower_analytic_job_to_filtered_curves(disk, 0, limits);
     require(result.error == AnalyticFilteredLoweringError::resource_limit_exceeded &&
                 result.telemetry.peak_working_memory_bytes == 0,
             "one-byte-short lowering memory limit did not fail closed");
-    limits.working_memory_bytes = 2 * 768;
+    limits.working_memory_bytes = 2 * 800;
     result = lower_analytic_job_to_filtered_curves(disk, 0, limits);
     require(result.error == AnalyticFilteredLoweringError::none &&
-                result.telemetry.peak_working_memory_bytes == 2 * 768,
+                result.telemetry.peak_working_memory_bytes == 2 * 800,
             "exact lowering memory budget did not succeed deterministically");
 
     const std::uint64_t disk_work_units = result.telemetry.work_units;
@@ -1132,6 +1174,7 @@ int main()
 {
     test_authored_winding_and_large_origin();
     test_irrational_authored_arc();
+    test_endpoint_radius_authored_minor_and_major_arcs();
     test_disks_annuli_and_tokens();
     test_arbitrary_capsule();
     test_capsule_carrier_proofs();

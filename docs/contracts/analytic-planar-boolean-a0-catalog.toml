@@ -1,6 +1,6 @@
 catalog_version = 1
 catalog_identity = "geometry.analytic_planar_boolean.catalog.a0"
-status = "structural_frozen_numeric_reopened"
+status = "pre_release_contract_evolution"
 operation_identity = "geometry.analytic_planar_boolean_batch.a0"
 packet_generation = 1
 request_magic = "GMABRQ01"
@@ -23,6 +23,7 @@ swept_path = 5
 underlying = "u8"
 line = 1
 circular_arc = 2
+circular_arc_by_radius = 3
 
 [enum.fragment_kind]
 underlying = "u8"

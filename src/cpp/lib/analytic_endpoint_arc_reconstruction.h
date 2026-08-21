@@ -23,7 +23,8 @@ inline bool reconstruct_endpoint_authoritative_arc_center(std::int64_t start_x,
     const WideInteger radius_squared = wide_multiply(radius_integer, radius_integer);
     const WideInteger four_radius_squared = wide_add(wide_add(radius_squared, radius_squared),
                                                      wide_add(radius_squared, radius_squared));
-    if (wide_compare(chord_squared, four_radius_squared) > 0)
+    const int chord_order = wide_compare(chord_squared, four_radius_squared);
+    if (chord_order > 0 || (chord_order == 0 && major_arc))
         return false;
 
     const Interval chord =

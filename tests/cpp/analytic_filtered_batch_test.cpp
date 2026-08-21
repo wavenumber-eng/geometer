@@ -54,6 +54,35 @@ AnalyticRequestPacketRecords plain_disks(std::uint32_t count)
     return records;
 }
 
+AnalyticRequestPacketRecords endpoint_radius_circle()
+{
+    AnalyticRequestPacketRecords records;
+    records.jobs = {{10, 0, 1}};
+    records.stages = {{100, 1, 0, 1}};
+    records.operands = {{1000, 1, 0}};
+    records.planar_regions = {{500, 0, 0, 0}};
+    records.rings = {{600, 0, 2, 0, 2, 0}};
+    records.vertices = {{700, 0, 0}, {701, 4000, 0}};
+    records.segments = {{800, 900, 3, 1, false, 0, 0, 3000}, {801, 901, 1, 0, false, 0, 0, 0}};
+    return records;
+}
+
+AnalyticRequestPacketRecords overlapping_endpoint_radius_arcs_with_distinct_chords()
+{
+    AnalyticRequestPacketRecords records;
+    records.jobs = {{10, 0, 1}};
+    records.stages = {{100, 1, 0, 2}};
+    records.operands = {{1000, 1, 0}, {1001, 1, 1}};
+    records.planar_regions = {{500, 0, 0, 0}, {501, 1, 0, 0}};
+    records.rings = {{600, 0, 2, 0, 2, 0}, {601, 2, 2, 2, 2, 0}};
+    records.vertices = {{700, -11, 7}, {701, 8, -10}, {702, -11, 7}, {703, -3, 13}};
+    records.segments = {{800, 900, 3, 1, false, 0, 0, 13},
+                        {801, 901, 1, 0, false, 0, 0, 0},
+                        {802, 902, 3, 1, true, 0, 0, 13},
+                        {803, 903, 1, 0, false, 0, 0, 0}};
+    return records;
+}
+
 AnalyticRequestPacketRecords unsupported_then_disk()
 {
     AnalyticRequestPacketRecords records;
@@ -518,6 +547,47 @@ void test_empty_batch()
             "empty job ranges were not canonically zeroed");
 }
 
+void test_endpoint_radius_circle_executes_deterministically()
+{
+    const auto records = endpoint_radius_circle();
+    require(validate_analytic_request_packet_records(records) == AnalyticRequestPacketError::none,
+            "endpoint/radius request failed packet validation");
+    const auto first = build_analytic_filtered_batch(records);
+    const auto second = build_analytic_filtered_batch(records);
+    require(first.error == AnalyticFilteredBatchError::none && first.packet &&
+                second.error == AnalyticFilteredBatchError::none && second.packet,
+            "endpoint/radius batch execution failed");
+    require(first.packet->bytes == second.packet->bytes,
+            "endpoint/radius batch bytes are not deterministic");
+    require(first.packet->records.job_results.size() == 1,
+            "endpoint/radius batch job count drifted");
+    require(first.packet->records.job_results[0].status == 0,
+            "endpoint/radius batch returned a job-local failure");
+    require(first.packet->records.job_results[0].result_region_count == 1,
+            "endpoint/radius batch result-region count drifted");
+    require(first.packet->records.fragments.size() == 2,
+            "endpoint/radius batch fragment count drifted");
+}
+
+void test_distinct_chord_endpoint_radius_overlap_fails_closed_deterministically()
+{
+    const auto records = overlapping_endpoint_radius_arcs_with_distinct_chords();
+    require(validate_analytic_request_packet_records(records) == AnalyticRequestPacketError::none,
+            "distinct-chord endpoint/radius request failed packet validation");
+    const auto first = build_analytic_filtered_batch(records);
+    const auto second = build_analytic_filtered_batch(records);
+    require(first.error == AnalyticFilteredBatchError::none && first.packet &&
+                second.error == AnalyticFilteredBatchError::none && second.packet,
+            "distinct-chord endpoint/radius failure was not isolated to its job");
+    require(first.packet->bytes == second.packet->bytes,
+            "distinct-chord endpoint/radius failure bytes are not deterministic");
+    require(first.packet->records.job_results.size() == 1 &&
+                first.packet->records.job_results[0].status == 1 &&
+                first.packet->records.diagnostics.size() == 1 &&
+                first.packet->records.diagnostics[0].code == 65'547,
+            "distinct-chord endpoint/radius overlap did not fail closed as a resource limit");
+}
+
 void test_two_successful_jobs()
 {
     const auto records = two_disks();
@@ -882,6 +952,8 @@ std::string relationship_parity_vector()
 int main(int argc, char** argv)
 {
     test_empty_batch();
+    test_endpoint_radius_circle_executes_deterministically();
+    test_distinct_chord_endpoint_radius_overlap_fails_closed_deterministically();
     test_two_successful_jobs();
     test_job_local_failure_isolated();
     test_disjoint_relationship();

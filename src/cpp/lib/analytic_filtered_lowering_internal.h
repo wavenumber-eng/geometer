@@ -50,10 +50,19 @@ struct CircleCarrierKey
     WideInteger radicand{};
 };
 
+struct EndpointRadiusCircleKey
+{
+    AnalyticIntegerPointNm first;
+    AnalyticIntegerPointNm second;
+    std::uint64_t radius = 0;
+    bool center_left = false;
+};
+
 enum class TokenKeyKind : std::uint8_t
 {
     line,
     circle,
+    endpoint_radius_circle,
 };
 
 struct TokenDescriptor
@@ -61,6 +70,7 @@ struct TokenDescriptor
     TokenKeyKind kind = TokenKeyKind::line;
     LineCarrierKey line;
     CircleCarrierKey circle;
+    EndpointRadiusCircleKey endpoint_radius_circle;
 };
 
 struct EmittedCurve

@@ -168,6 +168,56 @@ int main()
     require(reencoded.value && *reencoded.value == *encoded.value,
             "exemplar request round trip is not byte identical");
 
+    // The pre-release A0 row retains center-form bytes and uses kind 3 with a
+    // radius at offset 24 for endpoint/radius authored arcs.
+    AnalyticRequestPacketRecords radius_records = exemplar;
+    for (std::size_t index : {std::size_t{4}, std::size_t{5}})
+    {
+        radius_records.segments[index].kind = 3;
+        radius_records.segments[index].center_x_nm = 0;
+        radius_records.segments[index].center_y_nm = 0;
+        radius_records.segments[index].radius_nm = 1000;
+    }
+    AnalyticRequestPacketEncodeResult radius_encoded =
+        encode_analytic_request_packet(radius_records);
+    require(radius_encoded.error == AnalyticRequestPacketError::none && radius_encoded.value,
+            "endpoint/radius request packet encoding failed");
+    AnalyticRequestPacketRecordsResult radius_decoded =
+        decode_analytic_request_packet(radius_encoded.value->data(), radius_encoded.value->size());
+    require(radius_decoded.error == AnalyticRequestPacketError::none && radius_decoded.value &&
+                radius_decoded.value->segments[4].kind == 3 &&
+                radius_decoded.value->segments[4].radius_nm == 1000 &&
+                radius_decoded.value->segments[4].center_x_nm == 0 &&
+                radius_decoded.value->segments[4].center_y_nm == 0,
+            "endpoint/radius request packet did not round trip");
+    AnalyticRequestPacketEncodeResult radius_reencoded =
+        encode_analytic_request_packet(*radius_decoded.value);
+    require(radius_reencoded.value && *radius_reencoded.value == *radius_encoded.value,
+            "endpoint/radius request packet round trip is not byte identical");
+    const std::size_t radius_segment_table =
+        static_cast<std::size_t>(read_u64(*radius_encoded.value, 64 + 7 * 32 + 8));
+    std::vector<std::uint8_t> malformed_radius = *radius_encoded.value;
+    write_u64(malformed_radius, radius_segment_table + 4 * 40 + 24, 0);
+    require_decode_error(malformed_radius, AnalyticRequestPacketError::invalid_packet,
+                         "zero endpoint/radius arc radius was accepted");
+    malformed_radius = *radius_encoded.value;
+    malformed_radius[radius_segment_table + 4 * 40 + 32] = 1;
+    require_decode_error(malformed_radius, AnalyticRequestPacketError::invalid_packet,
+                         "nonzero endpoint/radius reserved bytes were accepted");
+
+    AnalyticRequestPacketRecords path_radius_records = exemplar;
+    path_radius_records.segments[6].kind = 3;
+    path_radius_records.segments[6].direction = 1;
+    path_radius_records.segments[6].radius_nm = 1000;
+    require_encode_error(path_radius_records, AnalyticRequestPacketError::invalid_packet,
+                         "endpoint/radius arc was accepted in an open swept path");
+    std::vector<std::uint8_t> malformed_path_radius = *encoded.value;
+    malformed_path_radius[radius_segment_table + 6 * 40 + 16] = 3;
+    malformed_path_radius[radius_segment_table + 6 * 40 + 17] = 1;
+    write_u64(malformed_path_radius, radius_segment_table + 6 * 40 + 24, 1000);
+    require_decode_error(malformed_path_radius, AnalyticRequestPacketError::invalid_packet,
+                         "packet endpoint/radius arc was accepted in an open swept path");
+
     // Header and directory defects reject the batch as invalid_packet.
     std::vector<std::uint8_t> malformed = *encoded.value;
     malformed[0] = 0;

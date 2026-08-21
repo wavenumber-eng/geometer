@@ -2,8 +2,10 @@
 
 ## Status
 
-The logical TypeSpec shapes and packed A0 record layout are accepted and
-frozen. The solver and numeric policy are reopened under
+The logical TypeSpec shapes and packed A0 record layout are pre-release and
+remain under the MATZ visualization integration gate. Existing center-form
+bytes stay compatible while A0 adds an endpoint/radius authored arc variant
+whose exact center may be non-integral. The solver and numeric policy are governed under
 [ADR-013](../geometer/adr/geometer-adr-013-filtered_resolution_bounded_planar_boolean.md) for a
 speed-first filtered implementation with a 50 nm topology-resolution envelope.
 The arbitrary-precision algebraic engine is explicitly non-primary. MATZ
@@ -12,14 +14,28 @@ consumer/provider design input, and independent review approved the analytic
 architecture at normative revision
 `529c768e559b4c88874264748d4186e775c8a4dd`. The separately compiled TypeSpec
 candidate and its logical/packed reconciliation were accepted at
-`f4b6a9b87bf16f57ef29dae22150b16f2a742b64`; it remains isolated from the
-promoted-contract entrypoint until production promotion.
+`f4b6a9b87bf16f57ef29dae22150b16f2a742b64`; it remains a pre-release MATZ
+candidate in the shared generated projections until production promotion.
 
-The structural freeze authorizes raw packet goldens and generated codec work.
-It does not authorize production solver promotion, generated production
-projections, or release before the filtered-solver gates pass. ADR-012 records
+The current contract authorizes raw packet goldens and generated codec work,
+but is not released until the MATZ visualization gates pass. ADR-012 records
 the historical exact-first feasibility decision; ADR-013 supersedes it for
 production implementation.
+
+The endpoint/radius authored variant is admitted for closed planar-region
+rings. Constant-width swept-path centerlines retain line and exact
+integer-center arc segments in A0; endpoint/radius swept offsets are a separate
+future geometry capability.
+
+The filtered solver currently certifies coincident endpoint/radius circle
+carriers only when they use the same canonical unordered endpoint pair,
+radius, and selected center side. Equivalent circles described by different
+endpoint pairs, or by mixed center-form and endpoint/radius-form arcs, may fail
+closed with the governed `resource_limit_exceeded` job diagnostic under
+ADR-013. They are never approximated or omitted from a completed result. The
+MATZ real-board gates determine whether this bounded carrier rule is sufficient
+for the visualization release; scalable general carrier canonicalization is
+tracked in [Geometer issue #21](https://github.com/wavenumber-eng/geometer/issues/21).
 
 The stable operation identity is
 `geometry.analytic_planar_boolean_batch.a0`. Friendly generated methods are
@@ -173,11 +189,13 @@ subtraction is a successful empty result.
 ### Geometry
 
 Every coordinate is a signed integer nanometer. Positive lengths are unsigned
-integer nanometers. A0 wire arcs use topology endpoints plus an integer center
-and explicit direction/major-arc branch; the contract carries no angle or
-trigonometric field. Consumer fixture shorthand may describe a source sweep in
-microdegrees, but the imported conformance vector freezes its expanded integer
-vertices/center/branch before packet encoding.
+integer nanometers. A0 closed-ring arcs use topology endpoints plus either an
+exact integer center or an exact positive integer radius, together with an
+explicit direction/major-arc branch; the contract carries no angle or
+trigonometric field. Open swept-path centerlines admit only line and exact
+integer-center arc segments. Consumer fixture shorthand may describe a source
+sweep in microdegrees, but the imported conformance vector freezes its expanded
+integer vertices and governed arc construction before packet encoding.
 
 ```text
 PointNm
@@ -193,24 +211,37 @@ PlanarRing
 PlanarPath
   pathId: PathId
   vertices: AuthoredVertex[]
-  segments: AuthoredSegment[]
+  segments: AuthoredPathSegment[]
   invariant: segments.length + 1 == vertices.length
 
 AuthoredSegment
   segmentId: SegmentId
   curveId: CurveId
-  geometry: line | CircularArcDescriptor
+  geometry: line | CircularArcByCenterDescriptor | CircularArcByRadiusDescriptor
 
-CircularArcDescriptor
+AuthoredPathSegment
+  segmentId: SegmentId
+  curveId: CurveId
+  geometry: line | CircularArcByCenterDescriptor
+
+CircularArcByCenterDescriptor
   center: PointNm
+  direction: cw | ccw
+  majorArc: bool
+
+CircularArcByRadiusDescriptor
+  radiusNm: uint64
   direction: cw | ccw
   majorArc: bool
 ```
 
-A topology-indexed authored arc may not be a full circle. The exact integer
-squared distances from its center to both topology endpoints must be equal and
-nonzero; direction and major-arc branch select the unique authored arc. Full
-circles use compact disk/annulus features.
+A topology-indexed authored arc may not be a full circle. Center form requires
+the exact integer squared distances from its center to both topology endpoints
+to be equal and nonzero. Radius form requires a nonzero chord no longer than
+the diameter; its topology endpoints, radius, direction, and major-arc branch
+select the unique authored arc even when its center is not integral. Full
+circles use compact disk/annulus features. Radius form is not admitted in an
+open `PlanarPath`.
 
 The operand union is:
 

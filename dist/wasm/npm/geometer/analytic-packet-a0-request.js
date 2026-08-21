@@ -1,5 +1,5 @@
 import { compareBigint, encodeTables, fail, length, MAX_JOBS, MAX_OPERANDS, MAX_QUERIES, MAX_RING_SEGMENTS, MAX_STAGES, putI64, putU32, putU64, REQUEST_MAGIC, REQUEST_TABLES, record, required, unsigned, } from "./analytic-packet-a0-common.js";
-/** Encode the frozen canonical GMABRQ01 projection using bigint IDs and nanometer coordinates. */
+/** Encode the pre-release canonical GMABRQ01 projection using bigint IDs and nanometer coordinates. */
 export function encodeAnalyticPlanarBooleanBatchRequestA0Packet(request) {
     if (!Array.isArray(request.jobs) || !Array.isArray(request.relationship_queries))
         fail("Analytic request jobs and relationship queries must be arrays.");
@@ -47,6 +47,8 @@ export function encodeAnalyticPlanarBooleanBatchRequestA0Packet(request) {
         }
         const segmentBegin = table(8).records.length;
         for (const segment of ring.segments) {
+            if (open && segment.kind === "circular_arc_by_radius")
+                fail("Endpoint/radius arcs are not supported in swept paths.");
             uniqueId("segment", segment.segment_id);
             unsigned(segment.curve_id, "curve id", true);
             table(8).records.push(record(40, (view) => {
@@ -61,6 +63,13 @@ export function encodeAnalyticPlanarBooleanBatchRequestA0Packet(request) {
                     view.setUint8(18, segment.major_arc ? 1 : 0);
                     putI64(view, 24, segment.center.x, "arc center x");
                     putI64(view, 32, segment.center.y, "arc center y");
+                }
+                else if (segment.kind === "circular_arc_by_radius") {
+                    view.setUint8(16, 3);
+                    view.setUint8(17, segment.direction === "ccw" ? 1 : 2);
+                    view.setUint8(18, segment.major_arc ? 1 : 0);
+                    length(segment.radius_nm, "arc radius");
+                    putU64(view, 24, segment.radius_nm, "arc radius", true);
                 }
                 else {
                     fail("Unknown authored segment kind.");

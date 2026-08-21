@@ -25,6 +25,7 @@ from geometer._generated.contracts.models import (
     AnalyticPlanarBooleanStage,
     AnnulusOperand,
     ArcDirection,
+    AuthoredCircularArcByRadiusSegment,
     AuthoredCircularArcSegment,
     AuthoredLineSegment,
     AuthoredVertex,
@@ -262,6 +263,97 @@ def test_request_encoder_emits_exact_empty_and_rich_canonical_packets() -> None:
     encoded = encode_analytic_planar_boolean_batch_request_a0_packet(_request())
     assert struct.unpack_from("<Q", encoded, struct.unpack_from("<Q", encoded, 72)[0])[0] == (1 << 64) - 1
     assert struct.unpack_from("<I", encoded, 40)[0] == 1
+
+
+def test_request_encoder_preserves_center_arc_bytes_and_adds_exact_radius_variant() -> None:
+    ring = PlanarRing(
+        ring_id=1,
+        vertices=(
+            AuthoredVertex(vertex_id=1, point=PointNm(x=0, y=0)),
+            AuthoredVertex(vertex_id=2, point=PointNm(x=6, y=0)),
+        ),
+        segments=(
+            AuthoredCircularArcByRadiusSegment(
+                segment_id=1,
+                curve_id=1,
+                kind="circular_arc_by_radius",
+                radius_nm=5,
+                direction=ArcDirection.CCW,
+                major_arc=False,
+            ),
+            AuthoredCircularArcByRadiusSegment(
+                segment_id=2,
+                curve_id=2,
+                kind="circular_arc_by_radius",
+                radius_nm=5,
+                direction=ArcDirection.CCW,
+                major_arc=True,
+            ),
+        ),
+    )
+    request = AnalyticPlanarBooleanBatchRequestA0(
+        jobs=(
+            AnalyticPlanarBooleanJob(
+                job_id=1,
+                stages=(
+                    AnalyticPlanarBooleanStage(
+                        stage_id=1,
+                        operation=StageOperation.UNION_STAGE,
+                        operands=(
+                            PlanarRegionOperand(
+                                operand_id=1,
+                                kind="planar_region",
+                                region_id=1,
+                                outer=ring,
+                                holes=(),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        ),
+        relationship_queries=(),
+    )
+    packet = encode_analytic_planar_boolean_batch_request_a0_packet(request)
+    segment_table_offset = struct.unpack_from("<Q", packet, 64 + 7 * 32 + 8)[0]
+    assert packet[segment_table_offset + 16] == 3
+    assert packet[segment_table_offset + 17] == 1
+    assert packet[segment_table_offset + 18] == 0
+    assert struct.unpack_from("<Q", packet, segment_table_offset + 24)[0] == 5
+    assert packet[segment_table_offset + 32 : segment_table_offset + 40] == b"\0" * 8
+    assert packet[segment_table_offset + 40 + 16] == 3
+    assert packet[segment_table_offset + 40 + 18] == 1
+
+    # Existing center-form canonical vectors remain byte-for-byte unchanged.
+    assert (
+        encode_analytic_planar_boolean_batch_request_a0_packet(_cpp_exemplar_request())
+        == _corpus()[1]["request.exemplar"]
+    )
+
+
+def test_request_encoder_rejects_endpoint_radius_arc_in_swept_path() -> None:
+    request = _cpp_exemplar_request()
+    stage = request.jobs[0].stages[1]
+    swept = stage.operands[1]
+    assert isinstance(swept, SweptPathOperand)
+    invalid_path = replace(
+        swept.centerline,
+        segments=(
+            AuthoredCircularArcByRadiusSegment(
+                segment_id=806,
+                curve_id=906,
+                kind="circular_arc_by_radius",
+                radius_nm=10_000,
+                direction=ArcDirection.CCW,
+                major_arc=False,
+            ),
+        ),
+    )
+    invalid_swept = replace(swept, centerline=invalid_path)  # type: ignore[arg-type]
+    invalid_stage = replace(stage, operands=(stage.operands[0], invalid_swept))
+    invalid_job = replace(request.jobs[0], stages=(request.jobs[0].stages[0], invalid_stage))
+    with pytest.raises(AnalyticPacketError, match="not supported in swept paths"):
+        encode_analytic_planar_boolean_batch_request_a0_packet(replace(request, jobs=(invalid_job, request.jobs[1])))
 
 
 def test_request_encoder_rejects_wrong_runtime_shapes_ids_and_references() -> None:

@@ -238,7 +238,8 @@ bool bind_geometry_source(const AnalyticSourceReference& source,
         return found != segments.end() && found->segment_id == source.primary_id &&
                found->curve_id == source.secondary_id && found->operand_id == source.operand_id &&
                ((found->kind == 1 && source.role == AnalyticSourceRole::authored_line) ||
-                (found->kind == 2 && source.role == AnalyticSourceRole::authored_circular_arc));
+                ((found->kind == 2 || found->kind == 3) &&
+                 source.role == AnalyticSourceRole::authored_circular_arc));
     }
     std::uint64_t feature = 0;
     switch (operand->geometry_kind)

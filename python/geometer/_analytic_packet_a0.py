@@ -1,4 +1,4 @@
-"""Strict binary codec for the frozen analytic planar Boolean A0 packets."""
+"""Strict binary codec for the pre-release analytic planar Boolean A0 packets."""
 
 from __future__ import annotations
 
@@ -10,20 +10,14 @@ from typing import Any, NoReturn
 from ._generated.contracts import models as m
 
 
-REQUEST_MAGIC = b"GMABRQ01"
-RESULT_MAGIC = b"GMABRS01"
-HEADER_BYTES = 64
-DIRECTORY_ENTRY_BYTES = 32
+REQUEST_MAGIC, RESULT_MAGIC = b"GMABRQ01", b"GMABRS01"
+HEADER_BYTES, DIRECTORY_ENTRY_BYTES = 64, 32
 MAX_PACKET_BYTES = 256 * 1024 * 1024
 U32_NONE = (1 << 32) - 1
 U64_MAX = (1 << 64) - 1
-I64_MIN = -(1 << 63)
-I64_MAX = (1 << 63) - 1
+I64_MIN, I64_MAX = -(1 << 63), (1 << 63) - 1
 MAX_LENGTH_NM = 1_000_000_000_000
-MAX_JOBS = 65_535
-MAX_STAGES = 1_048_576
-MAX_OPERANDS = 4_194_304
-MAX_QUERIES = 1_048_576
+MAX_JOBS, MAX_STAGES, MAX_OPERANDS, MAX_QUERIES = 65_535, 1_048_576, 4_194_304, 1_048_576
 MAX_RING_SEGMENTS = 131_072
 MAX_LOGICAL_SOURCE_REFERENCE_EXPANSIONS = 1_048_576
 REQUEST_TABLES = (24, 32, 24, 32, 4, 32, 24, 40, 32, 40, 48, 32, 24)
@@ -150,6 +144,8 @@ def _add_request_ring(context: _RequestContext, ring: Any, *, open_path: bool) -
         )
     segment_begin = len(context.tables[7])
     for segment in segments:
+        if open_path and type(segment) is m.AuthoredCircularArcByRadiusSegment:
+            _fail("Endpoint/radius arcs are not supported in swept paths.")
         context.tables[7].append(_encode_request_segment(context, segment))
     row = _record(32)
     _put(row, 0, "QIIIII", identity, vertex_begin, len(vertices), segment_begin, len(segments), 1 if open_path else 0)
@@ -170,6 +166,16 @@ def _encode_request_segment(context: _RequestContext, segment: Any) -> bytearray
             _u64(segment.curve_id, "curve id", nonzero=True),
             1,
         )
+        return row
+    if type(segment) is m.AuthoredCircularArcByRadiusSegment:
+        if segment.kind != "circular_arc_by_radius" or type(segment.major_arc) is not bool:
+            _fail("Invalid authored endpoint/radius circular arc.")
+        direction = _enum_value(segment.direction, m.ArcDirection, "arc direction")
+        segment_id = _unique_request_id(context, "segment", segment.segment_id)
+        curve_id = _u64(segment.curve_id, "curve id", nonzero=True)
+        _put(row, 0, "QQ", segment_id, curve_id)
+        row[16:19] = bytes((3, 1 if direction == "ccw" else 2, int(segment.major_arc)))
+        _put(row, 24, "Q", _length(segment.radius_nm, "arc radius"))
         return row
     if type(segment) is not m.AuthoredCircularArcSegment:
         _fail("Unknown authored segment kind.")

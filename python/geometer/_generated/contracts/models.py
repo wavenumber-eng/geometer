@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Literal, TypeAlias
 
-NORMALIZED_CATALOG_SHA256 = "d88c4f7d1a487c34d7654c886b79b608bcbd53469b2b3e3d6acd9d9617b00f19"
+NORMALIZED_CATALOG_SHA256 = "c93e41a3aa0d64ab4dab905cea82aaeb3b3792155d1f5b2850673567a699d59c"
 
 JobId: TypeAlias = int
 
@@ -64,7 +64,18 @@ class AuthoredCircularArcSegment:
     major_arc: bool
 
 
-AuthoredSegment: TypeAlias = AuthoredLineSegment | AuthoredCircularArcSegment
+# A circular arc selected exactly by its topology-owned endpoints, radius, direction, and branch.
+@dataclass(frozen=True, slots=True, kw_only=True)
+class AuthoredCircularArcByRadiusSegment:
+    segment_id: SegmentId
+    curve_id: CurveId
+    kind: Literal["circular_arc_by_radius"]
+    radius_nm: int
+    direction: ArcDirection
+    major_arc: bool
+
+
+AuthoredSegment: TypeAlias = AuthoredLineSegment | AuthoredCircularArcSegment | AuthoredCircularArcByRadiusSegment
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -117,12 +128,15 @@ class CapsuleOperand:
 
 PathId: TypeAlias = int
 
+# Segment forms supported by constant-width swept centerlines.
+AuthoredPathSegment: TypeAlias = AuthoredLineSegment | AuthoredCircularArcSegment
+
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class PlanarPath:
     path_id: PathId
     vertices: tuple[AuthoredVertex, ...]
-    segments: tuple[AuthoredSegment, ...]
+    segments: tuple[AuthoredPathSegment, ...]
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)

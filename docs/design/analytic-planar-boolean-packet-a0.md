@@ -2,13 +2,13 @@
 
 ## Status
 
-Accepted and frozen as packet generation A0 for implementation. This
+Pre-release packet generation A0 under active MATZ integration. This
 separately governed binary projection carries the logical models in
-[Analytic Planar Boolean A0 Design](analytic-planar-boolean-a0.md). It is not
-generated merely by choosing a TypeSpec emitter. Any incompatible change now
-requires a new packet generation and magic. Raw-byte goldens and production
-codecs are post-freeze implementation work rather than evidence claimed by
-this design status.
+[Analytic Planar Boolean A0 Design](analytic-planar-boolean-a0.md). Existing
+line and integer-center arc rows and their raw-byte goldens remain stable. The
+owner has authorized adding the endpoint/radius arc interpretation before the
+first MATZ visualization release; future incompatible changes after that
+release require a new packet generation and magic.
 
 An implementation-review erratum dated 2026-08-14 resolves the only
 pre-golden layout contradiction: table offsets are eight-byte aligned, while
@@ -18,11 +18,11 @@ aligns the following table. This records the uniquely encodable intent of A0;
 the generation and magic are unchanged because no raw golden or deployed codec
 preceded the correction.
 
-ADR-013 leaves the record layout, generation, and magic frozen but reopens the
-solver-facing numeric limits. In particular, the 1 nm coordinate grid is
-retained while the production topology-resolution and boundary-displacement
-envelope becomes 50 nm. Changing those governed limits does not alter packet
-bytes or field interpretation.
+ADR-013 governs the solver-facing numeric limits. In particular, the 1 nm
+coordinate grid is retained while the production topology-resolution and
+boundary-displacement envelope is 50 nm. The endpoint/radius row carries an
+exact integer radius; its generally irrational center is reconstructed by the
+trusted solver and is not rounded onto the source grid.
 
 Every numeric enum, flag, role, status, event, diagnostic, and path token is
 assigned in the machine-readable governed catalog
@@ -253,15 +253,29 @@ exactly one ring/path owner.
 | ---: | --- | --- |
 | 0 | `u64` | segment id |
 | 8 | `u64` | curve id |
-| 16 | `u8` | kind: `1` line, `2` circular arc |
+| 16 | `u8` | kind: `1` line, `2` integer-center circular arc, `3` endpoint/radius circular arc |
 | 17 | `u8` | direction: `0` line, `1` CCW, `2` CW |
 | 18 | `u8` | major arc boolean |
 | 19 | 5 bytes | reserved, zero |
-| 24 | `i64` | circle center x, zero for line |
-| 32 | `i64` | circle center y, zero for line |
+| 24 | `i64` or `u64` | kind 2 center x; kind 3 positive radius; zero for line |
+| 32 | `i64` or reserved | kind 2 center y; zero for line and kind 3 |
 
 The owning ring/path supplies endpoints by topology. Full-circle arc segments,
-zero-length segments, and incoherent circle branches are invalid.
+zero-length segments, radii shorter than half the chord, major-flagged
+semicircles, and incoherent circle branches are invalid. Kind 3 selects the
+unique center branch from its ordered endpoints, radius, direction, and
+minor/major flag; the center need not lie on the integer-nanometer grid.
+Kind 3 is valid only for segments owned by closed planar rings. Open swept-path
+rings reject kind 3 before geometry execution.
+
+The filtered A0 implementation identifies coincident kind-3 carriers by their
+canonical unordered endpoint pair, radius, and selected center side. Equal
+circles expressed with different endpoint pairs, or with mixed kind-2/kind-3
+records, may therefore return the governed job-local
+`resource_limit_exceeded` diagnostic. This bounded unresolved-predicate outcome
+is deterministic and does not authorize approximation or partial success.
+General carrier canonicalization and endpoint/radius swept paths are tracked in
+[Geometer issue #21](https://github.com/wavenumber-eng/geometer/issues/21).
 
 ### Disk record, 32 bytes
 

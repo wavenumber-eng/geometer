@@ -1,5 +1,6 @@
 #include "geometer/analytic_filtered_lowering.h"
 
+#include "analytic_endpoint_arc_reconstruction.h"
 #include "analytic_filtered_interval.h"
 #include "analytic_filtered_lowering_internal.h"
 #include "analytic_wide_integer.h"
@@ -22,7 +23,7 @@ using namespace analytic_detail;
 using namespace analytic_lowering_detail;
 
 constexpr std::uint64_t kMaximumSpanNm = 1'000'000'000'000;
-constexpr std::uint64_t kLogicalBytesPerCurve = 768;
+constexpr std::uint64_t kLogicalBytesPerCurve = 800;
 constexpr std::uint64_t kRetainedGeometryFixedBytes = 16;
 constexpr std::uint64_t kRetainedCurveBytes = kAnalyticAtomicCurveLogicalBytes;
 constexpr std::uint64_t kRetainedBoundsBytes = 48;
@@ -73,7 +74,12 @@ struct SegmentGeometry
     bool major_arc = false;
     AnalyticIntegerPointNm start;
     AnalyticIntegerPointNm end;
-    AnalyticIntegerPointNm center;
+    Point center;
+    Interval radius;
+    bool has_integer_center = false;
+    AnalyticIntegerPointNm integer_center;
+    bool endpoint_authoritative = false;
+    std::uint64_t integer_radius = 0;
     WideInteger radius_squared{};
 };
 #include "analytic_filtered_lowering_support.h"
@@ -270,6 +276,16 @@ class FilteredJobLowerer
         max_global_y_ = std::max(max_global_y_, y);
     }
 
+    bool include_global_expansion(std::int64_t x, std::int64_t y, std::uint64_t extent)
+    {
+        if (!global_expansion_fits(x, extent) || !global_expansion_fits(y, extent))
+            return fail(AnalyticFilteredLoweringError::resource_limit_exceeded);
+        const auto signed_extent = static_cast<std::int64_t>(extent);
+        include_global(x - signed_extent, y - signed_extent);
+        include_global(x + signed_extent, y + signed_extent);
+        return true;
+    }
+
     bool scan_ring(const AnalyticRequestRingRecord& ring)
     {
         if (!charge_work(ring.vertex_count))
@@ -283,6 +299,9 @@ class FilteredJobLowerer
                 records_.segments[ring.segment_begin + index];
             if (segment.kind == 2)
                 include_global(segment.center_x_nm, segment.center_y_nm);
+            else if (segment.kind == 3 &&
+                     !include_global_expansion(vertex.x_nm, vertex.y_nm, segment.radius_nm * 2U))
+                return false;
         }
         return true;
     }
@@ -301,6 +320,12 @@ class FilteredJobLowerer
             const auto& segment = records_.segments[ring.segment_begin + index];
             if (segment.kind == 2)
                 include_global(segment.center_x_nm, segment.center_y_nm);
+            else if (segment.kind == 3)
+            {
+                const auto& vertex = records_.vertices[ring.vertex_begin + index];
+                if (!include_global_expansion(vertex.x_nm, vertex.y_nm, segment.radius_nm * 2U))
+                    return false;
+            }
         }
         return true;
     }
@@ -407,6 +432,17 @@ class FilteredJobLowerer
             const auto& segment = records_.segments[ring.segment_begin + index];
             if (segment.kind == 2 && !include_core_extent(segment.center_x_nm, segment.center_y_nm))
                 return false;
+            if (segment.kind == 3)
+            {
+                if (segment.radius_nm > kMaximumSpanNm / 2U)
+                    return false;
+                AnalyticIntegerPointNm local;
+                if (!local_point(vertex.x_nm, vertex.y_nm, local))
+                    return false;
+                const auto doubled_extent = static_cast<std::int64_t>(segment.radius_nm * 4U);
+                include_extent_doubled(local.x * 2 - doubled_extent, local.y * 2 - doubled_extent);
+                include_extent_doubled(local.x * 2 + doubled_extent, local.y * 2 + doubled_extent);
+            }
         }
         return true;
     }
@@ -685,6 +721,22 @@ class FilteredJobLowerer
         return descriptor;
     }
 
+    TokenDescriptor endpoint_radius_circle_descriptor(const SegmentGeometry& segment) const
+    {
+        const bool forward =
+            std::tie(segment.start.x, segment.start.y) < std::tie(segment.end.x, segment.end.y);
+        TokenDescriptor descriptor;
+        descriptor.kind = TokenKeyKind::endpoint_radius_circle;
+        descriptor.endpoint_radius_circle = {
+            forward ? segment.start : segment.end,
+            forward ? segment.end : segment.start,
+            segment.integer_radius,
+            forward ? segment.counterclockwise != segment.major_arc
+                    : segment.counterclockwise == segment.major_arc,
+        };
+        return descriptor;
+    }
+
     bool cardinal_may_be_on_arc(const AnalyticAtomicCurveNm& curve, Point radial)
     {
         if (!charge_predicate())
@@ -785,10 +837,10 @@ class FilteredJobLowerer
         return true;
     }
 
-    Interval radius_interval(AnalyticIntegerPointNm endpoint, AnalyticIntegerPointNm center)
+    Interval radius_interval(AnalyticIntegerPointNm endpoint, Point center)
     {
         ++telemetry_.square_root_calls;
-        const Point radial = subtract(point(endpoint), point(center));
+        const Point radial = subtract(point(endpoint), center);
         return square_root(dot(radial, radial));
     }
 
@@ -829,35 +881,98 @@ class FilteredJobLowerer
             return fail(AnalyticFilteredLoweringError::resource_limit_exceeded);
         if (segment.start.x == segment.end.x && segment.start.y == segment.end.y)
             return fail(AnalyticFilteredLoweringError::invalid_topology);
-        if (record.kind != 2)
+        if (record.kind == 1)
             return true;
         segment.is_arc = true;
         segment.counterclockwise = record.direction == 1;
         segment.major_arc = record.major_arc;
-        if (!local_point(record.center_x_nm, record.center_y_nm, segment.center))
+        if (record.kind == 2)
+        {
+            if (!local_point(record.center_x_nm, record.center_y_nm, segment.integer_center))
+                return fail(AnalyticFilteredLoweringError::resource_limit_exceeded);
+            segment.has_integer_center = true;
+            segment.center = point(segment.integer_center);
+            segment.radius_squared = squared_distance(segment.start, segment.integer_center);
+            if (!charge_predicate())
+                return false;
+            if (wide_sign(segment.radius_squared) == 0 ||
+                wide_compare(segment.radius_squared,
+                             squared_distance(segment.end, segment.integer_center)) != 0)
+                return fail(AnalyticFilteredLoweringError::invalid_arc);
+            if (!charge_predicate())
+                return false;
+            const int turn =
+                wide_sign(cross_from(segment.integer_center, segment.start, segment.end));
+            const bool derived_major = segment.counterclockwise ? turn < 0 : turn > 0;
+            if (segment.major_arc != derived_major)
+                return fail(AnalyticFilteredLoweringError::invalid_arc);
+            segment.radius = radius_interval(segment.start, segment.center);
+            return true;
+        }
+        if (record.kind != 3)
+            return fail(AnalyticFilteredLoweringError::unsupported_geometry);
+        const std::int64_t dx = segment.end.x - segment.start.x;
+        const std::int64_t dy = segment.end.y - segment.start.y;
+        const WideInteger chord_squared = wide_add(wide_multiply(dx, dx), wide_multiply(dy, dy));
+        const auto signed_radius = static_cast<std::int64_t>(record.radius_nm);
+        const WideInteger radius_squared = wide_multiply(signed_radius, signed_radius);
+        const WideInteger diameter_squared = wide_add(wide_add(radius_squared, radius_squared),
+                                                      wide_add(radius_squared, radius_squared));
+        if (!charge_predicate())
+            return false;
+        const int chord_order = wide_compare(chord_squared, diameter_squared);
+        if (chord_order > 0 || (chord_order == 0 && segment.major_arc))
+            return fail(AnalyticFilteredLoweringError::invalid_arc);
+        ++telemetry_.square_root_calls;
+        if (!reconstruct_endpoint_authoritative_arc_center(
+                segment.start.x, segment.start.y, segment.end.x, segment.end.y, record.radius_nm,
+                segment.counterclockwise, segment.major_arc, segment.center))
+            return fail(AnalyticFilteredLoweringError::invalid_arc);
+        if (!valid(segment.center.x) || !valid(segment.center.y) || segment.center.x.lower < 0.0 ||
+            segment.center.y.lower < 0.0 ||
+            segment.center.x.upper > static_cast<double>(kMaximumSpanNm) ||
+            segment.center.y.upper > static_cast<double>(kMaximumSpanNm) ||
+            segment.center.x.upper - segment.center.x.lower >
+                static_cast<double>(kAnalyticTopologyResolutionNm) ||
+            segment.center.y.upper - segment.center.y.lower >
+                static_cast<double>(kAnalyticTopologyResolutionNm))
             return fail(AnalyticFilteredLoweringError::resource_limit_exceeded);
-        segment.radius_squared = squared_distance(segment.start, segment.center);
-        if (!charge_predicate())
-            return false;
-        if (wide_sign(segment.radius_squared) == 0 ||
-            wide_compare(segment.radius_squared, squared_distance(segment.end, segment.center)) !=
-                0)
-            return fail(AnalyticFilteredLoweringError::invalid_arc);
-        if (!charge_predicate())
-            return false;
-        const int turn = wide_sign(cross_from(segment.center, segment.start, segment.end));
-        const bool derived_major = segment.counterclockwise ? turn < 0 : turn > 0;
-        if (segment.major_arc != derived_major)
-            return fail(AnalyticFilteredLoweringError::invalid_arc);
+        segment.radius = exact(static_cast<double>(record.radius_nm));
+        segment.endpoint_authoritative = true;
+        segment.integer_radius = record.radius_nm;
         return true;
     }
 
     bool arc_contains_leftmost(const SegmentGeometry& segment)
     {
-        std::int64_t sx = segment.start.x - segment.center.x;
-        std::int64_t sy = segment.start.y - segment.center.y;
-        std::int64_t ex = segment.end.x - segment.center.x;
-        std::int64_t ey = segment.end.y - segment.center.y;
+        if (!segment.has_integer_center)
+        {
+            Point start = subtract(point(segment.start), segment.center);
+            Point end = subtract(point(segment.end), segment.center);
+            if (!segment.counterclockwise)
+                std::swap(start, end);
+            const Interval turn_interval = cross(start, end);
+            int turn = 0;
+            int start_y = 0;
+            int end_y = 0;
+            if (!interval_sign(turn_interval, turn) || !interval_sign(start.y, start_y) ||
+                !interval_sign(end.y, end_y))
+                return false;
+            if (turn > 0)
+                return start_y > 0 && end_y < 0;
+            if (turn == 0)
+                return start_y > 0;
+            const bool complement_interior = end_y > 0 && start_y < 0;
+            bool at_start = false;
+            bool at_end = false;
+            if (!leftmost_endpoint(start, at_start) || !leftmost_endpoint(end, at_end))
+                return false;
+            return !complement_interior && !at_start && !at_end;
+        }
+        std::int64_t sx = segment.start.x - segment.integer_center.x;
+        std::int64_t sy = segment.start.y - segment.integer_center.y;
+        std::int64_t ex = segment.end.x - segment.integer_center.x;
+        std::int64_t ey = segment.end.y - segment.integer_center.y;
         if (!segment.counterclockwise)
         {
             std::swap(sx, ex);
@@ -876,8 +991,33 @@ class FilteredJobLowerer
         return !complement_interior && !at_start && !at_end;
     }
 
-    void tangent(const SegmentGeometry& segment, bool at_start, std::int64_t& x,
-                 std::int64_t& y) const
+    bool interval_sign(Interval value, int& sign)
+    {
+        if (!charge_predicate())
+            return false;
+        if (value.lower > 0.0)
+            sign = 1;
+        else if (value.upper < 0.0)
+            sign = -1;
+        else if (singleton(value) && value.lower == 0.0)
+            sign = 0;
+        else
+            return fail(AnalyticFilteredLoweringError::resource_limit_exceeded);
+        return true;
+    }
+
+    bool leftmost_endpoint(Point radial, bool& value)
+    {
+        int x = 0;
+        int y = 0;
+        if (!interval_sign(radial.x, x) || !interval_sign(radial.y, y))
+            return false;
+        value = x < 0 && y == 0;
+        return true;
+    }
+
+    void integer_tangent(const SegmentGeometry& segment, bool at_start, std::int64_t& x,
+                         std::int64_t& y) const
     {
         if (!segment.is_arc)
         {
@@ -886,8 +1026,8 @@ class FilteredJobLowerer
             return;
         }
         const AnalyticIntegerPointNm endpoint = at_start ? segment.start : segment.end;
-        const std::int64_t radial_x = endpoint.x - segment.center.x;
-        const std::int64_t radial_y = endpoint.y - segment.center.y;
+        const std::int64_t radial_x = endpoint.x - segment.integer_center.x;
+        const std::int64_t radial_y = endpoint.y - segment.integer_center.y;
         if (segment.counterclockwise)
         {
             x = -radial_y;
@@ -900,6 +1040,16 @@ class FilteredJobLowerer
         }
     }
 
+    Point interval_tangent(const SegmentGeometry& segment, bool at_start) const
+    {
+        if (!segment.is_arc)
+            return subtract(point(segment.end), point(segment.start));
+        const Point radial =
+            subtract(point(at_start ? segment.start : segment.end), segment.center);
+        return segment.counterclockwise ? perpendicular(radial)
+                                        : scale(perpendicular(radial), exact(-1.0));
+    }
+
     bool vertex_orientation(const AnalyticRequestRingRecord& ring, std::uint32_t vertex,
                             bool& counterclockwise)
     {
@@ -909,26 +1059,49 @@ class FilteredJobLowerer
             !validate_segment(ring, (vertex + ring.segment_count - 1) % ring.segment_count,
                               incoming))
             return false;
-        std::int64_t out_x = 0;
-        std::int64_t out_y = 0;
-        std::int64_t in_x = 0;
-        std::int64_t in_y = 0;
-        tangent(outgoing, true, out_x, out_y);
-        tangent(incoming, false, in_x, in_y);
-        if (!charge_predicate())
+        if ((!outgoing.is_arc || outgoing.has_integer_center) &&
+            (!incoming.is_arc || incoming.has_integer_center))
+        {
+            std::int64_t out_x = 0;
+            std::int64_t out_y = 0;
+            std::int64_t in_x = 0;
+            std::int64_t in_y = 0;
+            integer_tangent(outgoing, true, out_x, out_y);
+            integer_tangent(incoming, false, in_x, in_y);
+            if (!charge_predicate())
+                return false;
+            const int turn =
+                wide_sign(wide_subtract(wide_multiply(in_x, out_y), wide_multiply(in_y, out_x)));
+            if (turn != 0)
+            {
+                counterclockwise = turn > 0;
+                return true;
+            }
+            if (!charge_predicate())
+                return false;
+            if (wide_sign(dot_vectors(in_x, in_y, out_x, out_y)) <= 0 || out_y == 0)
+                return fail(AnalyticFilteredLoweringError::invalid_topology);
+            counterclockwise = out_y < 0;
+            return true;
+        }
+        const Point outgoing_tangent = interval_tangent(outgoing, true);
+        const Point incoming_tangent = interval_tangent(incoming, false);
+        int turn = 0;
+        if (!interval_sign(cross(incoming_tangent, outgoing_tangent), turn))
             return false;
-        const int turn =
-            wide_sign(wide_subtract(wide_multiply(in_x, out_y), wide_multiply(in_y, out_x)));
         if (turn != 0)
         {
             counterclockwise = turn > 0;
             return true;
         }
-        if (!charge_predicate())
+        int tangent_dot = 0;
+        int outgoing_y = 0;
+        if (!interval_sign(dot(incoming_tangent, outgoing_tangent), tangent_dot) ||
+            !interval_sign(outgoing_tangent.y, outgoing_y))
             return false;
-        if (wide_sign(dot_vectors(in_x, in_y, out_x, out_y)) <= 0 || out_y == 0)
+        if (tangent_dot <= 0 || outgoing_y == 0)
             return fail(AnalyticFilteredLoweringError::invalid_topology);
-        counterclockwise = out_y < 0;
+        counterclockwise = outgoing_y < 0;
         return true;
     }
 
@@ -949,11 +1122,12 @@ class FilteredJobLowerer
         if (!local_point(best_record.x_nm, best_record.y_nm, best_point))
             return fail(AnalyticFilteredLoweringError::resource_limit_exceeded);
         Interval best_x = exact(static_cast<double>(best_point.x));
-        std::int64_t best_y = best_point.y;
+        Interval best_y = exact(static_cast<double>(best_point.y));
         bool best_is_arc = false;
         bool best_arc_ccw = false;
         AnalyticIntegerPointNm best_center{};
         WideInteger best_squared{};
+        bool best_has_integer_center = false;
 
         if (!charge_work(ring.segment_count))
             return false;
@@ -968,36 +1142,40 @@ class FilteredJobLowerer
                     return false;
                 continue;
             }
-            const Interval candidate_x = subtract(exact(static_cast<double>(segment.center.x)),
-                                                  radius_interval(segment.start, segment.center));
+            const Interval candidate_x = subtract(segment.center.x, segment.radius);
             bool choose = candidate_x.upper < best_x.lower;
             if (!choose && !(best_x.upper < candidate_x.lower))
             {
                 bool same_x = false;
-                if (!best_is_arc)
+                if (segment.has_integer_center && !best_is_arc)
                 {
-                    const std::int64_t delta = segment.center.x - best_point.x;
+                    const std::int64_t delta = segment.integer_center.x - best_point.x;
                     if (delta >= 0 && charge_predicate())
                         same_x =
                             wide_compare(segment.radius_squared, wide_multiply(delta, delta)) == 0;
                 }
-                else if (segment.center.x == best_center.x && charge_predicate())
+                else if (segment.has_integer_center && best_has_integer_center &&
+                         segment.integer_center.x == best_center.x && charge_predicate())
                     same_x = wide_compare(segment.radius_squared, best_squared) == 0;
                 if (error_ != AnalyticFilteredLoweringError::none)
                     return false;
                 if (!same_x)
                     return fail(AnalyticFilteredLoweringError::resource_limit_exceeded);
-                if (segment.center.y < best_y)
+                if (segment.center.y.upper < best_y.lower)
                     choose = true;
-                else if (segment.center.y == best_y && best_is_arc &&
-                         segment.counterclockwise != best_arc_ccw)
-                    return fail(AnalyticFilteredLoweringError::invalid_topology);
+                else if (!(best_y.upper < segment.center.y.lower))
+                {
+                    if (!best_is_arc || segment.counterclockwise != best_arc_ccw)
+                        return fail(AnalyticFilteredLoweringError::invalid_topology);
+                }
             }
             if (choose)
             {
                 best_is_arc = true;
                 best_arc_ccw = segment.counterclockwise;
-                best_center = segment.center;
+                best_has_integer_center = segment.has_integer_center;
+                if (segment.has_integer_center)
+                    best_center = segment.integer_center;
                 best_squared = segment.radius_squared;
                 best_x = candidate_x;
                 best_y = segment.center.y;
@@ -1029,9 +1207,9 @@ class FilteredJobLowerer
             AnalyticAtomicCurveNm curve;
             curve.start = public_point(point(segment.start));
             curve.end = public_point(point(segment.end));
-            curve.has_integer_certificate = true;
             curve.integer_start = segment.start;
             curve.integer_end = segment.end;
+            curve.has_integer_certificate = true;
             bool agrees = segment.end.x != segment.start.x ? segment.end.x > segment.start.x
                                                            : segment.end.y > segment.start.y;
             AnalyticFilteredSourceRole role = AnalyticFilteredSourceRole::authored_line;
@@ -1041,31 +1219,54 @@ class FilteredJobLowerer
                 curve.kind = AnalyticAtomicCurveKind::circular_arc;
                 curve.counterclockwise = segment.counterclockwise;
                 curve.major_arc = segment.major_arc;
-                curve.circle.center = public_point(point(segment.center));
-                Interval radius = radius_interval(segment.start, segment.center);
-                curve.integer_center = segment.center;
-                std::uint64_t exact_radius = 0;
-                if (!integer_radius(segment.radius_squared, radius.upper, exact_radius) &&
-                    error_ != AnalyticFilteredLoweringError::none)
-                    return false;
-                if (exact_radius != 0)
+                curve.circle.center = public_point(segment.center);
+                Interval radius = segment.radius;
+                if (segment.endpoint_authoritative)
                 {
                     curve.has_integer_radius_certificate = true;
-                    curve.integer_radius = exact_radius;
-                    radius = exact(static_cast<double>(exact_radius));
+                    curve.integer_radius = segment.integer_radius;
+                    curve.has_integer_certificate = false;
+                    curve.has_endpoint_authoritative_arc_certificate = true;
+                    const bool lower_x_monotone = endpoint_authoritative_arc_is_x_monotone(
+                        segment.start.x, segment.start.y, segment.end.x, segment.end.y,
+                        segment.integer_radius, segment.counterclockwise, segment.major_arc,
+                        segment.center, false);
+                    const bool upper_x_monotone = endpoint_authoritative_arc_is_x_monotone(
+                        segment.start.x, segment.start.y, segment.end.x, segment.end.y,
+                        segment.integer_radius, segment.counterclockwise, segment.major_arc,
+                        segment.center, true);
+                    curve.has_endpoint_authoritative_x_monotone_certificate =
+                        lower_x_monotone || upper_x_monotone;
+                    curve.endpoint_authoritative_upper_branch = upper_x_monotone;
+                    curve.has_arc_sweep_certificate = true;
+                    descriptor = endpoint_radius_circle_descriptor(segment);
+                }
+                else
+                {
+                    curve.integer_center = segment.integer_center;
+                    std::uint64_t exact_radius = 0;
+                    if (!integer_radius(segment.radius_squared, radius.upper, exact_radius) &&
+                        error_ != AnalyticFilteredLoweringError::none)
+                        return false;
+                    if (exact_radius != 0)
+                    {
+                        curve.has_integer_radius_certificate = true;
+                        curve.integer_radius = exact_radius;
+                        radius = exact(static_cast<double>(exact_radius));
+                    }
+                    const std::uint64_t radius_ceiling =
+                        static_cast<std::uint64_t>(std::ceil(radius.upper));
+                    if (!global_expansion_fits(record.center_x_nm, radius_ceiling) ||
+                        !global_expansion_fits(record.center_y_nm, radius_ceiling))
+                        return fail(AnalyticFilteredLoweringError::resource_limit_exceeded);
+                    descriptor = circle_descriptor(
+                        segment.integer_center,
+                        wide_add(wide_add(segment.radius_squared, segment.radius_squared),
+                                 wide_add(segment.radius_squared, segment.radius_squared)));
                 }
                 if (!valid(radius) || radius.lower <= 0.0 || radius.upper > kMaximumSpanNm)
                     return fail(AnalyticFilteredLoweringError::resource_limit_exceeded);
-                const std::uint64_t radius_ceiling =
-                    static_cast<std::uint64_t>(std::ceil(radius.upper));
-                if (!global_expansion_fits(record.center_x_nm, radius_ceiling) ||
-                    !global_expansion_fits(record.center_y_nm, radius_ceiling))
-                    return fail(AnalyticFilteredLoweringError::resource_limit_exceeded);
                 curve.circle.radius = public_interval(radius);
-                descriptor = circle_descriptor(
-                    segment.center,
-                    wide_add(wide_add(segment.radius_squared, segment.radius_squared),
-                             wide_add(segment.radius_squared, segment.radius_squared)));
                 agrees = segment.counterclockwise;
                 role = AnalyticFilteredSourceRole::authored_circular_arc;
             }
@@ -1116,211 +1317,7 @@ class FilteredJobLowerer
                emit(make_half(right, left), true, material_inside, coverage_id, source, descriptor);
     }
 
-    bool lower_capsule(const AnalyticRequestOperandRecord& operand)
-    {
-        const auto& capsule = records_.capsules[operand.geometry_index];
-        AnalyticIntegerPointNm start;
-        AnalyticIntegerPointNm end;
-        if (!local_point(capsule.start_x_nm, capsule.start_y_nm, start) ||
-            !local_point(capsule.end_x_nm, capsule.end_y_nm, end))
-            return fail(AnalyticFilteredLoweringError::resource_limit_exceeded);
-        if (start.x == end.x && start.y == end.y)
-            return fail(AnalyticFilteredLoweringError::invalid_topology);
-        const std::int64_t dx = end.x - start.x;
-        const std::int64_t dy = end.y - start.y;
-        ++telemetry_.square_root_calls;
-        const Interval length = square_root(
-            add(square(exact(static_cast<double>(dx))), square(exact(static_cast<double>(dy)))));
-        if (!valid(length) || length.lower <= 0.0)
-            return fail(AnalyticFilteredLoweringError::resource_limit_exceeded);
-        const Interval half_width = exact(static_cast<double>(capsule.width_nm) * 0.5);
-        const Interval factor = divide(half_width, length);
-        const Point offset{multiply(exact(static_cast<double>(-dy)), factor),
-                           multiply(exact(static_cast<double>(dx)), factor)};
-        const Point start_point = point(start);
-        const Point end_point = point(end);
-        const Point start_left = add(start_point, offset);
-        const Point start_right = subtract(start_point, offset);
-        const Point end_left = add(end_point, offset);
-        const Point end_right = subtract(end_point, offset);
-        const LineFamilyKey line_family = canonical_direction(dx, dy);
-        const WideInteger width_squared =
-            wide_multiply(static_cast<std::int64_t>(capsule.width_nm),
-                          static_cast<std::int64_t>(capsule.width_nm));
-        const bool forward_agrees = dx != 0 ? dx > 0 : dy > 0;
-        const WideInteger base = wide_subtract(wide_multiply(line_family.dx, start.y),
-                                               wide_multiply(line_family.dy, start.x));
-        const WideInteger base_times_two = wide_add(base, base);
-        const WideInteger primitive_squared =
-            wide_add(wide_multiply(line_family.dx, line_family.dx),
-                     wide_multiply(line_family.dy, line_family.dy));
-        std::uint64_t primitive_length = 0;
-        const double primitive_approximation =
-            std::hypot(static_cast<double>(line_family.dx), static_cast<double>(line_family.dy));
-        const bool integral_primitive_length = integer_square_root(
-            primitive_squared, primitive_approximation,
-            static_cast<std::uint64_t>(std::numeric_limits<std::int64_t>::max()), primitive_length);
-        if (error_ != AnalyticFilteredLoweringError::none)
-            return false;
-        const auto line_descriptor = [&](bool original_left)
-        {
-            const bool canonical_left = original_left == forward_agrees;
-            const std::int64_t sign = canonical_left ? 1 : -1;
-            TokenDescriptor descriptor;
-            descriptor.line.family = line_family;
-            if (integral_primitive_length)
-            {
-                const WideInteger shift =
-                    wide_multiply(static_cast<std::int64_t>(capsule.width_nm),
-                                  static_cast<std::int64_t>(primitive_length));
-                descriptor.line.rational_part_times_two =
-                    sign > 0 ? wide_add(base_times_two, shift)
-                             : wide_subtract(base_times_two, shift);
-            }
-            else
-            {
-                descriptor.line.rational_part_times_two = base_times_two;
-                descriptor.line.radical_coefficient =
-                    sign * static_cast<std::int64_t>(capsule.width_nm);
-            }
-            return descriptor;
-        };
-        const auto source = [&](AnalyticFilteredSourceRole role)
-        {
-            return AnalyticFilteredSourceReference{AnalyticFilteredSourceKind::compact_feature_role,
-                                                   role, operand.operand_id, capsule.feature_id, 0};
-        };
-        const auto line = [&](Point first, Point second)
-        {
-            AnalyticAtomicCurveNm curve;
-            curve.start = public_point(first);
-            curve.end = public_point(second);
-            return curve;
-        };
-        const auto cap = [&](Point first, Point second, AnalyticIntegerPointNm center)
-        {
-            AnalyticAtomicCurveNm curve;
-            curve.kind = AnalyticAtomicCurveKind::circular_arc;
-            curve.start = public_point(first);
-            curve.end = public_point(second);
-            curve.circle.center = public_point(point(center));
-            curve.circle.radius = public_interval(half_width);
-            curve.counterclockwise = true;
-            curve.has_arc_sweep_certificate = true;
-            return curve;
-        };
-        const std::uint32_t curve_begin = static_cast<std::uint32_t>(out_.curves.size());
-        if (!emit(line(start_right, end_right), forward_agrees, true, operand.operand_id,
-                  source(AnalyticFilteredSourceRole::capsule_right_line), line_descriptor(false)) ||
-            !emit(cap(end_right, end_left, end), true, true, operand.operand_id,
-                  source(AnalyticFilteredSourceRole::capsule_end_cap),
-                  circle_descriptor(end, width_squared)) ||
-            !emit(line(end_left, start_left), !forward_agrees, true, operand.operand_id,
-                  source(AnalyticFilteredSourceRole::capsule_left_line), line_descriptor(true)) ||
-            !emit(cap(start_left, start_right, start), true, true, operand.operand_id,
-                  source(AnalyticFilteredSourceRole::capsule_start_cap),
-                  circle_descriptor(start, width_squared)))
-            return false;
-        if (dy == 0)
-            horizontal_mirrors_.push_back({curve_begin, curve_begin + 2U, start.y});
-        endpoint_tangencies_.push_back({curve_begin, curve_begin + 1U, false, true});
-        endpoint_tangencies_.push_back({curve_begin + 2U, curve_begin + 1U, true, false});
-        endpoint_tangencies_.push_back({curve_begin + 2U, curve_begin + 3U, false, true});
-        endpoint_tangencies_.push_back({curve_begin, curve_begin + 3U, true, false});
-        return true;
-    }
-
-    bool lower_swept_path(const AnalyticRequestOperandRecord& operand)
-    {
-        const std::uint64_t prior_projected_curves = projected_curves_;
-        AnalyticSolverLimits swept_limits = limits_;
-        if (telemetry_.work_units > swept_limits.predicate_calls)
-            return fail(AnalyticFilteredLoweringError::resource_limit_exceeded);
-        swept_limits.predicate_calls -= telemetry_.work_units;
-        if (prior_projected_curves >
-            std::numeric_limits<std::uint64_t>::max() / kLogicalBytesPerCurve)
-            return fail(AnalyticFilteredLoweringError::resource_limit_exceeded);
-        const std::uint64_t retained =
-            std::max(kRetainedGeometryFixedBytes, prior_projected_curves * kLogicalBytesPerCurve);
-        if (retained > swept_limits.working_memory_bytes)
-            return fail(AnalyticFilteredLoweringError::resource_limit_exceeded);
-        swept_limits.working_memory_bytes -= retained;
-        SweptPathLoweringResult swept = lower_filtered_swept_path(
-            records_, operand, out_.origin_x_nm, out_.origin_y_nm, swept_limits);
-        telemetry_.work_units += swept.telemetry.work_units;
-        telemetry_.fixed_width_predicates += swept.telemetry.fixed_width_predicates;
-        telemetry_.square_root_calls += swept.telemetry.square_root_calls;
-        telemetry_.algebraic_fallback_calls += swept.telemetry.algebraic_fallback_calls;
-        if (swept.telemetry.peak_working_memory_bytes >
-            std::numeric_limits<std::uint64_t>::max() - retained)
-            return fail(AnalyticFilteredLoweringError::resource_limit_exceeded);
-        telemetry_.peak_working_memory_bytes =
-            std::max(telemetry_.peak_working_memory_bytes,
-                     retained + swept.telemetry.peak_working_memory_bytes);
-        if (swept.telemetry.required_working_memory_bytes != 0)
-        {
-            if (swept.telemetry.required_working_memory_bytes >
-                std::numeric_limits<std::uint64_t>::max() - retained)
-                return fail(AnalyticFilteredLoweringError::resource_limit_exceeded);
-            telemetry_.required_working_memory_bytes =
-                std::max(telemetry_.required_working_memory_bytes,
-                         retained + swept.telemetry.required_working_memory_bytes);
-        }
-        if (swept.error != AnalyticFilteredLoweringError::none)
-            return fail(swept.error);
-        if (swept.curves.size() > limits_.boundary_occurrences - projected_curves_)
-            return fail(AnalyticFilteredLoweringError::resource_limit_exceeded);
-        if (!add_projected(swept.curves.size()))
-            return false;
-        const std::uint64_t projected_bytes = projected_curves_ * kLogicalBytesPerCurve;
-        if (swept.telemetry.retained_geometry_bytes >
-            std::numeric_limits<std::uint64_t>::max() - projected_bytes)
-            return fail(AnalyticFilteredLoweringError::resource_limit_exceeded);
-        const std::uint64_t parent_child_overlap_bytes =
-            projected_bytes + swept.telemetry.retained_geometry_bytes;
-        if (parent_child_overlap_bytes > limits_.working_memory_bytes)
-        {
-            telemetry_.required_working_memory_bytes =
-                std::max(telemetry_.required_working_memory_bytes, parent_child_overlap_bytes);
-            return fail(AnalyticFilteredLoweringError::resource_limit_exceeded);
-        }
-        telemetry_.peak_working_memory_bytes =
-            std::max(telemetry_.peak_working_memory_bytes, parent_child_overlap_bytes);
-        if (swept.curves.size() > std::numeric_limits<std::uint64_t>::max() / 6U)
-            return fail(AnalyticFilteredLoweringError::resource_limit_exceeded);
-        std::uint64_t reemit_work = swept.curves.size() * 6U;
-        if (swept.endpoint_tangencies.size() >
-            (std::numeric_limits<std::uint64_t>::max() - reemit_work) / 2U)
-            return fail(AnalyticFilteredLoweringError::resource_limit_exceeded);
-        reemit_work += swept.endpoint_tangencies.size() * 2U;
-        if (!charge_work(reemit_work))
-            return false;
-        const std::uint32_t curve_begin = static_cast<std::uint32_t>(out_.curves.size());
-        out_.curves.reserve(projected_curves_);
-        out_.bounds.reserve(projected_curves_);
-        out_.occurrences.reserve(projected_curves_);
-        descriptors_.reserve(projected_curves_);
-        endpoint_tangencies_.reserve(projected_curves_);
-        for (EmittedCurve& value : swept.curves)
-            if (!emit(std::move(value.curve), value.agrees_with_carrier, value.material_on_left,
-                      operand.operand_id, value.source, std::move(value.descriptor)))
-                return false;
-        for (const EmittedEndpointTangency& tangent : swept.endpoint_tangencies)
-        {
-            if (tangent.first_curve >= swept.curves.size() ||
-                tangent.second_curve >= swept.curves.size())
-                return fail(AnalyticFilteredLoweringError::resource_limit_exceeded);
-            const std::uint32_t first = curve_begin + tangent.first_curve;
-            const std::uint32_t second = curve_begin + tangent.second_curve;
-            if (first >= out_.curves.size() || second >= out_.curves.size() ||
-                (out_.curves[first].kind == AnalyticAtomicCurveKind::line &&
-                 out_.curves[second].kind == AnalyticAtomicCurveKind::line))
-                return fail(AnalyticFilteredLoweringError::resource_limit_exceeded);
-            endpoint_tangencies_.push_back({first, second, tangent.first_start,
-                                            tangent.second_start, tangent.construction_identity});
-        }
-        return true;
-    }
+#include "analytic_filtered_lowering_primitive_methods.h"
 
     bool lower_operand(const AnalyticRequestOperandRecord& operand)
     {

@@ -3,7 +3,7 @@
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
 pub const NORMALIZED_CATALOG_SHA256: &str =
-    "d88c4f7d1a487c34d7654c886b79b608bcbd53469b2b3e3d6acd9d9617b00f19";
+    "c93e41a3aa0d64ab4dab905cea82aaeb3b3792155d1f5b2850673567a699d59c";
 
 #[derive(Debug, thiserror::Error)]
 pub enum ContractError {
@@ -463,9 +463,51 @@ impl Validate for AuthoredCircularArcSegment {
 }
 
 #[derive(Clone, Debug, PartialEq)]
+pub struct AuthoredCircularArcByRadiusSegment {
+    pub segment_id: SegmentId,
+    pub curve_id: CurveId,
+    pub kind: String,
+    pub radius_nm: u64,
+    pub direction: ArcDirection,
+    pub major_arc: bool,
+}
+
+impl Validate for AuthoredCircularArcByRadiusSegment {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "segment_id");
+        let value = &self.segment_id;
+        value.validate_at(&field_path)?;
+        let field_path = child_path(path, "curve_id");
+        let value = &self.curve_id;
+        value.validate_at(&field_path)?;
+        let field_path = child_path(path, "kind");
+        let value = &self.kind;
+        if value != "circular_arc_by_radius" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "radius_nm");
+        let value = &self.radius_nm;
+        if *value < 1 {
+            return Err(invalid(&field_path, "number is below its minimum"));
+        }
+        if *value > 1000000000000 {
+            return Err(invalid(&field_path, "number exceeds its maximum"));
+        }
+        let field_path = child_path(path, "direction");
+        let value = &self.direction;
+        value.validate_at(&field_path)?;
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub enum AuthoredSegment {
     Line(AuthoredLineSegment),
     CircularArc(AuthoredCircularArcSegment),
+    CircularArcByRadius(AuthoredCircularArcByRadiusSegment),
 }
 
 impl Validate for AuthoredSegment {
@@ -473,6 +515,7 @@ impl Validate for AuthoredSegment {
         match self {
             Self::Line(value) => value.validate_at(path),
             Self::CircularArc(value) => value.validate_at(path),
+            Self::CircularArcByRadius(value) => value.validate_at(path),
         }
     }
 }
@@ -763,10 +806,25 @@ impl Validate for PathId {
 }
 
 #[derive(Clone, Debug, PartialEq)]
+pub enum AuthoredPathSegment {
+    Line(AuthoredLineSegment),
+    CircularArc(AuthoredCircularArcSegment),
+}
+
+impl Validate for AuthoredPathSegment {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        match self {
+            Self::Line(value) => value.validate_at(path),
+            Self::CircularArc(value) => value.validate_at(path),
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub struct PlanarPath {
     pub path_id: PathId,
     pub vertices: Vec<AuthoredVertex>,
-    pub segments: Vec<AuthoredSegment>,
+    pub segments: Vec<AuthoredPathSegment>,
 }
 
 impl Validate for PlanarPath {

@@ -75,7 +75,18 @@ struct AuthoredCircularArcSegment
     bool major_arc{};
 };
 
-using AuthoredSegment = std::variant<AuthoredLineSegment, AuthoredCircularArcSegment>;
+struct AuthoredCircularArcByRadiusSegment
+{
+    SegmentId segment_id{};
+    CurveId curve_id{};
+    std::string kind = "circular_arc_by_radius";
+    std::uint64_t radius_nm{};
+    ArcDirection direction{};
+    bool major_arc{};
+};
+
+using AuthoredSegment = std::variant<AuthoredLineSegment, AuthoredCircularArcSegment,
+                                     AuthoredCircularArcByRadiusSegment>;
 
 struct PlanarRing
 {
@@ -126,11 +137,13 @@ struct CapsuleOperand
 
 using PathId = std::uint64_t;
 
+using AuthoredPathSegment = std::variant<AuthoredLineSegment, AuthoredCircularArcSegment>;
+
 struct PlanarPath
 {
     PathId path_id{};
     std::vector<AuthoredVertex> vertices{};
-    std::vector<AuthoredSegment> segments{};
+    std::vector<AuthoredPathSegment> segments{};
 };
 
 struct SweptPathOperand

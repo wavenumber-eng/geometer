@@ -402,7 +402,7 @@
         "segments": {
           "type": "array",
           "items": {
-            "$ref": "#/$defs/AuthoredSegment"
+            "$ref": "#/$defs/AuthoredPathSegment"
           },
           "minItems": 1,
           "maxItems": 131072
@@ -446,12 +446,26 @@
         },
         {
           "$ref": "#/$defs/AuthoredCircularArcSegment"
+        },
+        {
+          "$ref": "#/$defs/AuthoredCircularArcByRadiusSegment"
         }
       ]
     },
     "PathId": {
       "type": "string",
       "minimum": 1
+    },
+    "AuthoredPathSegment": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/AuthoredLineSegment"
+        },
+        {
+          "$ref": "#/$defs/AuthoredCircularArcSegment"
+        }
+      ],
+      "description": "Segment forms supported by constant-width swept centerlines."
     },
     "VertexId": {
       "type": "string",
@@ -514,6 +528,44 @@
       "unevaluatedProperties": {
         "not": {}
       }
+    },
+    "AuthoredCircularArcByRadiusSegment": {
+      "type": "object",
+      "properties": {
+        "segment_id": {
+          "$ref": "#/$defs/SegmentId"
+        },
+        "curve_id": {
+          "$ref": "#/$defs/CurveId"
+        },
+        "kind": {
+          "type": "string",
+          "const": "circular_arc_by_radius"
+        },
+        "radius_nm": {
+          "type": "string",
+          "minimum": 1,
+          "maximum": 1000000000000
+        },
+        "direction": {
+          "$ref": "#/$defs/ArcDirection"
+        },
+        "major_arc": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "segment_id",
+        "curve_id",
+        "kind",
+        "radius_nm",
+        "direction",
+        "major_arc"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      },
+      "description": "A circular arc selected exactly by its topology-owned endpoints, radius, direction, and branch."
     },
     "SegmentId": {
       "type": "string",

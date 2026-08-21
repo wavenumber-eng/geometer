@@ -455,7 +455,7 @@ def _assert_contract_and_operation_inventory(manifest: dict[str, Any]) -> None:
     assert not set(candidate_ids) & set(operation_ids)
     assert candidate_ids == ["geometry.analytic_planar_boolean_batch.a0"]
     candidate = candidates[0]
-    assert candidate["status"] == "contract_frozen"
+    assert candidate["status"] == "pre_release_matz_candidate"
     assert candidate["solver_numeric_status"] == "reopened_filtered_50nm"
     assert candidate["filtered_solver_foundation"] == (
         "direct_lowering_broad_narrow_overlay_arrangement_face_selection_material_regions_"
@@ -499,7 +499,7 @@ def _assert_candidate_packet_vectors(manifest: dict[str, Any]) -> None:
         "tests/cpp/analytic_result_packet_records_test.cpp",
     ]
     assert candidate["packet_vector_producer_source_sha256"] == [
-        "7c2c6a960182271688a87f64747b52e0b63391295c27c68247829878293f6966",
+        "553e8eb77734d93ba51ada6b3ab55b2afe70869b27eee6fc6519c7a939e12f82",
         "886473dec4add537f99a15465a0cd78474a4f19f2cecf78a090c798360e7af71",
     ]
     for source, digest in zip(
@@ -1207,7 +1207,7 @@ _EXPECTED_FILTERED_SOLVER: dict[str, Any] = {
     "lowering_token_policy": (
         "fixed_capacity_open_addressed_exact_construction_keys_and_vertical_column_identities_with_metered_probes"
     ),
-    "lowering_logical_bytes_per_curve": 768,
+    "lowering_logical_bytes_per_curve": 800,
     "lowering_parity_validator": "scripts/validate_analytic_filtered_lowering_parity.py",
     "lowering_vector_bytes": 3952,
     "lowering_vector_sha256": ("9c3dada9b6df8c7e219620a31e5effb363ef0c3468f5db7ae1555852b94ce02d"),

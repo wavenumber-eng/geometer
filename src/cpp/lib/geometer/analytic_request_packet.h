@@ -78,6 +78,7 @@ struct AnalyticRequestSegmentRecord
     bool major_arc = false;
     std::int64_t center_x_nm = 0;
     std::int64_t center_y_nm = 0;
+    std::uint64_t radius_nm = 0;
 };
 
 struct AnalyticRequestDiskRecord

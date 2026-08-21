@@ -307,7 +307,7 @@ bool valid_endpoint_authoritative_arc_certificate(const AnalyticAtomicCurveNm& c
     if (!curve.has_endpoint_authoritative_arc_certificate)
         return !curve.has_endpoint_authoritative_x_monotone_certificate;
     if (curve.has_integer_certificate || !curve.has_integer_radius_certificate ||
-        !curve.has_arc_sweep_certificate || curve.major_arc || curve.integer_radius == 0 ||
+        !curve.has_arc_sweep_certificate || curve.integer_radius == 0 ||
         curve.integer_radius > static_cast<std::uint64_t>(kLocalCoordinateSpanNm) ||
         !point_equals_certificate(curve.start, curve.integer_start) ||
         !point_equals_certificate(curve.end, curve.integer_end) ||

@@ -350,6 +350,12 @@ void test_endpoint_authoritative_arc_certificate()
                 AnalyticNarrowPhaseError::invalid_argument,
             "an endpoint-authoritative arc crossing a cardinal seam must be rejected");
 
+    auto forged_major_semicircle = endpoint_authoritative_arc(1, -5, 0, 5, 0, 5, true, false);
+    forged_major_semicircle.major_arc = true;
+    require(intersect_analytic_curve_candidates({forged_major_semicircle}, {}).error ==
+                AnalyticNarrowPhaseError::invalid_argument,
+            "an ambiguous endpoint-authoritative major semicircle certificate was accepted");
+
     curves = {
         endpoint_authoritative_arc(1, 0, 0, -34, 68, 85, false, false),
         endpoint_authoritative_arc(2, 0, 0, -77, 49, 85, true, true),

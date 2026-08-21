@@ -66,9 +66,16 @@ bool same_family(const TokenDescriptor& left, const TokenDescriptor& right) noex
 {
     if (left.kind != right.kind)
         return false;
-    return left.kind == TokenKeyKind::line
-               ? same_line_family(left.line.family, right.line.family)
-               : same_circle_family(left.circle.family, right.circle.family);
+    if (left.kind == TokenKeyKind::line)
+        return same_line_family(left.line.family, right.line.family);
+    if (left.kind == TokenKeyKind::circle)
+        return same_circle_family(left.circle.family, right.circle.family);
+    return left.endpoint_radius_circle.first.x == right.endpoint_radius_circle.first.x &&
+           left.endpoint_radius_circle.first.y == right.endpoint_radius_circle.first.y &&
+           left.endpoint_radius_circle.second.x == right.endpoint_radius_circle.second.x &&
+           left.endpoint_radius_circle.second.y == right.endpoint_radius_circle.second.y &&
+           left.endpoint_radius_circle.radius == right.endpoint_radius_circle.radius &&
+           left.endpoint_radius_circle.center_left == right.endpoint_radius_circle.center_left;
 }
 
 bool same_carrier(const TokenDescriptor& left, const TokenDescriptor& right) noexcept
@@ -79,9 +86,11 @@ bool same_carrier(const TokenDescriptor& left, const TokenDescriptor& right) noe
         return wide_compare(left.line.rational_part_times_two,
                             right.line.rational_part_times_two) == 0 &&
                left.line.radical_coefficient == right.line.radical_coefficient;
-    return wide_compare(left.circle.rational_part, right.circle.rational_part) == 0 &&
-           left.circle.radical_coefficient == right.circle.radical_coefficient &&
-           wide_compare(left.circle.radicand, right.circle.radicand) == 0;
+    if (left.kind == TokenKeyKind::circle)
+        return wide_compare(left.circle.rational_part, right.circle.rational_part) == 0 &&
+               left.circle.radical_coefficient == right.circle.radical_coefficient &&
+               wide_compare(left.circle.radicand, right.circle.radicand) == 0;
+    return true;
 }
 
 std::uint64_t token_hash(const TokenDescriptor& value, bool carrier) noexcept
@@ -97,6 +106,15 @@ std::uint64_t token_hash(const TokenDescriptor& value, bool carrier) noexcept
             state = hash_word(state, static_cast<std::uint64_t>(value.line.radical_coefficient));
         }
         return state;
+    }
+    if (value.kind == TokenKeyKind::endpoint_radius_circle)
+    {
+        state = hash_word(state, static_cast<std::uint64_t>(value.endpoint_radius_circle.first.x));
+        state = hash_word(state, static_cast<std::uint64_t>(value.endpoint_radius_circle.first.y));
+        state = hash_word(state, static_cast<std::uint64_t>(value.endpoint_radius_circle.second.x));
+        state = hash_word(state, static_cast<std::uint64_t>(value.endpoint_radius_circle.second.y));
+        state = hash_word(state, value.endpoint_radius_circle.radius);
+        return hash_word(state, value.endpoint_radius_circle.center_left ? 1U : 0U);
     }
     state = hash_word(state, static_cast<std::uint64_t>(value.circle.family.x));
     state = hash_word(state, static_cast<std::uint64_t>(value.circle.family.y));

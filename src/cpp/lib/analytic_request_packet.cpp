@@ -301,6 +301,9 @@ AnalyticRequestPacketError validate_rings(const AnalyticRequestPacketRecords& re
             return AnalyticRequestPacketError::invalid_reference;
         if (open_path)
         {
+            for (std::uint64_t index = ring.segment_begin; index < segment_cursor; ++index)
+                if (records.segments[index].kind == 3)
+                    return AnalyticRequestPacketError::invalid_packet;
             if (ring.segment_count == 0 ||
                 static_cast<std::uint64_t>(ring.vertex_count) != ring.segment_count + 1ULL)
                 return AnalyticRequestPacketError::invalid_packet;
@@ -345,13 +348,21 @@ validate_vertices_and_segments(const AnalyticRequestPacketRecords& records)
         if (segment.kind == 1)
         {
             if (segment.direction != 0 || segment.major_arc || segment.center_x_nm != 0 ||
-                segment.center_y_nm != 0)
+                segment.center_y_nm != 0 || segment.radius_nm != 0)
                 return AnalyticRequestPacketError::invalid_packet;
         }
         else if (segment.kind == 2)
         {
-            if (segment.direction != 1 && segment.direction != 2)
+            if ((segment.direction != 1 && segment.direction != 2) || segment.radius_nm != 0)
                 return AnalyticRequestPacketError::invalid_packet;
+        }
+        else if (segment.kind == 3)
+        {
+            if ((segment.direction != 1 && segment.direction != 2) || segment.center_x_nm != 0 ||
+                segment.center_y_nm != 0 || segment.radius_nm == 0)
+                return AnalyticRequestPacketError::invalid_packet;
+            if (segment.radius_nm > kMaximumLengthNm)
+                return AnalyticRequestPacketError::limit_exceeded;
         }
         else
         {
@@ -604,8 +615,17 @@ AnalyticRequestPacketRecordsResult decode_analytic_request_packet(const std::uin
             if (record[18] > 1U || !zero_range(record, 19, 24))
                 return decode_failure(AnalyticRequestPacketError::invalid_packet);
             segment.major_arc = record[18] == 1U;
-            segment.center_x_nm = read_i64(record + 24);
-            segment.center_y_nm = read_i64(record + 32);
+            if (segment.kind == 3)
+            {
+                segment.radius_nm = read_u64(record + 24);
+                if (!zero_range(record, 32, 40))
+                    return decode_failure(AnalyticRequestPacketError::invalid_packet);
+            }
+            else
+            {
+                segment.center_x_nm = read_i64(record + 24);
+                segment.center_y_nm = read_i64(record + 32);
+            }
             records.segments.push_back(segment);
         }
         records.disks.reserve(static_cast<std::size_t>(counts[8]));
@@ -811,8 +831,13 @@ encode_analytic_request_packet(const AnalyticRequestPacketRecords& records)
             output[offset + 16] = segment.kind;
             output[offset + 17] = segment.direction;
             output[offset + 18] = segment.major_arc ? 1U : 0U;
-            write_i64(output, offset + 24, segment.center_x_nm);
-            write_i64(output, offset + 32, segment.center_y_nm);
+            if (segment.kind == 3)
+                write_u64(output, offset + 24, segment.radius_nm);
+            else
+            {
+                write_i64(output, offset + 24, segment.center_x_nm);
+                write_i64(output, offset + 32, segment.center_y_nm);
+            }
             offset += kRecordBytes[7];
         }
         offset = static_cast<std::size_t>(offsets[8]);

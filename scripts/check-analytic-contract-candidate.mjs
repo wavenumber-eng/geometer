@@ -160,6 +160,14 @@ try {
       "direction",
       "major_arc",
     ],
+    AuthoredCircularArcByRadiusSegment: [
+      "segment_id",
+      "curve_id",
+      "kind",
+      "radius_nm",
+      "direction",
+      "major_arc",
+    ],
     AuthoredLineSegment: ["segment_id", "curve_id", "kind"],
     AuthoredVertex: ["vertex_id", "point"],
     CapsuleOperand: ["operand_id", "kind", "feature_id", "start", "end", "width_nm"],
@@ -259,6 +267,11 @@ try {
     AuthoredSegment: {
       line: "AuthoredLineSegment",
       circular_arc: "AuthoredCircularArcSegment",
+      circular_arc_by_radius: "AuthoredCircularArcByRadiusSegment",
+    },
+    AuthoredPathSegment: {
+      line: "AuthoredLineSegment",
+      circular_arc: "AuthoredCircularArcSegment",
     },
     DirectedFragment: {
       line: "ResultLineFragment",
@@ -276,7 +289,12 @@ try {
       capsule: 4,
       swept_path: 5,
     },
-    "enum.authored_segment_kind": { underlying: "u8", line: 1, circular_arc: 2 },
+    "enum.authored_segment_kind": {
+      underlying: "u8",
+      line: 1,
+      circular_arc: 2,
+      circular_arc_by_radius: 3,
+    },
     "enum.fragment_kind": { underlying: "u8", line: 1, circular_arc: 2 },
     "enum.arc_direction": { underlying: "u8", not_applicable: 0, ccw: 1, cw: 2 },
     "enum.job_status": { underlying: "u8", success: 0, failure: 1 },

@@ -318,12 +318,12 @@ struct AnalyticAtomicCurveNm
     AnalyticIntegerPointNm integer_center;
     bool has_integer_radius_certificate = false;
     std::uint64_t integer_radius = 0;
-    // Normalization-replay-only construction fact. Integer endpoints/radius,
-    // direction, major flag, and the filtered center are bound to the exact
-    // endpoint-authoritative center branch reconstructed by the trusted
-    // normalizer. This allows a known endpoint root to be factored without
-    // storing its generally irrational center algebraically. Request inputs
-    // cannot mint this certificate.
+    // Trusted-lowering construction fact. Integer endpoints/radius, direction,
+    // major flag, and the filtered center are bound to the exact
+    // endpoint-authoritative center branch. This allows a known endpoint root
+    // to be factored without storing its generally irrational center
+    // algebraically. It is issued only by validated request lowering or result
+    // normalization replay; raw packet flags cannot mint it.
     bool has_endpoint_authoritative_arc_certificate = false;
     // A separately verified refinement proves that the reconstructed finite
     // arc remains on one named x-monotone half. Without it, overlay performs

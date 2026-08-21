@@ -939,6 +939,17 @@ class OverlayBuilder
         const Interval product = dot(start_radial, end_radial);
         if (determinant.lower == 0.0 && determinant.upper == 0.0 && product.upper < 0.0)
             return true;
+        if (product.upper < 0.0 && curve.has_endpoint_authoritative_arc_certificate)
+        {
+            const AnalyticFilteredPointNm left_seam = circle_left_seam(curve);
+            const AnalyticFilteredPointNm right_seam = circle_right_seam(curve);
+            const bool opposite_certified_seams = (points_within_resolution(start, left_seam) &&
+                                                   points_within_resolution(end, right_seam)) ||
+                                                  (points_within_resolution(start, right_seam) &&
+                                                   points_within_resolution(end, left_seam));
+            if (opposite_certified_seams)
+                return true;
+        }
         if (product.upper < 0.0)
         {
             bool found_certificate = false;

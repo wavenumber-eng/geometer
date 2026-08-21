@@ -25,7 +25,7 @@ import type {
   PlanarRing,
 } from "./generated/contracts.js";
 
-/** Encode the frozen canonical GMABRQ01 projection using bigint IDs and nanometer coordinates. */
+/** Encode the pre-release canonical GMABRQ01 projection using bigint IDs and nanometer coordinates. */
 export function encodeAnalyticPlanarBooleanBatchRequestA0Packet(
   request: AnalyticPlanarBooleanBatchRequestA0,
 ): Uint8Array {
@@ -78,6 +78,8 @@ export function encodeAnalyticPlanarBooleanBatchRequestA0Packet(
     }
     const segmentBegin = table(8).records.length;
     for (const segment of ring.segments) {
+      if (open && segment.kind === "circular_arc_by_radius")
+        fail("Endpoint/radius arcs are not supported in swept paths.");
       uniqueId("segment", segment.segment_id);
       unsigned(segment.curve_id, "curve id", true);
       table(8).records.push(
@@ -92,6 +94,12 @@ export function encodeAnalyticPlanarBooleanBatchRequestA0Packet(
             view.setUint8(18, segment.major_arc ? 1 : 0);
             putI64(view, 24, segment.center.x, "arc center x");
             putI64(view, 32, segment.center.y, "arc center y");
+          } else if (segment.kind === "circular_arc_by_radius") {
+            view.setUint8(16, 3);
+            view.setUint8(17, segment.direction === "ccw" ? 1 : 2);
+            view.setUint8(18, segment.major_arc ? 1 : 0);
+            length(segment.radius_nm, "arc radius");
+            putU64(view, 24, segment.radius_nm, "arc radius", true);
           } else {
             fail("Unknown authored segment kind.");
           }

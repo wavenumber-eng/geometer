@@ -37,7 +37,8 @@ void generated_analytic_logical_dtos_cover_integer_domain()
     using namespace geometer::contracts;
     static_assert(std::is_same_v<JobId, std::uint64_t>);
     static_assert(std::is_same_v<decltype(PointNm::x), std::int64_t>);
-    static_assert(std::variant_size_v<AuthoredSegment> == 2U);
+    static_assert(std::variant_size_v<AuthoredSegment> == 3U);
+    static_assert(std::variant_size_v<AuthoredPathSegment> == 2U);
     static_assert(std::variant_size_v<AnalyticPlanarBooleanJobResult> == 2U);
     static_assert(std::variant_size_v<AnalyticPlanarOperand> == 5U);
     static_assert(std::variant_size_v<DirectedFragment> == 2U);

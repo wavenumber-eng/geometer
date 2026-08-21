@@ -355,6 +355,10 @@ def build_geometer_wasm() -> None:
     # WASM install uses lib/cmake/opencascade/ (different from native's cmake/)
     occt_cmake_dir = OCCT_WASM_INSTALL / "lib" / "cmake" / "opencascade"
 
+    print("Checking generated contract and TypeScript package freshness ...")
+    npm = "npm.cmd" if sys.platform == "win32" else "npm"
+    run([npm, "run", "check:contracts"], cwd=ROOT)
+
     print("Configuring geometer for WASM ...")
     GEOMETER_WASM_BUILD.mkdir(parents=True, exist_ok=True)
     run(
@@ -433,6 +437,13 @@ def build_geometer_wasm() -> None:
     node_test_package.write_text('{"private":true,"type":"commonjs"}\n', encoding="utf-8", newline="\n")
 
     run([sys.executable, str(ROOT / "scripts" / "write_dist_manifest.py")])
+    run(
+        [
+            sys.executable,
+            str(ROOT / "scripts" / "browser_build_attestation.py"),
+            "write",
+        ]
+    )
     print("geometer WASM build complete.")
 
 

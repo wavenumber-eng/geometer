@@ -27,6 +27,11 @@ ROWS = [
         "Persisted native library artifacts for downstream source checkouts.",
     ),
     (
+        "`wasm/geometer.browser-build-attestation.json`",
+        "Browser and TypeScript build attestation",
+        "Deterministic source-, contract-, toolchain-, and artifact-bound provenance for the full and planar WASM runtimes plus the generated TypeScript package.",
+    ),
+    (
         "`wasm/browser/geometer.js`, `wasm/browser/geometer.wasm`",
         "Full browser/Web Worker integration WASM",
         "Official application integration build. Exports `createGeometerModule` and the full C ABI, including OCCT-backed STEP-to-GLB, HLR, and planar byte APIs.",

@@ -100,3 +100,10 @@ file = "test_native_build_attestation.py"
 name = "Native Build Attestation"
 description = "Checks deterministic executable-bound native build sidecars, clean-source promotion authority, and fail-closed stale or malformed provenance."
 test_case_type = "unit"
+
+[[subtests]]
+id = "PY_013"
+file = "test_browser_build_attestation.py"
+name = "Browser Build Attestation"
+description = "Checks source- and artifact-bound browser/TypeScript sidecars, contract freshness provenance, and fail-closed stale or malformed closure."
+test_case_type = "unit"

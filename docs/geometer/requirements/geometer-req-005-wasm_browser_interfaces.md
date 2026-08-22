@@ -29,3 +29,5 @@ workflows.
    the planar-only browser target.
 6. Keep user-facing browser examples under `examples/wasm/`.
 7. Keep test-only validation and benchmark harnesses under `tests/wasm/`.
+8. Apply REQ-009 to distributable browser-demo sites without treating demo UI
+   policy as part of the core WASM geometry interface.

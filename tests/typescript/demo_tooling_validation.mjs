@@ -6,11 +6,14 @@ import {
   CommandRegistry,
   normalizePointerInput,
   normalizeWheelInput,
+  PanelManager,
   resolvePointerIntent,
   scalarBinding,
   ToolController,
   vec2Binding,
 } from "../../dist/wasm/demos/demo-tooling/index.js";
+
+assert.equal(typeof PanelManager, "function", "demo tooling exports the typed panel manager");
 
 function pointer(overrides = {}) {
   return {

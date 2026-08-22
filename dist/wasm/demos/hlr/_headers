@@ -1,0 +1,10 @@
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: no-referrer
+  Permissions-Policy: camera=(), geolocation=(), microphone=()
+  Cache-Control: no-cache
+  Content-Security-Policy: default-src 'none'; script-src 'wasm-unsafe-eval' blob: 'sha256-1hry+KJL/gwjbYoLsaTxyRk6S3HPzbrcljewehQ/PNU=' 'sha256-Z7rHtg34jjtUiYrgO6F/rzyPlyFV6XVhoUAHqL5YhtU='; worker-src blob:; style-src 'unsafe-inline'; connect-src data: blob:; img-src data: blob:; font-src data:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'
+
+/index.html
+  Cache-Control: no-cache
+  Content-Type: text/html; charset=utf-8

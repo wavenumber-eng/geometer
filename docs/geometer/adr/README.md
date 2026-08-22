@@ -16,3 +16,4 @@ and should not be treated as docs of record after a change ships.
 - [ADR 011: Generic Operation Transports](geometer-adr-011-generic_operation_transports.md)
 - [ADR 012: Exact Arrangement For Analytic Planar Booleans](geometer-adr-012-exact_analytic_planar_boolean_arrangement.md)
 - [ADR 013: Filtered, Resolution-Bounded Analytic Planar Booleans](geometer-adr-013-filtered_resolution_bounded_planar_boolean.md)
+- [ADR 014: Self-Contained Browser Demo Distribution](geometer-adr-014-self_contained_browser_demo_distribution.md)

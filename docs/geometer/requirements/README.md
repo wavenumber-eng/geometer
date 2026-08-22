@@ -12,3 +12,4 @@ wire formats.
 - [REQ-006 Release Quality Gates](geometer-req-006-release_quality_gates.md)
 - [REQ-007 Development Standards Baseline](geometer-req-007-development_standards_baseline.md)
 - [REQ-008 Generated Cross-Language Contracts](geometer-req-008-generated_cross_language_contracts.md)
+- [REQ-009 Browser Demo Distribution](geometer-req-009-browser_demo_distribution.md)

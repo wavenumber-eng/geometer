@@ -1,9 +1,10 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Geometer Embedded Models</title>
+  <title>Geometer HLR Lab</title>
+  <link rel="stylesheet" href="/examples/wasm/demo-tooling/panels.css">
   <style>
     :root {
       color-scheme: light;
@@ -11,16 +12,14 @@
       font-size: 11px;
       background: #f5f5f5;
       color: #18202a;
-      --projection-detail-color: #000000;
-      --projection-outline-color: #000000;
-      --projection-bbox-color: #d97706;
     }
 
     * { box-sizing: border-box; }
     body { margin: 0; min-height: 100vh; background: #f5f5f5; }
     button, select, input { font: inherit; }
 
-    .app { min-height: 100vh; display: grid; grid-template-rows: auto auto auto 1fr; }
+    .app { height: 100vh; display: grid; grid-template-rows: auto minmax(0, 1fr); overflow: hidden; }
+    .workspace { min-width: 0; min-height: 0; }
 
     .toolbar {
       display: flex;
@@ -32,7 +31,7 @@
       border: 0;
     }
 
-    .tunables {
+    .appearance-row, .tunables {
       display: flex;
       flex-wrap: wrap;
       gap: 6px 10px;
@@ -44,13 +43,13 @@
       color: #4a5565;
     }
 
-    .tunables .control {
+    .appearance-row .control, .tunables .control {
       display: inline-flex;
       gap: 4px;
       align-items: center;
     }
 
-    .tunables input, .tunables select {
+    .appearance-row input, .appearance-row select, .tunables input, .tunables select {
       height: 22px;
       padding: 0 4px;
       border: 0;
@@ -62,17 +61,77 @@
 
     .tunables input[type=number] { width: 64px; }
 
-    .edge-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 4px 8px;
+    .appearance-row {
+      padding: 8px 10px;
+      color: #344154;
+    }
+    .layer-appearance {
+      display: inline-flex;
       align-items: center;
+      gap: 4px;
+      min-height: 24px;
+      padding: 1px 5px;
+      background: #fff;
+    }
+    .layer-appearance .layer-name { font-weight: 600; }
+    .layer-appearance input[type=color] { width: 26px; padding: 2px; }
+    .layer-appearance input[type=number] { width: 42px; }
+    .layer-appearance select { max-width: 68px; }
+
+    .advanced-settings {
+      background: #f5f5f5;
+      color: #4a5565;
+    }
+    .advanced-settings > summary {
+      margin: 8px 10px 4px;
+      width: max-content;
+      cursor: pointer;
+      color: #344154;
+      font-weight: 600;
+      user-select: none;
+    }
+    .advanced-settings .setting-help {
+      padding: 0 10px 6px;
+      color: #647184;
+      font-size: 10px;
+    }
+    .advanced-settings :disabled { opacity: 0.45; cursor: not-allowed; }
+
+    .three-settings { padding: 8px 10px 12px; color: #344154; }
+    .three-settings h3 {
+      margin: 8px 0 6px;
+      color: #344154;
+      font-size: 11px;
+    }
+    .three-settings h3:first-child { margin-top: 0; }
+    .three-control {
+      display: grid;
+      grid-template-columns: 92px minmax(0, 1fr) 38px;
+      gap: 6px;
+      align-items: center;
+      min-height: 28px;
+    }
+    .three-control select, .three-control input[type=color] { width: 100%; }
+    .three-control input[type=range] { width: 100%; min-width: 0; }
+    .three-control output { color: #647184; text-align: right; }
+    .three-check { display: flex; gap: 6px; align-items: center; min-height: 26px; }
+    .three-help { margin: 8px 0; color: #647184; font-size: 10px; line-height: 1.35; }
+
+    .edge-row {
       padding: 0 10px 6px;
       background: #f5f5f5;
       font-size: 11px;
       color: #4a5565;
     }
-    .edge-row .group-label { font-weight: 600; color: #344154; margin-right: 2px; }
+    .edge-preset-row { margin-bottom: 8px; }
+    .edge-group + .edge-group { margin-top: 8px; }
+    .edge-row .group-label {
+      display: block;
+      margin-bottom: 4px;
+      font-weight: 700;
+      color: #344154;
+    }
+    .edge-flags { display: flex; flex-wrap: wrap; gap: 4px; }
     .edge-row .legend { color: #647184; margin-left: 6px; font-size: 10px; }
     .edge-row label.flag {
       display: inline-flex;
@@ -139,7 +198,7 @@
     }
     .toolbar-check input { margin: 0; }
 
-    button.reproject {
+    button.toolbar-action {
       height: 24px;
       padding: 0 10px;
       border: 0;
@@ -149,8 +208,21 @@
       cursor: pointer;
       font-size: 11px;
     }
+    button.toolbar-action.secondary { background: #fff; color: #344154; }
+    button.toolbar-action:disabled { color: #8a96a6; background: #e9edf1; cursor: not-allowed; }
+    #stepFileInput { display: none; }
 
-    .main { position: relative; display: grid; grid-template-columns: minmax(280px, 1fr) minmax(280px, 1fr); min-height: 0; }
+    .main {
+      position: absolute;
+      top: 0;
+      right: var(--gdm-content-right, 0px);
+      bottom: var(--gdm-content-bottom, 0px);
+      left: var(--gdm-content-left, 0px);
+      display: grid;
+      grid-template-columns: minmax(280px, 1fr) minmax(280px, 1fr);
+      min-width: 0;
+      min-height: 0;
+    }
     .pane { position: relative; min-width: 0; min-height: 0; background: #fff; }
     .pane + .pane { border: 0; }
     #modelPane { background: #fff; }
@@ -239,20 +311,38 @@
 
     #validationResult { position: fixed; left: -10000px; top: auto; width: 1px; height: 1px; overflow: hidden; }
 
-    @media (max-width: 720px) {
-      .main { grid-template-columns: 1fr; grid-template-rows: minmax(280px, 1fr) minmax(280px, 1fr); }
+    @media (max-width: 1100px) {
+      .main { grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr) minmax(0, 1fr); }
     }
   </style>
 </head>
 <body>
   <div class="app">
     <div class="toolbar">
+      <input id="stepFileInput" type="file" accept=".step,.stp,model/step,application/step">
+      <button type="button" class="toolbar-action" id="openStepButton">Open STEP</button>
       <label class="select-wrap">
         <span class="label">Model</span>
         <select id="modelSelect"></select>
       </label>
+      <label class="select-wrap" title="World direction from the model origin toward the viewer for the Top preset.">
+        <span class="label">Top axis</span>
+        <select id="topAxisSelect" aria-label="Top axis">
+          <option value="+y" selected>+Y</option><option value="-y">-Y</option>
+          <option value="+x">+X</option><option value="-x">-X</option>
+          <option value="+z">+Z</option><option value="-z">-Z</option>
+        </select>
+      </label>
+      <label class="select-wrap" title="World direction from the model origin toward the viewer for the Front preset. Must be perpendicular to Top.">
+        <span class="label">Front axis</span>
+        <select id="frontAxisSelect" aria-label="Front axis">
+          <option value="+x">+X</option><option value="-x">-X</option>
+          <option value="+y">+Y</option><option value="-y">-Y</option>
+          <option value="+z" selected>+Z</option><option value="-z">-Z</option>
+        </select>
+      </label>
       <div class="segmented" id="viewButtons" aria-label="Projection view">
-        <button type="button" data-view="top" class="active">Top</button>
+        <button type="button" data-view="top">Top</button>
         <button type="button" data-view="bottom">Bot</button>
         <button type="button" data-view="front">Front</button>
         <button type="button" data-view="back">Back</button>
@@ -262,112 +352,152 @@
         <button type="button" data-view="isoBottom">ISO B</button>
         <button type="button" data-view="isoFront">ISO F</button>
         <button type="button" data-view="isoBack">ISO K</button>
-        <button type="button" data-view="camera" title="Project from current 3D camera direction. Click Re-project after rotating to refresh.">Cam</button>
+        <button type="button" data-view="camera" class="active" title="Project from the live 3D trackball camera direction.">Cam</button>
       </div>
-      <div class="segmented" id="modeButtons" aria-label="Projection mode">
+      <button type="button" class="toolbar-action secondary" id="exportSvgButton" disabled>Export SVG</button>
+      <div class="status" id="status">Idle</div>
+    </div>
+    <div class="workspace" id="workspace">
+      <div id="panelContentBank" hidden>
+        <div id="settingsPanelContent">
+    <div class="appearance-row" aria-label="Projection display and appearance">
+      <label class="control" title="The HLR pane is orthographic. Choose Orthographic to match it in 3D, or Perspective for depth inspection.">
+        <span>3D lens</span>
+        <select id="cameraLensSelect">
+          <option value="orthographic">Orthographic (matches HLR)</option>
+          <option value="perspective">Perspective</option>
+        </select>
+      </label>
+      <div class="segmented" id="modeButtons" aria-label="Projection layers">
         <button type="button" data-mode="detail" class="active">Detail</button>
         <button type="button" data-mode="outline">Outline</button>
         <button type="button" data-mode="both">Both</button>
       </div>
-      <label class="toolbar-check" title="Show projected bounding box overlay.">
-        <input id="bboxToggleInput" type="checkbox">
-        <span>BBox</span>
+      <label class="layer-appearance" title="Detail-layer appearance in Detail and Both modes.">
+        <span class="layer-name">Detail</span>
+        <input id="detailColorInput" aria-label="Detail color" type="color" value="#000000">
+        <input id="detailWidthInput" aria-label="Detail line width" type="number" min="0.25" max="5" step="0.25" value="2.4">
+        <select id="detailStyleSelect" aria-label="Detail line style"><option value="solid">Solid</option><option value="dashed">Dash</option><option value="dotted">Dot</option></select>
       </label>
-      <div class="status" id="status">Idle</div>
+      <label class="layer-appearance" title="Outline-layer appearance in Outline and Both modes.">
+        <span class="layer-name">Outline</span>
+        <input id="outlineColorInput" aria-label="Outline color" type="color" value="#000000">
+        <input id="outlineWidthInput" aria-label="Outline line width" type="number" min="0.25" max="5" step="0.25" value="3.6">
+        <select id="outlineStyleSelect" aria-label="Outline line style"><option value="solid">Solid</option><option value="dashed">Dash</option><option value="dotted">Dot</option></select>
+      </label>
+      <label class="layer-appearance" title="Optional projected bounding-box overlay and its appearance.">
+        <input id="bboxToggleInput" aria-label="Show bounding box" type="checkbox">
+        <span class="layer-name">BBox</span>
+        <input id="bboxColorInput" aria-label="Bounding box color" type="color" value="#d97706">
+        <input id="bboxWidthInput" aria-label="Bounding box line width" type="number" min="0.25" max="5" step="0.25" value="1.8">
+        <select id="bboxStyleSelect" aria-label="Bounding box line style"><option value="solid">Solid</option><option value="dashed" selected>Dash</option><option value="dotted">Dot</option></select>
+      </label>
     </div>
-    <div class="tunables">
-      <label class="control" title="HLR algorithm.">
-        <span>Algorithm</span>
-        <select id="algoSelect">
-          <option value="poly">Poly</option>
-          <option value="exact">Exact</option>
-        </select>
-      </label>
-      <label class="control" title="Outline source algorithm. Mesh shadow is intended for assembly projection silhouettes.">
-        <span>Outline</span>
-        <select id="outlineAlgoSelect">
-          <option value="mesh-shadow">Mesh shadow</option>
-          <option value="hlr-close">HLR close</option>
-        </select>
-      </label>
-      <label class="control" title="Linear mesh deflection (mm). Draftsman uses ~0.01.">
-        <span>Lin defl</span>
-        <input id="linDeflInput" type="number" min="0.0001" step="0.001" value="0.01">
-      </label>
-      <label class="control" title="Angular mesh deflection (radians).">
-        <span>Ang defl</span>
-        <input id="angDeflInput" type="number" min="0.001" step="0.05" value="0.5">
-      </label>
-      <label class="control" title="HLR edge classification angle tolerance (radians).">
-        <span>HLR tol</span>
-        <input id="hlrTolInput" type="number" min="0.0001" step="0.001" value="0.0174533">
-      </label>
-      <label class="control" title="Relative mesh deflection scales linear deflection by bbox.">
-        <span>Mesh rel</span>
-        <select id="meshRelativeSelect"><option value="false">No</option><option value="true">Yes</option></select>
-      </label>
-      <label class="control" title="Bbox-relative deflection coefficient.">
-        <span>Coef</span>
-        <input id="deflCoeffInput" type="number" min="0.00001" step="0.0005" value="0.004">
-      </label>
-      <label class="control" title="Projection detail color.">
-        <span>Detail</span>
-        <input id="detailColorInput" type="color" value="#000000">
-      </label>
-      <label class="control" title="Projection outline color.">
-        <span>Outline</span>
-        <input id="outlineColorInput" type="color" value="#000000">
-      </label>
-      <label class="control" title="Projection bounding box color.">
-        <span>BBox</span>
-        <input id="bboxColorInput" type="color" value="#d97706">
-      </label>
-      <button type="button" class="reproject" id="reprojectButton">Re-project</button>
-    </div>
-    <div class="edge-row" id="edgeRow">
-      <label class="control" title="Quick preset for the OCCT edge categories below. Custom = manual toggles.">
-        <span>Profile</span>
-        <select id="profileSelect">
-          <option value="detail">Detail (default)</option>
-          <option value="all-visible">All visible</option>
-          <option value="visible+hidden">Visible + hidden</option>
-          <option value="custom">Custom</option>
-        </select>
-      </label>
-      <span class="group-label">Visible</span>
-      <label class="flag" title="HLRBRep_HLRToShape::VCompound() - visible sharp edges" data-algo-poly="ok">
-        <input type="checkbox" data-edge="edge_v_sharp" checked><span>Sharp</span>
-      </label>
-      <label class="flag" title="HLRBRep_HLRToShape::OutLineVCompound() - visible silhouette / outline" data-algo-poly="ok">
-        <input type="checkbox" data-edge="edge_v_outline" checked><span>Outline</span>
-      </label>
-      <label class="flag" title="HLRBRep_HLRToShape::Rg1LineVCompound() - visible smooth (tangential) edges. Exact only." data-algo-poly="no">
-        <input type="checkbox" data-edge="edge_v_smooth"><span>Smooth</span>
-      </label>
-      <label class="flag" title="HLRBRep_HLRToShape::RgNLineVCompound() - visible sewn (manifold) edges. Exact only." data-algo-poly="no">
-        <input type="checkbox" data-edge="edge_v_sewn"><span>Sewn</span>
-      </label>
-      <label class="flag" title="HLRBRep_HLRToShape::IsoLineVCompound() - visible parametric isolines. Exact only." data-algo-poly="no">
-        <input type="checkbox" data-edge="edge_v_iso"><span>Iso</span>
-      </label>
-      <span class="group-label">Hidden</span>
-      <label class="flag" title="HLRBRep_HLRToShape::HCompound() - hidden sharp edges" data-algo-poly="ok">
-        <input type="checkbox" data-edge="edge_h_sharp"><span>Sharp</span>
-      </label>
-      <label class="flag" title="HLRBRep_HLRToShape::OutLineHCompound() - hidden silhouette" data-algo-poly="ok">
-        <input type="checkbox" data-edge="edge_h_outline"><span>Outline</span>
-      </label>
-      <label class="flag" title="HLRBRep_HLRToShape::Rg1LineHCompound() - hidden smooth. Exact only." data-algo-poly="no">
-        <input type="checkbox" data-edge="edge_h_smooth"><span>Smooth</span>
-      </label>
-      <label class="flag" title="HLRBRep_HLRToShape::RgNLineHCompound() - hidden sewn. Exact only." data-algo-poly="no">
-        <input type="checkbox" data-edge="edge_h_sewn"><span>Sewn</span>
-      </label>
-      <label class="flag" title="HLRBRep_HLRToShape::IsoLineHCompound() - hidden isolines. Exact only." data-algo-poly="no">
-        <input type="checkbox" data-edge="edge_h_iso"><span>Iso</span>
-      </label>
-      <span class="legend" id="edgeLegend">Detail = active flags. Outline = silhouette geometry. BBox = projected shape bounds.</span>
-    </div>
+    <details class="advanced-settings" open>
+      <summary>Geometry settings</summary>
+      <div class="tunables">
+        <label class="control" title="Geometer projection_algorithm. Polygonal is fast; Exact preserves native curves and exposes every OCCT edge category.">
+          <span>HLR engine</span>
+          <select id="algoSelect"><option value="poly">Polygonal (fast)</option><option value="exact">Exact curves</option></select>
+        </label>
+        <label class="control" title="Geometer outline_algorithm. This builds the independent Outline layer and is unrelated to the Detail edge checkboxes.">
+          <span>Silhouette source</span>
+          <select id="outlineAlgoSelect"><option value="mesh-shadow">Mesh shadow (recommended)</option><option value="hlr-close">Closed HLR edges</option></select>
+        </label>
+        <label class="control" title="Geometer mesh_deflection_mode. Model-relative multiplies the largest model dimension by the quality coefficient.">
+          <span>Tessellation</span>
+          <select id="meshDeflectionModeSelect"><option value="bbox-relative">Model-relative</option><option value="absolute">Absolute tolerance</option></select>
+        </label>
+        <label class="control" title="mesh_deflection_coefficient. Used only for model-relative tessellation; smaller values produce finer meshes.">
+          <span>Quality coef</span>
+          <input id="deflCoeffInput" type="number" min="0.00001" step="0.0005" value="0.004">
+        </label>
+        <label class="control" title="mesh_linear_deflection in millimeters. Used only for absolute tessellation; smaller values produce finer meshes.">
+          <span>Linear tol (mm)</span>
+          <input id="linDeflInput" type="number" min="0.0001" step="0.001" value="0.01" disabled>
+        </label>
+        <label class="control" title="mesh_angular_deflection in radians. Used by OCCT tessellation; smaller values preserve curved surfaces more closely.">
+          <span>Angular tol (rad)</span>
+          <input id="angDeflInput" type="number" min="0.001" step="0.05" value="0.5">
+        </label>
+        <label class="control" title="hlr_angle_tolerance in radians. Used by polygonal HLR for silhouette/sharp-edge classification; ignored by Exact.">
+          <span>Edge angle (rad)</span>
+          <input id="hlrTolInput" type="number" min="0.0001" step="0.001" value="0.0174533">
+        </label>
+        <button type="button" class="toolbar-action secondary" id="resetGeometryButton">Reset geometry defaults</button>
+      </div>
+      <div class="edge-row" id="edgeRow">
+        <div class="edge-preset-row">
+          <label class="control" title="A demo convenience preset for the OCCT edge categories that feed only the Detail layer.">
+            <span>Detail edge set</span>
+            <select id="edgePresetSelect">
+              <option value="detail">Sharp + silhouettes</option>
+              <option value="all-visible">All visible (exact)</option>
+              <option value="visible+hidden">Visible + hidden</option>
+              <option value="custom">Custom categories</option>
+            </select>
+          </label>
+        </div>
+        <div class="edge-group">
+          <span class="group-label">Visible</span>
+          <div class="edge-flags">
+            <label class="flag" title="OCCT VCompound: visible sharp edges. Feeds Detail only." data-algo-poly="ok"><input type="checkbox" data-edge="edge_v_sharp" checked><span>Sharp edges</span></label>
+            <label class="flag" title="OCCT OutLineVCompound: visible silhouette edges. Despite the OCCT name, this feeds Detail—not Geometer's Outline layer." data-algo-poly="ok"><input type="checkbox" data-edge="edge_v_outline" checked><span>Silhouette edges</span></label>
+            <label class="flag" title="OCCT Rg1LineVCompound: visible tangent edges. Exact only; feeds Detail." data-algo-poly="no"><input type="checkbox" data-edge="edge_v_smooth"><span>Tangent edges</span></label>
+            <label class="flag" title="OCCT RgNLineVCompound: visible sewn/manifold edges. Exact only; feeds Detail." data-algo-poly="no"><input type="checkbox" data-edge="edge_v_sewn"><span>Seam edges</span></label>
+            <label class="flag" title="OCCT IsoLineVCompound: visible parametric isolines. Exact only; feeds Detail." data-algo-poly="no"><input type="checkbox" data-edge="edge_v_iso"><span>Isolines</span></label>
+          </div>
+        </div>
+        <div class="edge-group">
+          <span class="group-label">Hidden</span>
+          <div class="edge-flags">
+            <label class="flag" title="OCCT HCompound: hidden sharp edges. Feeds Detail only." data-algo-poly="ok"><input type="checkbox" data-edge="edge_h_sharp"><span>Sharp edges</span></label>
+            <label class="flag" title="OCCT OutLineHCompound: hidden silhouette edges. Feeds Detail only." data-algo-poly="ok"><input type="checkbox" data-edge="edge_h_outline"><span>Silhouette edges</span></label>
+            <label class="flag" title="OCCT Rg1LineHCompound: hidden tangent edges. Exact only; feeds Detail." data-algo-poly="no"><input type="checkbox" data-edge="edge_h_smooth"><span>Tangent edges</span></label>
+            <label class="flag" title="OCCT RgNLineHCompound: hidden sewn/manifold edges. Exact only; feeds Detail." data-algo-poly="no"><input type="checkbox" data-edge="edge_h_sewn"><span>Seam edges</span></label>
+            <label class="flag" title="OCCT IsoLineHCompound: hidden parametric isolines. Exact only; feeds Detail." data-algo-poly="no"><input type="checkbox" data-edge="edge_h_iso"><span>Isolines</span></label>
+          </div>
+        </div>
+      </div>
+      <div class="setting-help">Detail is configured OCCT HLR edge geometry. Outline is an independent Geometer assembly silhouette; Mesh shadow is the normal choice. Both displays those two unchanged layers together. The raw edge categories never change Outline.</div>
+    </details>
+        </div>
+        <div class="three-settings" id="threePanelContent">
+          <h3>Materials and shading</h3>
+          <label class="three-control" title="Viz Lambert converts imported meshes to a matte technical-view material. Source PBR preserves the OCCT glTF materials. Basic is unlit.">
+            <span>Material</span>
+            <select id="materialModeSelect">
+              <option value="lambert">Viz Lambert</option>
+              <option value="source">Source glTF PBR</option>
+              <option value="basic">Unlit Basic</option>
+            </select>
+            <span></span>
+          </label>
+          <label class="three-control">
+            <span>Shading</span>
+            <select id="shadingModeSelect"><option value="smooth">Smooth</option><option value="flat">Flat</option></select>
+            <span></span>
+          </label>
+          <label class="three-control">
+            <span>Sidedness</span>
+            <select id="sidednessSelect"><option value="source">Source</option><option value="double">Double-sided</option><option value="front">Front only</option></select>
+            <span></span>
+          </label>
+          <label class="three-check"><input id="wireframeInput" type="checkbox"><span>Wireframe</span></label>
+
+          <h3>Lighting</h3>
+          <label class="three-control"><span>Ambient</span><input id="ambientLightInput" type="range" min="0" max="3" step="0.05" value="0.2"><output id="ambientLightValue">0.20</output></label>
+          <label class="three-control"><span>Fixed key</span><input id="keyLightInput" type="range" min="0" max="3" step="0.05" value="0.5"><output id="keyLightValue">0.50</output></label>
+          <label class="three-control"><span>Camera light</span><input id="cameraLightInput" type="range" min="0" max="3" step="0.05" value="0.75"><output id="cameraLightValue">0.75</output></label>
+
+          <h3>Rendering</h3>
+          <label class="three-control"><span>Background</span><input id="backgroundColorInput" type="color" value="#ffffff"><span></span></label>
+          <label class="three-control"><span>Tone mapping</span><select id="toneMappingSelect"><option value="none">None</option><option value="aces">ACES filmic</option></select><span></span></label>
+          <label class="three-control"><span>Exposure</span><input id="exposureInput" type="range" min="0.1" max="3" step="0.05" value="1" disabled><output id="exposureValue">1.00</output></label>
+          <p class="three-help">The Viz-style light rig uses ambient, fixed directional, and camera-following directional lights. Basic materials ignore all three lights.</p>
+          <button type="button" class="toolbar-action secondary" id="resetThreeButton">Reset 3D defaults</button>
+        </div>
+      </div>
     <main class="main">
       <section class="pane" id="modelPane">
         <canvas id="modelCanvas"></canvas>
@@ -385,6 +515,7 @@
         <img id="wnWatermarkImg" alt="" src="/tests/wasm/vendor/wn/logo.svg">
       </div>
     </main>
+    </div>
   </div>
   <div class="work-overlay" id="workOverlay" aria-live="polite" aria-busy="true">
     <div class="work-panel">
@@ -405,834 +536,6 @@
       }
     }
   </script>
-  <script type="module">
-    import * as THREE from "three";
-    import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
-    import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-
-    const manifestUrl = "/tests/fixtures/embedded_models_manifest.json";
-    // Altium PCB / Draftsman view conventions (Z-up, right-handed).
-    // Source: PcbDrawing/Altium.Designer.PcbDrawing.Implementation.Board.DataRetreival/ProjectionByOCC.cs::CalculateProjectionParams.
-    // Altium also post-mirrors Back and Left horizontally (ScaleTransform(-1, 1)) so all 6 ortho views read with consistent left-right orientation.
-    const ISO = 1 / Math.sqrt(3);
-    const projectionViews = [
-      { id: "top",      label: "Top",      direction: [0, 0, 1],            up: [0, 1, 0] },
-      { id: "bottom",   label: "Bottom",   direction: [0, 0, -1],           up: [0, 1, 0] },
-      { id: "front",    label: "Front",    direction: [0, -1, 0],           up: [0, 0, 1] },
-      { id: "back",     label: "Back",     direction: [0, 1, 0],            up: [0, 0, 1],  mirrorX: true },
-      { id: "left",     label: "Left",     direction: [-1, 0, 0],           up: [0, 0, 1],  mirrorX: true },
-      { id: "right",    label: "Right",    direction: [1, 0, 0],            up: [0, 0, 1] },
-      { id: "isoTop",    label: "ISO Top",    direction: [ ISO,  ISO,  ISO], up: [0,  1, 0] },
-      { id: "isoBottom", label: "ISO Bot",    direction: [ ISO, -ISO, -ISO], up: [0, -1, 0] },
-      { id: "isoFront",  label: "ISO Front",  direction: [ ISO, -ISO,  ISO], up: [0,  0, 1] },
-      { id: "isoBack",   label: "ISO Back",   direction: [ ISO,  ISO, -ISO], up: [0,  0, -1] },
-    ];
-
-    const state = {
-      models: [],
-      selectedModel: null,
-      viewId: "top",
-      mode: "detail",
-      backend: "current",
-      projectionWorker: null,
-      workerBackend: null,
-      projectionRequests: new Map(),
-      nextProjectionRequestId: 1,
-      projectionCache: new Map(),
-      stepCache: new Map(),
-      activeLoad: 0,
-      activeProjection: 0,
-      cameraReprojectTimer: 0,
-      suppressCameraChange: false,
-      validation: new URLSearchParams(window.location.search).get("validation") === "1",
-    };
-
-    const els = {
-      modelSelect: document.getElementById("modelSelect"),
-      viewButtons: document.getElementById("viewButtons"),
-      modeButtons: document.getElementById("modeButtons"),
-      status: document.getElementById("status"),
-      canvas: document.getElementById("modelCanvas"),
-      projectionSvg: document.getElementById("projectionSvg"),
-      modelMetric: document.getElementById("modelMetric"),
-      meshMetric: document.getElementById("meshMetric"),
-      projectionMetric: document.getElementById("projectionMetric"),
-      sourceMetric: document.getElementById("sourceMetric"),
-      workOverlay: document.getElementById("workOverlay"),
-      workTitle: document.getElementById("workTitle"),
-      workSubtitle: document.getElementById("workSubtitle"),
-      validationResult: document.getElementById("validationResult"),
-      algoSelect: document.getElementById("algoSelect"),
-      outlineAlgoSelect: document.getElementById("outlineAlgoSelect"),
-      linDeflInput: document.getElementById("linDeflInput"),
-      angDeflInput: document.getElementById("angDeflInput"),
-      hlrTolInput: document.getElementById("hlrTolInput"),
-      meshRelativeSelect: document.getElementById("meshRelativeSelect"),
-      deflCoeffInput: document.getElementById("deflCoeffInput"),
-      detailColorInput: document.getElementById("detailColorInput"),
-      outlineColorInput: document.getElementById("outlineColorInput"),
-      bboxColorInput: document.getElementById("bboxColorInput"),
-      bboxToggleInput: document.getElementById("bboxToggleInput"),
-      reprojectButton: document.getElementById("reprojectButton"),
-      profileSelect: document.getElementById("profileSelect"),
-      edgeRow: document.getElementById("edgeRow"),
-    };
-
-    // OCCT HLR edge categories. Order matches the C++ HlrProjectionOptions struct.
-    const EDGE_FLAGS = [
-      "edge_v_sharp", "edge_v_outline", "edge_v_smooth", "edge_v_sewn", "edge_v_iso",
-      "edge_h_sharp", "edge_h_outline", "edge_h_smooth", "edge_h_sewn", "edge_h_iso",
-    ];
-
-    // Profile presets â€” each lists which flags are enabled.
-    const EDGE_PROFILES = {
-      "detail":          ["edge_v_sharp", "edge_v_outline"],
-      "all-visible":     ["edge_v_sharp", "edge_v_outline", "edge_v_smooth", "edge_v_sewn"],
-      "visible+hidden":  ["edge_v_sharp", "edge_v_outline", "edge_h_sharp", "edge_h_outline"],
-    };
-
-    function edgeCheckbox(name) {
-      return els.edgeRow.querySelector(`input[data-edge="${name}"]`);
-    }
-
-    function readEdgeFlags() {
-      const flags = {};
-      for (const name of EDGE_FLAGS) flags[name] = edgeCheckbox(name).checked;
-      return flags;
-    }
-
-    function applyProfile(profileId) {
-      const enabled = EDGE_PROFILES[profileId];
-      if (!enabled) return;
-      for (const name of EDGE_FLAGS) edgeCheckbox(name).checked = enabled.includes(name);
-    }
-
-    function syncEdgeRowToAlgo() {
-      // Poly HLR only supports V/H Compound + OutLine. Gray out the 6 unsupported flags.
-      const poly = els.algoSelect.value === "poly";
-      for (const label of els.edgeRow.querySelectorAll("label.flag")) {
-        const supported = !poly || label.dataset.algoPoly === "ok";
-        label.classList.toggle("disabled", !supported);
-        const cb = label.querySelector("input[type=checkbox]");
-        cb.disabled = !supported;
-      }
-    }
-
-    const renderer = new THREE.WebGLRenderer({
-      canvas: els.canvas,
-      antialias: true,
-      preserveDrawingBuffer: true,
-    });
-    renderer.setClearColor(0xffffff, 1);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0xffffff);
-    const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100000);
-    const controls = new OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = false;
-    controls.screenSpacePanning = true;
-
-    const ambient = new THREE.HemisphereLight(0xffffff, 0x8b97a6, 2.1);
-    scene.add(ambient);
-    const key = new THREE.DirectionalLight(0xffffff, 2.4);
-    key.position.set(2.5, 3.0, 4.5);
-    scene.add(key);
-    const fill = new THREE.DirectionalLight(0xd7f0ff, 0.9);
-    fill.position.set(-4, 1, -2);
-    scene.add(fill);
-
-    const modelGroup = new THREE.Group();
-    scene.add(modelGroup);
-    const grid = new THREE.GridHelper(10, 10, 0xa7b0ba, 0xc6cdd4);
-    grid.visible = false;
-    scene.add(grid);
-
-    const loader = new GLTFLoader();
-    const resizeObserver = new ResizeObserver(resizeRenderer);
-    resizeObserver.observe(document.getElementById("modelPane"));
-
-    function assetUrl(path) {
-      return `/${path.split("/").map(encodeURIComponent).join("/")}`;
-    }
-
-    function formatBytes(bytes) {
-      if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
-      return `${Math.max(1, Math.round(bytes / 1024))} KB`;
-    }
-
-    function formatMs(ms) {
-      if (!Number.isFinite(ms)) return "0 ms";
-      if (ms >= 1000) return `${(ms / 1000).toFixed(2)} s`;
-      return `${Math.max(1, Math.round(ms))} ms`;
-    }
-
-    function projectionTimingText(timings) {
-      if (timings.cached) return "HLR cache";
-      const stepText = timings.cachedStep ? "STEP cache" : `STEP ${formatMs(timings.stepFetchMs)}`;
-      const phases = [];
-      if (Number.isFinite(timings.meshMs)) phases.push(`mesh ${formatMs(timings.meshMs)}`);
-      if (Number.isFinite(timings.nativeHlrMs)) phases.push(`hlr ${formatMs(timings.nativeHlrMs)}`);
-      if (Number.isFinite(timings.extractMs)) phases.push(`ext ${formatMs(timings.extractMs)}`);
-      const phaseText = phases.length ? ` (${phases.join(" / ")})` : "";
-      return `${stepText} - HLR ${formatMs(timings.hlrMs)} worker${phaseText}`;
-    }
-
-    function moduleTimingText(timings) {
-      return Number.isFinite(timings.moduleMs) && timings.moduleMs > 1 ? ` - WASM ${formatMs(timings.moduleMs)}` : "";
-    }
-
-    function setStatus(text, busy = false, detail = "") {
-      els.status.textContent = text;
-      document.body.classList.toggle("busy", busy);
-      els.workOverlay.classList.toggle("visible", busy);
-      els.workTitle.textContent = busy ? text : "Idle";
-      els.workSubtitle.textContent = busy ? detail : "";
-    }
-
-    function setValidation(text, pass) {
-      els.validationResult.textContent = text;
-      if (state.validation) document.title = text.startsWith("RUNNING") ? "RUNNING" : (pass ? "PASS" : "FAIL");
-    }
-
-    function applyProjectionColors() {
-      document.documentElement.style.setProperty("--projection-detail-color", els.detailColorInput.value);
-      document.documentElement.style.setProperty("--projection-outline-color", els.outlineColorInput.value);
-      document.documentElement.style.setProperty("--projection-bbox-color", els.bboxColorInput.value);
-    }
-
-    function resizeRenderer() {
-      const rect = els.canvas.parentElement.getBoundingClientRect();
-      const width = Math.max(1, Math.floor(rect.width));
-      const height = Math.max(1, Math.floor(rect.height));
-      renderer.setSize(width, height, false);
-      camera.aspect = width / height;
-      camera.updateProjectionMatrix();
-      renderOnce();
-    }
-
-    function renderOnce() {
-      controls.update();
-      renderer.render(scene, camera);
-    }
-
-    function animate() {
-      requestAnimationFrame(animate);
-      renderOnce();
-    }
-
-    function clearModel() {
-      while (modelGroup.children.length) {
-        const child = modelGroup.children.pop();
-        child.traverse((node) => {
-          if (node.geometry) node.geometry.dispose();
-          const materials = Array.isArray(node.material) ? node.material : [node.material];
-          for (const material of materials) if (material) material.dispose();
-        });
-      }
-    }
-
-    function meshBounds(root) {
-      // Compute bounds only from Mesh nodes inside the GLB. Lights, cameras, empty
-      // groups, or helper objects can have huge implicit positions that inflate
-      // the bounding box and push the camera unnecessarily far back.
-      const box = new THREE.Box3();
-      let empty = true;
-      root.updateMatrixWorld(true);
-      root.traverse((node) => {
-        if (!node.isMesh || !node.geometry) return;
-        if (!node.geometry.boundingBox) node.geometry.computeBoundingBox();
-        const local = node.geometry.boundingBox;
-        if (!local || !Number.isFinite(local.min.x) || !Number.isFinite(local.max.x)) return;
-        const world = local.clone().applyMatrix4(node.matrixWorld);
-        box.union(world);
-        empty = false;
-      });
-      if (empty) return new THREE.Box3().setFromObject(root);
-      return box;
-    }
-
-    function fitCamera(root) {
-      const bounds = meshBounds(root);
-      const size = new THREE.Vector3();
-      const center = new THREE.Vector3();
-      bounds.getSize(size);
-      bounds.getCenter(center);
-      root.position.sub(center);
-
-      const sphere = new THREE.Sphere();
-      meshBounds(root).getBoundingSphere(sphere);
-      const radius = Math.max(sphere.radius, Math.max(size.x, size.y, size.z) * 0.5, 0.001);
-      // Aspect-aware bounding-sphere fit. Use whichever (vertical or horizontal)
-      // FOV is the limiting dimension so the sphere fits regardless of pane shape.
-      const halfFovV = (camera.fov * Math.PI / 180) / 2;
-      const halfFovH = Math.atan(Math.tan(halfFovV) * Math.max(camera.aspect, 0.01));
-      const halfFov = Math.min(halfFovV, halfFovH);
-      const distance = (radius / Math.sin(halfFov)) * 1.05;
-      const viewDirection = new THREE.Vector3(0.72, 0.54, 1.0).normalize();
-      camera.near = Math.max(radius / 1000, 0.0001);
-      camera.far = Math.max(distance * 8, radius * 8, 10);
-      camera.position.copy(viewDirection.multiplyScalar(distance));
-      camera.updateProjectionMatrix();
-      controls.target.set(0, 0, 0);
-      state.suppressCameraChange = true;
-      controls.update();
-      state.suppressCameraChange = false;
-      controls.minDistance = Math.max(radius * 0.01, 0.0001);
-      controls.maxDistance = Math.max(distance * 8, radius * 8);
-
-      grid.scale.setScalar(Math.max(radius / 10, 1));
-      grid.visible = false;
-    }
-
-    function currentOptions() {
-      return {
-        projection_algorithm: els.algoSelect.value,
-        outline_algorithm: els.outlineAlgoSelect.value,
-        mesh_linear_deflection: Number.parseFloat(els.linDeflInput.value) || 0.01,
-        mesh_angular_deflection: Number.parseFloat(els.angDeflInput.value) || 0.5,
-        hlr_angle_tolerance: Number.parseFloat(els.hlrTolInput.value) || 0.0174533,
-        mesh_relative: els.meshRelativeSelect.value === "true",
-        mesh_deflection_mode: "bbox-relative",
-        mesh_deflection_coefficient: Number.parseFloat(els.deflCoeffInput.value) || 0.004,
-        ...readEdgeFlags(),
-      };
-    }
-
-    function ensureProjectionWorker(backend) {
-      if (state.projectionWorker && state.workerBackend === backend) return state.projectionWorker;
-      if (state.projectionWorker) {
-        state.projectionWorker.terminate();
-        state.projectionRequests.clear();
-      }
-      state.projectionWorker = new Worker("/examples/wasm/hlr_projection_worker.js");
-      state.workerBackend = backend;
-      state.projectionWorker.onmessage = (event) => {
-        const { id, ok, projection, timings, error } = event.data;
-        const request = state.projectionRequests.get(id);
-        if (!request) return;
-        state.projectionRequests.delete(id);
-        if (ok) request.resolve({ projection, timings });
-        else {
-          const failure = new Error(error || "HLR worker failed.");
-          failure.timings = timings || {};
-          request.reject(failure);
-        }
-      };
-      const rejectPending = (error) => {
-        const failure = error instanceof Error ? error : new Error(String(error || "HLR worker failed."));
-        for (const request of state.projectionRequests.values()) request.reject(failure);
-        state.projectionRequests.clear();
-      };
-      state.projectionWorker.onerror = (event) => {
-        rejectPending(event.message || "HLR worker startup failed.");
-      };
-      state.projectionWorker.onmessageerror = () => {
-        rejectPending("HLR worker returned an unreadable message.");
-      };
-      return state.projectionWorker;
-    }
-
-    function cameraViewSpec() {
-      // Build a ProjectionViewSpec from the live three.js camera. OCCT's HLR
-      // wants the outward plane normal (pointing from origin toward the viewer),
-      // which is (camera.position - target). For the "up" we use camera.up â€” the
-      // orthogonalization happens inside gp_Ax2::SetYDirection.
-      const dir = new THREE.Vector3().subVectors(camera.position, controls.target).normalize();
-      const up = camera.up.clone().normalize();
-      if (!Number.isFinite(dir.x) || dir.length() < 1e-6) {
-        return { id: "camera", direction: [0, 0, 1], up: [0, 1, 0], mirrorX: false };
-      }
-      return {
-        id: "camera",
-        direction: [dir.x, dir.y, dir.z],
-        up: [up.x, up.y, up.z],
-        mirrorX: false,
-      };
-    }
-
-    function projectionView(viewId) {
-      if (viewId === "camera") return cameraViewSpec();
-      return projectionViews.find((view) => view.id === viewId) || projectionViews[0];
-    }
-
-    function moveCameraToView(viewSpec) {
-      // Place the camera along viewSpec.direction at the same distance from the
-      // orbit target as it currently is, so toggling Top/Front/etc snaps the 3D
-      // view to match the 2D projection direction. Camera button is excluded â€”
-      // it reads the live camera position instead of moving it.
-      if (!viewSpec || viewSpec.id === "camera") return;
-      const target = controls.target.clone();
-      const currentDistance = camera.position.distanceTo(target);
-      const dir = new THREE.Vector3(viewSpec.direction[0], viewSpec.direction[1], viewSpec.direction[2]).normalize();
-      if (dir.length() < 1e-6) return;
-      camera.up.set(viewSpec.up[0], viewSpec.up[1], viewSpec.up[2]).normalize();
-      camera.position.copy(target).addScaledVector(dir, currentDistance);
-      camera.lookAt(target);
-      state.suppressCameraChange = true;
-      controls.update();
-      state.suppressCameraChange = false;
-      renderOnce();
-    }
-
-    function optionsCacheTag(opts) {
-      const base = [
-        opts.projection_algorithm,
-        opts.outline_algorithm,
-        opts.mesh_linear_deflection,
-        opts.mesh_angular_deflection,
-        opts.hlr_angle_tolerance,
-        opts.mesh_relative,
-        opts.mesh_deflection_mode,
-        opts.mesh_deflection_coefficient,
-      ];
-      const edges = EDGE_FLAGS.map((name) => opts[name] ? 1 : 0).join("");
-      return [...base, edges].join(":");
-    }
-
-    function projectionCacheKey(model, viewId, opts, backend) {
-      return `${backend}|${optionsCacheTag(opts)}|${model.name}|${viewId}`;
-    }
-
-    async function loadStepBuffer(model) {
-      const cached = state.stepCache.get(model.name);
-      if (cached) return { stepBuffer: cached, stepFetchMs: 0, cachedStep: true };
-
-      const fetchStart = performance.now();
-      const response = await fetch(assetUrl(model.step));
-      if (!response.ok) throw new Error(`STEP fetch failed: ${response.status}`);
-      const stepBuffer = await response.arrayBuffer();
-      const stepFetchMs = performance.now() - fetchStart;
-      state.stepCache.set(model.name, stepBuffer);
-      return { stepBuffer, stepFetchMs, cachedStep: false };
-    }
-
-    function runProjectionInWorker(stepBuffer, views, backend, options) {
-      const id = state.nextProjectionRequestId++;
-      const worker = ensureProjectionWorker(backend);
-      return new Promise((resolve, reject) => {
-        state.projectionRequests.set(id, { resolve, reject });
-        worker.postMessage({ id, stepBuffer, views, backend, options }, [stepBuffer]);
-      });
-    }
-
-    async function loadProjection(model, viewId, opts, backend) {
-      // Camera view depends on live orbit state; never cache it.
-      const cacheable = viewId !== "camera";
-      const cacheKey = projectionCacheKey(model, viewId, opts, backend);
-      if (cacheable) {
-        const cached = state.projectionCache.get(cacheKey);
-        if (cached) {
-          return { projection: cached, timings: { cached: true, stepFetchMs: 0, moduleMs: 0, hlrMs: 0, jsonParseMs: 0 } };
-        }
-      }
-
-      const step = await loadStepBuffer(model);
-      const transferBuffer = step.stepBuffer.slice(0);
-      const workerResult = await runProjectionInWorker(transferBuffer, [projectionView(viewId)], backend, opts);
-      const projection = workerResult.projection;
-      if (cacheable) state.projectionCache.set(cacheKey, projection);
-      return {
-        projection,
-        timings: { ...workerResult.timings, stepFetchMs: step.stepFetchMs, cachedStep: step.cachedStep, cached: false },
-      };
-    }
-
-    async function renderProjectionForCurrentView() {
-      const model = state.selectedModel;
-      if (!model) return null;
-
-      const loadId = state.activeLoad;
-      const projectionId = ++state.activeProjection;
-      const viewId = state.viewId;
-      const backend = state.backend;
-      const opts = currentOptions();
-      const started = performance.now();
-      setStatus(`Projecting ${model.name}: ${viewId}`, true, "HLR runs in a browser Worker; 3D view stays interactive.");
-      const projectionResult = await loadProjection(model, viewId, opts, backend);
-      if (loadId !== state.activeLoad || projectionId !== state.activeProjection || viewId !== state.viewId) return null;
-
-      const counts = drawProjection(projectionResult.projection, viewId);
-      const timings = projectionResult.timings || {};
-      const hlrText = projectionTimingText(timings);
-      const totalMs = performance.now() - started;
-      els.sourceMetric.textContent = `STEP ${formatBytes(model.stepBytes)} - ${hlrText}${moduleTimingText(timings)}`;
-      setStatus(`${model.name} ${viewId} ready - ${hlrText} - ${formatMs(totalMs)}`, false);
-      return { counts, projectionResult };
-    }
-
-    function collectPrimitives(viewGeometry, mode) {
-      const result = [];
-      const addMode = (name, className) => {
-        const geometry = viewGeometry.modes && viewGeometry.modes[name];
-        if (!geometry) return;
-        for (const segment of geometry.segments || []) result.push({ type: "segment", className, value: segment });
-        for (const arc of geometry.arcs || []) result.push({ type: "arc", className, value: arc });
-      };
-      if (mode === "both") { addMode("detail", "detail muted"); addMode("outline", "outline"); }
-      else addMode(mode, mode);
-      if (els.bboxToggleInput.checked && mode !== "bbox") addMode("bbox", "bbox");
-      return result;
-    }
-
-    function transformedPoints(primitive, mirrorX = false) {
-      const sx = mirrorX ? -1 : 1;
-      if (primitive.type === "segment") {
-        const [x1, y1, x2, y2] = primitive.value;
-        return [[sx * x1, -y1], [sx * x2, -y2]];
-      }
-      const arc = primitive.value;
-      const center = [sx * arc.center[0], -arc.center[1]];
-      if (arc.full_circle) {
-        return [[center[0] - arc.radius, center[1] - arc.radius], [center[0] + arc.radius, center[1] + arc.radius]];
-      }
-      return [
-        [sx * arc.start[0], -arc.start[1]],
-        [sx * arc.end[0], -arc.end[1]],
-        [center[0] - arc.radius, center[1] - arc.radius],
-        [center[0] + arc.radius, center[1] + arc.radius],
-      ];
-    }
-
-    function projectionBounds(primitives, mirrorX = false) {
-      const bounds = { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity };
-      for (const primitive of primitives) {
-        for (const [x, y] of transformedPoints(primitive, mirrorX)) {
-          bounds.minX = Math.min(bounds.minX, x);
-          bounds.minY = Math.min(bounds.minY, y);
-          bounds.maxX = Math.max(bounds.maxX, x);
-          bounds.maxY = Math.max(bounds.maxY, y);
-        }
-      }
-      if (!Number.isFinite(bounds.minX)) return { minX: -1, minY: -1, maxX: 1, maxY: 1 };
-      return bounds;
-    }
-
-    function drawProjection(projection, viewId = state.viewId, mode = state.mode) {
-      const viewGeometry = (projection.views || []).find((view) => view.id === viewId);
-      if (!viewGeometry) throw new Error(`Projection view not found: ${viewId}`);
-
-      // Altium convention: horizontally mirror Back and Left ortho views so all 6 sides read left-to-right consistently.
-      const viewSpec = projectionView(viewId);
-      const mirrorX = !!(viewSpec && viewSpec.mirrorX);
-      const sx = mirrorX ? -1 : 1;
-
-      const primitives = collectPrimitives(viewGeometry, mode);
-      const bounds = projectionBounds(primitives, mirrorX);
-      const width = Math.max(bounds.maxX - bounds.minX, 1);
-      const height = Math.max(bounds.maxY - bounds.minY, 1);
-      const pad = Math.max(width, height) * 0.08;
-
-      const svg = els.projectionSvg;
-      svg.replaceChildren();
-      svg.setAttribute("viewBox", `${bounds.minX - pad} ${bounds.minY - pad} ${width + pad * 2} ${height + pad * 2}`);
-
-      const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
-      const style = document.createElementNS("http://www.w3.org/2000/svg", "style");
-      style.textContent = `
-        .detail { stroke: var(--projection-detail-color); stroke-width: 2.4px; }
-        .outline { stroke: var(--projection-outline-color); stroke-width: 3.6px; }
-        .bbox { stroke: var(--projection-bbox-color); stroke-width: 1.8px; stroke-dasharray: 6 4; }
-        .muted { stroke: #9aa5b1; stroke-width: 1.8px; }
-        line, path, circle { fill: none; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
-      `;
-      defs.append(style);
-      svg.append(defs);
-
-      for (const primitive of primitives) {
-        if (primitive.type === "segment") {
-          const [x1, y1, x2, y2] = primitive.value;
-          const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-          line.setAttribute("class", primitive.className);
-          line.setAttribute("x1", sx * x1);
-          line.setAttribute("y1", -y1);
-          line.setAttribute("x2", sx * x2);
-          line.setAttribute("y2", -y2);
-          svg.append(line);
-        } else {
-          const arc = primitive.value;
-          if (arc.full_circle) {
-            const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-            circle.setAttribute("class", primitive.className);
-            circle.setAttribute("cx", sx * arc.center[0]);
-            circle.setAttribute("cy", -arc.center[1]);
-            circle.setAttribute("r", arc.radius);
-            svg.append(circle);
-          } else {
-            const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-            const largeArc = Math.abs(arc.extent_rad) > Math.PI ? 1 : 0;
-            // Mirroring flips arc orientation, so flip the SVG sweep flag too.
-            const sweep = arc.ccw ? (mirrorX ? 1 : 0) : (mirrorX ? 0 : 1);
-            path.setAttribute("class", primitive.className);
-            path.setAttribute("d", `M ${sx * arc.start[0]} ${-arc.start[1]} A ${arc.radius} ${arc.radius} 0 ${largeArc} ${sweep} ${sx * arc.end[0]} ${-arc.end[1]}`);
-            svg.append(path);
-          }
-        }
-      }
-
-      const detail = viewGeometry.modes.detail || { segments: [], arcs: [] };
-      const outline = viewGeometry.modes.outline || { segments: [], arcs: [] };
-      const bbox = viewGeometry.modes.bbox || { segments: [], arcs: [] };
-      const detailCount = (detail.segments || []).length + (detail.arcs || []).length;
-      const outlineCount = (outline.segments || []).length + (outline.arcs || []).length;
-      const bboxCount = (bbox.segments || []).length + (bbox.arcs || []).length;
-      els.projectionMetric.textContent = `${viewId} detail ${detailCount} outline ${outlineCount} bbox ${bboxCount}`;
-      return { detailCount, outlineCount, bboxCount, primitiveCount: primitives.length };
-    }
-
-    function activateSegmented(container, attribute, value) {
-      for (const button of container.querySelectorAll("button")) {
-        button.classList.toggle("active", button.dataset[attribute] === value);
-      }
-    }
-
-    async function loadSelectedModel() {
-      const model = state.selectedModel;
-      if (!model) return;
-
-      const loadId = ++state.activeLoad;
-      const viewId = state.viewId;
-      const backend = state.backend;
-      const opts = currentOptions();
-      const totalStart = performance.now();
-      setStatus(`Loading ${model.name}`, true, "Loading the 3D mesh. HLR continues in a browser Worker.");
-      els.sourceMetric.textContent = `STEP ${formatBytes(model.stepBytes)}`;
-      els.meshMetric.textContent = `GLB ${formatBytes(model.glbBytes)}`;
-      els.projectionMetric.textContent = `${viewId} pending`;
-      setValidation("RUNNING", false);
-
-      try {
-        let projectionPromise = null;
-        if (viewId !== "camera") {
-          projectionPromise = loadProjection(model, viewId, opts, backend)
-            .then((projectionResult) => ({ projectionResult }))
-            .catch((projectionError) => ({ projectionError }));
-        }
-
-        const glbResult = await loadGlb(model, loadId);
-        if (loadId !== state.activeLoad) return;
-        setStatus(`${model.name} 3D ready - projecting ${viewId}`, true, "Use the 3D controls while HLR finishes.");
-        if (viewId === "camera") {
-          projectionPromise = loadProjection(model, viewId, opts, backend)
-            .then((projectionResult) => ({ projectionResult }))
-            .catch((projectionError) => ({ projectionError }));
-        }
-
-        const projectionOutcome = await projectionPromise;
-        if (loadId !== state.activeLoad) return;
-        if (viewId !== state.viewId) return;
-        if (projectionOutcome.projectionError) throw projectionOutcome.projectionError;
-
-        const projectionResult = projectionOutcome.projectionResult;
-        const projection = projectionResult.projection;
-        const counts = drawProjection(projection, viewId);
-        const totalMs = performance.now() - totalStart;
-        const timings = projectionResult.timings || {};
-        const hlrText = projectionTimingText(timings);
-        const moduleText = moduleTimingText(timings);
-        const glbText = `GLB ${formatMs(glbResult.glbMs)}`;
-        els.sourceMetric.textContent = `STEP ${formatBytes(model.stepBytes)} - ${hlrText}${moduleText}`;
-        els.meshMetric.textContent = `GLB ${formatBytes(model.glbBytes)} - ${formatMs(glbResult.glbMs)}`;
-        setStatus(`${model.name} ready - ${glbText} - ${hlrText} - total ${formatMs(totalMs)}`, false);
-
-        if (state.validation) {
-          await new Promise((resolve) => requestAnimationFrame(resolve));
-          await new Promise((resolve) => requestAnimationFrame(resolve));
-          const nonBlank = canvasHasPixels();
-          const pass = nonBlank && counts.detailCount > 0 && counts.outlineCount > 0;
-          setValidation(pass ? `PASS model=${model.name} detail=${counts.detailCount} outline=${counts.outlineCount} hlr=${formatMs(timings.hlrMs)} glb=${formatMs(glbResult.glbMs)}` : "FAIL render check", pass);
-        }
-      } catch (error) {
-        const message = error && error.stack ? error.stack : String(error);
-        setStatus(`Error: ${error && error.message ? error.message : error}`, false);
-        setValidation(`FAIL ${message}`, false);
-        throw error;
-      }
-    }
-
-    function loadGlb(model, loadId) {
-      const started = performance.now();
-      return new Promise((resolve, reject) => {
-        loader.load(assetUrl(model.glb), (gltf) => {
-          const glbMs = performance.now() - started;
-          if (loadId !== state.activeLoad) { resolve({ loaded: false, glbMs }); return; }
-          clearModel();
-          modelGroup.add(gltf.scene);
-          fitCamera(gltf.scene);
-          els.modelMetric.textContent = model.name;
-          els.meshMetric.textContent = `GLB ${formatBytes(model.glbBytes)} - ${formatMs(glbMs)}`;
-          renderOnce();
-          resolve({ loaded: true, glbMs });
-        }, undefined, reject);
-      });
-    }
-
-    function canvasHasPixels() {
-      const canvas = renderer.domElement;
-      const sample = document.createElement("canvas");
-      sample.width = 16;
-      sample.height = 16;
-      const context = sample.getContext("2d", { willReadFrequently: true });
-      context.drawImage(canvas, 0, 0, sample.width, sample.height);
-      const pixels = context.getImageData(0, 0, sample.width, sample.height).data;
-      for (let i = 0; i < pixels.length; i += 4) {
-        if (pixels[i] !== 223 || pixels[i + 1] !== 229 || pixels[i + 2] !== 234) return true;
-      }
-      return false;
-    }
-
-    function selectModelByName(name) {
-      const model = state.models.find((item) => item.name === name) || state.models[0];
-      state.selectedModel = model;
-      els.modelSelect.value = model.name;
-      return loadSelectedModel();
-    }
-
-    function reprojectCurrent({ force = true } = {}) {
-      if (!state.selectedModel) return;
-      const opts = currentOptions();
-      if (force) {
-        state.projectionCache.delete(projectionCacheKey(state.selectedModel, state.viewId, opts, state.backend));
-      }
-      renderProjectionForCurrentView().catch(console.error);
-    }
-
-    function redrawCurrentProjection() {
-      if (!state.selectedModel) return;
-      applyProjectionColors();
-      const opts = currentOptions();
-      const cached = state.projectionCache.get(projectionCacheKey(state.selectedModel, state.viewId, opts, state.backend));
-      if (cached) drawProjection(cached);
-      else renderProjectionForCurrentView().catch(console.error);
-    }
-
-    function scheduleCameraProjection() {
-      if (!state.selectedModel || state.suppressCameraChange) return;
-      if (state.viewId !== "camera") {
-        state.viewId = "camera";
-        activateSegmented(els.viewButtons, "view", state.viewId);
-      }
-      window.clearTimeout(state.cameraReprojectTimer);
-      state.cameraReprojectTimer = window.setTimeout(() => reprojectCurrent({ force: true }), 160);
-    }
-
-    async function init() {
-      setStatus("Loading manifest", true, "Reading embedded model fixture list.");
-      const response = await fetch(manifestUrl);
-      if (!response.ok) throw new Error(`Manifest fetch failed: ${response.status}`);
-      state.models = await response.json();
-
-      for (const model of state.models) {
-        const option = document.createElement("option");
-        option.value = model.name;
-        option.textContent = model.name;
-        els.modelSelect.append(option);
-      }
-
-      els.modelSelect.addEventListener("change", () => {
-        selectModelByName(els.modelSelect.value).catch(console.error);
-      });
-
-      controls.addEventListener("change", scheduleCameraProjection);
-
-      els.viewButtons.addEventListener("click", (event) => {
-        const button = event.target.closest("button[data-view]");
-        if (!button) return;
-        state.viewId = button.dataset.view;
-        activateSegmented(els.viewButtons, "view", state.viewId);
-        // Snap the 3D camera to the equivalent direction so the 3D pane mirrors
-        // the chosen ortho/ISO view. The "camera" button skips this.
-        moveCameraToView(projectionView(state.viewId));
-        renderProjectionForCurrentView().catch(console.error);
-      });
-
-      els.modeButtons.addEventListener("click", (event) => {
-        const button = event.target.closest("button[data-mode]");
-        if (!button) return;
-        state.mode = button.dataset.mode;
-        activateSegmented(els.modeButtons, "mode", state.mode);
-        redrawCurrentProjection();
-      });
-
-      els.algoSelect.addEventListener("change", () => {
-        syncEdgeRowToAlgo();
-        reprojectCurrent({ force: true });
-      });
-
-      for (const input of [els.outlineAlgoSelect, els.linDeflInput, els.angDeflInput, els.hlrTolInput, els.meshRelativeSelect, els.deflCoeffInput]) {
-        input.addEventListener("change", () => reprojectCurrent({ force: true }));
-      }
-
-      for (const input of [els.detailColorInput, els.outlineColorInput, els.bboxColorInput]) {
-        input.addEventListener("input", redrawCurrentProjection);
-      }
-
-      els.bboxToggleInput.addEventListener("change", redrawCurrentProjection);
-
-      els.profileSelect.addEventListener("change", () => {
-        if (els.profileSelect.value === "custom") return;
-        applyProfile(els.profileSelect.value);
-        reprojectCurrent({ force: true });
-      });
-
-      // Manually toggling any edge checkbox flips Profile -> Custom and re-projects.
-      els.edgeRow.addEventListener("change", (event) => {
-        const cb = event.target.closest("input[data-edge]");
-        if (!cb) return;
-        els.profileSelect.value = "custom";
-        reprojectCurrent({ force: true });
-      });
-
-      els.reprojectButton.addEventListener("click", () => {
-        reprojectCurrent({ force: true });
-      });
-
-      const params = new URLSearchParams(window.location.search);
-      const requestedView = params.get("view");
-      if (requestedView === "camera" || projectionViews.some((view) => view.id === requestedView)) {
-        state.viewId = requestedView;
-        activateSegmented(els.viewButtons, "view", state.viewId);
-      }
-      const requestedMode = params.get("mode");
-      if (["detail", "outline", "both"].includes(requestedMode)) {
-        state.mode = requestedMode;
-        activateSegmented(els.modeButtons, "mode", state.mode);
-      }
-      const requestedAlgo = params.get("algo");
-      if (["poly", "exact"].includes(requestedAlgo)) els.algoSelect.value = requestedAlgo;
-      const requestedOutlineAlgo = params.get("outlineAlgo") || params.get("outline_algorithm");
-      if (["mesh-shadow", "hlr-close"].includes(requestedOutlineAlgo)) els.outlineAlgoSelect.value = requestedOutlineAlgo;
-      const requestedProfile = params.get("profile");
-      if (requestedProfile && EDGE_PROFILES[requestedProfile]) {
-        els.profileSelect.value = requestedProfile;
-        applyProfile(requestedProfile);
-      } else {
-        applyProfile("detail");
-      }
-      syncEdgeRowToAlgo();
-      const lin = params.get("lin");
-      if (lin) els.linDeflInput.value = lin;
-      const ang = params.get("ang");
-      if (ang) els.angDeflInput.value = ang;
-      const coef = params.get("coef");
-      if (coef) els.deflCoeffInput.value = coef;
-      applyProjectionColors();
-
-      const requested = params.get("model");
-      const index = Number.parseInt(params.get("index") || "0", 10);
-      const initial = requested || (state.models[Math.max(0, Math.min(index, state.models.length - 1))] || state.models[0]).name;
-
-      resizeRenderer();
-      animate();
-      await selectModelByName(initial);
-    }
-
-    init().catch((error) => {
-      const message = error && error.stack ? error.stack : String(error);
-      setStatus(`Error: ${error && error.message ? error.message : error}`, false);
-      setValidation(`FAIL ${message}`, false);
-      console.error(error);
-    });
-  </script>
+  <script type="module" src="/examples/wasm/embedded_model_viewer.js"></script>
 </body>
 </html>

@@ -12,7 +12,7 @@
     "check:analytic-candidate": "npm run check:node-toolchain && node scripts/check-analytic-contract-candidate.mjs",
     "check:docs": "npm run check:node-toolchain && node scripts/generate-contract-docs.mjs --check",
     "check:typescript": "node scripts/generate-typescript-contracts.mjs --check && node scripts/build-typescript-package.mjs --check && node scripts/build-typescript-examples.mjs --check",
-    "check:contracts": "npm run check:node-toolchain && biome check src/ts/wn-geometer-contract-emitter src/ts/geometer scripts && node scripts/generate-contracts.mjs --check && node scripts/generate-cpp-contracts.mjs --check && npm run check:typescript && node scripts/generate-rust-contracts.mjs --check && node scripts/generate-python-contracts.mjs --check && node scripts/generate-contract-docs.mjs --check && npm run check:contract-vectors && node scripts/check-analytic-contract-candidate.mjs"
+    "check:contracts": "npm run check:node-toolchain && biome check src/ts/wn-geometer-contract-emitter src/ts/geometer scripts examples/wasm/embedded_model_viewer.js && node scripts/generate-contracts.mjs --check && node scripts/generate-cpp-contracts.mjs --check && npm run check:typescript && node scripts/generate-rust-contracts.mjs --check && node scripts/generate-python-contracts.mjs --check && node scripts/generate-contract-docs.mjs --check && npm run check:contract-vectors && node scripts/check-analytic-contract-candidate.mjs"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.7",

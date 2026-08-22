@@ -7,9 +7,10 @@ concerns = ["typescript", "contracts", "wasm", "package"]
 
 objectives = [
     "Validate reflected Canvas arc-center and traversal branches used by the analytic polygon-pour demo.",
-    "Validate generic clean-room TypeScript editor tooling for deterministic input, camera, tool, animation, shortcut, and history behavior.",
+    "Validate generic clean-room TypeScript editor tooling for deterministic input, camera, panel, tool, animation, shortcut, and history behavior.",
     "Verify the analytic polygon-pour demo is a deterministic single HTML file with embedded theme, fonts, logo, Worker, and governed WASM bytes.",
     "Verify migrated analytic and model-bounds pages use the one shared variable-driven demo theme without inline visual styles.",
+    "Verify the HLR lab builds as a deploy-unchanged offline site with local STEP upload, generated 3D previews, and SVG export.",
     "Replay governed contract vectors through generated strict TypeScript codecs.",
     "Round-trip bigint analytic packet projections and reject malformed packed layouts.",
     "Install and typecheck the ESM package from a clean temporary consumer.",

@@ -125,8 +125,47 @@ function project(module, stepBytes, views, options) {
   }
 }
 
+function stepToGlb(module, stepBytes) {
+  const stepPtr = module._malloc(stepBytes.length);
+  const valueOut = module._malloc(4);
+  const valueSizeOut = module._malloc(4);
+  const errorOut = module._malloc(4);
+
+  try {
+    module.HEAPU8.set(stepBytes, stepPtr);
+    module.HEAPU32[valueOut >> 2] = 0;
+    module.HEAPU32[valueSizeOut >> 2] = 0;
+    module.HEAPU32[errorOut >> 2] = 0;
+
+    const code = module.ccall(
+      "geometer_step_to_glb_bytes",
+      "number",
+      ["number", "number", "number", "number", "number", "number"],
+      [stepPtr, stepBytes.length, 0, valueOut, valueSizeOut, errorOut],
+    );
+
+    const valuePtr = module.getValue(valueOut, "i32");
+    const valueSize = module.getValue(valueSizeOut, "i32");
+    const errorPtr = module.getValue(errorOut, "i32");
+    if (code !== 0) {
+      const message = errorPtr ? module.UTF8ToString(errorPtr) : `STEP to GLB failed: ${code}`;
+      if (errorPtr) module._geometer_free_string(errorPtr);
+      throw new Error(message);
+    }
+
+    const glbBytes = module.HEAPU8.slice(valuePtr, valuePtr + valueSize);
+    module._geometer_free_bytes(valuePtr);
+    return glbBytes.buffer;
+  } finally {
+    module._free(stepPtr);
+    module._free(valueOut);
+    module._free(valueSizeOut);
+    module._free(errorOut);
+  }
+}
+
 self.onmessage = async (event) => {
-  const { id, stepBuffer, views, options, backend } = event.data;
+  const { id, operation = "project", stepBuffer, views, options, backend } = event.data;
   const timings = {};
 
   try {
@@ -135,6 +174,15 @@ self.onmessage = async (event) => {
     timings.moduleMs = performance.now() - moduleStart;
 
     const stepBytes = new Uint8Array(stepBuffer);
+    if (operation === "step-to-glb") {
+      const glbStart = performance.now();
+      const glbBuffer = stepToGlb(module, stepBytes);
+      timings.glbMs = performance.now() - glbStart;
+      self.postMessage({ id, ok: true, glbBuffer, timings, backend: activeBackend }, [glbBuffer]);
+      return;
+    }
+    if (operation !== "project") throw new Error(`Unsupported worker operation: ${operation}`);
+
     const hlrStart = performance.now();
     const json = project(module, stepBytes, views, options);
     timings.hlrMs = performance.now() - hlrStart;

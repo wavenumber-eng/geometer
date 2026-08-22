@@ -21,6 +21,7 @@ NODE = shutil.which("node")
         "analytic_cpp_vector_validation.mjs",
         "contract_codec_validation.mjs",
         "demo_tooling_validation.mjs",
+        "hlr_static_site_validation.mjs",
         "package_consumer_validation.mjs",
         "pcb_polygon_pour_artifact_validation.mjs",
         "pcb_polygon_pour_model_validation.mjs",

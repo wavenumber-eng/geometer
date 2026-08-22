@@ -6,6 +6,7 @@
       "src/ts/wn-geometer-contract-emitter/**/*.js",
       "src/ts/geometer/**/*.ts",
       "tests/typescript/*.mjs",
+      "examples/wasm/embedded_model_viewer.js",
       "examples/wasm/**/*.ts"
     ]
   },

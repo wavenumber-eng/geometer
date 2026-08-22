@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Build a one-file browser HLR demo.
 
-The development viewer in `examples/wasm/embedded_model_viewer.html` loads
-fixtures, Three.js, a Worker script, and Geometer WASM from repo-relative paths.
-This script turns that viewer into a literal standalone HTML file under
-`dist/wasm/demos/hlr_demo.html`.
+The development viewer in `examples/wasm/embedded_model_viewer.html` and its
+application module load fixtures, Three.js, a Worker script, and Geometer WASM
+from repo-relative paths. This script turns that viewer into a literal
+standalone HTML file under `dist/wasm/demos/hlr_demo.html`.
 
 Run after `python scripts/build_wasm.py`:
 
@@ -13,8 +13,10 @@ Run after `python scripts/build_wasm.py`:
 
 from __future__ import annotations
 
+import hashlib
 import json
 import re
+import textwrap
 from pathlib import Path
 
 from standalone_html import b64, bundle_es_module, data_uri
@@ -22,7 +24,10 @@ from standalone_html import b64, bundle_es_module, data_uri
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "examples" / "wasm" / "embedded_model_viewer.html"
+APP_SOURCE = ROOT / "examples" / "wasm" / "embedded_model_viewer.js"
 WORKER_SOURCE = ROOT / "examples" / "wasm" / "hlr_projection_worker.js"
+PANEL_SOURCE = ROOT / "examples" / "wasm" / "demo-tooling" / "panels.ts"
+PANEL_STYLES = ROOT / "examples" / "wasm" / "demo-tooling" / "panels.css"
 SOURCE_MANIFEST = ROOT / "tests" / "fixtures" / "embedded_models_manifest.json"
 LOGO_SVG = ROOT / "tests" / "wasm" / "vendor" / "wn" / "logo.svg"
 GEOMETER_BROWSER = ROOT / "dist" / "wasm" / "browser"
@@ -31,8 +36,11 @@ GEOMETER_WASM = GEOMETER_BROWSER / "geometer.wasm"
 OUT = ROOT / "dist" / "wasm" / "demos" / "hlr_demo.html"
 JS_DEPS_DIR = ROOT / ".deps" / "js" / "hlr-demo"
 THREE_BUNDLE = JS_DEPS_DIR / "three_hlr_bundle.js"
+PANEL_BUNDLE = JS_DEPS_DIR / "demo_panels_bundle.js"
+THREE_LICENSE = ROOT / "node_modules" / "three" / "LICENSE"
 
 LOGO_ATTR = 'src="/tests/wasm/vendor/wn/logo.svg"'
+PANEL_STYLESHEET = '<link rel="stylesheet" href="/examples/wasm/demo-tooling/panels.css">'
 DEMO_MODEL_NAMES = {
     "BGA90-8X13mm.step",
     "SOT-23.STEP",
@@ -50,8 +58,8 @@ def ensure_three_bundle() -> str:
             [
                 'import * as THREE from "three";',
                 'import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";',
-                'import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";',
-                "globalThis.GeometerHlrDemoDeps = { THREE, GLTFLoader, OrbitControls };",
+                'import { TrackballControls } from "three/examples/jsm/controls/TrackballControls.js";',
+                "globalThis.GeometerHlrDemoDeps = { THREE, GLTFLoader, TrackballControls };",
                 "",
             ]
         ),
@@ -61,6 +69,26 @@ def ensure_three_bundle() -> str:
     bundle_es_module(entry_js, THREE_BUNDLE, target="es2020")
     return "\n".join(
         line.rstrip() for line in THREE_BUNDLE.read_text(encoding="utf-8").splitlines()
+    ) + "\n"
+
+
+def ensure_panel_bundle() -> str:
+    JS_DEPS_DIR.mkdir(parents=True, exist_ok=True)
+    entry_ts = JS_DEPS_DIR / "demo_panels_entry.ts"
+    entry_ts.write_text(
+        "\n".join(
+            [
+                f'import {{ PanelManager }} from "{PANEL_SOURCE.as_posix()}";',
+                "globalThis.GeometerDemoPanels = { PanelManager };",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+        newline="\n",
+    )
+    bundle_es_module(entry_ts, PANEL_BUNDLE, target="es2020")
+    return "\n".join(
+        line.rstrip() for line in PANEL_BUNDLE.read_text(encoding="utf-8").splitlines()
     ) + "\n"
 
 
@@ -155,40 +183,60 @@ def assert_self_contained(html: str) -> None:
 
 
 def main() -> None:
-    for required in (SOURCE, WORKER_SOURCE, SOURCE_MANIFEST, LOGO_SVG, GEOMETER_JS, GEOMETER_WASM):
+    for required in (
+        SOURCE,
+        APP_SOURCE,
+        WORKER_SOURCE,
+        PANEL_SOURCE,
+        PANEL_STYLES,
+        SOURCE_MANIFEST,
+        LOGO_SVG,
+        GEOMETER_JS,
+        GEOMETER_WASM,
+        THREE_LICENSE,
+    ):
         if not required.exists():
             raise SystemExit(f"Missing {required}")
 
     three_bundle = ensure_three_bundle()
+    panel_bundle = ensure_panel_bundle()
     manifest_json = json.dumps(embedded_manifest(), separators=(",", ":"))
     worker_json = json.dumps(self_contained_worker_source())
 
     html = SOURCE.read_text(encoding="utf-8")
+    app_source = textwrap.indent(APP_SOURCE.read_text(encoding="utf-8"), "    ")
+    html = replace_once(
+        html,
+        '  <script type="module" src="/examples/wasm/embedded_model_viewer.js"></script>',
+        f'  <script type="module">\n{app_source}\n  </script>',
+    )
     html = strip_importmap(html)
     html = replace_once(
         html,
+        f"  {PANEL_STYLESHEET}",
+        f"  <style>\n{PANEL_STYLES.read_text(encoding='utf-8')}\n  </style>",
+    )
+    html = replace_once(
+        html,
         '  <script type="module">',
-        f"  <script>\n{three_bundle}\n  </script>\n  <script>",
+        f"  <script>\n{three_bundle}\n{panel_bundle}\n  </script>\n  <script>",
     )
     html = replace_once(
         html,
         '    import * as THREE from "three";\n'
-        '    import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";\n'
-        '    import { OrbitControls } from "three/addons/controls/OrbitControls.js";',
-        "    const { THREE, GLTFLoader, OrbitControls } = window.GeometerHlrDemoDeps;",
+        '    import { TrackballControls } from "three/addons/controls/TrackballControls.js";\n'
+        '    import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";',
+        "    const { THREE, GLTFLoader, TrackballControls } = window.GeometerHlrDemoDeps;",
+    )
+    html = replace_once(
+        html,
+        '    import { PanelManager } from "/dist/wasm/demos/demo-tooling/panels.js";',
+        "    const { PanelManager } = window.GeometerDemoPanels;",
     )
     html = replace_once(
         html,
         '    const manifestUrl = "/tests/fixtures/embedded_models_manifest.json";',
         f"    const embeddedManifest = {manifest_json};",
-    )
-    html = replace_once(
-        html,
-        '    function assetUrl(path) {\n      return `/${path.split("/").map(encodeURIComponent).join("/")}`;\n    }',
-        "    function assetUrl(path) {\n"
-        '      if (path.startsWith("data:") || path.startsWith("blob:")) return path;\n'
-        '      return path.split("/").map(encodeURIComponent).join("/");\n'
-        "    }",
     )
     html = replace_once(
         html,
@@ -220,6 +268,15 @@ def main() -> None:
     if LOGO_ATTR in html:
         logo_uri = f"data:image/svg+xml;base64,{b64(LOGO_SVG.read_bytes())}"
         html = html.replace(LOGO_ATTR, f'src="{logo_uri}"', 1)
+
+    three_license = THREE_LICENSE.read_text(encoding="utf-8")
+    license_digest = hashlib.sha256(three_license.encode("utf-8")).hexdigest()
+    html = replace_once(
+        html,
+        "\n</body>",
+        f'\n  <script id="three-license" type="text/plain" data-sha256="{license_digest}">'
+        f"{three_license}</script>\n</body>",
+    )
 
     assert_self_contained(html)
     OUT.parent.mkdir(parents=True, exist_ok=True)

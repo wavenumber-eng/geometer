@@ -27,6 +27,7 @@ durable record belongs here, in ADRs, and in requirements.
   reference oracle and bounded fallback)
 - [Python package interface](python-package.md)
 - [WASM interfaces](wasm.md)
+- [Browser demo packaging and UI](browser-demos.md)
 - [CLI interfaces](cli.md)
 - [Dependency cache](dependency-cache.md)
 - [STEP topology annotation research](step-topology-annotation-research.md)

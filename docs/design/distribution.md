@@ -21,6 +21,10 @@ Persist these when publishing interface changes:
   `dist/wasm/planar-browser/geometer-planar-browser.wasm`.
 - Generated TypeScript ESM package: `dist/wasm/npm/geometer/` with explicit root,
   contracts, direct WASM, Worker-client, and Worker-host exports.
+- Browser demos: self-contained HTML artifacts and deploy-unchanged static
+  directories under `dist/wasm/demos/`. A single-HTML hosted directory has
+  `index.html` as its only runtime file; `_headers` and `asset-manifest.json`
+  are deployment and verification metadata.
 
 Native platform directory names use:
 
@@ -31,6 +35,10 @@ Native platform directory names use:
 
 Root-level build artifacts are intentionally not produced. Source-checkout
 consumers must use grouped native, npm, and WASM paths.
+
+Demo build scripts do not publish. See
+[Browser demo packaging and UI](browser-demos.md) for the local build, closure,
+review, and explicit publication boundary.
 
 Do not commit local generated build state:
 

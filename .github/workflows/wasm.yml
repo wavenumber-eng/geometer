@@ -18,6 +18,8 @@ name: WASM
       - "scripts/build_wasm.py"
       - "scripts/write_analytic_packet_vectors.py"
       - "scripts/build_analytic_polygon_pour_site.py"
+      - "scripts/build_hlr_site.py"
+      - "scripts/package_single_html_site.py"
       - "scripts/build_standalone_demos.py"
       - "scripts/build_self_contained_analytic_polygon_pour_demo.py"
       - "scripts/build_self_contained_hlr_demo.py"
@@ -117,10 +119,14 @@ jobs:
           google-chrome --version
           npm run check:typescript
           uv run python scripts/build_analytic_polygon_pour_site.py
+          uv run python scripts/build_hlr_site.py
           uv run python scripts/build_standalone_demos.py all
           node tests/typescript/analytic_static_site_validation.mjs
+          node tests/typescript/hlr_static_site_validation.mjs
           node tests/typescript/analytic_self_contained_demo_validation.mjs
           uv run pytest tests/wasm/test_analytic_standalone_demo.py -q
+          uv run pytest tests/wasm/test_hlr_static_site.py -q
+          uv run pytest tests/python/test_package_single_html_site.py -q
           uv run pytest tests/python/test_contract_promotion_manifest.py -q
 
       - name: Run WASM validation tests

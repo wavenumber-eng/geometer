@@ -619,8 +619,23 @@ python -m http.server 8123 --bind 127.0.0.1
 
 `http://127.0.0.1:8123/examples/wasm/embedded_model_viewer.html`
 
-The viewer loads the GLB for the 3D pane and sends the matching STEP bytes to
-the browser WASM HLR API for the projection pane.
+The source viewer loads the GLB for the 3D pane and sends the matching STEP
+bytes to the browser WASM HLR API for the projection pane. The maintained HLR
+Lab also accepts local STEP uploads, keeps OCCT work in a Worker, and uses the
+shared TypeScript panel system.
+
+Build the self-contained artifact and its deploy-unchanged review directory:
+
+```powershell
+python scripts\build_hlr_site.py
+python -m http.server 8123 --bind 127.0.0.1 --directory dist\wasm\demos\hlr
+```
+
+Open `http://127.0.0.1:8123/`. The page runtime is only `index.html`; the
+adjacent `_headers` and `asset-manifest.json` files are deployment and closure
+metadata. This command builds and serves locally—it does not publish. See
+[Browser demo packaging and UI](../design/browser-demos.md) before adding or
+hosting another demo.
 
 The generated TypeScript model-bounds example uses the packaged high-level
 Worker client and the same full-browser WASM artifact. It keeps synchronous

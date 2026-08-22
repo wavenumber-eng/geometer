@@ -10,6 +10,7 @@ objectives = [
     "Verify the operation catalog reports the governed wasm32 descriptor layout.",
     "Retain STEP-to-GLB and packed planar WASM compatibility round trips.",
     "Open the analytic polygon-pour single-file demo through file:// and verify two real Worker/WASM solves plus shared theme invariants.",
+    "Serve the deploy-unchanged HLR lab and verify local STEP upload, generated GLB/HLR output, and standalone SVG export in Chrome.",
     "Exercise the standalone PCB editor through file:// Chrome: via move/add, 45-degree routing, polygon editing, latest-only solves, and zero network requests.",
     "Require exact canonical analytic packet parity across native executable IPC and the distributed browser WASM generic-operation ABI.",
 ]
@@ -40,4 +41,11 @@ id = "WASM_004"
 file = "test_analytic_cross_transport_parity.py"
 name = "Analytic Cross-Transport Canonical Parity"
 description = "Runs one governed primitive-family request with a self query through executable IPC and browser WASM, requiring exact result bytes and standalone job digests."
+test_case_type = "integration"
+
+[[subtests]]
+id = "WASM_005"
+file = "test_hlr_static_site.py"
+name = "Hosted HLR Lab"
+description = "Runs the static HLR site in Chrome and verifies upload, local conversion, projection, export, and zero external requests."
 test_case_type = "integration"

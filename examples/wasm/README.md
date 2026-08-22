@@ -136,8 +136,9 @@ their respective operation contracts are promoted.
 
 ## Embedded Model Viewer
 
-`embedded_model_viewer.html` is the browser reference for the high-level
-Geometer workflow. It:
+`embedded_model_viewer.html` and `embedded_model_viewer.js` are the browser
+reference shell and application module for the high-level
+Geometer workflow. Together they:
 
 - load a prepared GLB model into an interactive Three.js 3D pane;
 - run STEP HLR through the browser WASM worker;
@@ -168,7 +169,68 @@ Open `dist/wasm/demos/hlr_demo.html` directly from disk. The generated file
 embeds the Geometer browser WASM, the demo model assets, the Worker body,
 Three.js viewer runtime, and the watermark.
 
-The page uses the embedded model fixtures under `tests/fixtures/`.
+The page uses the embedded model fixtures under `tests/fixtures/`. It also accepts
+local `.step` and `.stp` uploads. Uploaded bytes stay in the browser: the Worker
+uses Geometer WASM to produce both the 3D GLB preview and the HLR projection.
+`Export SVG` downloads the active view, display mode, bounding-box choice, and
+colors as a standalone, model-unit-sized SVG. The 3D pane uses Three.js
+TrackballControls: left-drag rotates freely, the wheel zooms, and right-drag pans.
+Its lens defaults to orthographic so it matches Geometer's orthographic HLR;
+the `3D lens` selector can switch to perspective for depth inspection.
+
+The projection UI follows the terminology in ADR 008. `Detail` is the
+configured OCCT HLR edge-category layer, `Outline` is Geometer's independent
+assembly silhouette, and `Both` displays those layers without changing either
+layer's color, width, or line style. Mesh shadow is the recommended silhouette
+source. Raw OCCT categories live under `Geometry settings`, are labeled as
+Detail-only, and use `Detail edge set` rather than the overloaded term
+`Profile`. Tessellation is either model-relative (controlled by `Quality coef`)
+or absolute (controlled by `Linear tol (mm)`), so the page no longer presents
+inactive linear/relative controls at the same time.
+Line widths are capped at 5 px, and dash/dot lengths and gaps scale with each
+layer's width so thick patterned lines remain legible in the page and SVG export.
+Secondary display and geometry controls live in the resizable `Settings` dock,
+which uses the dependency-free TypeScript panel system in `demo-tooling`. The
+dock can be collapsed or hidden from its activity-rail tab. `Reset geometry
+defaults` restores the polygonal engine, mesh-shadow silhouette, model-relative
+tessellation coefficient, linear/angular tolerances, edge-angle tolerance, and
+the Sharp + silhouettes Detail edge set before recomputing the current view.
+
+`Top axis` and `Front axis` explicitly define the preset frame in model
+coordinates; they must be perpendicular. Right/Left and the ISO presets are
+derived as a right-handed frame. The default is `+Y` Top and `+Z` Front. Camera
+fitting preserves the active named preset when the model changes; only the live
+`Cam` view uses the fit camera's isometric direction. Query parameters
+`topAxis` and `frontAxis` accept `+x`, `-x`,
+`+y`, `-y`, `+z`, or `-z`.
+
+The `3D` dock exposes material, shading, sidedness, wireframe, background, tone
+mapping, exposure, and light controls. `Viz Lambert` is the default: it preserves
+the imported colors/maps while converting the OCCT-generated glTF PBR materials
+to matte `MeshLambertMaterial`. `Source glTF PBR` restores the original materials,
+and `Unlit Basic` uses `MeshBasicMaterial`. The default Viz-style light rig is
+ambient 0.2, fixed directional 0.5, and camera-following directional 0.75 with
+explicit sRGB output. There is currently no environment map or shadow pass.
+
+Build the deploy-unchanged hosted directory:
+
+```powershell
+python scripts\build_hlr_site.py
+```
+
+Serve `dist/wasm/demos/hlr/` locally for review or deploy it unchanged to
+Cloudflare Pages after signoff. Its only runtime file is `index.html`: the
+browser Worker, Geometer WASM, Three.js runtime and license, logo, styles, and
+example models are all embedded in that one page. `_headers` and
+`asset-manifest.json` are deployment/verification metadata, not runtime assets.
+The reusable `scripts/package_single_html_site.py` tool supplies the CSP,
+single-runtime-file manifest, deterministic staging, and Cloudflare headers for
+this and future self-contained demos.
+
+See [Browser demo packaging and UI](../../docs/design/browser-demos.md) for the
+durable source/build/test layout and the checklist for adding another hosted
+demo. Building these artifacts never publishes them.
+
 Refresh those fixtures with:
 
 ```powershell

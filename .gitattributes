@@ -27,6 +27,8 @@
 *.yaml text eol=lf
 *.yml text eol=lf
 
+dist/wasm/demos/**/_headers text eol=lf
+
 *.a binary
 *.dll binary
 *.dylib binary

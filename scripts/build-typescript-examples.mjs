@@ -22,6 +22,7 @@ const outputs = [
   "demo-tooling/history.js",
   "demo-tooling/index.js",
   "demo-tooling/input.js",
+  "demo-tooling/panels.js",
   "demo-tooling/tool-controller.js",
   "model_bounds_demo.js",
   "model_bounds_worker.js",

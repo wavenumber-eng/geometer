@@ -14,6 +14,7 @@ objectives = [
     "Replay the vendored MATZ production subset through the public persistent Python client without importing consumer policy.",
     "Replay pinned and externally supplied analytic request packets through production IPC with governed performance reporting.",
     "Verify build-script helper logic that is practical to test without native rebuilds.",
+    "Package any self-contained demo as a deterministic one-runtime-file review site with CSP and closure metadata.",
     "Verify the contract promotion manifest remains aligned with implemented interfaces.",
 ]
 
@@ -106,4 +107,11 @@ id = "PY_013"
 file = "test_browser_build_attestation.py"
 name = "Browser Build Attestation"
 description = "Checks source- and artifact-bound browser/TypeScript sidecars, contract freshness provenance, and fail-closed stale or malformed closure."
+test_case_type = "unit"
+
+[[subtests]]
+id = "PY_014"
+file = "test_package_single_html_site.py"
+name = "Single-HTML Static Site Packager"
+description = "Checks deterministic one-runtime-file packaging, CSP hashes, metadata, and rejection of external dependencies."
 test_case_type = "unit"

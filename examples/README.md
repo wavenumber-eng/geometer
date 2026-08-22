@@ -5,6 +5,9 @@ test harness.
 
 - `python/` - Python wrapper examples and demo tools.
 - `cpp/` - native C++ example applications.
-- `wasm/` - browser/WASM examples, including the embedded model viewer.
+- `wasm/` - browser/WASM examples, the HLR Lab, reusable TypeScript demo
+  tooling, and sources for self-contained hosted demos.
 
 Test-only browser validation and benchmark harnesses live under `tests/wasm/`.
+The maintained build, packaging, panel, and publication boundaries are in
+[`docs/design/browser-demos.md`](../docs/design/browser-demos.md).

@@ -115,6 +115,11 @@ if(NOT EMSCRIPTEN)
     list(APPEND GEOMETER_LIB_SOURCES
         ipc_a0_frame.cpp
         ipc_a0_server.cpp
+        step_topology_inspection.cpp
+        step_topology_glb.cpp
+        step_topology_logical_groups.cpp
+        step_topology_render_binding.cpp
+        step_topology_session.cpp
     )
 endif()
 
@@ -191,7 +196,7 @@ function(configure_geometer_native_target target_name)
     endif()
 
     if(WIN32)
-        target_link_libraries(${target_name} PUBLIC ws2_32)
+        target_link_libraries(${target_name} PUBLIC ws2_32 bcrypt)
     endif()
 
     if(MSVC)

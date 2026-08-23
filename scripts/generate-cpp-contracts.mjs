@@ -222,14 +222,14 @@ function generateSource() {
     '    if (!value.IsBool()) return fail(error, "geometer.contract.type_mismatch", path, "Expected a boolean."); *out = value.GetBool(); return true;',
     "}",
     "",
-    "bool decode_uint32(const rapidjson::Value& value, std::uint32_t* out, const std::string& path, ContractError* error, std::uint64_t maximum)",
+    "bool decode_uint32(const rapidjson::Value& value, std::uint32_t* out, const std::string& path, ContractError* error, std::uint64_t minimum, std::uint64_t maximum)",
     "{",
-    '    if (!value.IsUint64() || value.GetUint64() > maximum || value.GetUint64() > std::numeric_limits<std::uint32_t>::max()) return fail(error, "geometer.contract.number_range", path, "Expected an unsigned 32-bit integer within its contract bounds."); *out = static_cast<std::uint32_t>(value.GetUint64()); return true;',
+    '    if (!value.IsUint64() || value.GetUint64() < minimum || value.GetUint64() > maximum || value.GetUint64() > std::numeric_limits<std::uint32_t>::max()) return fail(error, "geometer.contract.number_range", path, "Expected an unsigned 32-bit integer within its contract bounds."); *out = static_cast<std::uint32_t>(value.GetUint64()); return true;',
     "}",
     "",
-    "bool decode_uint64(const rapidjson::Value& value, std::uint64_t* out, const std::string& path, ContractError* error, std::uint64_t maximum)",
+    "bool decode_uint64(const rapidjson::Value& value, std::uint64_t* out, const std::string& path, ContractError* error, std::uint64_t minimum, std::uint64_t maximum)",
     "{",
-    '    if (!value.IsUint64() || value.GetUint64() > maximum) return fail(error, "geometer.contract.number_range", path, "Expected an unsigned 64-bit integer within its contract bounds."); *out = value.GetUint64(); return true;',
+    '    if (!value.IsUint64() || value.GetUint64() < minimum || value.GetUint64() > maximum) return fail(error, "geometer.contract.number_range", path, "Expected an unsigned 64-bit integer within its contract bounds."); *out = value.GetUint64(); return true;',
     "}",
     "",
     "bool decode_double(const rapidjson::Value& value, double* out, const std::string& path, ContractError* error, double minimum, double maximum)",
@@ -260,14 +260,14 @@ function generateSource() {
     '    if (!std::isfinite(value) || value < minimum || value > maximum) return fail(error, "geometer.contract.number_range", "", "Number is outside its contract bounds."); writer.Double(value); return true;',
     "}",
     "",
-    "bool write_uint32(rapidjson::Writer<rapidjson::StringBuffer>& writer, std::uint32_t value, ContractError* error, std::uint64_t maximum)",
+    "bool write_uint32(rapidjson::Writer<rapidjson::StringBuffer>& writer, std::uint32_t value, ContractError* error, std::uint64_t minimum, std::uint64_t maximum)",
     "{",
-    '    if (value > maximum) return fail(error, "geometer.contract.number_range", "", "Unsigned integer exceeds its contract bounds."); writer.Uint(value); return true;',
+    '    if (value < minimum || value > maximum) return fail(error, "geometer.contract.number_range", "", "Unsigned integer is outside its contract bounds."); writer.Uint(value); return true;',
     "}",
     "",
-    "bool write_uint64(rapidjson::Writer<rapidjson::StringBuffer>& writer, std::uint64_t value, ContractError* error, std::uint64_t maximum)",
+    "bool write_uint64(rapidjson::Writer<rapidjson::StringBuffer>& writer, std::uint64_t value, ContractError* error, std::uint64_t minimum, std::uint64_t maximum)",
     "{",
-    '    if (value > maximum) return fail(error, "geometer.contract.number_range", "", "Unsigned integer exceeds its contract bounds."); writer.Uint64(value); return true;',
+    '    if (value < minimum || value > maximum) return fail(error, "geometer.contract.number_range", "", "Unsigned integer is outside its contract bounds."); writer.Uint64(value); return true;',
     "}",
     "",
     "bool write_string(rapidjson::Writer<rapidjson::StringBuffer>& writer, const std::string& value, ContractError* error, std::size_t minimum, std::size_t maximum)",
@@ -295,6 +295,16 @@ function generateSource() {
     "bool write_string_item(rapidjson::Writer<rapidjson::StringBuffer>& writer, const std::string& value, ContractError* error)",
     "{",
     "    return write_string(writer, value, error, 0U, std::numeric_limits<std::size_t>::max());",
+    "}",
+    "",
+    "bool decode_double_item(const rapidjson::Value& value, double* out, const std::string& path, ContractError* error)",
+    "{",
+    "    return decode_double(value, out, path, error, -std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity());",
+    "}",
+    "",
+    "bool write_double_item(rapidjson::Writer<rapidjson::StringBuffer>& writer, const double& value, ContractError* error)",
+    "{",
+    "    return write_double(writer, value, error, -std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity());",
     "}",
     "",
     "template <typename T>",
@@ -350,12 +360,15 @@ function generateSource() {
 }
 
 function generateOperationCatalogSource() {
+  const runtimeOperations = projectionCatalog.operations.filter(
+    (operation) => operation.runtime_available,
+  );
   const runtimeCatalog = {
     catalog: "wn.geometer.operation_catalog.a0",
     generic_abi: "a0",
     release_version: "__WN_RELEASE_VERSION__",
     c_abi_generation: "__WN_C_ABI_GENERATION__",
-    operations: projectionCatalog.operations.map((operation) => ({
+    operations: runtimeOperations.map((operation) => ({
       identity: operation.identity,
       request_contract: operation.request_contract,
       result_contract: operation.result_contract,
@@ -427,7 +440,7 @@ function generateOperationCatalogSource() {
   const rootsByContract = new Map(
     projectionCatalog.roots.map((rootRecord) => [rootRecord.contract_identity, rootRecord]),
   );
-  for (const operation of projectionCatalog.operations) {
+  for (const operation of runtimeOperations) {
     requestContracts.push(
       `    if (operation_id == ${JSON.stringify(operation.identity)}) return ${JSON.stringify(operation.request_contract)};`,
     );
@@ -773,9 +786,9 @@ function decodeCall(type, value, out, path, error, constraints = {}) {
       return `decode_string(${value}, ${out}, ${path}, ${error}, ${sizeConstant(constraints.min_length, "0U")}, ${sizeConstant(constraints.max_length)})`;
     if (type.name === "boolean") return `decode_boolean(${value}, ${out}, ${path}, ${error})`;
     if (type.name === "uint32")
-      return `decode_uint32(${value}, ${out}, ${path}, ${error}, ${integerMaximum(constraints, "std::numeric_limits<std::uint32_t>::max()")})`;
+      return `decode_uint32(${value}, ${out}, ${path}, ${error}, ${integerMinimum(constraints)}, ${integerMaximum(constraints, "std::numeric_limits<std::uint32_t>::max()")})`;
     if (type.name === "uint64")
-      return `decode_uint64(${value}, ${out}, ${path}, ${error}, ${integerMaximum(constraints, "std::numeric_limits<std::uint64_t>::max()")})`;
+      return `decode_uint64(${value}, ${out}, ${path}, ${error}, ${integerMinimum(constraints)}, ${integerMaximum(constraints, "std::numeric_limits<std::uint64_t>::max()")})`;
     if (type.name === "float64")
       return `decode_double(${value}, ${out}, ${path}, ${error}, ${constraints.min_value ?? "-std::numeric_limits<double>::infinity()"}, ${constraints.max_value ?? "std::numeric_limits<double>::infinity()"})`;
   }
@@ -785,8 +798,9 @@ function decodeCall(type, value, out, path, error, constraints = {}) {
     const decoder =
       type.element.kind === "reference"
         ? `decode_${shortName(type.element.target)}`
-        : type.element.kind === "primitive" && type.element.name === "string"
-          ? "decode_string_item"
+        : type.element.kind === "primitive"
+          ? ({ string: "decode_string_item", float64: "decode_double_item" }[type.element.name] ??
+            unsupported(type))
           : unsupported(type);
     return `decode_array(${value}, ${out}, ${path}, ${error}, ${sizeConstant(constraints.min_items, "0U")}, ${sizeConstant(constraints.max_items)}, ${decoder})`;
   }
@@ -801,9 +815,9 @@ function writeCall(type, value, error, constraints = {}) {
       return `write_string(writer, ${value}, ${error}, ${sizeConstant(constraints.min_length, "0U")}, ${sizeConstant(constraints.max_length)})`;
     if (type.name === "boolean") return `(writer.Bool(${value}), true)`;
     if (type.name === "uint32")
-      return `write_uint32(writer, ${value}, ${error}, ${integerMaximum(constraints, "std::numeric_limits<std::uint32_t>::max()")})`;
+      return `write_uint32(writer, ${value}, ${error}, ${integerMinimum(constraints)}, ${integerMaximum(constraints, "std::numeric_limits<std::uint32_t>::max()")})`;
     if (type.name === "uint64")
-      return `write_uint64(writer, ${value}, ${error}, ${integerMaximum(constraints, "std::numeric_limits<std::uint64_t>::max()")})`;
+      return `write_uint64(writer, ${value}, ${error}, ${integerMinimum(constraints)}, ${integerMaximum(constraints, "std::numeric_limits<std::uint64_t>::max()")})`;
     if (type.name === "float64")
       return `write_double(writer, ${value}, ${error}, ${constraints.min_value ?? "-std::numeric_limits<double>::infinity()"}, ${constraints.max_value ?? "std::numeric_limits<double>::infinity()"})`;
   }
@@ -813,8 +827,9 @@ function writeCall(type, value, error, constraints = {}) {
     const writer =
       type.element.kind === "reference"
         ? `write_${shortName(type.element.target)}`
-        : type.element.kind === "primitive" && type.element.name === "string"
-          ? "write_string_item"
+        : type.element.kind === "primitive"
+          ? ({ string: "write_string_item", float64: "write_double_item" }[type.element.name] ??
+            unsupported(type))
           : unsupported(type);
     return `write_array(writer, ${value}, ${error}, ${sizeConstant(constraints.min_items, "0U")}, ${sizeConstant(constraints.max_items)}, ${writer})`;
   }
@@ -870,6 +885,9 @@ function sizeConstant(value, fallback = "std::numeric_limits<std::size_t>::max()
 }
 function integerMaximum(constraints, fallback) {
   return constraints.max_value === undefined ? fallback : `${constraints.max_value}ULL`;
+}
+function integerMinimum(constraints) {
+  return constraints.min_value === undefined ? "0ULL" : `${constraints.min_value}ULL`;
 }
 function unsupported(value) {
   throw new Error(`Unsupported C++ catalog type ${JSON.stringify(value)}`);

@@ -14,6 +14,9 @@ extern dec optionPatch(target: Model);
 
 extern dec operationIdentity(target: Operation, identity: valueof string);
 
+/** Marks an operation as generated structural research that is not runtime-advertised. */
+extern dec experimentalOperation(target: Operation);
+
 extern dec inputAttachment(
   target: Operation,
   name: valueof string,

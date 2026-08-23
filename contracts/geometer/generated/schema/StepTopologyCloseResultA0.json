@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:wavenumber:schema:geometer:geometry.step_topology.close.result:a0",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "type": "string",
+      "const": "geometry.step_topology.close.result.a0"
+    },
+    "session_handle": {
+      "type": "string",
+      "minLength": 68,
+      "maxLength": 68
+    },
+    "closed": {
+      "type": "boolean",
+      "const": true
+    }
+  },
+  "required": [
+    "schema",
+    "session_handle",
+    "closed"
+  ],
+  "unevaluatedProperties": {
+    "not": {}
+  }
+}

@@ -148,16 +148,20 @@ function operationCatalogTemplate() {
     generic_abi: "a0",
     release_version: "",
     c_abi_generation: 0,
-    operations: contractCatalog.operations.map((operation) => ({
-      identity: operation.identity,
-      request_contract: operation.request_contract,
-      result_contract: operation.result_contract,
-      input_attachments: operation.input_attachments,
-      output_attachments: operation.output_attachments,
-      runtime_dispatch: operation.runtime_dispatch,
-      ...(operation.request_projection ? { request_projection: operation.request_projection } : {}),
-      ...(operation.result_projection ? { result_projection: operation.result_projection } : {}),
-    })),
+    operations: contractCatalog.operations
+      .filter((operation) => operation.runtime_available)
+      .map((operation) => ({
+        identity: operation.identity,
+        request_contract: operation.request_contract,
+        result_contract: operation.result_contract,
+        input_attachments: operation.input_attachments,
+        output_attachments: operation.output_attachments,
+        runtime_dispatch: operation.runtime_dispatch,
+        ...(operation.request_projection
+          ? { request_projection: operation.request_projection }
+          : {}),
+        ...(operation.result_projection ? { result_projection: operation.result_projection } : {}),
+      })),
     attachment_descriptor: {
       wasm32: {
         size: 36,

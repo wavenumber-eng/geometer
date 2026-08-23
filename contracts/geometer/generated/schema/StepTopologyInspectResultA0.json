@@ -1,0 +1,544 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:wavenumber:schema:geometer:geometry.step_topology.inspect.result:a0",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "type": "string",
+      "const": "geometry.step_topology.inspect.result.a0"
+    },
+    "session": {
+      "$ref": "#/$defs/SessionReference"
+    },
+    "counts": {
+      "$ref": "#/$defs/InspectionCounts"
+    },
+    "page": {
+      "$ref": "#/$defs/TopologyPage"
+    },
+    "compact_table": {
+      "$ref": "#/$defs/TopologyTableAttachmentDescriptor"
+    },
+    "diagnostics": {
+      "type": "array",
+      "items": {
+        "$ref": "urn:wavenumber:schema:geometer:geometry.common.diagnostic:a0"
+      },
+      "maxItems": 256
+    }
+  },
+  "required": [
+    "schema",
+    "session",
+    "counts",
+    "page",
+    "diagnostics"
+  ],
+  "unevaluatedProperties": {
+    "not": {}
+  },
+  "$defs": {
+    "SessionReference": {
+      "type": "object",
+      "properties": {
+        "session_handle": {
+          "type": "string",
+          "minLength": 68,
+          "maxLength": 68
+        },
+        "generation": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        }
+      },
+      "required": [
+        "session_handle",
+        "generation"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "InspectionCounts": {
+      "type": "object",
+      "properties": {
+        "definitions": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "root_occurrences": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "component_occurrences": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "bodies": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "shells": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 250000
+        },
+        "faces": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        }
+      },
+      "required": [
+        "definitions",
+        "root_occurrences",
+        "component_occurrences",
+        "bodies",
+        "shells",
+        "faces"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "TopologyPage": {
+      "type": "object",
+      "properties": {
+        "definitions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DefinitionSummary"
+          },
+          "maxItems": 1024
+        },
+        "occurrences": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/OccurrenceSummary"
+          },
+          "maxItems": 1024
+        },
+        "bodies": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/BodySummary"
+          },
+          "maxItems": 1024
+        },
+        "shells": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ShellSummary"
+          },
+          "maxItems": 1024
+        },
+        "faces": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/FaceSummary"
+          },
+          "maxItems": 1024
+        },
+        "next_cursor": {
+          "type": "string",
+          "maxLength": 256
+        }
+      },
+      "required": [
+        "definitions",
+        "occurrences",
+        "bodies",
+        "shells",
+        "faces"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "TopologyTableAttachmentDescriptor": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "const": "topology_table"
+        },
+        "media_type": {
+          "type": "string",
+          "const": "application/vnd.wavenumber.geometer.step-topology-table"
+        },
+        "format": {
+          "type": "string",
+          "const": "wn.geometer.step-topology-table.a0"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 134217728
+        },
+        "sha256": {
+          "type": "string",
+          "minLength": 64,
+          "maxLength": 64
+        }
+      },
+      "required": [
+        "name",
+        "media_type",
+        "format",
+        "bytes",
+        "sha256"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "DefinitionSummary": {
+      "type": "object",
+      "properties": {
+        "handle": {
+          "type": "string",
+          "minLength": 68,
+          "maxLength": 68
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "assembly": {
+          "type": "boolean"
+        },
+        "body_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "face_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        "source_entity": {
+          "$ref": "#/$defs/SourceEntityEvidence"
+        }
+      },
+      "required": [
+        "handle",
+        "name",
+        "assembly",
+        "body_count",
+        "face_count"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "OccurrenceSummary": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/RootOccurrenceSummary"
+        },
+        {
+          "$ref": "#/$defs/ComponentOccurrenceSummary"
+        }
+      ]
+    },
+    "BodySummary": {
+      "type": "object",
+      "properties": {
+        "handle": {
+          "type": "string",
+          "minLength": 68,
+          "maxLength": 68
+        },
+        "definition_handle": {
+          "type": "string",
+          "minLength": 68,
+          "maxLength": 68
+        },
+        "topology_kind": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "shell_handles": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 250000
+        },
+        "face_handles": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 1000000
+        },
+        "bounds_mm": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 6,
+          "maxItems": 6
+        },
+        "volume_mm3": {
+          "type": "number",
+          "minimum": 0
+        },
+        "source_entity": {
+          "$ref": "#/$defs/SourceEntityEvidence"
+        }
+      },
+      "required": [
+        "handle",
+        "definition_handle",
+        "topology_kind",
+        "shell_handles",
+        "face_handles",
+        "bounds_mm",
+        "volume_mm3"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "ShellSummary": {
+      "type": "object",
+      "properties": {
+        "handle": {
+          "type": "string",
+          "minLength": 68,
+          "maxLength": 68
+        },
+        "definition_handle": {
+          "type": "string",
+          "minLength": 68,
+          "maxLength": 68
+        },
+        "body_handles": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 100000
+        },
+        "face_handles": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 1000000
+        },
+        "source_entity": {
+          "$ref": "#/$defs/SourceEntityEvidence"
+        }
+      },
+      "required": [
+        "handle",
+        "definition_handle",
+        "body_handles",
+        "face_handles"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "FaceSummary": {
+      "type": "object",
+      "properties": {
+        "handle": {
+          "type": "string",
+          "minLength": 68,
+          "maxLength": 68
+        },
+        "definition_handle": {
+          "type": "string",
+          "minLength": 68,
+          "maxLength": 68
+        },
+        "body_handles": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 100000
+        },
+        "shell_handles": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 250000
+        },
+        "bounds_mm": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 6,
+          "maxItems": 6
+        },
+        "area_mm2": {
+          "type": "number",
+          "minimum": 0
+        },
+        "centroid_mm": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "source_entity": {
+          "$ref": "#/$defs/SourceEntityEvidence"
+        }
+      },
+      "required": [
+        "handle",
+        "definition_handle",
+        "body_handles",
+        "shell_handles",
+        "bounds_mm",
+        "area_mm2",
+        "centroid_mm"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "SourceEntityEvidence": {
+      "type": "object",
+      "properties": {
+        "mapped": {
+          "type": "boolean"
+        },
+        "shape_result_round_trip": {
+          "type": "boolean"
+        },
+        "model_number": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5000000
+        },
+        "entity_type": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "mapping_method": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        }
+      },
+      "required": [
+        "mapped",
+        "shape_result_round_trip"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "RootOccurrenceSummary": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "root"
+        },
+        "handle": {
+          "type": "string",
+          "minLength": 68,
+          "maxLength": 68
+        },
+        "definition_handle": {
+          "type": "string",
+          "minLength": 68,
+          "maxLength": 68
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "transform": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 12,
+          "maxItems": 12
+        }
+      },
+      "required": [
+        "kind",
+        "handle",
+        "definition_handle",
+        "name",
+        "transform"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "ComponentOccurrenceSummary": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "component"
+        },
+        "handle": {
+          "type": "string",
+          "minLength": 68,
+          "maxLength": 68
+        },
+        "definition_handle": {
+          "type": "string",
+          "minLength": 68,
+          "maxLength": 68
+        },
+        "parent_occurrence_handle": {
+          "type": "string",
+          "minLength": 68,
+          "maxLength": 68
+        },
+        "depth": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 64
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "transform": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 12,
+          "maxItems": 12
+        }
+      },
+      "required": [
+        "kind",
+        "handle",
+        "definition_handle",
+        "parent_occurrence_handle",
+        "depth",
+        "name",
+        "transform"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    }
+  }
+}

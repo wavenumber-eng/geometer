@@ -3,6 +3,7 @@
 #include "geometer/c_api.h"
 #include "geometer/generated/contracts/contracts.h"
 #include "geometer/operation_transport.h"
+#include "geometer/sha256.h"
 
 #include <algorithm>
 #include <cctype>
@@ -17,6 +18,7 @@
 #include <stdexcept>
 #include <string>
 #include <type_traits>
+#include <unordered_set>
 #include <vector>
 
 namespace
@@ -134,7 +136,397 @@ bool decode_contract_vector(const std::string& identity, const std::vector<unsig
         geometer::contracts::OperationOutcomeA0 value;
         return geometer::contracts::decode_json(data.data(), data.size(), &value, &error);
     }
+    if (identity == "geometry.step_topology.resolve_hit.request.a0")
+    {
+        geometer::contracts::StepTopologyResolveHitRequestA0 value;
+        if (!geometer::contracts::decode_json(data.data(), data.size(), &value, &error))
+        {
+            return false;
+        }
+        std::string encoded;
+        require(geometer::contracts::encode_json(value, &encoded, &error),
+                "accepted STEP topology hit vector should encode");
+        std::string source(data.begin(), data.end());
+        while (!source.empty() && (source.back() == '\r' || source.back() == '\n'))
+        {
+            source.pop_back();
+        }
+        require(encoded == source, "STEP topology hit vector must round-trip canonically");
+        return true;
+    }
+    if (identity == "geometry.step_topology.resolve_hit.result.a0")
+    {
+        geometer::contracts::StepTopologyResolveHitResultA0 value;
+        return geometer::contracts::decode_json(data.data(), data.size(), &value, &error);
+    }
+    if (identity == "geometry.step_topology.render.result.a0")
+    {
+        geometer::contracts::StepTopologyRenderResultA0 value;
+        return geometer::contracts::decode_json(data.data(), data.size(), &value, &error);
+    }
+    if (identity == "geometry.step_topology.inspect.result.a0")
+    {
+        geometer::contracts::StepTopologyInspectResultA0 value;
+        return geometer::contracts::decode_json(data.data(), data.size(), &value, &error);
+    }
     throw std::runtime_error("unhandled contract vector identity: " + identity);
+}
+
+bool validate_step_topology_semantics(const rapidjson::Value& vector,
+                                      const std::vector<unsigned char>& data,
+                                      const std::string& vector_root)
+{
+    const std::string oracle = vector["oracle"].GetString();
+    geometer::contracts::ContractError error;
+    if (oracle == "step_topology_session")
+    {
+        geometer::contracts::StepTopologyResolveHitRequestA0 value;
+        require(geometer::contracts::decode_json(data.data(), data.size(), &value, &error),
+                "session semantic vector must be structurally valid");
+        return value.session.session_handle == vector["expected_session_handle"].GetString() &&
+               value.session.generation == vector["expected_generation"].GetUint();
+    }
+    if (oracle == "step_topology_inspection_high_fan_in")
+    {
+        geometer::contracts::StepTopologyInspectResultA0 seed;
+        require(geometer::contracts::decode_json(data.data(), data.size(), &seed, &error),
+                "high-fan-in seed vector must be structurally valid");
+        return vector.HasMember("fan_in") && vector["fan_in"].GetUint() == 4096U;
+    }
+    if (oracle == "step_topology_inspection")
+    {
+        std::vector<geometer::contracts::StepTopologyInspectResultA0> pages;
+        if (vector.HasMember("prior_pages"))
+        {
+            for (const auto& prior_path : vector["prior_pages"].GetArray())
+            {
+                const auto prior_data = read_bytes(vector_root + prior_path.GetString());
+                geometer::contracts::StepTopologyInspectResultA0 prior;
+                require(geometer::contracts::decode_json(prior_data.data(), prior_data.size(),
+                                                         &prior, &error),
+                        "prior inspection page must be structurally valid");
+                pages.push_back(std::move(prior));
+            }
+        }
+        geometer::contracts::StepTopologyInspectResultA0 current;
+        require(geometer::contracts::decode_json(data.data(), data.size(), &current, &error),
+                "inspection semantic vector must be structurally valid");
+        pages.push_back(std::move(current));
+
+        auto value = pages.front();
+        value.page.definitions.clear();
+        value.page.occurrences.clear();
+        value.page.bodies.clear();
+        value.page.shells.clear();
+        value.page.faces.clear();
+        std::unordered_set<std::string> cursors;
+        for (std::size_t page_index = 0; page_index < pages.size(); ++page_index)
+        {
+            const auto& page = pages[page_index];
+            if (page.session.session_handle != value.session.session_handle ||
+                page.session.generation != value.session.generation ||
+                page.counts.definitions != value.counts.definitions ||
+                page.counts.root_occurrences != value.counts.root_occurrences ||
+                page.counts.component_occurrences != value.counts.component_occurrences ||
+                page.counts.bodies != value.counts.bodies ||
+                page.counts.shells != value.counts.shells ||
+                page.counts.faces != value.counts.faces)
+                return false;
+            const bool terminal = page_index + 1U == pages.size();
+            if (terminal == page.page.next_cursor.has_value())
+                return false;
+            const std::size_t page_record_count =
+                page.page.definitions.size() + page.page.occurrences.size() +
+                page.page.bodies.size() + page.page.shells.size() + page.page.faces.size();
+            if (!terminal && page_record_count == 0U)
+                return false;
+            if (page.page.next_cursor.has_value() && !cursors.insert(*page.page.next_cursor).second)
+                return false;
+            value.page.definitions.insert(value.page.definitions.end(),
+                                          page.page.definitions.begin(),
+                                          page.page.definitions.end());
+            value.page.occurrences.insert(value.page.occurrences.end(),
+                                          page.page.occurrences.begin(),
+                                          page.page.occurrences.end());
+            value.page.bodies.insert(value.page.bodies.end(), page.page.bodies.begin(),
+                                     page.page.bodies.end());
+            value.page.shells.insert(value.page.shells.end(), page.page.shells.begin(),
+                                     page.page.shells.end());
+            value.page.faces.insert(value.page.faces.end(), page.page.faces.begin(),
+                                    page.page.faces.end());
+        }
+
+        std::unordered_set<std::string> handles;
+        const auto add = [&handles](const std::string& handle)
+        { return handles.insert(handle).second; };
+        for (const auto& item : value.page.definitions)
+            if (!add(item.handle))
+                return false;
+        std::uint32_t root_count = 0;
+        std::uint32_t component_count = 0;
+        for (const auto& item : value.page.occurrences)
+        {
+            if (!std::visit([&add](const auto& occurrence) { return add(occurrence.handle); },
+                            item))
+                return false;
+            std::holds_alternative<geometer::contracts::RootOccurrenceSummary>(item)
+                ? ++root_count
+                : ++component_count;
+        }
+        for (const auto& item : value.page.bodies)
+            if (!add(item.handle))
+                return false;
+        for (const auto& item : value.page.shells)
+            if (!add(item.handle))
+                return false;
+        for (const auto& item : value.page.faces)
+            if (!add(item.handle))
+                return false;
+        if (value.page.definitions.size() != value.counts.definitions ||
+            root_count != value.counts.root_occurrences ||
+            component_count != value.counts.component_occurrences ||
+            value.page.bodies.size() != value.counts.bodies ||
+            value.page.shells.size() != value.counts.shells ||
+            value.page.faces.size() != value.counts.faces)
+            return false;
+
+        const auto valid_evidence = [](const auto& optional_evidence)
+        {
+            if (!optional_evidence.has_value())
+                return true;
+            const auto& evidence = *optional_evidence;
+            const bool has_all_positive_fields = evidence.model_number.has_value() &&
+                                                 evidence.entity_type.has_value() &&
+                                                 evidence.mapping_method.has_value();
+            const bool has_any_positive_field = evidence.model_number.has_value() ||
+                                                evidence.entity_type.has_value() ||
+                                                evidence.mapping_method.has_value();
+            return evidence.mapped ? has_all_positive_fields
+                                   : !evidence.shape_result_round_trip && !has_any_positive_field;
+        };
+        for (const auto& item : value.page.definitions)
+            if (!valid_evidence(item.source_entity))
+                return false;
+        for (const auto& item : value.page.bodies)
+            if (!valid_evidence(item.source_entity))
+                return false;
+        for (const auto& item : value.page.shells)
+            if (!valid_evidence(item.source_entity))
+                return false;
+        for (const auto& item : value.page.faces)
+            if (!valid_evidence(item.source_entity))
+                return false;
+
+        const auto contains =
+            [](const std::vector<std::string>& values, const std::string& expected)
+        { return std::find(values.begin(), values.end(), expected) != values.end(); };
+        const auto find_definition = [&value](const std::string& handle)
+        {
+            return std::find_if(value.page.definitions.begin(), value.page.definitions.end(),
+                                [&handle](const auto& item) { return item.handle == handle; });
+        };
+        const auto find_body = [&value](const std::string& handle)
+        {
+            return std::find_if(value.page.bodies.begin(), value.page.bodies.end(),
+                                [&handle](const auto& item) { return item.handle == handle; });
+        };
+        const auto find_shell = [&value](const std::string& handle)
+        {
+            return std::find_if(value.page.shells.begin(), value.page.shells.end(),
+                                [&handle](const auto& item) { return item.handle == handle; });
+        };
+        const auto find_face = [&value](const std::string& handle)
+        {
+            return std::find_if(value.page.faces.begin(), value.page.faces.end(),
+                                [&handle](const auto& item) { return item.handle == handle; });
+        };
+        const auto find_occurrence = [&value](const std::string& handle)
+        {
+            return std::find_if(value.page.occurrences.begin(), value.page.occurrences.end(),
+                                [&handle](const auto& item)
+                                {
+                                    return std::visit([&handle](const auto& occurrence)
+                                                      { return occurrence.handle == handle; },
+                                                      item);
+                                });
+        };
+        for (const auto& definition : value.page.definitions)
+        {
+            const auto body_count = static_cast<std::uint32_t>(std::count_if(
+                value.page.bodies.begin(), value.page.bodies.end(), [&definition](const auto& item)
+                { return item.definition_handle == definition.handle; }));
+            const auto face_count = static_cast<std::uint32_t>(std::count_if(
+                value.page.faces.begin(), value.page.faces.end(), [&definition](const auto& item)
+                { return item.definition_handle == definition.handle; }));
+            if (body_count != definition.body_count || face_count != definition.face_count)
+                return false;
+        }
+        for (const auto& item : value.page.occurrences)
+        {
+            const bool valid = std::visit(
+                [&](const auto& occurrence)
+                {
+                    if (find_definition(occurrence.definition_handle) ==
+                        value.page.definitions.end())
+                        return false;
+                    using Occurrence = std::decay_t<decltype(occurrence)>;
+                    if constexpr (std::is_same_v<Occurrence,
+                                                 geometer::contracts::ComponentOccurrenceSummary>)
+                    {
+                        std::unordered_set<std::string> ancestors{occurrence.handle};
+                        std::uint32_t expected_depth = occurrence.depth;
+                        const geometer::contracts::OccurrenceSummary* current_item = &item;
+                        while (const auto* component =
+                                   std::get_if<geometer::contracts::ComponentOccurrenceSummary>(
+                                       current_item))
+                        {
+                            const auto parent =
+                                find_occurrence(component->parent_occurrence_handle);
+                            if (parent == value.page.occurrences.end() || expected_depth == 0U)
+                                return false;
+                            const std::string parent_handle =
+                                std::visit([](const auto& parent_value)
+                                           { return parent_value.handle; }, *parent);
+                            if (!ancestors.insert(parent_handle).second)
+                                return false;
+                            --expected_depth;
+                            if (const auto* parent_component =
+                                    std::get_if<geometer::contracts::ComponentOccurrenceSummary>(
+                                        &*parent);
+                                parent_component && parent_component->depth != expected_depth)
+                                return false;
+                            current_item = &*parent;
+                        }
+                        return expected_depth == 0U;
+                    }
+                    return true;
+                },
+                item);
+            if (!valid)
+                return false;
+        }
+        for (const auto& body : value.page.bodies)
+        {
+            if (find_definition(body.definition_handle) == value.page.definitions.end())
+                return false;
+            std::unordered_set<std::string> members;
+            for (const auto& shell_handle : body.shell_handles)
+            {
+                if (!members.insert(shell_handle).second)
+                    return false;
+                const auto shell = find_shell(shell_handle);
+                if (shell == value.page.shells.end() ||
+                    shell->definition_handle != body.definition_handle ||
+                    !contains(shell->body_handles, body.handle))
+                    return false;
+            }
+            for (const auto& face_handle : body.face_handles)
+            {
+                if (!members.insert(face_handle).second)
+                    return false;
+                const auto face = find_face(face_handle);
+                if (face == value.page.faces.end() ||
+                    face->definition_handle != body.definition_handle ||
+                    !contains(face->body_handles, body.handle))
+                    return false;
+            }
+        }
+        for (const auto& shell : value.page.shells)
+        {
+            if (find_definition(shell.definition_handle) == value.page.definitions.end())
+                return false;
+            std::unordered_set<std::string> members;
+            for (const auto& body_handle : shell.body_handles)
+            {
+                if (!members.insert(body_handle).second)
+                    return false;
+                const auto body = find_body(body_handle);
+                if (body == value.page.bodies.end() ||
+                    body->definition_handle != shell.definition_handle ||
+                    !contains(body->shell_handles, shell.handle))
+                    return false;
+            }
+            for (const auto& face_handle : shell.face_handles)
+            {
+                if (!members.insert(face_handle).second)
+                    return false;
+                const auto face = find_face(face_handle);
+                if (face == value.page.faces.end() ||
+                    face->definition_handle != shell.definition_handle ||
+                    !contains(face->shell_handles, shell.handle))
+                    return false;
+            }
+        }
+        for (const auto& face : value.page.faces)
+        {
+            if (find_definition(face.definition_handle) == value.page.definitions.end())
+                return false;
+            std::unordered_set<std::string> members;
+            for (const auto& body_handle : face.body_handles)
+            {
+                if (!members.insert(body_handle).second)
+                    return false;
+                const auto body = find_body(body_handle);
+                if (body == value.page.bodies.end() ||
+                    body->definition_handle != face.definition_handle ||
+                    !contains(body->face_handles, face.handle))
+                    return false;
+            }
+            for (const auto& shell_handle : face.shell_handles)
+            {
+                if (!members.insert(shell_handle).second)
+                    return false;
+                const auto shell = find_shell(shell_handle);
+                if (shell == value.page.shells.end() ||
+                    shell->definition_handle != face.definition_handle ||
+                    !contains(shell->face_handles, face.handle))
+                    return false;
+            }
+        }
+        return true;
+    }
+    if (oracle == "step_topology_render_attachments")
+    {
+        geometer::contracts::StepTopologyRenderResultA0 value;
+        require(geometer::contracts::decode_json(data.data(), data.size(), &value, &error),
+                "render semantic vector must be structurally valid");
+        if (value.artifact.content_sha256 != value.glb.sha256 ||
+            vector["attachments"].Size() != (value.compact_binding_table.has_value() ? 2U : 1U))
+            return false;
+        std::unordered_set<std::string> names;
+        for (const auto& attachment : vector["attachments"].GetArray())
+        {
+            const std::string name = attachment["name"].GetString();
+            if (!names.insert(name).second)
+                return false;
+            const std::string media_type = attachment["media_type"].GetString();
+            std::uint32_t expected_bytes = 0;
+            std::string expected_sha256;
+            if (name == value.glb.name && media_type == value.glb.media_type)
+            {
+                expected_bytes = value.glb.bytes;
+                expected_sha256 = value.glb.sha256;
+            }
+            else if (value.compact_binding_table.has_value() &&
+                     name == value.compact_binding_table->name &&
+                     media_type == value.compact_binding_table->media_type)
+            {
+                expected_bytes = value.compact_binding_table->bytes;
+                expected_sha256 = value.compact_binding_table->sha256;
+            }
+            else
+                return false;
+            const std::vector<unsigned char> bytes =
+                read_bytes(vector_root + attachment["file"].GetString());
+            if (bytes.size() != expected_bytes ||
+                geometer::sha256_hex(bytes.data(), bytes.size()) != expected_sha256)
+                return false;
+        }
+        return names.count(value.glb.name) == 1U &&
+               (!value.compact_binding_table.has_value() ||
+                names.count(value.compact_binding_table->name) == 1U);
+    }
+    throw std::runtime_error("unhandled STEP topology semantic oracle: " + oracle);
 }
 
 std::string execute_model_bounds_vector(const rapidjson::Value& vector)
@@ -291,7 +683,7 @@ void generated_cpp_replays_all_governed_contract_vectors()
             "contract vector manifest should be valid JSON");
     require(manifest.HasMember("vectors") && manifest["vectors"].IsArray(),
             "contract vector manifest should contain an array");
-    require(manifest["vectors"].Size() == 20U, "C++ must replay every governed contract vector");
+    require(manifest["vectors"].Size() == 41U, "C++ must replay every governed contract vector");
 
     for (const auto& vector : manifest["vectors"].GetArray())
     {
@@ -306,7 +698,12 @@ void generated_cpp_replays_all_governed_contract_vectors()
         }
 
         geometer::contracts::ModelBoundsOptionsA0 options;
-        const bool accepted = decode_contract_vector(identity, data, &options);
+        bool accepted = decode_contract_vector(identity, data, &options);
+        if (accepted && std::string(vector["lane"].GetString()) == "semantic" &&
+            std::string(vector["oracle"].GetString()).rfind("step_topology_", 0) == 0)
+        {
+            accepted = validate_step_topology_semantics(vector, data, root);
+        }
         require(accepted == (std::string(vector["expected"].GetString()) == "accept"),
                 "unexpected C++ contract vector result: " + id);
 

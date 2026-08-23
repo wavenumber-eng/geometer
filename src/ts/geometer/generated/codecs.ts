@@ -16,6 +16,16 @@ import type {
   ModelBoundsOptionsA0,
   ModelBoundsResultA0,
   OperationOutcomeA0,
+  StepTopologyCloseRequestA0,
+  StepTopologyCloseResultA0,
+  StepTopologyInspectRequestA0,
+  StepTopologyInspectResultA0,
+  StepTopologyOpenRequestA0,
+  StepTopologyOpenResultA0,
+  StepTopologyRenderRequestA0,
+  StepTopologyRenderResultA0,
+  StepTopologyResolveHitRequestA0,
+  StepTopologyResolveHitResultA0,
 } from "./contracts.js";
 
 const declarations: ContractDescriptorMap = {
@@ -876,6 +886,1050 @@ const declarations: ContractDescriptorMap = {
       },
     },
   },
+  "Wavenumber.Geometer.Contracts.StepTopologyA0.BodySummary": {
+    kind: "object",
+    properties: {
+      handle: {
+        type: { kind: "primitive", name: "string" },
+        optional: false,
+        constraints: { min_length: 68, max_length: 68 },
+      },
+      definition_handle: {
+        type: { kind: "primitive", name: "string" },
+        optional: false,
+        constraints: { min_length: 68, max_length: 68 },
+      },
+      topology_kind: {
+        type: { kind: "primitive", name: "string" },
+        optional: false,
+        constraints: { min_length: 1, max_length: 64 },
+      },
+      shell_handles: {
+        type: { kind: "array", element: { kind: "primitive", name: "string" } },
+        optional: false,
+        constraints: { max_items: 250000 },
+      },
+      face_handles: {
+        type: { kind: "array", element: { kind: "primitive", name: "string" } },
+        optional: false,
+        constraints: { max_items: 1000000 },
+      },
+      bounds_mm: {
+        type: { kind: "array", element: { kind: "primitive", name: "float64" } },
+        optional: false,
+        constraints: { min_items: 6, max_items: 6 },
+      },
+      volume_mm3: {
+        type: { kind: "primitive", name: "float64" },
+        optional: false,
+        constraints: { min_value: 0 },
+      },
+      source_entity: {
+        type: {
+          kind: "reference",
+          target: "Wavenumber.Geometer.Contracts.StepTopologyA0.SourceEntityEvidence",
+        },
+        optional: true,
+        constraints: {},
+      },
+    },
+  },
+  "Wavenumber.Geometer.Contracts.StepTopologyA0.ComponentOccurrenceSummary": {
+    kind: "object",
+    properties: {
+      kind: {
+        type: { kind: "literal", value_type: "string", value: "component" },
+        optional: false,
+        constraints: {},
+      },
+      handle: {
+        type: { kind: "primitive", name: "string" },
+        optional: false,
+        constraints: { min_length: 68, max_length: 68 },
+      },
+      definition_handle: {
+        type: { kind: "primitive", name: "string" },
+        optional: false,
+        constraints: { min_length: 68, max_length: 68 },
+      },
+      parent_occurrence_handle: {
+        type: { kind: "primitive", name: "string" },
+        optional: false,
+        constraints: { min_length: 68, max_length: 68 },
+      },
+      depth: {
+        type: { kind: "primitive", name: "uint32" },
+        optional: false,
+        constraints: { min_value: 1, max_value: 64 },
+      },
+      name: {
+        type: { kind: "primitive", name: "string" },
+        optional: false,
+        constraints: { max_length: 4096 },
+      },
+      transform: {
+        type: { kind: "array", element: { kind: "primitive", name: "float64" } },
+        optional: false,
+        constraints: { min_items: 12, max_items: 12 },
+      },
+    },
+  },
+  "Wavenumber.Geometer.Contracts.StepTopologyA0.DefinitionSummary": {
+    kind: "object",
+    properties: {
+      handle: {
+        type: { kind: "primitive", name: "string" },
+        optional: false,
+        constraints: { min_length: 68, max_length: 68 },
+      },
+      name: {
+        type: { kind: "primitive", name: "string" },
+        optional: false,
+        constraints: { max_length: 4096 },
+      },
+      assembly: { type: { kind: "primitive", name: "boolean" }, optional: false, constraints: {} },
+      body_count: {
+        type: { kind: "primitive", name: "uint32" },
+        optional: false,
+        constraints: { max_value: 100000 },
+      },
+      face_count: {
+        type: { kind: "primitive", name: "uint32" },
+        optional: false,
+        constraints: { max_value: 1000000 },
+      },
+      source_entity: {
+        type: {
+          kind: "reference",
+          target: "Wavenumber.Geometer.Contracts.StepTopologyA0.SourceEntityEvidence",
+        },
+        optional: true,
+        constraints: {},
+      },
+    },
+  },
+  "Wavenumber.Geometer.Contracts.StepTopologyA0.FaceSummary": {
+    kind: "object",
+    properties: {
+      handle: {
+        type: { kind: "primitive", name: "string" },
+        optional: false,
+        constraints: { min_length: 68, max_length: 68 },
+      },
+      definition_handle: {
+        type: { kind: "primitive", name: "string" },
+        optional: false,
+        constraints: { min_length: 68, max_length: 68 },
+      },
+      body_handles: {
+        type: { kind: "array", element: { kind: "primitive", name: "string" } },
+        optional: false,
+        constraints: { max_items: 100000 },
+      },
+      shell_handles: {
+        type: { kind: "array", element: { kind: "primitive", name: "string" } },
+        optional: false,
+        constraints: { max_items: 250000 },
+      },
+      bounds_mm: {
+        type: { kind: "array", element: { kind: "primitive", name: "float64" } },
+        optional: false,
+        constraints: { min_items: 6, max_items: 6 },
+      },
+      area_mm2: {
+        type: { kind: "primitive", name: "float64" },
+        optional: false,
+        constraints: { min_value: 0 },
+      },
+      centroid_mm: {
+        type: { kind: "array", element: { kind: "primitive", name: "float64" } },
+        optional: false,
+        constraints: { min_items: 3, max_items: 3 },
+      },
+      source_entity: {
+        type: {
+          kind: "reference",
+          target: "Wavenumber.Geometer.Contracts.StepTopologyA0.SourceEntityEvidence",
+        },
+        optional: true,
+        constraints: {},
+      },
+    },
+  },
+  "Wavenumber.Geometer.Contracts.StepTopologyA0.GlbAttachmentDescriptor": {
+    kind: "object",
+    properties: {
+      name: {
+        type: { kind: "literal", value_type: "string", value: "glb" },
+        optional: false,
+        constraints: {},
+      },
+      media_type: {
+        type: { kind: "literal", value_type: "string", value: "model/gltf-binary" },
+        optional: false,
+        constraints: {},
+      },
+      format: {
+        type: { kind: "literal", value_type: "string", value: "glb-2.0" },
+        optional: false,
+        constraints: {},
+      },
+      bytes: {
+        type: { kind: "primitive", name: "uint32" },
+        optional: false,
+        constraints: { min_value: 1, max_value: 268435456 },
+      },
+      sha256: {
+        type: { kind: "primitive", name: "string" },
+        optional: false,
+        constraints: { min_length: 64, max_length: 64 },
+      },
+    },
+  },
+  "Wavenumber.Geometer.Contracts.StepTopologyA0.InspectionCounts": {
+    kind: "object",
+    properties: {
+      definitions: {
+        type: { kind: "primitive", name: "uint32" },
+        optional: false,
+        constraints: { max_value: 10000 },
+      },
+      root_occurrences: {
+        type: { kind: "primitive", name: "uint32" },
+        optional: false,
+        constraints: { max_value: 100000 },
+      },
+      component_occurrences: {
+        type: { kind: "primitive", name: "uint32" },
+        optional: false,
+        constraints: { max_value: 100000 },
+      },
+      bodies: {
+        type: { kind: "primitive", name: "uint32" },
+        optional: false,
+        constraints: { max_value: 100000 },
+      },
+      shells: {
+        type: { kind: "primitive", name: "uint32" },
+        optional: false,
+        constraints: { max_value: 250000 },
+      },
+      faces: {
+        type: { kind: "primitive", name: "uint32" },
+        optional: false,
+        constraints: { max_value: 1000000 },
+      },
+    },
+  },
+  "Wavenumber.Geometer.Contracts.StepTopologyA0.OccurrenceSummary": {
+    kind: "union",
+    variants: [
+      {
+        kind: "reference",
+        target: "Wavenumber.Geometer.Contracts.StepTopologyA0.RootOccurrenceSummary",
+      },
+      {
+        kind: "reference",
+        target: "Wavenumber.Geometer.Contracts.StepTopologyA0.ComponentOccurrenceSummary",
+      },
+    ],
+  },
+  "Wavenumber.Geometer.Contracts.StepTopologyA0.PageRequest": {
+    kind: "object",
+    properties: {
+      cursor: {
+        type: { kind: "primitive", name: "string" },
+        optional: true,
+        constraints: { max_length: 256 },
+      },
+      limit: {
+        type: { kind: "primitive", name: "uint32" },
+        optional: false,
+        constraints: { min_value: 1, max_value: 1024 },
+      },
+    },
+  },
+  "Wavenumber.Geometer.Contracts.StepTopologyA0.RenderArtifactDescriptor": {
+    kind: "object",
+    properties: {
+      artifact_handle: {
+        type: { kind: "primitive", name: "string" },
+        optional: false,
+        constraints: { min_length: 68, max_length: 68 },
+      },
+      content_sha256: {
+        type: { kind: "primitive", name: "string" },
+        optional: false,
+        constraints: { min_length: 64, max_length: 64 },
+      },
+      render_artifact_handle: {
+        type: { kind: "primitive", name: "string" },
+        optional: false,
+        constraints: { min_length: 68, max_length: 68 },
+      },
+      render_content_sha256: {
+        type: { kind: "primitive", name: "string" },
+        optional: false,
+        constraints: { min_length: 64, max_length: 64 },
+      },
+      binding_layout: {
+        type: { kind: "literal", value_type: "string", value: "node-primitive-a0" },
+        optional: false,
+        constraints: {},
+      },
+      geometry_length_unit: {
+        type: { kind: "literal", value_type: "string", value: "meter" },
+        optional: false,
+        constraints: {},
+      },
+      source_length_unit: {
+        type: { kind: "literal", value_type: "string", value: "millimeter" },
+        optional: false,
+        constraints: {},
+      },
+      counts: {
+        type: {
+          kind: "reference",
+          target: "Wavenumber.Geometer.Contracts.StepTopologyA0.RenderCounts",
+        },
+        optional: false,
+        constraints: {},
+      },
+    },
+  },
+  "Wavenumber.Geometer.Contracts.StepTopologyA0.RenderCounts": {
+    kind: "object",
+    properties: {
+      meshes: {
+        type: { kind: "primitive", name: "uint32" },
+        optional: false,
+        constraints: { max_value: 10000 },
+      },
+      instances: {
+        type: { kind: "primitive", name: "uint32" },
+        optional: false,
+        constraints: { max_value: 100000 },
+      },
+      primitives: {
+        type: { kind: "primitive", name: "uint32" },
+        optional: false,
+        constraints: { max_value: 1000000 },
+      },
+      geometry_triangles: {
+        type: { kind: "primitive", name: "uint32" },
+        optional: false,
+        constraints: { max_value: 10000000 },
+      },
+      instanced_triangles: {
+        type: { kind: "primitive", name: "uint32" },
+        optional: false,
+        constraints: { max_value: 50000000 },
+      },
+    },
+  },
+  "Wavenumber.Geometer.Contracts.StepTopologyA0.RootOccurrenceSummary": {
+    kind: "object",
+    properties: {
+      kind: {
+        type: { kind: "literal", value_type: "string", value: "root" },
+        optional: false,
+        constraints: {},
+      },
+      handle: {
+        type: { kind: "primitive", name: "string" },
+        optional: false,
+        constraints: { min_length: 68, max_length: 68 },
+      },
+      definition_handle: {
+        type: { kind: "primitive", name: "string" },
+        optional: false,
+        constraints: { min_length: 68, max_length: 68 },
+      },
+      name: {
+        type: { kind: "primitive", name: "string" },
+        optional: false,
+        constraints: { max_length: 4096 },
+      },
+      transform: {
+        type: { kind: "array", element: { kind: "primitive", name: "float64" } },
+        optional: false,
+        constraints: { min_items: 12, max_items: 12 },
+      },
+    },
+  },
+  "Wavenumber.Geometer.Contracts.StepTopologyA0.SessionReference": {
+    kind: "object",
+    properties: {
+      session_handle: {
+        type: { kind: "primitive", name: "string" },
+        optional: false,
+        constraints: { min_length: 68, max_length: 68 },
+      },
+      generation: {
+        type: { kind: "primitive", name: "uint32" },
+        optional: false,
+        constraints: { min_value: 1 },
+      },
+    },
+  },
+  "Wavenumber.Geometer.Contracts.StepTopologyA0.ShellSummary": {
+    kind: "object",
+    properties: {
+      handle: {
+        type: { kind: "primitive", name: "string" },
+        optional: false,
+        constraints: { min_length: 68, max_length: 68 },
+      },
+      definition_handle: {
+        type: { kind: "primitive", name: "string" },
+        optional: false,
+        constraints: { min_length: 68, max_length: 68 },
+      },
+      body_handles: {
+        type: { kind: "array", element: { kind: "primitive", name: "string" } },
+        optional: false,
+        constraints: { max_items: 100000 },
+      },
+      face_handles: {
+        type: { kind: "array", element: { kind: "primitive", name: "string" } },
+        optional: false,
+        constraints: { max_items: 1000000 },
+      },
+      source_entity: {
+        type: {
+          kind: "reference",
+          target: "Wavenumber.Geometer.Contracts.StepTopologyA0.SourceEntityEvidence",
+        },
+        optional: true,
+        constraints: {},
+      },
+    },
+  },
+  "Wavenumber.Geometer.Contracts.StepTopologyA0.SourceDescriptor": {
+    kind: "object",
+    properties: {
+      format: {
+        type: { kind: "literal", value_type: "string", value: "step" },
+        optional: false,
+        constraints: {},
+      },
+      sha256: {
+        type: { kind: "primitive", name: "string" },
+        optional: false,
+        constraints: { min_length: 64, max_length: 64 },
+      },
+      bytes: {
+        type: { kind: "primitive", name: "uint32" },
+        optional: false,
+        constraints: { min_value: 1, max_value: 268435456 },
+      },
+      normalized_length_unit: {
+        type: { kind: "literal", value_type: "string", value: "millimeter" },
+        optional: false,
+        constraints: {},
+      },
+    },
+  },
+  "Wavenumber.Geometer.Contracts.StepTopologyA0.SourceEntityEvidence": {
+    kind: "object",
+    properties: {
+      mapped: { type: { kind: "primitive", name: "boolean" }, optional: false, constraints: {} },
+      shape_result_round_trip: {
+        type: { kind: "primitive", name: "boolean" },
+        optional: false,
+        constraints: {},
+      },
+      model_number: {
+        type: { kind: "primitive", name: "uint32" },
+        optional: true,
+        constraints: { min_value: 1, max_value: 5000000 },
+      },
+      entity_type: {
+        type: { kind: "primitive", name: "string" },
+        optional: true,
+        constraints: { min_length: 1, max_length: 128 },
+      },
+      mapping_method: {
+        type: { kind: "primitive", name: "string" },
+        optional: true,
+        constraints: { min_length: 1, max_length: 128 },
+      },
+    },
+  },
+  "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyCloseRequestA0": {
+    kind: "object",
+    properties: {
+      schema: {
+        type: {
+          kind: "literal",
+          value_type: "string",
+          value: "geometry.step_topology.close.request.a0",
+        },
+        optional: false,
+        constraints: {},
+      },
+      session: {
+        type: {
+          kind: "reference",
+          target: "Wavenumber.Geometer.Contracts.StepTopologyA0.SessionReference",
+        },
+        optional: false,
+        constraints: {},
+      },
+    },
+  },
+  "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyCloseResultA0": {
+    kind: "object",
+    properties: {
+      schema: {
+        type: {
+          kind: "literal",
+          value_type: "string",
+          value: "geometry.step_topology.close.result.a0",
+        },
+        optional: false,
+        constraints: {},
+      },
+      session_handle: {
+        type: { kind: "primitive", name: "string" },
+        optional: false,
+        constraints: { min_length: 68, max_length: 68 },
+      },
+      closed: {
+        type: { kind: "literal", value_type: "boolean", value: true },
+        optional: false,
+        constraints: {},
+      },
+    },
+  },
+  "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyInspectRequestA0": {
+    kind: "object",
+    properties: {
+      schema: {
+        type: {
+          kind: "literal",
+          value_type: "string",
+          value: "geometry.step_topology.inspect.request.a0",
+        },
+        optional: false,
+        constraints: {},
+      },
+      session: {
+        type: {
+          kind: "reference",
+          target: "Wavenumber.Geometer.Contracts.StepTopologyA0.SessionReference",
+        },
+        optional: false,
+        constraints: {},
+      },
+      page: {
+        type: {
+          kind: "reference",
+          target: "Wavenumber.Geometer.Contracts.StepTopologyA0.PageRequest",
+        },
+        optional: false,
+        constraints: {},
+      },
+      include_source_entity_evidence: {
+        type: { kind: "primitive", name: "boolean" },
+        optional: false,
+        constraints: {},
+      },
+      include_diagnostics: {
+        type: { kind: "primitive", name: "boolean" },
+        optional: false,
+        constraints: {},
+      },
+    },
+  },
+  "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyInspectResultA0": {
+    kind: "object",
+    properties: {
+      schema: {
+        type: {
+          kind: "literal",
+          value_type: "string",
+          value: "geometry.step_topology.inspect.result.a0",
+        },
+        optional: false,
+        constraints: {},
+      },
+      session: {
+        type: {
+          kind: "reference",
+          target: "Wavenumber.Geometer.Contracts.StepTopologyA0.SessionReference",
+        },
+        optional: false,
+        constraints: {},
+      },
+      counts: {
+        type: {
+          kind: "reference",
+          target: "Wavenumber.Geometer.Contracts.StepTopologyA0.InspectionCounts",
+        },
+        optional: false,
+        constraints: {},
+      },
+      page: {
+        type: {
+          kind: "reference",
+          target: "Wavenumber.Geometer.Contracts.StepTopologyA0.TopologyPage",
+        },
+        optional: false,
+        constraints: {},
+      },
+      compact_table: {
+        type: {
+          kind: "reference",
+          target: "Wavenumber.Geometer.Contracts.StepTopologyA0.TopologyTableAttachmentDescriptor",
+        },
+        optional: true,
+        constraints: {},
+      },
+      diagnostics: {
+        type: {
+          kind: "array",
+          element: {
+            kind: "reference",
+            target: "Wavenumber.Geometer.Contracts.Common.DiagnosticA0",
+          },
+        },
+        optional: false,
+        constraints: { max_items: 256 },
+      },
+    },
+  },
+  "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyOpenRequestA0": {
+    kind: "object",
+    properties: {
+      schema: {
+        type: {
+          kind: "literal",
+          value_type: "string",
+          value: "geometry.step_topology.open.request.a0",
+        },
+        optional: false,
+        constraints: {},
+      },
+    },
+  },
+  "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyOpenResultA0": {
+    kind: "object",
+    properties: {
+      schema: {
+        type: {
+          kind: "literal",
+          value_type: "string",
+          value: "geometry.step_topology.open.result.a0",
+        },
+        optional: false,
+        constraints: {},
+      },
+      session: {
+        type: {
+          kind: "reference",
+          target: "Wavenumber.Geometer.Contracts.StepTopologyA0.SessionReference",
+        },
+        optional: false,
+        constraints: {},
+      },
+      source: {
+        type: {
+          kind: "reference",
+          target: "Wavenumber.Geometer.Contracts.StepTopologyA0.SourceDescriptor",
+        },
+        optional: false,
+        constraints: {},
+      },
+      tool: {
+        type: {
+          kind: "reference",
+          target: "Wavenumber.Geometer.Contracts.StepTopologyA0.ToolDescriptor",
+        },
+        optional: false,
+        constraints: {},
+      },
+      evicted_session_handles: {
+        type: { kind: "array", element: { kind: "primitive", name: "string" } },
+        optional: false,
+        constraints: { max_items: 8 },
+      },
+    },
+  },
+  "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyRenderRequestA0": {
+    kind: "object",
+    properties: {
+      schema: {
+        type: {
+          kind: "literal",
+          value_type: "string",
+          value: "geometry.step_topology.render.request.a0",
+        },
+        optional: false,
+        constraints: {},
+      },
+      session: {
+        type: {
+          kind: "reference",
+          target: "Wavenumber.Geometer.Contracts.StepTopologyA0.SessionReference",
+        },
+        optional: false,
+        constraints: {},
+      },
+      tessellation: {
+        type: {
+          kind: "reference",
+          target: "Wavenumber.Geometer.Contracts.StepTopologyA0.TessellationOptions",
+        },
+        optional: false,
+        constraints: {},
+      },
+    },
+  },
+  "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyRenderResultA0": {
+    kind: "object",
+    properties: {
+      schema: {
+        type: {
+          kind: "literal",
+          value_type: "string",
+          value: "geometry.step_topology.render.result.a0",
+        },
+        optional: false,
+        constraints: {},
+      },
+      session: {
+        type: {
+          kind: "reference",
+          target: "Wavenumber.Geometer.Contracts.StepTopologyA0.SessionReference",
+        },
+        optional: false,
+        constraints: {},
+      },
+      artifact: {
+        type: {
+          kind: "reference",
+          target: "Wavenumber.Geometer.Contracts.StepTopologyA0.RenderArtifactDescriptor",
+        },
+        optional: false,
+        constraints: {},
+      },
+      glb: {
+        type: {
+          kind: "reference",
+          target: "Wavenumber.Geometer.Contracts.StepTopologyA0.GlbAttachmentDescriptor",
+        },
+        optional: false,
+        constraints: {},
+      },
+      compact_binding_table: {
+        type: {
+          kind: "reference",
+          target:
+            "Wavenumber.Geometer.Contracts.StepTopologyA0.TopologyBindingTableAttachmentDescriptor",
+        },
+        optional: true,
+        constraints: {},
+      },
+    },
+  },
+  "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyResolveHitRequestA0": {
+    kind: "object",
+    properties: {
+      schema: {
+        type: {
+          kind: "literal",
+          value_type: "string",
+          value: "geometry.step_topology.resolve_hit.request.a0",
+        },
+        optional: false,
+        constraints: {},
+      },
+      session: {
+        type: {
+          kind: "reference",
+          target: "Wavenumber.Geometer.Contracts.StepTopologyA0.SessionReference",
+        },
+        optional: false,
+        constraints: {},
+      },
+      artifact_handle: {
+        type: { kind: "primitive", name: "string" },
+        optional: false,
+        constraints: { min_length: 68, max_length: 68 },
+      },
+      content_sha256: {
+        type: { kind: "primitive", name: "string" },
+        optional: false,
+        constraints: { min_length: 64, max_length: 64 },
+      },
+      instance_index: {
+        type: { kind: "primitive", name: "uint32" },
+        optional: false,
+        constraints: { max_value: 99999 },
+      },
+      primitive_index: {
+        type: { kind: "primitive", name: "uint32" },
+        optional: false,
+        constraints: { max_value: 999999 },
+      },
+      primitive_triangle_index: {
+        type: { kind: "primitive", name: "uint32" },
+        optional: false,
+        constraints: { max_value: 9999999 },
+      },
+      occurrence_handle: {
+        type: { kind: "primitive", name: "string" },
+        optional: false,
+        constraints: { min_length: 68, max_length: 68 },
+      },
+      body_handle: {
+        type: { kind: "primitive", name: "string" },
+        optional: false,
+        constraints: { min_length: 68, max_length: 68 },
+      },
+      face_handle: {
+        type: { kind: "primitive", name: "string" },
+        optional: false,
+        constraints: { min_length: 68, max_length: 68 },
+      },
+    },
+  },
+  "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyResolveHitResultA0": {
+    kind: "object",
+    properties: {
+      schema: {
+        type: {
+          kind: "literal",
+          value_type: "string",
+          value: "geometry.step_topology.resolve_hit.result.a0",
+        },
+        optional: false,
+        constraints: {},
+      },
+      session: {
+        type: {
+          kind: "reference",
+          target: "Wavenumber.Geometer.Contracts.StepTopologyA0.SessionReference",
+        },
+        optional: false,
+        constraints: {},
+      },
+      instance_index: {
+        type: { kind: "primitive", name: "uint32" },
+        optional: false,
+        constraints: { max_value: 99999 },
+      },
+      primitive_index: {
+        type: { kind: "primitive", name: "uint32" },
+        optional: false,
+        constraints: { max_value: 999999 },
+      },
+      triangle_index: {
+        type: { kind: "primitive", name: "uint32" },
+        optional: false,
+        constraints: { max_value: 9999999 },
+      },
+      occurrence_handle: {
+        type: { kind: "primitive", name: "string" },
+        optional: false,
+        constraints: { min_length: 68, max_length: 68 },
+      },
+      body_handle: {
+        type: { kind: "primitive", name: "string" },
+        optional: false,
+        constraints: { min_length: 68, max_length: 68 },
+      },
+      face_handle: {
+        type: { kind: "primitive", name: "string" },
+        optional: false,
+        constraints: { min_length: 68, max_length: 68 },
+      },
+    },
+  },
+  "Wavenumber.Geometer.Contracts.StepTopologyA0.TessellationOptions": {
+    kind: "object",
+    properties: {
+      linear_deflection_mm: {
+        type: { kind: "primitive", name: "float64" },
+        optional: false,
+        constraints: { min_value: 0.000001, max_value: 1000 },
+      },
+      angular_deflection_rad: {
+        type: { kind: "primitive", name: "float64" },
+        optional: false,
+        constraints: { min_value: 0.000001, max_value: Math.PI },
+      },
+      relative: { type: { kind: "primitive", name: "boolean" }, optional: false, constraints: {} },
+      parallel: { type: { kind: "primitive", name: "boolean" }, optional: false, constraints: {} },
+      source_to_render: {
+        type: { kind: "array", element: { kind: "primitive", name: "float64" } },
+        optional: false,
+        constraints: { min_items: 12, max_items: 12 },
+      },
+    },
+  },
+  "Wavenumber.Geometer.Contracts.StepTopologyA0.ToolDescriptor": {
+    kind: "object",
+    properties: {
+      name: {
+        type: { kind: "literal", value_type: "string", value: "geometer" },
+        optional: false,
+        constraints: {},
+      },
+      release_version: {
+        type: { kind: "primitive", name: "string" },
+        optional: false,
+        constraints: { min_length: 1, max_length: 64 },
+      },
+      occt_version: {
+        type: { kind: "primitive", name: "string" },
+        optional: false,
+        constraints: { min_length: 1, max_length: 64 },
+      },
+    },
+  },
+  "Wavenumber.Geometer.Contracts.StepTopologyA0.TopologyBindingTableAttachmentDescriptor": {
+    kind: "object",
+    properties: {
+      name: {
+        type: { kind: "literal", value_type: "string", value: "topology_binding_table" },
+        optional: false,
+        constraints: {},
+      },
+      media_type: {
+        type: {
+          kind: "literal",
+          value_type: "string",
+          value: "application/vnd.wavenumber.geometer.step-topology-binding-table",
+        },
+        optional: false,
+        constraints: {},
+      },
+      format: {
+        type: {
+          kind: "literal",
+          value_type: "string",
+          value: "wn.geometer.step-topology-binding-table.a0",
+        },
+        optional: false,
+        constraints: {},
+      },
+      bytes: {
+        type: { kind: "primitive", name: "uint32" },
+        optional: false,
+        constraints: { min_value: 1, max_value: 134217728 },
+      },
+      sha256: {
+        type: { kind: "primitive", name: "string" },
+        optional: false,
+        constraints: { min_length: 64, max_length: 64 },
+      },
+    },
+  },
+  "Wavenumber.Geometer.Contracts.StepTopologyA0.TopologyPage": {
+    kind: "object",
+    properties: {
+      definitions: {
+        type: {
+          kind: "array",
+          element: {
+            kind: "reference",
+            target: "Wavenumber.Geometer.Contracts.StepTopologyA0.DefinitionSummary",
+          },
+        },
+        optional: false,
+        constraints: { max_items: 1024 },
+      },
+      occurrences: {
+        type: {
+          kind: "array",
+          element: {
+            kind: "reference",
+            target: "Wavenumber.Geometer.Contracts.StepTopologyA0.OccurrenceSummary",
+          },
+        },
+        optional: false,
+        constraints: { max_items: 1024 },
+      },
+      bodies: {
+        type: {
+          kind: "array",
+          element: {
+            kind: "reference",
+            target: "Wavenumber.Geometer.Contracts.StepTopologyA0.BodySummary",
+          },
+        },
+        optional: false,
+        constraints: { max_items: 1024 },
+      },
+      shells: {
+        type: {
+          kind: "array",
+          element: {
+            kind: "reference",
+            target: "Wavenumber.Geometer.Contracts.StepTopologyA0.ShellSummary",
+          },
+        },
+        optional: false,
+        constraints: { max_items: 1024 },
+      },
+      faces: {
+        type: {
+          kind: "array",
+          element: {
+            kind: "reference",
+            target: "Wavenumber.Geometer.Contracts.StepTopologyA0.FaceSummary",
+          },
+        },
+        optional: false,
+        constraints: { max_items: 1024 },
+      },
+      next_cursor: {
+        type: { kind: "primitive", name: "string" },
+        optional: true,
+        constraints: { max_length: 256 },
+      },
+    },
+  },
+  "Wavenumber.Geometer.Contracts.StepTopologyA0.TopologyTableAttachmentDescriptor": {
+    kind: "object",
+    properties: {
+      name: {
+        type: { kind: "literal", value_type: "string", value: "topology_table" },
+        optional: false,
+        constraints: {},
+      },
+      media_type: {
+        type: {
+          kind: "literal",
+          value_type: "string",
+          value: "application/vnd.wavenumber.geometer.step-topology-table",
+        },
+        optional: false,
+        constraints: {},
+      },
+      format: {
+        type: {
+          kind: "literal",
+          value_type: "string",
+          value: "wn.geometer.step-topology-table.a0",
+        },
+        optional: false,
+        constraints: {},
+      },
+      bytes: {
+        type: { kind: "primitive", name: "uint32" },
+        optional: false,
+        constraints: { min_value: 1, max_value: 134217728 },
+      },
+      sha256: {
+        type: { kind: "primitive", name: "string" },
+        optional: false,
+        constraints: { min_length: 64, max_length: 64 },
+      },
+    },
+  },
 };
 
 export function decodeDiagnosticA0Json(data: string | Uint8Array): DiagnosticA0 {
@@ -1099,6 +2153,252 @@ export function encodeOperationOutcomeA0Json(value: OperationOutcomeA0): string 
     {
       kind: "reference",
       target: "Wavenumber.Geometer.Contracts.OperationOutcomeA0.OperationOutcomeA0",
+    },
+    declarations,
+  );
+}
+
+export function decodeStepTopologyCloseRequestA0Json(
+  data: string | Uint8Array,
+): StepTopologyCloseRequestA0 {
+  return decodeContractJson(
+    data,
+    {
+      kind: "reference",
+      target: "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyCloseRequestA0",
+    },
+    declarations,
+  ) as StepTopologyCloseRequestA0;
+}
+
+export function encodeStepTopologyCloseRequestA0Json(value: StepTopologyCloseRequestA0): string {
+  return encodeContractJson(
+    value,
+    {
+      kind: "reference",
+      target: "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyCloseRequestA0",
+    },
+    declarations,
+  );
+}
+
+export function decodeStepTopologyCloseResultA0Json(
+  data: string | Uint8Array,
+): StepTopologyCloseResultA0 {
+  return decodeContractJson(
+    data,
+    {
+      kind: "reference",
+      target: "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyCloseResultA0",
+    },
+    declarations,
+  ) as StepTopologyCloseResultA0;
+}
+
+export function encodeStepTopologyCloseResultA0Json(value: StepTopologyCloseResultA0): string {
+  return encodeContractJson(
+    value,
+    {
+      kind: "reference",
+      target: "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyCloseResultA0",
+    },
+    declarations,
+  );
+}
+
+export function decodeStepTopologyInspectRequestA0Json(
+  data: string | Uint8Array,
+): StepTopologyInspectRequestA0 {
+  return decodeContractJson(
+    data,
+    {
+      kind: "reference",
+      target: "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyInspectRequestA0",
+    },
+    declarations,
+  ) as StepTopologyInspectRequestA0;
+}
+
+export function encodeStepTopologyInspectRequestA0Json(
+  value: StepTopologyInspectRequestA0,
+): string {
+  return encodeContractJson(
+    value,
+    {
+      kind: "reference",
+      target: "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyInspectRequestA0",
+    },
+    declarations,
+  );
+}
+
+export function decodeStepTopologyInspectResultA0Json(
+  data: string | Uint8Array,
+): StepTopologyInspectResultA0 {
+  return decodeContractJson(
+    data,
+    {
+      kind: "reference",
+      target: "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyInspectResultA0",
+    },
+    declarations,
+  ) as StepTopologyInspectResultA0;
+}
+
+export function encodeStepTopologyInspectResultA0Json(value: StepTopologyInspectResultA0): string {
+  return encodeContractJson(
+    value,
+    {
+      kind: "reference",
+      target: "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyInspectResultA0",
+    },
+    declarations,
+  );
+}
+
+export function decodeStepTopologyOpenRequestA0Json(
+  data: string | Uint8Array,
+): StepTopologyOpenRequestA0 {
+  return decodeContractJson(
+    data,
+    {
+      kind: "reference",
+      target: "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyOpenRequestA0",
+    },
+    declarations,
+  ) as StepTopologyOpenRequestA0;
+}
+
+export function encodeStepTopologyOpenRequestA0Json(value: StepTopologyOpenRequestA0): string {
+  return encodeContractJson(
+    value,
+    {
+      kind: "reference",
+      target: "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyOpenRequestA0",
+    },
+    declarations,
+  );
+}
+
+export function decodeStepTopologyOpenResultA0Json(
+  data: string | Uint8Array,
+): StepTopologyOpenResultA0 {
+  return decodeContractJson(
+    data,
+    {
+      kind: "reference",
+      target: "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyOpenResultA0",
+    },
+    declarations,
+  ) as StepTopologyOpenResultA0;
+}
+
+export function encodeStepTopologyOpenResultA0Json(value: StepTopologyOpenResultA0): string {
+  return encodeContractJson(
+    value,
+    {
+      kind: "reference",
+      target: "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyOpenResultA0",
+    },
+    declarations,
+  );
+}
+
+export function decodeStepTopologyRenderRequestA0Json(
+  data: string | Uint8Array,
+): StepTopologyRenderRequestA0 {
+  return decodeContractJson(
+    data,
+    {
+      kind: "reference",
+      target: "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyRenderRequestA0",
+    },
+    declarations,
+  ) as StepTopologyRenderRequestA0;
+}
+
+export function encodeStepTopologyRenderRequestA0Json(value: StepTopologyRenderRequestA0): string {
+  return encodeContractJson(
+    value,
+    {
+      kind: "reference",
+      target: "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyRenderRequestA0",
+    },
+    declarations,
+  );
+}
+
+export function decodeStepTopologyRenderResultA0Json(
+  data: string | Uint8Array,
+): StepTopologyRenderResultA0 {
+  return decodeContractJson(
+    data,
+    {
+      kind: "reference",
+      target: "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyRenderResultA0",
+    },
+    declarations,
+  ) as StepTopologyRenderResultA0;
+}
+
+export function encodeStepTopologyRenderResultA0Json(value: StepTopologyRenderResultA0): string {
+  return encodeContractJson(
+    value,
+    {
+      kind: "reference",
+      target: "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyRenderResultA0",
+    },
+    declarations,
+  );
+}
+
+export function decodeStepTopologyResolveHitRequestA0Json(
+  data: string | Uint8Array,
+): StepTopologyResolveHitRequestA0 {
+  return decodeContractJson(
+    data,
+    {
+      kind: "reference",
+      target: "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyResolveHitRequestA0",
+    },
+    declarations,
+  ) as StepTopologyResolveHitRequestA0;
+}
+
+export function encodeStepTopologyResolveHitRequestA0Json(
+  value: StepTopologyResolveHitRequestA0,
+): string {
+  return encodeContractJson(
+    value,
+    {
+      kind: "reference",
+      target: "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyResolveHitRequestA0",
+    },
+    declarations,
+  );
+}
+
+export function decodeStepTopologyResolveHitResultA0Json(
+  data: string | Uint8Array,
+): StepTopologyResolveHitResultA0 {
+  return decodeContractJson(
+    data,
+    {
+      kind: "reference",
+      target: "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyResolveHitResultA0",
+    },
+    declarations,
+  ) as StepTopologyResolveHitResultA0;
+}
+
+export function encodeStepTopologyResolveHitResultA0Json(
+  value: StepTopologyResolveHitResultA0,
+): string {
+  return encodeContractJson(
+    value,
+    {
+      kind: "reference",
+      target: "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyResolveHitResultA0",
     },
     declarations,
   );

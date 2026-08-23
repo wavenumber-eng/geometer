@@ -674,6 +674,102 @@ configure_geometer_fixture_test(geometer_projection_outline_test
 
 add_test(NAME geometer_projection_outline_test COMMAND geometer_projection_outline_test)
 
+if(NOT EMSCRIPTEN)
+    add_executable(geometer_step_topology_session_test
+        step_topology_session_test.cpp
+    )
+
+    target_link_libraries(geometer_step_topology_session_test PRIVATE geometer_lib)
+    configure_geometer_fixture_test(geometer_step_topology_session_test)
+    add_test(NAME geometer_step_topology_session_test COMMAND geometer_step_topology_session_test)
+
+    add_executable(geometer_step_topology_logical_groups_test
+        step_topology_logical_groups_test.cpp
+    )
+    target_link_libraries(geometer_step_topology_logical_groups_test PRIVATE geometer_lib)
+    configure_geometer_fixture_test(geometer_step_topology_logical_groups_test)
+    add_test(NAME geometer_step_topology_logical_groups_test
+             COMMAND geometer_step_topology_logical_groups_test)
+
+    add_executable(geometer_step_topology_brep_graph_test
+        step_topology_brep_graph_test.cpp
+    )
+
+    target_link_libraries(geometer_step_topology_brep_graph_test PRIVATE geometer_lib)
+    add_test(NAME geometer_step_topology_brep_graph_test
+             COMMAND geometer_step_topology_brep_graph_test)
+
+    add_executable(geometer_step_topology_render_binding_test
+        step_topology_render_binding_test.cpp
+    )
+    target_link_libraries(geometer_step_topology_render_binding_test PRIVATE geometer_lib)
+    configure_geometer_fixture_test(geometer_step_topology_render_binding_test)
+    add_test(NAME geometer_step_topology_render_binding_test
+             COMMAND geometer_step_topology_render_binding_test)
+
+    add_executable(geometer_step_topology_fixture_inventory
+        step_topology_fixture_inventory.cpp
+    )
+
+    target_link_libraries(geometer_step_topology_fixture_inventory PRIVATE geometer_lib)
+
+    add_executable(geometer_step_topology_worker_test_server
+        step_topology_worker_test_server.cpp
+    )
+
+    target_link_libraries(geometer_step_topology_worker_test_server PRIVATE geometer_lib)
+
+    add_executable(geometer_step_topology_glb_fixture_emitter
+        step_topology_glb_fixture_emitter.cpp
+    )
+    target_link_libraries(geometer_step_topology_glb_fixture_emitter PRIVATE geometer_lib)
+
+    add_test(
+        NAME geometer_step_topology_fixture_inventory_test
+        COMMAND geometer_step_topology_fixture_inventory --self-test
+    )
+
+    add_test(
+        NAME geometer_step_topology_generated_fixtures_test
+        COMMAND geometer_step_topology_fixture_inventory --verify-generated
+                ${CMAKE_SOURCE_DIR}/tests/fixtures/step/generated_topology
+    )
+
+    add_test(
+        NAME geometer_step_topology_fixture_baseline_test
+        COMMAND geometer_step_topology_fixture_inventory --check-report
+                docs/reports/step-topology-fixture-baseline.json
+                monolithic
+                tests/fixtures/step/embedded_models/miniature_test_point.stp
+                tests/fixtures/glb/embedded_models/miniature_test_point.glb
+                monolithic
+                tests/fixtures/step/embedded_models/SOT-23.STEP
+                tests/fixtures/glb/embedded_models/SOT-23.glb
+                small_assembly
+                tests/fixtures/step/embedded_models/RESC1608X06L.step
+                tests/fixtures/glb/embedded_models/RESC1608X06L.glb
+                repeated_assembly
+                tests/fixtures/step/embedded_models/SOIC-20-300.STEP
+                tests/fixtures/glb/embedded_models/SOIC-20-300.glb
+                varied_assembly
+                tests/fixtures/step/embedded_models/ABM3B.STEP
+                tests/fixtures/glb/embedded_models/ABM3B.glb
+                generated_repeated_assembly
+                tests/fixtures/step/generated_topology/generated_repeated_occurrences.step
+                -
+                generated_fused_slab
+                tests/fixtures/step/generated_topology/generated_fused_slab.step
+                -
+                generated_flat_multi_solid
+                tests/fixtures/step/generated_topology/generated_flat_multi_solid.step
+                -
+    )
+    set_tests_properties(
+        geometer_step_topology_fixture_baseline_test
+        PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    )
+endif()
+
 if(EMSCRIPTEN)
     # The repository package is ESM, while these executable test harnesses use
     # Emscripten's CommonJS Node runtime. Keep every registered WASM CTest on
@@ -704,6 +800,13 @@ if(WIN32 AND OpenCASCADE_BINARY_DIR)
         geometer_projection_options_json_test
         geometer_projection_model_transform_test
         geometer_projection_outline_test
+        geometer_step_topology_session_test
+        geometer_step_topology_logical_groups_test
+        geometer_step_topology_brep_graph_test
+        geometer_step_topology_render_binding_test
+        geometer_step_topology_fixture_inventory_test
+        geometer_step_topology_generated_fixtures_test
+        geometer_step_topology_fixture_baseline_test
         PROPERTIES
             ENVIRONMENT_MODIFICATION "PATH=path_list_prepend:${OpenCASCADE_BINARY_DIR}"
     )

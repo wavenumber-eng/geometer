@@ -1,0 +1,223 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:wavenumber:schema:geometer:geometry.step_topology.render.result:a0",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "type": "string",
+      "const": "geometry.step_topology.render.result.a0"
+    },
+    "session": {
+      "$ref": "#/$defs/SessionReference"
+    },
+    "artifact": {
+      "$ref": "#/$defs/RenderArtifactDescriptor"
+    },
+    "glb": {
+      "$ref": "#/$defs/GlbAttachmentDescriptor"
+    },
+    "compact_binding_table": {
+      "$ref": "#/$defs/TopologyBindingTableAttachmentDescriptor"
+    }
+  },
+  "required": [
+    "schema",
+    "session",
+    "artifact",
+    "glb"
+  ],
+  "unevaluatedProperties": {
+    "not": {}
+  },
+  "$defs": {
+    "SessionReference": {
+      "type": "object",
+      "properties": {
+        "session_handle": {
+          "type": "string",
+          "minLength": 68,
+          "maxLength": 68
+        },
+        "generation": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        }
+      },
+      "required": [
+        "session_handle",
+        "generation"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "RenderArtifactDescriptor": {
+      "type": "object",
+      "properties": {
+        "artifact_handle": {
+          "type": "string",
+          "minLength": 68,
+          "maxLength": 68
+        },
+        "content_sha256": {
+          "type": "string",
+          "minLength": 64,
+          "maxLength": 64
+        },
+        "render_artifact_handle": {
+          "type": "string",
+          "minLength": 68,
+          "maxLength": 68
+        },
+        "render_content_sha256": {
+          "type": "string",
+          "minLength": 64,
+          "maxLength": 64
+        },
+        "binding_layout": {
+          "type": "string",
+          "const": "node-primitive-a0"
+        },
+        "geometry_length_unit": {
+          "type": "string",
+          "const": "meter"
+        },
+        "source_length_unit": {
+          "type": "string",
+          "const": "millimeter"
+        },
+        "counts": {
+          "$ref": "#/$defs/RenderCounts"
+        }
+      },
+      "required": [
+        "artifact_handle",
+        "content_sha256",
+        "render_artifact_handle",
+        "render_content_sha256",
+        "binding_layout",
+        "geometry_length_unit",
+        "source_length_unit",
+        "counts"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "GlbAttachmentDescriptor": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "const": "glb"
+        },
+        "media_type": {
+          "type": "string",
+          "const": "model/gltf-binary"
+        },
+        "format": {
+          "type": "string",
+          "const": "glb-2.0"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 268435456
+        },
+        "sha256": {
+          "type": "string",
+          "minLength": 64,
+          "maxLength": 64
+        }
+      },
+      "required": [
+        "name",
+        "media_type",
+        "format",
+        "bytes",
+        "sha256"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "TopologyBindingTableAttachmentDescriptor": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "const": "topology_binding_table"
+        },
+        "media_type": {
+          "type": "string",
+          "const": "application/vnd.wavenumber.geometer.step-topology-binding-table"
+        },
+        "format": {
+          "type": "string",
+          "const": "wn.geometer.step-topology-binding-table.a0"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 134217728
+        },
+        "sha256": {
+          "type": "string",
+          "minLength": 64,
+          "maxLength": 64
+        }
+      },
+      "required": [
+        "name",
+        "media_type",
+        "format",
+        "bytes",
+        "sha256"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "RenderCounts": {
+      "type": "object",
+      "properties": {
+        "meshes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "instances": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "primitives": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        "geometry_triangles": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000000
+        },
+        "instanced_triangles": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 50000000
+        }
+      },
+      "required": [
+        "meshes",
+        "instances",
+        "primitives",
+        "geometry_triangles",
+        "instanced_triangles"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    }
+  }
+}

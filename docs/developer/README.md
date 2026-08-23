@@ -705,6 +705,53 @@ python tests\wasm\planar_batch_solve_bytes_chrome_benchmark.py request.bin --wor
 The Rack metadata under `tests/` describes test strata, but the C++ tests are
 registered through CTest.
 
+The experimental native STEP topology research has an additional contained
+worker test. It opens a real OCCT session, then verifies hard deadline/cancel
+replacement (including descendants), private temporary-directory cleanup,
+injected supervisor-failure cleanup, cooperative native cancellation, and the
+platform OS memory ceiling (Windows Job Object or POSIX exec-launcher
+`RLIMIT_AS`):
+
+```powershell
+cmake --build build --config Release --target geometer_step_topology_worker_test_server
+uv run pytest tests\python\test_topology_worker_supervisor.py -q
+```
+
+The helper worker protocol is test-only. Do not build application code against
+it. Slice A's persistent-topology operation models are now generated from
+TypeSpec, but are explicitly marked unavailable until a governed process
+adapter implements them. See
+[STEP topology contract Slice A](../design/step-topology-contract-a0.md).
+
+The experimental direct topology-to-triangle binding proof has a separate
+native target. It verifies indexed face spans, repeated-occurrence instances,
+reverse hit resolution, transforms/reflections, winding/normals, limits, and
+generation invalidation. The fixture baseline test also resolves every
+triangle of every instance across the measured corpus:
+
+```powershell
+cmake --build build --config Release --target `
+  geometer_step_topology_render_binding_test `
+  geometer_step_topology_fixture_inventory
+ctest --test-dir build -C Release --output-on-failure -R `
+  "geometer_step_topology_(render_binding|fixture_baseline)_test"
+```
+
+The experimental topology GLB proof adds a native fixture emitter and a real
+Three.js loader/raycast integration test. Node dependencies are pinned by the
+repository lockfile; this command runs every checked STEP fixture plus a
+reflected-coordinate case and writes all temporary artifacts under the pytest
+directory:
+
+```powershell
+cmake --build build --config Release --target `
+  geometer_step_topology_glb_fixture_emitter
+uv run pytest tests\python\test_topology_glb_raycast.py -q
+```
+
+The emitted GLB is a neutral-material topology work packet and is not the existing
+presentation-oriented STEP-to-GLB output.
+
 Current limitation: the top-level CMake configure always resolves OCCT first.
 That means even low-level tests need the native dependency setup when run
 through CMake. For isolated low-level work before `.deps/` exists, direct

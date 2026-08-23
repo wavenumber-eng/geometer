@@ -6,6 +6,15 @@ import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import Ajv2020 from "ajv/dist/2020.js";
+import {
+  decodeStepTopologyInspectResultA0Json,
+  decodeStepTopologyRenderResultA0Json,
+  decodeStepTopologyResolveHitRequestA0Json,
+  StepTopologyInspectionAccumulator,
+  validateStepTopologyInspection,
+  validateStepTopologyRenderAttachments,
+  validateStepTopologyResolveHitContext,
+} from "../dist/wasm/npm/geometer/index.js";
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const vectorRoot = join(repositoryRoot, "tests", "contracts", "vectors");
@@ -100,6 +109,59 @@ async function main() {
       assertEqual(actual, vector.expected_value, `${vector.id} presence projection`);
       continue;
     }
+    if (vector.lane === "semantic" && vector.oracle.startsWith("step_topology_")) {
+      let semanticError = null;
+      try {
+        if (vector.oracle === "step_topology_session") {
+          const request = decodeStepTopologyResolveHitRequestA0Json(bytes);
+          validateStepTopologyResolveHitContext(request, {
+            sessionHandle: vector.expected_session_handle,
+            generation: vector.expected_generation,
+          });
+        } else if (vector.oracle === "step_topology_inspection") {
+          if (vector.prior_pages) {
+            const accumulator = new StepTopologyInspectionAccumulator();
+            for (const priorPage of vector.prior_pages) {
+              referencedFiles.add(priorPage);
+              accumulator.addPage(
+                decodeStepTopologyInspectResultA0Json(await readFile(join(vectorRoot, priorPage))),
+              );
+            }
+            accumulator.addPage(decodeStepTopologyInspectResultA0Json(bytes));
+          } else {
+            validateStepTopologyInspection(decodeStepTopologyInspectResultA0Json(bytes));
+          }
+        } else if (vector.oracle === "step_topology_inspection_high_fan_in") {
+          const accumulator = new StepTopologyInspectionAccumulator();
+          for (const page of highFanInInspectionPages(
+            decodeStepTopologyInspectResultA0Json(bytes),
+            vector.fan_in,
+          )) {
+            accumulator.addPage(page);
+          }
+        } else if (vector.oracle === "step_topology_render_attachments") {
+          const attachments = [];
+          for (const attachment of vector.attachments) {
+            referencedFiles.add(attachment.file);
+            attachments.push({
+              name: attachment.name,
+              mediaType: attachment.media_type,
+              data: await readFile(join(vectorRoot, attachment.file)),
+            });
+          }
+          await validateStepTopologyRenderAttachments(
+            decodeStepTopologyRenderResultA0Json(bytes),
+            attachments,
+          );
+        } else {
+          throw new Error(`${vector.id}: unknown STEP topology semantic oracle.`);
+        }
+      } catch (error) {
+        semanticError = error;
+      }
+      assertOutcome(vector, semanticError === null, semanticError);
+      continue;
+    }
     throw new Error(`${vector.id}: unsupported lane/oracle ${vector.lane}/${vector.oracle}`);
   }
 
@@ -191,6 +253,56 @@ function validateManifest(value) {
     if (!vector.file.startsWith("cases/") || vector.file.includes("..")) {
       throw new Error(`${vector.id}: invalid repository-relative case path.`);
     }
+    if (vector.oracle.startsWith("step_topology_")) {
+      if (vector.lane !== "semantic") {
+        throw new Error(`${vector.id}: STEP topology oracle must use the semantic lane.`);
+      }
+      if (vector.oracle === "step_topology_session") {
+        if (
+          typeof vector.expected_session_handle !== "string" ||
+          !Number.isSafeInteger(vector.expected_generation)
+        ) {
+          throw new Error(`${vector.id}: session oracle context is incomplete.`);
+        }
+      } else if (vector.oracle === "step_topology_render_attachments") {
+        if (!Array.isArray(vector.attachments) || vector.attachments.length === 0) {
+          throw new Error(`${vector.id}: render oracle attachments are missing.`);
+        }
+        for (const attachment of vector.attachments) {
+          if (
+            typeof attachment.name !== "string" ||
+            typeof attachment.media_type !== "string" ||
+            !attachment.file?.startsWith("cases/") ||
+            attachment.file.includes("..")
+          ) {
+            throw new Error(`${vector.id}: render oracle attachment is invalid.`);
+          }
+        }
+      } else if (vector.oracle === "step_topology_inspection_high_fan_in") {
+        if (
+          !Number.isSafeInteger(vector.fan_in) ||
+          vector.fan_in < 1024 ||
+          vector.fan_in > 100000
+        ) {
+          throw new Error(`${vector.id}: high-fan-in size is invalid.`);
+        }
+      } else if (vector.oracle === "step_topology_inspection") {
+        if (vector.prior_pages !== undefined) {
+          if (
+            !Array.isArray(vector.prior_pages) ||
+            vector.prior_pages.length === 0 ||
+            vector.prior_pages.some(
+              (path) =>
+                typeof path !== "string" || !path.startsWith("cases/") || path.includes(".."),
+            )
+          ) {
+            throw new Error(`${vector.id}: inspection prior_pages are invalid.`);
+          }
+        }
+      } else {
+        throw new Error(`${vector.id}: unsupported STEP topology semantic oracle.`);
+      }
+    }
   }
   for (const vector of value.operation_vectors) {
     if (!vector.id || ids.has(vector.id)) {
@@ -237,6 +349,70 @@ function validateManifest(value) {
       throw new Error(`${vector.id}: failure vector lacks exact diagnostic metadata.`);
     }
   }
+}
+
+function highFanInInspectionPages(seed, fanIn) {
+  const definitionHandle = `gtt_${"a".repeat(64)}`;
+  const shellHandle = `gtt_${"e".repeat(64)}`;
+  const bodyHandles = Array.from(
+    { length: fanIn },
+    (_, index) => `gtt_${(index + 1).toString(16).padStart(64, "0")}`,
+  );
+  const pages = [];
+  for (let offset = 0; offset < fanIn; offset += 1024) {
+    const terminal = offset + 1024 >= fanIn;
+    const handles = bodyHandles.slice(offset, offset + 1024);
+    pages.push({
+      schema: "geometry.step_topology.inspect.result.a0",
+      session: seed.session,
+      counts: {
+        definitions: 1,
+        root_occurrences: 0,
+        component_occurrences: 0,
+        bodies: fanIn,
+        shells: 1,
+        faces: 0,
+      },
+      page: {
+        definitions:
+          offset === 0
+            ? [
+                {
+                  handle: definitionHandle,
+                  name: "high fan-in definition",
+                  assembly: false,
+                  body_count: fanIn,
+                  face_count: 0,
+                },
+              ]
+            : [],
+        occurrences: [],
+        bodies: handles.map((handle) => ({
+          handle,
+          definition_handle: definitionHandle,
+          topology_kind: "solid",
+          shell_handles: [shellHandle],
+          face_handles: [],
+          bounds_mm: [0, 0, 0, 1, 1, 1],
+          volume_mm3: 1,
+        })),
+        shells: terminal
+          ? [
+              {
+                handle: shellHandle,
+                definition_handle: definitionHandle,
+                body_handles: bodyHandles,
+                face_handles: [],
+              },
+            ]
+          : [],
+        faces: [],
+        ...(terminal ? {} : { next_cursor: `body-${offset + handles.length}` }),
+      },
+      diagnostics: [],
+    });
+  }
+  return pages;
 }
 
 function assertOutcome(vector, valid, detail) {

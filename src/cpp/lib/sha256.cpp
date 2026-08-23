@@ -1,6 +1,8 @@
 #include "geometer/sha256.h"
 
+#include <algorithm>
 #include <array>
+#include <cstring>
 #include <limits>
 #include <stdexcept>
 
@@ -83,53 +85,106 @@ void compress(std::array<std::uint32_t, 8>& state, const std::uint8_t* block)
 
 } // namespace
 
-std::array<std::uint8_t, 32> sha256(const std::uint8_t* data, std::size_t size)
+Sha256Builder::Sha256Builder()
+    : state_{0x6a09e667U, 0xbb67ae85U, 0x3c6ef372U, 0xa54ff53aU,
+             0x510e527fU, 0x9b05688cU, 0x1f83d9abU, 0x5be0cd19U}
 {
-    if (data == nullptr && size != 0)
-        throw std::invalid_argument("SHA-256 input pointer is null");
-    if constexpr (std::numeric_limits<std::size_t>::max() >
-                  std::numeric_limits<std::uint64_t>::max() / 8U)
-        if (size > std::numeric_limits<std::uint64_t>::max() / 8U)
-            throw std::length_error("SHA-256 input is too large");
-    std::array<std::uint32_t, 8> state{0x6a09e667U, 0xbb67ae85U, 0x3c6ef372U, 0xa54ff53aU,
-                                       0x510e527fU, 0x9b05688cU, 0x1f83d9abU, 0x5be0cd19U};
-    std::size_t offset = 0;
-    while (size - offset >= 64)
-    {
-        compress(state, data + offset);
-        offset += 64;
-    }
-    std::array<std::uint8_t, 128> final{};
-    const std::size_t remainder = size - offset;
-    for (std::size_t index = 0; index < remainder; ++index)
-        final[index] = data[offset + index];
-    final[remainder] = 0x80;
-    const std::size_t final_size = remainder < 56 ? 64 : 128;
-    const std::uint64_t bit_size = static_cast<std::uint64_t>(size) * 8U;
-    for (std::uint32_t index = 0; index < 8; ++index)
-        final[final_size - 1 - index] = static_cast<std::uint8_t>(bit_size >> (index * 8U));
-    compress(state, final.data());
-    if (final_size == 128)
-        compress(state, final.data() + 64);
-    std::array<std::uint8_t, 32> digest{};
-    for (std::uint32_t word = 0; word < state.size(); ++word)
-        for (std::uint32_t byte = 0; byte < 4; ++byte)
-            digest[word * 4 + byte] = static_cast<std::uint8_t>(state[word] >> ((3U - byte) * 8U));
-    return digest;
 }
 
-std::string sha256_hex(const std::uint8_t* data, std::size_t size)
+void Sha256Builder::update(const std::uint8_t* data, std::size_t size)
+{
+    if (data == nullptr && size != 0)
+    {
+        throw std::invalid_argument("SHA-256 input pointer is null");
+    }
+    if (size > std::numeric_limits<std::uint64_t>::max() / 8U - total_size_)
+    {
+        throw std::length_error("SHA-256 input is too large");
+    }
+    total_size_ += static_cast<std::uint64_t>(size);
+    std::size_t offset = 0;
+    if (buffer_size_ != 0)
+    {
+        const std::size_t copied = std::min(size, buffer_.size() - buffer_size_);
+        if (copied != 0)
+        {
+            std::memcpy(buffer_.data() + buffer_size_, data, copied);
+        }
+        buffer_size_ += copied;
+        offset += copied;
+        if (buffer_size_ == buffer_.size())
+        {
+            compress(state_, buffer_.data());
+            buffer_size_ = 0;
+        }
+    }
+    while (size - offset >= buffer_.size())
+    {
+        compress(state_, data + offset);
+        offset += buffer_.size();
+    }
+    if (offset < size)
+    {
+        buffer_size_ = size - offset;
+        std::memcpy(buffer_.data(), data + offset, buffer_size_);
+    }
+}
+
+std::array<std::uint8_t, 32> Sha256Builder::digest() const
+{
+    Sha256Builder copy = *this;
+    std::array<std::uint8_t, 128> final{};
+    std::memcpy(final.data(), copy.buffer_.data(), copy.buffer_size_);
+    final[copy.buffer_size_] = 0x80;
+    const std::size_t final_size = copy.buffer_size_ < 56 ? 64 : 128;
+    const std::uint64_t bit_size = copy.total_size_ * 8U;
+    for (std::uint32_t index = 0; index < 8; ++index)
+    {
+        final[final_size - 1U - index] = static_cast<std::uint8_t>(bit_size >> (index * 8U));
+    }
+    compress(copy.state_, final.data());
+    if (final_size == 128)
+    {
+        compress(copy.state_, final.data() + 64);
+    }
+    std::array<std::uint8_t, 32> result{};
+    for (std::uint32_t word = 0; word < copy.state_.size(); ++word)
+    {
+        for (std::uint32_t byte = 0; byte < 4; ++byte)
+        {
+            result[word * 4U + byte] =
+                static_cast<std::uint8_t>(copy.state_[word] >> ((3U - byte) * 8U));
+        }
+    }
+    return result;
+}
+
+std::string Sha256Builder::hex_digest() const
 {
     constexpr char digits[] = "0123456789abcdef";
-    const auto digest = sha256(data, size);
+    const auto bytes = digest();
     std::string output;
     output.reserve(64);
-    for (const std::uint8_t byte : digest)
+    for (const std::uint8_t byte : bytes)
     {
         output.push_back(digits[byte >> 4U]);
         output.push_back(digits[byte & 15U]);
     }
     return output;
+}
+
+std::array<std::uint8_t, 32> sha256(const std::uint8_t* data, std::size_t size)
+{
+    Sha256Builder builder;
+    builder.update(data, size);
+    return builder.digest();
+}
+
+std::string sha256_hex(const std::uint8_t* data, std::size_t size)
+{
+    Sha256Builder builder;
+    builder.update(data, size);
+    return builder.hex_digest();
 }
 
 } // namespace geometer

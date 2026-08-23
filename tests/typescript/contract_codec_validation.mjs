@@ -9,10 +9,21 @@ import {
   decodeModelBoundsOptionsA0Json,
   decodeModelBoundsResultA0Json,
   decodeOperationOutcomeA0Json,
-  encodeModelBoundsOptionsA0Json,
+  decodeStepTopologyInspectResultA0Json,
+  decodeStepTopologyRenderResultA0Json,
+  decodeStepTopologyResolveHitRequestA0Json,
+  decodeStepTopologyResolveHitResultA0Json,
   encodeIpcReasonA0Json,
+  encodeModelBoundsOptionsA0Json,
   encodeOperationOutcomeA0Json,
+  encodeStepTopologyResolveHitRequestA0Json,
 } from "../../dist/wasm/npm/geometer/generated/index.js";
+import {
+  StepTopologyInspectionAccumulator,
+  validateStepTopologyInspection,
+  validateStepTopologyRenderAttachments,
+  validateStepTopologyResolveHitContext,
+} from "../../dist/wasm/npm/geometer/index.js";
 
 const root = resolve(fileURLToPath(new URL("../..", import.meta.url)));
 const vectorRoot = join(root, "tests", "contracts", "vectors");
@@ -22,6 +33,10 @@ const decoders = {
   "geometry.model_bounds.a0": decodeModelBoundsResultA0Json,
   "geometry.model_bounds.options.a0": decodeModelBoundsOptionsA0Json,
   "geometer.operation.outcome.a0": decodeOperationOutcomeA0Json,
+  "geometry.step_topology.inspect.result.a0": decodeStepTopologyInspectResultA0Json,
+  "geometry.step_topology.render.result.a0": decodeStepTopologyRenderResultA0Json,
+  "geometry.step_topology.resolve_hit.request.a0": decodeStepTopologyResolveHitRequestA0Json,
+  "geometry.step_topology.resolve_hit.result.a0": decodeStepTopologyResolveHitResultA0Json,
 };
 
 for (const vector of manifest.vectors) {
@@ -39,6 +54,47 @@ for (const vector of manifest.vectors) {
   } catch (caught) {
     error = caught;
   }
+  const structurallyAccepted = error === null;
+  if (structurallyAccepted && vector.oracle.startsWith("step_topology_")) {
+    try {
+      if (vector.oracle === "step_topology_session") {
+        validateStepTopologyResolveHitContext(decoded, {
+          sessionHandle: vector.expected_session_handle,
+          generation: vector.expected_generation,
+        });
+      } else if (vector.oracle === "step_topology_inspection") {
+        if (vector.prior_pages) {
+          const accumulator = new StepTopologyInspectionAccumulator();
+          for (const priorPage of vector.prior_pages) {
+            accumulator.addPage(
+              decodeStepTopologyInspectResultA0Json(await readFile(join(vectorRoot, priorPage))),
+            );
+          }
+          accumulator.addPage(decoded);
+        } else {
+          validateStepTopologyInspection(decoded);
+        }
+      } else if (vector.oracle === "step_topology_inspection_high_fan_in") {
+        const accumulator = new StepTopologyInspectionAccumulator();
+        for (const page of highFanInInspectionPages(decoded, vector.fan_in)) {
+          accumulator.addPage(page);
+        }
+      } else if (vector.oracle === "step_topology_render_attachments") {
+        await validateStepTopologyRenderAttachments(
+          decoded,
+          await Promise.all(
+            vector.attachments.map(async (attachment) => ({
+              name: attachment.name,
+              mediaType: attachment.media_type,
+              data: await readFile(join(vectorRoot, attachment.file)),
+            })),
+          ),
+        );
+      }
+    } catch (caught) {
+      error = caught;
+    }
+  }
   const accepted = error === null;
   if (accepted !== (vector.expected === "accept")) {
     throw new Error(
@@ -53,6 +109,102 @@ for (const vector of manifest.vectors) {
       throw new Error(`${vector.id}: presence projection mismatch.`);
     }
   }
+  if (
+    structurallyAccepted &&
+    vector.contract_identity === "geometry.step_topology.resolve_hit.request.a0"
+  ) {
+    const roundTrip = encodeStepTopologyResolveHitRequestA0Json(decoded);
+    if (roundTrip !== stored.toString("utf8").trimEnd()) {
+      throw new Error(`${vector.id}: generated TypeScript round-trip is not canonical.`);
+    }
+  }
+}
+
+function highFanInInspectionPages(seed, fanIn) {
+  const definitionHandle = `gtt_${"a".repeat(64)}`;
+  const shellHandle = `gtt_${"e".repeat(64)}`;
+  const bodyHandles = Array.from(
+    { length: fanIn },
+    (_, index) => `gtt_${(index + 1).toString(16).padStart(64, "0")}`,
+  );
+  return Array.from({ length: Math.ceil(fanIn / 1024) }, (_, pageIndex) => {
+    const offset = pageIndex * 1024;
+    const handles = bodyHandles.slice(offset, offset + 1024);
+    const terminal = offset + handles.length === fanIn;
+    return {
+      schema: "geometry.step_topology.inspect.result.a0",
+      session: seed.session,
+      counts: {
+        definitions: 1,
+        root_occurrences: 0,
+        component_occurrences: 0,
+        bodies: fanIn,
+        shells: 1,
+        faces: 0,
+      },
+      page: {
+        definitions:
+          offset === 0
+            ? [
+                {
+                  handle: definitionHandle,
+                  name: "high fan-in definition",
+                  assembly: false,
+                  body_count: fanIn,
+                  face_count: 0,
+                },
+              ]
+            : [],
+        occurrences: [],
+        bodies: handles.map((handle) => ({
+          handle,
+          definition_handle: definitionHandle,
+          topology_kind: "solid",
+          shell_handles: [shellHandle],
+          face_handles: [],
+          bounds_mm: [0, 0, 0, 1, 1, 1],
+          volume_mm3: 1,
+        })),
+        shells: terminal
+          ? [
+              {
+                handle: shellHandle,
+                definition_handle: definitionHandle,
+                body_handles: bodyHandles,
+                face_handles: [],
+              },
+            ]
+          : [],
+        faces: [],
+        ...(terminal ? {} : { next_cursor: `body-${offset + handles.length}` }),
+      },
+      diagnostics: [],
+    };
+  });
+}
+
+const topologyHit = decodeStepTopologyResolveHitRequestA0Json(
+  await readFile(join(vectorRoot, "cases", "step-topology-resolve-hit-valid.json")),
+);
+if (typeof topologyHit.session.generation !== "number") {
+  throw new Error("STEP topology generation must decode as a TypeScript number.");
+}
+encodeStepTopologyResolveHitRequestA0Json({
+  ...topologyHit,
+  session: { ...topologyHit.session, generation: 4_294_967_295 },
+});
+let oversizedGenerationAccepted = false;
+try {
+  encodeStepTopologyResolveHitRequestA0Json({
+    ...topologyHit,
+    session: { ...topologyHit.session, generation: 4_294_967_296 },
+  });
+  oversizedGenerationAccepted = true;
+} catch {
+  // Expected: Slice A generations are explicitly bounded to uint32.
+}
+if (oversizedGenerationAccepted) {
+  throw new Error("STEP topology generation exceeded its uint32 contract.");
 }
 
 if (encodeModelBoundsOptionsA0Json({}) !== "{}") {
@@ -115,4 +267,4 @@ for (const [label, encode] of [
   if (sparseArrayAccepted) throw new Error(`Encoder accepted a sparse ${label}.`);
 }
 
-console.log(JSON.stringify({ vectors: manifest.vectors.length, generatedCodecs: 4 }));
+console.log(JSON.stringify({ vectors: manifest.vectors.length, generatedCodecs: 8 }));

@@ -688,6 +688,272 @@ struct OperationSuccessA0
 
 using OperationOutcomeA0 = std::variant<OperationSuccessA0, OperationFailureA0>;
 
+struct SourceEntityEvidence
+{
+    bool mapped{};
+    bool shape_result_round_trip{};
+    std::optional<std::uint32_t> model_number{};
+    std::optional<std::string> entity_type{};
+    std::optional<std::string> mapping_method{};
+};
+
+struct BodySummary
+{
+    std::string handle{};
+    std::string definition_handle{};
+    std::string topology_kind{};
+    std::vector<std::string> shell_handles{};
+    std::vector<std::string> face_handles{};
+    std::vector<double> bounds_mm{};
+    double volume_mm3{};
+    std::optional<SourceEntityEvidence> source_entity{};
+};
+
+struct ComponentOccurrenceSummary
+{
+    std::string kind = "component";
+    std::string handle{};
+    std::string definition_handle{};
+    std::string parent_occurrence_handle{};
+    std::uint32_t depth{};
+    std::string name{};
+    std::vector<double> transform{};
+};
+
+struct DefinitionSummary
+{
+    std::string handle{};
+    std::string name{};
+    bool assembly{};
+    std::uint32_t body_count{};
+    std::uint32_t face_count{};
+    std::optional<SourceEntityEvidence> source_entity{};
+};
+
+struct FaceSummary
+{
+    std::string handle{};
+    std::string definition_handle{};
+    std::vector<std::string> body_handles{};
+    std::vector<std::string> shell_handles{};
+    std::vector<double> bounds_mm{};
+    double area_mm2{};
+    std::vector<double> centroid_mm{};
+    std::optional<SourceEntityEvidence> source_entity{};
+};
+
+struct GlbAttachmentDescriptor
+{
+    std::string name = "glb";
+    std::string media_type = "model/gltf-binary";
+    std::string format = "glb-2.0";
+    std::uint32_t bytes{};
+    std::string sha256{};
+};
+
+struct InspectionCounts
+{
+    std::uint32_t definitions{};
+    std::uint32_t root_occurrences{};
+    std::uint32_t component_occurrences{};
+    std::uint32_t bodies{};
+    std::uint32_t shells{};
+    std::uint32_t faces{};
+};
+
+struct RootOccurrenceSummary
+{
+    std::string kind = "root";
+    std::string handle{};
+    std::string definition_handle{};
+    std::string name{};
+    std::vector<double> transform{};
+};
+
+using OccurrenceSummary = std::variant<RootOccurrenceSummary, ComponentOccurrenceSummary>;
+
+struct PageRequest
+{
+    std::optional<std::string> cursor{};
+    std::uint32_t limit{};
+};
+
+struct RenderCounts
+{
+    std::uint32_t meshes{};
+    std::uint32_t instances{};
+    std::uint32_t primitives{};
+    std::uint32_t geometry_triangles{};
+    std::uint32_t instanced_triangles{};
+};
+
+struct RenderArtifactDescriptor
+{
+    std::string artifact_handle{};
+    std::string content_sha256{};
+    std::string render_artifact_handle{};
+    std::string render_content_sha256{};
+    std::string binding_layout = "node-primitive-a0";
+    std::string geometry_length_unit = "meter";
+    std::string source_length_unit = "millimeter";
+    RenderCounts counts{};
+};
+
+struct SessionReference
+{
+    std::string session_handle{};
+    std::uint32_t generation{};
+};
+
+struct ShellSummary
+{
+    std::string handle{};
+    std::string definition_handle{};
+    std::vector<std::string> body_handles{};
+    std::vector<std::string> face_handles{};
+    std::optional<SourceEntityEvidence> source_entity{};
+};
+
+struct SourceDescriptor
+{
+    std::string format = "step";
+    std::string sha256{};
+    std::uint32_t bytes{};
+    std::string normalized_length_unit = "millimeter";
+};
+
+struct StepTopologyCloseRequestA0
+{
+    std::string schema = "geometry.step_topology.close.request.a0";
+    SessionReference session{};
+};
+
+struct StepTopologyCloseResultA0
+{
+    std::string schema = "geometry.step_topology.close.result.a0";
+    std::string session_handle{};
+    bool closed = true;
+};
+
+struct StepTopologyInspectRequestA0
+{
+    std::string schema = "geometry.step_topology.inspect.request.a0";
+    SessionReference session{};
+    PageRequest page{};
+    bool include_source_entity_evidence{};
+    bool include_diagnostics{};
+};
+
+struct TopologyPage
+{
+    std::vector<DefinitionSummary> definitions{};
+    std::vector<OccurrenceSummary> occurrences{};
+    std::vector<BodySummary> bodies{};
+    std::vector<ShellSummary> shells{};
+    std::vector<FaceSummary> faces{};
+    std::optional<std::string> next_cursor{};
+};
+
+struct TopologyTableAttachmentDescriptor
+{
+    std::string name = "topology_table";
+    std::string media_type = "application/vnd.wavenumber.geometer.step-topology-table";
+    std::string format = "wn.geometer.step-topology-table.a0";
+    std::uint32_t bytes{};
+    std::string sha256{};
+};
+
+struct StepTopologyInspectResultA0
+{
+    std::string schema = "geometry.step_topology.inspect.result.a0";
+    SessionReference session{};
+    InspectionCounts counts{};
+    TopologyPage page{};
+    std::optional<TopologyTableAttachmentDescriptor> compact_table{};
+    std::vector<DiagnosticA0> diagnostics{};
+};
+
+struct StepTopologyOpenRequestA0
+{
+    std::string schema = "geometry.step_topology.open.request.a0";
+};
+
+struct ToolDescriptor
+{
+    std::string name = "geometer";
+    std::string release_version{};
+    std::string occt_version{};
+};
+
+struct StepTopologyOpenResultA0
+{
+    std::string schema = "geometry.step_topology.open.result.a0";
+    SessionReference session{};
+    SourceDescriptor source{};
+    ToolDescriptor tool{};
+    std::vector<std::string> evicted_session_handles{};
+};
+
+struct TessellationOptions
+{
+    double linear_deflection_mm{};
+    double angular_deflection_rad{};
+    bool relative{};
+    bool parallel{};
+    std::vector<double> source_to_render{};
+};
+
+struct StepTopologyRenderRequestA0
+{
+    std::string schema = "geometry.step_topology.render.request.a0";
+    SessionReference session{};
+    TessellationOptions tessellation{};
+};
+
+struct TopologyBindingTableAttachmentDescriptor
+{
+    std::string name = "topology_binding_table";
+    std::string media_type = "application/vnd.wavenumber.geometer.step-topology-binding-table";
+    std::string format = "wn.geometer.step-topology-binding-table.a0";
+    std::uint32_t bytes{};
+    std::string sha256{};
+};
+
+struct StepTopologyRenderResultA0
+{
+    std::string schema = "geometry.step_topology.render.result.a0";
+    SessionReference session{};
+    RenderArtifactDescriptor artifact{};
+    GlbAttachmentDescriptor glb{};
+    std::optional<TopologyBindingTableAttachmentDescriptor> compact_binding_table{};
+};
+
+struct StepTopologyResolveHitRequestA0
+{
+    std::string schema = "geometry.step_topology.resolve_hit.request.a0";
+    SessionReference session{};
+    std::string artifact_handle{};
+    std::string content_sha256{};
+    std::uint32_t instance_index{};
+    std::uint32_t primitive_index{};
+    std::uint32_t primitive_triangle_index{};
+    std::string occurrence_handle{};
+    std::string body_handle{};
+    std::string face_handle{};
+};
+
+struct StepTopologyResolveHitResultA0
+{
+    std::string schema = "geometry.step_topology.resolve_hit.result.a0";
+    SessionReference session{};
+    std::uint32_t instance_index{};
+    std::uint32_t primitive_index{};
+    std::uint32_t triangle_index{};
+    std::string occurrence_handle{};
+    std::string body_handle{};
+    std::string face_handle{};
+};
+
 bool decode_json(const unsigned char* data, std::size_t size, DiagnosticA0* value,
                  ContractError* error = nullptr);
 bool encode_json(const DiagnosticA0& value, std::string* json, ContractError* error = nullptr);
@@ -744,6 +1010,56 @@ bool encode_json(const ModelBoundsResultA0& value, std::string* json,
 bool decode_json(const unsigned char* data, std::size_t size, OperationOutcomeA0* value,
                  ContractError* error = nullptr);
 bool encode_json(const OperationOutcomeA0& value, std::string* json,
+                 ContractError* error = nullptr);
+
+bool decode_json(const unsigned char* data, std::size_t size, StepTopologyCloseRequestA0* value,
+                 ContractError* error = nullptr);
+bool encode_json(const StepTopologyCloseRequestA0& value, std::string* json,
+                 ContractError* error = nullptr);
+
+bool decode_json(const unsigned char* data, std::size_t size, StepTopologyCloseResultA0* value,
+                 ContractError* error = nullptr);
+bool encode_json(const StepTopologyCloseResultA0& value, std::string* json,
+                 ContractError* error = nullptr);
+
+bool decode_json(const unsigned char* data, std::size_t size, StepTopologyInspectRequestA0* value,
+                 ContractError* error = nullptr);
+bool encode_json(const StepTopologyInspectRequestA0& value, std::string* json,
+                 ContractError* error = nullptr);
+
+bool decode_json(const unsigned char* data, std::size_t size, StepTopologyInspectResultA0* value,
+                 ContractError* error = nullptr);
+bool encode_json(const StepTopologyInspectResultA0& value, std::string* json,
+                 ContractError* error = nullptr);
+
+bool decode_json(const unsigned char* data, std::size_t size, StepTopologyOpenRequestA0* value,
+                 ContractError* error = nullptr);
+bool encode_json(const StepTopologyOpenRequestA0& value, std::string* json,
+                 ContractError* error = nullptr);
+
+bool decode_json(const unsigned char* data, std::size_t size, StepTopologyOpenResultA0* value,
+                 ContractError* error = nullptr);
+bool encode_json(const StepTopologyOpenResultA0& value, std::string* json,
+                 ContractError* error = nullptr);
+
+bool decode_json(const unsigned char* data, std::size_t size, StepTopologyRenderRequestA0* value,
+                 ContractError* error = nullptr);
+bool encode_json(const StepTopologyRenderRequestA0& value, std::string* json,
+                 ContractError* error = nullptr);
+
+bool decode_json(const unsigned char* data, std::size_t size, StepTopologyRenderResultA0* value,
+                 ContractError* error = nullptr);
+bool encode_json(const StepTopologyRenderResultA0& value, std::string* json,
+                 ContractError* error = nullptr);
+
+bool decode_json(const unsigned char* data, std::size_t size,
+                 StepTopologyResolveHitRequestA0* value, ContractError* error = nullptr);
+bool encode_json(const StepTopologyResolveHitRequestA0& value, std::string* json,
+                 ContractError* error = nullptr);
+
+bool decode_json(const unsigned char* data, std::size_t size, StepTopologyResolveHitResultA0* value,
+                 ContractError* error = nullptr);
+bool encode_json(const StepTopologyResolveHitResultA0& value, std::string* json,
                  ContractError* error = nullptr);
 
 } // namespace geometer::contracts

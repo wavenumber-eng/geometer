@@ -151,6 +151,7 @@ function generateOperations() {
     lines.push(`    identity: ${JSON.stringify(operation.identity)},`);
     lines.push(`    requestContract: ${JSON.stringify(operation.request_contract)},`);
     lines.push(`    resultContract: ${JSON.stringify(operation.result_contract)},`);
+    lines.push(`    runtimeAvailable: ${JSON.stringify(operation.runtime_available)},`);
     lines.push(`    runtimeDispatch: ${JSON.stringify(operation.runtime_dispatch)},`);
     lines.push(`    inputAttachments: ${JSON.stringify(operation.input_attachments)},`);
     lines.push(`    outputAttachments: ${JSON.stringify(operation.output_attachments)},`);
@@ -177,14 +178,14 @@ function generateIndex() {
 
 function descriptor(item) {
   if (item.kind === "enum") {
-    return `{ kind: "enum", values: ${JSON.stringify(item.members.map((member) => member.value))} }`;
+    return `{ kind: "enum", values: ${codeLiteral(item.members.map((member) => member.value))} }`;
   }
   if (item.kind === "union") {
-    return `{ kind: "union", variants: ${JSON.stringify(item.variants.map((variant) => typeDescriptor(variant.type)))} }`;
+    return `{ kind: "union", variants: ${codeLiteral(item.variants.map((variant) => typeDescriptor(variant.type)))} }`;
   }
   if (item.kind !== "model") unsupported(item);
   if (item.model_kind === "array") {
-    return `{ kind: "array", element: ${JSON.stringify(typeDescriptor(item.index_value))}, constraints: ${JSON.stringify(item.constraints)} }`;
+    return `{ kind: "array", element: ${codeLiteral(typeDescriptor(item.index_value))}, constraints: ${codeLiteral(item.constraints)} }`;
   }
   if (item.model_kind !== "object" || item.base !== null) unsupported(item);
   const properties = Object.fromEntries(
@@ -197,7 +198,18 @@ function descriptor(item) {
       },
     ]),
   );
-  return `{ kind: "object", properties: ${JSON.stringify(properties)} }`;
+  return `{ kind: "object", properties: ${codeLiteral(properties)} }`;
+}
+
+function codeLiteral(value) {
+  if (typeof value === "number" && value === Math.PI) return "Math.PI";
+  if (Array.isArray(value)) return `[${value.map(codeLiteral).join(",")}]`;
+  if (value !== null && typeof value === "object") {
+    return `{${Object.entries(value)
+      .map(([key, item]) => `${JSON.stringify(key)}:${codeLiteral(item)}`)
+      .join(",")}}`;
+  }
+  return JSON.stringify(value);
 }
 
 function typeDescriptor(type) {

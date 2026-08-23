@@ -30,6 +30,7 @@ const OWNED_NAMESPACE = "Wavenumber.Geometer.Contracts";
 const CONTRACT_IDENTITY = Symbol.for("wavenumber.geometer.contractIdentity");
 const OPTION_PATCH = Symbol.for("wavenumber.geometer.optionPatch");
 const OPERATION_IDENTITY = Symbol.for("wavenumber.geometer.operationIdentity");
+const EXPERIMENTAL_OPERATION = Symbol.for("wavenumber.geometer.experimentalOperation");
 const INPUT_ATTACHMENTS = Symbol.for("wavenumber.geometer.inputAttachments");
 const OUTPUT_ATTACHMENTS = Symbol.for("wavenumber.geometer.outputAttachments");
 const REQUEST_PACKED_PROJECTION = Symbol.for("wavenumber.geometer.requestPackedProjection");
@@ -45,6 +46,10 @@ export function $optionPatch(context, target) {
 
 export function $operationIdentity(context, target, identity) {
   setUnique(context.program, OPERATION_IDENTITY, target, identity, "operation identity");
+}
+
+export function $experimentalOperation(context, target) {
+  setUnique(context.program, EXPERIMENTAL_OPERATION, target, true, "experimental operation marker");
 }
 
 export function $inputAttachment(context, target, name, required, mediaTypes, maxBytes) {
@@ -223,6 +228,7 @@ function operationRecord(program, operation, identity) {
     result_contract: result,
     input_attachments: inputAttachments,
     output_attachments: outputAttachments,
+    runtime_available: !getState(program, EXPERIMENTAL_OPERATION, operation),
     runtime_dispatch: runtimeDispatch,
     ...(requestProjection ? { request_projection: requestProjection } : {}),
     ...(resultProjection ? { result_projection: resultProjection } : {}),

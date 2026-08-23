@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="6cacbf010b3ae7a2af74c68517e5bcd68e3f4da11c904fb2626debf0ba8d17e2">
+  <title>geometry.step_topology.inspect.result.a0 — Geometer</title>
+  <link rel="stylesheet" href="../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="6cacbf010b3ae7a2af74c68517e5bcd68e3f4da11c904fb2626debf0ba8d17e2" data-page-kind="contract" data-contract-identity="geometry.step_topology.inspect.result.a0" data-promotion-status="experimental_candidate">
+<main>
+<header>
+  <p class="page-type">Contract root</p>
+  <h1><code>geometry.step_topology.inspect.result.a0</code></h1>
+  <p class="lede"></p>
+</header>
+<nav class="nav" aria-label="Contract navigation"><a href="../index.html">All contracts</a><a href="../../../../contracts/geometer/generated/schema/StepTopologyInspectResultA0.json">JSON Schema</a><a href="../../../../src/tsp/geometer/main.tsp">TypeSpec entry point</a><a href="../../../design/contract-semantics.md">Compatibility policy</a></nav>
+<aside class="callout"><strong>Generated, not authored.</strong> Edit TypeSpec and regenerate. Lifecycle evidence remains in the promotion manifest.</aside>
+
+<section><h2>Identity</h2><table><tbody>
+<tr><th>Contract</th><td><code>geometry.step_topology.inspect.result.a0</code></td></tr>
+<tr><th>Schema</th><td><code>urn:wavenumber:schema:geometer:geometry.step_topology.inspect.result:a0</code></td></tr>
+<tr><th>Declaration</th><td><code>Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyInspectResultA0</code></td></tr>
+<tr><th>Lifecycle</th><td><span class="status">experimental_candidate</span></td></tr>
+<tr><th>Current authority</th><td><code>typespec_candidate</code></td></tr>
+</tbody></table></section>
+<section class="model-section"><h2>Declarations <span class="tag">15</span></h2><details open id="declaration-wavenumber-geometer-contracts-steptopologya0-steptopologyinspectresulta0"><summary><h2><code>StepTopologyInspectResultA0</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>schema</code></td><td>required</td><td><code>&quot;geometry.step_topology.inspect.result.a0&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>session</code></td><td>required</td><td><code>SessionReference</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>counts</code></td><td>required</td><td><code>InspectionCounts</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>page</code></td><td>required</td><td><code>TopologyPage</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>compact_table</code></td><td>optional</td><td><code>TopologyTableAttachmentDescriptor</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>diagnostics</code></td><td>required</td><td><code>DiagnosticA0[]</code></td><td>—</td><td><code>max_items=256</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-common-diagnostica0"><summary><h2><code>DiagnosticA0</code> <span class="tag">model</span></h2></summary><p>A strict cross-transport diagnostic; message text is informative rather than identity.</p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>code</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=1</code></td><td>Stable namespaced diagnostic identity.</td></tr>
+<tr><td><code>category</code></td><td>required</td><td><code>DiagnosticCategory</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>message</code></td><td>required</td><td><code>string</code></td><td>—</td><td>none</td><td>Human-readable non-normative detail.</td></tr>
+<tr><td><code>retryable</code></td><td>required</td><td><code>boolean</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>path</code></td><td>optional</td><td><code>string</code></td><td>—</td><td>none</td><td>RFC 6901 JSON Pointer when a document location is meaningful.</td></tr>
+<tr><td><code>operation</code></td><td>optional</td><td><code>string</code></td><td>—</td><td>none</td><td>Stable operation identity when the diagnostic is operation-scoped.</td></tr>
+<tr><td><code>request_id</code></td><td>optional</td><td><code>string</code></td><td>—</td><td>none</td><td>Transport correlation identifier when available.</td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-common-diagnosticcategory"><summary><h2><code>DiagnosticCategory</code> <span class="tag">enum</span></h2></summary><p>Stable diagnostic category with distinct transport, contract, and operation domains.</p><table><thead><tr><th>Member</th><th>Wire value</th><th>Description</th></tr></thead><tbody><tr><td><code>transport</code></td><td><code>transport</code></td><td></td></tr>
+<tr><td><code>contract</code></td><td><code>contract</code></td><td></td></tr>
+<tr><td><code>operation</code></td><td><code>operation</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-steptopologya0-bodysummary"><summary><h2><code>BodySummary</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>handle</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=68</code> <code>max_length=68</code></td><td></td></tr>
+<tr><td><code>definition_handle</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=68</code> <code>max_length=68</code></td><td></td></tr>
+<tr><td><code>topology_kind</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=1</code> <code>max_length=64</code></td><td></td></tr>
+<tr><td><code>shell_handles</code></td><td>required</td><td><code>string[]</code></td><td>—</td><td><code>max_items=250000</code></td><td></td></tr>
+<tr><td><code>face_handles</code></td><td>required</td><td><code>string[]</code></td><td>—</td><td><code>max_items=1000000</code></td><td></td></tr>
+<tr><td><code>bounds_mm</code></td><td>required</td><td><code>float64[]</code></td><td>—</td><td><code>min_items=6</code> <code>max_items=6</code></td><td></td></tr>
+<tr><td><code>volume_mm3</code></td><td>required</td><td><code>float64</code></td><td>—</td><td><code>min_value=0</code></td><td></td></tr>
+<tr><td><code>source_entity</code></td><td>optional</td><td><code>SourceEntityEvidence</code></td><td>—</td><td>none</td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-steptopologya0-componentoccurrencesummary"><summary><h2><code>ComponentOccurrenceSummary</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>kind</code></td><td>required</td><td><code>&quot;component&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>handle</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=68</code> <code>max_length=68</code></td><td></td></tr>
+<tr><td><code>definition_handle</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=68</code> <code>max_length=68</code></td><td></td></tr>
+<tr><td><code>parent_occurrence_handle</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=68</code> <code>max_length=68</code></td><td></td></tr>
+<tr><td><code>depth</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>min_value=1</code> <code>max_value=64</code></td><td></td></tr>
+<tr><td><code>name</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>max_length=4096</code></td><td></td></tr>
+<tr><td><code>transform</code></td><td>required</td><td><code>float64[]</code></td><td>—</td><td><code>min_items=12</code> <code>max_items=12</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-steptopologya0-definitionsummary"><summary><h2><code>DefinitionSummary</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>handle</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=68</code> <code>max_length=68</code></td><td></td></tr>
+<tr><td><code>name</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>max_length=4096</code></td><td></td></tr>
+<tr><td><code>assembly</code></td><td>required</td><td><code>boolean</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>body_count</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>max_value=100000</code></td><td></td></tr>
+<tr><td><code>face_count</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>max_value=1000000</code></td><td></td></tr>
+<tr><td><code>source_entity</code></td><td>optional</td><td><code>SourceEntityEvidence</code></td><td>—</td><td>none</td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-steptopologya0-facesummary"><summary><h2><code>FaceSummary</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>handle</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=68</code> <code>max_length=68</code></td><td></td></tr>
+<tr><td><code>definition_handle</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=68</code> <code>max_length=68</code></td><td></td></tr>
+<tr><td><code>body_handles</code></td><td>required</td><td><code>string[]</code></td><td>—</td><td><code>max_items=100000</code></td><td></td></tr>
+<tr><td><code>shell_handles</code></td><td>required</td><td><code>string[]</code></td><td>—</td><td><code>max_items=250000</code></td><td></td></tr>
+<tr><td><code>bounds_mm</code></td><td>required</td><td><code>float64[]</code></td><td>—</td><td><code>min_items=6</code> <code>max_items=6</code></td><td></td></tr>
+<tr><td><code>area_mm2</code></td><td>required</td><td><code>float64</code></td><td>—</td><td><code>min_value=0</code></td><td></td></tr>
+<tr><td><code>centroid_mm</code></td><td>required</td><td><code>float64[]</code></td><td>—</td><td><code>min_items=3</code> <code>max_items=3</code></td><td></td></tr>
+<tr><td><code>source_entity</code></td><td>optional</td><td><code>SourceEntityEvidence</code></td><td>—</td><td>none</td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-steptopologya0-inspectioncounts"><summary><h2><code>InspectionCounts</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>definitions</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>max_value=10000</code></td><td></td></tr>
+<tr><td><code>root_occurrences</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>max_value=100000</code></td><td></td></tr>
+<tr><td><code>component_occurrences</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>max_value=100000</code></td><td></td></tr>
+<tr><td><code>bodies</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>max_value=100000</code></td><td></td></tr>
+<tr><td><code>shells</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>max_value=250000</code></td><td></td></tr>
+<tr><td><code>faces</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>max_value=1000000</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-steptopologya0-occurrencesummary"><summary><h2><code>OccurrenceSummary</code> <span class="tag">union</span></h2></summary><p></p><ul><li><code>root</code>: <code>RootOccurrenceSummary</code></li><li><code>component</code>: <code>ComponentOccurrenceSummary</code></li></ul></details>
+<details open id="declaration-wavenumber-geometer-contracts-steptopologya0-rootoccurrencesummary"><summary><h2><code>RootOccurrenceSummary</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>kind</code></td><td>required</td><td><code>&quot;root&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>handle</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=68</code> <code>max_length=68</code></td><td></td></tr>
+<tr><td><code>definition_handle</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=68</code> <code>max_length=68</code></td><td></td></tr>
+<tr><td><code>name</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>max_length=4096</code></td><td></td></tr>
+<tr><td><code>transform</code></td><td>required</td><td><code>float64[]</code></td><td>—</td><td><code>min_items=12</code> <code>max_items=12</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-steptopologya0-sessionreference"><summary><h2><code>SessionReference</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>session_handle</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=68</code> <code>max_length=68</code></td><td></td></tr>
+<tr><td><code>generation</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>min_value=1</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-steptopologya0-shellsummary"><summary><h2><code>ShellSummary</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>handle</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=68</code> <code>max_length=68</code></td><td></td></tr>
+<tr><td><code>definition_handle</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=68</code> <code>max_length=68</code></td><td></td></tr>
+<tr><td><code>body_handles</code></td><td>required</td><td><code>string[]</code></td><td>—</td><td><code>max_items=100000</code></td><td></td></tr>
+<tr><td><code>face_handles</code></td><td>required</td><td><code>string[]</code></td><td>—</td><td><code>max_items=1000000</code></td><td></td></tr>
+<tr><td><code>source_entity</code></td><td>optional</td><td><code>SourceEntityEvidence</code></td><td>—</td><td>none</td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-steptopologya0-sourceentityevidence"><summary><h2><code>SourceEntityEvidence</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>mapped</code></td><td>required</td><td><code>boolean</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>shape_result_round_trip</code></td><td>required</td><td><code>boolean</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>model_number</code></td><td>optional</td><td><code>uint32</code></td><td>—</td><td><code>min_value=1</code> <code>max_value=5000000</code></td><td></td></tr>
+<tr><td><code>entity_type</code></td><td>optional</td><td><code>string</code></td><td>—</td><td><code>min_length=1</code> <code>max_length=128</code></td><td></td></tr>
+<tr><td><code>mapping_method</code></td><td>optional</td><td><code>string</code></td><td>—</td><td><code>min_length=1</code> <code>max_length=128</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-steptopologya0-topologypage"><summary><h2><code>TopologyPage</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>definitions</code></td><td>required</td><td><code>DefinitionSummary[]</code></td><td>—</td><td><code>max_items=1024</code></td><td></td></tr>
+<tr><td><code>occurrences</code></td><td>required</td><td><code>OccurrenceSummary[]</code></td><td>—</td><td><code>max_items=1024</code></td><td></td></tr>
+<tr><td><code>bodies</code></td><td>required</td><td><code>BodySummary[]</code></td><td>—</td><td><code>max_items=1024</code></td><td></td></tr>
+<tr><td><code>shells</code></td><td>required</td><td><code>ShellSummary[]</code></td><td>—</td><td><code>max_items=1024</code></td><td></td></tr>
+<tr><td><code>faces</code></td><td>required</td><td><code>FaceSummary[]</code></td><td>—</td><td><code>max_items=1024</code></td><td></td></tr>
+<tr><td><code>next_cursor</code></td><td>optional</td><td><code>string</code></td><td>—</td><td><code>max_length=256</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-steptopologya0-topologytableattachmentdescriptor"><summary><h2><code>TopologyTableAttachmentDescriptor</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>name</code></td><td>required</td><td><code>&quot;topology_table&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>media_type</code></td><td>required</td><td><code>&quot;application/vnd.wavenumber.geometer.step-topology-table&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>format</code></td><td>required</td><td><code>&quot;wn.geometer.step-topology-table.a0&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>bytes</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>min_value=1</code> <code>max_value=134217728</code></td><td></td></tr>
+<tr><td><code>sha256</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=64</code> <code>max_length=64</code></td><td></td></tr></tbody></table></details></section>
+</main>
+</body>
+</html>

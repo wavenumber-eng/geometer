@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:wavenumber:schema:geometer:geometry.step_topology.render.request:a0",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "type": "string",
+      "const": "geometry.step_topology.render.request.a0"
+    },
+    "session": {
+      "$ref": "#/$defs/SessionReference"
+    },
+    "tessellation": {
+      "$ref": "#/$defs/TessellationOptions"
+    }
+  },
+  "required": [
+    "schema",
+    "session",
+    "tessellation"
+  ],
+  "unevaluatedProperties": {
+    "not": {}
+  },
+  "$defs": {
+    "SessionReference": {
+      "type": "object",
+      "properties": {
+        "session_handle": {
+          "type": "string",
+          "minLength": 68,
+          "maxLength": 68
+        },
+        "generation": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        }
+      },
+      "required": [
+        "session_handle",
+        "generation"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "TessellationOptions": {
+      "type": "object",
+      "properties": {
+        "linear_deflection_mm": {
+          "type": "number",
+          "minimum": 0.000001,
+          "maximum": 1000
+        },
+        "angular_deflection_rad": {
+          "type": "number",
+          "minimum": 0.000001,
+          "maximum": 3.141592653589793
+        },
+        "relative": {
+          "type": "boolean"
+        },
+        "parallel": {
+          "type": "boolean"
+        },
+        "source_to_render": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 12,
+          "maxItems": 12
+        }
+      },
+      "required": [
+        "linear_deflection_mm",
+        "angular_deflection_rad",
+        "relative",
+        "parallel",
+        "source_to_render"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    }
+  }
+}

@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:wavenumber:schema:geometer:geometry.step_topology.resolve_hit.result:a0",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "type": "string",
+      "const": "geometry.step_topology.resolve_hit.result.a0"
+    },
+    "session": {
+      "$ref": "#/$defs/SessionReference"
+    },
+    "instance_index": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 99999
+    },
+    "primitive_index": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 999999
+    },
+    "triangle_index": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9999999
+    },
+    "occurrence_handle": {
+      "type": "string",
+      "minLength": 68,
+      "maxLength": 68
+    },
+    "body_handle": {
+      "type": "string",
+      "minLength": 68,
+      "maxLength": 68
+    },
+    "face_handle": {
+      "type": "string",
+      "minLength": 68,
+      "maxLength": 68
+    }
+  },
+  "required": [
+    "schema",
+    "session",
+    "instance_index",
+    "primitive_index",
+    "triangle_index",
+    "occurrence_handle",
+    "body_handle",
+    "face_handle"
+  ],
+  "unevaluatedProperties": {
+    "not": {}
+  },
+  "$defs": {
+    "SessionReference": {
+      "type": "object",
+      "properties": {
+        "session_handle": {
+          "type": "string",
+          "minLength": 68,
+          "maxLength": 68
+        },
+        "generation": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        }
+      },
+      "required": [
+        "session_handle",
+        "generation"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    }
+  }
+}

@@ -227,6 +227,258 @@
       "comparison": "exact",
       "excluded_fields": [],
       "tolerance": null
+    },
+    {
+      "id": "strict.step-topology-resolve-hit.accept",
+      "contract_identity": "geometry.step_topology.resolve_hit.request.a0",
+      "file": "cases/step-topology-resolve-hit-valid.json",
+      "lane": "strict_json",
+      "oracle": "strict_parser",
+      "expected": "accept",
+      "comparison": "exact",
+      "excluded_fields": [],
+      "tolerance": null
+    },
+    {
+      "id": "schema.step-topology-resolve-hit-unknown-field.reject",
+      "contract_identity": "geometry.step_topology.resolve_hit.request.a0",
+      "file": "cases/step-topology-resolve-hit-unknown-field.json",
+      "lane": "schema",
+      "oracle": "generated_schema",
+      "expected": "reject",
+      "comparison": "exact",
+      "excluded_fields": [],
+      "tolerance": null
+    },
+    {
+      "id": "schema.step-topology-resolve-hit-zero-generation.reject",
+      "contract_identity": "geometry.step_topology.resolve_hit.request.a0",
+      "file": "cases/step-topology-resolve-hit-zero-generation.json",
+      "lane": "schema",
+      "oracle": "generated_schema",
+      "expected": "reject",
+      "comparison": "exact",
+      "excluded_fields": [],
+      "tolerance": null
+    },
+    {
+      "id": "schema.step-topology-resolve-hit-range.reject",
+      "contract_identity": "geometry.step_topology.resolve_hit.request.a0",
+      "file": "cases/step-topology-resolve-hit-range-invalid.json",
+      "lane": "schema",
+      "oracle": "generated_schema",
+      "expected": "reject",
+      "comparison": "exact",
+      "excluded_fields": [],
+      "tolerance": null
+    },
+    {
+      "id": "schema.step-topology-render-attachment-relationship.reject",
+      "contract_identity": "geometry.step_topology.render.result.a0",
+      "file": "cases/step-topology-render-invalid-glb-descriptor.json",
+      "lane": "schema",
+      "oracle": "generated_schema",
+      "expected": "reject",
+      "comparison": "exact",
+      "excluded_fields": [],
+      "tolerance": null
+    },
+    {
+      "id": "schema.step-topology-resolve-hit-result-max.accept",
+      "contract_identity": "geometry.step_topology.resolve_hit.result.a0",
+      "file": "cases/step-topology-resolve-hit-result-max.json",
+      "lane": "schema",
+      "oracle": "generated_schema",
+      "expected": "accept",
+      "comparison": "exact",
+      "excluded_fields": [],
+      "tolerance": null
+    },
+    {
+      "id": "schema.step-topology-resolve-hit-result-instance-over-max.reject",
+      "contract_identity": "geometry.step_topology.resolve_hit.result.a0",
+      "file": "cases/step-topology-resolve-hit-result-instance-over-max.json",
+      "lane": "schema",
+      "oracle": "generated_schema",
+      "expected": "reject",
+      "comparison": "exact",
+      "excluded_fields": [],
+      "tolerance": null
+    },
+    {
+      "id": "schema.step-topology-resolve-hit-result-primitive-over-max.reject",
+      "contract_identity": "geometry.step_topology.resolve_hit.result.a0",
+      "file": "cases/step-topology-resolve-hit-result-primitive-over-max.json",
+      "lane": "schema",
+      "oracle": "generated_schema",
+      "expected": "reject",
+      "comparison": "exact",
+      "excluded_fields": [],
+      "tolerance": null
+    },
+    {
+      "id": "schema.step-topology-resolve-hit-result-triangle-over-max.reject",
+      "contract_identity": "geometry.step_topology.resolve_hit.result.a0",
+      "file": "cases/step-topology-resolve-hit-result-triangle-over-max.json",
+      "lane": "schema",
+      "oracle": "generated_schema",
+      "expected": "reject",
+      "comparison": "exact",
+      "excluded_fields": [],
+      "tolerance": null
+    },
+    {
+      "id": "schema.step-topology-inspect-depth-max.accept",
+      "contract_identity": "geometry.step_topology.inspect.result.a0",
+      "file": "cases/step-topology-inspect-depth-max.json",
+      "lane": "schema",
+      "oracle": "generated_schema",
+      "expected": "accept",
+      "comparison": "exact",
+      "excluded_fields": [],
+      "tolerance": null
+    },
+    {
+      "id": "schema.step-topology-inspect-depth-over-max.reject",
+      "contract_identity": "geometry.step_topology.inspect.result.a0",
+      "file": "cases/step-topology-inspect-depth-over-max.json",
+      "lane": "schema",
+      "oracle": "generated_schema",
+      "expected": "reject",
+      "comparison": "exact",
+      "excluded_fields": [],
+      "tolerance": null
+    },
+    {
+      "id": "semantic.step-topology-stale-generation.reject",
+      "contract_identity": "geometry.step_topology.resolve_hit.request.a0",
+      "file": "cases/step-topology-resolve-hit-valid.json",
+      "lane": "semantic",
+      "oracle": "step_topology_session",
+      "expected_session_handle": "gts_1111111111111111111111111111111111111111111111111111111111111111",
+      "expected_generation": 8,
+      "expected": "reject",
+      "comparison": "exact",
+      "excluded_fields": [],
+      "tolerance": null
+    },
+    {
+      "id": "semantic.step-topology-duplicate-target.reject",
+      "contract_identity": "geometry.step_topology.inspect.result.a0",
+      "file": "cases/step-topology-inspect-duplicate-target.json",
+      "lane": "semantic",
+      "oracle": "step_topology_inspection",
+      "expected": "reject",
+      "comparison": "exact",
+      "excluded_fields": [],
+      "tolerance": null
+    },
+    {
+      "id": "semantic.step-topology-inspection-membership.accept",
+      "contract_identity": "geometry.step_topology.inspect.result.a0",
+      "file": "cases/step-topology-inspect-valid.json",
+      "lane": "semantic",
+      "oracle": "step_topology_inspection",
+      "expected": "accept",
+      "comparison": "exact",
+      "excluded_fields": [],
+      "tolerance": null
+    },
+    {
+      "id": "semantic.step-topology-cross-page-duplicate.reject",
+      "contract_identity": "geometry.step_topology.inspect.result.a0",
+      "file": "cases/step-topology-inspect-cross-page-duplicate-page-2.json",
+      "prior_pages": ["cases/step-topology-inspect-cross-page-duplicate-page-1.json"],
+      "lane": "semantic",
+      "oracle": "step_topology_inspection",
+      "expected": "reject",
+      "comparison": "exact",
+      "excluded_fields": [],
+      "tolerance": null
+    },
+    {
+      "id": "semantic.step-topology-cross-page-edge.reject",
+      "contract_identity": "geometry.step_topology.inspect.result.a0",
+      "file": "cases/step-topology-inspect-cross-page-edge-page-2.json",
+      "prior_pages": ["cases/step-topology-inspect-cross-page-edge-page-1.json"],
+      "lane": "semantic",
+      "oracle": "step_topology_inspection",
+      "expected": "reject",
+      "comparison": "exact",
+      "excluded_fields": [],
+      "tolerance": null
+    },
+    {
+      "id": "semantic.step-topology-over-count-before-terminal.reject",
+      "contract_identity": "geometry.step_topology.inspect.result.a0",
+      "file": "cases/step-topology-inspect-over-count-page-2.json",
+      "prior_pages": ["cases/step-topology-inspect-over-count-page-1.json"],
+      "lane": "semantic",
+      "oracle": "step_topology_inspection",
+      "expected": "reject",
+      "comparison": "exact",
+      "excluded_fields": [],
+      "tolerance": null
+    },
+    {
+      "id": "semantic.step-topology-empty-continuation.reject",
+      "contract_identity": "geometry.step_topology.inspect.result.a0",
+      "file": "cases/step-topology-inspect-empty-continuation-page-2.json",
+      "prior_pages": ["cases/step-topology-inspect-empty-continuation-page-1.json"],
+      "lane": "semantic",
+      "oracle": "step_topology_inspection",
+      "expected": "reject",
+      "comparison": "exact",
+      "excluded_fields": [],
+      "tolerance": null
+    },
+    {
+      "id": "semantic.step-topology-high-fan-in.accept",
+      "contract_identity": "geometry.step_topology.inspect.result.a0",
+      "file": "cases/step-topology-inspect-valid.json",
+      "fan_in": 4096,
+      "lane": "semantic",
+      "oracle": "step_topology_inspection_high_fan_in",
+      "expected": "accept",
+      "comparison": "exact",
+      "excluded_fields": [],
+      "tolerance": null
+    },
+    {
+      "id": "semantic.step-topology-render-attachments.accept",
+      "contract_identity": "geometry.step_topology.render.result.a0",
+      "file": "cases/step-topology-render-attachment-valid.json",
+      "lane": "semantic",
+      "oracle": "step_topology_render_attachments",
+      "attachments": [
+        {
+          "name": "glb",
+          "media_type": "model/gltf-binary",
+          "file": "cases/step-topology-render-attachment.bin"
+        }
+      ],
+      "expected": "accept",
+      "comparison": "exact",
+      "excluded_fields": [],
+      "tolerance": null
+    },
+    {
+      "id": "semantic.step-topology-render-digest-relationship.reject",
+      "contract_identity": "geometry.step_topology.render.result.a0",
+      "file": "cases/step-topology-render-artifact-digest-mismatch.json",
+      "lane": "semantic",
+      "oracle": "step_topology_render_attachments",
+      "attachments": [
+        {
+          "name": "glb",
+          "media_type": "model/gltf-binary",
+          "file": "cases/step-topology-render-attachment.bin"
+        }
+      ],
+      "expected": "reject",
+      "comparison": "exact",
+      "excluded_fields": [],
+      "tolerance": null
     }
   ],
   "operation_vectors": [

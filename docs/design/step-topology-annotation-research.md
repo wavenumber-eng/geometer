@@ -1,9 +1,20 @@
 # STEP Topology Annotation Research
 
-Status: pre-design research plan  
-Date: 2026-06-22  
+Status: active research provenance; see the measured baseline and dev-std plan
+
+Date: 2026-08-22
+
 Scope: Geometer STEP/AP242, OCCT/XCAF/BRepGraph, browser annotation handoff
-Tracking: wavenumber-eng/geometer#15
+Tracking: wavenumber-eng/geometer#15, #16, #17
+
+The measured fixture and capability baseline is
+[step-topology-fixture-baseline.md](step-topology-fixture-baseline.md). The
+active implementation sequence is the temporary dev-std plan
+`occt-topology-annotation-research`. Where this older note suggests stable ids,
+an A0 annotation vocabulary, or a particular GLB layout, treat those as
+historical hypotheses. Current work uses session-scoped opaque handles,
+greenfield unpromoted TypeSpec candidates, and measured carrier experiments.
+The legacy `appz/data_models` GLTF enrichment is explicitly excluded.
 
 ## Purpose
 
@@ -39,7 +50,7 @@ Current public browser-facing APIs are task APIs, not an exposed OCCT binding:
 - The C ABI/WASM surface returns byte buffers or JSON for current operations;
   it does not expose XCAF labels, product structure, face identity, or STEP
   metadata.
-- `scripts/dependency_versions.py` pins OCCT to `8.0.0`, so BRepGraph can be
+- `scripts/dependency_versions.py` pins OCCT to `8.0.1`, so BRepGraph can be
   investigated in this repository once the local OCCT build exposes the headers.
 
 Relevant files:
@@ -158,8 +169,8 @@ relationships.
 
 ## OCCT AP242 Carrier Findings 2026-07-28
 
-The current Geometer checkout is already on the latest local `main` and pins
-OCCT to `V8_0_0` / `8.0.0` in `scripts/dependency_versions.py`.
+The current Geometer checkout pins OCCT to `V8_0_1` / `8.0.1` in
+`scripts/dependency_versions.py`.
 
 Current Geometer STEP paths:
 
@@ -348,6 +359,14 @@ Cons:
 
 The spike may start with Route A if it shortens the path to a working browser
 selection UI. The persistent STEP annotation contract must not depend on GLB.
+
+Current result (2026-08-22): the first proof selected Route A with one
+primitive per face, using a deterministic GLB encoder over Geometer's sealed
+OCCT tessellation rather than relying on `RWGltf_CafWriter` traversal order.
+The pinned Three.js raycast proof and measured tradeoffs are recorded in
+[STEP topology GLB work-packet research](step-topology-glb-binding.md). A
+compact binary range table remains the likely scaling path; it has not yet
+been selected as a contract.
 
 ## BRepGraph Relevance
 
@@ -549,8 +568,8 @@ BRepGraph without flattening.
   - one slab/fused package;
   - one AP203 or AP214 vendor model;
   - one AP242 model if available.
-- Geometer can emit a browser-usable topology/render view with stable ids for
-  body-level selection.
+- Geometer can emit a browser-usable topology/render view with session-scoped
+  opaque handles for body-level selection.
 - Geometer can emit at least one face-level selectable id and map it to render
   triangles or a GLB primitive.
 - Geometer can write and reload a WN product-level metadata block.

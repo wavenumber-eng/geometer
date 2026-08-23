@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:wavenumber:schema:geometer:geometry.step_topology.open.request:a0",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "type": "string",
+      "const": "geometry.step_topology.open.request.a0"
+    }
+  },
+  "required": [
+    "schema"
+  ],
+  "unevaluatedProperties": {
+    "not": {}
+  }
+}

@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Literal, TypeAlias
 
-NORMALIZED_CATALOG_SHA256 = "c93e41a3aa0d64ab4dab905cea82aaeb3b3792155d1f5b2850673567a699d59c"
+NORMALIZED_CATALOG_SHA256 = "6cacbf010b3ae7a2af74c68517e5bcd68e3f4da11c904fb2626debf0ba8d17e2"
 
 JobId: TypeAlias = int
 
@@ -728,6 +728,274 @@ class OperationSuccessA0:
 # Transport-neutral typed outcome shared by the generic C ABI and executable IPC.
 OperationOutcomeA0: TypeAlias = OperationSuccessA0 | OperationFailureA0
 
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class SourceEntityEvidence:
+    mapped: bool
+    shape_result_round_trip: bool
+    model_number: int | None = None
+    entity_type: str | None = None
+    mapping_method: str | None = None
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class BodySummary:
+    handle: str
+    definition_handle: str
+    topology_kind: str
+    shell_handles: tuple[str, ...]
+    face_handles: tuple[str, ...]
+    bounds_mm: tuple[float, ...]
+    volume_mm3: float
+    source_entity: SourceEntityEvidence | None = None
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class ComponentOccurrenceSummary:
+    kind: Literal["component"]
+    handle: str
+    definition_handle: str
+    parent_occurrence_handle: str
+    depth: int
+    name: str
+    transform: tuple[float, ...]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class DefinitionSummary:
+    handle: str
+    name: str
+    assembly: bool
+    body_count: int
+    face_count: int
+    source_entity: SourceEntityEvidence | None = None
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class FaceSummary:
+    handle: str
+    definition_handle: str
+    body_handles: tuple[str, ...]
+    shell_handles: tuple[str, ...]
+    bounds_mm: tuple[float, ...]
+    area_mm2: float
+    centroid_mm: tuple[float, ...]
+    source_entity: SourceEntityEvidence | None = None
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class GlbAttachmentDescriptor:
+    name: Literal["glb"]
+    media_type: Literal["model/gltf-binary"]
+    format: Literal["glb-2.0"]
+    bytes: int
+    sha256: str
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class InspectionCounts:
+    definitions: int
+    root_occurrences: int
+    component_occurrences: int
+    bodies: int
+    shells: int
+    faces: int
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class RootOccurrenceSummary:
+    kind: Literal["root"]
+    handle: str
+    definition_handle: str
+    name: str
+    transform: tuple[float, ...]
+
+
+OccurrenceSummary: TypeAlias = RootOccurrenceSummary | ComponentOccurrenceSummary
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class PageRequest:
+    cursor: str | None = None
+    limit: int
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class RenderCounts:
+    meshes: int
+    instances: int
+    primitives: int
+    geometry_triangles: int
+    instanced_triangles: int
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class RenderArtifactDescriptor:
+    artifact_handle: str
+    content_sha256: str
+    render_artifact_handle: str
+    render_content_sha256: str
+    binding_layout: Literal["node-primitive-a0"]
+    geometry_length_unit: Literal["meter"]
+    source_length_unit: Literal["millimeter"]
+    counts: RenderCounts
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class SessionReference:
+    session_handle: str
+    generation: int
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class ShellSummary:
+    handle: str
+    definition_handle: str
+    body_handles: tuple[str, ...]
+    face_handles: tuple[str, ...]
+    source_entity: SourceEntityEvidence | None = None
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class SourceDescriptor:
+    format: Literal["step"]
+    sha256: str
+    bytes: int
+    normalized_length_unit: Literal["millimeter"]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class StepTopologyCloseRequestA0:
+    schema: Literal["geometry.step_topology.close.request.a0"]
+    session: SessionReference
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class StepTopologyCloseResultA0:
+    schema: Literal["geometry.step_topology.close.result.a0"]
+    session_handle: str
+    closed: Literal[True]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class StepTopologyInspectRequestA0:
+    schema: Literal["geometry.step_topology.inspect.request.a0"]
+    session: SessionReference
+    page: PageRequest
+    include_source_entity_evidence: bool
+    include_diagnostics: bool
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class TopologyPage:
+    definitions: tuple[DefinitionSummary, ...]
+    occurrences: tuple[OccurrenceSummary, ...]
+    bodies: tuple[BodySummary, ...]
+    shells: tuple[ShellSummary, ...]
+    faces: tuple[FaceSummary, ...]
+    next_cursor: str | None = None
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class TopologyTableAttachmentDescriptor:
+    name: Literal["topology_table"]
+    media_type: Literal["application/vnd.wavenumber.geometer.step-topology-table"]
+    format: Literal["wn.geometer.step-topology-table.a0"]
+    bytes: int
+    sha256: str
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class StepTopologyInspectResultA0:
+    schema: Literal["geometry.step_topology.inspect.result.a0"]
+    session: SessionReference
+    counts: InspectionCounts
+    page: TopologyPage
+    compact_table: TopologyTableAttachmentDescriptor | None = None
+    diagnostics: tuple[DiagnosticA0, ...]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class StepTopologyOpenRequestA0:
+    schema: Literal["geometry.step_topology.open.request.a0"]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class ToolDescriptor:
+    name: Literal["geometer"]
+    release_version: str
+    occt_version: str
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class StepTopologyOpenResultA0:
+    schema: Literal["geometry.step_topology.open.result.a0"]
+    session: SessionReference
+    source: SourceDescriptor
+    tool: ToolDescriptor
+    evicted_session_handles: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class TessellationOptions:
+    linear_deflection_mm: float
+    angular_deflection_rad: float
+    relative: bool
+    parallel: bool
+    source_to_render: tuple[float, ...]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class StepTopologyRenderRequestA0:
+    schema: Literal["geometry.step_topology.render.request.a0"]
+    session: SessionReference
+    tessellation: TessellationOptions
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class TopologyBindingTableAttachmentDescriptor:
+    name: Literal["topology_binding_table"]
+    media_type: Literal["application/vnd.wavenumber.geometer.step-topology-binding-table"]
+    format: Literal["wn.geometer.step-topology-binding-table.a0"]
+    bytes: int
+    sha256: str
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class StepTopologyRenderResultA0:
+    schema: Literal["geometry.step_topology.render.result.a0"]
+    session: SessionReference
+    artifact: RenderArtifactDescriptor
+    glb: GlbAttachmentDescriptor
+    compact_binding_table: TopologyBindingTableAttachmentDescriptor | None = None
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class StepTopologyResolveHitRequestA0:
+    schema: Literal["geometry.step_topology.resolve_hit.request.a0"]
+    session: SessionReference
+    artifact_handle: str
+    content_sha256: str
+    instance_index: int
+    primitive_index: int
+    primitive_triangle_index: int
+    occurrence_handle: str
+    body_handle: str
+    face_handle: str
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class StepTopologyResolveHitResultA0:
+    schema: Literal["geometry.step_topology.resolve_hit.result.a0"]
+    session: SessionReference
+    instance_index: int
+    primitive_index: int
+    triangle_index: int
+    occurrence_handle: str
+    body_handle: str
+    face_handle: str
+
+
 MODEL_TYPES = {
     "Wavenumber.Geometer.Contracts.Common.DiagnosticA0": DiagnosticA0,
     "Wavenumber.Geometer.Contracts.Common.PackedAttachmentProjectionA0": PackedAttachmentProjectionA0,
@@ -758,6 +1026,35 @@ MODEL_TYPES = {
     "Wavenumber.Geometer.Contracts.ModelBoundsA0.ModelBoundsValues": ModelBoundsValues,
     "Wavenumber.Geometer.Contracts.OperationOutcomeA0.OperationFailureA0": OperationFailureA0,
     "Wavenumber.Geometer.Contracts.OperationOutcomeA0.OperationSuccessA0": OperationSuccessA0,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.BodySummary": BodySummary,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.ComponentOccurrenceSummary": ComponentOccurrenceSummary,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.DefinitionSummary": DefinitionSummary,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.FaceSummary": FaceSummary,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.GlbAttachmentDescriptor": GlbAttachmentDescriptor,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.InspectionCounts": InspectionCounts,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.PageRequest": PageRequest,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.RenderArtifactDescriptor": RenderArtifactDescriptor,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.RenderCounts": RenderCounts,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.RootOccurrenceSummary": RootOccurrenceSummary,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.SessionReference": SessionReference,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.ShellSummary": ShellSummary,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.SourceDescriptor": SourceDescriptor,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.SourceEntityEvidence": SourceEntityEvidence,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyCloseRequestA0": StepTopologyCloseRequestA0,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyCloseResultA0": StepTopologyCloseResultA0,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyInspectRequestA0": StepTopologyInspectRequestA0,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyInspectResultA0": StepTopologyInspectResultA0,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyOpenRequestA0": StepTopologyOpenRequestA0,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyOpenResultA0": StepTopologyOpenResultA0,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyRenderRequestA0": StepTopologyRenderRequestA0,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyRenderResultA0": StepTopologyRenderResultA0,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyResolveHitRequestA0": StepTopologyResolveHitRequestA0,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyResolveHitResultA0": StepTopologyResolveHitResultA0,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.TessellationOptions": TessellationOptions,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.ToolDescriptor": ToolDescriptor,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.TopologyBindingTableAttachmentDescriptor": TopologyBindingTableAttachmentDescriptor,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.TopologyPage": TopologyPage,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.TopologyTableAttachmentDescriptor": TopologyTableAttachmentDescriptor,
 }
 
 ENUM_TYPES = {

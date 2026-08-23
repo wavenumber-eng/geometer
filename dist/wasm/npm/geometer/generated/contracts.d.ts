@@ -469,3 +469,210 @@ export interface OperationSuccessA0 {
 }
 /** Transport-neutral typed outcome shared by the generic C ABI and executable IPC. */
 export type OperationOutcomeA0 = OperationSuccessA0 | OperationFailureA0;
+export interface SourceEntityEvidence {
+    readonly mapped: boolean;
+    readonly shape_result_round_trip: boolean;
+    readonly model_number?: number;
+    readonly entity_type?: string;
+    readonly mapping_method?: string;
+}
+export interface BodySummary {
+    readonly handle: string;
+    readonly definition_handle: string;
+    readonly topology_kind: string;
+    readonly shell_handles: readonly string[];
+    readonly face_handles: readonly string[];
+    readonly bounds_mm: readonly number[];
+    readonly volume_mm3: number;
+    readonly source_entity?: SourceEntityEvidence;
+}
+export interface ComponentOccurrenceSummary {
+    readonly kind: "component";
+    readonly handle: string;
+    readonly definition_handle: string;
+    readonly parent_occurrence_handle: string;
+    readonly depth: number;
+    readonly name: string;
+    readonly transform: readonly number[];
+}
+export interface DefinitionSummary {
+    readonly handle: string;
+    readonly name: string;
+    readonly assembly: boolean;
+    readonly body_count: number;
+    readonly face_count: number;
+    readonly source_entity?: SourceEntityEvidence;
+}
+export interface FaceSummary {
+    readonly handle: string;
+    readonly definition_handle: string;
+    readonly body_handles: readonly string[];
+    readonly shell_handles: readonly string[];
+    readonly bounds_mm: readonly number[];
+    readonly area_mm2: number;
+    readonly centroid_mm: readonly number[];
+    readonly source_entity?: SourceEntityEvidence;
+}
+export interface GlbAttachmentDescriptor {
+    readonly name: "glb";
+    readonly media_type: "model/gltf-binary";
+    readonly format: "glb-2.0";
+    readonly bytes: number;
+    readonly sha256: string;
+}
+export interface InspectionCounts {
+    readonly definitions: number;
+    readonly root_occurrences: number;
+    readonly component_occurrences: number;
+    readonly bodies: number;
+    readonly shells: number;
+    readonly faces: number;
+}
+export interface RootOccurrenceSummary {
+    readonly kind: "root";
+    readonly handle: string;
+    readonly definition_handle: string;
+    readonly name: string;
+    readonly transform: readonly number[];
+}
+export type OccurrenceSummary = RootOccurrenceSummary | ComponentOccurrenceSummary;
+export interface PageRequest {
+    readonly cursor?: string;
+    readonly limit: number;
+}
+export interface RenderCounts {
+    readonly meshes: number;
+    readonly instances: number;
+    readonly primitives: number;
+    readonly geometry_triangles: number;
+    readonly instanced_triangles: number;
+}
+export interface RenderArtifactDescriptor {
+    readonly artifact_handle: string;
+    readonly content_sha256: string;
+    readonly render_artifact_handle: string;
+    readonly render_content_sha256: string;
+    readonly binding_layout: "node-primitive-a0";
+    readonly geometry_length_unit: "meter";
+    readonly source_length_unit: "millimeter";
+    readonly counts: RenderCounts;
+}
+export interface SessionReference {
+    readonly session_handle: string;
+    readonly generation: number;
+}
+export interface ShellSummary {
+    readonly handle: string;
+    readonly definition_handle: string;
+    readonly body_handles: readonly string[];
+    readonly face_handles: readonly string[];
+    readonly source_entity?: SourceEntityEvidence;
+}
+export interface SourceDescriptor {
+    readonly format: "step";
+    readonly sha256: string;
+    readonly bytes: number;
+    readonly normalized_length_unit: "millimeter";
+}
+export interface StepTopologyCloseRequestA0 {
+    readonly schema: "geometry.step_topology.close.request.a0";
+    readonly session: SessionReference;
+}
+export interface StepTopologyCloseResultA0 {
+    readonly schema: "geometry.step_topology.close.result.a0";
+    readonly session_handle: string;
+    readonly closed: true;
+}
+export interface StepTopologyInspectRequestA0 {
+    readonly schema: "geometry.step_topology.inspect.request.a0";
+    readonly session: SessionReference;
+    readonly page: PageRequest;
+    readonly include_source_entity_evidence: boolean;
+    readonly include_diagnostics: boolean;
+}
+export interface TopologyPage {
+    readonly definitions: readonly DefinitionSummary[];
+    readonly occurrences: readonly OccurrenceSummary[];
+    readonly bodies: readonly BodySummary[];
+    readonly shells: readonly ShellSummary[];
+    readonly faces: readonly FaceSummary[];
+    readonly next_cursor?: string;
+}
+export interface TopologyTableAttachmentDescriptor {
+    readonly name: "topology_table";
+    readonly media_type: "application/vnd.wavenumber.geometer.step-topology-table";
+    readonly format: "wn.geometer.step-topology-table.a0";
+    readonly bytes: number;
+    readonly sha256: string;
+}
+export interface StepTopologyInspectResultA0 {
+    readonly schema: "geometry.step_topology.inspect.result.a0";
+    readonly session: SessionReference;
+    readonly counts: InspectionCounts;
+    readonly page: TopologyPage;
+    readonly compact_table?: TopologyTableAttachmentDescriptor;
+    readonly diagnostics: readonly DiagnosticA0[];
+}
+export interface StepTopologyOpenRequestA0 {
+    readonly schema: "geometry.step_topology.open.request.a0";
+}
+export interface ToolDescriptor {
+    readonly name: "geometer";
+    readonly release_version: string;
+    readonly occt_version: string;
+}
+export interface StepTopologyOpenResultA0 {
+    readonly schema: "geometry.step_topology.open.result.a0";
+    readonly session: SessionReference;
+    readonly source: SourceDescriptor;
+    readonly tool: ToolDescriptor;
+    readonly evicted_session_handles: readonly string[];
+}
+export interface TessellationOptions {
+    readonly linear_deflection_mm: number;
+    readonly angular_deflection_rad: number;
+    readonly relative: boolean;
+    readonly parallel: boolean;
+    readonly source_to_render: readonly number[];
+}
+export interface StepTopologyRenderRequestA0 {
+    readonly schema: "geometry.step_topology.render.request.a0";
+    readonly session: SessionReference;
+    readonly tessellation: TessellationOptions;
+}
+export interface TopologyBindingTableAttachmentDescriptor {
+    readonly name: "topology_binding_table";
+    readonly media_type: "application/vnd.wavenumber.geometer.step-topology-binding-table";
+    readonly format: "wn.geometer.step-topology-binding-table.a0";
+    readonly bytes: number;
+    readonly sha256: string;
+}
+export interface StepTopologyRenderResultA0 {
+    readonly schema: "geometry.step_topology.render.result.a0";
+    readonly session: SessionReference;
+    readonly artifact: RenderArtifactDescriptor;
+    readonly glb: GlbAttachmentDescriptor;
+    readonly compact_binding_table?: TopologyBindingTableAttachmentDescriptor;
+}
+export interface StepTopologyResolveHitRequestA0 {
+    readonly schema: "geometry.step_topology.resolve_hit.request.a0";
+    readonly session: SessionReference;
+    readonly artifact_handle: string;
+    readonly content_sha256: string;
+    readonly instance_index: number;
+    readonly primitive_index: number;
+    readonly primitive_triangle_index: number;
+    readonly occurrence_handle: string;
+    readonly body_handle: string;
+    readonly face_handle: string;
+}
+export interface StepTopologyResolveHitResultA0 {
+    readonly schema: "geometry.step_topology.resolve_hit.result.a0";
+    readonly session: SessionReference;
+    readonly instance_index: number;
+    readonly primitive_index: number;
+    readonly triangle_index: number;
+    readonly occurrence_handle: string;
+    readonly body_handle: string;
+    readonly face_handle: string;
+}

@@ -250,6 +250,8 @@ function validateRuntimeCatalog(value) {
         throw new GeometerWasmTransportError(0, "WASM module operation declarations are malformed.");
     }
     for (const [identity, expected] of Object.entries(operationCatalog)) {
+        if (!expected.runtimeAvailable)
+            continue;
         const actual = value.operations.find((operation) => operation.identity === identity);
         if (!actual)
             throw new GeometerWasmTransportError(0, `WASM module is missing ${identity}.`);

@@ -1,0 +1,120 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:wavenumber:schema:geometer:geometry.step_topology.open.result:a0",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "type": "string",
+      "const": "geometry.step_topology.open.result.a0"
+    },
+    "session": {
+      "$ref": "#/$defs/SessionReference"
+    },
+    "source": {
+      "$ref": "#/$defs/SourceDescriptor"
+    },
+    "tool": {
+      "$ref": "#/$defs/ToolDescriptor"
+    },
+    "evicted_session_handles": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 8
+    }
+  },
+  "required": [
+    "schema",
+    "session",
+    "source",
+    "tool",
+    "evicted_session_handles"
+  ],
+  "unevaluatedProperties": {
+    "not": {}
+  },
+  "$defs": {
+    "SessionReference": {
+      "type": "object",
+      "properties": {
+        "session_handle": {
+          "type": "string",
+          "minLength": 68,
+          "maxLength": 68
+        },
+        "generation": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        }
+      },
+      "required": [
+        "session_handle",
+        "generation"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "SourceDescriptor": {
+      "type": "object",
+      "properties": {
+        "format": {
+          "type": "string",
+          "const": "step"
+        },
+        "sha256": {
+          "type": "string",
+          "minLength": 64,
+          "maxLength": 64
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 268435456
+        },
+        "normalized_length_unit": {
+          "type": "string",
+          "const": "millimeter"
+        }
+      },
+      "required": [
+        "format",
+        "sha256",
+        "bytes",
+        "normalized_length_unit"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "ToolDescriptor": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "const": "geometer"
+        },
+        "release_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "occt_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        }
+      },
+      "required": [
+        "name",
+        "release_version",
+        "occt_version"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    }
+  }
+}

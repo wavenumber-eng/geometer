@@ -131,7 +131,7 @@ async function validateGeneratedState(manifest, catalog) {
 
   const expectedOperations = [
     ...manifest.operations.filter((operation) =>
-      ["pilot_candidate", "promoted"].includes(operation.status),
+      ["experimental_candidate", "pilot_candidate", "promoted"].includes(operation.status),
     ),
     ...manifest.candidateOperations.filter(
       (operation) => operation.status === "pre_release_matz_candidate",

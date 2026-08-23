@@ -31,6 +31,12 @@ durable record belongs here, in ADRs, and in requirements.
 - [CLI interfaces](cli.md)
 - [Dependency cache](dependency-cache.md)
 - [STEP topology annotation research](step-topology-annotation-research.md)
+- [STEP topology fixture baseline](step-topology-fixture-baseline.md)
+- [Native STEP topology inspection research](step-topology-native-inspection.md)
+- [Direct STEP topology render-binding research](step-topology-render-binding.md)
+- [STEP topology GLB work-packet research](step-topology-glb-binding.md)
+- [STEP topology contract Slice A](step-topology-contract-a0.md)
+- [Native STEP topology logical-group transactions](step-topology-logical-groups.md)
 
 ## Format Docs
 

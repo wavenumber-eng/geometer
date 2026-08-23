@@ -9,9 +9,9 @@ and the promotion manifest owns lifecycle/evidence state.
 
 ADR-011 is Accepted and its independent transport review is recorded in the
 promotion manifest. The TypeSpec/catalog foundation described here is
-implemented. The generic C ABI, generated C++ projection, and model-bounds
-TypeScript/browser WASM projection are now separately implemented and tested
-slices. Executable IPC, Rust, and Python projections remain later slices.
+implemented, including C++, TypeScript, Rust, Python, JSON Schema, and HTML
+projections. Promotion and runtime availability remain separate lifecycle
+decisions for every operation.
 
 ## ALX baseline and Geometer differences
 
@@ -135,6 +135,8 @@ contains, in deterministic order:
 - closed/open-object intent and reviewed extension-bucket annotations;
 - discriminator and variant metadata;
 - operations with stable identity plus request/result contract references;
+- explicit runtime availability, allowing generated experimental structure to
+  remain absent from runtime capability catalogs;
 - named input/output attachments with direction, requiredness, allowed media
   types, and byte limits; and
 - generator-relevant logical annotations whose meaning is governed here or in
@@ -150,6 +152,14 @@ attachment records to TypeSpec operation declarations. Raw attachments are not
 modeled as base64 strings or JSON properties. The operation request and result
 references point to ordinary generated DTO roots; transport-specific envelopes
 remain governed by ADR-011 and its specifications.
+
+`@experimentalOperation` marks a catalog-discovered operation as structural
+research with `runtime_available: false`. Its roots still generate in every
+required language, but C++, Rust, and Python expected runtime catalogs omit it.
+TypeScript operation metadata retains it with `runtimeAvailable: false`, and
+runtime catalog compatibility checks consider only available operations. The
+promotion manifest must independently register the operation and both roots as
+`experimental_candidate`; the decorator is not promotion evidence.
 
 ## Supported subset and failure policy
 

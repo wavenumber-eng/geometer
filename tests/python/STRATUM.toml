@@ -115,3 +115,17 @@ file = "test_package_single_html_site.py"
 name = "Single-HTML Static Site Packager"
 description = "Checks deterministic one-runtime-file packaging, CSP hashes, metadata, and rejection of external dependencies."
 test_case_type = "unit"
+
+[[subtests]]
+id = "PY_015"
+file = "test_topology_worker_supervisor.py"
+name = "Topology Worker Process Containment"
+description = "Runs a real OCCT topology session behind hard deadline/cancel replacement, private temporary storage cleanup, and OS memory ceilings."
+test_case_type = "integration"
+
+[[subtests]]
+id = "PY_016"
+file = "test_topology_glb_raycast.py"
+name = "Topology GLB Three.js Binding"
+description = "Loads every fixture's sealed native topology GLB plus a reflected case with pinned Three.js and proves exact accessor, transform, material, occurrence, body, face, and triangle hit resolution."
+test_case_type = "integration"

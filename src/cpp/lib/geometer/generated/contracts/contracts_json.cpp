@@ -157,6 +157,128 @@ bool decode_OperationOutcomeA0(const rapidjson::Value&, OperationOutcomeA0*, con
                                ContractError*);
 bool write_OperationOutcomeA0(rapidjson::Writer<rapidjson::StringBuffer>&,
                               const OperationOutcomeA0&, ContractError*);
+bool decode_SourceEntityEvidence(const rapidjson::Value&, SourceEntityEvidence*, const std::string&,
+                                 ContractError*);
+bool write_SourceEntityEvidence(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                const SourceEntityEvidence&, ContractError*);
+bool decode_BodySummary(const rapidjson::Value&, BodySummary*, const std::string&, ContractError*);
+bool write_BodySummary(rapidjson::Writer<rapidjson::StringBuffer>&, const BodySummary&,
+                       ContractError*);
+bool decode_ComponentOccurrenceSummary(const rapidjson::Value&, ComponentOccurrenceSummary*,
+                                       const std::string&, ContractError*);
+bool write_ComponentOccurrenceSummary(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                      const ComponentOccurrenceSummary&, ContractError*);
+bool decode_DefinitionSummary(const rapidjson::Value&, DefinitionSummary*, const std::string&,
+                              ContractError*);
+bool write_DefinitionSummary(rapidjson::Writer<rapidjson::StringBuffer>&, const DefinitionSummary&,
+                             ContractError*);
+bool decode_FaceSummary(const rapidjson::Value&, FaceSummary*, const std::string&, ContractError*);
+bool write_FaceSummary(rapidjson::Writer<rapidjson::StringBuffer>&, const FaceSummary&,
+                       ContractError*);
+bool decode_GlbAttachmentDescriptor(const rapidjson::Value&, GlbAttachmentDescriptor*,
+                                    const std::string&, ContractError*);
+bool write_GlbAttachmentDescriptor(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                   const GlbAttachmentDescriptor&, ContractError*);
+bool decode_InspectionCounts(const rapidjson::Value&, InspectionCounts*, const std::string&,
+                             ContractError*);
+bool write_InspectionCounts(rapidjson::Writer<rapidjson::StringBuffer>&, const InspectionCounts&,
+                            ContractError*);
+bool decode_RootOccurrenceSummary(const rapidjson::Value&, RootOccurrenceSummary*,
+                                  const std::string&, ContractError*);
+bool write_RootOccurrenceSummary(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                 const RootOccurrenceSummary&, ContractError*);
+bool decode_OccurrenceSummary(const rapidjson::Value&, OccurrenceSummary*, const std::string&,
+                              ContractError*);
+bool write_OccurrenceSummary(rapidjson::Writer<rapidjson::StringBuffer>&, const OccurrenceSummary&,
+                             ContractError*);
+bool decode_PageRequest(const rapidjson::Value&, PageRequest*, const std::string&, ContractError*);
+bool write_PageRequest(rapidjson::Writer<rapidjson::StringBuffer>&, const PageRequest&,
+                       ContractError*);
+bool decode_RenderCounts(const rapidjson::Value&, RenderCounts*, const std::string&,
+                         ContractError*);
+bool write_RenderCounts(rapidjson::Writer<rapidjson::StringBuffer>&, const RenderCounts&,
+                        ContractError*);
+bool decode_RenderArtifactDescriptor(const rapidjson::Value&, RenderArtifactDescriptor*,
+                                     const std::string&, ContractError*);
+bool write_RenderArtifactDescriptor(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                    const RenderArtifactDescriptor&, ContractError*);
+bool decode_SessionReference(const rapidjson::Value&, SessionReference*, const std::string&,
+                             ContractError*);
+bool write_SessionReference(rapidjson::Writer<rapidjson::StringBuffer>&, const SessionReference&,
+                            ContractError*);
+bool decode_ShellSummary(const rapidjson::Value&, ShellSummary*, const std::string&,
+                         ContractError*);
+bool write_ShellSummary(rapidjson::Writer<rapidjson::StringBuffer>&, const ShellSummary&,
+                        ContractError*);
+bool decode_SourceDescriptor(const rapidjson::Value&, SourceDescriptor*, const std::string&,
+                             ContractError*);
+bool write_SourceDescriptor(rapidjson::Writer<rapidjson::StringBuffer>&, const SourceDescriptor&,
+                            ContractError*);
+bool decode_StepTopologyCloseRequestA0(const rapidjson::Value&, StepTopologyCloseRequestA0*,
+                                       const std::string&, ContractError*);
+bool write_StepTopologyCloseRequestA0(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                      const StepTopologyCloseRequestA0&, ContractError*);
+bool decode_StepTopologyCloseResultA0(const rapidjson::Value&, StepTopologyCloseResultA0*,
+                                      const std::string&, ContractError*);
+bool write_StepTopologyCloseResultA0(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                     const StepTopologyCloseResultA0&, ContractError*);
+bool decode_StepTopologyInspectRequestA0(const rapidjson::Value&, StepTopologyInspectRequestA0*,
+                                         const std::string&, ContractError*);
+bool write_StepTopologyInspectRequestA0(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                        const StepTopologyInspectRequestA0&, ContractError*);
+bool decode_TopologyPage(const rapidjson::Value&, TopologyPage*, const std::string&,
+                         ContractError*);
+bool write_TopologyPage(rapidjson::Writer<rapidjson::StringBuffer>&, const TopologyPage&,
+                        ContractError*);
+bool decode_TopologyTableAttachmentDescriptor(const rapidjson::Value&,
+                                              TopologyTableAttachmentDescriptor*,
+                                              const std::string&, ContractError*);
+bool write_TopologyTableAttachmentDescriptor(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                             const TopologyTableAttachmentDescriptor&,
+                                             ContractError*);
+bool decode_StepTopologyInspectResultA0(const rapidjson::Value&, StepTopologyInspectResultA0*,
+                                        const std::string&, ContractError*);
+bool write_StepTopologyInspectResultA0(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                       const StepTopologyInspectResultA0&, ContractError*);
+bool decode_StepTopologyOpenRequestA0(const rapidjson::Value&, StepTopologyOpenRequestA0*,
+                                      const std::string&, ContractError*);
+bool write_StepTopologyOpenRequestA0(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                     const StepTopologyOpenRequestA0&, ContractError*);
+bool decode_ToolDescriptor(const rapidjson::Value&, ToolDescriptor*, const std::string&,
+                           ContractError*);
+bool write_ToolDescriptor(rapidjson::Writer<rapidjson::StringBuffer>&, const ToolDescriptor&,
+                          ContractError*);
+bool decode_StepTopologyOpenResultA0(const rapidjson::Value&, StepTopologyOpenResultA0*,
+                                     const std::string&, ContractError*);
+bool write_StepTopologyOpenResultA0(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                    const StepTopologyOpenResultA0&, ContractError*);
+bool decode_TessellationOptions(const rapidjson::Value&, TessellationOptions*, const std::string&,
+                                ContractError*);
+bool write_TessellationOptions(rapidjson::Writer<rapidjson::StringBuffer>&,
+                               const TessellationOptions&, ContractError*);
+bool decode_StepTopologyRenderRequestA0(const rapidjson::Value&, StepTopologyRenderRequestA0*,
+                                        const std::string&, ContractError*);
+bool write_StepTopologyRenderRequestA0(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                       const StepTopologyRenderRequestA0&, ContractError*);
+bool decode_TopologyBindingTableAttachmentDescriptor(const rapidjson::Value&,
+                                                     TopologyBindingTableAttachmentDescriptor*,
+                                                     const std::string&, ContractError*);
+bool write_TopologyBindingTableAttachmentDescriptor(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                                    const TopologyBindingTableAttachmentDescriptor&,
+                                                    ContractError*);
+bool decode_StepTopologyRenderResultA0(const rapidjson::Value&, StepTopologyRenderResultA0*,
+                                       const std::string&, ContractError*);
+bool write_StepTopologyRenderResultA0(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                      const StepTopologyRenderResultA0&, ContractError*);
+bool decode_StepTopologyResolveHitRequestA0(const rapidjson::Value&,
+                                            StepTopologyResolveHitRequestA0*, const std::string&,
+                                            ContractError*);
+bool write_StepTopologyResolveHitRequestA0(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                           const StepTopologyResolveHitRequestA0&, ContractError*);
+bool decode_StepTopologyResolveHitResultA0(const rapidjson::Value&, StepTopologyResolveHitResultA0*,
+                                           const std::string&, ContractError*);
+bool write_StepTopologyResolveHitResultA0(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                          const StepTopologyResolveHitResultA0&, ContractError*);
 
 constexpr std::size_t kMaxJsonBytes = 8U * 1024U * 1024U;
 
@@ -286,9 +408,9 @@ bool decode_boolean(const rapidjson::Value& value, bool* out, const std::string&
 }
 
 bool decode_uint32(const rapidjson::Value& value, std::uint32_t* out, const std::string& path,
-                   ContractError* error, std::uint64_t maximum)
+                   ContractError* error, std::uint64_t minimum, std::uint64_t maximum)
 {
-    if (!value.IsUint64() || value.GetUint64() > maximum ||
+    if (!value.IsUint64() || value.GetUint64() < minimum || value.GetUint64() > maximum ||
         value.GetUint64() > std::numeric_limits<std::uint32_t>::max())
         return fail(error, "geometer.contract.number_range", path,
                     "Expected an unsigned 32-bit integer within its contract bounds.");
@@ -297,9 +419,9 @@ bool decode_uint32(const rapidjson::Value& value, std::uint32_t* out, const std:
 }
 
 bool decode_uint64(const rapidjson::Value& value, std::uint64_t* out, const std::string& path,
-                   ContractError* error, std::uint64_t maximum)
+                   ContractError* error, std::uint64_t minimum, std::uint64_t maximum)
 {
-    if (!value.IsUint64() || value.GetUint64() > maximum)
+    if (!value.IsUint64() || value.GetUint64() < minimum || value.GetUint64() > maximum)
         return fail(error, "geometer.contract.number_range", path,
                     "Expected an unsigned 64-bit integer within its contract bounds.");
     *out = value.GetUint64();
@@ -372,21 +494,21 @@ bool write_double(rapidjson::Writer<rapidjson::StringBuffer>& writer, double val
 }
 
 bool write_uint32(rapidjson::Writer<rapidjson::StringBuffer>& writer, std::uint32_t value,
-                  ContractError* error, std::uint64_t maximum)
+                  ContractError* error, std::uint64_t minimum, std::uint64_t maximum)
 {
-    if (value > maximum)
+    if (value < minimum || value > maximum)
         return fail(error, "geometer.contract.number_range", "",
-                    "Unsigned integer exceeds its contract bounds.");
+                    "Unsigned integer is outside its contract bounds.");
     writer.Uint(value);
     return true;
 }
 
 bool write_uint64(rapidjson::Writer<rapidjson::StringBuffer>& writer, std::uint64_t value,
-                  ContractError* error, std::uint64_t maximum)
+                  ContractError* error, std::uint64_t minimum, std::uint64_t maximum)
 {
-    if (value > maximum)
+    if (value < minimum || value > maximum)
         return fail(error, "geometer.contract.number_range", "",
-                    "Unsigned integer exceeds its contract bounds.");
+                    "Unsigned integer is outside its contract bounds.");
     writer.Uint64(value);
     return true;
 }
@@ -433,6 +555,20 @@ bool write_string_item(rapidjson::Writer<rapidjson::StringBuffer>& writer, const
                        ContractError* error)
 {
     return write_string(writer, value, error, 0U, std::numeric_limits<std::size_t>::max());
+}
+
+bool decode_double_item(const rapidjson::Value& value, double* out, const std::string& path,
+                        ContractError* error)
+{
+    return decode_double(value, out, path, error, -std::numeric_limits<double>::infinity(),
+                         std::numeric_limits<double>::infinity());
+}
+
+bool write_double_item(rapidjson::Writer<rapidjson::StringBuffer>& writer, const double& value,
+                       ContractError* error)
+{
+    return write_double(writer, value, error, -std::numeric_limits<double>::infinity(),
+                        std::numeric_limits<double>::infinity());
 }
 
 template <typename T>
@@ -742,7 +878,7 @@ bool decode_IpcAttachmentDeclarationA0(const rapidjson::Value& value,
             return fail(error, "geometer.contract.missing_field", child_path(path, "max_bytes"),
                         "Required field is missing.");
         if (!decode_uint32(member->value, &out->max_bytes, child_path(path, "max_bytes"), error,
-                           268435456ULL))
+                           0ULL, 268435456ULL))
             return false;
     }
     return true;
@@ -762,7 +898,7 @@ bool write_IpcAttachmentDeclarationA0(rapidjson::Writer<rapidjson::StringBuffer>
     if (!write_array(writer, value.media_types, error, 1U, 16U, write_string_item))
         return false;
     writer.Key("max_bytes");
-    if (!write_uint32(writer, value.max_bytes, error, 268435456ULL))
+    if (!write_uint32(writer, value.max_bytes, error, 0ULL, 268435456ULL))
         return false;
     writer.EndObject();
     return true;
@@ -783,7 +919,7 @@ bool decode_IpcAttachmentOffsetsWasm32A0(const rapidjson::Value& value,
             return fail(error, "geometer.contract.missing_field", child_path(path, "struct_size"),
                         "Required field is missing.");
         if (!decode_uint32(member->value, &out->struct_size, child_path(path, "struct_size"), error,
-                           0ULL))
+                           0ULL, 0ULL))
             return false;
     }
     {
@@ -791,7 +927,8 @@ bool decode_IpcAttachmentOffsetsWasm32A0(const rapidjson::Value& value,
         if (member == value.MemberEnd())
             return fail(error, "geometer.contract.missing_field", child_path(path, "flags"),
                         "Required field is missing.");
-        if (!decode_uint32(member->value, &out->flags, child_path(path, "flags"), error, 4ULL))
+        if (!decode_uint32(member->value, &out->flags, child_path(path, "flags"), error, 4ULL,
+                           4ULL))
             return false;
     }
     {
@@ -799,7 +936,7 @@ bool decode_IpcAttachmentOffsetsWasm32A0(const rapidjson::Value& value,
         if (member == value.MemberEnd())
             return fail(error, "geometer.contract.missing_field", child_path(path, "name"),
                         "Required field is missing.");
-        if (!decode_uint32(member->value, &out->name, child_path(path, "name"), error, 8ULL))
+        if (!decode_uint32(member->value, &out->name, child_path(path, "name"), error, 8ULL, 8ULL))
             return false;
     }
     {
@@ -808,7 +945,7 @@ bool decode_IpcAttachmentOffsetsWasm32A0(const rapidjson::Value& value,
             return fail(error, "geometer.contract.missing_field", child_path(path, "name_size"),
                         "Required field is missing.");
         if (!decode_uint32(member->value, &out->name_size, child_path(path, "name_size"), error,
-                           12ULL))
+                           12ULL, 12ULL))
             return false;
     }
     {
@@ -817,7 +954,7 @@ bool decode_IpcAttachmentOffsetsWasm32A0(const rapidjson::Value& value,
             return fail(error, "geometer.contract.missing_field", child_path(path, "media_type"),
                         "Required field is missing.");
         if (!decode_uint32(member->value, &out->media_type, child_path(path, "media_type"), error,
-                           16ULL))
+                           16ULL, 16ULL))
             return false;
     }
     {
@@ -826,7 +963,7 @@ bool decode_IpcAttachmentOffsetsWasm32A0(const rapidjson::Value& value,
             return fail(error, "geometer.contract.missing_field",
                         child_path(path, "media_type_size"), "Required field is missing.");
         if (!decode_uint32(member->value, &out->media_type_size,
-                           child_path(path, "media_type_size"), error, 20ULL))
+                           child_path(path, "media_type_size"), error, 20ULL, 20ULL))
             return false;
     }
     {
@@ -834,7 +971,8 @@ bool decode_IpcAttachmentOffsetsWasm32A0(const rapidjson::Value& value,
         if (member == value.MemberEnd())
             return fail(error, "geometer.contract.missing_field", child_path(path, "data"),
                         "Required field is missing.");
-        if (!decode_uint32(member->value, &out->data, child_path(path, "data"), error, 24ULL))
+        if (!decode_uint32(member->value, &out->data, child_path(path, "data"), error, 24ULL,
+                           24ULL))
             return false;
     }
     {
@@ -843,7 +981,7 @@ bool decode_IpcAttachmentOffsetsWasm32A0(const rapidjson::Value& value,
             return fail(error, "geometer.contract.missing_field", child_path(path, "data_size"),
                         "Required field is missing.");
         if (!decode_uint32(member->value, &out->data_size, child_path(path, "data_size"), error,
-                           28ULL))
+                           28ULL, 28ULL))
             return false;
     }
     {
@@ -852,7 +990,7 @@ bool decode_IpcAttachmentOffsetsWasm32A0(const rapidjson::Value& value,
             return fail(error, "geometer.contract.missing_field", child_path(path, "reserved0"),
                         "Required field is missing.");
         if (!decode_uint32(member->value, &out->reserved0, child_path(path, "reserved0"), error,
-                           32ULL))
+                           32ULL, 32ULL))
             return false;
     }
     return true;
@@ -864,31 +1002,31 @@ bool write_IpcAttachmentOffsetsWasm32A0(rapidjson::Writer<rapidjson::StringBuffe
 {
     writer.StartObject();
     writer.Key("struct_size");
-    if (!write_uint32(writer, value.struct_size, error, 0ULL))
+    if (!write_uint32(writer, value.struct_size, error, 0ULL, 0ULL))
         return false;
     writer.Key("flags");
-    if (!write_uint32(writer, value.flags, error, 4ULL))
+    if (!write_uint32(writer, value.flags, error, 4ULL, 4ULL))
         return false;
     writer.Key("name");
-    if (!write_uint32(writer, value.name, error, 8ULL))
+    if (!write_uint32(writer, value.name, error, 8ULL, 8ULL))
         return false;
     writer.Key("name_size");
-    if (!write_uint32(writer, value.name_size, error, 12ULL))
+    if (!write_uint32(writer, value.name_size, error, 12ULL, 12ULL))
         return false;
     writer.Key("media_type");
-    if (!write_uint32(writer, value.media_type, error, 16ULL))
+    if (!write_uint32(writer, value.media_type, error, 16ULL, 16ULL))
         return false;
     writer.Key("media_type_size");
-    if (!write_uint32(writer, value.media_type_size, error, 20ULL))
+    if (!write_uint32(writer, value.media_type_size, error, 20ULL, 20ULL))
         return false;
     writer.Key("data");
-    if (!write_uint32(writer, value.data, error, 24ULL))
+    if (!write_uint32(writer, value.data, error, 24ULL, 24ULL))
         return false;
     writer.Key("data_size");
-    if (!write_uint32(writer, value.data_size, error, 28ULL))
+    if (!write_uint32(writer, value.data_size, error, 28ULL, 28ULL))
         return false;
     writer.Key("reserved0");
-    if (!write_uint32(writer, value.reserved0, error, 32ULL))
+    if (!write_uint32(writer, value.reserved0, error, 32ULL, 32ULL))
         return false;
     writer.EndObject();
     return true;
@@ -906,7 +1044,8 @@ bool decode_IpcAttachmentLayoutWasm32A0(const rapidjson::Value& value,
         if (member == value.MemberEnd())
             return fail(error, "geometer.contract.missing_field", child_path(path, "size"),
                         "Required field is missing.");
-        if (!decode_uint32(member->value, &out->size, child_path(path, "size"), error, 36ULL))
+        if (!decode_uint32(member->value, &out->size, child_path(path, "size"), error, 36ULL,
+                           36ULL))
             return false;
     }
     {
@@ -927,7 +1066,7 @@ bool write_IpcAttachmentLayoutWasm32A0(rapidjson::Writer<rapidjson::StringBuffer
 {
     writer.StartObject();
     writer.Key("size");
-    if (!write_uint32(writer, value.size, error, 36ULL))
+    if (!write_uint32(writer, value.size, error, 36ULL, 36ULL))
         return false;
     writer.Key("offsets");
     if (!write_IpcAttachmentOffsetsWasm32A0(writer, value.offsets, error))
@@ -951,7 +1090,7 @@ bool decode_IpcAttachmentOffsetsPointer64A0(const rapidjson::Value& value,
             return fail(error, "geometer.contract.missing_field", child_path(path, "struct_size"),
                         "Required field is missing.");
         if (!decode_uint32(member->value, &out->struct_size, child_path(path, "struct_size"), error,
-                           0ULL))
+                           0ULL, 0ULL))
             return false;
     }
     {
@@ -959,7 +1098,8 @@ bool decode_IpcAttachmentOffsetsPointer64A0(const rapidjson::Value& value,
         if (member == value.MemberEnd())
             return fail(error, "geometer.contract.missing_field", child_path(path, "flags"),
                         "Required field is missing.");
-        if (!decode_uint32(member->value, &out->flags, child_path(path, "flags"), error, 4ULL))
+        if (!decode_uint32(member->value, &out->flags, child_path(path, "flags"), error, 4ULL,
+                           4ULL))
             return false;
     }
     {
@@ -967,7 +1107,7 @@ bool decode_IpcAttachmentOffsetsPointer64A0(const rapidjson::Value& value,
         if (member == value.MemberEnd())
             return fail(error, "geometer.contract.missing_field", child_path(path, "name"),
                         "Required field is missing.");
-        if (!decode_uint32(member->value, &out->name, child_path(path, "name"), error, 8ULL))
+        if (!decode_uint32(member->value, &out->name, child_path(path, "name"), error, 8ULL, 8ULL))
             return false;
     }
     {
@@ -976,7 +1116,7 @@ bool decode_IpcAttachmentOffsetsPointer64A0(const rapidjson::Value& value,
             return fail(error, "geometer.contract.missing_field", child_path(path, "name_size"),
                         "Required field is missing.");
         if (!decode_uint32(member->value, &out->name_size, child_path(path, "name_size"), error,
-                           16ULL))
+                           16ULL, 16ULL))
             return false;
     }
     {
@@ -985,7 +1125,7 @@ bool decode_IpcAttachmentOffsetsPointer64A0(const rapidjson::Value& value,
             return fail(error, "geometer.contract.missing_field", child_path(path, "media_type"),
                         "Required field is missing.");
         if (!decode_uint32(member->value, &out->media_type, child_path(path, "media_type"), error,
-                           24ULL))
+                           24ULL, 24ULL))
             return false;
     }
     {
@@ -994,7 +1134,7 @@ bool decode_IpcAttachmentOffsetsPointer64A0(const rapidjson::Value& value,
             return fail(error, "geometer.contract.missing_field",
                         child_path(path, "media_type_size"), "Required field is missing.");
         if (!decode_uint32(member->value, &out->media_type_size,
-                           child_path(path, "media_type_size"), error, 32ULL))
+                           child_path(path, "media_type_size"), error, 32ULL, 32ULL))
             return false;
     }
     {
@@ -1002,7 +1142,8 @@ bool decode_IpcAttachmentOffsetsPointer64A0(const rapidjson::Value& value,
         if (member == value.MemberEnd())
             return fail(error, "geometer.contract.missing_field", child_path(path, "data"),
                         "Required field is missing.");
-        if (!decode_uint32(member->value, &out->data, child_path(path, "data"), error, 40ULL))
+        if (!decode_uint32(member->value, &out->data, child_path(path, "data"), error, 40ULL,
+                           40ULL))
             return false;
     }
     {
@@ -1011,7 +1152,7 @@ bool decode_IpcAttachmentOffsetsPointer64A0(const rapidjson::Value& value,
             return fail(error, "geometer.contract.missing_field", child_path(path, "data_size"),
                         "Required field is missing.");
         if (!decode_uint32(member->value, &out->data_size, child_path(path, "data_size"), error,
-                           48ULL))
+                           48ULL, 48ULL))
             return false;
     }
     {
@@ -1020,7 +1161,7 @@ bool decode_IpcAttachmentOffsetsPointer64A0(const rapidjson::Value& value,
             return fail(error, "geometer.contract.missing_field", child_path(path, "reserved0"),
                         "Required field is missing.");
         if (!decode_uint32(member->value, &out->reserved0, child_path(path, "reserved0"), error,
-                           52ULL))
+                           52ULL, 52ULL))
             return false;
     }
     return true;
@@ -1032,31 +1173,31 @@ bool write_IpcAttachmentOffsetsPointer64A0(rapidjson::Writer<rapidjson::StringBu
 {
     writer.StartObject();
     writer.Key("struct_size");
-    if (!write_uint32(writer, value.struct_size, error, 0ULL))
+    if (!write_uint32(writer, value.struct_size, error, 0ULL, 0ULL))
         return false;
     writer.Key("flags");
-    if (!write_uint32(writer, value.flags, error, 4ULL))
+    if (!write_uint32(writer, value.flags, error, 4ULL, 4ULL))
         return false;
     writer.Key("name");
-    if (!write_uint32(writer, value.name, error, 8ULL))
+    if (!write_uint32(writer, value.name, error, 8ULL, 8ULL))
         return false;
     writer.Key("name_size");
-    if (!write_uint32(writer, value.name_size, error, 16ULL))
+    if (!write_uint32(writer, value.name_size, error, 16ULL, 16ULL))
         return false;
     writer.Key("media_type");
-    if (!write_uint32(writer, value.media_type, error, 24ULL))
+    if (!write_uint32(writer, value.media_type, error, 24ULL, 24ULL))
         return false;
     writer.Key("media_type_size");
-    if (!write_uint32(writer, value.media_type_size, error, 32ULL))
+    if (!write_uint32(writer, value.media_type_size, error, 32ULL, 32ULL))
         return false;
     writer.Key("data");
-    if (!write_uint32(writer, value.data, error, 40ULL))
+    if (!write_uint32(writer, value.data, error, 40ULL, 40ULL))
         return false;
     writer.Key("data_size");
-    if (!write_uint32(writer, value.data_size, error, 48ULL))
+    if (!write_uint32(writer, value.data_size, error, 48ULL, 48ULL))
         return false;
     writer.Key("reserved0");
-    if (!write_uint32(writer, value.reserved0, error, 52ULL))
+    if (!write_uint32(writer, value.reserved0, error, 52ULL, 52ULL))
         return false;
     writer.EndObject();
     return true;
@@ -1074,7 +1215,8 @@ bool decode_IpcAttachmentLayoutPointer64A0(const rapidjson::Value& value,
         if (member == value.MemberEnd())
             return fail(error, "geometer.contract.missing_field", child_path(path, "size"),
                         "Required field is missing.");
-        if (!decode_uint32(member->value, &out->size, child_path(path, "size"), error, 56ULL))
+        if (!decode_uint32(member->value, &out->size, child_path(path, "size"), error, 56ULL,
+                           56ULL))
             return false;
     }
     {
@@ -1095,7 +1237,7 @@ bool write_IpcAttachmentLayoutPointer64A0(rapidjson::Writer<rapidjson::StringBuf
 {
     writer.StartObject();
     writer.Key("size");
-    if (!write_uint32(writer, value.size, error, 56ULL))
+    if (!write_uint32(writer, value.size, error, 56ULL, 56ULL))
         return false;
     writer.Key("offsets");
     if (!write_IpcAttachmentOffsetsPointer64A0(writer, value.offsets, error))
@@ -1236,7 +1378,7 @@ bool decode_IpcEffectiveLimitsA0(const rapidjson::Value& value, IpcEffectiveLimi
             return fail(error, "geometer.contract.missing_field", child_path(path, "json_bytes"),
                         "Required field is missing.");
         if (!decode_uint32(member->value, &out->json_bytes, child_path(path, "json_bytes"), error,
-                           8388608ULL))
+                           0ULL, 8388608ULL))
             return false;
     }
     {
@@ -1245,7 +1387,7 @@ bool decode_IpcEffectiveLimitsA0(const rapidjson::Value& value, IpcEffectiveLimi
             return fail(error, "geometer.contract.missing_field",
                         child_path(path, "attachment_count"), "Required field is missing.");
         if (!decode_uint32(member->value, &out->attachment_count,
-                           child_path(path, "attachment_count"), error, 16ULL))
+                           child_path(path, "attachment_count"), error, 0ULL, 16ULL))
             return false;
     }
     {
@@ -1254,7 +1396,7 @@ bool decode_IpcEffectiveLimitsA0(const rapidjson::Value& value, IpcEffectiveLimi
             return fail(error, "geometer.contract.missing_field",
                         child_path(path, "attachment_name_bytes"), "Required field is missing.");
         if (!decode_uint32(member->value, &out->attachment_name_bytes,
-                           child_path(path, "attachment_name_bytes"), error, 128ULL))
+                           child_path(path, "attachment_name_bytes"), error, 0ULL, 128ULL))
             return false;
     }
     {
@@ -1264,7 +1406,7 @@ bool decode_IpcEffectiveLimitsA0(const rapidjson::Value& value, IpcEffectiveLimi
                         child_path(path, "attachment_media_type_bytes"),
                         "Required field is missing.");
         if (!decode_uint32(member->value, &out->attachment_media_type_bytes,
-                           child_path(path, "attachment_media_type_bytes"), error, 128ULL))
+                           child_path(path, "attachment_media_type_bytes"), error, 0ULL, 128ULL))
             return false;
     }
     {
@@ -1273,7 +1415,7 @@ bool decode_IpcEffectiveLimitsA0(const rapidjson::Value& value, IpcEffectiveLimi
             return fail(error, "geometer.contract.missing_field",
                         child_path(path, "attachment_bytes"), "Required field is missing.");
         if (!decode_uint32(member->value, &out->attachment_bytes,
-                           child_path(path, "attachment_bytes"), error, 268435456ULL))
+                           child_path(path, "attachment_bytes"), error, 0ULL, 268435456ULL))
             return false;
     }
     {
@@ -1282,7 +1424,7 @@ bool decode_IpcEffectiveLimitsA0(const rapidjson::Value& value, IpcEffectiveLimi
             return fail(error, "geometer.contract.missing_field", child_path(path, "frame_bytes"),
                         "Required field is missing.");
         if (!decode_uint32(member->value, &out->frame_bytes, child_path(path, "frame_bytes"), error,
-                           536870912ULL))
+                           0ULL, 536870912ULL))
             return false;
     }
     {
@@ -1291,7 +1433,7 @@ bool decode_IpcEffectiveLimitsA0(const rapidjson::Value& value, IpcEffectiveLimi
             return fail(error, "geometer.contract.missing_field",
                         child_path(path, "queued_requests"), "Required field is missing.");
         if (!decode_uint32(member->value, &out->queued_requests,
-                           child_path(path, "queued_requests"), error, 8ULL))
+                           child_path(path, "queued_requests"), error, 0ULL, 8ULL))
             return false;
     }
     {
@@ -1300,7 +1442,7 @@ bool decode_IpcEffectiveLimitsA0(const rapidjson::Value& value, IpcEffectiveLimi
             return fail(error, "geometer.contract.missing_field", child_path(path, "queued_bytes"),
                         "Required field is missing.");
         if (!decode_uint32(member->value, &out->queued_bytes, child_path(path, "queued_bytes"),
-                           error, 536870912ULL))
+                           error, 0ULL, 536870912ULL))
             return false;
     }
     {
@@ -1309,7 +1451,7 @@ bool decode_IpcEffectiveLimitsA0(const rapidjson::Value& value, IpcEffectiveLimi
             return fail(error, "geometer.contract.missing_field",
                         child_path(path, "resident_request_bytes"), "Required field is missing.");
         if (!decode_uint32(member->value, &out->resident_request_bytes,
-                           child_path(path, "resident_request_bytes"), error, 536870912ULL))
+                           child_path(path, "resident_request_bytes"), error, 0ULL, 536870912ULL))
             return false;
     }
     {
@@ -1318,7 +1460,7 @@ bool decode_IpcEffectiveLimitsA0(const rapidjson::Value& value, IpcEffectiveLimi
             return fail(error, "geometer.contract.missing_field",
                         child_path(path, "pending_writer_bytes"), "Required field is missing.");
         if (!decode_uint32(member->value, &out->pending_writer_bytes,
-                           child_path(path, "pending_writer_bytes"), error, 536870912ULL))
+                           child_path(path, "pending_writer_bytes"), error, 0ULL, 536870912ULL))
             return false;
     }
     return true;
@@ -1329,34 +1471,34 @@ bool write_IpcEffectiveLimitsA0(rapidjson::Writer<rapidjson::StringBuffer>& writ
 {
     writer.StartObject();
     writer.Key("json_bytes");
-    if (!write_uint32(writer, value.json_bytes, error, 8388608ULL))
+    if (!write_uint32(writer, value.json_bytes, error, 0ULL, 8388608ULL))
         return false;
     writer.Key("attachment_count");
-    if (!write_uint32(writer, value.attachment_count, error, 16ULL))
+    if (!write_uint32(writer, value.attachment_count, error, 0ULL, 16ULL))
         return false;
     writer.Key("attachment_name_bytes");
-    if (!write_uint32(writer, value.attachment_name_bytes, error, 128ULL))
+    if (!write_uint32(writer, value.attachment_name_bytes, error, 0ULL, 128ULL))
         return false;
     writer.Key("attachment_media_type_bytes");
-    if (!write_uint32(writer, value.attachment_media_type_bytes, error, 128ULL))
+    if (!write_uint32(writer, value.attachment_media_type_bytes, error, 0ULL, 128ULL))
         return false;
     writer.Key("attachment_bytes");
-    if (!write_uint32(writer, value.attachment_bytes, error, 268435456ULL))
+    if (!write_uint32(writer, value.attachment_bytes, error, 0ULL, 268435456ULL))
         return false;
     writer.Key("frame_bytes");
-    if (!write_uint32(writer, value.frame_bytes, error, 536870912ULL))
+    if (!write_uint32(writer, value.frame_bytes, error, 0ULL, 536870912ULL))
         return false;
     writer.Key("queued_requests");
-    if (!write_uint32(writer, value.queued_requests, error, 8ULL))
+    if (!write_uint32(writer, value.queued_requests, error, 0ULL, 8ULL))
         return false;
     writer.Key("queued_bytes");
-    if (!write_uint32(writer, value.queued_bytes, error, 536870912ULL))
+    if (!write_uint32(writer, value.queued_bytes, error, 0ULL, 536870912ULL))
         return false;
     writer.Key("resident_request_bytes");
-    if (!write_uint32(writer, value.resident_request_bytes, error, 536870912ULL))
+    if (!write_uint32(writer, value.resident_request_bytes, error, 0ULL, 536870912ULL))
         return false;
     writer.Key("pending_writer_bytes");
-    if (!write_uint32(writer, value.pending_writer_bytes, error, 536870912ULL))
+    if (!write_uint32(writer, value.pending_writer_bytes, error, 0ULL, 536870912ULL))
         return false;
     writer.EndObject();
     return true;
@@ -1382,7 +1524,7 @@ bool decode_IpcGenericAbiLimitsA0(const rapidjson::Value& value, IpcGenericAbiLi
             return fail(error, "geometer.contract.missing_field",
                         child_path(path, "operation_id_bytes"), "Required field is missing.");
         if (!decode_uint32(member->value, &out->operation_id_bytes,
-                           child_path(path, "operation_id_bytes"), error, 128ULL))
+                           child_path(path, "operation_id_bytes"), error, 0ULL, 128ULL))
             return false;
     }
     {
@@ -1391,7 +1533,7 @@ bool decode_IpcGenericAbiLimitsA0(const rapidjson::Value& value, IpcGenericAbiLi
             return fail(error, "geometer.contract.missing_field",
                         child_path(path, "request_json_bytes"), "Required field is missing.");
         if (!decode_uint32(member->value, &out->request_json_bytes,
-                           child_path(path, "request_json_bytes"), error, 8388608ULL))
+                           child_path(path, "request_json_bytes"), error, 0ULL, 8388608ULL))
             return false;
     }
     {
@@ -1400,7 +1542,7 @@ bool decode_IpcGenericAbiLimitsA0(const rapidjson::Value& value, IpcGenericAbiLi
             return fail(error, "geometer.contract.missing_field",
                         child_path(path, "response_json_bytes"), "Required field is missing.");
         if (!decode_uint32(member->value, &out->response_json_bytes,
-                           child_path(path, "response_json_bytes"), error, 8388608ULL))
+                           child_path(path, "response_json_bytes"), error, 0ULL, 8388608ULL))
             return false;
     }
     {
@@ -1409,7 +1551,7 @@ bool decode_IpcGenericAbiLimitsA0(const rapidjson::Value& value, IpcGenericAbiLi
             return fail(error, "geometer.contract.missing_field",
                         child_path(path, "attachment_count"), "Required field is missing.");
         if (!decode_uint32(member->value, &out->attachment_count,
-                           child_path(path, "attachment_count"), error, 16ULL))
+                           child_path(path, "attachment_count"), error, 0ULL, 16ULL))
             return false;
     }
     {
@@ -1418,7 +1560,7 @@ bool decode_IpcGenericAbiLimitsA0(const rapidjson::Value& value, IpcGenericAbiLi
             return fail(error, "geometer.contract.missing_field",
                         child_path(path, "attachment_name_bytes"), "Required field is missing.");
         if (!decode_uint32(member->value, &out->attachment_name_bytes,
-                           child_path(path, "attachment_name_bytes"), error, 128ULL))
+                           child_path(path, "attachment_name_bytes"), error, 0ULL, 128ULL))
             return false;
     }
     {
@@ -1428,7 +1570,7 @@ bool decode_IpcGenericAbiLimitsA0(const rapidjson::Value& value, IpcGenericAbiLi
                         child_path(path, "attachment_media_type_bytes"),
                         "Required field is missing.");
         if (!decode_uint32(member->value, &out->attachment_media_type_bytes,
-                           child_path(path, "attachment_media_type_bytes"), error, 128ULL))
+                           child_path(path, "attachment_media_type_bytes"), error, 0ULL, 128ULL))
             return false;
     }
     {
@@ -1437,7 +1579,7 @@ bool decode_IpcGenericAbiLimitsA0(const rapidjson::Value& value, IpcGenericAbiLi
             return fail(error, "geometer.contract.missing_field",
                         child_path(path, "attachment_bytes"), "Required field is missing.");
         if (!decode_uint32(member->value, &out->attachment_bytes,
-                           child_path(path, "attachment_bytes"), error, 268435456ULL))
+                           child_path(path, "attachment_bytes"), error, 0ULL, 268435456ULL))
             return false;
     }
     {
@@ -1447,7 +1589,7 @@ bool decode_IpcGenericAbiLimitsA0(const rapidjson::Value& value, IpcGenericAbiLi
                         child_path(path, "aggregate_attachment_bytes_native"),
                         "Required field is missing.");
         if (!decode_uint32(member->value, &out->aggregate_attachment_bytes_native,
-                           child_path(path, "aggregate_attachment_bytes_native"), error,
+                           child_path(path, "aggregate_attachment_bytes_native"), error, 0ULL,
                            536870912ULL))
             return false;
     }
@@ -1458,7 +1600,7 @@ bool decode_IpcGenericAbiLimitsA0(const rapidjson::Value& value, IpcGenericAbiLi
                         child_path(path, "aggregate_attachment_bytes_wasm"),
                         "Required field is missing.");
         if (!decode_uint32(member->value, &out->aggregate_attachment_bytes_wasm,
-                           child_path(path, "aggregate_attachment_bytes_wasm"), error,
+                           child_path(path, "aggregate_attachment_bytes_wasm"), error, 0ULL,
                            268435456ULL))
             return false;
     }
@@ -1470,31 +1612,31 @@ bool write_IpcGenericAbiLimitsA0(rapidjson::Writer<rapidjson::StringBuffer>& wri
 {
     writer.StartObject();
     writer.Key("operation_id_bytes");
-    if (!write_uint32(writer, value.operation_id_bytes, error, 128ULL))
+    if (!write_uint32(writer, value.operation_id_bytes, error, 0ULL, 128ULL))
         return false;
     writer.Key("request_json_bytes");
-    if (!write_uint32(writer, value.request_json_bytes, error, 8388608ULL))
+    if (!write_uint32(writer, value.request_json_bytes, error, 0ULL, 8388608ULL))
         return false;
     writer.Key("response_json_bytes");
-    if (!write_uint32(writer, value.response_json_bytes, error, 8388608ULL))
+    if (!write_uint32(writer, value.response_json_bytes, error, 0ULL, 8388608ULL))
         return false;
     writer.Key("attachment_count");
-    if (!write_uint32(writer, value.attachment_count, error, 16ULL))
+    if (!write_uint32(writer, value.attachment_count, error, 0ULL, 16ULL))
         return false;
     writer.Key("attachment_name_bytes");
-    if (!write_uint32(writer, value.attachment_name_bytes, error, 128ULL))
+    if (!write_uint32(writer, value.attachment_name_bytes, error, 0ULL, 128ULL))
         return false;
     writer.Key("attachment_media_type_bytes");
-    if (!write_uint32(writer, value.attachment_media_type_bytes, error, 128ULL))
+    if (!write_uint32(writer, value.attachment_media_type_bytes, error, 0ULL, 128ULL))
         return false;
     writer.Key("attachment_bytes");
-    if (!write_uint32(writer, value.attachment_bytes, error, 268435456ULL))
+    if (!write_uint32(writer, value.attachment_bytes, error, 0ULL, 268435456ULL))
         return false;
     writer.Key("aggregate_attachment_bytes_native");
-    if (!write_uint32(writer, value.aggregate_attachment_bytes_native, error, 536870912ULL))
+    if (!write_uint32(writer, value.aggregate_attachment_bytes_native, error, 0ULL, 536870912ULL))
         return false;
     writer.Key("aggregate_attachment_bytes_wasm");
-    if (!write_uint32(writer, value.aggregate_attachment_bytes_wasm, error, 268435456ULL))
+    if (!write_uint32(writer, value.aggregate_attachment_bytes_wasm, error, 0ULL, 268435456ULL))
         return false;
     writer.EndObject();
     return true;
@@ -1834,7 +1976,7 @@ bool decode_IpcOperationCatalogA0(const rapidjson::Value& value, IpcOperationCat
             return fail(error, "geometer.contract.missing_field",
                         child_path(path, "c_abi_generation"), "Required field is missing.");
         if (!decode_uint32(member->value, &out->c_abi_generation,
-                           child_path(path, "c_abi_generation"), error,
+                           child_path(path, "c_abi_generation"), error, 0ULL,
                            std::numeric_limits<std::uint32_t>::max()))
             return false;
     }
@@ -1883,7 +2025,7 @@ bool write_IpcOperationCatalogA0(rapidjson::Writer<rapidjson::StringBuffer>& wri
     if (!write_string(writer, value.release_version, error, 1U, 32U))
         return false;
     writer.Key("c_abi_generation");
-    if (!write_uint32(writer, value.c_abi_generation, error,
+    if (!write_uint32(writer, value.c_abi_generation, error, 0ULL,
                       std::numeric_limits<std::uint32_t>::max()))
         return false;
     writer.Key("operations");
@@ -2209,7 +2351,7 @@ bool decode_IpcShutdownAckA0(const rapidjson::Value& value, IpcShutdownAckA0* ou
                         child_path(path, "rejectedQueuedRequestCount"),
                         "Required field is missing.");
         if (!decode_uint32(member->value, &out->rejectedQueuedRequestCount,
-                           child_path(path, "rejectedQueuedRequestCount"), error,
+                           child_path(path, "rejectedQueuedRequestCount"), error, 0ULL,
                            std::numeric_limits<std::uint32_t>::max()))
             return false;
     }
@@ -2227,7 +2369,7 @@ bool write_IpcShutdownAckA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
     if (!(writer.Bool(value.activeRequestCompleted), true))
         return false;
     writer.Key("rejectedQueuedRequestCount");
-    if (!write_uint32(writer, value.rejectedQueuedRequestCount, error,
+    if (!write_uint32(writer, value.rejectedQueuedRequestCount, error, 0ULL,
                       std::numeric_limits<std::uint32_t>::max()))
         return false;
     writer.EndObject();
@@ -2257,7 +2399,7 @@ bool decode_IpcWelcomeA0(const rapidjson::Value& value, IpcWelcomeA0* out, const
             return fail(error, "geometer.contract.missing_field",
                         child_path(path, "c_abi_generation"), "Required field is missing.");
         if (!decode_uint32(member->value, &out->c_abi_generation,
-                           child_path(path, "c_abi_generation"), error,
+                           child_path(path, "c_abi_generation"), error, 0ULL,
                            std::numeric_limits<std::uint32_t>::max()))
             return false;
     }
@@ -2316,7 +2458,7 @@ bool write_IpcWelcomeA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
     if (!write_string(writer, value.release_version, error, 1U, 32U))
         return false;
     writer.Key("c_abi_generation");
-    if (!write_uint32(writer, value.c_abi_generation, error,
+    if (!write_uint32(writer, value.c_abi_generation, error, 0ULL,
                       std::numeric_limits<std::uint32_t>::max()))
         return false;
     writer.Key("ipc");
@@ -2786,6 +2928,2447 @@ bool write_OperationOutcomeA0(rapidjson::Writer<rapidjson::StringBuffer>& writer
     }
 }
 
+bool decode_SourceEntityEvidence(const rapidjson::Value& value, SourceEntityEvidence* out,
+                                 const std::string& path, ContractError* error)
+{
+    static const char* const names[] = {"mapped", "shape_result_round_trip", "model_number",
+                                        "entity_type", "mapping_method"};
+    if (!validate_object(value, names, 5U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("mapped");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "mapped"),
+                        "Required field is missing.");
+        if (!decode_boolean(member->value, &out->mapped, child_path(path, "mapped"), error))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("shape_result_round_trip");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "shape_result_round_trip"), "Required field is missing.");
+        if (!decode_boolean(member->value, &out->shape_result_round_trip,
+                            child_path(path, "shape_result_round_trip"), error))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("model_number");
+        if (member != value.MemberEnd())
+        {
+            std::uint32_t decoded{};
+            if (!decode_uint32(member->value, &decoded, child_path(path, "model_number"), error,
+                               1ULL, 5000000ULL))
+                return false;
+            out->model_number = std::move(decoded);
+        }
+        else
+            out->model_number.reset();
+    }
+    {
+        const auto member = value.FindMember("entity_type");
+        if (member != value.MemberEnd())
+        {
+            std::string decoded{};
+            if (!decode_string(member->value, &decoded, child_path(path, "entity_type"), error, 1U,
+                               128U))
+                return false;
+            out->entity_type = std::move(decoded);
+        }
+        else
+            out->entity_type.reset();
+    }
+    {
+        const auto member = value.FindMember("mapping_method");
+        if (member != value.MemberEnd())
+        {
+            std::string decoded{};
+            if (!decode_string(member->value, &decoded, child_path(path, "mapping_method"), error,
+                               1U, 128U))
+                return false;
+            out->mapping_method = std::move(decoded);
+        }
+        else
+            out->mapping_method.reset();
+    }
+    return true;
+}
+
+bool write_SourceEntityEvidence(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                const SourceEntityEvidence& value, ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("mapped");
+    if (!(writer.Bool(value.mapped), true))
+        return false;
+    writer.Key("shape_result_round_trip");
+    if (!(writer.Bool(value.shape_result_round_trip), true))
+        return false;
+    if (value.model_number.has_value())
+    {
+        writer.Key("model_number");
+        if (!write_uint32(writer, *value.model_number, error, 1ULL, 5000000ULL))
+            return false;
+    }
+    if (value.entity_type.has_value())
+    {
+        writer.Key("entity_type");
+        if (!write_string(writer, *value.entity_type, error, 1U, 128U))
+            return false;
+    }
+    if (value.mapping_method.has_value())
+    {
+        writer.Key("mapping_method");
+        if (!write_string(writer, *value.mapping_method, error, 1U, 128U))
+            return false;
+    }
+    writer.EndObject();
+    return true;
+}
+
+bool decode_BodySummary(const rapidjson::Value& value, BodySummary* out, const std::string& path,
+                        ContractError* error)
+{
+    static const char* const names[] = {"handle",        "definition_handle", "topology_kind",
+                                        "shell_handles", "face_handles",      "bounds_mm",
+                                        "volume_mm3",    "source_entity"};
+    if (!validate_object(value, names, 8U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("handle");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "handle"),
+                        "Required field is missing.");
+        if (!decode_string(member->value, &out->handle, child_path(path, "handle"), error, 68U,
+                           68U))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("definition_handle");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "definition_handle"), "Required field is missing.");
+        if (!decode_string(member->value, &out->definition_handle,
+                           child_path(path, "definition_handle"), error, 68U, 68U))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("topology_kind");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "topology_kind"),
+                        "Required field is missing.");
+        if (!decode_string(member->value, &out->topology_kind, child_path(path, "topology_kind"),
+                           error, 1U, 64U))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("shell_handles");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "shell_handles"),
+                        "Required field is missing.");
+        if (!decode_array(member->value, &out->shell_handles, child_path(path, "shell_handles"),
+                          error, 0U, 250000U, decode_string_item))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("face_handles");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "face_handles"),
+                        "Required field is missing.");
+        if (!decode_array(member->value, &out->face_handles, child_path(path, "face_handles"),
+                          error, 0U, 1000000U, decode_string_item))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("bounds_mm");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "bounds_mm"),
+                        "Required field is missing.");
+        if (!decode_array(member->value, &out->bounds_mm, child_path(path, "bounds_mm"), error, 6U,
+                          6U, decode_double_item))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("volume_mm3");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "volume_mm3"),
+                        "Required field is missing.");
+        if (!decode_double(member->value, &out->volume_mm3, child_path(path, "volume_mm3"), error,
+                           0, std::numeric_limits<double>::infinity()))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("source_entity");
+        if (member != value.MemberEnd())
+        {
+            SourceEntityEvidence decoded{};
+            if (!decode_SourceEntityEvidence(member->value, &decoded,
+                                             child_path(path, "source_entity"), error))
+                return false;
+            out->source_entity = std::move(decoded);
+        }
+        else
+            out->source_entity.reset();
+    }
+    return true;
+}
+
+bool write_BodySummary(rapidjson::Writer<rapidjson::StringBuffer>& writer, const BodySummary& value,
+                       ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("handle");
+    if (!write_string(writer, value.handle, error, 68U, 68U))
+        return false;
+    writer.Key("definition_handle");
+    if (!write_string(writer, value.definition_handle, error, 68U, 68U))
+        return false;
+    writer.Key("topology_kind");
+    if (!write_string(writer, value.topology_kind, error, 1U, 64U))
+        return false;
+    writer.Key("shell_handles");
+    if (!write_array(writer, value.shell_handles, error, 0U, 250000U, write_string_item))
+        return false;
+    writer.Key("face_handles");
+    if (!write_array(writer, value.face_handles, error, 0U, 1000000U, write_string_item))
+        return false;
+    writer.Key("bounds_mm");
+    if (!write_array(writer, value.bounds_mm, error, 6U, 6U, write_double_item))
+        return false;
+    writer.Key("volume_mm3");
+    if (!write_double(writer, value.volume_mm3, error, 0, std::numeric_limits<double>::infinity()))
+        return false;
+    if (value.source_entity.has_value())
+    {
+        writer.Key("source_entity");
+        if (!write_SourceEntityEvidence(writer, *value.source_entity, error))
+            return false;
+    }
+    writer.EndObject();
+    return true;
+}
+
+bool decode_ComponentOccurrenceSummary(const rapidjson::Value& value,
+                                       ComponentOccurrenceSummary* out, const std::string& path,
+                                       ContractError* error)
+{
+    static const char* const names[] = {
+        "kind",  "handle", "definition_handle", "parent_occurrence_handle",
+        "depth", "name",   "transform"};
+    if (!validate_object(value, names, 7U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("kind");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "kind"),
+                        "Required field is missing.");
+        if (!decode_literal_string(member->value, &out->kind, child_path(path, "kind"), error,
+                                   "component"))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("handle");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "handle"),
+                        "Required field is missing.");
+        if (!decode_string(member->value, &out->handle, child_path(path, "handle"), error, 68U,
+                           68U))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("definition_handle");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "definition_handle"), "Required field is missing.");
+        if (!decode_string(member->value, &out->definition_handle,
+                           child_path(path, "definition_handle"), error, 68U, 68U))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("parent_occurrence_handle");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "parent_occurrence_handle"), "Required field is missing.");
+        if (!decode_string(member->value, &out->parent_occurrence_handle,
+                           child_path(path, "parent_occurrence_handle"), error, 68U, 68U))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("depth");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "depth"),
+                        "Required field is missing.");
+        if (!decode_uint32(member->value, &out->depth, child_path(path, "depth"), error, 1ULL,
+                           64ULL))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("name");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "name"),
+                        "Required field is missing.");
+        if (!decode_string(member->value, &out->name, child_path(path, "name"), error, 0U, 4096U))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("transform");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "transform"),
+                        "Required field is missing.");
+        if (!decode_array(member->value, &out->transform, child_path(path, "transform"), error, 12U,
+                          12U, decode_double_item))
+            return false;
+    }
+    return true;
+}
+
+bool write_ComponentOccurrenceSummary(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                      const ComponentOccurrenceSummary& value, ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("kind");
+    if (!write_literal_string(writer, value.kind, error, "component"))
+        return false;
+    writer.Key("handle");
+    if (!write_string(writer, value.handle, error, 68U, 68U))
+        return false;
+    writer.Key("definition_handle");
+    if (!write_string(writer, value.definition_handle, error, 68U, 68U))
+        return false;
+    writer.Key("parent_occurrence_handle");
+    if (!write_string(writer, value.parent_occurrence_handle, error, 68U, 68U))
+        return false;
+    writer.Key("depth");
+    if (!write_uint32(writer, value.depth, error, 1ULL, 64ULL))
+        return false;
+    writer.Key("name");
+    if (!write_string(writer, value.name, error, 0U, 4096U))
+        return false;
+    writer.Key("transform");
+    if (!write_array(writer, value.transform, error, 12U, 12U, write_double_item))
+        return false;
+    writer.EndObject();
+    return true;
+}
+
+bool decode_DefinitionSummary(const rapidjson::Value& value, DefinitionSummary* out,
+                              const std::string& path, ContractError* error)
+{
+    static const char* const names[] = {"handle",     "name",       "assembly",
+                                        "body_count", "face_count", "source_entity"};
+    if (!validate_object(value, names, 6U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("handle");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "handle"),
+                        "Required field is missing.");
+        if (!decode_string(member->value, &out->handle, child_path(path, "handle"), error, 68U,
+                           68U))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("name");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "name"),
+                        "Required field is missing.");
+        if (!decode_string(member->value, &out->name, child_path(path, "name"), error, 0U, 4096U))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("assembly");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "assembly"),
+                        "Required field is missing.");
+        if (!decode_boolean(member->value, &out->assembly, child_path(path, "assembly"), error))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("body_count");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "body_count"),
+                        "Required field is missing.");
+        if (!decode_uint32(member->value, &out->body_count, child_path(path, "body_count"), error,
+                           0ULL, 100000ULL))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("face_count");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "face_count"),
+                        "Required field is missing.");
+        if (!decode_uint32(member->value, &out->face_count, child_path(path, "face_count"), error,
+                           0ULL, 1000000ULL))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("source_entity");
+        if (member != value.MemberEnd())
+        {
+            SourceEntityEvidence decoded{};
+            if (!decode_SourceEntityEvidence(member->value, &decoded,
+                                             child_path(path, "source_entity"), error))
+                return false;
+            out->source_entity = std::move(decoded);
+        }
+        else
+            out->source_entity.reset();
+    }
+    return true;
+}
+
+bool write_DefinitionSummary(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                             const DefinitionSummary& value, ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("handle");
+    if (!write_string(writer, value.handle, error, 68U, 68U))
+        return false;
+    writer.Key("name");
+    if (!write_string(writer, value.name, error, 0U, 4096U))
+        return false;
+    writer.Key("assembly");
+    if (!(writer.Bool(value.assembly), true))
+        return false;
+    writer.Key("body_count");
+    if (!write_uint32(writer, value.body_count, error, 0ULL, 100000ULL))
+        return false;
+    writer.Key("face_count");
+    if (!write_uint32(writer, value.face_count, error, 0ULL, 1000000ULL))
+        return false;
+    if (value.source_entity.has_value())
+    {
+        writer.Key("source_entity");
+        if (!write_SourceEntityEvidence(writer, *value.source_entity, error))
+            return false;
+    }
+    writer.EndObject();
+    return true;
+}
+
+bool decode_FaceSummary(const rapidjson::Value& value, FaceSummary* out, const std::string& path,
+                        ContractError* error)
+{
+    static const char* const names[] = {"handle",        "definition_handle", "body_handles",
+                                        "shell_handles", "bounds_mm",         "area_mm2",
+                                        "centroid_mm",   "source_entity"};
+    if (!validate_object(value, names, 8U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("handle");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "handle"),
+                        "Required field is missing.");
+        if (!decode_string(member->value, &out->handle, child_path(path, "handle"), error, 68U,
+                           68U))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("definition_handle");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "definition_handle"), "Required field is missing.");
+        if (!decode_string(member->value, &out->definition_handle,
+                           child_path(path, "definition_handle"), error, 68U, 68U))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("body_handles");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "body_handles"),
+                        "Required field is missing.");
+        if (!decode_array(member->value, &out->body_handles, child_path(path, "body_handles"),
+                          error, 0U, 100000U, decode_string_item))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("shell_handles");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "shell_handles"),
+                        "Required field is missing.");
+        if (!decode_array(member->value, &out->shell_handles, child_path(path, "shell_handles"),
+                          error, 0U, 250000U, decode_string_item))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("bounds_mm");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "bounds_mm"),
+                        "Required field is missing.");
+        if (!decode_array(member->value, &out->bounds_mm, child_path(path, "bounds_mm"), error, 6U,
+                          6U, decode_double_item))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("area_mm2");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "area_mm2"),
+                        "Required field is missing.");
+        if (!decode_double(member->value, &out->area_mm2, child_path(path, "area_mm2"), error, 0,
+                           std::numeric_limits<double>::infinity()))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("centroid_mm");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "centroid_mm"),
+                        "Required field is missing.");
+        if (!decode_array(member->value, &out->centroid_mm, child_path(path, "centroid_mm"), error,
+                          3U, 3U, decode_double_item))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("source_entity");
+        if (member != value.MemberEnd())
+        {
+            SourceEntityEvidence decoded{};
+            if (!decode_SourceEntityEvidence(member->value, &decoded,
+                                             child_path(path, "source_entity"), error))
+                return false;
+            out->source_entity = std::move(decoded);
+        }
+        else
+            out->source_entity.reset();
+    }
+    return true;
+}
+
+bool write_FaceSummary(rapidjson::Writer<rapidjson::StringBuffer>& writer, const FaceSummary& value,
+                       ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("handle");
+    if (!write_string(writer, value.handle, error, 68U, 68U))
+        return false;
+    writer.Key("definition_handle");
+    if (!write_string(writer, value.definition_handle, error, 68U, 68U))
+        return false;
+    writer.Key("body_handles");
+    if (!write_array(writer, value.body_handles, error, 0U, 100000U, write_string_item))
+        return false;
+    writer.Key("shell_handles");
+    if (!write_array(writer, value.shell_handles, error, 0U, 250000U, write_string_item))
+        return false;
+    writer.Key("bounds_mm");
+    if (!write_array(writer, value.bounds_mm, error, 6U, 6U, write_double_item))
+        return false;
+    writer.Key("area_mm2");
+    if (!write_double(writer, value.area_mm2, error, 0, std::numeric_limits<double>::infinity()))
+        return false;
+    writer.Key("centroid_mm");
+    if (!write_array(writer, value.centroid_mm, error, 3U, 3U, write_double_item))
+        return false;
+    if (value.source_entity.has_value())
+    {
+        writer.Key("source_entity");
+        if (!write_SourceEntityEvidence(writer, *value.source_entity, error))
+            return false;
+    }
+    writer.EndObject();
+    return true;
+}
+
+bool decode_GlbAttachmentDescriptor(const rapidjson::Value& value, GlbAttachmentDescriptor* out,
+                                    const std::string& path, ContractError* error)
+{
+    static const char* const names[] = {"name", "media_type", "format", "bytes", "sha256"};
+    if (!validate_object(value, names, 5U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("name");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "name"),
+                        "Required field is missing.");
+        if (!decode_literal_string(member->value, &out->name, child_path(path, "name"), error,
+                                   "glb"))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("media_type");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "media_type"),
+                        "Required field is missing.");
+        if (!decode_literal_string(member->value, &out->media_type, child_path(path, "media_type"),
+                                   error, "model/gltf-binary"))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("format");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "format"),
+                        "Required field is missing.");
+        if (!decode_literal_string(member->value, &out->format, child_path(path, "format"), error,
+                                   "glb-2.0"))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("bytes");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "bytes"),
+                        "Required field is missing.");
+        if (!decode_uint32(member->value, &out->bytes, child_path(path, "bytes"), error, 1ULL,
+                           268435456ULL))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("sha256");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "sha256"),
+                        "Required field is missing.");
+        if (!decode_string(member->value, &out->sha256, child_path(path, "sha256"), error, 64U,
+                           64U))
+            return false;
+    }
+    return true;
+}
+
+bool write_GlbAttachmentDescriptor(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                   const GlbAttachmentDescriptor& value, ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("name");
+    if (!write_literal_string(writer, value.name, error, "glb"))
+        return false;
+    writer.Key("media_type");
+    if (!write_literal_string(writer, value.media_type, error, "model/gltf-binary"))
+        return false;
+    writer.Key("format");
+    if (!write_literal_string(writer, value.format, error, "glb-2.0"))
+        return false;
+    writer.Key("bytes");
+    if (!write_uint32(writer, value.bytes, error, 1ULL, 268435456ULL))
+        return false;
+    writer.Key("sha256");
+    if (!write_string(writer, value.sha256, error, 64U, 64U))
+        return false;
+    writer.EndObject();
+    return true;
+}
+
+bool decode_InspectionCounts(const rapidjson::Value& value, InspectionCounts* out,
+                             const std::string& path, ContractError* error)
+{
+    static const char* const names[] = {"definitions", "root_occurrences", "component_occurrences",
+                                        "bodies",      "shells",           "faces"};
+    if (!validate_object(value, names, 6U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("definitions");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "definitions"),
+                        "Required field is missing.");
+        if (!decode_uint32(member->value, &out->definitions, child_path(path, "definitions"), error,
+                           0ULL, 10000ULL))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("root_occurrences");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "root_occurrences"), "Required field is missing.");
+        if (!decode_uint32(member->value, &out->root_occurrences,
+                           child_path(path, "root_occurrences"), error, 0ULL, 100000ULL))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("component_occurrences");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "component_occurrences"), "Required field is missing.");
+        if (!decode_uint32(member->value, &out->component_occurrences,
+                           child_path(path, "component_occurrences"), error, 0ULL, 100000ULL))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("bodies");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "bodies"),
+                        "Required field is missing.");
+        if (!decode_uint32(member->value, &out->bodies, child_path(path, "bodies"), error, 0ULL,
+                           100000ULL))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("shells");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "shells"),
+                        "Required field is missing.");
+        if (!decode_uint32(member->value, &out->shells, child_path(path, "shells"), error, 0ULL,
+                           250000ULL))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("faces");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "faces"),
+                        "Required field is missing.");
+        if (!decode_uint32(member->value, &out->faces, child_path(path, "faces"), error, 0ULL,
+                           1000000ULL))
+            return false;
+    }
+    return true;
+}
+
+bool write_InspectionCounts(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                            const InspectionCounts& value, ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("definitions");
+    if (!write_uint32(writer, value.definitions, error, 0ULL, 10000ULL))
+        return false;
+    writer.Key("root_occurrences");
+    if (!write_uint32(writer, value.root_occurrences, error, 0ULL, 100000ULL))
+        return false;
+    writer.Key("component_occurrences");
+    if (!write_uint32(writer, value.component_occurrences, error, 0ULL, 100000ULL))
+        return false;
+    writer.Key("bodies");
+    if (!write_uint32(writer, value.bodies, error, 0ULL, 100000ULL))
+        return false;
+    writer.Key("shells");
+    if (!write_uint32(writer, value.shells, error, 0ULL, 250000ULL))
+        return false;
+    writer.Key("faces");
+    if (!write_uint32(writer, value.faces, error, 0ULL, 1000000ULL))
+        return false;
+    writer.EndObject();
+    return true;
+}
+
+bool decode_RootOccurrenceSummary(const rapidjson::Value& value, RootOccurrenceSummary* out,
+                                  const std::string& path, ContractError* error)
+{
+    static const char* const names[] = {"kind", "handle", "definition_handle", "name", "transform"};
+    if (!validate_object(value, names, 5U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("kind");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "kind"),
+                        "Required field is missing.");
+        if (!decode_literal_string(member->value, &out->kind, child_path(path, "kind"), error,
+                                   "root"))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("handle");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "handle"),
+                        "Required field is missing.");
+        if (!decode_string(member->value, &out->handle, child_path(path, "handle"), error, 68U,
+                           68U))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("definition_handle");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "definition_handle"), "Required field is missing.");
+        if (!decode_string(member->value, &out->definition_handle,
+                           child_path(path, "definition_handle"), error, 68U, 68U))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("name");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "name"),
+                        "Required field is missing.");
+        if (!decode_string(member->value, &out->name, child_path(path, "name"), error, 0U, 4096U))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("transform");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "transform"),
+                        "Required field is missing.");
+        if (!decode_array(member->value, &out->transform, child_path(path, "transform"), error, 12U,
+                          12U, decode_double_item))
+            return false;
+    }
+    return true;
+}
+
+bool write_RootOccurrenceSummary(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                 const RootOccurrenceSummary& value, ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("kind");
+    if (!write_literal_string(writer, value.kind, error, "root"))
+        return false;
+    writer.Key("handle");
+    if (!write_string(writer, value.handle, error, 68U, 68U))
+        return false;
+    writer.Key("definition_handle");
+    if (!write_string(writer, value.definition_handle, error, 68U, 68U))
+        return false;
+    writer.Key("name");
+    if (!write_string(writer, value.name, error, 0U, 4096U))
+        return false;
+    writer.Key("transform");
+    if (!write_array(writer, value.transform, error, 12U, 12U, write_double_item))
+        return false;
+    writer.EndObject();
+    return true;
+}
+
+bool decode_OccurrenceSummary(const rapidjson::Value& value, OccurrenceSummary* out,
+                              const std::string& path, ContractError* error)
+{
+    int matches = 0;
+    OccurrenceSummary selected{};
+    {
+        RootOccurrenceSummary candidate{};
+        ContractError ignored;
+        if (decode_RootOccurrenceSummary(value, &candidate, path, &ignored))
+        {
+            ++matches;
+            selected = OccurrenceSummary(std::in_place_index<0>, std::move(candidate));
+        }
+    }
+    {
+        ComponentOccurrenceSummary candidate{};
+        ContractError ignored;
+        if (decode_ComponentOccurrenceSummary(value, &candidate, path, &ignored))
+        {
+            ++matches;
+            selected = OccurrenceSummary(std::in_place_index<1>, std::move(candidate));
+        }
+    }
+    if (matches != 1)
+        return fail(error, "geometer.contract.union_mismatch", path,
+                    "Expected exactly one union variant.");
+    *out = std::move(selected);
+    return true;
+}
+
+bool write_OccurrenceSummary(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                             const OccurrenceSummary& value, ContractError* error)
+{
+    switch (value.index())
+    {
+    case 0:
+        return write_RootOccurrenceSummary(writer, std::get<0>(value), error);
+    case 1:
+        return write_ComponentOccurrenceSummary(writer, std::get<1>(value), error);
+    default:
+        return fail(error, "geometer.contract.union_mismatch", "", "Unknown union variant.");
+    }
+}
+
+bool decode_PageRequest(const rapidjson::Value& value, PageRequest* out, const std::string& path,
+                        ContractError* error)
+{
+    static const char* const names[] = {"cursor", "limit"};
+    if (!validate_object(value, names, 2U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("cursor");
+        if (member != value.MemberEnd())
+        {
+            std::string decoded{};
+            if (!decode_string(member->value, &decoded, child_path(path, "cursor"), error, 0U,
+                               256U))
+                return false;
+            out->cursor = std::move(decoded);
+        }
+        else
+            out->cursor.reset();
+    }
+    {
+        const auto member = value.FindMember("limit");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "limit"),
+                        "Required field is missing.");
+        if (!decode_uint32(member->value, &out->limit, child_path(path, "limit"), error, 1ULL,
+                           1024ULL))
+            return false;
+    }
+    return true;
+}
+
+bool write_PageRequest(rapidjson::Writer<rapidjson::StringBuffer>& writer, const PageRequest& value,
+                       ContractError* error)
+{
+    writer.StartObject();
+    if (value.cursor.has_value())
+    {
+        writer.Key("cursor");
+        if (!write_string(writer, *value.cursor, error, 0U, 256U))
+            return false;
+    }
+    writer.Key("limit");
+    if (!write_uint32(writer, value.limit, error, 1ULL, 1024ULL))
+        return false;
+    writer.EndObject();
+    return true;
+}
+
+bool decode_RenderCounts(const rapidjson::Value& value, RenderCounts* out, const std::string& path,
+                         ContractError* error)
+{
+    static const char* const names[] = {"meshes", "instances", "primitives", "geometry_triangles",
+                                        "instanced_triangles"};
+    if (!validate_object(value, names, 5U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("meshes");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "meshes"),
+                        "Required field is missing.");
+        if (!decode_uint32(member->value, &out->meshes, child_path(path, "meshes"), error, 0ULL,
+                           10000ULL))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("instances");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "instances"),
+                        "Required field is missing.");
+        if (!decode_uint32(member->value, &out->instances, child_path(path, "instances"), error,
+                           0ULL, 100000ULL))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("primitives");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "primitives"),
+                        "Required field is missing.");
+        if (!decode_uint32(member->value, &out->primitives, child_path(path, "primitives"), error,
+                           0ULL, 1000000ULL))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("geometry_triangles");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "geometry_triangles"), "Required field is missing.");
+        if (!decode_uint32(member->value, &out->geometry_triangles,
+                           child_path(path, "geometry_triangles"), error, 0ULL, 10000000ULL))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("instanced_triangles");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "instanced_triangles"), "Required field is missing.");
+        if (!decode_uint32(member->value, &out->instanced_triangles,
+                           child_path(path, "instanced_triangles"), error, 0ULL, 50000000ULL))
+            return false;
+    }
+    return true;
+}
+
+bool write_RenderCounts(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                        const RenderCounts& value, ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("meshes");
+    if (!write_uint32(writer, value.meshes, error, 0ULL, 10000ULL))
+        return false;
+    writer.Key("instances");
+    if (!write_uint32(writer, value.instances, error, 0ULL, 100000ULL))
+        return false;
+    writer.Key("primitives");
+    if (!write_uint32(writer, value.primitives, error, 0ULL, 1000000ULL))
+        return false;
+    writer.Key("geometry_triangles");
+    if (!write_uint32(writer, value.geometry_triangles, error, 0ULL, 10000000ULL))
+        return false;
+    writer.Key("instanced_triangles");
+    if (!write_uint32(writer, value.instanced_triangles, error, 0ULL, 50000000ULL))
+        return false;
+    writer.EndObject();
+    return true;
+}
+
+bool decode_RenderArtifactDescriptor(const rapidjson::Value& value, RenderArtifactDescriptor* out,
+                                     const std::string& path, ContractError* error)
+{
+    static const char* const names[] = {"artifact_handle",        "content_sha256",
+                                        "render_artifact_handle", "render_content_sha256",
+                                        "binding_layout",         "geometry_length_unit",
+                                        "source_length_unit",     "counts"};
+    if (!validate_object(value, names, 8U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("artifact_handle");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "artifact_handle"), "Required field is missing.");
+        if (!decode_string(member->value, &out->artifact_handle,
+                           child_path(path, "artifact_handle"), error, 68U, 68U))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("content_sha256");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "content_sha256"), "Required field is missing.");
+        if (!decode_string(member->value, &out->content_sha256, child_path(path, "content_sha256"),
+                           error, 64U, 64U))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("render_artifact_handle");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "render_artifact_handle"), "Required field is missing.");
+        if (!decode_string(member->value, &out->render_artifact_handle,
+                           child_path(path, "render_artifact_handle"), error, 68U, 68U))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("render_content_sha256");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "render_content_sha256"), "Required field is missing.");
+        if (!decode_string(member->value, &out->render_content_sha256,
+                           child_path(path, "render_content_sha256"), error, 64U, 64U))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("binding_layout");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "binding_layout"), "Required field is missing.");
+        if (!decode_literal_string(member->value, &out->binding_layout,
+                                   child_path(path, "binding_layout"), error, "node-primitive-a0"))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("geometry_length_unit");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "geometry_length_unit"), "Required field is missing.");
+        if (!decode_literal_string(member->value, &out->geometry_length_unit,
+                                   child_path(path, "geometry_length_unit"), error, "meter"))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("source_length_unit");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "source_length_unit"), "Required field is missing.");
+        if (!decode_literal_string(member->value, &out->source_length_unit,
+                                   child_path(path, "source_length_unit"), error, "millimeter"))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("counts");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "counts"),
+                        "Required field is missing.");
+        if (!decode_RenderCounts(member->value, &out->counts, child_path(path, "counts"), error))
+            return false;
+    }
+    return true;
+}
+
+bool write_RenderArtifactDescriptor(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                    const RenderArtifactDescriptor& value, ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("artifact_handle");
+    if (!write_string(writer, value.artifact_handle, error, 68U, 68U))
+        return false;
+    writer.Key("content_sha256");
+    if (!write_string(writer, value.content_sha256, error, 64U, 64U))
+        return false;
+    writer.Key("render_artifact_handle");
+    if (!write_string(writer, value.render_artifact_handle, error, 68U, 68U))
+        return false;
+    writer.Key("render_content_sha256");
+    if (!write_string(writer, value.render_content_sha256, error, 64U, 64U))
+        return false;
+    writer.Key("binding_layout");
+    if (!write_literal_string(writer, value.binding_layout, error, "node-primitive-a0"))
+        return false;
+    writer.Key("geometry_length_unit");
+    if (!write_literal_string(writer, value.geometry_length_unit, error, "meter"))
+        return false;
+    writer.Key("source_length_unit");
+    if (!write_literal_string(writer, value.source_length_unit, error, "millimeter"))
+        return false;
+    writer.Key("counts");
+    if (!write_RenderCounts(writer, value.counts, error))
+        return false;
+    writer.EndObject();
+    return true;
+}
+
+bool decode_SessionReference(const rapidjson::Value& value, SessionReference* out,
+                             const std::string& path, ContractError* error)
+{
+    static const char* const names[] = {"session_handle", "generation"};
+    if (!validate_object(value, names, 2U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("session_handle");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "session_handle"), "Required field is missing.");
+        if (!decode_string(member->value, &out->session_handle, child_path(path, "session_handle"),
+                           error, 68U, 68U))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("generation");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "generation"),
+                        "Required field is missing.");
+        if (!decode_uint32(member->value, &out->generation, child_path(path, "generation"), error,
+                           1ULL, std::numeric_limits<std::uint32_t>::max()))
+            return false;
+    }
+    return true;
+}
+
+bool write_SessionReference(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                            const SessionReference& value, ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("session_handle");
+    if (!write_string(writer, value.session_handle, error, 68U, 68U))
+        return false;
+    writer.Key("generation");
+    if (!write_uint32(writer, value.generation, error, 1ULL,
+                      std::numeric_limits<std::uint32_t>::max()))
+        return false;
+    writer.EndObject();
+    return true;
+}
+
+bool decode_ShellSummary(const rapidjson::Value& value, ShellSummary* out, const std::string& path,
+                         ContractError* error)
+{
+    static const char* const names[] = {"handle", "definition_handle", "body_handles",
+                                        "face_handles", "source_entity"};
+    if (!validate_object(value, names, 5U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("handle");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "handle"),
+                        "Required field is missing.");
+        if (!decode_string(member->value, &out->handle, child_path(path, "handle"), error, 68U,
+                           68U))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("definition_handle");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "definition_handle"), "Required field is missing.");
+        if (!decode_string(member->value, &out->definition_handle,
+                           child_path(path, "definition_handle"), error, 68U, 68U))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("body_handles");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "body_handles"),
+                        "Required field is missing.");
+        if (!decode_array(member->value, &out->body_handles, child_path(path, "body_handles"),
+                          error, 0U, 100000U, decode_string_item))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("face_handles");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "face_handles"),
+                        "Required field is missing.");
+        if (!decode_array(member->value, &out->face_handles, child_path(path, "face_handles"),
+                          error, 0U, 1000000U, decode_string_item))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("source_entity");
+        if (member != value.MemberEnd())
+        {
+            SourceEntityEvidence decoded{};
+            if (!decode_SourceEntityEvidence(member->value, &decoded,
+                                             child_path(path, "source_entity"), error))
+                return false;
+            out->source_entity = std::move(decoded);
+        }
+        else
+            out->source_entity.reset();
+    }
+    return true;
+}
+
+bool write_ShellSummary(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                        const ShellSummary& value, ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("handle");
+    if (!write_string(writer, value.handle, error, 68U, 68U))
+        return false;
+    writer.Key("definition_handle");
+    if (!write_string(writer, value.definition_handle, error, 68U, 68U))
+        return false;
+    writer.Key("body_handles");
+    if (!write_array(writer, value.body_handles, error, 0U, 100000U, write_string_item))
+        return false;
+    writer.Key("face_handles");
+    if (!write_array(writer, value.face_handles, error, 0U, 1000000U, write_string_item))
+        return false;
+    if (value.source_entity.has_value())
+    {
+        writer.Key("source_entity");
+        if (!write_SourceEntityEvidence(writer, *value.source_entity, error))
+            return false;
+    }
+    writer.EndObject();
+    return true;
+}
+
+bool decode_SourceDescriptor(const rapidjson::Value& value, SourceDescriptor* out,
+                             const std::string& path, ContractError* error)
+{
+    static const char* const names[] = {"format", "sha256", "bytes", "normalized_length_unit"};
+    if (!validate_object(value, names, 4U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("format");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "format"),
+                        "Required field is missing.");
+        if (!decode_literal_string(member->value, &out->format, child_path(path, "format"), error,
+                                   "step"))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("sha256");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "sha256"),
+                        "Required field is missing.");
+        if (!decode_string(member->value, &out->sha256, child_path(path, "sha256"), error, 64U,
+                           64U))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("bytes");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "bytes"),
+                        "Required field is missing.");
+        if (!decode_uint32(member->value, &out->bytes, child_path(path, "bytes"), error, 1ULL,
+                           268435456ULL))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("normalized_length_unit");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "normalized_length_unit"), "Required field is missing.");
+        if (!decode_literal_string(member->value, &out->normalized_length_unit,
+                                   child_path(path, "normalized_length_unit"), error, "millimeter"))
+            return false;
+    }
+    return true;
+}
+
+bool write_SourceDescriptor(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                            const SourceDescriptor& value, ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("format");
+    if (!write_literal_string(writer, value.format, error, "step"))
+        return false;
+    writer.Key("sha256");
+    if (!write_string(writer, value.sha256, error, 64U, 64U))
+        return false;
+    writer.Key("bytes");
+    if (!write_uint32(writer, value.bytes, error, 1ULL, 268435456ULL))
+        return false;
+    writer.Key("normalized_length_unit");
+    if (!write_literal_string(writer, value.normalized_length_unit, error, "millimeter"))
+        return false;
+    writer.EndObject();
+    return true;
+}
+
+bool decode_StepTopologyCloseRequestA0(const rapidjson::Value& value,
+                                       StepTopologyCloseRequestA0* out, const std::string& path,
+                                       ContractError* error)
+{
+    static const char* const names[] = {"schema", "session"};
+    if (!validate_object(value, names, 2U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("schema");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "schema"),
+                        "Required field is missing.");
+        if (!decode_literal_string(member->value, &out->schema, child_path(path, "schema"), error,
+                                   "geometry.step_topology.close.request.a0"))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("session");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "session"),
+                        "Required field is missing.");
+        if (!decode_SessionReference(member->value, &out->session, child_path(path, "session"),
+                                     error))
+            return false;
+    }
+    return true;
+}
+
+bool write_StepTopologyCloseRequestA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                      const StepTopologyCloseRequestA0& value, ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("schema");
+    if (!write_literal_string(writer, value.schema, error,
+                              "geometry.step_topology.close.request.a0"))
+        return false;
+    writer.Key("session");
+    if (!write_SessionReference(writer, value.session, error))
+        return false;
+    writer.EndObject();
+    return true;
+}
+
+bool decode_StepTopologyCloseResultA0(const rapidjson::Value& value, StepTopologyCloseResultA0* out,
+                                      const std::string& path, ContractError* error)
+{
+    static const char* const names[] = {"schema", "session_handle", "closed"};
+    if (!validate_object(value, names, 3U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("schema");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "schema"),
+                        "Required field is missing.");
+        if (!decode_literal_string(member->value, &out->schema, child_path(path, "schema"), error,
+                                   "geometry.step_topology.close.result.a0"))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("session_handle");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "session_handle"), "Required field is missing.");
+        if (!decode_string(member->value, &out->session_handle, child_path(path, "session_handle"),
+                           error, 68U, 68U))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("closed");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "closed"),
+                        "Required field is missing.");
+        if (!decode_literal_boolean(member->value, &out->closed, child_path(path, "closed"), error,
+                                    true))
+            return false;
+    }
+    return true;
+}
+
+bool write_StepTopologyCloseResultA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                     const StepTopologyCloseResultA0& value, ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("schema");
+    if (!write_literal_string(writer, value.schema, error,
+                              "geometry.step_topology.close.result.a0"))
+        return false;
+    writer.Key("session_handle");
+    if (!write_string(writer, value.session_handle, error, 68U, 68U))
+        return false;
+    writer.Key("closed");
+    if (!write_literal_boolean(writer, value.closed, error, true))
+        return false;
+    writer.EndObject();
+    return true;
+}
+
+bool decode_StepTopologyInspectRequestA0(const rapidjson::Value& value,
+                                         StepTopologyInspectRequestA0* out, const std::string& path,
+                                         ContractError* error)
+{
+    static const char* const names[] = {"schema", "session", "page",
+                                        "include_source_entity_evidence", "include_diagnostics"};
+    if (!validate_object(value, names, 5U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("schema");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "schema"),
+                        "Required field is missing.");
+        if (!decode_literal_string(member->value, &out->schema, child_path(path, "schema"), error,
+                                   "geometry.step_topology.inspect.request.a0"))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("session");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "session"),
+                        "Required field is missing.");
+        if (!decode_SessionReference(member->value, &out->session, child_path(path, "session"),
+                                     error))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("page");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "page"),
+                        "Required field is missing.");
+        if (!decode_PageRequest(member->value, &out->page, child_path(path, "page"), error))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("include_source_entity_evidence");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "include_source_entity_evidence"),
+                        "Required field is missing.");
+        if (!decode_boolean(member->value, &out->include_source_entity_evidence,
+                            child_path(path, "include_source_entity_evidence"), error))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("include_diagnostics");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "include_diagnostics"), "Required field is missing.");
+        if (!decode_boolean(member->value, &out->include_diagnostics,
+                            child_path(path, "include_diagnostics"), error))
+            return false;
+    }
+    return true;
+}
+
+bool write_StepTopologyInspectRequestA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                        const StepTopologyInspectRequestA0& value,
+                                        ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("schema");
+    if (!write_literal_string(writer, value.schema, error,
+                              "geometry.step_topology.inspect.request.a0"))
+        return false;
+    writer.Key("session");
+    if (!write_SessionReference(writer, value.session, error))
+        return false;
+    writer.Key("page");
+    if (!write_PageRequest(writer, value.page, error))
+        return false;
+    writer.Key("include_source_entity_evidence");
+    if (!(writer.Bool(value.include_source_entity_evidence), true))
+        return false;
+    writer.Key("include_diagnostics");
+    if (!(writer.Bool(value.include_diagnostics), true))
+        return false;
+    writer.EndObject();
+    return true;
+}
+
+bool decode_TopologyPage(const rapidjson::Value& value, TopologyPage* out, const std::string& path,
+                         ContractError* error)
+{
+    static const char* const names[] = {"definitions", "occurrences", "bodies",
+                                        "shells",      "faces",       "next_cursor"};
+    if (!validate_object(value, names, 6U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("definitions");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "definitions"),
+                        "Required field is missing.");
+        if (!decode_array(member->value, &out->definitions, child_path(path, "definitions"), error,
+                          0U, 1024U, decode_DefinitionSummary))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("occurrences");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "occurrences"),
+                        "Required field is missing.");
+        if (!decode_array(member->value, &out->occurrences, child_path(path, "occurrences"), error,
+                          0U, 1024U, decode_OccurrenceSummary))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("bodies");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "bodies"),
+                        "Required field is missing.");
+        if (!decode_array(member->value, &out->bodies, child_path(path, "bodies"), error, 0U, 1024U,
+                          decode_BodySummary))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("shells");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "shells"),
+                        "Required field is missing.");
+        if (!decode_array(member->value, &out->shells, child_path(path, "shells"), error, 0U, 1024U,
+                          decode_ShellSummary))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("faces");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "faces"),
+                        "Required field is missing.");
+        if (!decode_array(member->value, &out->faces, child_path(path, "faces"), error, 0U, 1024U,
+                          decode_FaceSummary))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("next_cursor");
+        if (member != value.MemberEnd())
+        {
+            std::string decoded{};
+            if (!decode_string(member->value, &decoded, child_path(path, "next_cursor"), error, 0U,
+                               256U))
+                return false;
+            out->next_cursor = std::move(decoded);
+        }
+        else
+            out->next_cursor.reset();
+    }
+    return true;
+}
+
+bool write_TopologyPage(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                        const TopologyPage& value, ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("definitions");
+    if (!write_array(writer, value.definitions, error, 0U, 1024U, write_DefinitionSummary))
+        return false;
+    writer.Key("occurrences");
+    if (!write_array(writer, value.occurrences, error, 0U, 1024U, write_OccurrenceSummary))
+        return false;
+    writer.Key("bodies");
+    if (!write_array(writer, value.bodies, error, 0U, 1024U, write_BodySummary))
+        return false;
+    writer.Key("shells");
+    if (!write_array(writer, value.shells, error, 0U, 1024U, write_ShellSummary))
+        return false;
+    writer.Key("faces");
+    if (!write_array(writer, value.faces, error, 0U, 1024U, write_FaceSummary))
+        return false;
+    if (value.next_cursor.has_value())
+    {
+        writer.Key("next_cursor");
+        if (!write_string(writer, *value.next_cursor, error, 0U, 256U))
+            return false;
+    }
+    writer.EndObject();
+    return true;
+}
+
+bool decode_TopologyTableAttachmentDescriptor(const rapidjson::Value& value,
+                                              TopologyTableAttachmentDescriptor* out,
+                                              const std::string& path, ContractError* error)
+{
+    static const char* const names[] = {"name", "media_type", "format", "bytes", "sha256"};
+    if (!validate_object(value, names, 5U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("name");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "name"),
+                        "Required field is missing.");
+        if (!decode_literal_string(member->value, &out->name, child_path(path, "name"), error,
+                                   "topology_table"))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("media_type");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "media_type"),
+                        "Required field is missing.");
+        if (!decode_literal_string(member->value, &out->media_type, child_path(path, "media_type"),
+                                   error,
+                                   "application/vnd.wavenumber.geometer.step-topology-table"))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("format");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "format"),
+                        "Required field is missing.");
+        if (!decode_literal_string(member->value, &out->format, child_path(path, "format"), error,
+                                   "wn.geometer.step-topology-table.a0"))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("bytes");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "bytes"),
+                        "Required field is missing.");
+        if (!decode_uint32(member->value, &out->bytes, child_path(path, "bytes"), error, 1ULL,
+                           134217728ULL))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("sha256");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "sha256"),
+                        "Required field is missing.");
+        if (!decode_string(member->value, &out->sha256, child_path(path, "sha256"), error, 64U,
+                           64U))
+            return false;
+    }
+    return true;
+}
+
+bool write_TopologyTableAttachmentDescriptor(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                             const TopologyTableAttachmentDescriptor& value,
+                                             ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("name");
+    if (!write_literal_string(writer, value.name, error, "topology_table"))
+        return false;
+    writer.Key("media_type");
+    if (!write_literal_string(writer, value.media_type, error,
+                              "application/vnd.wavenumber.geometer.step-topology-table"))
+        return false;
+    writer.Key("format");
+    if (!write_literal_string(writer, value.format, error, "wn.geometer.step-topology-table.a0"))
+        return false;
+    writer.Key("bytes");
+    if (!write_uint32(writer, value.bytes, error, 1ULL, 134217728ULL))
+        return false;
+    writer.Key("sha256");
+    if (!write_string(writer, value.sha256, error, 64U, 64U))
+        return false;
+    writer.EndObject();
+    return true;
+}
+
+bool decode_StepTopologyInspectResultA0(const rapidjson::Value& value,
+                                        StepTopologyInspectResultA0* out, const std::string& path,
+                                        ContractError* error)
+{
+    static const char* const names[] = {"schema", "session",       "counts",
+                                        "page",   "compact_table", "diagnostics"};
+    if (!validate_object(value, names, 6U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("schema");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "schema"),
+                        "Required field is missing.");
+        if (!decode_literal_string(member->value, &out->schema, child_path(path, "schema"), error,
+                                   "geometry.step_topology.inspect.result.a0"))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("session");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "session"),
+                        "Required field is missing.");
+        if (!decode_SessionReference(member->value, &out->session, child_path(path, "session"),
+                                     error))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("counts");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "counts"),
+                        "Required field is missing.");
+        if (!decode_InspectionCounts(member->value, &out->counts, child_path(path, "counts"),
+                                     error))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("page");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "page"),
+                        "Required field is missing.");
+        if (!decode_TopologyPage(member->value, &out->page, child_path(path, "page"), error))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("compact_table");
+        if (member != value.MemberEnd())
+        {
+            TopologyTableAttachmentDescriptor decoded{};
+            if (!decode_TopologyTableAttachmentDescriptor(member->value, &decoded,
+                                                          child_path(path, "compact_table"), error))
+                return false;
+            out->compact_table = std::move(decoded);
+        }
+        else
+            out->compact_table.reset();
+    }
+    {
+        const auto member = value.FindMember("diagnostics");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "diagnostics"),
+                        "Required field is missing.");
+        if (!decode_array(member->value, &out->diagnostics, child_path(path, "diagnostics"), error,
+                          0U, 256U, decode_DiagnosticA0))
+            return false;
+    }
+    return true;
+}
+
+bool write_StepTopologyInspectResultA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                       const StepTopologyInspectResultA0& value,
+                                       ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("schema");
+    if (!write_literal_string(writer, value.schema, error,
+                              "geometry.step_topology.inspect.result.a0"))
+        return false;
+    writer.Key("session");
+    if (!write_SessionReference(writer, value.session, error))
+        return false;
+    writer.Key("counts");
+    if (!write_InspectionCounts(writer, value.counts, error))
+        return false;
+    writer.Key("page");
+    if (!write_TopologyPage(writer, value.page, error))
+        return false;
+    if (value.compact_table.has_value())
+    {
+        writer.Key("compact_table");
+        if (!write_TopologyTableAttachmentDescriptor(writer, *value.compact_table, error))
+            return false;
+    }
+    writer.Key("diagnostics");
+    if (!write_array(writer, value.diagnostics, error, 0U, 256U, write_DiagnosticA0))
+        return false;
+    writer.EndObject();
+    return true;
+}
+
+bool decode_StepTopologyOpenRequestA0(const rapidjson::Value& value, StepTopologyOpenRequestA0* out,
+                                      const std::string& path, ContractError* error)
+{
+    static const char* const names[] = {"schema"};
+    if (!validate_object(value, names, 1U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("schema");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "schema"),
+                        "Required field is missing.");
+        if (!decode_literal_string(member->value, &out->schema, child_path(path, "schema"), error,
+                                   "geometry.step_topology.open.request.a0"))
+            return false;
+    }
+    return true;
+}
+
+bool write_StepTopologyOpenRequestA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                     const StepTopologyOpenRequestA0& value, ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("schema");
+    if (!write_literal_string(writer, value.schema, error,
+                              "geometry.step_topology.open.request.a0"))
+        return false;
+    writer.EndObject();
+    return true;
+}
+
+bool decode_ToolDescriptor(const rapidjson::Value& value, ToolDescriptor* out,
+                           const std::string& path, ContractError* error)
+{
+    static const char* const names[] = {"name", "release_version", "occt_version"};
+    if (!validate_object(value, names, 3U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("name");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "name"),
+                        "Required field is missing.");
+        if (!decode_literal_string(member->value, &out->name, child_path(path, "name"), error,
+                                   "geometer"))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("release_version");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "release_version"), "Required field is missing.");
+        if (!decode_string(member->value, &out->release_version,
+                           child_path(path, "release_version"), error, 1U, 64U))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("occt_version");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "occt_version"),
+                        "Required field is missing.");
+        if (!decode_string(member->value, &out->occt_version, child_path(path, "occt_version"),
+                           error, 1U, 64U))
+            return false;
+    }
+    return true;
+}
+
+bool write_ToolDescriptor(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                          const ToolDescriptor& value, ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("name");
+    if (!write_literal_string(writer, value.name, error, "geometer"))
+        return false;
+    writer.Key("release_version");
+    if (!write_string(writer, value.release_version, error, 1U, 64U))
+        return false;
+    writer.Key("occt_version");
+    if (!write_string(writer, value.occt_version, error, 1U, 64U))
+        return false;
+    writer.EndObject();
+    return true;
+}
+
+bool decode_StepTopologyOpenResultA0(const rapidjson::Value& value, StepTopologyOpenResultA0* out,
+                                     const std::string& path, ContractError* error)
+{
+    static const char* const names[] = {"schema", "session", "source", "tool",
+                                        "evicted_session_handles"};
+    if (!validate_object(value, names, 5U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("schema");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "schema"),
+                        "Required field is missing.");
+        if (!decode_literal_string(member->value, &out->schema, child_path(path, "schema"), error,
+                                   "geometry.step_topology.open.result.a0"))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("session");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "session"),
+                        "Required field is missing.");
+        if (!decode_SessionReference(member->value, &out->session, child_path(path, "session"),
+                                     error))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("source");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "source"),
+                        "Required field is missing.");
+        if (!decode_SourceDescriptor(member->value, &out->source, child_path(path, "source"),
+                                     error))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("tool");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "tool"),
+                        "Required field is missing.");
+        if (!decode_ToolDescriptor(member->value, &out->tool, child_path(path, "tool"), error))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("evicted_session_handles");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "evicted_session_handles"), "Required field is missing.");
+        if (!decode_array(member->value, &out->evicted_session_handles,
+                          child_path(path, "evicted_session_handles"), error, 0U, 8U,
+                          decode_string_item))
+            return false;
+    }
+    return true;
+}
+
+bool write_StepTopologyOpenResultA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                    const StepTopologyOpenResultA0& value, ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("schema");
+    if (!write_literal_string(writer, value.schema, error, "geometry.step_topology.open.result.a0"))
+        return false;
+    writer.Key("session");
+    if (!write_SessionReference(writer, value.session, error))
+        return false;
+    writer.Key("source");
+    if (!write_SourceDescriptor(writer, value.source, error))
+        return false;
+    writer.Key("tool");
+    if (!write_ToolDescriptor(writer, value.tool, error))
+        return false;
+    writer.Key("evicted_session_handles");
+    if (!write_array(writer, value.evicted_session_handles, error, 0U, 8U, write_string_item))
+        return false;
+    writer.EndObject();
+    return true;
+}
+
+bool decode_TessellationOptions(const rapidjson::Value& value, TessellationOptions* out,
+                                const std::string& path, ContractError* error)
+{
+    static const char* const names[] = {"linear_deflection_mm", "angular_deflection_rad",
+                                        "relative", "parallel", "source_to_render"};
+    if (!validate_object(value, names, 5U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("linear_deflection_mm");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "linear_deflection_mm"), "Required field is missing.");
+        if (!decode_double(member->value, &out->linear_deflection_mm,
+                           child_path(path, "linear_deflection_mm"), error, 0.000001, 1000))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("angular_deflection_rad");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "angular_deflection_rad"), "Required field is missing.");
+        if (!decode_double(member->value, &out->angular_deflection_rad,
+                           child_path(path, "angular_deflection_rad"), error, 0.000001,
+                           3.141592653589793))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("relative");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "relative"),
+                        "Required field is missing.");
+        if (!decode_boolean(member->value, &out->relative, child_path(path, "relative"), error))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("parallel");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "parallel"),
+                        "Required field is missing.");
+        if (!decode_boolean(member->value, &out->parallel, child_path(path, "parallel"), error))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("source_to_render");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "source_to_render"), "Required field is missing.");
+        if (!decode_array(member->value, &out->source_to_render,
+                          child_path(path, "source_to_render"), error, 12U, 12U,
+                          decode_double_item))
+            return false;
+    }
+    return true;
+}
+
+bool write_TessellationOptions(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                               const TessellationOptions& value, ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("linear_deflection_mm");
+    if (!write_double(writer, value.linear_deflection_mm, error, 0.000001, 1000))
+        return false;
+    writer.Key("angular_deflection_rad");
+    if (!write_double(writer, value.angular_deflection_rad, error, 0.000001, 3.141592653589793))
+        return false;
+    writer.Key("relative");
+    if (!(writer.Bool(value.relative), true))
+        return false;
+    writer.Key("parallel");
+    if (!(writer.Bool(value.parallel), true))
+        return false;
+    writer.Key("source_to_render");
+    if (!write_array(writer, value.source_to_render, error, 12U, 12U, write_double_item))
+        return false;
+    writer.EndObject();
+    return true;
+}
+
+bool decode_StepTopologyRenderRequestA0(const rapidjson::Value& value,
+                                        StepTopologyRenderRequestA0* out, const std::string& path,
+                                        ContractError* error)
+{
+    static const char* const names[] = {"schema", "session", "tessellation"};
+    if (!validate_object(value, names, 3U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("schema");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "schema"),
+                        "Required field is missing.");
+        if (!decode_literal_string(member->value, &out->schema, child_path(path, "schema"), error,
+                                   "geometry.step_topology.render.request.a0"))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("session");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "session"),
+                        "Required field is missing.");
+        if (!decode_SessionReference(member->value, &out->session, child_path(path, "session"),
+                                     error))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("tessellation");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "tessellation"),
+                        "Required field is missing.");
+        if (!decode_TessellationOptions(member->value, &out->tessellation,
+                                        child_path(path, "tessellation"), error))
+            return false;
+    }
+    return true;
+}
+
+bool write_StepTopologyRenderRequestA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                       const StepTopologyRenderRequestA0& value,
+                                       ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("schema");
+    if (!write_literal_string(writer, value.schema, error,
+                              "geometry.step_topology.render.request.a0"))
+        return false;
+    writer.Key("session");
+    if (!write_SessionReference(writer, value.session, error))
+        return false;
+    writer.Key("tessellation");
+    if (!write_TessellationOptions(writer, value.tessellation, error))
+        return false;
+    writer.EndObject();
+    return true;
+}
+
+bool decode_TopologyBindingTableAttachmentDescriptor(const rapidjson::Value& value,
+                                                     TopologyBindingTableAttachmentDescriptor* out,
+                                                     const std::string& path, ContractError* error)
+{
+    static const char* const names[] = {"name", "media_type", "format", "bytes", "sha256"};
+    if (!validate_object(value, names, 5U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("name");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "name"),
+                        "Required field is missing.");
+        if (!decode_literal_string(member->value, &out->name, child_path(path, "name"), error,
+                                   "topology_binding_table"))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("media_type");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "media_type"),
+                        "Required field is missing.");
+        if (!decode_literal_string(
+                member->value, &out->media_type, child_path(path, "media_type"), error,
+                "application/vnd.wavenumber.geometer.step-topology-binding-table"))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("format");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "format"),
+                        "Required field is missing.");
+        if (!decode_literal_string(member->value, &out->format, child_path(path, "format"), error,
+                                   "wn.geometer.step-topology-binding-table.a0"))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("bytes");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "bytes"),
+                        "Required field is missing.");
+        if (!decode_uint32(member->value, &out->bytes, child_path(path, "bytes"), error, 1ULL,
+                           134217728ULL))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("sha256");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "sha256"),
+                        "Required field is missing.");
+        if (!decode_string(member->value, &out->sha256, child_path(path, "sha256"), error, 64U,
+                           64U))
+            return false;
+    }
+    return true;
+}
+
+bool write_TopologyBindingTableAttachmentDescriptor(
+    rapidjson::Writer<rapidjson::StringBuffer>& writer,
+    const TopologyBindingTableAttachmentDescriptor& value, ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("name");
+    if (!write_literal_string(writer, value.name, error, "topology_binding_table"))
+        return false;
+    writer.Key("media_type");
+    if (!write_literal_string(writer, value.media_type, error,
+                              "application/vnd.wavenumber.geometer.step-topology-binding-table"))
+        return false;
+    writer.Key("format");
+    if (!write_literal_string(writer, value.format, error,
+                              "wn.geometer.step-topology-binding-table.a0"))
+        return false;
+    writer.Key("bytes");
+    if (!write_uint32(writer, value.bytes, error, 1ULL, 134217728ULL))
+        return false;
+    writer.Key("sha256");
+    if (!write_string(writer, value.sha256, error, 64U, 64U))
+        return false;
+    writer.EndObject();
+    return true;
+}
+
+bool decode_StepTopologyRenderResultA0(const rapidjson::Value& value,
+                                       StepTopologyRenderResultA0* out, const std::string& path,
+                                       ContractError* error)
+{
+    static const char* const names[] = {"schema", "session", "artifact", "glb",
+                                        "compact_binding_table"};
+    if (!validate_object(value, names, 5U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("schema");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "schema"),
+                        "Required field is missing.");
+        if (!decode_literal_string(member->value, &out->schema, child_path(path, "schema"), error,
+                                   "geometry.step_topology.render.result.a0"))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("session");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "session"),
+                        "Required field is missing.");
+        if (!decode_SessionReference(member->value, &out->session, child_path(path, "session"),
+                                     error))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("artifact");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "artifact"),
+                        "Required field is missing.");
+        if (!decode_RenderArtifactDescriptor(member->value, &out->artifact,
+                                             child_path(path, "artifact"), error))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("glb");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "glb"),
+                        "Required field is missing.");
+        if (!decode_GlbAttachmentDescriptor(member->value, &out->glb, child_path(path, "glb"),
+                                            error))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("compact_binding_table");
+        if (member != value.MemberEnd())
+        {
+            TopologyBindingTableAttachmentDescriptor decoded{};
+            if (!decode_TopologyBindingTableAttachmentDescriptor(
+                    member->value, &decoded, child_path(path, "compact_binding_table"), error))
+                return false;
+            out->compact_binding_table = std::move(decoded);
+        }
+        else
+            out->compact_binding_table.reset();
+    }
+    return true;
+}
+
+bool write_StepTopologyRenderResultA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                      const StepTopologyRenderResultA0& value, ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("schema");
+    if (!write_literal_string(writer, value.schema, error,
+                              "geometry.step_topology.render.result.a0"))
+        return false;
+    writer.Key("session");
+    if (!write_SessionReference(writer, value.session, error))
+        return false;
+    writer.Key("artifact");
+    if (!write_RenderArtifactDescriptor(writer, value.artifact, error))
+        return false;
+    writer.Key("glb");
+    if (!write_GlbAttachmentDescriptor(writer, value.glb, error))
+        return false;
+    if (value.compact_binding_table.has_value())
+    {
+        writer.Key("compact_binding_table");
+        if (!write_TopologyBindingTableAttachmentDescriptor(writer, *value.compact_binding_table,
+                                                            error))
+            return false;
+    }
+    writer.EndObject();
+    return true;
+}
+
+bool decode_StepTopologyResolveHitRequestA0(const rapidjson::Value& value,
+                                            StepTopologyResolveHitRequestA0* out,
+                                            const std::string& path, ContractError* error)
+{
+    static const char* const names[] = {
+        "schema",         "session",         "artifact_handle",          "content_sha256",
+        "instance_index", "primitive_index", "primitive_triangle_index", "occurrence_handle",
+        "body_handle",    "face_handle"};
+    if (!validate_object(value, names, 10U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("schema");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "schema"),
+                        "Required field is missing.");
+        if (!decode_literal_string(member->value, &out->schema, child_path(path, "schema"), error,
+                                   "geometry.step_topology.resolve_hit.request.a0"))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("session");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "session"),
+                        "Required field is missing.");
+        if (!decode_SessionReference(member->value, &out->session, child_path(path, "session"),
+                                     error))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("artifact_handle");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "artifact_handle"), "Required field is missing.");
+        if (!decode_string(member->value, &out->artifact_handle,
+                           child_path(path, "artifact_handle"), error, 68U, 68U))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("content_sha256");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "content_sha256"), "Required field is missing.");
+        if (!decode_string(member->value, &out->content_sha256, child_path(path, "content_sha256"),
+                           error, 64U, 64U))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("instance_index");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "instance_index"), "Required field is missing.");
+        if (!decode_uint32(member->value, &out->instance_index, child_path(path, "instance_index"),
+                           error, 0ULL, 99999ULL))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("primitive_index");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "primitive_index"), "Required field is missing.");
+        if (!decode_uint32(member->value, &out->primitive_index,
+                           child_path(path, "primitive_index"), error, 0ULL, 999999ULL))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("primitive_triangle_index");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "primitive_triangle_index"), "Required field is missing.");
+        if (!decode_uint32(member->value, &out->primitive_triangle_index,
+                           child_path(path, "primitive_triangle_index"), error, 0ULL, 9999999ULL))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("occurrence_handle");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "occurrence_handle"), "Required field is missing.");
+        if (!decode_string(member->value, &out->occurrence_handle,
+                           child_path(path, "occurrence_handle"), error, 68U, 68U))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("body_handle");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "body_handle"),
+                        "Required field is missing.");
+        if (!decode_string(member->value, &out->body_handle, child_path(path, "body_handle"), error,
+                           68U, 68U))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("face_handle");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "face_handle"),
+                        "Required field is missing.");
+        if (!decode_string(member->value, &out->face_handle, child_path(path, "face_handle"), error,
+                           68U, 68U))
+            return false;
+    }
+    return true;
+}
+
+bool write_StepTopologyResolveHitRequestA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                           const StepTopologyResolveHitRequestA0& value,
+                                           ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("schema");
+    if (!write_literal_string(writer, value.schema, error,
+                              "geometry.step_topology.resolve_hit.request.a0"))
+        return false;
+    writer.Key("session");
+    if (!write_SessionReference(writer, value.session, error))
+        return false;
+    writer.Key("artifact_handle");
+    if (!write_string(writer, value.artifact_handle, error, 68U, 68U))
+        return false;
+    writer.Key("content_sha256");
+    if (!write_string(writer, value.content_sha256, error, 64U, 64U))
+        return false;
+    writer.Key("instance_index");
+    if (!write_uint32(writer, value.instance_index, error, 0ULL, 99999ULL))
+        return false;
+    writer.Key("primitive_index");
+    if (!write_uint32(writer, value.primitive_index, error, 0ULL, 999999ULL))
+        return false;
+    writer.Key("primitive_triangle_index");
+    if (!write_uint32(writer, value.primitive_triangle_index, error, 0ULL, 9999999ULL))
+        return false;
+    writer.Key("occurrence_handle");
+    if (!write_string(writer, value.occurrence_handle, error, 68U, 68U))
+        return false;
+    writer.Key("body_handle");
+    if (!write_string(writer, value.body_handle, error, 68U, 68U))
+        return false;
+    writer.Key("face_handle");
+    if (!write_string(writer, value.face_handle, error, 68U, 68U))
+        return false;
+    writer.EndObject();
+    return true;
+}
+
+bool decode_StepTopologyResolveHitResultA0(const rapidjson::Value& value,
+                                           StepTopologyResolveHitResultA0* out,
+                                           const std::string& path, ContractError* error)
+{
+    static const char* const names[] = {"schema",          "session",        "instance_index",
+                                        "primitive_index", "triangle_index", "occurrence_handle",
+                                        "body_handle",     "face_handle"};
+    if (!validate_object(value, names, 8U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("schema");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "schema"),
+                        "Required field is missing.");
+        if (!decode_literal_string(member->value, &out->schema, child_path(path, "schema"), error,
+                                   "geometry.step_topology.resolve_hit.result.a0"))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("session");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "session"),
+                        "Required field is missing.");
+        if (!decode_SessionReference(member->value, &out->session, child_path(path, "session"),
+                                     error))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("instance_index");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "instance_index"), "Required field is missing.");
+        if (!decode_uint32(member->value, &out->instance_index, child_path(path, "instance_index"),
+                           error, 0ULL, 99999ULL))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("primitive_index");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "primitive_index"), "Required field is missing.");
+        if (!decode_uint32(member->value, &out->primitive_index,
+                           child_path(path, "primitive_index"), error, 0ULL, 999999ULL))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("triangle_index");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "triangle_index"), "Required field is missing.");
+        if (!decode_uint32(member->value, &out->triangle_index, child_path(path, "triangle_index"),
+                           error, 0ULL, 9999999ULL))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("occurrence_handle");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "occurrence_handle"), "Required field is missing.");
+        if (!decode_string(member->value, &out->occurrence_handle,
+                           child_path(path, "occurrence_handle"), error, 68U, 68U))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("body_handle");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "body_handle"),
+                        "Required field is missing.");
+        if (!decode_string(member->value, &out->body_handle, child_path(path, "body_handle"), error,
+                           68U, 68U))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("face_handle");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "face_handle"),
+                        "Required field is missing.");
+        if (!decode_string(member->value, &out->face_handle, child_path(path, "face_handle"), error,
+                           68U, 68U))
+            return false;
+    }
+    return true;
+}
+
+bool write_StepTopologyResolveHitResultA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                          const StepTopologyResolveHitResultA0& value,
+                                          ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("schema");
+    if (!write_literal_string(writer, value.schema, error,
+                              "geometry.step_topology.resolve_hit.result.a0"))
+        return false;
+    writer.Key("session");
+    if (!write_SessionReference(writer, value.session, error))
+        return false;
+    writer.Key("instance_index");
+    if (!write_uint32(writer, value.instance_index, error, 0ULL, 99999ULL))
+        return false;
+    writer.Key("primitive_index");
+    if (!write_uint32(writer, value.primitive_index, error, 0ULL, 999999ULL))
+        return false;
+    writer.Key("triangle_index");
+    if (!write_uint32(writer, value.triangle_index, error, 0ULL, 9999999ULL))
+        return false;
+    writer.Key("occurrence_handle");
+    if (!write_string(writer, value.occurrence_handle, error, 68U, 68U))
+        return false;
+    writer.Key("body_handle");
+    if (!write_string(writer, value.body_handle, error, 68U, 68U))
+        return false;
+    writer.Key("face_handle");
+    if (!write_string(writer, value.face_handle, error, 68U, 68U))
+        return false;
+    writer.EndObject();
+    return true;
+}
+
 bool parse_document(const unsigned char* data, std::size_t size, rapidjson::Document* document,
                     ContractError* error)
 {
@@ -3092,6 +5675,228 @@ bool decode_json(const unsigned char* data, std::size_t size, OperationOutcomeA0
 bool encode_json(const OperationOutcomeA0& value, std::string* json, ContractError* error)
 {
     return encode_root<OperationOutcomeA0>(value, write_OperationOutcomeA0, json, error);
+}
+
+bool decode_json(const unsigned char* data, std::size_t size, StepTopologyCloseRequestA0* value,
+                 ContractError* error)
+{
+    if (value == nullptr)
+        return fail(error, "geometer.contract.invalid_argument", "",
+                    "Output value pointer is null.");
+    rapidjson::Document document;
+    if (!parse_document(data, size, &document, error))
+        return false;
+    StepTopologyCloseRequestA0 decoded{};
+    if (!decode_StepTopologyCloseRequestA0(document, &decoded, "", error))
+        return false;
+    *value = std::move(decoded);
+    return true;
+}
+
+bool encode_json(const StepTopologyCloseRequestA0& value, std::string* json, ContractError* error)
+{
+    return encode_root<StepTopologyCloseRequestA0>(value, write_StepTopologyCloseRequestA0, json,
+                                                   error);
+}
+
+bool decode_json(const unsigned char* data, std::size_t size, StepTopologyCloseResultA0* value,
+                 ContractError* error)
+{
+    if (value == nullptr)
+        return fail(error, "geometer.contract.invalid_argument", "",
+                    "Output value pointer is null.");
+    rapidjson::Document document;
+    if (!parse_document(data, size, &document, error))
+        return false;
+    StepTopologyCloseResultA0 decoded{};
+    if (!decode_StepTopologyCloseResultA0(document, &decoded, "", error))
+        return false;
+    *value = std::move(decoded);
+    return true;
+}
+
+bool encode_json(const StepTopologyCloseResultA0& value, std::string* json, ContractError* error)
+{
+    return encode_root<StepTopologyCloseResultA0>(value, write_StepTopologyCloseResultA0, json,
+                                                  error);
+}
+
+bool decode_json(const unsigned char* data, std::size_t size, StepTopologyInspectRequestA0* value,
+                 ContractError* error)
+{
+    if (value == nullptr)
+        return fail(error, "geometer.contract.invalid_argument", "",
+                    "Output value pointer is null.");
+    rapidjson::Document document;
+    if (!parse_document(data, size, &document, error))
+        return false;
+    StepTopologyInspectRequestA0 decoded{};
+    if (!decode_StepTopologyInspectRequestA0(document, &decoded, "", error))
+        return false;
+    *value = std::move(decoded);
+    return true;
+}
+
+bool encode_json(const StepTopologyInspectRequestA0& value, std::string* json, ContractError* error)
+{
+    return encode_root<StepTopologyInspectRequestA0>(value, write_StepTopologyInspectRequestA0,
+                                                     json, error);
+}
+
+bool decode_json(const unsigned char* data, std::size_t size, StepTopologyInspectResultA0* value,
+                 ContractError* error)
+{
+    if (value == nullptr)
+        return fail(error, "geometer.contract.invalid_argument", "",
+                    "Output value pointer is null.");
+    rapidjson::Document document;
+    if (!parse_document(data, size, &document, error))
+        return false;
+    StepTopologyInspectResultA0 decoded{};
+    if (!decode_StepTopologyInspectResultA0(document, &decoded, "", error))
+        return false;
+    *value = std::move(decoded);
+    return true;
+}
+
+bool encode_json(const StepTopologyInspectResultA0& value, std::string* json, ContractError* error)
+{
+    return encode_root<StepTopologyInspectResultA0>(value, write_StepTopologyInspectResultA0, json,
+                                                    error);
+}
+
+bool decode_json(const unsigned char* data, std::size_t size, StepTopologyOpenRequestA0* value,
+                 ContractError* error)
+{
+    if (value == nullptr)
+        return fail(error, "geometer.contract.invalid_argument", "",
+                    "Output value pointer is null.");
+    rapidjson::Document document;
+    if (!parse_document(data, size, &document, error))
+        return false;
+    StepTopologyOpenRequestA0 decoded{};
+    if (!decode_StepTopologyOpenRequestA0(document, &decoded, "", error))
+        return false;
+    *value = std::move(decoded);
+    return true;
+}
+
+bool encode_json(const StepTopologyOpenRequestA0& value, std::string* json, ContractError* error)
+{
+    return encode_root<StepTopologyOpenRequestA0>(value, write_StepTopologyOpenRequestA0, json,
+                                                  error);
+}
+
+bool decode_json(const unsigned char* data, std::size_t size, StepTopologyOpenResultA0* value,
+                 ContractError* error)
+{
+    if (value == nullptr)
+        return fail(error, "geometer.contract.invalid_argument", "",
+                    "Output value pointer is null.");
+    rapidjson::Document document;
+    if (!parse_document(data, size, &document, error))
+        return false;
+    StepTopologyOpenResultA0 decoded{};
+    if (!decode_StepTopologyOpenResultA0(document, &decoded, "", error))
+        return false;
+    *value = std::move(decoded);
+    return true;
+}
+
+bool encode_json(const StepTopologyOpenResultA0& value, std::string* json, ContractError* error)
+{
+    return encode_root<StepTopologyOpenResultA0>(value, write_StepTopologyOpenResultA0, json,
+                                                 error);
+}
+
+bool decode_json(const unsigned char* data, std::size_t size, StepTopologyRenderRequestA0* value,
+                 ContractError* error)
+{
+    if (value == nullptr)
+        return fail(error, "geometer.contract.invalid_argument", "",
+                    "Output value pointer is null.");
+    rapidjson::Document document;
+    if (!parse_document(data, size, &document, error))
+        return false;
+    StepTopologyRenderRequestA0 decoded{};
+    if (!decode_StepTopologyRenderRequestA0(document, &decoded, "", error))
+        return false;
+    *value = std::move(decoded);
+    return true;
+}
+
+bool encode_json(const StepTopologyRenderRequestA0& value, std::string* json, ContractError* error)
+{
+    return encode_root<StepTopologyRenderRequestA0>(value, write_StepTopologyRenderRequestA0, json,
+                                                    error);
+}
+
+bool decode_json(const unsigned char* data, std::size_t size, StepTopologyRenderResultA0* value,
+                 ContractError* error)
+{
+    if (value == nullptr)
+        return fail(error, "geometer.contract.invalid_argument", "",
+                    "Output value pointer is null.");
+    rapidjson::Document document;
+    if (!parse_document(data, size, &document, error))
+        return false;
+    StepTopologyRenderResultA0 decoded{};
+    if (!decode_StepTopologyRenderResultA0(document, &decoded, "", error))
+        return false;
+    *value = std::move(decoded);
+    return true;
+}
+
+bool encode_json(const StepTopologyRenderResultA0& value, std::string* json, ContractError* error)
+{
+    return encode_root<StepTopologyRenderResultA0>(value, write_StepTopologyRenderResultA0, json,
+                                                   error);
+}
+
+bool decode_json(const unsigned char* data, std::size_t size,
+                 StepTopologyResolveHitRequestA0* value, ContractError* error)
+{
+    if (value == nullptr)
+        return fail(error, "geometer.contract.invalid_argument", "",
+                    "Output value pointer is null.");
+    rapidjson::Document document;
+    if (!parse_document(data, size, &document, error))
+        return false;
+    StepTopologyResolveHitRequestA0 decoded{};
+    if (!decode_StepTopologyResolveHitRequestA0(document, &decoded, "", error))
+        return false;
+    *value = std::move(decoded);
+    return true;
+}
+
+bool encode_json(const StepTopologyResolveHitRequestA0& value, std::string* json,
+                 ContractError* error)
+{
+    return encode_root<StepTopologyResolveHitRequestA0>(
+        value, write_StepTopologyResolveHitRequestA0, json, error);
+}
+
+bool decode_json(const unsigned char* data, std::size_t size, StepTopologyResolveHitResultA0* value,
+                 ContractError* error)
+{
+    if (value == nullptr)
+        return fail(error, "geometer.contract.invalid_argument", "",
+                    "Output value pointer is null.");
+    rapidjson::Document document;
+    if (!parse_document(data, size, &document, error))
+        return false;
+    StepTopologyResolveHitResultA0 decoded{};
+    if (!decode_StepTopologyResolveHitResultA0(document, &decoded, "", error))
+        return false;
+    *value = std::move(decoded);
+    return true;
+}
+
+bool encode_json(const StepTopologyResolveHitResultA0& value, std::string* json,
+                 ContractError* error)
+{
+    return encode_root<StepTopologyResolveHitResultA0>(value, write_StepTopologyResolveHitResultA0,
+                                                       json, error);
 }
 
 } // namespace geometer::contracts

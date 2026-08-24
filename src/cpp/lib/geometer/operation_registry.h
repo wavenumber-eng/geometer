@@ -31,6 +31,7 @@ struct OperationExecution
 };
 
 const char* operation_catalog_json();
+const char* native_operation_catalog_json();
 const char* normalized_contract_catalog_sha256();
 bool operation_output_attachment_declared(const std::string& operation_id,
                                           const std::string& attachment_name,
@@ -54,6 +55,10 @@ bool operation_result_projection(const std::string& operation_id, const char** a
                                  const char** format);
 bool operation_logical_result_matches(const std::string& operation_id,
                                       const contracts::OperationResultValueA0& result);
+bool operation_request_value_matches(const std::string& operation_id,
+                                     const contracts::IpcRequestValueA0& request);
+bool operation_result_value_matches(const std::string& operation_id,
+                                    const contracts::OperationResultValueA0& result);
 std::size_t operation_required_output_attachment_count(const std::string& operation_id);
 const char* operation_required_output_attachment_name(const std::string& operation_id,
                                                       std::size_t index);
@@ -62,5 +67,12 @@ void execute_operation(const std::string& operation_id, const unsigned char* req
                        std::size_t request_json_size,
                        const std::vector<OperationAttachmentView>& attachments,
                        OperationExecution* execution);
+
+#ifndef __EMSCRIPTEN__
+void execute_native_operation(const std::string& operation_id, const unsigned char* request_json,
+                              std::size_t request_json_size,
+                              const std::vector<OperationAttachmentView>& attachments,
+                              OperationExecution* execution);
+#endif
 
 } // namespace geometer

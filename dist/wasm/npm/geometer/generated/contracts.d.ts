@@ -404,8 +404,320 @@ export interface ModelBoundsOptionsA0 {
     /** Absent preserves the inherited transform; canonical default intent is identity. */
     readonly model_transform?: Matrix4x4;
 }
-/** Strict generic request envelope for executable IPC A0. */
-export type IpcRequestValueA0 = ModelBoundsOptionsA0 | PackedAttachmentProjectionA0;
+export interface StepTopologyOpenRequestA0 {
+    readonly schema: "geometry.step_topology.open.request.a0";
+}
+export interface SessionReference {
+    readonly session_handle: string;
+    readonly generation: number;
+}
+export interface StepTopologyCloseRequestA0 {
+    readonly schema: "geometry.step_topology.close.request.a0";
+    readonly session: SessionReference;
+}
+export interface PageRequest {
+    readonly cursor?: string;
+    readonly limit: number;
+}
+export interface StepTopologyInspectRequestA0 {
+    readonly schema: "geometry.step_topology.inspect.request.a0";
+    readonly session: SessionReference;
+    readonly page: PageRequest;
+    readonly include_source_entity_evidence: boolean;
+    readonly include_diagnostics: boolean;
+}
+export interface TessellationOptions {
+    readonly linear_deflection_mm: number;
+    readonly angular_deflection_rad: number;
+    readonly relative: boolean;
+    readonly parallel: boolean;
+    readonly source_to_render: readonly number[];
+}
+export interface StepTopologyRenderRequestA0 {
+    readonly schema: "geometry.step_topology.render.request.a0";
+    readonly session: SessionReference;
+    readonly tessellation: TessellationOptions;
+}
+export interface StepTopologyResolveHitRequestA0 {
+    readonly schema: "geometry.step_topology.resolve_hit.request.a0";
+    readonly session: SessionReference;
+    readonly artifact_handle: string;
+    readonly content_sha256: string;
+    readonly instance_index: number;
+    readonly primitive_index: number;
+    readonly primitive_triangle_index: number;
+    readonly occurrence_handle: string;
+    readonly body_handle: string;
+    readonly face_handle: string;
+}
+export interface CreateLogicalGroupCommand {
+    readonly kind: "create";
+    readonly authored_id: string;
+    readonly name: string;
+    readonly member_handles: readonly string[];
+}
+export interface RenameLogicalGroupCommand {
+    readonly kind: "rename";
+    readonly authored_id: string;
+    readonly expected_revision: number;
+    readonly name: string;
+}
+export interface ReplaceLogicalGroupMembersCommand {
+    readonly kind: "replace_members";
+    readonly authored_id: string;
+    readonly expected_revision: number;
+    readonly member_handles: readonly string[];
+}
+export interface EraseLogicalGroupCommand {
+    readonly kind: "erase";
+    readonly authored_id: string;
+    readonly expected_revision: number;
+}
+export type LogicalGroupCommand = CreateLogicalGroupCommand | RenameLogicalGroupCommand | ReplaceLogicalGroupMembersCommand | EraseLogicalGroupCommand;
+export interface StepTopologyApplyLogicalGroupsRequestA0 {
+    readonly schema: "geometry.step_topology.apply_logical_groups.request.a0";
+    readonly session: SessionReference;
+    readonly commands: readonly LogicalGroupCommand[];
+}
+export interface DocumentProbeTarget {
+    readonly kind: "document";
+}
+export interface DefinitionProbeTarget {
+    readonly kind: "definition";
+    readonly target_handle: string;
+}
+export interface RootOccurrenceProbeTarget {
+    readonly kind: "root_occurrence";
+    readonly target_handle: string;
+}
+export interface ComponentOccurrenceProbeTarget {
+    readonly kind: "occurrence";
+    readonly target_handle: string;
+}
+export interface BodyProbeTarget {
+    readonly kind: "body";
+    readonly target_handle: string;
+}
+export interface FaceProbeTarget {
+    readonly kind: "face";
+    readonly target_handle: string;
+}
+export interface LogicalGroupProbeTarget {
+    readonly kind: "logical_group";
+    readonly group_authored_id: string;
+}
+export type MetadataProbeTarget = DocumentProbeTarget | DefinitionProbeTarget | RootOccurrenceProbeTarget | ComponentOccurrenceProbeTarget | BodyProbeTarget | FaceProbeTarget | LogicalGroupProbeTarget;
+export interface AttachMetadataProbeCommand {
+    readonly kind: "attach";
+    readonly authored_id: string;
+    readonly target: MetadataProbeTarget;
+    readonly key: string;
+    readonly value: string;
+}
+export interface ReplaceMetadataProbeCommand {
+    readonly kind: "replace";
+    readonly authored_id: string;
+    readonly expected_revision: number;
+    readonly target: MetadataProbeTarget;
+    readonly key: string;
+    readonly value: string;
+}
+export interface EraseMetadataProbeCommand {
+    readonly kind: "erase";
+    readonly authored_id: string;
+    readonly expected_revision: number;
+}
+export type MetadataProbeCommand = AttachMetadataProbeCommand | ReplaceMetadataProbeCommand | EraseMetadataProbeCommand;
+export interface StepTopologyApplyMetadataProbesRequestA0 {
+    readonly schema: "geometry.step_topology.apply_metadata_probes.request.a0";
+    readonly session: SessionReference;
+    readonly commands: readonly MetadataProbeCommand[];
+}
+export interface StepTopologyCheckpointEditJournalRequestA0 {
+    readonly schema: "geometry.step_topology.checkpoint_edit_journal.request.a0";
+    readonly session: SessionReference;
+}
+export type HierarchySourceKind = "definition" | "body";
+export interface CreateHierarchyProductCommand {
+    readonly kind: "create_product";
+    readonly authored_id: string;
+    readonly name: string;
+    readonly source_kind: HierarchySourceKind;
+    readonly source_handle: string;
+}
+export interface CreateHierarchyAssemblyCommand {
+    readonly kind: "create_assembly";
+    readonly authored_id: string;
+    readonly name: string;
+}
+export interface CreateHierarchyOccurrenceCommand {
+    readonly kind: "create_occurrence";
+    readonly authored_id: string;
+    readonly child_authored_id: string;
+    readonly parent_assembly_authored_id: string;
+    readonly transform: readonly number[];
+}
+export interface ReparentHierarchyOccurrenceCommand {
+    readonly kind: "reparent_occurrence";
+    readonly authored_id: string;
+    readonly expected_revision: number;
+    readonly parent_assembly_authored_id: string;
+    readonly transform: readonly number[];
+}
+export interface RenameHierarchyNodeCommand {
+    readonly kind: "rename_node";
+    readonly authored_id: string;
+    readonly expected_revision: number;
+    readonly name: string;
+}
+export interface EraseHierarchyOccurrenceCommand {
+    readonly kind: "erase_occurrence";
+    readonly authored_id: string;
+    readonly expected_revision: number;
+}
+export interface EraseHierarchyNodeCommand {
+    readonly kind: "erase_node";
+    readonly authored_id: string;
+    readonly expected_revision: number;
+}
+export type HierarchyCommand = CreateHierarchyProductCommand | CreateHierarchyAssemblyCommand | CreateHierarchyOccurrenceCommand | ReparentHierarchyOccurrenceCommand | RenameHierarchyNodeCommand | EraseHierarchyOccurrenceCommand | EraseHierarchyNodeCommand;
+export interface StepTopologyApplyHierarchyRequestA0 {
+    readonly schema: "geometry.step_topology.apply_hierarchy.request.a0";
+    readonly session: SessionReference;
+    readonly expected_hierarchy_revision: number;
+    readonly commands: readonly HierarchyCommand[];
+}
+export type SaveCarrier = "xbf" | "xml_xcaf" | "step_ap242" | "json_sidecar";
+export interface StepTopologySaveRequestA0 {
+    readonly schema: "geometry.step_topology.save.request.a0";
+    readonly session: SessionReference;
+    readonly carrier: SaveCarrier;
+    readonly include_diagnostics: boolean;
+}
+export interface SourceDescriptor {
+    readonly format: "step";
+    readonly sha256: string;
+    readonly bytes: number;
+    readonly normalized_length_unit: "millimeter";
+}
+export interface XbfPersistenceArtifact {
+    readonly carrier: "xbf";
+    readonly name: "state_artifact";
+    readonly media_type: "application/vnd.opencascade.xbf";
+    readonly format: "ocaf-xbf-version-12";
+    readonly bytes: number;
+    readonly sha256: string;
+}
+export interface XmlXcafPersistenceArtifact {
+    readonly carrier: "xml_xcaf";
+    readonly name: "state_artifact";
+    readonly media_type: "application/vnd.opencascade.xml-xcaf";
+    readonly format: "ocaf-xml-xcaf-version-12";
+    readonly bytes: number;
+    readonly sha256: string;
+}
+export interface StepAp242PersistenceArtifact {
+    readonly carrier: "step_ap242";
+    readonly name: "state_artifact";
+    readonly media_type: "application/step";
+    readonly format: "ap242-managed-model-based-3d-engineering";
+    readonly bytes: number;
+    readonly sha256: string;
+}
+export interface JsonSidecarPersistenceArtifact {
+    readonly carrier: "json_sidecar";
+    readonly name: "state_artifact";
+    readonly media_type: "application/vnd.wavenumber.geometer.step-topology-sidecar+json";
+    readonly format: "geometer.step_topology_sidecar.a0";
+    readonly bytes: number;
+    readonly sha256: string;
+}
+export interface EditJournalPersistenceArtifact {
+    readonly carrier: "edit_journal";
+    readonly name: "state_artifact";
+    readonly media_type: "application/vnd.wavenumber.geometer.step-topology-edit-journal";
+    readonly format: "geometer.step_topology_edit_journal.a0";
+    readonly bytes: number;
+    readonly sha256: string;
+}
+export type RestoreStateArtifact = XbfPersistenceArtifact | XmlXcafPersistenceArtifact | StepAp242PersistenceArtifact | JsonSidecarPersistenceArtifact | EditJournalPersistenceArtifact;
+export interface EditJournalReplayPreconditions {
+    readonly source_sha256: string;
+    readonly source_brep_sha256: string;
+    readonly target_inventory_sha256: string;
+    readonly occt_version: string;
+    readonly transaction_count: number;
+}
+export interface StepTopologyRestoreRequestA0 {
+    readonly schema: "geometry.step_topology.restore.request.a0";
+    readonly source: SourceDescriptor;
+    readonly state_artifact: RestoreStateArtifact;
+    readonly replay_preconditions?: EditJournalReplayPreconditions;
+    readonly include_diagnostics: boolean;
+}
+export interface RecoveryProvenance {
+    readonly source_artifact_sha256: string;
+    readonly candidate_artifact_sha256: string;
+    readonly source_occt_version: string;
+    readonly candidate_occt_version: string;
+    readonly source_driver: string;
+    readonly candidate_driver: string;
+    readonly source_writer_settings: string;
+    readonly candidate_writer_settings: string;
+    readonly command_provenance: string;
+    readonly measured_wall_time_milliseconds: number;
+}
+export interface RecoveryTolerances {
+    readonly length_mm: number;
+    readonly area_mm2: number;
+    readonly volume_mm3: number;
+}
+export type LogicalGroupMemberKind = "body" | "face";
+export interface RecoveryFingerprint {
+    readonly normalized_length_unit: "millimeter";
+    readonly coordinate_frame: string;
+    readonly occurrence_context: string;
+    readonly geometry_kind: string;
+    readonly area_mm2: number;
+    readonly volume_mm3: number;
+    readonly centroid_mm: readonly number[];
+    readonly bounds_mm: readonly number[];
+    readonly adjacency_sha256: string;
+}
+export type RecoveryLineage = "none" | "split_from_source" | "merged_from_sources";
+export interface RecoveryCandidate {
+    readonly target_handle: string;
+    readonly kind: LogicalGroupMemberKind;
+    readonly authored_target_id?: string;
+    readonly topology_link_verified: boolean;
+    readonly carrier_locator: string;
+    readonly carrier_locator_validated: boolean;
+    readonly carrier_record: string;
+    readonly lineage: RecoveryLineage;
+    readonly fingerprint?: RecoveryFingerprint;
+}
+export interface RecoveryMemberRequest {
+    readonly member_record_id: string;
+    readonly kind: LogicalGroupMemberKind;
+    readonly authored_target_id: string;
+    readonly carrier_locator: string;
+    readonly source_fingerprint?: RecoveryFingerprint;
+    readonly candidates: readonly RecoveryCandidate[];
+}
+export interface RecoveryGroupRequest {
+    readonly group_authored_id: string;
+    readonly provenance: RecoveryProvenance;
+    readonly tolerances: RecoveryTolerances;
+    readonly members: readonly RecoveryMemberRequest[];
+}
+export interface StepTopologyAnalyzeRecoveryRequestA0 {
+    readonly schema: "geometry.step_topology.analyze_recovery.request.a0";
+    readonly groups: readonly RecoveryGroupRequest[];
+}
+/** Structurally representable request payloads for executable IPC A0.
+A variant is callable only when the negotiated runtime catalog advertises
+its operation; structural presence does not imply runtime availability. */
+export type IpcRequestValueA0 = ModelBoundsOptionsA0 | PackedAttachmentProjectionA0 | StepTopologyOpenRequestA0 | StepTopologyCloseRequestA0 | StepTopologyInspectRequestA0 | StepTopologyRenderRequestA0 | StepTopologyResolveHitRequestA0 | StepTopologyApplyLogicalGroupsRequestA0 | StepTopologyApplyMetadataProbesRequestA0 | StepTopologyCheckpointEditJournalRequestA0 | StepTopologyApplyHierarchyRequestA0 | StepTopologySaveRequestA0 | StepTopologyRestoreRequestA0 | StepTopologyAnalyzeRecoveryRequestA0;
 export interface IpcRequestA0 {
     readonly operation: string;
     readonly request: IpcRequestValueA0;
@@ -459,16 +771,32 @@ export interface OperationFailureA0 {
     readonly ok: false;
     readonly diagnostics: readonly DiagnosticA0[];
 }
-/** Results currently available through the generic operation transport. */
-export type OperationResultValueA0 = ModelBoundsResultA0 | PackedAttachmentProjectionA0;
-/** A completed operation with its operation-specific result. */
-export interface OperationSuccessA0 {
-    readonly operation: string;
-    readonly ok: true;
-    readonly result: OperationResultValueA0;
+export interface ToolDescriptor {
+    readonly name: "geometer";
+    readonly release_version: string;
+    readonly occt_version: string;
 }
-/** Transport-neutral typed outcome shared by the generic C ABI and executable IPC. */
-export type OperationOutcomeA0 = OperationSuccessA0 | OperationFailureA0;
+export interface StepTopologyOpenResultA0 {
+    readonly schema: "geometry.step_topology.open.result.a0";
+    readonly session: SessionReference;
+    readonly source: SourceDescriptor;
+    readonly tool: ToolDescriptor;
+    readonly evicted_session_handles: readonly string[];
+}
+export interface StepTopologyCloseResultA0 {
+    readonly schema: "geometry.step_topology.close.result.a0";
+    readonly session_handle: string;
+    readonly closed: true;
+}
+export interface InspectionCounts {
+    readonly definitions: number;
+    readonly root_occurrences: number;
+    readonly component_occurrences: number;
+    readonly bodies: number;
+    readonly shells: number;
+    readonly faces: number;
+    readonly memberships: number;
+}
 export interface SourceEntityEvidence {
     readonly mapped: boolean;
     readonly shape_result_round_trip: boolean;
@@ -476,15 +804,20 @@ export interface SourceEntityEvidence {
     readonly entity_type?: string;
     readonly mapping_method?: string;
 }
-export interface BodySummary {
+export interface DefinitionSummary {
+    readonly handle: string;
+    readonly name: string;
+    readonly assembly: boolean;
+    readonly body_count: number;
+    readonly face_count: number;
+    readonly source_entity?: SourceEntityEvidence;
+}
+export interface RootOccurrenceSummary {
+    readonly kind: "root";
     readonly handle: string;
     readonly definition_handle: string;
-    readonly topology_kind: string;
-    readonly shell_handles: readonly string[];
-    readonly face_handles: readonly string[];
-    readonly bounds_mm: readonly number[];
-    readonly volume_mm3: number;
-    readonly source_entity?: SourceEntityEvidence;
+    readonly name: string;
+    readonly transform: readonly number[];
 }
 export interface ComponentOccurrenceSummary {
     readonly kind: "component";
@@ -495,10 +828,20 @@ export interface ComponentOccurrenceSummary {
     readonly name: string;
     readonly transform: readonly number[];
 }
-export interface DefinitionSummary {
+export type OccurrenceSummary = RootOccurrenceSummary | ComponentOccurrenceSummary;
+export interface BodySummary {
     readonly handle: string;
-    readonly name: string;
-    readonly assembly: boolean;
+    readonly definition_handle: string;
+    readonly topology_kind: string;
+    readonly shell_count: number;
+    readonly face_count: number;
+    readonly bounds_mm: readonly number[];
+    readonly volume_mm3: number;
+    readonly source_entity?: SourceEntityEvidence;
+}
+export interface ShellSummary {
+    readonly handle: string;
+    readonly definition_handle: string;
     readonly body_count: number;
     readonly face_count: number;
     readonly source_entity?: SourceEntityEvidence;
@@ -506,39 +849,42 @@ export interface DefinitionSummary {
 export interface FaceSummary {
     readonly handle: string;
     readonly definition_handle: string;
-    readonly body_handles: readonly string[];
-    readonly shell_handles: readonly string[];
+    readonly body_count: number;
+    readonly shell_count: number;
     readonly bounds_mm: readonly number[];
     readonly area_mm2: number;
     readonly centroid_mm: readonly number[];
     readonly source_entity?: SourceEntityEvidence;
 }
-export interface GlbAttachmentDescriptor {
-    readonly name: "glb";
-    readonly media_type: "model/gltf-binary";
-    readonly format: "glb-2.0";
+export type TopologyMembershipKind = "body_shell" | "body_face" | "shell_face";
+export interface TopologyMembership {
+    readonly kind: TopologyMembershipKind;
+    readonly owner_handle: string;
+    readonly member_handle: string;
+}
+export interface TopologyPage {
+    readonly definitions: readonly DefinitionSummary[];
+    readonly occurrences: readonly OccurrenceSummary[];
+    readonly bodies: readonly BodySummary[];
+    readonly shells: readonly ShellSummary[];
+    readonly faces: readonly FaceSummary[];
+    readonly memberships: readonly TopologyMembership[];
+    readonly next_cursor?: string;
+}
+export interface TopologyTableAttachmentDescriptor {
+    readonly name: "topology_table";
+    readonly media_type: "application/vnd.wavenumber.geometer.step-topology-table";
+    readonly format: "wn.geometer.step-topology-table.a0";
     readonly bytes: number;
     readonly sha256: string;
 }
-export interface InspectionCounts {
-    readonly definitions: number;
-    readonly root_occurrences: number;
-    readonly component_occurrences: number;
-    readonly bodies: number;
-    readonly shells: number;
-    readonly faces: number;
-}
-export interface RootOccurrenceSummary {
-    readonly kind: "root";
-    readonly handle: string;
-    readonly definition_handle: string;
-    readonly name: string;
-    readonly transform: readonly number[];
-}
-export type OccurrenceSummary = RootOccurrenceSummary | ComponentOccurrenceSummary;
-export interface PageRequest {
-    readonly cursor?: string;
-    readonly limit: number;
+export interface StepTopologyInspectResultA0 {
+    readonly schema: "geometry.step_topology.inspect.result.a0";
+    readonly session: SessionReference;
+    readonly counts: InspectionCounts;
+    readonly page: TopologyPage;
+    readonly compact_table?: TopologyTableAttachmentDescriptor;
+    readonly diagnostics: readonly DiagnosticA0[];
 }
 export interface RenderCounts {
     readonly meshes: number;
@@ -557,88 +903,12 @@ export interface RenderArtifactDescriptor {
     readonly source_length_unit: "millimeter";
     readonly counts: RenderCounts;
 }
-export interface SessionReference {
-    readonly session_handle: string;
-    readonly generation: number;
-}
-export interface ShellSummary {
-    readonly handle: string;
-    readonly definition_handle: string;
-    readonly body_handles: readonly string[];
-    readonly face_handles: readonly string[];
-    readonly source_entity?: SourceEntityEvidence;
-}
-export interface SourceDescriptor {
-    readonly format: "step";
-    readonly sha256: string;
-    readonly bytes: number;
-    readonly normalized_length_unit: "millimeter";
-}
-export interface StepTopologyCloseRequestA0 {
-    readonly schema: "geometry.step_topology.close.request.a0";
-    readonly session: SessionReference;
-}
-export interface StepTopologyCloseResultA0 {
-    readonly schema: "geometry.step_topology.close.result.a0";
-    readonly session_handle: string;
-    readonly closed: true;
-}
-export interface StepTopologyInspectRequestA0 {
-    readonly schema: "geometry.step_topology.inspect.request.a0";
-    readonly session: SessionReference;
-    readonly page: PageRequest;
-    readonly include_source_entity_evidence: boolean;
-    readonly include_diagnostics: boolean;
-}
-export interface TopologyPage {
-    readonly definitions: readonly DefinitionSummary[];
-    readonly occurrences: readonly OccurrenceSummary[];
-    readonly bodies: readonly BodySummary[];
-    readonly shells: readonly ShellSummary[];
-    readonly faces: readonly FaceSummary[];
-    readonly next_cursor?: string;
-}
-export interface TopologyTableAttachmentDescriptor {
-    readonly name: "topology_table";
-    readonly media_type: "application/vnd.wavenumber.geometer.step-topology-table";
-    readonly format: "wn.geometer.step-topology-table.a0";
+export interface GlbAttachmentDescriptor {
+    readonly name: "glb";
+    readonly media_type: "model/gltf-binary";
+    readonly format: "glb-2.0";
     readonly bytes: number;
     readonly sha256: string;
-}
-export interface StepTopologyInspectResultA0 {
-    readonly schema: "geometry.step_topology.inspect.result.a0";
-    readonly session: SessionReference;
-    readonly counts: InspectionCounts;
-    readonly page: TopologyPage;
-    readonly compact_table?: TopologyTableAttachmentDescriptor;
-    readonly diagnostics: readonly DiagnosticA0[];
-}
-export interface StepTopologyOpenRequestA0 {
-    readonly schema: "geometry.step_topology.open.request.a0";
-}
-export interface ToolDescriptor {
-    readonly name: "geometer";
-    readonly release_version: string;
-    readonly occt_version: string;
-}
-export interface StepTopologyOpenResultA0 {
-    readonly schema: "geometry.step_topology.open.result.a0";
-    readonly session: SessionReference;
-    readonly source: SourceDescriptor;
-    readonly tool: ToolDescriptor;
-    readonly evicted_session_handles: readonly string[];
-}
-export interface TessellationOptions {
-    readonly linear_deflection_mm: number;
-    readonly angular_deflection_rad: number;
-    readonly relative: boolean;
-    readonly parallel: boolean;
-    readonly source_to_render: readonly number[];
-}
-export interface StepTopologyRenderRequestA0 {
-    readonly schema: "geometry.step_topology.render.request.a0";
-    readonly session: SessionReference;
-    readonly tessellation: TessellationOptions;
 }
 export interface TopologyBindingTableAttachmentDescriptor {
     readonly name: "topology_binding_table";
@@ -654,18 +924,6 @@ export interface StepTopologyRenderResultA0 {
     readonly glb: GlbAttachmentDescriptor;
     readonly compact_binding_table?: TopologyBindingTableAttachmentDescriptor;
 }
-export interface StepTopologyResolveHitRequestA0 {
-    readonly schema: "geometry.step_topology.resolve_hit.request.a0";
-    readonly session: SessionReference;
-    readonly artifact_handle: string;
-    readonly content_sha256: string;
-    readonly instance_index: number;
-    readonly primitive_index: number;
-    readonly primitive_triangle_index: number;
-    readonly occurrence_handle: string;
-    readonly body_handle: string;
-    readonly face_handle: string;
-}
 export interface StepTopologyResolveHitResultA0 {
     readonly schema: "geometry.step_topology.resolve_hit.result.a0";
     readonly session: SessionReference;
@@ -676,3 +934,179 @@ export interface StepTopologyResolveHitResultA0 {
     readonly body_handle: string;
     readonly face_handle: string;
 }
+export interface MutationSessionState {
+    readonly session: SessionReference;
+    readonly edit_journal_revision: number;
+    readonly accounted_string_bytes: number;
+    readonly estimated_resident_bytes: number;
+}
+export interface LogicalGroupMember {
+    readonly kind: LogicalGroupMemberKind;
+    readonly target_handle: string;
+}
+export interface LogicalGroup {
+    readonly authored_id: string;
+    readonly revision: number;
+    readonly name: string;
+    readonly members: readonly LogicalGroupMember[];
+}
+export interface StepTopologyApplyLogicalGroupsResultA0 {
+    readonly schema: "geometry.step_topology.apply_logical_groups.result.a0";
+    readonly state: MutationSessionState;
+    readonly groups: readonly LogicalGroup[];
+    readonly diagnostics: readonly DiagnosticA0[];
+}
+export interface MetadataProbe {
+    readonly authored_id: string;
+    readonly revision: number;
+    readonly target: MetadataProbeTarget;
+    readonly key: string;
+    readonly value: string;
+}
+export interface StepTopologyApplyMetadataProbesResultA0 {
+    readonly schema: "geometry.step_topology.apply_metadata_probes.result.a0";
+    readonly state: MutationSessionState;
+    readonly groups: readonly LogicalGroup[];
+    readonly probes: readonly MetadataProbe[];
+    readonly diagnostics: readonly DiagnosticA0[];
+}
+export interface EditJournalAttachmentDescriptor {
+    readonly name: "edit_journal";
+    readonly media_type: "application/vnd.wavenumber.geometer.step-topology-edit-journal";
+    readonly format: "geometer.step_topology_edit_journal.a0";
+    readonly bytes: number;
+    readonly sha256: string;
+}
+export interface StepTopologyCheckpointEditJournalResultA0 {
+    readonly schema: "geometry.step_topology.checkpoint_edit_journal.result.a0";
+    readonly state: MutationSessionState;
+    readonly source_sha256: string;
+    readonly source_brep_sha256: string;
+    readonly target_inventory_sha256: string;
+    readonly occt_version: string;
+    readonly transaction_count: number;
+    readonly journal: EditJournalAttachmentDescriptor;
+    readonly diagnostics: readonly DiagnosticA0[];
+}
+export type HierarchyNodeKind = "product" | "assembly";
+export interface HierarchyNode {
+    readonly authored_id: string;
+    readonly revision: number;
+    readonly kind: HierarchyNodeKind;
+    readonly name: string;
+    readonly source_kind?: HierarchySourceKind;
+    readonly source_handle?: string;
+}
+export interface HierarchyOccurrence {
+    readonly authored_id: string;
+    readonly revision: number;
+    readonly child_authored_id: string;
+    readonly parent_assembly_authored_id: string;
+    readonly transform: readonly number[];
+}
+export interface HierarchyState {
+    readonly hierarchy_revision: number;
+    readonly source_brep_sha256: string;
+    readonly nodes: readonly HierarchyNode[];
+    readonly occurrences: readonly HierarchyOccurrence[];
+}
+export interface StepTopologyApplyHierarchyResultA0 {
+    readonly schema: "geometry.step_topology.apply_hierarchy.result.a0";
+    readonly state: MutationSessionState;
+    readonly hierarchy: HierarchyState;
+    readonly diagnostics: readonly DiagnosticA0[];
+}
+export type SavePersistenceArtifact = XbfPersistenceArtifact | XmlXcafPersistenceArtifact | StepAp242PersistenceArtifact | JsonSidecarPersistenceArtifact;
+export type PersistenceCarrier = "xbf" | "xml_xcaf" | "step_ap242" | "json_sidecar" | "edit_journal";
+export type CarrierSupportState = "supported" | "experimental" | "unsupported";
+export interface CarrierCapabilityNote {
+    readonly value: string;
+}
+export interface CarrierCapability {
+    readonly carrier: PersistenceCarrier;
+    readonly save: CarrierSupportState;
+    readonly restore: CarrierSupportState;
+    readonly authored_payload: CarrierSupportState;
+    readonly topology_links: CarrierSupportState;
+    readonly notes: readonly CarrierCapabilityNote[];
+}
+export interface StepTopologySaveResultA0 {
+    readonly schema: "geometry.step_topology.save.result.a0";
+    readonly state: MutationSessionState;
+    readonly source_sha256: string;
+    readonly artifact: SavePersistenceArtifact;
+    readonly capabilities: readonly CarrierCapability[];
+    readonly diagnostics: readonly DiagnosticA0[];
+}
+export type RecoveryResolutionState = "resolved" | "ambiguous" | "unresolved" | "unsupported";
+export type RecoveryGroupCompleteness = "fully_recovered" | "partially_recovered" | "unrecovered" | "unsupported";
+export type RecoveryResolutionMethod = "authored_id_topology_link" | "validated_carrier_locator" | "unique_geometry_adjacency_fingerprint" | "none";
+export type RecoveryTopologyComparison = "unchanged" | "relocated" | "split" | "merged" | "otherwise_changed" | "not_compared" | "unavailable";
+export type RecoveryConfidence = "high" | "medium" | "low" | "none";
+export interface RecoveryComparedField {
+    readonly value: string;
+}
+export interface RecoveryCarrierRecord {
+    readonly value: string;
+}
+export interface RecoveryRejectedAlternative {
+    readonly target_handle: string;
+    readonly reason: string;
+}
+export interface RecoveryEvidence {
+    readonly candidate_count: number;
+    readonly matching_candidate_count: number;
+    readonly compared_fields: readonly RecoveryComparedField[];
+    readonly tolerances: RecoveryTolerances;
+    readonly carrier_records: readonly RecoveryCarrierRecord[];
+    readonly rejected_alternatives: readonly RecoveryRejectedAlternative[];
+}
+export interface RecoveryMemberResult {
+    readonly member_record_id: string;
+    readonly kind: LogicalGroupMemberKind;
+    readonly authored_target_id: string;
+    readonly resolution_state: RecoveryResolutionState;
+    readonly resolution_method: RecoveryResolutionMethod;
+    readonly topology_comparison: RecoveryTopologyComparison;
+    readonly confidence: RecoveryConfidence;
+    readonly resolved_target_handle?: string;
+    readonly evidence: RecoveryEvidence;
+}
+export interface RecoveryGroupResult {
+    readonly group_authored_id: string;
+    readonly provenance: RecoveryProvenance;
+    readonly resolution_state: RecoveryResolutionState;
+    readonly completeness: RecoveryGroupCompleteness;
+    readonly resolved_member_count: number;
+    readonly ambiguous_member_count: number;
+    readonly unresolved_member_count: number;
+    readonly unsupported_member_count: number;
+    readonly members: readonly RecoveryMemberResult[];
+}
+export interface StepTopologyRestoreResultA0 {
+    readonly schema: "geometry.step_topology.restore.result.a0";
+    readonly session: SessionReference;
+    readonly source: SourceDescriptor;
+    readonly tool: ToolDescriptor;
+    readonly replayed_transaction_count: number;
+    readonly evicted_session_handles?: readonly string[];
+    readonly recovery: readonly RecoveryGroupResult[];
+    readonly diagnostics: readonly DiagnosticA0[];
+}
+export interface StepTopologyAnalyzeRecoveryResultA0 {
+    readonly schema: "geometry.step_topology.analyze_recovery.result.a0";
+    readonly groups: readonly RecoveryGroupResult[];
+    readonly diagnostics: readonly DiagnosticA0[];
+}
+/** Structurally representable operation results. A result variant may belong
+to a runtime-unavailable experimental operation and is not an availability
+claim; the negotiated operation catalog remains authoritative. */
+export type OperationResultValueA0 = ModelBoundsResultA0 | PackedAttachmentProjectionA0 | StepTopologyOpenResultA0 | StepTopologyCloseResultA0 | StepTopologyInspectResultA0 | StepTopologyRenderResultA0 | StepTopologyResolveHitResultA0 | StepTopologyApplyLogicalGroupsResultA0 | StepTopologyApplyMetadataProbesResultA0 | StepTopologyCheckpointEditJournalResultA0 | StepTopologyApplyHierarchyResultA0 | StepTopologySaveResultA0 | StepTopologyRestoreResultA0 | StepTopologyAnalyzeRecoveryResultA0;
+/** A completed operation with its operation-specific result. */
+export interface OperationSuccessA0 {
+    readonly operation: string;
+    readonly ok: true;
+    readonly result: OperationResultValueA0;
+}
+/** Transport-neutral typed outcome shared by the generic C ABI and executable IPC. */
+export type OperationOutcomeA0 = OperationSuccessA0 | OperationFailureA0;

@@ -1,0 +1,202 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:wavenumber:schema:geometer:geometry.step_topology.apply_logical_groups.request:a0",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "type": "string",
+      "const": "geometry.step_topology.apply_logical_groups.request.a0"
+    },
+    "session": {
+      "$ref": "#/$defs/SessionReference"
+    },
+    "commands": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/LogicalGroupCommand"
+      },
+      "minItems": 1,
+      "maxItems": 10000
+    }
+  },
+  "required": [
+    "schema",
+    "session",
+    "commands"
+  ],
+  "unevaluatedProperties": {
+    "not": {}
+  },
+  "$defs": {
+    "SessionReference": {
+      "type": "object",
+      "properties": {
+        "session_handle": {
+          "type": "string",
+          "minLength": 68,
+          "maxLength": 68
+        },
+        "generation": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        }
+      },
+      "required": [
+        "session_handle",
+        "generation"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "LogicalGroupCommand": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/CreateLogicalGroupCommand"
+        },
+        {
+          "$ref": "#/$defs/RenameLogicalGroupCommand"
+        },
+        {
+          "$ref": "#/$defs/ReplaceLogicalGroupMembersCommand"
+        },
+        {
+          "$ref": "#/$defs/EraseLogicalGroupCommand"
+        }
+      ]
+    },
+    "CreateLogicalGroupCommand": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "create"
+        },
+        "authored_id": {
+          "type": "string",
+          "minLength": 28,
+          "maxLength": 128
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "member_handles": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "maxItems": 100000
+        }
+      },
+      "required": [
+        "kind",
+        "authored_id",
+        "name",
+        "member_handles"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "RenameLogicalGroupCommand": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "rename"
+        },
+        "authored_id": {
+          "type": "string",
+          "minLength": 28,
+          "maxLength": 128
+        },
+        "expected_revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        }
+      },
+      "required": [
+        "kind",
+        "authored_id",
+        "expected_revision",
+        "name"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "ReplaceLogicalGroupMembersCommand": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "replace_members"
+        },
+        "authored_id": {
+          "type": "string",
+          "minLength": 28,
+          "maxLength": 128
+        },
+        "expected_revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        },
+        "member_handles": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "maxItems": 100000
+        }
+      },
+      "required": [
+        "kind",
+        "authored_id",
+        "expected_revision",
+        "member_handles"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "EraseLogicalGroupCommand": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "erase"
+        },
+        "authored_id": {
+          "type": "string",
+          "minLength": 28,
+          "maxLength": 128
+        },
+        "expected_revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        }
+      },
+      "required": [
+        "kind",
+        "authored_id",
+        "expected_revision"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    }
+  }
+}

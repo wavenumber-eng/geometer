@@ -229,6 +229,8 @@ std::string render_content_digest(const StepTopologyRenderArtifact& artifact)
     hash_string(&hash, artifact.session.source_sha256);
     hash_string(&hash, artifact.session.occt_version);
     hash_u64(&hash, artifact.session.source_bytes);
+    hash_u64(&hash, artifact.session.edit_journal_revision);
+    hash_u64(&hash, artifact.session.accounted_string_bytes);
     hash_u64(&hash, artifact.session.estimated_resident_bytes);
     hash_string(&hash, artifact.normalized_length_unit);
     hash_doubles(&hash, artifact.source_to_render);
@@ -297,10 +299,11 @@ class RenderBuilder
 {
   public:
     RenderBuilder(SessionData* data, const StepTopologyTessellationOptions& options,
-                  const StepTopologyCancellation* cancellation,
+                  const StepTopologyCancellation* cancellation, std::size_t byte_limit,
                   StepTopologyRenderArtifact* artifact, Status* status)
         : data_(data), options_(options), cancellation_(cancellation), artifact_(artifact),
-          status_(status)
+          status_(status),
+          byte_limit_(std::min(byte_limit, data->limits.max_render_estimated_bytes))
     {
     }
 
@@ -312,6 +315,12 @@ class RenderBuilder
         }
         artifact_->session = data_->info;
         artifact_->source_to_render = options_.source_to_render;
+        if (!charge(sizeof(*artifact_) * 2U + artifact_->research_format.size() +
+                        artifact_->normalized_length_unit.size() +
+                        data_->info.session_handle.size() + data_->info.source_sha256.size() +
+                        data_->info.occt_version.size(),
+                    "render artifact transient bytes"))
+            return status_code_;
         std::unordered_map<std::string, std::size_t> definition_meshes;
         for (const StepTopologyDefinition& definition : data_->snapshot.definitions)
         {
@@ -337,6 +346,9 @@ class RenderBuilder
             }
             StepTopologyRenderMesh mesh;
             mesh.definition_handle = definition.handle;
+            if (!charge(sizeof(StepTopologyRenderMesh) * 2U + definition.handle.size() * 2U,
+                        "render mesh transient bytes"))
+                return status_code_;
             if (!build_mesh(definition, shape->second.shape, &mesh))
             {
                 return status_code_;
@@ -364,7 +376,7 @@ class RenderBuilder
         artifact_->content_sha256 = render_content_digest(*artifact_);
         artifact_->artifact_handle = render_artifact_handle(*data_, artifact_->content_sha256);
         artifact_->estimated_resident_bytes = estimated_render_bytes(*artifact_);
-        if (artifact_->estimated_resident_bytes > data_->limits.max_render_estimated_bytes)
+        if (artifact_->estimated_resident_bytes > byte_limit_)
         {
             fail(kResourceLimit, "STEP topology render artifact exceeds its byte limit.");
             return status_code_;
@@ -447,6 +459,13 @@ class RenderBuilder
         triangulation->ComputeNormals();
         const std::size_t node_count = static_cast<std::size_t>(triangulation->NbNodes());
         const std::size_t triangle_count = static_cast<std::size_t>(triangulation->NbTriangles());
+        SaturatingSize face_bytes;
+        face_bytes.add_product(node_count, sizeof(StepTopologyRenderVertex) * 2U);
+        face_bytes.add_product(triangle_count * 3U, sizeof(std::uint32_t) * 2U);
+        face_bytes.add(sizeof(StepTopologyRenderPrimitive) * 2U);
+        face_bytes.add((face.body_handles.front().size() + face.handle.size() + 2U) * 2U);
+        if (!charge(face_bytes.value(), "render face transient bytes"))
+            return false;
         if (!bounded(total_vertices_ + node_count, data_->limits.max_render_vertices,
                      "render vertex count") ||
             !bounded(total_indices_ + triangle_count * 3U, data_->limits.max_render_indices,
@@ -535,6 +554,18 @@ class RenderBuilder
         {
             return false;
         }
+        SaturatingSize instance_bytes;
+        instance_bytes.add(sizeof(StepTopologyRenderInstance) * 2U);
+        instance_bytes.add((occurrence_handle.size() + definition_handle.size() + 2U) * 2U);
+        for (const auto& primitive : geometry.primitives)
+        {
+            instance_bytes.add(sizeof(StepTopologyTriangleBinding) * 2U);
+            instance_bytes.add((occurrence_handle.size() + primitive.body_handle.size() +
+                                primitive.face_handle.size() + 3U) *
+                               2U);
+        }
+        if (!charge(instance_bytes.value(), "render instance transient bytes"))
+            return false;
         StepTopologyRenderInstance instance;
         instance.occurrence_handle = occurrence_handle;
         instance.definition_handle = definition_handle;
@@ -580,6 +611,15 @@ class RenderBuilder
                                      std::string("STEP topology ") + what + " exceeds its limit.");
     }
 
+    bool charge(std::size_t value, const char* what)
+    {
+        if (value > byte_limit_ || charged_bytes_ > byte_limit_ - value)
+            return fail(kResourceLimit,
+                        std::string("STEP topology ") + what + " exceeds its limit.");
+        charged_bytes_ += value;
+        return true;
+    }
+
     bool fail(int code, const std::string& message)
     {
         status_code_ = code;
@@ -596,17 +636,19 @@ class RenderBuilder
     std::size_t total_primitives_ = 0;
     std::size_t total_vertices_ = 0;
     std::size_t total_indices_ = 0;
+    std::size_t byte_limit_ = 0;
+    std::size_t charged_bytes_ = 0;
 };
 
 } // namespace
 
 int build_render_artifact(SessionData* data, const StepTopologyTessellationOptions& options,
-                          const StepTopologyCancellation* cancellation,
+                          const StepTopologyCancellation* cancellation, std::size_t byte_limit,
                           StepTopologyRenderArtifact* artifact, Status* status)
 {
     try
     {
-        RenderBuilder builder(data, options, cancellation, artifact, status);
+        RenderBuilder builder(data, options, cancellation, byte_limit, artifact, status);
         const int code = builder.build();
         if (code != 0)
         {

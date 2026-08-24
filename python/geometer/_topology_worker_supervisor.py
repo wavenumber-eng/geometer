@@ -18,7 +18,7 @@ import tempfile
 import threading
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Sequence, cast
+from typing import Any, Callable, Sequence, cast
 
 
 _MINIMUM_MEMORY_LIMIT = 32 * 1024 * 1024
@@ -161,6 +161,29 @@ class _WindowsJob:
         if self._handle:
             self._kernel32.CloseHandle(self._handle)
             self._handle = None
+
+
+def _collect_after_termination(process: subprocess.Popen[bytes], terminate: Callable[[], None]) -> tuple[bytes, bytes]:
+    terminate()
+    try:
+        return process.communicate(timeout=2)
+    except subprocess.TimeoutExpired as error:
+        process.kill()
+        try:
+            return process.communicate(timeout=2)
+        except subprocess.TimeoutExpired as second_error:
+            for stream in (process.stdin, process.stdout, process.stderr):
+                if stream is not None:
+                    stream.close()
+            try:
+                process.wait(timeout=2)
+            except subprocess.TimeoutExpired as wait_error:
+                raise TopologyWorkerError(
+                    "topology worker could not be reaped after forced termination"
+                ) from wait_error
+            stdout = b"" if error.output is None else error.output
+            stderr = b"" if second_error.stderr is None else second_error.stderr
+            return stdout, stderr
 
 
 class TopologyWorkerSupervisor:
@@ -311,23 +334,4 @@ class TopologyWorkerSupervisor:
                 process.kill()
 
     def _terminate_and_collect(self, process: subprocess.Popen[bytes]) -> tuple[bytes, bytes]:
-        self._terminate_generation(process)
-        try:
-            return process.communicate(timeout=2)
-        except subprocess.TimeoutExpired as error:
-            process.kill()
-            try:
-                return process.communicate(timeout=2)
-            except subprocess.TimeoutExpired as second_error:
-                for stream in (process.stdin, process.stdout, process.stderr):
-                    if stream is not None:
-                        stream.close()
-                try:
-                    process.wait(timeout=2)
-                except subprocess.TimeoutExpired as wait_error:
-                    raise TopologyWorkerError(
-                        "topology worker could not be reaped after forced termination"
-                    ) from wait_error
-                stdout = b"" if error.output is None else error.output
-                stderr = b"" if second_error.stderr is None else second_error.stderr
-                return stdout, stderr
+        return _collect_after_termination(process, lambda: self._terminate_generation(process))

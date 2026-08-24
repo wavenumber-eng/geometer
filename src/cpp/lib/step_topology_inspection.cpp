@@ -2,8 +2,12 @@
 
 #include "geometer/sha256.h"
 
+#include <BRepAdaptor_Curve.hxx>
+#include <BRepAdaptor_Surface.hxx>
 #include <BRepBndLib.hxx>
+#include <BRepCheck_Analyzer.hxx>
 #include <BRepGProp.hxx>
+#include <BRep_Tool.hxx>
 #include <Bnd_Box.hxx>
 #include <DESTEP_Parameters.hxx>
 #include <GProp_GProps.hxx>
@@ -25,8 +29,10 @@
 #include <TDataStd_TreeNode.hxx>
 #include <TopAbs_ShapeEnum.hxx>
 #include <TopExp.hxx>
+#include <TopExp_Explorer.hxx>
 #include <TopLoc_Location.hxx>
 #include <TopTools_ShapeMapHasher.hxx>
+#include <TopoDS.hxx>
 #include <TopoDS_Iterator.hxx>
 #include <TopoDS_Shape.hxx>
 #include <XCAFDoc.hxx>
@@ -48,7 +54,9 @@
 #include <cstddef>
 #include <cstdint>
 #include <exception>
+#include <iomanip>
 #include <limits>
+#include <locale>
 #include <set>
 #include <sstream>
 #include <stdexcept>
@@ -203,159 +211,202 @@ void face_properties(const TopoDS_Shape& face, double* area, std::array<double, 
     *centroid = {center.X(), center.Y(), center.Z()};
 }
 
+void map_shapes(const TopoDS_Shape& shape, TopAbs_ShapeEnum type, ShapeMap* map);
+
+void hash_size(Sha256Builder* hash, std::size_t value)
+{
+    std::array<std::uint8_t, 8> encoded{};
+    const std::uint64_t narrowed = static_cast<std::uint64_t>(value);
+    for (unsigned int shift = 0; shift < 64U; shift += 8U)
+        encoded[shift / 8U] = static_cast<std::uint8_t>((narrowed >> shift) & 0xffU);
+    hash->update(encoded.data(), encoded.size());
+}
+
+int brep_digest(const SessionData& data, const StepTopologyCancellation* cancellation,
+                std::string* digest, std::size_t* work_items, Status* status)
+{
+    *digest = {};
+    *work_items = 0;
+    Sha256Builder hash;
+    const auto cancelled = [&]()
+    {
+        if (cancellation == nullptr || !cancellation->is_cancelled())
+            return false;
+        set_status(status, kCancelled, "B-rep evidence hashing was cancelled.");
+        return true;
+    };
+    const auto map_for_digest = [&](const TopoDS_Shape& shape, TopAbs_ShapeEnum type, ShapeMap* map)
+    {
+        map->Clear();
+        if (shape.IsNull())
+            return true;
+        if (shape.ShapeType() == type)
+        {
+            map->Add(shape);
+            if (*work_items == std::numeric_limits<std::size_t>::max())
+                return false;
+            ++*work_items;
+        }
+        for (TopExp_Explorer explorer(shape, type); explorer.More(); explorer.Next())
+        {
+            if (cancelled() || *work_items == std::numeric_limits<std::size_t>::max())
+                return false;
+            ++*work_items;
+            map->Add(explorer.Current());
+        }
+        return true;
+    };
+    hash_size(&hash, data.snapshot.definitions.size());
+    for (const StepTopologyDefinition& definition : data.snapshot.definitions)
+    {
+        if (cancelled())
+            return kCancelled;
+        const auto found = data.handles.find(definition.handle);
+        if (found == data.handles.end() || found->second.kind != StepTopologyTargetKind::definition)
+            throw std::runtime_error("Definition handle is missing while hashing the B-rep.");
+        const TopoDS_Shape& shape = found->second.shape;
+        const auto number = [](double value)
+        {
+            std::ostringstream stream;
+            stream.imbue(std::locale::classic());
+            stream << std::setprecision(std::numeric_limits<double>::max_digits10) << value;
+            return stream.str();
+        };
+        const auto append_bounds =
+            [&number](std::ostringstream* stream, const std::array<double, 6>& values)
+        {
+            for (double value : values)
+                *stream << '|' << number(value);
+        };
+        const auto append_point = [&number](std::ostringstream* stream, const gp_Pnt& point)
+        {
+            *stream << '|' << number(point.X()) << '|' << number(point.Y()) << '|'
+                    << number(point.Z());
+        };
+        const auto hash_sorted = [&hash, &cancelled](std::vector<std::string>* evidence)
+        {
+            std::sort(evidence->begin(), evidence->end());
+            hash_size(&hash, evidence->size());
+            for (const std::string& item : *evidence)
+            {
+                if (cancelled())
+                    return false;
+                hash_size(&hash, item.size());
+                hash.update(reinterpret_cast<const std::uint8_t*>(item.data()), item.size());
+            }
+            return true;
+        };
+
+        std::ostringstream summary;
+        summary.imbue(std::locale::classic());
+        summary << static_cast<int>(shape.ShapeType()) << '|'
+                << static_cast<int>(shape.Orientation()) << '|'
+                << static_cast<int>(BRepCheck_Analyzer(shape, true).IsValid()) << '|'
+                << number(shape_volume(shape));
+        append_bounds(&summary, shape_bounds(shape));
+        for (TopAbs_ShapeEnum type : {TopAbs_COMPOUND, TopAbs_COMPSOLID, TopAbs_SOLID, TopAbs_SHELL,
+                                      TopAbs_FACE, TopAbs_WIRE, TopAbs_EDGE, TopAbs_VERTEX})
+        {
+            ShapeMap topology;
+            if (!map_for_digest(shape, type, &topology))
+                return cancelled() ? kCancelled : kResourceLimit;
+            summary << '|' << topology.Extent();
+        }
+        const std::string summary_text = summary.str();
+        hash_size(&hash, summary_text.size());
+        hash.update(reinterpret_cast<const std::uint8_t*>(summary_text.data()),
+                    summary_text.size());
+
+        std::vector<std::string> face_evidence;
+        ShapeMap faces;
+        if (!map_for_digest(shape, TopAbs_FACE, &faces))
+            return cancelled() ? kCancelled : kResourceLimit;
+        face_evidence.reserve(static_cast<std::size_t>(faces.Extent()));
+        for (int index = 1; index <= faces.Extent(); ++index)
+        {
+            if (cancelled())
+                return kCancelled;
+            const TopoDS_Face face = TopoDS::Face(faces(index));
+            double area = 0.0;
+            std::array<double, 3> centroid{};
+            face_properties(face, &area, &centroid);
+            ShapeMap wires;
+            ShapeMap edges;
+            ShapeMap vertices;
+            if (!map_for_digest(face, TopAbs_WIRE, &wires) ||
+                !map_for_digest(face, TopAbs_EDGE, &edges) ||
+                !map_for_digest(face, TopAbs_VERTEX, &vertices))
+                return cancelled() ? kCancelled : kResourceLimit;
+            std::ostringstream item;
+            item.imbue(std::locale::classic());
+            item << static_cast<int>(BRepAdaptor_Surface(face, false).GetType()) << '|'
+                 << static_cast<int>(face.Orientation()) << '|'
+                 << number(BRep_Tool::Tolerance(face)) << '|' << number(area) << '|'
+                 << number(centroid[0]) << '|' << number(centroid[1]) << '|' << number(centroid[2])
+                 << '|' << wires.Extent() << '|' << edges.Extent() << '|' << vertices.Extent();
+            append_bounds(&item, shape_bounds(face));
+            face_evidence.push_back(item.str());
+        }
+        if (!hash_sorted(&face_evidence))
+            return kCancelled;
+
+        std::vector<std::string> edge_evidence;
+        ShapeMap edges;
+        if (!map_for_digest(shape, TopAbs_EDGE, &edges))
+            return cancelled() ? kCancelled : kResourceLimit;
+        edge_evidence.reserve(static_cast<std::size_t>(edges.Extent()));
+        for (int index = 1; index <= edges.Extent(); ++index)
+        {
+            if (cancelled())
+                return kCancelled;
+            const TopoDS_Edge edge = TopoDS::Edge(edges(index));
+            GProp_GProps properties;
+            BRepGProp::LinearProperties(edge, properties);
+            ShapeMap vertices;
+            if (!map_for_digest(edge, TopAbs_VERTEX, &vertices))
+                return cancelled() ? kCancelled : kResourceLimit;
+            std::ostringstream item;
+            item.imbue(std::locale::classic());
+            item << static_cast<int>(BRepAdaptor_Curve(edge).GetType()) << '|'
+                 << static_cast<int>(edge.Orientation()) << '|'
+                 << number(BRep_Tool::Tolerance(edge)) << '|' << number(properties.Mass()) << '|'
+                 << vertices.Extent();
+            append_point(&item, properties.CentreOfMass());
+            append_bounds(&item, shape_bounds(edge));
+            edge_evidence.push_back(item.str());
+        }
+        if (!hash_sorted(&edge_evidence))
+            return kCancelled;
+
+        std::vector<std::string> vertex_evidence;
+        ShapeMap vertices;
+        if (!map_for_digest(shape, TopAbs_VERTEX, &vertices))
+            return cancelled() ? kCancelled : kResourceLimit;
+        vertex_evidence.reserve(static_cast<std::size_t>(vertices.Extent()));
+        for (int index = 1; index <= vertices.Extent(); ++index)
+        {
+            if (cancelled())
+                return kCancelled;
+            const TopoDS_Vertex vertex = TopoDS::Vertex(vertices(index));
+            std::ostringstream item;
+            item.imbue(std::locale::classic());
+            item << number(BRep_Tool::Tolerance(vertex));
+            append_point(&item, BRep_Tool::Pnt(vertex));
+            vertex_evidence.push_back(item.str());
+        }
+        if (!hash_sorted(&vertex_evidence))
+            return kCancelled;
+    }
+    *digest = hash.hex_digest();
+    return 0;
+}
+
 void map_shapes(const TopoDS_Shape& shape, TopAbs_ShapeEnum type, ShapeMap* map)
 {
     if (!shape.IsNull())
     {
         TopExp::MapShapes(shape, type, *map);
     }
-}
-
-class ResidentByteEstimate
-{
-  public:
-    void add(std::size_t bytes)
-    {
-        if (value_ > std::numeric_limits<std::size_t>::max() - bytes)
-        {
-            value_ = std::numeric_limits<std::size_t>::max();
-            return;
-        }
-        value_ += bytes;
-    }
-
-    void add_product(std::size_t count, std::size_t element_size)
-    {
-        if (count != 0 && element_size > std::numeric_limits<std::size_t>::max() / count)
-        {
-            value_ = std::numeric_limits<std::size_t>::max();
-            return;
-        }
-        add(count * element_size);
-    }
-
-    std::size_t value() const
-    {
-        return value_;
-    }
-
-  private:
-    std::size_t value_ = 0;
-};
-
-void add_string_storage(ResidentByteEstimate* estimate, const std::string& value)
-{
-    // Counting capacity even for small-string storage deliberately overestimates retained heap.
-    estimate->add(value.capacity());
-    estimate->add(1U);
-}
-
-void add_string_vector_storage(ResidentByteEstimate* estimate,
-                               const std::vector<std::string>& values)
-{
-    estimate->add_product(values.capacity(), sizeof(std::string));
-    for (const std::string& value : values)
-    {
-        add_string_storage(estimate, value);
-    }
-}
-
-std::size_t estimated_resident_bytes(const SessionData& data)
-{
-    const StepTopologySnapshot& snapshot = data.snapshot;
-    ResidentByteEstimate estimate;
-    estimate.add(sizeof(SessionData));
-    estimate.add_product(data.source.capacity(), sizeof(unsigned char));
-    add_string_storage(&estimate, data.info.session_handle);
-    add_string_storage(&estimate, data.info.source_sha256);
-    add_string_storage(&estimate, data.info.occt_version);
-    add_string_storage(&estimate, snapshot.research_format);
-    add_string_storage(&estimate, snapshot.session.session_handle);
-    add_string_storage(&estimate, snapshot.session.source_sha256);
-    add_string_storage(&estimate, snapshot.session.occt_version);
-    estimate.add_product(data.logical_groups.capacity(), sizeof(LogicalGroupRecord));
-    for (const LogicalGroupRecord& group : data.logical_groups)
-    {
-        add_string_storage(&estimate, group.authored_id);
-        add_string_storage(&estimate, group.name);
-        estimate.add_product(group.members.capacity(), sizeof(LogicalGroupMemberRecord));
-    }
-
-    estimate.add_product(snapshot.definitions.capacity(), sizeof(StepTopologyDefinition));
-    for (const StepTopologyDefinition& definition : snapshot.definitions)
-    {
-        add_string_storage(&estimate, definition.handle);
-        add_string_storage(&estimate, definition.label.name);
-        add_string_storage(&estimate, definition.source_entity.entity_type);
-        add_string_storage(&estimate, definition.source_entity.mapping_method);
-        add_string_vector_storage(&estimate, definition.body_handles);
-    }
-    estimate.add_product(snapshot.occurrences.capacity(), sizeof(StepTopologyOccurrence));
-    for (const StepTopologyOccurrence& occurrence : snapshot.occurrences)
-    {
-        add_string_storage(&estimate, occurrence.handle);
-        add_string_storage(&estimate, occurrence.definition_handle);
-        add_string_storage(&estimate, occurrence.parent_occurrence_handle);
-        add_string_storage(&estimate, occurrence.label.name);
-    }
-    estimate.add_product(snapshot.root_occurrences.capacity(), sizeof(StepTopologyRootOccurrence));
-    for (const StepTopologyRootOccurrence& root : snapshot.root_occurrences)
-    {
-        add_string_storage(&estimate, root.handle);
-        add_string_storage(&estimate, root.definition_handle);
-        add_string_storage(&estimate, root.label.name);
-    }
-    estimate.add_product(snapshot.bodies.capacity(), sizeof(StepTopologyBody));
-    for (const StepTopologyBody& body : snapshot.bodies)
-    {
-        add_string_storage(&estimate, body.handle);
-        add_string_storage(&estimate, body.definition_handle);
-        add_string_storage(&estimate, body.topology_kind);
-        add_string_storage(&estimate, body.label.name);
-        add_string_storage(&estimate, body.source_entity.entity_type);
-        add_string_storage(&estimate, body.source_entity.mapping_method);
-        add_string_vector_storage(&estimate, body.shell_handles);
-        add_string_vector_storage(&estimate, body.face_handles);
-    }
-    estimate.add_product(snapshot.shells.capacity(), sizeof(StepTopologyShell));
-    for (const StepTopologyShell& shell : snapshot.shells)
-    {
-        add_string_storage(&estimate, shell.handle);
-        add_string_storage(&estimate, shell.definition_handle);
-        add_string_storage(&estimate, shell.label.name);
-        add_string_storage(&estimate, shell.source_entity.entity_type);
-        add_string_storage(&estimate, shell.source_entity.mapping_method);
-        add_string_vector_storage(&estimate, shell.body_handles);
-        add_string_vector_storage(&estimate, shell.face_handles);
-    }
-    estimate.add_product(snapshot.faces.capacity(), sizeof(StepTopologyFace));
-    for (const StepTopologyFace& face : snapshot.faces)
-    {
-        add_string_storage(&estimate, face.handle);
-        add_string_storage(&estimate, face.definition_handle);
-        add_string_storage(&estimate, face.label.name);
-        add_string_storage(&estimate, face.source_entity.entity_type);
-        add_string_storage(&estimate, face.source_entity.mapping_method);
-        add_string_vector_storage(&estimate, face.body_handles);
-        add_string_vector_storage(&estimate, face.shell_handles);
-    }
-    estimate.add_product(snapshot.diagnostic_carriers.capacity(),
-                         sizeof(StepTopologyDiagnosticCarrier));
-    for (const StepTopologyDiagnosticCarrier& diagnostic : snapshot.diagnostic_carriers)
-    {
-        add_string_storage(&estimate, diagnostic.target_handle);
-        add_string_storage(&estimate, diagnostic.xcaf_label_entry);
-    }
-    estimate.add_product(data.handles.bucket_count(), sizeof(void*));
-    estimate.add_product(data.handles.size(),
-                         sizeof(std::pair<const std::string, HandleRecord>) + 2U * sizeof(void*));
-    for (const auto& item : data.handles)
-    {
-        add_string_storage(&estimate, item.first);
-    }
-    // OCCT/XCAF allocation is intentionally not guessed here; hard containment belongs to the
-    // worker process boundary. This estimate conservatively accounts all Geometer-owned storage.
-    return estimate.value();
 }
 
 class SnapshotBuilder
@@ -443,6 +494,9 @@ class SnapshotBuilder
             }
         }
         count_document_metadata();
+        if (!count_memberships())
+            return status_code_;
+        data_->snapshot.source_transfer_work_items = transfer_work_item_count_;
         return 0;
     }
 
@@ -479,6 +533,33 @@ class SnapshotBuilder
             return fail(kResourceLimit,
                         std::string("STEP topology ") + what + " exceeds the configured limit.");
         }
+        return true;
+    }
+
+    bool count_memberships()
+    {
+        constexpr std::size_t kMaxMemberships = 5000000U;
+        std::size_t count = 0U;
+        const auto add = [&](std::size_t value)
+        {
+            if (value > kMaxMemberships - count)
+                return false;
+            count += value;
+            return true;
+        };
+        for (const auto& body : data_->snapshot.bodies)
+        {
+            if (!add(body.shell_handles.size()) || !add(body.face_handles.size()))
+                return fail(kResourceLimit,
+                            "STEP topology membership-edge count exceeds the wire contract limit.");
+        }
+        for (const auto& shell : data_->snapshot.shells)
+        {
+            if (!add(shell.face_handles.size()))
+                return fail(kResourceLimit,
+                            "STEP topology membership-edge count exceeds the wire contract limit.");
+        }
+        data_->snapshot.membership_count = count;
         return true;
     }
 
@@ -898,6 +979,8 @@ class SnapshotBuilder
                 return false;
         }
         const std::size_t face_offset = data_->snapshot.faces.size();
+        data_->snapshot.definitions[definition_index].face_count +=
+            static_cast<std::size_t>(faces.Extent());
         for (int face_index = 1; face_index <= faces.Extent(); ++face_index)
         {
             const TopoDS_Shape face_shape = faces.FindKey(face_index);
@@ -1171,9 +1254,16 @@ int rebuild_snapshot(SessionData* data, const StepTopologyCancellation* cancella
     StepTopologySnapshot previous_snapshot = std::move(data->snapshot);
     auto previous_handles = std::move(data->handles);
     const std::size_t previous_string_bytes = data->total_string_bytes;
+    const std::size_t previous_snapshot_string_bytes = data->snapshot_string_bytes;
+    const std::size_t previous_probe_string_bytes = data->metadata_probe_string_bytes;
+    const std::size_t previous_journal_string_bytes = data->journal_string_bytes;
     const std::size_t previous_estimate = data->info.estimated_resident_bytes;
+    const std::size_t previous_accounted_string_bytes = data->info.accounted_string_bytes;
     data->snapshot = {};
     data->handles.clear();
+    data->snapshot_string_bytes = 0;
+    data->metadata_probe_string_bytes = 0;
+    data->journal_string_bytes = 0;
     data->total_string_bytes = 0;
     try
     {
@@ -1183,17 +1273,93 @@ int rebuild_snapshot(SessionData* data, const StepTopologyCancellation* cancella
         {
             data->snapshot = std::move(previous_snapshot);
             data->handles = std::move(previous_handles);
+            data->snapshot_string_bytes = previous_snapshot_string_bytes;
+            data->metadata_probe_string_bytes = previous_probe_string_bytes;
+            data->journal_string_bytes = previous_journal_string_bytes;
             data->total_string_bytes = previous_string_bytes;
             data->info.estimated_resident_bytes = previous_estimate;
+            data->info.accounted_string_bytes = previous_accounted_string_bytes;
             return code;
         }
+        const int brep_code = brep_digest(*data, cancellation, &data->snapshot.brep_sha256,
+                                          &data->snapshot.brep_digest_work_items, status);
+        if (brep_code != 0)
+        {
+            data->snapshot = std::move(previous_snapshot);
+            data->handles = std::move(previous_handles);
+            data->snapshot_string_bytes = previous_snapshot_string_bytes;
+            data->metadata_probe_string_bytes = previous_probe_string_bytes;
+            data->journal_string_bytes = previous_journal_string_bytes;
+            data->total_string_bytes = previous_string_bytes;
+            data->info.estimated_resident_bytes = previous_estimate;
+            data->info.accounted_string_bytes = previous_accounted_string_bytes;
+            return brep_code;
+        }
+        if (!account_string(data, data->snapshot.brep_sha256, status))
+        {
+            data->snapshot = std::move(previous_snapshot);
+            data->handles = std::move(previous_handles);
+            data->snapshot_string_bytes = previous_snapshot_string_bytes;
+            data->metadata_probe_string_bytes = previous_probe_string_bytes;
+            data->journal_string_bytes = previous_journal_string_bytes;
+            data->total_string_bytes = previous_string_bytes;
+            data->info.estimated_resident_bytes = previous_estimate;
+            data->info.accounted_string_bytes = previous_accounted_string_bytes;
+            return kResourceLimit;
+        }
+        data->snapshot_string_bytes = data->total_string_bytes;
+        const int group_string_code = account_logical_group_strings(data, cancellation, status);
+        if (group_string_code != 0)
+        {
+            data->snapshot = std::move(previous_snapshot);
+            data->handles = std::move(previous_handles);
+            data->snapshot_string_bytes = previous_snapshot_string_bytes;
+            data->metadata_probe_string_bytes = previous_probe_string_bytes;
+            data->journal_string_bytes = previous_journal_string_bytes;
+            data->total_string_bytes = previous_string_bytes;
+            data->info.estimated_resident_bytes = previous_estimate;
+            data->info.accounted_string_bytes = previous_accounted_string_bytes;
+            return group_string_code;
+        }
+        const int probe_string_code = account_metadata_probe_strings(data, cancellation, status);
+        if (probe_string_code != 0)
+        {
+            data->snapshot = std::move(previous_snapshot);
+            data->handles = std::move(previous_handles);
+            data->snapshot_string_bytes = previous_snapshot_string_bytes;
+            data->metadata_probe_string_bytes = previous_probe_string_bytes;
+            data->journal_string_bytes = previous_journal_string_bytes;
+            data->total_string_bytes = previous_string_bytes;
+            data->info.estimated_resident_bytes = previous_estimate;
+            data->info.accounted_string_bytes = previous_accounted_string_bytes;
+            return probe_string_code;
+        }
+        const int journal_string_code = account_edit_journal_strings(data, cancellation, status);
+        if (journal_string_code != 0)
+        {
+            data->snapshot = std::move(previous_snapshot);
+            data->handles = std::move(previous_handles);
+            data->snapshot_string_bytes = previous_snapshot_string_bytes;
+            data->metadata_probe_string_bytes = previous_probe_string_bytes;
+            data->journal_string_bytes = previous_journal_string_bytes;
+            data->total_string_bytes = previous_string_bytes;
+            data->info.estimated_resident_bytes = previous_estimate;
+            data->info.accounted_string_bytes = previous_accounted_string_bytes;
+            return journal_string_code;
+        }
+        data->info.edit_journal_revision = static_cast<std::uint64_t>(data->edit_journal.size());
+        data->info.accounted_string_bytes = data->total_string_bytes;
         data->info.estimated_resident_bytes = estimated_resident_bytes(*data);
         if (data->info.estimated_resident_bytes > data->limits.max_session_estimated_bytes)
         {
             data->snapshot = std::move(previous_snapshot);
             data->handles = std::move(previous_handles);
+            data->snapshot_string_bytes = previous_snapshot_string_bytes;
+            data->metadata_probe_string_bytes = previous_probe_string_bytes;
+            data->journal_string_bytes = previous_journal_string_bytes;
             data->total_string_bytes = previous_string_bytes;
             data->info.estimated_resident_bytes = previous_estimate;
+            data->info.accounted_string_bytes = previous_accounted_string_bytes;
             set_status(status, kResourceLimit,
                        "STEP topology session exceeds the resident-byte estimate.");
             return kResourceLimit;
@@ -1206,8 +1372,12 @@ int rebuild_snapshot(SessionData* data, const StepTopologyCancellation* cancella
     {
         data->snapshot = std::move(previous_snapshot);
         data->handles = std::move(previous_handles);
+        data->snapshot_string_bytes = previous_snapshot_string_bytes;
+        data->metadata_probe_string_bytes = previous_probe_string_bytes;
+        data->journal_string_bytes = previous_journal_string_bytes;
         data->total_string_bytes = previous_string_bytes;
         data->info.estimated_resident_bytes = previous_estimate;
+        data->info.accounted_string_bytes = previous_accounted_string_bytes;
         set_status(status, kInternalFailure, failure.GetMessageString());
         return kInternalFailure;
     }
@@ -1215,8 +1385,12 @@ int rebuild_snapshot(SessionData* data, const StepTopologyCancellation* cancella
     {
         data->snapshot = std::move(previous_snapshot);
         data->handles = std::move(previous_handles);
+        data->snapshot_string_bytes = previous_snapshot_string_bytes;
+        data->metadata_probe_string_bytes = previous_probe_string_bytes;
+        data->journal_string_bytes = previous_journal_string_bytes;
         data->total_string_bytes = previous_string_bytes;
         data->info.estimated_resident_bytes = previous_estimate;
+        data->info.accounted_string_bytes = previous_accounted_string_bytes;
         set_status(status, kInternalFailure, error.what());
         return kInternalFailure;
     }

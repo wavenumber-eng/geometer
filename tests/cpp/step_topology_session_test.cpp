@@ -1,5 +1,7 @@
 #include "geometer/step_topology_session.h"
 
+#include <rapidjson/document.h>
+
 #include <algorithm>
 #include <array>
 #include <chrono>
@@ -12,6 +14,8 @@
 #include <set>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -501,6 +505,15 @@ void resource_limits_reject_before_exposing_a_session()
     limits = {};
     limits.max_transfer_work_items = 1;
     require_rejected(limits, "transfer indexing execution-work limit should reject opening");
+    limits = {};
+    limits.max_group_transaction_member_references = 0;
+    require_rejected(limits, "zero aggregate group-member limit should reject opening");
+    limits = {};
+    limits.max_hierarchy_transaction_commands = 0;
+    require_rejected(limits, "zero hierarchy command limit should reject opening");
+    limits = {};
+    limits.max_hierarchy_transaction_work_items = 0;
+    require_rejected(limits, "zero hierarchy work limit should reject opening");
 
     std::unique_ptr<geometer::StepTopologySession> measured = open_repeated();
     limits = {};
@@ -556,7 +569,40 @@ void store_evicts_expires_and_invalidates_on_process_replacement()
             "least-recently-used session should fail lookup after eviction");
     require(store.inspect(first.session.session_handle, {}, &snapshot, &status) == 0,
             "recently touched session should remain live");
-    require(store.estimated_resident_bytes() > 0, "store should account resident bytes");
+    const std::size_t before_render_bytes = store.estimated_resident_bytes();
+    geometer::StepTopologyGlbRenderOutput first_render;
+    require(store.render_glb_work_packet(first.session.session_handle, {}, &first_render,
+                                         &status) == 0 &&
+                !first_render.glb.empty(),
+            "stored GLB render failed: " + status.message);
+    const std::size_t after_render_bytes = store.estimated_resident_bytes();
+    require(after_render_bytes > before_render_bytes,
+            "store should account the retained authoritative render artifact");
+    geometer::StepTopologyGlbHitDescriptor superseded;
+    superseded.artifact_handle = first_render.artifact_handle;
+    superseded.content_sha256 = first_render.content_sha256;
+    geometer::StepTopologyGlbOptions second_options;
+    second_options.tessellation.source_to_render = {1.0, 0.0, 0.0, 0.0, 0.0, 1.0,
+                                                    0.0, 0.0, 0.0, 0.0, 1.0, 0.0};
+    geometer::StepTopologyGlbRenderOutput second_render;
+    require(store.render_glb_work_packet(first.session.session_handle, second_options,
+                                         &second_render, &status) == 0,
+            "replacement GLB render failed: " + status.message);
+    require(second_render.artifact_handle != first_render.artifact_handle &&
+                store.estimated_resident_bytes() == after_render_bytes,
+            "a new render should replace, rather than accumulate, retained artifact state");
+    geometer::StepTopologyRenderHit stale_hit;
+    require(store.resolve_glb_hit(first.session.session_handle, superseded, &stale_hit, &status) !=
+                0,
+            "a superseded GLB artifact must fail closed");
+    geometer::StepTopologyGlbOptions over_wire_options;
+    over_wire_options.glb_byte_limit = 35U;
+    const std::size_t retained_bytes = store.estimated_resident_bytes();
+    geometer::StepTopologyGlbRenderOutput over_wire_render;
+    require(store.render_glb_work_packet(first.session.session_handle, over_wire_options,
+                                         &over_wire_render, &status) != 0 &&
+                over_wire_render.glb.empty() && store.estimated_resident_bytes() == retained_bytes,
+            "an over-wire candidate must fail progressively and preserve retained state");
 
     const std::vector<std::string> replaced = store.clear_for_process_replacement();
     require(replaced.size() == 2 && store.size() == 0 && store.estimated_resident_bytes() == 0,
@@ -580,6 +626,22 @@ void store_evicts_expires_and_invalidates_on_process_replacement()
                 byte_third.evicted_session_handles.front() == byte_first.session.session_handle,
             "aggregate store byte limit should evict the least-recently-used session");
 
+    limits = {};
+    limits.max_sessions = 1;
+    limits.max_store_estimated_bytes = measured->info().estimated_resident_bytes + 1U;
+    geometer::StepTopologySessionStore render_limited_store(limits);
+    geometer::StepTopologyOpenResult render_limited;
+    require(render_limited_store.open_step(bytes.data(), bytes.size(), &render_limited, &status) ==
+                0,
+            "render-limited store open failed: " + status.message);
+    const std::size_t render_limited_bytes = render_limited_store.estimated_resident_bytes();
+    geometer::StepTopologyGlbRenderOutput rejected_render;
+    require(render_limited_store.render_glb_work_packet(render_limited.session.session_handle, {},
+                                                        &rejected_render, &status) != 0 &&
+                rejected_render.glb.empty() &&
+                render_limited_store.estimated_resident_bytes() == render_limited_bytes,
+            "render admission must reject atomically without retaining unaccounted state");
+
     limits.max_sessions = 1;
     limits.inactivity_timeout = std::chrono::milliseconds(1);
     geometer::StepTopologySessionStore expiring_store(limits);
@@ -591,6 +653,128 @@ void store_evicts_expires_and_invalidates_on_process_replacement()
     require(expired.size() == 1 && expired.front() == expiring.session.session_handle &&
                 expiring_store.size() == 0,
             "inactive session should expire deterministically");
+}
+
+void stored_render_hit_resolution_is_constant_work()
+{
+    const std::vector<unsigned char> bytes =
+        read_bytes("tests/fixtures/step/embedded_models/SOIC-20-300.STEP");
+    geometer::StepTopologySessionStore store;
+    geometer::StepTopologyOpenResult opened;
+    geometer::Status status;
+    require(store.open_step(bytes.data(), bytes.size(), &opened, &status) == 0,
+            "high-cardinality hit store open failed: " + status.message);
+    geometer::StepTopologyGlbRenderOutput rendered;
+    require(store.render_glb_work_packet(opened.session.session_handle, {}, &rendered, &status) ==
+                    0 &&
+                rendered.instance_count > 10U && rendered.primitive_count > 10U,
+            "high-cardinality hit render failed: " + status.message);
+    require(rendered.glb.size() >= 20U, "rendered GLB is too short");
+    const auto read_u32 = [&rendered](std::size_t offset)
+    {
+        return static_cast<std::uint32_t>(rendered.glb[offset]) |
+               (static_cast<std::uint32_t>(rendered.glb[offset + 1U]) << 8U) |
+               (static_cast<std::uint32_t>(rendered.glb[offset + 2U]) << 16U) |
+               (static_cast<std::uint32_t>(rendered.glb[offset + 3U]) << 24U);
+    };
+    const std::size_t json_size = read_u32(12U);
+    require(json_size <= rendered.glb.size() - 20U, "rendered GLB JSON chunk is invalid");
+    rapidjson::Document document;
+    document.Parse(reinterpret_cast<const char*>(rendered.glb.data() + 20U), json_size);
+    require(!document.HasParseError(), "rendered GLB JSON should parse");
+    const auto& node = document["nodes"][0U]["extras"]["wn_geometer"];
+    const std::size_t mesh_index = node["mesh_index"].GetUint64();
+    const auto& primitive = document["meshes"][static_cast<rapidjson::SizeType>(mesh_index)]
+                                    ["primitives"][0U]["extras"]["wn_geometer"];
+    geometer::StepTopologyGlbHitDescriptor descriptor;
+    descriptor.artifact_handle = rendered.artifact_handle;
+    descriptor.content_sha256 = rendered.content_sha256;
+    descriptor.instance_index = node["instance_index"].GetUint64();
+    descriptor.primitive_index = primitive["primitive_index"].GetUint64();
+    descriptor.primitive_triangle_index = 0U;
+    descriptor.occurrence_handle = node["occurrence_handle"].GetString();
+    descriptor.body_handle = primitive["body_handle"].GetString();
+    descriptor.face_handle = primitive["face_handle"].GetString();
+    geometer::StepTopologyRenderHit hit;
+    require(store.resolve_glb_hit(opened.session.session_handle, descriptor, &hit, &status) == 0,
+            "high-cardinality stored hit failed: " + status.message);
+    require(hit.lookup_work_items == 1U && hit.occurrence_handle == descriptor.occurrence_handle &&
+                hit.body_handle == descriptor.body_handle &&
+                hit.face_handle == descriptor.face_handle,
+            "stored hit resolution must use one direct authoritative lookup regardless of artifact "
+            "size");
+}
+
+void immutable_page_cursor_streams_records_and_memberships()
+{
+    static_assert(
+        std::is_same_v<typename decltype(geometer::StepTopologySnapshotPage::bodies)::value_type,
+                       geometer::StepTopologyBodyPageSummary>);
+    static_assert(
+        !std::is_same_v<geometer::StepTopologyBodyPageSummary, geometer::StepTopologyBody>);
+    static_assert(
+        std::is_same_v<typename decltype(geometer::StepTopologySnapshotPage::shells)::value_type,
+                       geometer::StepTopologyShellPageSummary>);
+    static_assert(
+        std::is_same_v<typename decltype(geometer::StepTopologySnapshotPage::faces)::value_type,
+                       geometer::StepTopologyFacePageSummary>);
+    const std::vector<unsigned char> bytes =
+        read_bytes("tests/fixtures/step/generated_topology/generated_flat_multi_solid.step");
+    std::unique_ptr<geometer::StepTopologySession> session;
+    geometer::Status status;
+    require(geometer::StepTopologySession::open_step(bytes.data(), bytes.size(), {}, &session,
+                                                     &status) == 0,
+            "paged session open failed: " + status.message);
+    geometer::StepTopologyPagePosition position;
+    std::unordered_map<std::string, std::size_t> declared_faces;
+    std::unordered_map<std::string, std::size_t> observed_faces;
+    std::size_t observed_records = 0U;
+    std::size_t expected_records = 0U;
+    bool saw_target_summary = false;
+    bool saw_isolated_membership = false;
+    for (;;)
+    {
+        geometer::StepTopologySnapshotPage page;
+        require(session->inspect_page({}, position, 1U, &page, &status) == 0,
+                "limit-one page failed: " + status.message);
+        const std::size_t page_records =
+            page.definitions.size() + page.root_occurrences.size() + page.occurrences.size() +
+            page.bodies.size() + page.shells.size() + page.faces.size() + page.memberships.size();
+        require(page_records == 1U,
+                "each nonterminal limit-one page should make one-record progress");
+        if (expected_records == 0U)
+            expected_records = page.definition_count + page.root_occurrence_count +
+                               page.component_occurrence_count + page.body_count +
+                               page.shell_count + page.face_count + page.membership_count;
+        for (const auto& definition : page.definitions)
+            declared_faces[definition.handle] = definition.face_count;
+        for (const auto& face : page.faces)
+            ++observed_faces[face.definition_handle];
+        for (const auto& body : page.bodies)
+        {
+            saw_target_summary = true;
+            require(body.shell_count + body.face_count > 0U && page.memberships.empty(),
+                    "a target page must expose only membership counts, not hidden edge arrays");
+        }
+        if (!page.memberships.empty())
+        {
+            saw_isolated_membership = true;
+            require(page.definitions.empty() && page.root_occurrences.empty() &&
+                        page.occurrences.empty() && page.bodies.empty() && page.shells.empty() &&
+                        page.faces.empty(),
+                    "a limit-one membership page must materialize exactly one edge");
+        }
+        ++observed_records;
+        if (!page.has_next)
+            break;
+        position = page.next;
+    }
+    require(observed_records == expected_records,
+            "paged topology stream should exactly satisfy its declared counts");
+    require(declared_faces == observed_faces,
+            "definition face counts should count unique face records, not body memberships");
+    require(saw_target_summary && saw_isolated_membership,
+            "paged inspection should separate bounded target summaries from membership edges");
 }
 
 } // namespace
@@ -606,6 +790,8 @@ int main()
         transfer_mapping_is_measured_across_the_fixture_corpus();
         root_placement_is_separate_from_definition_geometry();
         resource_limits_reject_before_exposing_a_session();
+        immutable_page_cursor_streams_records_and_memberships();
+        stored_render_hit_resolution_is_constant_work();
         store_evicts_expires_and_invalidates_on_process_replacement();
         return 0;
     }

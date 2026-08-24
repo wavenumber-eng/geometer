@@ -102,16 +102,47 @@ remediation_probe_disposition = "rejected_cross_platform_source_hash_literal"
 
 [experimental_evidence.step_topology_slice_a]
 status = "unpromoted_structural_candidate"
-catalog_sha256 = "6cacbf010b3ae7a2af74c68517e5bcd68e3f4da11c904fb2626debf0ba8d17e2"
-vector_manifest_sha256 = "0774af20031d4d00f8bf2201a4b8c5defbe9391b36f54d7aa8dbe7b751e1398b"
-governed_vector_ids = ["strict.step-topology-resolve-hit.accept", "schema.step-topology-resolve-hit-unknown-field.reject", "schema.step-topology-resolve-hit-zero-generation.reject", "schema.step-topology-resolve-hit-range.reject", "schema.step-topology-render-attachment-relationship.reject", "schema.step-topology-resolve-hit-result-max.accept", "schema.step-topology-resolve-hit-result-instance-over-max.reject", "schema.step-topology-resolve-hit-result-primitive-over-max.reject", "schema.step-topology-resolve-hit-result-triangle-over-max.reject", "schema.step-topology-inspect-depth-max.accept", "schema.step-topology-inspect-depth-over-max.reject", "semantic.step-topology-stale-generation.reject", "semantic.step-topology-duplicate-target.reject", "semantic.step-topology-inspection-membership.accept", "semantic.step-topology-cross-page-duplicate.reject", "semantic.step-topology-cross-page-edge.reject", "semantic.step-topology-over-count-before-terminal.reject", "semantic.step-topology-empty-continuation.reject", "semantic.step-topology-high-fan-in.accept", "semantic.step-topology-render-attachments.accept", "semantic.step-topology-render-digest-relationship.reject"]
-governed_vector_count = 21
-structural_vector_count = 11
-semantic_vector_count = 10
+catalog_sha256 = "40ad574a40ea2e474d085d26263bf1ecbf3d76f6e14de8d795829e97389ae96b"
+vector_manifest_sha256 = "d3b1d465f64e59c582f57ed27aa2c5d671ce8608aa1764952f093d307ceb4f69"
+governed_vector_ids = ["strict.ipc-step-topology-open-envelope.accept", "strict.operation-step-topology-open-outcome.accept", "semantic.step-topology-ipc-envelope-pair-matrix.accept", "semantic.step-topology-ipc-request-operation-mismatch.reject", "semantic.step-topology-operation-result-operation-mismatch.reject", "strict.step-topology-resolve-hit.accept", "schema.step-topology-resolve-hit-unknown-field.reject", "schema.step-topology-resolve-hit-zero-generation.reject", "schema.step-topology-resolve-hit-range.reject", "schema.step-topology-render-attachment-relationship.reject", "schema.step-topology-resolve-hit-result-max.accept", "schema.step-topology-resolve-hit-result-instance-over-max.reject", "schema.step-topology-resolve-hit-result-primitive-over-max.reject", "schema.step-topology-resolve-hit-result-triangle-over-max.reject", "schema.step-topology-inspect-depth-max.accept", "schema.step-topology-inspect-depth-over-max.reject", "semantic.step-topology-stale-generation.reject", "semantic.step-topology-duplicate-target.reject", "semantic.step-topology-inspection-membership.accept", "semantic.step-topology-cross-page-duplicate.reject", "semantic.step-topology-cross-page-edge.reject", "semantic.step-topology-over-count-before-terminal.reject", "semantic.step-topology-empty-continuation.reject", "semantic.step-topology-high-fan-in.accept", "semantic.step-topology-render-attachments.accept", "semantic.step-topology-render-digest-relationship.reject"]
+governed_vector_count = 26
+structural_vector_count = 13
+semantic_vector_count = 13
 operation_vector_count = 0
 runtime_advertised = false
+native_runtime_operations = ["geometry.step_topology.close.a0", "geometry.step_topology.inspect.a0", "geometry.step_topology.open.a0", "geometry.step_topology.render.a0", "geometry.step_topology.resolve_hit.a0"]
 projections = ["json_schema", "cpp", "typescript", "rust", "python", "html"]
 behavioral_authority = "focused_cpp_step_topology_session"
+legacy_gltf_enrichment_reused = false
+
+[experimental_evidence.step_topology_slice_b]
+status = "unpromoted_structural_candidate"
+catalog_sha256 = "40ad574a40ea2e474d085d26263bf1ecbf3d76f6e14de8d795829e97389ae96b"
+vector_manifest_sha256 = "d3b1d465f64e59c582f57ed27aa2c5d671ce8608aa1764952f093d307ceb4f69"
+governed_vector_ids = ["strict.step-topology-apply-groups.accept", "semantic.step-topology-apply-groups-uppercase.accept", "schema.step-topology-apply-groups-unknown-field.reject", "semantic.step-topology-apply-groups-short-handle.reject", "schema.step-topology-apply-groups-create-revision.reject", "semantic.step-topology-apply-groups-duplicate-member.reject", "semantic.step-topology-apply-groups-invalid-namespace.reject", "semantic.step-topology-apply-groups-duplicate-create.reject", "strict.step-topology-probe-duplicate-discriminator.reject", "strict.step-topology-probe-duplicate-payload-field.reject", "schema.step-topology-probe-erase-payload.reject", "schema.step-topology-probe-invalid-target-shape.reject", "semantic.step-topology-probe-invalid-key-namespace.reject", "semantic.step-topology-checkpoint-attachment.accept", "semantic.step-topology-checkpoint-digest.reject", "semantic.step-topology-checkpoint-revision.reject", "schema.step-topology-checkpoint-bytes-over-max.reject", "semantic.step-topology-apply-groups-lifecycle.accept", "semantic.step-topology-apply-probes-targets-lifecycle.accept", "semantic.step-topology-apply-groups-result-max-revision.accept", "schema.step-topology-apply-probes-result.accept", "semantic.step-topology-apply-probes-result-groups.accept", "strict.step-topology-checkpoint-request.accept", "semantic.step-topology-probe-invalid-group-namespace.reject", "semantic.step-topology-probe-duplicate-attach.reject", "semantic.step-topology-group-request-aggregate-members-exact.accept", "semantic.step-topology-group-request-aggregate-members.reject", "semantic.step-topology-group-result-aggregate-members-exact.accept", "semantic.step-topology-group-result-aggregate-members.reject", "semantic.step-topology-checkpoint-name.reject", "semantic.step-topology-checkpoint-media.reject", "semantic.step-topology-checkpoint-bytes.reject", "semantic.step-topology-checkpoint-count.reject", "semantic.step-topology-apply-hierarchy.accept", "semantic.step-topology-apply-hierarchy-lifecycle.accept", "semantic.step-topology-apply-hierarchy-uppercase.reject", "semantic.step-topology-apply-hierarchy-revision-max.accept", "schema.step-topology-apply-hierarchy-revision-over-max.reject", "semantic.step-topology-hierarchy-result.accept", "semantic.step-topology-hierarchy-cycle.reject"]
+governed_vector_count = 40
+structural_vector_count = 11
+semantic_vector_count = 29
+operation_vector_count = 0
+runtime_advertised = false
+native_runtime_operations = ["geometry.step_topology.apply_logical_groups.a0", "geometry.step_topology.apply_metadata_probes.a0", "geometry.step_topology.checkpoint_edit_journal.a0"]
+projections = ["json_schema", "cpp", "typescript", "rust", "python", "html"]
+behavioral_authority = "focused_cpp_step_topology_logical_groups_hierarchy_and_edit_journal"
+legacy_gltf_enrichment_reused = false
+
+[experimental_evidence.step_topology_slice_c]
+status = "unpromoted_structural_candidate"
+catalog_sha256 = "40ad574a40ea2e474d085d26263bf1ecbf3d76f6e14de8d795829e97389ae96b"
+vector_manifest_sha256 = "d3b1d465f64e59c582f57ed27aa2c5d671ce8608aa1764952f093d307ceb4f69"
+governed_vector_ids = ["schema.step-topology-save-result.accept", "semantic.step-topology-save-attachments.accept", "semantic.step-topology-save-media.reject", "semantic.step-topology-save-capabilities.reject", "semantic.step-topology-save-request-carrier.reject", "strict.step-topology-restore-request.accept", "semantic.step-topology-restore-attachments.accept", "semantic.step-topology-restore-replay-source.reject", "semantic.step-topology-restore-model-step.accept", "semantic.step-topology-restore-source-media.reject", "semantic.step-topology-restore-result.accept", "semantic.step-topology-restore-result-source.reject", "semantic.step-topology-restore-result-count.reject", "semantic.step-topology-restore-result-recovery.reject", "semantic.step-topology-recovery-request.accept", "semantic.step-topology-recovery-candidates-max.accept", "schema.step-topology-recovery-candidates-over-max.reject", "semantic.step-topology-recovery-missing-authored-id.reject", "semantic.step-topology-recovery-empty-locator.reject", "semantic.step-topology-recovery-uppercase-digest.reject", "semantic.step-topology-recovery-invalid-bounds.reject", "semantic.step-topology-recovery-partial.accept", "semantic.step-topology-recovery-count-mismatch.reject", "semantic.step-topology-recovery-evidence-count.reject", "semantic.step-topology-recovery-resolved-rejected-overlap.reject", "semantic.step-topology-recovery-ambiguous.accept", "semantic.step-topology-recovery-changed.accept", "semantic.step-topology-recovery-unavailable.accept", "schema.step-topology-recovery-empty-group.reject"]
+governed_vector_count = 29
+structural_vector_count = 4
+semantic_vector_count = 25
+operation_vector_count = 0
+runtime_advertised = false
+native_runtime_operations = ["geometry.step_topology.restore.a0"]
+projections = ["json_schema", "cpp", "typescript", "rust", "python", "html"]
+behavioral_authority = "focused_cpp_step_topology_recovery_and_persistence_evidence"
 legacy_gltf_enrichment_reused = false
 
 [toolchain]
@@ -494,7 +525,7 @@ packet_sha256 = "865964402ff6258151b199f748ae0754c9fc4908021af01ffc6abdb47f2013e
 reviewed_adr_sha256 = "d4905bda88727fadeb221a3b6c5bfb392f5e062bb6033b0cded29f59fb492de0"
 adr_sha256 = "2a69d9e05baa7894be3677d2a9c250098bd45915a7cc9d083639650d3151d7d8"
 generic_c_abi_sha256 = "1b9d02d310110530cb62c82125613865a90bcb2f9da49397ae61dbc61abcd861"
-executable_ipc_sha256 = "c4d65cdcad36382e7fba83e1180f5e937194a5652f131b90f63e4f55a80dd339"
+executable_ipc_sha256 = "42c122829bca64a4d9987acdefe5d72026e3e5e3fcd2cb4a64a6083485b3dfbf"
 reviewer = "independent-reviewer"
 review_date = "2026-08-12"
 reviewed_revision = "529c768e559b4c88874264748d4186e775c8a4dd"
@@ -803,6 +834,7 @@ status = "experimental_candidate"
 current_authority = "typespec_candidate"
 source = "src/tsp/geometer/operations/step-topology-a0.tsp"
 pilot_required = true
+native_runtime_operation = "geometry.step_topology.open.a0"
 compatibility = "Unpromoted research structure over the focused native session API; the required STEP input is a named binary attachment."
 
 [[contracts]]
@@ -812,6 +844,7 @@ status = "experimental_candidate"
 current_authority = "typespec_candidate"
 source = "src/tsp/geometer/operations/step-topology-a0.tsp"
 pilot_required = true
+native_runtime_operation = "geometry.step_topology.open.a0"
 compatibility = "Unpromoted research structure; session handles are opaque, process-local, generation-scoped, and never durable identity."
 
 [[contracts]]
@@ -821,6 +854,7 @@ status = "experimental_candidate"
 current_authority = "typespec_candidate"
 source = "src/tsp/geometer/operations/step-topology-a0.tsp"
 pilot_required = true
+native_runtime_operation = "geometry.step_topology.close.a0"
 compatibility = "Unpromoted research structure; close validates the originating session and current generation."
 
 [[contracts]]
@@ -830,6 +864,7 @@ status = "experimental_candidate"
 current_authority = "typespec_candidate"
 source = "src/tsp/geometer/operations/step-topology-a0.tsp"
 pilot_required = true
+native_runtime_operation = "geometry.step_topology.close.a0"
 compatibility = "Unpromoted research structure; a successful close invalidates all session, target, render, and GLB artifact handles."
 
 [[contracts]]
@@ -839,6 +874,7 @@ status = "experimental_candidate"
 current_authority = "typespec_candidate"
 source = "src/tsp/geometer/operations/step-topology-a0.tsp"
 pilot_required = true
+native_runtime_operation = "geometry.step_topology.inspect.a0"
 compatibility = "Unpromoted paged inspection request; source-carrier evidence and diagnostics remain explicit opt-ins."
 
 [[contracts]]
@@ -848,6 +884,7 @@ status = "experimental_candidate"
 current_authority = "typespec_candidate"
 source = "src/tsp/geometer/operations/step-topology-a0.tsp"
 pilot_required = true
+native_runtime_operation = "geometry.step_topology.inspect.a0"
 compatibility = "Unpromoted bounded normalized topology page with an optional named compact-table attachment."
 
 [[contracts]]
@@ -857,6 +894,7 @@ status = "experimental_candidate"
 current_authority = "typespec_candidate"
 source = "src/tsp/geometer/operations/step-topology-a0.tsp"
 pilot_required = true
+native_runtime_operation = "geometry.step_topology.render.a0"
 compatibility = "Unpromoted tessellation request; coordinate conversion and deflections are explicit and bound to the session generation."
 
 [[contracts]]
@@ -866,6 +904,7 @@ status = "experimental_candidate"
 current_authority = "typespec_candidate"
 source = "src/tsp/geometer/operations/step-topology-a0.tsp"
 pilot_required = true
+native_runtime_operation = "geometry.step_topology.render.a0"
 compatibility = "Unpromoted sealed GLB work-artifact descriptor with required GLB and optional compact binding-table attachments."
 
 [[contracts]]
@@ -875,6 +914,7 @@ status = "experimental_candidate"
 current_authority = "typespec_candidate"
 source = "src/tsp/geometer/operations/step-topology-a0.tsp"
 pilot_required = true
+native_runtime_operation = "geometry.step_topology.resolve_hit.a0"
 compatibility = "Unpromoted return-path request; the native implementation validates the artifact seal, generation, indices, and claimed occurrence/body/face handles."
 
 [[contracts]]
@@ -884,7 +924,142 @@ status = "experimental_candidate"
 current_authority = "typespec_candidate"
 source = "src/tsp/geometer/operations/step-topology-a0.tsp"
 pilot_required = true
+native_runtime_operation = "geometry.step_topology.resolve_hit.a0"
 compatibility = "Unpromoted validated hit result; render locators remain valid only for the named artifact and session generation."
+
+[[contracts]]
+id = "geometry.step_topology.apply_logical_groups.request.a0"
+kind = "request"
+status = "experimental_candidate"
+current_authority = "typespec_candidate"
+source = "src/tsp/geometer/operations/step-topology-a0.tsp"
+pilot_required = true
+native_runtime_operation = "geometry.step_topology.apply_logical_groups.a0"
+compatibility = "Unpromoted closed logical-group command union over generation-scoped body and face handles; native C++ remains behavioral authority."
+
+[[contracts]]
+id = "geometry.step_topology.apply_logical_groups.result.a0"
+kind = "result"
+status = "experimental_candidate"
+current_authority = "typespec_candidate"
+source = "src/tsp/geometer/operations/step-topology-a0.tsp"
+pilot_required = true
+native_runtime_operation = "geometry.step_topology.apply_logical_groups.a0"
+compatibility = "Unpromoted complete logical-group publication with refreshed handles and bounded mutation/journal state."
+
+[[contracts]]
+id = "geometry.step_topology.apply_metadata_probes.request.a0"
+kind = "request"
+status = "experimental_candidate"
+current_authority = "typespec_candidate"
+source = "src/tsp/geometer/operations/step-topology-a0.tsp"
+pilot_required = true
+native_runtime_operation = "geometry.step_topology.apply_metadata_probes.a0"
+compatibility = "Unpromoted neutral research-probe command union; erase has no target or payload variant and semantic annotations remain out of scope."
+
+[[contracts]]
+id = "geometry.step_topology.apply_metadata_probes.result.a0"
+kind = "result"
+status = "experimental_candidate"
+current_authority = "typespec_candidate"
+source = "src/tsp/geometer/operations/step-topology-a0.tsp"
+pilot_required = true
+native_runtime_operation = "geometry.step_topology.apply_metadata_probes.a0"
+compatibility = "Unpromoted complete logical-group and metadata-probe publication with fresh generation-scoped targets."
+
+[[contracts]]
+id = "geometry.step_topology.checkpoint_edit_journal.request.a0"
+kind = "request"
+status = "experimental_candidate"
+current_authority = "typespec_candidate"
+source = "src/tsp/geometer/operations/step-topology-a0.tsp"
+pilot_required = true
+native_runtime_operation = "geometry.step_topology.checkpoint_edit_journal.a0"
+compatibility = "Unpromoted native live-session checkpoint request; exact edit-journal restore is runtime-advertised through Slice C while changed-source recovery remains deferred."
+
+[[contracts]]
+id = "geometry.step_topology.checkpoint_edit_journal.result.a0"
+kind = "result"
+status = "experimental_candidate"
+current_authority = "typespec_candidate"
+source = "src/tsp/geometer/operations/step-topology-a0.tsp"
+pilot_required = true
+native_runtime_operation = "geometry.step_topology.checkpoint_edit_journal.a0"
+compatibility = "Unpromoted exact-source checkpoint evidence and required binary edit-journal attachment descriptor; the binary layout remains separately governed by native design."
+
+[[contracts]]
+id = "geometry.step_topology.apply_hierarchy.request.a0"
+kind = "request"
+status = "experimental_candidate"
+current_authority = "typespec_candidate"
+source = "src/tsp/geometer/operations/step-topology-a0.tsp"
+pilot_required = true
+compatibility = "Unpromoted closed hierarchy command union over complete definitions, bodies, assemblies, and occurrences; arbitrary face subsets are excluded."
+
+[[contracts]]
+id = "geometry.step_topology.apply_hierarchy.result.a0"
+kind = "result"
+status = "experimental_candidate"
+current_authority = "typespec_candidate"
+source = "src/tsp/geometer/operations/step-topology-a0.tsp"
+pilot_required = true
+compatibility = "Unpromoted bounded hierarchy publication; the focused native hierarchy value API remains behavioral authority."
+
+[[contracts]]
+id = "geometry.step_topology.save.request.a0"
+kind = "request"
+status = "experimental_candidate"
+current_authority = "typespec_candidate"
+source = "src/tsp/geometer/operations/step-topology-a0.tsp"
+pilot_required = true
+compatibility = "Unpromoted carrier-selection structure; XBF, XML XCAF, AP242, and sidecar capabilities remain explicit and carrier-specific."
+
+[[contracts]]
+id = "geometry.step_topology.save.result.a0"
+kind = "result"
+status = "experimental_candidate"
+current_authority = "typespec_candidate"
+source = "src/tsp/geometer/operations/step-topology-a0.tsp"
+pilot_required = true
+compatibility = "Unpromoted sealed persistence-artifact union and capability report; no save operation is runtime-advertised."
+
+[[contracts]]
+id = "geometry.step_topology.restore.request.a0"
+kind = "request"
+status = "experimental_candidate"
+current_authority = "typespec_candidate"
+source = "src/tsp/geometer/operations/step-topology-a0.tsp"
+pilot_required = true
+native_runtime_operation = "geometry.step_topology.restore.a0"
+compatibility = "Unpromoted restore structure; the native runtime advertises only exact-source edit-journal replay, and runtime handles and carrier locators are never durable identity."
+
+[[contracts]]
+id = "geometry.step_topology.restore.result.a0"
+kind = "result"
+status = "experimental_candidate"
+current_authority = "typespec_candidate"
+source = "src/tsp/geometer/operations/step-topology-a0.tsp"
+pilot_required = true
+native_runtime_operation = "geometry.step_topology.restore.a0"
+compatibility = "Unpromoted restored-session and multidimensional recovery publication; native exact edit-journal restore is runtime-advertised while general carrier restore and recovery analysis are not."
+
+[[contracts]]
+id = "geometry.step_topology.analyze_recovery.request.a0"
+kind = "request"
+status = "experimental_candidate"
+current_authority = "typespec_candidate"
+source = "src/tsp/geometer/operations/step-topology-a0.tsp"
+pilot_required = true
+compatibility = "Unpromoted bounded carrier/fingerprint evidence request; native recovery policy remains behavioral authority."
+
+[[contracts]]
+id = "geometry.step_topology.analyze_recovery.result.a0"
+kind = "result"
+status = "experimental_candidate"
+current_authority = "typespec_candidate"
+source = "src/tsp/geometer/operations/step-topology-a0.tsp"
+pilot_required = true
+compatibility = "Unpromoted member-level recovery results keep resolution, method, topology comparison, confidence, and group completeness independent."
 
 [[contracts]]
 id = "geometry.projection.options.b0"
@@ -1044,6 +1219,76 @@ cli_names = []
 compatibility_cli_names = []
 
 [[operations]]
+id = "geometry.step_topology.apply_logical_groups.a0"
+status = "experimental_candidate"
+request_contract = "geometry.step_topology.apply_logical_groups.request.a0"
+result_contract = "geometry.step_topology.apply_logical_groups.result.a0"
+input_attachments = []
+output_attachments = []
+cli_names = []
+compatibility_cli_names = []
+
+[[operations]]
+id = "geometry.step_topology.apply_metadata_probes.a0"
+status = "experimental_candidate"
+request_contract = "geometry.step_topology.apply_metadata_probes.request.a0"
+result_contract = "geometry.step_topology.apply_metadata_probes.result.a0"
+input_attachments = []
+output_attachments = []
+cli_names = []
+compatibility_cli_names = []
+
+[[operations]]
+id = "geometry.step_topology.checkpoint_edit_journal.a0"
+status = "experimental_candidate"
+request_contract = "geometry.step_topology.checkpoint_edit_journal.request.a0"
+result_contract = "geometry.step_topology.checkpoint_edit_journal.result.a0"
+input_attachments = []
+output_attachments = ["edit_journal"]
+cli_names = []
+compatibility_cli_names = []
+
+[[operations]]
+id = "geometry.step_topology.apply_hierarchy.a0"
+status = "experimental_candidate"
+request_contract = "geometry.step_topology.apply_hierarchy.request.a0"
+result_contract = "geometry.step_topology.apply_hierarchy.result.a0"
+input_attachments = []
+output_attachments = []
+cli_names = []
+compatibility_cli_names = []
+
+[[operations]]
+id = "geometry.step_topology.save.a0"
+status = "experimental_candidate"
+request_contract = "geometry.step_topology.save.request.a0"
+result_contract = "geometry.step_topology.save.result.a0"
+input_attachments = []
+output_attachments = ["state_artifact"]
+cli_names = []
+compatibility_cli_names = []
+
+[[operations]]
+id = "geometry.step_topology.restore.a0"
+status = "experimental_candidate"
+request_contract = "geometry.step_topology.restore.request.a0"
+result_contract = "geometry.step_topology.restore.result.a0"
+input_attachments = ["source", "state_artifact"]
+output_attachments = []
+cli_names = []
+compatibility_cli_names = []
+
+[[operations]]
+id = "geometry.step_topology.analyze_recovery.a0"
+status = "experimental_candidate"
+request_contract = "geometry.step_topology.analyze_recovery.request.a0"
+result_contract = "geometry.step_topology.analyze_recovery.result.a0"
+input_attachments = []
+output_attachments = []
+cli_names = []
+compatibility_cli_names = []
+
+[[operations]]
 id = "geometry.model_hlr_projection.a0"
 status = "inventory_only"
 request_contract = "geometry.projection.options.b0"
@@ -1194,7 +1439,7 @@ performance_qualification_default_request = "tests/contracts/vectors/analytic/cr
 real_board_packet_provenance = "docs/contracts/analytic-real-board-packet-provenance.toml"
 real_board_packet_provenance_sha256 = "3e465a113fb4edb7667b9b76e684337f1062f76e3456b7a5ef0404f82034d7c2"
 real_board_packet_provenance_test = "tests/python/test_contract_promotion_manifest.py"
-real_board_packet_provenance_test_sha256 = "a8cc30a0b330f3de03fededae5bebf09eec90beed9ee312c605eaaff91c79f7b"
+real_board_packet_provenance_test_sha256 = "4c1813c7b45a81c1ec8652da033819db373cb5e8632ddae4f19e1473d5209952"
 real_board_packet_provenance_status = "public_mit_redistribution_authorized_rt_generated_local_qualified_loz_pending"
 real_board_packet_case_ids = ["rt_super_c1_pwr4", "loz_old_man_curved_copper"]
 real_board_packet_source_sha256 = ["90545409b6ce16e0b636fce3176c90b73be301d03f0a9e32c4ab21a42ad14aca", "377d5a05ed24137ea603d11c663d52ae48849b378534b346010936b826eb2375"]

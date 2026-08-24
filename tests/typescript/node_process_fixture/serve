@@ -1,0 +1,128 @@
+import {
+  encodeIpcShutdownAckA0Json,
+  encodeIpcWelcomeA0Json,
+  NORMALIZED_CONTRACT_CATALOG_SHA256,
+  operationCatalog,
+} from "../../../dist/wasm/npm/geometer/generated/index.js";
+import {
+  encodeGeometerIpcFrame,
+  GeometerIpcFrameDecoder,
+} from "../../../dist/wasm/npm/geometer/ipc-a0.js";
+
+const mode = process.env.GEOMETER_NODE_PROCESS_FIXTURE_MODE ?? "ack_hang";
+if (mode === "early_exit_stderr") {
+  process.stderr.write("0123456789TAIL", () => process.exit(23));
+} else {
+  const keepAlive = setInterval(() => {}, 1_000);
+  process.on("SIGTERM", () => {
+    process.stderr.write("SIGTERM ignored\n");
+  });
+  if (mode !== "handshake_timeout") {
+    const decoder = new GeometerIpcFrameDecoder();
+    process.stdin.on("data", (chunk) => {
+      for (const frame of decoder.push(new Uint8Array(chunk))) {
+        if (frame.kind === 1) {
+          send(2, encodeIpcWelcomeA0Json(welcome()));
+        } else if (frame.kind === 8) {
+          send(
+            9,
+            encodeIpcShutdownAckA0Json({
+              activeRequestCompleted: true,
+              rejectedQueuedRequestCount: 0,
+              status: "complete",
+            }),
+          );
+        }
+      }
+    });
+  }
+  process.on("exit", () => clearInterval(keepAlive));
+}
+
+function send(kind, json) {
+  process.stdout.write(
+    encodeGeometerIpcFrame({ attachments: [], json, kind, requestId: 0n }),
+  );
+}
+
+function welcome() {
+  const operations = Object.values(operationCatalog)
+    .filter((item) => item.runtimeAvailable || item.nativeRuntimeAvailable)
+    .map((item) => ({
+      identity: item.identity,
+      input_attachments: item.inputAttachments,
+      output_attachments: item.outputAttachments,
+      request_contract: item.requestContract,
+      ...("requestProjection" in item ? { request_projection: item.requestProjection } : {}),
+      result_contract: item.resultContract,
+      ...("resultProjection" in item ? { result_projection: item.resultProjection } : {}),
+      runtime_dispatch: item.runtimeDispatch,
+    }));
+  return {
+    c_abi_generation: 20260821,
+    capabilities: ["serialized_execution", "queue_only_cancellation", "raw_attachments"],
+    catalog_sha256: NORMALIZED_CONTRACT_CATALOG_SHA256,
+    ipc: "a0",
+    limits: {
+      attachment_bytes: 256 * 1024 * 1024,
+      attachment_count: 16,
+      attachment_media_type_bytes: 128,
+      attachment_name_bytes: 128,
+      frame_bytes: 512 * 1024 * 1024,
+      json_bytes: 8 * 1024 * 1024,
+      pending_writer_bytes: 512 * 1024 * 1024,
+      queued_bytes: 512 * 1024 * 1024,
+      queued_requests: 8,
+      resident_request_bytes: 512 * 1024 * 1024,
+    },
+    operation_catalog: {
+      attachment_descriptor: {
+        pointer64: {
+          offsets: {
+            data: 40,
+            data_size: 48,
+            flags: 4,
+            media_type: 24,
+            media_type_size: 32,
+            name: 8,
+            name_size: 16,
+            reserved0: 52,
+            struct_size: 0,
+          },
+          size: 56,
+        },
+        wasm32: {
+          offsets: {
+            data: 24,
+            data_size: 28,
+            flags: 4,
+            media_type: 16,
+            media_type_size: 20,
+            name: 8,
+            name_size: 12,
+            reserved0: 32,
+            struct_size: 0,
+          },
+          size: 36,
+        },
+      },
+      c_abi_generation: 20260821,
+      catalog: "wn.geometer.operation_catalog.a0",
+      generic_abi: "a0",
+      limits: {
+        aggregate_attachment_bytes_native: 512 * 1024 * 1024,
+        aggregate_attachment_bytes_wasm: 256 * 1024 * 1024,
+        attachment_bytes: 256 * 1024 * 1024,
+        attachment_count: 16,
+        attachment_media_type_bytes: 128,
+        attachment_name_bytes: 128,
+        operation_id_bytes: 128,
+        request_json_bytes: 8 * 1024 * 1024,
+        response_json_bytes: 8 * 1024 * 1024,
+      },
+      operations,
+      release_version: "2026.8.21",
+    },
+    release_version: "2026.8.21",
+  };
+}

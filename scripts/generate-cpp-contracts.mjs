@@ -363,12 +363,15 @@ function generateOperationCatalogSource() {
   const runtimeOperations = projectionCatalog.operations.filter(
     (operation) => operation.runtime_available,
   );
-  const runtimeCatalog = {
+  const nativeRuntimeOperations = projectionCatalog.operations.filter(
+    (operation) => operation.runtime_available || operation.native_runtime_available,
+  );
+  const runtimeCatalogFor = (operations) => ({
     catalog: "wn.geometer.operation_catalog.a0",
     generic_abi: "a0",
     release_version: "__WN_RELEASE_VERSION__",
     c_abi_generation: "__WN_C_ABI_GENERATION__",
-    operations: runtimeOperations.map((operation) => ({
+    operations: operations.map((operation) => ({
       identity: operation.identity,
       request_contract: operation.request_contract,
       result_contract: operation.result_contract,
@@ -419,11 +422,16 @@ function generateOperationCatalogSource() {
       aggregate_attachment_bytes_native: 512 * 1024 * 1024,
       aggregate_attachment_bytes_wasm: 256 * 1024 * 1024,
     },
+  });
+  const catalogFragments = (operations) => {
+    const serialized = JSON.stringify(runtimeCatalogFor(operations));
+    const [beforeRelease, afterReleaseMarker] = serialized.split("__WN_RELEASE_VERSION__");
+    const [beforeAbi, afterAbi] = afterReleaseMarker.split('"__WN_C_ABI_GENERATION__"');
+    if (afterAbi === undefined) throw new Error("Could not place runtime catalog version markers.");
+    return { beforeRelease, beforeAbi, afterAbi };
   };
-  const serialized = JSON.stringify(runtimeCatalog);
-  const [beforeRelease, afterReleaseMarker] = serialized.split("__WN_RELEASE_VERSION__");
-  const [beforeAbi, afterAbi] = afterReleaseMarker.split('"__WN_C_ABI_GENERATION__"');
-  if (afterAbi === undefined) throw new Error("Could not place runtime catalog version markers.");
+  const portableCatalog = catalogFragments(runtimeOperations);
+  const nativeCatalog = catalogFragments(nativeRuntimeOperations);
   const attachmentChecks = [];
   const inputAttachmentChecks = [];
   const inputAttachmentMaximums = [];
@@ -437,10 +445,31 @@ function generateOperationCatalogSource() {
   const requiredAttachmentCounts = [];
   const requiredAttachmentNames = [];
   const logicalResultChecks = [];
+  const structuralRequestChecks = [];
+  const structuralResultChecks = [];
   const rootsByContract = new Map(
     projectionCatalog.roots.map((rootRecord) => [rootRecord.contract_identity, rootRecord]),
   );
-  for (const operation of runtimeOperations) {
+  for (const operation of projectionCatalog.operations) {
+    const requestRoot = rootsByContract.get(operation.request_contract);
+    const resultRoot = rootsByContract.get(operation.result_contract);
+    if (requestRoot === undefined || resultRoot === undefined) {
+      throw new Error(`Operation ${operation.identity} has an ungenerated request or result root.`);
+    }
+    const requestType = operation.request_projection
+      ? "PackedAttachmentProjectionA0"
+      : shortName(requestRoot.name);
+    const resultType = operation.result_projection
+      ? "PackedAttachmentProjectionA0"
+      : shortName(resultRoot.name);
+    structuralRequestChecks.push(
+      `    if (operation_id == ${JSON.stringify(operation.identity)}) return std::holds_alternative<contracts::${requestType}>(request);`,
+    );
+    structuralResultChecks.push(
+      `    if (operation_id == ${JSON.stringify(operation.identity)}) return std::holds_alternative<contracts::${resultType}>(result);`,
+    );
+  }
+  for (const operation of nativeRuntimeOperations) {
     requestContracts.push(
       `    if (operation_id == ${JSON.stringify(operation.identity)}) return ${JSON.stringify(operation.request_contract)};`,
     );
@@ -513,9 +542,17 @@ function generateOperationCatalogSource() {
     "",
     "const char* operation_catalog_json()",
     "{",
-    `    static const std::string catalog = std::string(${JSON.stringify(beforeRelease)}) +`,
-    `                                       version_string() + ${JSON.stringify(beforeAbi)} +`,
-    `                                       std::to_string(abi_version()) + ${JSON.stringify(afterAbi)};`,
+    `    static const std::string catalog = std::string(${JSON.stringify(portableCatalog.beforeRelease)}) +`,
+    `                                       version_string() + ${JSON.stringify(portableCatalog.beforeAbi)} +`,
+    `                                       std::to_string(abi_version()) + ${JSON.stringify(portableCatalog.afterAbi)};`,
+    "    return catalog.c_str();",
+    "}",
+    "",
+    "const char* native_operation_catalog_json()",
+    "{",
+    `    static const std::string catalog = std::string(${JSON.stringify(nativeCatalog.beforeRelease)}) +`,
+    `                                       version_string() + ${JSON.stringify(nativeCatalog.beforeAbi)} +`,
+    `                                       std::to_string(abi_version()) + ${JSON.stringify(nativeCatalog.afterAbi)};`,
     "    return catalog.c_str();",
     "}",
     "",
@@ -618,6 +655,24 @@ function generateOperationCatalogSource() {
     "                                      const contracts::OperationResultValueA0& result)",
     "{",
     ...logicalResultChecks,
+    "    (void)operation_id;",
+    "    (void)result;",
+    "    return false;",
+    "}",
+    "",
+    "bool operation_request_value_matches(const std::string& operation_id,",
+    "                                     const contracts::IpcRequestValueA0& request)",
+    "{",
+    ...structuralRequestChecks,
+    "    (void)operation_id;",
+    "    (void)request;",
+    "    return false;",
+    "}",
+    "",
+    "bool operation_result_value_matches(const std::string& operation_id,",
+    "                                    const contracts::OperationResultValueA0& result)",
+    "{",
+    ...structuralResultChecks,
     "    (void)operation_id;",
     "    (void)result;",
     "    return false;",

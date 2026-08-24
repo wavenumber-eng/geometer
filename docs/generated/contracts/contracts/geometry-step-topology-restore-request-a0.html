@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="40ad574a40ea2e474d085d26263bf1ecbf3d76f6e14de8d795829e97389ae96b">
+  <title>geometry.step_topology.restore.request.a0 — Geometer</title>
+  <link rel="stylesheet" href="../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="40ad574a40ea2e474d085d26263bf1ecbf3d76f6e14de8d795829e97389ae96b" data-page-kind="contract" data-contract-identity="geometry.step_topology.restore.request.a0" data-promotion-status="experimental_candidate">
+<main>
+<header>
+  <p class="page-type">Contract root</p>
+  <h1><code>geometry.step_topology.restore.request.a0</code></h1>
+  <p class="lede"></p>
+</header>
+<nav class="nav" aria-label="Contract navigation"><a href="../index.html">All contracts</a><a href="../../../../contracts/geometer/generated/schema/StepTopologyRestoreRequestA0.json">JSON Schema</a><a href="../../../../src/tsp/geometer/main.tsp">TypeSpec entry point</a><a href="../../../design/contract-semantics.md">Compatibility policy</a></nav>
+<aside class="callout"><strong>Generated, not authored.</strong> Edit TypeSpec and regenerate. Lifecycle evidence remains in the promotion manifest.</aside>
+
+<section><h2>Identity</h2><table><tbody>
+<tr><th>Contract</th><td><code>geometry.step_topology.restore.request.a0</code></td></tr>
+<tr><th>Schema</th><td><code>urn:wavenumber:schema:geometer:geometry.step_topology.restore.request:a0</code></td></tr>
+<tr><th>Declaration</th><td><code>Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyRestoreRequestA0</code></td></tr>
+<tr><th>Lifecycle</th><td><span class="status">experimental_candidate</span></td></tr>
+<tr><th>Current authority</th><td><code>typespec_candidate</code></td></tr>
+</tbody></table></section>
+<section class="model-section"><h2>Declarations <span class="tag">9</span></h2><details open id="declaration-wavenumber-geometer-contracts-steptopologya0-steptopologyrestorerequesta0"><summary><h2><code>StepTopologyRestoreRequestA0</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>schema</code></td><td>required</td><td><code>&quot;geometry.step_topology.restore.request.a0&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>source</code></td><td>required</td><td><code>SourceDescriptor</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>state_artifact</code></td><td>required</td><td><code>RestoreStateArtifact</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>replay_preconditions</code></td><td>optional</td><td><code>EditJournalReplayPreconditions</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>include_diagnostics</code></td><td>required</td><td><code>boolean</code></td><td>—</td><td>none</td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-steptopologya0-editjournalpersistenceartifact"><summary><h2><code>EditJournalPersistenceArtifact</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>carrier</code></td><td>required</td><td><code>&quot;edit_journal&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>name</code></td><td>required</td><td><code>&quot;state_artifact&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>media_type</code></td><td>required</td><td><code>&quot;application/vnd.wavenumber.geometer.step-topology-edit-journal&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>format</code></td><td>required</td><td><code>&quot;geometer.step_topology_edit_journal.a0&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>bytes</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>min_value=1</code> <code>max_value=67108864</code></td><td></td></tr>
+<tr><td><code>sha256</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=64</code> <code>max_length=64</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-steptopologya0-editjournalreplaypreconditions"><summary><h2><code>EditJournalReplayPreconditions</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>source_sha256</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=64</code> <code>max_length=64</code></td><td></td></tr>
+<tr><td><code>source_brep_sha256</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=64</code> <code>max_length=64</code></td><td></td></tr>
+<tr><td><code>target_inventory_sha256</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=64</code> <code>max_length=64</code></td><td></td></tr>
+<tr><td><code>occt_version</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=1</code> <code>max_length=64</code></td><td></td></tr>
+<tr><td><code>transaction_count</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>max_value=100000</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-steptopologya0-jsonsidecarpersistenceartifact"><summary><h2><code>JsonSidecarPersistenceArtifact</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>carrier</code></td><td>required</td><td><code>&quot;json_sidecar&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>name</code></td><td>required</td><td><code>&quot;state_artifact&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>media_type</code></td><td>required</td><td><code>&quot;application/vnd.wavenumber.geometer.step-topology-sidecar+json&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>format</code></td><td>required</td><td><code>&quot;geometer.step_topology_sidecar.a0&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>bytes</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>min_value=1</code> <code>max_value=67108864</code></td><td></td></tr>
+<tr><td><code>sha256</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=64</code> <code>max_length=64</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-steptopologya0-restorestateartifact"><summary><h2><code>RestoreStateArtifact</code> <span class="tag">union</span></h2></summary><p></p><ul><li><code>xbf</code>: <code>XbfPersistenceArtifact</code></li><li><code>xml_xcaf</code>: <code>XmlXcafPersistenceArtifact</code></li><li><code>step_ap242</code>: <code>StepAp242PersistenceArtifact</code></li><li><code>json_sidecar</code>: <code>JsonSidecarPersistenceArtifact</code></li><li><code>edit_journal</code>: <code>EditJournalPersistenceArtifact</code></li></ul></details>
+<details open id="declaration-wavenumber-geometer-contracts-steptopologya0-sourcedescriptor"><summary><h2><code>SourceDescriptor</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>format</code></td><td>required</td><td><code>&quot;step&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>sha256</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=64</code> <code>max_length=64</code></td><td></td></tr>
+<tr><td><code>bytes</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>min_value=1</code> <code>max_value=268435456</code></td><td></td></tr>
+<tr><td><code>normalized_length_unit</code></td><td>required</td><td><code>&quot;millimeter&quot;</code></td><td>—</td><td>none</td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-steptopologya0-stepap242persistenceartifact"><summary><h2><code>StepAp242PersistenceArtifact</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>carrier</code></td><td>required</td><td><code>&quot;step_ap242&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>name</code></td><td>required</td><td><code>&quot;state_artifact&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>media_type</code></td><td>required</td><td><code>&quot;application/step&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>format</code></td><td>required</td><td><code>&quot;ap242-managed-model-based-3d-engineering&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>bytes</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>min_value=1</code> <code>max_value=536870912</code></td><td></td></tr>
+<tr><td><code>sha256</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=64</code> <code>max_length=64</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-steptopologya0-xbfpersistenceartifact"><summary><h2><code>XbfPersistenceArtifact</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>carrier</code></td><td>required</td><td><code>&quot;xbf&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>name</code></td><td>required</td><td><code>&quot;state_artifact&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>media_type</code></td><td>required</td><td><code>&quot;application/vnd.opencascade.xbf&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>format</code></td><td>required</td><td><code>&quot;ocaf-xbf-version-12&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>bytes</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>min_value=1</code> <code>max_value=536870912</code></td><td></td></tr>
+<tr><td><code>sha256</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=64</code> <code>max_length=64</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-steptopologya0-xmlxcafpersistenceartifact"><summary><h2><code>XmlXcafPersistenceArtifact</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>carrier</code></td><td>required</td><td><code>&quot;xml_xcaf&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>name</code></td><td>required</td><td><code>&quot;state_artifact&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>media_type</code></td><td>required</td><td><code>&quot;application/vnd.opencascade.xml-xcaf&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>format</code></td><td>required</td><td><code>&quot;ocaf-xml-xcaf-version-12&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>bytes</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>min_value=1</code> <code>max_value=536870912</code></td><td></td></tr>
+<tr><td><code>sha256</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=64</code> <code>max_length=64</code></td><td></td></tr></tbody></table></details></section>
+</main>
+</body>
+</html>

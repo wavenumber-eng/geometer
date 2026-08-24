@@ -36,7 +36,16 @@ durable record belongs here, in ADRs, and in requirements.
 - [Direct STEP topology render-binding research](step-topology-render-binding.md)
 - [STEP topology GLB work-packet research](step-topology-glb-binding.md)
 - [STEP topology contract Slice A](step-topology-contract-a0.md)
+- [STEP topology contract Slice B](step-topology-contract-slice-b.md)
+- [STEP topology contract Slice C](step-topology-contract-slice-c.md)
 - [Native STEP topology logical-group transactions](step-topology-logical-groups.md)
+- [STEP topology edit-journal checkpoint](step-topology-edit-journal.md)
+- [STEP topology metadata probes](step-topology-metadata-probes.md)
+- [Standard XCAF binary/XML persistence baseline](step-topology-xcaf-persistence.md)
+- [AP242 product/body/face persistence baseline](step-topology-ap242-persistence.md)
+- [STEP topology multidimensional recovery](step-topology-recovery.md)
+- [STEP topology synthetic product hierarchy](step-topology-hierarchy.md)
+- [STEP topology Appz Annotation Lab handoff](step-topology-appz-annotation-lab-handoff.md)
 
 ## Format Docs
 

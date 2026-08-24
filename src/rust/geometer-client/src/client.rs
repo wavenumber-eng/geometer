@@ -444,12 +444,7 @@ impl GeometerClient {
             ));
         }
         match response.outcome {
-            OperationOutcomeA0::Success(success) => match success.result {
-                OperationResultValueA0::ModelBounds(result) => Ok(result),
-                OperationResultValueA0::PackedAttachment(_) => Err(GeometerClientError::Protocol(
-                    "model_bounds returned an incompatible packed result".to_owned(),
-                )),
-            },
+            OperationOutcomeA0::Success(success) => model_bounds_result(success.result),
             OperationOutcomeA0::Failure(failure) => Err(GeometerClientError::Operation {
                 operation: failure.operation,
                 diagnostics: failure.diagnostics,
@@ -704,6 +699,17 @@ impl GeometerClient {
             ));
         }
         Ok(id)
+    }
+}
+
+fn model_bounds_result(
+    result: OperationResultValueA0,
+) -> Result<ModelBoundsResultA0, GeometerClientError> {
+    match result {
+        OperationResultValueA0::ModelBounds(result) => Ok(result),
+        _ => Err(GeometerClientError::Protocol(
+            "model_bounds returned an incompatible result variant".to_owned(),
+        )),
     }
 }
 

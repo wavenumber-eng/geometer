@@ -1,0 +1,1 @@
+{"schema":"geometry.step_topology.apply_logical_groups.request.a0","session":{"session_handle":"gts_1111111111111111111111111111111111111111111111111111111111111111","generation":7},"commands":[{"kind":"create","authored_id":"wn.geometer.research.group.demo","name":"Demo faces","member_handles":["gtt_short"]}]}

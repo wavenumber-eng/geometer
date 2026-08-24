@@ -71,6 +71,12 @@ async function validatePackage() {
   for (const required of [
     "index.js",
     "index.d.ts",
+    "ipc-a0.js",
+    "ipc-a0.d.ts",
+    "ipc-client-a0.js",
+    "ipc-client-a0.d.ts",
+    "node-process-a0.js",
+    "node-process-a0.d.ts",
     "wasm.js",
     "wasm.d.ts",
     "worker.js",

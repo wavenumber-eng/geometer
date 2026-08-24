@@ -92,6 +92,11 @@
           "type": "integer",
           "minimum": 0,
           "maximum": 1000000
+        },
+        "memberships": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 5000000
         }
       },
       "required": [
@@ -100,7 +105,8 @@
         "component_occurrences",
         "bodies",
         "shells",
-        "faces"
+        "faces",
+        "memberships"
       ],
       "unevaluatedProperties": {
         "not": {}
@@ -144,6 +150,13 @@
           },
           "maxItems": 1024
         },
+        "memberships": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TopologyMembership"
+          },
+          "maxItems": 1024
+        },
         "next_cursor": {
           "type": "string",
           "maxLength": 256
@@ -154,7 +167,8 @@
         "occurrences",
         "bodies",
         "shells",
-        "faces"
+        "faces",
+        "memberships"
       ],
       "unevaluatedProperties": {
         "not": {}
@@ -265,19 +279,15 @@
           "minLength": 1,
           "maxLength": 64
         },
-        "shell_handles": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "maxItems": 250000
+        "shell_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 250000
         },
-        "face_handles": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "maxItems": 1000000
+        "face_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
         },
         "bounds_mm": {
           "type": "array",
@@ -299,8 +309,8 @@
         "handle",
         "definition_handle",
         "topology_kind",
-        "shell_handles",
-        "face_handles",
+        "shell_count",
+        "face_count",
         "bounds_mm",
         "volume_mm3"
       ],
@@ -321,19 +331,15 @@
           "minLength": 68,
           "maxLength": 68
         },
-        "body_handles": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "maxItems": 100000
+        "body_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
         },
-        "face_handles": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "maxItems": 1000000
+        "face_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
         },
         "source_entity": {
           "$ref": "#/$defs/SourceEntityEvidence"
@@ -342,8 +348,8 @@
       "required": [
         "handle",
         "definition_handle",
-        "body_handles",
-        "face_handles"
+        "body_count",
+        "face_count"
       ],
       "unevaluatedProperties": {
         "not": {}
@@ -362,19 +368,15 @@
           "minLength": 68,
           "maxLength": 68
         },
-        "body_handles": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "maxItems": 100000
+        "body_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
         },
-        "shell_handles": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "maxItems": 250000
+        "shell_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 250000
         },
         "bounds_mm": {
           "type": "array",
@@ -403,11 +405,37 @@
       "required": [
         "handle",
         "definition_handle",
-        "body_handles",
-        "shell_handles",
+        "body_count",
+        "shell_count",
         "bounds_mm",
         "area_mm2",
         "centroid_mm"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "TopologyMembership": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "$ref": "#/$defs/TopologyMembershipKind"
+        },
+        "owner_handle": {
+          "type": "string",
+          "minLength": 68,
+          "maxLength": 68
+        },
+        "member_handle": {
+          "type": "string",
+          "minLength": 68,
+          "maxLength": 68
+        }
+      },
+      "required": [
+        "kind",
+        "owner_handle",
+        "member_handle"
       ],
       "unevaluatedProperties": {
         "not": {}
@@ -539,6 +567,14 @@
       "unevaluatedProperties": {
         "not": {}
       }
+    },
+    "TopologyMembershipKind": {
+      "type": "string",
+      "enum": [
+        "body_shell",
+        "body_face",
+        "shell_face"
+      ]
     }
   }
 }

@@ -154,12 +154,15 @@ references point to ordinary generated DTO roots; transport-specific envelopes
 remain governed by ADR-011 and its specifications.
 
 `@experimentalOperation` marks a catalog-discovered operation as structural
-research with `runtime_available: false`. Its roots still generate in every
-required language, but C++, Rust, and Python expected runtime catalogs omit it.
-TypeScript operation metadata retains it with `runtimeAvailable: false`, and
-runtime catalog compatibility checks consider only available operations. The
+research with portable `runtime_available: false`. Its roots still generate in
+every required language. `@nativeExperimentalOperation` may only accompany
+that marker and adds `native_runtime_available: true`; an unpaired use is a
+compile error so native-only intent cannot fail open into C ABI/WASM exposure.
+Rust and Python executable-client catalogs include portable plus native-only
+operations. TypeScript metadata retains both flags, allowing its portable IPC
+client expectation and native Node-process expectation to remain exact. The
 promotion manifest must independently register the operation and both roots as
-`experimental_candidate`; the decorator is not promotion evidence.
+`experimental_candidate`; neither decorator is promotion evidence.
 
 ## Supported subset and failure policy
 

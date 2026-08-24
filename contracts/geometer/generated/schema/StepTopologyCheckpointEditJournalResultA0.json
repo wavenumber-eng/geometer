@@ -1,0 +1,156 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:wavenumber:schema:geometer:geometry.step_topology.checkpoint_edit_journal.result:a0",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "type": "string",
+      "const": "geometry.step_topology.checkpoint_edit_journal.result.a0"
+    },
+    "state": {
+      "$ref": "#/$defs/MutationSessionState"
+    },
+    "source_sha256": {
+      "type": "string",
+      "minLength": 64,
+      "maxLength": 64
+    },
+    "source_brep_sha256": {
+      "type": "string",
+      "minLength": 64,
+      "maxLength": 64
+    },
+    "target_inventory_sha256": {
+      "type": "string",
+      "minLength": 64,
+      "maxLength": 64
+    },
+    "occt_version": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "transaction_count": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100000
+    },
+    "journal": {
+      "$ref": "#/$defs/EditJournalAttachmentDescriptor"
+    },
+    "diagnostics": {
+      "type": "array",
+      "items": {
+        "$ref": "urn:wavenumber:schema:geometer:geometry.common.diagnostic:a0"
+      },
+      "maxItems": 256
+    }
+  },
+  "required": [
+    "schema",
+    "state",
+    "source_sha256",
+    "source_brep_sha256",
+    "target_inventory_sha256",
+    "occt_version",
+    "transaction_count",
+    "journal",
+    "diagnostics"
+  ],
+  "unevaluatedProperties": {
+    "not": {}
+  },
+  "$defs": {
+    "MutationSessionState": {
+      "type": "object",
+      "properties": {
+        "session": {
+          "$ref": "#/$defs/SessionReference"
+        },
+        "edit_journal_revision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "accounted_string_bytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 16777216
+        },
+        "estimated_resident_bytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 536870912
+        }
+      },
+      "required": [
+        "session",
+        "edit_journal_revision",
+        "accounted_string_bytes",
+        "estimated_resident_bytes"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "EditJournalAttachmentDescriptor": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "const": "edit_journal"
+        },
+        "media_type": {
+          "type": "string",
+          "const": "application/vnd.wavenumber.geometer.step-topology-edit-journal"
+        },
+        "format": {
+          "type": "string",
+          "const": "geometer.step_topology_edit_journal.a0"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 67108864
+        },
+        "sha256": {
+          "type": "string",
+          "minLength": 64,
+          "maxLength": 64
+        }
+      },
+      "required": [
+        "name",
+        "media_type",
+        "format",
+        "bytes",
+        "sha256"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "SessionReference": {
+      "type": "object",
+      "properties": {
+        "session_handle": {
+          "type": "string",
+          "minLength": 68,
+          "maxLength": 68
+        },
+        "generation": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        }
+      },
+      "required": [
+        "session_handle",
+        "generation"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    }
+  }
+}

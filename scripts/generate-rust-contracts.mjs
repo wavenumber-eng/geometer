@@ -67,6 +67,9 @@ async function emit(name, content) {
 function generateHeader() {
   return `// Generated from wn_geometer_contract_catalog.a0.json. Do not edit.
 
+#![allow(clippy::approx_constant, reason = "schema bounds retain their exact generated decimal form")]
+#![allow(clippy::large_enum_variant, reason = "generated wire DTOs preserve their unboxed contract shape")]
+
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
 pub const NORMALIZED_CATALOG_SHA256: &str = "${catalogSha256}";
@@ -149,7 +152,7 @@ function operationCatalogTemplate() {
     release_version: "",
     c_abi_generation: 0,
     operations: contractCatalog.operations
-      .filter((operation) => operation.runtime_available)
+      .filter((operation) => operation.runtime_available || operation.native_runtime_available)
       .map((operation) => ({
         identity: operation.identity,
         request_contract: operation.request_contract,
@@ -233,6 +236,7 @@ impl Validate for ${shortName(item.name)} {
 }
 
 function generateUnion(item, jsonWire) {
+  const name = shortName(item.name);
   const variants = item.variants
     .map((variant) => `    ${pascal(variant.name)}(${rustType(variant.type)}),`)
     .join("\n");
@@ -241,12 +245,36 @@ function generateUnion(item, jsonWire) {
       (variant) => `            Self::${pascal(variant.name)}(value) => value.validate_at(path),`,
     )
     .join("\n");
-  return `#[derive(Clone, Debug, ${jsonWire ? "Deserialize, " : ""}PartialEq${jsonWire ? ", Serialize" : ""})]
-${jsonWire ? "#[serde(untagged)]\n" : ""}pub enum ${shortName(item.name)} {
-${variants}
-}
+  const deserialization = jsonWire
+    ? `
 
-impl Validate for ${shortName(item.name)} {
+impl<'de> Deserialize<'de> for ${name} {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let raw = Box::<serde_json::value::RawValue>::deserialize(deserializer)?;
+${item.variants
+  .map(
+    (
+      variant,
+    ) => `        if let Ok(value) = serde_json::from_str::<${rustType(variant.type)}>(raw.get()) {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::${pascal(variant.name)}(value));
+            }
+        }`,
+  )
+  .join("\n")}
+        Err(serde::de::Error::custom("value does not match any ${name} variant"))
+    }
+}`
+    : "";
+  return `#[derive(Clone, Debug, PartialEq${jsonWire ? ", Serialize" : ""})]
+${jsonWire ? "#[serde(untagged)]\n" : ""}pub enum ${name} {
+${variants}
+}${deserialization}
+
+impl Validate for ${name} {
     fn validate_at(&self, path: &str) -> Result<(), ContractError> {
         match self {
 ${validation}

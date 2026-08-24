@@ -20,9 +20,11 @@ returns normalized research records for:
   properties, and `TDataStd_NamedData` summaries; and
 - opt-in, model-local STEP transfer-map evidence.
 
-This API deliberately precedes TypeSpec Slice A. Its C++ structures are
-behavioral research evidence, not a schema promise, and are not exported by the
-WASM build or generic operation transport.
+The C++ value structures remain behavioral research evidence rather than a
+schema promise. The generated experimental surface now routes native executable
+open, paged inspect, render, hit-resolution, close, logical-group/probe
+mutation, journal checkpoint, and exact-source journal restore operations.
+Those operations remain absent from the portable C ABI and browser/WASM runtime.
 
 ## Identity And Resolution
 
@@ -53,15 +55,16 @@ occurrence context.
 | Event | Current behavior |
 | --- | --- |
 | Open | Validate source/limits, hash exact submitted bytes, import from an in-memory stream, build one bounded snapshot, then publish the session atomically |
-| Inspect | Return a copy of the current snapshot; carrier labels and source-entity evidence are independently opt-in |
+| Inspect | The value API can return a full snapshot copy. Native IPC pages the immutable retained snapshot without copying it wholesale; source-entity evidence is opt-in and diagnostic carriers are explicitly unsupported on the wire |
 | Refresh | Atomically rebuild at generation + 1; old target handles become invalid only after success. A failed or cancelled refresh clears its output and preserves the prior generation and handles |
 | Close | Destroy the source bytes, OCCT reader/work session, XCAF document, snapshot, and handle registry |
 | Expiry | `StepTopologySessionStore` removes sessions at the configured inactivity timeout |
 | Eviction | The store removes least-recently-used sessions before exceeding session-count or estimated-resident-byte limits and reports their session tokens |
 | Worker replacement | In-process `clear_for_process_replacement()` supports orderly replacement; a deadline/cancel kill destroys the whole worker. The supervisor starts a new process generation, so every old session and target token remains invalid |
-| Restart/restore | Reopen the original STEP bytes to obtain a new session. No GLB can restore authoring state. XBF checkpoints and edit-journal recovery are later work packages |
-| Render | The next experimental native slice tessellates the live generation into a bounded renderer-neutral binding artifact; see `step-topology-render-binding.md` |
-| Apply/export | Not exposed by this inspection slice. Their later operations must validate session/generation, apply atomically, and use private output storage |
+| Restart/restore | Native IPC can reopen the exact original STEP bytes plus a bounded edit journal under explicit source, B-rep, inventory, OCCT-version, and transaction-count preconditions. It always issues a new session identity. No GLB can restore authoring state; changed-source recovery and general XBF/XML restore remain later runtime work |
+| Render | Native IPC emits a bounded GLB while retaining one memory-accounted authoritative render artifact per live session; a new render supersedes the prior artifact |
+| Mutation/checkpoint | Native IPC routes atomic logical-group and metadata-probe transactions and emits a source-bound edit-journal attachment. Successful mutations advance the generation and remint every topology handle |
+| Hierarchy/save/export | Generated experimental shapes exist, but native process routing remains unavailable. Future implementations must preserve the same session, attachment, and atomic-publication boundaries |
 
 The value API is serialized-worker infrastructure, not a thread-safe shared
 document service. It performs no filesystem writes during import. The internal
@@ -98,15 +101,33 @@ individual strings, aggregate strings, active sessions, and estimated resident
 bytes. Transfer indexing charges every scanned model entity and every visited
 result subshape, including repeats, and fails the inspection atomically at its
 own limits; it never silently truncates and then reports a false negative.
+
+The session information reports aggregate accounted string bytes. That total
+includes normalized inspection strings plus live logical-group authored ids
+and names. The snapshot's normalized B-rep evidence digest excludes
+tessellation and is intended for change detection and recovery evidence only;
+it is not a persistent target identifier.
 Resident-byte arithmetic saturates on overflow and
 conservatively accounts vector and string capacity, nested collections, retained
 source bytes, normalized records, and handle-map nodes/buckets. It is an
 admission/accounting estimate, not a measurement of all OCCT/XCAF heap
 allocations; hard process memory containment remains required.
 
-Default cardinality limits are intentionally below the existing framed
-transport ceilings. Slice A still needs pagination or a compact topology-table
-attachment before any inspection structure becomes a wire contract.
+Native GLB rendering adds a separate aggregate transient ceiling. After the
+candidate render artifact is charged, the encoder progressively accounts its
+BIN, JSON stacks, layout metadata, old-plus-new source reallocation peaks, and
+destination GLB while enforcing the independent final-wire ceiling. Source
+allocations are admitted through a shared budget allocator before system
+allocation; the once-reserved destination is preflighted against all live
+source storage. The store derives that transient ceiling from currently
+available resident allowance without releasing the prior retained artifact, so
+failure is atomic.
+
+Native IPC exposes a precomputed, bounded record count and pages no more than
+1,024 combined target/membership-edge records at a time. Its continuation
+cursor can resume within a high-degree membership list, so a body or shell
+cannot force an oversized response. The optional compact topology-table
+attachment remains deferred.
 
 ## STEP Transfer-Map Evidence
 
@@ -148,14 +169,18 @@ and exact benefits are measured. BRepGraph does not block the inspection API.
 
 The native tests cover explicit source-root placement, nested repeated
 occurrences, composed rotation and translation, flat multi-solid definitions,
-reciprocal body/shell/face memberships, material definition and assignment
+exact body/shell/face membership counts and separately paged relationship edges, material definition and assignment
 round-trip, metadata summaries,
 opt-in diagnostics and source evidence, exact source hashing, all target kinds,
 OS-random session-token uniqueness, forged and cross-session handles,
 generation refresh, cancelled-open rejection, failed-refresh rollback, close,
 cardinality and transfer-index limits,
 session/store-byte admission, access-sensitive LRU eviction, inactivity expiry,
-process-replacement invalidation, and the isolated BRepGraph capability probe.
+process-replacement invalidation, exact-journal replay, replay-precondition
+failure before store eviction, fresh restored identity, and the isolated
+BRepGraph capability probe. The TypeScript integration additionally performs a
+real Three.js raycast, mutation/checkpoint, process replacement, exact restore,
+and post-restore group/probe edits.
 
 Process-containment validation is separate because it needs the native test
 worker executable:

@@ -84,8 +84,13 @@ bool valid_limits(const StepTopologyLimits& limits)
            limits.max_render_instanced_triangles > 0 && limits.max_render_estimated_bytes > 0 &&
            limits.max_render_glb_bytes > 0 && limits.max_string_bytes > 0 &&
            limits.max_logical_groups > 0 && limits.max_group_members > 0 &&
-           limits.max_total_string_bytes > 0 && limits.max_session_estimated_bytes > 0 &&
-           limits.max_store_estimated_bytes > 0 && limits.inactivity_timeout.count() > 0;
+           limits.max_group_transaction_member_references > 0 && limits.max_metadata_probes > 0 &&
+           limits.max_edit_journal_transactions > 0 && limits.max_edit_journal_bytes > 0 &&
+           limits.max_edit_journal_replay_work_items > 0 &&
+           limits.max_hierarchy_transaction_commands > 0 &&
+           limits.max_hierarchy_transaction_work_items > 0 && limits.max_total_string_bytes > 0 &&
+           limits.max_session_estimated_bytes > 0 && limits.max_store_estimated_bytes > 0 &&
+           limits.inactivity_timeout.count() > 0;
 }
 
 void remove_source_evidence(StepTopologySnapshot* snapshot)
@@ -186,6 +191,92 @@ int StepTopologySession::open_step(const unsigned char* source, std::size_t sour
     return open_step(source, source_size, limits, nullptr, session, status);
 }
 
+int StepTopologySession::open_step_with_edit_journal(
+    const unsigned char* source, std::size_t source_size, const unsigned char* journal,
+    std::size_t journal_size, const StepTopologyLimits& limits,
+    std::unique_ptr<StepTopologySession>* session,
+    StepTopologyEditJournalRestoreResult* restored_state, Status* status)
+{
+    return open_step_with_edit_journal(source, source_size, journal, journal_size, limits, nullptr,
+                                       session, restored_state, status);
+}
+
+int StepTopologySession::open_step_with_edit_journal(
+    const unsigned char* source, std::size_t source_size, const unsigned char* journal,
+    std::size_t journal_size, const StepTopologyLimits& limits,
+    const StepTopologyCancellation* cancellation, std::unique_ptr<StepTopologySession>* session,
+    StepTopologyEditJournalRestoreResult* restored_state, Status* status)
+{
+    if (session == nullptr || restored_state == nullptr)
+    {
+        set_status(status, kInvalidArgument, "Edit-journal restore output is null.");
+        return kInvalidArgument;
+    }
+    session->reset();
+    *restored_state = {};
+    try
+    {
+        std::string journal_source_sha256;
+        std::string journal_brep_sha256;
+        std::string journal_target_inventory_sha256;
+        std::string journal_occt_version;
+        std::vector<EditJournalTransactionRecord> transactions;
+        const int decode_code =
+            decode_edit_journal(journal, journal_size, limits, &journal_source_sha256,
+                                &journal_brep_sha256, &journal_target_inventory_sha256,
+                                &journal_occt_version, cancellation, &transactions, status);
+        if (decode_code != 0)
+            return decode_code;
+
+        std::unique_ptr<StepTopologySession> opened;
+        const int open_code = open_step(source, source_size, limits, cancellation, &opened, status);
+        if (open_code != 0)
+            return open_code;
+        if (opened->impl_->data->info.source_sha256 != journal_source_sha256 ||
+            opened->impl_->data->snapshot.brep_sha256 != journal_brep_sha256 ||
+            edit_journal_target_inventory_sha256(opened->impl_->data->snapshot) !=
+                journal_target_inventory_sha256 ||
+            opened->impl_->data->info.occt_version != journal_occt_version)
+        {
+            set_status(
+                status, kConflict,
+                "Edit journal does not match the exact STEP source, ordered target inventory, "
+                "B-rep, and OCCT version.");
+            return kConflict;
+        }
+        const int replay_code = replay_edit_journal(opened->impl_->data.get(), transactions,
+                                                    cancellation, restored_state, status);
+        if (replay_code != 0)
+        {
+            *restored_state = {};
+            return replay_code;
+        }
+        opened->impl_->info.generation = opened->impl_->data->info.generation;
+        opened->impl_->info.edit_journal_revision = opened->impl_->data->info.edit_journal_revision;
+        opened->impl_->info.accounted_string_bytes =
+            opened->impl_->data->info.accounted_string_bytes;
+        opened->impl_->info.estimated_resident_bytes =
+            opened->impl_->data->info.estimated_resident_bytes;
+        *session = std::move(opened);
+        set_status(status, 0, "");
+        return 0;
+    }
+    catch (const Standard_Failure& failure)
+    {
+        session->reset();
+        *restored_state = {};
+        set_status(status, kInternalFailure, failure.GetMessageString());
+        return kInternalFailure;
+    }
+    catch (const std::exception& error)
+    {
+        session->reset();
+        *restored_state = {};
+        set_status(status, kInternalFailure, error.what());
+        return kInternalFailure;
+    }
+}
+
 int StepTopologySession::open_step(const unsigned char* source, std::size_t source_size,
                                    const StepTopologyLimits& limits,
                                    const StepTopologyCancellation* cancellation,
@@ -234,6 +325,11 @@ int StepTopologySession::open_step(const unsigned char* source, std::size_t sour
         if (inspect_code != 0)
         {
             return inspect_code;
+        }
+        const int journal_code = initialize_edit_journal_accounting(data.get(), status);
+        if (journal_code != 0)
+        {
+            return journal_code;
         }
         if (data->info.estimated_resident_bytes > limits.max_session_estimated_bytes)
         {
@@ -298,6 +394,217 @@ int StepTopologySession::inspect(const StepTopologyInspectionOptions& options,
     return 0;
 }
 
+int StepTopologySession::inspect_page(const StepTopologyInspectionOptions& options,
+                                      const StepTopologyPagePosition& position, std::size_t limit,
+                                      StepTopologySnapshotPage* page, Status* status) const
+{
+    if (page == nullptr || limit == 0U || limit > 1024U)
+    {
+        set_status(status, kInvalidArgument, "STEP topology page output or limit is invalid.");
+        return kInvalidArgument;
+    }
+    *page = {};
+    if (!is_open())
+    {
+        set_status(status, kClosed, "STEP topology session is closed.");
+        return kClosed;
+    }
+    if (options.include_diagnostic_carriers)
+    {
+        set_status(status, kInvalidArgument,
+                   "Diagnostic-carrier projection is deferred from the native wire page.");
+        return kInvalidArgument;
+    }
+
+    const StepTopologySnapshot& snapshot = impl_->data->snapshot;
+    page->session = snapshot.session;
+    page->definition_count = snapshot.definitions.size();
+    page->root_occurrence_count = snapshot.root_occurrences.size();
+    page->component_occurrence_count = snapshot.occurrences.size();
+    page->body_count = snapshot.bodies.size();
+    page->shell_count = snapshot.shells.size();
+    page->face_count = snapshot.faces.size();
+    page->membership_count = snapshot.membership_count;
+
+    StepTopologyPagePosition current = position;
+    if (current.section > 9U)
+    {
+        set_status(status, kInvalidArgument, "STEP topology page position section is invalid.");
+        return kInvalidArgument;
+    }
+    auto valid_position = [&](std::size_t size, bool nested)
+    { return current.record <= size && (nested || current.member == 0U); };
+    const std::size_t section_sizes[] = {
+        snapshot.definitions.size(), snapshot.root_occurrences.size(),
+        snapshot.occurrences.size(), snapshot.bodies.size(),
+        snapshot.shells.size(),      snapshot.faces.size(),
+        snapshot.bodies.size(),      snapshot.bodies.size(),
+        snapshot.shells.size(),      0U,
+    };
+    if (!valid_position(section_sizes[current.section], current.section >= 6U) ||
+        (current.record == section_sizes[current.section] && current.member != 0U))
+    {
+        set_status(status, kInvalidArgument, "STEP topology page position is out of bounds.");
+        return kInvalidArgument;
+    }
+    if (current.section == 6U && current.record < snapshot.bodies.size() &&
+        current.member > snapshot.bodies[current.record].shell_handles.size())
+    {
+        set_status(status, kInvalidArgument, "STEP topology page member is out of bounds.");
+        return kInvalidArgument;
+    }
+    if (current.section == 7U && current.record < snapshot.bodies.size() &&
+        current.member > snapshot.bodies[current.record].face_handles.size())
+    {
+        set_status(status, kInvalidArgument, "STEP topology page member is out of bounds.");
+        return kInvalidArgument;
+    }
+    if (current.section == 8U && current.record < snapshot.shells.size() &&
+        current.member > snapshot.shells[current.record].face_handles.size())
+    {
+        set_status(status, kInvalidArgument, "STEP topology page member is out of bounds.");
+        return kInvalidArgument;
+    }
+
+    auto clear_evidence = [&](auto* item)
+    {
+        if (!options.include_source_entity_evidence)
+            item->source_entity = {};
+    };
+    std::size_t added = 0U;
+    while (added < limit && current.section < 9U)
+    {
+        if (current.section == 0U && current.record < snapshot.definitions.size())
+        {
+            const auto& source = snapshot.definitions[current.record++];
+            page->definitions.push_back({source.handle, source.is_assembly, source.label,
+                                         source.body_handles.size(), source.face_count,
+                                         source.source_entity});
+            clear_evidence(&page->definitions.back());
+            ++added;
+        }
+        else if (current.section == 1U && current.record < snapshot.root_occurrences.size())
+        {
+            page->root_occurrences.push_back(snapshot.root_occurrences[current.record++]);
+            ++added;
+        }
+        else if (current.section == 2U && current.record < snapshot.occurrences.size())
+        {
+            page->occurrences.push_back(snapshot.occurrences[current.record++]);
+            ++added;
+        }
+        else if (current.section == 3U && current.record < snapshot.bodies.size())
+        {
+            const auto& source = snapshot.bodies[current.record++];
+            page->bodies.push_back({source.handle, source.definition_handle, source.topology_kind,
+                                    source.shell_handles.size(), source.face_handles.size(),
+                                    source.bounds, source.volume, source.label,
+                                    source.source_entity});
+            clear_evidence(&page->bodies.back());
+            ++added;
+        }
+        else if (current.section == 4U && current.record < snapshot.shells.size())
+        {
+            const auto& source = snapshot.shells[current.record++];
+            page->shells.push_back({source.handle, source.definition_handle,
+                                    source.body_handles.size(), source.face_handles.size(),
+                                    source.label, source.source_entity});
+            clear_evidence(&page->shells.back());
+            ++added;
+        }
+        else if (current.section == 5U && current.record < snapshot.faces.size())
+        {
+            const auto& source = snapshot.faces[current.record++];
+            page->faces.push_back({source.handle, source.definition_handle,
+                                   source.body_handles.size(), source.shell_handles.size(),
+                                   source.bounds, source.area, source.centroid, source.label,
+                                   source.source_entity});
+            clear_evidence(&page->faces.back());
+            ++added;
+        }
+        else if (current.section >= 6U)
+        {
+            const std::vector<std::string>* members = nullptr;
+            std::string owner;
+            StepTopologyMembershipKind kind = StepTopologyMembershipKind::body_shell;
+            if (current.section == 6U && current.record < snapshot.bodies.size())
+            {
+                owner = snapshot.bodies[current.record].handle;
+                members = &snapshot.bodies[current.record].shell_handles;
+            }
+            else if (current.section == 7U && current.record < snapshot.bodies.size())
+            {
+                owner = snapshot.bodies[current.record].handle;
+                members = &snapshot.bodies[current.record].face_handles;
+                kind = StepTopologyMembershipKind::body_face;
+            }
+            else if (current.section == 8U && current.record < snapshot.shells.size())
+            {
+                owner = snapshot.shells[current.record].handle;
+                members = &snapshot.shells[current.record].face_handles;
+                kind = StepTopologyMembershipKind::shell_face;
+            }
+            if (members != nullptr && current.member < members->size())
+            {
+                page->memberships.push_back({kind, owner, (*members)[current.member++]});
+                ++added;
+            }
+            else if (current.record < section_sizes[current.section])
+            {
+                ++current.record;
+                current.member = 0U;
+            }
+            else
+            {
+                ++current.section;
+                current.record = 0U;
+                current.member = 0U;
+            }
+        }
+        else
+        {
+            ++current.section;
+            current.record = 0U;
+            current.member = 0U;
+        }
+    }
+    for (;;)
+    {
+        if (current.section < 6U && current.record == section_sizes[current.section])
+        {
+            ++current.section;
+            current.record = 0U;
+            current.member = 0U;
+            continue;
+        }
+        if (current.section >= 6U && current.section < 9U)
+        {
+            if (current.record == section_sizes[current.section])
+            {
+                ++current.section;
+                current.record = 0U;
+                current.member = 0U;
+                continue;
+            }
+            const std::size_t member_size =
+                current.section == 6U   ? snapshot.bodies[current.record].shell_handles.size()
+                : current.section == 7U ? snapshot.bodies[current.record].face_handles.size()
+                                        : snapshot.shells[current.record].face_handles.size();
+            if (current.member == member_size)
+            {
+                ++current.record;
+                current.member = 0U;
+                continue;
+            }
+        }
+        break;
+    }
+    page->next = current;
+    page->has_next = current.section < 9U;
+    set_status(status, 0, "");
+    return 0;
+}
+
 int StepTopologySession::refresh(StepTopologySnapshot* snapshot, Status* status)
 {
     return refresh(nullptr, snapshot, status);
@@ -357,7 +664,8 @@ int StepTopologySession::render(const StepTopologyTessellationOptions& options,
         set_status(status, kClosed, "STEP topology session is closed.");
         return kClosed;
     }
-    return build_render_artifact(impl_->data.get(), options, cancellation, artifact, status);
+    return build_render_artifact(impl_->data.get(), options, cancellation,
+                                 impl_->data->limits.max_render_estimated_bytes, artifact, status);
 }
 
 int StepTopologySession::render_glb_work_packet(const StepTopologyGlbOptions& options,
@@ -405,6 +713,8 @@ int StepTopologySession::resolve_render_hit(const StepTopologyRenderArtifact& ar
         artifact.session.source_sha256 != impl_->data->info.source_sha256 ||
         artifact.session.occt_version != impl_->data->info.occt_version ||
         artifact.session.source_bytes != impl_->data->info.source_bytes ||
+        artifact.session.edit_journal_revision != impl_->data->info.edit_journal_revision ||
+        artifact.session.accounted_string_bytes != impl_->data->info.accounted_string_bytes ||
         artifact.session.estimated_resident_bytes != impl_->data->info.estimated_resident_bytes)
     {
         set_status(status, kUnknownTarget,
@@ -672,16 +982,77 @@ int StepTopologySession::apply_logical_groups(const StepTopologyGroupTransaction
                                               StepTopologyGroupTransactionResult* result,
                                               Status* status)
 {
+    return apply_logical_groups(transaction, nullptr, nullptr, result, status);
+}
+
+int StepTopologySession::apply_logical_groups(const StepTopologyGroupTransaction& transaction,
+                                              StepTopologyGroupPublicationGate publication_gate,
+                                              void* publication_context,
+                                              StepTopologyGroupTransactionResult* result,
+                                              Status* status)
+{
     if (!is_open())
     {
         set_status(status, kClosed, "STEP topology session is closed.");
         return kClosed;
     }
     const int code =
-        apply_logical_group_transaction(impl_->data.get(), transaction, result, status);
+        apply_logical_group_transaction(impl_->data.get(), transaction, nullptr, publication_gate,
+                                        publication_context, result, status);
     if (code == 0)
     {
-        impl_->info = impl_->data->info;
+        // Identity/source strings are immutable after open. Updating only mutable scalar state
+        // keeps successful transaction publication free of a late allocating copy.
+        impl_->info.generation = impl_->data->info.generation;
+        impl_->info.edit_journal_revision = impl_->data->info.edit_journal_revision;
+        impl_->info.accounted_string_bytes = impl_->data->info.accounted_string_bytes;
+        impl_->info.estimated_resident_bytes = impl_->data->info.estimated_resident_bytes;
+    }
+    return code;
+}
+
+int StepTopologySession::checkpoint_edit_journal(StepTopologyEditJournalCheckpoint* checkpoint,
+                                                 Status* status) const
+{
+    if (!is_open())
+    {
+        if (checkpoint != nullptr)
+            *checkpoint = {};
+        set_status(status, kClosed, "STEP topology session is closed.");
+        return kClosed;
+    }
+    return encode_edit_journal(impl_->data.get(), checkpoint, status);
+}
+
+int StepTopologySession::apply_metadata_probes(const StepTopologyProbeTransaction& transaction,
+                                               StepTopologyProbeTransactionResult* result,
+                                               Status* status)
+{
+    return apply_metadata_probes(transaction, nullptr, nullptr, result, status);
+}
+
+int StepTopologySession::apply_metadata_probes(const StepTopologyProbeTransaction& transaction,
+                                               StepTopologyProbePublicationGate publication_gate,
+                                               void* publication_context,
+                                               StepTopologyProbeTransactionResult* result,
+                                               Status* status)
+{
+    if (!is_open())
+    {
+        if (result != nullptr)
+            *result = {};
+        set_status(status, kClosed, "STEP topology session is closed.");
+        return kClosed;
+    }
+    const int code =
+        apply_metadata_probe_transaction(impl_->data.get(), transaction, nullptr, publication_gate,
+                                         publication_context, result, status);
+    if (code == 0)
+    {
+        impl_->info.generation = impl_->data->info.generation;
+        impl_->info.edit_journal_revision = impl_->data->info.edit_journal_revision;
+        impl_->info.accounted_string_bytes = impl_->data->info.accounted_string_bytes;
+        impl_->info.estimated_resident_bytes = impl_->data->info.estimated_resident_bytes;
     }
     return code;
 }
@@ -696,286 +1067,6 @@ int StepTopologySession::close(Status* status)
     impl_->data.reset();
     set_status(status, 0, "");
     return 0;
-}
-
-struct StepTopologySessionStore::Impl
-{
-    struct Entry
-    {
-        std::unique_ptr<StepTopologySession> session;
-        std::chrono::steady_clock::time_point last_access;
-        std::uint64_t access_order = 0;
-    };
-
-    explicit Impl(StepTopologyLimits value) : limits(std::move(value)) {}
-
-    StepTopologyLimits limits;
-    std::unordered_map<std::string, Entry> sessions;
-    std::size_t resident_bytes = 0;
-    std::uint64_t access_counter = 0;
-
-    void touch(Entry& entry)
-    {
-        entry.last_access = std::chrono::steady_clock::now();
-        entry.access_order = ++access_counter;
-    }
-
-    std::string evict_lru()
-    {
-        auto oldest = sessions.end();
-        for (auto iterator = sessions.begin(); iterator != sessions.end(); ++iterator)
-        {
-            if (oldest == sessions.end() ||
-                iterator->second.access_order < oldest->second.access_order)
-            {
-                oldest = iterator;
-            }
-        }
-        if (oldest == sessions.end())
-        {
-            return {};
-        }
-        const std::string handle = oldest->first;
-        resident_bytes -= oldest->second.session->info().estimated_resident_bytes;
-        sessions.erase(oldest);
-        return handle;
-    }
-};
-
-StepTopologySessionStore::StepTopologySessionStore(StepTopologyLimits limits)
-    : impl_(std::make_unique<Impl>(std::move(limits)))
-{
-}
-
-StepTopologySessionStore::StepTopologySessionStore(StepTopologySessionStore&&) noexcept = default;
-StepTopologySessionStore&
-StepTopologySessionStore::operator=(StepTopologySessionStore&&) noexcept = default;
-StepTopologySessionStore::~StepTopologySessionStore() = default;
-
-int StepTopologySessionStore::open_step(const unsigned char* source, std::size_t source_size,
-                                        StepTopologyOpenResult* result, Status* status)
-{
-    if (result == nullptr)
-    {
-        set_status(status, kInvalidArgument, "STEP topology open result pointer is null.");
-        return kInvalidArgument;
-    }
-    std::unique_ptr<StepTopologySession> session;
-    const int code =
-        StepTopologySession::open_step(source, source_size, impl_->limits, &session, status);
-    if (code != 0)
-    {
-        return code;
-    }
-    const std::size_t bytes = session->info().estimated_resident_bytes;
-    if (bytes > impl_->limits.max_store_estimated_bytes)
-    {
-        set_status(status, kResourceLimit,
-                   "STEP topology session exceeds the store resident-byte limit.");
-        return kResourceLimit;
-    }
-
-    const std::string handle = session->info().session_handle;
-    if (impl_->sessions.count(handle) != 0)
-    {
-        set_status(status, kInternalFailure, "STEP topology session handle collision.");
-        return kInternalFailure;
-    }
-
-    StepTopologyOpenResult output;
-    output.evicted_session_handles = evict_expired();
-    while (impl_->sessions.size() >= impl_->limits.max_sessions ||
-           impl_->resident_bytes > impl_->limits.max_store_estimated_bytes - bytes)
-    {
-        const std::string evicted = impl_->evict_lru();
-        if (evicted.empty())
-        {
-            set_status(status, kResourceLimit, "STEP topology store cannot admit the session.");
-            return kResourceLimit;
-        }
-        output.evicted_session_handles.push_back(evicted);
-    }
-
-    output.session = session->info();
-    Impl::Entry entry;
-    entry.session = std::move(session);
-    impl_->touch(entry);
-    const auto inserted = impl_->sessions.emplace(handle, std::move(entry));
-    if (!inserted.second)
-    {
-        set_status(status, kInternalFailure, "STEP topology session handle collision.");
-        return kInternalFailure;
-    }
-    impl_->resident_bytes += bytes;
-    *result = std::move(output);
-    set_status(status, 0, "");
-    return 0;
-}
-
-int StepTopologySessionStore::inspect(const std::string& session_handle_value,
-                                      const StepTopologyInspectionOptions& options,
-                                      StepTopologySnapshot* snapshot, Status* status)
-{
-    evict_expired();
-    const auto found = impl_->sessions.find(session_handle_value);
-    if (found == impl_->sessions.end())
-    {
-        set_status(status, kUnknownSession, "STEP topology session is unknown or expired.");
-        return kUnknownSession;
-    }
-    impl_->touch(found->second);
-    return found->second.session->inspect(options, snapshot, status);
-}
-
-int StepTopologySessionStore::refresh(const std::string& session_handle_value,
-                                      StepTopologySnapshot* snapshot, Status* status)
-{
-    if (snapshot != nullptr)
-    {
-        *snapshot = {};
-    }
-    evict_expired();
-    const auto found = impl_->sessions.find(session_handle_value);
-    if (found == impl_->sessions.end())
-    {
-        set_status(status, kUnknownSession, "STEP topology session is unknown or expired.");
-        return kUnknownSession;
-    }
-    const std::size_t previous_bytes = found->second.session->info().estimated_resident_bytes;
-    const int code = found->second.session->refresh(snapshot, status);
-    if (code != 0)
-    {
-        return code;
-    }
-    const std::size_t current_bytes = found->second.session->info().estimated_resident_bytes;
-    const std::size_t other_bytes = impl_->resident_bytes - previous_bytes;
-    if (current_bytes > impl_->limits.max_store_estimated_bytes ||
-        other_bytes > impl_->limits.max_store_estimated_bytes - current_bytes)
-    {
-        impl_->resident_bytes = other_bytes;
-        impl_->sessions.erase(found);
-        if (snapshot != nullptr)
-        {
-            *snapshot = {};
-        }
-        set_status(
-            status, kResourceLimit,
-            "Refreshed STEP topology session no longer fits the store limit and was evicted.");
-        return kResourceLimit;
-    }
-    impl_->resident_bytes = impl_->resident_bytes - previous_bytes + current_bytes;
-    impl_->touch(found->second);
-    return 0;
-}
-
-int StepTopologySessionStore::apply_logical_groups(const std::string& session_handle_value,
-                                                   const StepTopologyGroupTransaction& transaction,
-                                                   StepTopologyGroupTransactionResult* result,
-                                                   Status* status)
-{
-    if (result != nullptr)
-        *result = {};
-    evict_expired();
-    const auto found = impl_->sessions.find(session_handle_value);
-    if (found == impl_->sessions.end())
-    {
-        set_status(status, kUnknownSession, "STEP topology session is unknown or expired.");
-        return kUnknownSession;
-    }
-    const std::size_t previous_bytes = found->second.session->info().estimated_resident_bytes;
-    const int code = found->second.session->apply_logical_groups(transaction, result, status);
-    if (code != 0)
-        return code;
-    const std::size_t current_bytes = found->second.session->info().estimated_resident_bytes;
-    const std::size_t other_bytes = impl_->resident_bytes - previous_bytes;
-    if (current_bytes > impl_->limits.max_store_estimated_bytes ||
-        other_bytes > impl_->limits.max_store_estimated_bytes - current_bytes)
-    {
-        impl_->resident_bytes = other_bytes;
-        impl_->sessions.erase(found);
-        if (result != nullptr)
-            *result = {};
-        set_status(status, kResourceLimit,
-                   "Mutated STEP topology session no longer fits the store limit and was evicted.");
-        return kResourceLimit;
-    }
-    impl_->resident_bytes = other_bytes + current_bytes;
-    impl_->touch(found->second);
-    return 0;
-}
-
-int StepTopologySessionStore::resolve(const std::string& session_handle_value,
-                                      const std::string& target_handle,
-                                      StepTopologyResolvedTarget* target, Status* status)
-{
-    evict_expired();
-    const auto found = impl_->sessions.find(session_handle_value);
-    if (found == impl_->sessions.end())
-    {
-        set_status(status, kUnknownSession, "STEP topology session is unknown or expired.");
-        return kUnknownSession;
-    }
-    impl_->touch(found->second);
-    return found->second.session->resolve(target_handle, target, status);
-}
-
-int StepTopologySessionStore::close(const std::string& session_handle_value, Status* status)
-{
-    const auto found = impl_->sessions.find(session_handle_value);
-    if (found == impl_->sessions.end())
-    {
-        set_status(status, kUnknownSession, "STEP topology session is unknown or already closed.");
-        return kUnknownSession;
-    }
-    impl_->resident_bytes -= found->second.session->info().estimated_resident_bytes;
-    impl_->sessions.erase(found);
-    set_status(status, 0, "");
-    return 0;
-}
-
-std::vector<std::string>
-StepTopologySessionStore::evict_expired(std::chrono::steady_clock::time_point now)
-{
-    std::vector<std::string> evicted;
-    for (auto iterator = impl_->sessions.begin(); iterator != impl_->sessions.end();)
-    {
-        if (now - iterator->second.last_access >= impl_->limits.inactivity_timeout)
-        {
-            evicted.push_back(iterator->first);
-            impl_->resident_bytes -= iterator->second.session->info().estimated_resident_bytes;
-            iterator = impl_->sessions.erase(iterator);
-        }
-        else
-        {
-            ++iterator;
-        }
-    }
-    std::sort(evicted.begin(), evicted.end());
-    return evicted;
-}
-
-std::vector<std::string> StepTopologySessionStore::clear_for_process_replacement()
-{
-    std::vector<std::string> invalidated;
-    invalidated.reserve(impl_->sessions.size());
-    for (const auto& item : impl_->sessions)
-    {
-        invalidated.push_back(item.first);
-    }
-    std::sort(invalidated.begin(), invalidated.end());
-    impl_->sessions.clear();
-    impl_->resident_bytes = 0;
-    return invalidated;
-}
-
-std::size_t StepTopologySessionStore::size() const
-{
-    return impl_->sessions.size();
-}
-
-std::size_t StepTopologySessionStore::estimated_resident_bytes() const
-{
-    return impl_->resident_bytes;
 }
 
 } // namespace geometer

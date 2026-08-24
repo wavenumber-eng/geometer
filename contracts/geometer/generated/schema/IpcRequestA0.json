@@ -27,9 +27,45 @@
         },
         {
           "$ref": "#/$defs/PackedAttachmentProjectionA0"
+        },
+        {
+          "$ref": "urn:wavenumber:schema:geometer:geometry.step_topology.open.request:a0"
+        },
+        {
+          "$ref": "urn:wavenumber:schema:geometer:geometry.step_topology.close.request:a0"
+        },
+        {
+          "$ref": "urn:wavenumber:schema:geometer:geometry.step_topology.inspect.request:a0"
+        },
+        {
+          "$ref": "urn:wavenumber:schema:geometer:geometry.step_topology.render.request:a0"
+        },
+        {
+          "$ref": "urn:wavenumber:schema:geometer:geometry.step_topology.resolve_hit.request:a0"
+        },
+        {
+          "$ref": "urn:wavenumber:schema:geometer:geometry.step_topology.apply_logical_groups.request:a0"
+        },
+        {
+          "$ref": "urn:wavenumber:schema:geometer:geometry.step_topology.apply_metadata_probes.request:a0"
+        },
+        {
+          "$ref": "urn:wavenumber:schema:geometer:geometry.step_topology.checkpoint_edit_journal.request:a0"
+        },
+        {
+          "$ref": "urn:wavenumber:schema:geometer:geometry.step_topology.apply_hierarchy.request:a0"
+        },
+        {
+          "$ref": "urn:wavenumber:schema:geometer:geometry.step_topology.save.request:a0"
+        },
+        {
+          "$ref": "urn:wavenumber:schema:geometer:geometry.step_topology.restore.request:a0"
+        },
+        {
+          "$ref": "urn:wavenumber:schema:geometer:geometry.step_topology.analyze_recovery.request:a0"
         }
       ],
-      "description": "Strict generic request envelope for executable IPC A0."
+      "description": "Structurally representable request payloads for executable IPC A0.\nA variant is callable only when the negotiated runtime catalog advertises\nits operation; structural presence does not imply runtime availability."
     },
     "PackedAttachmentProjectionA0": {
       "type": "object",

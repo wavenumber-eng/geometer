@@ -2,6 +2,7 @@ import "@typespec/json-schema";
 import "@wavenumber/wn-geometer-contract-emitter";
 import "./common.tsp";
 import "./operations/model-bounds-a0.tsp";
+import "./operations/step-topology-a0.tsp";
 
 using TypeSpec.JsonSchema;
 using Wavenumber.Geometer.ContractMetadata;
@@ -38,11 +39,27 @@ model IpcReasonA0 {
   reason?: string;
 }
 
-/** Strict generic request envelope for executable IPC A0. */
+/**
+ * Structurally representable request payloads for executable IPC A0.
+ * A variant is callable only when the negotiated runtime catalog advertises
+ * its operation; structural presence does not imply runtime availability.
+ */
 @oneOf
 union IpcRequestValueA0 {
   logical_dto: Wavenumber.Geometer.Contracts.ModelBoundsA0.ModelBoundsOptionsA0,
   packed_attachment: Wavenumber.Geometer.Contracts.Common.PackedAttachmentProjectionA0,
+  step_topology_open: Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyOpenRequestA0,
+  step_topology_close: Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyCloseRequestA0,
+  step_topology_inspect: Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyInspectRequestA0,
+  step_topology_render: Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyRenderRequestA0,
+  step_topology_resolve_hit: Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyResolveHitRequestA0,
+  step_topology_apply_logical_groups: Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyApplyLogicalGroupsRequestA0,
+  step_topology_apply_metadata_probes: Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyApplyMetadataProbesRequestA0,
+  step_topology_checkpoint_edit_journal: Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyCheckpointEditJournalRequestA0,
+  step_topology_apply_hierarchy: Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyApplyHierarchyRequestA0,
+  step_topology_save: Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologySaveRequestA0,
+  step_topology_restore: Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyRestoreRequestA0,
+  step_topology_analyze_recovery: Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyAnalyzeRecoveryRequestA0,
 }
 
 @jsonSchema

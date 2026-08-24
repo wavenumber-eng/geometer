@@ -1,0 +1,86 @@
+{
+    "schema":  "geometry.step_topology.save.result.a0",
+    "state":  {
+                  "session":  {
+                                  "session_handle":  "gts_1111111111111111111111111111111111111111111111111111111111111111",
+                                  "generation":  10
+                              },
+                  "edit_journal_revision":  1,
+                  "accounted_string_bytes":  256,
+                  "estimated_resident_bytes":  8192
+              },
+    "source_sha256":  "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "artifact":  {
+                     "carrier":  "xbf",
+                     "name":  "state_artifact",
+                     "media_type":  "application/vnd.opencascade.xbf",
+                     "format":  "ocaf-xbf-version-12",
+                     "bytes":  15,
+                     "sha256":  "7fa646430db55036b9b854b32c2f8d6f37fd929bf6c74fa31b55d33605719cb4"
+                 },
+    "capabilities":  [
+                         {
+                             "carrier":  "xbf",
+                             "save":  "experimental",
+                             "restore":  "experimental",
+                             "authored_payload":  "experimental",
+                             "topology_links":  "experimental",
+                             "notes":  [
+                                           {
+                                               "value":  "same-version research cache"
+                                           }
+                                       ]
+                         },
+                         {
+                             "carrier":  "xml_xcaf",
+                             "save":  "experimental",
+                             "restore":  "experimental",
+                             "authored_payload":  "experimental",
+                             "topology_links":  "experimental",
+                             "notes":  [
+                                           {
+                                               "value":  "same-version research cache"
+                                           }
+                                       ]
+                         },
+                         {
+                             "carrier":  "step_ap242",
+                             "save":  "experimental",
+                             "restore":  "experimental",
+                             "authored_payload":  "experimental",
+                             "topology_links":  "experimental",
+                             "notes":  [
+                                           {
+                                               "value":  "OCCT self-round-trip evidence only"
+                                           }
+                                       ]
+                         },
+                         {
+                             "carrier":  "json_sidecar",
+                             "save":  "experimental",
+                             "restore":  "experimental",
+                             "authored_payload":  "experimental",
+                             "topology_links":  "experimental",
+                             "notes":  [
+                                           {
+                                               "value":  "contract candidate"
+                                           }
+                                       ]
+                         },
+                         {
+                             "carrier":  "xbf",
+                             "save":  "experimental",
+                             "restore":  "experimental",
+                             "authored_payload":  "experimental",
+                             "topology_links":  "experimental",
+                             "notes":  [
+                                           {
+                                               "value":  "requires exact replay preconditions"
+                                           }
+                                       ]
+                         }
+                     ],
+    "diagnostics":  [
+
+                    ]
+}

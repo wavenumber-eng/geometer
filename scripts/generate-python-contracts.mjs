@@ -191,7 +191,7 @@ function generateOperations() {
     release_version: "",
     c_abi_generation: 0,
     operations: contractCatalog.operations
-      .filter((operation) => operation.runtime_available)
+      .filter((operation) => operation.runtime_available || operation.native_runtime_available)
       .map((operation) => ({
         identity: operation.identity,
         request_contract: operation.request_contract,

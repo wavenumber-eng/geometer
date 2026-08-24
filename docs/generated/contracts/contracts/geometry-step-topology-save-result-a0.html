@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="40ad574a40ea2e474d085d26263bf1ecbf3d76f6e14de8d795829e97389ae96b">
+  <title>geometry.step_topology.save.result.a0 — Geometer</title>
+  <link rel="stylesheet" href="../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="40ad574a40ea2e474d085d26263bf1ecbf3d76f6e14de8d795829e97389ae96b" data-page-kind="contract" data-contract-identity="geometry.step_topology.save.result.a0" data-promotion-status="experimental_candidate">
+<main>
+<header>
+  <p class="page-type">Contract root</p>
+  <h1><code>geometry.step_topology.save.result.a0</code></h1>
+  <p class="lede"></p>
+</header>
+<nav class="nav" aria-label="Contract navigation"><a href="../index.html">All contracts</a><a href="../../../../contracts/geometer/generated/schema/StepTopologySaveResultA0.json">JSON Schema</a><a href="../../../../src/tsp/geometer/main.tsp">TypeSpec entry point</a><a href="../../../design/contract-semantics.md">Compatibility policy</a></nav>
+<aside class="callout"><strong>Generated, not authored.</strong> Edit TypeSpec and regenerate. Lifecycle evidence remains in the promotion manifest.</aside>
+
+<section><h2>Identity</h2><table><tbody>
+<tr><th>Contract</th><td><code>geometry.step_topology.save.result.a0</code></td></tr>
+<tr><th>Schema</th><td><code>urn:wavenumber:schema:geometer:geometry.step_topology.save.result:a0</code></td></tr>
+<tr><th>Declaration</th><td><code>Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologySaveResultA0</code></td></tr>
+<tr><th>Lifecycle</th><td><span class="status">experimental_candidate</span></td></tr>
+<tr><th>Current authority</th><td><code>typespec_candidate</code></td></tr>
+</tbody></table></section>
+<section class="model-section"><h2>Declarations <span class="tag">14</span></h2><details open id="declaration-wavenumber-geometer-contracts-steptopologya0-steptopologysaveresulta0"><summary><h2><code>StepTopologySaveResultA0</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>schema</code></td><td>required</td><td><code>&quot;geometry.step_topology.save.result.a0&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>state</code></td><td>required</td><td><code>MutationSessionState</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>source_sha256</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=64</code> <code>max_length=64</code></td><td></td></tr>
+<tr><td><code>artifact</code></td><td>required</td><td><code>SavePersistenceArtifact</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>capabilities</code></td><td>required</td><td><code>CarrierCapability[]</code></td><td>—</td><td><code>min_items=5</code> <code>max_items=5</code></td><td></td></tr>
+<tr><td><code>diagnostics</code></td><td>required</td><td><code>DiagnosticA0[]</code></td><td>—</td><td><code>max_items=256</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-common-diagnostica0"><summary><h2><code>DiagnosticA0</code> <span class="tag">model</span></h2></summary><p>A strict cross-transport diagnostic; message text is informative rather than identity.</p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>code</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=1</code></td><td>Stable namespaced diagnostic identity.</td></tr>
+<tr><td><code>category</code></td><td>required</td><td><code>DiagnosticCategory</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>message</code></td><td>required</td><td><code>string</code></td><td>—</td><td>none</td><td>Human-readable non-normative detail.</td></tr>
+<tr><td><code>retryable</code></td><td>required</td><td><code>boolean</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>path</code></td><td>optional</td><td><code>string</code></td><td>—</td><td>none</td><td>RFC 6901 JSON Pointer when a document location is meaningful.</td></tr>
+<tr><td><code>operation</code></td><td>optional</td><td><code>string</code></td><td>—</td><td>none</td><td>Stable operation identity when the diagnostic is operation-scoped.</td></tr>
+<tr><td><code>request_id</code></td><td>optional</td><td><code>string</code></td><td>—</td><td>none</td><td>Transport correlation identifier when available.</td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-common-diagnosticcategory"><summary><h2><code>DiagnosticCategory</code> <span class="tag">enum</span></h2></summary><p>Stable diagnostic category with distinct transport, contract, and operation domains.</p><table><thead><tr><th>Member</th><th>Wire value</th><th>Description</th></tr></thead><tbody><tr><td><code>transport</code></td><td><code>transport</code></td><td></td></tr>
+<tr><td><code>contract</code></td><td><code>contract</code></td><td></td></tr>
+<tr><td><code>operation</code></td><td><code>operation</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-steptopologya0-carriercapability"><summary><h2><code>CarrierCapability</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>carrier</code></td><td>required</td><td><code>PersistenceCarrier</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>save</code></td><td>required</td><td><code>CarrierSupportState</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>restore</code></td><td>required</td><td><code>CarrierSupportState</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>authored_payload</code></td><td>required</td><td><code>CarrierSupportState</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>topology_links</code></td><td>required</td><td><code>CarrierSupportState</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>notes</code></td><td>required</td><td><code>CarrierCapabilityNote[]</code></td><td>—</td><td><code>max_items=16</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-steptopologya0-carriercapabilitynote"><summary><h2><code>CarrierCapabilityNote</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>value</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=1</code> <code>max_length=256</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-steptopologya0-carriersupportstate"><summary><h2><code>CarrierSupportState</code> <span class="tag">enum</span></h2></summary><p></p><table><thead><tr><th>Member</th><th>Wire value</th><th>Description</th></tr></thead><tbody><tr><td><code>supported</code></td><td><code>supported</code></td><td></td></tr>
+<tr><td><code>experimental</code></td><td><code>experimental</code></td><td></td></tr>
+<tr><td><code>unsupported</code></td><td><code>unsupported</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-steptopologya0-jsonsidecarpersistenceartifact"><summary><h2><code>JsonSidecarPersistenceArtifact</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>carrier</code></td><td>required</td><td><code>&quot;json_sidecar&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>name</code></td><td>required</td><td><code>&quot;state_artifact&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>media_type</code></td><td>required</td><td><code>&quot;application/vnd.wavenumber.geometer.step-topology-sidecar+json&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>format</code></td><td>required</td><td><code>&quot;geometer.step_topology_sidecar.a0&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>bytes</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>min_value=1</code> <code>max_value=67108864</code></td><td></td></tr>
+<tr><td><code>sha256</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=64</code> <code>max_length=64</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-steptopologya0-mutationsessionstate"><summary><h2><code>MutationSessionState</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>session</code></td><td>required</td><td><code>SessionReference</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>edit_journal_revision</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>max_value=100000</code></td><td></td></tr>
+<tr><td><code>accounted_string_bytes</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>max_value=16777216</code></td><td></td></tr>
+<tr><td><code>estimated_resident_bytes</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>max_value=536870912</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-steptopologya0-persistencecarrier"><summary><h2><code>PersistenceCarrier</code> <span class="tag">enum</span></h2></summary><p></p><table><thead><tr><th>Member</th><th>Wire value</th><th>Description</th></tr></thead><tbody><tr><td><code>xbf</code></td><td><code>xbf</code></td><td></td></tr>
+<tr><td><code>xml_xcaf</code></td><td><code>xml_xcaf</code></td><td></td></tr>
+<tr><td><code>step_ap242</code></td><td><code>step_ap242</code></td><td></td></tr>
+<tr><td><code>json_sidecar</code></td><td><code>json_sidecar</code></td><td></td></tr>
+<tr><td><code>edit_journal</code></td><td><code>edit_journal</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-steptopologya0-savepersistenceartifact"><summary><h2><code>SavePersistenceArtifact</code> <span class="tag">union</span></h2></summary><p></p><ul><li><code>xbf</code>: <code>XbfPersistenceArtifact</code></li><li><code>xml_xcaf</code>: <code>XmlXcafPersistenceArtifact</code></li><li><code>step_ap242</code>: <code>StepAp242PersistenceArtifact</code></li><li><code>json_sidecar</code>: <code>JsonSidecarPersistenceArtifact</code></li></ul></details>
+<details open id="declaration-wavenumber-geometer-contracts-steptopologya0-sessionreference"><summary><h2><code>SessionReference</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>session_handle</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=68</code> <code>max_length=68</code></td><td></td></tr>
+<tr><td><code>generation</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>min_value=1</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-steptopologya0-stepap242persistenceartifact"><summary><h2><code>StepAp242PersistenceArtifact</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>carrier</code></td><td>required</td><td><code>&quot;step_ap242&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>name</code></td><td>required</td><td><code>&quot;state_artifact&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>media_type</code></td><td>required</td><td><code>&quot;application/step&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>format</code></td><td>required</td><td><code>&quot;ap242-managed-model-based-3d-engineering&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>bytes</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>min_value=1</code> <code>max_value=536870912</code></td><td></td></tr>
+<tr><td><code>sha256</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=64</code> <code>max_length=64</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-steptopologya0-xbfpersistenceartifact"><summary><h2><code>XbfPersistenceArtifact</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>carrier</code></td><td>required</td><td><code>&quot;xbf&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>name</code></td><td>required</td><td><code>&quot;state_artifact&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>media_type</code></td><td>required</td><td><code>&quot;application/vnd.opencascade.xbf&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>format</code></td><td>required</td><td><code>&quot;ocaf-xbf-version-12&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>bytes</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>min_value=1</code> <code>max_value=536870912</code></td><td></td></tr>
+<tr><td><code>sha256</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=64</code> <code>max_length=64</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-steptopologya0-xmlxcafpersistenceartifact"><summary><h2><code>XmlXcafPersistenceArtifact</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>carrier</code></td><td>required</td><td><code>&quot;xml_xcaf&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>name</code></td><td>required</td><td><code>&quot;state_artifact&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>media_type</code></td><td>required</td><td><code>&quot;application/vnd.opencascade.xml-xcaf&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>format</code></td><td>required</td><td><code>&quot;ocaf-xml-xcaf-version-12&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>bytes</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>min_value=1</code> <code>max_value=536870912</code></td><td></td></tr>
+<tr><td><code>sha256</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=64</code> <code>max_length=64</code></td><td></td></tr></tbody></table></details></section>
+</main>
+</body>
+</html>

@@ -1,6 +1,6 @@
 # STEP Topology Contract Slice A
 
-Status: unpromoted experimental structural candidate; not runtime-advertised
+Status: unpromoted experimental candidate; native lifecycle/inspection/render runtime available
 
 Date: 2026-08-22
 
@@ -9,7 +9,13 @@ Date: 2026-08-22
 Slice A gives the native STEP/XCAF research a generated, bounded vocabulary for
 future process and TypeScript adapters. It covers open, close, paged inspection,
 GLB rendering, and renderer-neutral hit resolution. It does not expose those
-operations through the generic C ABI or executable IPC yet.
+operations through the generic C ABI or browser/WASM. The native executable IPC
+initially advertised open, paged inspect, render, hit resolution, and close;
+later experimental slices add group/probe mutation, journal checkpoint, and
+exact journal restore. The strict generic IPC request and
+operation-outcome envelopes now admit every generated topology
+request/result variant, which is transport typing only and does not change
+runtime availability.
 
 The authored source is
 `src/tsp/geometer/operations/step-topology-a0.tsp`; the operation declarations
@@ -41,26 +47,29 @@ implementing weaker copies of session security.
 The normalized inspection result separates definitions, root occurrences,
 component occurrences, bodies, shells, and faces. Component occurrences carry
 their parent and positive depth; root occurrences cannot accidentally acquire
-those fields. Body/shell/face ownership is plural and reciprocal because an
-OCCT subshape may participate in more than one containing shape. Definitions,
+those fields. Body/shell/face ownership is plural because an OCCT subshape may
+participate in more than one containing shape. Bounded `body_shell`,
+`body_face`, and `shell_face` edge records carry relationships separately from
+fixed-size target summaries, so one high-membership target cannot exceed the
+JSON limit. Definitions,
 bodies, shells, and faces may carry the same source-entity evidence shape,
 including the source model number, entity type, mapping method, and whether the
 shape-result relationship round-trips.
 
-A page contains no more than 1,024 records of each kind and has an opaque
-continuation cursor. Counts describe the complete snapshot. Verbose
-source-entity evidence and diagnostics are explicit request choices. Large
-normalized data may move through the optional compact topology table once that
-table format is separately specified; JSON remains bounded by the existing 8
-MiB contract limit.
+A native page contains no more than 1,024 total target/edge records and has an
+opaque section/record/member continuation cursor. Counts describe the complete
+snapshot. Source-entity evidence is opt-in. Diagnostic-carrier projection is
+currently rejected explicitly when `include_diagnostics` is true; it is not a
+silent empty result. The optional compact topology table remains reserved for a
+future separately specified format.
 
 Whole-snapshot validation is stateful. The generated TypeScript helper exposes
 a session/generation-bound inspection accumulator that accepts every page
 through the terminal page. It retains target handles and relationships across
 page boundaries, rejects changed counts or repeated cursors, and only at the
 terminal page accepts exact counts, complete definition and occurrence
-parentage, non-dangling topology edges, definition agreement, and reciprocal
-body/shell/face membership. The one-call helper is only for terminal
+parentage, non-dangling topology edges, definition agreement, and exact
+body/shell/face membership counts. The one-call helper is only for terminal
 single-page snapshots and rejects a continuation cursor.
 
 The accumulator rejects a declared count as soon as any record category
@@ -110,22 +119,27 @@ targets only after exact validation.
 
 ## Candidate Availability
 
-The normalized catalog contains the five operations with
-`runtime_available: false`. Generated TypeScript metadata exposes the
-candidate models and that availability flag for research consumers. Generated
-C++, Rust, and Python expected runtime catalogs, and the native generic
-operation catalog, omit the operations. The TypeScript WASM catalog checker
-likewise ignores structurally known operations that are not runtime available.
-This keeps generated DTO/codecs useful without claiming a callable transport.
+All twelve topology operations retain portable `runtime_available: false`.
+Nine additionally carry `native_runtime_available: true`: open, inspect,
+render, resolve hit, close, apply logical groups, apply metadata probes,
+checkpoint edit journal, and exact edit-journal restore. The portable C ABI and
+browser/WASM catalogs include none of them. TypeScript metadata carries both
+flags: the environment-neutral IPC client defaults to portable expectations,
+while the Node process adapter forces the native catalog. Hierarchy, general
+save, and recovery analysis remain structural-only.
 
 ## Validation
 
-Twenty-one Slice A governed vectors are recorded explicitly in the promotion
-manifest: eleven strict/schema vectors and ten semantic vectors. They prove canonical C++
+Twenty-six Slice A governed vectors are recorded explicitly in the promotion
+manifest: thirteen strict/schema vectors and thirteen semantic vectors. They prove
+that a topology open request and result round-trip through the generic strict
+IPC envelopes while remaining unavailable through portable runtimes; bind all twelve topology
+operation identities to their request/result schema identities; reject request
+and success-result identity mismatches; canonical C++
 and TypeScript hit-request round-trip; rejection of unknown fields, zero
 generations, and out-of-range indices; stale-session rejection; global target
 handle uniqueness across pages; complete cross-page definition, occurrence,
-and topology relationships; reciprocal plural membership; positive and
+and topology relationships; plural membership edges and exact counts; positive and
 negative source-entity evidence; bounded page progress/counts; the native
 maximum occurrence depth; exact resolve-result maxima; and exact
 external attachment name, media type, byte length, SHA-256, and artifact/GLB
@@ -134,8 +148,8 @@ structural projection; C++ and TypeScript own the additional semantic vector
 oracles.
 
 The semantic corpus includes a 4,096-body shared-shell high-fan-in snapshot
-split across four pages. Reciprocity uses membership sets built once per
-record, so both directed edge checks are constant-time lookups rather than
+split across four target pages and four edge pages. Validation uses membership
+sets built once per owner, so edge checks are constant-time lookups rather than
 repeated scans of high-degree arrays.
 
 Native tests separately prove unique target issuance, stale and cross-session
@@ -157,9 +171,13 @@ The native behavior remains covered by
 `geometer_step_topology_session_test` and
 `geometer_step_topology_render_binding_test`.
 
-## Deferred Surface
+## Surface Outside Slice A
 
-Slice A does not define apply/edit commands, logical groups, hierarchy,
+Slice A itself does not define apply/edit commands, logical groups, hierarchy,
 save/export, XBF/XML, AP242 persistence, restart restore, edit journals, or
-recovery evidence. Those structures are admitted only after their respective
-native evidence slices stabilize.
+recovery evidence. Unpromoted Slice B now owns logical-group, neutral-probe,
+hierarchy, and checkpoint structures, with native routing for groups, probes,
+and journal checkpoint. Unpromoted Slice C owns persistence and recovery
+structures, with native routing for exact edit-journal restore only. General
+hierarchy, save/carrier restore, and changed-source recovery routing remain
+deferred.

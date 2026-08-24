@@ -12,6 +12,7 @@
 #include <fstream>
 #include <iostream>
 #include <iterator>
+#include <limits>
 #include <memory>
 #include <set>
 #include <stdexcept>
@@ -245,6 +246,16 @@ void render_limits_cancellation_and_generation_fail_closed()
     require(session->resolve_render_hit(mismatched, 0, 0, &hit, &status) != 0,
             "mismatched render primitive must fail closed");
 
+    geometer::StepTopologyRenderArtifact journal_revision_tampered = artifact;
+    ++journal_revision_tampered.session.edit_journal_revision;
+    require(session->resolve_render_hit(journal_revision_tampered, 0, 0, &hit, &status) != 0,
+            "tampered render journal revision must invalidate the artifact seal");
+
+    geometer::StepTopologyRenderArtifact string_accounting_tampered = artifact;
+    ++string_accounting_tampered.session.accounted_string_bytes;
+    require(session->resolve_render_hit(string_accounting_tampered, 0, 0, &hit, &status) != 0,
+            "tampered render string accounting must invalidate the artifact seal");
+
     geometer::StepTopologyRenderArtifact overlapping = artifact;
     overlapping.bindings[1].first_triangle = overlapping.bindings[0].first_triangle;
     require(session->resolve_render_hit(overlapping, 0, 0, &hit, &status) != 0,
@@ -285,6 +296,50 @@ void glb_packet_is_self_describing_exact_and_bounded()
                     geometer::sha256_hex(packet.glb.data(), packet.glb.size()) &&
                 packet.render.instances.size() == 4 && !packet.glb.empty(),
             "topology GLB packet result is incomplete");
+
+    geometer::StepTopologyGlbWorkPacket measured_encoding;
+    geometer::step_topology_internal::GlbEncodingBudgetStats generous_stats;
+    constexpr std::size_t generous_limit = 512U * 1024U * 1024U;
+    require(geometer::step_topology_internal::encode_glb_from_render_for_test(
+                packet.render, nullptr, generous_limit, generous_limit, &measured_encoding, &status,
+                nullptr, nullptr, &generous_stats) == 0,
+            "measuring GLB encoder residency failed: " + status.message);
+    require(generous_stats.pre_destination_resident_bytes <=
+                std::numeric_limits<std::size_t>::max() - measured_encoding.glb.size(),
+            "GLB encoder residency measurement overflowed");
+    const std::size_t simultaneous_limit =
+        generous_stats.pre_destination_resident_bytes + measured_encoding.glb.size() - 1U;
+    require(measured_encoding.glb.size() <= simultaneous_limit &&
+                generous_stats.pre_destination_resident_bytes <= simultaneous_limit,
+            "GLB peak boundary must fit each side independently");
+    geometer::StepTopologyGlbWorkPacket peak_rejected;
+    require(geometer::step_topology_internal::encode_glb_from_render_for_test(
+                packet.render, nullptr, generous_limit, simultaneous_limit, &peak_rejected, &status,
+                nullptr, nullptr) != 0 &&
+                peak_rejected.glb.empty() &&
+                status.message ==
+                    "STEP topology GLB destination exceeds its transient resident-byte limit.",
+            "GLB encoding must reject atomically when source and destination fit separately but "
+            "their simultaneous resident storage exceeds the transient limit");
+
+    require(generous_stats.peak_source_resident_bytes > 1U,
+            "GLB source encoder did not report an allocation peak");
+    const std::size_t source_growth_limit = generous_stats.peak_source_resident_bytes - 1U;
+    geometer::StepTopologyGlbWorkPacket source_growth_rejected;
+    geometer::step_topology_internal::GlbEncodingBudgetStats rejected_stats;
+    require(geometer::step_topology_internal::encode_glb_from_render_for_test(
+                packet.render, nullptr, generous_limit, source_growth_limit,
+                &source_growth_rejected, &status, nullptr, nullptr, &rejected_stats) != 0 &&
+                source_growth_rejected.glb.empty() &&
+                status.message ==
+                    "STEP topology GLB source allocation exceeds its transient resident-byte "
+                    "limit before allocation." &&
+                rejected_stats.rejected_allocation_bytes > 0U &&
+                rejected_stats.resident_bytes_before_rejected_allocation <= source_growth_limit &&
+                rejected_stats.rejected_allocation_bytes >
+                    source_growth_limit - rejected_stats.resident_bytes_before_rejected_allocation,
+            "GLB source growth must be rejected before the old-plus-new allocation crosses the "
+            "transient limit");
     const geometer::StepTopologyGlbWorkPacket sealed_packet = packet;
     require(read_u32(packet.glb, 0) == 0x46546c67U && read_u32(packet.glb, 4) == 2U &&
                 read_u32(packet.glb, 8) == packet.glb.size() &&
@@ -346,6 +401,14 @@ void glb_packet_is_self_describing_exact_and_bounded()
     modified_geometry.glb[binary_offset] ^= 1U;
     require(session->resolve_glb_hit(modified_geometry, descriptor, &hit, &status) != 0,
             "modified GLB geometry must invalidate the native artifact seal");
+    geometer::StepTopologyGlbWorkPacket modified_journal_revision = packet;
+    ++modified_journal_revision.render.session.edit_journal_revision;
+    require(session->resolve_glb_hit(modified_journal_revision, descriptor, &hit, &status) != 0,
+            "tampered GLB journal revision must invalidate the nested render seal");
+    geometer::StepTopologyGlbWorkPacket modified_string_accounting = packet;
+    ++modified_string_accounting.render.session.accounted_string_bytes;
+    require(session->resolve_glb_hit(modified_string_accounting, descriptor, &hit, &status) != 0,
+            "tampered GLB string accounting must invalidate the nested render seal");
     geometer::StepTopologyGlbHitDescriptor forged_target = descriptor;
     forged_target.face_handle = packet.render.meshes[0].primitives[1].face_handle;
     require(session->resolve_glb_hit(packet, forged_target, &hit, &status) != 0,
@@ -451,8 +514,8 @@ void in_flight_glb_cancellation_is_observed()
         [&]()
         {
             code = geometer::step_topology_internal::encode_glb_from_render_for_test(
-                render, &cancellation, 512U * 1024U * 1024U, &packet, &status, entry_hook,
-                &context);
+                render, &cancellation, 512U * 1024U * 1024U, 512U * 1024U * 1024U, &packet, &status,
+                entry_hook, &context);
         });
     while (!entered.load(std::memory_order_acquire))
         std::this_thread::yield();

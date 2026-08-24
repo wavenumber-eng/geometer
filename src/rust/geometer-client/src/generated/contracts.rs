@@ -1,9 +1,18 @@
 // Generated from wn_geometer_contract_catalog.a0.json. Do not edit.
 
+#![allow(
+    clippy::approx_constant,
+    reason = "schema bounds retain their exact generated decimal form"
+)]
+#![allow(
+    clippy::large_enum_variant,
+    reason = "generated wire DTOs preserve their unboxed contract shape"
+)]
+
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
 pub const NORMALIZED_CATALOG_SHA256: &str =
-    "6cacbf010b3ae7a2af74c68517e5bcd68e3f4da11c904fb2626debf0ba8d17e2";
+    "40ad574a40ea2e474d085d26263bf1ecbf3d76f6e14de8d795829e97389ae96b";
 
 #[derive(Debug, thiserror::Error)]
 pub enum ContractError {
@@ -2792,10 +2801,2637 @@ impl Validate for ModelBoundsOptionsA0 {
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct StepTopologyOpenRequestA0 {
+    pub schema: String,
+}
+
+impl Validate for StepTopologyOpenRequestA0 {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "schema");
+        let value = &self.schema;
+        if value != "geometry.step_topology.open.request.a0" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct SessionReference {
+    pub session_handle: String,
+    pub generation: u32,
+}
+
+impl Validate for SessionReference {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "session_handle");
+        let value = &self.session_handle;
+        if value.len() < 68 {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 68 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "generation");
+        let value = &self.generation;
+        if *value < 1 {
+            return Err(invalid(&field_path, "number is below its minimum"));
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct StepTopologyCloseRequestA0 {
+    pub schema: String,
+    pub session: SessionReference,
+}
+
+impl Validate for StepTopologyCloseRequestA0 {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "schema");
+        let value = &self.schema;
+        if value != "geometry.step_topology.close.request.a0" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "session");
+        let value = &self.session;
+        value.validate_at(&field_path)?;
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct PageRequest {
+    #[serde(
+        default,
+        deserialize_with = "deserialize_optional_non_null",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub cursor: Option<String>,
+    pub limit: u32,
+}
+
+impl Validate for PageRequest {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "cursor");
+        if let Some(value) = &self.cursor {
+            if value.len() > 256 {
+                return Err(invalid(&field_path, "string exceeds its maximum"));
+            }
+        }
+        let field_path = child_path(path, "limit");
+        let value = &self.limit;
+        if *value < 1 {
+            return Err(invalid(&field_path, "number is below its minimum"));
+        }
+        if *value > 1024 {
+            return Err(invalid(&field_path, "number exceeds its maximum"));
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct StepTopologyInspectRequestA0 {
+    pub schema: String,
+    pub session: SessionReference,
+    pub page: PageRequest,
+    pub include_source_entity_evidence: bool,
+    pub include_diagnostics: bool,
+}
+
+impl Validate for StepTopologyInspectRequestA0 {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "schema");
+        let value = &self.schema;
+        if value != "geometry.step_topology.inspect.request.a0" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "session");
+        let value = &self.session;
+        value.validate_at(&field_path)?;
+        let field_path = child_path(path, "page");
+        let value = &self.page;
+        value.validate_at(&field_path)?;
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct TessellationOptions {
+    pub linear_deflection_mm: f64,
+    pub angular_deflection_rad: f64,
+    pub relative: bool,
+    pub parallel: bool,
+    pub source_to_render: Vec<f64>,
+}
+
+impl Validate for TessellationOptions {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "linear_deflection_mm");
+        let value = &self.linear_deflection_mm;
+        if !value.is_finite() {
+            return Err(invalid(&field_path, "number must be finite"));
+        }
+        if *value < 0.000001_f64 {
+            return Err(invalid(&field_path, "number is below its minimum"));
+        }
+        if *value > 1000_f64 {
+            return Err(invalid(&field_path, "number exceeds its maximum"));
+        }
+        let field_path = child_path(path, "angular_deflection_rad");
+        let value = &self.angular_deflection_rad;
+        if !value.is_finite() {
+            return Err(invalid(&field_path, "number must be finite"));
+        }
+        if *value < 0.000001_f64 {
+            return Err(invalid(&field_path, "number is below its minimum"));
+        }
+        if *value > 3.141592653589793_f64 {
+            return Err(invalid(&field_path, "number exceeds its maximum"));
+        }
+        let field_path = child_path(path, "source_to_render");
+        let value = &self.source_to_render;
+        if value.len() < 12 {
+            return Err(invalid(&field_path, "array is shorter than its minimum"));
+        }
+        if value.len() > 12 {
+            return Err(invalid(&field_path, "array exceeds its maximum"));
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct StepTopologyRenderRequestA0 {
+    pub schema: String,
+    pub session: SessionReference,
+    pub tessellation: TessellationOptions,
+}
+
+impl Validate for StepTopologyRenderRequestA0 {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "schema");
+        let value = &self.schema;
+        if value != "geometry.step_topology.render.request.a0" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "session");
+        let value = &self.session;
+        value.validate_at(&field_path)?;
+        let field_path = child_path(path, "tessellation");
+        let value = &self.tessellation;
+        value.validate_at(&field_path)?;
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct StepTopologyResolveHitRequestA0 {
+    pub schema: String,
+    pub session: SessionReference,
+    pub artifact_handle: String,
+    pub content_sha256: String,
+    pub instance_index: u32,
+    pub primitive_index: u32,
+    pub primitive_triangle_index: u32,
+    pub occurrence_handle: String,
+    pub body_handle: String,
+    pub face_handle: String,
+}
+
+impl Validate for StepTopologyResolveHitRequestA0 {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "schema");
+        let value = &self.schema;
+        if value != "geometry.step_topology.resolve_hit.request.a0" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "session");
+        let value = &self.session;
+        value.validate_at(&field_path)?;
+        let field_path = child_path(path, "artifact_handle");
+        let value = &self.artifact_handle;
+        if value.len() < 68 {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 68 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "content_sha256");
+        let value = &self.content_sha256;
+        if value.len() < 64 {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 64 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "instance_index");
+        let value = &self.instance_index;
+        if *value > 99999 {
+            return Err(invalid(&field_path, "number exceeds its maximum"));
+        }
+        let field_path = child_path(path, "primitive_index");
+        let value = &self.primitive_index;
+        if *value > 999999 {
+            return Err(invalid(&field_path, "number exceeds its maximum"));
+        }
+        let field_path = child_path(path, "primitive_triangle_index");
+        let value = &self.primitive_triangle_index;
+        if *value > 9999999 {
+            return Err(invalid(&field_path, "number exceeds its maximum"));
+        }
+        let field_path = child_path(path, "occurrence_handle");
+        let value = &self.occurrence_handle;
+        if value.len() < 68 {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 68 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "body_handle");
+        let value = &self.body_handle;
+        if value.len() < 68 {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 68 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "face_handle");
+        let value = &self.face_handle;
+        if value.len() < 68 {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 68 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct CreateLogicalGroupCommand {
+    pub kind: String,
+    pub authored_id: String,
+    pub name: String,
+    pub member_handles: Vec<String>,
+}
+
+impl Validate for CreateLogicalGroupCommand {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "kind");
+        let value = &self.kind;
+        if value != "create" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "authored_id");
+        let value = &self.authored_id;
+        if value.len() < 28 {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 128 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "name");
+        let value = &self.name;
+        if value.is_empty() {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 4096 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "member_handles");
+        let value = &self.member_handles;
+        if value.is_empty() {
+            return Err(invalid(&field_path, "array is shorter than its minimum"));
+        }
+        if value.len() > 100000 {
+            return Err(invalid(&field_path, "array exceeds its maximum"));
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct RenameLogicalGroupCommand {
+    pub kind: String,
+    pub authored_id: String,
+    pub expected_revision: u32,
+    pub name: String,
+}
+
+impl Validate for RenameLogicalGroupCommand {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "kind");
+        let value = &self.kind;
+        if value != "rename" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "authored_id");
+        let value = &self.authored_id;
+        if value.len() < 28 {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 128 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "expected_revision");
+        let value = &self.expected_revision;
+        if *value < 1 {
+            return Err(invalid(&field_path, "number is below its minimum"));
+        }
+        let field_path = child_path(path, "name");
+        let value = &self.name;
+        if value.is_empty() {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 4096 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct ReplaceLogicalGroupMembersCommand {
+    pub kind: String,
+    pub authored_id: String,
+    pub expected_revision: u32,
+    pub member_handles: Vec<String>,
+}
+
+impl Validate for ReplaceLogicalGroupMembersCommand {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "kind");
+        let value = &self.kind;
+        if value != "replace_members" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "authored_id");
+        let value = &self.authored_id;
+        if value.len() < 28 {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 128 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "expected_revision");
+        let value = &self.expected_revision;
+        if *value < 1 {
+            return Err(invalid(&field_path, "number is below its minimum"));
+        }
+        let field_path = child_path(path, "member_handles");
+        let value = &self.member_handles;
+        if value.is_empty() {
+            return Err(invalid(&field_path, "array is shorter than its minimum"));
+        }
+        if value.len() > 100000 {
+            return Err(invalid(&field_path, "array exceeds its maximum"));
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct EraseLogicalGroupCommand {
+    pub kind: String,
+    pub authored_id: String,
+    pub expected_revision: u32,
+}
+
+impl Validate for EraseLogicalGroupCommand {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "kind");
+        let value = &self.kind;
+        if value != "erase" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "authored_id");
+        let value = &self.authored_id;
+        if value.len() < 28 {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 128 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "expected_revision");
+        let value = &self.expected_revision;
+        if *value < 1 {
+            return Err(invalid(&field_path, "number is below its minimum"));
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize)]
+#[serde(untagged)]
+pub enum LogicalGroupCommand {
+    Create(CreateLogicalGroupCommand),
+    Rename(RenameLogicalGroupCommand),
+    ReplaceMembers(ReplaceLogicalGroupMembersCommand),
+    Erase(EraseLogicalGroupCommand),
+}
+
+impl<'de> Deserialize<'de> for LogicalGroupCommand {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let raw = Box::<serde_json::value::RawValue>::deserialize(deserializer)?;
+        if let Ok(value) = serde_json::from_str::<CreateLogicalGroupCommand>(raw.get()) {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::Create(value));
+            }
+        }
+        if let Ok(value) = serde_json::from_str::<RenameLogicalGroupCommand>(raw.get()) {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::Rename(value));
+            }
+        }
+        if let Ok(value) = serde_json::from_str::<ReplaceLogicalGroupMembersCommand>(raw.get()) {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::ReplaceMembers(value));
+            }
+        }
+        if let Ok(value) = serde_json::from_str::<EraseLogicalGroupCommand>(raw.get()) {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::Erase(value));
+            }
+        }
+        Err(serde::de::Error::custom(
+            "value does not match any LogicalGroupCommand variant",
+        ))
+    }
+}
+
+impl Validate for LogicalGroupCommand {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        match self {
+            Self::Create(value) => value.validate_at(path),
+            Self::Rename(value) => value.validate_at(path),
+            Self::ReplaceMembers(value) => value.validate_at(path),
+            Self::Erase(value) => value.validate_at(path),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct StepTopologyApplyLogicalGroupsRequestA0 {
+    pub schema: String,
+    pub session: SessionReference,
+    pub commands: Vec<LogicalGroupCommand>,
+}
+
+impl Validate for StepTopologyApplyLogicalGroupsRequestA0 {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "schema");
+        let value = &self.schema;
+        if value != "geometry.step_topology.apply_logical_groups.request.a0" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "session");
+        let value = &self.session;
+        value.validate_at(&field_path)?;
+        let field_path = child_path(path, "commands");
+        let value = &self.commands;
+        if value.is_empty() {
+            return Err(invalid(&field_path, "array is shorter than its minimum"));
+        }
+        if value.len() > 10000 {
+            return Err(invalid(&field_path, "array exceeds its maximum"));
+        }
+        for (index, item) in value.iter().enumerate() {
+            item.validate_at(&child_path(&field_path, &index.to_string()))?;
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct DocumentProbeTarget {
+    pub kind: String,
+}
+
+impl Validate for DocumentProbeTarget {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "kind");
+        let value = &self.kind;
+        if value != "document" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct DefinitionProbeTarget {
+    pub kind: String,
+    pub target_handle: String,
+}
+
+impl Validate for DefinitionProbeTarget {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "kind");
+        let value = &self.kind;
+        if value != "definition" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "target_handle");
+        let value = &self.target_handle;
+        if value.len() < 68 {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 68 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct RootOccurrenceProbeTarget {
+    pub kind: String,
+    pub target_handle: String,
+}
+
+impl Validate for RootOccurrenceProbeTarget {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "kind");
+        let value = &self.kind;
+        if value != "root_occurrence" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "target_handle");
+        let value = &self.target_handle;
+        if value.len() < 68 {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 68 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct ComponentOccurrenceProbeTarget {
+    pub kind: String,
+    pub target_handle: String,
+}
+
+impl Validate for ComponentOccurrenceProbeTarget {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "kind");
+        let value = &self.kind;
+        if value != "occurrence" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "target_handle");
+        let value = &self.target_handle;
+        if value.len() < 68 {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 68 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct BodyProbeTarget {
+    pub kind: String,
+    pub target_handle: String,
+}
+
+impl Validate for BodyProbeTarget {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "kind");
+        let value = &self.kind;
+        if value != "body" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "target_handle");
+        let value = &self.target_handle;
+        if value.len() < 68 {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 68 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct FaceProbeTarget {
+    pub kind: String,
+    pub target_handle: String,
+}
+
+impl Validate for FaceProbeTarget {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "kind");
+        let value = &self.kind;
+        if value != "face" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "target_handle");
+        let value = &self.target_handle;
+        if value.len() < 68 {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 68 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct LogicalGroupProbeTarget {
+    pub kind: String,
+    pub group_authored_id: String,
+}
+
+impl Validate for LogicalGroupProbeTarget {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "kind");
+        let value = &self.kind;
+        if value != "logical_group" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "group_authored_id");
+        let value = &self.group_authored_id;
+        if value.len() < 28 {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 128 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize)]
+#[serde(untagged)]
+pub enum MetadataProbeTarget {
+    Document(DocumentProbeTarget),
+    Definition(DefinitionProbeTarget),
+    RootOccurrence(RootOccurrenceProbeTarget),
+    Occurrence(ComponentOccurrenceProbeTarget),
+    Body(BodyProbeTarget),
+    Face(FaceProbeTarget),
+    LogicalGroup(LogicalGroupProbeTarget),
+}
+
+impl<'de> Deserialize<'de> for MetadataProbeTarget {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let raw = Box::<serde_json::value::RawValue>::deserialize(deserializer)?;
+        if let Ok(value) = serde_json::from_str::<DocumentProbeTarget>(raw.get()) {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::Document(value));
+            }
+        }
+        if let Ok(value) = serde_json::from_str::<DefinitionProbeTarget>(raw.get()) {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::Definition(value));
+            }
+        }
+        if let Ok(value) = serde_json::from_str::<RootOccurrenceProbeTarget>(raw.get()) {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::RootOccurrence(value));
+            }
+        }
+        if let Ok(value) = serde_json::from_str::<ComponentOccurrenceProbeTarget>(raw.get()) {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::Occurrence(value));
+            }
+        }
+        if let Ok(value) = serde_json::from_str::<BodyProbeTarget>(raw.get()) {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::Body(value));
+            }
+        }
+        if let Ok(value) = serde_json::from_str::<FaceProbeTarget>(raw.get()) {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::Face(value));
+            }
+        }
+        if let Ok(value) = serde_json::from_str::<LogicalGroupProbeTarget>(raw.get()) {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::LogicalGroup(value));
+            }
+        }
+        Err(serde::de::Error::custom(
+            "value does not match any MetadataProbeTarget variant",
+        ))
+    }
+}
+
+impl Validate for MetadataProbeTarget {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        match self {
+            Self::Document(value) => value.validate_at(path),
+            Self::Definition(value) => value.validate_at(path),
+            Self::RootOccurrence(value) => value.validate_at(path),
+            Self::Occurrence(value) => value.validate_at(path),
+            Self::Body(value) => value.validate_at(path),
+            Self::Face(value) => value.validate_at(path),
+            Self::LogicalGroup(value) => value.validate_at(path),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct AttachMetadataProbeCommand {
+    pub kind: String,
+    pub authored_id: String,
+    pub target: MetadataProbeTarget,
+    pub key: String,
+    pub value: String,
+}
+
+impl Validate for AttachMetadataProbeCommand {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "kind");
+        let value = &self.kind;
+        if value != "attach" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "authored_id");
+        let value = &self.authored_id;
+        if value.len() < 28 {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 128 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "target");
+        let value = &self.target;
+        value.validate_at(&field_path)?;
+        let field_path = child_path(path, "key");
+        let value = &self.key;
+        if value.len() < 32 {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 128 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "value");
+        let value = &self.value;
+        if value.is_empty() {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 4096 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct ReplaceMetadataProbeCommand {
+    pub kind: String,
+    pub authored_id: String,
+    pub expected_revision: u32,
+    pub target: MetadataProbeTarget,
+    pub key: String,
+    pub value: String,
+}
+
+impl Validate for ReplaceMetadataProbeCommand {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "kind");
+        let value = &self.kind;
+        if value != "replace" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "authored_id");
+        let value = &self.authored_id;
+        if value.len() < 28 {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 128 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "expected_revision");
+        let value = &self.expected_revision;
+        if *value < 1 {
+            return Err(invalid(&field_path, "number is below its minimum"));
+        }
+        let field_path = child_path(path, "target");
+        let value = &self.target;
+        value.validate_at(&field_path)?;
+        let field_path = child_path(path, "key");
+        let value = &self.key;
+        if value.len() < 32 {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 128 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "value");
+        let value = &self.value;
+        if value.is_empty() {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 4096 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct EraseMetadataProbeCommand {
+    pub kind: String,
+    pub authored_id: String,
+    pub expected_revision: u32,
+}
+
+impl Validate for EraseMetadataProbeCommand {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "kind");
+        let value = &self.kind;
+        if value != "erase" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "authored_id");
+        let value = &self.authored_id;
+        if value.len() < 28 {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 128 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "expected_revision");
+        let value = &self.expected_revision;
+        if *value < 1 {
+            return Err(invalid(&field_path, "number is below its minimum"));
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize)]
+#[serde(untagged)]
+pub enum MetadataProbeCommand {
+    Attach(AttachMetadataProbeCommand),
+    Replace(ReplaceMetadataProbeCommand),
+    Erase(EraseMetadataProbeCommand),
+}
+
+impl<'de> Deserialize<'de> for MetadataProbeCommand {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let raw = Box::<serde_json::value::RawValue>::deserialize(deserializer)?;
+        if let Ok(value) = serde_json::from_str::<AttachMetadataProbeCommand>(raw.get()) {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::Attach(value));
+            }
+        }
+        if let Ok(value) = serde_json::from_str::<ReplaceMetadataProbeCommand>(raw.get()) {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::Replace(value));
+            }
+        }
+        if let Ok(value) = serde_json::from_str::<EraseMetadataProbeCommand>(raw.get()) {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::Erase(value));
+            }
+        }
+        Err(serde::de::Error::custom(
+            "value does not match any MetadataProbeCommand variant",
+        ))
+    }
+}
+
+impl Validate for MetadataProbeCommand {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        match self {
+            Self::Attach(value) => value.validate_at(path),
+            Self::Replace(value) => value.validate_at(path),
+            Self::Erase(value) => value.validate_at(path),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct StepTopologyApplyMetadataProbesRequestA0 {
+    pub schema: String,
+    pub session: SessionReference,
+    pub commands: Vec<MetadataProbeCommand>,
+}
+
+impl Validate for StepTopologyApplyMetadataProbesRequestA0 {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "schema");
+        let value = &self.schema;
+        if value != "geometry.step_topology.apply_metadata_probes.request.a0" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "session");
+        let value = &self.session;
+        value.validate_at(&field_path)?;
+        let field_path = child_path(path, "commands");
+        let value = &self.commands;
+        if value.is_empty() {
+            return Err(invalid(&field_path, "array is shorter than its minimum"));
+        }
+        if value.len() > 10000 {
+            return Err(invalid(&field_path, "array exceeds its maximum"));
+        }
+        for (index, item) in value.iter().enumerate() {
+            item.validate_at(&child_path(&field_path, &index.to_string()))?;
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct StepTopologyCheckpointEditJournalRequestA0 {
+    pub schema: String,
+    pub session: SessionReference,
+}
+
+impl Validate for StepTopologyCheckpointEditJournalRequestA0 {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "schema");
+        let value = &self.schema;
+        if value != "geometry.step_topology.checkpoint_edit_journal.request.a0" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "session");
+        let value = &self.session;
+        value.validate_at(&field_path)?;
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+pub enum HierarchySourceKind {
+    #[serde(rename = "definition")]
+    Definition,
+    #[serde(rename = "body")]
+    Body,
+}
+
+impl Validate for HierarchySourceKind {
+    fn validate_at(&self, _path: &str) -> Result<(), ContractError> {
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct CreateHierarchyProductCommand {
+    pub kind: String,
+    pub authored_id: String,
+    pub name: String,
+    pub source_kind: HierarchySourceKind,
+    pub source_handle: String,
+}
+
+impl Validate for CreateHierarchyProductCommand {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "kind");
+        let value = &self.kind;
+        if value != "create_product" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "authored_id");
+        let value = &self.authored_id;
+        if value.len() < 28 {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 128 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "name");
+        let value = &self.name;
+        if value.is_empty() {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 4096 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "source_kind");
+        let value = &self.source_kind;
+        value.validate_at(&field_path)?;
+        let field_path = child_path(path, "source_handle");
+        let value = &self.source_handle;
+        if value.len() < 68 {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 68 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct CreateHierarchyAssemblyCommand {
+    pub kind: String,
+    pub authored_id: String,
+    pub name: String,
+}
+
+impl Validate for CreateHierarchyAssemblyCommand {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "kind");
+        let value = &self.kind;
+        if value != "create_assembly" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "authored_id");
+        let value = &self.authored_id;
+        if value.len() < 28 {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 128 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "name");
+        let value = &self.name;
+        if value.is_empty() {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 4096 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct CreateHierarchyOccurrenceCommand {
+    pub kind: String,
+    pub authored_id: String,
+    pub child_authored_id: String,
+    pub parent_assembly_authored_id: String,
+    pub transform: Vec<f64>,
+}
+
+impl Validate for CreateHierarchyOccurrenceCommand {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "kind");
+        let value = &self.kind;
+        if value != "create_occurrence" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "authored_id");
+        let value = &self.authored_id;
+        if value.len() < 28 {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 128 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "child_authored_id");
+        let value = &self.child_authored_id;
+        if value.len() < 28 {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 128 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "parent_assembly_authored_id");
+        let value = &self.parent_assembly_authored_id;
+        if value.len() < 28 {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 128 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "transform");
+        let value = &self.transform;
+        if value.len() < 12 {
+            return Err(invalid(&field_path, "array is shorter than its minimum"));
+        }
+        if value.len() > 12 {
+            return Err(invalid(&field_path, "array exceeds its maximum"));
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct ReparentHierarchyOccurrenceCommand {
+    pub kind: String,
+    pub authored_id: String,
+    pub expected_revision: u32,
+    pub parent_assembly_authored_id: String,
+    pub transform: Vec<f64>,
+}
+
+impl Validate for ReparentHierarchyOccurrenceCommand {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "kind");
+        let value = &self.kind;
+        if value != "reparent_occurrence" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "authored_id");
+        let value = &self.authored_id;
+        if value.len() < 28 {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 128 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "expected_revision");
+        let value = &self.expected_revision;
+        if *value < 1 {
+            return Err(invalid(&field_path, "number is below its minimum"));
+        }
+        let field_path = child_path(path, "parent_assembly_authored_id");
+        let value = &self.parent_assembly_authored_id;
+        if value.len() < 28 {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 128 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "transform");
+        let value = &self.transform;
+        if value.len() < 12 {
+            return Err(invalid(&field_path, "array is shorter than its minimum"));
+        }
+        if value.len() > 12 {
+            return Err(invalid(&field_path, "array exceeds its maximum"));
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct RenameHierarchyNodeCommand {
+    pub kind: String,
+    pub authored_id: String,
+    pub expected_revision: u32,
+    pub name: String,
+}
+
+impl Validate for RenameHierarchyNodeCommand {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "kind");
+        let value = &self.kind;
+        if value != "rename_node" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "authored_id");
+        let value = &self.authored_id;
+        if value.len() < 28 {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 128 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "expected_revision");
+        let value = &self.expected_revision;
+        if *value < 1 {
+            return Err(invalid(&field_path, "number is below its minimum"));
+        }
+        let field_path = child_path(path, "name");
+        let value = &self.name;
+        if value.is_empty() {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 4096 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct EraseHierarchyOccurrenceCommand {
+    pub kind: String,
+    pub authored_id: String,
+    pub expected_revision: u32,
+}
+
+impl Validate for EraseHierarchyOccurrenceCommand {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "kind");
+        let value = &self.kind;
+        if value != "erase_occurrence" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "authored_id");
+        let value = &self.authored_id;
+        if value.len() < 28 {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 128 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "expected_revision");
+        let value = &self.expected_revision;
+        if *value < 1 {
+            return Err(invalid(&field_path, "number is below its minimum"));
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct EraseHierarchyNodeCommand {
+    pub kind: String,
+    pub authored_id: String,
+    pub expected_revision: u32,
+}
+
+impl Validate for EraseHierarchyNodeCommand {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "kind");
+        let value = &self.kind;
+        if value != "erase_node" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "authored_id");
+        let value = &self.authored_id;
+        if value.len() < 28 {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 128 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "expected_revision");
+        let value = &self.expected_revision;
+        if *value < 1 {
+            return Err(invalid(&field_path, "number is below its minimum"));
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize)]
+#[serde(untagged)]
+pub enum HierarchyCommand {
+    CreateProduct(CreateHierarchyProductCommand),
+    CreateAssembly(CreateHierarchyAssemblyCommand),
+    CreateOccurrence(CreateHierarchyOccurrenceCommand),
+    ReparentOccurrence(ReparentHierarchyOccurrenceCommand),
+    RenameNode(RenameHierarchyNodeCommand),
+    EraseOccurrence(EraseHierarchyOccurrenceCommand),
+    EraseNode(EraseHierarchyNodeCommand),
+}
+
+impl<'de> Deserialize<'de> for HierarchyCommand {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let raw = Box::<serde_json::value::RawValue>::deserialize(deserializer)?;
+        if let Ok(value) = serde_json::from_str::<CreateHierarchyProductCommand>(raw.get()) {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::CreateProduct(value));
+            }
+        }
+        if let Ok(value) = serde_json::from_str::<CreateHierarchyAssemblyCommand>(raw.get()) {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::CreateAssembly(value));
+            }
+        }
+        if let Ok(value) = serde_json::from_str::<CreateHierarchyOccurrenceCommand>(raw.get()) {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::CreateOccurrence(value));
+            }
+        }
+        if let Ok(value) = serde_json::from_str::<ReparentHierarchyOccurrenceCommand>(raw.get()) {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::ReparentOccurrence(value));
+            }
+        }
+        if let Ok(value) = serde_json::from_str::<RenameHierarchyNodeCommand>(raw.get()) {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::RenameNode(value));
+            }
+        }
+        if let Ok(value) = serde_json::from_str::<EraseHierarchyOccurrenceCommand>(raw.get()) {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::EraseOccurrence(value));
+            }
+        }
+        if let Ok(value) = serde_json::from_str::<EraseHierarchyNodeCommand>(raw.get()) {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::EraseNode(value));
+            }
+        }
+        Err(serde::de::Error::custom(
+            "value does not match any HierarchyCommand variant",
+        ))
+    }
+}
+
+impl Validate for HierarchyCommand {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        match self {
+            Self::CreateProduct(value) => value.validate_at(path),
+            Self::CreateAssembly(value) => value.validate_at(path),
+            Self::CreateOccurrence(value) => value.validate_at(path),
+            Self::ReparentOccurrence(value) => value.validate_at(path),
+            Self::RenameNode(value) => value.validate_at(path),
+            Self::EraseOccurrence(value) => value.validate_at(path),
+            Self::EraseNode(value) => value.validate_at(path),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct StepTopologyApplyHierarchyRequestA0 {
+    pub schema: String,
+    pub session: SessionReference,
+    pub expected_hierarchy_revision: u32,
+    pub commands: Vec<HierarchyCommand>,
+}
+
+impl Validate for StepTopologyApplyHierarchyRequestA0 {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "schema");
+        let value = &self.schema;
+        if value != "geometry.step_topology.apply_hierarchy.request.a0" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "session");
+        let value = &self.session;
+        value.validate_at(&field_path)?;
+        let field_path = child_path(path, "commands");
+        let value = &self.commands;
+        if value.is_empty() {
+            return Err(invalid(&field_path, "array is shorter than its minimum"));
+        }
+        if value.len() > 10000 {
+            return Err(invalid(&field_path, "array exceeds its maximum"));
+        }
+        for (index, item) in value.iter().enumerate() {
+            item.validate_at(&child_path(&field_path, &index.to_string()))?;
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+pub enum SaveCarrier {
+    #[serde(rename = "xbf")]
+    Xbf,
+    #[serde(rename = "xml_xcaf")]
+    XmlXcaf,
+    #[serde(rename = "step_ap242")]
+    StepAp242,
+    #[serde(rename = "json_sidecar")]
+    JsonSidecar,
+}
+
+impl Validate for SaveCarrier {
+    fn validate_at(&self, _path: &str) -> Result<(), ContractError> {
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct StepTopologySaveRequestA0 {
+    pub schema: String,
+    pub session: SessionReference,
+    pub carrier: SaveCarrier,
+    pub include_diagnostics: bool,
+}
+
+impl Validate for StepTopologySaveRequestA0 {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "schema");
+        let value = &self.schema;
+        if value != "geometry.step_topology.save.request.a0" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "session");
+        let value = &self.session;
+        value.validate_at(&field_path)?;
+        let field_path = child_path(path, "carrier");
+        let value = &self.carrier;
+        value.validate_at(&field_path)?;
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct SourceDescriptor {
+    pub format: String,
+    pub sha256: String,
+    pub bytes: u32,
+    pub normalized_length_unit: String,
+}
+
+impl Validate for SourceDescriptor {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "format");
+        let value = &self.format;
+        if value != "step" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "sha256");
+        let value = &self.sha256;
+        if value.len() < 64 {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 64 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "bytes");
+        let value = &self.bytes;
+        if *value < 1 {
+            return Err(invalid(&field_path, "number is below its minimum"));
+        }
+        if *value > 268435456 {
+            return Err(invalid(&field_path, "number exceeds its maximum"));
+        }
+        let field_path = child_path(path, "normalized_length_unit");
+        let value = &self.normalized_length_unit;
+        if value != "millimeter" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct XbfPersistenceArtifact {
+    pub carrier: String,
+    pub name: String,
+    pub media_type: String,
+    pub format: String,
+    pub bytes: u32,
+    pub sha256: String,
+}
+
+impl Validate for XbfPersistenceArtifact {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "carrier");
+        let value = &self.carrier;
+        if value != "xbf" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "name");
+        let value = &self.name;
+        if value != "state_artifact" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "media_type");
+        let value = &self.media_type;
+        if value != "application/vnd.opencascade.xbf" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "format");
+        let value = &self.format;
+        if value != "ocaf-xbf-version-12" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "bytes");
+        let value = &self.bytes;
+        if *value < 1 {
+            return Err(invalid(&field_path, "number is below its minimum"));
+        }
+        if *value > 536870912 {
+            return Err(invalid(&field_path, "number exceeds its maximum"));
+        }
+        let field_path = child_path(path, "sha256");
+        let value = &self.sha256;
+        if value.len() < 64 {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 64 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct XmlXcafPersistenceArtifact {
+    pub carrier: String,
+    pub name: String,
+    pub media_type: String,
+    pub format: String,
+    pub bytes: u32,
+    pub sha256: String,
+}
+
+impl Validate for XmlXcafPersistenceArtifact {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "carrier");
+        let value = &self.carrier;
+        if value != "xml_xcaf" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "name");
+        let value = &self.name;
+        if value != "state_artifact" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "media_type");
+        let value = &self.media_type;
+        if value != "application/vnd.opencascade.xml-xcaf" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "format");
+        let value = &self.format;
+        if value != "ocaf-xml-xcaf-version-12" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "bytes");
+        let value = &self.bytes;
+        if *value < 1 {
+            return Err(invalid(&field_path, "number is below its minimum"));
+        }
+        if *value > 536870912 {
+            return Err(invalid(&field_path, "number exceeds its maximum"));
+        }
+        let field_path = child_path(path, "sha256");
+        let value = &self.sha256;
+        if value.len() < 64 {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 64 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct StepAp242PersistenceArtifact {
+    pub carrier: String,
+    pub name: String,
+    pub media_type: String,
+    pub format: String,
+    pub bytes: u32,
+    pub sha256: String,
+}
+
+impl Validate for StepAp242PersistenceArtifact {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "carrier");
+        let value = &self.carrier;
+        if value != "step_ap242" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "name");
+        let value = &self.name;
+        if value != "state_artifact" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "media_type");
+        let value = &self.media_type;
+        if value != "application/step" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "format");
+        let value = &self.format;
+        if value != "ap242-managed-model-based-3d-engineering" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "bytes");
+        let value = &self.bytes;
+        if *value < 1 {
+            return Err(invalid(&field_path, "number is below its minimum"));
+        }
+        if *value > 536870912 {
+            return Err(invalid(&field_path, "number exceeds its maximum"));
+        }
+        let field_path = child_path(path, "sha256");
+        let value = &self.sha256;
+        if value.len() < 64 {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 64 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct JsonSidecarPersistenceArtifact {
+    pub carrier: String,
+    pub name: String,
+    pub media_type: String,
+    pub format: String,
+    pub bytes: u32,
+    pub sha256: String,
+}
+
+impl Validate for JsonSidecarPersistenceArtifact {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "carrier");
+        let value = &self.carrier;
+        if value != "json_sidecar" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "name");
+        let value = &self.name;
+        if value != "state_artifact" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "media_type");
+        let value = &self.media_type;
+        if value != "application/vnd.wavenumber.geometer.step-topology-sidecar+json" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "format");
+        let value = &self.format;
+        if value != "geometer.step_topology_sidecar.a0" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "bytes");
+        let value = &self.bytes;
+        if *value < 1 {
+            return Err(invalid(&field_path, "number is below its minimum"));
+        }
+        if *value > 67108864 {
+            return Err(invalid(&field_path, "number exceeds its maximum"));
+        }
+        let field_path = child_path(path, "sha256");
+        let value = &self.sha256;
+        if value.len() < 64 {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 64 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct EditJournalPersistenceArtifact {
+    pub carrier: String,
+    pub name: String,
+    pub media_type: String,
+    pub format: String,
+    pub bytes: u32,
+    pub sha256: String,
+}
+
+impl Validate for EditJournalPersistenceArtifact {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "carrier");
+        let value = &self.carrier;
+        if value != "edit_journal" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "name");
+        let value = &self.name;
+        if value != "state_artifact" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "media_type");
+        let value = &self.media_type;
+        if value != "application/vnd.wavenumber.geometer.step-topology-edit-journal" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "format");
+        let value = &self.format;
+        if value != "geometer.step_topology_edit_journal.a0" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "bytes");
+        let value = &self.bytes;
+        if *value < 1 {
+            return Err(invalid(&field_path, "number is below its minimum"));
+        }
+        if *value > 67108864 {
+            return Err(invalid(&field_path, "number exceeds its maximum"));
+        }
+        let field_path = child_path(path, "sha256");
+        let value = &self.sha256;
+        if value.len() < 64 {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 64 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize)]
+#[serde(untagged)]
+pub enum RestoreStateArtifact {
+    Xbf(XbfPersistenceArtifact),
+    XmlXcaf(XmlXcafPersistenceArtifact),
+    StepAp242(StepAp242PersistenceArtifact),
+    JsonSidecar(JsonSidecarPersistenceArtifact),
+    EditJournal(EditJournalPersistenceArtifact),
+}
+
+impl<'de> Deserialize<'de> for RestoreStateArtifact {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let raw = Box::<serde_json::value::RawValue>::deserialize(deserializer)?;
+        if let Ok(value) = serde_json::from_str::<XbfPersistenceArtifact>(raw.get()) {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::Xbf(value));
+            }
+        }
+        if let Ok(value) = serde_json::from_str::<XmlXcafPersistenceArtifact>(raw.get()) {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::XmlXcaf(value));
+            }
+        }
+        if let Ok(value) = serde_json::from_str::<StepAp242PersistenceArtifact>(raw.get()) {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::StepAp242(value));
+            }
+        }
+        if let Ok(value) = serde_json::from_str::<JsonSidecarPersistenceArtifact>(raw.get()) {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::JsonSidecar(value));
+            }
+        }
+        if let Ok(value) = serde_json::from_str::<EditJournalPersistenceArtifact>(raw.get()) {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::EditJournal(value));
+            }
+        }
+        Err(serde::de::Error::custom(
+            "value does not match any RestoreStateArtifact variant",
+        ))
+    }
+}
+
+impl Validate for RestoreStateArtifact {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        match self {
+            Self::Xbf(value) => value.validate_at(path),
+            Self::XmlXcaf(value) => value.validate_at(path),
+            Self::StepAp242(value) => value.validate_at(path),
+            Self::JsonSidecar(value) => value.validate_at(path),
+            Self::EditJournal(value) => value.validate_at(path),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct EditJournalReplayPreconditions {
+    pub source_sha256: String,
+    pub source_brep_sha256: String,
+    pub target_inventory_sha256: String,
+    pub occt_version: String,
+    pub transaction_count: u32,
+}
+
+impl Validate for EditJournalReplayPreconditions {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "source_sha256");
+        let value = &self.source_sha256;
+        if value.len() < 64 {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 64 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "source_brep_sha256");
+        let value = &self.source_brep_sha256;
+        if value.len() < 64 {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 64 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "target_inventory_sha256");
+        let value = &self.target_inventory_sha256;
+        if value.len() < 64 {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 64 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "occt_version");
+        let value = &self.occt_version;
+        if value.is_empty() {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 64 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "transaction_count");
+        let value = &self.transaction_count;
+        if *value > 100000 {
+            return Err(invalid(&field_path, "number exceeds its maximum"));
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct StepTopologyRestoreRequestA0 {
+    pub schema: String,
+    pub source: SourceDescriptor,
+    pub state_artifact: RestoreStateArtifact,
+    #[serde(
+        default,
+        deserialize_with = "deserialize_optional_non_null",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub replay_preconditions: Option<EditJournalReplayPreconditions>,
+    pub include_diagnostics: bool,
+}
+
+impl Validate for StepTopologyRestoreRequestA0 {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "schema");
+        let value = &self.schema;
+        if value != "geometry.step_topology.restore.request.a0" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "source");
+        let value = &self.source;
+        value.validate_at(&field_path)?;
+        let field_path = child_path(path, "state_artifact");
+        let value = &self.state_artifact;
+        value.validate_at(&field_path)?;
+        let field_path = child_path(path, "replay_preconditions");
+        if let Some(value) = &self.replay_preconditions {
+            value.validate_at(&field_path)?;
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct RecoveryProvenance {
+    pub source_artifact_sha256: String,
+    pub candidate_artifact_sha256: String,
+    pub source_occt_version: String,
+    pub candidate_occt_version: String,
+    pub source_driver: String,
+    pub candidate_driver: String,
+    pub source_writer_settings: String,
+    pub candidate_writer_settings: String,
+    pub command_provenance: String,
+    pub measured_wall_time_milliseconds: f64,
+}
+
+impl Validate for RecoveryProvenance {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "source_artifact_sha256");
+        let value = &self.source_artifact_sha256;
+        if value.len() < 64 {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 64 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "candidate_artifact_sha256");
+        let value = &self.candidate_artifact_sha256;
+        if value.len() < 64 {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 64 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "source_occt_version");
+        let value = &self.source_occt_version;
+        if value.is_empty() {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 64 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "candidate_occt_version");
+        let value = &self.candidate_occt_version;
+        if value.is_empty() {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 64 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "source_driver");
+        let value = &self.source_driver;
+        if value.is_empty() {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 128 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "candidate_driver");
+        let value = &self.candidate_driver;
+        if value.is_empty() {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 128 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "source_writer_settings");
+        let value = &self.source_writer_settings;
+        if value.is_empty() {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 4096 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "candidate_writer_settings");
+        let value = &self.candidate_writer_settings;
+        if value.is_empty() {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 4096 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "command_provenance");
+        let value = &self.command_provenance;
+        if value.is_empty() {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 8192 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "measured_wall_time_milliseconds");
+        let value = &self.measured_wall_time_milliseconds;
+        if !value.is_finite() {
+            return Err(invalid(&field_path, "number must be finite"));
+        }
+        if *value < 0_f64 {
+            return Err(invalid(&field_path, "number is below its minimum"));
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct RecoveryTolerances {
+    pub length_mm: f64,
+    pub area_mm2: f64,
+    pub volume_mm3: f64,
+}
+
+impl Validate for RecoveryTolerances {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "length_mm");
+        let value = &self.length_mm;
+        if !value.is_finite() {
+            return Err(invalid(&field_path, "number must be finite"));
+        }
+        if *value < 1e-9_f64 {
+            return Err(invalid(&field_path, "number is below its minimum"));
+        }
+        let field_path = child_path(path, "area_mm2");
+        let value = &self.area_mm2;
+        if !value.is_finite() {
+            return Err(invalid(&field_path, "number must be finite"));
+        }
+        if *value < 1e-9_f64 {
+            return Err(invalid(&field_path, "number is below its minimum"));
+        }
+        let field_path = child_path(path, "volume_mm3");
+        let value = &self.volume_mm3;
+        if !value.is_finite() {
+            return Err(invalid(&field_path, "number must be finite"));
+        }
+        if *value < 1e-9_f64 {
+            return Err(invalid(&field_path, "number is below its minimum"));
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+pub enum LogicalGroupMemberKind {
+    #[serde(rename = "body")]
+    Body,
+    #[serde(rename = "face")]
+    Face,
+}
+
+impl Validate for LogicalGroupMemberKind {
+    fn validate_at(&self, _path: &str) -> Result<(), ContractError> {
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct RecoveryFingerprint {
+    pub normalized_length_unit: String,
+    pub coordinate_frame: String,
+    pub occurrence_context: String,
+    pub geometry_kind: String,
+    pub area_mm2: f64,
+    pub volume_mm3: f64,
+    pub centroid_mm: Vec<f64>,
+    pub bounds_mm: Vec<f64>,
+    pub adjacency_sha256: String,
+}
+
+impl Validate for RecoveryFingerprint {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "normalized_length_unit");
+        let value = &self.normalized_length_unit;
+        if value != "millimeter" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "coordinate_frame");
+        let value = &self.coordinate_frame;
+        if value.is_empty() {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 128 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "occurrence_context");
+        let value = &self.occurrence_context;
+        if value.is_empty() {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 128 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "geometry_kind");
+        let value = &self.geometry_kind;
+        if value.is_empty() {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 128 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "area_mm2");
+        let value = &self.area_mm2;
+        if !value.is_finite() {
+            return Err(invalid(&field_path, "number must be finite"));
+        }
+        if *value < 0_f64 {
+            return Err(invalid(&field_path, "number is below its minimum"));
+        }
+        let field_path = child_path(path, "volume_mm3");
+        let value = &self.volume_mm3;
+        if !value.is_finite() {
+            return Err(invalid(&field_path, "number must be finite"));
+        }
+        if *value < 0_f64 {
+            return Err(invalid(&field_path, "number is below its minimum"));
+        }
+        let field_path = child_path(path, "centroid_mm");
+        let value = &self.centroid_mm;
+        if value.len() < 3 {
+            return Err(invalid(&field_path, "array is shorter than its minimum"));
+        }
+        if value.len() > 3 {
+            return Err(invalid(&field_path, "array exceeds its maximum"));
+        }
+        let field_path = child_path(path, "bounds_mm");
+        let value = &self.bounds_mm;
+        if value.len() < 6 {
+            return Err(invalid(&field_path, "array is shorter than its minimum"));
+        }
+        if value.len() > 6 {
+            return Err(invalid(&field_path, "array exceeds its maximum"));
+        }
+        let field_path = child_path(path, "adjacency_sha256");
+        let value = &self.adjacency_sha256;
+        if value.len() < 64 {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 64 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+pub enum RecoveryLineage {
+    #[serde(rename = "none")]
+    None,
+    #[serde(rename = "split_from_source")]
+    SplitFromSource,
+    #[serde(rename = "merged_from_sources")]
+    MergedFromSources,
+}
+
+impl Validate for RecoveryLineage {
+    fn validate_at(&self, _path: &str) -> Result<(), ContractError> {
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct RecoveryCandidate {
+    pub target_handle: String,
+    pub kind: LogicalGroupMemberKind,
+    #[serde(
+        default,
+        deserialize_with = "deserialize_optional_non_null",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub authored_target_id: Option<String>,
+    pub topology_link_verified: bool,
+    pub carrier_locator: String,
+    pub carrier_locator_validated: bool,
+    pub carrier_record: String,
+    pub lineage: RecoveryLineage,
+    #[serde(
+        default,
+        deserialize_with = "deserialize_optional_non_null",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub fingerprint: Option<RecoveryFingerprint>,
+}
+
+impl Validate for RecoveryCandidate {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "target_handle");
+        let value = &self.target_handle;
+        if value.len() < 68 {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 68 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "kind");
+        let value = &self.kind;
+        value.validate_at(&field_path)?;
+        let field_path = child_path(path, "authored_target_id");
+        if let Some(value) = &self.authored_target_id {
+            if value.len() < 28 {
+                return Err(invalid(&field_path, "string is shorter than its minimum"));
+            }
+            if value.len() > 128 {
+                return Err(invalid(&field_path, "string exceeds its maximum"));
+            }
+        }
+        let field_path = child_path(path, "carrier_locator");
+        let value = &self.carrier_locator;
+        if value.len() > 4096 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "carrier_record");
+        let value = &self.carrier_record;
+        if value.len() > 4096 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "lineage");
+        let value = &self.lineage;
+        value.validate_at(&field_path)?;
+        let field_path = child_path(path, "fingerprint");
+        if let Some(value) = &self.fingerprint {
+            value.validate_at(&field_path)?;
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct RecoveryMemberRequest {
+    pub member_record_id: String,
+    pub kind: LogicalGroupMemberKind,
+    pub authored_target_id: String,
+    pub carrier_locator: String,
+    #[serde(
+        default,
+        deserialize_with = "deserialize_optional_non_null",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub source_fingerprint: Option<RecoveryFingerprint>,
+    pub candidates: Vec<RecoveryCandidate>,
+}
+
+impl Validate for RecoveryMemberRequest {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "member_record_id");
+        let value = &self.member_record_id;
+        if value.len() < 28 {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 128 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "kind");
+        let value = &self.kind;
+        value.validate_at(&field_path)?;
+        let field_path = child_path(path, "authored_target_id");
+        let value = &self.authored_target_id;
+        if value.len() > 128 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "carrier_locator");
+        let value = &self.carrier_locator;
+        if value.len() > 4096 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "source_fingerprint");
+        if let Some(value) = &self.source_fingerprint {
+            value.validate_at(&field_path)?;
+        }
+        let field_path = child_path(path, "candidates");
+        let value = &self.candidates;
+        if value.len() > 16 {
+            return Err(invalid(&field_path, "array exceeds its maximum"));
+        }
+        for (index, item) in value.iter().enumerate() {
+            item.validate_at(&child_path(&field_path, &index.to_string()))?;
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct RecoveryGroupRequest {
+    pub group_authored_id: String,
+    pub provenance: RecoveryProvenance,
+    pub tolerances: RecoveryTolerances,
+    pub members: Vec<RecoveryMemberRequest>,
+}
+
+impl Validate for RecoveryGroupRequest {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "group_authored_id");
+        let value = &self.group_authored_id;
+        if value.len() < 28 {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 128 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "provenance");
+        let value = &self.provenance;
+        value.validate_at(&field_path)?;
+        let field_path = child_path(path, "tolerances");
+        let value = &self.tolerances;
+        value.validate_at(&field_path)?;
+        let field_path = child_path(path, "members");
+        let value = &self.members;
+        if value.is_empty() {
+            return Err(invalid(&field_path, "array is shorter than its minimum"));
+        }
+        if value.len() > 256 {
+            return Err(invalid(&field_path, "array exceeds its maximum"));
+        }
+        for (index, item) in value.iter().enumerate() {
+            item.validate_at(&child_path(&field_path, &index.to_string()))?;
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct StepTopologyAnalyzeRecoveryRequestA0 {
+    pub schema: String,
+    pub groups: Vec<RecoveryGroupRequest>,
+}
+
+impl Validate for StepTopologyAnalyzeRecoveryRequestA0 {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "schema");
+        let value = &self.schema;
+        if value != "geometry.step_topology.analyze_recovery.request.a0" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "groups");
+        let value = &self.groups;
+        if value.is_empty() {
+            return Err(invalid(&field_path, "array is shorter than its minimum"));
+        }
+        if value.len() > 16 {
+            return Err(invalid(&field_path, "array exceeds its maximum"));
+        }
+        for (index, item) in value.iter().enumerate() {
+            item.validate_at(&child_path(&field_path, &index.to_string()))?;
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize)]
 #[serde(untagged)]
 pub enum IpcRequestValueA0 {
     LogicalDto(ModelBoundsOptionsA0),
     PackedAttachment(PackedAttachmentProjectionA0),
+    StepTopologyOpen(StepTopologyOpenRequestA0),
+    StepTopologyClose(StepTopologyCloseRequestA0),
+    StepTopologyInspect(StepTopologyInspectRequestA0),
+    StepTopologyRender(StepTopologyRenderRequestA0),
+    StepTopologyResolveHit(StepTopologyResolveHitRequestA0),
+    StepTopologyApplyLogicalGroups(StepTopologyApplyLogicalGroupsRequestA0),
+    StepTopologyApplyMetadataProbes(StepTopologyApplyMetadataProbesRequestA0),
+    StepTopologyCheckpointEditJournal(StepTopologyCheckpointEditJournalRequestA0),
+    StepTopologyApplyHierarchy(StepTopologyApplyHierarchyRequestA0),
+    StepTopologySave(StepTopologySaveRequestA0),
+    StepTopologyRestore(StepTopologyRestoreRequestA0),
+    StepTopologyAnalyzeRecovery(StepTopologyAnalyzeRecoveryRequestA0),
+}
+
+impl<'de> Deserialize<'de> for IpcRequestValueA0 {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let raw = Box::<serde_json::value::RawValue>::deserialize(deserializer)?;
+        if let Ok(value) = serde_json::from_str::<ModelBoundsOptionsA0>(raw.get()) {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::LogicalDto(value));
+            }
+        }
+        if let Ok(value) = serde_json::from_str::<PackedAttachmentProjectionA0>(raw.get()) {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::PackedAttachment(value));
+            }
+        }
+        if let Ok(value) = serde_json::from_str::<StepTopologyOpenRequestA0>(raw.get()) {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::StepTopologyOpen(value));
+            }
+        }
+        if let Ok(value) = serde_json::from_str::<StepTopologyCloseRequestA0>(raw.get()) {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::StepTopologyClose(value));
+            }
+        }
+        if let Ok(value) = serde_json::from_str::<StepTopologyInspectRequestA0>(raw.get()) {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::StepTopologyInspect(value));
+            }
+        }
+        if let Ok(value) = serde_json::from_str::<StepTopologyRenderRequestA0>(raw.get()) {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::StepTopologyRender(value));
+            }
+        }
+        if let Ok(value) = serde_json::from_str::<StepTopologyResolveHitRequestA0>(raw.get()) {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::StepTopologyResolveHit(value));
+            }
+        }
+        if let Ok(value) =
+            serde_json::from_str::<StepTopologyApplyLogicalGroupsRequestA0>(raw.get())
+        {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::StepTopologyApplyLogicalGroups(value));
+            }
+        }
+        if let Ok(value) =
+            serde_json::from_str::<StepTopologyApplyMetadataProbesRequestA0>(raw.get())
+        {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::StepTopologyApplyMetadataProbes(value));
+            }
+        }
+        if let Ok(value) =
+            serde_json::from_str::<StepTopologyCheckpointEditJournalRequestA0>(raw.get())
+        {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::StepTopologyCheckpointEditJournal(value));
+            }
+        }
+        if let Ok(value) = serde_json::from_str::<StepTopologyApplyHierarchyRequestA0>(raw.get()) {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::StepTopologyApplyHierarchy(value));
+            }
+        }
+        if let Ok(value) = serde_json::from_str::<StepTopologySaveRequestA0>(raw.get()) {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::StepTopologySave(value));
+            }
+        }
+        if let Ok(value) = serde_json::from_str::<StepTopologyRestoreRequestA0>(raw.get()) {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::StepTopologyRestore(value));
+            }
+        }
+        if let Ok(value) = serde_json::from_str::<StepTopologyAnalyzeRecoveryRequestA0>(raw.get()) {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::StepTopologyAnalyzeRecovery(value));
+            }
+        }
+        Err(serde::de::Error::custom(
+            "value does not match any IpcRequestValueA0 variant",
+        ))
+    }
 }
 
 impl Validate for IpcRequestValueA0 {
@@ -2803,6 +5439,18 @@ impl Validate for IpcRequestValueA0 {
         match self {
             Self::LogicalDto(value) => value.validate_at(path),
             Self::PackedAttachment(value) => value.validate_at(path),
+            Self::StepTopologyOpen(value) => value.validate_at(path),
+            Self::StepTopologyClose(value) => value.validate_at(path),
+            Self::StepTopologyInspect(value) => value.validate_at(path),
+            Self::StepTopologyRender(value) => value.validate_at(path),
+            Self::StepTopologyResolveHit(value) => value.validate_at(path),
+            Self::StepTopologyApplyLogicalGroups(value) => value.validate_at(path),
+            Self::StepTopologyApplyMetadataProbes(value) => value.validate_at(path),
+            Self::StepTopologyCheckpointEditJournal(value) => value.validate_at(path),
+            Self::StepTopologyApplyHierarchy(value) => value.validate_at(path),
+            Self::StepTopologySave(value) => value.validate_at(path),
+            Self::StepTopologyRestore(value) => value.validate_at(path),
+            Self::StepTopologyAnalyzeRecovery(value) => value.validate_at(path),
         }
     }
 }
@@ -3074,67 +5722,169 @@ impl Validate for OperationFailureA0 {
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
-#[serde(untagged)]
-pub enum OperationResultValueA0 {
-    ModelBounds(ModelBoundsResultA0),
-    PackedAttachment(PackedAttachmentProjectionA0),
+#[serde(deny_unknown_fields)]
+pub struct ToolDescriptor {
+    pub name: String,
+    pub release_version: String,
+    pub occt_version: String,
 }
 
-impl Validate for OperationResultValueA0 {
+impl Validate for ToolDescriptor {
     fn validate_at(&self, path: &str) -> Result<(), ContractError> {
-        match self {
-            Self::ModelBounds(value) => value.validate_at(path),
-            Self::PackedAttachment(value) => value.validate_at(path),
+        let field_path = child_path(path, "name");
+        let value = &self.name;
+        if value != "geometer" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
         }
+        let field_path = child_path(path, "release_version");
+        let value = &self.release_version;
+        if value.is_empty() {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 64 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "occt_version");
+        let value = &self.occt_version;
+        if value.is_empty() {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 64 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        Ok(())
     }
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
-pub struct OperationSuccessA0 {
-    pub operation: String,
-    pub ok: bool,
-    pub result: OperationResultValueA0,
+pub struct StepTopologyOpenResultA0 {
+    pub schema: String,
+    pub session: SessionReference,
+    pub source: SourceDescriptor,
+    pub tool: ToolDescriptor,
+    pub evicted_session_handles: Vec<String>,
 }
 
-impl Validate for OperationSuccessA0 {
+impl Validate for StepTopologyOpenResultA0 {
     fn validate_at(&self, path: &str) -> Result<(), ContractError> {
-        let field_path = child_path(path, "operation");
-        let value = &self.operation;
-        if value.is_empty() {
+        let field_path = child_path(path, "schema");
+        let value = &self.schema;
+        if value != "geometry.step_topology.open.result.a0" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "session");
+        let value = &self.session;
+        value.validate_at(&field_path)?;
+        let field_path = child_path(path, "source");
+        let value = &self.source;
+        value.validate_at(&field_path)?;
+        let field_path = child_path(path, "tool");
+        let value = &self.tool;
+        value.validate_at(&field_path)?;
+        let field_path = child_path(path, "evicted_session_handles");
+        let value = &self.evicted_session_handles;
+        if value.len() > 8 {
+            return Err(invalid(&field_path, "array exceeds its maximum"));
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct StepTopologyCloseResultA0 {
+    pub schema: String,
+    pub session_handle: String,
+    pub closed: bool,
+}
+
+impl Validate for StepTopologyCloseResultA0 {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "schema");
+        let value = &self.schema;
+        if value != "geometry.step_topology.close.result.a0" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "session_handle");
+        let value = &self.session_handle;
+        if value.len() < 68 {
             return Err(invalid(&field_path, "string is shorter than its minimum"));
         }
-        if value.len() > 128 {
+        if value.len() > 68 {
             return Err(invalid(&field_path, "string exceeds its maximum"));
         }
-        let field_path = child_path(path, "ok");
-        let value = &self.ok;
+        let field_path = child_path(path, "closed");
+        let value = &self.closed;
         if !*value {
             return Err(invalid(
                 &field_path,
                 "literal value does not match the contract",
             ));
         }
-        let field_path = child_path(path, "result");
-        let value = &self.result;
-        value.validate_at(&field_path)?;
         Ok(())
     }
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
-#[serde(untagged)]
-pub enum OperationOutcomeA0 {
-    Success(OperationSuccessA0),
-    Failure(OperationFailureA0),
+#[serde(deny_unknown_fields)]
+pub struct InspectionCounts {
+    pub definitions: u32,
+    pub root_occurrences: u32,
+    pub component_occurrences: u32,
+    pub bodies: u32,
+    pub shells: u32,
+    pub faces: u32,
+    pub memberships: u32,
 }
 
-impl Validate for OperationOutcomeA0 {
+impl Validate for InspectionCounts {
     fn validate_at(&self, path: &str) -> Result<(), ContractError> {
-        match self {
-            Self::Success(value) => value.validate_at(path),
-            Self::Failure(value) => value.validate_at(path),
+        let field_path = child_path(path, "definitions");
+        let value = &self.definitions;
+        if *value > 10000 {
+            return Err(invalid(&field_path, "number exceeds its maximum"));
         }
+        let field_path = child_path(path, "root_occurrences");
+        let value = &self.root_occurrences;
+        if *value > 100000 {
+            return Err(invalid(&field_path, "number exceeds its maximum"));
+        }
+        let field_path = child_path(path, "component_occurrences");
+        let value = &self.component_occurrences;
+        if *value > 100000 {
+            return Err(invalid(&field_path, "number exceeds its maximum"));
+        }
+        let field_path = child_path(path, "bodies");
+        let value = &self.bodies;
+        if *value > 100000 {
+            return Err(invalid(&field_path, "number exceeds its maximum"));
+        }
+        let field_path = child_path(path, "shells");
+        let value = &self.shells;
+        if *value > 250000 {
+            return Err(invalid(&field_path, "number exceeds its maximum"));
+        }
+        let field_path = child_path(path, "faces");
+        let value = &self.faces;
+        if *value > 1000000 {
+            return Err(invalid(&field_path, "number exceeds its maximum"));
+        }
+        let field_path = child_path(path, "memberships");
+        let value = &self.memberships;
+        if *value > 5000000 {
+            return Err(invalid(&field_path, "number exceeds its maximum"));
+        }
+        Ok(())
     }
 }
 
@@ -3198,14 +5948,12 @@ impl Validate for SourceEntityEvidence {
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
-pub struct BodySummary {
+pub struct DefinitionSummary {
     pub handle: String,
-    pub definition_handle: String,
-    pub topology_kind: String,
-    pub shell_handles: Vec<String>,
-    pub face_handles: Vec<String>,
-    pub bounds_mm: Vec<f64>,
-    pub volume_mm3: f64,
+    pub name: String,
+    pub assembly: bool,
+    pub body_count: u32,
+    pub face_count: u32,
     #[serde(
         default,
         deserialize_with = "deserialize_optional_non_null",
@@ -3214,8 +5962,59 @@ pub struct BodySummary {
     pub source_entity: Option<SourceEntityEvidence>,
 }
 
-impl Validate for BodySummary {
+impl Validate for DefinitionSummary {
     fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "handle");
+        let value = &self.handle;
+        if value.len() < 68 {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 68 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "name");
+        let value = &self.name;
+        if value.len() > 4096 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "body_count");
+        let value = &self.body_count;
+        if *value > 100000 {
+            return Err(invalid(&field_path, "number exceeds its maximum"));
+        }
+        let field_path = child_path(path, "face_count");
+        let value = &self.face_count;
+        if *value > 1000000 {
+            return Err(invalid(&field_path, "number exceeds its maximum"));
+        }
+        let field_path = child_path(path, "source_entity");
+        if let Some(value) = &self.source_entity {
+            value.validate_at(&field_path)?;
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct RootOccurrenceSummary {
+    pub kind: String,
+    pub handle: String,
+    pub definition_handle: String,
+    pub name: String,
+    pub transform: Vec<f64>,
+}
+
+impl Validate for RootOccurrenceSummary {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "kind");
+        let value = &self.kind;
+        if value != "root" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
         let field_path = child_path(path, "handle");
         let value = &self.handle;
         if value.len() < 68 {
@@ -3232,43 +6031,18 @@ impl Validate for BodySummary {
         if value.len() > 68 {
             return Err(invalid(&field_path, "string exceeds its maximum"));
         }
-        let field_path = child_path(path, "topology_kind");
-        let value = &self.topology_kind;
-        if value.is_empty() {
-            return Err(invalid(&field_path, "string is shorter than its minimum"));
-        }
-        if value.len() > 64 {
+        let field_path = child_path(path, "name");
+        let value = &self.name;
+        if value.len() > 4096 {
             return Err(invalid(&field_path, "string exceeds its maximum"));
         }
-        let field_path = child_path(path, "shell_handles");
-        let value = &self.shell_handles;
-        if value.len() > 250000 {
-            return Err(invalid(&field_path, "array exceeds its maximum"));
-        }
-        let field_path = child_path(path, "face_handles");
-        let value = &self.face_handles;
-        if value.len() > 1000000 {
-            return Err(invalid(&field_path, "array exceeds its maximum"));
-        }
-        let field_path = child_path(path, "bounds_mm");
-        let value = &self.bounds_mm;
-        if value.len() < 6 {
+        let field_path = child_path(path, "transform");
+        let value = &self.transform;
+        if value.len() < 12 {
             return Err(invalid(&field_path, "array is shorter than its minimum"));
         }
-        if value.len() > 6 {
+        if value.len() > 12 {
             return Err(invalid(&field_path, "array exceeds its maximum"));
-        }
-        let field_path = child_path(path, "volume_mm3");
-        let value = &self.volume_mm3;
-        if !value.is_finite() {
-            return Err(invalid(&field_path, "number must be finite"));
-        }
-        if *value < 0_f64 {
-            return Err(invalid(&field_path, "number is below its minimum"));
-        }
-        let field_path = child_path(path, "source_entity");
-        if let Some(value) = &self.source_entity {
-            value.validate_at(&field_path)?;
         }
         Ok(())
     }
@@ -3345,12 +6119,127 @@ impl Validate for ComponentOccurrenceSummary {
     }
 }
 
+#[derive(Clone, Debug, PartialEq, Serialize)]
+#[serde(untagged)]
+pub enum OccurrenceSummary {
+    Root(RootOccurrenceSummary),
+    Component(ComponentOccurrenceSummary),
+}
+
+impl<'de> Deserialize<'de> for OccurrenceSummary {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let raw = Box::<serde_json::value::RawValue>::deserialize(deserializer)?;
+        if let Ok(value) = serde_json::from_str::<RootOccurrenceSummary>(raw.get()) {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::Root(value));
+            }
+        }
+        if let Ok(value) = serde_json::from_str::<ComponentOccurrenceSummary>(raw.get()) {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::Component(value));
+            }
+        }
+        Err(serde::de::Error::custom(
+            "value does not match any OccurrenceSummary variant",
+        ))
+    }
+}
+
+impl Validate for OccurrenceSummary {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        match self {
+            Self::Root(value) => value.validate_at(path),
+            Self::Component(value) => value.validate_at(path),
+        }
+    }
+}
+
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
-pub struct DefinitionSummary {
+pub struct BodySummary {
     pub handle: String,
-    pub name: String,
-    pub assembly: bool,
+    pub definition_handle: String,
+    pub topology_kind: String,
+    pub shell_count: u32,
+    pub face_count: u32,
+    pub bounds_mm: Vec<f64>,
+    pub volume_mm3: f64,
+    #[serde(
+        default,
+        deserialize_with = "deserialize_optional_non_null",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub source_entity: Option<SourceEntityEvidence>,
+}
+
+impl Validate for BodySummary {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "handle");
+        let value = &self.handle;
+        if value.len() < 68 {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 68 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "definition_handle");
+        let value = &self.definition_handle;
+        if value.len() < 68 {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 68 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "topology_kind");
+        let value = &self.topology_kind;
+        if value.is_empty() {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 64 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "shell_count");
+        let value = &self.shell_count;
+        if *value > 250000 {
+            return Err(invalid(&field_path, "number exceeds its maximum"));
+        }
+        let field_path = child_path(path, "face_count");
+        let value = &self.face_count;
+        if *value > 1000000 {
+            return Err(invalid(&field_path, "number exceeds its maximum"));
+        }
+        let field_path = child_path(path, "bounds_mm");
+        let value = &self.bounds_mm;
+        if value.len() < 6 {
+            return Err(invalid(&field_path, "array is shorter than its minimum"));
+        }
+        if value.len() > 6 {
+            return Err(invalid(&field_path, "array exceeds its maximum"));
+        }
+        let field_path = child_path(path, "volume_mm3");
+        let value = &self.volume_mm3;
+        if !value.is_finite() {
+            return Err(invalid(&field_path, "number must be finite"));
+        }
+        if *value < 0_f64 {
+            return Err(invalid(&field_path, "number is below its minimum"));
+        }
+        let field_path = child_path(path, "source_entity");
+        if let Some(value) = &self.source_entity {
+            value.validate_at(&field_path)?;
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct ShellSummary {
+    pub handle: String,
+    pub definition_handle: String,
     pub body_count: u32,
     pub face_count: u32,
     #[serde(
@@ -3361,7 +6250,7 @@ pub struct DefinitionSummary {
     pub source_entity: Option<SourceEntityEvidence>,
 }
 
-impl Validate for DefinitionSummary {
+impl Validate for ShellSummary {
     fn validate_at(&self, path: &str) -> Result<(), ContractError> {
         let field_path = child_path(path, "handle");
         let value = &self.handle;
@@ -3371,9 +6260,12 @@ impl Validate for DefinitionSummary {
         if value.len() > 68 {
             return Err(invalid(&field_path, "string exceeds its maximum"));
         }
-        let field_path = child_path(path, "name");
-        let value = &self.name;
-        if value.len() > 4096 {
+        let field_path = child_path(path, "definition_handle");
+        let value = &self.definition_handle;
+        if value.len() < 68 {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 68 {
             return Err(invalid(&field_path, "string exceeds its maximum"));
         }
         let field_path = child_path(path, "body_count");
@@ -3399,8 +6291,8 @@ impl Validate for DefinitionSummary {
 pub struct FaceSummary {
     pub handle: String,
     pub definition_handle: String,
-    pub body_handles: Vec<String>,
-    pub shell_handles: Vec<String>,
+    pub body_count: u32,
+    pub shell_count: u32,
     pub bounds_mm: Vec<f64>,
     pub area_mm2: f64,
     pub centroid_mm: Vec<f64>,
@@ -3430,15 +6322,15 @@ impl Validate for FaceSummary {
         if value.len() > 68 {
             return Err(invalid(&field_path, "string exceeds its maximum"));
         }
-        let field_path = child_path(path, "body_handles");
-        let value = &self.body_handles;
-        if value.len() > 100000 {
-            return Err(invalid(&field_path, "array exceeds its maximum"));
+        let field_path = child_path(path, "body_count");
+        let value = &self.body_count;
+        if *value > 100000 {
+            return Err(invalid(&field_path, "number exceeds its maximum"));
         }
-        let field_path = child_path(path, "shell_handles");
-        let value = &self.shell_handles;
-        if value.len() > 250000 {
-            return Err(invalid(&field_path, "array exceeds its maximum"));
+        let field_path = child_path(path, "shell_count");
+        let value = &self.shell_count;
+        if *value > 250000 {
+            return Err(invalid(&field_path, "number exceeds its maximum"));
         }
         let field_path = child_path(path, "bounds_mm");
         let value = &self.bounds_mm;
@@ -3473,8 +6365,134 @@ impl Validate for FaceSummary {
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+pub enum TopologyMembershipKind {
+    #[serde(rename = "body_shell")]
+    BodyShell,
+    #[serde(rename = "body_face")]
+    BodyFace,
+    #[serde(rename = "shell_face")]
+    ShellFace,
+}
+
+impl Validate for TopologyMembershipKind {
+    fn validate_at(&self, _path: &str) -> Result<(), ContractError> {
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
-pub struct GlbAttachmentDescriptor {
+pub struct TopologyMembership {
+    pub kind: TopologyMembershipKind,
+    pub owner_handle: String,
+    pub member_handle: String,
+}
+
+impl Validate for TopologyMembership {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "kind");
+        let value = &self.kind;
+        value.validate_at(&field_path)?;
+        let field_path = child_path(path, "owner_handle");
+        let value = &self.owner_handle;
+        if value.len() < 68 {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 68 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "member_handle");
+        let value = &self.member_handle;
+        if value.len() < 68 {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 68 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct TopologyPage {
+    pub definitions: Vec<DefinitionSummary>,
+    pub occurrences: Vec<OccurrenceSummary>,
+    pub bodies: Vec<BodySummary>,
+    pub shells: Vec<ShellSummary>,
+    pub faces: Vec<FaceSummary>,
+    pub memberships: Vec<TopologyMembership>,
+    #[serde(
+        default,
+        deserialize_with = "deserialize_optional_non_null",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub next_cursor: Option<String>,
+}
+
+impl Validate for TopologyPage {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "definitions");
+        let value = &self.definitions;
+        if value.len() > 1024 {
+            return Err(invalid(&field_path, "array exceeds its maximum"));
+        }
+        for (index, item) in value.iter().enumerate() {
+            item.validate_at(&child_path(&field_path, &index.to_string()))?;
+        }
+        let field_path = child_path(path, "occurrences");
+        let value = &self.occurrences;
+        if value.len() > 1024 {
+            return Err(invalid(&field_path, "array exceeds its maximum"));
+        }
+        for (index, item) in value.iter().enumerate() {
+            item.validate_at(&child_path(&field_path, &index.to_string()))?;
+        }
+        let field_path = child_path(path, "bodies");
+        let value = &self.bodies;
+        if value.len() > 1024 {
+            return Err(invalid(&field_path, "array exceeds its maximum"));
+        }
+        for (index, item) in value.iter().enumerate() {
+            item.validate_at(&child_path(&field_path, &index.to_string()))?;
+        }
+        let field_path = child_path(path, "shells");
+        let value = &self.shells;
+        if value.len() > 1024 {
+            return Err(invalid(&field_path, "array exceeds its maximum"));
+        }
+        for (index, item) in value.iter().enumerate() {
+            item.validate_at(&child_path(&field_path, &index.to_string()))?;
+        }
+        let field_path = child_path(path, "faces");
+        let value = &self.faces;
+        if value.len() > 1024 {
+            return Err(invalid(&field_path, "array exceeds its maximum"));
+        }
+        for (index, item) in value.iter().enumerate() {
+            item.validate_at(&child_path(&field_path, &index.to_string()))?;
+        }
+        let field_path = child_path(path, "memberships");
+        let value = &self.memberships;
+        if value.len() > 1024 {
+            return Err(invalid(&field_path, "array exceeds its maximum"));
+        }
+        for (index, item) in value.iter().enumerate() {
+            item.validate_at(&child_path(&field_path, &index.to_string()))?;
+        }
+        let field_path = child_path(path, "next_cursor");
+        if let Some(value) = &self.next_cursor {
+            if value.len() > 256 {
+                return Err(invalid(&field_path, "string exceeds its maximum"));
+            }
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct TopologyTableAttachmentDescriptor {
     pub name: String,
     pub media_type: String,
     pub format: String,
@@ -3482,11 +6500,11 @@ pub struct GlbAttachmentDescriptor {
     pub sha256: String,
 }
 
-impl Validate for GlbAttachmentDescriptor {
+impl Validate for TopologyTableAttachmentDescriptor {
     fn validate_at(&self, path: &str) -> Result<(), ContractError> {
         let field_path = child_path(path, "name");
         let value = &self.name;
-        if value != "glb" {
+        if value != "topology_table" {
             return Err(invalid(
                 &field_path,
                 "literal value does not match the contract",
@@ -3494,7 +6512,7 @@ impl Validate for GlbAttachmentDescriptor {
         }
         let field_path = child_path(path, "media_type");
         let value = &self.media_type;
-        if value != "model/gltf-binary" {
+        if value != "application/vnd.wavenumber.geometer.step-topology-table" {
             return Err(invalid(
                 &field_path,
                 "literal value does not match the contract",
@@ -3502,7 +6520,7 @@ impl Validate for GlbAttachmentDescriptor {
         }
         let field_path = child_path(path, "format");
         let value = &self.format;
-        if value != "glb-2.0" {
+        if value != "wn.geometer.step-topology-table.a0" {
             return Err(invalid(
                 &field_path,
                 "literal value does not match the contract",
@@ -3513,7 +6531,7 @@ impl Validate for GlbAttachmentDescriptor {
         if *value < 1 {
             return Err(invalid(&field_path, "number is below its minimum"));
         }
-        if *value > 268435456 {
+        if *value > 134217728 {
             return Err(invalid(&field_path, "number exceeds its maximum"));
         }
         let field_path = child_path(path, "sha256");
@@ -3530,147 +6548,50 @@ impl Validate for GlbAttachmentDescriptor {
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
-pub struct InspectionCounts {
-    pub definitions: u32,
-    pub root_occurrences: u32,
-    pub component_occurrences: u32,
-    pub bodies: u32,
-    pub shells: u32,
-    pub faces: u32,
-}
-
-impl Validate for InspectionCounts {
-    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
-        let field_path = child_path(path, "definitions");
-        let value = &self.definitions;
-        if *value > 10000 {
-            return Err(invalid(&field_path, "number exceeds its maximum"));
-        }
-        let field_path = child_path(path, "root_occurrences");
-        let value = &self.root_occurrences;
-        if *value > 100000 {
-            return Err(invalid(&field_path, "number exceeds its maximum"));
-        }
-        let field_path = child_path(path, "component_occurrences");
-        let value = &self.component_occurrences;
-        if *value > 100000 {
-            return Err(invalid(&field_path, "number exceeds its maximum"));
-        }
-        let field_path = child_path(path, "bodies");
-        let value = &self.bodies;
-        if *value > 100000 {
-            return Err(invalid(&field_path, "number exceeds its maximum"));
-        }
-        let field_path = child_path(path, "shells");
-        let value = &self.shells;
-        if *value > 250000 {
-            return Err(invalid(&field_path, "number exceeds its maximum"));
-        }
-        let field_path = child_path(path, "faces");
-        let value = &self.faces;
-        if *value > 1000000 {
-            return Err(invalid(&field_path, "number exceeds its maximum"));
-        }
-        Ok(())
-    }
-}
-
-#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
-#[serde(deny_unknown_fields)]
-pub struct RootOccurrenceSummary {
-    pub kind: String,
-    pub handle: String,
-    pub definition_handle: String,
-    pub name: String,
-    pub transform: Vec<f64>,
-}
-
-impl Validate for RootOccurrenceSummary {
-    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
-        let field_path = child_path(path, "kind");
-        let value = &self.kind;
-        if value != "root" {
-            return Err(invalid(
-                &field_path,
-                "literal value does not match the contract",
-            ));
-        }
-        let field_path = child_path(path, "handle");
-        let value = &self.handle;
-        if value.len() < 68 {
-            return Err(invalid(&field_path, "string is shorter than its minimum"));
-        }
-        if value.len() > 68 {
-            return Err(invalid(&field_path, "string exceeds its maximum"));
-        }
-        let field_path = child_path(path, "definition_handle");
-        let value = &self.definition_handle;
-        if value.len() < 68 {
-            return Err(invalid(&field_path, "string is shorter than its minimum"));
-        }
-        if value.len() > 68 {
-            return Err(invalid(&field_path, "string exceeds its maximum"));
-        }
-        let field_path = child_path(path, "name");
-        let value = &self.name;
-        if value.len() > 4096 {
-            return Err(invalid(&field_path, "string exceeds its maximum"));
-        }
-        let field_path = child_path(path, "transform");
-        let value = &self.transform;
-        if value.len() < 12 {
-            return Err(invalid(&field_path, "array is shorter than its minimum"));
-        }
-        if value.len() > 12 {
-            return Err(invalid(&field_path, "array exceeds its maximum"));
-        }
-        Ok(())
-    }
-}
-
-#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
-#[serde(untagged)]
-pub enum OccurrenceSummary {
-    Root(RootOccurrenceSummary),
-    Component(ComponentOccurrenceSummary),
-}
-
-impl Validate for OccurrenceSummary {
-    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
-        match self {
-            Self::Root(value) => value.validate_at(path),
-            Self::Component(value) => value.validate_at(path),
-        }
-    }
-}
-
-#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
-#[serde(deny_unknown_fields)]
-pub struct PageRequest {
+pub struct StepTopologyInspectResultA0 {
+    pub schema: String,
+    pub session: SessionReference,
+    pub counts: InspectionCounts,
+    pub page: TopologyPage,
     #[serde(
         default,
         deserialize_with = "deserialize_optional_non_null",
         skip_serializing_if = "Option::is_none"
     )]
-    pub cursor: Option<String>,
-    pub limit: u32,
+    pub compact_table: Option<TopologyTableAttachmentDescriptor>,
+    pub diagnostics: Vec<DiagnosticA0>,
 }
 
-impl Validate for PageRequest {
+impl Validate for StepTopologyInspectResultA0 {
     fn validate_at(&self, path: &str) -> Result<(), ContractError> {
-        let field_path = child_path(path, "cursor");
-        if let Some(value) = &self.cursor {
-            if value.len() > 256 {
-                return Err(invalid(&field_path, "string exceeds its maximum"));
-            }
+        let field_path = child_path(path, "schema");
+        let value = &self.schema;
+        if value != "geometry.step_topology.inspect.result.a0" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
         }
-        let field_path = child_path(path, "limit");
-        let value = &self.limit;
-        if *value < 1 {
-            return Err(invalid(&field_path, "number is below its minimum"));
+        let field_path = child_path(path, "session");
+        let value = &self.session;
+        value.validate_at(&field_path)?;
+        let field_path = child_path(path, "counts");
+        let value = &self.counts;
+        value.validate_at(&field_path)?;
+        let field_path = child_path(path, "page");
+        let value = &self.page;
+        value.validate_at(&field_path)?;
+        let field_path = child_path(path, "compact_table");
+        if let Some(value) = &self.compact_table {
+            value.validate_at(&field_path)?;
         }
-        if *value > 1024 {
-            return Err(invalid(&field_path, "number exceeds its maximum"));
+        let field_path = child_path(path, "diagnostics");
+        let value = &self.diagnostics;
+        if value.len() > 256 {
+            return Err(invalid(&field_path, "array exceeds its maximum"));
+        }
+        for (index, item) in value.iter().enumerate() {
+            item.validate_at(&child_path(&field_path, &index.to_string()))?;
         }
         Ok(())
     }
@@ -3797,107 +6718,39 @@ impl Validate for RenderArtifactDescriptor {
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
-pub struct SessionReference {
-    pub session_handle: String,
-    pub generation: u32,
-}
-
-impl Validate for SessionReference {
-    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
-        let field_path = child_path(path, "session_handle");
-        let value = &self.session_handle;
-        if value.len() < 68 {
-            return Err(invalid(&field_path, "string is shorter than its minimum"));
-        }
-        if value.len() > 68 {
-            return Err(invalid(&field_path, "string exceeds its maximum"));
-        }
-        let field_path = child_path(path, "generation");
-        let value = &self.generation;
-        if *value < 1 {
-            return Err(invalid(&field_path, "number is below its minimum"));
-        }
-        Ok(())
-    }
-}
-
-#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
-#[serde(deny_unknown_fields)]
-pub struct ShellSummary {
-    pub handle: String,
-    pub definition_handle: String,
-    pub body_handles: Vec<String>,
-    pub face_handles: Vec<String>,
-    #[serde(
-        default,
-        deserialize_with = "deserialize_optional_non_null",
-        skip_serializing_if = "Option::is_none"
-    )]
-    pub source_entity: Option<SourceEntityEvidence>,
-}
-
-impl Validate for ShellSummary {
-    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
-        let field_path = child_path(path, "handle");
-        let value = &self.handle;
-        if value.len() < 68 {
-            return Err(invalid(&field_path, "string is shorter than its minimum"));
-        }
-        if value.len() > 68 {
-            return Err(invalid(&field_path, "string exceeds its maximum"));
-        }
-        let field_path = child_path(path, "definition_handle");
-        let value = &self.definition_handle;
-        if value.len() < 68 {
-            return Err(invalid(&field_path, "string is shorter than its minimum"));
-        }
-        if value.len() > 68 {
-            return Err(invalid(&field_path, "string exceeds its maximum"));
-        }
-        let field_path = child_path(path, "body_handles");
-        let value = &self.body_handles;
-        if value.len() > 100000 {
-            return Err(invalid(&field_path, "array exceeds its maximum"));
-        }
-        let field_path = child_path(path, "face_handles");
-        let value = &self.face_handles;
-        if value.len() > 1000000 {
-            return Err(invalid(&field_path, "array exceeds its maximum"));
-        }
-        let field_path = child_path(path, "source_entity");
-        if let Some(value) = &self.source_entity {
-            value.validate_at(&field_path)?;
-        }
-        Ok(())
-    }
-}
-
-#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
-#[serde(deny_unknown_fields)]
-pub struct SourceDescriptor {
+pub struct GlbAttachmentDescriptor {
+    pub name: String,
+    pub media_type: String,
     pub format: String,
-    pub sha256: String,
     pub bytes: u32,
-    pub normalized_length_unit: String,
+    pub sha256: String,
 }
 
-impl Validate for SourceDescriptor {
+impl Validate for GlbAttachmentDescriptor {
     fn validate_at(&self, path: &str) -> Result<(), ContractError> {
-        let field_path = child_path(path, "format");
-        let value = &self.format;
-        if value != "step" {
+        let field_path = child_path(path, "name");
+        let value = &self.name;
+        if value != "glb" {
             return Err(invalid(
                 &field_path,
                 "literal value does not match the contract",
             ));
         }
-        let field_path = child_path(path, "sha256");
-        let value = &self.sha256;
-        if value.len() < 64 {
-            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        let field_path = child_path(path, "media_type");
+        let value = &self.media_type;
+        if value != "model/gltf-binary" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
         }
-        if value.len() > 64 {
-            return Err(invalid(&field_path, "string exceeds its maximum"));
+        let field_path = child_path(path, "format");
+        let value = &self.format;
+        if value != "glb-2.0" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
         }
         let field_path = child_path(path, "bytes");
         let value = &self.bytes;
@@ -3907,222 +6760,6 @@ impl Validate for SourceDescriptor {
         if *value > 268435456 {
             return Err(invalid(&field_path, "number exceeds its maximum"));
         }
-        let field_path = child_path(path, "normalized_length_unit");
-        let value = &self.normalized_length_unit;
-        if value != "millimeter" {
-            return Err(invalid(
-                &field_path,
-                "literal value does not match the contract",
-            ));
-        }
-        Ok(())
-    }
-}
-
-#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
-#[serde(deny_unknown_fields)]
-pub struct StepTopologyCloseRequestA0 {
-    pub schema: String,
-    pub session: SessionReference,
-}
-
-impl Validate for StepTopologyCloseRequestA0 {
-    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
-        let field_path = child_path(path, "schema");
-        let value = &self.schema;
-        if value != "geometry.step_topology.close.request.a0" {
-            return Err(invalid(
-                &field_path,
-                "literal value does not match the contract",
-            ));
-        }
-        let field_path = child_path(path, "session");
-        let value = &self.session;
-        value.validate_at(&field_path)?;
-        Ok(())
-    }
-}
-
-#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
-#[serde(deny_unknown_fields)]
-pub struct StepTopologyCloseResultA0 {
-    pub schema: String,
-    pub session_handle: String,
-    pub closed: bool,
-}
-
-impl Validate for StepTopologyCloseResultA0 {
-    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
-        let field_path = child_path(path, "schema");
-        let value = &self.schema;
-        if value != "geometry.step_topology.close.result.a0" {
-            return Err(invalid(
-                &field_path,
-                "literal value does not match the contract",
-            ));
-        }
-        let field_path = child_path(path, "session_handle");
-        let value = &self.session_handle;
-        if value.len() < 68 {
-            return Err(invalid(&field_path, "string is shorter than its minimum"));
-        }
-        if value.len() > 68 {
-            return Err(invalid(&field_path, "string exceeds its maximum"));
-        }
-        let field_path = child_path(path, "closed");
-        let value = &self.closed;
-        if !*value {
-            return Err(invalid(
-                &field_path,
-                "literal value does not match the contract",
-            ));
-        }
-        Ok(())
-    }
-}
-
-#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
-#[serde(deny_unknown_fields)]
-pub struct StepTopologyInspectRequestA0 {
-    pub schema: String,
-    pub session: SessionReference,
-    pub page: PageRequest,
-    pub include_source_entity_evidence: bool,
-    pub include_diagnostics: bool,
-}
-
-impl Validate for StepTopologyInspectRequestA0 {
-    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
-        let field_path = child_path(path, "schema");
-        let value = &self.schema;
-        if value != "geometry.step_topology.inspect.request.a0" {
-            return Err(invalid(
-                &field_path,
-                "literal value does not match the contract",
-            ));
-        }
-        let field_path = child_path(path, "session");
-        let value = &self.session;
-        value.validate_at(&field_path)?;
-        let field_path = child_path(path, "page");
-        let value = &self.page;
-        value.validate_at(&field_path)?;
-        Ok(())
-    }
-}
-
-#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
-#[serde(deny_unknown_fields)]
-pub struct TopologyPage {
-    pub definitions: Vec<DefinitionSummary>,
-    pub occurrences: Vec<OccurrenceSummary>,
-    pub bodies: Vec<BodySummary>,
-    pub shells: Vec<ShellSummary>,
-    pub faces: Vec<FaceSummary>,
-    #[serde(
-        default,
-        deserialize_with = "deserialize_optional_non_null",
-        skip_serializing_if = "Option::is_none"
-    )]
-    pub next_cursor: Option<String>,
-}
-
-impl Validate for TopologyPage {
-    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
-        let field_path = child_path(path, "definitions");
-        let value = &self.definitions;
-        if value.len() > 1024 {
-            return Err(invalid(&field_path, "array exceeds its maximum"));
-        }
-        for (index, item) in value.iter().enumerate() {
-            item.validate_at(&child_path(&field_path, &index.to_string()))?;
-        }
-        let field_path = child_path(path, "occurrences");
-        let value = &self.occurrences;
-        if value.len() > 1024 {
-            return Err(invalid(&field_path, "array exceeds its maximum"));
-        }
-        for (index, item) in value.iter().enumerate() {
-            item.validate_at(&child_path(&field_path, &index.to_string()))?;
-        }
-        let field_path = child_path(path, "bodies");
-        let value = &self.bodies;
-        if value.len() > 1024 {
-            return Err(invalid(&field_path, "array exceeds its maximum"));
-        }
-        for (index, item) in value.iter().enumerate() {
-            item.validate_at(&child_path(&field_path, &index.to_string()))?;
-        }
-        let field_path = child_path(path, "shells");
-        let value = &self.shells;
-        if value.len() > 1024 {
-            return Err(invalid(&field_path, "array exceeds its maximum"));
-        }
-        for (index, item) in value.iter().enumerate() {
-            item.validate_at(&child_path(&field_path, &index.to_string()))?;
-        }
-        let field_path = child_path(path, "faces");
-        let value = &self.faces;
-        if value.len() > 1024 {
-            return Err(invalid(&field_path, "array exceeds its maximum"));
-        }
-        for (index, item) in value.iter().enumerate() {
-            item.validate_at(&child_path(&field_path, &index.to_string()))?;
-        }
-        let field_path = child_path(path, "next_cursor");
-        if let Some(value) = &self.next_cursor {
-            if value.len() > 256 {
-                return Err(invalid(&field_path, "string exceeds its maximum"));
-            }
-        }
-        Ok(())
-    }
-}
-
-#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
-#[serde(deny_unknown_fields)]
-pub struct TopologyTableAttachmentDescriptor {
-    pub name: String,
-    pub media_type: String,
-    pub format: String,
-    pub bytes: u32,
-    pub sha256: String,
-}
-
-impl Validate for TopologyTableAttachmentDescriptor {
-    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
-        let field_path = child_path(path, "name");
-        let value = &self.name;
-        if value != "topology_table" {
-            return Err(invalid(
-                &field_path,
-                "literal value does not match the contract",
-            ));
-        }
-        let field_path = child_path(path, "media_type");
-        let value = &self.media_type;
-        if value != "application/vnd.wavenumber.geometer.step-topology-table" {
-            return Err(invalid(
-                &field_path,
-                "literal value does not match the contract",
-            ));
-        }
-        let field_path = child_path(path, "format");
-        let value = &self.format;
-        if value != "wn.geometer.step-topology-table.a0" {
-            return Err(invalid(
-                &field_path,
-                "literal value does not match the contract",
-            ));
-        }
-        let field_path = child_path(path, "bytes");
-        let value = &self.bytes;
-        if *value < 1 {
-            return Err(invalid(&field_path, "number is below its minimum"));
-        }
-        if *value > 134217728 {
-            return Err(invalid(&field_path, "number exceeds its maximum"));
-        }
         let field_path = child_path(path, "sha256");
         let value = &self.sha256;
         if value.len() < 64 {
@@ -4131,227 +6768,6 @@ impl Validate for TopologyTableAttachmentDescriptor {
         if value.len() > 64 {
             return Err(invalid(&field_path, "string exceeds its maximum"));
         }
-        Ok(())
-    }
-}
-
-#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
-#[serde(deny_unknown_fields)]
-pub struct StepTopologyInspectResultA0 {
-    pub schema: String,
-    pub session: SessionReference,
-    pub counts: InspectionCounts,
-    pub page: TopologyPage,
-    #[serde(
-        default,
-        deserialize_with = "deserialize_optional_non_null",
-        skip_serializing_if = "Option::is_none"
-    )]
-    pub compact_table: Option<TopologyTableAttachmentDescriptor>,
-    pub diagnostics: Vec<DiagnosticA0>,
-}
-
-impl Validate for StepTopologyInspectResultA0 {
-    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
-        let field_path = child_path(path, "schema");
-        let value = &self.schema;
-        if value != "geometry.step_topology.inspect.result.a0" {
-            return Err(invalid(
-                &field_path,
-                "literal value does not match the contract",
-            ));
-        }
-        let field_path = child_path(path, "session");
-        let value = &self.session;
-        value.validate_at(&field_path)?;
-        let field_path = child_path(path, "counts");
-        let value = &self.counts;
-        value.validate_at(&field_path)?;
-        let field_path = child_path(path, "page");
-        let value = &self.page;
-        value.validate_at(&field_path)?;
-        let field_path = child_path(path, "compact_table");
-        if let Some(value) = &self.compact_table {
-            value.validate_at(&field_path)?;
-        }
-        let field_path = child_path(path, "diagnostics");
-        let value = &self.diagnostics;
-        if value.len() > 256 {
-            return Err(invalid(&field_path, "array exceeds its maximum"));
-        }
-        for (index, item) in value.iter().enumerate() {
-            item.validate_at(&child_path(&field_path, &index.to_string()))?;
-        }
-        Ok(())
-    }
-}
-
-#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
-#[serde(deny_unknown_fields)]
-pub struct StepTopologyOpenRequestA0 {
-    pub schema: String,
-}
-
-impl Validate for StepTopologyOpenRequestA0 {
-    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
-        let field_path = child_path(path, "schema");
-        let value = &self.schema;
-        if value != "geometry.step_topology.open.request.a0" {
-            return Err(invalid(
-                &field_path,
-                "literal value does not match the contract",
-            ));
-        }
-        Ok(())
-    }
-}
-
-#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
-#[serde(deny_unknown_fields)]
-pub struct ToolDescriptor {
-    pub name: String,
-    pub release_version: String,
-    pub occt_version: String,
-}
-
-impl Validate for ToolDescriptor {
-    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
-        let field_path = child_path(path, "name");
-        let value = &self.name;
-        if value != "geometer" {
-            return Err(invalid(
-                &field_path,
-                "literal value does not match the contract",
-            ));
-        }
-        let field_path = child_path(path, "release_version");
-        let value = &self.release_version;
-        if value.is_empty() {
-            return Err(invalid(&field_path, "string is shorter than its minimum"));
-        }
-        if value.len() > 64 {
-            return Err(invalid(&field_path, "string exceeds its maximum"));
-        }
-        let field_path = child_path(path, "occt_version");
-        let value = &self.occt_version;
-        if value.is_empty() {
-            return Err(invalid(&field_path, "string is shorter than its minimum"));
-        }
-        if value.len() > 64 {
-            return Err(invalid(&field_path, "string exceeds its maximum"));
-        }
-        Ok(())
-    }
-}
-
-#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
-#[serde(deny_unknown_fields)]
-pub struct StepTopologyOpenResultA0 {
-    pub schema: String,
-    pub session: SessionReference,
-    pub source: SourceDescriptor,
-    pub tool: ToolDescriptor,
-    pub evicted_session_handles: Vec<String>,
-}
-
-impl Validate for StepTopologyOpenResultA0 {
-    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
-        let field_path = child_path(path, "schema");
-        let value = &self.schema;
-        if value != "geometry.step_topology.open.result.a0" {
-            return Err(invalid(
-                &field_path,
-                "literal value does not match the contract",
-            ));
-        }
-        let field_path = child_path(path, "session");
-        let value = &self.session;
-        value.validate_at(&field_path)?;
-        let field_path = child_path(path, "source");
-        let value = &self.source;
-        value.validate_at(&field_path)?;
-        let field_path = child_path(path, "tool");
-        let value = &self.tool;
-        value.validate_at(&field_path)?;
-        let field_path = child_path(path, "evicted_session_handles");
-        let value = &self.evicted_session_handles;
-        if value.len() > 8 {
-            return Err(invalid(&field_path, "array exceeds its maximum"));
-        }
-        Ok(())
-    }
-}
-
-#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
-#[serde(deny_unknown_fields)]
-pub struct TessellationOptions {
-    pub linear_deflection_mm: f64,
-    pub angular_deflection_rad: f64,
-    pub relative: bool,
-    pub parallel: bool,
-    pub source_to_render: Vec<f64>,
-}
-
-impl Validate for TessellationOptions {
-    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
-        let field_path = child_path(path, "linear_deflection_mm");
-        let value = &self.linear_deflection_mm;
-        if !value.is_finite() {
-            return Err(invalid(&field_path, "number must be finite"));
-        }
-        if *value < 0.000001_f64 {
-            return Err(invalid(&field_path, "number is below its minimum"));
-        }
-        if *value > 1000_f64 {
-            return Err(invalid(&field_path, "number exceeds its maximum"));
-        }
-        let field_path = child_path(path, "angular_deflection_rad");
-        let value = &self.angular_deflection_rad;
-        if !value.is_finite() {
-            return Err(invalid(&field_path, "number must be finite"));
-        }
-        if *value < 0.000001_f64 {
-            return Err(invalid(&field_path, "number is below its minimum"));
-        }
-        if *value > 3.141592653589793_f64 {
-            return Err(invalid(&field_path, "number exceeds its maximum"));
-        }
-        let field_path = child_path(path, "source_to_render");
-        let value = &self.source_to_render;
-        if value.len() < 12 {
-            return Err(invalid(&field_path, "array is shorter than its minimum"));
-        }
-        if value.len() > 12 {
-            return Err(invalid(&field_path, "array exceeds its maximum"));
-        }
-        Ok(())
-    }
-}
-
-#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
-#[serde(deny_unknown_fields)]
-pub struct StepTopologyRenderRequestA0 {
-    pub schema: String,
-    pub session: SessionReference,
-    pub tessellation: TessellationOptions,
-}
-
-impl Validate for StepTopologyRenderRequestA0 {
-    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
-        let field_path = child_path(path, "schema");
-        let value = &self.schema;
-        if value != "geometry.step_topology.render.request.a0" {
-            return Err(invalid(
-                &field_path,
-                "literal value does not match the contract",
-            ));
-        }
-        let field_path = child_path(path, "session");
-        let value = &self.session;
-        value.validate_at(&field_path)?;
-        let field_path = child_path(path, "tessellation");
-        let value = &self.tessellation;
-        value.validate_at(&field_path)?;
         Ok(())
     }
 }
@@ -4456,93 +6872,6 @@ impl Validate for StepTopologyRenderResultA0 {
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
-pub struct StepTopologyResolveHitRequestA0 {
-    pub schema: String,
-    pub session: SessionReference,
-    pub artifact_handle: String,
-    pub content_sha256: String,
-    pub instance_index: u32,
-    pub primitive_index: u32,
-    pub primitive_triangle_index: u32,
-    pub occurrence_handle: String,
-    pub body_handle: String,
-    pub face_handle: String,
-}
-
-impl Validate for StepTopologyResolveHitRequestA0 {
-    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
-        let field_path = child_path(path, "schema");
-        let value = &self.schema;
-        if value != "geometry.step_topology.resolve_hit.request.a0" {
-            return Err(invalid(
-                &field_path,
-                "literal value does not match the contract",
-            ));
-        }
-        let field_path = child_path(path, "session");
-        let value = &self.session;
-        value.validate_at(&field_path)?;
-        let field_path = child_path(path, "artifact_handle");
-        let value = &self.artifact_handle;
-        if value.len() < 68 {
-            return Err(invalid(&field_path, "string is shorter than its minimum"));
-        }
-        if value.len() > 68 {
-            return Err(invalid(&field_path, "string exceeds its maximum"));
-        }
-        let field_path = child_path(path, "content_sha256");
-        let value = &self.content_sha256;
-        if value.len() < 64 {
-            return Err(invalid(&field_path, "string is shorter than its minimum"));
-        }
-        if value.len() > 64 {
-            return Err(invalid(&field_path, "string exceeds its maximum"));
-        }
-        let field_path = child_path(path, "instance_index");
-        let value = &self.instance_index;
-        if *value > 99999 {
-            return Err(invalid(&field_path, "number exceeds its maximum"));
-        }
-        let field_path = child_path(path, "primitive_index");
-        let value = &self.primitive_index;
-        if *value > 999999 {
-            return Err(invalid(&field_path, "number exceeds its maximum"));
-        }
-        let field_path = child_path(path, "primitive_triangle_index");
-        let value = &self.primitive_triangle_index;
-        if *value > 9999999 {
-            return Err(invalid(&field_path, "number exceeds its maximum"));
-        }
-        let field_path = child_path(path, "occurrence_handle");
-        let value = &self.occurrence_handle;
-        if value.len() < 68 {
-            return Err(invalid(&field_path, "string is shorter than its minimum"));
-        }
-        if value.len() > 68 {
-            return Err(invalid(&field_path, "string exceeds its maximum"));
-        }
-        let field_path = child_path(path, "body_handle");
-        let value = &self.body_handle;
-        if value.len() < 68 {
-            return Err(invalid(&field_path, "string is shorter than its minimum"));
-        }
-        if value.len() > 68 {
-            return Err(invalid(&field_path, "string exceeds its maximum"));
-        }
-        let field_path = child_path(path, "face_handle");
-        let value = &self.face_handle;
-        if value.len() < 68 {
-            return Err(invalid(&field_path, "string is shorter than its minimum"));
-        }
-        if value.len() > 68 {
-            return Err(invalid(&field_path, "string exceeds its maximum"));
-        }
-        Ok(())
-    }
-}
-
-#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
-#[serde(deny_unknown_fields)]
 pub struct StepTopologyResolveHitResultA0 {
     pub schema: String,
     pub session: SessionReference,
@@ -4607,6 +6936,1455 @@ impl Validate for StepTopologyResolveHitResultA0 {
             return Err(invalid(&field_path, "string exceeds its maximum"));
         }
         Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct MutationSessionState {
+    pub session: SessionReference,
+    pub edit_journal_revision: u32,
+    pub accounted_string_bytes: u32,
+    pub estimated_resident_bytes: u32,
+}
+
+impl Validate for MutationSessionState {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "session");
+        let value = &self.session;
+        value.validate_at(&field_path)?;
+        let field_path = child_path(path, "edit_journal_revision");
+        let value = &self.edit_journal_revision;
+        if *value > 100000 {
+            return Err(invalid(&field_path, "number exceeds its maximum"));
+        }
+        let field_path = child_path(path, "accounted_string_bytes");
+        let value = &self.accounted_string_bytes;
+        if *value > 16777216 {
+            return Err(invalid(&field_path, "number exceeds its maximum"));
+        }
+        let field_path = child_path(path, "estimated_resident_bytes");
+        let value = &self.estimated_resident_bytes;
+        if *value > 536870912 {
+            return Err(invalid(&field_path, "number exceeds its maximum"));
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct LogicalGroupMember {
+    pub kind: LogicalGroupMemberKind,
+    pub target_handle: String,
+}
+
+impl Validate for LogicalGroupMember {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "kind");
+        let value = &self.kind;
+        value.validate_at(&field_path)?;
+        let field_path = child_path(path, "target_handle");
+        let value = &self.target_handle;
+        if value.len() < 68 {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 68 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct LogicalGroup {
+    pub authored_id: String,
+    pub revision: u32,
+    pub name: String,
+    pub members: Vec<LogicalGroupMember>,
+}
+
+impl Validate for LogicalGroup {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "authored_id");
+        let value = &self.authored_id;
+        if value.len() < 28 {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 128 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "revision");
+        let value = &self.revision;
+        if *value < 1 {
+            return Err(invalid(&field_path, "number is below its minimum"));
+        }
+        let field_path = child_path(path, "name");
+        let value = &self.name;
+        if value.is_empty() {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 4096 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "members");
+        let value = &self.members;
+        if value.is_empty() {
+            return Err(invalid(&field_path, "array is shorter than its minimum"));
+        }
+        if value.len() > 100000 {
+            return Err(invalid(&field_path, "array exceeds its maximum"));
+        }
+        for (index, item) in value.iter().enumerate() {
+            item.validate_at(&child_path(&field_path, &index.to_string()))?;
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct StepTopologyApplyLogicalGroupsResultA0 {
+    pub schema: String,
+    pub state: MutationSessionState,
+    pub groups: Vec<LogicalGroup>,
+    pub diagnostics: Vec<DiagnosticA0>,
+}
+
+impl Validate for StepTopologyApplyLogicalGroupsResultA0 {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "schema");
+        let value = &self.schema;
+        if value != "geometry.step_topology.apply_logical_groups.result.a0" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "state");
+        let value = &self.state;
+        value.validate_at(&field_path)?;
+        let field_path = child_path(path, "groups");
+        let value = &self.groups;
+        if value.len() > 10000 {
+            return Err(invalid(&field_path, "array exceeds its maximum"));
+        }
+        for (index, item) in value.iter().enumerate() {
+            item.validate_at(&child_path(&field_path, &index.to_string()))?;
+        }
+        let field_path = child_path(path, "diagnostics");
+        let value = &self.diagnostics;
+        if value.len() > 256 {
+            return Err(invalid(&field_path, "array exceeds its maximum"));
+        }
+        for (index, item) in value.iter().enumerate() {
+            item.validate_at(&child_path(&field_path, &index.to_string()))?;
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct MetadataProbe {
+    pub authored_id: String,
+    pub revision: u32,
+    pub target: MetadataProbeTarget,
+    pub key: String,
+    pub value: String,
+}
+
+impl Validate for MetadataProbe {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "authored_id");
+        let value = &self.authored_id;
+        if value.len() < 28 {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 128 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "revision");
+        let value = &self.revision;
+        if *value < 1 {
+            return Err(invalid(&field_path, "number is below its minimum"));
+        }
+        let field_path = child_path(path, "target");
+        let value = &self.target;
+        value.validate_at(&field_path)?;
+        let field_path = child_path(path, "key");
+        let value = &self.key;
+        if value.len() < 32 {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 128 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "value");
+        let value = &self.value;
+        if value.is_empty() {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 4096 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct StepTopologyApplyMetadataProbesResultA0 {
+    pub schema: String,
+    pub state: MutationSessionState,
+    pub groups: Vec<LogicalGroup>,
+    pub probes: Vec<MetadataProbe>,
+    pub diagnostics: Vec<DiagnosticA0>,
+}
+
+impl Validate for StepTopologyApplyMetadataProbesResultA0 {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "schema");
+        let value = &self.schema;
+        if value != "geometry.step_topology.apply_metadata_probes.result.a0" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "state");
+        let value = &self.state;
+        value.validate_at(&field_path)?;
+        let field_path = child_path(path, "groups");
+        let value = &self.groups;
+        if value.len() > 10000 {
+            return Err(invalid(&field_path, "array exceeds its maximum"));
+        }
+        for (index, item) in value.iter().enumerate() {
+            item.validate_at(&child_path(&field_path, &index.to_string()))?;
+        }
+        let field_path = child_path(path, "probes");
+        let value = &self.probes;
+        if value.len() > 10000 {
+            return Err(invalid(&field_path, "array exceeds its maximum"));
+        }
+        for (index, item) in value.iter().enumerate() {
+            item.validate_at(&child_path(&field_path, &index.to_string()))?;
+        }
+        let field_path = child_path(path, "diagnostics");
+        let value = &self.diagnostics;
+        if value.len() > 256 {
+            return Err(invalid(&field_path, "array exceeds its maximum"));
+        }
+        for (index, item) in value.iter().enumerate() {
+            item.validate_at(&child_path(&field_path, &index.to_string()))?;
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct EditJournalAttachmentDescriptor {
+    pub name: String,
+    pub media_type: String,
+    pub format: String,
+    pub bytes: u32,
+    pub sha256: String,
+}
+
+impl Validate for EditJournalAttachmentDescriptor {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "name");
+        let value = &self.name;
+        if value != "edit_journal" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "media_type");
+        let value = &self.media_type;
+        if value != "application/vnd.wavenumber.geometer.step-topology-edit-journal" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "format");
+        let value = &self.format;
+        if value != "geometer.step_topology_edit_journal.a0" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "bytes");
+        let value = &self.bytes;
+        if *value < 1 {
+            return Err(invalid(&field_path, "number is below its minimum"));
+        }
+        if *value > 67108864 {
+            return Err(invalid(&field_path, "number exceeds its maximum"));
+        }
+        let field_path = child_path(path, "sha256");
+        let value = &self.sha256;
+        if value.len() < 64 {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 64 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct StepTopologyCheckpointEditJournalResultA0 {
+    pub schema: String,
+    pub state: MutationSessionState,
+    pub source_sha256: String,
+    pub source_brep_sha256: String,
+    pub target_inventory_sha256: String,
+    pub occt_version: String,
+    pub transaction_count: u32,
+    pub journal: EditJournalAttachmentDescriptor,
+    pub diagnostics: Vec<DiagnosticA0>,
+}
+
+impl Validate for StepTopologyCheckpointEditJournalResultA0 {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "schema");
+        let value = &self.schema;
+        if value != "geometry.step_topology.checkpoint_edit_journal.result.a0" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "state");
+        let value = &self.state;
+        value.validate_at(&field_path)?;
+        let field_path = child_path(path, "source_sha256");
+        let value = &self.source_sha256;
+        if value.len() < 64 {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 64 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "source_brep_sha256");
+        let value = &self.source_brep_sha256;
+        if value.len() < 64 {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 64 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "target_inventory_sha256");
+        let value = &self.target_inventory_sha256;
+        if value.len() < 64 {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 64 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "occt_version");
+        let value = &self.occt_version;
+        if value.is_empty() {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 64 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "transaction_count");
+        let value = &self.transaction_count;
+        if *value > 100000 {
+            return Err(invalid(&field_path, "number exceeds its maximum"));
+        }
+        let field_path = child_path(path, "journal");
+        let value = &self.journal;
+        value.validate_at(&field_path)?;
+        let field_path = child_path(path, "diagnostics");
+        let value = &self.diagnostics;
+        if value.len() > 256 {
+            return Err(invalid(&field_path, "array exceeds its maximum"));
+        }
+        for (index, item) in value.iter().enumerate() {
+            item.validate_at(&child_path(&field_path, &index.to_string()))?;
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+pub enum HierarchyNodeKind {
+    #[serde(rename = "product")]
+    Product,
+    #[serde(rename = "assembly")]
+    Assembly,
+}
+
+impl Validate for HierarchyNodeKind {
+    fn validate_at(&self, _path: &str) -> Result<(), ContractError> {
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct HierarchyNode {
+    pub authored_id: String,
+    pub revision: u32,
+    pub kind: HierarchyNodeKind,
+    pub name: String,
+    #[serde(
+        default,
+        deserialize_with = "deserialize_optional_non_null",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub source_kind: Option<HierarchySourceKind>,
+    #[serde(
+        default,
+        deserialize_with = "deserialize_optional_non_null",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub source_handle: Option<String>,
+}
+
+impl Validate for HierarchyNode {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "authored_id");
+        let value = &self.authored_id;
+        if value.len() < 28 {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 128 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "revision");
+        let value = &self.revision;
+        if *value < 1 {
+            return Err(invalid(&field_path, "number is below its minimum"));
+        }
+        let field_path = child_path(path, "kind");
+        let value = &self.kind;
+        value.validate_at(&field_path)?;
+        let field_path = child_path(path, "name");
+        let value = &self.name;
+        if value.is_empty() {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 4096 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "source_kind");
+        if let Some(value) = &self.source_kind {
+            value.validate_at(&field_path)?;
+        }
+        let field_path = child_path(path, "source_handle");
+        if let Some(value) = &self.source_handle {
+            if value.len() < 68 {
+                return Err(invalid(&field_path, "string is shorter than its minimum"));
+            }
+            if value.len() > 68 {
+                return Err(invalid(&field_path, "string exceeds its maximum"));
+            }
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct HierarchyOccurrence {
+    pub authored_id: String,
+    pub revision: u32,
+    pub child_authored_id: String,
+    pub parent_assembly_authored_id: String,
+    pub transform: Vec<f64>,
+}
+
+impl Validate for HierarchyOccurrence {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "authored_id");
+        let value = &self.authored_id;
+        if value.len() < 28 {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 128 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "revision");
+        let value = &self.revision;
+        if *value < 1 {
+            return Err(invalid(&field_path, "number is below its minimum"));
+        }
+        let field_path = child_path(path, "child_authored_id");
+        let value = &self.child_authored_id;
+        if value.len() < 28 {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 128 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "parent_assembly_authored_id");
+        let value = &self.parent_assembly_authored_id;
+        if value.len() < 28 {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 128 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "transform");
+        let value = &self.transform;
+        if value.len() < 12 {
+            return Err(invalid(&field_path, "array is shorter than its minimum"));
+        }
+        if value.len() > 12 {
+            return Err(invalid(&field_path, "array exceeds its maximum"));
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct HierarchyState {
+    pub hierarchy_revision: u32,
+    pub source_brep_sha256: String,
+    pub nodes: Vec<HierarchyNode>,
+    pub occurrences: Vec<HierarchyOccurrence>,
+}
+
+impl Validate for HierarchyState {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "source_brep_sha256");
+        let value = &self.source_brep_sha256;
+        if value.len() < 64 {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 64 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "nodes");
+        let value = &self.nodes;
+        if value.len() > 10000 {
+            return Err(invalid(&field_path, "array exceeds its maximum"));
+        }
+        for (index, item) in value.iter().enumerate() {
+            item.validate_at(&child_path(&field_path, &index.to_string()))?;
+        }
+        let field_path = child_path(path, "occurrences");
+        let value = &self.occurrences;
+        if value.len() > 100000 {
+            return Err(invalid(&field_path, "array exceeds its maximum"));
+        }
+        for (index, item) in value.iter().enumerate() {
+            item.validate_at(&child_path(&field_path, &index.to_string()))?;
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct StepTopologyApplyHierarchyResultA0 {
+    pub schema: String,
+    pub state: MutationSessionState,
+    pub hierarchy: HierarchyState,
+    pub diagnostics: Vec<DiagnosticA0>,
+}
+
+impl Validate for StepTopologyApplyHierarchyResultA0 {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "schema");
+        let value = &self.schema;
+        if value != "geometry.step_topology.apply_hierarchy.result.a0" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "state");
+        let value = &self.state;
+        value.validate_at(&field_path)?;
+        let field_path = child_path(path, "hierarchy");
+        let value = &self.hierarchy;
+        value.validate_at(&field_path)?;
+        let field_path = child_path(path, "diagnostics");
+        let value = &self.diagnostics;
+        if value.len() > 256 {
+            return Err(invalid(&field_path, "array exceeds its maximum"));
+        }
+        for (index, item) in value.iter().enumerate() {
+            item.validate_at(&child_path(&field_path, &index.to_string()))?;
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize)]
+#[serde(untagged)]
+pub enum SavePersistenceArtifact {
+    Xbf(XbfPersistenceArtifact),
+    XmlXcaf(XmlXcafPersistenceArtifact),
+    StepAp242(StepAp242PersistenceArtifact),
+    JsonSidecar(JsonSidecarPersistenceArtifact),
+}
+
+impl<'de> Deserialize<'de> for SavePersistenceArtifact {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let raw = Box::<serde_json::value::RawValue>::deserialize(deserializer)?;
+        if let Ok(value) = serde_json::from_str::<XbfPersistenceArtifact>(raw.get()) {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::Xbf(value));
+            }
+        }
+        if let Ok(value) = serde_json::from_str::<XmlXcafPersistenceArtifact>(raw.get()) {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::XmlXcaf(value));
+            }
+        }
+        if let Ok(value) = serde_json::from_str::<StepAp242PersistenceArtifact>(raw.get()) {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::StepAp242(value));
+            }
+        }
+        if let Ok(value) = serde_json::from_str::<JsonSidecarPersistenceArtifact>(raw.get()) {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::JsonSidecar(value));
+            }
+        }
+        Err(serde::de::Error::custom(
+            "value does not match any SavePersistenceArtifact variant",
+        ))
+    }
+}
+
+impl Validate for SavePersistenceArtifact {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        match self {
+            Self::Xbf(value) => value.validate_at(path),
+            Self::XmlXcaf(value) => value.validate_at(path),
+            Self::StepAp242(value) => value.validate_at(path),
+            Self::JsonSidecar(value) => value.validate_at(path),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+pub enum PersistenceCarrier {
+    #[serde(rename = "xbf")]
+    Xbf,
+    #[serde(rename = "xml_xcaf")]
+    XmlXcaf,
+    #[serde(rename = "step_ap242")]
+    StepAp242,
+    #[serde(rename = "json_sidecar")]
+    JsonSidecar,
+    #[serde(rename = "edit_journal")]
+    EditJournal,
+}
+
+impl Validate for PersistenceCarrier {
+    fn validate_at(&self, _path: &str) -> Result<(), ContractError> {
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+pub enum CarrierSupportState {
+    #[serde(rename = "supported")]
+    Supported,
+    #[serde(rename = "experimental")]
+    Experimental,
+    #[serde(rename = "unsupported")]
+    Unsupported,
+}
+
+impl Validate for CarrierSupportState {
+    fn validate_at(&self, _path: &str) -> Result<(), ContractError> {
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct CarrierCapabilityNote {
+    pub value: String,
+}
+
+impl Validate for CarrierCapabilityNote {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "value");
+        let value = &self.value;
+        if value.is_empty() {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 256 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct CarrierCapability {
+    pub carrier: PersistenceCarrier,
+    pub save: CarrierSupportState,
+    pub restore: CarrierSupportState,
+    pub authored_payload: CarrierSupportState,
+    pub topology_links: CarrierSupportState,
+    pub notes: Vec<CarrierCapabilityNote>,
+}
+
+impl Validate for CarrierCapability {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "carrier");
+        let value = &self.carrier;
+        value.validate_at(&field_path)?;
+        let field_path = child_path(path, "save");
+        let value = &self.save;
+        value.validate_at(&field_path)?;
+        let field_path = child_path(path, "restore");
+        let value = &self.restore;
+        value.validate_at(&field_path)?;
+        let field_path = child_path(path, "authored_payload");
+        let value = &self.authored_payload;
+        value.validate_at(&field_path)?;
+        let field_path = child_path(path, "topology_links");
+        let value = &self.topology_links;
+        value.validate_at(&field_path)?;
+        let field_path = child_path(path, "notes");
+        let value = &self.notes;
+        if value.len() > 16 {
+            return Err(invalid(&field_path, "array exceeds its maximum"));
+        }
+        for (index, item) in value.iter().enumerate() {
+            item.validate_at(&child_path(&field_path, &index.to_string()))?;
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct StepTopologySaveResultA0 {
+    pub schema: String,
+    pub state: MutationSessionState,
+    pub source_sha256: String,
+    pub artifact: SavePersistenceArtifact,
+    pub capabilities: Vec<CarrierCapability>,
+    pub diagnostics: Vec<DiagnosticA0>,
+}
+
+impl Validate for StepTopologySaveResultA0 {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "schema");
+        let value = &self.schema;
+        if value != "geometry.step_topology.save.result.a0" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "state");
+        let value = &self.state;
+        value.validate_at(&field_path)?;
+        let field_path = child_path(path, "source_sha256");
+        let value = &self.source_sha256;
+        if value.len() < 64 {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 64 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "artifact");
+        let value = &self.artifact;
+        value.validate_at(&field_path)?;
+        let field_path = child_path(path, "capabilities");
+        let value = &self.capabilities;
+        if value.len() < 5 {
+            return Err(invalid(&field_path, "array is shorter than its minimum"));
+        }
+        if value.len() > 5 {
+            return Err(invalid(&field_path, "array exceeds its maximum"));
+        }
+        for (index, item) in value.iter().enumerate() {
+            item.validate_at(&child_path(&field_path, &index.to_string()))?;
+        }
+        let field_path = child_path(path, "diagnostics");
+        let value = &self.diagnostics;
+        if value.len() > 256 {
+            return Err(invalid(&field_path, "array exceeds its maximum"));
+        }
+        for (index, item) in value.iter().enumerate() {
+            item.validate_at(&child_path(&field_path, &index.to_string()))?;
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+pub enum RecoveryResolutionState {
+    #[serde(rename = "resolved")]
+    Resolved,
+    #[serde(rename = "ambiguous")]
+    Ambiguous,
+    #[serde(rename = "unresolved")]
+    Unresolved,
+    #[serde(rename = "unsupported")]
+    Unsupported,
+}
+
+impl Validate for RecoveryResolutionState {
+    fn validate_at(&self, _path: &str) -> Result<(), ContractError> {
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+pub enum RecoveryGroupCompleteness {
+    #[serde(rename = "fully_recovered")]
+    FullyRecovered,
+    #[serde(rename = "partially_recovered")]
+    PartiallyRecovered,
+    #[serde(rename = "unrecovered")]
+    Unrecovered,
+    #[serde(rename = "unsupported")]
+    Unsupported,
+}
+
+impl Validate for RecoveryGroupCompleteness {
+    fn validate_at(&self, _path: &str) -> Result<(), ContractError> {
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+pub enum RecoveryResolutionMethod {
+    #[serde(rename = "authored_id_topology_link")]
+    AuthoredIdTopologyLink,
+    #[serde(rename = "validated_carrier_locator")]
+    ValidatedCarrierLocator,
+    #[serde(rename = "unique_geometry_adjacency_fingerprint")]
+    UniqueGeometryAdjacencyFingerprint,
+    #[serde(rename = "none")]
+    None,
+}
+
+impl Validate for RecoveryResolutionMethod {
+    fn validate_at(&self, _path: &str) -> Result<(), ContractError> {
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+pub enum RecoveryTopologyComparison {
+    #[serde(rename = "unchanged")]
+    Unchanged,
+    #[serde(rename = "relocated")]
+    Relocated,
+    #[serde(rename = "split")]
+    Split,
+    #[serde(rename = "merged")]
+    Merged,
+    #[serde(rename = "otherwise_changed")]
+    OtherwiseChanged,
+    #[serde(rename = "not_compared")]
+    NotCompared,
+    #[serde(rename = "unavailable")]
+    Unavailable,
+}
+
+impl Validate for RecoveryTopologyComparison {
+    fn validate_at(&self, _path: &str) -> Result<(), ContractError> {
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+pub enum RecoveryConfidence {
+    #[serde(rename = "high")]
+    High,
+    #[serde(rename = "medium")]
+    Medium,
+    #[serde(rename = "low")]
+    Low,
+    #[serde(rename = "none")]
+    None,
+}
+
+impl Validate for RecoveryConfidence {
+    fn validate_at(&self, _path: &str) -> Result<(), ContractError> {
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct RecoveryComparedField {
+    pub value: String,
+}
+
+impl Validate for RecoveryComparedField {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "value");
+        let value = &self.value;
+        if value.is_empty() {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 128 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct RecoveryCarrierRecord {
+    pub value: String,
+}
+
+impl Validate for RecoveryCarrierRecord {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "value");
+        let value = &self.value;
+        if value.is_empty() {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 4096 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct RecoveryRejectedAlternative {
+    pub target_handle: String,
+    pub reason: String,
+}
+
+impl Validate for RecoveryRejectedAlternative {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "target_handle");
+        let value = &self.target_handle;
+        if value.len() < 68 {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 68 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "reason");
+        let value = &self.reason;
+        if value.is_empty() {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 4096 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct RecoveryEvidence {
+    pub candidate_count: u32,
+    pub matching_candidate_count: u32,
+    pub compared_fields: Vec<RecoveryComparedField>,
+    pub tolerances: RecoveryTolerances,
+    pub carrier_records: Vec<RecoveryCarrierRecord>,
+    pub rejected_alternatives: Vec<RecoveryRejectedAlternative>,
+}
+
+impl Validate for RecoveryEvidence {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "candidate_count");
+        let value = &self.candidate_count;
+        if *value > 16 {
+            return Err(invalid(&field_path, "number exceeds its maximum"));
+        }
+        let field_path = child_path(path, "matching_candidate_count");
+        let value = &self.matching_candidate_count;
+        if *value > 16 {
+            return Err(invalid(&field_path, "number exceeds its maximum"));
+        }
+        let field_path = child_path(path, "compared_fields");
+        let value = &self.compared_fields;
+        if value.len() > 16 {
+            return Err(invalid(&field_path, "array exceeds its maximum"));
+        }
+        for (index, item) in value.iter().enumerate() {
+            item.validate_at(&child_path(&field_path, &index.to_string()))?;
+        }
+        let field_path = child_path(path, "tolerances");
+        let value = &self.tolerances;
+        value.validate_at(&field_path)?;
+        let field_path = child_path(path, "carrier_records");
+        let value = &self.carrier_records;
+        if value.len() > 16 {
+            return Err(invalid(&field_path, "array exceeds its maximum"));
+        }
+        for (index, item) in value.iter().enumerate() {
+            item.validate_at(&child_path(&field_path, &index.to_string()))?;
+        }
+        let field_path = child_path(path, "rejected_alternatives");
+        let value = &self.rejected_alternatives;
+        if value.len() > 16 {
+            return Err(invalid(&field_path, "array exceeds its maximum"));
+        }
+        for (index, item) in value.iter().enumerate() {
+            item.validate_at(&child_path(&field_path, &index.to_string()))?;
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct RecoveryMemberResult {
+    pub member_record_id: String,
+    pub kind: LogicalGroupMemberKind,
+    pub authored_target_id: String,
+    pub resolution_state: RecoveryResolutionState,
+    pub resolution_method: RecoveryResolutionMethod,
+    pub topology_comparison: RecoveryTopologyComparison,
+    pub confidence: RecoveryConfidence,
+    #[serde(
+        default,
+        deserialize_with = "deserialize_optional_non_null",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub resolved_target_handle: Option<String>,
+    pub evidence: RecoveryEvidence,
+}
+
+impl Validate for RecoveryMemberResult {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "member_record_id");
+        let value = &self.member_record_id;
+        if value.len() < 28 {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 128 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "kind");
+        let value = &self.kind;
+        value.validate_at(&field_path)?;
+        let field_path = child_path(path, "authored_target_id");
+        let value = &self.authored_target_id;
+        if value.len() > 128 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "resolution_state");
+        let value = &self.resolution_state;
+        value.validate_at(&field_path)?;
+        let field_path = child_path(path, "resolution_method");
+        let value = &self.resolution_method;
+        value.validate_at(&field_path)?;
+        let field_path = child_path(path, "topology_comparison");
+        let value = &self.topology_comparison;
+        value.validate_at(&field_path)?;
+        let field_path = child_path(path, "confidence");
+        let value = &self.confidence;
+        value.validate_at(&field_path)?;
+        let field_path = child_path(path, "resolved_target_handle");
+        if let Some(value) = &self.resolved_target_handle {
+            if value.len() < 68 {
+                return Err(invalid(&field_path, "string is shorter than its minimum"));
+            }
+            if value.len() > 68 {
+                return Err(invalid(&field_path, "string exceeds its maximum"));
+            }
+        }
+        let field_path = child_path(path, "evidence");
+        let value = &self.evidence;
+        value.validate_at(&field_path)?;
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct RecoveryGroupResult {
+    pub group_authored_id: String,
+    pub provenance: RecoveryProvenance,
+    pub resolution_state: RecoveryResolutionState,
+    pub completeness: RecoveryGroupCompleteness,
+    pub resolved_member_count: u32,
+    pub ambiguous_member_count: u32,
+    pub unresolved_member_count: u32,
+    pub unsupported_member_count: u32,
+    pub members: Vec<RecoveryMemberResult>,
+}
+
+impl Validate for RecoveryGroupResult {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "group_authored_id");
+        let value = &self.group_authored_id;
+        if value.len() < 28 {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 128 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "provenance");
+        let value = &self.provenance;
+        value.validate_at(&field_path)?;
+        let field_path = child_path(path, "resolution_state");
+        let value = &self.resolution_state;
+        value.validate_at(&field_path)?;
+        let field_path = child_path(path, "completeness");
+        let value = &self.completeness;
+        value.validate_at(&field_path)?;
+        let field_path = child_path(path, "resolved_member_count");
+        let value = &self.resolved_member_count;
+        if *value > 256 {
+            return Err(invalid(&field_path, "number exceeds its maximum"));
+        }
+        let field_path = child_path(path, "ambiguous_member_count");
+        let value = &self.ambiguous_member_count;
+        if *value > 256 {
+            return Err(invalid(&field_path, "number exceeds its maximum"));
+        }
+        let field_path = child_path(path, "unresolved_member_count");
+        let value = &self.unresolved_member_count;
+        if *value > 256 {
+            return Err(invalid(&field_path, "number exceeds its maximum"));
+        }
+        let field_path = child_path(path, "unsupported_member_count");
+        let value = &self.unsupported_member_count;
+        if *value > 256 {
+            return Err(invalid(&field_path, "number exceeds its maximum"));
+        }
+        let field_path = child_path(path, "members");
+        let value = &self.members;
+        if value.is_empty() {
+            return Err(invalid(&field_path, "array is shorter than its minimum"));
+        }
+        if value.len() > 256 {
+            return Err(invalid(&field_path, "array exceeds its maximum"));
+        }
+        for (index, item) in value.iter().enumerate() {
+            item.validate_at(&child_path(&field_path, &index.to_string()))?;
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct StepTopologyRestoreResultA0 {
+    pub schema: String,
+    pub session: SessionReference,
+    pub source: SourceDescriptor,
+    pub tool: ToolDescriptor,
+    pub replayed_transaction_count: u32,
+    #[serde(
+        default,
+        deserialize_with = "deserialize_optional_non_null",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub evicted_session_handles: Option<Vec<String>>,
+    pub recovery: Vec<RecoveryGroupResult>,
+    pub diagnostics: Vec<DiagnosticA0>,
+}
+
+impl Validate for StepTopologyRestoreResultA0 {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "schema");
+        let value = &self.schema;
+        if value != "geometry.step_topology.restore.result.a0" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "session");
+        let value = &self.session;
+        value.validate_at(&field_path)?;
+        let field_path = child_path(path, "source");
+        let value = &self.source;
+        value.validate_at(&field_path)?;
+        let field_path = child_path(path, "tool");
+        let value = &self.tool;
+        value.validate_at(&field_path)?;
+        let field_path = child_path(path, "replayed_transaction_count");
+        let value = &self.replayed_transaction_count;
+        if *value > 100000 {
+            return Err(invalid(&field_path, "number exceeds its maximum"));
+        }
+        let field_path = child_path(path, "evicted_session_handles");
+        if let Some(value) = &self.evicted_session_handles {
+            if value.len() > 64 {
+                return Err(invalid(&field_path, "array exceeds its maximum"));
+            }
+        }
+        let field_path = child_path(path, "recovery");
+        let value = &self.recovery;
+        if value.len() > 16 {
+            return Err(invalid(&field_path, "array exceeds its maximum"));
+        }
+        for (index, item) in value.iter().enumerate() {
+            item.validate_at(&child_path(&field_path, &index.to_string()))?;
+        }
+        let field_path = child_path(path, "diagnostics");
+        let value = &self.diagnostics;
+        if value.len() > 256 {
+            return Err(invalid(&field_path, "array exceeds its maximum"));
+        }
+        for (index, item) in value.iter().enumerate() {
+            item.validate_at(&child_path(&field_path, &index.to_string()))?;
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct StepTopologyAnalyzeRecoveryResultA0 {
+    pub schema: String,
+    pub groups: Vec<RecoveryGroupResult>,
+    pub diagnostics: Vec<DiagnosticA0>,
+}
+
+impl Validate for StepTopologyAnalyzeRecoveryResultA0 {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "schema");
+        let value = &self.schema;
+        if value != "geometry.step_topology.analyze_recovery.result.a0" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "groups");
+        let value = &self.groups;
+        if value.len() > 16 {
+            return Err(invalid(&field_path, "array exceeds its maximum"));
+        }
+        for (index, item) in value.iter().enumerate() {
+            item.validate_at(&child_path(&field_path, &index.to_string()))?;
+        }
+        let field_path = child_path(path, "diagnostics");
+        let value = &self.diagnostics;
+        if value.len() > 256 {
+            return Err(invalid(&field_path, "array exceeds its maximum"));
+        }
+        for (index, item) in value.iter().enumerate() {
+            item.validate_at(&child_path(&field_path, &index.to_string()))?;
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize)]
+#[serde(untagged)]
+pub enum OperationResultValueA0 {
+    ModelBounds(ModelBoundsResultA0),
+    PackedAttachment(PackedAttachmentProjectionA0),
+    StepTopologyOpen(StepTopologyOpenResultA0),
+    StepTopologyClose(StepTopologyCloseResultA0),
+    StepTopologyInspect(StepTopologyInspectResultA0),
+    StepTopologyRender(StepTopologyRenderResultA0),
+    StepTopologyResolveHit(StepTopologyResolveHitResultA0),
+    StepTopologyApplyLogicalGroups(StepTopologyApplyLogicalGroupsResultA0),
+    StepTopologyApplyMetadataProbes(StepTopologyApplyMetadataProbesResultA0),
+    StepTopologyCheckpointEditJournal(StepTopologyCheckpointEditJournalResultA0),
+    StepTopologyApplyHierarchy(StepTopologyApplyHierarchyResultA0),
+    StepTopologySave(StepTopologySaveResultA0),
+    StepTopologyRestore(StepTopologyRestoreResultA0),
+    StepTopologyAnalyzeRecovery(StepTopologyAnalyzeRecoveryResultA0),
+}
+
+impl<'de> Deserialize<'de> for OperationResultValueA0 {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let raw = Box::<serde_json::value::RawValue>::deserialize(deserializer)?;
+        if let Ok(value) = serde_json::from_str::<ModelBoundsResultA0>(raw.get()) {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::ModelBounds(value));
+            }
+        }
+        if let Ok(value) = serde_json::from_str::<PackedAttachmentProjectionA0>(raw.get()) {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::PackedAttachment(value));
+            }
+        }
+        if let Ok(value) = serde_json::from_str::<StepTopologyOpenResultA0>(raw.get()) {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::StepTopologyOpen(value));
+            }
+        }
+        if let Ok(value) = serde_json::from_str::<StepTopologyCloseResultA0>(raw.get()) {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::StepTopologyClose(value));
+            }
+        }
+        if let Ok(value) = serde_json::from_str::<StepTopologyInspectResultA0>(raw.get()) {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::StepTopologyInspect(value));
+            }
+        }
+        if let Ok(value) = serde_json::from_str::<StepTopologyRenderResultA0>(raw.get()) {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::StepTopologyRender(value));
+            }
+        }
+        if let Ok(value) = serde_json::from_str::<StepTopologyResolveHitResultA0>(raw.get()) {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::StepTopologyResolveHit(value));
+            }
+        }
+        if let Ok(value) = serde_json::from_str::<StepTopologyApplyLogicalGroupsResultA0>(raw.get())
+        {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::StepTopologyApplyLogicalGroups(value));
+            }
+        }
+        if let Ok(value) =
+            serde_json::from_str::<StepTopologyApplyMetadataProbesResultA0>(raw.get())
+        {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::StepTopologyApplyMetadataProbes(value));
+            }
+        }
+        if let Ok(value) =
+            serde_json::from_str::<StepTopologyCheckpointEditJournalResultA0>(raw.get())
+        {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::StepTopologyCheckpointEditJournal(value));
+            }
+        }
+        if let Ok(value) = serde_json::from_str::<StepTopologyApplyHierarchyResultA0>(raw.get()) {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::StepTopologyApplyHierarchy(value));
+            }
+        }
+        if let Ok(value) = serde_json::from_str::<StepTopologySaveResultA0>(raw.get()) {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::StepTopologySave(value));
+            }
+        }
+        if let Ok(value) = serde_json::from_str::<StepTopologyRestoreResultA0>(raw.get()) {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::StepTopologyRestore(value));
+            }
+        }
+        if let Ok(value) = serde_json::from_str::<StepTopologyAnalyzeRecoveryResultA0>(raw.get()) {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::StepTopologyAnalyzeRecovery(value));
+            }
+        }
+        Err(serde::de::Error::custom(
+            "value does not match any OperationResultValueA0 variant",
+        ))
+    }
+}
+
+impl Validate for OperationResultValueA0 {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        match self {
+            Self::ModelBounds(value) => value.validate_at(path),
+            Self::PackedAttachment(value) => value.validate_at(path),
+            Self::StepTopologyOpen(value) => value.validate_at(path),
+            Self::StepTopologyClose(value) => value.validate_at(path),
+            Self::StepTopologyInspect(value) => value.validate_at(path),
+            Self::StepTopologyRender(value) => value.validate_at(path),
+            Self::StepTopologyResolveHit(value) => value.validate_at(path),
+            Self::StepTopologyApplyLogicalGroups(value) => value.validate_at(path),
+            Self::StepTopologyApplyMetadataProbes(value) => value.validate_at(path),
+            Self::StepTopologyCheckpointEditJournal(value) => value.validate_at(path),
+            Self::StepTopologyApplyHierarchy(value) => value.validate_at(path),
+            Self::StepTopologySave(value) => value.validate_at(path),
+            Self::StepTopologyRestore(value) => value.validate_at(path),
+            Self::StepTopologyAnalyzeRecovery(value) => value.validate_at(path),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct OperationSuccessA0 {
+    pub operation: String,
+    pub ok: bool,
+    pub result: OperationResultValueA0,
+}
+
+impl Validate for OperationSuccessA0 {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "operation");
+        let value = &self.operation;
+        if value.is_empty() {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 128 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "ok");
+        let value = &self.ok;
+        if !*value {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "result");
+        let value = &self.result;
+        value.validate_at(&field_path)?;
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize)]
+#[serde(untagged)]
+pub enum OperationOutcomeA0 {
+    Success(OperationSuccessA0),
+    Failure(OperationFailureA0),
+}
+
+impl<'de> Deserialize<'de> for OperationOutcomeA0 {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let raw = Box::<serde_json::value::RawValue>::deserialize(deserializer)?;
+        if let Ok(value) = serde_json::from_str::<OperationSuccessA0>(raw.get()) {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::Success(value));
+            }
+        }
+        if let Ok(value) = serde_json::from_str::<OperationFailureA0>(raw.get()) {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::Failure(value));
+            }
+        }
+        Err(serde::de::Error::custom(
+            "value does not match any OperationOutcomeA0 variant",
+        ))
+    }
+}
+
+impl Validate for OperationOutcomeA0 {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        match self {
+            Self::Success(value) => value.validate_at(path),
+            Self::Failure(value) => value.validate_at(path),
+        }
     }
 }
 
@@ -4734,6 +8512,126 @@ pub fn encode_operation_outcome_a0_json(
     encode_json(value)
 }
 
+pub fn decode_step_topology_analyze_recovery_request_a0_json(
+    data: &[u8],
+) -> Result<StepTopologyAnalyzeRecoveryRequestA0, ContractError> {
+    decode_json(data)
+}
+
+pub fn encode_step_topology_analyze_recovery_request_a0_json(
+    value: &StepTopologyAnalyzeRecoveryRequestA0,
+) -> Result<Vec<u8>, ContractError> {
+    encode_json(value)
+}
+
+pub fn decode_step_topology_analyze_recovery_result_a0_json(
+    data: &[u8],
+) -> Result<StepTopologyAnalyzeRecoveryResultA0, ContractError> {
+    decode_json(data)
+}
+
+pub fn encode_step_topology_analyze_recovery_result_a0_json(
+    value: &StepTopologyAnalyzeRecoveryResultA0,
+) -> Result<Vec<u8>, ContractError> {
+    encode_json(value)
+}
+
+pub fn decode_step_topology_apply_hierarchy_request_a0_json(
+    data: &[u8],
+) -> Result<StepTopologyApplyHierarchyRequestA0, ContractError> {
+    decode_json(data)
+}
+
+pub fn encode_step_topology_apply_hierarchy_request_a0_json(
+    value: &StepTopologyApplyHierarchyRequestA0,
+) -> Result<Vec<u8>, ContractError> {
+    encode_json(value)
+}
+
+pub fn decode_step_topology_apply_hierarchy_result_a0_json(
+    data: &[u8],
+) -> Result<StepTopologyApplyHierarchyResultA0, ContractError> {
+    decode_json(data)
+}
+
+pub fn encode_step_topology_apply_hierarchy_result_a0_json(
+    value: &StepTopologyApplyHierarchyResultA0,
+) -> Result<Vec<u8>, ContractError> {
+    encode_json(value)
+}
+
+pub fn decode_step_topology_apply_logical_groups_request_a0_json(
+    data: &[u8],
+) -> Result<StepTopologyApplyLogicalGroupsRequestA0, ContractError> {
+    decode_json(data)
+}
+
+pub fn encode_step_topology_apply_logical_groups_request_a0_json(
+    value: &StepTopologyApplyLogicalGroupsRequestA0,
+) -> Result<Vec<u8>, ContractError> {
+    encode_json(value)
+}
+
+pub fn decode_step_topology_apply_logical_groups_result_a0_json(
+    data: &[u8],
+) -> Result<StepTopologyApplyLogicalGroupsResultA0, ContractError> {
+    decode_json(data)
+}
+
+pub fn encode_step_topology_apply_logical_groups_result_a0_json(
+    value: &StepTopologyApplyLogicalGroupsResultA0,
+) -> Result<Vec<u8>, ContractError> {
+    encode_json(value)
+}
+
+pub fn decode_step_topology_apply_metadata_probes_request_a0_json(
+    data: &[u8],
+) -> Result<StepTopologyApplyMetadataProbesRequestA0, ContractError> {
+    decode_json(data)
+}
+
+pub fn encode_step_topology_apply_metadata_probes_request_a0_json(
+    value: &StepTopologyApplyMetadataProbesRequestA0,
+) -> Result<Vec<u8>, ContractError> {
+    encode_json(value)
+}
+
+pub fn decode_step_topology_apply_metadata_probes_result_a0_json(
+    data: &[u8],
+) -> Result<StepTopologyApplyMetadataProbesResultA0, ContractError> {
+    decode_json(data)
+}
+
+pub fn encode_step_topology_apply_metadata_probes_result_a0_json(
+    value: &StepTopologyApplyMetadataProbesResultA0,
+) -> Result<Vec<u8>, ContractError> {
+    encode_json(value)
+}
+
+pub fn decode_step_topology_checkpoint_edit_journal_request_a0_json(
+    data: &[u8],
+) -> Result<StepTopologyCheckpointEditJournalRequestA0, ContractError> {
+    decode_json(data)
+}
+
+pub fn encode_step_topology_checkpoint_edit_journal_request_a0_json(
+    value: &StepTopologyCheckpointEditJournalRequestA0,
+) -> Result<Vec<u8>, ContractError> {
+    encode_json(value)
+}
+
+pub fn decode_step_topology_checkpoint_edit_journal_result_a0_json(
+    data: &[u8],
+) -> Result<StepTopologyCheckpointEditJournalResultA0, ContractError> {
+    decode_json(data)
+}
+
+pub fn encode_step_topology_checkpoint_edit_journal_result_a0_json(
+    value: &StepTopologyCheckpointEditJournalResultA0,
+) -> Result<Vec<u8>, ContractError> {
+    encode_json(value)
+}
+
 pub fn decode_step_topology_close_request_a0_json(
     data: &[u8],
 ) -> Result<StepTopologyCloseRequestA0, ContractError> {
@@ -4850,6 +8748,54 @@ pub fn decode_step_topology_resolve_hit_result_a0_json(
 
 pub fn encode_step_topology_resolve_hit_result_a0_json(
     value: &StepTopologyResolveHitResultA0,
+) -> Result<Vec<u8>, ContractError> {
+    encode_json(value)
+}
+
+pub fn decode_step_topology_restore_request_a0_json(
+    data: &[u8],
+) -> Result<StepTopologyRestoreRequestA0, ContractError> {
+    decode_json(data)
+}
+
+pub fn encode_step_topology_restore_request_a0_json(
+    value: &StepTopologyRestoreRequestA0,
+) -> Result<Vec<u8>, ContractError> {
+    encode_json(value)
+}
+
+pub fn decode_step_topology_restore_result_a0_json(
+    data: &[u8],
+) -> Result<StepTopologyRestoreResultA0, ContractError> {
+    decode_json(data)
+}
+
+pub fn encode_step_topology_restore_result_a0_json(
+    value: &StepTopologyRestoreResultA0,
+) -> Result<Vec<u8>, ContractError> {
+    encode_json(value)
+}
+
+pub fn decode_step_topology_save_request_a0_json(
+    data: &[u8],
+) -> Result<StepTopologySaveRequestA0, ContractError> {
+    decode_json(data)
+}
+
+pub fn encode_step_topology_save_request_a0_json(
+    value: &StepTopologySaveRequestA0,
+) -> Result<Vec<u8>, ContractError> {
+    encode_json(value)
+}
+
+pub fn decode_step_topology_save_result_a0_json(
+    data: &[u8],
+) -> Result<StepTopologySaveResultA0, ContractError> {
+    decode_json(data)
+}
+
+pub fn encode_step_topology_save_result_a0_json(
+    value: &StepTopologySaveResultA0,
 ) -> Result<Vec<u8>, ContractError> {
     encode_json(value)
 }

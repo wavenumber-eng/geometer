@@ -10,8 +10,10 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <cstdlib>
 #include <cstring>
 #include <limits>
+#include <new>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -37,7 +39,8 @@ struct MeshLayout
     std::size_t normals_accessor = 0;
     std::array<double, 3> minimum{};
     std::array<double, 3> maximum{};
-    std::vector<PrimitiveLayout> primitives;
+    std::size_t first_primitive = 0;
+    std::size_t primitive_count = 0;
 };
 
 struct BufferView
@@ -58,7 +61,163 @@ struct Accessor
     std::array<double, 3> maximum{};
 };
 
-void append_u32(std::vector<unsigned char>* bytes, std::uint32_t value)
+class EncoderBudgetExceeded final : public std::bad_alloc
+{
+};
+
+class EncoderBudget
+{
+  public:
+    EncoderBudget(std::size_t limit, GlbEncodingBudgetStats* stats) : limit_(limit), stats_(stats)
+    {
+    }
+
+    void acquire(std::size_t bytes)
+    {
+        if (bytes > limit_ || resident_bytes_ > limit_ - bytes)
+        {
+            if (stats_ != nullptr)
+            {
+                stats_->resident_bytes_before_rejected_allocation = resident_bytes_;
+                stats_->rejected_allocation_bytes = bytes;
+            }
+            throw EncoderBudgetExceeded{};
+        }
+        resident_bytes_ += bytes;
+        peak_bytes_ = std::max(peak_bytes_, resident_bytes_);
+        if (stats_ != nullptr)
+            stats_->peak_source_resident_bytes = peak_bytes_;
+    }
+
+    void release(std::size_t bytes) noexcept
+    {
+        resident_bytes_ -= std::min(resident_bytes_, bytes);
+    }
+
+    std::size_t resident_bytes() const noexcept
+    {
+        return resident_bytes_;
+    }
+
+  private:
+    std::size_t limit_ = 0;
+    std::size_t resident_bytes_ = 0;
+    std::size_t peak_bytes_ = 0;
+    GlbEncodingBudgetStats* stats_ = nullptr;
+};
+
+template <typename T> class EncoderAllocator
+{
+  public:
+    using value_type = T;
+
+    explicit EncoderAllocator(EncoderBudget* budget = nullptr) noexcept : budget_(budget) {}
+
+    template <typename U>
+    EncoderAllocator(const EncoderAllocator<U>& other) noexcept : budget_(other.budget())
+    {
+    }
+
+    T* allocate(std::size_t count)
+    {
+        if (count > std::numeric_limits<std::size_t>::max() / sizeof(T))
+            throw EncoderBudgetExceeded{};
+        const std::size_t bytes = count * sizeof(T);
+        budget_->acquire(bytes);
+        try
+        {
+            return static_cast<T*>(::operator new(bytes));
+        }
+        catch (...)
+        {
+            budget_->release(bytes);
+            throw;
+        }
+    }
+
+    void deallocate(T* pointer, std::size_t count) noexcept
+    {
+        ::operator delete(pointer);
+        budget_->release(count * sizeof(T));
+    }
+
+    EncoderBudget* budget() const noexcept
+    {
+        return budget_;
+    }
+
+    template <typename U> bool operator==(const EncoderAllocator<U>& other) const noexcept
+    {
+        return budget_ == other.budget();
+    }
+
+    template <typename U> bool operator!=(const EncoderAllocator<U>& other) const noexcept
+    {
+        return !(*this == other);
+    }
+
+  private:
+    EncoderBudget* budget_ = nullptr;
+};
+
+class EncoderRapidJsonAllocator
+{
+  public:
+    static constexpr bool kNeedFree = true;
+
+    EncoderRapidJsonAllocator() = default;
+    explicit EncoderRapidJsonAllocator(EncoderBudget* budget) : budget_(budget) {}
+
+    void* Malloc(std::size_t size)
+    {
+        if (size == 0)
+            return nullptr;
+        budget_->acquire(size);
+        void* result = std::malloc(size);
+        if (result == nullptr)
+        {
+            budget_->release(size);
+            throw std::bad_alloc{};
+        }
+        return result;
+    }
+
+    void* Realloc(void* original, std::size_t original_size, std::size_t new_size)
+    {
+        if (new_size == 0)
+        {
+            std::free(original);
+            budget_->release(original_size);
+            return nullptr;
+        }
+        // Allocate-copy-free explicitly so the budget gates the real old-plus-new peak before
+        // the system allocation occurs.
+        void* replacement = Malloc(new_size);
+        if (original != nullptr)
+        {
+            std::memcpy(replacement, original, std::min(original_size, new_size));
+            std::free(original);
+            budget_->release(original_size);
+        }
+        return replacement;
+    }
+
+    static void Free(void* pointer)
+    {
+        std::free(pointer);
+    }
+
+  private:
+    EncoderBudget* budget_ = nullptr;
+};
+
+template <typename T> using EncoderVector = std::vector<T, EncoderAllocator<T>>;
+using EncoderJsonBuffer =
+    rapidjson::GenericStringBuffer<rapidjson::UTF8<>, EncoderRapidJsonAllocator>;
+using EncoderJsonWriter = rapidjson::Writer<EncoderJsonBuffer, rapidjson::UTF8<>, rapidjson::UTF8<>,
+                                            EncoderRapidJsonAllocator>;
+
+template <typename ByteVector> void append_u32(ByteVector* bytes, std::uint32_t value)
 {
     for (unsigned int shift = 0; shift < 32U; shift += 8U)
     {
@@ -66,7 +225,7 @@ void append_u32(std::vector<unsigned char>* bytes, std::uint32_t value)
     }
 }
 
-void append_float(std::vector<unsigned char>* bytes, float value)
+template <typename ByteVector> void append_float(ByteVector* bytes, float value)
 {
     std::uint32_t bits = 0;
     static_assert(sizeof(value) == sizeof(bits));
@@ -74,7 +233,7 @@ void append_float(std::vector<unsigned char>* bytes, float value)
     append_u32(bytes, bits);
 }
 
-void align_four(std::vector<unsigned char>* bytes, unsigned char padding)
+template <typename ByteVector> void align_four(ByteVector* bytes, unsigned char padding)
 {
     while (bytes->size() % 4U != 0)
     {
@@ -87,8 +246,8 @@ bool cancelled(const StepTopologyCancellation* cancellation)
     return cancellation != nullptr && cancellation->is_cancelled();
 }
 
-int check_progress(const StepTopologyCancellation* cancellation, std::size_t binary_bytes,
-                   std::size_t json_bytes, std::size_t byte_limit, Status* status)
+int check_wire_progress(const StepTopologyCancellation* cancellation, std::size_t binary_bytes,
+                        std::size_t json_bytes, std::size_t wire_byte_limit, Status* status)
 {
     if (cancelled(cancellation))
     {
@@ -96,9 +255,9 @@ int check_progress(const StepTopologyCancellation* cancellation, std::size_t bin
         return kCancelled;
     }
     constexpr std::size_t framing_bytes = 36U;
-    if (binary_bytes > byte_limit || json_bytes > byte_limit ||
-        binary_bytes > byte_limit - std::min(json_bytes, byte_limit) ||
-        binary_bytes + json_bytes > byte_limit - std::min(framing_bytes, byte_limit))
+    if (binary_bytes > wire_byte_limit || json_bytes > wire_byte_limit ||
+        binary_bytes > wire_byte_limit - std::min(json_bytes, wire_byte_limit) ||
+        binary_bytes + json_bytes > wire_byte_limit - std::min(framing_bytes, wire_byte_limit))
     {
         set_status(status, kResourceLimit, "STEP topology GLB exceeds its byte limit.");
         return kResourceLimit;
@@ -178,15 +337,14 @@ int digest_glb(const std::vector<unsigned char>& glb, const StepTopologyCancella
     return 0;
 }
 
-void write_string(rapidjson::Writer<rapidjson::StringBuffer>* writer, const char* key,
-                  const std::string& value)
+void write_string(EncoderJsonWriter* writer, const char* key, const std::string& value)
 {
     writer->Key(key);
     writer->String(value.data(), static_cast<rapidjson::SizeType>(value.size()));
 }
 
-void write_binding_extras(rapidjson::Writer<rapidjson::StringBuffer>* writer,
-                          const StepTopologyRenderPrimitive& primitive, std::size_t primitive_index)
+void write_binding_extras(EncoderJsonWriter* writer, const StepTopologyRenderPrimitive& primitive,
+                          std::size_t primitive_index)
 {
     writer->Key("extras");
     writer->StartObject();
@@ -204,23 +362,42 @@ void write_binding_extras(rapidjson::Writer<rapidjson::StringBuffer>* writer,
     writer->EndObject();
 }
 
-int encode_glb(const StepTopologyRenderArtifact& render,
-               const StepTopologyCancellation* cancellation, std::size_t byte_limit,
-               StepTopologyGlbWorkPacket* packet, Status* status,
-               GlbEncodingEntryHook entry_hook = nullptr, void* entry_hook_context = nullptr)
+int encode_glb_impl(const StepTopologyRenderArtifact& render,
+                    const StepTopologyCancellation* cancellation, std::size_t wire_byte_limit,
+                    std::size_t transient_byte_limit, StepTopologyGlbWorkPacket* packet,
+                    Status* status, GlbEncodingEntryHook entry_hook, void* entry_hook_context,
+                    GlbEncodingBudgetStats* budget_stats)
 {
-    if (byte_limit < 36U)
+    if (wire_byte_limit < 36U)
     {
         set_status(status, kResourceLimit, "STEP topology GLB byte limit is below framing size.");
         return kResourceLimit;
     }
     if (entry_hook != nullptr)
         entry_hook(entry_hook_context);
-    std::vector<unsigned char> binary;
-    std::vector<BufferView> buffer_views;
-    std::vector<Accessor> accessors;
-    std::vector<MeshLayout> layouts;
+    constexpr std::size_t kFixedEncoderBytes =
+        sizeof(EncoderVector<unsigned char>) + sizeof(EncoderVector<BufferView>) +
+        sizeof(EncoderVector<Accessor>) + sizeof(EncoderVector<MeshLayout>) +
+        sizeof(EncoderVector<PrimitiveLayout>) + sizeof(EncoderJsonBuffer) +
+        sizeof(EncoderJsonWriter) + sizeof(std::vector<unsigned char>);
+    EncoderBudget budget(transient_byte_limit, budget_stats);
+    budget.acquire(kFixedEncoderBytes);
+    EncoderVector<unsigned char> binary{EncoderAllocator<unsigned char>(&budget)};
+    EncoderVector<BufferView> buffer_views{EncoderAllocator<BufferView>(&budget)};
+    EncoderVector<Accessor> accessors{EncoderAllocator<Accessor>(&budget)};
+    EncoderVector<MeshLayout> layouts{EncoderAllocator<MeshLayout>(&budget)};
+    EncoderVector<PrimitiveLayout> primitive_layouts{EncoderAllocator<PrimitiveLayout>(&budget)};
+    EncoderRapidJsonAllocator json_allocator(&budget);
+    EncoderJsonBuffer json_buffer(&json_allocator);
+    EncoderJsonWriter writer(json_buffer, &json_allocator);
+    const auto progress = [&]()
+    {
+        return check_wire_progress(cancellation, binary.size(), json_buffer.GetSize(),
+                                   wire_byte_limit, status);
+    };
     layouts.reserve(render.meshes.size());
+    if (const int progress_code = progress(); progress_code != 0)
+        return progress_code;
     for (const StepTopologyRenderMesh& mesh : render.meshes)
     {
         if (cancelled(cancellation) || mesh.vertices.empty() || mesh.indices.empty())
@@ -230,7 +407,8 @@ int encode_glb(const StepTopologyRenderArtifact& render,
                                                : "STEP topology GLB mesh is empty.");
             return cancelled(cancellation) ? kCancelled : kTransferFailed;
         }
-        MeshLayout layout;
+        layouts.emplace_back();
+        MeshLayout& layout = layouts.back();
         layout.minimum = {std::numeric_limits<double>::infinity(),
                           std::numeric_limits<double>::infinity(),
                           std::numeric_limits<double>::infinity()};
@@ -256,14 +434,15 @@ int encode_glb(const StepTopologyRenderArtifact& render,
                 layout.minimum[axis] = std::min(layout.minimum[axis], static_cast<double>(value));
                 layout.maximum[axis] = std::max(layout.maximum[axis], static_cast<double>(value));
             }
-            const int progress = check_progress(cancellation, binary.size(), 0, byte_limit, status);
-            if (progress != 0)
-                return progress;
+            if (const int progress_code = progress(); progress_code != 0)
+                return progress_code;
         }
         buffer_views.push_back({positions_offset, binary.size() - positions_offset, 34962});
         layout.positions_accessor = accessors.size();
         accessors.push_back({layout.positions_view, 5126, mesh.vertices.size(), "VEC3", true,
                              layout.minimum, layout.maximum});
+        if (const int progress_code = progress(); progress_code != 0)
+            return progress_code;
 
         align_four(&binary, 0);
         layout.normals_view = buffer_views.size();
@@ -281,16 +460,19 @@ int encode_glb(const StepTopologyRenderArtifact& render,
                 }
                 append_float(&binary, value);
             }
-            const int progress = check_progress(cancellation, binary.size(), 0, byte_limit, status);
-            if (progress != 0)
-                return progress;
+            if (const int progress_code = progress(); progress_code != 0)
+                return progress_code;
         }
         buffer_views.push_back({normals_offset, binary.size() - normals_offset, 34962});
         layout.normals_accessor = accessors.size();
         accessors.push_back(
             {layout.normals_view, 5126, mesh.vertices.size(), "VEC3", false, {}, {}});
 
-        layout.primitives.reserve(mesh.primitives.size());
+        layout.first_primitive = primitive_layouts.size();
+        layout.primitive_count = mesh.primitives.size();
+        if (mesh.primitives.size() > primitive_layouts.max_size() - primitive_layouts.size())
+            throw EncoderBudgetExceeded{};
+        primitive_layouts.reserve(primitive_layouts.size() + mesh.primitives.size());
         for (const StepTopologyRenderPrimitive& primitive : mesh.primitives)
         {
             if (cancelled(cancellation) || primitive.first_index > mesh.indices.size() ||
@@ -310,10 +492,8 @@ int encode_glb(const StepTopologyRenderArtifact& render,
                  index < primitive.first_index + primitive.index_count; ++index)
             {
                 append_u32(&binary, mesh.indices[index]);
-                const int progress =
-                    check_progress(cancellation, binary.size(), 0, byte_limit, status);
-                if (progress != 0)
-                    return progress;
+                if (const int progress_code = progress(); progress_code != 0)
+                    return progress_code;
             }
             buffer_views.push_back({offset, binary.size() - offset, 34963});
             primitive_layout.indices_accessor = accessors.size();
@@ -324,21 +504,15 @@ int encode_glb(const StepTopologyRenderArtifact& render,
                                  false,
                                  {},
                                  {}});
-            layout.primitives.push_back(primitive_layout);
+            primitive_layouts.push_back(primitive_layout);
+            if (const int progress_code = progress(); progress_code != 0)
+                return progress_code;
         }
-        layouts.push_back(std::move(layout));
-        const int progress = check_progress(cancellation, binary.size(), 0, byte_limit, status);
-        if (progress != 0)
-            return progress;
+        if (const int progress_code = progress(); progress_code != 0)
+            return progress_code;
     }
 
-    rapidjson::StringBuffer json_buffer;
-    rapidjson::Writer<rapidjson::StringBuffer> writer(json_buffer);
-    const auto json_progress = [&]()
-    {
-        return check_progress(cancellation, binary.size(), json_buffer.GetSize(), byte_limit,
-                              status);
-    };
+    const auto json_progress = [&]() { return progress(); };
     writer.StartObject();
     writer.Key("asset");
     writer.StartObject();
@@ -488,7 +662,8 @@ int encode_glb(const StepTopologyRenderArtifact& render,
             writer.Uint64(layout.normals_accessor);
             writer.EndObject();
             writer.Key("indices");
-            writer.Uint64(layout.primitives[primitive_index].indices_accessor);
+            writer.Uint64(
+                primitive_layouts[layout.first_primitive + primitive_index].indices_accessor);
             writer.Key("mode");
             writer.Int(4);
             writer.Key("material");
@@ -565,11 +740,25 @@ int encode_glb(const StepTopologyRenderArtifact& render,
         return progress;
 
     const std::size_t json_size = json_buffer.GetSize();
+    if (json_size > std::numeric_limits<std::uint32_t>::max() - 3U)
+    {
+        set_status(status, kResourceLimit, "STEP topology GLB JSON chunk is too large.");
+        return kResourceLimit;
+    }
     const std::size_t padded_json_size = (json_size + 3U) & ~std::size_t{3U};
     const std::size_t binary_size = binary.size();
     align_four(&binary, 0);
+    if (const int progress_code = progress(); progress_code != 0)
+        return progress_code;
+    if (binary.size() > std::numeric_limits<std::uint32_t>::max() ||
+        padded_json_size > std::numeric_limits<std::size_t>::max() - 28U ||
+        binary.size() > std::numeric_limits<std::size_t>::max() - 28U - padded_json_size)
+    {
+        set_status(status, kResourceLimit, "STEP topology GLB chunks are too large.");
+        return kResourceLimit;
+    }
     const std::size_t total_size = 12U + 8U + padded_json_size + 8U + binary.size();
-    if (total_size > byte_limit || total_size > std::numeric_limits<std::uint32_t>::max())
+    if (total_size > wire_byte_limit || total_size > std::numeric_limits<std::uint32_t>::max())
     {
         set_status(status, kResourceLimit, "STEP topology GLB exceeds its byte limit.");
         return kResourceLimit;
@@ -579,7 +768,21 @@ int encode_glb(const StepTopologyRenderArtifact& render,
         set_status(status, kCancelled, "STEP topology GLB encoding was cancelled.");
         return kCancelled;
     }
+    if (packet->glb.capacity() > std::numeric_limits<std::size_t>::max() - budget.resident_bytes())
+        throw EncoderBudgetExceeded{};
+    const std::size_t pre_destination_bytes = budget.resident_bytes() + packet->glb.capacity();
+    if (budget_stats != nullptr)
+        budget_stats->pre_destination_resident_bytes = pre_destination_bytes;
+    if (total_size > transient_byte_limit ||
+        pre_destination_bytes > transient_byte_limit - total_size)
+    {
+        set_status(status, kResourceLimit,
+                   "STEP topology GLB destination exceeds its transient resident-byte limit.");
+        return kResourceLimit;
+    }
     packet->glb.reserve(total_size);
+    if (const int progress_code = progress(); progress_code != 0)
+        return progress_code;
     append_u32(&packet->glb, 0x46546c67U);
     append_u32(&packet->glb, 2U);
     append_u32(&packet->glb, static_cast<std::uint32_t>(total_size));
@@ -587,15 +790,15 @@ int encode_glb(const StepTopologyRenderArtifact& render,
     append_u32(&packet->glb, 0x4e4f534aU);
     int append_code =
         append_chunk(&packet->glb, reinterpret_cast<const unsigned char*>(json_buffer.GetString()),
-                     json_size, cancellation, byte_limit, status);
+                     json_size, cancellation, wire_byte_limit, status);
     if (append_code != 0)
         return append_code;
     while (packet->glb.size() % 4U != 0)
         packet->glb.push_back(' ');
     append_u32(&packet->glb, static_cast<std::uint32_t>(binary.size()));
     append_u32(&packet->glb, 0x004e4942U);
-    append_code =
-        append_chunk(&packet->glb, binary.data(), binary.size(), cancellation, byte_limit, status);
+    append_code = append_chunk(&packet->glb, binary.data(), binary.size(), cancellation,
+                               wire_byte_limit, status);
     if (append_code != 0)
         return append_code;
     packet->json_bytes = json_size;
@@ -603,13 +806,41 @@ int encode_glb(const StepTopologyRenderArtifact& render,
     return 0;
 }
 
+int encode_glb(const StepTopologyRenderArtifact& render,
+               const StepTopologyCancellation* cancellation, std::size_t wire_byte_limit,
+               std::size_t transient_byte_limit, StepTopologyGlbWorkPacket* packet, Status* status,
+               GlbEncodingEntryHook entry_hook = nullptr, void* entry_hook_context = nullptr,
+               GlbEncodingBudgetStats* budget_stats = nullptr)
+{
+    if (budget_stats != nullptr)
+        *budget_stats = {};
+    try
+    {
+        return encode_glb_impl(render, cancellation, wire_byte_limit, transient_byte_limit, packet,
+                               status, entry_hook, entry_hook_context, budget_stats);
+    }
+    catch (const EncoderBudgetExceeded&)
+    {
+        set_status(status, kResourceLimit,
+                   "STEP topology GLB source allocation exceeds its transient resident-byte "
+                   "limit before allocation.");
+        return kResourceLimit;
+    }
+    catch (const std::bad_alloc&)
+    {
+        set_status(status, kResourceLimit, "STEP topology GLB allocation failed.");
+        return kResourceLimit;
+    }
+}
+
 } // namespace
 
 int encode_glb_from_render_for_test(const StepTopologyRenderArtifact& render,
                                     const StepTopologyCancellation* cancellation,
-                                    std::size_t byte_limit, StepTopologyGlbWorkPacket* packet,
-                                    Status* status, GlbEncodingEntryHook entry_hook,
-                                    void* entry_hook_context)
+                                    std::size_t wire_byte_limit, std::size_t transient_byte_limit,
+                                    StepTopologyGlbWorkPacket* packet, Status* status,
+                                    GlbEncodingEntryHook entry_hook, void* entry_hook_context,
+                                    GlbEncodingBudgetStats* budget_stats)
 {
     if (packet == nullptr)
     {
@@ -617,8 +848,8 @@ int encode_glb_from_render_for_test(const StepTopologyRenderArtifact& render,
         return kInvalidArgument;
     }
     *packet = {};
-    const int code = encode_glb(render, cancellation, byte_limit, packet, status, entry_hook,
-                                entry_hook_context);
+    const int code = encode_glb(render, cancellation, wire_byte_limit, transient_byte_limit, packet,
+                                status, entry_hook, entry_hook_context, budget_stats);
     if (code != 0)
         *packet = {};
     return code;
@@ -630,15 +861,28 @@ int build_glb_work_packet(SessionData* data, const StepTopologyGlbOptions& optio
 {
     try
     {
+        const std::size_t transient_limit =
+            std::min(options.transient_byte_limit, data->limits.max_render_estimated_bytes);
         const int render_code = build_render_artifact(data, options.tessellation, cancellation,
-                                                      &packet->render, status);
+                                                      transient_limit, &packet->render, status);
         if (render_code != 0)
         {
             *packet = {};
             return render_code;
         }
-        const int encode_code = encode_glb(packet->render, cancellation,
-                                           data->limits.max_render_glb_bytes, packet, status);
+        if (packet->render.estimated_resident_bytes >= options.transient_byte_limit)
+        {
+            *packet = {};
+            set_status(status, kResourceLimit,
+                       "STEP topology render exhausts the transient GLB byte budget.");
+            return kResourceLimit;
+        }
+        const std::size_t remaining_transient =
+            options.transient_byte_limit - packet->render.estimated_resident_bytes;
+        const std::size_t glb_limit =
+            std::min(data->limits.max_render_glb_bytes, options.glb_byte_limit);
+        const int encode_code = encode_glb(packet->render, cancellation, glb_limit,
+                                           remaining_transient, packet, status);
         if (encode_code != 0)
         {
             *packet = {};

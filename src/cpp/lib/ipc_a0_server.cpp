@@ -242,7 +242,7 @@ std::string welcome_json()
 {
     contracts::ContractError error;
     contracts::IpcOperationCatalogA0 catalog;
-    const std::string catalog_json = operation_catalog_json();
+    const std::string catalog_json = native_operation_catalog_json();
     if (!contracts::decode_json(reinterpret_cast<const unsigned char*>(catalog_json.data()),
                                 catalog_json.size(), &catalog, &error))
     {
@@ -366,6 +366,13 @@ bool parse_request(Frame* frame, QueuedRequest* request, std::string* diagnostic
         *error = contract_error.message;
         return false;
     }
+    if (!operation_request_value_matches(envelope.operation, envelope.request))
+    {
+        *diagnostic_code = "geometer.contract.operation_payload_mismatch";
+        *diagnostic_path = "/request";
+        *error = "The request payload does not match the declared operation.";
+        return false;
+    }
     const auto request_member = document.FindMember("request");
     if (request_member == document.MemberEnd())
     {
@@ -397,9 +404,9 @@ Frame execute_request(const QueuedRequest& request)
                                attachment.data.size()});
     }
     OperationExecution execution;
-    execute_operation(request.operation,
-                      reinterpret_cast<const unsigned char*>(request.request_json.data()),
-                      request.request_json.size(), attachments, &execution);
+    execute_native_operation(request.operation,
+                             reinterpret_cast<const unsigned char*>(request.request_json.data()),
+                             request.request_json.size(), attachments, &execution);
     Frame response;
     response.kind = FrameKind::response;
     response.request_id = request.id;

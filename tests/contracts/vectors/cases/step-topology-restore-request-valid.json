@@ -1,0 +1,7 @@
+{
+  "schema": "geometry.step_topology.restore.request.a0",
+  "source": {"format": "step", "sha256": "7fa646430db55036b9b854b32c2f8d6f37fd929bf6c74fa31b55d33605719cb4", "bytes": 15, "normalized_length_unit": "millimeter"},
+  "state_artifact": {"carrier": "edit_journal", "name": "state_artifact", "media_type": "application/vnd.wavenumber.geometer.step-topology-edit-journal", "format": "geometer.step_topology_edit_journal.a0", "bytes": 15, "sha256": "7fa646430db55036b9b854b32c2f8d6f37fd929bf6c74fa31b55d33605719cb4"},
+  "replay_preconditions": {"source_sha256": "7fa646430db55036b9b854b32c2f8d6f37fd929bf6c74fa31b55d33605719cb4", "source_brep_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", "target_inventory_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc", "occt_version": "8.0.1", "transaction_count": 1},
+  "include_diagnostics": false
+}

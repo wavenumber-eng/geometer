@@ -1,6 +1,6 @@
 # STEP Topology GLB Work-Packet Research
 
-Status: selected experimental encoding; not a supported wire contract
+Status: selected experimental encoding; available through unpromoted native executable operations
 
 Date: 2026-08-22
 
@@ -11,6 +11,21 @@ topology render artifact. A real pinned Three.js 0.161 `GLTFLoader` and
 `Raycaster` test proves that every rendered primitive across the checked corpus
 and a reflected case resolves to the exact native occurrence, body, and face
 handles.
+
+The native executable's experimental render operation returns the GLB as a
+bounded attachment and retains only the authoritative sealed render artifact,
+not a second copy of the GLB. The retained artifact, including its outer
+identity wrapper, is memory-accounted,
+session/generation-bound, replaced by the next render, and destroyed on close,
+eviction, expiry, mutation, or process replacement. Resolve-hit validates the
+browser's returned indices and target claims against that retained artifact.
+The portable C ABI and browser/WASM runtime do not advertise these operations.
+
+The retained artifact is trusted immutable store state. Resolve-hit therefore
+uses direct instance, mesh, and primitive indexing and performs one bounded
+lookup plus exact target-claim checks; it does not rehash or rescan the whole
+artifact for every click. The public C++ value API keeps its full validation
+path for caller-supplied mutable artifacts.
 
 The selected A0 experiment uses:
 
@@ -109,6 +124,20 @@ records, final chunks, and SHA-256 chunks rather than only after a complete
 allocation. Cancellation or any encoding failure clears the entire output
 packet. POSITION bounds are computed from the exact finite FLOAT values stored
 in the BIN chunk.
+
+Store rendering also supplies an aggregate transient budget equal to the
+remaining store allowance while the prior retained artifact stays live.
+Render records are charged progressively, and GLB encoding receives only the
+budget left after the candidate render plus a distinct 256 MiB wire ceiling.
+The encoder uses one shared budget-enforcing allocator for BIN, layout tables,
+and both RapidJSON stacks. Vector growth and RapidJSON reallocation charge the
+simultaneously live old-plus-new allocations before calling the system
+allocator. The destination GLB reserves once from empty only after its final
+size and coexistence with all live source storage are preflighted. Regression
+tests prove both boundaries: source growth is rejected before the denied
+allocation, and a final GLB which fits the wire ceiling is still rejected when
+source and destination cannot coexist under the transient ceiling. Failure
+keeps the prior retained artifact intact.
 
 The native structural test checks GLB framing, metadata, shared mesh/instance
 counts, exact topology extras, coordinate conversion, cancellation, the GLB

@@ -613,7 +613,461 @@ struct ModelBoundsOptionsA0
     std::optional<Matrix4x4> model_transform{};
 };
 
-using IpcRequestValueA0 = std::variant<ModelBoundsOptionsA0, PackedAttachmentProjectionA0>;
+struct StepTopologyOpenRequestA0
+{
+    std::string schema = "geometry.step_topology.open.request.a0";
+};
+
+struct SessionReference
+{
+    std::string session_handle{};
+    std::uint32_t generation{};
+};
+
+struct StepTopologyCloseRequestA0
+{
+    std::string schema = "geometry.step_topology.close.request.a0";
+    SessionReference session{};
+};
+
+struct PageRequest
+{
+    std::optional<std::string> cursor{};
+    std::uint32_t limit{};
+};
+
+struct StepTopologyInspectRequestA0
+{
+    std::string schema = "geometry.step_topology.inspect.request.a0";
+    SessionReference session{};
+    PageRequest page{};
+    bool include_source_entity_evidence{};
+    bool include_diagnostics{};
+};
+
+struct TessellationOptions
+{
+    double linear_deflection_mm{};
+    double angular_deflection_rad{};
+    bool relative{};
+    bool parallel{};
+    std::vector<double> source_to_render{};
+};
+
+struct StepTopologyRenderRequestA0
+{
+    std::string schema = "geometry.step_topology.render.request.a0";
+    SessionReference session{};
+    TessellationOptions tessellation{};
+};
+
+struct StepTopologyResolveHitRequestA0
+{
+    std::string schema = "geometry.step_topology.resolve_hit.request.a0";
+    SessionReference session{};
+    std::string artifact_handle{};
+    std::string content_sha256{};
+    std::uint32_t instance_index{};
+    std::uint32_t primitive_index{};
+    std::uint32_t primitive_triangle_index{};
+    std::string occurrence_handle{};
+    std::string body_handle{};
+    std::string face_handle{};
+};
+
+struct CreateLogicalGroupCommand
+{
+    std::string kind = "create";
+    std::string authored_id{};
+    std::string name{};
+    std::vector<std::string> member_handles{};
+};
+
+struct RenameLogicalGroupCommand
+{
+    std::string kind = "rename";
+    std::string authored_id{};
+    std::uint32_t expected_revision{};
+    std::string name{};
+};
+
+struct ReplaceLogicalGroupMembersCommand
+{
+    std::string kind = "replace_members";
+    std::string authored_id{};
+    std::uint32_t expected_revision{};
+    std::vector<std::string> member_handles{};
+};
+
+struct EraseLogicalGroupCommand
+{
+    std::string kind = "erase";
+    std::string authored_id{};
+    std::uint32_t expected_revision{};
+};
+
+using LogicalGroupCommand =
+    std::variant<CreateLogicalGroupCommand, RenameLogicalGroupCommand,
+                 ReplaceLogicalGroupMembersCommand, EraseLogicalGroupCommand>;
+
+struct StepTopologyApplyLogicalGroupsRequestA0
+{
+    std::string schema = "geometry.step_topology.apply_logical_groups.request.a0";
+    SessionReference session{};
+    std::vector<LogicalGroupCommand> commands{};
+};
+
+struct DocumentProbeTarget
+{
+    std::string kind = "document";
+};
+
+struct DefinitionProbeTarget
+{
+    std::string kind = "definition";
+    std::string target_handle{};
+};
+
+struct RootOccurrenceProbeTarget
+{
+    std::string kind = "root_occurrence";
+    std::string target_handle{};
+};
+
+struct ComponentOccurrenceProbeTarget
+{
+    std::string kind = "occurrence";
+    std::string target_handle{};
+};
+
+struct BodyProbeTarget
+{
+    std::string kind = "body";
+    std::string target_handle{};
+};
+
+struct FaceProbeTarget
+{
+    std::string kind = "face";
+    std::string target_handle{};
+};
+
+struct LogicalGroupProbeTarget
+{
+    std::string kind = "logical_group";
+    std::string group_authored_id{};
+};
+
+using MetadataProbeTarget = std::variant<DocumentProbeTarget, DefinitionProbeTarget,
+                                         RootOccurrenceProbeTarget, ComponentOccurrenceProbeTarget,
+                                         BodyProbeTarget, FaceProbeTarget, LogicalGroupProbeTarget>;
+
+struct AttachMetadataProbeCommand
+{
+    std::string kind = "attach";
+    std::string authored_id{};
+    MetadataProbeTarget target{};
+    std::string key{};
+    std::string value{};
+};
+
+struct ReplaceMetadataProbeCommand
+{
+    std::string kind = "replace";
+    std::string authored_id{};
+    std::uint32_t expected_revision{};
+    MetadataProbeTarget target{};
+    std::string key{};
+    std::string value{};
+};
+
+struct EraseMetadataProbeCommand
+{
+    std::string kind = "erase";
+    std::string authored_id{};
+    std::uint32_t expected_revision{};
+};
+
+using MetadataProbeCommand = std::variant<AttachMetadataProbeCommand, ReplaceMetadataProbeCommand,
+                                          EraseMetadataProbeCommand>;
+
+struct StepTopologyApplyMetadataProbesRequestA0
+{
+    std::string schema = "geometry.step_topology.apply_metadata_probes.request.a0";
+    SessionReference session{};
+    std::vector<MetadataProbeCommand> commands{};
+};
+
+struct StepTopologyCheckpointEditJournalRequestA0
+{
+    std::string schema = "geometry.step_topology.checkpoint_edit_journal.request.a0";
+    SessionReference session{};
+};
+
+enum class HierarchySourceKind
+{
+    definition,
+    body,
+};
+
+struct CreateHierarchyProductCommand
+{
+    std::string kind = "create_product";
+    std::string authored_id{};
+    std::string name{};
+    HierarchySourceKind source_kind{};
+    std::string source_handle{};
+};
+
+struct CreateHierarchyAssemblyCommand
+{
+    std::string kind = "create_assembly";
+    std::string authored_id{};
+    std::string name{};
+};
+
+struct CreateHierarchyOccurrenceCommand
+{
+    std::string kind = "create_occurrence";
+    std::string authored_id{};
+    std::string child_authored_id{};
+    std::string parent_assembly_authored_id{};
+    std::vector<double> transform{};
+};
+
+struct ReparentHierarchyOccurrenceCommand
+{
+    std::string kind = "reparent_occurrence";
+    std::string authored_id{};
+    std::uint32_t expected_revision{};
+    std::string parent_assembly_authored_id{};
+    std::vector<double> transform{};
+};
+
+struct RenameHierarchyNodeCommand
+{
+    std::string kind = "rename_node";
+    std::string authored_id{};
+    std::uint32_t expected_revision{};
+    std::string name{};
+};
+
+struct EraseHierarchyOccurrenceCommand
+{
+    std::string kind = "erase_occurrence";
+    std::string authored_id{};
+    std::uint32_t expected_revision{};
+};
+
+struct EraseHierarchyNodeCommand
+{
+    std::string kind = "erase_node";
+    std::string authored_id{};
+    std::uint32_t expected_revision{};
+};
+
+using HierarchyCommand =
+    std::variant<CreateHierarchyProductCommand, CreateHierarchyAssemblyCommand,
+                 CreateHierarchyOccurrenceCommand, ReparentHierarchyOccurrenceCommand,
+                 RenameHierarchyNodeCommand, EraseHierarchyOccurrenceCommand,
+                 EraseHierarchyNodeCommand>;
+
+struct StepTopologyApplyHierarchyRequestA0
+{
+    std::string schema = "geometry.step_topology.apply_hierarchy.request.a0";
+    SessionReference session{};
+    std::uint32_t expected_hierarchy_revision{};
+    std::vector<HierarchyCommand> commands{};
+};
+
+enum class SaveCarrier
+{
+    xbf,
+    xml_xcaf,
+    step_ap242,
+    json_sidecar,
+};
+
+struct StepTopologySaveRequestA0
+{
+    std::string schema = "geometry.step_topology.save.request.a0";
+    SessionReference session{};
+    SaveCarrier carrier{};
+    bool include_diagnostics{};
+};
+
+struct SourceDescriptor
+{
+    std::string format = "step";
+    std::string sha256{};
+    std::uint32_t bytes{};
+    std::string normalized_length_unit = "millimeter";
+};
+
+struct XbfPersistenceArtifact
+{
+    std::string carrier = "xbf";
+    std::string name = "state_artifact";
+    std::string media_type = "application/vnd.opencascade.xbf";
+    std::string format = "ocaf-xbf-version-12";
+    std::uint32_t bytes{};
+    std::string sha256{};
+};
+
+struct XmlXcafPersistenceArtifact
+{
+    std::string carrier = "xml_xcaf";
+    std::string name = "state_artifact";
+    std::string media_type = "application/vnd.opencascade.xml-xcaf";
+    std::string format = "ocaf-xml-xcaf-version-12";
+    std::uint32_t bytes{};
+    std::string sha256{};
+};
+
+struct StepAp242PersistenceArtifact
+{
+    std::string carrier = "step_ap242";
+    std::string name = "state_artifact";
+    std::string media_type = "application/step";
+    std::string format = "ap242-managed-model-based-3d-engineering";
+    std::uint32_t bytes{};
+    std::string sha256{};
+};
+
+struct JsonSidecarPersistenceArtifact
+{
+    std::string carrier = "json_sidecar";
+    std::string name = "state_artifact";
+    std::string media_type = "application/vnd.wavenumber.geometer.step-topology-sidecar+json";
+    std::string format = "geometer.step_topology_sidecar.a0";
+    std::uint32_t bytes{};
+    std::string sha256{};
+};
+
+struct EditJournalPersistenceArtifact
+{
+    std::string carrier = "edit_journal";
+    std::string name = "state_artifact";
+    std::string media_type = "application/vnd.wavenumber.geometer.step-topology-edit-journal";
+    std::string format = "geometer.step_topology_edit_journal.a0";
+    std::uint32_t bytes{};
+    std::string sha256{};
+};
+
+using RestoreStateArtifact =
+    std::variant<XbfPersistenceArtifact, XmlXcafPersistenceArtifact, StepAp242PersistenceArtifact,
+                 JsonSidecarPersistenceArtifact, EditJournalPersistenceArtifact>;
+
+struct EditJournalReplayPreconditions
+{
+    std::string source_sha256{};
+    std::string source_brep_sha256{};
+    std::string target_inventory_sha256{};
+    std::string occt_version{};
+    std::uint32_t transaction_count{};
+};
+
+struct StepTopologyRestoreRequestA0
+{
+    std::string schema = "geometry.step_topology.restore.request.a0";
+    SourceDescriptor source{};
+    RestoreStateArtifact state_artifact{};
+    std::optional<EditJournalReplayPreconditions> replay_preconditions{};
+    bool include_diagnostics{};
+};
+
+struct RecoveryProvenance
+{
+    std::string source_artifact_sha256{};
+    std::string candidate_artifact_sha256{};
+    std::string source_occt_version{};
+    std::string candidate_occt_version{};
+    std::string source_driver{};
+    std::string candidate_driver{};
+    std::string source_writer_settings{};
+    std::string candidate_writer_settings{};
+    std::string command_provenance{};
+    double measured_wall_time_milliseconds{};
+};
+
+struct RecoveryTolerances
+{
+    double length_mm{};
+    double area_mm2{};
+    double volume_mm3{};
+};
+
+enum class LogicalGroupMemberKind
+{
+    body,
+    face,
+};
+
+struct RecoveryFingerprint
+{
+    std::string normalized_length_unit = "millimeter";
+    std::string coordinate_frame{};
+    std::string occurrence_context{};
+    std::string geometry_kind{};
+    double area_mm2{};
+    double volume_mm3{};
+    std::vector<double> centroid_mm{};
+    std::vector<double> bounds_mm{};
+    std::string adjacency_sha256{};
+};
+
+enum class RecoveryLineage
+{
+    none,
+    split_from_source,
+    merged_from_sources,
+};
+
+struct RecoveryCandidate
+{
+    std::string target_handle{};
+    LogicalGroupMemberKind kind{};
+    std::optional<std::string> authored_target_id{};
+    bool topology_link_verified{};
+    std::string carrier_locator{};
+    bool carrier_locator_validated{};
+    std::string carrier_record{};
+    RecoveryLineage lineage{};
+    std::optional<RecoveryFingerprint> fingerprint{};
+};
+
+struct RecoveryMemberRequest
+{
+    std::string member_record_id{};
+    LogicalGroupMemberKind kind{};
+    std::string authored_target_id{};
+    std::string carrier_locator{};
+    std::optional<RecoveryFingerprint> source_fingerprint{};
+    std::vector<RecoveryCandidate> candidates{};
+};
+
+struct RecoveryGroupRequest
+{
+    std::string group_authored_id{};
+    RecoveryProvenance provenance{};
+    RecoveryTolerances tolerances{};
+    std::vector<RecoveryMemberRequest> members{};
+};
+
+struct StepTopologyAnalyzeRecoveryRequestA0
+{
+    std::string schema = "geometry.step_topology.analyze_recovery.request.a0";
+    std::vector<RecoveryGroupRequest> groups{};
+};
+
+using IpcRequestValueA0 =
+    std::variant<ModelBoundsOptionsA0, PackedAttachmentProjectionA0, StepTopologyOpenRequestA0,
+                 StepTopologyCloseRequestA0, StepTopologyInspectRequestA0,
+                 StepTopologyRenderRequestA0, StepTopologyResolveHitRequestA0,
+                 StepTopologyApplyLogicalGroupsRequestA0, StepTopologyApplyMetadataProbesRequestA0,
+                 StepTopologyCheckpointEditJournalRequestA0, StepTopologyApplyHierarchyRequestA0,
+                 StepTopologySaveRequestA0, StepTopologyRestoreRequestA0,
+                 StepTopologyAnalyzeRecoveryRequestA0>;
 
 struct IpcRequestA0
 {
@@ -677,16 +1131,39 @@ struct OperationFailureA0
     std::vector<DiagnosticA0> diagnostics{};
 };
 
-using OperationResultValueA0 = std::variant<ModelBoundsResultA0, PackedAttachmentProjectionA0>;
-
-struct OperationSuccessA0
+struct ToolDescriptor
 {
-    std::string operation{};
-    bool ok = true;
-    OperationResultValueA0 result{};
+    std::string name = "geometer";
+    std::string release_version{};
+    std::string occt_version{};
 };
 
-using OperationOutcomeA0 = std::variant<OperationSuccessA0, OperationFailureA0>;
+struct StepTopologyOpenResultA0
+{
+    std::string schema = "geometry.step_topology.open.result.a0";
+    SessionReference session{};
+    SourceDescriptor source{};
+    ToolDescriptor tool{};
+    std::vector<std::string> evicted_session_handles{};
+};
+
+struct StepTopologyCloseResultA0
+{
+    std::string schema = "geometry.step_topology.close.result.a0";
+    std::string session_handle{};
+    bool closed = true;
+};
+
+struct InspectionCounts
+{
+    std::uint32_t definitions{};
+    std::uint32_t root_occurrences{};
+    std::uint32_t component_occurrences{};
+    std::uint32_t bodies{};
+    std::uint32_t shells{};
+    std::uint32_t faces{};
+    std::uint32_t memberships{};
+};
 
 struct SourceEntityEvidence
 {
@@ -697,16 +1174,23 @@ struct SourceEntityEvidence
     std::optional<std::string> mapping_method{};
 };
 
-struct BodySummary
+struct DefinitionSummary
 {
     std::string handle{};
-    std::string definition_handle{};
-    std::string topology_kind{};
-    std::vector<std::string> shell_handles{};
-    std::vector<std::string> face_handles{};
-    std::vector<double> bounds_mm{};
-    double volume_mm3{};
+    std::string name{};
+    bool assembly{};
+    std::uint32_t body_count{};
+    std::uint32_t face_count{};
     std::optional<SourceEntityEvidence> source_entity{};
+};
+
+struct RootOccurrenceSummary
+{
+    std::string kind = "root";
+    std::string handle{};
+    std::string definition_handle{};
+    std::string name{};
+    std::vector<double> transform{};
 };
 
 struct ComponentOccurrenceSummary
@@ -720,11 +1204,24 @@ struct ComponentOccurrenceSummary
     std::vector<double> transform{};
 };
 
-struct DefinitionSummary
+using OccurrenceSummary = std::variant<RootOccurrenceSummary, ComponentOccurrenceSummary>;
+
+struct BodySummary
 {
     std::string handle{};
-    std::string name{};
-    bool assembly{};
+    std::string definition_handle{};
+    std::string topology_kind{};
+    std::uint32_t shell_count{};
+    std::uint32_t face_count{};
+    std::vector<double> bounds_mm{};
+    double volume_mm3{};
+    std::optional<SourceEntityEvidence> source_entity{};
+};
+
+struct ShellSummary
+{
+    std::string handle{};
+    std::string definition_handle{};
     std::uint32_t body_count{};
     std::uint32_t face_count{};
     std::optional<SourceEntityEvidence> source_entity{};
@@ -734,48 +1231,56 @@ struct FaceSummary
 {
     std::string handle{};
     std::string definition_handle{};
-    std::vector<std::string> body_handles{};
-    std::vector<std::string> shell_handles{};
+    std::uint32_t body_count{};
+    std::uint32_t shell_count{};
     std::vector<double> bounds_mm{};
     double area_mm2{};
     std::vector<double> centroid_mm{};
     std::optional<SourceEntityEvidence> source_entity{};
 };
 
-struct GlbAttachmentDescriptor
+enum class TopologyMembershipKind
 {
-    std::string name = "glb";
-    std::string media_type = "model/gltf-binary";
-    std::string format = "glb-2.0";
+    body_shell,
+    body_face,
+    shell_face,
+};
+
+struct TopologyMembership
+{
+    TopologyMembershipKind kind{};
+    std::string owner_handle{};
+    std::string member_handle{};
+};
+
+struct TopologyPage
+{
+    std::vector<DefinitionSummary> definitions{};
+    std::vector<OccurrenceSummary> occurrences{};
+    std::vector<BodySummary> bodies{};
+    std::vector<ShellSummary> shells{};
+    std::vector<FaceSummary> faces{};
+    std::vector<TopologyMembership> memberships{};
+    std::optional<std::string> next_cursor{};
+};
+
+struct TopologyTableAttachmentDescriptor
+{
+    std::string name = "topology_table";
+    std::string media_type = "application/vnd.wavenumber.geometer.step-topology-table";
+    std::string format = "wn.geometer.step-topology-table.a0";
     std::uint32_t bytes{};
     std::string sha256{};
 };
 
-struct InspectionCounts
+struct StepTopologyInspectResultA0
 {
-    std::uint32_t definitions{};
-    std::uint32_t root_occurrences{};
-    std::uint32_t component_occurrences{};
-    std::uint32_t bodies{};
-    std::uint32_t shells{};
-    std::uint32_t faces{};
-};
-
-struct RootOccurrenceSummary
-{
-    std::string kind = "root";
-    std::string handle{};
-    std::string definition_handle{};
-    std::string name{};
-    std::vector<double> transform{};
-};
-
-using OccurrenceSummary = std::variant<RootOccurrenceSummary, ComponentOccurrenceSummary>;
-
-struct PageRequest
-{
-    std::optional<std::string> cursor{};
-    std::uint32_t limit{};
+    std::string schema = "geometry.step_topology.inspect.result.a0";
+    SessionReference session{};
+    InspectionCounts counts{};
+    TopologyPage page{};
+    std::optional<TopologyTableAttachmentDescriptor> compact_table{};
+    std::vector<DiagnosticA0> diagnostics{};
 };
 
 struct RenderCounts
@@ -799,115 +1304,13 @@ struct RenderArtifactDescriptor
     RenderCounts counts{};
 };
 
-struct SessionReference
+struct GlbAttachmentDescriptor
 {
-    std::string session_handle{};
-    std::uint32_t generation{};
-};
-
-struct ShellSummary
-{
-    std::string handle{};
-    std::string definition_handle{};
-    std::vector<std::string> body_handles{};
-    std::vector<std::string> face_handles{};
-    std::optional<SourceEntityEvidence> source_entity{};
-};
-
-struct SourceDescriptor
-{
-    std::string format = "step";
-    std::string sha256{};
-    std::uint32_t bytes{};
-    std::string normalized_length_unit = "millimeter";
-};
-
-struct StepTopologyCloseRequestA0
-{
-    std::string schema = "geometry.step_topology.close.request.a0";
-    SessionReference session{};
-};
-
-struct StepTopologyCloseResultA0
-{
-    std::string schema = "geometry.step_topology.close.result.a0";
-    std::string session_handle{};
-    bool closed = true;
-};
-
-struct StepTopologyInspectRequestA0
-{
-    std::string schema = "geometry.step_topology.inspect.request.a0";
-    SessionReference session{};
-    PageRequest page{};
-    bool include_source_entity_evidence{};
-    bool include_diagnostics{};
-};
-
-struct TopologyPage
-{
-    std::vector<DefinitionSummary> definitions{};
-    std::vector<OccurrenceSummary> occurrences{};
-    std::vector<BodySummary> bodies{};
-    std::vector<ShellSummary> shells{};
-    std::vector<FaceSummary> faces{};
-    std::optional<std::string> next_cursor{};
-};
-
-struct TopologyTableAttachmentDescriptor
-{
-    std::string name = "topology_table";
-    std::string media_type = "application/vnd.wavenumber.geometer.step-topology-table";
-    std::string format = "wn.geometer.step-topology-table.a0";
+    std::string name = "glb";
+    std::string media_type = "model/gltf-binary";
+    std::string format = "glb-2.0";
     std::uint32_t bytes{};
     std::string sha256{};
-};
-
-struct StepTopologyInspectResultA0
-{
-    std::string schema = "geometry.step_topology.inspect.result.a0";
-    SessionReference session{};
-    InspectionCounts counts{};
-    TopologyPage page{};
-    std::optional<TopologyTableAttachmentDescriptor> compact_table{};
-    std::vector<DiagnosticA0> diagnostics{};
-};
-
-struct StepTopologyOpenRequestA0
-{
-    std::string schema = "geometry.step_topology.open.request.a0";
-};
-
-struct ToolDescriptor
-{
-    std::string name = "geometer";
-    std::string release_version{};
-    std::string occt_version{};
-};
-
-struct StepTopologyOpenResultA0
-{
-    std::string schema = "geometry.step_topology.open.result.a0";
-    SessionReference session{};
-    SourceDescriptor source{};
-    ToolDescriptor tool{};
-    std::vector<std::string> evicted_session_handles{};
-};
-
-struct TessellationOptions
-{
-    double linear_deflection_mm{};
-    double angular_deflection_rad{};
-    bool relative{};
-    bool parallel{};
-    std::vector<double> source_to_render{};
-};
-
-struct StepTopologyRenderRequestA0
-{
-    std::string schema = "geometry.step_topology.render.request.a0";
-    SessionReference session{};
-    TessellationOptions tessellation{};
 };
 
 struct TopologyBindingTableAttachmentDescriptor
@@ -928,20 +1331,6 @@ struct StepTopologyRenderResultA0
     std::optional<TopologyBindingTableAttachmentDescriptor> compact_binding_table{};
 };
 
-struct StepTopologyResolveHitRequestA0
-{
-    std::string schema = "geometry.step_topology.resolve_hit.request.a0";
-    SessionReference session{};
-    std::string artifact_handle{};
-    std::string content_sha256{};
-    std::uint32_t instance_index{};
-    std::uint32_t primitive_index{};
-    std::uint32_t primitive_triangle_index{};
-    std::string occurrence_handle{};
-    std::string body_handle{};
-    std::string face_handle{};
-};
-
 struct StepTopologyResolveHitResultA0
 {
     std::string schema = "geometry.step_topology.resolve_hit.result.a0";
@@ -953,6 +1342,293 @@ struct StepTopologyResolveHitResultA0
     std::string body_handle{};
     std::string face_handle{};
 };
+
+struct MutationSessionState
+{
+    SessionReference session{};
+    std::uint32_t edit_journal_revision{};
+    std::uint32_t accounted_string_bytes{};
+    std::uint32_t estimated_resident_bytes{};
+};
+
+struct LogicalGroupMember
+{
+    LogicalGroupMemberKind kind{};
+    std::string target_handle{};
+};
+
+struct LogicalGroup
+{
+    std::string authored_id{};
+    std::uint32_t revision{};
+    std::string name{};
+    std::vector<LogicalGroupMember> members{};
+};
+
+struct StepTopologyApplyLogicalGroupsResultA0
+{
+    std::string schema = "geometry.step_topology.apply_logical_groups.result.a0";
+    MutationSessionState state{};
+    std::vector<LogicalGroup> groups{};
+    std::vector<DiagnosticA0> diagnostics{};
+};
+
+struct MetadataProbe
+{
+    std::string authored_id{};
+    std::uint32_t revision{};
+    MetadataProbeTarget target{};
+    std::string key{};
+    std::string value{};
+};
+
+struct StepTopologyApplyMetadataProbesResultA0
+{
+    std::string schema = "geometry.step_topology.apply_metadata_probes.result.a0";
+    MutationSessionState state{};
+    std::vector<LogicalGroup> groups{};
+    std::vector<MetadataProbe> probes{};
+    std::vector<DiagnosticA0> diagnostics{};
+};
+
+struct EditJournalAttachmentDescriptor
+{
+    std::string name = "edit_journal";
+    std::string media_type = "application/vnd.wavenumber.geometer.step-topology-edit-journal";
+    std::string format = "geometer.step_topology_edit_journal.a0";
+    std::uint32_t bytes{};
+    std::string sha256{};
+};
+
+struct StepTopologyCheckpointEditJournalResultA0
+{
+    std::string schema = "geometry.step_topology.checkpoint_edit_journal.result.a0";
+    MutationSessionState state{};
+    std::string source_sha256{};
+    std::string source_brep_sha256{};
+    std::string target_inventory_sha256{};
+    std::string occt_version{};
+    std::uint32_t transaction_count{};
+    EditJournalAttachmentDescriptor journal{};
+    std::vector<DiagnosticA0> diagnostics{};
+};
+
+enum class HierarchyNodeKind
+{
+    product,
+    assembly,
+};
+
+struct HierarchyNode
+{
+    std::string authored_id{};
+    std::uint32_t revision{};
+    HierarchyNodeKind kind{};
+    std::string name{};
+    std::optional<HierarchySourceKind> source_kind{};
+    std::optional<std::string> source_handle{};
+};
+
+struct HierarchyOccurrence
+{
+    std::string authored_id{};
+    std::uint32_t revision{};
+    std::string child_authored_id{};
+    std::string parent_assembly_authored_id{};
+    std::vector<double> transform{};
+};
+
+struct HierarchyState
+{
+    std::uint32_t hierarchy_revision{};
+    std::string source_brep_sha256{};
+    std::vector<HierarchyNode> nodes{};
+    std::vector<HierarchyOccurrence> occurrences{};
+};
+
+struct StepTopologyApplyHierarchyResultA0
+{
+    std::string schema = "geometry.step_topology.apply_hierarchy.result.a0";
+    MutationSessionState state{};
+    HierarchyState hierarchy{};
+    std::vector<DiagnosticA0> diagnostics{};
+};
+
+using SavePersistenceArtifact =
+    std::variant<XbfPersistenceArtifact, XmlXcafPersistenceArtifact, StepAp242PersistenceArtifact,
+                 JsonSidecarPersistenceArtifact>;
+
+enum class PersistenceCarrier
+{
+    xbf,
+    xml_xcaf,
+    step_ap242,
+    json_sidecar,
+    edit_journal,
+};
+
+enum class CarrierSupportState
+{
+    supported,
+    experimental,
+    unsupported,
+};
+
+struct CarrierCapabilityNote
+{
+    std::string value{};
+};
+
+struct CarrierCapability
+{
+    PersistenceCarrier carrier{};
+    CarrierSupportState save{};
+    CarrierSupportState restore{};
+    CarrierSupportState authored_payload{};
+    CarrierSupportState topology_links{};
+    std::vector<CarrierCapabilityNote> notes{};
+};
+
+struct StepTopologySaveResultA0
+{
+    std::string schema = "geometry.step_topology.save.result.a0";
+    MutationSessionState state{};
+    std::string source_sha256{};
+    SavePersistenceArtifact artifact{};
+    std::vector<CarrierCapability> capabilities{};
+    std::vector<DiagnosticA0> diagnostics{};
+};
+
+enum class RecoveryResolutionState
+{
+    resolved,
+    ambiguous,
+    unresolved,
+    unsupported,
+};
+
+enum class RecoveryGroupCompleteness
+{
+    fully_recovered,
+    partially_recovered,
+    unrecovered,
+    unsupported,
+};
+
+enum class RecoveryResolutionMethod
+{
+    authored_id_topology_link,
+    validated_carrier_locator,
+    unique_geometry_adjacency_fingerprint,
+    none,
+};
+
+enum class RecoveryTopologyComparison
+{
+    unchanged,
+    relocated,
+    split,
+    merged,
+    otherwise_changed,
+    not_compared,
+    unavailable,
+};
+
+enum class RecoveryConfidence
+{
+    high,
+    medium,
+    low,
+    none,
+};
+
+struct RecoveryComparedField
+{
+    std::string value{};
+};
+
+struct RecoveryCarrierRecord
+{
+    std::string value{};
+};
+
+struct RecoveryRejectedAlternative
+{
+    std::string target_handle{};
+    std::string reason{};
+};
+
+struct RecoveryEvidence
+{
+    std::uint32_t candidate_count{};
+    std::uint32_t matching_candidate_count{};
+    std::vector<RecoveryComparedField> compared_fields{};
+    RecoveryTolerances tolerances{};
+    std::vector<RecoveryCarrierRecord> carrier_records{};
+    std::vector<RecoveryRejectedAlternative> rejected_alternatives{};
+};
+
+struct RecoveryMemberResult
+{
+    std::string member_record_id{};
+    LogicalGroupMemberKind kind{};
+    std::string authored_target_id{};
+    RecoveryResolutionState resolution_state{};
+    RecoveryResolutionMethod resolution_method{};
+    RecoveryTopologyComparison topology_comparison{};
+    RecoveryConfidence confidence{};
+    std::optional<std::string> resolved_target_handle{};
+    RecoveryEvidence evidence{};
+};
+
+struct RecoveryGroupResult
+{
+    std::string group_authored_id{};
+    RecoveryProvenance provenance{};
+    RecoveryResolutionState resolution_state{};
+    RecoveryGroupCompleteness completeness{};
+    std::uint32_t resolved_member_count{};
+    std::uint32_t ambiguous_member_count{};
+    std::uint32_t unresolved_member_count{};
+    std::uint32_t unsupported_member_count{};
+    std::vector<RecoveryMemberResult> members{};
+};
+
+struct StepTopologyRestoreResultA0
+{
+    std::string schema = "geometry.step_topology.restore.result.a0";
+    SessionReference session{};
+    SourceDescriptor source{};
+    ToolDescriptor tool{};
+    std::uint32_t replayed_transaction_count{};
+    std::optional<std::vector<std::string>> evicted_session_handles{};
+    std::vector<RecoveryGroupResult> recovery{};
+    std::vector<DiagnosticA0> diagnostics{};
+};
+
+struct StepTopologyAnalyzeRecoveryResultA0
+{
+    std::string schema = "geometry.step_topology.analyze_recovery.result.a0";
+    std::vector<RecoveryGroupResult> groups{};
+    std::vector<DiagnosticA0> diagnostics{};
+};
+
+using OperationResultValueA0 =
+    std::variant<ModelBoundsResultA0, PackedAttachmentProjectionA0, StepTopologyOpenResultA0,
+                 StepTopologyCloseResultA0, StepTopologyInspectResultA0, StepTopologyRenderResultA0,
+                 StepTopologyResolveHitResultA0, StepTopologyApplyLogicalGroupsResultA0,
+                 StepTopologyApplyMetadataProbesResultA0, StepTopologyCheckpointEditJournalResultA0,
+                 StepTopologyApplyHierarchyResultA0, StepTopologySaveResultA0,
+                 StepTopologyRestoreResultA0, StepTopologyAnalyzeRecoveryResultA0>;
+
+struct OperationSuccessA0
+{
+    std::string operation{};
+    bool ok = true;
+    OperationResultValueA0 result{};
+};
+
+using OperationOutcomeA0 = std::variant<OperationSuccessA0, OperationFailureA0>;
 
 bool decode_json(const unsigned char* data, std::size_t size, DiagnosticA0* value,
                  ContractError* error = nullptr);
@@ -1012,6 +1688,56 @@ bool decode_json(const unsigned char* data, std::size_t size, OperationOutcomeA0
 bool encode_json(const OperationOutcomeA0& value, std::string* json,
                  ContractError* error = nullptr);
 
+bool decode_json(const unsigned char* data, std::size_t size,
+                 StepTopologyAnalyzeRecoveryRequestA0* value, ContractError* error = nullptr);
+bool encode_json(const StepTopologyAnalyzeRecoveryRequestA0& value, std::string* json,
+                 ContractError* error = nullptr);
+
+bool decode_json(const unsigned char* data, std::size_t size,
+                 StepTopologyAnalyzeRecoveryResultA0* value, ContractError* error = nullptr);
+bool encode_json(const StepTopologyAnalyzeRecoveryResultA0& value, std::string* json,
+                 ContractError* error = nullptr);
+
+bool decode_json(const unsigned char* data, std::size_t size,
+                 StepTopologyApplyHierarchyRequestA0* value, ContractError* error = nullptr);
+bool encode_json(const StepTopologyApplyHierarchyRequestA0& value, std::string* json,
+                 ContractError* error = nullptr);
+
+bool decode_json(const unsigned char* data, std::size_t size,
+                 StepTopologyApplyHierarchyResultA0* value, ContractError* error = nullptr);
+bool encode_json(const StepTopologyApplyHierarchyResultA0& value, std::string* json,
+                 ContractError* error = nullptr);
+
+bool decode_json(const unsigned char* data, std::size_t size,
+                 StepTopologyApplyLogicalGroupsRequestA0* value, ContractError* error = nullptr);
+bool encode_json(const StepTopologyApplyLogicalGroupsRequestA0& value, std::string* json,
+                 ContractError* error = nullptr);
+
+bool decode_json(const unsigned char* data, std::size_t size,
+                 StepTopologyApplyLogicalGroupsResultA0* value, ContractError* error = nullptr);
+bool encode_json(const StepTopologyApplyLogicalGroupsResultA0& value, std::string* json,
+                 ContractError* error = nullptr);
+
+bool decode_json(const unsigned char* data, std::size_t size,
+                 StepTopologyApplyMetadataProbesRequestA0* value, ContractError* error = nullptr);
+bool encode_json(const StepTopologyApplyMetadataProbesRequestA0& value, std::string* json,
+                 ContractError* error = nullptr);
+
+bool decode_json(const unsigned char* data, std::size_t size,
+                 StepTopologyApplyMetadataProbesResultA0* value, ContractError* error = nullptr);
+bool encode_json(const StepTopologyApplyMetadataProbesResultA0& value, std::string* json,
+                 ContractError* error = nullptr);
+
+bool decode_json(const unsigned char* data, std::size_t size,
+                 StepTopologyCheckpointEditJournalRequestA0* value, ContractError* error = nullptr);
+bool encode_json(const StepTopologyCheckpointEditJournalRequestA0& value, std::string* json,
+                 ContractError* error = nullptr);
+
+bool decode_json(const unsigned char* data, std::size_t size,
+                 StepTopologyCheckpointEditJournalResultA0* value, ContractError* error = nullptr);
+bool encode_json(const StepTopologyCheckpointEditJournalResultA0& value, std::string* json,
+                 ContractError* error = nullptr);
+
 bool decode_json(const unsigned char* data, std::size_t size, StepTopologyCloseRequestA0* value,
                  ContractError* error = nullptr);
 bool encode_json(const StepTopologyCloseRequestA0& value, std::string* json,
@@ -1060,6 +1786,26 @@ bool encode_json(const StepTopologyResolveHitRequestA0& value, std::string* json
 bool decode_json(const unsigned char* data, std::size_t size, StepTopologyResolveHitResultA0* value,
                  ContractError* error = nullptr);
 bool encode_json(const StepTopologyResolveHitResultA0& value, std::string* json,
+                 ContractError* error = nullptr);
+
+bool decode_json(const unsigned char* data, std::size_t size, StepTopologyRestoreRequestA0* value,
+                 ContractError* error = nullptr);
+bool encode_json(const StepTopologyRestoreRequestA0& value, std::string* json,
+                 ContractError* error = nullptr);
+
+bool decode_json(const unsigned char* data, std::size_t size, StepTopologyRestoreResultA0* value,
+                 ContractError* error = nullptr);
+bool encode_json(const StepTopologyRestoreResultA0& value, std::string* json,
+                 ContractError* error = nullptr);
+
+bool decode_json(const unsigned char* data, std::size_t size, StepTopologySaveRequestA0* value,
+                 ContractError* error = nullptr);
+bool encode_json(const StepTopologySaveRequestA0& value, std::string* json,
+                 ContractError* error = nullptr);
+
+bool decode_json(const unsigned char* data, std::size_t size, StepTopologySaveResultA0* value,
+                 ContractError* error = nullptr);
+bool encode_json(const StepTopologySaveResultA0& value, std::string* json,
                  ContractError* error = nullptr);
 
 } // namespace geometer::contracts

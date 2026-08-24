@@ -115,11 +115,18 @@ if(NOT EMSCRIPTEN)
     list(APPEND GEOMETER_LIB_SOURCES
         ipc_a0_frame.cpp
         ipc_a0_server.cpp
+        native_topology_operation_registry.cpp
+        step_topology_edit_journal.cpp
         step_topology_inspection.cpp
         step_topology_glb.cpp
+        step_topology_hierarchy.cpp
         step_topology_logical_groups.cpp
+        step_topology_metadata_probes.cpp
+        step_topology_recovery.cpp
         step_topology_render_binding.cpp
+        step_topology_resident_accounting.cpp
         step_topology_session.cpp
+        step_topology_session_store.cpp
     )
 endif()
 
@@ -165,6 +172,13 @@ set(GEOMETER_OCCT_LIBS
     TKMath
     TKernel
 )
+
+# Standard OCAF document persistence is a native research/cache surface. Keep
+# these drivers out of the browser WASM link closure until a browser use case is
+# intentionally designed and measured.
+if(NOT EMSCRIPTEN)
+    list(PREPEND GEOMETER_OCCT_LIBS TKBinXCAF TKXmlXCAF)
+endif()
 
 set(GEOMETER_OCCT_LINK_LIBS ${GEOMETER_OCCT_LIBS})
 if(UNIX AND NOT EMSCRIPTEN AND GEOMETER_OCCT_LIBRARY_TYPE STREQUAL "Static" AND OpenCASCADE_LIBRARIES)

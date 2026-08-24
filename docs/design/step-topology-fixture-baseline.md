@@ -73,6 +73,20 @@ committed and regenerated copies, and compares topology counts, bounds, volume,
 names, expanded occurrence paths, and accumulated transforms. Temporary state
 is removed by an RAII guard even when an assertion fails.
 
+## Corpus Provenance Boundary
+
+This report is a structure/topology inventory, not a complete corpus provenance
+manifest. It records content hashes and generated-fixture construction, but it
+does not yet record source, license-or-usage basis, or redistribution permission
+for every pre-existing embedded model. The three generated fixtures are
+reproducible project outputs; additional Appz or private fixtures still require
+the explicit provenance fields described in the Annotation Lab handoff.
+
+The freshness test is also not a full-corpus unmodified read/write/reload
+baseline. It regenerates the three synthetic fixtures and compares semantic
+reload results. Appz issue #140 still needs recorded before/after evidence for
+unmodified write/reload across its selected corpus.
+
 The current corpus demonstrates that a large occurrence count does not imply a
 large definition count. It also demonstrates that existing files vary sharply
 in labeled subshape coverage: one AP203 fixture has none, while the AP214
@@ -138,11 +152,32 @@ one-merged-primitive-per-occurrence projection. See
 [GLB work-packet research](step-topology-glb-binding.md) for the route and
 layout comparison and the real Three.js raycast result.
 
+## Runtime, Fixture, And Matrix Impact
+
+The completion audit on Windows x64 with OCCT 8.0.1 recorded the following
+local evidence on 2026-08-23:
+
+- all 12 registered `step_topology` CTests passed in 8.88 seconds within the
+  existing native CTest/Rack stratum;
+- the three committed generated STEP fixtures total 83,398 bytes;
+- the machine-readable baseline report is 15,135 bytes; and
+- the bundled Node/TypeScript student reference is 1,202,603 bytes.
+
+These are repository-impact observations, not performance commitments. The
+topology tests remain in the existing native lane; no new mandatory CI matrix
+lane was added. Same-version XBF/XML and AP242 evidence runs in ordinary CTest.
+The older/newer OCCT custom-driver compatibility matrix remains an explicit
+manual qualification because it builds separate dependency trees and is not an
+appropriate per-change CI cost. Future fixture additions must update this size,
+runtime, provenance, and lane review rather than silently expanding the corpus.
+
 ## ISO 10303-242:2025 Traceability
 
-The licensed local ISO package is read through `GEOMETER_AP242_SPEC_ROOT`; its
-path and contents are not committed. The following table records schema/entity
-locations and short interpretations, not copied specification text.
+`GEOMETER_AP242_SPEC_ROOT` is a manual shell convention for a reviewer opening
+the licensed local ISO package; no Geometer test currently reads that variable.
+Its path and contents are not committed. The following table records
+schema/entity locations and short interpretations, not copied specification
+text.
 
 All paths below are relative to the licensed package root. Each candidate is
 present in AP242 MIM Table 3 at
@@ -161,11 +196,15 @@ and in the long-form MIM at
 | `property_definition_representation` | `data/resources/product_property_representation_schema/product_property_representation_schema.htm#product_property_representation_schema.property_definition_representation` | Joins a represented definition to a representation; name and description are each at most singular | Candidate property payload representation path |
 | `descriptive_representation_item` | `data/resources/qualified_measure_schema/qualified_measure_schema.htm#qualified_measure_schema.descriptive_representation_item` | A representation item with a textual description | Candidate compact research payload item, not a final annotation model |
 
-The strongest first AP242 proof remains a property payload that characterizes a
-shape aspect plus a `geometric_item_specific_usage` topology link. The table
-only establishes that the EXPRESS relationships are candidates. It does not
-establish that OCCT 8.0.1 writes, reloads, or promotes every relationship into
-XCAF. Those are separate implementation-support experiments.
+The first focused [AP242 persistence baseline](step-topology-ap242-persistence.md)
+now proves an OCCT 8.0.1 model-API round trip using an exactly connected
+product-level general-property graph plus separate body and face
+`geometric_item_specific_usage` links to that same product. The reloaded face
+item resolves uniquely to one restored-body face under the recorded geometric
+comparison.
+The table remains the specification traceability for the tested subset; it
+does not imply that OCCT writes every AP242 relationship or promotes generic
+topology links into high-level XCAF attributes.
 
 ### Conformance posture
 
@@ -198,9 +237,9 @@ support. Each of those must be proven separately in later work packages.
 
 The current generated OCCT install contains the required public headers and
 static libraries for XCAF inspection, `TKBinXCAF`, `TKXmlXCAF`, and BRepGraph.
-Geometer currently links XCAF but does not yet link `TKBinXCAF` or `TKXmlXCAF`.
-Persistence toolkit linkage is deferred to the XBF/XML work package so the
-baseline helper does not broaden the distributed runtime surface.
+Geometer now links `TKBinXCAF` and `TKXmlXCAF`; the same-version standard
+driver evidence is recorded in `step-topology-xcaf-persistence.md`.
+The toolkits are native-only and are not added to the browser WASM target.
 
 The follow-on [native inspection research](step-topology-native-inspection.md)
 now proves BRepGraph population, reconstruction, UID behavior, repeated product

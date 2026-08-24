@@ -1,0 +1,369 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:wavenumber:schema:geometer:geometry.step_topology.apply_metadata_probes.result:a0",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "type": "string",
+      "const": "geometry.step_topology.apply_metadata_probes.result.a0"
+    },
+    "state": {
+      "$ref": "#/$defs/MutationSessionState"
+    },
+    "groups": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/LogicalGroup"
+      },
+      "maxItems": 10000
+    },
+    "probes": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/MetadataProbe"
+      },
+      "maxItems": 10000
+    },
+    "diagnostics": {
+      "type": "array",
+      "items": {
+        "$ref": "urn:wavenumber:schema:geometer:geometry.common.diagnostic:a0"
+      },
+      "maxItems": 256
+    }
+  },
+  "required": [
+    "schema",
+    "state",
+    "groups",
+    "probes",
+    "diagnostics"
+  ],
+  "unevaluatedProperties": {
+    "not": {}
+  },
+  "$defs": {
+    "MutationSessionState": {
+      "type": "object",
+      "properties": {
+        "session": {
+          "$ref": "#/$defs/SessionReference"
+        },
+        "edit_journal_revision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "accounted_string_bytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 16777216
+        },
+        "estimated_resident_bytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 536870912
+        }
+      },
+      "required": [
+        "session",
+        "edit_journal_revision",
+        "accounted_string_bytes",
+        "estimated_resident_bytes"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "LogicalGroup": {
+      "type": "object",
+      "properties": {
+        "authored_id": {
+          "type": "string",
+          "minLength": 28,
+          "maxLength": 128
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "members": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/LogicalGroupMember"
+          },
+          "minItems": 1,
+          "maxItems": 100000
+        }
+      },
+      "required": [
+        "authored_id",
+        "revision",
+        "name",
+        "members"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "MetadataProbe": {
+      "type": "object",
+      "properties": {
+        "authored_id": {
+          "type": "string",
+          "minLength": 28,
+          "maxLength": 128
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        },
+        "target": {
+          "$ref": "#/$defs/MetadataProbeTarget"
+        },
+        "key": {
+          "type": "string",
+          "minLength": 32,
+          "maxLength": 128
+        },
+        "value": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        }
+      },
+      "required": [
+        "authored_id",
+        "revision",
+        "target",
+        "key",
+        "value"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "SessionReference": {
+      "type": "object",
+      "properties": {
+        "session_handle": {
+          "type": "string",
+          "minLength": 68,
+          "maxLength": 68
+        },
+        "generation": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        }
+      },
+      "required": [
+        "session_handle",
+        "generation"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "LogicalGroupMember": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "$ref": "#/$defs/LogicalGroupMemberKind"
+        },
+        "target_handle": {
+          "type": "string",
+          "minLength": 68,
+          "maxLength": 68
+        }
+      },
+      "required": [
+        "kind",
+        "target_handle"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "MetadataProbeTarget": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/DocumentProbeTarget"
+        },
+        {
+          "$ref": "#/$defs/DefinitionProbeTarget"
+        },
+        {
+          "$ref": "#/$defs/RootOccurrenceProbeTarget"
+        },
+        {
+          "$ref": "#/$defs/ComponentOccurrenceProbeTarget"
+        },
+        {
+          "$ref": "#/$defs/BodyProbeTarget"
+        },
+        {
+          "$ref": "#/$defs/FaceProbeTarget"
+        },
+        {
+          "$ref": "#/$defs/LogicalGroupProbeTarget"
+        }
+      ]
+    },
+    "LogicalGroupMemberKind": {
+      "type": "string",
+      "enum": [
+        "body",
+        "face"
+      ]
+    },
+    "DocumentProbeTarget": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "document"
+        }
+      },
+      "required": [
+        "kind"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "DefinitionProbeTarget": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "definition"
+        },
+        "target_handle": {
+          "type": "string",
+          "minLength": 68,
+          "maxLength": 68
+        }
+      },
+      "required": [
+        "kind",
+        "target_handle"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "RootOccurrenceProbeTarget": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "root_occurrence"
+        },
+        "target_handle": {
+          "type": "string",
+          "minLength": 68,
+          "maxLength": 68
+        }
+      },
+      "required": [
+        "kind",
+        "target_handle"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "ComponentOccurrenceProbeTarget": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "occurrence"
+        },
+        "target_handle": {
+          "type": "string",
+          "minLength": 68,
+          "maxLength": 68
+        }
+      },
+      "required": [
+        "kind",
+        "target_handle"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "BodyProbeTarget": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "body"
+        },
+        "target_handle": {
+          "type": "string",
+          "minLength": 68,
+          "maxLength": 68
+        }
+      },
+      "required": [
+        "kind",
+        "target_handle"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "FaceProbeTarget": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "face"
+        },
+        "target_handle": {
+          "type": "string",
+          "minLength": 68,
+          "maxLength": 68
+        }
+      },
+      "required": [
+        "kind",
+        "target_handle"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "LogicalGroupProbeTarget": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "logical_group"
+        },
+        "group_authored_id": {
+          "type": "string",
+          "minLength": 28,
+          "maxLength": 128
+        }
+      },
+      "required": [
+        "kind",
+        "group_authored_id"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    }
+  }
+}

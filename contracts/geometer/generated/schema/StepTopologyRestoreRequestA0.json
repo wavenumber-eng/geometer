@@ -1,0 +1,335 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:wavenumber:schema:geometer:geometry.step_topology.restore.request:a0",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "type": "string",
+      "const": "geometry.step_topology.restore.request.a0"
+    },
+    "source": {
+      "$ref": "#/$defs/SourceDescriptor"
+    },
+    "state_artifact": {
+      "$ref": "#/$defs/RestoreStateArtifact"
+    },
+    "replay_preconditions": {
+      "$ref": "#/$defs/EditJournalReplayPreconditions"
+    },
+    "include_diagnostics": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "schema",
+    "source",
+    "state_artifact",
+    "include_diagnostics"
+  ],
+  "unevaluatedProperties": {
+    "not": {}
+  },
+  "$defs": {
+    "SourceDescriptor": {
+      "type": "object",
+      "properties": {
+        "format": {
+          "type": "string",
+          "const": "step"
+        },
+        "sha256": {
+          "type": "string",
+          "minLength": 64,
+          "maxLength": 64
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 268435456
+        },
+        "normalized_length_unit": {
+          "type": "string",
+          "const": "millimeter"
+        }
+      },
+      "required": [
+        "format",
+        "sha256",
+        "bytes",
+        "normalized_length_unit"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "RestoreStateArtifact": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/XbfPersistenceArtifact"
+        },
+        {
+          "$ref": "#/$defs/XmlXcafPersistenceArtifact"
+        },
+        {
+          "$ref": "#/$defs/StepAp242PersistenceArtifact"
+        },
+        {
+          "$ref": "#/$defs/JsonSidecarPersistenceArtifact"
+        },
+        {
+          "$ref": "#/$defs/EditJournalPersistenceArtifact"
+        }
+      ]
+    },
+    "EditJournalReplayPreconditions": {
+      "type": "object",
+      "properties": {
+        "source_sha256": {
+          "type": "string",
+          "minLength": 64,
+          "maxLength": 64
+        },
+        "source_brep_sha256": {
+          "type": "string",
+          "minLength": 64,
+          "maxLength": 64
+        },
+        "target_inventory_sha256": {
+          "type": "string",
+          "minLength": 64,
+          "maxLength": 64
+        },
+        "occt_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "transaction_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        }
+      },
+      "required": [
+        "source_sha256",
+        "source_brep_sha256",
+        "target_inventory_sha256",
+        "occt_version",
+        "transaction_count"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "XbfPersistenceArtifact": {
+      "type": "object",
+      "properties": {
+        "carrier": {
+          "type": "string",
+          "const": "xbf"
+        },
+        "name": {
+          "type": "string",
+          "const": "state_artifact"
+        },
+        "media_type": {
+          "type": "string",
+          "const": "application/vnd.opencascade.xbf"
+        },
+        "format": {
+          "type": "string",
+          "const": "ocaf-xbf-version-12"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 536870912
+        },
+        "sha256": {
+          "type": "string",
+          "minLength": 64,
+          "maxLength": 64
+        }
+      },
+      "required": [
+        "carrier",
+        "name",
+        "media_type",
+        "format",
+        "bytes",
+        "sha256"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "XmlXcafPersistenceArtifact": {
+      "type": "object",
+      "properties": {
+        "carrier": {
+          "type": "string",
+          "const": "xml_xcaf"
+        },
+        "name": {
+          "type": "string",
+          "const": "state_artifact"
+        },
+        "media_type": {
+          "type": "string",
+          "const": "application/vnd.opencascade.xml-xcaf"
+        },
+        "format": {
+          "type": "string",
+          "const": "ocaf-xml-xcaf-version-12"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 536870912
+        },
+        "sha256": {
+          "type": "string",
+          "minLength": 64,
+          "maxLength": 64
+        }
+      },
+      "required": [
+        "carrier",
+        "name",
+        "media_type",
+        "format",
+        "bytes",
+        "sha256"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "StepAp242PersistenceArtifact": {
+      "type": "object",
+      "properties": {
+        "carrier": {
+          "type": "string",
+          "const": "step_ap242"
+        },
+        "name": {
+          "type": "string",
+          "const": "state_artifact"
+        },
+        "media_type": {
+          "type": "string",
+          "const": "application/step"
+        },
+        "format": {
+          "type": "string",
+          "const": "ap242-managed-model-based-3d-engineering"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 536870912
+        },
+        "sha256": {
+          "type": "string",
+          "minLength": 64,
+          "maxLength": 64
+        }
+      },
+      "required": [
+        "carrier",
+        "name",
+        "media_type",
+        "format",
+        "bytes",
+        "sha256"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "JsonSidecarPersistenceArtifact": {
+      "type": "object",
+      "properties": {
+        "carrier": {
+          "type": "string",
+          "const": "json_sidecar"
+        },
+        "name": {
+          "type": "string",
+          "const": "state_artifact"
+        },
+        "media_type": {
+          "type": "string",
+          "const": "application/vnd.wavenumber.geometer.step-topology-sidecar+json"
+        },
+        "format": {
+          "type": "string",
+          "const": "geometer.step_topology_sidecar.a0"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 67108864
+        },
+        "sha256": {
+          "type": "string",
+          "minLength": 64,
+          "maxLength": 64
+        }
+      },
+      "required": [
+        "carrier",
+        "name",
+        "media_type",
+        "format",
+        "bytes",
+        "sha256"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "EditJournalPersistenceArtifact": {
+      "type": "object",
+      "properties": {
+        "carrier": {
+          "type": "string",
+          "const": "edit_journal"
+        },
+        "name": {
+          "type": "string",
+          "const": "state_artifact"
+        },
+        "media_type": {
+          "type": "string",
+          "const": "application/vnd.wavenumber.geometer.step-topology-edit-journal"
+        },
+        "format": {
+          "type": "string",
+          "const": "geometer.step_topology_edit_journal.a0"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 67108864
+        },
+        "sha256": {
+          "type": "string",
+          "minLength": 64,
+          "maxLength": 64
+        }
+      },
+      "required": [
+        "carrier",
+        "name",
+        "media_type",
+        "format",
+        "bytes",
+        "sha256"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    }
+  }
+}

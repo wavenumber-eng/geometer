@@ -1,0 +1,224 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:wavenumber:schema:geometer:geometry.step_topology.apply_hierarchy.result:a0",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "type": "string",
+      "const": "geometry.step_topology.apply_hierarchy.result.a0"
+    },
+    "state": {
+      "$ref": "#/$defs/MutationSessionState"
+    },
+    "hierarchy": {
+      "$ref": "#/$defs/HierarchyState"
+    },
+    "diagnostics": {
+      "type": "array",
+      "items": {
+        "$ref": "urn:wavenumber:schema:geometer:geometry.common.diagnostic:a0"
+      },
+      "maxItems": 256
+    }
+  },
+  "required": [
+    "schema",
+    "state",
+    "hierarchy",
+    "diagnostics"
+  ],
+  "unevaluatedProperties": {
+    "not": {}
+  },
+  "$defs": {
+    "MutationSessionState": {
+      "type": "object",
+      "properties": {
+        "session": {
+          "$ref": "#/$defs/SessionReference"
+        },
+        "edit_journal_revision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "accounted_string_bytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 16777216
+        },
+        "estimated_resident_bytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 536870912
+        }
+      },
+      "required": [
+        "session",
+        "edit_journal_revision",
+        "accounted_string_bytes",
+        "estimated_resident_bytes"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "HierarchyState": {
+      "type": "object",
+      "properties": {
+        "hierarchy_revision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        },
+        "source_brep_sha256": {
+          "type": "string",
+          "minLength": 64,
+          "maxLength": 64
+        },
+        "nodes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/HierarchyNode"
+          },
+          "maxItems": 10000
+        },
+        "occurrences": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/HierarchyOccurrence"
+          },
+          "maxItems": 100000
+        }
+      },
+      "required": [
+        "hierarchy_revision",
+        "source_brep_sha256",
+        "nodes",
+        "occurrences"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "SessionReference": {
+      "type": "object",
+      "properties": {
+        "session_handle": {
+          "type": "string",
+          "minLength": 68,
+          "maxLength": 68
+        },
+        "generation": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        }
+      },
+      "required": [
+        "session_handle",
+        "generation"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "HierarchyNode": {
+      "type": "object",
+      "properties": {
+        "authored_id": {
+          "type": "string",
+          "minLength": 28,
+          "maxLength": 128
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        },
+        "kind": {
+          "$ref": "#/$defs/HierarchyNodeKind"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "source_kind": {
+          "$ref": "#/$defs/HierarchySourceKind"
+        },
+        "source_handle": {
+          "type": "string",
+          "minLength": 68,
+          "maxLength": 68
+        }
+      },
+      "required": [
+        "authored_id",
+        "revision",
+        "kind",
+        "name"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "HierarchyOccurrence": {
+      "type": "object",
+      "properties": {
+        "authored_id": {
+          "type": "string",
+          "minLength": 28,
+          "maxLength": 128
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        },
+        "child_authored_id": {
+          "type": "string",
+          "minLength": 28,
+          "maxLength": 128
+        },
+        "parent_assembly_authored_id": {
+          "type": "string",
+          "minLength": 28,
+          "maxLength": 128
+        },
+        "transform": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 12,
+          "maxItems": 12
+        }
+      },
+      "required": [
+        "authored_id",
+        "revision",
+        "child_authored_id",
+        "parent_assembly_authored_id",
+        "transform"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "HierarchyNodeKind": {
+      "type": "string",
+      "enum": [
+        "product",
+        "assembly"
+      ]
+    },
+    "HierarchySourceKind": {
+      "type": "string",
+      "enum": [
+        "definition",
+        "body"
+      ]
+    }
+  }
+}

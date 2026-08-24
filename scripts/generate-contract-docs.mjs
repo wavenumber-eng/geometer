@@ -243,10 +243,14 @@ function renderOperationPage(operation, lifecycle, contractPages, digest) {
       : "";
   const availabilityCallout = operation.runtime_available
     ? '<aside class="callout"><strong>Additive generic operation.</strong> Raw model bytes travel as named attachments; JSON contains only the typed request and result structures.</aside>'
-    : '<aside class="callout"><strong>Structural research only.</strong> Generated DTOs and codecs exist, but this operation is not advertised or callable through a Geometer runtime transport.</aside>';
+    : operation.native_runtime_available
+      ? '<aside class="callout"><strong>Experimental native operation.</strong> Generated DTOs and codecs are callable through the native executable IPC runtime, but the operation remains absent from the portable C ABI and browser/WASM catalogs.</aside>'
+      : '<aside class="callout"><strong>Structural research only.</strong> Generated DTOs and codecs exist, but this operation is not advertised or callable through a Geometer runtime transport.</aside>';
   const transportSection = operation.runtime_available
     ? '<section><h2>Supported transport design</h2><div class="grid"><article class="panel"><h3>Native and browser/WASM</h3><p>Additive generic C ABI with explicit ownership and attachment arrays.</p></article><article class="panel"><h3>Executable IPC</h3><p>Binary-safe framed stdio A0 with generated JSON envelopes and raw attachments.</p></article></div></section>'
-    : '<section><h2>Transport status</h2><div class="panel"><p>Unavailable. A later adapter must implement and validate the native behavior before this operation may enter a runtime capability catalog.</p></div></section>';
+    : operation.native_runtime_available
+      ? '<section><h2>Experimental transport</h2><div class="panel"><p>Available only through binary-safe framed stdio A0 from the native Geometer executable. It is not a generic C ABI or browser/WASM capability.</p></div></section>'
+      : '<section><h2>Transport status</h2><div class="panel"><p>Unavailable. A later adapter must implement and validate the native behavior before this operation may enter a runtime capability catalog.</p></div></section>';
   return htmlDocument({
     title: `${operation.identity} operation — Geometer`,
     depth: 1,
@@ -255,7 +259,7 @@ function renderOperationPage(operation, lifecycle, contractPages, digest) {
     content: `<header><p class="page-type">Operation</p><h1><code>${escapeHtml(operation.identity)}</code></h1><p class="lede">${escapeHtml(operation.doc)}</p></header>
 <nav class="nav" aria-label="Operation navigation"><a href="../index.html">All contracts</a><a href="../${escapeAttribute(contractPages[operation.request_contract])}">Request contract</a><a href="../${escapeAttribute(contractPages[operation.result_contract])}">Result contract</a><a href="../../../design/generic-operation-c-abi.md">Generic C ABI</a><a href="../../../design/typescript-client.md">TypeScript client</a><a href="../../../design/executable-ipc-a0.md">Executable IPC A0</a></nav>
 ${availabilityCallout}
-<section><h2>Registry</h2><table><tbody><tr><th>Operation identity</th><td><code>${escapeHtml(operation.identity)}</code></td></tr><tr><th>Lifecycle</th><td><span class="status">${escapeHtml(lifecycle.status)}</span></td></tr><tr><th>Runtime available</th><td><code>${operation.runtime_available ? "true" : "false"}</code></td></tr><tr><th>Request</th><td><code>${escapeHtml(operation.request_contract)}</code></td></tr><tr><th>Result</th><td><code>${escapeHtml(operation.result_contract)}</code></td></tr></tbody></table></section>
+<section><h2>Registry</h2><table><tbody><tr><th>Operation identity</th><td><code>${escapeHtml(operation.identity)}</code></td></tr><tr><th>Lifecycle</th><td><span class="status">${escapeHtml(lifecycle.status)}</span></td></tr><tr><th>Portable runtime</th><td><code>${operation.runtime_available ? "true" : "false"}</code></td></tr><tr><th>Native executable runtime</th><td><code>${operation.native_runtime_available ? "true" : "false"}</code></td></tr><tr><th>Request</th><td><code>${escapeHtml(operation.request_contract)}</code></td></tr><tr><th>Result</th><td><code>${escapeHtml(operation.result_contract)}</code></td></tr></tbody></table></section>
 <section><h2>Attachments <span class="tag">${operation.input_attachments.length + operation.output_attachments.length}</span></h2><table><thead><tr><th>Direction</th><th>Name</th><th>Presence</th><th>Media types</th><th>Maximum bytes</th></tr></thead><tbody>${attachmentRows}</tbody></table></section>
 ${transportSection}${exampleSection}`,
   });

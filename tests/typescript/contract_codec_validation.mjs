@@ -5,24 +5,54 @@ import { fileURLToPath } from "node:url";
 import {
   decodeDiagnosticA0Json,
   decodeIpcHelloA0Json,
+  decodeIpcRequestA0Json,
   decodeIpcShutdownAckA0Json,
   decodeModelBoundsOptionsA0Json,
   decodeModelBoundsResultA0Json,
   decodeOperationOutcomeA0Json,
+  decodeStepTopologyAnalyzeRecoveryRequestA0Json,
+  decodeStepTopologyAnalyzeRecoveryResultA0Json,
+  decodeStepTopologyApplyHierarchyRequestA0Json,
+  decodeStepTopologyApplyHierarchyResultA0Json,
+  decodeStepTopologyApplyLogicalGroupsRequestA0Json,
+  decodeStepTopologyApplyLogicalGroupsResultA0Json,
+  decodeStepTopologyApplyMetadataProbesRequestA0Json,
+  decodeStepTopologyApplyMetadataProbesResultA0Json,
+  decodeStepTopologyCheckpointEditJournalRequestA0Json,
+  decodeStepTopologyCheckpointEditJournalResultA0Json,
   decodeStepTopologyInspectResultA0Json,
   decodeStepTopologyRenderResultA0Json,
   decodeStepTopologyResolveHitRequestA0Json,
   decodeStepTopologyResolveHitResultA0Json,
+  decodeStepTopologyRestoreRequestA0Json,
+  decodeStepTopologyRestoreResultA0Json,
+  decodeStepTopologySaveRequestA0Json,
+  decodeStepTopologySaveResultA0Json,
   encodeIpcReasonA0Json,
   encodeModelBoundsOptionsA0Json,
   encodeOperationOutcomeA0Json,
+  encodeStepTopologyApplyLogicalGroupsRequestA0Json,
   encodeStepTopologyResolveHitRequestA0Json,
 } from "../../dist/wasm/npm/geometer/generated/index.js";
 import {
+  operationCatalog,
   StepTopologyInspectionAccumulator,
+  validateIpcOutcomeOperationPair,
+  validateIpcRequestOperationPair,
+  validateStepTopologyCheckpointAttachment,
+  validateStepTopologyHierarchyCommands,
+  validateStepTopologyHierarchyResult,
   validateStepTopologyInspection,
+  validateStepTopologyLogicalGroupCommands,
+  validateStepTopologyLogicalGroupResult,
+  validateStepTopologyMetadataProbeCommands,
+  validateStepTopologyRecoveryRequest,
+  validateStepTopologyRecoveryResults,
   validateStepTopologyRenderAttachments,
   validateStepTopologyResolveHitContext,
+  validateStepTopologyRestoreAttachments,
+  validateStepTopologyRestoreResult,
+  validateStepTopologySaveAttachments,
 } from "../../dist/wasm/npm/geometer/index.js";
 
 const root = resolve(fileURLToPath(new URL("../..", import.meta.url)));
@@ -33,6 +63,29 @@ const decoders = {
   "geometry.model_bounds.a0": decodeModelBoundsResultA0Json,
   "geometry.model_bounds.options.a0": decodeModelBoundsOptionsA0Json,
   "geometer.operation.outcome.a0": decodeOperationOutcomeA0Json,
+  "geometer.ipc.request.a0": decodeIpcRequestA0Json,
+  "geometry.step_topology.apply_logical_groups.request.a0":
+    decodeStepTopologyApplyLogicalGroupsRequestA0Json,
+  "geometry.step_topology.apply_logical_groups.result.a0":
+    decodeStepTopologyApplyLogicalGroupsResultA0Json,
+  "geometry.step_topology.apply_metadata_probes.request.a0":
+    decodeStepTopologyApplyMetadataProbesRequestA0Json,
+  "geometry.step_topology.apply_metadata_probes.result.a0":
+    decodeStepTopologyApplyMetadataProbesResultA0Json,
+  "geometry.step_topology.checkpoint_edit_journal.request.a0":
+    decodeStepTopologyCheckpointEditJournalRequestA0Json,
+  "geometry.step_topology.checkpoint_edit_journal.result.a0":
+    decodeStepTopologyCheckpointEditJournalResultA0Json,
+  "geometry.step_topology.apply_hierarchy.request.a0":
+    decodeStepTopologyApplyHierarchyRequestA0Json,
+  "geometry.step_topology.apply_hierarchy.result.a0": decodeStepTopologyApplyHierarchyResultA0Json,
+  "geometry.step_topology.save.result.a0": decodeStepTopologySaveResultA0Json,
+  "geometry.step_topology.restore.request.a0": decodeStepTopologyRestoreRequestA0Json,
+  "geometry.step_topology.restore.result.a0": decodeStepTopologyRestoreResultA0Json,
+  "geometry.step_topology.analyze_recovery.request.a0":
+    decodeStepTopologyAnalyzeRecoveryRequestA0Json,
+  "geometry.step_topology.analyze_recovery.result.a0":
+    decodeStepTopologyAnalyzeRecoveryResultA0Json,
   "geometry.step_topology.inspect.result.a0": decodeStepTopologyInspectResultA0Json,
   "geometry.step_topology.render.result.a0": decodeStepTopologyRenderResultA0Json,
   "geometry.step_topology.resolve_hit.request.a0": decodeStepTopologyResolveHitRequestA0Json,
@@ -80,7 +133,89 @@ for (const vector of manifest.vectors) {
           accumulator.addPage(page);
         }
       } else if (vector.oracle === "step_topology_render_attachments") {
-        await validateStepTopologyRenderAttachments(
+        const attachments = await Promise.all(
+          vector.attachments.map(async (attachment) => ({
+            name: attachment.name,
+            mediaType: attachment.media_type,
+            data: await readFile(join(vectorRoot, attachment.file)),
+          })),
+        );
+        await validateStepTopologyRenderAttachments(decoded, attachments);
+        if (vector.expected === "accept") {
+          const tampered = attachments.map((attachment, index) => ({
+            ...attachment,
+            data:
+              index === 0
+                ? Uint8Array.from(attachment.data, (value, byteIndex) =>
+                    byteIndex === 0 ? value ^ 1 : value,
+                  )
+                : attachment.data,
+          }));
+          let tamperedAccepted = false;
+          try {
+            await validateStepTopologyRenderAttachments(decoded, tampered);
+            tamperedAccepted = true;
+          } catch {
+            // Expected: a visual artifact is authenticated before Three.js consumes it.
+          }
+          if (tamperedAccepted) throw new Error("Render validation accepted tampered GLB bytes.");
+        }
+      } else if (vector.oracle === "step_topology_logical_group_commands") {
+        validateStepTopologyLogicalGroupCommands(decoded);
+      } else if (vector.oracle === "step_topology_logical_group_commands_high_fan_in") {
+        const split = Math.floor(vector.fan_in / 2);
+        validateStepTopologyLogicalGroupCommands({
+          ...decoded,
+          commands: [
+            {
+              kind: "create",
+              authored_id: "wn.geometer.research.group.aggregate-a",
+              name: "Aggregate A",
+              member_handles: generatedTargetHandles(split),
+            },
+            {
+              kind: "create",
+              authored_id: "wn.geometer.research.group.aggregate-b",
+              name: "Aggregate B",
+              member_handles: generatedTargetHandles(vector.fan_in - split, split),
+            },
+          ],
+        });
+      } else if (vector.oracle === "step_topology_logical_group_result") {
+        validateStepTopologyLogicalGroupResult(decoded);
+      } else if (vector.oracle === "step_topology_logical_group_result_high_fan_in") {
+        const split = Math.floor(vector.fan_in / 2);
+        validateStepTopologyLogicalGroupResult({
+          ...decoded,
+          groups: [
+            {
+              ...decoded.groups[0],
+              authored_id: "wn.geometer.research.group.aggregate-a",
+              name: "Aggregate A",
+              members: generatedTargetHandles(split).map((target_handle) => ({
+                kind: "face",
+                target_handle,
+              })),
+            },
+            {
+              ...decoded.groups[0],
+              authored_id: "wn.geometer.research.group.aggregate-b",
+              name: "Aggregate B",
+              members: generatedTargetHandles(vector.fan_in - split, split).map(
+                (target_handle) => ({
+                  kind: "face",
+                  target_handle,
+                }),
+              ),
+            },
+          ],
+        });
+      } else if (vector.oracle === "step_topology_metadata_probe_result") {
+        validateStepTopologyLogicalGroupResult(decoded);
+      } else if (vector.oracle === "step_topology_metadata_probe_commands") {
+        validateStepTopologyMetadataProbeCommands(decoded);
+      } else if (vector.oracle === "step_topology_checkpoint_attachment") {
+        await validateStepTopologyCheckpointAttachment(
           decoded,
           await Promise.all(
             vector.attachments.map(async (attachment) => ({
@@ -90,6 +225,47 @@ for (const vector of manifest.vectors) {
             })),
           ),
         );
+      } else if (vector.oracle === "step_topology_hierarchy_commands") {
+        validateStepTopologyHierarchyCommands(decoded);
+      } else if (vector.oracle === "step_topology_hierarchy_result") {
+        validateStepTopologyHierarchyResult(decoded);
+      } else if (vector.oracle === "step_topology_recovery_request") {
+        validateStepTopologyRecoveryRequest(decoded.groups);
+      } else if (vector.oracle === "step_topology_recovery_result") {
+        validateStepTopologyRecoveryResults(decoded.groups);
+      } else if (vector.oracle === "step_topology_save_attachments") {
+        await validateStepTopologySaveAttachments(
+          decodeStepTopologySaveRequestA0Json(
+            await readFile(join(vectorRoot, vector.context_file)),
+          ),
+          decoded,
+          await loadAttachments(vector),
+        );
+      } else if (vector.oracle === "step_topology_restore_attachments") {
+        await validateStepTopologyRestoreAttachments(decoded, await loadAttachments(vector));
+      } else if (vector.oracle === "step_topology_restore_result") {
+        validateStepTopologyRestoreResult(
+          decodeStepTopologyRestoreRequestA0Json(
+            await readFile(join(vectorRoot, vector.context_file)),
+          ),
+          decoded,
+        );
+      } else if (vector.oracle === "step_topology_ipc_request_pair") {
+        validateIpcRequestOperationPair(decoded);
+      } else if (vector.oracle === "step_topology_ipc_result_pair") {
+        validateIpcOutcomeOperationPair(decoded);
+      } else if (vector.oracle === "step_topology_ipc_pair_matrix") {
+        validateIpcRequestOperationPair(decoded);
+        for (const [operation, contract] of vector.request_pairs) {
+          if (operationCatalog[operation]?.requestContract !== contract) {
+            throw new Error(`Request pair mismatch for ${operation}.`);
+          }
+        }
+        for (const [operation, contract] of vector.result_pairs) {
+          if (operationCatalog[operation]?.resultContract !== contract) {
+            throw new Error(`Result pair mismatch for ${operation}.`);
+          }
+        }
       }
     } catch (caught) {
       error = caught;
@@ -118,6 +294,17 @@ for (const vector of manifest.vectors) {
       throw new Error(`${vector.id}: generated TypeScript round-trip is not canonical.`);
     }
   }
+  if (
+    structurallyAccepted &&
+    vector.contract_identity === "geometry.step_topology.apply_logical_groups.request.a0"
+  ) {
+    const roundTrip = encodeStepTopologyApplyLogicalGroupsRequestA0Json(decoded);
+    if (roundTrip !== stored.toString("utf8").trimEnd()) {
+      throw new Error(
+        `${vector.id}: generated TypeScript group-command round-trip is not canonical.`,
+      );
+    }
+  }
 }
 
 function highFanInInspectionPages(seed, fanIn) {
@@ -127,11 +314,11 @@ function highFanInInspectionPages(seed, fanIn) {
     { length: fanIn },
     (_, index) => `gtt_${(index + 1).toString(16).padStart(64, "0")}`,
   );
-  return Array.from({ length: Math.ceil(fanIn / 1024) }, (_, pageIndex) => {
-    const offset = pageIndex * 1024;
+  const pages = [];
+  for (let offset = 0; offset < fanIn; offset += 1024) {
     const handles = bodyHandles.slice(offset, offset + 1024);
-    const terminal = offset + handles.length === fanIn;
-    return {
+    const finalBodyPage = offset + handles.length >= fanIn;
+    pages.push({
       schema: "geometry.step_topology.inspect.result.a0",
       session: seed.session,
       counts: {
@@ -141,6 +328,7 @@ function highFanInInspectionPages(seed, fanIn) {
         bodies: fanIn,
         shells: 1,
         faces: 0,
+        memberships: fanIn,
       },
       page: {
         definitions:
@@ -160,27 +348,59 @@ function highFanInInspectionPages(seed, fanIn) {
           handle,
           definition_handle: definitionHandle,
           topology_kind: "solid",
-          shell_handles: [shellHandle],
-          face_handles: [],
+          shell_count: 1,
+          face_count: 0,
           bounds_mm: [0, 0, 0, 1, 1, 1],
           volume_mm3: 1,
         })),
-        shells: terminal
+        shells: finalBodyPage
           ? [
               {
                 handle: shellHandle,
                 definition_handle: definitionHandle,
-                body_handles: bodyHandles,
-                face_handles: [],
+                body_count: fanIn,
+                face_count: 0,
               },
             ]
           : [],
         faces: [],
-        ...(terminal ? {} : { next_cursor: `body-${offset + handles.length}` }),
+        memberships: [],
+        next_cursor: `body-${offset + handles.length}`,
       },
       diagnostics: [],
-    };
-  });
+    });
+  }
+  for (let offset = 0; offset < fanIn; offset += 1024) {
+    const handles = bodyHandles.slice(offset, offset + 1024);
+    const terminal = offset + handles.length >= fanIn;
+    pages.push({
+      schema: "geometry.step_topology.inspect.result.a0",
+      session: seed.session,
+      counts: pages[0].counts,
+      page: {
+        definitions: [],
+        occurrences: [],
+        bodies: [],
+        shells: [],
+        faces: [],
+        memberships: handles.map((handle) => ({
+          kind: "body_shell",
+          owner_handle: handle,
+          member_handle: shellHandle,
+        })),
+        ...(terminal ? {} : { next_cursor: `membership-${offset + handles.length}` }),
+      },
+      diagnostics: [],
+    });
+  }
+  return pages;
+}
+
+function generatedTargetHandles(count, offset = 0) {
+  return Array.from(
+    { length: count },
+    (_, index) => `gtt_${(offset + index + 1).toString(16).padStart(64, "0")}`,
+  );
 }
 
 const topologyHit = decodeStepTopologyResolveHitRequestA0Json(
@@ -221,6 +441,16 @@ try {
   // Expected.
 }
 if (invalidUnicodeAccepted) throw new Error("Encoder accepted an unpaired surrogate.");
+
+async function loadAttachments(vector) {
+  return Promise.all(
+    vector.attachments.map(async (attachment) => ({
+      name: attachment.name,
+      mediaType: attachment.media_type,
+      data: await readFile(join(vectorRoot, attachment.file)),
+    })),
+  );
+}
 
 const hello = decodeIpcHelloA0Json(
   '{"client_name":"typescript-test","client_version":"a0","protocols":["a0"]}',
@@ -267,4 +497,4 @@ for (const [label, encode] of [
   if (sparseArrayAccepted) throw new Error(`Encoder accepted a sparse ${label}.`);
 }
 
-console.log(JSON.stringify({ vectors: manifest.vectors.length, generatedCodecs: 8 }));
+console.log(JSON.stringify({ vectors: manifest.vectors.length, generatedCodecs: 11 }));

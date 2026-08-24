@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="40ad574a40ea2e474d085d26263bf1ecbf3d76f6e14de8d795829e97389ae96b">
+  <title>geometry.step_topology.apply_hierarchy.request.a0 — Geometer</title>
+  <link rel="stylesheet" href="../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="40ad574a40ea2e474d085d26263bf1ecbf3d76f6e14de8d795829e97389ae96b" data-page-kind="contract" data-contract-identity="geometry.step_topology.apply_hierarchy.request.a0" data-promotion-status="experimental_candidate">
+<main>
+<header>
+  <p class="page-type">Contract root</p>
+  <h1><code>geometry.step_topology.apply_hierarchy.request.a0</code></h1>
+  <p class="lede"></p>
+</header>
+<nav class="nav" aria-label="Contract navigation"><a href="../index.html">All contracts</a><a href="../../../../contracts/geometer/generated/schema/StepTopologyApplyHierarchyRequestA0.json">JSON Schema</a><a href="../../../../src/tsp/geometer/main.tsp">TypeSpec entry point</a><a href="../../../design/contract-semantics.md">Compatibility policy</a></nav>
+<aside class="callout"><strong>Generated, not authored.</strong> Edit TypeSpec and regenerate. Lifecycle evidence remains in the promotion manifest.</aside>
+
+<section><h2>Identity</h2><table><tbody>
+<tr><th>Contract</th><td><code>geometry.step_topology.apply_hierarchy.request.a0</code></td></tr>
+<tr><th>Schema</th><td><code>urn:wavenumber:schema:geometer:geometry.step_topology.apply_hierarchy.request:a0</code></td></tr>
+<tr><th>Declaration</th><td><code>Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyApplyHierarchyRequestA0</code></td></tr>
+<tr><th>Lifecycle</th><td><span class="status">experimental_candidate</span></td></tr>
+<tr><th>Current authority</th><td><code>typespec_candidate</code></td></tr>
+</tbody></table></section>
+<section class="model-section"><h2>Declarations <span class="tag">11</span></h2><details open id="declaration-wavenumber-geometer-contracts-steptopologya0-steptopologyapplyhierarchyrequesta0"><summary><h2><code>StepTopologyApplyHierarchyRequestA0</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>schema</code></td><td>required</td><td><code>&quot;geometry.step_topology.apply_hierarchy.request.a0&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>session</code></td><td>required</td><td><code>SessionReference</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>expected_hierarchy_revision</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>commands</code></td><td>required</td><td><code>HierarchyCommand[]</code></td><td>—</td><td><code>min_items=1</code> <code>max_items=10000</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-steptopologya0-createhierarchyassemblycommand"><summary><h2><code>CreateHierarchyAssemblyCommand</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>kind</code></td><td>required</td><td><code>&quot;create_assembly&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>authored_id</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=28</code> <code>max_length=128</code></td><td></td></tr>
+<tr><td><code>name</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=1</code> <code>max_length=4096</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-steptopologya0-createhierarchyoccurrencecommand"><summary><h2><code>CreateHierarchyOccurrenceCommand</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>kind</code></td><td>required</td><td><code>&quot;create_occurrence&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>authored_id</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=28</code> <code>max_length=128</code></td><td></td></tr>
+<tr><td><code>child_authored_id</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=28</code> <code>max_length=128</code></td><td></td></tr>
+<tr><td><code>parent_assembly_authored_id</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=28</code> <code>max_length=128</code></td><td></td></tr>
+<tr><td><code>transform</code></td><td>required</td><td><code>float64[]</code></td><td>—</td><td><code>min_items=12</code> <code>max_items=12</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-steptopologya0-createhierarchyproductcommand"><summary><h2><code>CreateHierarchyProductCommand</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>kind</code></td><td>required</td><td><code>&quot;create_product&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>authored_id</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=28</code> <code>max_length=128</code></td><td></td></tr>
+<tr><td><code>name</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=1</code> <code>max_length=4096</code></td><td></td></tr>
+<tr><td><code>source_kind</code></td><td>required</td><td><code>HierarchySourceKind</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>source_handle</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=68</code> <code>max_length=68</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-steptopologya0-erasehierarchynodecommand"><summary><h2><code>EraseHierarchyNodeCommand</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>kind</code></td><td>required</td><td><code>&quot;erase_node&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>authored_id</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=28</code> <code>max_length=128</code></td><td></td></tr>
+<tr><td><code>expected_revision</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>min_value=1</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-steptopologya0-erasehierarchyoccurrencecommand"><summary><h2><code>EraseHierarchyOccurrenceCommand</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>kind</code></td><td>required</td><td><code>&quot;erase_occurrence&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>authored_id</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=28</code> <code>max_length=128</code></td><td></td></tr>
+<tr><td><code>expected_revision</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>min_value=1</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-steptopologya0-hierarchycommand"><summary><h2><code>HierarchyCommand</code> <span class="tag">union</span></h2></summary><p></p><ul><li><code>create_product</code>: <code>CreateHierarchyProductCommand</code></li><li><code>create_assembly</code>: <code>CreateHierarchyAssemblyCommand</code></li><li><code>create_occurrence</code>: <code>CreateHierarchyOccurrenceCommand</code></li><li><code>reparent_occurrence</code>: <code>ReparentHierarchyOccurrenceCommand</code></li><li><code>rename_node</code>: <code>RenameHierarchyNodeCommand</code></li><li><code>erase_occurrence</code>: <code>EraseHierarchyOccurrenceCommand</code></li><li><code>erase_node</code>: <code>EraseHierarchyNodeCommand</code></li></ul></details>
+<details open id="declaration-wavenumber-geometer-contracts-steptopologya0-hierarchysourcekind"><summary><h2><code>HierarchySourceKind</code> <span class="tag">enum</span></h2></summary><p></p><table><thead><tr><th>Member</th><th>Wire value</th><th>Description</th></tr></thead><tbody><tr><td><code>definition</code></td><td><code>definition</code></td><td></td></tr>
+<tr><td><code>body</code></td><td><code>body</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-steptopologya0-renamehierarchynodecommand"><summary><h2><code>RenameHierarchyNodeCommand</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>kind</code></td><td>required</td><td><code>&quot;rename_node&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>authored_id</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=28</code> <code>max_length=128</code></td><td></td></tr>
+<tr><td><code>expected_revision</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>min_value=1</code></td><td></td></tr>
+<tr><td><code>name</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=1</code> <code>max_length=4096</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-steptopologya0-reparenthierarchyoccurrencecommand"><summary><h2><code>ReparentHierarchyOccurrenceCommand</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>kind</code></td><td>required</td><td><code>&quot;reparent_occurrence&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>authored_id</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=28</code> <code>max_length=128</code></td><td></td></tr>
+<tr><td><code>expected_revision</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>min_value=1</code></td><td></td></tr>
+<tr><td><code>parent_assembly_authored_id</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=28</code> <code>max_length=128</code></td><td></td></tr>
+<tr><td><code>transform</code></td><td>required</td><td><code>float64[]</code></td><td>—</td><td><code>min_items=12</code> <code>max_items=12</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-steptopologya0-sessionreference"><summary><h2><code>SessionReference</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>session_handle</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=68</code> <code>max_length=68</code></td><td></td></tr>
+<tr><td><code>generation</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>min_value=1</code></td><td></td></tr></tbody></table></details></section>
+</main>
+</body>
+</html>

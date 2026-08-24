@@ -115,6 +115,76 @@
       "option_patch": false
     },
     {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyAnalyzeRecoveryRequestA0",
+      "contract_identity": "geometry.step_topology.analyze_recovery.request.a0",
+      "schema_id": "urn:wavenumber:schema:geometer:geometry.step_topology.analyze_recovery.request:a0",
+      "declaration_kind": "model",
+      "option_patch": false
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyAnalyzeRecoveryResultA0",
+      "contract_identity": "geometry.step_topology.analyze_recovery.result.a0",
+      "schema_id": "urn:wavenumber:schema:geometer:geometry.step_topology.analyze_recovery.result:a0",
+      "declaration_kind": "model",
+      "option_patch": false
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyApplyHierarchyRequestA0",
+      "contract_identity": "geometry.step_topology.apply_hierarchy.request.a0",
+      "schema_id": "urn:wavenumber:schema:geometer:geometry.step_topology.apply_hierarchy.request:a0",
+      "declaration_kind": "model",
+      "option_patch": false
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyApplyHierarchyResultA0",
+      "contract_identity": "geometry.step_topology.apply_hierarchy.result.a0",
+      "schema_id": "urn:wavenumber:schema:geometer:geometry.step_topology.apply_hierarchy.result:a0",
+      "declaration_kind": "model",
+      "option_patch": false
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyApplyLogicalGroupsRequestA0",
+      "contract_identity": "geometry.step_topology.apply_logical_groups.request.a0",
+      "schema_id": "urn:wavenumber:schema:geometer:geometry.step_topology.apply_logical_groups.request:a0",
+      "declaration_kind": "model",
+      "option_patch": false
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyApplyLogicalGroupsResultA0",
+      "contract_identity": "geometry.step_topology.apply_logical_groups.result.a0",
+      "schema_id": "urn:wavenumber:schema:geometer:geometry.step_topology.apply_logical_groups.result:a0",
+      "declaration_kind": "model",
+      "option_patch": false
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyApplyMetadataProbesRequestA0",
+      "contract_identity": "geometry.step_topology.apply_metadata_probes.request.a0",
+      "schema_id": "urn:wavenumber:schema:geometer:geometry.step_topology.apply_metadata_probes.request:a0",
+      "declaration_kind": "model",
+      "option_patch": false
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyApplyMetadataProbesResultA0",
+      "contract_identity": "geometry.step_topology.apply_metadata_probes.result.a0",
+      "schema_id": "urn:wavenumber:schema:geometer:geometry.step_topology.apply_metadata_probes.result:a0",
+      "declaration_kind": "model",
+      "option_patch": false
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyCheckpointEditJournalRequestA0",
+      "contract_identity": "geometry.step_topology.checkpoint_edit_journal.request.a0",
+      "schema_id": "urn:wavenumber:schema:geometer:geometry.step_topology.checkpoint_edit_journal.request:a0",
+      "declaration_kind": "model",
+      "option_patch": false
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyCheckpointEditJournalResultA0",
+      "contract_identity": "geometry.step_topology.checkpoint_edit_journal.result.a0",
+      "schema_id": "urn:wavenumber:schema:geometer:geometry.step_topology.checkpoint_edit_journal.result:a0",
+      "declaration_kind": "model",
+      "option_patch": false
+    },
+    {
       "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyCloseRequestA0",
       "contract_identity": "geometry.step_topology.close.request.a0",
       "schema_id": "urn:wavenumber:schema:geometer:geometry.step_topology.close.request:a0",
@@ -181,6 +251,34 @@
       "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyResolveHitResultA0",
       "contract_identity": "geometry.step_topology.resolve_hit.result.a0",
       "schema_id": "urn:wavenumber:schema:geometer:geometry.step_topology.resolve_hit.result:a0",
+      "declaration_kind": "model",
+      "option_patch": false
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyRestoreRequestA0",
+      "contract_identity": "geometry.step_topology.restore.request.a0",
+      "schema_id": "urn:wavenumber:schema:geometer:geometry.step_topology.restore.request:a0",
+      "declaration_kind": "model",
+      "option_patch": false
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyRestoreResultA0",
+      "contract_identity": "geometry.step_topology.restore.result.a0",
+      "schema_id": "urn:wavenumber:schema:geometer:geometry.step_topology.restore.result:a0",
+      "declaration_kind": "model",
+      "option_patch": false
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologySaveRequestA0",
+      "contract_identity": "geometry.step_topology.save.request.a0",
+      "schema_id": "urn:wavenumber:schema:geometer:geometry.step_topology.save.request:a0",
+      "declaration_kind": "model",
+      "option_patch": false
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologySaveResultA0",
+      "contract_identity": "geometry.step_topology.save.result.a0",
+      "schema_id": "urn:wavenumber:schema:geometer:geometry.step_topology.save.result:a0",
       "declaration_kind": "model",
       "option_patch": false
     }
@@ -4406,7 +4504,7 @@
     {
       "name": "Wavenumber.Geometer.Contracts.IpcA0.IpcRequestValueA0",
       "kind": "union",
-      "doc": "Strict generic request envelope for executable IPC A0.",
+      "doc": "Structurally representable request payloads for executable IPC A0.\nA variant is callable only when the negotiated runtime catalog advertises\nits operation; structural presence does not imply runtime availability.",
       "annotations": {},
       "constraints": {},
       "composition": "one_of",
@@ -4425,6 +4523,114 @@
           "type": {
             "kind": "reference",
             "target": "Wavenumber.Geometer.Contracts.Common.PackedAttachmentProjectionA0"
+          },
+          "doc": "",
+          "annotations": {}
+        },
+        {
+          "name": "step_topology_open",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyOpenRequestA0"
+          },
+          "doc": "",
+          "annotations": {}
+        },
+        {
+          "name": "step_topology_close",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyCloseRequestA0"
+          },
+          "doc": "",
+          "annotations": {}
+        },
+        {
+          "name": "step_topology_inspect",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyInspectRequestA0"
+          },
+          "doc": "",
+          "annotations": {}
+        },
+        {
+          "name": "step_topology_render",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyRenderRequestA0"
+          },
+          "doc": "",
+          "annotations": {}
+        },
+        {
+          "name": "step_topology_resolve_hit",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyResolveHitRequestA0"
+          },
+          "doc": "",
+          "annotations": {}
+        },
+        {
+          "name": "step_topology_apply_logical_groups",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyApplyLogicalGroupsRequestA0"
+          },
+          "doc": "",
+          "annotations": {}
+        },
+        {
+          "name": "step_topology_apply_metadata_probes",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyApplyMetadataProbesRequestA0"
+          },
+          "doc": "",
+          "annotations": {}
+        },
+        {
+          "name": "step_topology_checkpoint_edit_journal",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyCheckpointEditJournalRequestA0"
+          },
+          "doc": "",
+          "annotations": {}
+        },
+        {
+          "name": "step_topology_apply_hierarchy",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyApplyHierarchyRequestA0"
+          },
+          "doc": "",
+          "annotations": {}
+        },
+        {
+          "name": "step_topology_save",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologySaveRequestA0"
+          },
+          "doc": "",
+          "annotations": {}
+        },
+        {
+          "name": "step_topology_restore",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyRestoreRequestA0"
+          },
+          "doc": "",
+          "annotations": {}
+        },
+        {
+          "name": "step_topology_analyze_recovery",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyAnalyzeRecoveryRequestA0"
           },
           "doc": "",
           "annotations": {}
@@ -4964,7 +5170,7 @@
     {
       "name": "Wavenumber.Geometer.Contracts.OperationOutcomeA0.OperationResultValueA0",
       "kind": "union",
-      "doc": "Results currently available through the generic operation transport.",
+      "doc": "Structurally representable operation results. A result variant may belong\nto a runtime-unavailable experimental operation and is not an availability\nclaim; the negotiated operation catalog remains authoritative.",
       "annotations": {},
       "constraints": {},
       "composition": "one_of",
@@ -4983,6 +5189,114 @@
           "type": {
             "kind": "reference",
             "target": "Wavenumber.Geometer.Contracts.Common.PackedAttachmentProjectionA0"
+          },
+          "doc": "",
+          "annotations": {}
+        },
+        {
+          "name": "step_topology_open",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyOpenResultA0"
+          },
+          "doc": "",
+          "annotations": {}
+        },
+        {
+          "name": "step_topology_close",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyCloseResultA0"
+          },
+          "doc": "",
+          "annotations": {}
+        },
+        {
+          "name": "step_topology_inspect",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyInspectResultA0"
+          },
+          "doc": "",
+          "annotations": {}
+        },
+        {
+          "name": "step_topology_render",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyRenderResultA0"
+          },
+          "doc": "",
+          "annotations": {}
+        },
+        {
+          "name": "step_topology_resolve_hit",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyResolveHitResultA0"
+          },
+          "doc": "",
+          "annotations": {}
+        },
+        {
+          "name": "step_topology_apply_logical_groups",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyApplyLogicalGroupsResultA0"
+          },
+          "doc": "",
+          "annotations": {}
+        },
+        {
+          "name": "step_topology_apply_metadata_probes",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyApplyMetadataProbesResultA0"
+          },
+          "doc": "",
+          "annotations": {}
+        },
+        {
+          "name": "step_topology_checkpoint_edit_journal",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyCheckpointEditJournalResultA0"
+          },
+          "doc": "",
+          "annotations": {}
+        },
+        {
+          "name": "step_topology_apply_hierarchy",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyApplyHierarchyResultA0"
+          },
+          "doc": "",
+          "annotations": {}
+        },
+        {
+          "name": "step_topology_save",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologySaveResultA0"
+          },
+          "doc": "",
+          "annotations": {}
+        },
+        {
+          "name": "step_topology_restore",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyRestoreResultA0"
+          },
+          "doc": "",
+          "annotations": {}
+        },
+        {
+          "name": "step_topology_analyze_recovery",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyAnalyzeRecoveryResultA0"
           },
           "doc": "",
           "annotations": {}
@@ -5039,6 +5353,121 @@
       ]
     },
     {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.AttachMetadataProbeCommand",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "kind",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "attach"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "authored_id",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 28,
+            "max_length": 128
+          }
+        },
+        {
+          "name": "target",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.MetadataProbeTarget"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "key",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 32,
+            "max_length": 128
+          }
+        },
+        {
+          "name": "value",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 1,
+            "max_length": 4096
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.BodyProbeTarget",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "kind",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "body"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "target_handle",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 68,
+            "max_length": 68
+          }
+        }
+      ]
+    },
+    {
       "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.BodySummary",
       "kind": "model",
       "doc": "",
@@ -5091,35 +5520,29 @@
           }
         },
         {
-          "name": "shell_handles",
+          "name": "shell_count",
           "optional": false,
           "doc": "",
           "type": {
-            "kind": "array",
-            "element": {
-              "kind": "primitive",
-              "name": "string"
-            }
+            "kind": "primitive",
+            "name": "uint32"
           },
           "annotations": {},
           "constraints": {
-            "max_items": 250000
+            "max_value": 250000
           }
         },
         {
-          "name": "face_handles",
+          "name": "face_count",
           "optional": false,
           "doc": "",
           "type": {
-            "kind": "array",
-            "element": {
-              "kind": "primitive",
-              "name": "string"
-            }
+            "kind": "primitive",
+            "name": "uint32"
           },
           "annotations": {},
           "constraints": {
-            "max_items": 1000000
+            "max_value": 1000000
           }
         },
         {
@@ -5162,6 +5585,177 @@
           },
           "annotations": {},
           "constraints": {}
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.CarrierCapability",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "carrier",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.PersistenceCarrier"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "save",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.CarrierSupportState"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "restore",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.CarrierSupportState"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "authored_payload",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.CarrierSupportState"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "topology_links",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.CarrierSupportState"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "notes",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "reference",
+              "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.CarrierCapabilityNote"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "max_items": 16
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.CarrierCapabilityNote",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "value",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 1,
+            "max_length": 256
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.CarrierSupportState",
+      "kind": "enum",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "members": [
+        {
+          "name": "supported",
+          "value": "supported",
+          "doc": ""
+        },
+        {
+          "name": "experimental",
+          "value": "experimental",
+          "doc": ""
+        },
+        {
+          "name": "unsupported",
+          "value": "unsupported",
+          "doc": ""
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.ComponentOccurrenceProbeTarget",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "kind",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "occurrence"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "target_handle",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 68,
+            "max_length": 68
+          }
         }
       ]
     },
@@ -5276,6 +5870,325 @@
       ]
     },
     {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.CreateHierarchyAssemblyCommand",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "kind",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "create_assembly"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "authored_id",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 28,
+            "max_length": 128
+          }
+        },
+        {
+          "name": "name",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 1,
+            "max_length": 4096
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.CreateHierarchyOccurrenceCommand",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "kind",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "create_occurrence"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "authored_id",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 28,
+            "max_length": 128
+          }
+        },
+        {
+          "name": "child_authored_id",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 28,
+            "max_length": 128
+          }
+        },
+        {
+          "name": "parent_assembly_authored_id",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 28,
+            "max_length": 128
+          }
+        },
+        {
+          "name": "transform",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "primitive",
+              "name": "float64"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "min_items": 12,
+            "max_items": 12
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.CreateHierarchyProductCommand",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "kind",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "create_product"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "authored_id",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 28,
+            "max_length": 128
+          }
+        },
+        {
+          "name": "name",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 1,
+            "max_length": 4096
+          }
+        },
+        {
+          "name": "source_kind",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.HierarchySourceKind"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "source_handle",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 68,
+            "max_length": 68
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.CreateLogicalGroupCommand",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "kind",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "create"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "authored_id",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 28,
+            "max_length": 128
+          }
+        },
+        {
+          "name": "name",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 1,
+            "max_length": 4096
+          }
+        },
+        {
+          "name": "member_handles",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "primitive",
+              "name": "string"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "min_items": 1,
+            "max_items": 100000
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.DefinitionProbeTarget",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "kind",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "definition"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "target_handle",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 68,
+            "max_length": 68
+          }
+        }
+      ]
+    },
+    {
       "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.DefinitionSummary",
       "kind": "model",
       "doc": "",
@@ -5363,6 +6276,517 @@
       ]
     },
     {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.DocumentProbeTarget",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "kind",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "document"
+          },
+          "annotations": {},
+          "constraints": {}
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.EditJournalAttachmentDescriptor",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "name",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "edit_journal"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "media_type",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "application/vnd.wavenumber.geometer.step-topology-edit-journal"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "format",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "geometer.step_topology_edit_journal.a0"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "bytes",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_value": 1,
+            "max_value": 67108864
+          }
+        },
+        {
+          "name": "sha256",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 64,
+            "max_length": 64
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.EditJournalPersistenceArtifact",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "carrier",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "edit_journal"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "name",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "state_artifact"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "media_type",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "application/vnd.wavenumber.geometer.step-topology-edit-journal"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "format",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "geometer.step_topology_edit_journal.a0"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "bytes",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_value": 1,
+            "max_value": 67108864
+          }
+        },
+        {
+          "name": "sha256",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 64,
+            "max_length": 64
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.EditJournalReplayPreconditions",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "source_sha256",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 64,
+            "max_length": 64
+          }
+        },
+        {
+          "name": "source_brep_sha256",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 64,
+            "max_length": 64
+          }
+        },
+        {
+          "name": "target_inventory_sha256",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 64,
+            "max_length": 64
+          }
+        },
+        {
+          "name": "occt_version",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 1,
+            "max_length": 64
+          }
+        },
+        {
+          "name": "transaction_count",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "max_value": 100000
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.EraseHierarchyNodeCommand",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "kind",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "erase_node"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "authored_id",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 28,
+            "max_length": 128
+          }
+        },
+        {
+          "name": "expected_revision",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_value": 1
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.EraseHierarchyOccurrenceCommand",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "kind",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "erase_occurrence"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "authored_id",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 28,
+            "max_length": 128
+          }
+        },
+        {
+          "name": "expected_revision",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_value": 1
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.EraseLogicalGroupCommand",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "kind",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "erase"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "authored_id",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 28,
+            "max_length": 128
+          }
+        },
+        {
+          "name": "expected_revision",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_value": 1
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.EraseMetadataProbeCommand",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "kind",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "erase"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "authored_id",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 28,
+            "max_length": 128
+          }
+        },
+        {
+          "name": "expected_revision",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_value": 1
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.FaceProbeTarget",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "kind",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "face"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "target_handle",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 68,
+            "max_length": 68
+          }
+        }
+      ]
+    },
+    {
       "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.FaceSummary",
       "kind": "model",
       "doc": "",
@@ -5401,35 +6825,29 @@
           }
         },
         {
-          "name": "body_handles",
+          "name": "body_count",
           "optional": false,
           "doc": "",
           "type": {
-            "kind": "array",
-            "element": {
-              "kind": "primitive",
-              "name": "string"
-            }
+            "kind": "primitive",
+            "name": "uint32"
           },
           "annotations": {},
           "constraints": {
-            "max_items": 100000
+            "max_value": 100000
           }
         },
         {
-          "name": "shell_handles",
+          "name": "shell_count",
           "optional": false,
           "doc": "",
           "type": {
-            "kind": "array",
-            "element": {
-              "kind": "primitive",
-              "name": "string"
-            }
+            "kind": "primitive",
+            "name": "uint32"
           },
           "annotations": {},
           "constraints": {
-            "max_items": 250000
+            "max_value": 250000
           }
         },
         {
@@ -5569,6 +6987,359 @@
       ]
     },
     {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.HierarchyCommand",
+      "kind": "union",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "composition": "one_of",
+      "variants": [
+        {
+          "name": "create_product",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.CreateHierarchyProductCommand"
+          },
+          "doc": "",
+          "annotations": {}
+        },
+        {
+          "name": "create_assembly",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.CreateHierarchyAssemblyCommand"
+          },
+          "doc": "",
+          "annotations": {}
+        },
+        {
+          "name": "create_occurrence",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.CreateHierarchyOccurrenceCommand"
+          },
+          "doc": "",
+          "annotations": {}
+        },
+        {
+          "name": "reparent_occurrence",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.ReparentHierarchyOccurrenceCommand"
+          },
+          "doc": "",
+          "annotations": {}
+        },
+        {
+          "name": "rename_node",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.RenameHierarchyNodeCommand"
+          },
+          "doc": "",
+          "annotations": {}
+        },
+        {
+          "name": "erase_occurrence",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.EraseHierarchyOccurrenceCommand"
+          },
+          "doc": "",
+          "annotations": {}
+        },
+        {
+          "name": "erase_node",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.EraseHierarchyNodeCommand"
+          },
+          "doc": "",
+          "annotations": {}
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.HierarchyNode",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "authored_id",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 28,
+            "max_length": 128
+          }
+        },
+        {
+          "name": "revision",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_value": 1
+          }
+        },
+        {
+          "name": "kind",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.HierarchyNodeKind"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "name",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 1,
+            "max_length": 4096
+          }
+        },
+        {
+          "name": "source_kind",
+          "optional": true,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.HierarchySourceKind"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "source_handle",
+          "optional": true,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 68,
+            "max_length": 68
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.HierarchyNodeKind",
+      "kind": "enum",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "members": [
+        {
+          "name": "product",
+          "value": "product",
+          "doc": ""
+        },
+        {
+          "name": "assembly",
+          "value": "assembly",
+          "doc": ""
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.HierarchyOccurrence",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "authored_id",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 28,
+            "max_length": 128
+          }
+        },
+        {
+          "name": "revision",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_value": 1
+          }
+        },
+        {
+          "name": "child_authored_id",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 28,
+            "max_length": 128
+          }
+        },
+        {
+          "name": "parent_assembly_authored_id",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 28,
+            "max_length": 128
+          }
+        },
+        {
+          "name": "transform",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "primitive",
+              "name": "float64"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "min_items": 12,
+            "max_items": 12
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.HierarchySourceKind",
+      "kind": "enum",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "members": [
+        {
+          "name": "definition",
+          "value": "definition",
+          "doc": ""
+        },
+        {
+          "name": "body",
+          "value": "body",
+          "doc": ""
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.HierarchyState",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "hierarchy_revision",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "source_brep_sha256",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 64,
+            "max_length": 64
+          }
+        },
+        {
+          "name": "nodes",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "reference",
+              "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.HierarchyNode"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "max_items": 10000
+          }
+        },
+        {
+          "name": "occurrences",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "reference",
+              "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.HierarchyOccurrence"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "max_items": 100000
+          }
+        }
+      ]
+    },
+    {
       "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.InspectionCounts",
       "kind": "model",
       "doc": "",
@@ -5655,6 +7426,567 @@
           "constraints": {
             "max_value": 1000000
           }
+        },
+        {
+          "name": "memberships",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "max_value": 5000000
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.JsonSidecarPersistenceArtifact",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "carrier",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "json_sidecar"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "name",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "state_artifact"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "media_type",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "application/vnd.wavenumber.geometer.step-topology-sidecar+json"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "format",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "geometer.step_topology_sidecar.a0"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "bytes",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_value": 1,
+            "max_value": 67108864
+          }
+        },
+        {
+          "name": "sha256",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 64,
+            "max_length": 64
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.LogicalGroup",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "authored_id",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 28,
+            "max_length": 128
+          }
+        },
+        {
+          "name": "revision",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_value": 1
+          }
+        },
+        {
+          "name": "name",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 1,
+            "max_length": 4096
+          }
+        },
+        {
+          "name": "members",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "reference",
+              "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.LogicalGroupMember"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "min_items": 1,
+            "max_items": 100000
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.LogicalGroupCommand",
+      "kind": "union",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "composition": "one_of",
+      "variants": [
+        {
+          "name": "create",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.CreateLogicalGroupCommand"
+          },
+          "doc": "",
+          "annotations": {}
+        },
+        {
+          "name": "rename",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.RenameLogicalGroupCommand"
+          },
+          "doc": "",
+          "annotations": {}
+        },
+        {
+          "name": "replace_members",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.ReplaceLogicalGroupMembersCommand"
+          },
+          "doc": "",
+          "annotations": {}
+        },
+        {
+          "name": "erase",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.EraseLogicalGroupCommand"
+          },
+          "doc": "",
+          "annotations": {}
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.LogicalGroupMember",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "kind",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.LogicalGroupMemberKind"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "target_handle",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 68,
+            "max_length": 68
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.LogicalGroupMemberKind",
+      "kind": "enum",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "members": [
+        {
+          "name": "body",
+          "value": "body",
+          "doc": ""
+        },
+        {
+          "name": "face",
+          "value": "face",
+          "doc": ""
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.LogicalGroupProbeTarget",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "kind",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "logical_group"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "group_authored_id",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 28,
+            "max_length": 128
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.MetadataProbe",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "authored_id",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 28,
+            "max_length": 128
+          }
+        },
+        {
+          "name": "revision",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_value": 1
+          }
+        },
+        {
+          "name": "target",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.MetadataProbeTarget"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "key",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 32,
+            "max_length": 128
+          }
+        },
+        {
+          "name": "value",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 1,
+            "max_length": 4096
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.MetadataProbeCommand",
+      "kind": "union",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "composition": "one_of",
+      "variants": [
+        {
+          "name": "attach",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.AttachMetadataProbeCommand"
+          },
+          "doc": "",
+          "annotations": {}
+        },
+        {
+          "name": "replace",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.ReplaceMetadataProbeCommand"
+          },
+          "doc": "",
+          "annotations": {}
+        },
+        {
+          "name": "erase",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.EraseMetadataProbeCommand"
+          },
+          "doc": "",
+          "annotations": {}
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.MetadataProbeTarget",
+      "kind": "union",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "composition": "one_of",
+      "variants": [
+        {
+          "name": "document",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.DocumentProbeTarget"
+          },
+          "doc": "",
+          "annotations": {}
+        },
+        {
+          "name": "definition",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.DefinitionProbeTarget"
+          },
+          "doc": "",
+          "annotations": {}
+        },
+        {
+          "name": "root_occurrence",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.RootOccurrenceProbeTarget"
+          },
+          "doc": "",
+          "annotations": {}
+        },
+        {
+          "name": "occurrence",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.ComponentOccurrenceProbeTarget"
+          },
+          "doc": "",
+          "annotations": {}
+        },
+        {
+          "name": "body",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.BodyProbeTarget"
+          },
+          "doc": "",
+          "annotations": {}
+        },
+        {
+          "name": "face",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.FaceProbeTarget"
+          },
+          "doc": "",
+          "annotations": {}
+        },
+        {
+          "name": "logical_group",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.LogicalGroupProbeTarget"
+          },
+          "doc": "",
+          "annotations": {}
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.MutationSessionState",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "session",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.SessionReference"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "edit_journal_revision",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "max_value": 100000
+          }
+        },
+        {
+          "name": "accounted_string_bytes",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "max_value": 16777216
+          }
+        },
+        {
+          "name": "estimated_resident_bytes",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "max_value": 536870912
+          }
         }
       ]
     },
@@ -5721,6 +8053,1408 @@
           "constraints": {
             "min_value": 1,
             "max_value": 1024
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.PersistenceCarrier",
+      "kind": "enum",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "members": [
+        {
+          "name": "xbf",
+          "value": "xbf",
+          "doc": ""
+        },
+        {
+          "name": "xml_xcaf",
+          "value": "xml_xcaf",
+          "doc": ""
+        },
+        {
+          "name": "step_ap242",
+          "value": "step_ap242",
+          "doc": ""
+        },
+        {
+          "name": "json_sidecar",
+          "value": "json_sidecar",
+          "doc": ""
+        },
+        {
+          "name": "edit_journal",
+          "value": "edit_journal",
+          "doc": ""
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.RecoveryCandidate",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "target_handle",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 68,
+            "max_length": 68
+          }
+        },
+        {
+          "name": "kind",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.LogicalGroupMemberKind"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "authored_target_id",
+          "optional": true,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 28,
+            "max_length": 128
+          }
+        },
+        {
+          "name": "topology_link_verified",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "boolean"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "carrier_locator",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "max_length": 4096
+          }
+        },
+        {
+          "name": "carrier_locator_validated",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "boolean"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "carrier_record",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "max_length": 4096
+          }
+        },
+        {
+          "name": "lineage",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.RecoveryLineage"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "fingerprint",
+          "optional": true,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.RecoveryFingerprint"
+          },
+          "annotations": {},
+          "constraints": {}
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.RecoveryCarrierRecord",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "value",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 1,
+            "max_length": 4096
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.RecoveryComparedField",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "value",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 1,
+            "max_length": 128
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.RecoveryConfidence",
+      "kind": "enum",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "members": [
+        {
+          "name": "high",
+          "value": "high",
+          "doc": ""
+        },
+        {
+          "name": "medium",
+          "value": "medium",
+          "doc": ""
+        },
+        {
+          "name": "low",
+          "value": "low",
+          "doc": ""
+        },
+        {
+          "name": "none",
+          "value": "none",
+          "doc": ""
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.RecoveryEvidence",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "candidate_count",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "max_value": 16
+          }
+        },
+        {
+          "name": "matching_candidate_count",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "max_value": 16
+          }
+        },
+        {
+          "name": "compared_fields",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "reference",
+              "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.RecoveryComparedField"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "max_items": 16
+          }
+        },
+        {
+          "name": "tolerances",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.RecoveryTolerances"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "carrier_records",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "reference",
+              "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.RecoveryCarrierRecord"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "max_items": 16
+          }
+        },
+        {
+          "name": "rejected_alternatives",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "reference",
+              "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.RecoveryRejectedAlternative"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "max_items": 16
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.RecoveryFingerprint",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "normalized_length_unit",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "millimeter"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "coordinate_frame",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 1,
+            "max_length": 128
+          }
+        },
+        {
+          "name": "occurrence_context",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 1,
+            "max_length": 128
+          }
+        },
+        {
+          "name": "geometry_kind",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 1,
+            "max_length": 128
+          }
+        },
+        {
+          "name": "area_mm2",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "float64"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_value": 0
+          }
+        },
+        {
+          "name": "volume_mm3",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "float64"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_value": 0
+          }
+        },
+        {
+          "name": "centroid_mm",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "primitive",
+              "name": "float64"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "min_items": 3,
+            "max_items": 3
+          }
+        },
+        {
+          "name": "bounds_mm",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "primitive",
+              "name": "float64"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "min_items": 6,
+            "max_items": 6
+          }
+        },
+        {
+          "name": "adjacency_sha256",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 64,
+            "max_length": 64
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.RecoveryGroupCompleteness",
+      "kind": "enum",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "members": [
+        {
+          "name": "fully_recovered",
+          "value": "fully_recovered",
+          "doc": ""
+        },
+        {
+          "name": "partially_recovered",
+          "value": "partially_recovered",
+          "doc": ""
+        },
+        {
+          "name": "unrecovered",
+          "value": "unrecovered",
+          "doc": ""
+        },
+        {
+          "name": "unsupported",
+          "value": "unsupported",
+          "doc": ""
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.RecoveryGroupRequest",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "group_authored_id",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 28,
+            "max_length": 128
+          }
+        },
+        {
+          "name": "provenance",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.RecoveryProvenance"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "tolerances",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.RecoveryTolerances"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "members",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "reference",
+              "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.RecoveryMemberRequest"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "min_items": 1,
+            "max_items": 256
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.RecoveryGroupResult",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "group_authored_id",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 28,
+            "max_length": 128
+          }
+        },
+        {
+          "name": "provenance",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.RecoveryProvenance"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "resolution_state",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.RecoveryResolutionState"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "completeness",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.RecoveryGroupCompleteness"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "resolved_member_count",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "max_value": 256
+          }
+        },
+        {
+          "name": "ambiguous_member_count",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "max_value": 256
+          }
+        },
+        {
+          "name": "unresolved_member_count",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "max_value": 256
+          }
+        },
+        {
+          "name": "unsupported_member_count",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "max_value": 256
+          }
+        },
+        {
+          "name": "members",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "reference",
+              "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.RecoveryMemberResult"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "min_items": 1,
+            "max_items": 256
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.RecoveryLineage",
+      "kind": "enum",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "members": [
+        {
+          "name": "none",
+          "value": "none",
+          "doc": ""
+        },
+        {
+          "name": "split_from_source",
+          "value": "split_from_source",
+          "doc": ""
+        },
+        {
+          "name": "merged_from_sources",
+          "value": "merged_from_sources",
+          "doc": ""
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.RecoveryMemberRequest",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "member_record_id",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 28,
+            "max_length": 128
+          }
+        },
+        {
+          "name": "kind",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.LogicalGroupMemberKind"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "authored_target_id",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "max_length": 128
+          }
+        },
+        {
+          "name": "carrier_locator",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "max_length": 4096
+          }
+        },
+        {
+          "name": "source_fingerprint",
+          "optional": true,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.RecoveryFingerprint"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "candidates",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "reference",
+              "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.RecoveryCandidate"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "max_items": 16
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.RecoveryMemberResult",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "member_record_id",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 28,
+            "max_length": 128
+          }
+        },
+        {
+          "name": "kind",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.LogicalGroupMemberKind"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "authored_target_id",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "max_length": 128
+          }
+        },
+        {
+          "name": "resolution_state",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.RecoveryResolutionState"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "resolution_method",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.RecoveryResolutionMethod"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "topology_comparison",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.RecoveryTopologyComparison"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "confidence",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.RecoveryConfidence"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "resolved_target_handle",
+          "optional": true,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 68,
+            "max_length": 68
+          }
+        },
+        {
+          "name": "evidence",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.RecoveryEvidence"
+          },
+          "annotations": {},
+          "constraints": {}
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.RecoveryProvenance",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "source_artifact_sha256",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 64,
+            "max_length": 64
+          }
+        },
+        {
+          "name": "candidate_artifact_sha256",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 64,
+            "max_length": 64
+          }
+        },
+        {
+          "name": "source_occt_version",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 1,
+            "max_length": 64
+          }
+        },
+        {
+          "name": "candidate_occt_version",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 1,
+            "max_length": 64
+          }
+        },
+        {
+          "name": "source_driver",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 1,
+            "max_length": 128
+          }
+        },
+        {
+          "name": "candidate_driver",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 1,
+            "max_length": 128
+          }
+        },
+        {
+          "name": "source_writer_settings",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 1,
+            "max_length": 4096
+          }
+        },
+        {
+          "name": "candidate_writer_settings",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 1,
+            "max_length": 4096
+          }
+        },
+        {
+          "name": "command_provenance",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 1,
+            "max_length": 8192
+          }
+        },
+        {
+          "name": "measured_wall_time_milliseconds",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "float64"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_value": 0
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.RecoveryRejectedAlternative",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "target_handle",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 68,
+            "max_length": 68
+          }
+        },
+        {
+          "name": "reason",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 1,
+            "max_length": 4096
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.RecoveryResolutionMethod",
+      "kind": "enum",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "members": [
+        {
+          "name": "authored_id_topology_link",
+          "value": "authored_id_topology_link",
+          "doc": ""
+        },
+        {
+          "name": "validated_carrier_locator",
+          "value": "validated_carrier_locator",
+          "doc": ""
+        },
+        {
+          "name": "unique_geometry_adjacency_fingerprint",
+          "value": "unique_geometry_adjacency_fingerprint",
+          "doc": ""
+        },
+        {
+          "name": "none",
+          "value": "none",
+          "doc": ""
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.RecoveryResolutionState",
+      "kind": "enum",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "members": [
+        {
+          "name": "resolved",
+          "value": "resolved",
+          "doc": ""
+        },
+        {
+          "name": "ambiguous",
+          "value": "ambiguous",
+          "doc": ""
+        },
+        {
+          "name": "unresolved",
+          "value": "unresolved",
+          "doc": ""
+        },
+        {
+          "name": "unsupported",
+          "value": "unsupported",
+          "doc": ""
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.RecoveryTolerances",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "length_mm",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "float64"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_value": 1e-9
+          }
+        },
+        {
+          "name": "area_mm2",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "float64"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_value": 1e-9
+          }
+        },
+        {
+          "name": "volume_mm3",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "float64"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_value": 1e-9
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.RecoveryTopologyComparison",
+      "kind": "enum",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "members": [
+        {
+          "name": "unchanged",
+          "value": "unchanged",
+          "doc": ""
+        },
+        {
+          "name": "relocated",
+          "value": "relocated",
+          "doc": ""
+        },
+        {
+          "name": "split",
+          "value": "split",
+          "doc": ""
+        },
+        {
+          "name": "merged",
+          "value": "merged",
+          "doc": ""
+        },
+        {
+          "name": "otherwise_changed",
+          "value": "otherwise_changed",
+          "doc": ""
+        },
+        {
+          "name": "not_compared",
+          "value": "not_compared",
+          "doc": ""
+        },
+        {
+          "name": "unavailable",
+          "value": "unavailable",
+          "doc": ""
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.RenameHierarchyNodeCommand",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "kind",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "rename_node"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "authored_id",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 28,
+            "max_length": 128
+          }
+        },
+        {
+          "name": "expected_revision",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_value": 1
+          }
+        },
+        {
+          "name": "name",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 1,
+            "max_length": 4096
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.RenameLogicalGroupCommand",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "kind",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "rename"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "authored_id",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 28,
+            "max_length": 128
+          }
+        },
+        {
+          "name": "expected_revision",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_value": 1
+          }
+        },
+        {
+          "name": "name",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 1,
+            "max_length": 4096
           }
         }
       ]
@@ -5918,6 +9652,339 @@
       ]
     },
     {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.ReparentHierarchyOccurrenceCommand",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "kind",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "reparent_occurrence"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "authored_id",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 28,
+            "max_length": 128
+          }
+        },
+        {
+          "name": "expected_revision",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_value": 1
+          }
+        },
+        {
+          "name": "parent_assembly_authored_id",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 28,
+            "max_length": 128
+          }
+        },
+        {
+          "name": "transform",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "primitive",
+              "name": "float64"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "min_items": 12,
+            "max_items": 12
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.ReplaceLogicalGroupMembersCommand",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "kind",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "replace_members"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "authored_id",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 28,
+            "max_length": 128
+          }
+        },
+        {
+          "name": "expected_revision",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_value": 1
+          }
+        },
+        {
+          "name": "member_handles",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "primitive",
+              "name": "string"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "min_items": 1,
+            "max_items": 100000
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.ReplaceMetadataProbeCommand",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "kind",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "replace"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "authored_id",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 28,
+            "max_length": 128
+          }
+        },
+        {
+          "name": "expected_revision",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_value": 1
+          }
+        },
+        {
+          "name": "target",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.MetadataProbeTarget"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "key",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 32,
+            "max_length": 128
+          }
+        },
+        {
+          "name": "value",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 1,
+            "max_length": 4096
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.RestoreStateArtifact",
+      "kind": "union",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "composition": "one_of",
+      "variants": [
+        {
+          "name": "xbf",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.XbfPersistenceArtifact"
+          },
+          "doc": "",
+          "annotations": {}
+        },
+        {
+          "name": "xml_xcaf",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.XmlXcafPersistenceArtifact"
+          },
+          "doc": "",
+          "annotations": {}
+        },
+        {
+          "name": "step_ap242",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.StepAp242PersistenceArtifact"
+          },
+          "doc": "",
+          "annotations": {}
+        },
+        {
+          "name": "json_sidecar",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.JsonSidecarPersistenceArtifact"
+          },
+          "doc": "",
+          "annotations": {}
+        },
+        {
+          "name": "edit_journal",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.EditJournalPersistenceArtifact"
+          },
+          "doc": "",
+          "annotations": {}
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.RootOccurrenceProbeTarget",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "kind",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "root_occurrence"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "target_handle",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 68,
+            "max_length": 68
+          }
+        }
+      ]
+    },
+    {
       "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.RootOccurrenceSummary",
       "kind": "model",
       "doc": "",
@@ -6000,6 +10067,81 @@
       ]
     },
     {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.SaveCarrier",
+      "kind": "enum",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "members": [
+        {
+          "name": "xbf",
+          "value": "xbf",
+          "doc": ""
+        },
+        {
+          "name": "xml_xcaf",
+          "value": "xml_xcaf",
+          "doc": ""
+        },
+        {
+          "name": "step_ap242",
+          "value": "step_ap242",
+          "doc": ""
+        },
+        {
+          "name": "json_sidecar",
+          "value": "json_sidecar",
+          "doc": ""
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.SavePersistenceArtifact",
+      "kind": "union",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "composition": "one_of",
+      "variants": [
+        {
+          "name": "xbf",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.XbfPersistenceArtifact"
+          },
+          "doc": "",
+          "annotations": {}
+        },
+        {
+          "name": "xml_xcaf",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.XmlXcafPersistenceArtifact"
+          },
+          "doc": "",
+          "annotations": {}
+        },
+        {
+          "name": "step_ap242",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.StepAp242PersistenceArtifact"
+          },
+          "doc": "",
+          "annotations": {}
+        },
+        {
+          "name": "json_sidecar",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.JsonSidecarPersistenceArtifact"
+          },
+          "doc": "",
+          "annotations": {}
+        }
+      ]
+    },
+    {
       "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.SessionReference",
       "kind": "model",
       "doc": "",
@@ -6077,35 +10219,29 @@
           }
         },
         {
-          "name": "body_handles",
+          "name": "body_count",
           "optional": false,
           "doc": "",
           "type": {
-            "kind": "array",
-            "element": {
-              "kind": "primitive",
-              "name": "string"
-            }
+            "kind": "primitive",
+            "name": "uint32"
           },
           "annotations": {},
           "constraints": {
-            "max_items": 100000
+            "max_value": 100000
           }
         },
         {
-          "name": "face_handles",
+          "name": "face_count",
           "optional": false,
           "doc": "",
           "type": {
-            "kind": "array",
-            "element": {
-              "kind": "primitive",
-              "name": "string"
-            }
+            "kind": "primitive",
+            "name": "uint32"
           },
           "annotations": {},
           "constraints": {
-            "max_items": 1000000
+            "max_value": 1000000
           }
         },
         {
@@ -6257,6 +10393,736 @@
           "constraints": {
             "min_length": 1,
             "max_length": 128
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.StepAp242PersistenceArtifact",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "carrier",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "step_ap242"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "name",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "state_artifact"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "media_type",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "application/step"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "format",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "ap242-managed-model-based-3d-engineering"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "bytes",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_value": 1,
+            "max_value": 536870912
+          }
+        },
+        {
+          "name": "sha256",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 64,
+            "max_length": 64
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyAnalyzeRecoveryRequestA0",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "schema",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "geometry.step_topology.analyze_recovery.request.a0"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "groups",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "reference",
+              "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.RecoveryGroupRequest"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "min_items": 1,
+            "max_items": 16
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyAnalyzeRecoveryResultA0",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "schema",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "geometry.step_topology.analyze_recovery.result.a0"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "groups",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "reference",
+              "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.RecoveryGroupResult"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "max_items": 16
+          }
+        },
+        {
+          "name": "diagnostics",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "reference",
+              "target": "Wavenumber.Geometer.Contracts.Common.DiagnosticA0"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "max_items": 256
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyApplyHierarchyRequestA0",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "schema",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "geometry.step_topology.apply_hierarchy.request.a0"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "session",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.SessionReference"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "expected_hierarchy_revision",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "commands",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "reference",
+              "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.HierarchyCommand"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "min_items": 1,
+            "max_items": 10000
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyApplyHierarchyResultA0",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "schema",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "geometry.step_topology.apply_hierarchy.result.a0"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "state",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.MutationSessionState"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "hierarchy",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.HierarchyState"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "diagnostics",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "reference",
+              "target": "Wavenumber.Geometer.Contracts.Common.DiagnosticA0"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "max_items": 256
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyApplyLogicalGroupsRequestA0",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "schema",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "geometry.step_topology.apply_logical_groups.request.a0"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "session",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.SessionReference"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "commands",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "reference",
+              "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.LogicalGroupCommand"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "min_items": 1,
+            "max_items": 10000
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyApplyLogicalGroupsResultA0",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "schema",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "geometry.step_topology.apply_logical_groups.result.a0"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "state",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.MutationSessionState"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "groups",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "reference",
+              "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.LogicalGroup"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "max_items": 10000
+          }
+        },
+        {
+          "name": "diagnostics",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "reference",
+              "target": "Wavenumber.Geometer.Contracts.Common.DiagnosticA0"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "max_items": 256
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyApplyMetadataProbesRequestA0",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "schema",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "geometry.step_topology.apply_metadata_probes.request.a0"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "session",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.SessionReference"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "commands",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "reference",
+              "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.MetadataProbeCommand"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "min_items": 1,
+            "max_items": 10000
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyApplyMetadataProbesResultA0",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "schema",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "geometry.step_topology.apply_metadata_probes.result.a0"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "state",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.MutationSessionState"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "groups",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "reference",
+              "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.LogicalGroup"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "max_items": 10000
+          }
+        },
+        {
+          "name": "probes",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "reference",
+              "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.MetadataProbe"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "max_items": 10000
+          }
+        },
+        {
+          "name": "diagnostics",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "reference",
+              "target": "Wavenumber.Geometer.Contracts.Common.DiagnosticA0"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "max_items": 256
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyCheckpointEditJournalRequestA0",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "schema",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "geometry.step_topology.checkpoint_edit_journal.request.a0"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "session",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.SessionReference"
+          },
+          "annotations": {},
+          "constraints": {}
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyCheckpointEditJournalResultA0",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "schema",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "geometry.step_topology.checkpoint_edit_journal.result.a0"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "state",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.MutationSessionState"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "source_sha256",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 64,
+            "max_length": 64
+          }
+        },
+        {
+          "name": "source_brep_sha256",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 64,
+            "max_length": 64
+          }
+        },
+        {
+          "name": "target_inventory_sha256",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 64,
+            "max_length": 64
+          }
+        },
+        {
+          "name": "occt_version",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 1,
+            "max_length": 64
+          }
+        },
+        {
+          "name": "transaction_count",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "max_value": 100000
+          }
+        },
+        {
+          "name": "journal",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.EditJournalAttachmentDescriptor"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "diagnostics",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "reference",
+              "target": "Wavenumber.Geometer.Contracts.Common.DiagnosticA0"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "max_items": 256
           }
         }
       ]
@@ -6970,6 +11836,342 @@
       ]
     },
     {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyRestoreRequestA0",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "schema",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "geometry.step_topology.restore.request.a0"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "source",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.SourceDescriptor"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "state_artifact",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.RestoreStateArtifact"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "replay_preconditions",
+          "optional": true,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.EditJournalReplayPreconditions"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "include_diagnostics",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "boolean"
+          },
+          "annotations": {},
+          "constraints": {}
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyRestoreResultA0",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "schema",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "geometry.step_topology.restore.result.a0"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "session",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.SessionReference"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "source",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.SourceDescriptor"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "tool",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.ToolDescriptor"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "replayed_transaction_count",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "max_value": 100000
+          }
+        },
+        {
+          "name": "evicted_session_handles",
+          "optional": true,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "primitive",
+              "name": "string"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "max_items": 64
+          }
+        },
+        {
+          "name": "recovery",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "reference",
+              "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.RecoveryGroupResult"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "max_items": 16
+          }
+        },
+        {
+          "name": "diagnostics",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "reference",
+              "target": "Wavenumber.Geometer.Contracts.Common.DiagnosticA0"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "max_items": 256
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologySaveRequestA0",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "schema",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "geometry.step_topology.save.request.a0"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "session",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.SessionReference"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "carrier",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.SaveCarrier"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "include_diagnostics",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "boolean"
+          },
+          "annotations": {},
+          "constraints": {}
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologySaveResultA0",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "schema",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "geometry.step_topology.save.result.a0"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "state",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.MutationSessionState"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "source_sha256",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 64,
+            "max_length": 64
+          }
+        },
+        {
+          "name": "artifact",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.SavePersistenceArtifact"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "capabilities",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "reference",
+              "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.CarrierCapability"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "min_items": 5,
+            "max_items": 5
+          }
+        },
+        {
+          "name": "diagnostics",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "reference",
+              "target": "Wavenumber.Geometer.Contracts.Common.DiagnosticA0"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "max_items": 256
+          }
+        }
+      ]
+    },
+    {
       "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.TessellationOptions",
       "kind": "model",
       "doc": "",
@@ -7177,6 +12379,81 @@
       ]
     },
     {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.TopologyMembership",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "kind",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.TopologyMembershipKind"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "owner_handle",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 68,
+            "max_length": 68
+          }
+        },
+        {
+          "name": "member_handle",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 68,
+            "max_length": 68
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.TopologyMembershipKind",
+      "kind": "enum",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "members": [
+        {
+          "name": "body_shell",
+          "value": "body_shell",
+          "doc": ""
+        },
+        {
+          "name": "body_face",
+          "value": "body_face",
+          "doc": ""
+        },
+        {
+          "name": "shell_face",
+          "value": "shell_face",
+          "doc": ""
+        }
+      ]
+    },
+    {
       "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.TopologyPage",
       "kind": "model",
       "doc": "",
@@ -7259,6 +12536,22 @@
             "element": {
               "kind": "reference",
               "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.FaceSummary"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "max_items": 1024
+          }
+        },
+        {
+          "name": "memberships",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "reference",
+              "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.TopologyMembership"
             }
           },
           "annotations": {},
@@ -7356,6 +12649,182 @@
           }
         }
       ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.XbfPersistenceArtifact",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "carrier",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "xbf"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "name",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "state_artifact"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "media_type",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "application/vnd.opencascade.xbf"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "format",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "ocaf-xbf-version-12"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "bytes",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_value": 1,
+            "max_value": 536870912
+          }
+        },
+        {
+          "name": "sha256",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 64,
+            "max_length": 64
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.StepTopologyA0.XmlXcafPersistenceArtifact",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "carrier",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "xml_xcaf"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "name",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "state_artifact"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "media_type",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "application/vnd.opencascade.xml-xcaf"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "format",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "ocaf-xml-xcaf-version-12"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "bytes",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_value": 1,
+            "max_value": 536870912
+          }
+        },
+        {
+          "name": "sha256",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 64,
+            "max_length": 64
+          }
+        }
+      ]
     }
   ],
   "operations": [
@@ -7385,6 +12854,7 @@
         }
       ],
       "runtime_available": true,
+      "native_runtime_available": false,
       "runtime_dispatch": "packed_attachment",
       "request_projection": {
         "kind": "packed_attachment",
@@ -7416,8 +12886,78 @@
       ],
       "output_attachments": [],
       "runtime_available": true,
+      "native_runtime_available": false,
       "runtime_dispatch": "logical_dto",
       "doc": "Compute axis-aligned model bounds from the required raw model attachment."
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.Operations.stepTopologyAnalyzeRecovery",
+      "identity": "geometry.step_topology.analyze_recovery.a0",
+      "request_contract": "geometry.step_topology.analyze_recovery.request.a0",
+      "result_contract": "geometry.step_topology.analyze_recovery.result.a0",
+      "input_attachments": [],
+      "output_attachments": [],
+      "runtime_available": false,
+      "native_runtime_available": false,
+      "runtime_dispatch": "logical_dto",
+      "doc": ""
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.Operations.stepTopologyApplyHierarchy",
+      "identity": "geometry.step_topology.apply_hierarchy.a0",
+      "request_contract": "geometry.step_topology.apply_hierarchy.request.a0",
+      "result_contract": "geometry.step_topology.apply_hierarchy.result.a0",
+      "input_attachments": [],
+      "output_attachments": [],
+      "runtime_available": false,
+      "native_runtime_available": false,
+      "runtime_dispatch": "logical_dto",
+      "doc": ""
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.Operations.stepTopologyApplyLogicalGroups",
+      "identity": "geometry.step_topology.apply_logical_groups.a0",
+      "request_contract": "geometry.step_topology.apply_logical_groups.request.a0",
+      "result_contract": "geometry.step_topology.apply_logical_groups.result.a0",
+      "input_attachments": [],
+      "output_attachments": [],
+      "runtime_available": false,
+      "native_runtime_available": true,
+      "runtime_dispatch": "logical_dto",
+      "doc": ""
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.Operations.stepTopologyApplyMetadataProbes",
+      "identity": "geometry.step_topology.apply_metadata_probes.a0",
+      "request_contract": "geometry.step_topology.apply_metadata_probes.request.a0",
+      "result_contract": "geometry.step_topology.apply_metadata_probes.result.a0",
+      "input_attachments": [],
+      "output_attachments": [],
+      "runtime_available": false,
+      "native_runtime_available": true,
+      "runtime_dispatch": "logical_dto",
+      "doc": ""
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.Operations.stepTopologyCheckpointEditJournal",
+      "identity": "geometry.step_topology.checkpoint_edit_journal.a0",
+      "request_contract": "geometry.step_topology.checkpoint_edit_journal.request.a0",
+      "result_contract": "geometry.step_topology.checkpoint_edit_journal.result.a0",
+      "input_attachments": [],
+      "output_attachments": [
+        {
+          "name": "edit_journal",
+          "required": true,
+          "media_types": [
+            "application/vnd.wavenumber.geometer.step-topology-edit-journal"
+          ],
+          "max_bytes": 67108864
+        }
+      ],
+      "runtime_available": false,
+      "native_runtime_available": true,
+      "runtime_dispatch": "logical_dto",
+      "doc": ""
     },
     {
       "name": "Wavenumber.Geometer.Contracts.Operations.stepTopologyClose",
@@ -7427,6 +12967,7 @@
       "input_attachments": [],
       "output_attachments": [],
       "runtime_available": false,
+      "native_runtime_available": true,
       "runtime_dispatch": "logical_dto",
       "doc": ""
     },
@@ -7447,6 +12988,7 @@
         }
       ],
       "runtime_available": false,
+      "native_runtime_available": true,
       "runtime_dispatch": "logical_dto",
       "doc": ""
     },
@@ -7468,6 +13010,7 @@
       ],
       "output_attachments": [],
       "runtime_available": false,
+      "native_runtime_available": true,
       "runtime_dispatch": "logical_dto",
       "doc": ""
     },
@@ -7496,6 +13039,7 @@
         }
       ],
       "runtime_available": false,
+      "native_runtime_available": true,
       "runtime_dispatch": "logical_dto",
       "doc": ""
     },
@@ -7507,6 +13051,61 @@
       "input_attachments": [],
       "output_attachments": [],
       "runtime_available": false,
+      "native_runtime_available": true,
+      "runtime_dispatch": "logical_dto",
+      "doc": ""
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.Operations.stepTopologyRestore",
+      "identity": "geometry.step_topology.restore.a0",
+      "request_contract": "geometry.step_topology.restore.request.a0",
+      "result_contract": "geometry.step_topology.restore.result.a0",
+      "input_attachments": [
+        {
+          "name": "source",
+          "required": true,
+          "media_types": [
+            "application/step",
+            "model/step"
+          ],
+          "max_bytes": 268435456
+        },
+        {
+          "name": "state_artifact",
+          "required": true,
+          "media_types": [
+            "application/vnd.wavenumber.geometer.step-topology-edit-journal"
+          ],
+          "max_bytes": 67108864
+        }
+      ],
+      "output_attachments": [],
+      "runtime_available": false,
+      "native_runtime_available": true,
+      "runtime_dispatch": "logical_dto",
+      "doc": ""
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.Operations.stepTopologySave",
+      "identity": "geometry.step_topology.save.a0",
+      "request_contract": "geometry.step_topology.save.request.a0",
+      "result_contract": "geometry.step_topology.save.result.a0",
+      "input_attachments": [],
+      "output_attachments": [
+        {
+          "name": "state_artifact",
+          "required": true,
+          "media_types": [
+            "application/step",
+            "application/vnd.opencascade.xbf",
+            "application/vnd.opencascade.xml-xcaf",
+            "application/vnd.wavenumber.geometer.step-topology-sidecar+json"
+          ],
+          "max_bytes": 536870912
+        }
+      ],
+      "runtime_available": false,
+      "native_runtime_available": false,
       "runtime_dispatch": "logical_dto",
       "doc": ""
     }

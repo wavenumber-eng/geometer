@@ -605,6 +605,7 @@ configure_geometer_fixture_test(geometer_model_bounds_test
 add_test(NAME geometer_model_bounds_test COMMAND geometer_model_bounds_test)
 
 add_executable(geometer_operation_contract_test
+    operation_contract_topology_semantics.cpp
     operation_contract_test.cpp
 )
 
@@ -690,6 +691,42 @@ if(NOT EMSCRIPTEN)
     configure_geometer_fixture_test(geometer_step_topology_logical_groups_test)
     add_test(NAME geometer_step_topology_logical_groups_test
              COMMAND geometer_step_topology_logical_groups_test)
+
+    add_executable(geometer_step_topology_xcaf_persistence_test
+        step_topology_xcaf_persistence_test.cpp
+    )
+    target_link_libraries(geometer_step_topology_xcaf_persistence_test PRIVATE geometer_lib)
+    add_test(NAME geometer_step_topology_xcaf_persistence_test
+             COMMAND geometer_step_topology_xcaf_persistence_test)
+
+    add_executable(geometer_step_topology_xcaf_custom_driver_test
+        step_topology_xcaf_custom_driver_test.cpp
+    )
+    target_link_libraries(geometer_step_topology_xcaf_custom_driver_test PRIVATE geometer_lib)
+    add_test(NAME geometer_step_topology_xcaf_custom_driver_test
+             COMMAND geometer_step_topology_xcaf_custom_driver_test)
+
+    add_executable(geometer_step_topology_ap242_persistence_test
+        step_topology_ap242_persistence_test.cpp
+    )
+    target_link_libraries(geometer_step_topology_ap242_persistence_test PRIVATE geometer_lib)
+    add_test(NAME geometer_step_topology_ap242_persistence_test
+             COMMAND geometer_step_topology_ap242_persistence_test)
+
+    add_executable(geometer_step_topology_recovery_test
+        step_topology_recovery_test.cpp
+    )
+    target_link_libraries(geometer_step_topology_recovery_test PRIVATE geometer_lib)
+    add_test(NAME geometer_step_topology_recovery_test
+             COMMAND geometer_step_topology_recovery_test)
+
+    add_executable(geometer_step_topology_hierarchy_test
+        step_topology_hierarchy_test.cpp
+    )
+    target_link_libraries(geometer_step_topology_hierarchy_test PRIVATE geometer_lib)
+    configure_geometer_fixture_test(geometer_step_topology_hierarchy_test)
+    add_test(NAME geometer_step_topology_hierarchy_test
+             COMMAND geometer_step_topology_hierarchy_test)
 
     add_executable(geometer_step_topology_brep_graph_test
         step_topology_brep_graph_test.cpp
@@ -802,6 +839,11 @@ if(WIN32 AND OpenCASCADE_BINARY_DIR)
         geometer_projection_outline_test
         geometer_step_topology_session_test
         geometer_step_topology_logical_groups_test
+        geometer_step_topology_xcaf_persistence_test
+        geometer_step_topology_xcaf_custom_driver_test
+        geometer_step_topology_ap242_persistence_test
+        geometer_step_topology_recovery_test
+        geometer_step_topology_hierarchy_test
         geometer_step_topology_brep_graph_test
         geometer_step_topology_render_binding_test
         geometer_step_topology_fixture_inventory_test

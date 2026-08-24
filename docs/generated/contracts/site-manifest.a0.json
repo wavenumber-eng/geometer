@@ -3,7 +3,7 @@
   "generation": "a0",
   "catalog_identity": "wn.geometer.contract_catalog",
   "catalog_generation": "a0",
-  "catalog_sha256": "6cacbf010b3ae7a2af74c68517e5bcd68e3f4da11c904fb2626debf0ba8d17e2",
+  "catalog_sha256": "40ad574a40ea2e474d085d26263bf1ecbf3d76f6e14de8d795829e97389ae96b",
   "contracts": {
     "geometry.analytic_planar_boolean_batch.request.a0": "contracts/geometry-analytic-planar-boolean-batch-request-a0.html",
     "geometry.analytic_planar_boolean_batch.result.a0": "contracts/geometry-analytic-planar-boolean-batch-result-a0.html",
@@ -20,6 +20,16 @@
     "geometry.model_bounds.options.a0": "contracts/geometry-model-bounds-options-a0.html",
     "geometry.model_bounds.a0": "contracts/geometry-model-bounds-a0.html",
     "geometer.operation.outcome.a0": "contracts/geometer-operation-outcome-a0.html",
+    "geometry.step_topology.analyze_recovery.request.a0": "contracts/geometry-step-topology-analyze-recovery-request-a0.html",
+    "geometry.step_topology.analyze_recovery.result.a0": "contracts/geometry-step-topology-analyze-recovery-result-a0.html",
+    "geometry.step_topology.apply_hierarchy.request.a0": "contracts/geometry-step-topology-apply-hierarchy-request-a0.html",
+    "geometry.step_topology.apply_hierarchy.result.a0": "contracts/geometry-step-topology-apply-hierarchy-result-a0.html",
+    "geometry.step_topology.apply_logical_groups.request.a0": "contracts/geometry-step-topology-apply-logical-groups-request-a0.html",
+    "geometry.step_topology.apply_logical_groups.result.a0": "contracts/geometry-step-topology-apply-logical-groups-result-a0.html",
+    "geometry.step_topology.apply_metadata_probes.request.a0": "contracts/geometry-step-topology-apply-metadata-probes-request-a0.html",
+    "geometry.step_topology.apply_metadata_probes.result.a0": "contracts/geometry-step-topology-apply-metadata-probes-result-a0.html",
+    "geometry.step_topology.checkpoint_edit_journal.request.a0": "contracts/geometry-step-topology-checkpoint-edit-journal-request-a0.html",
+    "geometry.step_topology.checkpoint_edit_journal.result.a0": "contracts/geometry-step-topology-checkpoint-edit-journal-result-a0.html",
     "geometry.step_topology.close.request.a0": "contracts/geometry-step-topology-close-request-a0.html",
     "geometry.step_topology.close.result.a0": "contracts/geometry-step-topology-close-result-a0.html",
     "geometry.step_topology.inspect.request.a0": "contracts/geometry-step-topology-inspect-request-a0.html",
@@ -29,15 +39,26 @@
     "geometry.step_topology.render.request.a0": "contracts/geometry-step-topology-render-request-a0.html",
     "geometry.step_topology.render.result.a0": "contracts/geometry-step-topology-render-result-a0.html",
     "geometry.step_topology.resolve_hit.request.a0": "contracts/geometry-step-topology-resolve-hit-request-a0.html",
-    "geometry.step_topology.resolve_hit.result.a0": "contracts/geometry-step-topology-resolve-hit-result-a0.html"
+    "geometry.step_topology.resolve_hit.result.a0": "contracts/geometry-step-topology-resolve-hit-result-a0.html",
+    "geometry.step_topology.restore.request.a0": "contracts/geometry-step-topology-restore-request-a0.html",
+    "geometry.step_topology.restore.result.a0": "contracts/geometry-step-topology-restore-result-a0.html",
+    "geometry.step_topology.save.request.a0": "contracts/geometry-step-topology-save-request-a0.html",
+    "geometry.step_topology.save.result.a0": "contracts/geometry-step-topology-save-result-a0.html"
   },
   "operations": {
     "geometry.analytic_planar_boolean_batch.a0": "operations/geometry-analytic-planar-boolean-batch-a0.html",
     "geometry.model_bounds.a0": "operations/geometry-model-bounds-a0.html",
+    "geometry.step_topology.analyze_recovery.a0": "operations/geometry-step-topology-analyze-recovery-a0.html",
+    "geometry.step_topology.apply_hierarchy.a0": "operations/geometry-step-topology-apply-hierarchy-a0.html",
+    "geometry.step_topology.apply_logical_groups.a0": "operations/geometry-step-topology-apply-logical-groups-a0.html",
+    "geometry.step_topology.apply_metadata_probes.a0": "operations/geometry-step-topology-apply-metadata-probes-a0.html",
+    "geometry.step_topology.checkpoint_edit_journal.a0": "operations/geometry-step-topology-checkpoint-edit-journal-a0.html",
     "geometry.step_topology.close.a0": "operations/geometry-step-topology-close-a0.html",
     "geometry.step_topology.inspect.a0": "operations/geometry-step-topology-inspect-a0.html",
     "geometry.step_topology.open.a0": "operations/geometry-step-topology-open-a0.html",
     "geometry.step_topology.render.a0": "operations/geometry-step-topology-render-a0.html",
-    "geometry.step_topology.resolve_hit.a0": "operations/geometry-step-topology-resolve-hit-a0.html"
+    "geometry.step_topology.resolve_hit.a0": "operations/geometry-step-topology-resolve-hit-a0.html",
+    "geometry.step_topology.restore.a0": "operations/geometry-step-topology-restore-a0.html",
+    "geometry.step_topology.save.a0": "operations/geometry-step-topology-save-a0.html"
   }
 }

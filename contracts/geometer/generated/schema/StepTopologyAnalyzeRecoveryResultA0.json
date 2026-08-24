@@ -1,0 +1,399 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:wavenumber:schema:geometer:geometry.step_topology.analyze_recovery.result:a0",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "type": "string",
+      "const": "geometry.step_topology.analyze_recovery.result.a0"
+    },
+    "groups": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/RecoveryGroupResult"
+      },
+      "maxItems": 16
+    },
+    "diagnostics": {
+      "type": "array",
+      "items": {
+        "$ref": "urn:wavenumber:schema:geometer:geometry.common.diagnostic:a0"
+      },
+      "maxItems": 256
+    }
+  },
+  "required": [
+    "schema",
+    "groups",
+    "diagnostics"
+  ],
+  "unevaluatedProperties": {
+    "not": {}
+  },
+  "$defs": {
+    "RecoveryGroupResult": {
+      "type": "object",
+      "properties": {
+        "group_authored_id": {
+          "type": "string",
+          "minLength": 28,
+          "maxLength": 128
+        },
+        "provenance": {
+          "$ref": "#/$defs/RecoveryProvenance"
+        },
+        "resolution_state": {
+          "$ref": "#/$defs/RecoveryResolutionState"
+        },
+        "completeness": {
+          "$ref": "#/$defs/RecoveryGroupCompleteness"
+        },
+        "resolved_member_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 256
+        },
+        "ambiguous_member_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 256
+        },
+        "unresolved_member_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 256
+        },
+        "unsupported_member_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 256
+        },
+        "members": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RecoveryMemberResult"
+          },
+          "minItems": 1,
+          "maxItems": 256
+        }
+      },
+      "required": [
+        "group_authored_id",
+        "provenance",
+        "resolution_state",
+        "completeness",
+        "resolved_member_count",
+        "ambiguous_member_count",
+        "unresolved_member_count",
+        "unsupported_member_count",
+        "members"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "RecoveryProvenance": {
+      "type": "object",
+      "properties": {
+        "source_artifact_sha256": {
+          "type": "string",
+          "minLength": 64,
+          "maxLength": 64
+        },
+        "candidate_artifact_sha256": {
+          "type": "string",
+          "minLength": 64,
+          "maxLength": 64
+        },
+        "source_occt_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "candidate_occt_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "source_driver": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "candidate_driver": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "source_writer_settings": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "candidate_writer_settings": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "command_provenance": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 8192
+        },
+        "measured_wall_time_milliseconds": {
+          "type": "number",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "source_artifact_sha256",
+        "candidate_artifact_sha256",
+        "source_occt_version",
+        "candidate_occt_version",
+        "source_driver",
+        "candidate_driver",
+        "source_writer_settings",
+        "candidate_writer_settings",
+        "command_provenance",
+        "measured_wall_time_milliseconds"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "RecoveryResolutionState": {
+      "type": "string",
+      "enum": [
+        "resolved",
+        "ambiguous",
+        "unresolved",
+        "unsupported"
+      ]
+    },
+    "RecoveryGroupCompleteness": {
+      "type": "string",
+      "enum": [
+        "fully_recovered",
+        "partially_recovered",
+        "unrecovered",
+        "unsupported"
+      ]
+    },
+    "RecoveryMemberResult": {
+      "type": "object",
+      "properties": {
+        "member_record_id": {
+          "type": "string",
+          "minLength": 28,
+          "maxLength": 128
+        },
+        "kind": {
+          "$ref": "#/$defs/LogicalGroupMemberKind"
+        },
+        "authored_target_id": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "resolution_state": {
+          "$ref": "#/$defs/RecoveryResolutionState"
+        },
+        "resolution_method": {
+          "$ref": "#/$defs/RecoveryResolutionMethod"
+        },
+        "topology_comparison": {
+          "$ref": "#/$defs/RecoveryTopologyComparison"
+        },
+        "confidence": {
+          "$ref": "#/$defs/RecoveryConfidence"
+        },
+        "resolved_target_handle": {
+          "type": "string",
+          "minLength": 68,
+          "maxLength": 68
+        },
+        "evidence": {
+          "$ref": "#/$defs/RecoveryEvidence"
+        }
+      },
+      "required": [
+        "member_record_id",
+        "kind",
+        "authored_target_id",
+        "resolution_state",
+        "resolution_method",
+        "topology_comparison",
+        "confidence",
+        "evidence"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "LogicalGroupMemberKind": {
+      "type": "string",
+      "enum": [
+        "body",
+        "face"
+      ]
+    },
+    "RecoveryResolutionMethod": {
+      "type": "string",
+      "enum": [
+        "authored_id_topology_link",
+        "validated_carrier_locator",
+        "unique_geometry_adjacency_fingerprint",
+        "none"
+      ]
+    },
+    "RecoveryTopologyComparison": {
+      "type": "string",
+      "enum": [
+        "unchanged",
+        "relocated",
+        "split",
+        "merged",
+        "otherwise_changed",
+        "not_compared",
+        "unavailable"
+      ]
+    },
+    "RecoveryConfidence": {
+      "type": "string",
+      "enum": [
+        "high",
+        "medium",
+        "low",
+        "none"
+      ]
+    },
+    "RecoveryEvidence": {
+      "type": "object",
+      "properties": {
+        "candidate_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 16
+        },
+        "matching_candidate_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 16
+        },
+        "compared_fields": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RecoveryComparedField"
+          },
+          "maxItems": 16
+        },
+        "tolerances": {
+          "$ref": "#/$defs/RecoveryTolerances"
+        },
+        "carrier_records": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RecoveryCarrierRecord"
+          },
+          "maxItems": 16
+        },
+        "rejected_alternatives": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RecoveryRejectedAlternative"
+          },
+          "maxItems": 16
+        }
+      },
+      "required": [
+        "candidate_count",
+        "matching_candidate_count",
+        "compared_fields",
+        "tolerances",
+        "carrier_records",
+        "rejected_alternatives"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "RecoveryComparedField": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        }
+      },
+      "required": [
+        "value"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "RecoveryTolerances": {
+      "type": "object",
+      "properties": {
+        "length_mm": {
+          "type": "number",
+          "minimum": 1e-9
+        },
+        "area_mm2": {
+          "type": "number",
+          "minimum": 1e-9
+        },
+        "volume_mm3": {
+          "type": "number",
+          "minimum": 1e-9
+        }
+      },
+      "required": [
+        "length_mm",
+        "area_mm2",
+        "volume_mm3"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "RecoveryCarrierRecord": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        }
+      },
+      "required": [
+        "value"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "RecoveryRejectedAlternative": {
+      "type": "object",
+      "properties": {
+        "target_handle": {
+          "type": "string",
+          "minLength": 68,
+          "maxLength": 68
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        }
+      },
+      "required": [
+        "target_handle",
+        "reason"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    }
+  }
+}

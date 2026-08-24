@@ -1,6 +1,7 @@
 // @ts-check
 
 import { spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
 import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { dirname, join, relative, resolve, sep } from "node:path";
@@ -25,7 +26,9 @@ if (process.argv.slice(2).some((argument) => argument !== "--check")) {
   throw new Error("Usage: node scripts/generate-typescript-contracts.mjs [--check]");
 }
 
-const contractCatalog = JSON.parse(await readFile(catalogPath, "utf8"));
+const catalogText = await readFile(catalogPath, "utf8");
+const contractCatalog = JSON.parse(catalogText);
+const catalogSha256 = createHash("sha256").update(catalogText).digest("hex");
 const codecCatalog = await applyProjectionDeferrals(contractCatalog, "typescript");
 const operationCatalogProjection = await applyProjectionDeferrals(contractCatalog, "typescript", {
   retainRuntimeDispatch: true,
@@ -145,13 +148,21 @@ function generateCodecs() {
 }
 
 function generateOperations() {
-  const lines = [generatedHeader(), "export const operationCatalog = {"];
+  const lines = [
+    generatedHeader(),
+    `export const NORMALIZED_CONTRACT_CATALOG_SHA256 = ${JSON.stringify(catalogSha256)} as const;`,
+    "",
+    "export const operationCatalog = {",
+  ];
   for (const operation of operationCatalogProjection.operations) {
     lines.push(`  ${JSON.stringify(operation.identity)}: {`);
     lines.push(`    identity: ${JSON.stringify(operation.identity)},`);
     lines.push(`    requestContract: ${JSON.stringify(operation.request_contract)},`);
     lines.push(`    resultContract: ${JSON.stringify(operation.result_contract)},`);
     lines.push(`    runtimeAvailable: ${JSON.stringify(operation.runtime_available)},`);
+    lines.push(
+      `    nativeRuntimeAvailable: ${JSON.stringify(operation.native_runtime_available)},`,
+    );
     lines.push(`    runtimeDispatch: ${JSON.stringify(operation.runtime_dispatch)},`);
     lines.push(`    inputAttachments: ${JSON.stringify(operation.input_attachments)},`);
     lines.push(`    outputAttachments: ${JSON.stringify(operation.output_attachments)},`);

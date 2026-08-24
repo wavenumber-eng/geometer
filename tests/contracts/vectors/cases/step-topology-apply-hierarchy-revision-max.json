@@ -1,0 +1,1 @@
+{"schema":"geometry.step_topology.apply_hierarchy.request.a0","session":{"session_handle":"gts_1111111111111111111111111111111111111111111111111111111111111111","generation":9},"expected_hierarchy_revision":4294967295,"commands":[{"kind":"create_assembly","authored_id":"wn.geometer.research.assembly.root","name":"Root"}]}

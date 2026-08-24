@@ -17,6 +17,9 @@ extern dec operationIdentity(target: Operation, identity: valueof string);
 /** Marks an operation as generated structural research that is not runtime-advertised. */
 extern dec experimentalOperation(target: Operation);
 
+/** Advertises an experimental operation only through the native executable IPC runtime. */
+extern dec nativeExperimentalOperation(target: Operation);
+
 extern dec inputAttachment(
   target: Operation,
   name: valueof string,

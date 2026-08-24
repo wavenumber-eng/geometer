@@ -31,6 +31,7 @@ const CONTRACT_IDENTITY = Symbol.for("wavenumber.geometer.contractIdentity");
 const OPTION_PATCH = Symbol.for("wavenumber.geometer.optionPatch");
 const OPERATION_IDENTITY = Symbol.for("wavenumber.geometer.operationIdentity");
 const EXPERIMENTAL_OPERATION = Symbol.for("wavenumber.geometer.experimentalOperation");
+const NATIVE_EXPERIMENTAL_OPERATION = Symbol.for("wavenumber.geometer.nativeExperimentalOperation");
 const INPUT_ATTACHMENTS = Symbol.for("wavenumber.geometer.inputAttachments");
 const OUTPUT_ATTACHMENTS = Symbol.for("wavenumber.geometer.outputAttachments");
 const REQUEST_PACKED_PROJECTION = Symbol.for("wavenumber.geometer.requestPackedProjection");
@@ -50,6 +51,16 @@ export function $operationIdentity(context, target, identity) {
 
 export function $experimentalOperation(context, target) {
   setUnique(context.program, EXPERIMENTAL_OPERATION, target, true, "experimental operation marker");
+}
+
+export function $nativeExperimentalOperation(context, target) {
+  setUnique(
+    context.program,
+    NATIVE_EXPERIMENTAL_OPERATION,
+    target,
+    true,
+    "native experimental operation marker",
+  );
 }
 
 export function $inputAttachment(context, target, name, required, mediaTypes, maxBytes) {
@@ -187,6 +198,13 @@ export async function $onEmit(context) {
 }
 
 function operationRecord(program, operation, identity) {
+  const experimental = Boolean(getState(program, EXPERIMENTAL_OPERATION, operation));
+  const nativeExperimental = Boolean(getState(program, NATIVE_EXPERIMENTAL_OPERATION, operation));
+  if (nativeExperimental && !experimental) {
+    throw new Error(
+      `Operation ${qualifiedName(operation)} uses @nativeExperimentalOperation without @experimentalOperation.`,
+    );
+  }
   const parameters = [...operation.parameters.properties.values()];
   if (parameters.length !== 1 || parameters[0].name !== "request") {
     throw new Error(
@@ -228,7 +246,8 @@ function operationRecord(program, operation, identity) {
     result_contract: result,
     input_attachments: inputAttachments,
     output_attachments: outputAttachments,
-    runtime_available: !getState(program, EXPERIMENTAL_OPERATION, operation),
+    runtime_available: !experimental,
+    native_runtime_available: nativeExperimental,
     runtime_dispatch: runtimeDispatch,
     ...(requestProjection ? { request_projection: requestProjection } : {}),
     ...(resultProjection ? { result_projection: resultProjection } : {}),

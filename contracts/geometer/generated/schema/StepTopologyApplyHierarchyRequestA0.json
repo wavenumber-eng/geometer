@@ -1,0 +1,327 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:wavenumber:schema:geometer:geometry.step_topology.apply_hierarchy.request:a0",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "type": "string",
+      "const": "geometry.step_topology.apply_hierarchy.request.a0"
+    },
+    "session": {
+      "$ref": "#/$defs/SessionReference"
+    },
+    "expected_hierarchy_revision": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 4294967295
+    },
+    "commands": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/HierarchyCommand"
+      },
+      "minItems": 1,
+      "maxItems": 10000
+    }
+  },
+  "required": [
+    "schema",
+    "session",
+    "expected_hierarchy_revision",
+    "commands"
+  ],
+  "unevaluatedProperties": {
+    "not": {}
+  },
+  "$defs": {
+    "SessionReference": {
+      "type": "object",
+      "properties": {
+        "session_handle": {
+          "type": "string",
+          "minLength": 68,
+          "maxLength": 68
+        },
+        "generation": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        }
+      },
+      "required": [
+        "session_handle",
+        "generation"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "HierarchyCommand": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/CreateHierarchyProductCommand"
+        },
+        {
+          "$ref": "#/$defs/CreateHierarchyAssemblyCommand"
+        },
+        {
+          "$ref": "#/$defs/CreateHierarchyOccurrenceCommand"
+        },
+        {
+          "$ref": "#/$defs/ReparentHierarchyOccurrenceCommand"
+        },
+        {
+          "$ref": "#/$defs/RenameHierarchyNodeCommand"
+        },
+        {
+          "$ref": "#/$defs/EraseHierarchyOccurrenceCommand"
+        },
+        {
+          "$ref": "#/$defs/EraseHierarchyNodeCommand"
+        }
+      ]
+    },
+    "CreateHierarchyProductCommand": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "create_product"
+        },
+        "authored_id": {
+          "type": "string",
+          "minLength": 28,
+          "maxLength": 128
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "source_kind": {
+          "$ref": "#/$defs/HierarchySourceKind"
+        },
+        "source_handle": {
+          "type": "string",
+          "minLength": 68,
+          "maxLength": 68
+        }
+      },
+      "required": [
+        "kind",
+        "authored_id",
+        "name",
+        "source_kind",
+        "source_handle"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "CreateHierarchyAssemblyCommand": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "create_assembly"
+        },
+        "authored_id": {
+          "type": "string",
+          "minLength": 28,
+          "maxLength": 128
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        }
+      },
+      "required": [
+        "kind",
+        "authored_id",
+        "name"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "CreateHierarchyOccurrenceCommand": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "create_occurrence"
+        },
+        "authored_id": {
+          "type": "string",
+          "minLength": 28,
+          "maxLength": 128
+        },
+        "child_authored_id": {
+          "type": "string",
+          "minLength": 28,
+          "maxLength": 128
+        },
+        "parent_assembly_authored_id": {
+          "type": "string",
+          "minLength": 28,
+          "maxLength": 128
+        },
+        "transform": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 12,
+          "maxItems": 12
+        }
+      },
+      "required": [
+        "kind",
+        "authored_id",
+        "child_authored_id",
+        "parent_assembly_authored_id",
+        "transform"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "ReparentHierarchyOccurrenceCommand": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "reparent_occurrence"
+        },
+        "authored_id": {
+          "type": "string",
+          "minLength": 28,
+          "maxLength": 128
+        },
+        "expected_revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        },
+        "parent_assembly_authored_id": {
+          "type": "string",
+          "minLength": 28,
+          "maxLength": 128
+        },
+        "transform": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 12,
+          "maxItems": 12
+        }
+      },
+      "required": [
+        "kind",
+        "authored_id",
+        "expected_revision",
+        "parent_assembly_authored_id",
+        "transform"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "RenameHierarchyNodeCommand": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "rename_node"
+        },
+        "authored_id": {
+          "type": "string",
+          "minLength": 28,
+          "maxLength": 128
+        },
+        "expected_revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        }
+      },
+      "required": [
+        "kind",
+        "authored_id",
+        "expected_revision",
+        "name"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "EraseHierarchyOccurrenceCommand": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "erase_occurrence"
+        },
+        "authored_id": {
+          "type": "string",
+          "minLength": 28,
+          "maxLength": 128
+        },
+        "expected_revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        }
+      },
+      "required": [
+        "kind",
+        "authored_id",
+        "expected_revision"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "EraseHierarchyNodeCommand": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "erase_node"
+        },
+        "authored_id": {
+          "type": "string",
+          "minLength": 28,
+          "maxLength": 128
+        },
+        "expected_revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        }
+      },
+      "required": [
+        "kind",
+        "authored_id",
+        "expected_revision"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "HierarchySourceKind": {
+      "type": "string",
+      "enum": [
+        "definition",
+        "body"
+      ]
+    }
+  }
+}

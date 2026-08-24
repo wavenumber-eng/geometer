@@ -15,6 +15,11 @@ generation, TypeSpec contract identities, and packed planar format versions.
 stdin and stdout carry frames only. stderr carries logs only. On Windows the
 server switches stdin and stdout to binary mode before reading the first byte.
 
+The TypeScript package exposes the transport-neutral frame codec at
+`@wavenumber/geometer/ipc-a0`. It accepts and returns byte chunks and has no
+Node process dependency; process spawning, supervision, operation codecs, and
+request lifecycle remain higher layers.
+
 ## Byte order and frame header
 
 All integer fields are unsigned little-endian. Every frame begins with this

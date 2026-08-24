@@ -74,9 +74,45 @@
         },
         {
           "$ref": "#/$defs/PackedAttachmentProjectionA0"
+        },
+        {
+          "$ref": "urn:wavenumber:schema:geometer:geometry.step_topology.open.result:a0"
+        },
+        {
+          "$ref": "urn:wavenumber:schema:geometer:geometry.step_topology.close.result:a0"
+        },
+        {
+          "$ref": "urn:wavenumber:schema:geometer:geometry.step_topology.inspect.result:a0"
+        },
+        {
+          "$ref": "urn:wavenumber:schema:geometer:geometry.step_topology.render.result:a0"
+        },
+        {
+          "$ref": "urn:wavenumber:schema:geometer:geometry.step_topology.resolve_hit.result:a0"
+        },
+        {
+          "$ref": "urn:wavenumber:schema:geometer:geometry.step_topology.apply_logical_groups.result:a0"
+        },
+        {
+          "$ref": "urn:wavenumber:schema:geometer:geometry.step_topology.apply_metadata_probes.result:a0"
+        },
+        {
+          "$ref": "urn:wavenumber:schema:geometer:geometry.step_topology.checkpoint_edit_journal.result:a0"
+        },
+        {
+          "$ref": "urn:wavenumber:schema:geometer:geometry.step_topology.apply_hierarchy.result:a0"
+        },
+        {
+          "$ref": "urn:wavenumber:schema:geometer:geometry.step_topology.save.result:a0"
+        },
+        {
+          "$ref": "urn:wavenumber:schema:geometer:geometry.step_topology.restore.result:a0"
+        },
+        {
+          "$ref": "urn:wavenumber:schema:geometer:geometry.step_topology.analyze_recovery.result:a0"
         }
       ],
-      "description": "Results currently available through the generic operation transport."
+      "description": "Structurally representable operation results. A result variant may belong\nto a runtime-unavailable experimental operation and is not an availability\nclaim; the negotiated operation catalog remains authoritative."
     },
     "PackedAttachmentProjectionA0": {
       "type": "object",

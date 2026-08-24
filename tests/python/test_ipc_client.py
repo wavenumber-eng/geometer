@@ -44,6 +44,7 @@ from geometer._ipc_client import (
     _ReadFailure,
     _validate_welcome,
 )
+from geometer._generated.contracts.operations import expected_operation_catalog
 from geometer._paths import executable_path
 
 
@@ -130,10 +131,11 @@ def test_persistent_client_validates_welcome_and_gracefully_shuts_down() -> None
         assert client.process_id > 0
         assert client.welcome.ipc == "a0"
         assert client.welcome.catalog_sha256 == NORMALIZED_CATALOG_SHA256
-        assert [item.identity for item in client.welcome.operation_catalog.operations] == [
-            ANALYTIC_OPERATION,
-            "geometry.model_bounds.a0",
-        ]
+        expected_catalog = expected_operation_catalog(
+            client.welcome.release_version,
+            client.welcome.c_abi_generation,
+        )
+        assert client.welcome.operation_catalog == expected_catalog
         assert client.stderr_text == ""
 
 

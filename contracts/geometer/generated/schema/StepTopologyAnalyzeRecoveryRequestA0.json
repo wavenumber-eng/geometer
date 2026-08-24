@@ -1,0 +1,328 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:wavenumber:schema:geometer:geometry.step_topology.analyze_recovery.request:a0",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "type": "string",
+      "const": "geometry.step_topology.analyze_recovery.request.a0"
+    },
+    "groups": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/RecoveryGroupRequest"
+      },
+      "minItems": 1,
+      "maxItems": 16
+    }
+  },
+  "required": [
+    "schema",
+    "groups"
+  ],
+  "unevaluatedProperties": {
+    "not": {}
+  },
+  "$defs": {
+    "RecoveryGroupRequest": {
+      "type": "object",
+      "properties": {
+        "group_authored_id": {
+          "type": "string",
+          "minLength": 28,
+          "maxLength": 128
+        },
+        "provenance": {
+          "$ref": "#/$defs/RecoveryProvenance"
+        },
+        "tolerances": {
+          "$ref": "#/$defs/RecoveryTolerances"
+        },
+        "members": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RecoveryMemberRequest"
+          },
+          "minItems": 1,
+          "maxItems": 256
+        }
+      },
+      "required": [
+        "group_authored_id",
+        "provenance",
+        "tolerances",
+        "members"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "RecoveryProvenance": {
+      "type": "object",
+      "properties": {
+        "source_artifact_sha256": {
+          "type": "string",
+          "minLength": 64,
+          "maxLength": 64
+        },
+        "candidate_artifact_sha256": {
+          "type": "string",
+          "minLength": 64,
+          "maxLength": 64
+        },
+        "source_occt_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "candidate_occt_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "source_driver": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "candidate_driver": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "source_writer_settings": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "candidate_writer_settings": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "command_provenance": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 8192
+        },
+        "measured_wall_time_milliseconds": {
+          "type": "number",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "source_artifact_sha256",
+        "candidate_artifact_sha256",
+        "source_occt_version",
+        "candidate_occt_version",
+        "source_driver",
+        "candidate_driver",
+        "source_writer_settings",
+        "candidate_writer_settings",
+        "command_provenance",
+        "measured_wall_time_milliseconds"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "RecoveryTolerances": {
+      "type": "object",
+      "properties": {
+        "length_mm": {
+          "type": "number",
+          "minimum": 1e-9
+        },
+        "area_mm2": {
+          "type": "number",
+          "minimum": 1e-9
+        },
+        "volume_mm3": {
+          "type": "number",
+          "minimum": 1e-9
+        }
+      },
+      "required": [
+        "length_mm",
+        "area_mm2",
+        "volume_mm3"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "RecoveryMemberRequest": {
+      "type": "object",
+      "properties": {
+        "member_record_id": {
+          "type": "string",
+          "minLength": 28,
+          "maxLength": 128
+        },
+        "kind": {
+          "$ref": "#/$defs/LogicalGroupMemberKind"
+        },
+        "authored_target_id": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "carrier_locator": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "source_fingerprint": {
+          "$ref": "#/$defs/RecoveryFingerprint"
+        },
+        "candidates": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RecoveryCandidate"
+          },
+          "maxItems": 16
+        }
+      },
+      "required": [
+        "member_record_id",
+        "kind",
+        "authored_target_id",
+        "carrier_locator",
+        "candidates"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "LogicalGroupMemberKind": {
+      "type": "string",
+      "enum": [
+        "body",
+        "face"
+      ]
+    },
+    "RecoveryFingerprint": {
+      "type": "object",
+      "properties": {
+        "normalized_length_unit": {
+          "type": "string",
+          "const": "millimeter"
+        },
+        "coordinate_frame": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "occurrence_context": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "geometry_kind": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "area_mm2": {
+          "type": "number",
+          "minimum": 0
+        },
+        "volume_mm3": {
+          "type": "number",
+          "minimum": 0
+        },
+        "centroid_mm": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "bounds_mm": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 6,
+          "maxItems": 6
+        },
+        "adjacency_sha256": {
+          "type": "string",
+          "minLength": 64,
+          "maxLength": 64
+        }
+      },
+      "required": [
+        "normalized_length_unit",
+        "coordinate_frame",
+        "occurrence_context",
+        "geometry_kind",
+        "area_mm2",
+        "volume_mm3",
+        "centroid_mm",
+        "bounds_mm",
+        "adjacency_sha256"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "RecoveryCandidate": {
+      "type": "object",
+      "properties": {
+        "target_handle": {
+          "type": "string",
+          "minLength": 68,
+          "maxLength": 68
+        },
+        "kind": {
+          "$ref": "#/$defs/LogicalGroupMemberKind"
+        },
+        "authored_target_id": {
+          "type": "string",
+          "minLength": 28,
+          "maxLength": 128
+        },
+        "topology_link_verified": {
+          "type": "boolean"
+        },
+        "carrier_locator": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "carrier_locator_validated": {
+          "type": "boolean"
+        },
+        "carrier_record": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "lineage": {
+          "$ref": "#/$defs/RecoveryLineage"
+        },
+        "fingerprint": {
+          "$ref": "#/$defs/RecoveryFingerprint"
+        }
+      },
+      "required": [
+        "target_handle",
+        "kind",
+        "topology_link_verified",
+        "carrier_locator",
+        "carrier_locator_validated",
+        "carrier_record",
+        "lineage"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "RecoveryLineage": {
+      "type": "string",
+      "enum": [
+        "none",
+        "split_from_source",
+        "merged_from_sources"
+      ]
+    }
+  }
+}

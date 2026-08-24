@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="40ad574a40ea2e474d085d26263bf1ecbf3d76f6e14de8d795829e97389ae96b">
+  <title>geometry.step_topology.analyze_recovery.result.a0 — Geometer</title>
+  <link rel="stylesheet" href="../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="40ad574a40ea2e474d085d26263bf1ecbf3d76f6e14de8d795829e97389ae96b" data-page-kind="contract" data-contract-identity="geometry.step_topology.analyze_recovery.result.a0" data-promotion-status="experimental_candidate">
+<main>
+<header>
+  <p class="page-type">Contract root</p>
+  <h1><code>geometry.step_topology.analyze_recovery.result.a0</code></h1>
+  <p class="lede"></p>
+</header>
+<nav class="nav" aria-label="Contract navigation"><a href="../index.html">All contracts</a><a href="../../../../contracts/geometer/generated/schema/StepTopologyAnalyzeRecoveryResultA0.json">JSON Schema</a><a href="../../../../src/tsp/geometer/main.tsp">TypeSpec entry point</a><a href="../../../design/contract-semantics.md">Compatibility policy</a></nav>
+<aside class="callout"><strong>Generated, not authored.</strong> Edit TypeSpec and regenerate. Lifecycle evidence remains in the promotion manifest.</aside>
+
+<section><h2>Identity</h2><table><tbody>
+<tr><th>Contract</th><td><code>geometry.step_topology.analyze_recovery.result.a0</code></td></tr>
+<tr><th>Schema</th><td><code>urn:wavenumber:schema:geometer:geometry.step_topology.analyze_recovery.result:a0</code></td></tr>
+<tr><th>Declaration</th><td><code>Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyAnalyzeRecoveryResultA0</code></td></tr>
+<tr><th>Lifecycle</th><td><span class="status">experimental_candidate</span></td></tr>
+<tr><th>Current authority</th><td><code>typespec_candidate</code></td></tr>
+</tbody></table></section>
+<section class="model-section"><h2>Declarations <span class="tag">17</span></h2><details open id="declaration-wavenumber-geometer-contracts-steptopologya0-steptopologyanalyzerecoveryresulta0"><summary><h2><code>StepTopologyAnalyzeRecoveryResultA0</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>schema</code></td><td>required</td><td><code>&quot;geometry.step_topology.analyze_recovery.result.a0&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>groups</code></td><td>required</td><td><code>RecoveryGroupResult[]</code></td><td>—</td><td><code>max_items=16</code></td><td></td></tr>
+<tr><td><code>diagnostics</code></td><td>required</td><td><code>DiagnosticA0[]</code></td><td>—</td><td><code>max_items=256</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-common-diagnostica0"><summary><h2><code>DiagnosticA0</code> <span class="tag">model</span></h2></summary><p>A strict cross-transport diagnostic; message text is informative rather than identity.</p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>code</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=1</code></td><td>Stable namespaced diagnostic identity.</td></tr>
+<tr><td><code>category</code></td><td>required</td><td><code>DiagnosticCategory</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>message</code></td><td>required</td><td><code>string</code></td><td>—</td><td>none</td><td>Human-readable non-normative detail.</td></tr>
+<tr><td><code>retryable</code></td><td>required</td><td><code>boolean</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>path</code></td><td>optional</td><td><code>string</code></td><td>—</td><td>none</td><td>RFC 6901 JSON Pointer when a document location is meaningful.</td></tr>
+<tr><td><code>operation</code></td><td>optional</td><td><code>string</code></td><td>—</td><td>none</td><td>Stable operation identity when the diagnostic is operation-scoped.</td></tr>
+<tr><td><code>request_id</code></td><td>optional</td><td><code>string</code></td><td>—</td><td>none</td><td>Transport correlation identifier when available.</td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-common-diagnosticcategory"><summary><h2><code>DiagnosticCategory</code> <span class="tag">enum</span></h2></summary><p>Stable diagnostic category with distinct transport, contract, and operation domains.</p><table><thead><tr><th>Member</th><th>Wire value</th><th>Description</th></tr></thead><tbody><tr><td><code>transport</code></td><td><code>transport</code></td><td></td></tr>
+<tr><td><code>contract</code></td><td><code>contract</code></td><td></td></tr>
+<tr><td><code>operation</code></td><td><code>operation</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-steptopologya0-logicalgroupmemberkind"><summary><h2><code>LogicalGroupMemberKind</code> <span class="tag">enum</span></h2></summary><p></p><table><thead><tr><th>Member</th><th>Wire value</th><th>Description</th></tr></thead><tbody><tr><td><code>body</code></td><td><code>body</code></td><td></td></tr>
+<tr><td><code>face</code></td><td><code>face</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-steptopologya0-recoverycarrierrecord"><summary><h2><code>RecoveryCarrierRecord</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>value</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=1</code> <code>max_length=4096</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-steptopologya0-recoverycomparedfield"><summary><h2><code>RecoveryComparedField</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>value</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=1</code> <code>max_length=128</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-steptopologya0-recoveryconfidence"><summary><h2><code>RecoveryConfidence</code> <span class="tag">enum</span></h2></summary><p></p><table><thead><tr><th>Member</th><th>Wire value</th><th>Description</th></tr></thead><tbody><tr><td><code>high</code></td><td><code>high</code></td><td></td></tr>
+<tr><td><code>medium</code></td><td><code>medium</code></td><td></td></tr>
+<tr><td><code>low</code></td><td><code>low</code></td><td></td></tr>
+<tr><td><code>none</code></td><td><code>none</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-steptopologya0-recoveryevidence"><summary><h2><code>RecoveryEvidence</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>candidate_count</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>max_value=16</code></td><td></td></tr>
+<tr><td><code>matching_candidate_count</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>max_value=16</code></td><td></td></tr>
+<tr><td><code>compared_fields</code></td><td>required</td><td><code>RecoveryComparedField[]</code></td><td>—</td><td><code>max_items=16</code></td><td></td></tr>
+<tr><td><code>tolerances</code></td><td>required</td><td><code>RecoveryTolerances</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>carrier_records</code></td><td>required</td><td><code>RecoveryCarrierRecord[]</code></td><td>—</td><td><code>max_items=16</code></td><td></td></tr>
+<tr><td><code>rejected_alternatives</code></td><td>required</td><td><code>RecoveryRejectedAlternative[]</code></td><td>—</td><td><code>max_items=16</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-steptopologya0-recoverygroupcompleteness"><summary><h2><code>RecoveryGroupCompleteness</code> <span class="tag">enum</span></h2></summary><p></p><table><thead><tr><th>Member</th><th>Wire value</th><th>Description</th></tr></thead><tbody><tr><td><code>fully_recovered</code></td><td><code>fully_recovered</code></td><td></td></tr>
+<tr><td><code>partially_recovered</code></td><td><code>partially_recovered</code></td><td></td></tr>
+<tr><td><code>unrecovered</code></td><td><code>unrecovered</code></td><td></td></tr>
+<tr><td><code>unsupported</code></td><td><code>unsupported</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-steptopologya0-recoverygroupresult"><summary><h2><code>RecoveryGroupResult</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>group_authored_id</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=28</code> <code>max_length=128</code></td><td></td></tr>
+<tr><td><code>provenance</code></td><td>required</td><td><code>RecoveryProvenance</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>resolution_state</code></td><td>required</td><td><code>RecoveryResolutionState</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>completeness</code></td><td>required</td><td><code>RecoveryGroupCompleteness</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>resolved_member_count</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>max_value=256</code></td><td></td></tr>
+<tr><td><code>ambiguous_member_count</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>max_value=256</code></td><td></td></tr>
+<tr><td><code>unresolved_member_count</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>max_value=256</code></td><td></td></tr>
+<tr><td><code>unsupported_member_count</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>max_value=256</code></td><td></td></tr>
+<tr><td><code>members</code></td><td>required</td><td><code>RecoveryMemberResult[]</code></td><td>—</td><td><code>min_items=1</code> <code>max_items=256</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-steptopologya0-recoverymemberresult"><summary><h2><code>RecoveryMemberResult</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>member_record_id</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=28</code> <code>max_length=128</code></td><td></td></tr>
+<tr><td><code>kind</code></td><td>required</td><td><code>LogicalGroupMemberKind</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>authored_target_id</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>max_length=128</code></td><td></td></tr>
+<tr><td><code>resolution_state</code></td><td>required</td><td><code>RecoveryResolutionState</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>resolution_method</code></td><td>required</td><td><code>RecoveryResolutionMethod</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>topology_comparison</code></td><td>required</td><td><code>RecoveryTopologyComparison</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>confidence</code></td><td>required</td><td><code>RecoveryConfidence</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>resolved_target_handle</code></td><td>optional</td><td><code>string</code></td><td>—</td><td><code>min_length=68</code> <code>max_length=68</code></td><td></td></tr>
+<tr><td><code>evidence</code></td><td>required</td><td><code>RecoveryEvidence</code></td><td>—</td><td>none</td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-steptopologya0-recoveryprovenance"><summary><h2><code>RecoveryProvenance</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>source_artifact_sha256</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=64</code> <code>max_length=64</code></td><td></td></tr>
+<tr><td><code>candidate_artifact_sha256</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=64</code> <code>max_length=64</code></td><td></td></tr>
+<tr><td><code>source_occt_version</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=1</code> <code>max_length=64</code></td><td></td></tr>
+<tr><td><code>candidate_occt_version</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=1</code> <code>max_length=64</code></td><td></td></tr>
+<tr><td><code>source_driver</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=1</code> <code>max_length=128</code></td><td></td></tr>
+<tr><td><code>candidate_driver</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=1</code> <code>max_length=128</code></td><td></td></tr>
+<tr><td><code>source_writer_settings</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=1</code> <code>max_length=4096</code></td><td></td></tr>
+<tr><td><code>candidate_writer_settings</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=1</code> <code>max_length=4096</code></td><td></td></tr>
+<tr><td><code>command_provenance</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=1</code> <code>max_length=8192</code></td><td></td></tr>
+<tr><td><code>measured_wall_time_milliseconds</code></td><td>required</td><td><code>float64</code></td><td>—</td><td><code>min_value=0</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-steptopologya0-recoveryrejectedalternative"><summary><h2><code>RecoveryRejectedAlternative</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>target_handle</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=68</code> <code>max_length=68</code></td><td></td></tr>
+<tr><td><code>reason</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=1</code> <code>max_length=4096</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-steptopologya0-recoveryresolutionmethod"><summary><h2><code>RecoveryResolutionMethod</code> <span class="tag">enum</span></h2></summary><p></p><table><thead><tr><th>Member</th><th>Wire value</th><th>Description</th></tr></thead><tbody><tr><td><code>authored_id_topology_link</code></td><td><code>authored_id_topology_link</code></td><td></td></tr>
+<tr><td><code>validated_carrier_locator</code></td><td><code>validated_carrier_locator</code></td><td></td></tr>
+<tr><td><code>unique_geometry_adjacency_fingerprint</code></td><td><code>unique_geometry_adjacency_fingerprint</code></td><td></td></tr>
+<tr><td><code>none</code></td><td><code>none</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-steptopologya0-recoveryresolutionstate"><summary><h2><code>RecoveryResolutionState</code> <span class="tag">enum</span></h2></summary><p></p><table><thead><tr><th>Member</th><th>Wire value</th><th>Description</th></tr></thead><tbody><tr><td><code>resolved</code></td><td><code>resolved</code></td><td></td></tr>
+<tr><td><code>ambiguous</code></td><td><code>ambiguous</code></td><td></td></tr>
+<tr><td><code>unresolved</code></td><td><code>unresolved</code></td><td></td></tr>
+<tr><td><code>unsupported</code></td><td><code>unsupported</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-steptopologya0-recoverytolerances"><summary><h2><code>RecoveryTolerances</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>length_mm</code></td><td>required</td><td><code>float64</code></td><td>—</td><td><code>min_value=1e-9</code></td><td></td></tr>
+<tr><td><code>area_mm2</code></td><td>required</td><td><code>float64</code></td><td>—</td><td><code>min_value=1e-9</code></td><td></td></tr>
+<tr><td><code>volume_mm3</code></td><td>required</td><td><code>float64</code></td><td>—</td><td><code>min_value=1e-9</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-steptopologya0-recoverytopologycomparison"><summary><h2><code>RecoveryTopologyComparison</code> <span class="tag">enum</span></h2></summary><p></p><table><thead><tr><th>Member</th><th>Wire value</th><th>Description</th></tr></thead><tbody><tr><td><code>unchanged</code></td><td><code>unchanged</code></td><td></td></tr>
+<tr><td><code>relocated</code></td><td><code>relocated</code></td><td></td></tr>
+<tr><td><code>split</code></td><td><code>split</code></td><td></td></tr>
+<tr><td><code>merged</code></td><td><code>merged</code></td><td></td></tr>
+<tr><td><code>otherwise_changed</code></td><td><code>otherwise_changed</code></td><td></td></tr>
+<tr><td><code>not_compared</code></td><td><code>not_compared</code></td><td></td></tr>
+<tr><td><code>unavailable</code></td><td><code>unavailable</code></td><td></td></tr></tbody></table></details></section>
+</main>
+</body>
+</html>

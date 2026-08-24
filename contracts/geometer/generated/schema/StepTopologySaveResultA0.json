@@ -1,0 +1,360 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:wavenumber:schema:geometer:geometry.step_topology.save.result:a0",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "type": "string",
+      "const": "geometry.step_topology.save.result.a0"
+    },
+    "state": {
+      "$ref": "#/$defs/MutationSessionState"
+    },
+    "source_sha256": {
+      "type": "string",
+      "minLength": 64,
+      "maxLength": 64
+    },
+    "artifact": {
+      "$ref": "#/$defs/SavePersistenceArtifact"
+    },
+    "capabilities": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/CarrierCapability"
+      },
+      "minItems": 5,
+      "maxItems": 5
+    },
+    "diagnostics": {
+      "type": "array",
+      "items": {
+        "$ref": "urn:wavenumber:schema:geometer:geometry.common.diagnostic:a0"
+      },
+      "maxItems": 256
+    }
+  },
+  "required": [
+    "schema",
+    "state",
+    "source_sha256",
+    "artifact",
+    "capabilities",
+    "diagnostics"
+  ],
+  "unevaluatedProperties": {
+    "not": {}
+  },
+  "$defs": {
+    "MutationSessionState": {
+      "type": "object",
+      "properties": {
+        "session": {
+          "$ref": "#/$defs/SessionReference"
+        },
+        "edit_journal_revision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "accounted_string_bytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 16777216
+        },
+        "estimated_resident_bytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 536870912
+        }
+      },
+      "required": [
+        "session",
+        "edit_journal_revision",
+        "accounted_string_bytes",
+        "estimated_resident_bytes"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "SavePersistenceArtifact": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/XbfPersistenceArtifact"
+        },
+        {
+          "$ref": "#/$defs/XmlXcafPersistenceArtifact"
+        },
+        {
+          "$ref": "#/$defs/StepAp242PersistenceArtifact"
+        },
+        {
+          "$ref": "#/$defs/JsonSidecarPersistenceArtifact"
+        }
+      ]
+    },
+    "CarrierCapability": {
+      "type": "object",
+      "properties": {
+        "carrier": {
+          "$ref": "#/$defs/PersistenceCarrier"
+        },
+        "save": {
+          "$ref": "#/$defs/CarrierSupportState"
+        },
+        "restore": {
+          "$ref": "#/$defs/CarrierSupportState"
+        },
+        "authored_payload": {
+          "$ref": "#/$defs/CarrierSupportState"
+        },
+        "topology_links": {
+          "$ref": "#/$defs/CarrierSupportState"
+        },
+        "notes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CarrierCapabilityNote"
+          },
+          "maxItems": 16
+        }
+      },
+      "required": [
+        "carrier",
+        "save",
+        "restore",
+        "authored_payload",
+        "topology_links",
+        "notes"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "SessionReference": {
+      "type": "object",
+      "properties": {
+        "session_handle": {
+          "type": "string",
+          "minLength": 68,
+          "maxLength": 68
+        },
+        "generation": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        }
+      },
+      "required": [
+        "session_handle",
+        "generation"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "XbfPersistenceArtifact": {
+      "type": "object",
+      "properties": {
+        "carrier": {
+          "type": "string",
+          "const": "xbf"
+        },
+        "name": {
+          "type": "string",
+          "const": "state_artifact"
+        },
+        "media_type": {
+          "type": "string",
+          "const": "application/vnd.opencascade.xbf"
+        },
+        "format": {
+          "type": "string",
+          "const": "ocaf-xbf-version-12"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 536870912
+        },
+        "sha256": {
+          "type": "string",
+          "minLength": 64,
+          "maxLength": 64
+        }
+      },
+      "required": [
+        "carrier",
+        "name",
+        "media_type",
+        "format",
+        "bytes",
+        "sha256"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "XmlXcafPersistenceArtifact": {
+      "type": "object",
+      "properties": {
+        "carrier": {
+          "type": "string",
+          "const": "xml_xcaf"
+        },
+        "name": {
+          "type": "string",
+          "const": "state_artifact"
+        },
+        "media_type": {
+          "type": "string",
+          "const": "application/vnd.opencascade.xml-xcaf"
+        },
+        "format": {
+          "type": "string",
+          "const": "ocaf-xml-xcaf-version-12"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 536870912
+        },
+        "sha256": {
+          "type": "string",
+          "minLength": 64,
+          "maxLength": 64
+        }
+      },
+      "required": [
+        "carrier",
+        "name",
+        "media_type",
+        "format",
+        "bytes",
+        "sha256"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "StepAp242PersistenceArtifact": {
+      "type": "object",
+      "properties": {
+        "carrier": {
+          "type": "string",
+          "const": "step_ap242"
+        },
+        "name": {
+          "type": "string",
+          "const": "state_artifact"
+        },
+        "media_type": {
+          "type": "string",
+          "const": "application/step"
+        },
+        "format": {
+          "type": "string",
+          "const": "ap242-managed-model-based-3d-engineering"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 536870912
+        },
+        "sha256": {
+          "type": "string",
+          "minLength": 64,
+          "maxLength": 64
+        }
+      },
+      "required": [
+        "carrier",
+        "name",
+        "media_type",
+        "format",
+        "bytes",
+        "sha256"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "JsonSidecarPersistenceArtifact": {
+      "type": "object",
+      "properties": {
+        "carrier": {
+          "type": "string",
+          "const": "json_sidecar"
+        },
+        "name": {
+          "type": "string",
+          "const": "state_artifact"
+        },
+        "media_type": {
+          "type": "string",
+          "const": "application/vnd.wavenumber.geometer.step-topology-sidecar+json"
+        },
+        "format": {
+          "type": "string",
+          "const": "geometer.step_topology_sidecar.a0"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 67108864
+        },
+        "sha256": {
+          "type": "string",
+          "minLength": 64,
+          "maxLength": 64
+        }
+      },
+      "required": [
+        "carrier",
+        "name",
+        "media_type",
+        "format",
+        "bytes",
+        "sha256"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "PersistenceCarrier": {
+      "type": "string",
+      "enum": [
+        "xbf",
+        "xml_xcaf",
+        "step_ap242",
+        "json_sidecar",
+        "edit_journal"
+      ]
+    },
+    "CarrierSupportState": {
+      "type": "string",
+      "enum": [
+        "supported",
+        "experimental",
+        "unsupported"
+      ]
+    },
+    "CarrierCapabilityNote": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        }
+      },
+      "required": [
+        "value"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    }
+  }
+}

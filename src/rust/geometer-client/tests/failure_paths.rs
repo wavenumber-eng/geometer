@@ -243,8 +243,8 @@ fn native_executable(root: &Path) -> PathBuf {
 fn test_server_executable(root: &Path, name: &str) -> PathBuf {
     let relative = Path::new("tests/cpp").join(executable_name(name));
     for build_root in [
-        root.join(format!("build-native-{}", platform_name())),
         root.join("build"),
+        root.join(format!("build-native-{}", platform_name())),
     ] {
         let candidate = build_root.join(&relative);
         if candidate.is_file() {

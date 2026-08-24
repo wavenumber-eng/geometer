@@ -117,6 +117,12 @@ npm run generate:contracts
 npm run check:contracts
 ```
 
+The same generation command typechecks and bundles the native-process STEP
+topology annotation reference to
+`dist/native/examples/step-topology-annotation-reference.mjs`. Run it as
+documented in [`examples/node/README.md`](../../examples/node/README.md) after a
+native build.
+
 The check compiles with warnings as errors, validates the normalized catalog,
 cross-checks pilot roots and operations against the promotion manifest,
 rejects stale, missing, unexpected, unlinked, or externally dependent generated
@@ -751,6 +757,59 @@ uv run pytest tests\python\test_topology_glb_raycast.py -q
 
 The emitted GLB is a neutral-material topology work packet and is not the existing
 presentation-oriented STEP-to-GLB output.
+
+The native persistence research has focused same-build XBF/XML and AP242
+product/body/face tests. The AP242 test uses the OCCT model API and generated
+geometry; it does not require or copy the licensed ISO package:
+
+```powershell
+cmake --build build --config Release --target `
+  geometer_step_topology_xcaf_persistence_test `
+  geometer_step_topology_xcaf_custom_driver_test `
+  geometer_step_topology_ap242_persistence_test `
+  geometer_step_topology_recovery_test `
+  geometer_step_topology_hierarchy_test
+ctest --test-dir build -C Release --output-on-failure -R `
+  "geometer_step_topology_(xcaf|ap242|recovery|hierarchy).*test"
+```
+
+The XCAF baseline uses standard names and NamedData. The separate custom-driver
+test registers one test-only namespaced attribute for binary and XML, checks
+serialized OCAF version 12, and proves that a stock reader can report success
+while dropping the attribute when its retrieval driver is absent. Neither is a
+cross-version or STEP interoperability claim.
+
+The selected custom-driver compatibility matrix uses OCCT 7.9.3 and 8.0.1 with
+the same MSVC v143 x64 static `/MD` ABI. Prepare the isolated older dependency
+once, then run the reusable matrix harness:
+
+```powershell
+python scripts\build_occt.py `
+  --occt-tag V7_9_3 `
+  --occt-state-root .deps\occt-qualification\7.9.3 `
+  --binary-cache auto
+python scripts\run_xcaf_custom_driver_matrix.py
+```
+
+The harness compiles one source file against both installs and exercises
+same-version, old-write/new-read, new-write/old-read, and missing-reader-driver
+behavior for XBF and XML. Its artifacts and provenance report remain generated
+under `.deps/xcaf-matrix/automated/`; do not commit them. The durable measured
+result and its narrow scope are recorded in
+`docs/design/step-topology-xcaf-persistence.md`.
+
+Specification traceability is recorded as relative locators in the design
+docs. `GEOMETER_AP242_SPEC_ROOT` is only a manual reviewer convention; no test
+or script consumes it. A reviewer may point it at the locally licensed ISO
+10303-242:2025 package and resolve the recorded relative paths, for example:
+
+```powershell
+$env:GEOMETER_AP242_SPEC_ROOT = '<licensed-package-root>'
+Test-Path (Join-Path $env:GEOMETER_AP242_SPEC_ROOT `
+  'data/resources/shape_tolerance_schema/shape_tolerance_schema.htm')
+```
+
+Never commit the licensed contents or an absolute workstation path.
 
 Current limitation: the top-level CMake configure always resolves OCCT first.
 That means even low-level tests need the native dependency setup when run

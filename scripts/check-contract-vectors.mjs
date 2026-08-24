@@ -7,13 +7,42 @@ import { fileURLToPath } from "node:url";
 
 import Ajv2020 from "ajv/dist/2020.js";
 import {
+  decodeIpcRequestA0Json,
+  decodeOperationOutcomeA0Json,
+  decodeStepTopologyAnalyzeRecoveryRequestA0Json,
+  decodeStepTopologyAnalyzeRecoveryResultA0Json,
+  decodeStepTopologyApplyHierarchyRequestA0Json,
+  decodeStepTopologyApplyHierarchyResultA0Json,
+  decodeStepTopologyApplyLogicalGroupsRequestA0Json,
+  decodeStepTopologyApplyLogicalGroupsResultA0Json,
+  decodeStepTopologyApplyMetadataProbesRequestA0Json,
+  decodeStepTopologyApplyMetadataProbesResultA0Json,
+  decodeStepTopologyCheckpointEditJournalResultA0Json,
   decodeStepTopologyInspectResultA0Json,
   decodeStepTopologyRenderResultA0Json,
   decodeStepTopologyResolveHitRequestA0Json,
+  decodeStepTopologyRestoreRequestA0Json,
+  decodeStepTopologyRestoreResultA0Json,
+  decodeStepTopologySaveRequestA0Json,
+  decodeStepTopologySaveResultA0Json,
+  operationCatalog,
   StepTopologyInspectionAccumulator,
+  validateIpcOutcomeOperationPair,
+  validateIpcRequestOperationPair,
+  validateStepTopologyCheckpointAttachment,
+  validateStepTopologyHierarchyCommands,
+  validateStepTopologyHierarchyResult,
   validateStepTopologyInspection,
+  validateStepTopologyLogicalGroupCommands,
+  validateStepTopologyLogicalGroupResult,
+  validateStepTopologyMetadataProbeCommands,
+  validateStepTopologyRecoveryRequest,
+  validateStepTopologyRecoveryResults,
   validateStepTopologyRenderAttachments,
   validateStepTopologyResolveHitContext,
+  validateStepTopologyRestoreAttachments,
+  validateStepTopologyRestoreResult,
+  validateStepTopologySaveAttachments,
 } from "../dist/wasm/npm/geometer/index.js";
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -153,6 +182,136 @@ async function main() {
             decodeStepTopologyRenderResultA0Json(bytes),
             attachments,
           );
+        } else if (vector.oracle === "step_topology_logical_group_commands") {
+          validateStepTopologyLogicalGroupCommands(
+            decodeStepTopologyApplyLogicalGroupsRequestA0Json(bytes),
+          );
+        } else if (vector.oracle === "step_topology_logical_group_commands_high_fan_in") {
+          const request = decodeStepTopologyApplyLogicalGroupsRequestA0Json(bytes);
+          const split = Math.floor(vector.fan_in / 2);
+          validateStepTopologyLogicalGroupCommands({
+            ...request,
+            commands: [
+              {
+                kind: "create",
+                authored_id: "wn.geometer.research.group.aggregate-a",
+                name: "Aggregate A",
+                member_handles: generatedTargetHandles(split),
+              },
+              {
+                kind: "create",
+                authored_id: "wn.geometer.research.group.aggregate-b",
+                name: "Aggregate B",
+                member_handles: generatedTargetHandles(vector.fan_in - split, split),
+              },
+            ],
+          });
+        } else if (vector.oracle === "step_topology_logical_group_result") {
+          validateStepTopologyLogicalGroupResult(
+            decodeStepTopologyApplyLogicalGroupsResultA0Json(bytes),
+          );
+        } else if (vector.oracle === "step_topology_logical_group_result_high_fan_in") {
+          const result = decodeStepTopologyApplyLogicalGroupsResultA0Json(bytes);
+          const split = Math.floor(vector.fan_in / 2);
+          validateStepTopologyLogicalGroupResult({
+            ...result,
+            groups: [
+              {
+                ...result.groups[0],
+                authored_id: "wn.geometer.research.group.aggregate-a",
+                name: "Aggregate A",
+                members: generatedTargetHandles(split).map((target_handle) => ({
+                  kind: "face",
+                  target_handle,
+                })),
+              },
+              {
+                ...result.groups[0],
+                authored_id: "wn.geometer.research.group.aggregate-b",
+                name: "Aggregate B",
+                members: generatedTargetHandles(vector.fan_in - split, split).map(
+                  (target_handle) => ({
+                    kind: "face",
+                    target_handle,
+                  }),
+                ),
+              },
+            ],
+          });
+        } else if (vector.oracle === "step_topology_metadata_probe_result") {
+          validateStepTopologyLogicalGroupResult(
+            decodeStepTopologyApplyMetadataProbesResultA0Json(bytes),
+          );
+        } else if (vector.oracle === "step_topology_metadata_probe_commands") {
+          validateStepTopologyMetadataProbeCommands(
+            decodeStepTopologyApplyMetadataProbesRequestA0Json(bytes),
+          );
+        } else if (vector.oracle === "step_topology_checkpoint_attachment") {
+          const attachments = [];
+          for (const attachment of vector.attachments) {
+            referencedFiles.add(attachment.file);
+            attachments.push({
+              name: attachment.name,
+              mediaType: attachment.media_type,
+              data: await readFile(join(vectorRoot, attachment.file)),
+            });
+          }
+          await validateStepTopologyCheckpointAttachment(
+            decodeStepTopologyCheckpointEditJournalResultA0Json(bytes),
+            attachments,
+          );
+        } else if (vector.oracle === "step_topology_hierarchy_commands") {
+          validateStepTopologyHierarchyCommands(
+            decodeStepTopologyApplyHierarchyRequestA0Json(bytes),
+          );
+        } else if (vector.oracle === "step_topology_hierarchy_result") {
+          validateStepTopologyHierarchyResult(decodeStepTopologyApplyHierarchyResultA0Json(bytes));
+        } else if (vector.oracle === "step_topology_recovery_request") {
+          validateStepTopologyRecoveryRequest(
+            decodeStepTopologyAnalyzeRecoveryRequestA0Json(bytes).groups,
+          );
+        } else if (vector.oracle === "step_topology_recovery_result") {
+          validateStepTopologyRecoveryResults(
+            decodeStepTopologyAnalyzeRecoveryResultA0Json(bytes).groups,
+          );
+        } else if (vector.oracle === "step_topology_save_attachments") {
+          referencedFiles.add(vector.context_file);
+          await validateStepTopologySaveAttachments(
+            decodeStepTopologySaveRequestA0Json(
+              await readFile(join(vectorRoot, vector.context_file)),
+            ),
+            decodeStepTopologySaveResultA0Json(bytes),
+            await loadSemanticAttachments(vector, vectorRoot, referencedFiles),
+          );
+        } else if (vector.oracle === "step_topology_restore_attachments") {
+          await validateStepTopologyRestoreAttachments(
+            decodeStepTopologyRestoreRequestA0Json(bytes),
+            await loadSemanticAttachments(vector, vectorRoot, referencedFiles),
+          );
+        } else if (vector.oracle === "step_topology_restore_result") {
+          referencedFiles.add(vector.context_file);
+          validateStepTopologyRestoreResult(
+            decodeStepTopologyRestoreRequestA0Json(
+              await readFile(join(vectorRoot, vector.context_file)),
+            ),
+            decodeStepTopologyRestoreResultA0Json(bytes),
+          );
+        } else if (vector.oracle === "step_topology_ipc_request_pair") {
+          validateIpcRequestOperationPair(decodeIpcRequestA0Json(bytes));
+        } else if (vector.oracle === "step_topology_ipc_result_pair") {
+          validateIpcOutcomeOperationPair(decodeOperationOutcomeA0Json(bytes));
+        } else if (vector.oracle === "step_topology_ipc_pair_matrix") {
+          validateIpcRequestOperationPair(decodeIpcRequestA0Json(bytes));
+          for (const [operation, contract] of vector.request_pairs) {
+            if (operationCatalog[operation]?.requestContract !== contract) {
+              throw new Error(`Request pair mismatch for ${operation}.`);
+            }
+          }
+          for (const [operation, contract] of vector.result_pairs) {
+            if (operationCatalog[operation]?.resultContract !== contract) {
+              throw new Error(`Result pair mismatch for ${operation}.`);
+            }
+          }
         } else {
           throw new Error(`${vector.id}: unknown STEP topology semantic oracle.`);
         }
@@ -264,9 +423,14 @@ function validateManifest(value) {
         ) {
           throw new Error(`${vector.id}: session oracle context is incomplete.`);
         }
-      } else if (vector.oracle === "step_topology_render_attachments") {
+      } else if (
+        vector.oracle === "step_topology_render_attachments" ||
+        vector.oracle === "step_topology_checkpoint_attachment" ||
+        vector.oracle === "step_topology_save_attachments" ||
+        vector.oracle === "step_topology_restore_attachments"
+      ) {
         if (!Array.isArray(vector.attachments) || vector.attachments.length === 0) {
-          throw new Error(`${vector.id}: render oracle attachments are missing.`);
+          throw new Error(`${vector.id}: attachment oracle inputs are missing.`);
         }
         for (const attachment of vector.attachments) {
           if (
@@ -275,8 +439,18 @@ function validateManifest(value) {
             !attachment.file?.startsWith("cases/") ||
             attachment.file.includes("..")
           ) {
-            throw new Error(`${vector.id}: render oracle attachment is invalid.`);
+            throw new Error(`${vector.id}: attachment oracle input is invalid.`);
           }
+        }
+        if (
+          vector.oracle === "step_topology_save_attachments" &&
+          (!vector.context_file?.startsWith("cases/") || vector.context_file.includes(".."))
+        ) {
+          throw new Error(`${vector.id}: save oracle context is invalid.`);
+        }
+      } else if (vector.oracle === "step_topology_restore_result") {
+        if (!vector.context_file?.startsWith("cases/") || vector.context_file.includes("..")) {
+          throw new Error(`${vector.id}: restore-result oracle context is invalid.`);
         }
       } else if (vector.oracle === "step_topology_inspection_high_fan_in") {
         if (
@@ -299,7 +473,37 @@ function validateManifest(value) {
             throw new Error(`${vector.id}: inspection prior_pages are invalid.`);
           }
         }
-      } else {
+      } else if (
+        vector.oracle === "step_topology_logical_group_commands_high_fan_in" ||
+        vector.oracle === "step_topology_logical_group_result_high_fan_in"
+      ) {
+        if (
+          !Number.isSafeInteger(vector.fan_in) ||
+          (vector.fan_in !== 100000 && vector.fan_in !== 100001)
+        ) {
+          throw new Error(`${vector.id}: logical-group high-fan-in size is invalid.`);
+        }
+      } else if (vector.oracle === "step_topology_ipc_pair_matrix") {
+        if (
+          !Array.isArray(vector.request_pairs) ||
+          vector.request_pairs.length !== 12 ||
+          !Array.isArray(vector.result_pairs) ||
+          vector.result_pairs.length !== 12
+        ) {
+          throw new Error(`${vector.id}: IPC pair matrix must cover all topology operations.`);
+        }
+      } else if (
+        vector.oracle !== "step_topology_logical_group_commands" &&
+        vector.oracle !== "step_topology_metadata_probe_commands" &&
+        vector.oracle !== "step_topology_metadata_probe_result" &&
+        vector.oracle !== "step_topology_logical_group_result" &&
+        vector.oracle !== "step_topology_hierarchy_commands" &&
+        vector.oracle !== "step_topology_hierarchy_result" &&
+        vector.oracle !== "step_topology_recovery_request" &&
+        vector.oracle !== "step_topology_recovery_result" &&
+        vector.oracle !== "step_topology_ipc_request_pair" &&
+        vector.oracle !== "step_topology_ipc_result_pair"
+      ) {
         throw new Error(`${vector.id}: unsupported STEP topology semantic oracle.`);
       }
     }
@@ -360,7 +564,7 @@ function highFanInInspectionPages(seed, fanIn) {
   );
   const pages = [];
   for (let offset = 0; offset < fanIn; offset += 1024) {
-    const terminal = offset + 1024 >= fanIn;
+    const finalBodyPage = offset + 1024 >= fanIn;
     const handles = bodyHandles.slice(offset, offset + 1024);
     pages.push({
       schema: "geometry.step_topology.inspect.result.a0",
@@ -372,6 +576,7 @@ function highFanInInspectionPages(seed, fanIn) {
         bodies: fanIn,
         shells: 1,
         faces: 0,
+        memberships: fanIn,
       },
       page: {
         definitions:
@@ -391,28 +596,59 @@ function highFanInInspectionPages(seed, fanIn) {
           handle,
           definition_handle: definitionHandle,
           topology_kind: "solid",
-          shell_handles: [shellHandle],
-          face_handles: [],
+          shell_count: 1,
+          face_count: 0,
           bounds_mm: [0, 0, 0, 1, 1, 1],
           volume_mm3: 1,
         })),
-        shells: terminal
+        shells: finalBodyPage
           ? [
               {
                 handle: shellHandle,
                 definition_handle: definitionHandle,
-                body_handles: bodyHandles,
-                face_handles: [],
+                body_count: fanIn,
+                face_count: 0,
               },
             ]
           : [],
         faces: [],
-        ...(terminal ? {} : { next_cursor: `body-${offset + handles.length}` }),
+        memberships: [],
+        next_cursor: `body-${offset + handles.length}`,
+      },
+      diagnostics: [],
+    });
+  }
+  for (let offset = 0; offset < fanIn; offset += 1024) {
+    const handles = bodyHandles.slice(offset, offset + 1024);
+    const terminal = offset + handles.length >= fanIn;
+    pages.push({
+      schema: "geometry.step_topology.inspect.result.a0",
+      session: seed.session,
+      counts: pages[0].counts,
+      page: {
+        definitions: [],
+        occurrences: [],
+        bodies: [],
+        shells: [],
+        faces: [],
+        memberships: handles.map((handle) => ({
+          kind: "body_shell",
+          owner_handle: handle,
+          member_handle: shellHandle,
+        })),
+        ...(terminal ? {} : { next_cursor: `membership-${offset + handles.length}` }),
       },
       diagnostics: [],
     });
   }
   return pages;
+}
+
+function generatedTargetHandles(count, offset = 0) {
+  return Array.from(
+    { length: count },
+    (_, index) => `gtt_${(offset + index + 1).toString(16).padStart(64, "0")}`,
+  );
 }
 
 function assertOutcome(vector, valid, detail) {
@@ -543,6 +779,19 @@ class StrictJsonParser {
   fail(message) {
     throw new Error(`${message} at byte-compatible character offset ${this.offset}`);
   }
+}
+
+async function loadSemanticAttachments(vector, vectorRoot, referencedFiles) {
+  const attachments = [];
+  for (const attachment of vector.attachments) {
+    referencedFiles.add(attachment.file);
+    attachments.push({
+      name: attachment.name,
+      mediaType: attachment.media_type,
+      data: await readFile(join(vectorRoot, attachment.file)),
+    });
+  }
+  return attachments;
 }
 
 async function listFiles(root) {

@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Literal, TypeAlias
 
-NORMALIZED_CATALOG_SHA256 = "6cacbf010b3ae7a2af74c68517e5bcd68e3f4da11c904fb2626debf0ba8d17e2"
+NORMALIZED_CATALOG_SHA256 = "40ad574a40ea2e474d085d26263bf1ecbf3d76f6e14de8d795829e97389ae96b"
 
 JobId: TypeAlias = int
 
@@ -638,8 +638,484 @@ class ModelBoundsOptionsA0:
     model_transform: Matrix4x4 | None = None
 
 
-# Strict generic request envelope for executable IPC A0.
-IpcRequestValueA0: TypeAlias = ModelBoundsOptionsA0 | PackedAttachmentProjectionA0
+@dataclass(frozen=True, slots=True, kw_only=True)
+class StepTopologyOpenRequestA0:
+    schema: Literal["geometry.step_topology.open.request.a0"]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class SessionReference:
+    session_handle: str
+    generation: int
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class StepTopologyCloseRequestA0:
+    schema: Literal["geometry.step_topology.close.request.a0"]
+    session: SessionReference
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class PageRequest:
+    cursor: str | None = None
+    limit: int
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class StepTopologyInspectRequestA0:
+    schema: Literal["geometry.step_topology.inspect.request.a0"]
+    session: SessionReference
+    page: PageRequest
+    include_source_entity_evidence: bool
+    include_diagnostics: bool
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class TessellationOptions:
+    linear_deflection_mm: float
+    angular_deflection_rad: float
+    relative: bool
+    parallel: bool
+    source_to_render: tuple[float, ...]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class StepTopologyRenderRequestA0:
+    schema: Literal["geometry.step_topology.render.request.a0"]
+    session: SessionReference
+    tessellation: TessellationOptions
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class StepTopologyResolveHitRequestA0:
+    schema: Literal["geometry.step_topology.resolve_hit.request.a0"]
+    session: SessionReference
+    artifact_handle: str
+    content_sha256: str
+    instance_index: int
+    primitive_index: int
+    primitive_triangle_index: int
+    occurrence_handle: str
+    body_handle: str
+    face_handle: str
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class CreateLogicalGroupCommand:
+    kind: Literal["create"]
+    authored_id: str
+    name: str
+    member_handles: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class RenameLogicalGroupCommand:
+    kind: Literal["rename"]
+    authored_id: str
+    expected_revision: int
+    name: str
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class ReplaceLogicalGroupMembersCommand:
+    kind: Literal["replace_members"]
+    authored_id: str
+    expected_revision: int
+    member_handles: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class EraseLogicalGroupCommand:
+    kind: Literal["erase"]
+    authored_id: str
+    expected_revision: int
+
+
+LogicalGroupCommand: TypeAlias = (
+    CreateLogicalGroupCommand | RenameLogicalGroupCommand | ReplaceLogicalGroupMembersCommand | EraseLogicalGroupCommand
+)
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class StepTopologyApplyLogicalGroupsRequestA0:
+    schema: Literal["geometry.step_topology.apply_logical_groups.request.a0"]
+    session: SessionReference
+    commands: tuple[LogicalGroupCommand, ...]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class DocumentProbeTarget:
+    kind: Literal["document"]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class DefinitionProbeTarget:
+    kind: Literal["definition"]
+    target_handle: str
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class RootOccurrenceProbeTarget:
+    kind: Literal["root_occurrence"]
+    target_handle: str
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class ComponentOccurrenceProbeTarget:
+    kind: Literal["occurrence"]
+    target_handle: str
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class BodyProbeTarget:
+    kind: Literal["body"]
+    target_handle: str
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class FaceProbeTarget:
+    kind: Literal["face"]
+    target_handle: str
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class LogicalGroupProbeTarget:
+    kind: Literal["logical_group"]
+    group_authored_id: str
+
+
+MetadataProbeTarget: TypeAlias = (
+    DocumentProbeTarget
+    | DefinitionProbeTarget
+    | RootOccurrenceProbeTarget
+    | ComponentOccurrenceProbeTarget
+    | BodyProbeTarget
+    | FaceProbeTarget
+    | LogicalGroupProbeTarget
+)
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class AttachMetadataProbeCommand:
+    kind: Literal["attach"]
+    authored_id: str
+    target: MetadataProbeTarget
+    key: str
+    value: str
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class ReplaceMetadataProbeCommand:
+    kind: Literal["replace"]
+    authored_id: str
+    expected_revision: int
+    target: MetadataProbeTarget
+    key: str
+    value: str
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class EraseMetadataProbeCommand:
+    kind: Literal["erase"]
+    authored_id: str
+    expected_revision: int
+
+
+MetadataProbeCommand: TypeAlias = AttachMetadataProbeCommand | ReplaceMetadataProbeCommand | EraseMetadataProbeCommand
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class StepTopologyApplyMetadataProbesRequestA0:
+    schema: Literal["geometry.step_topology.apply_metadata_probes.request.a0"]
+    session: SessionReference
+    commands: tuple[MetadataProbeCommand, ...]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class StepTopologyCheckpointEditJournalRequestA0:
+    schema: Literal["geometry.step_topology.checkpoint_edit_journal.request.a0"]
+    session: SessionReference
+
+
+class HierarchySourceKind(str, Enum):
+    DEFINITION = "definition"
+    BODY = "body"
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class CreateHierarchyProductCommand:
+    kind: Literal["create_product"]
+    authored_id: str
+    name: str
+    source_kind: HierarchySourceKind
+    source_handle: str
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class CreateHierarchyAssemblyCommand:
+    kind: Literal["create_assembly"]
+    authored_id: str
+    name: str
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class CreateHierarchyOccurrenceCommand:
+    kind: Literal["create_occurrence"]
+    authored_id: str
+    child_authored_id: str
+    parent_assembly_authored_id: str
+    transform: tuple[float, ...]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class ReparentHierarchyOccurrenceCommand:
+    kind: Literal["reparent_occurrence"]
+    authored_id: str
+    expected_revision: int
+    parent_assembly_authored_id: str
+    transform: tuple[float, ...]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class RenameHierarchyNodeCommand:
+    kind: Literal["rename_node"]
+    authored_id: str
+    expected_revision: int
+    name: str
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class EraseHierarchyOccurrenceCommand:
+    kind: Literal["erase_occurrence"]
+    authored_id: str
+    expected_revision: int
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class EraseHierarchyNodeCommand:
+    kind: Literal["erase_node"]
+    authored_id: str
+    expected_revision: int
+
+
+HierarchyCommand: TypeAlias = (
+    CreateHierarchyProductCommand
+    | CreateHierarchyAssemblyCommand
+    | CreateHierarchyOccurrenceCommand
+    | ReparentHierarchyOccurrenceCommand
+    | RenameHierarchyNodeCommand
+    | EraseHierarchyOccurrenceCommand
+    | EraseHierarchyNodeCommand
+)
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class StepTopologyApplyHierarchyRequestA0:
+    schema: Literal["geometry.step_topology.apply_hierarchy.request.a0"]
+    session: SessionReference
+    expected_hierarchy_revision: int
+    commands: tuple[HierarchyCommand, ...]
+
+
+class SaveCarrier(str, Enum):
+    XBF = "xbf"
+    XML_XCAF = "xml_xcaf"
+    STEP_AP242 = "step_ap242"
+    JSON_SIDECAR = "json_sidecar"
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class StepTopologySaveRequestA0:
+    schema: Literal["geometry.step_topology.save.request.a0"]
+    session: SessionReference
+    carrier: SaveCarrier
+    include_diagnostics: bool
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class SourceDescriptor:
+    format: Literal["step"]
+    sha256: str
+    bytes: int
+    normalized_length_unit: Literal["millimeter"]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class XbfPersistenceArtifact:
+    carrier: Literal["xbf"]
+    name: Literal["state_artifact"]
+    media_type: Literal["application/vnd.opencascade.xbf"]
+    format: Literal["ocaf-xbf-version-12"]
+    bytes: int
+    sha256: str
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class XmlXcafPersistenceArtifact:
+    carrier: Literal["xml_xcaf"]
+    name: Literal["state_artifact"]
+    media_type: Literal["application/vnd.opencascade.xml-xcaf"]
+    format: Literal["ocaf-xml-xcaf-version-12"]
+    bytes: int
+    sha256: str
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class StepAp242PersistenceArtifact:
+    carrier: Literal["step_ap242"]
+    name: Literal["state_artifact"]
+    media_type: Literal["application/step"]
+    format: Literal["ap242-managed-model-based-3d-engineering"]
+    bytes: int
+    sha256: str
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class JsonSidecarPersistenceArtifact:
+    carrier: Literal["json_sidecar"]
+    name: Literal["state_artifact"]
+    media_type: Literal["application/vnd.wavenumber.geometer.step-topology-sidecar+json"]
+    format: Literal["geometer.step_topology_sidecar.a0"]
+    bytes: int
+    sha256: str
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class EditJournalPersistenceArtifact:
+    carrier: Literal["edit_journal"]
+    name: Literal["state_artifact"]
+    media_type: Literal["application/vnd.wavenumber.geometer.step-topology-edit-journal"]
+    format: Literal["geometer.step_topology_edit_journal.a0"]
+    bytes: int
+    sha256: str
+
+
+RestoreStateArtifact: TypeAlias = (
+    XbfPersistenceArtifact
+    | XmlXcafPersistenceArtifact
+    | StepAp242PersistenceArtifact
+    | JsonSidecarPersistenceArtifact
+    | EditJournalPersistenceArtifact
+)
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class EditJournalReplayPreconditions:
+    source_sha256: str
+    source_brep_sha256: str
+    target_inventory_sha256: str
+    occt_version: str
+    transaction_count: int
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class StepTopologyRestoreRequestA0:
+    schema: Literal["geometry.step_topology.restore.request.a0"]
+    source: SourceDescriptor
+    state_artifact: RestoreStateArtifact
+    replay_preconditions: EditJournalReplayPreconditions | None = None
+    include_diagnostics: bool
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class RecoveryProvenance:
+    source_artifact_sha256: str
+    candidate_artifact_sha256: str
+    source_occt_version: str
+    candidate_occt_version: str
+    source_driver: str
+    candidate_driver: str
+    source_writer_settings: str
+    candidate_writer_settings: str
+    command_provenance: str
+    measured_wall_time_milliseconds: float
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class RecoveryTolerances:
+    length_mm: float
+    area_mm2: float
+    volume_mm3: float
+
+
+class LogicalGroupMemberKind(str, Enum):
+    BODY = "body"
+    FACE = "face"
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class RecoveryFingerprint:
+    normalized_length_unit: Literal["millimeter"]
+    coordinate_frame: str
+    occurrence_context: str
+    geometry_kind: str
+    area_mm2: float
+    volume_mm3: float
+    centroid_mm: tuple[float, ...]
+    bounds_mm: tuple[float, ...]
+    adjacency_sha256: str
+
+
+class RecoveryLineage(str, Enum):
+    NONE = "none"
+    SPLIT_FROM_SOURCE = "split_from_source"
+    MERGED_FROM_SOURCES = "merged_from_sources"
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class RecoveryCandidate:
+    target_handle: str
+    kind: LogicalGroupMemberKind
+    authored_target_id: str | None = None
+    topology_link_verified: bool
+    carrier_locator: str
+    carrier_locator_validated: bool
+    carrier_record: str
+    lineage: RecoveryLineage
+    fingerprint: RecoveryFingerprint | None = None
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class RecoveryMemberRequest:
+    member_record_id: str
+    kind: LogicalGroupMemberKind
+    authored_target_id: str
+    carrier_locator: str
+    source_fingerprint: RecoveryFingerprint | None = None
+    candidates: tuple[RecoveryCandidate, ...]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class RecoveryGroupRequest:
+    group_authored_id: str
+    provenance: RecoveryProvenance
+    tolerances: RecoveryTolerances
+    members: tuple[RecoveryMemberRequest, ...]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class StepTopologyAnalyzeRecoveryRequestA0:
+    schema: Literal["geometry.step_topology.analyze_recovery.request.a0"]
+    groups: tuple[RecoveryGroupRequest, ...]
+
+
+# Structurally representable request payloads for executable IPC A0. A variant is callable only when the negotiated runtime catalog advertises its operation; structural presence does not imply runtime availability.
+IpcRequestValueA0: TypeAlias = (
+    ModelBoundsOptionsA0
+    | PackedAttachmentProjectionA0
+    | StepTopologyOpenRequestA0
+    | StepTopologyCloseRequestA0
+    | StepTopologyInspectRequestA0
+    | StepTopologyRenderRequestA0
+    | StepTopologyResolveHitRequestA0
+    | StepTopologyApplyLogicalGroupsRequestA0
+    | StepTopologyApplyMetadataProbesRequestA0
+    | StepTopologyCheckpointEditJournalRequestA0
+    | StepTopologyApplyHierarchyRequestA0
+    | StepTopologySaveRequestA0
+    | StepTopologyRestoreRequestA0
+    | StepTopologyAnalyzeRecoveryRequestA0
+)
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -713,20 +1189,38 @@ class OperationFailureA0:
     diagnostics: tuple[DiagnosticA0, ...]
 
 
-# Results currently available through the generic operation transport.
-OperationResultValueA0: TypeAlias = ModelBoundsResultA0 | PackedAttachmentProjectionA0
-
-
-# A completed operation with its operation-specific result.
 @dataclass(frozen=True, slots=True, kw_only=True)
-class OperationSuccessA0:
-    operation: str
-    ok: Literal[True]
-    result: OperationResultValueA0
+class ToolDescriptor:
+    name: Literal["geometer"]
+    release_version: str
+    occt_version: str
 
 
-# Transport-neutral typed outcome shared by the generic C ABI and executable IPC.
-OperationOutcomeA0: TypeAlias = OperationSuccessA0 | OperationFailureA0
+@dataclass(frozen=True, slots=True, kw_only=True)
+class StepTopologyOpenResultA0:
+    schema: Literal["geometry.step_topology.open.result.a0"]
+    session: SessionReference
+    source: SourceDescriptor
+    tool: ToolDescriptor
+    evicted_session_handles: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class StepTopologyCloseResultA0:
+    schema: Literal["geometry.step_topology.close.result.a0"]
+    session_handle: str
+    closed: Literal[True]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class InspectionCounts:
+    definitions: int
+    root_occurrences: int
+    component_occurrences: int
+    bodies: int
+    shells: int
+    faces: int
+    memberships: int
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -736,29 +1230,6 @@ class SourceEntityEvidence:
     model_number: int | None = None
     entity_type: str | None = None
     mapping_method: str | None = None
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class BodySummary:
-    handle: str
-    definition_handle: str
-    topology_kind: str
-    shell_handles: tuple[str, ...]
-    face_handles: tuple[str, ...]
-    bounds_mm: tuple[float, ...]
-    volume_mm3: float
-    source_entity: SourceEntityEvidence | None = None
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class ComponentOccurrenceSummary:
-    kind: Literal["component"]
-    handle: str
-    definition_handle: str
-    parent_occurrence_handle: str
-    depth: int
-    name: str
-    transform: tuple[float, ...]
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -772,37 +1243,6 @@ class DefinitionSummary:
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
-class FaceSummary:
-    handle: str
-    definition_handle: str
-    body_handles: tuple[str, ...]
-    shell_handles: tuple[str, ...]
-    bounds_mm: tuple[float, ...]
-    area_mm2: float
-    centroid_mm: tuple[float, ...]
-    source_entity: SourceEntityEvidence | None = None
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class GlbAttachmentDescriptor:
-    name: Literal["glb"]
-    media_type: Literal["model/gltf-binary"]
-    format: Literal["glb-2.0"]
-    bytes: int
-    sha256: str
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class InspectionCounts:
-    definitions: int
-    root_occurrences: int
-    component_occurrences: int
-    bodies: int
-    shells: int
-    faces: int
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
 class RootOccurrenceSummary:
     kind: Literal["root"]
     handle: str
@@ -811,13 +1251,94 @@ class RootOccurrenceSummary:
     transform: tuple[float, ...]
 
 
+@dataclass(frozen=True, slots=True, kw_only=True)
+class ComponentOccurrenceSummary:
+    kind: Literal["component"]
+    handle: str
+    definition_handle: str
+    parent_occurrence_handle: str
+    depth: int
+    name: str
+    transform: tuple[float, ...]
+
+
 OccurrenceSummary: TypeAlias = RootOccurrenceSummary | ComponentOccurrenceSummary
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
-class PageRequest:
-    cursor: str | None = None
-    limit: int
+class BodySummary:
+    handle: str
+    definition_handle: str
+    topology_kind: str
+    shell_count: int
+    face_count: int
+    bounds_mm: tuple[float, ...]
+    volume_mm3: float
+    source_entity: SourceEntityEvidence | None = None
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class ShellSummary:
+    handle: str
+    definition_handle: str
+    body_count: int
+    face_count: int
+    source_entity: SourceEntityEvidence | None = None
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class FaceSummary:
+    handle: str
+    definition_handle: str
+    body_count: int
+    shell_count: int
+    bounds_mm: tuple[float, ...]
+    area_mm2: float
+    centroid_mm: tuple[float, ...]
+    source_entity: SourceEntityEvidence | None = None
+
+
+class TopologyMembershipKind(str, Enum):
+    BODY_SHELL = "body_shell"
+    BODY_FACE = "body_face"
+    SHELL_FACE = "shell_face"
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class TopologyMembership:
+    kind: TopologyMembershipKind
+    owner_handle: str
+    member_handle: str
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class TopologyPage:
+    definitions: tuple[DefinitionSummary, ...]
+    occurrences: tuple[OccurrenceSummary, ...]
+    bodies: tuple[BodySummary, ...]
+    shells: tuple[ShellSummary, ...]
+    faces: tuple[FaceSummary, ...]
+    memberships: tuple[TopologyMembership, ...]
+    next_cursor: str | None = None
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class TopologyTableAttachmentDescriptor:
+    name: Literal["topology_table"]
+    media_type: Literal["application/vnd.wavenumber.geometer.step-topology-table"]
+    format: Literal["wn.geometer.step-topology-table.a0"]
+    bytes: int
+    sha256: str
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class StepTopologyInspectResultA0:
+    schema: Literal["geometry.step_topology.inspect.result.a0"]
+    session: SessionReference
+    counts: InspectionCounts
+    page: TopologyPage
+    compact_table: TopologyTableAttachmentDescriptor | None = None
+    diagnostics: tuple[DiagnosticA0, ...]
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -842,114 +1363,12 @@ class RenderArtifactDescriptor:
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
-class SessionReference:
-    session_handle: str
-    generation: int
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class ShellSummary:
-    handle: str
-    definition_handle: str
-    body_handles: tuple[str, ...]
-    face_handles: tuple[str, ...]
-    source_entity: SourceEntityEvidence | None = None
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class SourceDescriptor:
-    format: Literal["step"]
-    sha256: str
-    bytes: int
-    normalized_length_unit: Literal["millimeter"]
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class StepTopologyCloseRequestA0:
-    schema: Literal["geometry.step_topology.close.request.a0"]
-    session: SessionReference
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class StepTopologyCloseResultA0:
-    schema: Literal["geometry.step_topology.close.result.a0"]
-    session_handle: str
-    closed: Literal[True]
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class StepTopologyInspectRequestA0:
-    schema: Literal["geometry.step_topology.inspect.request.a0"]
-    session: SessionReference
-    page: PageRequest
-    include_source_entity_evidence: bool
-    include_diagnostics: bool
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class TopologyPage:
-    definitions: tuple[DefinitionSummary, ...]
-    occurrences: tuple[OccurrenceSummary, ...]
-    bodies: tuple[BodySummary, ...]
-    shells: tuple[ShellSummary, ...]
-    faces: tuple[FaceSummary, ...]
-    next_cursor: str | None = None
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class TopologyTableAttachmentDescriptor:
-    name: Literal["topology_table"]
-    media_type: Literal["application/vnd.wavenumber.geometer.step-topology-table"]
-    format: Literal["wn.geometer.step-topology-table.a0"]
+class GlbAttachmentDescriptor:
+    name: Literal["glb"]
+    media_type: Literal["model/gltf-binary"]
+    format: Literal["glb-2.0"]
     bytes: int
     sha256: str
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class StepTopologyInspectResultA0:
-    schema: Literal["geometry.step_topology.inspect.result.a0"]
-    session: SessionReference
-    counts: InspectionCounts
-    page: TopologyPage
-    compact_table: TopologyTableAttachmentDescriptor | None = None
-    diagnostics: tuple[DiagnosticA0, ...]
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class StepTopologyOpenRequestA0:
-    schema: Literal["geometry.step_topology.open.request.a0"]
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class ToolDescriptor:
-    name: Literal["geometer"]
-    release_version: str
-    occt_version: str
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class StepTopologyOpenResultA0:
-    schema: Literal["geometry.step_topology.open.result.a0"]
-    session: SessionReference
-    source: SourceDescriptor
-    tool: ToolDescriptor
-    evicted_session_handles: tuple[str, ...]
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class TessellationOptions:
-    linear_deflection_mm: float
-    angular_deflection_rad: float
-    relative: bool
-    parallel: bool
-    source_to_render: tuple[float, ...]
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class StepTopologyRenderRequestA0:
-    schema: Literal["geometry.step_topology.render.request.a0"]
-    session: SessionReference
-    tessellation: TessellationOptions
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -971,20 +1390,6 @@ class StepTopologyRenderResultA0:
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
-class StepTopologyResolveHitRequestA0:
-    schema: Literal["geometry.step_topology.resolve_hit.request.a0"]
-    session: SessionReference
-    artifact_handle: str
-    content_sha256: str
-    instance_index: int
-    primitive_index: int
-    primitive_triangle_index: int
-    occurrence_handle: str
-    body_handle: str
-    face_handle: str
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
 class StepTopologyResolveHitResultA0:
     schema: Literal["geometry.step_topology.resolve_hit.result.a0"]
     session: SessionReference
@@ -995,6 +1400,299 @@ class StepTopologyResolveHitResultA0:
     body_handle: str
     face_handle: str
 
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class MutationSessionState:
+    session: SessionReference
+    edit_journal_revision: int
+    accounted_string_bytes: int
+    estimated_resident_bytes: int
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class LogicalGroupMember:
+    kind: LogicalGroupMemberKind
+    target_handle: str
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class LogicalGroup:
+    authored_id: str
+    revision: int
+    name: str
+    members: tuple[LogicalGroupMember, ...]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class StepTopologyApplyLogicalGroupsResultA0:
+    schema: Literal["geometry.step_topology.apply_logical_groups.result.a0"]
+    state: MutationSessionState
+    groups: tuple[LogicalGroup, ...]
+    diagnostics: tuple[DiagnosticA0, ...]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class MetadataProbe:
+    authored_id: str
+    revision: int
+    target: MetadataProbeTarget
+    key: str
+    value: str
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class StepTopologyApplyMetadataProbesResultA0:
+    schema: Literal["geometry.step_topology.apply_metadata_probes.result.a0"]
+    state: MutationSessionState
+    groups: tuple[LogicalGroup, ...]
+    probes: tuple[MetadataProbe, ...]
+    diagnostics: tuple[DiagnosticA0, ...]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class EditJournalAttachmentDescriptor:
+    name: Literal["edit_journal"]
+    media_type: Literal["application/vnd.wavenumber.geometer.step-topology-edit-journal"]
+    format: Literal["geometer.step_topology_edit_journal.a0"]
+    bytes: int
+    sha256: str
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class StepTopologyCheckpointEditJournalResultA0:
+    schema: Literal["geometry.step_topology.checkpoint_edit_journal.result.a0"]
+    state: MutationSessionState
+    source_sha256: str
+    source_brep_sha256: str
+    target_inventory_sha256: str
+    occt_version: str
+    transaction_count: int
+    journal: EditJournalAttachmentDescriptor
+    diagnostics: tuple[DiagnosticA0, ...]
+
+
+class HierarchyNodeKind(str, Enum):
+    PRODUCT = "product"
+    ASSEMBLY = "assembly"
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class HierarchyNode:
+    authored_id: str
+    revision: int
+    kind: HierarchyNodeKind
+    name: str
+    source_kind: HierarchySourceKind | None = None
+    source_handle: str | None = None
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class HierarchyOccurrence:
+    authored_id: str
+    revision: int
+    child_authored_id: str
+    parent_assembly_authored_id: str
+    transform: tuple[float, ...]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class HierarchyState:
+    hierarchy_revision: int
+    source_brep_sha256: str
+    nodes: tuple[HierarchyNode, ...]
+    occurrences: tuple[HierarchyOccurrence, ...]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class StepTopologyApplyHierarchyResultA0:
+    schema: Literal["geometry.step_topology.apply_hierarchy.result.a0"]
+    state: MutationSessionState
+    hierarchy: HierarchyState
+    diagnostics: tuple[DiagnosticA0, ...]
+
+
+SavePersistenceArtifact: TypeAlias = (
+    XbfPersistenceArtifact | XmlXcafPersistenceArtifact | StepAp242PersistenceArtifact | JsonSidecarPersistenceArtifact
+)
+
+
+class PersistenceCarrier(str, Enum):
+    XBF = "xbf"
+    XML_XCAF = "xml_xcaf"
+    STEP_AP242 = "step_ap242"
+    JSON_SIDECAR = "json_sidecar"
+    EDIT_JOURNAL = "edit_journal"
+
+
+class CarrierSupportState(str, Enum):
+    SUPPORTED = "supported"
+    EXPERIMENTAL = "experimental"
+    UNSUPPORTED = "unsupported"
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class CarrierCapabilityNote:
+    value: str
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class CarrierCapability:
+    carrier: PersistenceCarrier
+    save: CarrierSupportState
+    restore: CarrierSupportState
+    authored_payload: CarrierSupportState
+    topology_links: CarrierSupportState
+    notes: tuple[CarrierCapabilityNote, ...]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class StepTopologySaveResultA0:
+    schema: Literal["geometry.step_topology.save.result.a0"]
+    state: MutationSessionState
+    source_sha256: str
+    artifact: SavePersistenceArtifact
+    capabilities: tuple[CarrierCapability, ...]
+    diagnostics: tuple[DiagnosticA0, ...]
+
+
+class RecoveryResolutionState(str, Enum):
+    RESOLVED = "resolved"
+    AMBIGUOUS = "ambiguous"
+    UNRESOLVED = "unresolved"
+    UNSUPPORTED = "unsupported"
+
+
+class RecoveryGroupCompleteness(str, Enum):
+    FULLY_RECOVERED = "fully_recovered"
+    PARTIALLY_RECOVERED = "partially_recovered"
+    UNRECOVERED = "unrecovered"
+    UNSUPPORTED = "unsupported"
+
+
+class RecoveryResolutionMethod(str, Enum):
+    AUTHORED_ID_TOPOLOGY_LINK = "authored_id_topology_link"
+    VALIDATED_CARRIER_LOCATOR = "validated_carrier_locator"
+    UNIQUE_GEOMETRY_ADJACENCY_FINGERPRINT = "unique_geometry_adjacency_fingerprint"
+    NONE = "none"
+
+
+class RecoveryTopologyComparison(str, Enum):
+    UNCHANGED = "unchanged"
+    RELOCATED = "relocated"
+    SPLIT = "split"
+    MERGED = "merged"
+    OTHERWISE_CHANGED = "otherwise_changed"
+    NOT_COMPARED = "not_compared"
+    UNAVAILABLE = "unavailable"
+
+
+class RecoveryConfidence(str, Enum):
+    HIGH = "high"
+    MEDIUM = "medium"
+    LOW = "low"
+    NONE = "none"
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class RecoveryComparedField:
+    value: str
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class RecoveryCarrierRecord:
+    value: str
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class RecoveryRejectedAlternative:
+    target_handle: str
+    reason: str
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class RecoveryEvidence:
+    candidate_count: int
+    matching_candidate_count: int
+    compared_fields: tuple[RecoveryComparedField, ...]
+    tolerances: RecoveryTolerances
+    carrier_records: tuple[RecoveryCarrierRecord, ...]
+    rejected_alternatives: tuple[RecoveryRejectedAlternative, ...]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class RecoveryMemberResult:
+    member_record_id: str
+    kind: LogicalGroupMemberKind
+    authored_target_id: str
+    resolution_state: RecoveryResolutionState
+    resolution_method: RecoveryResolutionMethod
+    topology_comparison: RecoveryTopologyComparison
+    confidence: RecoveryConfidence
+    resolved_target_handle: str | None = None
+    evidence: RecoveryEvidence
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class RecoveryGroupResult:
+    group_authored_id: str
+    provenance: RecoveryProvenance
+    resolution_state: RecoveryResolutionState
+    completeness: RecoveryGroupCompleteness
+    resolved_member_count: int
+    ambiguous_member_count: int
+    unresolved_member_count: int
+    unsupported_member_count: int
+    members: tuple[RecoveryMemberResult, ...]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class StepTopologyRestoreResultA0:
+    schema: Literal["geometry.step_topology.restore.result.a0"]
+    session: SessionReference
+    source: SourceDescriptor
+    tool: ToolDescriptor
+    replayed_transaction_count: int
+    evicted_session_handles: tuple[str, ...] | None = None
+    recovery: tuple[RecoveryGroupResult, ...]
+    diagnostics: tuple[DiagnosticA0, ...]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class StepTopologyAnalyzeRecoveryResultA0:
+    schema: Literal["geometry.step_topology.analyze_recovery.result.a0"]
+    groups: tuple[RecoveryGroupResult, ...]
+    diagnostics: tuple[DiagnosticA0, ...]
+
+
+# Structurally representable operation results. A result variant may belong to a runtime-unavailable experimental operation and is not an availability claim; the negotiated operation catalog remains authoritative.
+OperationResultValueA0: TypeAlias = (
+    ModelBoundsResultA0
+    | PackedAttachmentProjectionA0
+    | StepTopologyOpenResultA0
+    | StepTopologyCloseResultA0
+    | StepTopologyInspectResultA0
+    | StepTopologyRenderResultA0
+    | StepTopologyResolveHitResultA0
+    | StepTopologyApplyLogicalGroupsResultA0
+    | StepTopologyApplyMetadataProbesResultA0
+    | StepTopologyCheckpointEditJournalResultA0
+    | StepTopologyApplyHierarchyResultA0
+    | StepTopologySaveResultA0
+    | StepTopologyRestoreResultA0
+    | StepTopologyAnalyzeRecoveryResultA0
+)
+
+
+# A completed operation with its operation-specific result.
+@dataclass(frozen=True, slots=True, kw_only=True)
+class OperationSuccessA0:
+    operation: str
+    ok: Literal[True]
+    result: OperationResultValueA0
+
+
+# Transport-neutral typed outcome shared by the generic C ABI and executable IPC.
+OperationOutcomeA0: TypeAlias = OperationSuccessA0 | OperationFailureA0
 
 MODEL_TYPES = {
     "Wavenumber.Geometer.Contracts.Common.DiagnosticA0": DiagnosticA0,
@@ -1026,20 +1724,77 @@ MODEL_TYPES = {
     "Wavenumber.Geometer.Contracts.ModelBoundsA0.ModelBoundsValues": ModelBoundsValues,
     "Wavenumber.Geometer.Contracts.OperationOutcomeA0.OperationFailureA0": OperationFailureA0,
     "Wavenumber.Geometer.Contracts.OperationOutcomeA0.OperationSuccessA0": OperationSuccessA0,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.AttachMetadataProbeCommand": AttachMetadataProbeCommand,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.BodyProbeTarget": BodyProbeTarget,
     "Wavenumber.Geometer.Contracts.StepTopologyA0.BodySummary": BodySummary,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.CarrierCapability": CarrierCapability,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.CarrierCapabilityNote": CarrierCapabilityNote,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.ComponentOccurrenceProbeTarget": ComponentOccurrenceProbeTarget,
     "Wavenumber.Geometer.Contracts.StepTopologyA0.ComponentOccurrenceSummary": ComponentOccurrenceSummary,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.CreateHierarchyAssemblyCommand": CreateHierarchyAssemblyCommand,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.CreateHierarchyOccurrenceCommand": CreateHierarchyOccurrenceCommand,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.CreateHierarchyProductCommand": CreateHierarchyProductCommand,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.CreateLogicalGroupCommand": CreateLogicalGroupCommand,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.DefinitionProbeTarget": DefinitionProbeTarget,
     "Wavenumber.Geometer.Contracts.StepTopologyA0.DefinitionSummary": DefinitionSummary,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.DocumentProbeTarget": DocumentProbeTarget,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.EditJournalAttachmentDescriptor": EditJournalAttachmentDescriptor,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.EditJournalPersistenceArtifact": EditJournalPersistenceArtifact,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.EditJournalReplayPreconditions": EditJournalReplayPreconditions,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.EraseHierarchyNodeCommand": EraseHierarchyNodeCommand,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.EraseHierarchyOccurrenceCommand": EraseHierarchyOccurrenceCommand,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.EraseLogicalGroupCommand": EraseLogicalGroupCommand,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.EraseMetadataProbeCommand": EraseMetadataProbeCommand,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.FaceProbeTarget": FaceProbeTarget,
     "Wavenumber.Geometer.Contracts.StepTopologyA0.FaceSummary": FaceSummary,
     "Wavenumber.Geometer.Contracts.StepTopologyA0.GlbAttachmentDescriptor": GlbAttachmentDescriptor,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.HierarchyNode": HierarchyNode,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.HierarchyOccurrence": HierarchyOccurrence,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.HierarchyState": HierarchyState,
     "Wavenumber.Geometer.Contracts.StepTopologyA0.InspectionCounts": InspectionCounts,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.JsonSidecarPersistenceArtifact": JsonSidecarPersistenceArtifact,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.LogicalGroup": LogicalGroup,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.LogicalGroupMember": LogicalGroupMember,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.LogicalGroupProbeTarget": LogicalGroupProbeTarget,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.MetadataProbe": MetadataProbe,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.MutationSessionState": MutationSessionState,
     "Wavenumber.Geometer.Contracts.StepTopologyA0.PageRequest": PageRequest,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.RecoveryCandidate": RecoveryCandidate,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.RecoveryCarrierRecord": RecoveryCarrierRecord,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.RecoveryComparedField": RecoveryComparedField,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.RecoveryEvidence": RecoveryEvidence,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.RecoveryFingerprint": RecoveryFingerprint,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.RecoveryGroupRequest": RecoveryGroupRequest,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.RecoveryGroupResult": RecoveryGroupResult,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.RecoveryMemberRequest": RecoveryMemberRequest,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.RecoveryMemberResult": RecoveryMemberResult,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.RecoveryProvenance": RecoveryProvenance,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.RecoveryRejectedAlternative": RecoveryRejectedAlternative,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.RecoveryTolerances": RecoveryTolerances,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.RenameHierarchyNodeCommand": RenameHierarchyNodeCommand,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.RenameLogicalGroupCommand": RenameLogicalGroupCommand,
     "Wavenumber.Geometer.Contracts.StepTopologyA0.RenderArtifactDescriptor": RenderArtifactDescriptor,
     "Wavenumber.Geometer.Contracts.StepTopologyA0.RenderCounts": RenderCounts,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.ReparentHierarchyOccurrenceCommand": ReparentHierarchyOccurrenceCommand,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.ReplaceLogicalGroupMembersCommand": ReplaceLogicalGroupMembersCommand,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.ReplaceMetadataProbeCommand": ReplaceMetadataProbeCommand,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.RootOccurrenceProbeTarget": RootOccurrenceProbeTarget,
     "Wavenumber.Geometer.Contracts.StepTopologyA0.RootOccurrenceSummary": RootOccurrenceSummary,
     "Wavenumber.Geometer.Contracts.StepTopologyA0.SessionReference": SessionReference,
     "Wavenumber.Geometer.Contracts.StepTopologyA0.ShellSummary": ShellSummary,
     "Wavenumber.Geometer.Contracts.StepTopologyA0.SourceDescriptor": SourceDescriptor,
     "Wavenumber.Geometer.Contracts.StepTopologyA0.SourceEntityEvidence": SourceEntityEvidence,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.StepAp242PersistenceArtifact": StepAp242PersistenceArtifact,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyAnalyzeRecoveryRequestA0": StepTopologyAnalyzeRecoveryRequestA0,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyAnalyzeRecoveryResultA0": StepTopologyAnalyzeRecoveryResultA0,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyApplyHierarchyRequestA0": StepTopologyApplyHierarchyRequestA0,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyApplyHierarchyResultA0": StepTopologyApplyHierarchyResultA0,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyApplyLogicalGroupsRequestA0": StepTopologyApplyLogicalGroupsRequestA0,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyApplyLogicalGroupsResultA0": StepTopologyApplyLogicalGroupsResultA0,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyApplyMetadataProbesRequestA0": StepTopologyApplyMetadataProbesRequestA0,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyApplyMetadataProbesResultA0": StepTopologyApplyMetadataProbesResultA0,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyCheckpointEditJournalRequestA0": StepTopologyCheckpointEditJournalRequestA0,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyCheckpointEditJournalResultA0": StepTopologyCheckpointEditJournalResultA0,
     "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyCloseRequestA0": StepTopologyCloseRequestA0,
     "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyCloseResultA0": StepTopologyCloseResultA0,
     "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyInspectRequestA0": StepTopologyInspectRequestA0,
@@ -1050,15 +1805,35 @@ MODEL_TYPES = {
     "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyRenderResultA0": StepTopologyRenderResultA0,
     "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyResolveHitRequestA0": StepTopologyResolveHitRequestA0,
     "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyResolveHitResultA0": StepTopologyResolveHitResultA0,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyRestoreRequestA0": StepTopologyRestoreRequestA0,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyRestoreResultA0": StepTopologyRestoreResultA0,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologySaveRequestA0": StepTopologySaveRequestA0,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologySaveResultA0": StepTopologySaveResultA0,
     "Wavenumber.Geometer.Contracts.StepTopologyA0.TessellationOptions": TessellationOptions,
     "Wavenumber.Geometer.Contracts.StepTopologyA0.ToolDescriptor": ToolDescriptor,
     "Wavenumber.Geometer.Contracts.StepTopologyA0.TopologyBindingTableAttachmentDescriptor": TopologyBindingTableAttachmentDescriptor,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.TopologyMembership": TopologyMembership,
     "Wavenumber.Geometer.Contracts.StepTopologyA0.TopologyPage": TopologyPage,
     "Wavenumber.Geometer.Contracts.StepTopologyA0.TopologyTableAttachmentDescriptor": TopologyTableAttachmentDescriptor,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.XbfPersistenceArtifact": XbfPersistenceArtifact,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.XmlXcafPersistenceArtifact": XmlXcafPersistenceArtifact,
 }
 
 ENUM_TYPES = {
     "Wavenumber.Geometer.Contracts.Common.DiagnosticCategory": DiagnosticCategory,
     "Wavenumber.Geometer.Contracts.IpcA0.IpcRuntimeDispatchA0": IpcRuntimeDispatchA0,
     "Wavenumber.Geometer.Contracts.ModelBoundsA0.ModelFormat": ModelFormat,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.CarrierSupportState": CarrierSupportState,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.HierarchyNodeKind": HierarchyNodeKind,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.HierarchySourceKind": HierarchySourceKind,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.LogicalGroupMemberKind": LogicalGroupMemberKind,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.PersistenceCarrier": PersistenceCarrier,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.RecoveryConfidence": RecoveryConfidence,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.RecoveryGroupCompleteness": RecoveryGroupCompleteness,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.RecoveryLineage": RecoveryLineage,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.RecoveryResolutionMethod": RecoveryResolutionMethod,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.RecoveryResolutionState": RecoveryResolutionState,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.RecoveryTopologyComparison": RecoveryTopologyComparison,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.SaveCarrier": SaveCarrier,
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.TopologyMembershipKind": TopologyMembershipKind,
 }

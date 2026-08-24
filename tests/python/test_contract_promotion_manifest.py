@@ -8,6 +8,8 @@ import tomllib
 from pathlib import Path
 from typing import Any
 
+from contract_promotion_topology_inventory import assert_step_topology_inventory
+
 
 ROOT = Path(__file__).resolve().parents[2]
 MANIFEST_PATH = ROOT / "docs" / "contracts" / "promotion-manifest.toml"
@@ -447,89 +449,7 @@ def _assert_contract_and_operation_inventory(manifest: dict[str, Any]) -> None:
     _unique(operation_ids, "operation id")
     assert {item["id"] for item in operations if item["status"] == "pilot_candidate"} == set()
     assert {item["id"] for item in operations if item["status"] == "promoted"} == {"geometry.model_bounds.a0"}
-    experimental_contracts = {item["id"] for item in contracts if item["status"] == "experimental_candidate"}
-    assert experimental_contracts == {
-        "geometry.step_topology.open.request.a0",
-        "geometry.step_topology.open.result.a0",
-        "geometry.step_topology.close.request.a0",
-        "geometry.step_topology.close.result.a0",
-        "geometry.step_topology.inspect.request.a0",
-        "geometry.step_topology.inspect.result.a0",
-        "geometry.step_topology.render.request.a0",
-        "geometry.step_topology.render.result.a0",
-        "geometry.step_topology.resolve_hit.request.a0",
-        "geometry.step_topology.resolve_hit.result.a0",
-    }
-    assert all(
-        item["current_authority"] == "typespec_candidate"
-        for item in contracts
-        if item["status"] == "experimental_candidate"
-    )
-    assert {item["id"] for item in operations if item["status"] == "experimental_candidate"} == {
-        "geometry.step_topology.open.a0",
-        "geometry.step_topology.close.a0",
-        "geometry.step_topology.inspect.a0",
-        "geometry.step_topology.render.a0",
-        "geometry.step_topology.resolve_hit.a0",
-    }
-
-    slice_a = manifest["experimental_evidence"]["step_topology_slice_a"]
-    assert slice_a == {
-        "status": "unpromoted_structural_candidate",
-        "catalog_sha256": "6cacbf010b3ae7a2af74c68517e5bcd68e3f4da11c904fb2626debf0ba8d17e2",
-        "vector_manifest_sha256": ("0774af20031d4d00f8bf2201a4b8c5defbe9391b36f54d7aa8dbe7b751e1398b"),
-        "governed_vector_ids": [
-            "strict.step-topology-resolve-hit.accept",
-            "schema.step-topology-resolve-hit-unknown-field.reject",
-            "schema.step-topology-resolve-hit-zero-generation.reject",
-            "schema.step-topology-resolve-hit-range.reject",
-            "schema.step-topology-render-attachment-relationship.reject",
-            "schema.step-topology-resolve-hit-result-max.accept",
-            "schema.step-topology-resolve-hit-result-instance-over-max.reject",
-            "schema.step-topology-resolve-hit-result-primitive-over-max.reject",
-            "schema.step-topology-resolve-hit-result-triangle-over-max.reject",
-            "schema.step-topology-inspect-depth-max.accept",
-            "schema.step-topology-inspect-depth-over-max.reject",
-            "semantic.step-topology-stale-generation.reject",
-            "semantic.step-topology-duplicate-target.reject",
-            "semantic.step-topology-inspection-membership.accept",
-            "semantic.step-topology-cross-page-duplicate.reject",
-            "semantic.step-topology-cross-page-edge.reject",
-            "semantic.step-topology-over-count-before-terminal.reject",
-            "semantic.step-topology-empty-continuation.reject",
-            "semantic.step-topology-high-fan-in.accept",
-            "semantic.step-topology-render-attachments.accept",
-            "semantic.step-topology-render-digest-relationship.reject",
-        ],
-        "governed_vector_count": 21,
-        "structural_vector_count": 11,
-        "semantic_vector_count": 10,
-        "operation_vector_count": 0,
-        "runtime_advertised": False,
-        "projections": ["json_schema", "cpp", "typescript", "rust", "python", "html"],
-        "behavioral_authority": "focused_cpp_step_topology_session",
-        "legacy_gltf_enrichment_reused": False,
-    }
-    assert _sha256(ROOT / manifest["toolchain"]["catalog"]) == slice_a["catalog_sha256"]
-    assert _sha256(ROOT / "tests/contracts/vectors/manifest.json") == slice_a["vector_manifest_sha256"]
-    vector_manifest = json.loads((ROOT / "tests/contracts/vectors/manifest.json").read_text())
-    topology_vectors = [item for item in vector_manifest["vectors"] if "step-topology" in item["id"]]
-    assert [item["id"] for item in topology_vectors] == slice_a["governed_vector_ids"]
-    assert sum(item["lane"] == "semantic" for item in topology_vectors) == slice_a["semantic_vector_count"]
-    catalog = json.loads((ROOT / manifest["toolchain"]["catalog"]).read_text(encoding="utf-8"))
-    topology_operations = [
-        item for item in catalog["operations"] if item["identity"].startswith("geometry.step_topology.")
-    ]
-    assert len(topology_operations) == 5
-    assert all(item["runtime_available"] is False for item in topology_operations)
-    for runtime_catalog in (
-        "src/cpp/lib/geometer/generated/contracts/operation_catalog.cpp",
-        "src/rust/geometer-client/src/generated/operations.rs",
-        "python/geometer/_generated/contracts/operations.py",
-    ):
-        assert "geometry.step_topology." not in (ROOT / runtime_catalog).read_text(encoding="utf-8")
-    typescript_operations = (ROOT / "src/ts/geometer/generated/operations.ts").read_text(encoding="utf-8")
-    assert typescript_operations.count("runtimeAvailable: false") == 5
+    assert_step_topology_inventory(manifest, contracts, operations)
 
     candidates = manifest["candidate_operations"]
     candidate_ids = [item["id"] for item in candidates]
@@ -644,9 +564,9 @@ def _assert_candidate_projection_surfaces(manifest: dict[str, Any]) -> None:
     assert "struct AnalyticPlanarBooleanBatchResultA0" in cpp_contract_header
     assert "decode_AnalyticPlanarBoolean" not in cpp_contract_json
     assert "write_AnalyticPlanarBoolean" not in cpp_contract_json
-    assert (
-        "using OperationResultValueA0 = std::variant<ModelBoundsResultA0, PackedAttachmentProjectionA0>;"
-    ) in cpp_contract_header
+    assert "using OperationResultValueA0 =" in cpp_contract_header
+    assert "PackedAttachmentProjectionA0, StepTopologyOpenResultA0" in cpp_contract_header
+    assert "StepTopologyAnalyzeRecoveryResultA0>;" in cpp_contract_header
     assert "holds_alternative<contracts::AnalyticPlanarBoolean" not in cpp_operation_catalog
     rust_contracts = (ROOT / "src/rust/geometer-client/src/generated/contracts.rs").read_text(encoding="utf-8")
     first_analytic_type = rust_contracts.index("pub struct JobId")

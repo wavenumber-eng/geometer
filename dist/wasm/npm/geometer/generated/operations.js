@@ -1,10 +1,12 @@
 // Generated from wn_geometer_contract_catalog.a0.json. Do not edit.
+export const NORMALIZED_CONTRACT_CATALOG_SHA256 = "40ad574a40ea2e474d085d26263bf1ecbf3d76f6e14de8d795829e97389ae96b";
 export const operationCatalog = {
     "geometry.analytic_planar_boolean_batch.a0": {
         identity: "geometry.analytic_planar_boolean_batch.a0",
         requestContract: "geometry.analytic_planar_boolean_batch.request.a0",
         resultContract: "geometry.analytic_planar_boolean_batch.result.a0",
         runtimeAvailable: true,
+        nativeRuntimeAvailable: false,
         runtimeDispatch: "packed_attachment",
         inputAttachments: [
             {
@@ -39,6 +41,7 @@ export const operationCatalog = {
         requestContract: "geometry.model_bounds.options.a0",
         resultContract: "geometry.model_bounds.a0",
         runtimeAvailable: true,
+        nativeRuntimeAvailable: false,
         runtimeDispatch: "logical_dto",
         inputAttachments: [
             {
@@ -51,11 +54,74 @@ export const operationCatalog = {
         outputAttachments: [],
         documentation: "Compute axis-aligned model bounds from the required raw model attachment.",
     },
+    "geometry.step_topology.analyze_recovery.a0": {
+        identity: "geometry.step_topology.analyze_recovery.a0",
+        requestContract: "geometry.step_topology.analyze_recovery.request.a0",
+        resultContract: "geometry.step_topology.analyze_recovery.result.a0",
+        runtimeAvailable: false,
+        nativeRuntimeAvailable: false,
+        runtimeDispatch: "logical_dto",
+        inputAttachments: [],
+        outputAttachments: [],
+        documentation: "",
+    },
+    "geometry.step_topology.apply_hierarchy.a0": {
+        identity: "geometry.step_topology.apply_hierarchy.a0",
+        requestContract: "geometry.step_topology.apply_hierarchy.request.a0",
+        resultContract: "geometry.step_topology.apply_hierarchy.result.a0",
+        runtimeAvailable: false,
+        nativeRuntimeAvailable: false,
+        runtimeDispatch: "logical_dto",
+        inputAttachments: [],
+        outputAttachments: [],
+        documentation: "",
+    },
+    "geometry.step_topology.apply_logical_groups.a0": {
+        identity: "geometry.step_topology.apply_logical_groups.a0",
+        requestContract: "geometry.step_topology.apply_logical_groups.request.a0",
+        resultContract: "geometry.step_topology.apply_logical_groups.result.a0",
+        runtimeAvailable: false,
+        nativeRuntimeAvailable: true,
+        runtimeDispatch: "logical_dto",
+        inputAttachments: [],
+        outputAttachments: [],
+        documentation: "",
+    },
+    "geometry.step_topology.apply_metadata_probes.a0": {
+        identity: "geometry.step_topology.apply_metadata_probes.a0",
+        requestContract: "geometry.step_topology.apply_metadata_probes.request.a0",
+        resultContract: "geometry.step_topology.apply_metadata_probes.result.a0",
+        runtimeAvailable: false,
+        nativeRuntimeAvailable: true,
+        runtimeDispatch: "logical_dto",
+        inputAttachments: [],
+        outputAttachments: [],
+        documentation: "",
+    },
+    "geometry.step_topology.checkpoint_edit_journal.a0": {
+        identity: "geometry.step_topology.checkpoint_edit_journal.a0",
+        requestContract: "geometry.step_topology.checkpoint_edit_journal.request.a0",
+        resultContract: "geometry.step_topology.checkpoint_edit_journal.result.a0",
+        runtimeAvailable: false,
+        nativeRuntimeAvailable: true,
+        runtimeDispatch: "logical_dto",
+        inputAttachments: [],
+        outputAttachments: [
+            {
+                name: "edit_journal",
+                required: true,
+                media_types: ["application/vnd.wavenumber.geometer.step-topology-edit-journal"],
+                max_bytes: 67108864,
+            },
+        ],
+        documentation: "",
+    },
     "geometry.step_topology.close.a0": {
         identity: "geometry.step_topology.close.a0",
         requestContract: "geometry.step_topology.close.request.a0",
         resultContract: "geometry.step_topology.close.result.a0",
         runtimeAvailable: false,
+        nativeRuntimeAvailable: true,
         runtimeDispatch: "logical_dto",
         inputAttachments: [],
         outputAttachments: [],
@@ -66,6 +132,7 @@ export const operationCatalog = {
         requestContract: "geometry.step_topology.inspect.request.a0",
         resultContract: "geometry.step_topology.inspect.result.a0",
         runtimeAvailable: false,
+        nativeRuntimeAvailable: true,
         runtimeDispatch: "logical_dto",
         inputAttachments: [],
         outputAttachments: [
@@ -83,6 +150,7 @@ export const operationCatalog = {
         requestContract: "geometry.step_topology.open.request.a0",
         resultContract: "geometry.step_topology.open.result.a0",
         runtimeAvailable: false,
+        nativeRuntimeAvailable: true,
         runtimeDispatch: "logical_dto",
         inputAttachments: [
             {
@@ -100,6 +168,7 @@ export const operationCatalog = {
         requestContract: "geometry.step_topology.render.request.a0",
         resultContract: "geometry.step_topology.render.result.a0",
         runtimeAvailable: false,
+        nativeRuntimeAvailable: true,
         runtimeDispatch: "logical_dto",
         inputAttachments: [],
         outputAttachments: [
@@ -118,9 +187,57 @@ export const operationCatalog = {
         requestContract: "geometry.step_topology.resolve_hit.request.a0",
         resultContract: "geometry.step_topology.resolve_hit.result.a0",
         runtimeAvailable: false,
+        nativeRuntimeAvailable: true,
         runtimeDispatch: "logical_dto",
         inputAttachments: [],
         outputAttachments: [],
+        documentation: "",
+    },
+    "geometry.step_topology.restore.a0": {
+        identity: "geometry.step_topology.restore.a0",
+        requestContract: "geometry.step_topology.restore.request.a0",
+        resultContract: "geometry.step_topology.restore.result.a0",
+        runtimeAvailable: false,
+        nativeRuntimeAvailable: true,
+        runtimeDispatch: "logical_dto",
+        inputAttachments: [
+            {
+                name: "source",
+                required: true,
+                media_types: ["application/step", "model/step"],
+                max_bytes: 268435456,
+            },
+            {
+                name: "state_artifact",
+                required: true,
+                media_types: ["application/vnd.wavenumber.geometer.step-topology-edit-journal"],
+                max_bytes: 67108864,
+            },
+        ],
+        outputAttachments: [],
+        documentation: "",
+    },
+    "geometry.step_topology.save.a0": {
+        identity: "geometry.step_topology.save.a0",
+        requestContract: "geometry.step_topology.save.request.a0",
+        resultContract: "geometry.step_topology.save.result.a0",
+        runtimeAvailable: false,
+        nativeRuntimeAvailable: false,
+        runtimeDispatch: "logical_dto",
+        inputAttachments: [],
+        outputAttachments: [
+            {
+                name: "state_artifact",
+                required: true,
+                media_types: [
+                    "application/step",
+                    "application/vnd.opencascade.xbf",
+                    "application/vnd.opencascade.xml-xcaf",
+                    "application/vnd.wavenumber.geometer.step-topology-sidecar+json",
+                ],
+                max_bytes: 536870912,
+            },
+        ],
         documentation: "",
     },
 };

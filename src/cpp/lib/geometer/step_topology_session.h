@@ -7,6 +7,7 @@
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
+#include <limits>
 #include <memory>
 #include <string>
 #include <vector>
@@ -46,6 +47,13 @@ struct StepTopologyLimits
     std::size_t max_render_glb_bytes = 512U * 1024U * 1024U;
     std::size_t max_logical_groups = 10000U;
     std::size_t max_group_members = 100000U;
+    std::size_t max_group_transaction_member_references = 100000U;
+    std::size_t max_metadata_probes = 10000U;
+    std::size_t max_edit_journal_transactions = 100000U;
+    std::size_t max_edit_journal_bytes = 64U * 1024U * 1024U;
+    std::size_t max_edit_journal_replay_work_items = 10000000U;
+    std::size_t max_hierarchy_transaction_commands = 10000U;
+    std::size_t max_hierarchy_transaction_work_items = 10000000U;
     std::size_t max_string_bytes = 4096U;
     std::size_t max_total_string_bytes = 16U * 1024U * 1024U;
     std::size_t max_session_estimated_bytes = 512U * 1024U * 1024U;
@@ -105,6 +113,7 @@ struct StepTopologyDefinition
     bool is_assembly = false;
     StepTopologyLabelSummary label;
     std::vector<std::string> body_handles;
+    std::size_t face_count = 0;
     StepSourceEntityEvidence source_entity;
 };
 
@@ -188,6 +197,8 @@ struct StepTopologySessionInfo
     std::string source_sha256;
     std::string occt_version;
     std::size_t source_bytes = 0;
+    std::uint64_t edit_journal_revision = 0;
+    std::size_t accounted_string_bytes = 0;
     std::size_t estimated_resident_bytes = 0;
 };
 
@@ -200,11 +211,15 @@ struct StepTopologyInspectionOptions
 struct StepTopologySnapshot
 {
     std::string research_format = "geometer.step_topology_inspection.research";
+    std::string brep_sha256;
+    std::size_t brep_digest_work_items = 0;
+    std::size_t source_transfer_work_items = 0;
     StepTopologySessionInfo session;
     StepReaderPosture reader_posture;
     StepTopologyMetadataSummary metadata;
     std::size_t free_shape_count = 0;
     std::size_t component_label_count = 0;
+    std::size_t membership_count = 0;
     std::vector<StepTopologyDefinition> definitions;
     std::vector<StepTopologyRootOccurrence> root_occurrences;
     std::vector<StepTopologyOccurrence> occurrences;
@@ -212,6 +227,94 @@ struct StepTopologySnapshot
     std::vector<StepTopologyShell> shells;
     std::vector<StepTopologyFace> faces;
     std::vector<StepTopologyDiagnosticCarrier> diagnostic_carriers;
+};
+
+enum class StepTopologyMembershipKind
+{
+    body_shell,
+    body_face,
+    shell_face,
+};
+
+struct StepTopologyMembership
+{
+    StepTopologyMembershipKind kind = StepTopologyMembershipKind::body_shell;
+    std::string owner_handle;
+    std::string member_handle;
+};
+
+struct StepTopologyDefinitionPageSummary
+{
+    std::string handle;
+    bool is_assembly = false;
+    StepTopologyLabelSummary label;
+    std::size_t body_count = 0;
+    std::size_t face_count = 0;
+    StepSourceEntityEvidence source_entity;
+};
+
+struct StepTopologyBodyPageSummary
+{
+    std::string handle;
+    std::string definition_handle;
+    std::string topology_kind;
+    std::size_t shell_count = 0;
+    std::size_t face_count = 0;
+    std::array<double, 6> bounds{};
+    double volume = 0.0;
+    StepTopologyLabelSummary label;
+    StepSourceEntityEvidence source_entity;
+};
+
+struct StepTopologyShellPageSummary
+{
+    std::string handle;
+    std::string definition_handle;
+    std::size_t body_count = 0;
+    std::size_t face_count = 0;
+    StepTopologyLabelSummary label;
+    StepSourceEntityEvidence source_entity;
+};
+
+struct StepTopologyFacePageSummary
+{
+    std::string handle;
+    std::string definition_handle;
+    std::size_t body_count = 0;
+    std::size_t shell_count = 0;
+    std::array<double, 6> bounds{};
+    double area = 0.0;
+    std::array<double, 3> centroid{};
+    StepTopologyLabelSummary label;
+    StepSourceEntityEvidence source_entity;
+};
+
+struct StepTopologyPagePosition
+{
+    std::size_t section = 0;
+    std::size_t record = 0;
+    std::size_t member = 0;
+};
+
+struct StepTopologySnapshotPage
+{
+    StepTopologySessionInfo session;
+    std::size_t definition_count = 0;
+    std::size_t root_occurrence_count = 0;
+    std::size_t component_occurrence_count = 0;
+    std::size_t body_count = 0;
+    std::size_t shell_count = 0;
+    std::size_t face_count = 0;
+    std::size_t membership_count = 0;
+    std::vector<StepTopologyDefinitionPageSummary> definitions;
+    std::vector<StepTopologyRootOccurrence> root_occurrences;
+    std::vector<StepTopologyOccurrence> occurrences;
+    std::vector<StepTopologyBodyPageSummary> bodies;
+    std::vector<StepTopologyShellPageSummary> shells;
+    std::vector<StepTopologyFacePageSummary> faces;
+    std::vector<StepTopologyMembership> memberships;
+    StepTopologyPagePosition next;
+    bool has_next = false;
 };
 
 struct StepTopologyResolvedTarget
@@ -262,6 +365,96 @@ struct StepTopologyGroupTransactionResult
 {
     StepTopologySessionInfo session;
     std::vector<StepTopologyLogicalGroup> groups;
+};
+
+enum class StepTopologyProbeTargetKind
+{
+    document,
+    definition,
+    root_occurrence,
+    occurrence,
+    body,
+    face,
+    logical_group,
+};
+
+struct StepTopologyProbeTarget
+{
+    StepTopologyProbeTargetKind kind = StepTopologyProbeTargetKind::document;
+    std::string target_handle;
+    std::string group_authored_id;
+};
+
+enum class StepTopologyProbeCommandKind
+{
+    attach,
+    replace,
+    erase,
+};
+
+struct StepTopologyProbeCommand
+{
+    StepTopologyProbeCommandKind kind = StepTopologyProbeCommandKind::attach;
+    std::string authored_id;
+    std::uint64_t expected_revision = 0;
+    StepTopologyProbeTarget target;
+    std::string key;
+    std::string value;
+};
+
+struct StepTopologyProbeTransaction
+{
+    std::uint64_t expected_generation = 0;
+    std::vector<StepTopologyProbeCommand> commands;
+};
+
+struct StepTopologyMetadataProbe
+{
+    std::string authored_id;
+    std::uint64_t revision = 0;
+    StepTopologyProbeTarget target;
+    std::string key;
+    std::string value;
+};
+
+struct StepTopologyProbeTransactionResult
+{
+    StepTopologySessionInfo session;
+    std::vector<StepTopologyLogicalGroup> groups;
+    std::vector<StepTopologyMetadataProbe> probes;
+};
+
+using StepTopologyGroupPublicationGate = int (*)(const StepTopologyGroupTransactionResult& result,
+                                                 void* context, Status* status);
+using StepTopologyProbePublicationGate = int (*)(const StepTopologyProbeTransactionResult& result,
+                                                 void* context, Status* status);
+
+struct StepTopologyEditJournalRestoreResult
+{
+    StepTopologySessionInfo session;
+    std::vector<StepTopologyLogicalGroup> groups;
+    std::vector<StepTopologyMetadataProbe> probes;
+};
+
+struct StepTopologyEditJournalCheckpoint
+{
+    std::string research_format = "geometer.step_topology_edit_journal.a0";
+    std::string source_sha256;
+    std::string source_brep_sha256;
+    std::string target_inventory_sha256;
+    std::string occt_version;
+    std::size_t transaction_count = 0;
+    std::string content_sha256;
+    std::vector<unsigned char> bytes;
+};
+
+struct StepTopologyEditJournalReplayPreconditions
+{
+    std::string source_sha256;
+    std::string source_brep_sha256;
+    std::string target_inventory_sha256;
+    std::string occt_version;
+    std::size_t transaction_count = 0;
 };
 
 struct StepTopologyOpenResult
@@ -351,11 +544,14 @@ struct StepTopologyRenderHit
     std::string occurrence_handle;
     std::string body_handle;
     std::string face_handle;
+    std::size_t lookup_work_items = 0;
 };
 
 struct StepTopologyGlbOptions
 {
     StepTopologyTessellationOptions tessellation;
+    std::size_t transient_byte_limit = std::numeric_limits<std::size_t>::max();
+    std::size_t glb_byte_limit = std::numeric_limits<std::size_t>::max();
 
     StepTopologyGlbOptions()
     {
@@ -386,6 +582,21 @@ struct StepTopologyGlbHitDescriptor
     std::string occurrence_handle;
     std::string body_handle;
     std::string face_handle;
+};
+
+struct StepTopologyGlbRenderOutput
+{
+    StepTopologySessionInfo session;
+    std::string artifact_handle;
+    std::string content_sha256;
+    std::string render_artifact_handle;
+    std::string render_content_sha256;
+    std::size_t mesh_count = 0;
+    std::size_t instance_count = 0;
+    std::size_t primitive_count = 0;
+    std::size_t geometry_triangle_count = 0;
+    std::size_t instanced_triangle_count = 0;
+    std::vector<unsigned char> glb;
 };
 
 class StepTopologyCancellation
@@ -421,11 +632,27 @@ class StepTopologySession
                          const StepTopologyLimits& limits,
                          const StepTopologyCancellation* cancellation,
                          std::unique_ptr<StepTopologySession>* session, Status* status = nullptr);
+    static int open_step_with_edit_journal(const unsigned char* source, std::size_t source_size,
+                                           const unsigned char* journal, std::size_t journal_size,
+                                           const StepTopologyLimits& limits,
+                                           std::unique_ptr<StepTopologySession>* session,
+                                           StepTopologyEditJournalRestoreResult* restored_state,
+                                           Status* status = nullptr);
+    static int open_step_with_edit_journal(const unsigned char* source, std::size_t source_size,
+                                           const unsigned char* journal, std::size_t journal_size,
+                                           const StepTopologyLimits& limits,
+                                           const StepTopologyCancellation* cancellation,
+                                           std::unique_ptr<StepTopologySession>* session,
+                                           StepTopologyEditJournalRestoreResult* restored_state,
+                                           Status* status = nullptr);
 
     const StepTopologySessionInfo& info() const;
     bool is_open() const;
     int inspect(const StepTopologyInspectionOptions& options, StepTopologySnapshot* snapshot,
                 Status* status = nullptr) const;
+    int inspect_page(const StepTopologyInspectionOptions& options,
+                     const StepTopologyPagePosition& position, std::size_t limit,
+                     StepTopologySnapshotPage* page, Status* status = nullptr) const;
     int refresh(StepTopologySnapshot* snapshot, Status* status = nullptr);
     int refresh(const StepTopologyCancellation* cancellation, StepTopologySnapshot* snapshot,
                 Status* status = nullptr);
@@ -449,6 +676,18 @@ class StepTopologySession
                 Status* status = nullptr) const;
     int apply_logical_groups(const StepTopologyGroupTransaction& transaction,
                              StepTopologyGroupTransactionResult* result, Status* status = nullptr);
+    int apply_logical_groups(const StepTopologyGroupTransaction& transaction,
+                             StepTopologyGroupPublicationGate publication_gate,
+                             void* publication_context, StepTopologyGroupTransactionResult* result,
+                             Status* status = nullptr);
+    int apply_metadata_probes(const StepTopologyProbeTransaction& transaction,
+                              StepTopologyProbeTransactionResult* result, Status* status = nullptr);
+    int apply_metadata_probes(const StepTopologyProbeTransaction& transaction,
+                              StepTopologyProbePublicationGate publication_gate,
+                              void* publication_context, StepTopologyProbeTransactionResult* result,
+                              Status* status = nullptr);
+    int checkpoint_edit_journal(StepTopologyEditJournalCheckpoint* checkpoint,
+                                Status* status = nullptr) const;
     int close(Status* status = nullptr);
 
   private:
@@ -469,13 +708,47 @@ class StepTopologySessionStore
 
     int open_step(const unsigned char* source, std::size_t source_size,
                   StepTopologyOpenResult* result, Status* status = nullptr);
+    int open_step_with_edit_journal(const unsigned char* source, std::size_t source_size,
+                                    const unsigned char* journal, std::size_t journal_size,
+                                    const StepTopologyEditJournalReplayPreconditions& preconditions,
+                                    StepTopologyOpenResult* result,
+                                    StepTopologyEditJournalRestoreResult* restored_state,
+                                    Status* status = nullptr);
+    int info(const std::string& session_handle, StepTopologySessionInfo* info,
+             Status* status = nullptr);
     int inspect(const std::string& session_handle, const StepTopologyInspectionOptions& options,
                 StepTopologySnapshot* snapshot, Status* status = nullptr);
+    int inspect_page(const std::string& session_handle,
+                     const StepTopologyInspectionOptions& options,
+                     const StepTopologyPagePosition& position, std::size_t limit,
+                     StepTopologySnapshotPage* page, Status* status = nullptr);
+    int render_glb_work_packet(const std::string& session_handle,
+                               const StepTopologyGlbOptions& options,
+                               StepTopologyGlbRenderOutput* output, Status* status = nullptr);
+    int resolve_glb_hit(const std::string& session_handle,
+                        const StepTopologyGlbHitDescriptor& descriptor, StepTopologyRenderHit* hit,
+                        Status* status = nullptr);
     int refresh(const std::string& session_handle, StepTopologySnapshot* snapshot,
                 Status* status = nullptr);
     int apply_logical_groups(const std::string& session_handle,
                              const StepTopologyGroupTransaction& transaction,
                              StepTopologyGroupTransactionResult* result, Status* status = nullptr);
+    int apply_logical_groups(const std::string& session_handle,
+                             const StepTopologyGroupTransaction& transaction,
+                             StepTopologyGroupPublicationGate publication_gate,
+                             void* publication_context, StepTopologyGroupTransactionResult* result,
+                             Status* status = nullptr);
+    int apply_metadata_probes(const std::string& session_handle,
+                              const StepTopologyProbeTransaction& transaction,
+                              StepTopologyProbeTransactionResult* result, Status* status = nullptr);
+    int apply_metadata_probes(const std::string& session_handle,
+                              const StepTopologyProbeTransaction& transaction,
+                              StepTopologyProbePublicationGate publication_gate,
+                              void* publication_context, StepTopologyProbeTransactionResult* result,
+                              Status* status = nullptr);
+    int checkpoint_edit_journal(const std::string& session_handle,
+                                StepTopologyEditJournalCheckpoint* checkpoint,
+                                Status* status = nullptr);
     int resolve(const std::string& session_handle, const std::string& target_handle,
                 StepTopologyResolvedTarget* target, Status* status = nullptr);
     int close(const std::string& session_handle, Status* status = nullptr);

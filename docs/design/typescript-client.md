@@ -88,6 +88,9 @@ The ESM package has explicit exports:
 | `@wavenumber/geometer` | Generated contracts plus high-level client |
 | `@wavenumber/geometer/contracts` | Generated DTOs, codecs, and operation metadata |
 | `@wavenumber/geometer/analytic-packet-a0` | Strict analytic request/result packet projection |
+| `@wavenumber/geometer/ipc-a0` | Environment-neutral bounded executable-frame codec |
+| `@wavenumber/geometer/ipc-client-a0` | Persistent client over injected WHATWG byte streams |
+| `@wavenumber/geometer/node-process-a0` | Node child-process supervision for `geometer serve --stdio` |
 | `@wavenumber/geometer/wasm` | Direct browser/Web Worker WASM transport adapter |
 | `@wavenumber/geometer/worker` | Correlated main-thread client for a dedicated Worker |
 | `@wavenumber/geometer/worker-host` | Worker-side host around the direct WASM adapter |
@@ -97,6 +100,42 @@ strict, exact-optional-property, and unchecked-index settings. It validates and
 atomically writes `dist/wasm/npm/geometer/`; check mode compares every artifact byte.
 `npm pack` plus a clean temporary consumer proves the package exports and
 declarations work outside repository path aliases.
+
+The IPC A0 frame export owns exact 48-byte header encoding, uint64 correlation
+ids, bounded attachment sections, segmented incremental decoding, strict UTF-8,
+and fixed-header rejection before body buffering. `ipc-client-a0` composes that
+codec with generated envelopes over injected WHATWG byte streams. It validates
+the normalized welcome digest, runtime operation declarations, effective
+limits, attachment inventories, response correlation, cancellation, and
+graceful shutdown. Request frames are encoded once, and outstanding count plus
+encoded bytes remain within the negotiated queue/resident ceilings even when a
+writer stalls. After welcome, the incremental decoder applies the negotiated
+JSON, attachment, text, and frame ceilings at header decode rather than merely
+accepting the larger A0 maxima. It still does not spawn or supervise a process.
+A Node adapter owns that platform boundary.
+
+Experimental topology DTOs and operation declarations remain generated so the
+research contract can be reviewed across languages, but the persistent client
+requires an operation to appear in the negotiated runtime catalog. The
+environment-neutral client defaults to the portable catalog, where all twelve
+topology operations fail locally. The Node process adapter selects the native
+catalog: nine operations cover open, paged inspect, render, resolve hit, close,
+logical groups, metadata probes, journal checkpoint, and exact journal restore.
+Hierarchy, general save, and recovery analysis remain structural-only. The
+adapter owns executable spawning, bounded stderr capture,
+handshake and shutdown deadlines, bounded direct-child termination with forced
+escalation, and clean-exit verification. It does not claim descendant-tree
+termination. A real SOT-23 STEP integration test exercises selection, mutation,
+checkpoint, close, exact restore, and post-restore mutation through that adapter
+and the native executable; browser entry points do not import Node modules.
+
+The runnable
+[`examples/node/step_topology_annotation_reference.ts`](../../examples/node/step_topology_annotation_reference.ts)
+reference goes one step further: it resolves an actual `GLTFLoader`/`Raycaster`
+hit, checkpoints a group and metadata probe, terminates the authoring process,
+starts a new native process, and proves exact replay by editing both restored
+records. Its generated JSON report retains digests and authored ids, not
+runtime handles or triangle locators.
 
 The Emscripten factory and `.wasm` remain separately distributed under
 `dist/wasm/browser/`. Consumers pass the factory itself and optional factory

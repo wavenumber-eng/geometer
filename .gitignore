@@ -38,3 +38,7 @@ node_modules/
 
 # Rust
 target/
+
+# Native libraries are build/cache outputs, not persisted runtime artifacts.
+dist/native/**/*.a
+dist/native/**/*.lib

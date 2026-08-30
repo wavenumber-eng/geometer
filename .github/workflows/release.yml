@@ -135,7 +135,7 @@ jobs:
         run: uv run --group dev twine check out/wheelhouse/*.whl
 
       - name: Package native dist
-        run: python -c "import pathlib, shutil; pathlib.Path('out').mkdir(exist_ok=True); shutil.make_archive('out/native-${{ matrix.platform }}', 'zip', 'dist/native/${{ matrix.platform }}')"
+        run: uv run --no-project python scripts/package_release_artifacts.py native --platform ${{ matrix.platform }} --output out/native-${{ matrix.platform }}.zip
 
       - name: Upload wheel artifact
         uses: actions/upload-artifact@v7

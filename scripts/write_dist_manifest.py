@@ -22,11 +22,6 @@ ROWS = [
         "Command-line STEP/HLR/planar tool for source checkouts. Current release platform names use `windows-x64`, `linux-x64`, `linux-arm64`, and `macos-arm64`.",
     ),
     (
-        "`native/<platform>/geometer.lib`, `native/<platform>/libgeometer.a`",
-        "Native static library",
-        "Persisted native library artifacts for downstream source checkouts.",
-    ),
-    (
         "`wasm/geometer.browser-build-attestation.json`",
         "Browser and TypeScript build attestation",
         "Deterministic source-, contract-, toolchain-, and artifact-bound provenance for the full and planar WASM runtimes plus the generated TypeScript package.",
@@ -69,7 +64,7 @@ def main() -> None:
         "",
         "Canonical artifacts are grouped by runtime target:",
         "",
-        "- `native/<platform>/` for native CLI/static-library artifacts.",
+        "- `native/<platform>/` for native CLI runtime artifacts.",
         "- `wasm/browser/` for the full browser integration target.",
         "- `wasm/node-test/` for the Node CLI parity/test target.",
         "- `wasm/planar-browser/` for the smaller planar-only browser target.",
@@ -90,6 +85,7 @@ def main() -> None:
     lines.extend(
         [
             "",
+            "Native `.lib` and `.a` files are build/cache outputs, not runtime artifacts or a supported SDK.",
             "Generated build state is not persisted here. Keep `.deps/`, `build/`, and `build-wasm/` out of Git.",
             "",
         ]

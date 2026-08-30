@@ -9,8 +9,6 @@ Persist these when publishing interface changes:
   `dist/native/<platform>/geometer`.
 - Native executable attestation:
   `dist/native/<platform>/geometer.build-attestation.json`.
-- Native static library: `dist/native/<platform>/geometer.lib` or
-  `dist/native/<platform>/libgeometer.a`.
 - Full browser WASM C ABI: `dist/wasm/browser/geometer.js` and
   `dist/wasm/browser/geometer.wasm`.
 - Node WASM CLI parity/test target: `dist/wasm/node-test/geometer-node-test.js`
@@ -35,6 +33,12 @@ Native platform directory names use:
 
 Root-level build artifacts are intentionally not produced. Source-checkout
 consumers must use grouped native, npm, and WASM paths.
+
+Native `.lib` and `.a` files remain ordinary build/cache outputs under the
+configured CMake build tree. They are not committed or included in native
+runtime releases. A future native SDK must be a separately designed package
+with public headers, exported CMake targets, ABI/toolchain metadata, licenses,
+and a complete dependency-link strategy; a bare static archive is not an SDK.
 
 Demo build scripts do not publish. See
 [Browser demo packaging and UI](browser-demos.md) for the local build, closure,

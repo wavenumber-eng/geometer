@@ -34,3 +34,7 @@ generic CAD geometry operations built on OCCT.
    Python surfaces.
 8. Treat remote OCCT binary archives as optional generated dependency cache
    inputs. Validate them before use and retain source builds as the fallback.
+9. Keep native `.lib` and `.a` artifacts in generated CMake build/cache state;
+   do not commit them or include them in runtime release archives. A future
+   native SDK requires a separately governed package with headers, exported
+   build-system targets, ABI metadata, licenses, and dependency closure.

@@ -15,7 +15,11 @@ Accepted
 
 ## Context
 
-Geometer produces binaries (CLI executable, static library, Node WASM CLI, and browser WASM C ABI) that need to be distributed. We need a single, known location for build outputs that can be committed to the repo and used directly by developers, CI, tests, and downstream projects.
+Geometer produces binaries (CLI executable, Node WASM CLI, and browser WASM C
+ABI) that need to be distributed. We need a single, known location for runtime
+outputs that can be committed to the repo and used directly by developers, CI,
+tests, and downstream projects. ADR 015 subsequently removed bare native static
+archives from this distribution surface.
 
 ## Decision
 
@@ -24,7 +28,6 @@ A `dist/` directory at the repo root holds distributable binaries. These are che
 Post-build, CMake copies outputs to grouped runtime directories under `dist/`:
 
 - `dist/native/<platform>/geometer.exe` (or `geometer` on Unix)
-- `dist/native/<platform>/geometer.lib` or `libgeometer.a`
 - `dist/wasm/browser/geometer.js` and `dist/wasm/browser/geometer.wasm` for
   full browser/Web Worker integration
 - `dist/wasm/node-test/geometer-node-test.js` and
@@ -33,9 +36,10 @@ Post-build, CMake copies outputs to grouped runtime directories under `dist/`:
   `dist/wasm/planar-browser/geometer-planar-browser.wasm` for smaller
   planar-only browser/Web Worker consumers
 
-Root-level build artifacts such as `dist/geometer.exe`, `dist/geometer.js`, or
-`dist/libgeometer.a` are intentionally not produced. Source-checkout consumers
-must use grouped paths.
+Root-level build artifacts such as `dist/geometer.exe` or `dist/geometer.js`
+are intentionally not produced. Source-checkout consumers must use grouped
+runtime paths. Native `.lib` and `.a` files remain in the configured CMake build
+tree and are governed by ADR 015.
 
 Generated dependency and build state remains outside version control:
 
@@ -50,7 +54,7 @@ Tests run against the binaries in `dist/`, not the build tree. This ensures what
 - Single location for all distributable artifacts regardless of build config.
 - Grouped paths prevent Windows, Linux, macOS, and WASM artifacts from
   overwriting each other.
-- Committed binaries allow consumers to clone and use native and WASM interfaces without building.
+- Committed runtime binaries allow consumers to clone and use native and WASM interfaces without building.
 - Testing against `dist/` catches packaging and copy issues (missing files, wrong binary).
 
 ## Consequences

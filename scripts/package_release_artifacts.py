@@ -15,6 +15,12 @@ DIST = ROOT / "dist"
 FIXED_ZIP_TIME = (1980, 1, 1, 0, 0, 0)
 
 
+def is_native_runtime_file(path: Path) -> bool:
+    """Return whether a native dist file belongs in a runtime archive."""
+
+    return path.is_file() and path.suffix.lower() not in {".a", ".lib"}
+
+
 def require_license_sources(platform: str | None) -> dict[str, Path]:
     sources = release_license_sources(ROOT, platform)
     missing = [str(path) for path in sources.values() if not path.is_file()]
@@ -30,7 +36,11 @@ def runtime_files(kind: str, platform: str | None) -> list[tuple[Path, str]]:
         source = DIST / "native" / platform
         if not source.is_dir():
             raise FileNotFoundError(f"Missing native distribution directory: {source}")
-        files = [(path, path.relative_to(source).as_posix()) for path in source.rglob("*") if path.is_file()]
+        files = [
+            (path, path.relative_to(source).as_posix())
+            for path in source.rglob("*")
+            if is_native_runtime_file(path)
+        ]
     else:
         files = []
         for relative in ("browser", "node-test", "planar-browser", "npm/geometer"):

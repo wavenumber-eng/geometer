@@ -16,6 +16,7 @@ objectives = [
     "Verify build-script helper logic that is practical to test without native rebuilds.",
     "Package any self-contained demo as a deterministic one-runtime-file review site with CSP and closure metadata.",
     "Verify the contract promotion manifest remains aligned with implemented interfaces.",
+    "Require native runtime distributions to exclude build-only static libraries.",
 ]
 
 [[subtests]]
@@ -129,3 +130,10 @@ file = "test_topology_glb_raycast.py"
 name = "Topology GLB Three.js Binding"
 description = "Loads every fixture's sealed native topology GLB plus a reflected case with pinned Three.js and proves exact accessor, transform, material, occurrence, body, face, and triangle hit resolution."
 test_case_type = "integration"
+
+[[subtests]]
+id = "PY_017"
+file = "test_native_runtime_distribution.py"
+name = "Native Runtime Distribution Boundary"
+description = "Checks native runtime packaging excludes and release validation rejects build-only .lib and .a artifacts."
+test_case_type = "unit"

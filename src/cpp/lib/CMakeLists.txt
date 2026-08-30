@@ -319,17 +319,3 @@ if(EMSCRIPTEN)
         COMMENT "Copying planar browser WASM outputs to dist/wasm/planar-browser/"
     )
 endif()
-
-if(NOT EMSCRIPTEN)
-    # Copy native static library to the platform-aware native dist folder.
-    add_custom_command(TARGET geometer_lib POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E make_directory "${GEOMETER_NATIVE_DIST_DIR}"
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            "$<TARGET_FILE:geometer_lib>"
-            "${GEOMETER_NATIVE_DIST_DIR}/"
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            "$<TARGET_FILE:geometer_lib>"
-            "${GEOMETER_NATIVE_DIST_DIR}/libgeometer.a"
-        COMMENT "Copying geometer_lib to dist/native/${GEOMETER_NATIVE_DIST_PLATFORM}/"
-    )
-endif()

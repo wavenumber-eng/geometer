@@ -33,8 +33,12 @@ def validate_native(path: Path) -> None:
         raise ValueError("native archive is missing the Geometer executable")
     if "geometer.build-attestation.json" not in names:
         raise ValueError("native archive is missing its executable build attestation")
-    if not ({"geometer.lib", "libgeometer.a"} & names):
-        raise ValueError("native archive is missing the static Geometer library")
+    native_libraries = {name for name in names if Path(name).suffix.lower() in {".a", ".lib"}}
+    if native_libraries:
+        raise ValueError(
+            "native runtime archive contains build-only static libraries: "
+            + ", ".join(sorted(native_libraries))
+        )
 
 
 def validate_wasm(path: Path) -> None:

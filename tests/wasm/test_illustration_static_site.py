@@ -244,6 +244,7 @@ async function main() {
     detail.checked = true;
     detail.dispatchEvent(new Event("change", { bubbles: true }));
     const busyStarted = !busy.hidden;
+    const busyPresentation = busy.dataset.presentation;
     detail.checked = false;
     detail.dispatchEvent(new Event("change", { bubbles: true }));
     await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
@@ -268,6 +269,7 @@ async function main() {
       generation,
       finalGeneration: Number(pane.dataset.prepareGeneration),
       busyStarted,
+      busyPresentation,
       canceled,
       details: Number(pane.dataset.canvasDetails),
       paths: document.querySelectorAll('#illustrationSvgHost path[class^="gml"]').length,
@@ -726,6 +728,7 @@ def test_illustration_static_site_mesh_render_upload_and_export() -> None:
     assert result["detailToggle"]["afterOff"] == result["detailToggle"]["before"]
     assert result["detailToggle"]["afterOn"] == result["detailToggle"]["before"]
     assert result["lazyLinework"]["busyStarted"] is True
+    assert result["lazyLinework"]["busyPresentation"] == "indicator"
     assert result["lazyLinework"]["canceled"] == {
         "busyHidden": True,
         "state": "ready",

@@ -246,17 +246,22 @@ controls.zoomSpeed = 1.2;
 controls.panSpeed = 0.3;
 controls.dynamicDampingFactor = 0.16;
 controls.staticMoving = false;
-threeScene.add(new THREE.HemisphereLight(0xffffff, 0x667078, 1.25));
+threeScene.add(new THREE.HemisphereLight(0xffffff, 0xaeb7c0, 1.2));
 const threeKey = new THREE.DirectionalLight(0xffffff, 1.7);
-threeKey.position.set(4, 8, 6);
-threeScene.add(threeKey);
+const previewLightRight = new THREE.Vector3();
+const previewLightUp = new THREE.Vector3();
+const previewLightTowardViewer = new THREE.Vector3();
+threeScene.add(threeKey, threeKey.target);
 const modelGroup = new THREE.Group();
 threeScene.add(modelGroup);
 const loader = new GLTFLoader();
 
-function setBusy(message: string | null): void {
+function setBusy(message: string | null, presentation: "overlay" | "indicator" = "overlay"): void {
   els.busy.hidden = message === null;
-  if (message) els.busyText.textContent = message;
+  if (message) {
+    els.busy.dataset.presentation = presentation;
+    els.busyText.textContent = message;
+  }
   els.app.dataset.state = message ? "loading" : "ready";
 }
 
@@ -649,7 +654,7 @@ async function prepareIllustration(reason: string): Promise<void> {
   cancelLazyHlrLinework();
   syncHlrControls();
   const started = performance.now();
-  setBusy(`Preparing ${reason} illustration...`);
+  setBusy(`Preparing ${reason} illustration...`, "indicator");
   await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
   try {
     const input = meshInput(root);
@@ -662,7 +667,7 @@ async function prepareIllustration(reason: string): Promise<void> {
       model &&
       (model.step || model.stepBuffer)
     ) {
-      setBusy(`Tracing ${model.name} with Geometer HLR...`);
+      setBusy(`Tracing ${model.name} with Geometer HLR...`, "indicator");
       const linework = await loadHlrLinework(model, view, currentModelTransform(root));
       hlrMs = linework.hlrMs;
       prepared = {
@@ -731,7 +736,7 @@ async function updateHlrVisibility(): Promise<void> {
   cancelLazyHlrLinework();
   const requestId = state.lineworkRequest;
   state.lineworkBusyRequest = requestId;
-  setBusy(`Tracing ${model.name} with Geometer HLR...`);
+  setBusy(`Tracing ${model.name} with Geometer HLR...`, "indicator");
   try {
     const view: MeshIllustrationView = {
       direction: scene.view.direction,
@@ -776,9 +781,23 @@ function scheduleCameraIllustration(): void {
   }, 180);
 }
 
+function updatePreviewLighting(): void {
+  const scale = Math.max(Number(camera.userData.halfHeight ?? 1), 0.001);
+  previewLightRight.set(1, 0, 0).applyQuaternion(camera.quaternion);
+  previewLightUp.set(0, 1, 0).applyQuaternion(camera.quaternion);
+  previewLightTowardViewer.subVectors(camera.position, controls.target).normalize();
+  threeKey.position
+    .copy(controls.target)
+    .addScaledVector(previewLightTowardViewer, scale * 2.6)
+    .addScaledVector(previewLightUp, scale * 1.1)
+    .addScaledVector(previewLightRight, scale * 0.65);
+  threeKey.target.position.copy(controls.target);
+}
+
 function renderLoop(): void {
   requestAnimationFrame(renderLoop);
   controls.update();
+  updatePreviewLighting();
   renderer.render(threeScene, camera);
 }
 

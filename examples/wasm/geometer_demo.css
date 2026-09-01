@@ -1522,12 +1522,47 @@ body[data-wn-watermark="true"]::after {
       position: absolute;
       inset: 0;
       z-index: 8;
-      display: grid;
-      place-items: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
       background: rgb(238 238 234 / 82%);
     }
     .illustration-busy[hidden] { display: none; }
+    .illustration-busy::before {
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgb(43 120 128 / 24%);
+      border-top-color: var(--wn-accent);
+      border-radius: 50%;
+      content: "";
+      animation: illustration-spin 700ms linear infinite;
+    }
     .illustration-busy div { padding: 14px 18px; border: 1px solid var(--wn-line); background: var(--wn-paper); color: var(--wn-ink); font-size: 11px; }
+    .illustration-busy[data-presentation="indicator"] {
+      inset: auto 10px 10px auto;
+      width: 26px;
+      height: 26px;
+      border: 1px solid rgb(43 120 128 / 22%);
+      border-radius: 50%;
+      background: rgb(255 255 255 / 84%);
+      box-shadow: 0 1px 4px rgb(23 37 44 / 12%);
+      pointer-events: none;
+    }
+    .illustration-busy[data-presentation="indicator"] div {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+    }
+    @keyframes illustration-spin { to { transform: rotate(360deg); } }
+    @media (prefers-reduced-motion: reduce) {
+      .illustration-busy::before { animation-duration: 1400ms; }
+    }
     #illustrationValidation { position: fixed; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
     @media (max-width: 1050px) {
       .illustration-workspace { grid-template-columns: 1fr 1fr; grid-template-rows: minmax(420px, 1fr) auto; }

@@ -1503,6 +1503,7 @@ body[data-wn-watermark="true"]::after {
     .illustration-control output { text-align: right; color: var(--wn-accent); }
     .illustration-check { display: flex; align-items: center; gap: 7px; min-height: 28px; color: var(--wn-muted); font-size: 10px; }
     .illustration-info { margin: 0; color: var(--wn-muted); font: 10px/1.55 var(--wn-font); }
+    .illustration-info strong { color: var(--wn-ink); font-weight: 600; }
     .illustration-info + .illustration-info { margin-top: 7px; }
     .illustration-status {
       min-width: 0;

@@ -150,6 +150,11 @@ presets plus custom linear deflection (millimetres), angular deflection
 projected triangle limit. Surface tolerance changes reconvert STEP through
 Geometer WASM; HLR tolerances only reproject linework, and GLB-only inputs retain
 their authored tessellation.
+Linear deflection is the maximum positional gap between an exact STEP surface
+and its triangle approximation; angular deflection limits directional change
+while following curvature. Smaller values increase curved-surface density.
+Remeshing the current model preserves the active orthographic camera pose,
+target, zoom, and framing scale.
 
 The illustration algorithm consumes generic indexed or non-indexed triangle
 meshes with transforms, material colors, and vertex normals. STEP is only the

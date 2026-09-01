@@ -393,6 +393,51 @@ async function main() {
     throw new Error("HLR detail did not restore after the camera regression check.");
   })()`, true);
 
+  const cameraRemesh = await evaluate(`(async () => {
+    const pane = document.querySelector("#illustrationOutputPane");
+    const chord = document.querySelector("#illustrationLinearDeflection");
+    const quality = document.querySelector("#illustrationMeshQuality");
+    const pose = () => ({
+      view: pane.dataset.view,
+      direction: pane.dataset.direction,
+      position: pane.dataset.cameraPosition,
+      target: pane.dataset.cameraTarget,
+      zoom: pane.dataset.cameraZoom,
+      halfHeight: pane.dataset.cameraHalfHeight,
+    });
+    const before = { generation: Number(pane.dataset.prepareGeneration), pose: pose() };
+    chord.value = "0.08";
+    chord.dispatchEvent(new Event("change", { bubbles: true }));
+    const customDeadline = Date.now() + 120000;
+    while (Date.now() < customDeadline) {
+      if (
+        Number(pane.dataset.prepareGeneration) > before.generation &&
+        !document.querySelector("#illustrationDownloadSvg").disabled &&
+        document.querySelector("#illustrationBusy").hidden
+      )
+        break;
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+    const custom = {
+      generation: Number(pane.dataset.prepareGeneration),
+      pose: pose(),
+      quality: quality.value,
+    };
+    quality.value = "balanced";
+    quality.dispatchEvent(new Event("change", { bubbles: true }));
+    const resetDeadline = Date.now() + 120000;
+    while (Date.now() < resetDeadline) {
+      if (
+        Number(pane.dataset.prepareGeneration) > custom.generation &&
+        !document.querySelector("#illustrationDownloadSvg").disabled &&
+        document.querySelector("#illustrationBusy").hidden
+      )
+        return { before, custom, reset: { generation: Number(pane.dataset.prepareGeneration), pose: pose() } };
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+    throw new Error("Camera-preserving mesh reset did not complete.");
+  })()`, true);
+
   const bga = await evaluate(`(async () => {
     const pane = document.querySelector("#illustrationOutputPane");
     const select = document.querySelector("#illustrationModelSelect");
@@ -488,7 +533,7 @@ async function main() {
   const resources = await evaluate(`performance.getEntriesByType("resource").map((entry) => entry.name)`);
   process.stdout.write(JSON.stringify({
     initial, restyle, detailToggle, lazyLinework, meshQuality, top, detailBeforeCamera,
-    camera, detailAfterCamera, bga, uploaded,
+    camera, detailAfterCamera, cameraRemesh, bga, uploaded,
     filename: download.suggestedFilename,
     exceptions,
     externalRequests: resources.filter((url) => /^https?:/u.test(url) && !url.startsWith(siteRoot)),
@@ -674,6 +719,22 @@ def test_illustration_static_site_mesh_render_upload_and_export() -> None:
     assert result["detailAfterCamera"]["details"] > 0
     assert result["detailAfterCamera"]["previousGeneration"] == result["camera"]["generation"]
     assert result["detailAfterCamera"]["generation"] == result["detailAfterCamera"]["previousGeneration"]
+    assert result["cameraRemesh"]["custom"]["quality"] == "custom"
+    assert result["cameraRemesh"]["custom"]["generation"] > result["cameraRemesh"]["before"]["generation"]
+    assert result["cameraRemesh"]["reset"]["generation"] > result["cameraRemesh"]["custom"]["generation"]
+    camera_pose_before = result["cameraRemesh"]["before"]["pose"]
+    for camera_pose_after in (
+        result["cameraRemesh"]["custom"]["pose"],
+        result["cameraRemesh"]["reset"]["pose"],
+    ):
+        assert camera_pose_after["view"] == camera_pose_before["view"] == "camera"
+        assert camera_pose_after["target"] == camera_pose_before["target"]
+        assert camera_pose_after["zoom"] == camera_pose_before["zoom"]
+        assert camera_pose_after["halfHeight"] == camera_pose_before["halfHeight"]
+        for field in ("position", "direction"):
+            before_values = tuple(float(value) for value in camera_pose_before[field].split(","))
+            after_values = tuple(float(value) for value in camera_pose_after[field].split(","))
+            assert after_values == pytest.approx(before_values, abs=0.0001)
     assert "BGA90" in result["bga"]["selected"]
     assert result["bga"]["triangles"] > 20_000
     assert result["bga"]["polygons"] == result["bga"]["triangles"]

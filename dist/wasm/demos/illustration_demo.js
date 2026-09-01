@@ -276,7 +276,17 @@ function resize() {
     els.illustrationCanvas.height = Math.max(1, Math.round(outputRect.height * ratio));
     redrawStyle();
 }
-function fitCamera(root) {
+function captureCameraView() {
+    return {
+        position: camera.position.clone(),
+        quaternion: camera.quaternion.clone(),
+        up: camera.up.clone(),
+        target: controls.target.clone(),
+        zoom: camera.zoom,
+        halfHeight: Number(camera.userData.halfHeight ?? 1),
+    };
+}
+function fitCamera(root, preservedView) {
     root.updateMatrixWorld(true);
     let bounds = new THREE.Box3().setFromObject(root);
     const center = bounds.getCenter(new THREE.Vector3());
@@ -285,13 +295,23 @@ function fitCamera(root) {
     bounds = new THREE.Box3().setFromObject(root);
     const sphere = bounds.getBoundingSphere(new THREE.Sphere());
     const radius = Math.max(sphere.radius, 0.001);
-    camera.userData.halfHeight = radius * 1.12;
+    camera.userData.halfHeight = preservedView?.halfHeight ?? radius * 1.12;
     camera.near = Math.max(radius / 1000, 0.0001);
     camera.far = Math.max(radius * 20, 10);
-    controls.target.set(0, 0, 0);
     controls.minDistance = radius * 0.05;
     controls.maxDistance = radius * 20;
-    moveCameraToView(state.view === "camera" ? "iso" : state.view);
+    if (preservedView) {
+        camera.position.copy(preservedView.position);
+        camera.quaternion.copy(preservedView.quaternion);
+        camera.up.copy(preservedView.up);
+        camera.zoom = preservedView.zoom;
+        controls.target.copy(preservedView.target);
+        camera.updateMatrixWorld(true);
+    }
+    else {
+        controls.target.set(0, 0, 0);
+        moveCameraToView(state.view === "camera" ? "iso" : state.view);
+    }
     resize();
 }
 function namedView(view) {
@@ -507,6 +527,16 @@ async function prepareIllustration(reason) {
             .join(",");
         els.outputPane.dataset.triangles = String(state.scene.stats.projectedTriangles);
         els.outputPane.dataset.meshKey = surfaceMeshKey(meshSettings);
+        els.outputPane.dataset.cameraPosition = camera.position
+            .toArray()
+            .map((value) => value.toFixed(9))
+            .join(",");
+        els.outputPane.dataset.cameraTarget = controls.target
+            .toArray()
+            .map((value) => value.toFixed(9))
+            .join(",");
+        els.outputPane.dataset.cameraZoom = camera.zoom.toFixed(9);
+        els.outputPane.dataset.cameraHalfHeight = Number(camera.userData.halfHeight ?? 1).toFixed(9);
         els.outputPane.dataset.prepareGeneration = String(state.prepareGeneration);
         redrawStyle();
         const elapsed = performance.now() - started;
@@ -626,7 +656,8 @@ async function modelGlbBuffer(model) {
     model.glbBytes = converted.buffer.byteLength;
     return { buffer: converted.buffer, meshMs: converted.glbMs, source: "remeshed" };
 }
-async function selectModel(model) {
+async function selectModel(model, options = {}) {
+    const preservedView = options.preserveCamera && state.root ? captureCameraView() : undefined;
     const loadId = ++state.activeLoad;
     state.prepareRequest += 1;
     cancelLazyHlrLinework();
@@ -659,7 +690,7 @@ async function selectModel(model) {
         clearModel();
         modelGroup.add(root);
         state.root = root;
-        fitCamera(root);
+        fitCamera(root, preservedView);
         await prepareIllustration("mesh");
         const elapsed = performance.now() - started;
         const sourceLabel = meshResult.source === "fixed-glb"
@@ -919,13 +950,13 @@ async function applyMeshQualityPreset() {
     applyMeshSettings(MESH_QUALITY_PRESETS[quality]);
     updateMeshInfo(`${els.meshQuality.selectedOptions[0]?.textContent ?? quality} requested`);
     if (state.model)
-        await selectModel(state.model);
+        await selectModel(state.model, { preserveCamera: true });
 }
 async function rebuildSurfaceMesh() {
     markMeshQualityCustom();
     updateMeshInfo("Custom STEP mesh requested");
     if (state.model)
-        await selectModel(state.model);
+        await selectModel(state.model, { preserveCamera: true });
 }
 async function rebuildHlrLinework() {
     markMeshQualityCustom();

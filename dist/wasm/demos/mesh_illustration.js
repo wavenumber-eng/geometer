@@ -143,7 +143,9 @@ export function prepareMeshIllustration(input, view, options = {}) {
     const right = normalize(cross(requestedUp, direction), "View right");
     const up = normalize(cross(direction, right), "Orthogonal view up");
     const mirrorX = view.mirrorX === true;
-    const maxTriangles = Math.max(1, Math.trunc(options.maxTriangles ?? 120_000));
+    const maxTriangles = options.maxTriangles === undefined
+        ? Number.POSITIVE_INFINITY
+        : Math.max(1, Math.trunc(finite(options.maxTriangles, 1)));
     const weldTolerance = Math.max(1e-9, finite(options.weldTolerance ?? 1e-6, 1e-6));
     const triangles = [];
     const edgeMaps = new Map();
@@ -157,7 +159,7 @@ export function prepareMeshIllustration(input, view, options = {}) {
         const triangleCount = validateMesh(mesh);
         sourceTriangles += triangleCount;
         if (sourceTriangles > maxTriangles)
-            throw new Error(`Mesh illustration exceeds the ${maxTriangles.toLocaleString()} triangle prototype limit.`);
+            throw new Error(`Mesh illustration exceeds the configured ${maxTriangles.toLocaleString()} triangle limit.`);
         const matrix = mesh.matrix ?? IDENTITY_MATRIX;
         const orientation = matrixDeterminantSign(matrix);
         for (let triangleIndex = 0; triangleIndex < triangleCount; triangleIndex += 1) {

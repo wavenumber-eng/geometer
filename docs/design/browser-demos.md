@@ -133,7 +133,7 @@ The first mesh-illustration feasibility slice is maintained in
   and toon surface shading;
 - STEP-backed demo inputs can be remeshed through Draft, Balanced, Fine, Extra
   fine, or custom linear/angular deflection settings, with separately grouped
-  HLR relative chord/angular tolerances and a projected-triangle safety limit;
+  HLR relative chord/angular tolerances and no demo-imposed triangle-count cap;
 - remeshing the active STEP model preserves its orthographic camera pose,
   target, zoom, and framing scale;
 - filled triangles use spatially culled overlap tests and depth-plane ordering

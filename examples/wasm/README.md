@@ -146,10 +146,10 @@ camera views, local STEP upload, and SVG/scene/style downloads.
 
 The Geometry section exposes Draft, Balanced, Fine, and Extra fine STEP mesh
 presets plus custom linear deflection (millimetres), angular deflection
-(degrees), separately grouped HLR relative chord/angular tolerances, and a
-projected triangle limit. Surface tolerance changes reconvert STEP through
-Geometer WASM; HLR tolerances only reproject linework, and GLB-only inputs retain
-their authored tessellation.
+(degrees) and separately grouped HLR relative chord/angular tolerances. The demo
+does not impose a triangle-count cap. Surface tolerance changes reconvert STEP
+through Geometer WASM; HLR tolerances only reproject linework, and GLB-only
+inputs retain their authored tessellation.
 Linear deflection is the maximum positional gap between an exact STEP surface
 and its triangle approximation; angular deflection limits directional change
 while following curvature. Smaller values increase curved-surface density.

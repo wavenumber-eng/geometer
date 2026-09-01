@@ -48,7 +48,6 @@ for (const required of [
   'id="illustrationAngularDeflection"',
   'id="illustrationHlrDeflection"',
   'id="illustrationHlrAngularDeflection"',
-  'id="illustrationTriangleLimit"',
   'option value="lambert"',
   'id="illustrationBands" type="range" min="2" max="32"',
   "data:model/gltf-binary;base64,",
@@ -57,6 +56,8 @@ for (const required of [
   "data:image/svg+xml;base64,",
 ])
   if (!html.includes(required)) throw new Error(`Illustration HTML omits ${required}.`);
+if (html.includes('id="illustrationTriangleLimit"'))
+  throw new Error("Illustration HTML retains the prototype triangle limit.");
 if (html.includes("https://cdn.jsdelivr.net"))
   throw new Error("Illustration HTML retains its development CDN import map.");
 

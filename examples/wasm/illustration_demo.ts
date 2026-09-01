@@ -68,7 +68,6 @@ interface MeshSettings {
   angularDeflectionDegrees: number;
   hlrDeflectionCoefficient: number;
   hlrAngularDeflectionDegrees: number;
-  maxTriangles: number;
 }
 
 interface CameraViewState {
@@ -86,28 +85,24 @@ const MESH_QUALITY_PRESETS: Readonly<Record<Exclude<MeshQualityId, "custom">, Me
     angularDeflectionDegrees: 40,
     hlrDeflectionCoefficient: 0.008,
     hlrAngularDeflectionDegrees: 40,
-    maxTriangles: 100_000,
   },
   balanced: {
     linearDeflectionMm: 0.1,
     angularDeflectionDegrees: (0.5 * 180) / Math.PI,
     hlrDeflectionCoefficient: 0.004,
     hlrAngularDeflectionDegrees: (0.5 * 180) / Math.PI,
-    maxTriangles: 140_000,
   },
   fine: {
     linearDeflectionMm: 0.03,
     angularDeflectionDegrees: 15,
     hlrDeflectionCoefficient: 0.002,
     hlrAngularDeflectionDegrees: 15,
-    maxTriangles: 250_000,
   },
   "extra-fine": {
     linearDeflectionMm: 0.01,
     angularDeflectionDegrees: 8,
     hlrDeflectionCoefficient: 0.001,
     hlrAngularDeflectionDegrees: 8,
-    maxTriangles: 500_000,
   },
 };
 
@@ -152,7 +147,6 @@ const els = {
   angularDeflection: required<HTMLInputElement>("illustrationAngularDeflection"),
   hlrDeflection: required<HTMLInputElement>("illustrationHlrDeflection"),
   hlrAngularDeflection: required<HTMLInputElement>("illustrationHlrAngularDeflection"),
-  triangleLimit: required<HTMLInputElement>("illustrationTriangleLimit"),
   meshInfo: required<HTMLParagraphElement>("illustrationMeshInfo"),
   shading: required<HTMLSelectElement>("illustrationShading"),
   bands: required<HTMLInputElement>("illustrationBands"),
@@ -317,7 +311,6 @@ function currentMeshSettings(): MeshSettings {
       60,
       (0.5 * 180) / Math.PI,
     ),
-    maxTriangles: Math.trunc(boundedNumberInput(els.triangleLimit, 10_000, 1_000_000, 140_000)),
   };
 }
 
@@ -333,12 +326,11 @@ function applyMeshSettings(settings: MeshSettings): void {
   els.angularDeflection.value = String(settings.angularDeflectionDegrees);
   els.hlrDeflection.value = String(settings.hlrDeflectionCoefficient);
   els.hlrAngularDeflection.value = String(settings.hlrAngularDeflectionDegrees);
-  els.triangleLimit.value = String(settings.maxTriangles);
 }
 
 function updateMeshInfo(prefix = "Mesh controls ready"): void {
   const settings = currentMeshSettings();
-  els.meshInfo.textContent = `${prefix}: STEP ${settings.linearDeflectionMm} mm / ${settings.angularDeflectionDegrees.toFixed(2)} deg; HLR ${settings.hlrDeflectionCoefficient} bbox / ${settings.hlrAngularDeflectionDegrees.toFixed(2)} deg; ${settings.maxTriangles.toLocaleString()} triangle limit.`;
+  els.meshInfo.textContent = `${prefix}: STEP ${settings.linearDeflectionMm} mm / ${settings.angularDeflectionDegrees.toFixed(2)} deg; HLR ${settings.hlrDeflectionCoefficient} bbox / ${settings.hlrAngularDeflectionDegrees.toFixed(2)} deg; no triangle-count cap.`;
 }
 
 function currentStyle(): MeshIllustrationStyle {
@@ -654,10 +646,7 @@ async function prepareIllustration(reason: string): Promise<void> {
     const input = meshInput(root);
     const view = currentView();
     const meshSettings = currentMeshSettings();
-    let prepared = prepareMeshIllustration(input, view, {
-      maxTriangles: meshSettings.maxTriangles,
-      weldTolerance: 1e-5,
-    });
+    let prepared = prepareMeshIllustration(input, view, { weldTolerance: 1e-5 });
     let hlrMs = 0;
     if (
       (state.showHlrOutline || state.showHlrDetail) &&
@@ -1157,12 +1146,6 @@ async function rebuildHlrLinework(): Promise<void> {
   if (state.root) await prepareIllustration("HLR mesh");
 }
 
-async function updateTriangleLimit(): Promise<void> {
-  markMeshQualityCustom();
-  updateMeshInfo("Custom triangle limit requested");
-  if (state.root) await prepareIllustration("triangle limit");
-}
-
 function wireEvents(): void {
   new ResizeObserver(resize).observe(els.modelPane);
   new ResizeObserver(resize).observe(els.outputPane);
@@ -1190,9 +1173,6 @@ function wireEvents(): void {
     control.addEventListener("change", () => {
       rebuildHlrLinework().catch(showError);
     });
-  els.triangleLimit.addEventListener("change", () => {
-    updateTriangleLimit().catch(showError);
-  });
   els.viewButtons.addEventListener("click", (event) => {
     const button = (event.target as Element | null)?.closest<HTMLButtonElement>(
       "button[data-view]",

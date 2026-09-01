@@ -292,7 +292,6 @@ async function main() {
       angular: Number(document.querySelector("#illustrationAngularDeflection").value),
       hlr: Number(document.querySelector("#illustrationHlrDeflection").value),
       hlrAngular: Number(document.querySelector("#illustrationHlrAngularDeflection").value),
-      limit: Number(document.querySelector("#illustrationTriangleLimit").value),
     };
 
     quality.value = "balanced";
@@ -706,7 +705,6 @@ def test_illustration_static_site_mesh_render_upload_and_export() -> None:
     assert result["meshQuality"]["fine"]["angular"] == pytest.approx(15)
     assert result["meshQuality"]["fine"]["hlr"] == pytest.approx(0.002)
     assert result["meshQuality"]["fine"]["hlrAngular"] == pytest.approx(15)
-    assert result["meshQuality"]["fine"]["limit"] == 250_000
     assert result["meshQuality"]["resetGeneration"] > result["meshQuality"]["fine"]["generation"]
     assert result["top"]["generation"] > result["initial"]["generation"]
     assert result["top"]["direction"] == "0.000000,1.000000,0.000000"

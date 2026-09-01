@@ -34,6 +34,19 @@ assert.equal(scene.stats.projectedTriangles, 12);
 assert.equal(scene.warnings.length, 0);
 assert.deepEqual(scene.bounds, { minX: -1, minY: -1, maxX: 1, maxY: 1 });
 assert.equal(scene.triangles.filter((triangle) => triangle.frontFacing).length, 2);
+assert.throws(
+  () =>
+    prepareMeshIllustration(
+      {
+        meshes: [
+          { id: "limited-cube", positions, indices, materials: [{ color: [0.2, 0.7, 0.62] }] },
+        ],
+      },
+      { direction: [0, 0, 1], up: [0, 1, 0] },
+      { maxTriangles: 11 },
+    ),
+  /configured 11 triangle limit/u,
+);
 
 const baseStyle = {
   shading: "toon",

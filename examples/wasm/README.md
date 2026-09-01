@@ -140,7 +140,8 @@ their respective operation contracts are promoted.
 form the first reviewable slice of the retained illustration plan. The page
 keeps the HLR Lab's side-by-side 3D/2D workflow, but the right pane renders
 colorized triangle surfaces to either SVG or Canvas2D. It supports flat,
-quantized-band, and early toon shading, live style changes, named or trackball
+unquantized Lambert diffuse, quantized-band (up to 32 bands), and early toon shading,
+live style changes, named or trackball
 camera views, local STEP upload, and SVG/scene/style downloads.
 
 The illustration algorithm consumes generic indexed or non-indexed triangle

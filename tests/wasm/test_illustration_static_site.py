@@ -137,7 +137,7 @@ async function main() {
     shading.value = "banded";
     shading.dispatchEvent(new Event("change", { bubbles: true }));
     const bands = document.querySelector("#illustrationBands");
-    bands.value = "4";
+    bands.value = "32";
     bands.dispatchEvent(new Event("input", { bubbles: true }));
     await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     document.querySelector('button[data-output="canvas"]').click();
@@ -146,6 +146,7 @@ async function main() {
       after: Number(pane.dataset.prepareGeneration),
       changed: previousSvg !== document.querySelector("#illustrationSvgHost svg").outerHTML,
       shading: pane.dataset.shading,
+      bands: Number(bands.value),
       output: pane.dataset.output,
       canvasVisible: !document.querySelector("#illustrationCanvas").classList.contains("hidden"),
       canvasOutlines: Number(pane.dataset.canvasOutlines),
@@ -519,6 +520,7 @@ def test_illustration_static_site_mesh_render_upload_and_export() -> None:
         "after": result["initial"]["generation"],
         "changed": True,
         "shading": "banded",
+        "bands": 32,
         "output": "canvas",
         "canvasVisible": True,
         "canvasOutlines": result["restyle"]["canvasOutlines"],
@@ -554,11 +556,11 @@ def test_illustration_static_site_mesh_render_upload_and_export() -> None:
     assert result["bga"]["elapsedMs"] < 30_000
     assert len(result["bga"]["probes"]) >= 20
     assert all(probe["count"] >= 2 for probe in result["bga"]["probes"])
-    assert {probe["fill"] for probe in result["bga"]["probes"]} <= {
-        "rgb(11,11,11)",
-        "rgb(16,16,16)",
-        "rgb(255,255,255)",
-    }
+    for fill in {probe["fill"] for probe in result["bga"]["probes"]}:
+        channels = tuple(int(channel) for channel in fill.removeprefix("rgb(").removesuffix(")").split(","))
+        assert len(channels) == 3
+        assert channels[0] == channels[1] == channels[2]
+        assert channels[0] <= 20 or channels[0] == 255
     assert result["uploaded"]["selected"] == "illustration-upload.step (local)"
     assert result["uploaded"]["triangles"] > 0
     assert result["uploaded"]["paths"] > 0

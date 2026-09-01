@@ -78,6 +78,65 @@ assert.notEqual(unlit.svg, toon.svg);
 assert.doesNotMatch(unlit.svg, /<rect /u);
 assert.match(unlit.svg, /rgb\(204,77,51\)/u);
 
+const smoothNormalScene = prepareMeshIllustration(
+  {
+    meshes: [
+      {
+        id: "smooth-normal-triangle",
+        positions: new Float32Array([-1, -1, 0, 1, -1, 0, 0, 1, 0]),
+        normals: new Float32Array([1, 0, 0, 1, 0, 0, 1, 0, 0]),
+        materials: [{ color: [0.8, 0.6, 0.2] }],
+      },
+    ],
+  },
+  { direction: [0, 0, 1], up: [0, 1, 0] },
+);
+const surfaceOnlyStyle = {
+  ...baseStyle,
+  showHlrOutline: false,
+  showOutlines: false,
+  showCreases: false,
+};
+const flatDiffuse = renderMeshIllustrationSvg(smoothNormalScene, {
+  ...surfaceOnlyStyle,
+  shading: "flat",
+});
+const lambert = renderMeshIllustrationSvg(smoothNormalScene, {
+  ...surfaceOnlyStyle,
+  shading: "lambert",
+});
+assert.notEqual(lambert.svg, flatDiffuse.svg);
+
+const band32 = renderMeshIllustrationSvg(smoothNormalScene, {
+  ...surfaceOnlyStyle,
+  shading: "banded",
+  ambient: 0.49,
+  keyIntensity: 0,
+  bands: 32,
+  sourceColors: false,
+  fallbackColor: [1, 1, 1],
+});
+const band8 = renderMeshIllustrationSvg(smoothNormalScene, {
+  ...surfaceOnlyStyle,
+  shading: "banded",
+  ambient: 0.49,
+  keyIntensity: 0,
+  bands: 8,
+  sourceColors: false,
+  fallbackColor: [1, 1, 1],
+});
+const bandOverLimit = renderMeshIllustrationSvg(smoothNormalScene, {
+  ...surfaceOnlyStyle,
+  shading: "banded",
+  ambient: 0.49,
+  keyIntensity: 0,
+  bands: 100,
+  sourceColors: false,
+  fallbackColor: [1, 1, 1],
+});
+assert.notEqual(band32.svg, band8.svg);
+assert.equal(bandOverLimit.svg, band32.svg);
+
 const mirrored = prepareMeshIllustration(
   {
     meshes: [

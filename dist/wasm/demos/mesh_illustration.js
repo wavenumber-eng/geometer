@@ -282,7 +282,7 @@ function triangleFill(triangle, scene, style) {
     let intensity = clamp(style.ambient) + clamp(style.keyIntensity, 0, 4) * diffuse;
     intensity = clamp(intensity);
     if (style.shading === "banded" || style.shading === "toon") {
-        const bands = Math.max(2, Math.min(8, Math.trunc(style.bands)));
+        const bands = Math.max(2, Math.min(32, Math.trunc(style.bands)));
         intensity = Math.round(intensity * (bands - 1)) / (bands - 1);
     }
     const rim = style.shading === "toon"

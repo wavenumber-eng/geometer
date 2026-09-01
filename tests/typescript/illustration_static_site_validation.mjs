@@ -43,6 +43,8 @@ for (const required of [
   'data-view="camera"',
   'id="illustrationHlrOutline"',
   'id="illustrationHlrDetail"',
+  'option value="lambert"',
+  'id="illustrationBands" type="range" min="2" max="32"',
   "data:model/gltf-binary;base64,",
   "data:application/step;base64,",
   "data:font/woff2;base64,",

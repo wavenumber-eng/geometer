@@ -129,6 +129,8 @@ The first mesh-illustration feasibility slice is maintained in
   symbol for its unioned `mesh-shadow` Outline layer;
 - SVG and Canvas2D consume one prepared projected scene and a separate style,
   so lighting or palette changes do not redo mesh preparation;
+- the shared renderer offers unlit, flat, unquantized Lambert diffuse, banded (2-32),
+  and toon surface shading;
 - filled triangles use spatially culled overlap tests and depth-plane ordering
   rather than a global average-depth painter sort, and cache that geometry-only
   order across style-only SVG/Canvas redraws;

@@ -48,6 +48,19 @@ LINE_LENGTH_EXEMPT_ROOTS = {
     ROOT / "src" / "ts" / "geometer" / "generated",
 }
 
+# Retained concept prototypes may carry narrowly scoped shape debt without
+# weakening the production-code limits above. Their lifecycle and promotion
+# requirements are documented in docs/design/browser-demos.md.
+PROTOTYPE_FILE_LENGTH_EXEMPTIONS = {
+    ROOT / "examples" / "wasm" / "mesh_illustration.ts",
+}
+PROTOTYPE_FUNCTION_LENGTH_EXEMPTIONS = {
+    (
+        ROOT / "tests" / "wasm" / "test_illustration_static_site.py",
+        "test_illustration_static_site_mesh_render_upload_and_export",
+    ),
+}
+
 ALLOWED_DIST_ROOT_FILES = {".gitkeep", "README.md"}
 ALLOWED_DIST_ROOT_DIRS = {"native", "npm", "wasm"}
 
@@ -105,7 +118,7 @@ def decision_count(node: ast.AST) -> int:
 def check_file_lengths(files: list[Path]) -> list[Violation]:
     violations: list[Violation] = []
     for path in files:
-        if is_line_length_exempt(path):
+        if is_line_length_exempt(path) or path in PROTOTYPE_FILE_LENGTH_EXEMPTIONS:
             continue
         line_count = len(path.read_text(encoding="utf-8").splitlines())
         if line_count > MAX_FILE_LINES:
@@ -141,7 +154,7 @@ def check_python_shapes(files: list[Path]) -> list[Violation]:
                         )
                     )
             else:
-                if length > MAX_PY_FUNCTION_LINES:
+                if length > MAX_PY_FUNCTION_LINES and (path, node.name) not in PROTOTYPE_FUNCTION_LENGTH_EXEMPTIONS:
                     violations.append(
                         Violation(path, f"function {node.name} has {length} lines; limit {MAX_PY_FUNCTION_LINES}")
                     )

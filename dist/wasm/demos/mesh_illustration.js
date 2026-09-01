@@ -380,9 +380,21 @@ function depthAt(triangle, point) {
         weightB * triangle.depths[1] +
         (1 - weightA - weightB) * triangle.depths[2]);
 }
+function significantTriangleOverlap(overlap, a, b, coordinateEpsilon) {
+    if (overlap.length < 3)
+        return false;
+    const boundsA = projectedBounds(a);
+    const boundsB = projectedBounds(b);
+    const scale = Math.max(boundsA.maxX - boundsA.minX, boundsA.maxY - boundsA.minY, boundsB.maxX - boundsB.minX, boundsB.maxY - boundsB.minY, coordinateEpsilon);
+    // Clipping two triangles that merely share an edge can produce a
+    // floating-point sliver. Compare area with a coordinate-tolerance strip,
+    // rather than epsilon squared, so adjacency does not become a false depth
+    // blocker in oblique projections.
+    return Math.abs(polygonSignedArea(overlap)) > coordinateEpsilon * scale * 4;
+}
 function overlapDepthOrder(a, b, coordinateEpsilon) {
     const overlap = clipConvexPolygon(a.points, b.points, coordinateEpsilon);
-    if (overlap.length < 3 || Math.abs(polygonSignedArea(overlap)) <= coordinateEpsilon ** 2)
+    if (!significantTriangleOverlap(overlap, a, b, coordinateEpsilon))
         return 0;
     let minimum = Infinity;
     let maximum = -Infinity;
@@ -843,7 +855,7 @@ function fusedComponent(commands, members, coordinateTolerance, depthTolerance) 
 }
 function projectedTrianglesOverlap(a, b, epsilon) {
     const overlap = clipConvexPolygon(a.points, b.points, epsilon);
-    return overlap.length >= 3 && Math.abs(polygonSignedArea(overlap)) > epsilon ** 2;
+    return significantTriangleOverlap(overlap, a, b, epsilon);
 }
 function fusionMobilityIntervals(commands, bounds) {
     const low = new Int32Array(commands.length);
@@ -927,7 +939,124 @@ function fusionMobilityIntervals(commands, bounds) {
     }
     return { low, high, sameStyleOverlaps };
 }
-function fuseTriangleCommands(commands, bounds) {
+function surfaceStyleKey(command) {
+    return `${command.fill}\u0000${command.opacity.toFixed(12)}`;
+}
+function layeredSurfaceCommand(commands, members, sameStyleAdjacency, coordinateTolerance, depthTolerance) {
+    const referenceTriangle = commands[members[0]].triangle;
+    const referenceNormal = referenceTriangle.geometricNormal;
+    const planeTolerance = Math.max(coordinateTolerance, depthTolerance) * 8;
+    if (members.some((member) => {
+        const triangle = commands[member].triangle;
+        return (dot(triangle.geometricNormal, referenceNormal) < 1 - 1e-10 ||
+            triangle.points.some((point, index) => Math.abs(triangle.depths[index] - depthAt(referenceTriangle, point)) >
+                planeTolerance));
+    }))
+        return null;
+    const sourceMaterials = new Set(members.map((member) => {
+        const triangle = commands[member].triangle;
+        return `${triangle.baseColor.map((value) => value.toFixed(12)).join(",")}|${triangle.opacity.toFixed(12)}`;
+    }));
+    if (sourceMaterials.size < 2)
+        return null;
+    const styleAreas = new Map();
+    for (const member of members) {
+        const command = commands[member];
+        const key = surfaceStyleKey(command);
+        const area = Math.abs(polygonSignedArea(command.triangle.points));
+        const entry = styleAreas.get(key);
+        if (entry)
+            entry.area += area;
+        else
+            styleAreas.set(key, { area, first: member, command });
+    }
+    if (styleAreas.size < 2)
+        return null;
+    const footprint = fusedComponent(commands, members, coordinateTolerance, depthTolerance);
+    if (!footprint)
+        return null;
+    const base = [...styleAreas.entries()].sort((a, b) => b[1].area - a[1].area || a[1].first - b[1].first)[0];
+    if (!base)
+        return null;
+    const [baseKey, baseStyle] = base;
+    const localIndex = new Map(members.map((member, index) => [member, index]));
+    const parent = Int32Array.from(members, (_member, index) => index);
+    const find = (value) => {
+        let root = value;
+        while (parent[root] !== root)
+            root = parent[root];
+        while (parent[value] !== value) {
+            const next = parent[value];
+            parent[value] = root;
+            value = next;
+        }
+        return root;
+    };
+    for (let index = 0; index < members.length; index += 1) {
+        const member = members[index];
+        for (const neighbor of sameStyleAdjacency[member] ?? []) {
+            const neighborIndex = localIndex.get(neighbor);
+            if (neighborIndex === undefined || neighborIndex <= index)
+                continue;
+            const rootA = find(index);
+            const rootB = find(neighborIndex);
+            if (rootA !== rootB)
+                parent[rootB] = rootA;
+        }
+    }
+    const components = new Map();
+    for (let index = 0; index < members.length; index += 1) {
+        const member = members[index];
+        const root = find(index);
+        const component = components.get(root);
+        if (component)
+            component.push(member);
+        else
+            components.set(root, [member]);
+    }
+    const layers = [
+        {
+            rings: footprint.rings,
+            fill: baseStyle.command.fill,
+            opacity: baseStyle.command.opacity,
+            triangleCount: members.length,
+        },
+    ];
+    for (const component of [...components.values()].sort((a, b) => a[0] - b[0])) {
+        const first = commands[component[0]];
+        if (surfaceStyleKey(first) === baseKey)
+            continue;
+        if (component.length === 1) {
+            layers.push({
+                rings: [orientedFusionVertices(first).map((vertex) => vertex.point)],
+                fill: first.fill,
+                opacity: first.opacity,
+                triangleCount: 1,
+            });
+            continue;
+        }
+        const fused = fusedComponent(commands, component, coordinateTolerance, depthTolerance);
+        if (!fused)
+            return null;
+        layers.push({
+            rings: fused.rings,
+            fill: fused.fill,
+            opacity: fused.opacity,
+            triangleCount: fused.triangleCount,
+        });
+    }
+    if (layers.length < 2)
+        return null;
+    return {
+        kind: "layered-surface",
+        depth: members.reduce((sum, member) => sum + commands[member].depth, 0) /
+            members.length,
+        order: members.reduce((minimum, member) => Math.min(minimum, commands[member].order), Infinity),
+        layers,
+        triangleCount: members.length,
+    };
+}
+function fuseTriangleCommands(commands, bounds, layerCoplanarMaterials) {
     if (commands.length < 2)
         return [...commands];
     const span = Math.max(bounds.maxX - bounds.minX, bounds.maxY - bounds.minY, 1e-9);
@@ -952,6 +1081,7 @@ function fuseTriangleCommands(commands, bounds) {
         return root;
     };
     const candidates = [];
+    const coplanarCandidates = [];
     const edgeMap = new Map();
     for (let triangle = 0; triangle < commands.length; triangle += 1) {
         const command = commands[triangle];
@@ -988,12 +1118,20 @@ function fuseTriangleCommands(commands, bounds) {
         const [a, b] = entries;
         const commandA = commands[a.triangle];
         const commandB = commands[b.triangle];
-        if (commandA.fill === commandB.fill &&
-            Math.abs(commandA.opacity - commandB.opacity) <= 1e-12 &&
-            a.startKey === b.endKey &&
+        const sharedBoundary = a.startKey === b.endKey &&
             a.endKey === b.startKey &&
-            cross2(a.start, a.end, a.third) * cross2(a.start, a.end, b.third) < -sideEpsilon)
+            cross2(a.start, a.end, a.third) * cross2(a.start, a.end, b.third) < -sideEpsilon;
+        if (!sharedBoundary)
+            continue;
+        if (commandA.fill === commandB.fill &&
+            Math.abs(commandA.opacity - commandB.opacity) <= 1e-12)
             candidates.push([a.triangle, b.triangle]);
+        if (layerCoplanarMaterials &&
+            commandA.opacity >= 1 - 1e-12 &&
+            commandB.opacity >= 1 - 1e-12 &&
+            dot(commandA.triangle.geometricNormal, commandB.triangle.geometricNormal) >=
+                1 - 1e-10)
+            coplanarCandidates.push([a.triangle, b.triangle]);
     }
     candidates.sort((a, b) => Math.abs(a[0] - a[1]) - Math.abs(b[0] - b[1]));
     for (const [a, b] of candidates) {
@@ -1008,6 +1146,25 @@ function fuseTriangleCommands(commands, bounds) {
         parent[rootB] = rootA;
         groupLow[rootA] = mergedLow;
         groupHigh[rootA] = mergedHigh;
+    }
+    const layerParent = commands.map((_command, index) => index);
+    const findLayer = (value) => {
+        let root = value;
+        while (layerParent[root] !== root)
+            root = layerParent[root];
+        while (layerParent[value] !== value) {
+            const next = layerParent[value];
+            layerParent[value] = root;
+            value = next;
+        }
+        return root;
+    };
+    coplanarCandidates.sort((a, b) => Math.abs(a[0] - a[1]) - Math.abs(b[0] - b[1]));
+    for (const [a, b] of coplanarCandidates) {
+        const rootA = findLayer(a);
+        const rootB = findLayer(b);
+        if (rootA !== rootB)
+            layerParent[rootB] = rootA;
     }
     const components = new Map();
     for (let triangle = 0; triangle < commands.length; triangle += 1) {
@@ -1024,30 +1181,69 @@ function fuseTriangleCommands(commands, bounds) {
         if (rootA === find(b))
             unsafeRoots.add(rootA);
     }
+    const sameStyleAdjacency = Array.from({ length: commands.length }, () => []);
+    for (const [a, b] of candidates) {
+        sameStyleAdjacency[a].push(b);
+        sameStyleAdjacency[b].push(a);
+    }
     const placements = [];
-    for (const [root, members] of components) {
-        if (members.length === 1 || unsafeRoots.has(root)) {
-            for (const member of members)
-                placements.push({
-                    position: member,
-                    order: member,
-                    commands: [commands[member]],
-                });
+    const consumedByLayers = new Set();
+    const layerComponents = new Map();
+    const layerTriangles = new Set();
+    for (const [first, second] of coplanarCandidates) {
+        layerTriangles.add(first);
+        layerTriangles.add(second);
+    }
+    for (const triangle of layerTriangles) {
+        const root = findLayer(triangle);
+        const members = layerComponents.get(root);
+        if (members)
+            members.push(triangle);
+        else
+            layerComponents.set(root, [triangle]);
+    }
+    for (const members of layerComponents.values()) {
+        if (members.length < 2)
             continue;
-        }
-        const fused = fusedComponent(commands, members, coordinateTolerance, depthTolerance);
-        if (!fused) {
-            for (const member of members)
-                placements.push({
-                    position: member,
-                    order: member,
-                    commands: [commands[member]],
-                });
+        const commonLow = members.reduce((value, member) => Math.max(value, low[member]), 0);
+        const commonHigh = members.reduce((value, member) => Math.min(value, high[member]), commands.length - 1);
+        if (commonLow > commonHigh)
             continue;
-        }
+        const layered = layeredSurfaceCommand(commands, members, sameStyleAdjacency, coordinateTolerance, depthTolerance);
+        if (!layered)
+            continue;
+        for (const member of members)
+            consumedByLayers.add(member);
         const average = members.reduce((sum, member) => sum + member, 0) / members.length;
+        const position = Math.max(commonLow, Math.min(commonHigh, Math.round(average)));
+        placements.push({ position, order: members[0], commands: [layered] });
+    }
+    for (const [root, members] of components) {
+        const available = members.filter((member) => !consumedByLayers.has(member));
+        if (available.length === 0)
+            continue;
+        if (available.length === 1 || unsafeRoots.has(root)) {
+            for (const member of available)
+                placements.push({
+                    position: member,
+                    order: member,
+                    commands: [commands[member]],
+                });
+            continue;
+        }
+        const fused = fusedComponent(commands, available, coordinateTolerance, depthTolerance);
+        if (!fused) {
+            for (const member of available)
+                placements.push({
+                    position: member,
+                    order: member,
+                    commands: [commands[member]],
+                });
+            continue;
+        }
+        const average = available.reduce((sum, member) => sum + member, 0) / available.length;
         const position = Math.max(groupLow[root], Math.min(groupHigh[root], Math.round(average)));
-        placements.push({ position, order: members[0], commands: [fused] });
+        placements.push({ position, order: available[0], commands: [fused] });
     }
     placements.sort((a, b) => a.position - b.position || a.order - b.order);
     return placements.flatMap((placement) => placement.commands);
@@ -1143,8 +1339,10 @@ function renderCommands(scene, style) {
         sceneCache.set(style.doubleSided, orderedTriangles.map((command) => command.triangle));
     }
     const surfaceCommands = style.fuseSurfaces
-        ? fuseTriangleCommands(orderedTriangles, scene.bounds)
+        ? fuseTriangleCommands(orderedTriangles, scene.bounds, style.layerCoplanarMaterials)
         : orderedTriangles;
+    const surfaceDraws = surfaceCommands.reduce((count, command) => count + (command.kind === "layered-surface" ? command.layers.length : 1), 0);
+    const layeredSurfaces = surfaceCommands.filter((command) => command.kind === "layered-surface").length;
     const commands = [
         ...surfaceCommands,
         // Generic mesh-derived linework is experimental and currently hidden by
@@ -1156,11 +1354,12 @@ function renderCommands(scene, style) {
         commands,
         stats: {
             triangles: triangleCount,
-            surfaceDraws: surfaceCommands.length,
+            surfaceDraws,
+            layeredSurfaces,
             outlines,
             details,
             creases,
-            commands: commands.length,
+            commands: surfaceDraws + strokeCommands.length + hlrCommands.length,
         },
     };
     RENDER_COMMAND_CACHE.set(scene, {
@@ -1272,6 +1471,12 @@ export function renderMeshIllustrationSvg(scene, style, title = "Geometer mesh i
         Math.round((point[0] - sourceMinX) * coordinateScale),
         Math.round((-point[1] - sourceMinY) * coordinateScale),
     ];
+    const surfacePath = (rings) => rings
+        .map((ring) => `M${ring
+        .map(mapPoint)
+        .map((point) => `${numberText(point[0])} ${numberText(point[1])}`)
+        .join("L")}Z`)
+        .join("");
     const seamOverlap = Math.max(1, Math.round(Math.max(width, height) * 0.003 * coordinateScale));
     const { commands, stats } = renderCommands(scene, style);
     const body = [];
@@ -1314,13 +1519,14 @@ export function renderMeshIllustrationSvg(scene, style, title = "Geometer mesh i
             body.push(`<polygon class="${surfaceClass(command.fill, command.opacity)}" points="${points}"/>`);
         }
         else if (command.kind === "fused-surface") {
-            const path = command.rings
-                .map((ring) => `M${ring
-                .map(mapPoint)
-                .map((point) => `${numberText(point[0])} ${numberText(point[1])}`)
-                .join("L")}Z`)
-                .join("");
+            const path = surfacePath(command.rings);
             body.push(`<path class="${surfaceClass(command.fill, command.opacity)}" d="${path}"/>`);
+        }
+        else if (command.kind === "layered-surface") {
+            for (const layer of command.layers) {
+                const path = surfacePath(layer.rings);
+                body.push(`<path class="${surfaceClass(layer.fill, layer.opacity)}" d="${path}"/>`);
+            }
         }
         else {
             const lineCommands = [command];
@@ -1328,6 +1534,7 @@ export function renderMeshIllustrationSvg(scene, style, title = "Geometer mesh i
                 const next = commands[commandIndex + 1];
                 if (next.kind === "triangle" ||
                     next.kind === "fused-surface" ||
+                    next.kind === "layered-surface" ||
                     next.color !== command.color ||
                     Math.abs(next.width - command.width) > 1e-15)
                     break;
@@ -1402,6 +1609,26 @@ export function renderMeshIllustrationCanvas(context, scene, style) {
             context.strokeStyle = command.fill;
             context.lineWidth = Math.max(0.7, Math.min(1.5, scale * 0.0008));
             context.stroke();
+        }
+        else if (command.kind === "layered-surface") {
+            for (const layer of command.layers) {
+                context.beginPath();
+                for (const ring of layer.rings) {
+                    const first = ring[0];
+                    context.moveTo(offsetX + first[0] * scale, offsetY - first[1] * scale);
+                    for (let index = 1; index < ring.length; index += 1) {
+                        const point = ring[index];
+                        context.lineTo(offsetX + point[0] * scale, offsetY - point[1] * scale);
+                    }
+                    context.closePath();
+                }
+                context.globalAlpha = layer.opacity;
+                context.fillStyle = layer.fill;
+                context.fill("evenodd");
+                context.strokeStyle = layer.fill;
+                context.lineWidth = Math.max(0.7, Math.min(1.5, scale * 0.0008));
+                context.stroke();
+            }
         }
         else {
             const [a, b] = "points" in command ? command.points : command.edge.points;

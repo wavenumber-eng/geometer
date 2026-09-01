@@ -80,6 +80,7 @@ const els = {
     rimValue: required("illustrationRimValue"),
     sourceColors: required("illustrationSourceColors"),
     fuseSurfaces: required("illustrationFuseSurfaces"),
+    layerCoplanar: required("illustrationLayerCoplanar"),
     fallback: required("illustrationFallback"),
     hlrOutline: required("illustrationHlrOutline"),
     hlrDetail: required("illustrationHlrDetail"),
@@ -215,6 +216,7 @@ function currentStyle() {
         background: els.background.value,
         transparentBackground: els.transparent.checked,
         fuseSurfaces: els.fuseSurfaces.checked,
+        layerCoplanarMaterials: els.layerCoplanar.checked,
         showHlrOutline: state.showHlrOutline,
         showHlrDetail: state.showHlrDetail,
         showOutlines: false,
@@ -459,7 +461,7 @@ function redrawStyle() {
     if (!context)
         throw new Error("Canvas2D is unavailable.");
     const canvasStats = renderMeshIllustrationCanvas(context, state.scene, style);
-    els.counts.textContent = `${rendered.stats.triangles.toLocaleString()} front-facing triangles → ${rendered.stats.surfaceDraws.toLocaleString()} polygon regions/draws / SVG ${formatBytes(svgBytes)} / ${rendered.stats.details.toLocaleString()} HLR detail / ${rendered.stats.outlines.toLocaleString()} HLR outline segments / ${state.scene.warnings.length} warnings`;
+    els.counts.textContent = `${rendered.stats.triangles.toLocaleString()} front-facing triangles → ${rendered.stats.surfaceDraws.toLocaleString()} polygon regions/draws / ${rendered.stats.layeredSurfaces.toLocaleString()} coplanar layers / SVG ${formatBytes(svgBytes)} / ${rendered.stats.details.toLocaleString()} HLR detail / ${rendered.stats.outlines.toLocaleString()} HLR outline segments / ${state.scene.warnings.length} warnings`;
     els.downloadSvg.disabled = false;
     els.downloadScene.disabled = false;
     els.downloadStyle.disabled = false;
@@ -475,6 +477,7 @@ function redrawStyle() {
     els.outputPane.dataset.canvasDetails = String(canvasStats.details);
     els.outputPane.dataset.visibleTriangles = String(canvasStats.triangles);
     els.outputPane.dataset.surfaceDraws = String(canvasStats.surfaceDraws);
+    els.outputPane.dataset.layeredSurfaces = String(canvasStats.layeredSurfaces);
     els.outputPane.dataset.svgBytes = String(svgBytes);
     threeScene.background = new THREE.Color(style.background);
     renderer.setClearColor(style.background, 1);
@@ -1029,6 +1032,7 @@ function wireEvents() {
         els.shading,
         els.sourceColors,
         els.fuseSurfaces,
+        els.layerCoplanar,
         els.fallback,
         els.outlineColor,
         els.doubleSided,

@@ -145,6 +145,11 @@ The first mesh-illustration feasibility slice is maintained in
   commands without crossing an overlapping different-style surface, while
   projected folds, overlaps, non-manifold edges, and invalid boundaries retain
   their original triangles;
+- when enabled with fusion, coplanar-material layering groups opaque,
+  same-plane partitions connected by complete mesh edges, underpaints their
+  union with the largest-area style, and overpaints the remaining fused styles;
+  the group is accepted only when all members share a safe paint-order interval,
+  otherwise the normal surface commands remain authoritative;
 - SVG output uses shared palette/line classes, a configurable normalized integer
   coordinate grid, compact polygon paths, and chained compound HLR paths; Canvas
   consumes the same cached render-command preparation;

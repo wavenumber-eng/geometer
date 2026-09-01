@@ -166,6 +166,18 @@ ambiguous projected folds or overlaps, non-manifold edges, and invalid boundary
 loops fall back to individual ordered triangles. This is a conservative
 output-size optimization rather than a change to the prepared mesh scene.
 
+When `fuseSurfaces` and `layerCoplanarMaterials` are both enabled, the shared
+renderer also recognizes opaque material partitions connected by complete
+edges on the same geometric plane. It unions the partition into a continuous
+footprint, underpaints that footprint with its largest-area rendered style,
+then overpaints the other fused material regions. The whole layered group must
+fit one common visibility-order interval; transparent, overlapping,
+non-manifold, non-coplanar, or ambiguously ordered groups retain the ordinary
+surface path. This generic treatment covers zero-height package markings,
+logos, and similar mesh-authored inlays without introducing PCB-specific
+policy. It does not reconstruct analytic STEP curves; marking contours still
+reflect the selected surface tessellation.
+
 SVG serialization uses shared style classes, chained compound HLR paths,
 collinear boundary removal, and a normalized integer coordinate grid. The
 default grid has 1,000,000 units across the larger unpadded artwork axis;
@@ -198,7 +210,9 @@ actual intersection before vector paint order is chosen; this avoids the
 body/lead and dense-assembly failures caused by average-depth sorting. Triangle
 visibility order is cached per prepared scene and back-face mode so style-only
 redraws do not rebuild the overlap graph. Triangle paint overlap suppresses
-SVG/Canvas antialias seams. The hidden, experimental adjacency-derived outline
+SVG/Canvas antialias seams. Coplanar material layering additionally ensures
+that shallow marking boundaries are overpainted with the marking color rather
+than a later-painted base color. The hidden, experimental adjacency-derived outline
 and crease flags remain overlay linework rather than occlusion-clipped strokes;
 STEP-backed lab output uses the visibility-resolved HLR outline instead.
 

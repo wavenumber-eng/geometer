@@ -4,17 +4,17 @@
     {
       "bytes": 541,
       "path": "_headers",
-      "sha256": "5a80eb716f60fb72d442dc50d5560cb954cc185682df1b3e116e09ecb2a67166"
+      "sha256": "bcdcfd36da63bc74754247204387c335042651db9e8100d9014999b3e0f29cff"
     },
     {
-      "bytes": 30734442,
+      "bytes": 30738480,
       "path": "index.html",
-      "sha256": "071e8a3bc4510008a2abf6a2c7d7a198c96cf6abc53064e1d12cb6636fd98719"
+      "sha256": "5271772ec15c1b8e9881a92a0e4792a623e81194d5897ac2662eed9c56cc7601"
     }
   ],
   "runtime_files": [
     "index.html"
   ],
   "schema": "wn.geometer.single_html_site.a0",
-  "sha256": "b6e38f60e8d8c53d6df93412ea33c1c6a73fb2704abf9c9b9e61b3b631ed19ea"
+  "sha256": "df8b6aea771d958ebdb862bbeeda88b419658727a8d3d9ddaa8017cc52eea4c6"
 }

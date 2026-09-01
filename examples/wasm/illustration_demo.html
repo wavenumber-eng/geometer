@@ -64,8 +64,9 @@
           <label class="illustration-control"><span>Rim</span><input id="illustrationRim" type="range" min="0" max="0.6" step="0.02" value="0.12"><output id="illustrationRimValue">0.12</output></label>
           <label class="illustration-check"><input id="illustrationSourceColors" type="checkbox" checked><span>Use source material colors</span></label>
           <label class="illustration-check" title="Builds safe polygon regions from adjacent opaque triangles with identical rendered color after visibility ordering."><input id="illustrationFuseSurfaces" type="checkbox" checked><span>Fuse same-color surfaces</span></label>
+          <label class="illustration-check" title="Underpaints safe opaque coplanar material partitions before drawing their markings, preventing dark seam bleed on shallow labels and logos."><input id="illustrationLayerCoplanar" type="checkbox" checked><span>Layer coplanar markings</span></label>
           <label class="illustration-control"><span>Fallback</span><input id="illustrationFallback" type="color" value="#71a6a0"><span></span></label>
-          <p class="illustration-info">Fusion converts safe opaque triangle groups into polygon regions while preserving depth-order boundaries. Ambiguous folds, overlaps, and transparent surfaces remain ordered triangles. SVG export also shares styles, chains HLR paths, and uses compact integer coordinates.</p>
+          <p class="illustration-info">Fusion converts safe opaque triangle groups into polygon regions while preserving depth-order boundaries. Coplanar layering paints a continuous base beneath shallow material markings before overpainting their colors. Ambiguous folds, overlaps, and transparent surfaces remain ordered triangles.</p>
         </section>
         <section>
           <h2>Linework</h2>

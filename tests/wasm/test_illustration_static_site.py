@@ -500,6 +500,8 @@ async function main() {
           selected: select.selectedOptions[0].textContent,
           triangles: Number(pane.dataset.triangles),
           surfaceDraws: Number(pane.dataset.surfaceDraws),
+          layeredSurfaces: Number(pane.dataset.layeredSurfaces),
+          layeringChecked: document.querySelector("#illustrationLayerCoplanar").checked,
           surfaces: document.querySelectorAll('#illustrationSvgHost polygon[class^="gms"], #illustrationSvgHost path[class^="gms"]').length,
           paths: document.querySelectorAll('#illustrationSvgHost path[class^="gml"]').length,
           elapsedMs: performance.now() - started,
@@ -775,6 +777,8 @@ def test_illustration_static_site_mesh_render_upload_and_export() -> None:
             assert after_values == pytest.approx(before_values, abs=0.0001)
     assert "BGA90" in result["bga"]["selected"]
     assert result["bga"]["triangles"] > 20_000
+    assert result["bga"]["layeredSurfaces"] > 0
+    assert result["bga"]["layeringChecked"] is True
     assert 0 < result["bga"]["surfaceDraws"] <= result["bga"]["triangles"]
     assert result["bga"]["surfaces"] == result["bga"]["surfaceDraws"]
     assert result["bga"]["paths"] > 0

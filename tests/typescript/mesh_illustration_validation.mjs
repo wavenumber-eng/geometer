@@ -59,6 +59,7 @@ const baseStyle = {
   background: "#f7f2df",
   transparentBackground: false,
   fuseSurfaces: false,
+  layerCoplanarMaterials: false,
   showHlrOutline: true,
   showHlrDetail: false,
   showOutlines: true,
@@ -152,6 +153,132 @@ const interleaved = renderMeshIllustrationSvg(interleavedScene, {
 assert.equal(interleaved.stats.triangles, 3);
 assert.equal(interleaved.stats.surfaceDraws, 2);
 assert.equal((interleaved.svg.match(/<path class="gms0"/gu) ?? []).length, 1);
+
+const coplanarMeshes = [
+  {
+    id: "white-inlay",
+    positions: new Float64Array([1, 1, 0, 3, 1, 0, 3, 2, 0, 1, 1, 0, 3, 2, 0, 1, 2, 0]),
+    materials: [{ color: [1, 1, 1] }],
+  },
+];
+for (const [x0, x1] of [
+  [0, 1],
+  [1, 3],
+  [3, 4],
+]) {
+  for (const [y0, y1] of [
+    [0, 1],
+    [1, 2],
+    [2, 3],
+  ]) {
+    if (x0 === 1 && x1 === 3 && y0 === 1 && y1 === 2) continue;
+    coplanarMeshes.push({
+      id: `black-base-${x0}-${y0}`,
+      positions: new Float64Array([
+        x0, y0, 0, x1, y0, 0, x1, y1, 0,
+        x0, y0, 0, x1, y1, 0, x0, y1, 0,
+      ]),
+      materials: [{ color: [0.05, 0.05, 0.05] }],
+    });
+  }
+}
+const coplanarScene = prepareMeshIllustration(
+  { meshes: coplanarMeshes },
+  { direction: [0.4, 0.3, 1], up: [0, 1, 0] },
+);
+const coplanarStyle = {
+  ...baseStyle,
+  shading: "unlit",
+  fuseSurfaces: true,
+  layerCoplanarMaterials: true,
+  showHlrOutline: false,
+  showOutlines: false,
+  showCreases: false,
+};
+const coplanarLayered = renderMeshIllustrationSvg(coplanarScene, coplanarStyle);
+assert.equal(coplanarLayered.stats.layeredSurfaces, 1);
+assert.equal(coplanarLayered.stats.surfaceDraws, 2);
+const coplanarPaths = [...coplanarLayered.svg.matchAll(/<path class="(gms\d+)" d="([^"]+)"/gu)];
+assert.equal(coplanarPaths.length, 2);
+assert.equal((coplanarPaths[0]?.[2].match(/M/gu) ?? []).length, 1);
+assert.match(coplanarLayered.svg, /\.gms0\{fill:rgb\(13,13,13\)/u);
+assert.match(coplanarLayered.svg, /\.gms1\{fill:rgb\(255,255,255\)/u);
+const coplanarUnlayered = renderMeshIllustrationSvg(coplanarScene, {
+  ...coplanarStyle,
+  layerCoplanarMaterials: false,
+});
+assert.equal(coplanarUnlayered.stats.layeredSurfaces, 0);
+const transparentCoplanar = renderMeshIllustrationSvg(
+  {
+    ...coplanarScene,
+    triangles: coplanarScene.triangles.map((triangle) => ({ ...triangle, opacity: 0.5 })),
+  },
+  coplanarStyle,
+);
+assert.equal(transparentCoplanar.stats.layeredSurfaces, 0);
+const foldedCoplanarCandidate = prepareMeshIllustration(
+  {
+    meshes: [
+      {
+        id: "flat-material-a",
+        positions: new Float64Array([0, 0, 0, 1, 0, 0, 0, 1, 0]),
+        materials: [{ color: [0.05, 0.05, 0.05] }],
+      },
+      {
+        id: "tilted-material-b",
+        positions: new Float64Array([1, 0, 0, 1, 1, 0.02, 0, 1, 0]),
+        materials: [{ color: [1, 1, 1] }],
+      },
+    ],
+  },
+  { direction: [0, 0, 1], up: [0, 1, 0] },
+);
+const foldedCoplanarResult = renderMeshIllustrationSvg(
+  foldedCoplanarCandidate,
+  coplanarStyle,
+);
+assert.equal(foldedCoplanarResult.stats.layeredSurfaces, 0);
+const varyingNormalScene = prepareMeshIllustration(
+  {
+    meshes: [
+      {
+        id: "one-material-normal-a",
+        positions: new Float64Array([0, 0, 0, 1, 0, 0, 0, 1, 0]),
+        normals: new Float64Array([0, 0, 1, 0, 0, 1, 0, 0, 1]),
+        materials: [{ color: [0.6, 0.6, 0.6] }],
+      },
+      {
+        id: "one-material-normal-b",
+        positions: new Float64Array([1, 0, 0, 1, 1, 0, 0, 1, 0]),
+        normals: new Float64Array([0, 1, 0, 0, 1, 0, 0, 1, 0]),
+        materials: [{ color: [0.6, 0.6, 0.6] }],
+      },
+    ],
+  },
+  { direction: [0, 0, 1], up: [0, 1, 0] },
+);
+const varyingNormalResult = renderMeshIllustrationSvg(varyingNormalScene, {
+  ...coplanarStyle,
+  shading: "lambert",
+});
+assert.equal(varyingNormalResult.stats.layeredSurfaces, 0);
+const occludedCoplanarScene = prepareMeshIllustration(
+  {
+    meshes: [
+      {
+        id: "front-occluder",
+        positions: new Float64Array([1.5, 0.5, 1, 3.5, 0.5, 1, 2.5, 2.5, 1]),
+        materials: [{ color: [0.1, 0.2, 0.8] }],
+      },
+      ...coplanarMeshes,
+    ],
+  },
+  { direction: [0, 0, 1], up: [0, 1, 0] },
+);
+const occludedCoplanar = renderMeshIllustrationSvg(occludedCoplanarScene, coplanarStyle);
+assert.equal(occludedCoplanar.stats.layeredSurfaces, 1);
+assert.equal(occludedCoplanar.stats.surfaceDraws, 3);
+assert.ok(occludedCoplanar.svg.lastIndexOf("<polygon") > occludedCoplanar.svg.lastIndexOf("<path"));
 
 const transparentCube = renderMeshIllustrationSvg(scene, {
   ...baseStyle,

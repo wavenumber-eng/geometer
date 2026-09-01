@@ -145,6 +145,37 @@ const tinySvg = renderMeshIllustrationSvg(tinyScene, { ...baseStyle, doubleSided
 assert.match(tinySvg, /0\.000002/u);
 assert.doesNotMatch(tinySvg, /viewBox="0 0 0 0"/u);
 
+// Average triangle depth gives the wrong painter order here: the large red
+// triangle has a greater average depth, while the overlapping blue patch is
+// closer at every point in their actual overlap.
+const overlapScene = prepareMeshIllustration(
+  {
+    meshes: [
+      {
+        id: "sloped-background",
+        positions: new Float64Array([0, 0, 0, 10, 0, 100, 0, 10, 100]),
+        materials: [{ color: [0.8, 0.1, 0.1] }],
+      },
+      {
+        id: "near-patch",
+        positions: new Float64Array([0.1, 0.1, 20, 1, 0.1, 20, 0.1, 1, 20]),
+        materials: [{ color: [0.1, 0.1, 0.8] }],
+      },
+    ],
+  },
+  { direction: [0, 0, 1], up: [0, 1, 0] },
+);
+const overlapSvg = renderMeshIllustrationSvg(overlapScene, {
+  ...baseStyle,
+  shading: "unlit",
+  showHlrOutline: false,
+  showOutlines: false,
+  showCreases: false,
+});
+const overlapPolygons = overlapSvg.svg.match(/<polygon [^>]+>/gu) ?? [];
+assert.equal(overlapPolygons.length, 2);
+assert.match(overlapPolygons[1], /fill="rgb\(26,26,204\)"/u);
+
 const hlrOverlay = renderMeshIllustrationSvg(
   {
     ...scene,

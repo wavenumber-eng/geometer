@@ -157,7 +157,14 @@ body trace used by the HLR Lab. That linework is composited over the shared
 SVG/Canvas surface scene and included in SVG downloads. Generic mesh inputs
 remain surface-only unless an adapter supplies comparable linework; the noisy
 triangle-adjacency silhouette experiment is not exposed in the main UI.
-Triangle paint overlap suppresses SVG/Canvas antialias seams.
+Projected triangle overlaps are spatially indexed and depth-compared over their
+actual intersection before vector paint order is chosen; this avoids the
+body/lead and dense-assembly failures caused by average-depth sorting. Triangle
+visibility order is cached per prepared scene and back-face mode so style-only
+redraws do not rebuild the overlap graph. Triangle paint overlap suppresses
+SVG/Canvas antialias seams. The hidden, experimental adjacency-derived outline
+and crease flags remain overlay linework rather than occlusion-clipped strokes;
+STEP-backed lab output uses the visibility-resolved HLR outline instead.
 
 The STEP adapter requests `strip_root_placement` so HLR and STEP-to-GLB use the
 same definition-local frame, keeps the projection result in its documented

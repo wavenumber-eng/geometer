@@ -129,6 +129,9 @@ The first mesh-illustration feasibility slice is maintained in
   symbol for its unioned `mesh-shadow` Outline layer;
 - SVG and Canvas2D consume one prepared projected scene and a separate style,
   so lighting or palette changes do not redo mesh preparation;
+- filled triangles use spatially culled overlap tests and depth-plane ordering
+  rather than a global average-depth painter sort, and cache that geometry-only
+  order across style-only SVG/Canvas redraws;
 - the Three.js pane and glTF adapter are demo concerns, not dependencies of the
   generic illustration algorithm; and
 - STEP-backed surfaces can composite that HLR outline in both SVG and Canvas;

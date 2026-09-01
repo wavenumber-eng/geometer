@@ -156,6 +156,10 @@ interface HlrOutlineCommand {
 type RenderCommand = TriangleCommand | StrokeCommand | HlrOutlineCommand;
 
 const IDENTITY_MATRIX = Object.freeze([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
+const VISIBILITY_ORDER_CACHE = new WeakMap<
+  MeshIllustrationScene,
+  Map<boolean, readonly IllustrationTriangle[]>
+>();
 
 function finite(value: number, fallback = 0): number {
   return Number.isFinite(value) ? value : fallback;
@@ -531,6 +535,342 @@ function edgeKind(
   return null;
 }
 
+interface ProjectedBounds {
+  minX: number;
+  minY: number;
+  maxX: number;
+  maxY: number;
+}
+
+function projectedBounds(triangle: IllustrationTriangle): ProjectedBounds {
+  return {
+    minX: Math.min(...triangle.points.map((point) => point[0])),
+    minY: Math.min(...triangle.points.map((point) => point[1])),
+    maxX: Math.max(...triangle.points.map((point) => point[0])),
+    maxY: Math.max(...triangle.points.map((point) => point[1])),
+  };
+}
+
+function boundsOverlap(a: ProjectedBounds, b: ProjectedBounds, epsilon: number): boolean {
+  return !(
+    a.maxX <= b.minX + epsilon ||
+    b.maxX <= a.minX + epsilon ||
+    a.maxY <= b.minY + epsilon ||
+    b.maxY <= a.minY + epsilon
+  );
+}
+
+function cross2(a: Vec2, b: Vec2, point: Vec2): number {
+  return (b[0] - a[0]) * (point[1] - a[1]) - (b[1] - a[1]) * (point[0] - a[0]);
+}
+
+function polygonSignedArea(points: readonly Vec2[]): number {
+  let twiceArea = 0;
+  for (let index = 0; index < points.length; index += 1) {
+    const current = points[index] as Vec2;
+    const next = points[(index + 1) % points.length] as Vec2;
+    twiceArea += current[0] * next[1] - next[0] * current[1];
+  }
+  return twiceArea * 0.5;
+}
+
+function clipConvexPolygon(
+  subject: readonly Vec2[],
+  clip: readonly [Vec2, Vec2, Vec2],
+  epsilon: number,
+): Vec2[] {
+  let output = [...subject];
+  const orientation = polygonSignedArea(clip) >= 0 ? 1 : -1;
+  for (let edgeIndex = 0; edgeIndex < clip.length && output.length > 0; edgeIndex += 1) {
+    const edgeStart = clip[edgeIndex] as Vec2;
+    const edgeEnd = clip[(edgeIndex + 1) % clip.length] as Vec2;
+    const input = output;
+    output = [];
+    let previous = input[input.length - 1] as Vec2;
+    let previousDistance = orientation * cross2(edgeStart, edgeEnd, previous);
+    for (const current of input) {
+      const currentDistance = orientation * cross2(edgeStart, edgeEnd, current);
+      const previousInside = previousDistance >= -epsilon;
+      const currentInside = currentDistance >= -epsilon;
+      if (previousInside !== currentInside) {
+        const denominator = previousDistance - currentDistance;
+        if (Math.abs(denominator) > epsilon) {
+          const ratio = previousDistance / denominator;
+          output.push([
+            previous[0] + (current[0] - previous[0]) * ratio,
+            previous[1] + (current[1] - previous[1]) * ratio,
+          ]);
+        }
+      }
+      if (currentInside) output.push(current);
+      previous = current;
+      previousDistance = currentDistance;
+    }
+  }
+  return output;
+}
+
+function depthAt(triangle: IllustrationTriangle, point: Vec2): number {
+  const [a, b, c] = triangle.points;
+  const denominator = (b[1] - c[1]) * (a[0] - c[0]) + (c[0] - b[0]) * (a[1] - c[1]);
+  if (Math.abs(denominator) < 1e-20) return triangle.depth;
+  const weightA =
+    ((b[1] - c[1]) * (point[0] - c[0]) + (c[0] - b[0]) * (point[1] - c[1])) / denominator;
+  const weightB =
+    ((c[1] - a[1]) * (point[0] - c[0]) + (a[0] - c[0]) * (point[1] - c[1])) / denominator;
+  return (
+    weightA * triangle.depths[0] +
+    weightB * triangle.depths[1] +
+    (1 - weightA - weightB) * triangle.depths[2]
+  );
+}
+
+function overlapDepthOrder(
+  a: IllustrationTriangle,
+  b: IllustrationTriangle,
+  coordinateEpsilon: number,
+): -1 | 0 | 1 {
+  const overlap = clipConvexPolygon(a.points, b.points, coordinateEpsilon);
+  if (overlap.length < 3 || Math.abs(polygonSignedArea(overlap)) <= coordinateEpsilon ** 2)
+    return 0;
+  let minimum = Infinity;
+  let maximum = -Infinity;
+  let maximumDepth = 1;
+  for (const point of overlap) {
+    const depthA = depthAt(a, point);
+    const depthB = depthAt(b, point);
+    const difference = depthA - depthB;
+    minimum = Math.min(minimum, difference);
+    maximum = Math.max(maximum, difference);
+    maximumDepth = Math.max(maximumDepth, Math.abs(depthA), Math.abs(depthB));
+  }
+  const depthEpsilon = maximumDepth * 1e-10;
+  if (minimum >= -depthEpsilon && maximum > depthEpsilon) return 1;
+  if (maximum <= depthEpsilon && minimum < -depthEpsilon) return -1;
+  return 0;
+}
+
+function heapPush(heap: number[], value: number, compare: (a: number, b: number) => number): void {
+  heap.push(value);
+  let index = heap.length - 1;
+  while (index > 0) {
+    const parent = Math.floor((index - 1) / 2);
+    const parentValue = heap[parent] as number;
+    if (compare(parentValue, value) <= 0) break;
+    heap[index] = parentValue;
+    index = parent;
+  }
+  heap[index] = value;
+}
+
+function heapPop(heap: number[], compare: (a: number, b: number) => number): number | undefined {
+  const first = heap[0];
+  const last = heap.pop();
+  if (first === undefined || last === undefined || heap.length === 0) return first;
+  let index = 0;
+  while (true) {
+    const left = index * 2 + 1;
+    if (left >= heap.length) break;
+    const right = left + 1;
+    let child = left;
+    const leftValue = heap[left] as number;
+    if (right < heap.length && compare(heap[right] as number, leftValue) < 0) child = right;
+    const childValue = heap[child] as number;
+    if (compare(childValue, last) >= 0) break;
+    heap[index] = childValue;
+    index = child;
+  }
+  heap[index] = last;
+  return first;
+}
+
+function triangleCommandOrder(a: TriangleCommand, b: TriangleCommand): number {
+  return a.depth - b.depth || a.order - b.order;
+}
+
+function stronglyConnectedComponents(
+  outgoing: readonly (readonly number[])[],
+  reverse: readonly (readonly number[])[],
+): { components: number[][]; componentOf: Int32Array } {
+  const visited = new Uint8Array(outgoing.length);
+  const finishOrder: number[] = [];
+  for (let start = 0; start < outgoing.length; start += 1) {
+    if (visited[start] === 1) continue;
+    const nodes = [start];
+    const offsets = [0];
+    visited[start] = 1;
+    while (nodes.length > 0) {
+      const stackIndex = nodes.length - 1;
+      const node = nodes[stackIndex] as number;
+      const offset = offsets[stackIndex] as number;
+      const neighbors = outgoing[node] as readonly number[];
+      if (offset < neighbors.length) {
+        const next = neighbors[offset] as number;
+        offsets[stackIndex] = offset + 1;
+        if (visited[next] === 0) {
+          visited[next] = 1;
+          nodes.push(next);
+          offsets.push(0);
+        }
+      } else {
+        finishOrder.push(node);
+        nodes.pop();
+        offsets.pop();
+      }
+    }
+  }
+
+  const componentOf = new Int32Array(outgoing.length);
+  componentOf.fill(-1);
+  const components: number[][] = [];
+  for (let orderIndex = finishOrder.length - 1; orderIndex >= 0; orderIndex -= 1) {
+    const start = finishOrder[orderIndex] as number;
+    if (componentOf[start] !== -1) continue;
+    const componentIndex = components.length;
+    const members: number[] = [];
+    const stack = [start];
+    componentOf[start] = componentIndex;
+    while (stack.length > 0) {
+      const node = stack.pop() as number;
+      members.push(node);
+      for (const next of reverse[node] as readonly number[]) {
+        if (componentOf[next] !== -1) continue;
+        componentOf[next] = componentIndex;
+        stack.push(next);
+      }
+    }
+    components.push(members);
+  }
+  return { components, componentOf };
+}
+
+function orderTriangleCommands(
+  commands: readonly TriangleCommand[],
+  bounds: MeshIllustrationScene["bounds"],
+): TriangleCommand[] {
+  if (commands.length < 2) return [...commands];
+  // Orthographic triangle depth is affine in projected X/Y. Clipping each
+  // candidate pair to its convex overlap and checking that polygon's vertices
+  // therefore proves a constant behind/in-front relation over the whole
+  // overlap. The grid avoids an O(n^2) scan on dense CAD tessellations.
+  const width = Math.max(bounds.maxX - bounds.minX, 1e-12);
+  const height = Math.max(bounds.maxY - bounds.minY, 1e-12);
+  const coordinateEpsilon = Math.max(width, height) * 1e-10;
+  const gridSize = Math.max(8, Math.min(192, Math.ceil(Math.sqrt(commands.length / 4))));
+  const cellWidth = width / gridSize;
+  const cellHeight = height / gridSize;
+  const boxes = commands.map((command) => projectedBounds(command.triangle));
+  const buckets = new Map<number, number[]>();
+  const broadTriangles: number[] = [];
+  const previousTriangles: number[] = [];
+  const marks = new Int32Array(commands.length);
+  const outgoing: number[][] = Array.from({ length: commands.length }, () => []);
+  const reverse: number[][] = Array.from({ length: commands.length }, () => []);
+  const cellRange = (box: ProjectedBounds): [number, number, number, number] => [
+    Math.max(0, Math.min(gridSize - 1, Math.floor((box.minX - bounds.minX) / cellWidth))),
+    Math.max(0, Math.min(gridSize - 1, Math.floor((box.maxX - bounds.minX) / cellWidth))),
+    Math.max(0, Math.min(gridSize - 1, Math.floor((box.minY - bounds.minY) / cellHeight))),
+    Math.max(0, Math.min(gridSize - 1, Math.floor((box.maxY - bounds.minY) / cellHeight))),
+  ];
+  const addConstraint = (index: number, candidate: number): void => {
+    const box = boxes[index] as ProjectedBounds;
+    const candidateBox = boxes[candidate] as ProjectedBounds;
+    if (!boundsOverlap(box, candidateBox, coordinateEpsilon)) return;
+    const order = overlapDepthOrder(
+      (commands[index] as TriangleCommand).triangle,
+      (commands[candidate] as TriangleCommand).triangle,
+      coordinateEpsilon,
+    );
+    if (order === 0) return;
+    const behind = order > 0 ? candidate : index;
+    const front = order > 0 ? index : candidate;
+    (outgoing[behind] as number[]).push(front);
+    (reverse[front] as number[]).push(behind);
+  };
+
+  for (let index = 0; index < commands.length; index += 1) {
+    const box = boxes[index] as ProjectedBounds;
+    const [minCellX, maxCellX, minCellY, maxCellY] = cellRange(box);
+    const coveredCells = (maxCellX - minCellX + 1) * (maxCellY - minCellY + 1);
+    const broad = coveredCells > Math.max(64, gridSize * 2);
+    const stamp = index + 1;
+    if (broad) {
+      for (const candidate of previousTriangles) addConstraint(index, candidate);
+    } else {
+      for (const candidate of broadTriangles) addConstraint(index, candidate);
+      for (let cellY = minCellY; cellY <= maxCellY; cellY += 1) {
+        for (let cellX = minCellX; cellX <= maxCellX; cellX += 1) {
+          const bucket = buckets.get(cellY * gridSize + cellX);
+          if (!bucket) continue;
+          for (const candidate of bucket) {
+            if (marks[candidate] === stamp) continue;
+            marks[candidate] = stamp;
+            addConstraint(index, candidate);
+          }
+        }
+      }
+      for (let cellY = minCellY; cellY <= maxCellY; cellY += 1) {
+        for (let cellX = minCellX; cellX <= maxCellX; cellX += 1) {
+          const key = cellY * gridSize + cellX;
+          const bucket = buckets.get(key);
+          if (bucket) bucket.push(index);
+          else buckets.set(key, [index]);
+        }
+      }
+    }
+    if (broad) broadTriangles.push(index);
+    previousTriangles.push(index);
+  }
+
+  const { components, componentOf } = stronglyConnectedComponents(outgoing, reverse);
+  const componentOutgoing = components.map(() => new Set<number>());
+  const componentIncoming = new Uint32Array(components.length);
+  for (let behind = 0; behind < outgoing.length; behind += 1) {
+    const behindComponent = componentOf[behind] as number;
+    for (const front of outgoing[behind] as number[]) {
+      const frontComponent = componentOf[front] as number;
+      if (behindComponent === frontComponent) continue;
+      const targets = componentOutgoing[behindComponent] as Set<number>;
+      if (targets.has(frontComponent)) continue;
+      targets.add(frontComponent);
+      componentIncoming[frontComponent] = (componentIncoming[frontComponent] ?? 0) + 1;
+    }
+  }
+
+  const componentDepths = components.map(
+    (members) =>
+      members.reduce((sum, member) => sum + (commands[member] as TriangleCommand).depth, 0) /
+      members.length,
+  );
+  const componentOrders = components.map((members) =>
+    members.reduce(
+      (minimum, member) => Math.min(minimum, (commands[member] as TriangleCommand).order),
+      Infinity,
+    ),
+  );
+  const compareComponents = (a: number, b: number): number =>
+    (componentDepths[a] as number) - (componentDepths[b] as number) ||
+    (componentOrders[a] as number) - (componentOrders[b] as number);
+  const ready: number[] = [];
+  for (let component = 0; component < components.length; component += 1) {
+    if (componentIncoming[component] === 0) heapPush(ready, component, compareComponents);
+  }
+  const ordered: TriangleCommand[] = [];
+  while (ready.length > 0) {
+    const component = heapPop(ready, compareComponents) as number;
+    const members = [...(components[component] as number[])].sort((a, b) =>
+      triangleCommandOrder(commands[a] as TriangleCommand, commands[b] as TriangleCommand),
+    );
+    for (const member of members) ordered.push(commands[member] as TriangleCommand);
+    for (const front of componentOutgoing[component] as Set<number>) {
+      const count = componentIncoming[front] ?? 0;
+      if (count > 0) componentIncoming[front] = count - 1;
+      if ((componentIncoming[front] ?? 0) === 0) heapPush(ready, front, compareComponents);
+    }
+  }
+  return ordered;
+}
+
 function renderCommands(
   scene: MeshIllustrationScene,
   style: MeshIllustrationStyle,
@@ -540,14 +880,16 @@ function renderCommands(
     scene.bounds.maxY - scene.bounds.minY,
     1e-9,
   );
-  const commands: RenderCommand[] = [];
+  const triangleCommands: TriangleCommand[] = [];
+  const strokeCommands: StrokeCommand[] = [];
+  const hlrCommands: HlrOutlineCommand[] = [];
   let order = 0;
   let triangleCount = 0;
   let outlines = 0;
   let creases = 0;
   for (const triangle of scene.triangles) {
     if (!triangle.frontFacing && !(style.doubleSided || triangle.doubleSided)) continue;
-    commands.push({
+    triangleCommands.push({
       kind: "triangle",
       depth: triangle.depth,
       order: order++,
@@ -560,7 +902,7 @@ function renderCommands(
   for (const edge of scene.edges) {
     const kind = edgeKind(edge, style);
     if (!kind) continue;
-    commands.push({
+    strokeCommands.push({
       kind,
       depth: edge.depth,
       order: order++,
@@ -573,7 +915,7 @@ function renderCommands(
   }
   if (style.showHlrOutline) {
     for (const segment of scene.outlineSegments ?? []) {
-      commands.push({
+      hlrCommands.push({
         kind: "hlr-outline",
         depth: Number.MAX_VALUE,
         order: order++,
@@ -584,12 +926,37 @@ function renderCommands(
       outlines += 1;
     }
   }
-  commands.sort((a, b) => {
-    const depthOrder = a.depth - b.depth;
-    if (depthOrder !== 0) return depthOrder;
-    const kindOrder = Number(a.kind !== "triangle") - Number(b.kind !== "triangle");
-    return kindOrder || a.order - b.order;
-  });
+  let sceneCache = VISIBILITY_ORDER_CACHE.get(scene);
+  if (!sceneCache) {
+    sceneCache = new Map();
+    VISIBILITY_ORDER_CACHE.set(scene, sceneCache);
+  }
+  const cachedTriangles = sceneCache.get(style.doubleSided);
+  const commandByTriangle = new Map(
+    triangleCommands.map((command) => [command.triangle, command] as const),
+  );
+  let orderedTriangles: TriangleCommand[];
+  if (
+    cachedTriangles?.length === triangleCommands.length &&
+    cachedTriangles.every((triangle) => commandByTriangle.has(triangle))
+  ) {
+    orderedTriangles = cachedTriangles.map(
+      (triangle) => commandByTriangle.get(triangle) as TriangleCommand,
+    );
+  } else {
+    orderedTriangles = orderTriangleCommands(triangleCommands, scene.bounds);
+    sceneCache.set(
+      style.doubleSided,
+      orderedTriangles.map((command) => command.triangle),
+    );
+  }
+  const commands: RenderCommand[] = [
+    ...orderedTriangles,
+    // Generic mesh-derived linework is experimental and currently hidden by
+    // the lab. Keep it above filled surfaces; CAD-derived HLR remains last.
+    ...strokeCommands.sort((a, b) => a.depth - b.depth || a.order - b.order),
+    ...hlrCommands,
+  ];
   return {
     commands,
     stats: { triangles: triangleCount, outlines, creases, commands: commands.length },

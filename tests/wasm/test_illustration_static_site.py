@@ -189,6 +189,49 @@ async function main() {
     throw new Error("Trackball did not drive a current-camera illustration.");
   })()`, true);
 
+  const bga = await evaluate(`(async () => {
+    const pane = document.querySelector("#illustrationOutputPane");
+    const select = document.querySelector("#illustrationModelSelect");
+    const option = [...select.options].find((candidate) => candidate.textContent.includes("BGA90"));
+    if (!option) throw new Error("BGA90 fixture is unavailable.");
+    const before = Number(pane.dataset.prepareGeneration);
+    const started = performance.now();
+    document.querySelector('button[data-output="svg"]').click();
+    select.value = option.value;
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+    const deadline = Date.now() + 120000;
+    while (Date.now() < deadline) {
+      if (
+        select.selectedOptions[0]?.textContent.includes("BGA90") &&
+        Number(pane.dataset.prepareGeneration) > before &&
+        !document.querySelector("#illustrationDownloadSvg").disabled
+      ) {
+        const svg = document.querySelector("#illustrationSvgHost svg");
+        const viewBox = svg.viewBox.baseVal;
+        const polygons = [...svg.querySelectorAll("polygon")];
+        const probes = [];
+        for (const y of [0.25, 0.35, 0.45, 0.55, 0.65, 0.75]) {
+          for (const x of [0.25, 0.35, 0.45, 0.55, 0.65, 0.75]) {
+            const point = new DOMPoint(viewBox.x + viewBox.width * x, viewBox.y + viewBox.height * y);
+            const covering = polygons.filter((polygon) => polygon.isPointInFill(point));
+            if (covering.length > 0)
+              probes.push({ x, y, count: covering.length, fill: covering.at(-1).getAttribute("fill") });
+          }
+        }
+        return {
+          selected: select.selectedOptions[0].textContent,
+          triangles: Number(pane.dataset.triangles),
+          polygons: document.querySelectorAll("#illustrationSvgHost polygon").length,
+          paths: document.querySelectorAll("#illustrationSvgHost path").length,
+          elapsedMs: performance.now() - started,
+          probes,
+        };
+      }
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+    throw new Error("BGA90 illustration did not complete.");
+  })()`, true);
+
   await evaluate(`(async () => {
     const binary = atob(${JSON.stringify(uploadBase64)});
     const bytes = new Uint8Array(binary.length);
@@ -239,7 +282,7 @@ async function main() {
 
   const resources = await evaluate(`performance.getEntriesByType("resource").map((entry) => entry.name)`);
   process.stdout.write(JSON.stringify({
-    initial, restyle, top, camera, uploaded,
+    initial, restyle, top, camera, bga, uploaded,
     filename: download.suggestedFilename,
     exceptions,
     externalRequests: resources.filter((url) => /^https?:/u.test(url) && !url.startsWith(siteRoot)),
@@ -388,6 +431,18 @@ def test_illustration_static_site_mesh_render_upload_and_export() -> None:
     assert result["top"]["direction"] == "0.000000,1.000000,0.000000"
     assert result["camera"]["view"] == "camera"
     assert result["camera"]["direction"] != result["top"]["direction"]
+    assert "BGA90" in result["bga"]["selected"]
+    assert result["bga"]["triangles"] > 20_000
+    assert result["bga"]["polygons"] == result["bga"]["triangles"]
+    assert result["bga"]["paths"] > 0
+    assert result["bga"]["elapsedMs"] < 30_000
+    assert len(result["bga"]["probes"]) >= 20
+    assert all(probe["count"] >= 2 for probe in result["bga"]["probes"])
+    assert {probe["fill"] for probe in result["bga"]["probes"]} <= {
+        "rgb(11,11,11)",
+        "rgb(16,16,16)",
+        "rgb(255,255,255)",
+    }
     assert result["uploaded"]["selected"] == "illustration-upload.step (local)"
     assert result["uploaded"]["triangles"] > 0
     assert result["uploaded"]["paths"] > 0

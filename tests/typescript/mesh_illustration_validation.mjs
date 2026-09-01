@@ -45,6 +45,7 @@ const baseStyle = {
   fallbackColor: [0.5, 0.5, 0.5],
   background: "#f7f2df",
   transparentBackground: false,
+  showHlrOutline: true,
   showOutlines: true,
   showCreases: true,
   creaseAngleDegrees: 40,
@@ -143,6 +144,23 @@ const tinyScene = prepareMeshIllustration(
 const tinySvg = renderMeshIllustrationSvg(tinyScene, { ...baseStyle, doubleSided: true }).svg;
 assert.match(tinySvg, /0\.000002/u);
 assert.doesNotMatch(tinySvg, /viewBox="0 0 0 0"/u);
+
+const hlrOverlay = renderMeshIllustrationSvg(
+  {
+    ...scene,
+    outlineSegments: [
+      {
+        points: [
+          [-1, -1],
+          [1, -1],
+        ],
+      },
+    ],
+  },
+  { ...baseStyle, showOutlines: false, showCreases: false, showHlrOutline: true },
+);
+assert.equal(hlrOverlay.stats.outlines, 1);
+assert.equal((hlrOverlay.svg.match(/<path /gu) ?? []).length, 1);
 
 console.log(
   JSON.stringify({

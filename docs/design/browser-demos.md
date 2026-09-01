@@ -125,13 +125,15 @@ The first mesh-illustration feasibility slice is maintained in
 - the core projector consumes generic mesh buffers, transforms, materials, and
   normals rather than STEP objects;
 - the current STEP adapter converts browser-local bytes through the existing
-  compatibility STEP-to-GLB symbol;
+  compatibility STEP-to-GLB symbol and can call the existing HLR projection
+  symbol for its unioned `mesh-shadow` Outline layer;
 - SVG and Canvas2D consume one prepared projected scene and a separate style,
   so lighting or palette changes do not redo mesh preparation;
 - the Three.js pane and glTF adapter are demo concerns, not dependencies of the
   generic illustration algorithm; and
-- mesh-derived silhouette/crease linework remains experimental while the
-  vector visibility and future HLR-overlay policy are evaluated.
+- STEP-backed surfaces can composite that HLR outline in both SVG and Canvas;
+  generic mesh-only sources remain surface-only unless an adapter supplies a
+  compatible linework layer.
 
 Build its hosted review directory with:
 

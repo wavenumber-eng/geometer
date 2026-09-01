@@ -151,10 +151,18 @@ uploaded models. A future glTF/GLB loader or Viz-generated PCB mesh can feed the
 same algorithm without STEP or OCCT.
 
 This is a visibility and appearance prototype, not the promoted illustration
-operation. Its mesh silhouette and crease toggles are intentionally labeled
-experimental because CAD face splitting and arbitrary triangle soups do not
-yet provide the analytic HLR-quality linework required by the final contract.
-They default off; triangle paint overlap suppresses SVG/Canvas antialias seams.
+operation. STEP-backed models can enable Geometer's existing HLR `mesh-shadow`
+Outline layer, which unions projected tessellated faces into the clean outer
+body trace used by the HLR Lab. That linework is composited over the shared
+SVG/Canvas surface scene and included in SVG downloads. Generic mesh inputs
+remain surface-only unless an adapter supplies comparable linework; the noisy
+triangle-adjacency silhouette experiment is not exposed in the main UI.
+Triangle paint overlap suppresses SVG/Canvas antialias seams.
+
+The STEP adapter requests `strip_root_placement` so HLR and STEP-to-GLB use the
+same definition-local frame, keeps the projection result in its documented
+millimetres, and converts outline coordinates to glTF metres only when attaching
+them to the illustration scene.
 
 Build and review the offline site:
 

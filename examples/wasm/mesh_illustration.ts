@@ -47,6 +47,7 @@ export interface MeshIllustrationStyle {
   fallbackColor: Rgb;
   background: string;
   transparentBackground: boolean;
+  showHlrOutline: boolean;
   showOutlines: boolean;
   showCreases: boolean;
   creaseAngleDegrees: number;
@@ -82,6 +83,10 @@ export interface IllustrationEdge {
   meshId: string;
 }
 
+export interface IllustrationLineSegment {
+  points: readonly [Vec2, Vec2];
+}
+
 export interface MeshIllustrationScene {
   schema: "geometry.mesh_illustration.prototype.a0";
   view: {
@@ -93,6 +98,8 @@ export interface MeshIllustrationScene {
   bounds: { minX: number; minY: number; maxX: number; maxY: number };
   triangles: readonly IllustrationTriangle[];
   edges: readonly IllustrationEdge[];
+  /** Optional CAD-derived linework, such as Geometer's HLR mesh-shadow outline. */
+  outlineSegments?: readonly IllustrationLineSegment[];
   stats: {
     sourceMeshes: number;
     sourceTriangles: number;
@@ -137,7 +144,16 @@ interface StrokeCommand {
   width: number;
 }
 
-type RenderCommand = TriangleCommand | StrokeCommand;
+interface HlrOutlineCommand {
+  kind: "hlr-outline";
+  depth: number;
+  order: number;
+  points: readonly [Vec2, Vec2];
+  color: string;
+  width: number;
+}
+
+type RenderCommand = TriangleCommand | StrokeCommand | HlrOutlineCommand;
 
 const IDENTITY_MATRIX = Object.freeze([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
 
@@ -555,6 +571,19 @@ function renderCommands(
     if (kind === "outline") outlines += 1;
     else creases += 1;
   }
+  if (style.showHlrOutline) {
+    for (const segment of scene.outlineSegments ?? []) {
+      commands.push({
+        kind: "hlr-outline",
+        depth: Number.MAX_VALUE,
+        order: order++,
+        points: segment.points,
+        color: style.outlineColor,
+        width: span * style.outlineWidth,
+      });
+      outlines += 1;
+    }
+  }
   commands.sort((a, b) => {
     const depthOrder = a.depth - b.depth;
     if (depthOrder !== 0) return depthOrder;
@@ -607,7 +636,7 @@ export function renderMeshIllustrationSvg(
         `<polygon points="${points}" fill="${command.fill}" stroke="${command.fill}" stroke-width="${numberText(seamOverlap)}" stroke-linejoin="round"${opacity}/>`,
       );
     } else {
-      const [a, b] = command.edge.points;
+      const [a, b] = command.kind === "hlr-outline" ? command.points : command.edge.points;
       body.push(
         `<path d="M ${numberText(a[0])} ${numberText(-a[1])} L ${numberText(b[0])} ${numberText(-b[1])}" fill="none" stroke="${escapeXml(command.color)}" stroke-width="${numberText(command.width)}" stroke-linecap="round" stroke-linejoin="round"/>`,
       );
@@ -663,7 +692,7 @@ export function renderMeshIllustrationCanvas(
       context.lineWidth = Math.max(0.7, Math.min(1.5, scale * 0.0008));
       context.stroke();
     } else {
-      const [a, b] = command.edge.points;
+      const [a, b] = command.kind === "hlr-outline" ? command.points : command.edge.points;
       context.beginPath();
       context.moveTo(offsetX + a[0] * scale, offsetY - a[1] * scale);
       context.lineTo(offsetX + b[0] * scale, offsetY - b[1] * scale);

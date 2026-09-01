@@ -3,6 +3,7 @@
 #include "geometer/planar_contours.h"
 #include "geometer/planar_solve.h"
 #include "mesh_shadow_outline.h"
+#include "step_xcaf_root_frame.h"
 
 #include <clipper2/clipper.h>
 
@@ -19,8 +20,11 @@
 #include <HLRBRep_PolyAlgo.hxx>
 #include <HLRBRep_PolyHLRToShape.hxx>
 #include <IFSelect_ReturnStatus.hxx>
+#include <STEPCAFControl_Reader.hxx>
 #include <STEPControl_Reader.hxx>
 #include <Standard_Failure.hxx>
+#include <TCollection_ExtendedString.hxx>
+#include <TDocStd_Document.hxx>
 #include <TopAbs_ShapeEnum.hxx>
 #include <TopExp_Explorer.hxx>
 #include <TopoDS.hxx>
@@ -200,10 +204,36 @@ std::vector<ProjectionViewSpec> effective_views(const HlrProjectionOptions& opti
 }
 
 TopoDS_Shape read_step_shape_from_bytes(const unsigned char* step_data, std::size_t step_size,
-                                        Status* status)
+                                        bool strip_root_placement, Status* status)
 {
     std::string step_text(reinterpret_cast<const char*>(step_data), step_size);
     std::istringstream step_stream(step_text);
+
+    if (strip_root_placement)
+    {
+        const Handle(TDocStd_Document) document =
+            new TDocStd_Document(TCollection_ExtendedString("XmlOcaf"));
+        STEPCAFControl_Reader reader;
+        const IFSelect_ReturnStatus read_status =
+            reader.ChangeReader().ReadStream("memory.step", step_stream);
+        if (read_status != IFSelect_RetDone)
+        {
+            set_status(status, 4, "Failed reading STEP bytes.");
+            return TopoDS_Shape();
+        }
+        if (!reader.Transfer(document))
+        {
+            set_status(status, 5, "Failed transferring STEP roots.");
+            return TopoDS_Shape();
+        }
+        strip_free_shape_root_locations(document);
+        const TopoDS_Shape shape = free_shape_compound(document);
+        if (shape.IsNull())
+        {
+            set_status(status, 6, "STEP transfer produced a null shape.");
+        }
+        return shape;
+    }
 
     STEPControl_Reader reader;
     const IFSelect_ReturnStatus read_status = reader.ReadStream("memory.step", step_stream);
@@ -1065,7 +1095,8 @@ int step_hlr_projection_from_bytes(const unsigned char* step_data, std::size_t s
         HlrProjectionTimings timings;
 
         const auto read_start = std::chrono::high_resolution_clock::now();
-        TopoDS_Shape shape = read_step_shape_from_bytes(step_data, step_size, status);
+        TopoDS_Shape shape =
+            read_step_shape_from_bytes(step_data, step_size, options.strip_root_placement, status);
         if (shape.IsNull())
         {
             return status == nullptr ? 6 : status->code;

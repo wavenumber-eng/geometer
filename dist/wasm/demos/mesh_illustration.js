@@ -344,6 +344,19 @@ function renderCommands(scene, style) {
         else
             creases += 1;
     }
+    if (style.showHlrOutline) {
+        for (const segment of scene.outlineSegments ?? []) {
+            commands.push({
+                kind: "hlr-outline",
+                depth: Number.MAX_VALUE,
+                order: order++,
+                points: segment.points,
+                color: style.outlineColor,
+                width: span * style.outlineWidth,
+            });
+            outlines += 1;
+        }
+    }
     commands.sort((a, b) => {
         const depthOrder = a.depth - b.depth;
         if (depthOrder !== 0)
@@ -386,7 +399,7 @@ export function renderMeshIllustrationSvg(scene, style, title = "Geometer mesh i
             body.push(`<polygon points="${points}" fill="${command.fill}" stroke="${command.fill}" stroke-width="${numberText(seamOverlap)}" stroke-linejoin="round"${opacity}/>`);
         }
         else {
-            const [a, b] = command.edge.points;
+            const [a, b] = command.kind === "hlr-outline" ? command.points : command.edge.points;
             body.push(`<path d="M ${numberText(a[0])} ${numberText(-a[1])} L ${numberText(b[0])} ${numberText(-b[1])}" fill="none" stroke="${escapeXml(command.color)}" stroke-width="${numberText(command.width)}" stroke-linecap="round" stroke-linejoin="round"/>`);
         }
     }
@@ -436,7 +449,7 @@ export function renderMeshIllustrationCanvas(context, scene, style) {
             context.stroke();
         }
         else {
-            const [a, b] = command.edge.points;
+            const [a, b] = command.kind === "hlr-outline" ? command.points : command.edge.points;
             context.beginPath();
             context.moveTo(offsetX + a[0] * scale, offsetY - a[1] * scale);
             context.lineTo(offsetX + b[0] * scale, offsetY - b[1] * scale);

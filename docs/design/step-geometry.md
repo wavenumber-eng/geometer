@@ -109,6 +109,7 @@ struct HlrProjectionOptions {
         0.0, 0.0, 1.0, 0.0,
         0.0, 0.0, 0.0, 1.0,
     };
+    bool strip_root_placement = false;
     ProjectionCurveMode curve_mode = ProjectionCurveMode::NativeArcs;
     int samples_per_curve = 24;
     int round_digits = 3;
@@ -226,3 +227,7 @@ loaded source shape before projection. Translation lives in the final column and
 the final row must be `[0, 0, 0, 1]`. The transform is generic source-model
 normalization; it does not imply PCB side, screen mirroring, or SVG/canvas
 Y-down policy.
+
+`strip_root_placement` optionally matches STEP-to-GLB's definition-local frame
+by removing only placements on free-shape roots before projection. It preserves
+assembly-child placements and defaults to `false` for backward compatibility.

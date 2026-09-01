@@ -96,6 +96,15 @@ async function main() {
     while (Date.now() < deadline) {
       const output = document.querySelector("#illustrationOutputPane");
       if (document.title.startsWith("PASS") && !document.querySelector("#illustrationDownloadSvg").disabled) {
+        const bounds = (selector) => {
+          const boxes = [...document.querySelectorAll(selector)].map((element) => element.getBBox());
+          return {
+            minX: Math.min(...boxes.map((box) => box.x)),
+            minY: Math.min(...boxes.map((box) => box.y)),
+            maxX: Math.max(...boxes.map((box) => box.x + box.width)),
+            maxY: Math.max(...boxes.map((box) => box.y + box.height)),
+          };
+        };
         return {
           title: document.title,
           model: document.querySelector("#illustrationModelSelect").value,
@@ -105,6 +114,8 @@ async function main() {
           generation: Number(output.dataset.prepareGeneration),
           polygons: document.querySelectorAll("#illustrationSvgHost polygon").length,
           paths: document.querySelectorAll("#illustrationSvgHost path").length,
+          surfaceBounds: bounds("#illustrationSvgHost polygon"),
+          outlineBounds: bounds("#illustrationSvgHost path"),
           output: output.dataset.output,
           shading: output.dataset.shading,
         };
@@ -125,9 +136,6 @@ async function main() {
     const bands = document.querySelector("#illustrationBands");
     bands.value = "4";
     bands.dispatchEvent(new Event("input", { bubbles: true }));
-    const outlines = document.querySelector("#illustrationOutlines");
-    outlines.checked = true;
-    outlines.dispatchEvent(new Event("change", { bubbles: true }));
     await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     document.querySelector('button[data-output="canvas"]').click();
     return {
@@ -137,6 +145,7 @@ async function main() {
       shading: pane.dataset.shading,
       output: pane.dataset.output,
       canvasVisible: !document.querySelector("#illustrationCanvas").classList.contains("hidden"),
+      canvasOutlines: Number(pane.dataset.canvasOutlines),
       paths: document.querySelectorAll("#illustrationSvgHost path").length,
     };
   })()`, true);
@@ -195,8 +204,25 @@ async function main() {
     while (Date.now() < deadline) {
       const selected = document.querySelector("#illustrationModelSelect").selectedOptions[0]?.textContent || "";
       const pane = document.querySelector("#illustrationOutputPane");
-      if (selected.includes("illustration-upload.step") && !document.querySelector("#illustrationDownloadSvg").disabled)
-        return { selected, triangles: Number(pane.dataset.triangles), view: pane.dataset.view };
+      if (selected.includes("illustration-upload.step") && !document.querySelector("#illustrationDownloadSvg").disabled) {
+        const bounds = (selector) => {
+          const boxes = [...document.querySelectorAll(selector)].map((element) => element.getBBox());
+          return {
+            minX: Math.min(...boxes.map((box) => box.x)),
+            minY: Math.min(...boxes.map((box) => box.y)),
+            maxX: Math.max(...boxes.map((box) => box.x + box.width)),
+            maxY: Math.max(...boxes.map((box) => box.y + box.height)),
+          };
+        };
+        return {
+          selected,
+          triangles: Number(pane.dataset.triangles),
+          paths: document.querySelectorAll("#illustrationSvgHost path").length,
+          surfaceBounds: bounds("#illustrationSvgHost polygon"),
+          outlineBounds: bounds("#illustrationSvgHost path"),
+          view: pane.dataset.view,
+        };
+      }
       await new Promise((resolve) => setTimeout(resolve, 50));
     }
     throw new Error("Uploaded STEP illustration did not complete.");
@@ -302,7 +328,9 @@ def test_illustration_static_site_mesh_render_upload_and_export() -> None:
                     "CDP_PORT": str(cdp_port),
                     "TEST_URL": url,
                     "DOWNLOAD_PATH": str(downloads),
-                    "UPLOAD_FIXTURE": str(ROOT / "tests" / "fixtures" / "step" / "embedded_models" / "SOT-23.STEP"),
+                    "UPLOAD_FIXTURE": str(
+                        ROOT / "tests" / "fixtures" / "step" / "generated_topology" / "generated_fused_slab.step"
+                    ),
                 },
                 capture_output=True,
                 text=True,
@@ -327,7 +355,21 @@ def test_illustration_static_site_mesh_render_upload_and_export() -> None:
     assert result["initial"]["title"].startswith("PASS")
     assert result["initial"]["triangles"] > 0
     assert result["initial"]["polygons"] > 0
-    assert result["initial"]["paths"] == 0
+    assert result["initial"]["paths"] > 0
+    surface_bounds = result["initial"]["surfaceBounds"]
+    outline_bounds = result["initial"]["outlineBounds"]
+    surface_width = surface_bounds["maxX"] - surface_bounds["minX"]
+    surface_height = surface_bounds["maxY"] - surface_bounds["minY"]
+    outline_width = outline_bounds["maxX"] - outline_bounds["minX"]
+    outline_height = outline_bounds["maxY"] - outline_bounds["minY"]
+    assert outline_width == pytest.approx(surface_width, rel=0.03)
+    assert outline_height == pytest.approx(surface_height, rel=0.03)
+    assert (outline_bounds["minX"] + outline_bounds["maxX"]) == pytest.approx(
+        surface_bounds["minX"] + surface_bounds["maxX"], abs=surface_width * 0.03
+    )
+    assert (outline_bounds["minY"] + outline_bounds["maxY"]) == pytest.approx(
+        surface_bounds["minY"] + surface_bounds["maxY"], abs=surface_height * 0.03
+    )
     assert result["initial"]["output"] == "svg"
     assert result["initial"]["shading"] == "toon"
     assert result["restyle"] == {
@@ -337,18 +379,38 @@ def test_illustration_static_site_mesh_render_upload_and_export() -> None:
         "shading": "banded",
         "output": "canvas",
         "canvasVisible": True,
+        "canvasOutlines": result["restyle"]["canvasOutlines"],
         "paths": result["restyle"]["paths"],
     }
-    assert result["restyle"]["paths"] > 0
+    assert result["restyle"]["paths"] == result["initial"]["paths"]
+    assert result["restyle"]["canvasOutlines"] == result["initial"]["paths"]
     assert result["top"]["generation"] > result["initial"]["generation"]
     assert result["top"]["direction"] == "0.000000,1.000000,0.000000"
     assert result["camera"]["view"] == "camera"
     assert result["camera"]["direction"] != result["top"]["direction"]
     assert result["uploaded"]["selected"] == "illustration-upload.step (local)"
     assert result["uploaded"]["triangles"] > 0
+    assert result["uploaded"]["paths"] > 0
+    uploaded_surface = result["uploaded"]["surfaceBounds"]
+    uploaded_outline = result["uploaded"]["outlineBounds"]
+    uploaded_surface_width = uploaded_surface["maxX"] - uploaded_surface["minX"]
+    uploaded_surface_height = uploaded_surface["maxY"] - uploaded_surface["minY"]
+    assert (uploaded_outline["maxX"] - uploaded_outline["minX"]) == pytest.approx(
+        uploaded_surface_width, rel=0.03
+    )
+    assert (uploaded_outline["maxY"] - uploaded_outline["minY"]) == pytest.approx(
+        uploaded_surface_height, rel=0.03
+    )
+    assert (uploaded_outline["minX"] + uploaded_outline["maxX"]) == pytest.approx(
+        uploaded_surface["minX"] + uploaded_surface["maxX"], abs=uploaded_surface_width * 0.03
+    )
+    assert (uploaded_outline["minY"] + uploaded_outline["maxY"]) == pytest.approx(
+        uploaded_surface["minY"] + uploaded_surface["maxY"], abs=uploaded_surface_height * 0.03
+    )
     assert result["filename"].endswith(".svg")
     assert result["exceptions"] == []
     assert result["externalRequests"] == []
     assert exported_svg.startswith('<?xml version="1.0" encoding="UTF-8"?>')
     assert "geometry.mesh_illustration.prototype.a0" in exported_svg
     assert "<polygon" in exported_svg
+    assert "<path" in exported_svg

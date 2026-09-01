@@ -48,10 +48,7 @@ const els = {
     rimValue: required("illustrationRimValue"),
     sourceColors: required("illustrationSourceColors"),
     fallback: required("illustrationFallback"),
-    outlines: required("illustrationOutlines"),
-    creases: required("illustrationCreases"),
-    creaseAngle: required("illustrationCreaseAngle"),
-    creaseAngleValue: required("illustrationCreaseAngleValue"),
+    hlrOutline: required("illustrationHlrOutline"),
     outlineColor: required("illustrationOutlineColor"),
     outlineWidth: required("illustrationOutlineWidth"),
     outlineWidthValue: required("illustrationOutlineWidthValue"),
@@ -75,9 +72,11 @@ const state = {
     workerRequest: 0,
     pendingWorker: new Map(),
     uploadedUrls: [],
+    projectionCache: new Map(),
     validation: new URLSearchParams(window.location.search).get("validation") === "1",
     suppressCamera: false,
     prepareGeneration: 0,
+    prepareRequest: 0,
 };
 const renderer = new THREE.WebGLRenderer({
     canvas: els.modelCanvas,
@@ -135,7 +134,6 @@ function currentStyle() {
     const ambient = numberInput(els.ambient, els.ambientValue, 2);
     const keyIntensity = numberInput(els.key, els.keyValue, 2);
     const rimAmount = numberInput(els.rim, els.rimValue, 2);
-    const creaseAngleDegrees = numberInput(els.creaseAngle, els.creaseAngleValue, 0);
     const outlineWidth = numberInput(els.outlineWidth, els.outlineWidthValue, 3);
     return {
         shading: els.shading.value,
@@ -147,9 +145,10 @@ function currentStyle() {
         fallbackColor: colorFromHex(els.fallback.value),
         background: els.background.value,
         transparentBackground: els.transparent.checked,
-        showOutlines: els.outlines.checked,
-        showCreases: els.creases.checked,
-        creaseAngleDegrees,
+        showHlrOutline: els.hlrOutline.checked,
+        showOutlines: false,
+        showCreases: false,
+        creaseAngleDegrees: 42,
         outlineColor: els.outlineColor.value,
         creaseColor: els.outlineColor.value,
         outlineWidth,
@@ -242,6 +241,32 @@ function currentView() {
     const direction = new THREE.Vector3().subVectors(camera.position, controls.target).normalize();
     const up = camera.up.clone().normalize();
     return { direction: [direction.x, direction.y, direction.z], up: [up.x, up.y, up.z] };
+}
+function currentModelTransform(root) {
+    root.updateMatrixWorld(true);
+    const value = root.matrixWorld.elements;
+    const at = (index) => value[index] ?? (index % 5 === 0 ? 1 : 0);
+    // Three stores column-major matrices; Geometer's HLR option is row-major.
+    // Keep this transform in STEP millimetres so geometry.projection.b0 retains
+    // its documented units; convert the resulting segments at the adapter edge.
+    return [
+        at(0),
+        at(4),
+        at(8),
+        at(12) * 1000,
+        at(1),
+        at(5),
+        at(9),
+        at(13) * 1000,
+        at(2),
+        at(6),
+        at(10),
+        at(14) * 1000,
+        at(3),
+        at(7),
+        at(11),
+        at(15),
+    ];
 }
 function moveCameraToView(viewId) {
     const view = namedView(viewId);
@@ -342,7 +367,7 @@ function redrawStyle() {
     if (!context)
         throw new Error("Canvas2D is unavailable.");
     const canvasStats = renderMeshIllustrationCanvas(context, state.scene, style);
-    els.counts.textContent = `${rendered.stats.triangles.toLocaleString()} visible triangles / ${rendered.stats.outlines.toLocaleString()} outlines / ${rendered.stats.creases.toLocaleString()} creases / ${state.scene.warnings.length} warnings`;
+    els.counts.textContent = `${rendered.stats.triangles.toLocaleString()} visible triangles / ${rendered.stats.outlines.toLocaleString()} HLR outline segments / ${state.scene.warnings.length} warnings`;
     els.downloadSvg.disabled = false;
     els.downloadScene.disabled = false;
     els.downloadStyle.disabled = false;
@@ -351,21 +376,36 @@ function redrawStyle() {
     els.outputLabel.textContent = `2D ${state.output.toUpperCase()} / ${style.shading.toUpperCase()} / ${canvasStats.commands.toLocaleString()} DRAWS`;
     els.outputPane.dataset.output = state.output;
     els.outputPane.dataset.shading = style.shading;
+    els.outputPane.dataset.canvasOutlines = String(canvasStats.outlines);
     threeScene.background = new THREE.Color(style.background);
     renderer.setClearColor(style.background, 1);
 }
 async function prepareIllustration(reason) {
-    if (!state.root)
+    const root = state.root;
+    const model = state.model;
+    if (!root)
         return;
+    const requestId = ++state.prepareRequest;
     const started = performance.now();
     setBusy(`Preparing ${reason} illustration...`);
     await new Promise((resolve) => requestAnimationFrame(() => resolve()));
     try {
-        const input = meshInput(state.root);
-        state.scene = prepareMeshIllustration(input, currentView(), {
+        const input = meshInput(root);
+        const view = currentView();
+        let prepared = prepareMeshIllustration(input, view, {
             maxTriangles: 140_000,
             weldTolerance: 1e-5,
         });
+        let hlrMs = 0;
+        if (els.hlrOutline.checked && model && (model.step || model.stepBuffer)) {
+            setBusy(`Tracing ${model.name} with Geometer HLR mesh-shadow...`);
+            const outline = await loadMeshShadowOutline(model, view, currentModelTransform(root));
+            hlrMs = outline.hlrMs;
+            prepared = { ...prepared, outlineSegments: outline.segments };
+        }
+        if (requestId !== state.prepareRequest || state.root !== root || state.model !== model)
+            return;
+        state.scene = prepared;
         state.prepareGeneration += 1;
         els.outputPane.dataset.view = state.view;
         els.outputPane.dataset.direction = state.scene.view.direction
@@ -375,12 +415,18 @@ async function prepareIllustration(reason) {
         els.outputPane.dataset.prepareGeneration = String(state.prepareGeneration);
         redrawStyle();
         const elapsed = performance.now() - started;
-        els.timing.textContent = `prepare ${formatMs(elapsed)} / ${state.scene.stats.sourceTriangles.toLocaleString()} triangles`;
+        els.timing.textContent = `prepare ${formatMs(elapsed)} / HLR ${formatMs(hlrMs)} / ${state.scene.stats.sourceTriangles.toLocaleString()} triangles`;
         setStatus(`${state.model?.name ?? "Model"} / ${state.view} / ${state.output.toUpperCase()} ready`);
         await validateIfRequested();
     }
+    catch (error) {
+        if (requestId !== state.prepareRequest || state.root !== root || state.model !== model)
+            return;
+        throw error;
+    }
     finally {
-        setBusy(null);
+        if (requestId === state.prepareRequest)
+            setBusy(null);
     }
 }
 function scheduleCameraIllustration() {
@@ -405,7 +451,12 @@ function loadGlb(buffer) {
 }
 async function selectModel(model) {
     const loadId = ++state.activeLoad;
+    state.prepareRequest += 1;
+    window.clearTimeout(state.renderTimer);
     state.model = model;
+    state.scene = null;
+    els.downloadSvg.disabled = true;
+    els.downloadScene.disabled = true;
     els.modelSelect.value = model.cacheKey ?? model.name;
     setBusy(`Loading ${model.name}...`);
     setStatus(`Loading ${model.name}`);
@@ -449,10 +500,10 @@ function stepWorker() {
         if (!pending)
             return;
         state.pendingWorker.delete(data.id);
-        if (data.ok && data.glbBuffer)
-            pending.resolve({ buffer: data.glbBuffer, glbMs: data.timings?.glbMs ?? 0 });
+        if (data.ok)
+            pending.resolve(data);
         else
-            pending.reject(new Error(data.error ?? "STEP conversion Worker failed."));
+            pending.reject(new Error(data.error ?? "STEP adapter Worker failed."));
     };
     const failWorker = (error) => {
         for (const pending of state.pendingWorker.values())
@@ -471,18 +522,64 @@ function stepWorker() {
     state.worker = worker;
     return worker;
 }
-function convertStep(stepBuffer) {
+function runStepWorker(message, stepBuffer) {
     const id = ++state.workerRequest;
     return new Promise((resolve, reject) => {
         state.pendingWorker.set(id, { resolve, reject });
         try {
-            stepWorker().postMessage({ id, stepBuffer }, [stepBuffer]);
+            stepWorker().postMessage({ id, ...message, stepBuffer }, [stepBuffer]);
         }
         catch (error) {
             state.pendingWorker.delete(id);
             reject(error instanceof Error ? error : new Error(String(error)));
         }
     });
+}
+async function convertStep(stepBuffer) {
+    const result = await runStepWorker({ operation: "step-to-glb" }, stepBuffer);
+    if (!result.glbBuffer)
+        throw new Error("STEP conversion Worker returned no GLB data.");
+    return { buffer: result.glbBuffer, glbMs: result.timings?.glbMs ?? 0 };
+}
+async function modelStepBuffer(model) {
+    if (model.stepBuffer)
+        return model.stepBuffer;
+    if (!model.step)
+        throw new Error(`${model.name} has no STEP source for HLR linework.`);
+    model.stepBuffer = await fetchArrayBuffer(model.step);
+    return model.stepBuffer;
+}
+function projectionCacheKey(model, view, modelTransform) {
+    const values = [...view.direction, ...view.up, view.mirrorX ? 1 : 0, ...modelTransform];
+    return `${model.cacheKey ?? model.name}|${values.map((value) => value.toFixed(7)).join(",")}`;
+}
+async function loadMeshShadowOutline(model, view, modelTransform) {
+    const cacheKey = projectionCacheKey(model, view, modelTransform);
+    let projection = state.projectionCache.get(cacheKey);
+    let hlrMs = 0;
+    if (!projection) {
+        const source = await modelStepBuffer(model);
+        const result = await runStepWorker({ operation: "mesh-shadow", view, modelTransform }, source.slice(0));
+        if (!result.projection)
+            throw new Error("HLR Worker returned no projection data.");
+        projection = result.projection;
+        hlrMs = result.timings?.hlrMs ?? 0;
+        state.projectionCache.set(cacheKey, projection);
+    }
+    const outline = projection.views?.[0]?.modes?.outline?.segments ?? [];
+    const mirrorX = view.mirrorX === true ? -1 : 1;
+    const millimetresToMetres = 0.001;
+    return {
+        segments: outline
+            .filter((segment) => segment.length === 4 && segment.every(Number.isFinite))
+            .map(([x1, y1, x2, y2]) => ({
+            points: [
+                [mirrorX * x1 * millimetresToMetres, y1 * millimetresToMetres],
+                [mirrorX * x2 * millimetresToMetres, y2 * millimetresToMetres],
+            ],
+        })),
+        hlrMs,
+    };
 }
 function appendModel(model) {
     const option = document.createElement("option");
@@ -498,7 +595,8 @@ async function openStep(file) {
     els.openButton.disabled = true;
     setBusy(`Converting ${file.name} to a mesh in Geometer WASM...`);
     try {
-        const converted = await convertStep(await file.arrayBuffer());
+        const stepBuffer = await file.arrayBuffer();
+        const converted = await convertStep(stepBuffer.slice(0));
         const model = {
             name: file.name,
             cacheKey: `local:${Date.now()}:${file.name}`,
@@ -507,12 +605,13 @@ async function openStep(file) {
             stepBytes: file.size,
             glbBytes: converted.buffer.byteLength,
             glbBuffer: converted.buffer,
+            stepBuffer,
             local: true,
         };
         state.models.push(model);
         appendModel(model);
         await selectModel(model);
-        els.timing.textContent = `STEP mesh ${formatMs(converted.glbMs)} / ${formatBytes(model.glbBytes)}`;
+        els.timing.textContent = `STEP mesh ${formatMs(converted.glbMs)} / ${formatBytes(model.glbBytes)} / HLR ready`;
     }
     finally {
         els.openButton.disabled = false;
@@ -622,8 +721,6 @@ function wireEvents() {
         els.shading,
         els.sourceColors,
         els.fallback,
-        els.outlines,
-        els.creases,
         els.outlineColor,
         els.doubleSided,
         els.background,
@@ -631,14 +728,10 @@ function wireEvents() {
     ]) {
         control.addEventListener("change", redrawStyle);
     }
-    for (const control of [
-        els.bands,
-        els.ambient,
-        els.key,
-        els.rim,
-        els.creaseAngle,
-        els.outlineWidth,
-    ]) {
+    els.hlrOutline.addEventListener("change", () => {
+        prepareIllustration("HLR linework").catch(showError);
+    });
+    for (const control of [els.bands, els.ambient, els.key, els.rim, els.outlineWidth]) {
         control.addEventListener("input", redrawStyle);
     }
     els.downloadSvg.addEventListener("click", () => download(`${fileStem()}-${state.view}.svg`, state.svg, "image/svg+xml"));

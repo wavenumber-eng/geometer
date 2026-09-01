@@ -47,7 +47,7 @@ def embedded_models() -> list[dict[str, object]]:
     return [
         {
             "name": entry["name"],
-            "step": "",
+            "step": data_uri(ROOT / entry["step"], "application/step"),
             "glb": data_uri(ROOT / entry["glb"], "model/gltf-binary"),
             "stepBytes": (ROOT / entry["step"]).stat().st_size,
             "glbBytes": (ROOT / entry["glb"]).stat().st_size,

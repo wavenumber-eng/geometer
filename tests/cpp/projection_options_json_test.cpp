@@ -40,6 +40,7 @@ void parse_explicit_options()
                        "[0,0,3,30],"
                        "[0,0,0,1]"
                        "],"
+                       "\"strip_root_placement\":true,"
                        "\"curve_mode\":\"polyline\","
                        "\"samples_per_curve\":12,"
                        "\"round_digits\":4,"
@@ -62,6 +63,7 @@ void parse_explicit_options()
     require(options.model_transform[3] == 10.0, "model_transform x translation should parse");
     require(options.model_transform[5] == 2.0, "model_transform y scale should parse");
     require(options.model_transform[11] == 30.0, "model_transform z translation should parse");
+    require(options.strip_root_placement, "strip_root_placement should parse");
     require(options.curve_mode == geometer::ProjectionCurveMode::Polyline,
             "curve mode should parse");
     require(options.samples_per_curve == 12, "samples should parse");
@@ -91,7 +93,8 @@ void parse_aliases()
                        "\"meshDeflectionCoefficient\":0.005,"
                        "\"outlineAlgorithm\":\"hlr_close\","
                        "\"unionPolygons\":true,"
-                       "\"modelTransform\":[1,0,0,4,0,1,0,5,0,0,1,6,0,0,0,1]"
+                       "\"modelTransform\":[1,0,0,4,0,1,0,5,0,0,1,6,0,0,0,1],"
+                       "\"stripRootPlacement\":true"
                        "}";
 
     geometer::HlrProjectionOptions options;
@@ -116,6 +119,7 @@ void parse_aliases()
     require(options.model_transform[3] == 4.0, "flat modelTransform alias should parse");
     require(options.model_transform[7] == 5.0, "flat modelTransform y translation should parse");
     require(options.model_transform[11] == 6.0, "flat modelTransform z translation should parse");
+    require(options.strip_root_placement, "stripRootPlacement alias should parse");
 }
 
 void reject_invalid_options()

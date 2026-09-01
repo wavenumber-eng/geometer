@@ -1,20 +1,16 @@
 #include "geometer/step_to_glb.h"
 
+#include "step_xcaf_root_frame.h"
+
 #include <BRepMesh_IncrementalMesh.hxx>
 #include <Message_ProgressRange.hxx>
 #include <NCollection_IndexedDataMap.hxx>
-#include <NCollection_Sequence.hxx>
 #include <RWGltf_CafWriter.hxx>
 #include <STEPCAFControl_Reader.hxx>
 #include <TCollection_AsciiString.hxx>
 #include <TCollection_ExtendedString.hxx>
-#include <TDF_Label.hxx>
 #include <TDocStd_Document.hxx>
-#include <TopLoc_Location.hxx>
 #include <TopoDS_Shape.hxx>
-#include <XCAFDoc_DocumentTool.hxx>
-#include <XCAFDoc_Location.hxx>
-#include <XCAFDoc_ShapeTool.hxx>
 
 #include <atomic>
 #include <cstdio>
@@ -93,10 +89,6 @@ int step_to_glb(const std::string& step_path, const std::string& glb_path,
         return 2;
     }
 
-    Handle(XCAFDoc_ShapeTool) shape_tool = XCAFDoc_DocumentTool::ShapeTool(doc->Main());
-    NCollection_Sequence<TDF_Label> free_shapes;
-    shape_tool->GetFreeShapes(free_shapes);
-
     // Transform-chain note: OCCT's STEPCAFControl_Reader preserves a STEP file's
     // source coordinate system (the top-level AXIS2_PLACEMENT_3D attached to the
     // SHAPE_REPRESENTATION) as the location on the free-shape label. The location
@@ -124,23 +116,14 @@ int step_to_glb(const std::string& step_path, const std::string& glb_path,
     // sub-parts (e.g. pad positions around an IC body) and are part of the
     // model's geometry, not the file's coordinate system. Stripping them
     // collapses all sub-parts to the origin.
-    for (int i = 1; i <= free_shapes.Length(); ++i)
+    strip_free_shape_root_locations(doc);
+    const TopoDS_Shape normalized_shape = free_shape_compound(doc);
+    if (normalized_shape.IsNull())
     {
-        TDF_Label label = free_shapes.Value(i);
-        TopoDS_Shape shape = shape_tool->GetShape(label);
-        if (shape.IsNull())
-        {
-            continue;
-        }
-        if (!shape.Location().IsIdentity())
-        {
-            XCAFDoc_Location::Set(label, TopLoc_Location());
-            shape_tool->SetShape(label, shape.Located(TopLoc_Location()));
-            shape = shape_tool->GetShape(label);
-        }
-        BRepMesh_IncrementalMesh mesher(shape, options.linear_deflection, false,
-                                        options.angular_deflection, false);
+        return 3;
     }
+    BRepMesh_IncrementalMesh mesher(normalized_shape, options.linear_deflection, false,
+                                    options.angular_deflection, false);
 
     RWGltf_CafWriter writer(TCollection_AsciiString(glb_path.c_str()), true);
 

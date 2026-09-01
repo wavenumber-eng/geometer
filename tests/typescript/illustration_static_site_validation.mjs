@@ -47,6 +47,7 @@ for (const required of [
   'id="illustrationLinearDeflection"',
   'id="illustrationAngularDeflection"',
   'id="illustrationHlrDeflection"',
+  'id="illustrationHlrAngularDeflection"',
   'id="illustrationTriangleLimit"',
   'option value="lambert"',
   'id="illustrationBands" type="range" min="2" max="32"',

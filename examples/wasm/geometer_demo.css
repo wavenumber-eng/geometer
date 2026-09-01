@@ -1477,6 +1477,16 @@ body[data-wn-watermark="true"]::after {
       letter-spacing: 0.08em;
       text-transform: uppercase;
     }
+    .illustration-settings h3 {
+      margin: 13px 0 5px;
+      padding-top: 9px;
+      border-top: 1px solid var(--wn-line-light);
+      color: var(--wn-accent);
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
     .illustration-control {
       min-height: 30px;
       display: grid;

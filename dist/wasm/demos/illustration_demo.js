@@ -7,24 +7,28 @@ const MESH_QUALITY_PRESETS = {
         linearDeflectionMm: 0.25,
         angularDeflectionDegrees: 40,
         hlrDeflectionCoefficient: 0.008,
+        hlrAngularDeflectionDegrees: 40,
         maxTriangles: 100_000,
     },
     balanced: {
         linearDeflectionMm: 0.1,
         angularDeflectionDegrees: (0.5 * 180) / Math.PI,
         hlrDeflectionCoefficient: 0.004,
+        hlrAngularDeflectionDegrees: (0.5 * 180) / Math.PI,
         maxTriangles: 140_000,
     },
     fine: {
         linearDeflectionMm: 0.03,
         angularDeflectionDegrees: 15,
         hlrDeflectionCoefficient: 0.002,
+        hlrAngularDeflectionDegrees: 15,
         maxTriangles: 250_000,
     },
     "extra-fine": {
         linearDeflectionMm: 0.01,
         angularDeflectionDegrees: 8,
         hlrDeflectionCoefficient: 0.001,
+        hlrAngularDeflectionDegrees: 8,
         maxTriangles: 500_000,
     },
 };
@@ -67,6 +71,7 @@ const els = {
     linearDeflection: required("illustrationLinearDeflection"),
     angularDeflection: required("illustrationAngularDeflection"),
     hlrDeflection: required("illustrationHlrDeflection"),
+    hlrAngularDeflection: required("illustrationHlrAngularDeflection"),
     triangleLimit: required("illustrationTriangleLimit"),
     meshInfo: required("illustrationMeshInfo"),
     shading: required("illustrationShading"),
@@ -112,6 +117,8 @@ const state = {
     prepareRequest: 0,
     lineworkRequest: 0,
     lineworkBusyRequest: null,
+    showHlrOutline: true,
+    showHlrDetail: true,
 };
 const renderer = new THREE.WebGLRenderer({
     canvas: els.modelCanvas,
@@ -173,6 +180,7 @@ function currentMeshSettings() {
         linearDeflectionMm: boundedNumberInput(els.linearDeflection, 0.001, 10, 0.1),
         angularDeflectionDegrees: boundedNumberInput(els.angularDeflection, 1, 60, (0.5 * 180) / Math.PI),
         hlrDeflectionCoefficient: boundedNumberInput(els.hlrDeflection, 0.0001, 0.05, 0.004),
+        hlrAngularDeflectionDegrees: boundedNumberInput(els.hlrAngularDeflection, 1, 60, (0.5 * 180) / Math.PI),
         maxTriangles: Math.trunc(boundedNumberInput(els.triangleLimit, 10_000, 1_000_000, 140_000)),
     };
 }
@@ -185,11 +193,12 @@ function applyMeshSettings(settings) {
     els.linearDeflection.value = String(settings.linearDeflectionMm);
     els.angularDeflection.value = String(settings.angularDeflectionDegrees);
     els.hlrDeflection.value = String(settings.hlrDeflectionCoefficient);
+    els.hlrAngularDeflection.value = String(settings.hlrAngularDeflectionDegrees);
     els.triangleLimit.value = String(settings.maxTriangles);
 }
 function updateMeshInfo(prefix = "Mesh controls ready") {
     const settings = currentMeshSettings();
-    els.meshInfo.textContent = `${prefix}: ${settings.linearDeflectionMm} mm chord / ${settings.angularDeflectionDegrees.toFixed(2)} deg / HLR ${settings.hlrDeflectionCoefficient} / ${settings.maxTriangles.toLocaleString()} triangle limit.`;
+    els.meshInfo.textContent = `${prefix}: STEP ${settings.linearDeflectionMm} mm / ${settings.angularDeflectionDegrees.toFixed(2)} deg; HLR ${settings.hlrDeflectionCoefficient} bbox / ${settings.hlrAngularDeflectionDegrees.toFixed(2)} deg; ${settings.maxTriangles.toLocaleString()} triangle limit.`;
 }
 function currentStyle() {
     const bands = Math.round(numberInput(els.bands, els.bandsValue, 0));
@@ -207,8 +216,8 @@ function currentStyle() {
         fallbackColor: colorFromHex(els.fallback.value),
         background: els.background.value,
         transparentBackground: els.transparent.checked,
-        showHlrOutline: els.hlrOutline.checked,
-        showHlrDetail: els.hlrDetail.checked,
+        showHlrOutline: state.showHlrOutline,
+        showHlrDetail: state.showHlrDetail,
         showOutlines: false,
         showCreases: false,
         creaseAngleDegrees: 42,
@@ -451,6 +460,10 @@ function cancelLazyHlrLinework() {
     state.lineworkBusyRequest = null;
     setBusy(null);
 }
+function syncHlrControls() {
+    els.hlrOutline.checked = state.showHlrOutline;
+    els.hlrDetail.checked = state.showHlrDetail;
+}
 async function prepareIllustration(reason) {
     const root = state.root;
     const model = state.model;
@@ -458,6 +471,7 @@ async function prepareIllustration(reason) {
         return;
     const requestId = ++state.prepareRequest;
     cancelLazyHlrLinework();
+    syncHlrControls();
     const started = performance.now();
     setBusy(`Preparing ${reason} illustration...`);
     await new Promise((resolve) => requestAnimationFrame(() => resolve()));
@@ -470,7 +484,7 @@ async function prepareIllustration(reason) {
             weldTolerance: 1e-5,
         });
         let hlrMs = 0;
-        if ((els.hlrOutline.checked || els.hlrDetail.checked) &&
+        if ((state.showHlrOutline || state.showHlrDetail) &&
             model &&
             (model.step || model.stepBuffer)) {
             setBusy(`Tracing ${model.name} with Geometer HLR...`);
@@ -516,7 +530,7 @@ async function updateHlrVisibility() {
     const root = state.root;
     if (!scene)
         return;
-    if (!els.hlrOutline.checked && !els.hlrDetail.checked) {
+    if (!state.showHlrOutline && !state.showHlrDetail) {
         cancelLazyHlrLinework();
         redrawStyle();
         return;
@@ -625,6 +639,7 @@ async function selectModel(model) {
         els.linearDeflection,
         els.angularDeflection,
         els.hlrDeflection,
+        els.hlrAngularDeflection,
     ])
         control.disabled = !stepBacked;
     els.downloadSvg.disabled = true;
@@ -745,7 +760,7 @@ function projectionCacheKey(model, view, modelTransform) {
         ...view.up,
         view.mirrorX ? 1 : 0,
         ...modelTransform,
-        (settings.angularDeflectionDegrees * Math.PI) / 180,
+        (settings.hlrAngularDeflectionDegrees * Math.PI) / 180,
         settings.hlrDeflectionCoefficient,
     ];
     return `${model.cacheKey ?? model.name}|${values.map((value) => value.toFixed(7)).join(",")}`;
@@ -762,7 +777,7 @@ async function loadHlrLinework(model, view, modelTransform) {
             view,
             modelTransform,
             hlrOptions: {
-                angularDeflectionRad: (settings.angularDeflectionDegrees * Math.PI) / 180,
+                angularDeflectionRad: (settings.hlrAngularDeflectionDegrees * Math.PI) / 180,
                 deflectionCoefficient: settings.hlrDeflectionCoefficient,
             },
         }, source.slice(0));
@@ -947,9 +962,10 @@ function wireEvents() {
             rebuildSurfaceMesh().catch(showError);
         });
     }
-    els.hlrDeflection.addEventListener("change", () => {
-        rebuildHlrLinework().catch(showError);
-    });
+    for (const control of [els.hlrDeflection, els.hlrAngularDeflection])
+        control.addEventListener("change", () => {
+            rebuildHlrLinework().catch(showError);
+        });
     els.triangleLimit.addEventListener("change", () => {
         updateTriangleLimit().catch(showError);
     });
@@ -983,9 +999,11 @@ function wireEvents() {
         control.addEventListener("change", redrawStyle);
     }
     els.hlrOutline.addEventListener("change", () => {
+        state.showHlrOutline = els.hlrOutline.checked;
         updateHlrVisibility().catch(showError);
     });
     els.hlrDetail.addEventListener("change", () => {
+        state.showHlrDetail = els.hlrDetail.checked;
         updateHlrVisibility().catch(showError);
     });
     for (const control of [els.bands, els.ambient, els.key, els.rim, els.outlineWidth]) {

@@ -291,6 +291,7 @@ async function main() {
       linear: Number(document.querySelector("#illustrationLinearDeflection").value),
       angular: Number(document.querySelector("#illustrationAngularDeflection").value),
       hlr: Number(document.querySelector("#illustrationHlrDeflection").value),
+      hlrAngular: Number(document.querySelector("#illustrationHlrAngularDeflection").value),
       limit: Number(document.querySelector("#illustrationTriangleLimit").value),
     };
 
@@ -322,6 +323,15 @@ async function main() {
     throw new Error("Top illustration did not complete.");
   })()`, true);
 
+  const detailBeforeCamera = await evaluate(`(async () => {
+    const pane = document.querySelector("#illustrationOutputPane");
+    const detail = document.querySelector("#illustrationHlrDetail");
+    detail.checked = false;
+    detail.dispatchEvent(new Event("change", { bubbles: true }));
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    return { checked: detail.checked, details: Number(pane.dataset.canvasDetails) };
+  })()`, true);
+
   const canvas = await evaluate(`(() => {
     const rect = document.querySelector("#illustrationModelCanvas").getBoundingClientRect();
     return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
@@ -340,12 +350,47 @@ async function main() {
   const camera = await evaluate(`(async () => {
     const pane = document.querySelector("#illustrationOutputPane");
     const deadline = Date.now() + 30000;
+    let settledGeneration = -1;
+    let settledSince = Date.now();
     while (Date.now() < deadline) {
-      if (pane.dataset.view === "camera" && pane.dataset.direction !== ${JSON.stringify(top.direction)})
-        return { view: pane.dataset.view, direction: pane.dataset.direction };
+      if (pane.dataset.view === "camera" && pane.dataset.direction !== ${JSON.stringify(top.direction)}) {
+        const generation = Number(pane.dataset.prepareGeneration);
+        if (generation !== settledGeneration) {
+          settledGeneration = generation;
+          settledSince = Date.now();
+        }
+        if (document.querySelector("#illustrationBusy").hidden && Date.now() - settledSince >= 500)
+          return {
+            view: pane.dataset.view,
+            direction: pane.dataset.direction,
+            generation,
+            detailChecked: document.querySelector("#illustrationHlrDetail").checked,
+            details: Number(pane.dataset.canvasDetails),
+          };
+      }
       await new Promise((resolve) => setTimeout(resolve, 50));
     }
     throw new Error("Trackball did not drive a current-camera illustration.");
+  })()`, true);
+
+  const detailAfterCamera = await evaluate(`(async () => {
+    const pane = document.querySelector("#illustrationOutputPane");
+    const detail = document.querySelector("#illustrationHlrDetail");
+    const generation = Number(pane.dataset.prepareGeneration);
+    detail.checked = true;
+    detail.dispatchEvent(new Event("change", { bubbles: true }));
+    const deadline = Date.now() + 120000;
+    while (Date.now() < deadline) {
+      if (Number(pane.dataset.canvasDetails) > 0 && document.querySelector("#illustrationBusy").hidden)
+        return {
+          checked: detail.checked,
+          details: Number(pane.dataset.canvasDetails),
+          generation: Number(pane.dataset.prepareGeneration),
+          previousGeneration: generation,
+        };
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+    throw new Error("HLR detail did not restore after the camera regression check.");
   })()`, true);
 
   const bga = await evaluate(`(async () => {
@@ -442,7 +487,8 @@ async function main() {
 
   const resources = await evaluate(`performance.getEntriesByType("resource").map((entry) => entry.name)`);
   process.stdout.write(JSON.stringify({
-    initial, restyle, detailToggle, lazyLinework, meshQuality, top, camera, bga, uploaded,
+    initial, restyle, detailToggle, lazyLinework, meshQuality, top, detailBeforeCamera,
+    camera, detailAfterCamera, bga, uploaded,
     filename: download.suggestedFilename,
     exceptions,
     externalRequests: resources.filter((url) => /^https?:/u.test(url) && !url.startsWith(siteRoot)),
@@ -614,12 +660,20 @@ def test_illustration_static_site_mesh_render_upload_and_export() -> None:
     assert result["meshQuality"]["fine"]["linear"] == pytest.approx(0.03)
     assert result["meshQuality"]["fine"]["angular"] == pytest.approx(15)
     assert result["meshQuality"]["fine"]["hlr"] == pytest.approx(0.002)
+    assert result["meshQuality"]["fine"]["hlrAngular"] == pytest.approx(15)
     assert result["meshQuality"]["fine"]["limit"] == 250_000
     assert result["meshQuality"]["resetGeneration"] > result["meshQuality"]["fine"]["generation"]
     assert result["top"]["generation"] > result["initial"]["generation"]
     assert result["top"]["direction"] == "0.000000,1.000000,0.000000"
+    assert result["detailBeforeCamera"] == {"checked": False, "details": 0}
     assert result["camera"]["view"] == "camera"
     assert result["camera"]["direction"] != result["top"]["direction"]
+    assert result["camera"]["detailChecked"] is False
+    assert result["camera"]["details"] == 0
+    assert result["detailAfterCamera"]["checked"] is True
+    assert result["detailAfterCamera"]["details"] > 0
+    assert result["detailAfterCamera"]["previousGeneration"] == result["camera"]["generation"]
+    assert result["detailAfterCamera"]["generation"] == result["detailAfterCamera"]["previousGeneration"]
     assert "BGA90" in result["bga"]["selected"]
     assert result["bga"]["triangles"] > 20_000
     assert result["bga"]["polygons"] == result["bga"]["triangles"]

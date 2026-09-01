@@ -116,6 +116,33 @@ view presets may stay in the page toolbar. Settings that affect geometry should
 recompute automatically; typed numeric inputs should be debounced. Pure display
 changes should redraw cached geometry instead of rerunning WASM.
 
+## STEP Illustration Lab Prototype
+
+The first mesh-illustration feasibility slice is maintained in
+`examples/wasm/illustration_demo.*`, `mesh_illustration.ts`, and
+`illustration_step_worker.js`. It is deliberately pre-contract research:
+
+- the core projector consumes generic mesh buffers, transforms, materials, and
+  normals rather than STEP objects;
+- the current STEP adapter converts browser-local bytes through the existing
+  compatibility STEP-to-GLB symbol;
+- SVG and Canvas2D consume one prepared projected scene and a separate style,
+  so lighting or palette changes do not redo mesh preparation;
+- the Three.js pane and glTF adapter are demo concerns, not dependencies of the
+  generic illustration algorithm; and
+- mesh-derived silhouette/crease linework remains experimental while the
+  vector visibility and future HLR-overlay policy are evaluated.
+
+Build its hosted review directory with:
+
+```powershell
+python scripts\build_illustration_site.py
+```
+
+The output is `dist/wasm/demos/illustration/`; its only runtime file is
+`index.html`. The single-file form is
+`dist/wasm/demos/illustration_demo.html`. Neither builder publishes artifacts.
+
 ## Adding A Single-HTML Demo
 
 1. Add the maintained page/application source under `examples/wasm/`.
@@ -140,9 +167,12 @@ Focused HLR/demo-platform checks are:
 
 ```powershell
 python scripts\build_hlr_site.py
+python scripts\build_illustration_site.py
 node tests\typescript\hlr_static_site_validation.mjs
+node tests\typescript\illustration_static_site_validation.mjs
 uv run pytest tests\python\test_package_single_html_site.py -q
 uv run pytest tests\wasm\test_hlr_static_site.py -q
+uv run pytest tests\wasm\test_illustration_static_site.py -q
 npm run check:typescript
 ```
 

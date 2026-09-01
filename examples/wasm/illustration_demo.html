@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Geometer STEP Illustration Lab</title>
+  <link rel="stylesheet" href="/examples/wasm/geometer_demo.css">
+</head>
+<body data-wn-watermark="true">
+  <div class="illustration-app" id="illustrationApp" data-state="loading">
+    <header class="illustration-toolbar">
+      <span class="illustration-brand">GEOMETER / ILLUSTRATION LAB</span>
+      <input id="illustrationStepInput" type="file" accept=".step,.stp,model/step,application/step">
+      <button class="primary" id="illustrationOpenButton" type="button">Open STEP</button>
+      <select id="illustrationModelSelect" aria-label="Model"></select>
+      <span class="group" id="illustrationViewButtons" aria-label="View">
+        <button type="button" data-view="top">Top</button>
+        <button type="button" data-view="front">Front</button>
+        <button type="button" data-view="right">Right</button>
+        <button type="button" data-view="iso" class="active">ISO</button>
+        <button type="button" data-view="camera">Camera</button>
+      </span>
+      <span class="group" id="illustrationOutputButtons" aria-label="Output">
+        <button type="button" data-output="svg" class="active">SVG</button>
+        <button type="button" data-output="canvas">Canvas</button>
+      </span>
+      <button id="illustrationDownloadSvg" type="button" disabled>Download SVG</button>
+      <button id="illustrationDownloadScene" type="button" disabled>Scene JSON</button>
+      <button id="illustrationDownloadStyle" type="button" disabled>Style JSON</button>
+    </header>
+    <main class="illustration-workspace">
+      <section class="illustration-pane" id="illustrationModelPane">
+        <span class="pane-label">3D SOURCE / DRAG TO ORBIT</span>
+        <canvas id="illustrationModelCanvas"></canvas>
+      </section>
+      <section class="illustration-pane" id="illustrationOutputPane">
+        <span class="pane-label" id="illustrationOutputLabel">2D SVG / GENERIC MESH PROTOTYPE</span>
+        <div class="svg-host" id="illustrationSvgHost"></div>
+        <canvas class="hidden" id="illustrationCanvas"></canvas>
+        <div class="illustration-busy" id="illustrationBusy"><div id="illustrationBusyText">Loading model...</div></div>
+      </section>
+      <aside class="illustration-settings">
+        <section>
+          <h2>Surface</h2>
+          <label class="illustration-control"><span>Shading</span><select id="illustrationShading"><option value="flat">Flat diffuse</option><option value="banded">Banded</option><option value="toon" selected>Toon</option><option value="unlit">Unlit</option></select><span></span></label>
+          <label class="illustration-control"><span>Bands</span><input id="illustrationBands" type="range" min="2" max="6" step="1" value="3"><output id="illustrationBandsValue">3</output></label>
+          <label class="illustration-control"><span>Ambient</span><input id="illustrationAmbient" type="range" min="0" max="1" step="0.05" value="0.28"><output id="illustrationAmbientValue">0.28</output></label>
+          <label class="illustration-control"><span>Key light</span><input id="illustrationKey" type="range" min="0" max="1.5" step="0.05" value="0.9"><output id="illustrationKeyValue">0.90</output></label>
+          <label class="illustration-control"><span>Rim</span><input id="illustrationRim" type="range" min="0" max="0.6" step="0.02" value="0.12"><output id="illustrationRimValue">0.12</output></label>
+          <label class="illustration-check"><input id="illustrationSourceColors" type="checkbox" checked><span>Use source material colors</span></label>
+          <label class="illustration-control"><span>Fallback</span><input id="illustrationFallback" type="color" value="#71a6a0"><span></span></label>
+        </section>
+        <section>
+          <h2>Linework</h2>
+          <label class="illustration-check"><input id="illustrationOutlines" type="checkbox"><span>Mesh silhouette experiment</span></label>
+          <label class="illustration-check"><input id="illustrationCreases" type="checkbox"><span>Mesh crease experiment</span></label>
+          <label class="illustration-control"><span>Crease angle</span><input id="illustrationCreaseAngle" type="range" min="5" max="90" step="1" value="42"><output id="illustrationCreaseAngleValue">42</output></label>
+          <label class="illustration-control"><span>Outline</span><input id="illustrationOutlineColor" type="color" value="#17252c"><span></span></label>
+          <label class="illustration-control"><span>Line width</span><input id="illustrationOutlineWidth" type="range" min="0.001" max="0.018" step="0.001" value="0.006"><output id="illustrationOutlineWidthValue">0.006</output></label>
+          <label class="illustration-check"><input id="illustrationDoubleSided" type="checkbox"><span>Draw back faces</span></label>
+        </section>
+        <section>
+          <h2>Output</h2>
+          <label class="illustration-control"><span>Background</span><input id="illustrationBackground" type="color" value="#f7f2df"><span></span></label>
+          <label class="illustration-check"><input id="illustrationTransparent" type="checkbox"><span>Transparent background</span></label>
+          <p class="illustration-info" id="illustrationCounts">No scene prepared.</p>
+          <p class="illustration-info">Prototype path: STEP -&gt; Geometer GLB -&gt; generic mesh illustration. The illustration algorithm itself has no STEP dependency.</p>
+        </section>
+      </aside>
+    </main>
+    <footer class="illustration-status"><span id="illustrationStatus">Initializing</span><span id="illustrationTiming">mesh prototype a0</span></footer>
+  </div>
+  <pre id="illustrationValidation">RUNNING</pre>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/"
+      }
+    }
+  </script>
+  <script type="module" src="/dist/wasm/demos/illustration_demo.js"></script>
+</body>
+</html>

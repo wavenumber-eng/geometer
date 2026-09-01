@@ -134,6 +134,40 @@ python -m http.server 8123 --bind 127.0.0.1
 HLR and planar examples remain on their existing JavaScript surfaces until
 their respective operation contracts are promoted.
 
+## STEP Illustration Lab Prototype
+
+`illustration_demo.html`, `illustration_demo.ts`, and `mesh_illustration.ts`
+form the first reviewable slice of the retained illustration plan. The page
+keeps the HLR Lab's side-by-side 3D/2D workflow, but the right pane renders
+colorized triangle surfaces to either SVG or Canvas2D. It supports flat,
+quantized-band, and early toon shading, live style changes, named or trackball
+camera views, local STEP upload, and SVG/scene/style downloads.
+
+The illustration algorithm consumes generic indexed or non-indexed triangle
+meshes with transforms, material colors, and vertex normals. STEP is only the
+first adapter: the prototype Worker uses the existing STEP-to-GLB compatibility
+surface, then the same Three.js-to-generic-mesh adapter handles bundled and
+uploaded models. A future glTF/GLB loader or Viz-generated PCB mesh can feed the
+same algorithm without STEP or OCCT.
+
+This is a visibility and appearance prototype, not the promoted illustration
+operation. Its mesh silhouette and crease toggles are intentionally labeled
+experimental because CAD face splitting and arbitrary triangle soups do not
+yet provide the analytic HLR-quality linework required by the final contract.
+They default off; triangle paint overlap suppresses SVG/Canvas antialias seams.
+
+Build and review the offline site:
+
+```powershell
+node scripts\build-typescript-examples.mjs
+python scripts\build_illustration_site.py
+python -m http.server 8123 --bind 127.0.0.1 --directory dist\wasm\demos\illustration
+```
+
+Open `http://127.0.0.1:8123/`. The directly openable single-file artifact is
+`dist/wasm/demos/illustration_demo.html`. Building does not publish either
+artifact.
+
 ## Embedded Model Viewer
 
 `embedded_model_viewer.html` and `embedded_model_viewer.js` are the browser

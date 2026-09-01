@@ -13,6 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 BUILDERS = {
     "analytic-polygon-pour": "build_self_contained_analytic_polygon_pour_demo.py",
     "hlr": "build_self_contained_hlr_demo.py",
+    "illustration": "build_self_contained_illustration_demo.py",
     "pcb-polygon-pour": "build_self_contained_pcb_polygon_pour_demo.py",
     "planar-ring": "build_self_contained_planar_ring_solver_demo.py",
 }

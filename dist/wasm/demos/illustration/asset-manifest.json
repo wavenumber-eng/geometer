@@ -1,0 +1,20 @@
+{
+  "entrypoint": "index.html",
+  "files": [
+    {
+      "bytes": 541,
+      "path": "_headers",
+      "sha256": "18315ff61a7c9cc2f0f142a259b2ed01dab5abdd32f08fa38b6e5c29f4ff38ec"
+    },
+    {
+      "bytes": 27464829,
+      "path": "index.html",
+      "sha256": "db0129cfada75f4cfff07eb150f5ac62d803d4c0a8855c19ad927abffe95b120"
+    }
+  ],
+  "runtime_files": [
+    "index.html"
+  ],
+  "schema": "wn.geometer.single_html_site.a0",
+  "sha256": "281265e8f5fcefc621e5ef305c7f50276578b2cf4a41b0c4add863bc437568d0"
+}

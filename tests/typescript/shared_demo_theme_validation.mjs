@@ -4,7 +4,12 @@ import { resolve } from "node:path";
 const root = resolve(import.meta.dirname, "../..");
 const themePath = resolve(root, "examples/wasm/geometer_demo.css");
 const theme = readFileSync(themePath, "utf8");
-const pages = ["analytic_polygon_pour_demo.html", "model_bounds_demo.html", "pcb_polygon_pour_demo.html"];
+const pages = [
+  "analytic_polygon_pour_demo.html",
+  "illustration_demo.html",
+  "model_bounds_demo.html",
+  "pcb_polygon_pour_demo.html",
+];
 
 if (!theme.includes('font-family: "JetBrains Mono"')) {
   throw new Error("Shared demo theme must use the governed JetBrains Mono webfont.");
@@ -12,7 +17,7 @@ if (!theme.includes('font-family: "JetBrains Mono"')) {
 if (!theme.includes("border-radius: 0 !important")) {
   throw new Error("Shared demo theme must enforce flat component geometry.");
 }
-for (const rootSelector of ["#pour-shell", ".bounds-app", "#pcb-shell"]) {
+for (const rootSelector of ["#pour-shell", ".illustration-app", ".bounds-app", "#pcb-shell"]) {
   if (!theme.includes(rootSelector)) {
     throw new Error(`Shared demo theme is missing the ${rootSelector} layout namespace.`);
   }
@@ -47,4 +52,6 @@ if (/0x[\da-f]{6}|#[\da-f]{3,8}/iu.test(modelBoundsSource)) {
   throw new Error("Model-bounds scene colors must resolve from shared CSS variables.");
 }
 
-process.stdout.write("Shared analytic, PCB, and model-bounds demo theme validated.\n");
+process.stdout.write(
+  "Shared analytic, illustration, PCB, and model-bounds demo theme validated.\n",
+);

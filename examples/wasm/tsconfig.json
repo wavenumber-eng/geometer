@@ -25,6 +25,8 @@
     "analytic_polygon_pour_fixture.ts",
     "analytic_polygon_pour_worker.ts",
     "demo-tooling/**/*.ts",
+    "illustration_demo.ts",
+    "mesh_illustration.ts",
     "model_bounds_demo.ts",
     "model_bounds_worker.ts",
     "pcb_polygon_pour_demo.ts",

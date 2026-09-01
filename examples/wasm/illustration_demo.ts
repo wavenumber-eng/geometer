@@ -245,8 +245,10 @@ const controls = new TrackballControls(camera, renderer.domElement);
 controls.rotateSpeed = 1;
 controls.zoomSpeed = 1.2;
 controls.panSpeed = 0.3;
-controls.dynamicDampingFactor = 0.16;
-controls.staticMoving = false;
+// Camera inertia can continue changing the pose while an asynchronous STEP
+// remesh captures and restores it. The illustration lab favors deterministic
+// engineering views: the camera stops when pointer input stops.
+controls.staticMoving = true;
 threeScene.add(new THREE.HemisphereLight(0xffffff, 0xaeb7c0, 1.2));
 const threeKey = new THREE.DirectionalLight(0xffffff, 1.7);
 const previewLightRight = new THREE.Vector3();

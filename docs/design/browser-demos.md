@@ -118,6 +118,15 @@ changes should redraw cached geometry instead of rerunning WASM.
 
 ## STEP Illustration Lab Prototype
 
+> **Lifecycle status: retained concept prototype, not production code.** The
+> implementation remains in `examples/wasm/` so its rendering ideas can be
+> evaluated, demonstrated, and regression-tested. It defines no supported
+> public API, versioned illustration contract, output-compatibility guarantee,
+> or long-term ownership decision for Geometer. Prototype types and behavior
+> may change without deprecation. Any production promotion requires a separate
+> architecture decision that assigns the core/adapter/renderer boundary and
+> establishes contracts, compatibility policy, and release gates.
+
 The first mesh-illustration feasibility slice is maintained in
 `examples/wasm/illustration_demo.*`, `mesh_illustration.ts`, and
 `illustration_step_worker.js`. It is deliberately pre-contract research:

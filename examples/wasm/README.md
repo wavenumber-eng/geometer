@@ -136,9 +136,18 @@ their respective operation contracts are promoted.
 
 ## STEP Illustration Lab Prototype
 
+**Status: retained concept prototype.** This code is kept as an executable
+design study, regression target, and source of reusable experiments. It is not
+a production renderer, supported public API, versioned scene contract, or
+compatibility commitment. Its TypeScript types, algorithms, output details,
+and demo controls may change without deprecation while the ownership boundary
+is evaluated. Keeping the prototype in Geometer does not by itself decide that
+Geometer should own a future production illustration stack; promotion would
+require a separate contract and architecture decision.
+
 `illustration_demo.html`, `illustration_demo.ts`, and `mesh_illustration.ts`
-form the first reviewable slice of the retained illustration plan. The page
-keeps the HLR Lab's side-by-side 3D/2D workflow, but the right pane renders
+form the reviewable implementation of the retained illustration experiment.
+The page keeps the HLR Lab's side-by-side 3D/2D workflow, but the right pane renders
 colorized triangle surfaces to either SVG or Canvas2D. It supports flat,
 unquantized Lambert diffuse, quantized-band (up to 32 bands), and early toon shading,
 live style changes, named or trackball
@@ -197,7 +206,7 @@ surface, then the same Three.js-to-generic-mesh adapter handles bundled and
 uploaded models. A future glTF/GLB loader or Viz-generated PCB mesh can feed the
 same algorithm without STEP or OCCT.
 
-This is a visibility and appearance prototype, not the promoted illustration
+This is a visibility and appearance prototype, not a promoted illustration
 operation. STEP-backed models can enable Geometer's existing HLR `mesh-shadow`
 Outline layer, which unions projected tessellated faces into the clean outer
 body trace used by the HLR Lab, and its visible sharp-plus-silhouette Detail

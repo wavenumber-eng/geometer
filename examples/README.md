@@ -12,3 +12,9 @@ test harness.
 Test-only browser validation and benchmark harnesses live under `tests/wasm/`.
 The maintained build, packaging, panel, and publication boundaries are in
 [`docs/design/browser-demos.md`](../docs/design/browser-demos.md).
+
+The WASM examples include a retained
+[mesh-illustration concept prototype](wasm/README.md#step-illustration-lab-prototype).
+It is available for design evaluation and regression testing, but is not a
+production renderer, supported public API, or commitment that Geometer will own
+the eventual illustration architecture.

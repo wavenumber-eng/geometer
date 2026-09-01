@@ -160,6 +160,10 @@ geometer run request.json response.json
 - `examples/wasm/model_bounds_demo.html` - TypeScript/generated-client pilot
   that computes STEP model bounds in a dedicated Worker and visualizes them
   through browser WASM and Three.js.
+- `examples/wasm/illustration_demo.html` - retained mesh-illustration concept
+  prototype for SVG/Canvas design evaluation. It is not a production renderer
+  or supported Geometer interface; see the
+  [prototype lifecycle note](docs/design/browser-demos.md#step-illustration-lab-prototype).
 - `dist/wasm/demos/analytic_polygon_pour_demo.html`,
   `dist/wasm/demos/hlr_demo.html`, and
   `dist/wasm/demos/planar_ring_solver_demo.html` - one-file standalone browser

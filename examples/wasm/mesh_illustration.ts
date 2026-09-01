@@ -35,6 +35,11 @@ export interface MeshIllustrationPrepareOptions {
   weldTolerance?: number;
 }
 
+export interface MeshIllustrationSvgOptions {
+  /** Integer units across the larger unpadded artwork axis; default 1,000,000. */
+  coordinateSpan?: number;
+}
+
 export type MeshIllustrationShading = "unlit" | "flat" | "lambert" | "banded" | "toon";
 
 export interface MeshIllustrationStyle {
@@ -115,6 +120,7 @@ export interface MeshIllustrationScene {
 }
 
 export interface IllustrationRenderStats {
+  /** Front-facing triangles submitted to painting; some may be fully occluded. */
   triangles: number;
   surfaceDraws: number;
   outlines: number;
@@ -177,6 +183,17 @@ const IDENTITY_MATRIX = Object.freeze([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0,
 const VISIBILITY_ORDER_CACHE = new WeakMap<
   MeshIllustrationScene,
   Map<boolean, readonly IllustrationTriangle[]>
+>();
+const RENDER_COMMAND_CACHE = new WeakMap<
+  MeshIllustrationScene,
+  {
+    styleKey: string;
+    triangles: MeshIllustrationScene["triangles"];
+    edges: MeshIllustrationScene["edges"];
+    outlines: MeshIllustrationScene["outlineSegments"];
+    details: MeshIllustrationScene["detailSegments"];
+    result: { commands: RenderCommand[]; stats: IllustrationRenderStats };
+  }
 >();
 
 function finite(value: number, fallback = 0): number {
@@ -902,8 +919,34 @@ interface FusionEdge {
   key: string;
 }
 
-function pointFusionKey(point: Vec2, tolerance: number): string {
-  return `${Math.round(point[0] / tolerance)},${Math.round(point[1] / tolerance)}`;
+function pointFusionKey(
+  point: Vec2,
+  depth: number,
+  coordinateTolerance: number,
+  depthTolerance: number,
+): string {
+  return `${Math.round(point[0] / coordinateTolerance)},${Math.round(point[1] / coordinateTolerance)},${Math.round(depth / depthTolerance)}`;
+}
+
+function orientedFusionVertices(
+  command: TriangleCommand,
+): readonly [
+  { point: Vec2; depth: number },
+  { point: Vec2; depth: number },
+  { point: Vec2; depth: number },
+] {
+  const { points, depths } = command.triangle;
+  return polygonSignedArea(points) >= 0
+    ? [
+        { point: points[0], depth: depths[0] },
+        { point: points[1], depth: depths[1] },
+        { point: points[2], depth: depths[2] },
+      ]
+    : [
+        { point: points[0], depth: depths[0] },
+        { point: points[2], depth: depths[2] },
+        { point: points[1], depth: depths[1] },
+      ];
 }
 
 function segmentsIntersect(a: Vec2, b: Vec2, c: Vec2, d: Vec2, epsilon: number): boolean {
@@ -945,39 +988,130 @@ function validFusionRings(rings: readonly (readonly Vec2[])[], epsilon: number):
       });
     }
   }
-  for (let first = 0; first < segments.length; first += 1) {
+  const intersects = (first: number, second: number): boolean => {
     const a = segments[first] as (typeof segments)[number];
-    for (let second = first + 1; second < segments.length; second += 1) {
-      const b = segments[second] as (typeof segments)[number];
-      if (
-        a.ring === b.ring &&
-        (a.edge === b.edge ||
-          (a.edge + 1) % a.count === b.edge ||
-          (b.edge + 1) % b.count === a.edge)
-      )
-        continue;
-      if (segmentsIntersect(a.a, a.b, b.a, b.b, epsilon)) return false;
+    const b = segments[second] as (typeof segments)[number];
+    if (
+      a.ring === b.ring &&
+      (a.edge === b.edge ||
+        (a.edge + 1) % a.count === b.edge ||
+        (b.edge + 1) % b.count === a.edge)
+    )
+      return false;
+    return segmentsIntersect(a.a, a.b, b.a, b.b, epsilon);
+  };
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const segment of segments) {
+    minX = Math.min(minX, segment.a[0], segment.b[0]);
+    minY = Math.min(minY, segment.a[1], segment.b[1]);
+    maxX = Math.max(maxX, segment.a[0], segment.b[0]);
+    maxY = Math.max(maxY, segment.a[1], segment.b[1]);
+  }
+  const gridSize = Math.max(4, Math.min(256, Math.ceil(Math.sqrt(segments.length / 2))));
+  const cellWidth = Math.max((maxX - minX) / gridSize, epsilon);
+  const cellHeight = Math.max((maxY - minY) / gridSize, epsilon);
+  const buckets = new Map<number, number[]>();
+  const broadSegments: number[] = [];
+  const previousSegments: number[] = [];
+  const marks = new Int32Array(segments.length);
+  for (let index = 0; index < segments.length; index += 1) {
+    const segment = segments[index] as (typeof segments)[number];
+    const minCellX = Math.max(
+      0,
+      Math.min(gridSize - 1, Math.floor((Math.min(segment.a[0], segment.b[0]) - minX) / cellWidth)),
+    );
+    const maxCellX = Math.max(
+      0,
+      Math.min(gridSize - 1, Math.floor((Math.max(segment.a[0], segment.b[0]) - minX) / cellWidth)),
+    );
+    const minCellY = Math.max(
+      0,
+      Math.min(gridSize - 1, Math.floor((Math.min(segment.a[1], segment.b[1]) - minY) / cellHeight)),
+    );
+    const maxCellY = Math.max(
+      0,
+      Math.min(gridSize - 1, Math.floor((Math.max(segment.a[1], segment.b[1]) - minY) / cellHeight)),
+    );
+    const broad =
+      (maxCellX - minCellX + 1) * (maxCellY - minCellY + 1) > Math.max(32, gridSize);
+    const stamp = index + 1;
+    if (broad) {
+      for (const candidate of previousSegments) if (intersects(index, candidate)) return false;
+    } else {
+      for (const candidate of broadSegments) if (intersects(index, candidate)) return false;
+      for (let cellY = minCellY; cellY <= maxCellY; cellY += 1) {
+        for (let cellX = minCellX; cellX <= maxCellX; cellX += 1) {
+          for (const candidate of buckets.get(cellY * gridSize + cellX) ?? []) {
+            if (marks[candidate] === stamp) continue;
+            marks[candidate] = stamp;
+            if (intersects(index, candidate)) return false;
+          }
+        }
+      }
+      for (let cellY = minCellY; cellY <= maxCellY; cellY += 1) {
+        for (let cellX = minCellX; cellX <= maxCellX; cellX += 1) {
+          const key = cellY * gridSize + cellX;
+          const bucket = buckets.get(key);
+          if (bucket) bucket.push(index);
+          else buckets.set(key, [index]);
+        }
+      }
     }
+    if (broad) broadSegments.push(index);
+    previousSegments.push(index);
   }
   return true;
+}
+
+function simplifyFusionRing(points: readonly Vec2[], tolerance: number): Vec2[] {
+  const simplified = [...points];
+  let changed = true;
+  while (changed && simplified.length > 3) {
+    changed = false;
+    for (let index = 0; index < simplified.length; index += 1) {
+      const previous = simplified[(index + simplified.length - 1) % simplified.length] as Vec2;
+      const current = simplified[index] as Vec2;
+      const next = simplified[(index + 1) % simplified.length] as Vec2;
+      const baseline = Math.hypot(next[0] - previous[0], next[1] - previous[1]);
+      if (
+        baseline <= tolerance ||
+        Math.abs(cross2(previous, next, current)) / baseline <= tolerance
+      ) {
+        simplified.splice(index, 1);
+        changed = true;
+        break;
+      }
+    }
+  }
+  return simplified;
 }
 
 function fusedComponent(
   commands: readonly TriangleCommand[],
   members: readonly number[],
-  tolerance: number,
+  coordinateTolerance: number,
+  depthTolerance: number,
 ): FusedSurfaceCommand | null {
   const edgeMap = new Map<string, FusionEdge[]>();
   for (const member of members) {
-    const source = (commands[member] as TriangleCommand).triangle.points;
-    const points: readonly [Vec2, Vec2, Vec2] =
-      polygonSignedArea(source) >= 0 ? source : [source[0], source[2], source[1]];
+    const vertices = orientedFusionVertices(commands[member] as TriangleCommand);
     for (let edgeIndex = 0; edgeIndex < 3; edgeIndex += 1) {
-      const start = points[edgeIndex] as Vec2;
-      const end = points[(edgeIndex + 1) % 3] as Vec2;
-      const third = points[(edgeIndex + 2) % 3] as Vec2;
-      const startKey = pointFusionKey(start, tolerance);
-      const endKey = pointFusionKey(end, tolerance);
+      const startVertex = vertices[edgeIndex] as (typeof vertices)[number];
+      const endVertex = vertices[(edgeIndex + 1) % 3] as (typeof vertices)[number];
+      const thirdVertex = vertices[(edgeIndex + 2) % 3] as (typeof vertices)[number];
+      const start = startVertex.point;
+      const end = endVertex.point;
+      const third = thirdVertex.point;
+      const startKey = pointFusionKey(
+        start,
+        startVertex.depth,
+        coordinateTolerance,
+        depthTolerance,
+      );
+      const endKey = pointFusionKey(end, endVertex.depth, coordinateTolerance, depthTolerance);
       const key = startKey < endKey ? `${startKey}|${endKey}` : `${endKey}|${startKey}`;
       const edge: FusionEdge = { triangle: member, start, end, third, startKey, endKey, key };
       const entries = edgeMap.get(key);
@@ -1027,25 +1161,124 @@ function fusedComponent(
     }
     rings.push(ring);
   }
-  if (unused.size > 0 || !validFusionRings(rings, tolerance)) return null;
+  const simplifiedRings = rings.map((ring) => simplifyFusionRing(ring, coordinateTolerance));
+  if (unused.size > 0 || !validFusionRings(simplifiedRings, coordinateTolerance)) return null;
   const first = commands[members[0] as number] as TriangleCommand;
   return {
     kind: "fused-surface",
     depth: first.depth,
     order: first.order,
-    rings,
+    rings: simplifiedRings,
     fill: first.fill,
     opacity: first.opacity,
     triangleCount: members.length,
   };
 }
 
-function fuseTriangleRun(
+function projectedTrianglesOverlap(
+  a: IllustrationTriangle,
+  b: IllustrationTriangle,
+  epsilon: number,
+): boolean {
+  const overlap = clipConvexPolygon(a.points, b.points, epsilon);
+  return overlap.length >= 3 && Math.abs(polygonSignedArea(overlap)) > epsilon ** 2;
+}
+
+function fusionMobilityIntervals(
   commands: readonly TriangleCommand[],
-  tolerance: number,
+  bounds: MeshIllustrationScene["bounds"],
+): { low: Int32Array; high: Int32Array; sameStyleOverlaps: Array<readonly [number, number]> } {
+  const low = new Int32Array(commands.length);
+  const high = new Int32Array(commands.length);
+  const sameStyleOverlaps: Array<readonly [number, number]> = [];
+  for (let index = 0; index < commands.length; index += 1) high[index] = commands.length - 1;
+  if (commands.length < 2) return { low, high, sameStyleOverlaps };
+  const width = Math.max(bounds.maxX - bounds.minX, 1e-12);
+  const height = Math.max(bounds.maxY - bounds.minY, 1e-12);
+  const epsilon = Math.max(width, height) * 1e-10;
+  const gridSize = Math.max(8, Math.min(192, Math.ceil(Math.sqrt(commands.length / 4))));
+  const cellWidth = width / gridSize;
+  const cellHeight = height / gridSize;
+  const boxes = commands.map((command) => projectedBounds(command.triangle));
+  const buckets = new Map<number, number[]>();
+  const broadTriangles: number[] = [];
+  const previousTriangles: number[] = [];
+  const marks = new Int32Array(commands.length);
+  const cellRange = (box: ProjectedBounds): [number, number, number, number] => [
+    Math.max(0, Math.min(gridSize - 1, Math.floor((box.minX - bounds.minX) / cellWidth))),
+    Math.max(0, Math.min(gridSize - 1, Math.floor((box.maxX - bounds.minX) / cellWidth))),
+    Math.max(0, Math.min(gridSize - 1, Math.floor((box.minY - bounds.minY) / cellHeight))),
+    Math.max(0, Math.min(gridSize - 1, Math.floor((box.maxY - bounds.minY) / cellHeight))),
+  ];
+  const addBlocker = (front: number, back: number): void => {
+    const frontCommand = commands[front] as TriangleCommand;
+    const backCommand = commands[back] as TriangleCommand;
+    if (
+      !boundsOverlap(boxes[front] as ProjectedBounds, boxes[back] as ProjectedBounds, epsilon) ||
+      !projectedTrianglesOverlap(frontCommand.triangle, backCommand.triangle, epsilon)
+    )
+      return;
+    if (
+      frontCommand.fill === backCommand.fill &&
+      Math.abs(frontCommand.opacity - backCommand.opacity) <= 1e-12
+    ) {
+      sameStyleOverlaps.push([front, back]);
+      return;
+    }
+    low[front] = Math.max(low[front] as number, back + 1);
+    high[back] = Math.min(high[back] as number, front - 1);
+  };
+  for (let index = 0; index < commands.length; index += 1) {
+    const box = boxes[index] as ProjectedBounds;
+    const [minCellX, maxCellX, minCellY, maxCellY] = cellRange(box);
+    const coveredCells = (maxCellX - minCellX + 1) * (maxCellY - minCellY + 1);
+    const broad = coveredCells > Math.max(64, gridSize * 2);
+    const stamp = index + 1;
+    if (broad) {
+      for (const candidate of previousTriangles) addBlocker(index, candidate);
+    } else {
+      for (const candidate of broadTriangles) addBlocker(index, candidate);
+      for (let cellY = minCellY; cellY <= maxCellY; cellY += 1) {
+        for (let cellX = minCellX; cellX <= maxCellX; cellX += 1) {
+          const bucket = buckets.get(cellY * gridSize + cellX);
+          if (!bucket) continue;
+          for (const candidate of bucket) {
+            if (marks[candidate] === stamp) continue;
+            marks[candidate] = stamp;
+            addBlocker(index, candidate);
+          }
+        }
+      }
+      for (let cellY = minCellY; cellY <= maxCellY; cellY += 1) {
+        for (let cellX = minCellX; cellX <= maxCellX; cellX += 1) {
+          const key = cellY * gridSize + cellX;
+          const bucket = buckets.get(key);
+          if (bucket) bucket.push(index);
+          else buckets.set(key, [index]);
+        }
+      }
+    }
+    if (broad) broadTriangles.push(index);
+    previousTriangles.push(index);
+  }
+  return { low, high, sameStyleOverlaps };
+}
+
+function fuseTriangleCommands(
+  commands: readonly TriangleCommand[],
+  bounds: MeshIllustrationScene["bounds"],
 ): SurfaceCommand[] {
   if (commands.length < 2) return [...commands];
+  const span = Math.max(bounds.maxX - bounds.minX, bounds.maxY - bounds.minY, 1e-9);
+  const coordinateTolerance = Math.max(span * 1e-9, 1e-12);
+  const depths = commands.flatMap((command) => [...command.triangle.depths]);
+  const minimumDepth = depths.reduce((minimum, depth) => Math.min(minimum, depth), Infinity);
+  const maximumDepth = depths.reduce((maximum, depth) => Math.max(maximum, depth), -Infinity);
+  const depthTolerance = Math.max((maximumDepth - minimumDepth) * 1e-9, 1e-12);
+  const { low, high, sameStyleOverlaps } = fusionMobilityIntervals(commands, bounds);
   const parent = commands.map((_command, index) => index);
+  const groupLow = Int32Array.from(low);
+  const groupHigh = Int32Array.from(high);
   const find = (value: number): number => {
     let root = value;
     while ((parent[root] as number) !== root) root = parent[root] as number;
@@ -1056,39 +1289,69 @@ function fuseTriangleRun(
     }
     return root;
   };
-  const unite = (a: number, b: number): void => {
-    const rootA = find(a);
-    const rootB = find(b);
-    if (rootA !== rootB) parent[rootB] = rootA;
-  };
-  const edges = new Map<string, FusionEdge[]>();
+  const candidates: Array<readonly [number, number]> = [];
+  const edgeMap = new Map<string, FusionEdge[]>();
   for (let triangle = 0; triangle < commands.length; triangle += 1) {
-    const source = (commands[triangle] as TriangleCommand).triangle.points;
-    const points: readonly [Vec2, Vec2, Vec2] =
-      polygonSignedArea(source) >= 0 ? source : [source[0], source[2], source[1]];
+    const command = commands[triangle] as TriangleCommand;
+    if (command.opacity < 0.999) continue;
+    const vertices = orientedFusionVertices(command);
     for (let edgeIndex = 0; edgeIndex < 3; edgeIndex += 1) {
-      const start = points[edgeIndex] as Vec2;
-      const end = points[(edgeIndex + 1) % 3] as Vec2;
-      const third = points[(edgeIndex + 2) % 3] as Vec2;
-      const startKey = pointFusionKey(start, tolerance);
-      const endKey = pointFusionKey(end, tolerance);
+      const startVertex = vertices[edgeIndex] as (typeof vertices)[number];
+      const endVertex = vertices[(edgeIndex + 1) % 3] as (typeof vertices)[number];
+      const thirdVertex = vertices[(edgeIndex + 2) % 3] as (typeof vertices)[number];
+      const startKey = pointFusionKey(
+        startVertex.point,
+        startVertex.depth,
+        coordinateTolerance,
+        depthTolerance,
+      );
+      const endKey = pointFusionKey(
+        endVertex.point,
+        endVertex.depth,
+        coordinateTolerance,
+        depthTolerance,
+      );
       const key = startKey < endKey ? `${startKey}|${endKey}` : `${endKey}|${startKey}`;
-      const edge: FusionEdge = { triangle, start, end, third, startKey, endKey, key };
-      const entries = edges.get(key);
+      const edge: FusionEdge = {
+        triangle,
+        start: startVertex.point,
+        end: endVertex.point,
+        third: thirdVertex.point,
+        startKey,
+        endKey,
+        key,
+      };
+      const entries = edgeMap.get(key);
       if (entries) entries.push(edge);
-      else edges.set(key, [edge]);
+      else edgeMap.set(key, [edge]);
     }
   }
-  const sideEpsilon = tolerance ** 2;
-  for (const entries of edges.values()) {
+  const sideEpsilon = coordinateTolerance ** 2;
+  for (const entries of edgeMap.values()) {
     if (entries.length !== 2) continue;
     const [a, b] = entries as [FusionEdge, FusionEdge];
+    const commandA = commands[a.triangle] as TriangleCommand;
+    const commandB = commands[b.triangle] as TriangleCommand;
     if (
+      commandA.fill === commandB.fill &&
+      Math.abs(commandA.opacity - commandB.opacity) <= 1e-12 &&
       a.startKey === b.endKey &&
       a.endKey === b.startKey &&
       cross2(a.start, a.end, a.third) * cross2(a.start, a.end, b.third) < -sideEpsilon
     )
-      unite(a.triangle, b.triangle);
+      candidates.push([a.triangle, b.triangle]);
+  }
+  candidates.sort((a, b) => Math.abs(a[0] - a[1]) - Math.abs(b[0] - b[1]));
+  for (const [a, b] of candidates) {
+    const rootA = find(a);
+    const rootB = find(b);
+    if (rootA === rootB) continue;
+    const mergedLow = Math.max(groupLow[rootA] as number, groupLow[rootB] as number);
+    const mergedHigh = Math.min(groupHigh[rootA] as number, groupHigh[rootB] as number);
+    if (mergedLow > mergedHigh) continue;
+    parent[rootB] = rootA;
+    groupLow[rootA] = mergedLow;
+    groupHigh[rootA] = mergedHigh;
   }
   const components = new Map<number, number[]>();
   for (let triangle = 0; triangle < commands.length; triangle += 1) {
@@ -1097,47 +1360,57 @@ function fuseTriangleRun(
     if (members) members.push(triangle);
     else components.set(root, [triangle]);
   }
-  const result: SurfaceCommand[] = [];
-  for (const members of [...components.values()].sort(
-    (a, b) => (a[0] as number) - (b[0] as number),
-  )) {
-    if (members.length === 1) {
-      result.push(commands[members[0] as number] as TriangleCommand);
+  const unsafeRoots = new Set<number>();
+  for (const [a, b] of sameStyleOverlaps) {
+    const rootA = find(a);
+    if (rootA === find(b)) unsafeRoots.add(rootA);
+  }
+  const placements: Array<{ position: number; order: number; commands: SurfaceCommand[] }> = [];
+  for (const [root, members] of components) {
+    if (members.length === 1 || unsafeRoots.has(root)) {
+      for (const member of members)
+        placements.push({
+          position: member,
+          order: member,
+          commands: [commands[member] as TriangleCommand],
+        });
       continue;
     }
-    const fused = fusedComponent(commands, members, tolerance);
-    if (fused) result.push(fused);
-    else for (const member of members) result.push(commands[member] as TriangleCommand);
+    const fused = fusedComponent(commands, members, coordinateTolerance, depthTolerance);
+    if (!fused) {
+      for (const member of members)
+        placements.push({
+          position: member,
+          order: member,
+          commands: [commands[member] as TriangleCommand],
+        });
+      continue;
+    }
+    const average = members.reduce((sum, member) => sum + member, 0) / members.length;
+    const position = Math.max(
+      groupLow[root] as number,
+      Math.min(groupHigh[root] as number, Math.round(average)),
+    );
+    placements.push({ position, order: members[0] as number, commands: [fused] });
   }
-  return result;
-}
-
-function fuseTriangleCommands(
-  commands: readonly TriangleCommand[],
-  bounds: MeshIllustrationScene["bounds"],
-): SurfaceCommand[] {
-  const span = Math.max(bounds.maxX - bounds.minX, bounds.maxY - bounds.minY, 1e-9);
-  const tolerance = Math.max(span * 1e-9, 1e-12);
-  const result: SurfaceCommand[] = [];
-  for (let start = 0; start < commands.length; ) {
-    const first = commands[start] as TriangleCommand;
-    let end = start + 1;
-    while (
-      end < commands.length &&
-      (commands[end] as TriangleCommand).fill === first.fill &&
-      Math.abs((commands[end] as TriangleCommand).opacity - first.opacity) <= 1e-12
-    )
-      end += 1;
-    result.push(...fuseTriangleRun(commands.slice(start, end), tolerance));
-    start = end;
-  }
-  return result;
+  placements.sort((a, b) => a.position - b.position || a.order - b.order);
+  return placements.flatMap((placement) => placement.commands);
 }
 
 function renderCommands(
   scene: MeshIllustrationScene,
   style: MeshIllustrationStyle,
 ): { commands: RenderCommand[]; stats: IllustrationRenderStats } {
+  const styleKey = JSON.stringify(style);
+  const cached = RENDER_COMMAND_CACHE.get(scene);
+  if (
+    cached?.styleKey === styleKey &&
+    cached.triangles === scene.triangles &&
+    cached.edges === scene.edges &&
+    cached.outlines === scene.outlineSegments &&
+    cached.details === scene.detailSegments
+  )
+    return cached.result;
   const span = Math.max(
     scene.bounds.maxX - scene.bounds.minX,
     scene.bounds.maxY - scene.bounds.minY,
@@ -1240,7 +1513,7 @@ function renderCommands(
         Number(a.kind === "hlr-outline") - Number(b.kind === "hlr-outline") || a.order - b.order,
     ),
   ];
-  return {
+  const result = {
     commands,
     stats: {
       triangles: triangleCount,
@@ -1251,6 +1524,15 @@ function renderCommands(
       commands: commands.length,
     },
   };
+  RENDER_COMMAND_CACHE.set(scene, {
+    styleKey,
+    triangles: scene.triangles,
+    edges: scene.edges,
+    outlines: scene.outlineSegments,
+    details: scene.detailSegments,
+    result,
+  });
+  return result;
 }
 
 function numberText(value: number): string {
@@ -1262,62 +1544,188 @@ function escapeXml(value: string): string {
   return value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll('"', "&quot;");
 }
 
+function safeCssColor(value: string): string {
+  const color = value.trim();
+  return /^(?:#[0-9a-f]{3,8}|[a-z]+|(?:rgb|rgba|hsl|hsla)\([0-9.,%+\-\s]+\))$/iu.test(color)
+    ? color
+    : "#000000";
+}
+
+type LineCommand = StrokeCommand | HlrLineCommand;
+
+function lineCommandPoints(command: LineCommand): readonly [Vec2, Vec2] {
+  return "points" in command ? command.points : command.edge.points;
+}
+
+function chainedSvgLinePath(
+  commands: readonly LineCommand[],
+  mapPoint: (point: Vec2) => Vec2,
+): string {
+  interface Segment {
+    a: Vec2;
+    b: Vec2;
+    aKey: string;
+    bKey: string;
+  }
+  const pointKey = (point: Vec2): string => `${point[0]},${point[1]}`;
+  const segments: Segment[] = commands
+    .map((command) => {
+      const [sourceA, sourceB] = lineCommandPoints(command);
+      const a = mapPoint(sourceA);
+      const b = mapPoint(sourceB);
+      return { a, b, aKey: pointKey(a), bKey: pointKey(b) };
+    })
+    .filter((segment) => segment.aKey !== segment.bKey);
+  const adjacency = new Map<string, number[]>();
+  const points = new Map<string, Vec2>();
+  for (let index = 0; index < segments.length; index += 1) {
+    const segment = segments[index] as Segment;
+    points.set(segment.aKey, segment.a);
+    points.set(segment.bKey, segment.b);
+    for (const key of [segment.aKey, segment.bKey]) {
+      const entries = adjacency.get(key);
+      if (entries) entries.push(index);
+      else adjacency.set(key, [index]);
+    }
+  }
+  const used = new Uint8Array(segments.length);
+  const polylines: Vec2[][] = [];
+  const walk = (startKey: string, firstEdge: number): void => {
+    const polyline: Vec2[] = [points.get(startKey) as Vec2];
+    let key = startKey;
+    let edge = firstEdge;
+    while (used[edge] === 0) {
+      used[edge] = 1;
+      const segment = segments[edge] as Segment;
+      key = segment.aKey === key ? segment.bKey : segment.aKey;
+      polyline.push(points.get(key) as Vec2);
+      const incident = adjacency.get(key) ?? [];
+      const available = incident.filter((candidate) => used[candidate] === 0);
+      if (incident.length !== 2 || available.length === 0) break;
+      edge = available[0] as number;
+    }
+    polylines.push(polyline);
+  };
+  for (const [key, incident] of adjacency) {
+    if (incident.length === 2) continue;
+    for (const edge of incident) if (used[edge] === 0) walk(key, edge);
+  }
+  for (let edge = 0; edge < segments.length; edge += 1) {
+    if (used[edge] === 0) walk((segments[edge] as Segment).aKey, edge);
+  }
+  return polylines
+    .map((polyline) => {
+      const closed =
+        polyline.length > 2 && pointKey(polyline[0] as Vec2) === pointKey(polyline.at(-1) as Vec2);
+      const pointsToWrite = closed ? polyline.slice(0, -1) : polyline;
+      const [first, ...rest] = pointsToWrite;
+      const tail = rest.map((point) => `${numberText(point[0])} ${numberText(point[1])}`).join(" ");
+      return `M${numberText((first as Vec2)[0])} ${numberText((first as Vec2)[1])}${tail ? `L${tail}` : ""}${closed ? "Z" : ""}`;
+    })
+    .join("");
+}
+
 export function renderMeshIllustrationSvg(
   scene: MeshIllustrationScene,
   style: MeshIllustrationStyle,
   title = "Geometer mesh illustration",
+  options: MeshIllustrationSvgOptions = {},
 ): { svg: string; stats: IllustrationRenderStats } {
   const width = Math.max(scene.bounds.maxX - scene.bounds.minX, 1e-9);
   const height = Math.max(scene.bounds.maxY - scene.bounds.minY, 1e-9);
   const pad = Math.max(width, height) * 0.06;
-  const minX = scene.bounds.minX - pad;
-  const minY = -scene.bounds.maxY - pad;
+  const sourceMinX = scene.bounds.minX - pad;
+  const sourceMinY = -scene.bounds.maxY - pad;
   const viewWidth = width + pad * 2;
   const viewHeight = height + pad * 2;
-  const seamOverlap = Math.max(width, height) * 0.003;
+  // Normalize illustration output onto a high-resolution integer grid. Scene
+  // JSON and Canvas retain model coordinates; SVG avoids long metre-scale
+  // decimals while preserving one part per million across the larger axis.
+  const coordinateSpan = Math.round(clamp(options.coordinateSpan ?? 1_000_000, 10_000, 1_000_000_000));
+  const coordinateScale = coordinateSpan / Math.max(width, height);
+  const svgWidth = Math.max(1, Math.round(viewWidth * coordinateScale));
+  const svgHeight = Math.max(1, Math.round(viewHeight * coordinateScale));
+  const mapPoint = (point: Vec2): Vec2 => [
+    Math.round((point[0] - sourceMinX) * coordinateScale),
+    Math.round((-point[1] - sourceMinY) * coordinateScale),
+  ];
+  const seamOverlap = Math.max(1, Math.round(Math.max(width, height) * 0.003 * coordinateScale));
   const { commands, stats } = renderCommands(scene, style);
   const body: string[] = [];
-  if (!style.transparentBackground) {
-    body.push(
-      `<rect x="${numberText(minX)}" y="${numberText(minY)}" width="${numberText(viewWidth)}" height="${numberText(viewHeight)}" fill="${escapeXml(style.background)}"/>`,
+  const styleRules: string[] = [];
+  const surfaceClasses = new Map<string, string>();
+  const lineClasses = new Map<string, string>();
+  const surfaceClass = (fill: string, opacity: number): string => {
+    const color = safeCssColor(fill);
+    const key = `${color}|${numberText(opacity)}`;
+    const cached = surfaceClasses.get(key);
+    if (cached) return cached;
+    const name = `gms${surfaceClasses.size}`;
+    surfaceClasses.set(key, name);
+    styleRules.push(
+      `.${name}{fill:${color};fill-rule:evenodd;stroke:${color};stroke-width:${numberText(seamOverlap)};stroke-linejoin:round${opacity < 0.999 ? `;opacity:${numberText(opacity)}` : ""}}`,
     );
+    return name;
+  };
+  const lineClass = (color: string, lineWidth: number): string => {
+    const safeColor = safeCssColor(color);
+    const scaledWidth = Math.max(1, Math.round(lineWidth * coordinateScale));
+    const key = `${safeColor}|${scaledWidth}`;
+    const cached = lineClasses.get(key);
+    if (cached) return cached;
+    const name = `gml${lineClasses.size}`;
+    lineClasses.set(key, name);
+    styleRules.push(
+      `.${name}{fill:none;stroke:${safeColor};stroke-width:${scaledWidth};stroke-linecap:round;stroke-linejoin:round}`,
+    );
+    return name;
+  };
+  if (!style.transparentBackground) {
+    body.push(`<rect width="${svgWidth}" height="${svgHeight}" fill="${escapeXml(style.background)}"/>`);
   }
-  for (const command of commands) {
+  for (let commandIndex = 0; commandIndex < commands.length; commandIndex += 1) {
+    const command = commands[commandIndex] as RenderCommand;
     if (command.kind === "triangle") {
       const points = command.triangle.points
-        .map((point) => `${numberText(point[0])},${numberText(-point[1])}`)
+        .map(mapPoint)
+        .map((point) => `${numberText(point[0])},${numberText(point[1])}`)
         .join(" ");
-      const opacity =
-        command.opacity < 0.999 ? ` fill-opacity="${numberText(command.opacity)}"` : "";
-      body.push(
-        `<polygon data-surface="triangle" points="${points}" fill="${command.fill}" stroke="${command.fill}" stroke-width="${numberText(seamOverlap)}" stroke-linejoin="round"${opacity}/>`,
-      );
+      body.push(`<polygon class="${surfaceClass(command.fill, command.opacity)}" points="${points}"/>`);
     } else if (command.kind === "fused-surface") {
       const path = command.rings
         .map(
           (ring) =>
-            `M ${ring
-              .map((point) => `${numberText(point[0])} ${numberText(-point[1])}`)
-              .join(" L ")} Z`,
+            `M${ring
+              .map(mapPoint)
+              .map((point) => `${numberText(point[0])} ${numberText(point[1])}`)
+              .join("L")}Z`,
         )
-        .join(" ");
-      const opacity =
-        command.opacity < 0.999 ? ` fill-opacity="${numberText(command.opacity)}"` : "";
-      body.push(
-        `<path data-surface="fused" data-triangles="${command.triangleCount}" d="${path}" fill="${command.fill}" fill-rule="evenodd" stroke="${command.fill}" stroke-width="${numberText(seamOverlap)}" stroke-linejoin="round"${opacity}/>`,
-      );
+        .join("");
+      body.push(`<path class="${surfaceClass(command.fill, command.opacity)}" d="${path}"/>`);
     } else {
-      const [a, b] = "points" in command ? command.points : command.edge.points;
-      body.push(
-        `<path data-linework="${command.kind}" d="M ${numberText(a[0])} ${numberText(-a[1])} L ${numberText(b[0])} ${numberText(-b[1])}" fill="none" stroke="${escapeXml(command.color)}" stroke-width="${numberText(command.width)}" stroke-linecap="round" stroke-linejoin="round"/>`,
-      );
+      const lineCommands: LineCommand[] = [command];
+      while (commandIndex + 1 < commands.length) {
+        const next = commands[commandIndex + 1] as RenderCommand;
+        if (
+          next.kind === "triangle" ||
+          next.kind === "fused-surface" ||
+          next.color !== command.color ||
+          Math.abs(next.width - command.width) > 1e-15
+        )
+          break;
+        lineCommands.push(next);
+        commandIndex += 1;
+      }
+      const path = chainedSvgLinePath(lineCommands, mapPoint);
+      if (path) body.push(`<path class="${lineClass(command.color, command.width)}" d="${path}"/>`);
     }
   }
   const svg = [
     '<?xml version="1.0" encoding="UTF-8"?>',
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${numberText(minX)} ${numberText(minY)} ${numberText(viewWidth)} ${numberText(viewHeight)}" role="img">`,
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${svgWidth} ${svgHeight}" role="img">`,
     `<title>${escapeXml(title)}</title>`,
     `<metadata>geometry.mesh_illustration.prototype.a0</metadata>`,
+    `<style>${styleRules.map(escapeXml).join("")}</style>`,
     ...body,
     "</svg>",
     "",

@@ -90,8 +90,9 @@ const fusedCube = renderMeshIllustrationSvg(scene, {
 });
 assert.equal(fusedCube.stats.triangles, 2);
 assert.equal(fusedCube.stats.surfaceDraws, 1);
-assert.match(fusedCube.svg, /data-surface="fused" data-triangles="2"/u);
-assert.doesNotMatch(fusedCube.svg, /data-surface="triangle"/u);
+assert.match(fusedCube.svg, /<path class="gms0" d="M/u);
+assert.doesNotMatch(fusedCube.svg, /<polygon /u);
+assert.ok(Buffer.byteLength(fusedCube.svg) < Buffer.byteLength(toon.svg));
 
 const projectedOverlapScene = prepareMeshIllustration(
   {
@@ -116,7 +117,64 @@ const projectedOverlap = renderMeshIllustrationSvg(projectedOverlapScene, {
   showCreases: false,
 });
 assert.equal(projectedOverlap.stats.surfaceDraws, 2);
-assert.equal((projectedOverlap.svg.match(/data-surface="triangle"/gu) ?? []).length, 2);
+assert.equal((projectedOverlap.svg.match(/<polygon /gu) ?? []).length, 2);
+
+const interleavedScene = prepareMeshIllustration(
+  {
+    meshes: [
+      {
+        id: "red-a",
+        positions: new Float64Array([0, 0, 0, 1, 0, 0, 0, 1, 0]),
+        materials: [{ color: [0.8, 0.1, 0.1] }],
+      },
+      {
+        id: "blue-unrelated",
+        positions: new Float64Array([2, 0, 0, 3, 0, 0, 2, 1, 0]),
+        materials: [{ color: [0.1, 0.1, 0.8] }],
+      },
+      {
+        id: "red-b",
+        positions: new Float64Array([1, 0, 0, 1, 1, 0, 0, 1, 0]),
+        materials: [{ color: [0.8, 0.1, 0.1] }],
+      },
+    ],
+  },
+  { direction: [0, 0, 1], up: [0, 1, 0] },
+);
+const interleaved = renderMeshIllustrationSvg(interleavedScene, {
+  ...baseStyle,
+  shading: "unlit",
+  fuseSurfaces: true,
+  showHlrOutline: false,
+  showOutlines: false,
+  showCreases: false,
+});
+assert.equal(interleaved.stats.triangles, 3);
+assert.equal(interleaved.stats.surfaceDraws, 2);
+assert.equal((interleaved.svg.match(/<path class="gms0"/gu) ?? []).length, 1);
+
+const transparentCube = renderMeshIllustrationSvg(scene, {
+  ...baseStyle,
+  fuseSurfaces: true,
+  showHlrOutline: false,
+  showOutlines: false,
+  showCreases: false,
+  sourceColors: true,
+});
+const transparentScene = {
+  ...scene,
+  triangles: scene.triangles.map((triangle) => ({ ...triangle, opacity: 0.5 })),
+};
+const transparentResult = renderMeshIllustrationSvg(transparentScene, {
+  ...baseStyle,
+  fuseSurfaces: true,
+  showHlrOutline: false,
+  showOutlines: false,
+  showCreases: false,
+});
+assert.equal(transparentCube.stats.surfaceDraws, 1);
+assert.equal(transparentResult.stats.surfaceDraws, 2);
+assert.match(transparentResult.svg, /opacity:0\.5/u);
 
 const unlit = renderMeshIllustrationSvg(scene, {
   ...baseStyle,
@@ -253,7 +311,7 @@ const tinyScene = prepareMeshIllustration(
   { weldTolerance: 1e-9 },
 );
 const tinySvg = renderMeshIllustrationSvg(tinyScene, { ...baseStyle, doubleSided: true }).svg;
-assert.match(tinySvg, /0\.000002/u);
+assert.match(tinySvg, /viewBox="0 0 \d+ \d+"/u);
 assert.doesNotMatch(tinySvg, /viewBox="0 0 0 0"/u);
 
 // Average triangle depth gives the wrong painter order here: the large red
@@ -285,7 +343,9 @@ const overlapSvg = renderMeshIllustrationSvg(overlapScene, {
 });
 const overlapPolygons = overlapSvg.svg.match(/<polygon [^>]+>/gu) ?? [];
 assert.equal(overlapPolygons.length, 2);
-assert.match(overlapPolygons[1], /fill="rgb\(26,26,204\)"/u);
+assert.match(overlapSvg.svg, /\.gms0\{fill:rgb\(204,26,26\)/u);
+assert.match(overlapSvg.svg, /\.gms1\{fill:rgb\(26,26,204\)/u);
+assert.match(overlapPolygons[1], /class="gms1"/u);
 
 const hlrOverlay = renderMeshIllustrationSvg(
   {
@@ -302,6 +362,12 @@ const hlrOverlay = renderMeshIllustrationSvg(
       {
         points: [
           [-0.5, 0],
+          [0, 0],
+        ],
+      },
+      {
+        points: [
+          [0, 0],
           [0.5, 0],
         ],
       },
@@ -316,8 +382,54 @@ const hlrOverlay = renderMeshIllustrationSvg(
   },
 );
 assert.equal(hlrOverlay.stats.outlines, 1);
-assert.equal(hlrOverlay.stats.details, 1);
+assert.equal(hlrOverlay.stats.details, 2);
 assert.equal((hlrOverlay.svg.match(/<path /gu) ?? []).length, 2);
+assert.match(hlrOverlay.svg, /<style>\.gms0\{/u);
+assert.doesNotMatch(hlrOverlay.svg, /data-(?:surface|linework|triangles)=/u);
+
+const sanitizedStyle = renderMeshIllustrationSvg(scene, {
+  ...baseStyle,
+  outlineColor: "red;}<script>alert(1)</script>",
+});
+assert.doesNotMatch(sanitizedStyle.svg, /<script>/u);
+
+const gridColumns = 32;
+const gridRows = 16;
+const gridPositions = [];
+for (let row = 0; row <= gridRows; row += 1)
+  for (let column = 0; column <= gridColumns; column += 1)
+    gridPositions.push(column, row, 0);
+const gridIndices = [];
+for (let row = 0; row < gridRows; row += 1) {
+  for (let column = 0; column < gridColumns; column += 1) {
+    const a = row * (gridColumns + 1) + column;
+    const b = a + 1;
+    const d = (row + 1) * (gridColumns + 1) + column;
+    const c = d + 1;
+    gridIndices.push(a, b, c, a, c, d);
+  }
+}
+const pcbPlaneScene = prepareMeshIllustration(
+  {
+    meshes: [
+      {
+        id: "pcb-plane-grid",
+        positions: new Float64Array(gridPositions),
+        indices: new Uint32Array(gridIndices),
+        materials: [{ color: [0.1, 0.5, 0.2] }],
+      },
+    ],
+  },
+  { direction: [0, 0, 1], up: [0, 1, 0] },
+);
+const pcbPlane = renderMeshIllustrationSvg(pcbPlaneScene, {
+  ...surfaceOnlyStyle,
+  shading: "unlit",
+  fuseSurfaces: true,
+});
+assert.equal(pcbPlane.stats.triangles, gridColumns * gridRows * 2);
+assert.equal(pcbPlane.stats.surfaceDraws, 1);
+assert.ok(Buffer.byteLength(pcbPlane.svg) < 1_000);
 
 console.log(
   JSON.stringify({

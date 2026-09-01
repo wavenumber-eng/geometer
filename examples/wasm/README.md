@@ -156,13 +156,27 @@ while following curvature. Smaller values increase curved-surface density.
 Remeshing the current model preserves the active orthographic camera pose,
 target, zoom, and framing scale.
 
-The Surface panel can fuse safe adjacent triangles that resolve to the same
-rendered color. SVG and Canvas use the same fused surface commands, and the UI
-reports visible-triangle and resulting surface-draw counts. Fusion runs only
-after visibility ordering and never crosses an intervening paint command;
-ambiguous projected folds, overlaps, non-manifold edges, and invalid boundary
-loops fall back to individual triangles. This is a conservative output-size
-optimization rather than a change to the prepared mesh scene.
+The Surface panel can fuse safe adjacent opaque triangles that resolve to the
+same rendered color. SVG and Canvas use the same cached surface commands, and
+the UI reports front-facing-triangle, resulting polygon-draw, and SVG byte
+counts. Fusion runs after visibility ordering and may cross unrelated paint
+commands only when the whole polygon can move without crossing an overlapping
+different-style surface. Edge identity includes depth; transparent surfaces,
+ambiguous projected folds or overlaps, non-manifold edges, and invalid boundary
+loops fall back to individual ordered triangles. This is a conservative
+output-size optimization rather than a change to the prepared mesh scene.
+
+SVG serialization uses shared style classes, chained compound HLR paths,
+collinear boundary removal, and a normalized integer coordinate grid. The
+default grid has 1,000,000 units across the larger unpadded artwork axis;
+callers can override it through `MeshIllustrationSvgOptions.coordinateSpan`.
+Scene JSON and Canvas retain the original projected coordinates.
+
+The current polygon contraction does not yet clip away fully occluded triangle
+fragments. A future maximum-reduction mode can use Geometer's Clipper2 byte
+bridge to subtract accumulated front coverage and union the remaining opaque
+regions by style. Transparent, gradient, and Gouraud surfaces must retain an
+ordered mesh-capable fallback rather than using that opaque flattening path.
 
 The illustration algorithm consumes generic indexed or non-indexed triangle
 meshes with transforms, material colors, and vertex normals. STEP is only the

@@ -449,24 +449,29 @@ function redrawStyle() {
     state.style = style;
     const rendered = renderMeshIllustrationSvg(state.scene, style, `${state.model?.name ?? "model"} ${state.view} illustration`);
     state.svg = rendered.svg;
+    const svgBytes = new TextEncoder().encode(rendered.svg).byteLength;
     drawSvg(rendered.svg);
     const context = els.illustrationCanvas.getContext("2d");
     if (!context)
         throw new Error("Canvas2D is unavailable.");
     const canvasStats = renderMeshIllustrationCanvas(context, state.scene, style);
-    els.counts.textContent = `${rendered.stats.triangles.toLocaleString()} visible triangles → ${rendered.stats.surfaceDraws.toLocaleString()} surface draws / ${rendered.stats.details.toLocaleString()} HLR detail / ${rendered.stats.outlines.toLocaleString()} HLR outline segments / ${state.scene.warnings.length} warnings`;
+    els.counts.textContent = `${rendered.stats.triangles.toLocaleString()} front-facing triangles → ${rendered.stats.surfaceDraws.toLocaleString()} polygon regions/draws / SVG ${formatBytes(svgBytes)} / ${rendered.stats.details.toLocaleString()} HLR detail / ${rendered.stats.outlines.toLocaleString()} HLR outline segments / ${state.scene.warnings.length} warnings`;
     els.downloadSvg.disabled = false;
     els.downloadScene.disabled = false;
     els.downloadStyle.disabled = false;
     els.svgHost.classList.toggle("hidden", state.output !== "svg");
     els.illustrationCanvas.classList.toggle("hidden", state.output !== "canvas");
-    els.outputLabel.textContent = `2D ${state.output.toUpperCase()} / ${style.shading.toUpperCase()} / ${canvasStats.commands.toLocaleString()} DRAWS`;
+    els.outputLabel.textContent =
+        state.output === "svg"
+            ? `2D SVG / ${style.shading.toUpperCase()} / ${formatBytes(svgBytes)}`
+            : `2D CANVAS / ${style.shading.toUpperCase()} / ${canvasStats.commands.toLocaleString()} DRAWS`;
     els.outputPane.dataset.output = state.output;
     els.outputPane.dataset.shading = style.shading;
     els.outputPane.dataset.canvasOutlines = String(canvasStats.outlines + canvasStats.details);
     els.outputPane.dataset.canvasDetails = String(canvasStats.details);
     els.outputPane.dataset.visibleTriangles = String(canvasStats.triangles);
     els.outputPane.dataset.surfaceDraws = String(canvasStats.surfaceDraws);
+    els.outputPane.dataset.svgBytes = String(svgBytes);
     threeScene.background = new THREE.Color(style.background);
     renderer.setClearColor(style.background, 1);
 }

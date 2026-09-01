@@ -111,17 +111,20 @@ async function main() {
           view: output.dataset.view,
           direction: output.dataset.direction,
           triangles: Number(output.dataset.triangles),
+          visibleTriangles: Number(output.dataset.visibleTriangles),
           generation: Number(output.dataset.prepareGeneration),
           surfaceDraws: Number(output.dataset.surfaceDraws),
-          surfaces: document.querySelectorAll("#illustrationSvgHost [data-surface]").length,
-          paths: document.querySelectorAll("#illustrationSvgHost [data-linework]").length,
+          surfaces: document.querySelectorAll('#illustrationSvgHost polygon[class^="gms"], #illustrationSvgHost path[class^="gms"]').length,
+          paths: document.querySelectorAll('#illustrationSvgHost path[class^="gml"]').length,
           details: Number(output.dataset.canvasDetails),
+          lineSegments: Number(output.dataset.canvasOutlines),
           background: document.querySelector("#illustrationBackground").value,
           svgBackground: document.querySelector("#illustrationSvgHost svg > rect")?.getAttribute("fill"),
-          surfaceBounds: bounds("#illustrationSvgHost [data-surface]"),
-          outlineBounds: bounds("#illustrationSvgHost [data-linework]"),
+          surfaceBounds: bounds('#illustrationSvgHost polygon[class^="gms"], #illustrationSvgHost path[class^="gms"]'),
+          outlineBounds: bounds('#illustrationSvgHost path[class^="gml"]'),
           output: output.dataset.output,
           shading: output.dataset.shading,
+          svgBytes: new TextEncoder().encode(document.querySelector("#illustrationSvgHost svg").outerHTML).byteLength,
         };
       }
       if (document.title.startsWith("FAIL")) throw new Error(document.title);
@@ -152,7 +155,7 @@ async function main() {
       canvasVisible: !document.querySelector("#illustrationCanvas").classList.contains("hidden"),
       canvasOutlines: Number(pane.dataset.canvasOutlines),
       canvasDetails: Number(pane.dataset.canvasDetails),
-      paths: document.querySelectorAll("#illustrationSvgHost [data-linework]").length,
+      paths: document.querySelectorAll('#illustrationSvgHost path[class^="gml"]').length,
     };
   })()`, true);
 
@@ -188,7 +191,7 @@ async function main() {
     checkbox.dispatchEvent(new Event("change", { bubbles: true }));
     await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     if (Number(pane.dataset.canvasDetails) !== 0) throw new Error("HLR detail did not hide.");
-    const withoutDetails = document.querySelectorAll("#illustrationSvgHost [data-linework]").length;
+    const withoutDetails = document.querySelectorAll('#illustrationSvgHost path[class^="gml"]').length;
     const afterOff = Number(pane.dataset.prepareGeneration);
     checkbox.checked = true;
     checkbox.dispatchEvent(new Event("change", { bubbles: true }));
@@ -199,7 +202,7 @@ async function main() {
       afterOff,
       afterOn: Number(pane.dataset.prepareGeneration),
       withoutDetails,
-      withDetails: document.querySelectorAll("#illustrationSvgHost [data-linework]").length,
+      withDetails: document.querySelectorAll('#illustrationSvgHost path[class^="gml"]').length,
       details: Number(pane.dataset.canvasDetails),
     };
   })()`, true);
@@ -248,7 +251,7 @@ async function main() {
       busyHidden: busy.hidden,
       state: document.querySelector("#illustrationApp").dataset.state,
       details: Number(pane.dataset.canvasDetails),
-      paths: document.querySelectorAll("#illustrationSvgHost [data-linework]").length,
+      paths: document.querySelectorAll('#illustrationSvgHost path[class^="gml"]').length,
     };
 
     detail.checked = true;
@@ -267,7 +270,7 @@ async function main() {
       busyStarted,
       canceled,
       details: Number(pane.dataset.canvasDetails),
-      paths: document.querySelectorAll("#illustrationSvgHost [data-linework]").length,
+      paths: document.querySelectorAll('#illustrationSvgHost path[class^="gml"]').length,
     };
   })()`, true);
 
@@ -481,22 +484,22 @@ async function main() {
       ) {
         const svg = document.querySelector("#illustrationSvgHost svg");
         const viewBox = svg.viewBox.baseVal;
-        const surfaces = [...svg.querySelectorAll("[data-surface]")];
+        const surfaces = [...svg.querySelectorAll('polygon[class^="gms"], path[class^="gms"]')];
         const probes = [];
         for (const y of [0.25, 0.35, 0.45, 0.55, 0.65, 0.75]) {
           for (const x of [0.25, 0.35, 0.45, 0.55, 0.65, 0.75]) {
             const point = new DOMPoint(viewBox.x + viewBox.width * x, viewBox.y + viewBox.height * y);
             const covering = surfaces.filter((surface) => surface.isPointInFill(point));
             if (covering.length > 0)
-              probes.push({ x, y, count: covering.length, fill: covering.at(-1).getAttribute("fill") });
+              probes.push({ x, y, count: covering.length, fill: getComputedStyle(covering.at(-1)).fill });
           }
         }
         return {
           selected: select.selectedOptions[0].textContent,
           triangles: Number(pane.dataset.triangles),
           surfaceDraws: Number(pane.dataset.surfaceDraws),
-          surfaces: document.querySelectorAll("#illustrationSvgHost [data-surface]").length,
-          paths: document.querySelectorAll("#illustrationSvgHost [data-linework]").length,
+          surfaces: document.querySelectorAll('#illustrationSvgHost polygon[class^="gms"], #illustrationSvgHost path[class^="gms"]').length,
+          paths: document.querySelectorAll('#illustrationSvgHost path[class^="gml"]').length,
           elapsedMs: performance.now() - started,
           probes,
         };
@@ -534,10 +537,10 @@ async function main() {
         return {
           selected,
           triangles: Number(pane.dataset.triangles),
-          paths: document.querySelectorAll("#illustrationSvgHost [data-linework]").length,
+          paths: document.querySelectorAll('#illustrationSvgHost path[class^="gml"]').length,
           details: Number(pane.dataset.canvasDetails),
-          surfaceBounds: bounds("#illustrationSvgHost [data-surface]"),
-          outlineBounds: bounds("#illustrationSvgHost [data-linework]"),
+          surfaceBounds: bounds('#illustrationSvgHost polygon[class^="gms"], #illustrationSvgHost path[class^="gms"]'),
+          outlineBounds: bounds('#illustrationSvgHost path[class^="gml"]'),
           view: pane.dataset.view,
         };
       }
@@ -675,6 +678,8 @@ def test_illustration_static_site_mesh_render_upload_and_export() -> None:
     assert result["initial"]["triangles"] > 0
     assert result["initial"]["surfaces"] > 0
     assert result["initial"]["surfaces"] == result["initial"]["surfaceDraws"]
+    assert result["initial"]["surfaceDraws"] < result["initial"]["visibleTriangles"]
+    assert result["initial"]["svgBytes"] < 50_000
     assert result["initial"]["paths"] > 0
     assert result["initial"]["details"] > 0
     assert result["initial"]["background"] == "#ffffff"
@@ -708,7 +713,7 @@ def test_illustration_static_site_mesh_render_upload_and_export() -> None:
         "paths": result["restyle"]["paths"],
     }
     assert result["restyle"]["paths"] == result["initial"]["paths"]
-    assert result["restyle"]["canvasOutlines"] == result["initial"]["paths"]
+    assert result["restyle"]["canvasOutlines"] == result["initial"]["lineSegments"]
     assert result["restyle"]["canvasDetails"] == result["initial"]["details"]
     assert result["fusion"]["generation"] == result["fusion"]["after"]
     assert result["fusion"]["unfused"] == result["fusion"]["triangles"]
@@ -799,5 +804,6 @@ def test_illustration_static_site_mesh_render_upload_and_export() -> None:
     assert result["externalRequests"] == []
     assert exported_svg.startswith('<?xml version="1.0" encoding="UTF-8"?>')
     assert "geometry.mesh_illustration.prototype.a0" in exported_svg
-    assert "data-surface=" in exported_svg
-    assert "data-linework=" in exported_svg
+    assert "<style>" in exported_svg
+    assert 'class="gms' in exported_svg
+    assert 'class="gml' in exported_svg

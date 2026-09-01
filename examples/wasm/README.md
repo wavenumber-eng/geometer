@@ -156,6 +156,14 @@ while following curvature. Smaller values increase curved-surface density.
 Remeshing the current model preserves the active orthographic camera pose,
 target, zoom, and framing scale.
 
+The Surface panel can fuse safe adjacent triangles that resolve to the same
+rendered color. SVG and Canvas use the same fused surface commands, and the UI
+reports visible-triangle and resulting surface-draw counts. Fusion runs only
+after visibility ordering and never crosses an intervening paint command;
+ambiguous projected folds, overlaps, non-manifold edges, and invalid boundary
+loops fall back to individual triangles. This is a conservative output-size
+optimization rather than a change to the prepared mesh scene.
+
 The illustration algorithm consumes generic indexed or non-indexed triangle
 meshes with transforms, material colors, and vertex normals. STEP is only the
 first adapter: the prototype Worker uses the existing STEP-to-GLB compatibility

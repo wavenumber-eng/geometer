@@ -58,6 +58,7 @@ const baseStyle = {
   fallbackColor: [0.5, 0.5, 0.5],
   background: "#f7f2df",
   transparentBackground: false,
+  fuseSurfaces: false,
   showHlrOutline: true,
   showHlrDetail: false,
   showOutlines: true,
@@ -79,6 +80,43 @@ assert.match(toon.svg, /<polygon /u);
 assert.match(toon.svg, /<path /u);
 assert.match(toon.svg, /Cube toon proof/u);
 assert.doesNotMatch(toon.svg, /(?:NaN|Infinity)/u);
+
+const fusedCube = renderMeshIllustrationSvg(scene, {
+  ...baseStyle,
+  fuseSurfaces: true,
+  showHlrOutline: false,
+  showOutlines: false,
+  showCreases: false,
+});
+assert.equal(fusedCube.stats.triangles, 2);
+assert.equal(fusedCube.stats.surfaceDraws, 1);
+assert.match(fusedCube.svg, /data-surface="fused" data-triangles="2"/u);
+assert.doesNotMatch(fusedCube.svg, /data-surface="triangle"/u);
+
+const projectedOverlapScene = prepareMeshIllustration(
+  {
+    meshes: [
+      {
+        id: "projected-overlap",
+        positions: new Float64Array([
+          0, 0, 0, 1, 0, 0, 0, 1, 0,
+          0, 0, 1, 1, 0, 1, 0, 1, 1,
+        ]),
+        materials: [{ color: [0.2, 0.7, 0.62] }],
+      },
+    ],
+  },
+  { direction: [0, 0, 1], up: [0, 1, 0] },
+);
+const projectedOverlap = renderMeshIllustrationSvg(projectedOverlapScene, {
+  ...baseStyle,
+  fuseSurfaces: true,
+  showHlrOutline: false,
+  showOutlines: false,
+  showCreases: false,
+});
+assert.equal(projectedOverlap.stats.surfaceDraws, 2);
+assert.equal((projectedOverlap.svg.match(/data-surface="triangle"/gu) ?? []).length, 2);
 
 const unlit = renderMeshIllustrationSvg(scene, {
   ...baseStyle,

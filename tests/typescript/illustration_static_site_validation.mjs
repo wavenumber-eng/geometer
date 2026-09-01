@@ -42,6 +42,7 @@ for (const required of [
   'data-output="canvas"',
   'data-view="camera"',
   'id="illustrationHlrOutline"',
+  'id="illustrationFuseSurfaces"',
   'id="illustrationHlrDetail"',
   'id="illustrationMeshQuality"',
   'id="illustrationLinearDeflection"',

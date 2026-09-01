@@ -139,6 +139,10 @@ The first mesh-illustration feasibility slice is maintained in
 - filled triangles use spatially culled overlap tests and depth-plane ordering
   rather than a global average-depth painter sort, and cache that geometry-only
   order across style-only SVG/Canvas redraws;
+- an optional conservative fusion pass merges connected, consecutive triangles
+  with identical rendered fill and opacity into even-odd surface paths after
+  visibility ordering; projected folds, overlaps, non-manifold edges, and
+  invalid boundaries retain their original triangles;
 - the Three.js pane and glTF adapter are demo concerns, not dependencies of the
   generic illustration algorithm; and
 - STEP-backed surfaces can composite that HLR outline in both SVG and Canvas;

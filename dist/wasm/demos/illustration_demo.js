@@ -79,6 +79,7 @@ const els = {
     rim: required("illustrationRim"),
     rimValue: required("illustrationRimValue"),
     sourceColors: required("illustrationSourceColors"),
+    fuseSurfaces: required("illustrationFuseSurfaces"),
     fallback: required("illustrationFallback"),
     hlrOutline: required("illustrationHlrOutline"),
     hlrDetail: required("illustrationHlrDetail"),
@@ -209,6 +210,7 @@ function currentStyle() {
         fallbackColor: colorFromHex(els.fallback.value),
         background: els.background.value,
         transparentBackground: els.transparent.checked,
+        fuseSurfaces: els.fuseSurfaces.checked,
         showHlrOutline: state.showHlrOutline,
         showHlrDetail: state.showHlrDetail,
         showOutlines: false,
@@ -452,7 +454,7 @@ function redrawStyle() {
     if (!context)
         throw new Error("Canvas2D is unavailable.");
     const canvasStats = renderMeshIllustrationCanvas(context, state.scene, style);
-    els.counts.textContent = `${rendered.stats.triangles.toLocaleString()} visible triangles / ${rendered.stats.details.toLocaleString()} HLR detail / ${rendered.stats.outlines.toLocaleString()} HLR outline segments / ${state.scene.warnings.length} warnings`;
+    els.counts.textContent = `${rendered.stats.triangles.toLocaleString()} visible triangles → ${rendered.stats.surfaceDraws.toLocaleString()} surface draws / ${rendered.stats.details.toLocaleString()} HLR detail / ${rendered.stats.outlines.toLocaleString()} HLR outline segments / ${state.scene.warnings.length} warnings`;
     els.downloadSvg.disabled = false;
     els.downloadScene.disabled = false;
     els.downloadStyle.disabled = false;
@@ -463,6 +465,8 @@ function redrawStyle() {
     els.outputPane.dataset.shading = style.shading;
     els.outputPane.dataset.canvasOutlines = String(canvasStats.outlines + canvasStats.details);
     els.outputPane.dataset.canvasDetails = String(canvasStats.details);
+    els.outputPane.dataset.visibleTriangles = String(canvasStats.triangles);
+    els.outputPane.dataset.surfaceDraws = String(canvasStats.surfaceDraws);
     threeScene.background = new THREE.Color(style.background);
     renderer.setClearColor(style.background, 1);
 }
@@ -1002,6 +1006,7 @@ function wireEvents() {
     for (const control of [
         els.shading,
         els.sourceColors,
+        els.fuseSurfaces,
         els.fallback,
         els.outlineColor,
         els.doubleSided,

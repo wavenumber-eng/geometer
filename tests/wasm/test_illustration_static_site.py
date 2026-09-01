@@ -112,13 +112,14 @@ async function main() {
           direction: output.dataset.direction,
           triangles: Number(output.dataset.triangles),
           generation: Number(output.dataset.prepareGeneration),
-          polygons: document.querySelectorAll("#illustrationSvgHost polygon").length,
-          paths: document.querySelectorAll("#illustrationSvgHost path").length,
+          surfaceDraws: Number(output.dataset.surfaceDraws),
+          surfaces: document.querySelectorAll("#illustrationSvgHost [data-surface]").length,
+          paths: document.querySelectorAll("#illustrationSvgHost [data-linework]").length,
           details: Number(output.dataset.canvasDetails),
           background: document.querySelector("#illustrationBackground").value,
           svgBackground: document.querySelector("#illustrationSvgHost svg > rect")?.getAttribute("fill"),
-          surfaceBounds: bounds("#illustrationSvgHost polygon"),
-          outlineBounds: bounds("#illustrationSvgHost path"),
+          surfaceBounds: bounds("#illustrationSvgHost [data-surface]"),
+          outlineBounds: bounds("#illustrationSvgHost [data-linework]"),
           output: output.dataset.output,
           shading: output.dataset.shading,
         };
@@ -151,7 +152,31 @@ async function main() {
       canvasVisible: !document.querySelector("#illustrationCanvas").classList.contains("hidden"),
       canvasOutlines: Number(pane.dataset.canvasOutlines),
       canvasDetails: Number(pane.dataset.canvasDetails),
-      paths: document.querySelectorAll("#illustrationSvgHost path").length,
+      paths: document.querySelectorAll("#illustrationSvgHost [data-linework]").length,
+    };
+  })()`, true);
+
+  const fusion = await evaluate(`(async () => {
+    const pane = document.querySelector("#illustrationOutputPane");
+    const checkbox = document.querySelector("#illustrationFuseSurfaces");
+    const generation = Number(pane.dataset.prepareGeneration);
+    const fused = Number(pane.dataset.surfaceDraws);
+    checkbox.checked = false;
+    checkbox.dispatchEvent(new Event("change", { bubbles: true }));
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    const unfused = Number(pane.dataset.surfaceDraws);
+    const triangles = Number(pane.dataset.visibleTriangles);
+    checkbox.checked = true;
+    checkbox.dispatchEvent(new Event("change", { bubbles: true }));
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    return {
+      generation,
+      after: Number(pane.dataset.prepareGeneration),
+      fused,
+      unfused,
+      restored: Number(pane.dataset.surfaceDraws),
+      triangles,
+      checked: checkbox.checked,
     };
   })()`, true);
 
@@ -163,7 +188,7 @@ async function main() {
     checkbox.dispatchEvent(new Event("change", { bubbles: true }));
     await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     if (Number(pane.dataset.canvasDetails) !== 0) throw new Error("HLR detail did not hide.");
-    const withoutDetails = document.querySelectorAll("#illustrationSvgHost path").length;
+    const withoutDetails = document.querySelectorAll("#illustrationSvgHost [data-linework]").length;
     const afterOff = Number(pane.dataset.prepareGeneration);
     checkbox.checked = true;
     checkbox.dispatchEvent(new Event("change", { bubbles: true }));
@@ -174,7 +199,7 @@ async function main() {
       afterOff,
       afterOn: Number(pane.dataset.prepareGeneration),
       withoutDetails,
-      withDetails: document.querySelectorAll("#illustrationSvgHost path").length,
+      withDetails: document.querySelectorAll("#illustrationSvgHost [data-linework]").length,
       details: Number(pane.dataset.canvasDetails),
     };
   })()`, true);
@@ -223,7 +248,7 @@ async function main() {
       busyHidden: busy.hidden,
       state: document.querySelector("#illustrationApp").dataset.state,
       details: Number(pane.dataset.canvasDetails),
-      paths: document.querySelectorAll("#illustrationSvgHost path").length,
+      paths: document.querySelectorAll("#illustrationSvgHost [data-linework]").length,
     };
 
     detail.checked = true;
@@ -242,7 +267,7 @@ async function main() {
       busyStarted,
       canceled,
       details: Number(pane.dataset.canvasDetails),
-      paths: document.querySelectorAll("#illustrationSvgHost path").length,
+      paths: document.querySelectorAll("#illustrationSvgHost [data-linework]").length,
     };
   })()`, true);
 
@@ -456,12 +481,12 @@ async function main() {
       ) {
         const svg = document.querySelector("#illustrationSvgHost svg");
         const viewBox = svg.viewBox.baseVal;
-        const polygons = [...svg.querySelectorAll("polygon")];
+        const surfaces = [...svg.querySelectorAll("[data-surface]")];
         const probes = [];
         for (const y of [0.25, 0.35, 0.45, 0.55, 0.65, 0.75]) {
           for (const x of [0.25, 0.35, 0.45, 0.55, 0.65, 0.75]) {
             const point = new DOMPoint(viewBox.x + viewBox.width * x, viewBox.y + viewBox.height * y);
-            const covering = polygons.filter((polygon) => polygon.isPointInFill(point));
+            const covering = surfaces.filter((surface) => surface.isPointInFill(point));
             if (covering.length > 0)
               probes.push({ x, y, count: covering.length, fill: covering.at(-1).getAttribute("fill") });
           }
@@ -469,8 +494,9 @@ async function main() {
         return {
           selected: select.selectedOptions[0].textContent,
           triangles: Number(pane.dataset.triangles),
-          polygons: document.querySelectorAll("#illustrationSvgHost polygon").length,
-          paths: document.querySelectorAll("#illustrationSvgHost path").length,
+          surfaceDraws: Number(pane.dataset.surfaceDraws),
+          surfaces: document.querySelectorAll("#illustrationSvgHost [data-surface]").length,
+          paths: document.querySelectorAll("#illustrationSvgHost [data-linework]").length,
           elapsedMs: performance.now() - started,
           probes,
         };
@@ -508,10 +534,10 @@ async function main() {
         return {
           selected,
           triangles: Number(pane.dataset.triangles),
-          paths: document.querySelectorAll("#illustrationSvgHost path").length,
+          paths: document.querySelectorAll("#illustrationSvgHost [data-linework]").length,
           details: Number(pane.dataset.canvasDetails),
-          surfaceBounds: bounds("#illustrationSvgHost polygon"),
-          outlineBounds: bounds("#illustrationSvgHost path"),
+          surfaceBounds: bounds("#illustrationSvgHost [data-surface]"),
+          outlineBounds: bounds("#illustrationSvgHost [data-linework]"),
           view: pane.dataset.view,
         };
       }
@@ -531,7 +557,7 @@ async function main() {
 
   const resources = await evaluate(`performance.getEntriesByType("resource").map((entry) => entry.name)`);
   process.stdout.write(JSON.stringify({
-    initial, restyle, detailToggle, lazyLinework, meshQuality, top, detailBeforeCamera,
+    initial, restyle, fusion, detailToggle, lazyLinework, meshQuality, top, detailBeforeCamera,
     camera, detailAfterCamera, cameraRemesh, bga, uploaded,
     filename: download.suggestedFilename,
     exceptions,
@@ -647,7 +673,8 @@ def test_illustration_static_site_mesh_render_upload_and_export() -> None:
 
     assert result["initial"]["title"].startswith("PASS")
     assert result["initial"]["triangles"] > 0
-    assert result["initial"]["polygons"] > 0
+    assert result["initial"]["surfaces"] > 0
+    assert result["initial"]["surfaces"] == result["initial"]["surfaceDraws"]
     assert result["initial"]["paths"] > 0
     assert result["initial"]["details"] > 0
     assert result["initial"]["background"] == "#ffffff"
@@ -683,6 +710,11 @@ def test_illustration_static_site_mesh_render_upload_and_export() -> None:
     assert result["restyle"]["paths"] == result["initial"]["paths"]
     assert result["restyle"]["canvasOutlines"] == result["initial"]["paths"]
     assert result["restyle"]["canvasDetails"] == result["initial"]["details"]
+    assert result["fusion"]["generation"] == result["fusion"]["after"]
+    assert result["fusion"]["unfused"] == result["fusion"]["triangles"]
+    assert result["fusion"]["fused"] <= result["fusion"]["unfused"]
+    assert result["fusion"]["restored"] == result["fusion"]["fused"]
+    assert result["fusion"]["checked"] is True
     assert result["detailToggle"]["details"] == result["initial"]["details"]
     assert result["detailToggle"]["withDetails"] == result["initial"]["paths"]
     assert result["detailToggle"]["withoutDetails"] < result["detailToggle"]["withDetails"]
@@ -735,7 +767,8 @@ def test_illustration_static_site_mesh_render_upload_and_export() -> None:
             assert after_values == pytest.approx(before_values, abs=0.0001)
     assert "BGA90" in result["bga"]["selected"]
     assert result["bga"]["triangles"] > 20_000
-    assert result["bga"]["polygons"] == result["bga"]["triangles"]
+    assert 0 < result["bga"]["surfaceDraws"] <= result["bga"]["triangles"]
+    assert result["bga"]["surfaces"] == result["bga"]["surfaceDraws"]
     assert result["bga"]["paths"] > 0
     assert result["bga"]["elapsedMs"] < 30_000
     assert len(result["bga"]["probes"]) >= 20
@@ -766,5 +799,5 @@ def test_illustration_static_site_mesh_render_upload_and_export() -> None:
     assert result["externalRequests"] == []
     assert exported_svg.startswith('<?xml version="1.0" encoding="UTF-8"?>')
     assert "geometry.mesh_illustration.prototype.a0" in exported_svg
-    assert "<polygon" in exported_svg
-    assert "<path" in exported_svg
+    assert "data-surface=" in exported_svg
+    assert "data-linework=" in exported_svg

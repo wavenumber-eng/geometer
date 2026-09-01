@@ -624,6 +624,7 @@ function renderCommands(scene, style) {
     let order = 0;
     let triangleCount = 0;
     let outlines = 0;
+    let details = 0;
     let creases = 0;
     for (const triangle of scene.triangles) {
         if (!triangle.frontFacing && !(style.doubleSided || triangle.doubleSided))
@@ -668,6 +669,19 @@ function renderCommands(scene, style) {
             outlines += 1;
         }
     }
+    if (style.showHlrDetail) {
+        for (const segment of scene.detailSegments ?? []) {
+            hlrCommands.push({
+                kind: "hlr-detail",
+                depth: Number.MAX_VALUE,
+                order: order++,
+                points: segment.points,
+                color: style.creaseColor,
+                width: span * style.creaseWidth,
+            });
+            details += 1;
+        }
+    }
     let sceneCache = VISIBILITY_ORDER_CACHE.get(scene);
     if (!sceneCache) {
         sceneCache = new Map();
@@ -689,11 +703,11 @@ function renderCommands(scene, style) {
         // Generic mesh-derived linework is experimental and currently hidden by
         // the lab. Keep it above filled surfaces; CAD-derived HLR remains last.
         ...strokeCommands.sort((a, b) => a.depth - b.depth || a.order - b.order),
-        ...hlrCommands,
+        ...hlrCommands.sort((a, b) => Number(a.kind === "hlr-outline") - Number(b.kind === "hlr-outline") || a.order - b.order),
     ];
     return {
         commands,
-        stats: { triangles: triangleCount, outlines, creases, commands: commands.length },
+        stats: { triangles: triangleCount, outlines, details, creases, commands: commands.length },
     };
 }
 function numberText(value) {
@@ -726,7 +740,7 @@ export function renderMeshIllustrationSvg(scene, style, title = "Geometer mesh i
             body.push(`<polygon points="${points}" fill="${command.fill}" stroke="${command.fill}" stroke-width="${numberText(seamOverlap)}" stroke-linejoin="round"${opacity}/>`);
         }
         else {
-            const [a, b] = command.kind === "hlr-outline" ? command.points : command.edge.points;
+            const [a, b] = "points" in command ? command.points : command.edge.points;
             body.push(`<path d="M ${numberText(a[0])} ${numberText(-a[1])} L ${numberText(b[0])} ${numberText(-b[1])}" fill="none" stroke="${escapeXml(command.color)}" stroke-width="${numberText(command.width)}" stroke-linecap="round" stroke-linejoin="round"/>`);
         }
     }
@@ -776,7 +790,7 @@ export function renderMeshIllustrationCanvas(context, scene, style) {
             context.stroke();
         }
         else {
-            const [a, b] = command.kind === "hlr-outline" ? command.points : command.edge.points;
+            const [a, b] = "points" in command ? command.points : command.edge.points;
             context.beginPath();
             context.moveTo(offsetX + a[0] * scale, offsetY - a[1] * scale);
             context.lineTo(offsetX + b[0] * scale, offsetY - b[1] * scale);

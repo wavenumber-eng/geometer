@@ -136,7 +136,9 @@ The first mesh-illustration feasibility slice is maintained in
   generic illustration algorithm; and
 - STEP-backed surfaces can composite that HLR outline in both SVG and Canvas;
   generic mesh-only sources remain surface-only unless an adapter supplies a
-  compatible linework layer.
+  compatible linework layer; and
+- a separate HLR Detail checkbox composites the HLR Lab's visible sharp and
+  silhouette edge preset beneath the heavier mesh-shadow outline.
 
 Build its hosted review directory with:
 

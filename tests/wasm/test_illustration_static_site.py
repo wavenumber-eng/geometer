@@ -114,6 +114,9 @@ async function main() {
           generation: Number(output.dataset.prepareGeneration),
           polygons: document.querySelectorAll("#illustrationSvgHost polygon").length,
           paths: document.querySelectorAll("#illustrationSvgHost path").length,
+          details: Number(output.dataset.canvasDetails),
+          background: document.querySelector("#illustrationBackground").value,
+          svgBackground: document.querySelector("#illustrationSvgHost svg > rect")?.getAttribute("fill"),
           surfaceBounds: bounds("#illustrationSvgHost polygon"),
           outlineBounds: bounds("#illustrationSvgHost path"),
           output: output.dataset.output,
@@ -146,6 +149,98 @@ async function main() {
       output: pane.dataset.output,
       canvasVisible: !document.querySelector("#illustrationCanvas").classList.contains("hidden"),
       canvasOutlines: Number(pane.dataset.canvasOutlines),
+      canvasDetails: Number(pane.dataset.canvasDetails),
+      paths: document.querySelectorAll("#illustrationSvgHost path").length,
+    };
+  })()`, true);
+
+  const detailToggle = await evaluate(`(async () => {
+    const pane = document.querySelector("#illustrationOutputPane");
+    const checkbox = document.querySelector("#illustrationHlrDetail");
+    const before = Number(pane.dataset.prepareGeneration);
+    checkbox.checked = false;
+    checkbox.dispatchEvent(new Event("change", { bubbles: true }));
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    if (Number(pane.dataset.canvasDetails) !== 0) throw new Error("HLR detail did not hide.");
+    const withoutDetails = document.querySelectorAll("#illustrationSvgHost path").length;
+    const afterOff = Number(pane.dataset.prepareGeneration);
+    checkbox.checked = true;
+    checkbox.dispatchEvent(new Event("change", { bubbles: true }));
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    if (Number(pane.dataset.canvasDetails) <= 0) throw new Error("HLR detail did not show.");
+    return {
+      before,
+      afterOff,
+      afterOn: Number(pane.dataset.prepareGeneration),
+      withoutDetails,
+      withDetails: document.querySelectorAll("#illustrationSvgHost path").length,
+      details: Number(pane.dataset.canvasDetails),
+    };
+  })()`, true);
+
+  const lazyLinework = await evaluate(`(async () => {
+    const pane = document.querySelector("#illustrationOutputPane");
+    const busy = document.querySelector("#illustrationBusy");
+    const select = document.querySelector("#illustrationModelSelect");
+    const outline = document.querySelector("#illustrationHlrOutline");
+    const detail = document.querySelector("#illustrationHlrDetail");
+    outline.checked = false;
+    outline.dispatchEvent(new Event("change", { bubbles: true }));
+    detail.checked = false;
+    detail.dispatchEvent(new Event("change", { bubbles: true }));
+
+    const option = [...select.options].find(
+      (candidate) => candidate.value !== select.value && candidate.textContent.includes("SOIC-8-W"),
+    );
+    if (!option) throw new Error("SOIC-8-W fixture is unavailable.");
+    const beforeModel = Number(pane.dataset.prepareGeneration);
+    select.value = option.value;
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+    const modelDeadline = Date.now() + 120000;
+    while (Date.now() < modelDeadline) {
+      if (
+        select.value === option.value &&
+        Number(pane.dataset.prepareGeneration) > beforeModel &&
+        !document.querySelector("#illustrationDownloadSvg").disabled
+      )
+        break;
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+    if (Number(pane.dataset.prepareGeneration) <= beforeModel)
+      throw new Error("Linework-free model preparation did not complete.");
+    const generation = Number(pane.dataset.prepareGeneration);
+    if (Number(pane.dataset.canvasDetails) !== 0)
+      throw new Error("Disabled HLR detail was rendered on the new model.");
+
+    detail.checked = true;
+    detail.dispatchEvent(new Event("change", { bubbles: true }));
+    const busyStarted = !busy.hidden;
+    detail.checked = false;
+    detail.dispatchEvent(new Event("change", { bubbles: true }));
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    const canceled = {
+      busyHidden: busy.hidden,
+      state: document.querySelector("#illustrationApp").dataset.state,
+      details: Number(pane.dataset.canvasDetails),
+      paths: document.querySelectorAll("#illustrationSvgHost path").length,
+    };
+
+    detail.checked = true;
+    detail.dispatchEvent(new Event("change", { bubbles: true }));
+    const lineworkDeadline = Date.now() + 120000;
+    while (Date.now() < lineworkDeadline) {
+      if (Number(pane.dataset.canvasDetails) > 0 && busy.hidden) break;
+      if (document.title.startsWith("FAIL")) throw new Error(document.title);
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+    if (Number(pane.dataset.canvasDetails) <= 0)
+      throw new Error("Lazy HLR detail tracing did not complete.");
+    return {
+      generation,
+      finalGeneration: Number(pane.dataset.prepareGeneration),
+      busyStarted,
+      canceled,
+      details: Number(pane.dataset.canvasDetails),
       paths: document.querySelectorAll("#illustrationSvgHost path").length,
     };
   })()`, true);
@@ -261,6 +356,7 @@ async function main() {
           selected,
           triangles: Number(pane.dataset.triangles),
           paths: document.querySelectorAll("#illustrationSvgHost path").length,
+          details: Number(pane.dataset.canvasDetails),
           surfaceBounds: bounds("#illustrationSvgHost polygon"),
           outlineBounds: bounds("#illustrationSvgHost path"),
           view: pane.dataset.view,
@@ -282,7 +378,7 @@ async function main() {
 
   const resources = await evaluate(`performance.getEntriesByType("resource").map((entry) => entry.name)`);
   process.stdout.write(JSON.stringify({
-    initial, restyle, top, camera, bga, uploaded,
+    initial, restyle, detailToggle, lazyLinework, top, camera, bga, uploaded,
     filename: download.suggestedFilename,
     exceptions,
     externalRequests: resources.filter((url) => /^https?:/u.test(url) && !url.startsWith(siteRoot)),
@@ -399,6 +495,9 @@ def test_illustration_static_site_mesh_render_upload_and_export() -> None:
     assert result["initial"]["triangles"] > 0
     assert result["initial"]["polygons"] > 0
     assert result["initial"]["paths"] > 0
+    assert result["initial"]["details"] > 0
+    assert result["initial"]["background"] == "#ffffff"
+    assert result["initial"]["svgBackground"] == "#ffffff"
     surface_bounds = result["initial"]["surfaceBounds"]
     outline_bounds = result["initial"]["outlineBounds"]
     surface_width = surface_bounds["maxX"] - surface_bounds["minX"]
@@ -423,10 +522,27 @@ def test_illustration_static_site_mesh_render_upload_and_export() -> None:
         "output": "canvas",
         "canvasVisible": True,
         "canvasOutlines": result["restyle"]["canvasOutlines"],
+        "canvasDetails": result["restyle"]["canvasDetails"],
         "paths": result["restyle"]["paths"],
     }
     assert result["restyle"]["paths"] == result["initial"]["paths"]
     assert result["restyle"]["canvasOutlines"] == result["initial"]["paths"]
+    assert result["restyle"]["canvasDetails"] == result["initial"]["details"]
+    assert result["detailToggle"]["details"] == result["initial"]["details"]
+    assert result["detailToggle"]["withDetails"] == result["initial"]["paths"]
+    assert result["detailToggle"]["withoutDetails"] < result["detailToggle"]["withDetails"]
+    assert result["detailToggle"]["afterOff"] == result["detailToggle"]["before"]
+    assert result["detailToggle"]["afterOn"] == result["detailToggle"]["before"]
+    assert result["lazyLinework"]["busyStarted"] is True
+    assert result["lazyLinework"]["canceled"] == {
+        "busyHidden": True,
+        "state": "ready",
+        "details": 0,
+        "paths": 0,
+    }
+    assert result["lazyLinework"]["details"] > 0
+    assert result["lazyLinework"]["paths"] > 0
+    assert result["lazyLinework"]["finalGeneration"] == result["lazyLinework"]["generation"]
     assert result["top"]["generation"] > result["initial"]["generation"]
     assert result["top"]["direction"] == "0.000000,1.000000,0.000000"
     assert result["camera"]["view"] == "camera"
@@ -446,16 +562,13 @@ def test_illustration_static_site_mesh_render_upload_and_export() -> None:
     assert result["uploaded"]["selected"] == "illustration-upload.step (local)"
     assert result["uploaded"]["triangles"] > 0
     assert result["uploaded"]["paths"] > 0
+    assert result["uploaded"]["details"] > 0
     uploaded_surface = result["uploaded"]["surfaceBounds"]
     uploaded_outline = result["uploaded"]["outlineBounds"]
     uploaded_surface_width = uploaded_surface["maxX"] - uploaded_surface["minX"]
     uploaded_surface_height = uploaded_surface["maxY"] - uploaded_surface["minY"]
-    assert (uploaded_outline["maxX"] - uploaded_outline["minX"]) == pytest.approx(
-        uploaded_surface_width, rel=0.03
-    )
-    assert (uploaded_outline["maxY"] - uploaded_outline["minY"]) == pytest.approx(
-        uploaded_surface_height, rel=0.03
-    )
+    assert (uploaded_outline["maxX"] - uploaded_outline["minX"]) == pytest.approx(uploaded_surface_width, rel=0.03)
+    assert (uploaded_outline["maxY"] - uploaded_outline["minY"]) == pytest.approx(uploaded_surface_height, rel=0.03)
     assert (uploaded_outline["minX"] + uploaded_outline["maxX"]) == pytest.approx(
         uploaded_surface["minX"] + uploaded_surface["maxX"], abs=uploaded_surface_width * 0.03
     )

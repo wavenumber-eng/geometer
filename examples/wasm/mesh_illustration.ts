@@ -48,6 +48,7 @@ export interface MeshIllustrationStyle {
   background: string;
   transparentBackground: boolean;
   showHlrOutline: boolean;
+  showHlrDetail: boolean;
   showOutlines: boolean;
   showCreases: boolean;
   creaseAngleDegrees: number;
@@ -100,6 +101,8 @@ export interface MeshIllustrationScene {
   edges: readonly IllustrationEdge[];
   /** Optional CAD-derived linework, such as Geometer's HLR mesh-shadow outline. */
   outlineSegments?: readonly IllustrationLineSegment[];
+  /** Optional visible-edge detail produced by Geometer HLR. */
+  detailSegments?: readonly IllustrationLineSegment[];
   stats: {
     sourceMeshes: number;
     sourceTriangles: number;
@@ -112,6 +115,7 @@ export interface MeshIllustrationScene {
 export interface IllustrationRenderStats {
   triangles: number;
   outlines: number;
+  details: number;
   creases: number;
   commands: number;
 }
@@ -144,8 +148,8 @@ interface StrokeCommand {
   width: number;
 }
 
-interface HlrOutlineCommand {
-  kind: "hlr-outline";
+interface HlrLineCommand {
+  kind: "hlr-outline" | "hlr-detail";
   depth: number;
   order: number;
   points: readonly [Vec2, Vec2];
@@ -153,7 +157,7 @@ interface HlrOutlineCommand {
   width: number;
 }
 
-type RenderCommand = TriangleCommand | StrokeCommand | HlrOutlineCommand;
+type RenderCommand = TriangleCommand | StrokeCommand | HlrLineCommand;
 
 const IDENTITY_MATRIX = Object.freeze([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
 const VISIBILITY_ORDER_CACHE = new WeakMap<
@@ -882,10 +886,11 @@ function renderCommands(
   );
   const triangleCommands: TriangleCommand[] = [];
   const strokeCommands: StrokeCommand[] = [];
-  const hlrCommands: HlrOutlineCommand[] = [];
+  const hlrCommands: HlrLineCommand[] = [];
   let order = 0;
   let triangleCount = 0;
   let outlines = 0;
+  let details = 0;
   let creases = 0;
   for (const triangle of scene.triangles) {
     if (!triangle.frontFacing && !(style.doubleSided || triangle.doubleSided)) continue;
@@ -926,6 +931,19 @@ function renderCommands(
       outlines += 1;
     }
   }
+  if (style.showHlrDetail) {
+    for (const segment of scene.detailSegments ?? []) {
+      hlrCommands.push({
+        kind: "hlr-detail",
+        depth: Number.MAX_VALUE,
+        order: order++,
+        points: segment.points,
+        color: style.creaseColor,
+        width: span * style.creaseWidth,
+      });
+      details += 1;
+    }
+  }
   let sceneCache = VISIBILITY_ORDER_CACHE.get(scene);
   if (!sceneCache) {
     sceneCache = new Map();
@@ -955,11 +973,14 @@ function renderCommands(
     // Generic mesh-derived linework is experimental and currently hidden by
     // the lab. Keep it above filled surfaces; CAD-derived HLR remains last.
     ...strokeCommands.sort((a, b) => a.depth - b.depth || a.order - b.order),
-    ...hlrCommands,
+    ...hlrCommands.sort(
+      (a, b) =>
+        Number(a.kind === "hlr-outline") - Number(b.kind === "hlr-outline") || a.order - b.order,
+    ),
   ];
   return {
     commands,
-    stats: { triangles: triangleCount, outlines, creases, commands: commands.length },
+    stats: { triangles: triangleCount, outlines, details, creases, commands: commands.length },
   };
 }
 
@@ -1003,7 +1024,7 @@ export function renderMeshIllustrationSvg(
         `<polygon points="${points}" fill="${command.fill}" stroke="${command.fill}" stroke-width="${numberText(seamOverlap)}" stroke-linejoin="round"${opacity}/>`,
       );
     } else {
-      const [a, b] = command.kind === "hlr-outline" ? command.points : command.edge.points;
+      const [a, b] = "points" in command ? command.points : command.edge.points;
       body.push(
         `<path d="M ${numberText(a[0])} ${numberText(-a[1])} L ${numberText(b[0])} ${numberText(-b[1])}" fill="none" stroke="${escapeXml(command.color)}" stroke-width="${numberText(command.width)}" stroke-linecap="round" stroke-linejoin="round"/>`,
       );
@@ -1059,7 +1080,7 @@ export function renderMeshIllustrationCanvas(
       context.lineWidth = Math.max(0.7, Math.min(1.5, scale * 0.0008));
       context.stroke();
     } else {
-      const [a, b] = command.kind === "hlr-outline" ? command.points : command.edge.points;
+      const [a, b] = "points" in command ? command.points : command.edge.points;
       context.beginPath();
       context.moveTo(offsetX + a[0] * scale, offsetY - a[1] * scale);
       context.lineTo(offsetX + b[0] * scale, offsetY - b[1] * scale);

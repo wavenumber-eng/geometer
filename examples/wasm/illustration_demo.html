@@ -53,17 +53,18 @@
         <section>
           <h2>Linework</h2>
           <label class="illustration-check"><input id="illustrationHlrOutline" type="checkbox" checked><span>HLR mesh-shadow outline</span></label>
+          <label class="illustration-check"><input id="illustrationHlrDetail" type="checkbox" checked><span>HLR detail lines</span></label>
           <label class="illustration-control"><span>Outline</span><input id="illustrationOutlineColor" type="color" value="#17252c"><span></span></label>
           <label class="illustration-control"><span>Line width</span><input id="illustrationOutlineWidth" type="range" min="0.001" max="0.018" step="0.001" value="0.006"><output id="illustrationOutlineWidthValue">0.006</output></label>
           <label class="illustration-check"><input id="illustrationDoubleSided" type="checkbox"><span>Draw back faces</span></label>
-          <p class="illustration-info">Uses Geometer's existing unioned mesh-shadow Outline layer for STEP-backed models. Generic meshes remain surface-only unless linework is supplied.</p>
+          <p class="illustration-info">Uses Geometer's existing visible-edge Detail and unioned mesh-shadow Outline layers for STEP-backed models. Generic meshes remain surface-only unless linework is supplied.</p>
         </section>
         <section>
           <h2>Output</h2>
-          <label class="illustration-control"><span>Background</span><input id="illustrationBackground" type="color" value="#f7f2df"><span></span></label>
+          <label class="illustration-control"><span>Background</span><input id="illustrationBackground" type="color" value="#ffffff"><span></span></label>
           <label class="illustration-check"><input id="illustrationTransparent" type="checkbox"><span>Transparent background</span></label>
           <p class="illustration-info" id="illustrationCounts">No scene prepared.</p>
-          <p class="illustration-info">Prototype path: STEP -&gt; Geometer GLB + optional HLR outline -&gt; generic mesh illustration. The surface renderer itself has no STEP dependency.</p>
+          <p class="illustration-info">Prototype path: STEP -&gt; Geometer GLB + optional HLR linework -&gt; generic mesh illustration. The surface renderer itself has no STEP dependency.</p>
         </section>
       </aside>
     </main>

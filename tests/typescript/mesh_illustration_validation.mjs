@@ -46,6 +46,7 @@ const baseStyle = {
   background: "#f7f2df",
   transparentBackground: false,
   showHlrOutline: true,
+  showHlrDetail: false,
   showOutlines: true,
   showCreases: true,
   creaseAngleDegrees: 40,
@@ -187,16 +188,32 @@ const hlrOverlay = renderMeshIllustrationSvg(
         ],
       },
     ],
+    detailSegments: [
+      {
+        points: [
+          [-0.5, 0],
+          [0.5, 0],
+        ],
+      },
+    ],
   },
-  { ...baseStyle, showOutlines: false, showCreases: false, showHlrOutline: true },
+  {
+    ...baseStyle,
+    showOutlines: false,
+    showCreases: false,
+    showHlrOutline: true,
+    showHlrDetail: true,
+  },
 );
 assert.equal(hlrOverlay.stats.outlines, 1);
-assert.equal((hlrOverlay.svg.match(/<path /gu) ?? []).length, 1);
+assert.equal(hlrOverlay.stats.details, 1);
+assert.equal((hlrOverlay.svg.match(/<path /gu) ?? []).length, 2);
 
 console.log(
   JSON.stringify({
     triangles: toon.stats.triangles,
     outlines: toon.stats.outlines,
+    details: toon.stats.details,
     creases: toon.stats.creases,
     svgBytes: Buffer.byteLength(toon.svg),
   }),

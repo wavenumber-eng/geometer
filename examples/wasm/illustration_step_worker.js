@@ -62,8 +62,9 @@ function projectMeshShadow(module, stepBytes, view, modelTransform) {
     mesh_deflection_mode: "bbox-relative",
     mesh_deflection_coefficient: 0.004,
     union_outline_polygons: true,
-    edge_v_sharp: false,
-    edge_v_outline: false,
+    // Match the HLR Lab's Detail preset: visible sharp edges plus silhouettes.
+    edge_v_sharp: true,
+    edge_v_outline: true,
     edge_v_smooth: false,
     edge_v_sewn: false,
     edge_v_iso: false,

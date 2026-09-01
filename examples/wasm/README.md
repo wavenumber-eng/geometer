@@ -153,8 +153,9 @@ same algorithm without STEP or OCCT.
 This is a visibility and appearance prototype, not the promoted illustration
 operation. STEP-backed models can enable Geometer's existing HLR `mesh-shadow`
 Outline layer, which unions projected tessellated faces into the clean outer
-body trace used by the HLR Lab. That linework is composited over the shared
-SVG/Canvas surface scene and included in SVG downloads. Generic mesh inputs
+body trace used by the HLR Lab, and its visible sharp-plus-silhouette Detail
+preset. Independent checkboxes composite those layers over the shared
+SVG/Canvas surface scene and include them in SVG downloads. Generic mesh inputs
 remain surface-only unless an adapter supplies comparable linework; the noisy
 triangle-adjacency silhouette experiment is not exposed in the main UI.
 Projected triangle overlaps are spatially indexed and depth-compared over their

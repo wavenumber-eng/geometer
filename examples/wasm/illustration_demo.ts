@@ -30,7 +30,10 @@ interface DemoModel {
 interface HlrProjection {
   views?: Array<{
     id?: string;
-    modes?: { outline?: { segments?: Array<[number, number, number, number]> } };
+    modes?: {
+      outline?: { segments?: Array<[number, number, number, number]> };
+      detail?: { segments?: Array<[number, number, number, number]> };
+    };
   }>;
 }
 
@@ -106,6 +109,7 @@ const els = {
   sourceColors: required<HTMLInputElement>("illustrationSourceColors"),
   fallback: required<HTMLInputElement>("illustrationFallback"),
   hlrOutline: required<HTMLInputElement>("illustrationHlrOutline"),
+  hlrDetail: required<HTMLInputElement>("illustrationHlrDetail"),
   outlineColor: required<HTMLInputElement>("illustrationOutlineColor"),
   outlineWidth: required<HTMLInputElement>("illustrationOutlineWidth"),
   outlineWidthValue: required<HTMLOutputElement>("illustrationOutlineWidthValue"),
@@ -141,6 +145,8 @@ const state: {
   suppressCamera: boolean;
   prepareGeneration: number;
   prepareRequest: number;
+  lineworkRequest: number;
+  lineworkBusyRequest: number | null;
 } = {
   models: [],
   model: null,
@@ -162,6 +168,8 @@ const state: {
   suppressCamera: false,
   prepareGeneration: 0,
   prepareRequest: 0,
+  lineworkRequest: 0,
+  lineworkBusyRequest: null,
 };
 
 const renderer = new THREE.WebGLRenderer({
@@ -171,10 +179,10 @@ const renderer = new THREE.WebGLRenderer({
 });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 renderer.outputColorSpace = THREE.SRGBColorSpace;
-renderer.setClearColor(0xf7f2df, 1);
+renderer.setClearColor(0xffffff, 1);
 
 const threeScene = new THREE.Scene();
-threeScene.background = new THREE.Color(0xf7f2df);
+threeScene.background = new THREE.Color(0xffffff);
 const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.001, 100_000);
 const controls = new TrackballControls(camera, renderer.domElement);
 controls.rotateSpeed = 1;
@@ -239,6 +247,7 @@ function currentStyle(): MeshIllustrationStyle {
     background: els.background.value,
     transparentBackground: els.transparent.checked,
     showHlrOutline: els.hlrOutline.checked,
+    showHlrDetail: els.hlrDetail.checked,
     showOutlines: false,
     showCreases: false,
     creaseAngleDegrees: 42,
@@ -473,7 +482,7 @@ function redrawStyle(): void {
   const context = els.illustrationCanvas.getContext("2d");
   if (!context) throw new Error("Canvas2D is unavailable.");
   const canvasStats = renderMeshIllustrationCanvas(context, state.scene, style);
-  els.counts.textContent = `${rendered.stats.triangles.toLocaleString()} visible triangles / ${rendered.stats.outlines.toLocaleString()} HLR outline segments / ${state.scene.warnings.length} warnings`;
+  els.counts.textContent = `${rendered.stats.triangles.toLocaleString()} visible triangles / ${rendered.stats.details.toLocaleString()} HLR detail / ${rendered.stats.outlines.toLocaleString()} HLR outline segments / ${state.scene.warnings.length} warnings`;
   els.downloadSvg.disabled = false;
   els.downloadScene.disabled = false;
   els.downloadStyle.disabled = false;
@@ -482,9 +491,17 @@ function redrawStyle(): void {
   els.outputLabel.textContent = `2D ${state.output.toUpperCase()} / ${style.shading.toUpperCase()} / ${canvasStats.commands.toLocaleString()} DRAWS`;
   els.outputPane.dataset.output = state.output;
   els.outputPane.dataset.shading = style.shading;
-  els.outputPane.dataset.canvasOutlines = String(canvasStats.outlines);
+  els.outputPane.dataset.canvasOutlines = String(canvasStats.outlines + canvasStats.details);
+  els.outputPane.dataset.canvasDetails = String(canvasStats.details);
   threeScene.background = new THREE.Color(style.background);
   renderer.setClearColor(style.background, 1);
+}
+
+function cancelLazyHlrLinework(): void {
+  state.lineworkRequest += 1;
+  if (state.lineworkBusyRequest === null) return;
+  state.lineworkBusyRequest = null;
+  setBusy(null);
 }
 
 async function prepareIllustration(reason: string): Promise<void> {
@@ -492,6 +509,7 @@ async function prepareIllustration(reason: string): Promise<void> {
   const model = state.model;
   if (!root) return;
   const requestId = ++state.prepareRequest;
+  cancelLazyHlrLinework();
   const started = performance.now();
   setBusy(`Preparing ${reason} illustration...`);
   await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
@@ -503,13 +521,22 @@ async function prepareIllustration(reason: string): Promise<void> {
       weldTolerance: 1e-5,
     });
     let hlrMs = 0;
-    if (els.hlrOutline.checked && model && (model.step || model.stepBuffer)) {
-      setBusy(`Tracing ${model.name} with Geometer HLR mesh-shadow...`);
-      const outline = await loadMeshShadowOutline(model, view, currentModelTransform(root));
-      hlrMs = outline.hlrMs;
-      prepared = { ...prepared, outlineSegments: outline.segments };
+    if (
+      (els.hlrOutline.checked || els.hlrDetail.checked) &&
+      model &&
+      (model.step || model.stepBuffer)
+    ) {
+      setBusy(`Tracing ${model.name} with Geometer HLR...`);
+      const linework = await loadHlrLinework(model, view, currentModelTransform(root));
+      hlrMs = linework.hlrMs;
+      prepared = {
+        ...prepared,
+        outlineSegments: linework.outlineSegments,
+        detailSegments: linework.detailSegments,
+      };
     }
     if (requestId !== state.prepareRequest || state.root !== root || state.model !== model) return;
+    cancelLazyHlrLinework();
     state.scene = prepared;
     state.prepareGeneration += 1;
     els.outputPane.dataset.view = state.view;
@@ -530,6 +557,65 @@ async function prepareIllustration(reason: string): Promise<void> {
     throw error;
   } finally {
     if (requestId === state.prepareRequest) setBusy(null);
+  }
+}
+
+async function updateHlrVisibility(): Promise<void> {
+  const scene = state.scene;
+  const model = state.model;
+  const root = state.root;
+  if (!scene) return;
+  if (!els.hlrOutline.checked && !els.hlrDetail.checked) {
+    cancelLazyHlrLinework();
+    redrawStyle();
+    return;
+  }
+  if (scene.outlineSegments !== undefined && scene.detailSegments !== undefined) {
+    cancelLazyHlrLinework();
+    redrawStyle();
+    return;
+  }
+  if (!model || !root || (!model.step && !model.stepBuffer)) {
+    cancelLazyHlrLinework();
+    redrawStyle();
+    return;
+  }
+
+  cancelLazyHlrLinework();
+  const requestId = state.lineworkRequest;
+  state.lineworkBusyRequest = requestId;
+  setBusy(`Tracing ${model.name} with Geometer HLR...`);
+  try {
+    const view: MeshIllustrationView = {
+      direction: scene.view.direction,
+      up: scene.view.up,
+      mirrorX: scene.view.mirrorX,
+    };
+    const linework = await loadHlrLinework(model, view, currentModelTransform(root));
+    if (
+      requestId !== state.lineworkRequest ||
+      state.scene !== scene ||
+      state.model !== model ||
+      state.root !== root
+    )
+      return;
+    scene.outlineSegments = linework.outlineSegments;
+    scene.detailSegments = linework.detailSegments;
+    redrawStyle();
+  } catch (error) {
+    if (
+      requestId !== state.lineworkRequest ||
+      state.scene !== scene ||
+      state.model !== model ||
+      state.root !== root
+    )
+      return;
+    throw error;
+  } finally {
+    if (state.lineworkBusyRequest === requestId) {
+      state.lineworkBusyRequest = null;
+      setBusy(null);
+    }
   }
 }
 
@@ -558,6 +644,7 @@ function loadGlb(buffer: ArrayBuffer): Promise<THREE.Object3D> {
 async function selectModel(model: DemoModel): Promise<void> {
   const loadId = ++state.activeLoad;
   state.prepareRequest += 1;
+  cancelLazyHlrLinework();
   window.clearTimeout(state.renderTimer);
   state.model = model;
   state.scene = null;
@@ -662,11 +749,15 @@ function projectionCacheKey(
   return `${model.cacheKey ?? model.name}|${values.map((value) => value.toFixed(7)).join(",")}`;
 }
 
-async function loadMeshShadowOutline(
+async function loadHlrLinework(
   model: DemoModel,
   view: MeshIllustrationView,
   modelTransform: number[],
-): Promise<{ segments: Array<{ points: [[number, number], [number, number]] }>; hlrMs: number }> {
+): Promise<{
+  outlineSegments: Array<{ points: [[number, number], [number, number]] }>;
+  detailSegments: Array<{ points: [[number, number], [number, number]] }>;
+  hlrMs: number;
+}> {
   const cacheKey = projectionCacheKey(model, view, modelTransform);
   let projection = state.projectionCache.get(cacheKey);
   let hlrMs = 0;
@@ -681,18 +772,22 @@ async function loadMeshShadowOutline(
     hlrMs = result.timings?.hlrMs ?? 0;
     state.projectionCache.set(cacheKey, projection);
   }
-  const outline = projection.views?.[0]?.modes?.outline?.segments ?? [];
   const mirrorX = view.mirrorX === true ? -1 : 1;
   const millimetresToMetres = 0.001;
-  return {
-    segments: outline
+  const convertSegments = (
+    segments: Array<[number, number, number, number]>,
+  ): Array<{ points: [[number, number], [number, number]] }> =>
+    segments
       .filter((segment) => segment.length === 4 && segment.every(Number.isFinite))
       .map(([x1, y1, x2, y2]) => ({
         points: [
           [mirrorX * x1 * millimetresToMetres, y1 * millimetresToMetres],
           [mirrorX * x2 * millimetresToMetres, y2 * millimetresToMetres],
         ],
-      })),
+      }));
+  return {
+    outlineSegments: convertSegments(projection.views?.[0]?.modes?.outline?.segments ?? []),
+    detailSegments: convertSegments(projection.views?.[0]?.modes?.detail?.segments ?? []),
     hlrMs,
   };
 }
@@ -850,7 +945,10 @@ function wireEvents(): void {
     control.addEventListener("change", redrawStyle);
   }
   els.hlrOutline.addEventListener("change", () => {
-    prepareIllustration("HLR linework").catch(showError);
+    updateHlrVisibility().catch(showError);
+  });
+  els.hlrDetail.addEventListener("change", () => {
+    updateHlrVisibility().catch(showError);
   });
   for (const control of [els.bands, els.ambient, els.key, els.rim, els.outlineWidth]) {
     control.addEventListener("input", redrawStyle);

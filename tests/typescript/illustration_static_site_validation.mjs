@@ -42,6 +42,7 @@ for (const required of [
   'data-output="canvas"',
   'data-view="camera"',
   'id="illustrationHlrOutline"',
+  'id="illustrationHlrDetail"',
   "data:model/gltf-binary;base64,",
   "data:application/step;base64,",
   "data:font/woff2;base64,",

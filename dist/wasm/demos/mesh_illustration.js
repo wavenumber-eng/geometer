@@ -83,7 +83,8 @@ function transformNormal(matrix, normal) {
         (c * h - b * i) * normal[0] + (a * i - c * g) * normal[1] + (b * g - a * h) * normal[2],
         (b * f - c * e) * normal[0] + (c * d - a * f) * normal[1] + (a * e - b * d) * normal[2],
     ];
-    return normalize(transformed, "Transformed normal");
+    const orientation = matrixDeterminantSign(matrix);
+    return normalize([transformed[0] * orientation, transformed[1] * orientation, transformed[2] * orientation], "Transformed normal");
 }
 function positionAt(positions, index) {
     const offset = index * 3;
@@ -200,6 +201,7 @@ export function prepareMeshIllustration(input, view, options = {}) {
                 ],
                 opacity: clamp(material.opacity ?? 1),
                 frontFacing,
+                doubleSided: mesh.doubleSided === true,
                 meshId: mesh.id,
                 triangleIndex,
             };
@@ -313,7 +315,7 @@ function renderCommands(scene, style) {
     let outlines = 0;
     let creases = 0;
     for (const triangle of scene.triangles) {
-        if (!triangle.frontFacing && !style.doubleSided)
+        if (!triangle.frontFacing && !(style.doubleSided || triangle.doubleSided))
             continue;
         commands.push({
             kind: "triangle",
@@ -355,7 +357,7 @@ function renderCommands(scene, style) {
     };
 }
 function numberText(value) {
-    const rounded = Number(value.toFixed(5));
+    const rounded = Number(value.toPrecision(12));
     return Object.is(rounded, -0) ? "0" : String(rounded);
 }
 function escapeXml(value) {

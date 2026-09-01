@@ -83,6 +83,7 @@ const mirrored = prepareMeshIllustration(
         id: "mirrored-cube",
         positions,
         indices,
+        normals: new Float32Array(Array.from({ length: 8 }, () => [0, 0, 1]).flat()),
         matrix: [-1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 3, 0, 0, 1],
         materials: [{ color: [0.2, 0.7, 0.62] }],
       },
@@ -92,6 +93,56 @@ const mirrored = prepareMeshIllustration(
 );
 assert.equal(mirrored.triangles.filter((triangle) => triangle.frontFacing).length, 2);
 assert.deepEqual(mirrored.bounds, { minX: 2, minY: -1, maxX: 4, maxY: 1 });
+for (const triangle of mirrored.triangles)
+  assert.ok(
+    triangle.normal[2] > 0,
+    `reflected source normal should retain its orientation: ${triangle.normal}`,
+  );
+
+const backFacingSingleSided = prepareMeshIllustration(
+  {
+    meshes: [
+      {
+        id: "back-facing",
+        positions: new Float32Array([0, 0, 0, 0, 1, 0, 1, 0, 0]),
+        materials: [{ color: [0.4, 0.5, 0.6] }],
+      },
+    ],
+  },
+  { direction: [0, 0, 1], up: [0, 1, 0] },
+);
+assert.equal(renderMeshIllustrationSvg(backFacingSingleSided, baseStyle).stats.triangles, 0);
+const backFacingDoubleSided = prepareMeshIllustration(
+  {
+    meshes: [
+      {
+        id: "back-facing-double-sided",
+        positions: new Float32Array([0, 0, 0, 0, 1, 0, 1, 0, 0]),
+        materials: [{ color: [0.4, 0.5, 0.6] }],
+        doubleSided: true,
+      },
+    ],
+  },
+  { direction: [0, 0, 1], up: [0, 1, 0] },
+);
+assert.equal(renderMeshIllustrationSvg(backFacingDoubleSided, baseStyle).stats.triangles, 1);
+
+const tinyScene = prepareMeshIllustration(
+  {
+    meshes: [
+      {
+        id: "micron-scale-triangle",
+        positions: new Float64Array([0, 0, 0, 0.000002, 0, 0, 0, 0.000002, 0]),
+        materials: [{ color: [0.4, 0.5, 0.6] }],
+      },
+    ],
+  },
+  { direction: [0, 0, 1], up: [0, 1, 0] },
+  { weldTolerance: 1e-9 },
+);
+const tinySvg = renderMeshIllustrationSvg(tinyScene, { ...baseStyle, doubleSided: true }).svg;
+assert.match(tinySvg, /0\.000002/u);
+assert.doesNotMatch(tinySvg, /viewBox="0 0 0 0"/u);
 
 console.log(
   JSON.stringify({

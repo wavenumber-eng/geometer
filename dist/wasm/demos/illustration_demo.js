@@ -257,9 +257,12 @@ function moveCameraToView(viewId) {
 function materialColor(material) {
     const candidate = material;
     const color = candidate.color ?? new THREE.Color(0xb8bdc7);
+    const toSrgb = (value) => value <= 0.0031308 ? value * 12.92 : 1.055 * value ** (1 / 2.4) - 0.055;
     return {
         ...(material.name ? { name: material.name } : {}),
-        color: [color.r, color.g, color.b],
+        // Three stores material colors in linear-sRGB; the generic illustration
+        // contract accepts sRGB so that file adapters and UI colors agree.
+        color: [toSrgb(color.r), toSrgb(color.g), toSrgb(color.b)],
         opacity: Number.isFinite(candidate.opacity) ? candidate.opacity : 1,
     };
 }
@@ -451,7 +454,20 @@ function stepWorker() {
         else
             pending.reject(new Error(data.error ?? "STEP conversion Worker failed."));
     };
-    worker.onerror = (event) => showError(new Error(event.message || "STEP conversion Worker error."));
+    const failWorker = (error) => {
+        for (const pending of state.pendingWorker.values())
+            pending.reject(error);
+        state.pendingWorker.clear();
+        worker.terminate();
+        if (state.worker === worker)
+            state.worker = null;
+        showError(error);
+    };
+    worker.onerror = (event) => {
+        event.preventDefault();
+        failWorker(new Error(event.message || "STEP conversion Worker error."));
+    };
+    worker.onmessageerror = () => failWorker(new Error("STEP conversion Worker message error."));
     state.worker = worker;
     return worker;
 }
@@ -459,7 +475,13 @@ function convertStep(stepBuffer) {
     const id = ++state.workerRequest;
     return new Promise((resolve, reject) => {
         state.pendingWorker.set(id, { resolve, reject });
-        stepWorker().postMessage({ id, stepBuffer }, [stepBuffer]);
+        try {
+            stepWorker().postMessage({ id, stepBuffer }, [stepBuffer]);
+        }
+        catch (error) {
+            state.pendingWorker.delete(id);
+            reject(error instanceof Error ? error : new Error(String(error)));
+        }
     });
 }
 function appendModel(model) {

@@ -3,6 +3,7 @@ export type Vec3 = readonly [number, number, number];
 export type Rgb = readonly [number, number, number];
 
 export interface MeshIllustrationMaterial {
+  /** Source color expressed as sRGB channel values in the inclusive range [0, 1]. */
   color: Rgb;
   opacity?: number;
   name?: string;
@@ -66,6 +67,7 @@ export interface IllustrationTriangle {
   baseColor: Rgb;
   opacity: number;
   frontFacing: boolean;
+  doubleSided: boolean;
   meshId: string;
   triangleIndex: number;
 }
@@ -235,7 +237,11 @@ function transformNormal(matrix: ArrayLike<number>, normal: Vec3): Vec3 {
     (c * h - b * i) * normal[0] + (a * i - c * g) * normal[1] + (b * g - a * h) * normal[2],
     (b * f - c * e) * normal[0] + (c * d - a * f) * normal[1] + (a * e - b * d) * normal[2],
   ];
-  return normalize(transformed, "Transformed normal");
+  const orientation = matrixDeterminantSign(matrix);
+  return normalize(
+    [transformed[0] * orientation, transformed[1] * orientation, transformed[2] * orientation],
+    "Transformed normal",
+  );
 }
 
 function positionAt(positions: ArrayLike<number>, index: number): Vec3 {
@@ -389,6 +395,7 @@ export function prepareMeshIllustration(
         ],
         opacity: clamp(material.opacity ?? 1),
         frontFacing,
+        doubleSided: mesh.doubleSided === true,
         meshId: mesh.id,
         triangleIndex,
       };
@@ -523,7 +530,7 @@ function renderCommands(
   let outlines = 0;
   let creases = 0;
   for (const triangle of scene.triangles) {
-    if (!triangle.frontFacing && !style.doubleSided) continue;
+    if (!triangle.frontFacing && !(style.doubleSided || triangle.doubleSided)) continue;
     commands.push({
       kind: "triangle",
       depth: triangle.depth,
@@ -561,7 +568,7 @@ function renderCommands(
 }
 
 function numberText(value: number): string {
-  const rounded = Number(value.toFixed(5));
+  const rounded = Number(value.toPrecision(12));
   return Object.is(rounded, -0) ? "0" : String(rounded);
 }
 

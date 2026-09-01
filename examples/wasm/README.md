@@ -144,6 +144,12 @@ unquantized Lambert diffuse, quantized-band (up to 32 bands), and early toon sha
 live style changes, named or trackball
 camera views, local STEP upload, and SVG/scene/style downloads.
 
+The Geometry section exposes Draft, Balanced, Fine, and Extra fine STEP mesh
+presets plus custom linear deflection (millimetres), angular deflection
+(degrees), bounding-box-relative HLR mesh-shadow tolerance, and projected
+triangle limit. Surface tolerance changes reconvert STEP through Geometer WASM;
+GLB-only inputs retain their authored tessellation.
+
 The illustration algorithm consumes generic indexed or non-indexed triangle
 meshes with transforms, material colors, and vertex normals. STEP is only the
 first adapter: the prototype Worker uses the existing STEP-to-GLB compatibility

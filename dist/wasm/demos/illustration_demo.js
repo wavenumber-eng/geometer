@@ -2,6 +2,32 @@ import * as THREE from "three";
 import { TrackballControls } from "three/addons/controls/TrackballControls.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { prepareMeshIllustration, renderMeshIllustrationCanvas, renderMeshIllustrationSvg, } from "./mesh_illustration.js";
+const MESH_QUALITY_PRESETS = {
+    draft: {
+        linearDeflectionMm: 0.25,
+        angularDeflectionDegrees: 40,
+        hlrDeflectionCoefficient: 0.008,
+        maxTriangles: 100_000,
+    },
+    balanced: {
+        linearDeflectionMm: 0.1,
+        angularDeflectionDegrees: (0.5 * 180) / Math.PI,
+        hlrDeflectionCoefficient: 0.004,
+        maxTriangles: 140_000,
+    },
+    fine: {
+        linearDeflectionMm: 0.03,
+        angularDeflectionDegrees: 15,
+        hlrDeflectionCoefficient: 0.002,
+        maxTriangles: 250_000,
+    },
+    "extra-fine": {
+        linearDeflectionMm: 0.01,
+        angularDeflectionDegrees: 8,
+        hlrDeflectionCoefficient: 0.001,
+        maxTriangles: 500_000,
+    },
+};
 const DEMO_MODEL_ORDER = [
     "SOT-23.STEP",
     "SOIC-8-W.step",
@@ -37,6 +63,12 @@ const els = {
     timing: required("illustrationTiming"),
     counts: required("illustrationCounts"),
     validation: required("illustrationValidation"),
+    meshQuality: required("illustrationMeshQuality"),
+    linearDeflection: required("illustrationLinearDeflection"),
+    angularDeflection: required("illustrationAngularDeflection"),
+    hlrDeflection: required("illustrationHlrDeflection"),
+    triangleLimit: required("illustrationTriangleLimit"),
+    meshInfo: required("illustrationMeshInfo"),
     shading: required("illustrationShading"),
     bands: required("illustrationBands"),
     bandsValue: required("illustrationBandsValue"),
@@ -131,6 +163,33 @@ function numberInput(input, output, digits) {
     const value = Number.parseFloat(input.value);
     output.value = Number.isFinite(value) ? value.toFixed(digits) : "0";
     return Number.isFinite(value) ? value : 0;
+}
+function boundedNumberInput(input, minimum, maximum, fallback) {
+    const requested = Number.parseFloat(input.value);
+    return Math.max(minimum, Math.min(maximum, Number.isFinite(requested) ? requested : fallback));
+}
+function currentMeshSettings() {
+    return {
+        linearDeflectionMm: boundedNumberInput(els.linearDeflection, 0.001, 10, 0.1),
+        angularDeflectionDegrees: boundedNumberInput(els.angularDeflection, 1, 60, (0.5 * 180) / Math.PI),
+        hlrDeflectionCoefficient: boundedNumberInput(els.hlrDeflection, 0.0001, 0.05, 0.004),
+        maxTriangles: Math.trunc(boundedNumberInput(els.triangleLimit, 10_000, 1_000_000, 140_000)),
+    };
+}
+function surfaceMeshKey(settings) {
+    const angularRadians = (settings.angularDeflectionDegrees * Math.PI) / 180;
+    return `${settings.linearDeflectionMm.toPrecision(12)}|${angularRadians.toPrecision(12)}`;
+}
+const DEFAULT_SURFACE_MESH_KEY = surfaceMeshKey(MESH_QUALITY_PRESETS.balanced);
+function applyMeshSettings(settings) {
+    els.linearDeflection.value = String(settings.linearDeflectionMm);
+    els.angularDeflection.value = String(settings.angularDeflectionDegrees);
+    els.hlrDeflection.value = String(settings.hlrDeflectionCoefficient);
+    els.triangleLimit.value = String(settings.maxTriangles);
+}
+function updateMeshInfo(prefix = "Mesh controls ready") {
+    const settings = currentMeshSettings();
+    els.meshInfo.textContent = `${prefix}: ${settings.linearDeflectionMm} mm chord / ${settings.angularDeflectionDegrees.toFixed(2)} deg / HLR ${settings.hlrDeflectionCoefficient} / ${settings.maxTriangles.toLocaleString()} triangle limit.`;
 }
 function currentStyle() {
     const bands = Math.round(numberInput(els.bands, els.bandsValue, 0));
@@ -405,8 +464,9 @@ async function prepareIllustration(reason) {
     try {
         const input = meshInput(root);
         const view = currentView();
+        const meshSettings = currentMeshSettings();
         let prepared = prepareMeshIllustration(input, view, {
-            maxTriangles: 140_000,
+            maxTriangles: meshSettings.maxTriangles,
             weldTolerance: 1e-5,
         });
         let hlrMs = 0;
@@ -432,6 +492,7 @@ async function prepareIllustration(reason) {
             .map((value) => value.toFixed(6))
             .join(",");
         els.outputPane.dataset.triangles = String(state.scene.stats.projectedTriangles);
+        els.outputPane.dataset.meshKey = surfaceMeshKey(meshSettings);
         els.outputPane.dataset.prepareGeneration = String(state.prepareGeneration);
         redrawStyle();
         const elapsed = performance.now() - started;
@@ -525,6 +586,32 @@ function loadGlb(buffer) {
         loader.parse(buffer, "", (gltf) => resolve(gltf.scene), reject);
     });
 }
+async function modelGlbBuffer(model) {
+    const settings = currentMeshSettings();
+    const meshKey = surfaceMeshKey(settings);
+    const stepBacked = Boolean(model.step || model.stepBuffer);
+    if (!stepBacked) {
+        const buffer = model.glbBuffer ?? (await fetchArrayBuffer(model.glb));
+        model.glbBuffer = buffer;
+        model.glbMeshKey = "fixed-glb";
+        return { buffer, meshMs: 0, source: "fixed-glb" };
+    }
+    if (model.glbBuffer && model.glbMeshKey === meshKey)
+        return { buffer: model.glbBuffer, meshMs: 0, source: "cached" };
+    if (!model.local && model.glb && meshKey === DEFAULT_SURFACE_MESH_KEY) {
+        const buffer = await fetchArrayBuffer(model.glb);
+        model.glbBuffer = buffer;
+        model.glbMeshKey = meshKey;
+        model.glbBytes = buffer.byteLength;
+        return { buffer, meshMs: 0, source: "prebuilt" };
+    }
+    const source = await modelStepBuffer(model);
+    const converted = await convertStep(source.slice(0), settings);
+    model.glbBuffer = converted.buffer;
+    model.glbMeshKey = meshKey;
+    model.glbBytes = converted.buffer.byteLength;
+    return { buffer: converted.buffer, meshMs: converted.glbMs, source: "remeshed" };
+}
 async function selectModel(model) {
     const loadId = ++state.activeLoad;
     state.prepareRequest += 1;
@@ -532,6 +619,14 @@ async function selectModel(model) {
     window.clearTimeout(state.renderTimer);
     state.model = model;
     state.scene = null;
+    const stepBacked = Boolean(model.step || model.stepBuffer);
+    for (const control of [
+        els.meshQuality,
+        els.linearDeflection,
+        els.angularDeflection,
+        els.hlrDeflection,
+    ])
+        control.disabled = !stepBacked;
     els.downloadSvg.disabled = true;
     els.downloadScene.disabled = true;
     els.modelSelect.value = model.cacheKey ?? model.name;
@@ -539,7 +634,10 @@ async function selectModel(model) {
     setStatus(`Loading ${model.name}`);
     const started = performance.now();
     try {
-        const buffer = model.glbBuffer ?? (await fetchArrayBuffer(model.glb));
+        const meshResult = await modelGlbBuffer(model);
+        const { buffer } = meshResult;
+        if (loadId !== state.activeLoad)
+            return;
         const root = await loadGlb(buffer.slice(0));
         if (loadId !== state.activeLoad)
             return;
@@ -549,7 +647,15 @@ async function selectModel(model) {
         fitCamera(root);
         await prepareIllustration("mesh");
         const elapsed = performance.now() - started;
-        els.timing.textContent = `GLB ${formatBytes(buffer.byteLength)} / total ${formatMs(elapsed)}`;
+        const sourceLabel = meshResult.source === "fixed-glb"
+            ? "fixed GLB"
+            : meshResult.source === "prebuilt"
+                ? "balanced GLB"
+                : meshResult.source === "cached"
+                    ? "cached mesh"
+                    : `STEP mesh ${formatMs(meshResult.meshMs)}`;
+        els.timing.textContent = `${sourceLabel} / ${formatBytes(buffer.byteLength)} / total ${formatMs(elapsed)}`;
+        updateMeshInfo(meshResult.source === "fixed-glb" ? "Source GLB is fixed" : "STEP mesh active");
     }
     catch (error) {
         showError(error);
@@ -612,8 +718,14 @@ function runStepWorker(message, stepBuffer) {
         }
     });
 }
-async function convertStep(stepBuffer) {
-    const result = await runStepWorker({ operation: "step-to-glb" }, stepBuffer);
+async function convertStep(stepBuffer, settings = currentMeshSettings()) {
+    const result = await runStepWorker({
+        operation: "step-to-glb",
+        meshOptions: {
+            linearDeflectionMm: settings.linearDeflectionMm,
+            angularDeflectionRad: (settings.angularDeflectionDegrees * Math.PI) / 180,
+        },
+    }, stepBuffer);
     if (!result.glbBuffer)
         throw new Error("STEP conversion Worker returned no GLB data.");
     return { buffer: result.glbBuffer, glbMs: result.timings?.glbMs ?? 0 };
@@ -627,7 +739,15 @@ async function modelStepBuffer(model) {
     return model.stepBuffer;
 }
 function projectionCacheKey(model, view, modelTransform) {
-    const values = [...view.direction, ...view.up, view.mirrorX ? 1 : 0, ...modelTransform];
+    const settings = currentMeshSettings();
+    const values = [
+        ...view.direction,
+        ...view.up,
+        view.mirrorX ? 1 : 0,
+        ...modelTransform,
+        (settings.angularDeflectionDegrees * Math.PI) / 180,
+        settings.hlrDeflectionCoefficient,
+    ];
     return `${model.cacheKey ?? model.name}|${values.map((value) => value.toFixed(7)).join(",")}`;
 }
 async function loadHlrLinework(model, view, modelTransform) {
@@ -636,7 +756,16 @@ async function loadHlrLinework(model, view, modelTransform) {
     let hlrMs = 0;
     if (!projection) {
         const source = await modelStepBuffer(model);
-        const result = await runStepWorker({ operation: "mesh-shadow", view, modelTransform }, source.slice(0));
+        const settings = currentMeshSettings();
+        const result = await runStepWorker({
+            operation: "mesh-shadow",
+            view,
+            modelTransform,
+            hlrOptions: {
+                angularDeflectionRad: (settings.angularDeflectionDegrees * Math.PI) / 180,
+                deflectionCoefficient: settings.hlrDeflectionCoefficient,
+            },
+        }, source.slice(0));
         if (!result.projection)
             throw new Error("HLR Worker returned no projection data.");
         projection = result.projection;
@@ -675,6 +804,7 @@ async function openStep(file) {
     try {
         const stepBuffer = await file.arrayBuffer();
         const converted = await convertStep(stepBuffer.slice(0));
+        const settings = currentMeshSettings();
         const model = {
             name: file.name,
             cacheKey: `local:${Date.now()}:${file.name}`,
@@ -683,6 +813,7 @@ async function openStep(file) {
             stepBytes: file.size,
             glbBytes: converted.buffer.byteLength,
             glbBuffer: converted.buffer,
+            glbMeshKey: surfaceMeshKey(settings),
             stepBuffer,
             local: true,
         };
@@ -762,6 +893,37 @@ function showError(error) {
         document.title = `FAIL ${message}`;
     }
 }
+function markMeshQualityCustom() {
+    els.meshQuality.value = "custom";
+    applyMeshSettings(currentMeshSettings());
+}
+async function applyMeshQualityPreset() {
+    const quality = els.meshQuality.value;
+    if (quality === "custom")
+        return;
+    applyMeshSettings(MESH_QUALITY_PRESETS[quality]);
+    updateMeshInfo(`${els.meshQuality.selectedOptions[0]?.textContent ?? quality} requested`);
+    if (state.model)
+        await selectModel(state.model);
+}
+async function rebuildSurfaceMesh() {
+    markMeshQualityCustom();
+    updateMeshInfo("Custom STEP mesh requested");
+    if (state.model)
+        await selectModel(state.model);
+}
+async function rebuildHlrLinework() {
+    markMeshQualityCustom();
+    updateMeshInfo("Custom HLR mesh requested");
+    if (state.root)
+        await prepareIllustration("HLR mesh");
+}
+async function updateTriangleLimit() {
+    markMeshQualityCustom();
+    updateMeshInfo("Custom triangle limit requested");
+    if (state.root)
+        await prepareIllustration("triangle limit");
+}
 function wireEvents() {
     new ResizeObserver(resize).observe(els.modelPane);
     new ResizeObserver(resize).observe(els.outputPane);
@@ -776,6 +938,20 @@ function wireEvents() {
         const selected = state.models.find((model) => (model.cacheKey ?? model.name) === els.modelSelect.value);
         if (selected)
             selectModel(selected).catch(showError);
+    });
+    els.meshQuality.addEventListener("change", () => {
+        applyMeshQualityPreset().catch(showError);
+    });
+    for (const control of [els.linearDeflection, els.angularDeflection]) {
+        control.addEventListener("change", () => {
+            rebuildSurfaceMesh().catch(showError);
+        });
+    }
+    els.hlrDeflection.addEventListener("change", () => {
+        rebuildHlrLinework().catch(showError);
+    });
+    els.triangleLimit.addEventListener("change", () => {
+        updateTriangleLimit().catch(showError);
     });
     els.viewButtons.addEventListener("click", (event) => {
         const button = event.target?.closest("button[data-view]");

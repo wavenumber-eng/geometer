@@ -41,6 +41,15 @@
       </section>
       <aside class="illustration-settings">
         <section>
+          <h2>Geometry</h2>
+          <label class="illustration-control"><span>Quality</span><select id="illustrationMeshQuality"><option value="draft">Draft</option><option value="balanced" selected>Balanced</option><option value="fine">Fine</option><option value="extra-fine">Extra fine</option><option value="custom">Custom</option></select><span></span></label>
+          <label class="illustration-control" title="Maximum chordal deviation used when Geometer tessellates STEP surfaces. Smaller values produce more triangles."><span>Chord error</span><input id="illustrationLinearDeflection" type="number" min="0.001" max="10" step="0.001" value="0.1"><span>mm</span></label>
+          <label class="illustration-control" title="Angular deflection used when Geometer tessellates curved STEP surfaces. Smaller values produce smoother curves."><span>Mesh angle</span><input id="illustrationAngularDeflection" type="number" min="1" max="60" step="0.1" value="28.64788975654116"><span>deg</span></label>
+          <label class="illustration-control" title="Bounding-box-relative tolerance used by the HLR mesh-shadow outline. Smaller values produce finer traced contours."><span>HLR tolerance</span><input id="illustrationHlrDeflection" type="number" min="0.0001" max="0.05" step="0.0001" value="0.004"><span>relative</span></label>
+          <label class="illustration-control" title="Safety limit for the projected illustration scene. This does not itself create triangles."><span>Triangle limit</span><input id="illustrationTriangleLimit" type="number" min="10000" max="1000000" step="10000" value="140000"><span>triangles</span></label>
+          <p class="illustration-info" id="illustrationMeshInfo">Smaller chord, angle, and HLR tolerances produce finer curves. STEP models are remeshed; GLB-only meshes retain their source tessellation.</p>
+        </section>
+        <section>
           <h2>Surface</h2>
           <label class="illustration-control"><span>Shading</span><select id="illustrationShading"><option value="flat">Flat diffuse</option><option value="lambert">Lambert diffuse</option><option value="banded">Banded</option><option value="toon" selected>Toon</option><option value="unlit">Unlit</option></select><span></span></label>
           <label class="illustration-control"><span>Bands</span><input id="illustrationBands" type="range" min="2" max="32" step="1" value="3"><output id="illustrationBandsValue">3</output></label>

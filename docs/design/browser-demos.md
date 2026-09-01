@@ -131,6 +131,9 @@ The first mesh-illustration feasibility slice is maintained in
   so lighting or palette changes do not redo mesh preparation;
 - the shared renderer offers unlit, flat, unquantized Lambert diffuse, banded (2-32),
   and toon surface shading;
+- STEP-backed demo inputs can be remeshed through Draft, Balanced, Fine, Extra
+  fine, or custom linear/angular deflection settings, with a separate relative
+  HLR mesh-shadow tolerance and projected-triangle safety limit;
 - filled triangles use spatially culled overlap tests and depth-plane ordering
   rather than a global average-depth painter sort, and cache that geometry-only
   order across style-only SVG/Canvas redraws;

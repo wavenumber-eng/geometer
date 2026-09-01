@@ -246,6 +246,69 @@ async function main() {
     };
   })()`, true);
 
+  const meshQuality = await evaluate(`(async () => {
+    const pane = document.querySelector("#illustrationOutputPane");
+    const select = document.querySelector("#illustrationModelSelect");
+    const quality = document.querySelector("#illustrationMeshQuality");
+    const tsot = [...select.options].find((candidate) => candidate.textContent.includes("TSOT-23-5"));
+    if (!tsot) throw new Error("TSOT-23-5 fixture is unavailable.");
+    const beforeModel = Number(pane.dataset.prepareGeneration);
+    select.value = tsot.value;
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+    const balancedDeadline = Date.now() + 120000;
+    while (Date.now() < balancedDeadline) {
+      if (
+        select.value === tsot.value &&
+        Number(pane.dataset.prepareGeneration) > beforeModel &&
+        !document.querySelector("#illustrationDownloadSvg").disabled
+      )
+        break;
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+    const balanced = {
+      generation: Number(pane.dataset.prepareGeneration),
+      triangles: Number(pane.dataset.triangles),
+      meshKey: pane.dataset.meshKey,
+    };
+
+    quality.value = "fine";
+    quality.dispatchEvent(new Event("change", { bubbles: true }));
+    const fineDeadline = Date.now() + 120000;
+    while (Date.now() < fineDeadline) {
+      if (
+        Number(pane.dataset.prepareGeneration) > balanced.generation &&
+        pane.dataset.meshKey !== balanced.meshKey &&
+        !document.querySelector("#illustrationDownloadSvg").disabled
+      )
+        break;
+      if (document.title.startsWith("FAIL")) throw new Error(document.title);
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+    const fine = {
+      generation: Number(pane.dataset.prepareGeneration),
+      triangles: Number(pane.dataset.triangles),
+      meshKey: pane.dataset.meshKey,
+      linear: Number(document.querySelector("#illustrationLinearDeflection").value),
+      angular: Number(document.querySelector("#illustrationAngularDeflection").value),
+      hlr: Number(document.querySelector("#illustrationHlrDeflection").value),
+      limit: Number(document.querySelector("#illustrationTriangleLimit").value),
+    };
+
+    quality.value = "balanced";
+    quality.dispatchEvent(new Event("change", { bubbles: true }));
+    const resetDeadline = Date.now() + 120000;
+    while (Date.now() < resetDeadline) {
+      if (
+        Number(pane.dataset.prepareGeneration) > fine.generation &&
+        pane.dataset.meshKey === balanced.meshKey &&
+        !document.querySelector("#illustrationDownloadSvg").disabled
+      )
+        return { balanced, fine, resetGeneration: Number(pane.dataset.prepareGeneration) };
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+    throw new Error("Mesh quality reset did not complete.");
+  })()`, true);
+
   const top = await evaluate(`(async () => {
     const pane = document.querySelector("#illustrationOutputPane");
     const before = Number(pane.dataset.prepareGeneration);
@@ -379,7 +442,7 @@ async function main() {
 
   const resources = await evaluate(`performance.getEntriesByType("resource").map((entry) => entry.name)`);
   process.stdout.write(JSON.stringify({
-    initial, restyle, detailToggle, lazyLinework, top, camera, bga, uploaded,
+    initial, restyle, detailToggle, lazyLinework, meshQuality, top, camera, bga, uploaded,
     filename: download.suggestedFilename,
     exceptions,
     externalRequests: resources.filter((url) => /^https?:/u.test(url) && !url.startsWith(siteRoot)),
@@ -545,6 +608,14 @@ def test_illustration_static_site_mesh_render_upload_and_export() -> None:
     assert result["lazyLinework"]["details"] > 0
     assert result["lazyLinework"]["paths"] > 0
     assert result["lazyLinework"]["finalGeneration"] == result["lazyLinework"]["generation"]
+    assert result["meshQuality"]["balanced"]["triangles"] > 0
+    assert result["meshQuality"]["fine"]["triangles"] > result["meshQuality"]["balanced"]["triangles"]
+    assert result["meshQuality"]["fine"]["meshKey"] != result["meshQuality"]["balanced"]["meshKey"]
+    assert result["meshQuality"]["fine"]["linear"] == pytest.approx(0.03)
+    assert result["meshQuality"]["fine"]["angular"] == pytest.approx(15)
+    assert result["meshQuality"]["fine"]["hlr"] == pytest.approx(0.002)
+    assert result["meshQuality"]["fine"]["limit"] == 250_000
+    assert result["meshQuality"]["resetGeneration"] > result["meshQuality"]["fine"]["generation"]
     assert result["top"]["generation"] > result["initial"]["generation"]
     assert result["top"]["direction"] == "0.000000,1.000000,0.000000"
     assert result["camera"]["view"] == "camera"

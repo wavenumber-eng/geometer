@@ -15,8 +15,14 @@ function geometerModule() {
   return modulePromise;
 }
 
-function stepToGlb(module, stepBytes) {
+function stepToGlb(module, stepBytes, meshOptions = {}) {
   const stepPtr = module._malloc(stepBytes.length);
+  const optionsJson = JSON.stringify({
+    linear_deflection: meshOptions.linearDeflectionMm ?? 0.1,
+    angular_deflection: meshOptions.angularDeflectionRad ?? 0.5,
+  });
+  const optionsBytes = module.lengthBytesUTF8(optionsJson) + 1;
+  const optionsPtr = module._malloc(optionsBytes);
   const valueOut = module._malloc(4);
   const valueSizeOut = module._malloc(4);
   const errorOut = module._malloc(4);
@@ -25,11 +31,12 @@ function stepToGlb(module, stepBytes) {
     module.HEAPU32[valueOut >> 2] = 0;
     module.HEAPU32[valueSizeOut >> 2] = 0;
     module.HEAPU32[errorOut >> 2] = 0;
+    module.stringToUTF8(optionsJson, optionsPtr, optionsBytes);
     const code = module.ccall(
       "geometer_step_to_glb_bytes",
       "number",
       ["number", "number", "number", "number", "number", "number"],
-      [stepPtr, stepBytes.length, 0, valueOut, valueSizeOut, errorOut],
+      [stepPtr, stepBytes.length, optionsPtr, valueOut, valueSizeOut, errorOut],
     );
     const valuePtr = module.getValue(valueOut, "i32");
     const valueSize = module.getValue(valueSizeOut, "i32");
@@ -44,13 +51,14 @@ function stepToGlb(module, stepBytes) {
     return result.buffer;
   } finally {
     module._free(stepPtr);
+    module._free(optionsPtr);
     module._free(valueOut);
     module._free(valueSizeOut);
     module._free(errorOut);
   }
 }
 
-function projectMeshShadow(module, stepBytes, view, modelTransform) {
+function projectMeshShadow(module, stepBytes, view, modelTransform, hlrOptions = {}) {
   const optionsJson = JSON.stringify({
     views: [{ id: "illustration", ...view }],
     model_transform: modelTransform,
@@ -60,7 +68,8 @@ function projectMeshShadow(module, stepBytes, view, modelTransform) {
     projection_algorithm: "poly",
     outline_algorithm: "mesh-shadow",
     mesh_deflection_mode: "bbox-relative",
-    mesh_deflection_coefficient: 0.004,
+    mesh_angular_deflection: hlrOptions.angularDeflectionRad ?? 0.5,
+    mesh_deflection_coefficient: hlrOptions.deflectionCoefficient ?? 0.004,
     union_outline_polygons: true,
     // Match the HLR Lab's Detail preset: visible sharp edges plus silhouettes.
     edge_v_sharp: true,
@@ -109,7 +118,15 @@ function projectMeshShadow(module, stepBytes, view, modelTransform) {
 }
 
 self.onmessage = async (event) => {
-  const { id, operation = "step-to-glb", stepBuffer, view, modelTransform } = event.data;
+  const {
+    id,
+    operation = "step-to-glb",
+    stepBuffer,
+    view,
+    modelTransform,
+    meshOptions,
+    hlrOptions,
+  } = event.data;
   const timings = {};
   try {
     const moduleStarted = performance.now();
@@ -118,14 +135,14 @@ self.onmessage = async (event) => {
     const stepBytes = new Uint8Array(stepBuffer);
     if (operation === "step-to-glb") {
       const conversionStarted = performance.now();
-      const glbBuffer = stepToGlb(module, stepBytes);
+      const glbBuffer = stepToGlb(module, stepBytes, meshOptions);
       timings.glbMs = performance.now() - conversionStarted;
       self.postMessage({ id, ok: true, operation, glbBuffer, timings }, [glbBuffer]);
       return;
     }
     if (operation !== "mesh-shadow") throw new Error(`Unsupported operation: ${operation}`);
     const projectionStarted = performance.now();
-    const projection = projectMeshShadow(module, stepBytes, view, modelTransform);
+    const projection = projectMeshShadow(module, stepBytes, view, modelTransform, hlrOptions);
     timings.hlrMs = performance.now() - projectionStarted;
     self.postMessage({ id, ok: true, operation, projection, timings });
   } catch (error) {

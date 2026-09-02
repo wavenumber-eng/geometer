@@ -52,6 +52,7 @@ set(GEOMETER_LIB_SOURCES
     sha256.cpp
     step_to_glb.cpp
     step_to_glb_options_json.cpp
+    step_xcaf_root_frame.cpp
     version.cpp
     geometer/generated/contracts/contracts_json.cpp
     geometer/generated/contracts/operation_catalog.cpp

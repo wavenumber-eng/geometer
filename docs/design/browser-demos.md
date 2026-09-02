@@ -116,6 +116,70 @@ view presets may stay in the page toolbar. Settings that affect geometry should
 recompute automatically; typed numeric inputs should be debounced. Pure display
 changes should redraw cached geometry instead of rerunning WASM.
 
+## STEP Illustration Lab Prototype
+
+> **Lifecycle status: retained concept prototype, not production code.** The
+> implementation remains in `examples/wasm/` so its rendering ideas can be
+> evaluated, demonstrated, and regression-tested. It defines no supported
+> public API, versioned illustration contract, output-compatibility guarantee,
+> or long-term ownership decision for Geometer. Prototype types and behavior
+> may change without deprecation. Any production promotion requires a separate
+> architecture decision that assigns the core/adapter/renderer boundary and
+> establishes contracts, compatibility policy, and release gates.
+
+The first mesh-illustration feasibility slice is maintained in
+`examples/wasm/illustration_demo.*`, `mesh_illustration.ts`, and
+`illustration_step_worker.js`. It is deliberately pre-contract research:
+
+- the core projector consumes generic mesh buffers, transforms, materials, and
+  normals rather than STEP objects;
+- the current STEP adapter converts browser-local bytes through the existing
+  compatibility STEP-to-GLB symbol and can call the existing HLR projection
+  symbol for its unioned `mesh-shadow` Outline layer;
+- SVG and Canvas2D consume one prepared projected scene and a separate style,
+  so lighting or palette changes do not redo mesh preparation;
+- the shared renderer offers unlit, flat, unquantized Lambert diffuse, banded (2-32),
+  and toon surface shading;
+- STEP-backed demo inputs can be remeshed through Draft, Balanced, Fine, Extra
+  fine, or custom linear/angular deflection settings, with separately grouped
+  HLR relative chord/angular tolerances and no demo-imposed triangle-count cap;
+- remeshing the active STEP model preserves its orthographic camera pose,
+  target, zoom, and framing scale;
+- filled triangles use spatially culled overlap tests and depth-plane ordering
+  rather than a global average-depth painter sort, and cache that geometry-only
+  order across style-only SVG/Canvas redraws;
+- an optional conservative fusion pass contracts opaque, depth-connected
+  triangles with identical rendered fill into even-odd polygon regions after
+  visibility ordering; mobility intervals allow fusion across unrelated paint
+  commands without crossing an overlapping different-style surface, while
+  projected folds, overlaps, non-manifold edges, and invalid boundaries retain
+  their original triangles;
+- when enabled with fusion, coplanar-material layering groups opaque,
+  same-plane partitions connected by complete mesh edges, underpaints their
+  union with the largest-area style, and overpaints the remaining fused styles;
+  the group is accepted only when all members share a safe paint-order interval,
+  otherwise the normal surface commands remain authoritative;
+- SVG output uses shared palette/line classes, a configurable normalized integer
+  coordinate grid, compact polygon paths, and chained compound HLR paths; Canvas
+  consumes the same cached render-command preparation;
+- the Three.js pane and glTF adapter are demo concerns, not dependencies of the
+  generic illustration algorithm; and
+- STEP-backed surfaces can composite that HLR outline in both SVG and Canvas;
+  generic mesh-only sources remain surface-only unless an adapter supplies a
+  compatible linework layer; and
+- a separate HLR Detail checkbox composites the HLR Lab's visible sharp and
+  silhouette edge preset beneath the heavier mesh-shadow outline.
+
+Build its hosted review directory with:
+
+```powershell
+python scripts\build_illustration_site.py
+```
+
+The output is `dist/wasm/demos/illustration/`; its only runtime file is
+`index.html`. The single-file form is
+`dist/wasm/demos/illustration_demo.html`. Neither builder publishes artifacts.
+
 ## Adding A Single-HTML Demo
 
 1. Add the maintained page/application source under `examples/wasm/`.
@@ -140,9 +204,12 @@ Focused HLR/demo-platform checks are:
 
 ```powershell
 python scripts\build_hlr_site.py
+python scripts\build_illustration_site.py
 node tests\typescript\hlr_static_site_validation.mjs
+node tests\typescript\illustration_static_site_validation.mjs
 uv run pytest tests\python\test_package_single_html_site.py -q
 uv run pytest tests\wasm\test_hlr_static_site.py -q
+uv run pytest tests\wasm\test_illustration_static_site.py -q
 npm run check:typescript
 ```
 

@@ -47,6 +47,13 @@ durable record belongs here, in ADRs, and in requirements.
 - [STEP topology synthetic product hierarchy](step-topology-hierarchy.md)
 - [STEP topology Appz Annotation Lab handoff](step-topology-appz-annotation-lab-handoff.md)
 
+## Retained Research Prototypes
+
+- [STEP Illustration Lab prototype](browser-demos.md#step-illustration-lab-prototype)
+  is a retained concept demonstrator, not a supported interface or production
+  renderer. Its presence in Geometer does not settle long-term component
+  ownership; promotion requires a separate architecture and contract decision.
+
 ## Format Docs
 
 - [JSON formats](json-formats.md)

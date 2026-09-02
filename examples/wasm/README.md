@@ -134,6 +134,114 @@ python -m http.server 8123 --bind 127.0.0.1
 HLR and planar examples remain on their existing JavaScript surfaces until
 their respective operation contracts are promoted.
 
+## STEP Illustration Lab Prototype
+
+**Status: retained concept prototype.** This code is kept as an executable
+design study, regression target, and source of reusable experiments. It is not
+a production renderer, supported public API, versioned scene contract, or
+compatibility commitment. Its TypeScript types, algorithms, output details,
+and demo controls may change without deprecation while the ownership boundary
+is evaluated. Keeping the prototype in Geometer does not by itself decide that
+Geometer should own a future production illustration stack; promotion would
+require a separate contract and architecture decision.
+
+`illustration_demo.html`, `illustration_demo.ts`, and `mesh_illustration.ts`
+form the reviewable implementation of the retained illustration experiment.
+The page keeps the HLR Lab's side-by-side 3D/2D workflow, but the right pane renders
+colorized triangle surfaces to either SVG or Canvas2D. It supports flat,
+unquantized Lambert diffuse, quantized-band (up to 32 bands), and early toon shading,
+live style changes, named or trackball
+camera views, local STEP upload, and SVG/scene/style downloads.
+
+The Geometry section exposes Draft, Balanced, Fine, and Extra fine STEP mesh
+presets plus custom linear deflection (millimetres), angular deflection
+(degrees) and separately grouped HLR relative chord/angular tolerances. The demo
+does not impose a triangle-count cap. Surface tolerance changes reconvert STEP
+through Geometer WASM; HLR tolerances only reproject linework, and GLB-only
+inputs retain their authored tessellation.
+Linear deflection is the maximum positional gap between an exact STEP surface
+and its triangle approximation; angular deflection limits directional change
+while following curvature. Smaller values increase curved-surface density.
+Remeshing the current model preserves the active orthographic camera pose,
+target, zoom, and framing scale.
+
+The Surface panel can fuse safe adjacent opaque triangles that resolve to the
+same rendered color. SVG and Canvas use the same cached surface commands, and
+the UI reports front-facing-triangle, resulting polygon-draw, and SVG byte
+counts. Fusion runs after visibility ordering and may cross unrelated paint
+commands only when the whole polygon can move without crossing an overlapping
+different-style surface. Edge identity includes depth; transparent surfaces,
+ambiguous projected folds or overlaps, non-manifold edges, and invalid boundary
+loops fall back to individual ordered triangles. This is a conservative
+output-size optimization rather than a change to the prepared mesh scene.
+
+When `fuseSurfaces` and `layerCoplanarMaterials` are both enabled, the shared
+renderer also recognizes opaque material partitions connected by complete
+edges on the same geometric plane. It unions the partition into a continuous
+footprint, underpaints that footprint with its largest-area rendered style,
+then overpaints the other fused material regions. The whole layered group must
+fit one common visibility-order interval; transparent, overlapping,
+non-manifold, non-coplanar, or ambiguously ordered groups retain the ordinary
+surface path. This generic treatment covers zero-height package markings,
+logos, and similar mesh-authored inlays without introducing PCB-specific
+policy. It does not reconstruct analytic STEP curves; marking contours still
+reflect the selected surface tessellation.
+
+SVG serialization uses shared style classes, chained compound HLR paths,
+collinear boundary removal, and a normalized integer coordinate grid. The
+default grid has 1,000,000 units across the larger unpadded artwork axis;
+callers can override it through `MeshIllustrationSvgOptions.coordinateSpan`.
+Scene JSON and Canvas retain the original projected coordinates.
+
+The current polygon contraction does not yet clip away fully occluded triangle
+fragments. A future maximum-reduction mode can use Geometer's Clipper2 byte
+bridge to subtract accumulated front coverage and union the remaining opaque
+regions by style. Transparent, gradient, and Gouraud surfaces must retain an
+ordered mesh-capable fallback rather than using that opaque flattening path.
+
+The illustration algorithm consumes generic indexed or non-indexed triangle
+meshes with transforms, material colors, and vertex normals. STEP is only the
+first adapter: the prototype Worker uses the existing STEP-to-GLB compatibility
+surface, then the same Three.js-to-generic-mesh adapter handles bundled and
+uploaded models. A future glTF/GLB loader or Viz-generated PCB mesh can feed the
+same algorithm without STEP or OCCT.
+
+This is a visibility and appearance prototype, not a promoted illustration
+operation. STEP-backed models can enable Geometer's existing HLR `mesh-shadow`
+Outline layer, which unions projected tessellated faces into the clean outer
+body trace used by the HLR Lab, and its visible sharp-plus-silhouette Detail
+preset. Independent checkboxes composite those layers over the shared
+SVG/Canvas surface scene and include them in SVG downloads. Generic mesh inputs
+remain surface-only unless an adapter supplies comparable linework; the noisy
+triangle-adjacency silhouette experiment is not exposed in the main UI.
+Projected triangle overlaps are spatially indexed and depth-compared over their
+actual intersection before vector paint order is chosen; this avoids the
+body/lead and dense-assembly failures caused by average-depth sorting. Triangle
+visibility order is cached per prepared scene and back-face mode so style-only
+redraws do not rebuild the overlap graph. Triangle paint overlap suppresses
+SVG/Canvas antialias seams. Coplanar material layering additionally ensures
+that shallow marking boundaries are overpainted with the marking color rather
+than a later-painted base color. The hidden, experimental adjacency-derived outline
+and crease flags remain overlay linework rather than occlusion-clipped strokes;
+STEP-backed lab output uses the visibility-resolved HLR outline instead.
+
+The STEP adapter requests `strip_root_placement` so HLR and STEP-to-GLB use the
+same definition-local frame, keeps the projection result in its documented
+millimetres, and converts outline coordinates to glTF metres only when attaching
+them to the illustration scene.
+
+Build and review the offline site:
+
+```powershell
+node scripts\build-typescript-examples.mjs
+python scripts\build_illustration_site.py
+python -m http.server 8123 --bind 127.0.0.1 --directory dist\wasm\demos\illustration
+```
+
+Open `http://127.0.0.1:8123/`. The directly openable single-file artifact is
+`dist/wasm/demos/illustration_demo.html`. Building does not publish either
+artifact.
+
 ## Embedded Model Viewer
 
 `embedded_model_viewer.html` and `embedded_model_viewer.js` are the browser

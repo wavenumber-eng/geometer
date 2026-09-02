@@ -637,6 +637,15 @@ int parse_hlr_projection_options_json(const char* json, HlrProjectionOptions* op
             return 91;
         }
     }
+    if (const JsonValue* strip_root =
+            find_any_member(root, {"strip_root_placement", "stripRootPlacement"}))
+    {
+        if (!bool_field(*strip_root, &parsed.strip_root_placement, &error, "strip_root_placement"))
+        {
+            set_status(status, 91, error);
+            return 91;
+        }
+    }
     if (const JsonValue* curve_mode = find_any_member(root, {"curve_mode", "curveMode"}))
     {
         if (!parse_curve_mode(*curve_mode, &parsed.curve_mode, &error))

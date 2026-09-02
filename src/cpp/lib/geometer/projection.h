@@ -59,6 +59,9 @@ struct HlrProjectionOptions
     std::array<double, 16> model_transform = {
         1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0,
     };
+    // Match STEP-to-GLB's definition-local frame by removing only free-shape
+    // root placements while preserving assembly-child placements.
+    bool strip_root_placement = false;
     ProjectionCurveMode curve_mode = ProjectionCurveMode::NativeArcs;
     int samples_per_curve = 24;
     int round_digits = 3;

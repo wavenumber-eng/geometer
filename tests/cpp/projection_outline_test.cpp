@@ -7,6 +7,7 @@
 #include <fstream>
 #include <iostream>
 #include <iterator>
+#include <limits>
 #include <map>
 #include <set>
 #include <stdexcept>
@@ -40,6 +41,16 @@ std::vector<unsigned char> read_fixture_bytes(const std::string& name)
 {
     const std::string path =
         std::string(GEOMETER_TEST_SOURCE_DIR) + "/tests/fixtures/step/embedded_models/" + name;
+    std::ifstream input(path, std::ios::binary);
+    require(input.good(), "STEP fixture should be readable: " + path);
+    return std::vector<unsigned char>(std::istreambuf_iterator<char>(input),
+                                      std::istreambuf_iterator<char>());
+}
+
+std::vector<unsigned char> read_relative_step_fixture(const std::string& relative_path)
+{
+    const std::string path =
+        std::string(GEOMETER_TEST_SOURCE_DIR) + "/tests/fixtures/step/" + relative_path;
     std::ifstream input(path, std::ios::binary);
     require(input.good(), "STEP fixture should be readable: " + path);
     return std::vector<unsigned char>(std::istreambuf_iterator<char>(input),
@@ -225,6 +236,51 @@ void mesh_shadow_outline_avoids_side_view_edge_explosion()
     require(non_degree_two_endpoint_count(outline) == 0, "mesh-shadow outline should be closed");
 }
 
+void root_placement_stripping_matches_step_to_glb_definition_frame()
+{
+    const std::vector<unsigned char> step_bytes =
+        read_relative_step_fixture("generated_topology/generated_fused_slab.step");
+    geometer::HlrProjectionOptions placed_options = projection_options({view_spec("top")});
+    placed_options.outline_algorithm = geometer::ProjectionOutlineAlgorithm::MeshShadow;
+    placed_options.round_digits = 6;
+    geometer::HlrProjectionOptions stripped_options = placed_options;
+    stripped_options.strip_root_placement = true;
+
+    const auto project = [&step_bytes](const geometer::HlrProjectionOptions& options)
+    {
+        geometer::HlrProjectionResult result;
+        geometer::Status status;
+        const int code = geometer::step_hlr_projection_from_bytes(
+            step_bytes.data(), step_bytes.size(), options, &result, &status);
+        require(code == 0, "root-placement projection should succeed: " + status.message);
+        return result;
+    };
+    const geometer::HlrProjectionResult placed_result = project(placed_options);
+    const geometer::HlrProjectionResult stripped_result = project(stripped_options);
+    const geometer::ProjectedModeGeometry& placed = find_view(placed_result, "top").outline;
+    const geometer::ProjectedModeGeometry& stripped = find_view(stripped_result, "top").outline;
+    require(!placed.segments.empty() && !stripped.segments.empty(),
+            "root-placement projections should contain outlines");
+
+    const auto x_bounds = [](const geometer::ProjectedModeGeometry& geometry)
+    {
+        double minimum = std::numeric_limits<double>::infinity();
+        double maximum = -std::numeric_limits<double>::infinity();
+        for (const geometer::ProjectedSegment& segment : geometry.segments)
+        {
+            minimum = std::min(minimum, std::min(segment.x1, segment.x2));
+            maximum = std::max(maximum, std::max(segment.x1, segment.x2));
+        }
+        return std::pair<double, double>{minimum, maximum};
+    };
+    const auto placed_x = x_bounds(placed);
+    const auto stripped_x = x_bounds(stripped);
+    require(std::fabs(stripped_x.first) < 1.0e-6 && std::fabs(stripped_x.second - 9.0) < 1.0e-6,
+            "stripped HLR outline should use the STEP-to-GLB definition-local x frame");
+    require(std::fabs(placed_x.first - stripped_x.first) > 1.0,
+            "nonidentity root placement should remain observable when stripping is disabled");
+}
+
 } // namespace
 
 int main()
@@ -235,6 +291,7 @@ int main()
         raw_outline_option_is_still_observable();
         json_and_svg_use_outline_bbox_modes();
         mesh_shadow_outline_avoids_side_view_edge_explosion();
+        root_placement_stripping_matches_step_to_glb_definition_frame();
     }
     catch (const std::exception& e)
     {

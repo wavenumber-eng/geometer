@@ -49,6 +49,7 @@ Accepted option keys:
 
 Both values must be positive finite numbers. Empty or `null` JSON keeps the
 default options.
+
 ## HLR Options JSON
 
 Defined in `src/cpp/lib/geometer/projection_options_json.h`.
@@ -66,6 +67,10 @@ Accepted option keys:
 - `views`: array of `{ id, direction, up }`.
 - `model_transform` or `modelTransform`: row-major 4x4 number matrix. A flat
   array of 16 numbers is also accepted.
+- `strip_root_placement` or `stripRootPlacement`: remove only free-shape root
+  placements before projection, matching STEP-to-GLB's definition-local frame;
+  assembly-child placements remain intact. Defaults to `false` for backward
+  compatibility.
 - `curve_mode` or `curveMode`: `native_arcs`, `native-arcs`, or `polyline`.
 - `samples_per_curve` or `samples`.
 - `round_digits` or `roundDigits`.

@@ -1,6 +1,7 @@
 #include "geometer/projection.h"
 
 #include "fast_hlr_occt.h"
+#include "fast_mesh_shadow_outline.h"
 #include "geometer/planar_contours.h"
 #include "geometer/planar_solve.h"
 #include "mesh_shadow_outline.h"
@@ -1139,9 +1140,12 @@ int step_hlr_projection_from_bytes(const unsigned char* step_data, std::size_t s
             (options.output_outline &&
              options.outline_algorithm == ProjectionOutlineAlgorithm::HlrClosedEdges);
         const bool needs_fast_detail = use_fast && options.output_detail;
+        const bool needs_fast_outline =
+            options.output_outline &&
+            options.outline_algorithm == ProjectionOutlineAlgorithm::FastMeshShadow;
         const bool needs_poly_hlr = needs_classic_hlr && (use_poly || use_fast);
         const bool needs_mesh =
-            needs_poly_hlr || needs_fast_detail ||
+            needs_poly_hlr || needs_fast_detail || needs_fast_outline ||
             (options.output_outline &&
              options.outline_algorithm == ProjectionOutlineAlgorithm::MeshShadow);
         if (needs_mesh)
@@ -1176,7 +1180,7 @@ int step_hlr_projection_from_bytes(const unsigned char* step_data, std::size_t s
         }
 
         FastHlrPreparedMesh fast_prepared;
-        if (needs_fast_detail)
+        if (needs_fast_detail || needs_fast_outline)
         {
             const auto prepare_start = std::chrono::high_resolution_clock::now();
             const int fast_code =
@@ -1238,6 +1242,18 @@ int step_hlr_projection_from_bytes(const unsigned char* step_data, std::size_t s
             {
                 const auto outline_start = std::chrono::high_resolution_clock::now();
                 projected_view.outline = mesh_shadow_outline_geometry(shape, view, options, scale);
+                timings.extract_ms += elapsed_ms(outline_start);
+            }
+            else if (needs_fast_outline)
+            {
+                const auto outline_start = std::chrono::high_resolution_clock::now();
+                const int outline_code =
+                    fast_mesh_shadow_outline_geometry(fast_prepared, view, options.fast, scale,
+                                                      &projected_view.outline, nullptr, status);
+                if (outline_code != 0)
+                {
+                    return outline_code;
+                }
                 timings.extract_ms += elapsed_ms(outline_start);
             }
             if (options.output_bbox)

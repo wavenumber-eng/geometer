@@ -535,7 +535,12 @@ bool parse_projection_outline_algorithm(const JsonValue& value, ProjectionOutlin
         *output = ProjectionOutlineAlgorithm::MeshShadow;
         return true;
     }
-    *error = "outline_algorithm must be hlr-close or mesh-shadow.";
+    if (value.string_value == "fast-mesh-shadow" || value.string_value == "fast_mesh_shadow")
+    {
+        *output = ProjectionOutlineAlgorithm::FastMeshShadow;
+        return true;
+    }
+    *error = "outline_algorithm must be hlr-close, mesh-shadow, or fast-mesh-shadow.";
     return false;
 }
 

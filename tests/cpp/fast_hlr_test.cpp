@@ -1,4 +1,5 @@
 #include "fast_hlr_occt.h"
+#include "fast_mesh_shadow_outline.h"
 #include "geometer/fast_hlr.h"
 
 #include <BRepMesh_IncrementalMesh.hxx>
@@ -9,6 +10,7 @@
 #include <cmath>
 #include <exception>
 #include <iostream>
+#include <limits>
 #include <stdexcept>
 #include <string>
 
@@ -298,6 +300,97 @@ void disconnected_coincident_shapes_keep_separate_topology()
             "disconnected coincident boxes must retain independent edges");
 }
 
+geometer::ProjectedModeGeometry fast_outline(const geometer::FastHlrIndexedMesh& mesh)
+{
+    const geometer::FastHlrPreparedMesh prepared = prepare(mesh);
+    geometer::ProjectedModeGeometry outline;
+    geometer::Status status;
+    const int code = geometer::fast_mesh_shadow_outline_geometry(prepared, top_view(), {}, 1000,
+                                                                 &outline, nullptr, &status);
+    require(code == 0, "fast mesh-shadow should succeed: " + status.message);
+    return outline;
+}
+
+void fast_mesh_shadow_preserves_a_planar_hole()
+{
+    geometer::FastHlrIndexedMesh ring;
+    ring.vertices = {
+        {0.0, 0.0, 0.0}, {4.0, 0.0, 0.0}, {4.0, 4.0, 0.0}, {0.0, 4.0, 0.0},
+        {1.0, 1.0, 0.0}, {3.0, 1.0, 0.0}, {3.0, 3.0, 0.0}, {1.0, 3.0, 0.0},
+    };
+    ring.triangles = {
+        {{0, 1, 5}, 1}, {{0, 5, 4}, 1}, {{1, 2, 6}, 1}, {{1, 6, 5}, 1},
+        {{2, 3, 7}, 1}, {{2, 7, 6}, 1}, {{3, 0, 4}, 1}, {{3, 4, 7}, 1},
+    };
+    const geometer::ProjectedModeGeometry outline = fast_outline(ring);
+    require(outline.segments.size() == 8,
+            "planar ring shadow should contain four outer and four hole segments");
+}
+
+void fast_mesh_shadow_unions_overlapping_components()
+{
+    geometer::FastHlrIndexedMesh mesh;
+    mesh.vertices = {
+        {0.0, 0.0, 0.0}, {2.0, 0.0, 0.0}, {2.0, 2.0, 0.0}, {0.0, 2.0, 0.0},
+        {1.0, 0.0, 1.0}, {3.0, 0.0, 1.0}, {3.0, 2.0, 1.0}, {1.0, 2.0, 1.0},
+    };
+    mesh.triangles = {
+        {{0, 1, 2}, 1},
+        {{0, 2, 3}, 1},
+        {{4, 5, 6}, 2},
+        {{4, 6, 7}, 2},
+    };
+    const geometer::ProjectedModeGeometry outline = fast_outline(mesh);
+    require(outline.segments.size() == 4,
+            "overlapping rectangular components should union to one rectangle");
+    double minimum_x = std::numeric_limits<double>::infinity();
+    double maximum_x = -std::numeric_limits<double>::infinity();
+    for (const geometer::ProjectedSegment& segment : outline.segments)
+    {
+        minimum_x = std::min(minimum_x, std::min(segment.x1, segment.x2));
+        maximum_x = std::max(maximum_x, std::max(segment.x1, segment.x2));
+    }
+    require(near(minimum_x, 0.0) && near(maximum_x, 3.0),
+            "overlapping component union should retain the complete shadow extent");
+}
+
+void fast_mesh_shadow_falls_back_for_same_direction_shared_edges()
+{
+    geometer::FastHlrIndexedMesh mesh;
+    mesh.vertices = {{0.0, 0.0, 0.0}, {2.0, 0.0, 0.0}, {0.0, 2.0, 0.0}};
+    mesh.triangles = {{{0, 1, 2}, 1}, {{0, 1, 2}, 1}};
+    const geometer::ProjectedModeGeometry outline = fast_outline(mesh);
+    require(outline.segments.size() == 3,
+            "coincident same-face triangles should fall back to a triangle union");
+}
+
+void fast_mesh_shadow_enforces_output_and_coordinate_limits()
+{
+    geometer::FastHlrIndexedMesh mesh;
+    mesh.vertices = {{0.0, 0.0, 0.0}, {1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}};
+    mesh.triangles = {{{0, 1, 2}, 1}};
+    const geometer::FastHlrPreparedMesh prepared = prepare(mesh);
+    geometer::FastHlrOptions limited;
+    limited.limits.max_output_segments = 2;
+    geometer::ProjectedModeGeometry outline;
+    geometer::Status status;
+    require(geometer::fast_mesh_shadow_outline_geometry(prepared, top_view(), limited, 1000,
+                                                        &outline, nullptr, &status) == 7,
+            "fast mesh-shadow should enforce its output segment limit");
+
+    mesh.vertices[1].x = 1.0e20;
+    const geometer::FastHlrPreparedMesh huge = prepare(mesh);
+    require(geometer::fast_mesh_shadow_outline_geometry(huge, top_view(), {}, 1000, &outline,
+                                                        nullptr, &status) == 5,
+            "fast mesh-shadow should reject coordinates outside the Clipper grid");
+
+    geometer::FastHlrPreparedMesh malformed = prepared;
+    malformed.triangles[0].vertices[2] = 99;
+    require(geometer::fast_mesh_shadow_outline_geometry(malformed, top_view(), {}, 1000, &outline,
+                                                        nullptr, &status) == 5,
+            "fast mesh-shadow should reject malformed prepared triangle indices");
+}
+
 } // namespace
 
 int main()
@@ -314,6 +407,10 @@ int main()
         reversed_view_uses_the_same_near_direction_convention();
         sloped_occluder_splits_at_the_depth_crossing();
         disconnected_coincident_shapes_keep_separate_topology();
+        fast_mesh_shadow_preserves_a_planar_hole();
+        fast_mesh_shadow_unions_overlapping_components();
+        fast_mesh_shadow_falls_back_for_same_direction_shared_edges();
+        fast_mesh_shadow_enforces_output_and_coordinate_limits();
     }
     catch (const std::exception& error)
     {

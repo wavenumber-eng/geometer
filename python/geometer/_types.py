@@ -95,6 +95,10 @@ class HlrOptions:
         return cls(outline_algorithm="mesh-shadow")
 
     @classmethod
+    def fast_assembly_outline(cls) -> "HlrOptions":
+        return cls(outline_algorithm="fast-mesh-shadow")
+
+    @classmethod
     def visible_detail(cls) -> "HlrOptions":
         return cls(edge_v_smooth=True, edge_v_sewn=True)
 

@@ -64,7 +64,10 @@ enum class ProjectionOutlineAlgorithm
     HlrClosedEdges,
     // Build outline from the orthographic shadow of tessellated faces. This is
     // better for pure assembly silhouettes and can preserve projected holes.
-    MeshShadow
+    MeshShadow,
+    // Reconstruct projected CAD-face triangle-patch loops before unioning,
+    // with a hierarchical per-face union fallback for complex patches.
+    FastMeshShadow
 };
 
 struct ProjectionViewSpec

@@ -1,4 +1,4 @@
-"""Benchmark current HLR backends before implementing the fast alternative.
+"""Benchmark exact, poly, fast-detail, and mesh-shadow projection backends.
 
 The report deliberately measures the existing one-shot projection surface. Its
 wall time includes process startup, STEP import, projection, and serialization;
@@ -261,7 +261,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
     parser.add_argument("--model", action="append", default=[], help="fixture name; repeatable")
     parser.add_argument("--algorithm", action="append", choices=("poly", "exact", "fast"), default=[])
-    parser.add_argument("--outline", action="append", choices=("hlr-close", "mesh-shadow"), default=[])
+    parser.add_argument(
+        "--outline",
+        action="append",
+        choices=("hlr-close", "mesh-shadow", "fast-mesh-shadow"),
+        default=[],
+    )
     parser.add_argument("--layer", action="append", choices=("outline", "detail", "both"), default=[])
     parser.add_argument("--view", default="top")
     parser.add_argument("--warmup", type=int, default=1)

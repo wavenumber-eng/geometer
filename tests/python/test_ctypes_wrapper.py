@@ -116,6 +116,9 @@ def test_hlr_options_preserve_independent_output_layers() -> None:
     assert options["projection_algorithm"] == "fast"
     assert options["fast"] == {"crease_angle_rad": 0.25}
 
+    fast_outline = geometer.HlrOptions.fast_assembly_outline().to_json_value()
+    assert fast_outline["outline_algorithm"] == "fast-mesh-shadow"
+
 
 def test_model_bounds_returns_transformed_bounds() -> None:
     base = geometer.model_bounds(SOT23_STEP.read_bytes())

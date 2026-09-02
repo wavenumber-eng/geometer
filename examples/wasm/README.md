@@ -214,9 +214,10 @@ uploaded models. A future glTF/GLB loader or Viz-generated PCB mesh can feed the
 same algorithm without STEP or OCCT.
 
 This is a visibility and appearance prototype, not a promoted illustration
-operation. STEP-backed models can enable Geometer's existing HLR `mesh-shadow`
-Outline layer, which unions projected tessellated faces into the clean outer
-body trace used by the HLR Lab, and its visible sharp-plus-silhouette Detail
+operation. STEP-backed models can enable Geometer's `fast-mesh-shadow` Outline
+layer, which reconstructs CAD-face boundary loops when possible and falls back
+to per-face triangle unions before combining the reduced contours into the clean
+outer body trace, and its fast visible Detail
 preset. Independent checkboxes composite those layers over the shared
 SVG/Canvas surface scene and include them in SVG downloads. Generic mesh inputs
 remain surface-only unless an adapter supplies comparable linework; the noisy

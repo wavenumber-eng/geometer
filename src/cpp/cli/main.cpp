@@ -60,7 +60,7 @@ static void print_usage()
                  "  --deflection-coefficient <value>            (default: 0.004)\n"
                  "  --angular <value>      Angular deflection (default: 0.5)\n"
                  "  --projection-algorithm <poly|exact|fast>\n"
-                 "  --outline-algorithm <hlr-close|mesh-shadow>\n"
+                 "  --outline-algorithm <hlr-close|mesh-shadow|fast-mesh-shadow>\n"
                  "  --format <step>        Source model format (only step is supported)\n"
                  "  --view <id>            SVG view id (default: top)\n"
                  "  --mode <outline|detail|bbox> SVG mode (default: outline)\n"
@@ -529,10 +529,29 @@ static int parse_projection_options(int argc, char* argv[], int start,
         else if (std::strcmp(argv[i], "--outline-algorithm") == 0)
         {
             const char* value = argv[i + 1];
-            options->outline_algorithm =
-                (std::strcmp(value, "mesh-shadow") == 0 || std::strcmp(value, "mesh_shadow") == 0)
-                    ? geometer::ProjectionOutlineAlgorithm::MeshShadow
-                    : geometer::ProjectionOutlineAlgorithm::HlrClosedEdges;
+            if (std::strcmp(value, "fast-mesh-shadow") == 0 ||
+                std::strcmp(value, "fast_mesh_shadow") == 0)
+            {
+                options->outline_algorithm = geometer::ProjectionOutlineAlgorithm::FastMeshShadow;
+            }
+            else if (std::strcmp(value, "mesh-shadow") == 0 ||
+                     std::strcmp(value, "mesh_shadow") == 0)
+            {
+                options->outline_algorithm = geometer::ProjectionOutlineAlgorithm::MeshShadow;
+            }
+            else if (std::strcmp(value, "hlr-close") == 0 || std::strcmp(value, "hlr_close") == 0 ||
+                     std::strcmp(value, "hlr") == 0)
+            {
+                options->outline_algorithm = geometer::ProjectionOutlineAlgorithm::HlrClosedEdges;
+            }
+            else
+            {
+                std::fprintf(stderr,
+                             "--outline-algorithm must be hlr-close, mesh-shadow, or "
+                             "fast-mesh-shadow (got %s).\n",
+                             value);
+                return 2;
+            }
         }
         else if (std::strcmp(argv[i], "--projection-algorithm") == 0)
         {

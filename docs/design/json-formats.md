@@ -88,7 +88,8 @@ Accepted option keys:
 - `mesh_deflection_mode` or `meshDeflectionMode`: `absolute` or
   `bbox-relative`.
 - `mesh_deflection_coefficient` or `meshDeflectionCoefficient`.
-- `outline_algorithm` or `outlineAlgorithm`: `mesh-shadow` or `hlr-close`.
+- `outline_algorithm` or `outlineAlgorithm`: `hlr-close`, `mesh-shadow`, or
+  the additive evaluation backend `fast-mesh-shadow`.
 - `hlr_angle_tolerance` or `hlrAngleTolerance`.
 - `edge_v_sharp`, `edge_v_outline`, `edge_v_smooth`, `edge_v_sewn`,
   `edge_v_iso`, `edge_h_sharp`, `edge_h_outline`, `edge_h_smooth`,
@@ -98,7 +99,8 @@ Accepted option keys:
 - legacy `include_outline` or `includeOutline`, which toggles visible outline
   edges.
 - `union_outline_polygons`, `unionOutlinePolygons`, or `unionPolygons`.
-- `fast`: provisional options used only when `projection_algorithm` is `fast`:
+- `fast`: provisional options used by `projection_algorithm=fast` and
+  `outline_algorithm=fast-mesh-shadow`:
   `include_boundaries`, `include_creases`, `include_silhouettes`,
   `include_hidden`, `crease_angle_rad`, `weld_tolerance`,
   `projected_tolerance`, and `depth_tolerance`, with camelCase aliases. Its

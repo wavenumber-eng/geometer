@@ -66,7 +66,7 @@ function projectMeshShadow(module, stepBytes, view, modelTransform, hlrOptions =
     curve_mode: "polyline",
     round_digits: 6,
     projection_algorithm: "fast",
-    outline_algorithm: "mesh-shadow",
+    outline_algorithm: "fast-mesh-shadow",
     output_outline: hlrOptions.outputOutline ?? true,
     output_detail: hlrOptions.outputDetail ?? true,
     output_bbox: false,

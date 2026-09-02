@@ -96,6 +96,12 @@ enum class ProjectionAlgorithm {
     Fast
 };
 
+enum class ProjectionOutlineAlgorithm {
+    HlrClosedEdges,
+    MeshShadow,
+    FastMeshShadow
+};
+
 struct FastHlrLimits {
     std::size_t max_vertices = 2'000'000;
     std::size_t max_triangles = 2'000'000;
@@ -183,8 +189,9 @@ Fast-option behavior is intentionally explicit during evaluation:
 | `views`, `model_transform`, `strip_root_placement`, `round_digits` | Supported common behavior |
 | `output_outline`, `output_detail`, `output_bbox` | Supported as independent composable layers |
 | mesh deflection controls | Supported; they define the prepared triangle mesh |
-| nested `fast` controls and limits | Supported by the fast detail engine |
+| nested `fast` controls and limits | Supported by the fast detail and fast mesh-shadow engines |
 | `outline_algorithm=mesh-shadow` | Delegated to the independent Clipper2 triangle-union outline |
+| `outline_algorithm=fast-mesh-shadow` | Reconstructs projected CAD-face loops when possible, falls back to per-face triangle unions, then unions the reduced contours |
 | `outline_algorithm=hlr-close` | Delegated to the existing poly HLR-close outline path |
 | exact/poly `edge_*` flags | Not interpreted by fast detail; nested `fast` candidate flags apply instead |
 | `curve_mode`, `samples_per_curve`, native-arc behavior | Fast detail emits segments only and does not fit arcs |

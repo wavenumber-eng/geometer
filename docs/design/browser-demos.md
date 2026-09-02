@@ -135,7 +135,7 @@ The first mesh-illustration feasibility slice is maintained in
   normals rather than STEP objects;
 - the current STEP adapter converts browser-local bytes through the existing
   compatibility STEP-to-GLB symbol and can call the existing HLR projection
-  symbol for its unioned `mesh-shadow` Outline layer;
+  symbol for its hierarchical `fast-mesh-shadow` Outline layer;
 - SVG and Canvas2D consume one prepared projected scene and a separate style,
   so lighting or palette changes do not redo mesh preparation;
 - the shared renderer offers unlit, flat, unquantized Lambert diffuse, banded (2-32),
@@ -167,8 +167,9 @@ The first mesh-illustration feasibility slice is maintained in
 - STEP-backed surfaces can composite that HLR outline in both SVG and Canvas;
   generic mesh-only sources remain surface-only unless an adapter supplies a
   compatible linework layer; and
-- a separate HLR Detail checkbox composites the HLR Lab's visible sharp and
-  silhouette edge preset beneath the heavier mesh-shadow outline.
+- a separate HLR Detail checkbox composites fast visible boundary, crease, and
+  silhouette segments beneath the independently computed fast mesh-shadow
+  outline.
 
 The lab also contains a `GPU HLR` interaction experiment implemented in
 `fast_hlr.ts`. It retains boundary/crease buffers, lets opaque faces populate

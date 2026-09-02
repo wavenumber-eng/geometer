@@ -48,7 +48,7 @@ depends_on = ["candidate-edge-graph"]
 [[steps]]
 id = "fast-mesh-shadow-outline"
 title = "Implement a separately selectable prepared-mesh outline path because the current Clipper2 triangle union misses the frozen BGA90 budget"
-status = "pending"
+status = "done"
 depends_on = ["baseline-and-budgets"]
 
 [[steps]]
@@ -122,7 +122,7 @@ status = "pending"
 [[exit_criteria]]
 id = "outline-quality"
 title = "Fast mesh-shadow outline preserves projected holes and stays within its documented geometric tolerance"
-status = "pending"
+status = "done"
 
 [[exit_criteria]]
 id = "detail-quality"
@@ -315,8 +315,36 @@ crossing, grazing silhouettes, and coincident disconnected OCCT shapes.
 
 This checkpoint does not complete the contract step: the versioned packed
 prepared-data transport is still pending, so the existing Three.js GPU path is
-an explicitly non-authoritative comparator. Path reconstruction and the
-separate fast mesh-shadow implementation also remain pending.
+an explicitly non-authoritative comparator. Path reconstruction remains
+pending.
+
+### Fast mesh-shadow checkpoint
+
+The reviewed fast outline implementation keeps `mesh-shadow` unchanged and adds
+`fast-mesh-shadow` as an independently selectable evaluation backend. It
+normalizes projected triangle winding, opportunistically reconstructs CAD-face
+triangle-patch loops, and uses an associative hierarchical fallback: union
+projected triangles within each CAD face, then union the reduced face contours
+globally. The fallback preserves the existing triangle-shadow semantics while
+avoiding one monolithic boolean over the entire tessellation.
+
+After independent review, all five governed fixtures pass top/front closure,
+bounds, aggregate area, and per-loop signed-area parity against the existing
+triangle union. On BGA90, the existing all-triangle union spent 363-389 ms p95
+in outline extraction while the corrected hierarchical implementation spent
+17.93 ms p95. A combined fast-detail plus fast-outline request spent 89.87 ms
+p95 in the two prepared view phases, below the frozen 150 ms target. Across the
+five-fixture governed package corpus, fast outline extraction p95 ranged from
+0.21 ms to 17.93 ms; one-shot wall time remains dominated by STEP import and
+mesh preparation.
+
+The evaluation implementation checks configured prepared-input and final-output
+limits, malformed indices, coordinate ranges, and strict segment insertion.
+Clipper2 overlay itself is not interruptible, so an adversarial polygon overlay
+can still consume substantial intermediate time or memory before the final
+output limit is observed. Hardening that internal work bound remains part of the
+pending resource-safety exit criterion rather than blocking this evaluation
+checkpoint.
 
 ## Execution architecture
 
@@ -378,7 +406,7 @@ Fast detail and outline selection form an explicit compatibility matrix:
 
 ```text
 projection_algorithm = exact | poly | fast
-outline_algorithm    = hlr-close | mesh-shadow
+outline_algorithm    = hlr-close | mesh-shadow | fast-mesh-shadow
 ```
 
 Layer selection is orthogonal to that matrix. An outline-only request must not
@@ -421,8 +449,8 @@ enum class ProjectionAlgorithm {
 Do not change the default as part of this plan. Existing `poly` and `exact`
 requests retain their behavior. `fast` returns the existing
 `HlrProjectionResult` / `geometry.projection.b0` structure and continues to use
-`ProjectionOutlineAlgorithm` to select mesh-shadow versus closed-HLR outline
-semantics.
+`ProjectionOutlineAlgorithm` to select closed-HLR, existing mesh-shadow, or
+fast mesh-shadow outline semantics.
 
 The provisional evaluation contract reuses only genuinely common inputs: view,
 model transform, tessellation controls, independent output-layer selection,

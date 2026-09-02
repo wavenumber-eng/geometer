@@ -178,6 +178,12 @@ void reject_invalid_options()
     require(code == 91, "non-object fast options should return parse error");
 
     code = geometer::parse_hlr_projection_options_json(
+        "{\"outline_algorithm\":\"fast-mesh-shadow\"}", &options, &status);
+    require(code == 0, "fast mesh-shadow outline should parse");
+    require(options.outline_algorithm == geometer::ProjectionOutlineAlgorithm::FastMeshShadow,
+            "fast mesh-shadow should select its additive outline backend");
+
+    code = geometer::parse_hlr_projection_options_json(
         "{\"fast\":{\"limits\":{\"max_edges\":1.5}}}", &options, &status);
     require(code == 91, "fractional fast limit should return parse error");
 

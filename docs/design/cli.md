@@ -46,7 +46,7 @@ Projection CLI options:
 - `--samples <count>`
 - `--round-digits <count>`
 - `--projection-algorithm <poly|exact|fast>`
-- `--outline-algorithm <mesh-shadow|hlr-close>`
+- `--outline-algorithm <hlr-close|mesh-shadow|fast-mesh-shadow>`
 - `--deflection-mode <absolute|bbox-relative>`
 - `--deflection-coefficient <value>`
 

@@ -26,6 +26,11 @@ outline_only = geometer.project_step_hlr(
         output_bbox=False,
     ),
 )
+fast_outline = geometer.project_step_hlr(
+    "part.step",
+    views=[geometer.ProjectionView.top()],
+    options=geometer.HlrOptions.fast_assembly_outline(),
+)
 fast_detail = geometer.project_step_hlr(
     "part.step",
     views=[geometer.ProjectionView.top()],

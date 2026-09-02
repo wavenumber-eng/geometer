@@ -236,6 +236,38 @@ void mesh_shadow_outline_avoids_side_view_edge_explosion()
     require(non_degree_two_endpoint_count(outline) == 0, "mesh-shadow outline should be closed");
 }
 
+void output_layers_are_independently_selectable()
+{
+    geometer::HlrProjectionOptions outline_options = projection_options({view_spec("top")});
+    outline_options.outline_algorithm = geometer::ProjectionOutlineAlgorithm::MeshShadow;
+    outline_options.output_detail = false;
+    outline_options.output_bbox = false;
+
+    const geometer::HlrProjectionResult outline_result =
+        project_or_throw("SOT-23.STEP", outline_options);
+    const geometer::ProjectedViewGeometry& outline_view = find_view(outline_result, "top");
+    require(!outline_view.outline.segments.empty(), "outline-only should produce outline geometry");
+    require(outline_view.detail.segments.empty() && outline_view.detail.arcs.empty(),
+            "outline-only should leave detail empty");
+    require(outline_view.bbox.segments.empty() && outline_view.bbox.arcs.empty(),
+            "outline-only should leave bbox empty");
+    require(outline_result.timings.hlr_ms == 0.0,
+            "mesh-shadow outline-only should bypass detail HLR");
+
+    geometer::HlrProjectionOptions detail_options = projection_options({view_spec("top")});
+    detail_options.output_outline = false;
+    detail_options.output_bbox = false;
+
+    const geometer::HlrProjectionResult detail_result =
+        project_or_throw("SOT-23.STEP", detail_options);
+    const geometer::ProjectedViewGeometry& detail_view = find_view(detail_result, "top");
+    require(!detail_view.detail.segments.empty(), "detail-only should produce detail geometry");
+    require(detail_view.outline.segments.empty() && detail_view.outline.arcs.empty(),
+            "detail-only should leave outline empty");
+    require(detail_view.bbox.segments.empty() && detail_view.bbox.arcs.empty(),
+            "detail-only should leave bbox empty");
+}
+
 void root_placement_stripping_matches_step_to_glb_definition_frame()
 {
     const std::vector<unsigned char> step_bytes =
@@ -291,6 +323,7 @@ int main()
         raw_outline_option_is_still_observable();
         json_and_svg_use_outline_bbox_modes();
         mesh_shadow_outline_avoids_side_view_edge_explosion();
+        output_layers_are_independently_selectable();
         root_placement_stripping_matches_step_to_glb_definition_frame();
     }
     catch (const std::exception& e)

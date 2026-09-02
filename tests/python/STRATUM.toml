@@ -17,6 +17,7 @@ objectives = [
     "Package any self-contained demo as a deterministic one-runtime-file review site with CSP and closure metadata.",
     "Verify the contract promotion manifest remains aligned with implemented interfaces.",
     "Require native runtime distributions to exclude build-only static libraries.",
+    "Verify the fast-HLR baseline harness records reproducible statistics over the governed fixture subset.",
 ]
 
 [[subtests]]
@@ -136,4 +137,11 @@ id = "PY_017"
 file = "test_native_runtime_distribution.py"
 name = "Native Runtime Distribution Boundary"
 description = "Checks native runtime packaging excludes and release validation rejects build-only .lib and .a artifacts."
+test_case_type = "unit"
+
+[[subtests]]
+id = "PY_018"
+file = "test_fast_hlr_benchmark.py"
+name = "Fast HLR Baseline Harness"
+description = "Checks governed fixture selection and reproducible nearest-rank timing summaries for fast-HLR baseline evidence."
 test_case_type = "unit"

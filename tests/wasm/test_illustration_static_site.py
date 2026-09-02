@@ -133,6 +133,53 @@ async function main() {
     throw new Error("Timed out waiting for the initial illustration.");
   })()`, true);
 
+  const gpuHlr = await evaluate(`(async () => {
+    const pane = document.querySelector("#illustrationOutputPane");
+    const before = Number(pane.dataset.prepareGeneration);
+    document.querySelector('button[data-output="gpu"]').click();
+    for (let frame = 0; frame < 30; frame += 1)
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+    const canvas = document.querySelector("#illustrationFastCanvas");
+    const gl = canvas.getContext("webgl2");
+    const debugRenderer = gl.getExtension("WEBGL_debug_renderer_info");
+    const pixels = new Uint8Array(canvas.width * canvas.height * 4);
+    gl.readPixels(0, 0, canvas.width, canvas.height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+    let distinctPixels = false;
+    for (let index = 4; index < pixels.length; index += 4) {
+      if (
+        pixels[index] !== pixels[0] ||
+        pixels[index + 1] !== pixels[1] ||
+        pixels[index + 2] !== pixels[2] ||
+        pixels[index + 3] !== pixels[3]
+      ) {
+        distinctPixels = true;
+        break;
+      }
+    }
+    const result = {
+      before,
+      after: Number(pane.dataset.prepareGeneration),
+      output: pane.dataset.output,
+      visible: !document.querySelector("#illustrationFastCanvas").classList.contains("hidden"),
+      buildMs: Number(pane.dataset.fastHlrBuildMs),
+      triangles: Number(pane.dataset.fastHlrTriangles),
+      edges: Number(pane.dataset.fastHlrEdges),
+      cpuMs: Number(pane.dataset.fastHlrCpuMs),
+      gpuMs: pane.dataset.fastHlrGpuMs === "unavailable"
+        ? null
+        : Number(pane.dataset.fastHlrGpuMs),
+      frameMs: Number(pane.dataset.fastHlrFrameMs),
+      fps: Number(pane.dataset.fastHlrFps),
+      drawCalls: Number(pane.dataset.fastHlrDrawCalls),
+      distinctPixels,
+      renderer: debugRenderer
+        ? gl.getParameter(debugRenderer.UNMASKED_RENDERER_WEBGL)
+        : gl.getParameter(gl.RENDERER),
+    };
+    document.querySelector('button[data-output="canvas"]').click();
+    return result;
+  })()`, true);
+
   const restyle = await evaluate(`(async () => {
     const pane = document.querySelector("#illustrationOutputPane");
     const before = Number(pane.dataset.prepareGeneration);
@@ -513,6 +560,30 @@ async function main() {
     throw new Error("BGA90 illustration did not complete.");
   })()`, true);
 
+  const gpuHlrLarge = await evaluate(`(async () => {
+    const pane = document.querySelector("#illustrationOutputPane");
+    const before = Number(pane.dataset.prepareGeneration);
+    document.querySelector('button[data-output="gpu"]').click();
+    for (let frame = 0; frame < 60; frame += 1)
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+    const result = {
+      before,
+      after: Number(pane.dataset.prepareGeneration),
+      buildMs: Number(pane.dataset.fastHlrBuildMs),
+      triangles: Number(pane.dataset.fastHlrTriangles),
+      edges: Number(pane.dataset.fastHlrEdges),
+      cpuMs: Number(pane.dataset.fastHlrCpuMs),
+      gpuMs: pane.dataset.fastHlrGpuMs === "unavailable"
+        ? null
+        : Number(pane.dataset.fastHlrGpuMs),
+      frameMs: Number(pane.dataset.fastHlrFrameMs),
+      fps: Number(pane.dataset.fastHlrFps),
+      drawCalls: Number(pane.dataset.fastHlrDrawCalls),
+    };
+    document.querySelector('button[data-output="svg"]').click();
+    return result;
+  })()`, true);
+
   await evaluate(`(async () => {
     const binary = atob(${JSON.stringify(uploadBase64)});
     const bytes = new Uint8Array(binary.length);
@@ -564,8 +635,8 @@ async function main() {
 
   const resources = await evaluate(`performance.getEntriesByType("resource").map((entry) => entry.name)`);
   process.stdout.write(JSON.stringify({
-    initial, restyle, fusion, detailToggle, lazyLinework, meshQuality, top, detailBeforeCamera,
-    camera, detailAfterCamera, cameraRemesh, bga, uploaded,
+    initial, gpuHlr, restyle, fusion, detailToggle, lazyLinework, meshQuality, top, detailBeforeCamera,
+    camera, detailAfterCamera, cameraRemesh, bga, gpuHlrLarge, uploaded,
     filename: download.suggestedFilename,
     exceptions,
     externalRequests: resources.filter((url) => /^https?:/u.test(url) && !url.startsWith(siteRoot)),
@@ -631,17 +702,20 @@ def test_illustration_static_site_mesh_render_upload_and_export() -> None:
             stderr=subprocess.DEVNULL,
         )
         _wait_for_server(url)
-        browser = subprocess.Popen(
+        chrome_arguments = [chrome, "--headless=new"]
+        if not os.environ.get("GEOMETER_GPU_HLR_HARDWARE"):
+            chrome_arguments.append("--disable-gpu")
+        chrome_arguments.extend(
             [
-                chrome,
-                "--headless=new",
-                "--disable-gpu",
                 "--no-first-run",
                 "--no-default-browser-check",
                 f"--user-data-dir={profile}",
                 f"--remote-debugging-port={cdp_port}",
                 url,
-            ],
+            ]
+        )
+        browser = subprocess.Popen(
+            chrome_arguments,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
         )
@@ -674,6 +748,8 @@ def test_illustration_static_site_mesh_render_upload_and_export() -> None:
                     process.wait(timeout=10)
         assert completed.returncode == 0, completed.stdout + completed.stderr
         result = json.loads(completed.stdout)
+        if os.environ.get("GEOMETER_GPU_HLR_REPORT"):
+            print(json.dumps({"small": result["gpuHlr"], "large": result["gpuHlrLarge"]}, sort_keys=True))
         exported = downloads / result["filename"]
         assert exported.is_file()
         exported_svg = exported.read_text(encoding="utf-8")
@@ -704,6 +780,19 @@ def test_illustration_static_site_mesh_render_upload_and_export() -> None:
     )
     assert result["initial"]["output"] == "svg"
     assert result["initial"]["shading"] == "toon"
+    assert result["gpuHlr"]["before"] == result["gpuHlr"]["after"]
+    assert result["gpuHlr"]["output"] == "gpu"
+    assert result["gpuHlr"]["visible"] is True
+    assert result["gpuHlr"]["buildMs"] >= 0
+    assert result["gpuHlr"]["triangles"] == result["initial"]["triangles"]
+    assert result["gpuHlr"]["edges"] > 0
+    assert result["gpuHlr"]["cpuMs"] >= 0
+    assert result["gpuHlr"]["gpuMs"] is None or result["gpuHlr"]["gpuMs"] >= 0
+    assert result["gpuHlr"]["frameMs"] > 0
+    assert result["gpuHlr"]["fps"] > 0
+    assert result["gpuHlr"]["drawCalls"] > 0
+    assert result["gpuHlr"]["distinctPixels"] is True
+    assert result["gpuHlr"]["renderer"]
     assert result["restyle"] == {
         "before": result["initial"]["generation"],
         "after": result["initial"]["generation"],
@@ -783,6 +872,16 @@ def test_illustration_static_site_mesh_render_upload_and_export() -> None:
     assert result["bga"]["surfaces"] == result["bga"]["surfaceDraws"]
     assert result["bga"]["paths"] > 0
     assert result["bga"]["elapsedMs"] < 30_000
+    assert result["gpuHlrLarge"]["before"] == result["gpuHlrLarge"]["after"]
+    assert result["gpuHlrLarge"]["triangles"] > 20_000
+    assert result["gpuHlrLarge"]["triangles"] == pytest.approx(result["bga"]["triangles"], rel=0.01)
+    assert result["gpuHlrLarge"]["edges"] > result["gpuHlr"]["edges"]
+    assert result["gpuHlrLarge"]["buildMs"] >= 0
+    assert result["gpuHlrLarge"]["cpuMs"] >= 0
+    assert result["gpuHlrLarge"]["gpuMs"] is None or result["gpuHlrLarge"]["gpuMs"] >= 0
+    assert result["gpuHlrLarge"]["frameMs"] > 0
+    assert result["gpuHlrLarge"]["fps"] > 0
+    assert result["gpuHlrLarge"]["drawCalls"] > 0
     assert len(result["bga"]["probes"]) >= 20
     assert all(probe["count"] >= 2 for probe in result["bga"]["probes"])
     for fill in {probe["fill"] for probe in result["bga"]["probes"]}:

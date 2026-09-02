@@ -16,6 +16,16 @@ projection = geometer.project_step_hlr(
     views=[geometer.ProjectionView.top()],
     options=geometer.HlrOptions.assembly_outline(),
 )
+outline_only = geometer.project_step_hlr(
+    "part.step",
+    views=[geometer.ProjectionView.top()],
+    options=geometer.HlrOptions(
+        outline_algorithm="mesh-shadow",
+        output_outline=True,
+        output_detail=False,
+        output_bbox=False,
+    ),
+)
 generic_projection = geometer.project_model_hlr(
     "part.step",
     format="step",

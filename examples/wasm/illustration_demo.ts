@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { TrackballControls } from "three/addons/controls/TrackballControls.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { FastHlrViewport, type FastHlrFrameStats } from "./fast_hlr.js";
 import {
   type MeshIllustrationInput,
   type MeshIllustrationMaterial,
@@ -60,7 +61,7 @@ declare global {
 }
 
 type ViewId = "top" | "front" | "right" | "iso" | "camera";
-type OutputId = "svg" | "canvas";
+type OutputId = "svg" | "canvas" | "gpu";
 type MeshQualityId = "draft" | "balanced" | "fine" | "extra-fine" | "custom";
 
 interface MeshSettings {
@@ -134,6 +135,7 @@ const els = {
   outputPane: required<HTMLElement>("illustrationOutputPane"),
   modelCanvas: required<HTMLCanvasElement>("illustrationModelCanvas"),
   illustrationCanvas: required<HTMLCanvasElement>("illustrationCanvas"),
+  fastCanvas: required<HTMLCanvasElement>("illustrationFastCanvas"),
   svgHost: required<HTMLDivElement>("illustrationSvgHost"),
   outputLabel: required<HTMLSpanElement>("illustrationOutputLabel"),
   busy: required<HTMLDivElement>("illustrationBusy"),
@@ -167,6 +169,10 @@ const els = {
   outlineWidth: required<HTMLInputElement>("illustrationOutlineWidth"),
   outlineWidthValue: required<HTMLOutputElement>("illustrationOutlineWidthValue"),
   doubleSided: required<HTMLInputElement>("illustrationDoubleSided"),
+  fastCrease: required<HTMLInputElement>("illustrationFastCrease"),
+  fastCreaseValue: required<HTMLOutputElement>("illustrationFastCreaseValue"),
+  fastBias: required<HTMLInputElement>("illustrationFastBias"),
+  fastBiasValue: required<HTMLOutputElement>("illustrationFastBiasValue"),
   background: required<HTMLInputElement>("illustrationBackground"),
   transparent: required<HTMLInputElement>("illustrationTransparent"),
 };
@@ -237,6 +243,7 @@ const renderer = new THREE.WebGLRenderer({
 renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.setClearColor(0xffffff, 1);
+const fastHlr = new FastHlrViewport(els.fastCanvas);
 
 const threeScene = new THREE.Scene();
 threeScene.background = new THREE.Color(0xffffff);
@@ -374,6 +381,31 @@ function currentStyle(): MeshIllustrationStyle {
   };
 }
 
+function fastHlrStyle(): Parameters<FastHlrViewport["setStyle"]>[0] {
+  const crease = boundedNumberInput(els.fastCrease, 1, 80, 25);
+  const bias = boundedNumberInput(els.fastBias, 0, 4, 1);
+  els.fastCreaseValue.value = `${crease.toFixed(0)} deg`;
+  els.fastBiasValue.value = bias.toFixed(1);
+  return {
+    surfaceColor: 0xf4f3ed,
+    lineColor: els.outlineColor.value,
+    background: els.background.value,
+    creaseAngleDegrees: crease,
+    depthBiasFactor: bias,
+    depthBiasUnits: bias,
+    doubleSided: els.doubleSided.checked,
+  };
+}
+
+function rebuildFastHlr(): void {
+  fastHlr.setStyle(fastHlrStyle());
+  const stats = fastHlr.setSource(state.root);
+  if (!stats) return;
+  els.outputPane.dataset.fastHlrBuildMs = stats.buildMs.toFixed(3);
+  els.outputPane.dataset.fastHlrTriangles = String(stats.triangles);
+  els.outputPane.dataset.fastHlrEdges = String(stats.candidateEdges);
+}
+
 function activateButtons(container: HTMLElement, key: "view" | "output", value: string): void {
   for (const button of Array.from(container.querySelectorAll<HTMLButtonElement>("button")))
     button.classList.toggle("active", button.dataset[key] === value);
@@ -391,6 +423,7 @@ async function fetchArrayBuffer(path: string): Promise<ArrayBuffer> {
 }
 
 function clearModel(): void {
+  fastHlr.setSource(null);
   while (modelGroup.children.length > 0) {
     const child = modelGroup.children.pop();
     child?.traverse((node) => {
@@ -418,6 +451,7 @@ function resize(): void {
   camera.updateProjectionMatrix();
 
   const outputRect = els.outputPane.getBoundingClientRect();
+  fastHlr.setSize(outputRect.width, outputRect.height);
   const ratio = Math.min(window.devicePixelRatio || 1, 2);
   els.illustrationCanvas.width = Math.max(1, Math.round(outputRect.width * ratio));
   els.illustrationCanvas.height = Math.max(1, Math.round(outputRect.height * ratio));
@@ -603,6 +637,12 @@ function drawSvg(svg: string): void {
 }
 
 function redrawStyle(): void {
+  fastHlr.setStyle(fastHlrStyle());
+  if (state.output === "gpu") {
+    els.svgHost.classList.add("hidden");
+    els.illustrationCanvas.classList.add("hidden");
+    els.fastCanvas.classList.remove("hidden");
+  }
   if (!state.scene) return;
   const style = currentStyle();
   state.style = style;
@@ -623,10 +663,13 @@ function redrawStyle(): void {
   els.downloadStyle.disabled = false;
   els.svgHost.classList.toggle("hidden", state.output !== "svg");
   els.illustrationCanvas.classList.toggle("hidden", state.output !== "canvas");
+  els.fastCanvas.classList.toggle("hidden", state.output !== "gpu");
   els.outputLabel.textContent =
     state.output === "svg"
       ? `2D SVG / ${style.shading.toUpperCase()} / ${formatBytes(svgBytes)}`
-      : `2D CANVAS / ${style.shading.toUpperCase()} / ${canvasStats.commands.toLocaleString()} DRAWS`;
+      : state.output === "canvas"
+        ? `2D CANVAS / ${style.shading.toUpperCase()} / ${canvasStats.commands.toLocaleString()} DRAWS`
+        : "LIVE GPU HLR / DEPTH-TESTED RETAINED EDGES";
   els.outputPane.dataset.output = state.output;
   els.outputPane.dataset.shading = style.shading;
   els.outputPane.dataset.canvasOutlines = String(canvasStats.outlines + canvasStats.details);
@@ -781,6 +824,10 @@ function scheduleCameraIllustration(): void {
   state.view = "camera";
   activateButtons(els.viewButtons, "view", state.view);
   window.clearTimeout(state.renderTimer);
+  if (state.output === "gpu") {
+    setStatus(`${state.model?.name ?? "Model"} / live GPU HLR`);
+    return;
+  }
   state.renderTimer = window.setTimeout(() => {
     prepareIllustration("camera").catch(showError);
   }, 180);
@@ -799,11 +846,31 @@ function updatePreviewLighting(): void {
   threeKey.target.position.copy(controls.target);
 }
 
-function renderLoop(): void {
+let fastHlrReportAt = 0;
+
+function reportFastHlr(stats: FastHlrFrameStats): void {
+  els.outputPane.dataset.fastHlrCpuMs = stats.cpuMs.toFixed(3);
+  els.outputPane.dataset.fastHlrGpuMs = stats.gpuMs?.toFixed(3) ?? "unavailable";
+  els.outputPane.dataset.fastHlrFrameMs = stats.frameMs.toFixed(3);
+  els.outputPane.dataset.fastHlrFps = stats.fps.toFixed(1);
+  els.outputPane.dataset.fastHlrDrawCalls = String(stats.drawCalls);
+  els.counts.textContent = `${stats.triangles.toLocaleString()} triangles / ${stats.candidateEdges.toLocaleString()} retained candidate edges / ${stats.drawCalls.toLocaleString()} GPU draws`;
+  const gpuLabel = stats.gpuMs === null ? "GPU timer unavailable" : `${stats.gpuMs.toFixed(2)} ms GPU`;
+  els.timing.textContent = `GPU HLR ${stats.fps.toFixed(1)} fps / ${stats.cpuMs.toFixed(2)} ms CPU submit / ${gpuLabel} / edge build ${formatMs(stats.buildMs)}`;
+}
+
+function renderLoop(now = 0): void {
   requestAnimationFrame(renderLoop);
   controls.update();
   updatePreviewLighting();
   renderer.render(threeScene, camera);
+  if (state.output === "gpu") {
+    const stats = fastHlr.render(camera);
+    if (stats && now - fastHlrReportAt >= 250) {
+      fastHlrReportAt = now;
+      reportFastHlr(stats);
+    }
+  }
 }
 
 function loadGlb(buffer: ArrayBuffer): Promise<THREE.Object3D> {
@@ -879,7 +946,15 @@ async function selectModel(
     modelGroup.add(root);
     state.root = root;
     fitCamera(root, preservedView);
-    await prepareIllustration("mesh");
+    rebuildFastHlr();
+    if (state.output === "gpu") {
+      els.svgHost.classList.add("hidden");
+      els.illustrationCanvas.classList.add("hidden");
+      els.fastCanvas.classList.remove("hidden");
+      setStatus(`${model.name} / live GPU HLR`);
+    } else {
+      await prepareIllustration("mesh");
+    }
     const elapsed = performance.now() - started;
     const sourceLabel =
       meshResult.source === "fixed-glb"
@@ -1214,7 +1289,8 @@ function wireEvents(): void {
     state.view = button.dataset.view as ViewId;
     activateButtons(els.viewButtons, "view", state.view);
     if (state.view !== "camera") moveCameraToView(state.view);
-    prepareIllustration(state.view).catch(showError);
+    if (state.output === "gpu") setStatus(`${state.model?.name ?? "Model"} / live GPU HLR`);
+    else prepareIllustration(state.view).catch(showError);
   });
   els.outputButtons.addEventListener("click", (event) => {
     const button = (event.target as Element | null)?.closest<HTMLButtonElement>(
@@ -1223,7 +1299,20 @@ function wireEvents(): void {
     if (!button) return;
     state.output = button.dataset.output as OutputId;
     activateButtons(els.outputButtons, "output", state.output);
-    redrawStyle();
+    window.clearTimeout(state.renderTimer);
+    if (state.output === "gpu") {
+      els.svgHost.classList.add("hidden");
+      els.illustrationCanvas.classList.add("hidden");
+      els.fastCanvas.classList.remove("hidden");
+      els.outputPane.dataset.output = state.output;
+      els.outputLabel.textContent = "LIVE GPU HLR / DEPTH-TESTED RETAINED EDGES";
+      fastHlr.setStyle(fastHlrStyle());
+      setStatus(`${state.model?.name ?? "Model"} / live GPU HLR`);
+    } else if (!state.scene || state.view === "camera") {
+      prepareIllustration("camera").catch(showError);
+    } else {
+      redrawStyle();
+    }
   });
   for (const control of [
     els.shading,
@@ -1249,6 +1338,13 @@ function wireEvents(): void {
   for (const control of [els.bands, els.ambient, els.key, els.rim, els.outlineWidth]) {
     control.addEventListener("input", redrawStyle);
   }
+  els.fastCrease.addEventListener("input", () => {
+    fastHlrStyle();
+  });
+  els.fastCrease.addEventListener("change", rebuildFastHlr);
+  els.fastBias.addEventListener("input", () => {
+    fastHlr.setStyle(fastHlrStyle());
+  });
   els.downloadSvg.addEventListener("click", () =>
     download(`${fileStem()}-${state.view}.svg`, state.svg, "image/svg+xml"),
   );
@@ -1262,6 +1358,7 @@ function wireEvents(): void {
     state.worker?.terminate();
     if (state.workerUrl) URL.revokeObjectURL(state.workerUrl);
     for (const url of state.uploadedUrls) URL.revokeObjectURL(url);
+    fastHlr.dispose();
   });
 }
 

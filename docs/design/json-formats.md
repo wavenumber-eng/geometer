@@ -74,6 +74,12 @@ Accepted option keys:
 - `curve_mode` or `curveMode`: `native_arcs`, `native-arcs`, or `polyline`.
 - `samples_per_curve` or `samples`.
 - `round_digits` or `roundDigits`.
+- `output_outline` or `outputOutline`: emit the independently composable
+  outline layer; defaults to `true`.
+- `output_detail` or `outputDetail`: emit the independently composable detail
+  layer; defaults to `true`.
+- `output_bbox` or `outputBbox`: emit the projected bounding-box layer;
+  defaults to `true`.
 - `projection_algorithm` or `projectionAlgorithm`: `poly` or `exact`.
 - `mesh_linear_deflection` or `meshLinearDeflection`.
 - `mesh_angular_deflection` or `meshAngularDeflection`.
@@ -126,6 +132,12 @@ Each projected view contains:
 - `modes.outline`: assembly projection outline geometry.
 - `modes.detail`: HLR detail geometry.
 - `modes.bbox`: projected 3D shape bounding box geometry.
+
+All mode members remain present for schema compatibility. A layer disabled by
+its `output_*` option contains empty segment and arc arrays. Mesh-shadow
+outline-only requests bypass detail HLR; detail-only requests do not construct
+either outline algorithm. Combined requests keep outline and detail separate so
+callers can style and composite them independently.
 
 Segment objects contain `x1`, `y1`, `x2`, and `y2`. Arc objects contain
 `start`, `end`, `center`, `radius`, `extent_rad`, `ccw`, and `full_circle`.

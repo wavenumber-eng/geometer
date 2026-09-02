@@ -936,16 +936,19 @@ ProjectedViewGeometry project_view_exact(const TopoDS_Shape& shape, const Projec
         add_edge_geometry(shape, options, &detail_segment_keys, &detail_arc_keys, nullptr, scale,
                           extent_scale);
     };
-    extract_detail(options.edge_v_sharp, hlr_to_shape.VCompound());
-    extract_detail(options.edge_v_outline, hlr_to_shape.OutLineVCompound());
-    extract_detail(options.edge_v_smooth, hlr_to_shape.Rg1LineVCompound());
-    extract_detail(options.edge_v_sewn, hlr_to_shape.RgNLineVCompound());
-    extract_detail(options.edge_v_iso, hlr_to_shape.IsoLineVCompound());
-    extract_detail(options.edge_h_sharp, hlr_to_shape.HCompound());
-    extract_detail(options.edge_h_outline, hlr_to_shape.OutLineHCompound());
-    extract_detail(options.edge_h_smooth, hlr_to_shape.Rg1LineHCompound());
-    extract_detail(options.edge_h_sewn, hlr_to_shape.RgNLineHCompound());
-    extract_detail(options.edge_h_iso, hlr_to_shape.IsoLineHCompound());
+    if (options.output_detail)
+    {
+        extract_detail(options.edge_v_sharp, hlr_to_shape.VCompound());
+        extract_detail(options.edge_v_outline, hlr_to_shape.OutLineVCompound());
+        extract_detail(options.edge_v_smooth, hlr_to_shape.Rg1LineVCompound());
+        extract_detail(options.edge_v_sewn, hlr_to_shape.RgNLineVCompound());
+        extract_detail(options.edge_v_iso, hlr_to_shape.IsoLineVCompound());
+        extract_detail(options.edge_h_sharp, hlr_to_shape.HCompound());
+        extract_detail(options.edge_h_outline, hlr_to_shape.OutLineHCompound());
+        extract_detail(options.edge_h_smooth, hlr_to_shape.Rg1LineHCompound());
+        extract_detail(options.edge_h_sewn, hlr_to_shape.RgNLineHCompound());
+        extract_detail(options.edge_h_iso, hlr_to_shape.IsoLineHCompound());
+    }
 
     // The outline always consumes the COMPLETE visible outline (sharp +
     // outline + smooth + sewn, V and H), independent of the detail checkboxes, so
@@ -958,14 +961,17 @@ ProjectedViewGeometry project_view_exact(const TopoDS_Shape& shape, const Projec
         add_edge_geometry(shape, options, nullptr, nullptr, &contour_source_segments, scale,
                           extent_scale);
     };
-    extract_contour(hlr_to_shape.VCompound());
-    extract_contour(hlr_to_shape.OutLineVCompound());
-    extract_contour(hlr_to_shape.Rg1LineVCompound());
-    extract_contour(hlr_to_shape.RgNLineVCompound());
-    extract_contour(hlr_to_shape.HCompound());
-    extract_contour(hlr_to_shape.OutLineHCompound());
-    extract_contour(hlr_to_shape.Rg1LineHCompound());
-    extract_contour(hlr_to_shape.RgNLineHCompound());
+    if (options.output_outline)
+    {
+        extract_contour(hlr_to_shape.VCompound());
+        extract_contour(hlr_to_shape.OutLineVCompound());
+        extract_contour(hlr_to_shape.Rg1LineVCompound());
+        extract_contour(hlr_to_shape.RgNLineVCompound());
+        extract_contour(hlr_to_shape.HCompound());
+        extract_contour(hlr_to_shape.OutLineHCompound());
+        extract_contour(hlr_to_shape.Rg1LineHCompound());
+        extract_contour(hlr_to_shape.RgNLineHCompound());
+    }
 
     ProjectedViewGeometry projected;
     projected.view = view;
@@ -1027,10 +1033,13 @@ ProjectedViewGeometry project_view_poly(const TopoDS_Shape& shape, const Project
         add_edge_geometry(shape, poly_options, &detail_segment_keys, &detail_arc_keys, nullptr,
                           scale, extent_scale);
     };
-    extract_detail(poly_options.edge_v_sharp, poly_to_shape.VCompound());
-    extract_detail(poly_options.edge_v_outline, poly_to_shape.OutLineVCompound());
-    extract_detail(poly_options.edge_h_sharp, poly_to_shape.HCompound());
-    extract_detail(poly_options.edge_h_outline, poly_to_shape.OutLineHCompound());
+    if (poly_options.output_detail)
+    {
+        extract_detail(poly_options.edge_v_sharp, poly_to_shape.VCompound());
+        extract_detail(poly_options.edge_v_outline, poly_to_shape.OutLineVCompound());
+        extract_detail(poly_options.edge_h_sharp, poly_to_shape.HCompound());
+        extract_detail(poly_options.edge_h_outline, poly_to_shape.OutLineHCompound());
+    }
 
     // The outline always consumes the COMPLETE visible outline (every
     // sharp + outline edge, both V and H), independent of the detail checkboxes.
@@ -1043,10 +1052,13 @@ ProjectedViewGeometry project_view_poly(const TopoDS_Shape& shape, const Project
         add_edge_geometry(shape, poly_options, nullptr, nullptr, &contour_source_segments, scale,
                           extent_scale);
     };
-    extract_contour(poly_to_shape.VCompound());
-    extract_contour(poly_to_shape.OutLineVCompound());
-    extract_contour(poly_to_shape.HCompound());
-    extract_contour(poly_to_shape.OutLineHCompound());
+    if (poly_options.output_outline)
+    {
+        extract_contour(poly_to_shape.VCompound());
+        extract_contour(poly_to_shape.OutLineVCompound());
+        extract_contour(poly_to_shape.HCompound());
+        extract_contour(poly_to_shape.OutLineHCompound());
+    }
 
     ProjectedViewGeometry projected;
     projected.view = view;
@@ -1120,8 +1132,14 @@ int step_hlr_projection_from_bytes(const unsigned char* step_data, std::size_t s
         output.views.reserve(views.size());
 
         const bool use_poly = options.projection_algorithm == ProjectionAlgorithm::Poly;
+        const bool needs_hlr =
+            options.output_detail ||
+            (options.output_outline &&
+             options.outline_algorithm == ProjectionOutlineAlgorithm::HlrClosedEdges);
         const bool needs_mesh =
-            use_poly || options.outline_algorithm == ProjectionOutlineAlgorithm::MeshShadow;
+            (use_poly && needs_hlr) ||
+            (options.output_outline &&
+             options.outline_algorithm == ProjectionOutlineAlgorithm::MeshShadow);
         if (needs_mesh)
         {
             const auto mesh_start = std::chrono::high_resolution_clock::now();
@@ -1156,23 +1174,28 @@ int step_hlr_projection_from_bytes(const unsigned char* step_data, std::size_t s
         for (const ProjectionViewSpec& view : views)
         {
             ProjectedViewGeometry projected_view;
-            if (use_poly)
+            projected_view.view = view;
+            if (needs_hlr && use_poly)
             {
                 projected_view =
                     project_view_poly(shape, view, options, scale, extent_scale, &timings);
             }
-            else
+            else if (needs_hlr)
             {
                 projected_view =
                     project_view_exact(shape, view, options, scale, extent_scale, &timings);
             }
-            if (options.outline_algorithm == ProjectionOutlineAlgorithm::MeshShadow)
+            if (options.output_outline &&
+                options.outline_algorithm == ProjectionOutlineAlgorithm::MeshShadow)
             {
                 const auto outline_start = std::chrono::high_resolution_clock::now();
                 projected_view.outline = mesh_shadow_outline_geometry(shape, view, options, scale);
                 timings.extract_ms += elapsed_ms(outline_start);
             }
-            projected_view.bbox = projected_shape_bbox_geometry(shape, view, scale);
+            if (options.output_bbox)
+            {
+                projected_view.bbox = projected_shape_bbox_geometry(shape, view, scale);
+            }
             output.views.push_back(std::move(projected_view));
         }
 

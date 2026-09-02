@@ -41,6 +41,9 @@ void parse_explicit_options()
                        "[0,0,0,1]"
                        "],"
                        "\"strip_root_placement\":true,"
+                       "\"output_outline\":false,"
+                       "\"outputDetail\":false,"
+                       "\"output_bbox\":true,"
                        "\"curve_mode\":\"polyline\","
                        "\"samples_per_curve\":12,"
                        "\"round_digits\":4,"
@@ -64,6 +67,9 @@ void parse_explicit_options()
     require(options.model_transform[5] == 2.0, "model_transform y scale should parse");
     require(options.model_transform[11] == 30.0, "model_transform z translation should parse");
     require(options.strip_root_placement, "strip_root_placement should parse");
+    require(!options.output_outline, "output_outline should parse");
+    require(!options.output_detail, "outputDetail alias should parse");
+    require(options.output_bbox, "output_bbox should parse");
     require(options.curve_mode == geometer::ProjectionCurveMode::Polyline,
             "curve mode should parse");
     require(options.samples_per_curve == 12, "samples should parse");

@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { TrackballControls } from "three/addons/controls/TrackballControls.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { FastHlrViewport } from "./fast_hlr.js";
 import { prepareMeshIllustration, renderMeshIllustrationCanvas, renderMeshIllustrationSvg, } from "./mesh_illustration.js";
 const MESH_QUALITY_PRESETS = {
     draft: {
@@ -55,6 +56,7 @@ const els = {
     outputPane: required("illustrationOutputPane"),
     modelCanvas: required("illustrationModelCanvas"),
     illustrationCanvas: required("illustrationCanvas"),
+    fastCanvas: required("illustrationFastCanvas"),
     svgHost: required("illustrationSvgHost"),
     outputLabel: required("illustrationOutputLabel"),
     busy: required("illustrationBusy"),
@@ -88,6 +90,10 @@ const els = {
     outlineWidth: required("illustrationOutlineWidth"),
     outlineWidthValue: required("illustrationOutlineWidthValue"),
     doubleSided: required("illustrationDoubleSided"),
+    fastCrease: required("illustrationFastCrease"),
+    fastCreaseValue: required("illustrationFastCreaseValue"),
+    fastBias: required("illustrationFastBias"),
+    fastBiasValue: required("illustrationFastBiasValue"),
     background: required("illustrationBackground"),
     transparent: required("illustrationTransparent"),
 };
@@ -125,6 +131,7 @@ const renderer = new THREE.WebGLRenderer({
 renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.setClearColor(0xffffff, 1);
+const fastHlr = new FastHlrViewport(els.fastCanvas);
 const threeScene = new THREE.Scene();
 threeScene.background = new THREE.Color(0xffffff);
 const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.001, 100_000);
@@ -232,6 +239,30 @@ function currentStyle() {
         rimAmount,
     };
 }
+function fastHlrStyle() {
+    const crease = boundedNumberInput(els.fastCrease, 1, 80, 25);
+    const bias = boundedNumberInput(els.fastBias, 0, 4, 1);
+    els.fastCreaseValue.value = `${crease.toFixed(0)} deg`;
+    els.fastBiasValue.value = bias.toFixed(1);
+    return {
+        surfaceColor: 0xf4f3ed,
+        lineColor: els.outlineColor.value,
+        background: els.background.value,
+        creaseAngleDegrees: crease,
+        depthBiasFactor: bias,
+        depthBiasUnits: bias,
+        doubleSided: els.doubleSided.checked,
+    };
+}
+function rebuildFastHlr() {
+    fastHlr.setStyle(fastHlrStyle());
+    const stats = fastHlr.setSource(state.root);
+    if (!stats)
+        return;
+    els.outputPane.dataset.fastHlrBuildMs = stats.buildMs.toFixed(3);
+    els.outputPane.dataset.fastHlrTriangles = String(stats.triangles);
+    els.outputPane.dataset.fastHlrEdges = String(stats.candidateEdges);
+}
 function activateButtons(container, key, value) {
     for (const button of Array.from(container.querySelectorAll("button")))
         button.classList.toggle("active", button.dataset[key] === value);
@@ -248,6 +279,7 @@ async function fetchArrayBuffer(path) {
     return response.arrayBuffer();
 }
 function clearModel() {
+    fastHlr.setSource(null);
     while (modelGroup.children.length > 0) {
         const child = modelGroup.children.pop();
         child?.traverse((node) => {
@@ -274,6 +306,7 @@ function resize() {
     camera.bottom = -halfHeight;
     camera.updateProjectionMatrix();
     const outputRect = els.outputPane.getBoundingClientRect();
+    fastHlr.setSize(outputRect.width, outputRect.height);
     const ratio = Math.min(window.devicePixelRatio || 1, 2);
     els.illustrationCanvas.width = Math.max(1, Math.round(outputRect.width * ratio));
     els.illustrationCanvas.height = Math.max(1, Math.round(outputRect.height * ratio));
@@ -451,6 +484,12 @@ function drawSvg(svg) {
     els.svgHost.replaceChildren(document.importNode(parsed.documentElement, true));
 }
 function redrawStyle() {
+    fastHlr.setStyle(fastHlrStyle());
+    if (state.output === "gpu") {
+        els.svgHost.classList.add("hidden");
+        els.illustrationCanvas.classList.add("hidden");
+        els.fastCanvas.classList.remove("hidden");
+    }
     if (!state.scene)
         return;
     const style = currentStyle();
@@ -469,10 +508,13 @@ function redrawStyle() {
     els.downloadStyle.disabled = false;
     els.svgHost.classList.toggle("hidden", state.output !== "svg");
     els.illustrationCanvas.classList.toggle("hidden", state.output !== "canvas");
+    els.fastCanvas.classList.toggle("hidden", state.output !== "gpu");
     els.outputLabel.textContent =
         state.output === "svg"
             ? `2D SVG / ${style.shading.toUpperCase()} / ${formatBytes(svgBytes)}`
-            : `2D CANVAS / ${style.shading.toUpperCase()} / ${canvasStats.commands.toLocaleString()} DRAWS`;
+            : state.output === "canvas"
+                ? `2D CANVAS / ${style.shading.toUpperCase()} / ${canvasStats.commands.toLocaleString()} DRAWS`
+                : "LIVE GPU HLR / DEPTH-TESTED RETAINED EDGES";
     els.outputPane.dataset.output = state.output;
     els.outputPane.dataset.shading = style.shading;
     els.outputPane.dataset.canvasOutlines = String(canvasStats.outlines + canvasStats.details);
@@ -624,6 +666,10 @@ function scheduleCameraIllustration() {
     state.view = "camera";
     activateButtons(els.viewButtons, "view", state.view);
     window.clearTimeout(state.renderTimer);
+    if (state.output === "gpu") {
+        setStatus(`${state.model?.name ?? "Model"} / live GPU HLR`);
+        return;
+    }
     state.renderTimer = window.setTimeout(() => {
         prepareIllustration("camera").catch(showError);
     }, 180);
@@ -640,11 +686,29 @@ function updatePreviewLighting() {
         .addScaledVector(previewLightRight, scale * 0.65);
     threeKey.target.position.copy(controls.target);
 }
-function renderLoop() {
+let fastHlrReportAt = 0;
+function reportFastHlr(stats) {
+    els.outputPane.dataset.fastHlrCpuMs = stats.cpuMs.toFixed(3);
+    els.outputPane.dataset.fastHlrGpuMs = stats.gpuMs?.toFixed(3) ?? "unavailable";
+    els.outputPane.dataset.fastHlrFrameMs = stats.frameMs.toFixed(3);
+    els.outputPane.dataset.fastHlrFps = stats.fps.toFixed(1);
+    els.outputPane.dataset.fastHlrDrawCalls = String(stats.drawCalls);
+    els.counts.textContent = `${stats.triangles.toLocaleString()} triangles / ${stats.candidateEdges.toLocaleString()} retained candidate edges / ${stats.drawCalls.toLocaleString()} GPU draws`;
+    const gpuLabel = stats.gpuMs === null ? "GPU timer unavailable" : `${stats.gpuMs.toFixed(2)} ms GPU`;
+    els.timing.textContent = `GPU HLR ${stats.fps.toFixed(1)} fps / ${stats.cpuMs.toFixed(2)} ms CPU submit / ${gpuLabel} / edge build ${formatMs(stats.buildMs)}`;
+}
+function renderLoop(now = 0) {
     requestAnimationFrame(renderLoop);
     controls.update();
     updatePreviewLighting();
     renderer.render(threeScene, camera);
+    if (state.output === "gpu") {
+        const stats = fastHlr.render(camera);
+        if (stats && now - fastHlrReportAt >= 250) {
+            fastHlrReportAt = now;
+            reportFastHlr(stats);
+        }
+    }
 }
 function loadGlb(buffer) {
     return new Promise((resolve, reject) => {
@@ -712,7 +776,16 @@ async function selectModel(model, options = {}) {
         modelGroup.add(root);
         state.root = root;
         fitCamera(root, preservedView);
-        await prepareIllustration("mesh");
+        rebuildFastHlr();
+        if (state.output === "gpu") {
+            els.svgHost.classList.add("hidden");
+            els.illustrationCanvas.classList.add("hidden");
+            els.fastCanvas.classList.remove("hidden");
+            setStatus(`${model.name} / live GPU HLR`);
+        }
+        else {
+            await prepareIllustration("mesh");
+        }
         const elapsed = performance.now() - started;
         const sourceLabel = meshResult.source === "fixed-glb"
             ? "fixed GLB"
@@ -1020,7 +1093,10 @@ function wireEvents() {
         activateButtons(els.viewButtons, "view", state.view);
         if (state.view !== "camera")
             moveCameraToView(state.view);
-        prepareIllustration(state.view).catch(showError);
+        if (state.output === "gpu")
+            setStatus(`${state.model?.name ?? "Model"} / live GPU HLR`);
+        else
+            prepareIllustration(state.view).catch(showError);
     });
     els.outputButtons.addEventListener("click", (event) => {
         const button = event.target?.closest("button[data-output]");
@@ -1028,7 +1104,22 @@ function wireEvents() {
             return;
         state.output = button.dataset.output;
         activateButtons(els.outputButtons, "output", state.output);
-        redrawStyle();
+        window.clearTimeout(state.renderTimer);
+        if (state.output === "gpu") {
+            els.svgHost.classList.add("hidden");
+            els.illustrationCanvas.classList.add("hidden");
+            els.fastCanvas.classList.remove("hidden");
+            els.outputPane.dataset.output = state.output;
+            els.outputLabel.textContent = "LIVE GPU HLR / DEPTH-TESTED RETAINED EDGES";
+            fastHlr.setStyle(fastHlrStyle());
+            setStatus(`${state.model?.name ?? "Model"} / live GPU HLR`);
+        }
+        else if (!state.scene || state.view === "camera") {
+            prepareIllustration("camera").catch(showError);
+        }
+        else {
+            redrawStyle();
+        }
     });
     for (const control of [
         els.shading,
@@ -1054,6 +1145,13 @@ function wireEvents() {
     for (const control of [els.bands, els.ambient, els.key, els.rim, els.outlineWidth]) {
         control.addEventListener("input", redrawStyle);
     }
+    els.fastCrease.addEventListener("input", () => {
+        fastHlrStyle();
+    });
+    els.fastCrease.addEventListener("change", rebuildFastHlr);
+    els.fastBias.addEventListener("input", () => {
+        fastHlr.setStyle(fastHlrStyle());
+    });
     els.downloadSvg.addEventListener("click", () => download(`${fileStem()}-${state.view}.svg`, state.svg, "image/svg+xml"));
     els.downloadScene.addEventListener("click", () => download(`${fileStem()}-${state.view}.illustration.json`, sceneJson(), "application/json"));
     els.downloadStyle.addEventListener("click", () => download(`${fileStem()}.illustration-style.json`, styleJson(), "application/json"));
@@ -1063,6 +1161,7 @@ function wireEvents() {
             URL.revokeObjectURL(state.workerUrl);
         for (const url of state.uploadedUrls)
             URL.revokeObjectURL(url);
+        fastHlr.dispose();
     });
 }
 async function loadModels() {

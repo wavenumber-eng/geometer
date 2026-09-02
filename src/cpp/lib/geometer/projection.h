@@ -53,6 +53,11 @@ struct ProjectionViewSpec
 struct HlrProjectionOptions
 {
     std::vector<ProjectionViewSpec> views;
+    // Independently composable output layers. Defaults preserve the historical
+    // result, while callers can avoid work for layers they do not need.
+    bool output_outline = true;
+    bool output_detail = true;
+    bool output_bbox = true;
     // Row-major 4x4 affine transform applied to the source shape before
     // projection. Translation lives in the final column. The final row must be
     // [0, 0, 0, 1].

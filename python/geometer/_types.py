@@ -64,6 +64,9 @@ class ProjectionView:
 @dataclass
 class HlrOptions:
     projection_algorithm: str = "poly"
+    output_outline: bool = True
+    output_detail: bool = True
+    output_bbox: bool = True
     curve_mode: str = "polyline"
     samples_per_curve: int = 24
     round_digits: int = 3

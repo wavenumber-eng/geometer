@@ -103,6 +103,9 @@ struct ProjectionViewSpec {
 
 struct HlrProjectionOptions {
     std::vector<ProjectionViewSpec> views;
+    bool output_outline = true;
+    bool output_detail = true;
+    bool output_bbox = true;
     std::array<double, 16> model_transform = {
         1.0, 0.0, 0.0, 0.0,
         0.0, 1.0, 0.0, 0.0,
@@ -134,6 +137,13 @@ struct HlrProjectionOptions {
     double hlr_angle_tolerance = 0.0174533;
 };
 ```
+
+The three output modes are independently selectable. Their result members stay
+present when disabled but contain no primitives. In particular, an
+outline-only mesh-shadow request does not run detail HLR, and a detail-only
+request does not construct an outline. A combined request never merges outline
+and detail geometry, allowing downstream renderers to composite them with
+different presentation choices.
 
 Projection output:
 

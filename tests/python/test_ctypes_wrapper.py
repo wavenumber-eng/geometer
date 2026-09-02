@@ -101,6 +101,18 @@ def test_hlr_projection_json_returns_json_text() -> None:
     assert '"schema":"geometry.projection.b0"' in text
 
 
+def test_hlr_options_preserve_independent_output_layers() -> None:
+    options = geometer.HlrOptions(
+        output_outline=True,
+        output_detail=False,
+        output_bbox=False,
+    ).to_json_value()
+
+    assert options["output_outline"] is True
+    assert options["output_detail"] is False
+    assert options["output_bbox"] is False
+
+
 def test_model_bounds_returns_transformed_bounds() -> None:
     base = geometer.model_bounds(SOT23_STEP.read_bytes())
     result = geometer.model_bounds(

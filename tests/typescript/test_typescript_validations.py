@@ -24,6 +24,7 @@ NODE = shutil.which("node")
         "contract_codec_validation.mjs",
         "demo_tooling_validation.mjs",
         "emitter_validation.mjs",
+        "fast_hlr_validation.mjs",
         "hlr_static_site_validation.mjs",
         "illustration_static_site_validation.mjs",
         "ipc_a0_validation.mjs",
@@ -64,13 +65,7 @@ def test_step_topology_annotation_reference_restarts_native_process() -> None:
     completed = subprocess.run(
         [
             NODE,
-            str(
-                ROOT
-                / "dist"
-                / "native"
-                / "examples"
-                / "step-topology-annotation-reference.mjs"
-            ),
+            str(ROOT / "dist" / "native" / "examples" / "step-topology-annotation-reference.mjs"),
             str(ROOT / "dist" / "native" / platform_directory / executable_name),
             str(ROOT / "tests" / "fixtures" / "step" / "embedded_models" / "SOT-23.STEP"),
         ],

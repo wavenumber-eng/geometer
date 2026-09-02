@@ -670,6 +670,28 @@ int parse_hlr_projection_options_json(const char* json, HlrProjectionOptions* op
             return 91;
         }
     }
+    struct OutputLayerFlag
+    {
+        const char* snake;
+        const char* camel;
+        bool HlrProjectionOptions::* member;
+    };
+    const OutputLayerFlag output_layer_flags[] = {
+        {"output_outline", "outputOutline", &HlrProjectionOptions::output_outline},
+        {"output_detail", "outputDetail", &HlrProjectionOptions::output_detail},
+        {"output_bbox", "outputBbox", &HlrProjectionOptions::output_bbox},
+    };
+    for (const OutputLayerFlag& flag : output_layer_flags)
+    {
+        if (const JsonValue* node = find_any_member(root, {flag.snake, flag.camel}))
+        {
+            if (!bool_field(*node, &(parsed.*(flag.member)), &error, flag.snake))
+            {
+                set_status(status, 91, error);
+                return 91;
+            }
+        }
+    }
     // Back-compat: include_visible toggles all visible edge categories on/off,
     // include_outline toggles only the visible-outline category. These map onto
     // the new granular fields; granular fields below override if both provided.

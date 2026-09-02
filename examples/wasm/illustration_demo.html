@@ -23,6 +23,7 @@
       <span class="group" id="illustrationOutputButtons" aria-label="Output">
         <button type="button" data-output="svg" class="active">SVG</button>
         <button type="button" data-output="canvas">Canvas</button>
+        <button type="button" data-output="gpu">GPU HLR</button>
       </span>
       <button id="illustrationDownloadSvg" type="button" disabled>Download SVG</button>
       <button id="illustrationDownloadScene" type="button" disabled>Scene JSON</button>
@@ -37,6 +38,7 @@
         <span class="pane-label" id="illustrationOutputLabel">2D SVG / GENERIC MESH PROTOTYPE</span>
         <div class="svg-host" id="illustrationSvgHost"></div>
         <canvas class="hidden" id="illustrationCanvas"></canvas>
+        <canvas class="hidden" id="illustrationFastCanvas"></canvas>
         <div class="illustration-busy" id="illustrationBusy" data-presentation="overlay" role="status" aria-live="polite"><div id="illustrationBusyText">Loading model...</div></div>
       </section>
       <aside class="illustration-settings">
@@ -75,14 +77,16 @@
           <label class="illustration-control"><span>Outline</span><input id="illustrationOutlineColor" type="color" value="#17252c"><span></span></label>
           <label class="illustration-control"><span>Line width</span><input id="illustrationOutlineWidth" type="range" min="0.001" max="0.018" step="0.001" value="0.006"><output id="illustrationOutlineWidthValue">0.006</output></label>
           <label class="illustration-check"><input id="illustrationDoubleSided" type="checkbox"><span>Draw back faces</span></label>
-          <p class="illustration-info">Uses Geometer's existing visible-edge Detail and unioned mesh-shadow Outline layers for STEP-backed models. Generic meshes remain surface-only unless linework is supplied.</p>
+          <label class="illustration-control" title="Static mesh crease threshold used to build the retained GPU edge buffer."><span>GPU crease</span><input id="illustrationFastCrease" type="range" min="1" max="80" step="1" value="25"><output id="illustrationFastCreaseValue">25 deg</output></label>
+          <label class="illustration-control" title="Polygon offset applied to filled faces so their own candidate edges survive the depth test."><span>GPU depth bias</span><input id="illustrationFastBias" type="range" min="0" max="4" step="0.1" value="1"><output id="illustrationFastBiasValue">1.0</output></label>
+          <p class="illustration-info">GPU HLR retains a boundary/crease edge buffer, fills the hardware depth buffer with opaque faces, then draws only edge pixels that pass the depth test. Camera motion does not invoke OCCT or rebuild projected vectors.</p>
         </section>
         <section>
           <h2>Output</h2>
           <label class="illustration-control"><span>Background</span><input id="illustrationBackground" type="color" value="#ffffff"><span></span></label>
           <label class="illustration-check"><input id="illustrationTransparent" type="checkbox"><span>Transparent background</span></label>
           <p class="illustration-info" id="illustrationCounts">No scene prepared.</p>
-          <p class="illustration-info">Prototype path: STEP -&gt; Geometer GLB + optional HLR linework -&gt; generic mesh illustration. The surface renderer itself has no STEP dependency.</p>
+          <p class="illustration-info">Prototype path: STEP -&gt; Geometer GLB -&gt; retained GPU depth + edge passes for interaction; optional OCCT HLR remains the SVG/export path.</p>
         </section>
       </aside>
     </main>

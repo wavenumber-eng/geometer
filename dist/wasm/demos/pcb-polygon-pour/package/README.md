@@ -53,6 +53,47 @@ The Worker entry loads the separately distributed Emscripten factory and calls
 are copied into owned buffers before transfer, so caller arrays remain usable.
 Output attachments transfer back without structured-clone copies.
 
+The environment-neutral `@wavenumber/geometer/ipc-a0` export encodes and
+incrementally decodes the executable protocol's bounded binary frames. It does
+not spawn or supervise a native process; Node applications supply that process
+boundary separately.
+
+`@wavenumber/geometer/ipc-client-a0` adds a persistent correlated client over
+injected WHATWG readable/writable byte streams. It validates the welcome
+catalog and limits, generated operation envelopes, attachments, cancellation,
+and graceful shutdown. Pending request count and encoded bytes are bounded by
+the negotiated queue/resident limits even when the injected writer stalls;
+negotiated response limits are applied while incrementally decoding headers.
+Its default catalog expectation is the portable operation set. The Node process
+adapter selects the native catalog, where experimental STEP topology open,
+paged inspect, render, resolve hit, close, logical-group/probe mutation, journal
+checkpoint, and exact journal restore are callable. Hierarchy, general save,
+and recovery analysis remain structural-only and are rejected locally. None of
+the topology operations is
+advertised by the portable C ABI or browser/WASM runtime.
+
+Node applications can use the separately exported process adapter:
+
+```ts
+import { GeometerNodeProcessA0 } from "@wavenumber/geometer/node-process-a0";
+
+const process = await GeometerNodeProcessA0.spawn("/path/to/geometer", {
+  clientName: "my-tool",
+  clientVersion: "1.0.0",
+});
+const response = await process.client.execute("geometry.model_bounds.a0", {}, [
+  { name: "model", mediaType: "application/step", data: stepBytes },
+]);
+await process.close();
+```
+
+The adapter fixes the child arguments to `serve --stdio`, hides the process
+window on Windows, bounds captured stderr, applies handshake and shutdown
+timeouts, and requires a clean child exit after the shutdown acknowledgment.
+Failure sends termination to the direct child, waits a bounded grace interval,
+then escalates to a forced direct-child kill; it does not claim descendant-tree
+termination.
+
 The Emscripten module factory and its `.wasm` file remain separate release
 artifacts. Pass `wasmBinary`, `locateFile`, or other Emscripten module options
 through the optional second argument to `createGeometerWasmClient`.

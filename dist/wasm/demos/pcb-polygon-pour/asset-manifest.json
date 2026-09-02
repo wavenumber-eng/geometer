@@ -41,14 +41,19 @@
       "sha256": "3e80e7dafa9d93f5caf1db442d0d8d5eb1b99b8390fb7c4d75d929f9c13525b1"
     },
     {
-      "bytes": 221,
+      "bytes": 250,
       "path": "demo-tooling/index.js",
-      "sha256": "c19c4e8802463b8d72e3595f5db802b5373d79e1e91ec5f837f2d0ffbbc5ab12"
+      "sha256": "b84ad3afd4ec7323ed1388437b4746c34bdf7d75ae85321c6606a20cc646affd"
     },
     {
       "bytes": 2671,
       "path": "demo-tooling/input.js",
       "sha256": "d8e34e1e544db5b9279408275ba5658c591e9e08f1eb8e46e5bdd6da36eaffaa"
+    },
+    {
+      "bytes": 12807,
+      "path": "demo-tooling/panels.js",
+      "sha256": "f5eb0cd2f0fa1bf81c604c20a7476d0be30b1841ef4eef4d3eb5e9ccffcf1098"
     },
     {
       "bytes": 7068,
@@ -58,17 +63,17 @@
     {
       "bytes": 163460,
       "path": "geometer.js",
-      "sha256": "b1de9c0e63dfadf9b70b1f5452af3dd68d0f1a78a8ebff0f9f1e54cc5487788f"
+      "sha256": "c36bc79944ca62731520940eef474df8c505ed253986da9b322f616c3c4d4771"
     },
     {
-      "bytes": 18652109,
+      "bytes": 18926388,
       "path": "geometer.wasm",
-      "sha256": "52b8add6bf3e07a92da86ed6989dd26179c903f3622a3e3d3857ca68c17b3275"
+      "sha256": "660d5a9dcc73803e0c67849a2db4cff3e2879f1e2a05342f670de1fcabc4ecf8"
     },
     {
-      "bytes": 25371,
+      "bytes": 32461,
       "path": "geometer_demo.css",
-      "sha256": "fca1402133ee944fda1554738df44ae175ea8d6077b516a18a1e86128ee1b753"
+      "sha256": "282664fcd919a4a3c255030d47be84df2b0e5b5b9580ca2c684b1928d2546205"
     },
     {
       "bytes": 3436,
@@ -151,19 +156,19 @@
       "sha256": "920ccc3efa0f2e9b8ca8a7bd705c44ef71c5470af12edc0685f6349a14a23950"
     },
     {
-      "bytes": 2608,
+      "bytes": 9248,
       "path": "package/generated/codecs.d.ts",
-      "sha256": "aad6192e1244ad508722f32e19f72614c9cfeeb1f21eb433a6dfafe948fd437b"
+      "sha256": "56f69dde32d04b91c64f6095a3bbd3ae4eb24e1d4ecc5ae77b575a2539554cb4"
     },
     {
-      "bytes": 36559,
+      "bytes": 176172,
       "path": "package/generated/codecs.js",
-      "sha256": "27ca58f7109a2695a6bde04932c4d96fedc35698e1b4ea0de4db22c84d628e3c"
+      "sha256": "ea76dd52a53295b9702ffa3aacf959ed6b09da93c44a8d15468fd8b3f85a0cc3"
     },
     {
-      "bytes": 19455,
+      "bytes": 45420,
       "path": "package/generated/contracts.d.ts",
-      "sha256": "e960440406cd8aedb18bf5c7f23a2bc166cc7bf5a92640d35aba86ef64545d35"
+      "sha256": "7379ddec9987ea85dd2c0196757dcc2baea0b30fc0e416bb2943ed4dbce78db9"
     },
     {
       "bytes": 80,
@@ -181,34 +186,84 @@
       "sha256": "6e4731631af8b7473f72ecb2d014453cfa89d93f2b3d4b4b6a14f7d9be60145a"
     },
     {
-      "bytes": 2552,
+      "bytes": 11615,
       "path": "package/generated/operations.d.ts",
-      "sha256": "4930a79ee8737f658c6a1f7f363c1ef1b3fd8a9037537717f1d807fe0f090a6a"
+      "sha256": "33d624d5a666e320dd945248fbdbf8689eb8cfeab3bd59a78ab80fecef74099f"
     },
     {
-      "bytes": 2152,
+      "bytes": 9860,
       "path": "package/generated/operations.js",
-      "sha256": "7d220a9179f86099955ef7139fc693ea6f4405331b9ae2ff8ac1f3811811bae1"
+      "sha256": "5f925aee9c31a87bce742f3644335773a2f8abd485a37441a8ec6580f03e71cb"
     },
     {
-      "bytes": 135,
+      "bytes": 247,
       "path": "package/index.d.ts",
-      "sha256": "ecc10729481b0b93dff5cdc71dc427622fe784d2d902fe8658b215312106cb5e"
+      "sha256": "b62a0679f9b854208ca283ada9ea023991f7126443fc7efa2ab8f32b8383e310"
     },
     {
-      "bytes": 135,
+      "bytes": 247,
       "path": "package/index.js",
-      "sha256": "ecc10729481b0b93dff5cdc71dc427622fe784d2d902fe8658b215312106cb5e"
+      "sha256": "b62a0679f9b854208ca283ada9ea023991f7126443fc7efa2ab8f32b8383e310"
     },
     {
-      "bytes": 895,
+      "bytes": 2045,
+      "path": "package/ipc-a0.d.ts",
+      "sha256": "c5d2b0972766914b6ae16a834c799bedd9394fcc8365268cf2928cb097376929"
+    },
+    {
+      "bytes": 17311,
+      "path": "package/ipc-a0.js",
+      "sha256": "6214e919071688997bb13365cbbdb774c0bddcd32894b70703620a0eb5423808"
+    },
+    {
+      "bytes": 2815,
+      "path": "package/ipc-client-a0.d.ts",
+      "sha256": "8181c8a93adef43bc5b59cfdf219416d9788af05fa4f04bbed1851b214c2fc49"
+    },
+    {
+      "bytes": 19329,
+      "path": "package/ipc-client-a0.js",
+      "sha256": "cd373cb53f4bda2025f3432d6425796051f231014217d8e1c305e8e289ccea22"
+    },
+    {
+      "bytes": 1069,
+      "path": "package/node-process-a0.d.ts",
+      "sha256": "fcbc7e6878660e9eee1bd890f2ce90f860aaf1e330deed99f871b0c18433c31e"
+    },
+    {
+      "bytes": 6806,
+      "path": "package/node-process-a0.js",
+      "sha256": "e54af4821edc86f0844c6253d751b836f3c017c47ba096b8ab98809a20bbb8d3"
+    },
+    {
+      "bytes": 1019,
+      "path": "package/node-process-termination-a0.d.ts",
+      "sha256": "4492978a19989e1081ce3f111a2452e8080d4e813f0ec0ee5c4e437550f4407e"
+    },
+    {
+      "bytes": 2424,
+      "path": "package/node-process-termination-a0.js",
+      "sha256": "1ea11176aa8e1d01c5a325b03a4c0db9ddeccdd767cca03c15f416ffacb50c31"
+    },
+    {
+      "bytes": 1204,
       "path": "package/package.json",
-      "sha256": "5194385caeb68f138fdd92ef57549fab088fc2389ae249c98b1214188b5ffde0"
+      "sha256": "efb13284cfa9249fa7c369563f7102561b8bddff46ce350d778cdb3d97ec168f"
     },
     {
-      "bytes": 1934,
+      "bytes": 3986,
       "path": "package/README.md",
-      "sha256": "01f5a2ed215a36795d69bc30becac11b8b72c183ce320dac2dad8bffd5e1c55f"
+      "sha256": "b938554a28de8279f166f2dde88d03fbc8f268abc074909a53304cac859b5142"
+    },
+    {
+      "bytes": 3832,
+      "path": "package/step-topology-validation.d.ts",
+      "sha256": "ec555e41ef4c87e133f15941b1ff439baef3fd30b95715f083b56653c488bc8e"
+    },
+    {
+      "bytes": 43466,
+      "path": "package/step-topology-validation.js",
+      "sha256": "bed2fd31af416ebcacf3375892fe49b1fd2e509ad515fc5e9796813df6deb167"
     },
     {
       "bytes": 3329,
@@ -216,9 +271,9 @@
       "sha256": "44ede92d71756c3e6646a08fe316147e291faf4742a78575894fcf505a5cbe28"
     },
     {
-      "bytes": 22303,
+      "bytes": 22365,
       "path": "package/wasm.js",
-      "sha256": "18c6a675dbc0c3a7b3ceb02dfa97823b12b63e73f90e1dc2002371472b2979ed"
+      "sha256": "17b81710cbdd56226e00f74590bd5cb3b281be9686fb11d4b83d595d6ca5caae"
     },
     {
       "bytes": 827,
@@ -262,5 +317,5 @@
     }
   ],
   "schema": "wn.geometer.static_site.a0",
-  "sha256": "42979f4c206ba35598d3701aa37cdf11dcd970779e45f31457f735e8bbd74a93"
+  "sha256": "e073af72800f177e96eed1ad005f8c4be111fcf28e22a5297c2d36e7dcaa9140"
 }

@@ -18,6 +18,18 @@
       "types": "./analytic-packet-a0.d.ts",
       "import": "./analytic-packet-a0.js"
     },
+    "./ipc-a0": {
+      "types": "./ipc-a0.d.ts",
+      "import": "./ipc-a0.js"
+    },
+    "./ipc-client-a0": {
+      "types": "./ipc-client-a0.d.ts",
+      "import": "./ipc-client-a0.js"
+    },
+    "./node-process-a0": {
+      "types": "./node-process-a0.d.ts",
+      "import": "./node-process-a0.js"
+    },
     "./wasm": {
       "types": "./wasm.d.ts",
       "import": "./wasm.js"

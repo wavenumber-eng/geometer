@@ -887,6 +887,9 @@ function projectionCacheKey(model, view, modelTransform) {
         ...modelTransform,
         (settings.hlrAngularDeflectionDegrees * Math.PI) / 180,
         settings.hlrDeflectionCoefficient,
+        Number.parseFloat(els.fastCrease.value),
+        state.showHlrOutline ? 1 : 0,
+        state.showHlrDetail ? 1 : 0,
     ];
     return `${model.cacheKey ?? model.name}|${values.map((value) => value.toFixed(7)).join(",")}`;
 }
@@ -904,6 +907,9 @@ async function loadHlrLinework(model, view, modelTransform) {
             hlrOptions: {
                 angularDeflectionRad: (settings.hlrAngularDeflectionDegrees * Math.PI) / 180,
                 deflectionCoefficient: settings.hlrDeflectionCoefficient,
+                creaseAngleRad: (Number.parseFloat(els.fastCrease.value) * Math.PI) / 180,
+                outputOutline: state.showHlrOutline,
+                outputDetail: state.showHlrDetail,
             },
         }, source.slice(0));
         if (!result.projection)

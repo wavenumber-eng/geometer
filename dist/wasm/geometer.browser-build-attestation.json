@@ -2,11 +2,11 @@
   "artifacts": {
     "dist/wasm/browser/geometer.js": {
       "bytes": 163460,
-      "sha256": "68a29fb20f2591802f6a2298dd47143e98d5f3ee654c6fec821a7f8d52fa2775"
+      "sha256": "c36bc79944ca62731520940eef474df8c505ed253986da9b322f616c3c4d4771"
     },
     "dist/wasm/browser/geometer.wasm": {
-      "bytes": 18893560,
-      "sha256": "33570e2a15006024b1a6b9f21d526453bf9cf9ae1825bfc94714c615eb5f0c60"
+      "bytes": 18926388,
+      "sha256": "660d5a9dcc73803e0c67849a2db4cff3e2879f1e2a05342f670de1fcabc4ecf8"
     },
     "dist/wasm/npm/geometer/README.md": {
       "bytes": 3986,
@@ -182,10 +182,10 @@
     "contract_check_status": "passed",
     "source": {
       "authority": "git_head_and_source_worktree_excluding_dist_build_deps_out",
-      "revision": "3306c6f84426e7ce4cd74db6a74dc793dbaed358",
-      "tree_state": "dirty"
+      "revision": "05973114e4305d3e6965e28a30f6c47f9cc62284",
+      "tree_state": "clean"
     },
-    "source_content_sha256": "a7144119d32951adc0777656e94787c6db320d9f728bd1da4e38619acd678adb",
+    "source_content_sha256": "9a6bc81133e4c3ab93357f8f742c424e1e9e456873a9ba152b14b2616f4b63b9",
     "toolchain": {
       "emscripten": {
         "executable": ".deps/emsdk/upstream/emscripten/emcc.bat",
@@ -193,7 +193,7 @@
         "version": "3.1.56",
         "version_text": "emcc (Emscripten gcc/clang-like replacement + linker emulating GNU ld) 3.1.56 (cf90417346b78455089e64eb909d71d091ecc055)"
       },
-      "node": "v24.18.0",
+      "node": "v24.12.0",
       "npm": "11.16.0",
       "occt": {
         "profile": ".deps/occt-wasm-install/.geometer-occt-profile.json",

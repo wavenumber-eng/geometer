@@ -49,7 +49,20 @@ void parse_explicit_options()
                        "\"round_digits\":4,"
                        "\"mesh_deflection_mode\":\"absolute\","
                        "\"mesh_deflection_coefficient\":0.002,"
+                       "\"projection_algorithm\":\"fast\","
                        "\"outline_algorithm\":\"mesh-shadow\","
+                       "\"fast\":{"
+                       "\"include_boundaries\":false,"
+                       "\"includeCreases\":true,"
+                       "\"include_silhouettes\":false,"
+                       "\"includeHidden\":true,"
+                       "\"crease_angle_rad\":0.25,"
+                       "\"weldTolerance\":0.000001,"
+                       "\"projected_tolerance\":0.000002,"
+                       "\"depthTolerance\":0.000003,"
+                       "\"limits\":{\"max_candidate_pairs\":1234,"
+                       "\"maxGridReferences\":4321}"
+                       "},"
                        "\"include_visible\":false,"
                        "\"include_outline\":true,"
                        "\"union_outline_polygons\":false"
@@ -78,6 +91,8 @@ void parse_explicit_options()
             "mesh_deflection_mode should parse");
     require(options.mesh_deflection_coefficient == 0.002,
             "mesh_deflection_coefficient should parse");
+    require(options.projection_algorithm == geometer::ProjectionAlgorithm::Fast,
+            "fast projection_algorithm should parse");
     require(options.outline_algorithm == geometer::ProjectionOutlineAlgorithm::MeshShadow,
             "outline_algorithm should parse");
     // Legacy include_visible:false zeroes both visible-sharp and visible-outline.
@@ -85,6 +100,18 @@ void parse_explicit_options()
     require(!options.edge_v_sharp, "include_visible should clear edge_v_sharp");
     require(options.edge_v_outline, "include_outline should set edge_v_outline");
     require(!options.union_outline_polygons, "union_outline_polygons should parse");
+    require(!options.fast.include_boundaries, "fast.include_boundaries should parse");
+    require(options.fast.include_creases, "fast.includeCreases should parse");
+    require(!options.fast.include_silhouettes, "fast.include_silhouettes should parse");
+    require(options.fast.include_hidden, "fast.includeHidden should parse");
+    require(options.fast.crease_angle_rad == 0.25, "fast.crease_angle_rad should parse");
+    require(options.fast.weld_tolerance == 0.000001, "fast.weldTolerance should parse");
+    require(options.fast.projected_tolerance == 0.000002, "fast.projected_tolerance should parse");
+    require(options.fast.depth_tolerance == 0.000003, "fast.depthTolerance should parse");
+    require(options.fast.limits.max_candidate_pairs == 1234,
+            "fast.limits.max_candidate_pairs should parse");
+    require(options.fast.limits.max_grid_references == 4321,
+            "fast.limits.maxGridReferences should parse");
 }
 
 void parse_aliases()
@@ -146,6 +173,25 @@ void reject_invalid_options()
     code = geometer::parse_hlr_projection_options_json("{\"outline_algorithm\":\"bad\"}", &options,
                                                        &status);
     require(code == 91, "invalid outline_algorithm should return parse error");
+
+    code = geometer::parse_hlr_projection_options_json("{\"fast\":true}", &options, &status);
+    require(code == 91, "non-object fast options should return parse error");
+
+    code = geometer::parse_hlr_projection_options_json(
+        "{\"fast\":{\"limits\":{\"max_edges\":1.5}}}", &options, &status);
+    require(code == 91, "fractional fast limit should return parse error");
+
+    code = geometer::parse_hlr_projection_options_json(
+        "{\"fast\":{\"limits\":{\"max_edges\":4294967296}}}", &options, &status);
+    require(code == 91, "fast limits above the portable 32-bit range should be rejected");
+
+    code = geometer::parse_hlr_projection_options_json("{\"fast\":{\"projected_tolerance\":0}}",
+                                                       &options, &status);
+    require(code == 91, "non-positive projected tolerance should be rejected");
+
+    code = geometer::parse_hlr_projection_options_json("{\"fast\":{\"crease_angle_rad\":4}}",
+                                                       &options, &status);
+    require(code == 91, "crease angles above pi should be rejected");
 
     code = geometer::parse_hlr_projection_options_json("{\"model_transform\":[[1,0,0,0]]}",
                                                        &options, &status);

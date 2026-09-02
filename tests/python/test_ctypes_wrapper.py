@@ -103,6 +103,8 @@ def test_hlr_projection_json_returns_json_text() -> None:
 
 def test_hlr_options_preserve_independent_output_layers() -> None:
     options = geometer.HlrOptions(
+        projection_algorithm="fast",
+        fast={"crease_angle_rad": 0.25},
         output_outline=True,
         output_detail=False,
         output_bbox=False,
@@ -111,6 +113,8 @@ def test_hlr_options_preserve_independent_output_layers() -> None:
     assert options["output_outline"] is True
     assert options["output_detail"] is False
     assert options["output_bbox"] is False
+    assert options["projection_algorithm"] == "fast"
+    assert options["fast"] == {"crease_angle_rad": 0.25}
 
 
 def test_model_bounds_returns_transformed_bounds() -> None:

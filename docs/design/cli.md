@@ -45,6 +45,7 @@ Projection CLI options:
 - `--curve-mode <native-arcs|polyline>`
 - `--samples <count>`
 - `--round-digits <count>`
+- `--projection-algorithm <poly|exact|fast>`
 - `--outline-algorithm <mesh-shadow|hlr-close>`
 - `--deflection-mode <absolute|bbox-relative>`
 - `--deflection-coefficient <value>`

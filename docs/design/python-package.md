@@ -26,6 +26,17 @@ outline_only = geometer.project_step_hlr(
         output_bbox=False,
     ),
 )
+fast_detail = geometer.project_step_hlr(
+    "part.step",
+    views=[geometer.ProjectionView.top()],
+    options=geometer.HlrOptions(
+        projection_algorithm="fast",
+        fast={"crease_angle_rad": 0.4363323129985824},
+        output_outline=False,
+        output_detail=True,
+        output_bbox=False,
+    ),
+)
 generic_projection = geometer.project_model_hlr(
     "part.step",
     format="step",

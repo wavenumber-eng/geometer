@@ -36,6 +36,8 @@ set(GEOMETER_LIB_SOURCES
     analytic_solver_limits.cpp
     c_api.cpp
     clipper2_bytes.cpp
+    fast_hlr.cpp
+    fast_hlr_occt.cpp
     hlr_projection.cpp
     mesh_shadow_outline.cpp
     model_bounds.cpp

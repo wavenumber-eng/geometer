@@ -1,5 +1,6 @@
 #include "geometer/projection.h"
 
+#include "fast_hlr_occt.h"
 #include "geometer/planar_contours.h"
 #include "geometer/planar_solve.h"
 #include "mesh_shadow_outline.h"
@@ -1132,12 +1133,15 @@ int step_hlr_projection_from_bytes(const unsigned char* step_data, std::size_t s
         output.views.reserve(views.size());
 
         const bool use_poly = options.projection_algorithm == ProjectionAlgorithm::Poly;
-        const bool needs_hlr =
-            options.output_detail ||
+        const bool use_fast = options.projection_algorithm == ProjectionAlgorithm::Fast;
+        const bool needs_classic_hlr =
+            (!use_fast && options.output_detail) ||
             (options.output_outline &&
              options.outline_algorithm == ProjectionOutlineAlgorithm::HlrClosedEdges);
+        const bool needs_fast_detail = use_fast && options.output_detail;
+        const bool needs_poly_hlr = needs_classic_hlr && (use_poly || use_fast);
         const bool needs_mesh =
-            (use_poly && needs_hlr) ||
+            needs_poly_hlr || needs_fast_detail ||
             (options.output_outline &&
              options.outline_algorithm == ProjectionOutlineAlgorithm::MeshShadow);
         if (needs_mesh)
@@ -1171,19 +1175,63 @@ int step_hlr_projection_from_bytes(const unsigned char* step_data, std::size_t s
             timings.mesh_ms = elapsed_ms(mesh_start);
         }
 
+        FastHlrPreparedMesh fast_prepared;
+        if (needs_fast_detail)
+        {
+            const auto prepare_start = std::chrono::high_resolution_clock::now();
+            const int fast_code =
+                prepare_fast_hlr_shape(shape, options.fast, &fast_prepared, status);
+            if (fast_code != 0)
+            {
+                return fast_code;
+            }
+            timings.mesh_ms += elapsed_ms(prepare_start);
+        }
+
         for (const ProjectionViewSpec& view : views)
         {
             ProjectedViewGeometry projected_view;
             projected_view.view = view;
-            if (needs_hlr && use_poly)
+            if (needs_classic_hlr && (use_poly || use_fast))
             {
+                HlrProjectionOptions classic_options = options;
+                if (use_fast)
+                {
+                    classic_options.output_detail = false;
+                }
                 projected_view =
-                    project_view_poly(shape, view, options, scale, extent_scale, &timings);
+                    project_view_poly(shape, view, classic_options, scale, extent_scale, &timings);
             }
-            else if (needs_hlr)
+            else if (needs_classic_hlr)
             {
                 projected_view =
                     project_view_exact(shape, view, options, scale, extent_scale, &timings);
+            }
+            if (needs_fast_detail)
+            {
+                const auto fast_start = std::chrono::high_resolution_clock::now();
+                ProjectedModeGeometry hidden_geometry;
+                const int fast_code = project_fast_hlr_detail(
+                    fast_prepared, view, options.fast, &projected_view.detail,
+                    options.fast.include_hidden ? &hidden_geometry : nullptr, nullptr, status);
+                if (fast_code != 0)
+                {
+                    return fast_code;
+                }
+                if (options.fast.include_hidden)
+                {
+                    projected_view.detail.segments.insert(projected_view.detail.segments.end(),
+                                                          hidden_geometry.segments.begin(),
+                                                          hidden_geometry.segments.end());
+                }
+                std::set<SegmentKey> fast_segment_keys;
+                for (const ProjectedSegment& segment : projected_view.detail.segments)
+                {
+                    add_segment(&fast_segment_keys, segment, scale);
+                }
+                projected_view.detail =
+                    geometry_from_keys(fast_segment_keys, std::set<ArcKey>(), scale, extent_scale);
+                timings.hlr_ms += elapsed_ms(fast_start);
             }
             if (options.output_outline &&
                 options.outline_algorithm == ProjectionOutlineAlgorithm::MeshShadow)

@@ -92,7 +92,29 @@ enum class ProjectionCurveMode {
 
 enum class ProjectionAlgorithm {
     Poly,
-    Exact
+    Exact,
+    Fast
+};
+
+struct FastHlrLimits {
+    std::size_t max_vertices = 2'000'000;
+    std::size_t max_triangles = 2'000'000;
+    std::size_t max_edges = 4'000'000;
+    std::size_t max_grid_references = 64'000'000;
+    std::size_t max_candidate_pairs = 100'000'000;
+    std::size_t max_output_segments = 4'000'000;
+};
+
+struct FastHlrOptions {
+    bool include_boundaries = true;
+    bool include_creases = true;
+    bool include_silhouettes = true;
+    bool include_hidden = false;
+    double crease_angle_rad = 0.5235987755982988;
+    double weld_tolerance = 1.0e-7;
+    double projected_tolerance = 1.0e-8;
+    double depth_tolerance = 1.0e-7;
+    FastHlrLimits limits;
 };
 
 struct ProjectionViewSpec {
@@ -106,6 +128,7 @@ struct HlrProjectionOptions {
     bool output_outline = true;
     bool output_detail = true;
     bool output_bbox = true;
+    FastHlrOptions fast;
     std::array<double, 16> model_transform = {
         1.0, 0.0, 0.0, 0.0,
         0.0, 1.0, 0.0, 0.0,
@@ -144,6 +167,33 @@ outline-only mesh-shadow request does not run detail HLR, and a detail-only
 request does not construct an outline. A combined request never merges outline
 and detail geometry, allowing downstream renderers to composite them with
 different presentation choices.
+
+`Fast` is an additive evaluation backend. It tessellates through OCCT, builds a
+central C++ triangle/edge incidence graph, activates boundary, crease, and
+view-dependent silhouette candidates, and classifies visibility against a
+projected-triangle spatial index. Its provisional controls are isolated in the
+`fast` member rather than reinterpreting exact/poly edge flags. It currently
+emits straight segments; the existing line-and-circular-arc result schema is
+retained while reconstruction and bounded arc fitting are evaluated.
+
+Fast-option behavior is intentionally explicit during evaluation:
+
+| Option group | `fast` behavior |
+|---|---|
+| `views`, `model_transform`, `strip_root_placement`, `round_digits` | Supported common behavior |
+| `output_outline`, `output_detail`, `output_bbox` | Supported as independent composable layers |
+| mesh deflection controls | Supported; they define the prepared triangle mesh |
+| nested `fast` controls and limits | Supported by the fast detail engine |
+| `outline_algorithm=mesh-shadow` | Delegated to the independent Clipper2 triangle-union outline |
+| `outline_algorithm=hlr-close` | Delegated to the existing poly HLR-close outline path |
+| exact/poly `edge_*` flags | Not interpreted by fast detail; nested `fast` candidate flags apply instead |
+| `curve_mode`, `samples_per_curve`, native-arc behavior | Fast detail emits segments only and does not fit arcs |
+| `union_outline_polygons`, `hlr_angle_tolerance` | Apply only in the delegated outline path where applicable |
+
+The retained WebGL depth-pass experiment remains a deliberately independent
+comparator. It derives candidates from the display GLB and is not yet
+semantically centralized with the C++ prepared mesh. A versioned prepared-data
+transport is required before GPU/vector parity can be claimed.
 
 Projection output:
 

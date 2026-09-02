@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
@@ -64,6 +64,7 @@ class ProjectionView:
 @dataclass
 class HlrOptions:
     projection_algorithm: str = "poly"
+    fast: dict[str, Any] = field(default_factory=dict)
     output_outline: bool = True
     output_detail: bool = True
     output_bbox: bool = True

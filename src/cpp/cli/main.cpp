@@ -59,6 +59,7 @@ static void print_usage()
                  "  --deflection-mode <absolute|bbox-relative>  (default: bbox-relative)\n"
                  "  --deflection-coefficient <value>            (default: 0.004)\n"
                  "  --angular <value>      Angular deflection (default: 0.5)\n"
+                 "  --projection-algorithm <poly|exact|fast>\n"
                  "  --outline-algorithm <hlr-close|mesh-shadow>\n"
                  "  --format <step>        Source model format (only step is supported)\n"
                  "  --view <id>            SVG view id (default: top)\n"
@@ -471,9 +472,9 @@ static bool model_path_for_job(const rapidjson::Value& job, std::string* path)
     return member_string(job, "step_path", path) && !path->empty();
 }
 
-static void parse_projection_options(int argc, char* argv[], int start,
-                                     geometer::HlrProjectionOptions* options, std::string* view_id,
-                                     std::string* mode)
+static int parse_projection_options(int argc, char* argv[], int start,
+                                    geometer::HlrProjectionOptions* options, std::string* view_id,
+                                    std::string* mode)
 {
     for (int i = start; i < argc - 1; i += 2)
     {
@@ -533,7 +534,31 @@ static void parse_projection_options(int argc, char* argv[], int start,
                     ? geometer::ProjectionOutlineAlgorithm::MeshShadow
                     : geometer::ProjectionOutlineAlgorithm::HlrClosedEdges;
         }
+        else if (std::strcmp(argv[i], "--projection-algorithm") == 0)
+        {
+            const char* value = argv[i + 1];
+            if (std::strcmp(value, "fast") == 0)
+            {
+                options->projection_algorithm = geometer::ProjectionAlgorithm::Fast;
+            }
+            else if (std::strcmp(value, "exact") == 0)
+            {
+                options->projection_algorithm = geometer::ProjectionAlgorithm::Exact;
+            }
+            else if (std::strcmp(value, "poly") == 0)
+            {
+                options->projection_algorithm = geometer::ProjectionAlgorithm::Poly;
+            }
+            else
+            {
+                std::fprintf(stderr,
+                             "--projection-algorithm must be poly, exact, or fast (got %s).\n",
+                             value);
+                return 2;
+            }
+        }
     }
+    return 0;
 }
 
 static int validate_model_format_args(int argc, char* argv[], int start)
@@ -1271,7 +1296,12 @@ int main(int argc, char* argv[])
         {
             return format_result;
         }
-        parse_projection_options(argc, argv, 4, &options, &view_id, &mode);
+        const int projection_options_result =
+            parse_projection_options(argc, argv, 4, &options, &view_id, &mode);
+        if (projection_options_result != 0)
+        {
+            return projection_options_result;
+        }
 
         std::vector<unsigned char> step_bytes;
         if (!read_file_bytes(input, &step_bytes))

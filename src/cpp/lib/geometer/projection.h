@@ -19,7 +19,31 @@ enum class ProjectionCurveMode
 enum class ProjectionAlgorithm
 {
     Poly,
-    Exact
+    Exact,
+    Fast
+};
+
+struct FastHlrLimits
+{
+    std::size_t max_vertices = 2'000'000;
+    std::size_t max_triangles = 2'000'000;
+    std::size_t max_edges = 4'000'000;
+    std::size_t max_grid_references = 64'000'000;
+    std::size_t max_candidate_pairs = 100'000'000;
+    std::size_t max_output_segments = 4'000'000;
+};
+
+struct FastHlrOptions
+{
+    bool include_boundaries = true;
+    bool include_creases = true;
+    bool include_silhouettes = true;
+    bool include_hidden = false;
+    double crease_angle_rad = 0.5235987755982988;
+    double weld_tolerance = 1.0e-7;
+    double projected_tolerance = 1.0e-8;
+    double depth_tolerance = 1.0e-7;
+    FastHlrLimits limits;
 };
 
 enum class MeshDeflectionMode
@@ -58,6 +82,9 @@ struct HlrProjectionOptions
     bool output_outline = true;
     bool output_detail = true;
     bool output_bbox = true;
+    // Provisional, independently versioned controls used only by the fast
+    // evaluation backend.
+    FastHlrOptions fast;
     // Row-major 4x4 affine transform applied to the source shape before
     // projection. Translation lives in the final column. The final row must be
     // [0, 0, 0, 1].

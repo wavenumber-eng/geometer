@@ -9,6 +9,14 @@ target_include_directories(geometer_planar_contours_test PRIVATE
 
 add_test(NAME geometer_planar_contours_test COMMAND geometer_planar_contours_test)
 
+add_executable(geometer_fast_hlr_test
+    fast_hlr_test.cpp
+)
+
+target_link_libraries(geometer_fast_hlr_test PRIVATE geometer_lib)
+
+add_test(NAME geometer_fast_hlr_test COMMAND geometer_fast_hlr_test)
+
 add_executable(geometer_planar_solve_test
     planar_solve_test.cpp
 )
@@ -813,6 +821,7 @@ if(EMSCRIPTEN)
     # the same .cjs policy as the exact/synthetic targets above.
     set_target_properties(
         geometer_planar_contours_test
+        geometer_fast_hlr_test
         geometer_planar_solve_test
         geometer_planar_step_test
         geometer_model_bounds_test

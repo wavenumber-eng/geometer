@@ -80,7 +80,8 @@ Accepted option keys:
   layer; defaults to `true`.
 - `output_bbox` or `outputBbox`: emit the projected bounding-box layer;
   defaults to `true`.
-- `projection_algorithm` or `projectionAlgorithm`: `poly` or `exact`.
+- `projection_algorithm` or `projectionAlgorithm`: `poly`, `exact`, or the
+  additive evaluation backend `fast`.
 - `mesh_linear_deflection` or `meshLinearDeflection`.
 - `mesh_angular_deflection` or `meshAngularDeflection`.
 - `mesh_relative` or `meshRelative`.
@@ -97,6 +98,17 @@ Accepted option keys:
 - legacy `include_outline` or `includeOutline`, which toggles visible outline
   edges.
 - `union_outline_polygons`, `unionOutlinePolygons`, or `unionPolygons`.
+- `fast`: provisional options used only when `projection_algorithm` is `fast`:
+  `include_boundaries`, `include_creases`, `include_silhouettes`,
+  `include_hidden`, `crease_angle_rad`, `weld_tolerance`,
+  `projected_tolerance`, and `depth_tolerance`, with camelCase aliases. Its
+  nested `limits` object accepts `max_vertices`, `max_triangles`, `max_edges`,
+  `max_grid_references`, `max_candidate_pairs`, and `max_output_segments`,
+  also with camelCase aliases.
+
+The `fast` option block is an evaluation contract. Its controls may be refined
+before the backend is promoted, but they cannot change the meaning of the
+OCCT-specific exact/poly flags.
 
 The browser test pages currently use the viz-compatible setting set:
 

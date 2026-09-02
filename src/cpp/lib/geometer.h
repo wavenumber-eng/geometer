@@ -1,5 +1,6 @@
 #pragma once
 
+#include "geometer/fast_hlr.h"
 #include "geometer/model.h"
 #include "geometer/model_bounds.h"
 #include "geometer/model_bounds_options_json.h"

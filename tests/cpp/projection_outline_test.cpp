@@ -268,6 +268,39 @@ void output_layers_are_independently_selectable()
             "detail-only should leave bbox empty");
 }
 
+void fast_detail_projects_real_step_mesh()
+{
+    geometer::HlrProjectionOptions options = projection_options({view_spec("top")});
+    options.projection_algorithm = geometer::ProjectionAlgorithm::Fast;
+    options.output_outline = false;
+    options.output_bbox = false;
+
+    const geometer::HlrProjectionResult result = project_or_throw("SOT-23.STEP", options);
+    const geometer::ProjectedViewGeometry& view = find_view(result, "top");
+    require(!view.detail.segments.empty(), "fast detail should emit visible mesh edges");
+    require(view.detail.arcs.empty(), "first fast evaluation should emit straight segments only");
+    require(view.outline.segments.empty(), "fast detail-only should preserve the outline boundary");
+    require(view.bbox.segments.empty(), "fast detail-only should preserve the bbox boundary");
+    require(result.timings.mesh_ms > 0.0, "fast detail should report mesh preparation time");
+    require(result.timings.hlr_ms > 0.0, "fast detail should report visibility time");
+}
+
+void fast_hlr_close_outline_can_run_without_detail()
+{
+    geometer::HlrProjectionOptions options = projection_options({view_spec("top")});
+    options.projection_algorithm = geometer::ProjectionAlgorithm::Fast;
+    options.outline_algorithm = geometer::ProjectionOutlineAlgorithm::HlrClosedEdges;
+    options.output_detail = false;
+    options.output_bbox = false;
+
+    const geometer::HlrProjectionResult result = project_or_throw("SOT-23.STEP", options);
+    const geometer::ProjectedViewGeometry& view = find_view(result, "top");
+    require(!view.outline.segments.empty() || !view.outline.arcs.empty(),
+            "fast plus HLR-close should delegate a nonempty outline without detail");
+    require(view.detail.segments.empty() && view.detail.arcs.empty(),
+            "outline-only fast request should keep detail empty");
+}
+
 void root_placement_stripping_matches_step_to_glb_definition_frame()
 {
     const std::vector<unsigned char> step_bytes =
@@ -324,6 +357,8 @@ int main()
         json_and_svg_use_outline_bbox_modes();
         mesh_shadow_outline_avoids_side_view_edge_explosion();
         output_layers_are_independently_selectable();
+        fast_detail_projects_real_step_mesh();
+        fast_hlr_close_outline_can_run_without_detail();
         root_placement_stripping_matches_step_to_glb_definition_frame();
     }
     catch (const std::exception& e)

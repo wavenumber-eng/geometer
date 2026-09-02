@@ -260,7 +260,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
     parser.add_argument("--model", action="append", default=[], help="fixture name; repeatable")
-    parser.add_argument("--algorithm", action="append", choices=("poly", "exact"), default=[])
+    parser.add_argument("--algorithm", action="append", choices=("poly", "exact", "fast"), default=[])
     parser.add_argument("--outline", action="append", choices=("hlr-close", "mesh-shadow"), default=[])
     parser.add_argument("--layer", action="append", choices=("outline", "detail", "both"), default=[])
     parser.add_argument("--view", default="top")

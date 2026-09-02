@@ -300,6 +300,24 @@ rounding error budget must be reported. The final `external-review` gate remains
 pending for review of delivered code and evidence; this early review does not
 satisfy that gate.
 
+### First engine implementation review
+
+The first generic C++ engine slice received a second independent read-only
+review on 2026-09-02. Before checkpointing the slice, the implementation was
+hardened to preserve disconnected coincident components, validate all public
+prepared-mesh indices and incidence spans, use dimensionally consistent
+projected-length tolerances, bound spatial-index references, cap JSON limits to
+the portable 32-bit range, validate numeric options, retain grazing and
+non-manifold candidates conservatively, and canonicalize output through the
+existing rounding/deduplication policy. Tests now cover malformed input,
+resource failure, opposite view depth, oblique projection, sloped depth
+crossing, grazing silhouettes, and coincident disconnected OCCT shapes.
+
+This checkpoint does not complete the contract step: the versioned packed
+prepared-data transport is still pending, so the existing Three.js GPU path is
+an explicitly non-authoritative comparator. Path reconstruction and the
+separate fast mesh-shadow implementation also remain pending.
+
 ## Execution architecture
 
 The alternate implementation has one shared preparation layer and two output

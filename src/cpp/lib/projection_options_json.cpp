@@ -648,6 +648,7 @@ bool parse_fast_options(const JsonValue& value, FastHlrOptions* options, std::st
             {"max_edges", "maxEdges", &FastHlrLimits::max_edges},
             {"max_grid_references", "maxGridReferences", &FastHlrLimits::max_grid_references},
             {"max_candidate_pairs", "maxCandidatePairs", &FastHlrLimits::max_candidate_pairs},
+            {"max_fragments", "maxFragments", &FastHlrLimits::max_fragments},
             {"max_output_segments", "maxOutputSegments", &FastHlrLimits::max_output_segments},
         };
         for (const LimitOption& option : limit_options)

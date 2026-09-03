@@ -1,5 +1,7 @@
 #include "geometer/fast_hlr.h"
 
+#include "fast_hlr_reconstruct.h"
+
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
@@ -14,6 +16,9 @@ namespace
 {
 
 constexpr std::uint32_t kNoTriangle = std::numeric_limits<std::uint32_t>::max();
+constexpr std::uint8_t kBoundaryCategory = 1U;
+constexpr std::uint8_t kCreaseCategory = 2U;
+constexpr std::uint8_t kSilhouetteCategory = 4U;
 
 struct EdgeKey
 {
@@ -249,6 +254,74 @@ ProjectedSegment segment_interval(const ProjectedPoint& start, const ProjectedPo
             start.y + (end.y - start.y) * interval.first,
             start.x + (end.x - start.x) * interval.second,
             start.y + (end.y - start.y) * interval.second};
+}
+
+fast_hlr_internal::FragmentProvenance fragment_provenance(const FastHlrPreparedMesh& prepared,
+                                                          const FastHlrPreparedEdge& edge,
+                                                          std::size_t edge_index, bool boundary,
+                                                          bool crease, bool silhouette)
+{
+    fast_hlr_internal::FragmentProvenance provenance;
+    provenance.category_mask = static_cast<std::uint8_t>((boundary ? kBoundaryCategory : 0U) |
+                                                         (crease ? kCreaseCategory : 0U) |
+                                                         (silhouette ? kSilhouetteCategory : 0U));
+    std::array<std::uint32_t, 2> source_faces = {kFastHlrUnspecifiedSourceFace,
+                                                 kFastHlrUnspecifiedSourceFace};
+    if (edge.incident_count >= 1 && edge.incident_count <= 2)
+    {
+        source_faces[0] =
+            prepared.triangles[prepared.incident_triangles[edge.first_incident]].source_face;
+        if (edge.incident_count == 2)
+        {
+            source_faces[1] =
+                prepared.triangles[prepared.incident_triangles[edge.first_incident + 1]]
+                    .source_face;
+            if (source_faces[1] < source_faces[0])
+            {
+                std::swap(source_faces[0], source_faces[1]);
+            }
+        }
+    }
+    provenance.first_source_face = source_faces[0];
+    provenance.second_source_face = source_faces[1];
+    provenance.unique_edge =
+        edge.incident_count < 1 || edge.incident_count > 2 ||
+                source_faces[0] == kFastHlrUnspecifiedSourceFace ||
+                (edge.incident_count == 2 && source_faces[1] == kFastHlrUnspecifiedSourceFace)
+            ? static_cast<std::uint32_t>(edge_index)
+            : kNoTriangle;
+    return provenance;
+}
+
+fast_hlr_internal::ProjectedFragment
+projected_fragment(const ProjectedPoint& start, const ProjectedPoint& end, const Interval& interval,
+                   const FastHlrPreparedEdge& edge,
+                   const fast_hlr_internal::FragmentProvenance& provenance, bool reaches_start,
+                   bool reaches_end)
+{
+    fast_hlr_internal::ProjectedFragment fragment;
+    fragment.segment = segment_interval(start, end, interval);
+    fragment.start_vertex = reaches_start ? edge.vertices[0] : fast_hlr_internal::kNoTopologyVertex;
+    fragment.end_vertex = reaches_end ? edge.vertices[1] : fast_hlr_internal::kNoTopologyVertex;
+    fragment.provenance = provenance;
+    return fragment;
+}
+
+bool append_projected_fragment(const ProjectedPoint& start, const ProjectedPoint& end,
+                               const Interval& interval, const FastHlrPreparedEdge& edge,
+                               const fast_hlr_internal::FragmentProvenance& provenance,
+                               bool reaches_start, bool reaches_end,
+                               std::size_t other_fragment_count, std::size_t fragment_limit,
+                               std::vector<fast_hlr_internal::ProjectedFragment>* fragments)
+{
+    if (other_fragment_count > fragment_limit ||
+        fragments->size() >= fragment_limit - other_fragment_count)
+    {
+        return false;
+    }
+    fragments->push_back(
+        projected_fragment(start, end, interval, edge, provenance, reaches_start, reaches_end));
+    return true;
 }
 
 bool edge_is_crease(const FastHlrPreparedMesh& prepared, const FastHlrPreparedEdge& edge,
@@ -629,6 +702,8 @@ int project_fast_hlr_detail(const FastHlrPreparedMesh& prepared, const Projectio
 
     ProjectedModeGeometry visible_output;
     ProjectedModeGeometry hidden_output;
+    std::vector<fast_hlr_internal::ProjectedFragment> visible_fragments;
+    std::vector<fast_hlr_internal::ProjectedFragment> hidden_fragments;
     FastHlrStatistics output_statistics;
     if (!std::isfinite(bounds_min_x))
     {
@@ -656,8 +731,9 @@ int project_fast_hlr_detail(const FastHlrPreparedMesh& prepared, const Projectio
     const double cosine_threshold = std::cos(options.crease_angle_rad);
     std::vector<std::uint32_t> possible_occluders;
     std::vector<Interval> hidden_intervals;
-    for (const FastHlrPreparedEdge& edge : prepared.edges)
+    for (std::size_t edge_index = 0; edge_index < prepared.edges.size(); ++edge_index)
     {
+        const FastHlrPreparedEdge& edge = prepared.edges[edge_index];
         const bool boundary = edge.incident_count != 2;
         const bool crease =
             options.include_creases && edge_is_crease(prepared, edge, cosine_threshold);
@@ -671,6 +747,8 @@ int project_fast_hlr_detail(const FastHlrPreparedMesh& prepared, const Projectio
         output_statistics.boundary_edges += boundary ? 1 : 0;
         output_statistics.crease_edges += crease ? 1 : 0;
         output_statistics.silhouette_edges += silhouette ? 1 : 0;
+        const fast_hlr_internal::FragmentProvenance provenance =
+            fragment_provenance(prepared, edge, edge_index, boundary, crease, silhouette);
 
         const ProjectedPoint& start = vertices[edge.vertices[0]];
         const ProjectedPoint& end = vertices[edge.vertices[1]];
@@ -732,28 +810,59 @@ int project_fast_hlr_detail(const FastHlrPreparedMesh& prepared, const Projectio
         {
             if (interval.first > cursor + 1.0e-12)
             {
-                visible_output.segments.push_back(
-                    segment_interval(start, end, {cursor, interval.first}));
+                if (!append_projected_fragment(start, end, {cursor, interval.first}, edge,
+                                               provenance, cursor == 0.0, false,
+                                               hidden_fragments.size(),
+                                               options.limits.max_fragments, &visible_fragments))
+                {
+                    set_status(status, 6, "Fast HLR raw-fragment limit exceeded.");
+                    return 6;
+                }
             }
             if (options.include_hidden && hidden != nullptr)
             {
-                hidden_output.segments.push_back(segment_interval(start, end, interval));
+                if (!append_projected_fragment(start, end, interval, edge, provenance,
+                                               interval.first == 0.0, interval.second == 1.0,
+                                               visible_fragments.size(),
+                                               options.limits.max_fragments, &hidden_fragments))
+                {
+                    set_status(status, 6, "Fast HLR raw-fragment limit exceeded.");
+                    return 6;
+                }
             }
             cursor = std::max(cursor, interval.second);
         }
         if (cursor < 1.0 - 1.0e-12)
         {
-            visible_output.segments.push_back(segment_interval(start, end, {cursor, 1.0}));
-        }
-        if (visible_output.segments.size() > options.limits.max_output_segments ||
-            hidden_output.segments.size() >
-                options.limits.max_output_segments - visible_output.segments.size())
-        {
-            set_status(status, 7, "Fast HLR output-segment limit exceeded.");
-            return 7;
+            if (!append_projected_fragment(start, end, {cursor, 1.0}, edge, provenance,
+                                           cursor == 0.0, true, hidden_fragments.size(),
+                                           options.limits.max_fragments, &visible_fragments))
+            {
+                set_status(status, 6, "Fast HLR raw-fragment limit exceeded.");
+                return 6;
+            }
         }
     }
+    output_statistics.raw_visible_segments = visible_fragments.size();
+    output_statistics.raw_hidden_segments = hidden_fragments.size();
+    fast_hlr_internal::ReconstructionStatistics visible_reconstruction;
+    fast_hlr_internal::ReconstructionStatistics hidden_reconstruction;
+    visible_output.segments = fast_hlr_internal::reconstruct_collinear_fragments(
+        visible_fragments, &visible_reconstruction);
+    hidden_output.segments = fast_hlr_internal::reconstruct_collinear_fragments(
+        hidden_fragments, &hidden_reconstruction);
+    if (visible_output.segments.size() > options.limits.max_output_segments ||
+        hidden_output.segments.size() >
+            options.limits.max_output_segments - visible_output.segments.size())
+    {
+        set_status(status, 7, "Fast HLR output-segment limit exceeded.");
+        return 7;
+    }
+    output_statistics.collinear_joins = visible_reconstruction.joins + hidden_reconstruction.joins;
+    output_statistics.collinear_component_rejections =
+        visible_reconstruction.rejected + hidden_reconstruction.rejected;
     output_statistics.visible_segments = visible_output.segments.size();
+    output_statistics.hidden_segments = hidden_output.segments.size();
     *visible = std::move(visible_output);
     if (hidden != nullptr)
     {

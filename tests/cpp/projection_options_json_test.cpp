@@ -60,7 +60,7 @@ void parse_explicit_options()
                        "\"weldTolerance\":0.000001,"
                        "\"projected_tolerance\":0.000002,"
                        "\"depthTolerance\":0.000003,"
-                       "\"limits\":{\"max_candidate_pairs\":1234,"
+                       "\"limits\":{\"max_candidate_pairs\":1234,\"max_fragments\":2468,"
                        "\"maxGridReferences\":4321}"
                        "},"
                        "\"include_visible\":false,"
@@ -110,6 +110,7 @@ void parse_explicit_options()
     require(options.fast.depth_tolerance == 0.000003, "fast.depthTolerance should parse");
     require(options.fast.limits.max_candidate_pairs == 1234,
             "fast.limits.max_candidate_pairs should parse");
+    require(options.fast.limits.max_fragments == 2468, "fast.limits.max_fragments should parse");
     require(options.fast.limits.max_grid_references == 4321,
             "fast.limits.maxGridReferences should parse");
 }

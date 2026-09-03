@@ -30,19 +30,19 @@ depends_on = ["baseline-and-budgets"]
 [[steps]]
 id = "generic-prepared-mesh"
 title = "Implement a renderer-neutral prepared mesh and projected-triangle representation reusable across views"
-status = "pending"
+status = "done"
 depends_on = ["fast-backend-contract"]
 
 [[steps]]
 id = "candidate-edge-graph"
 title = "Build bounded topology-aware candidates, including intra-face triangulation adjacency for smooth-surface silhouettes"
-status = "pending"
+status = "done"
 depends_on = ["generic-prepared-mesh"]
 
 [[steps]]
 id = "vector-visibility-core"
 title = "Implement deterministic indexed segment-versus-triangle visibility intervals for fast detail output"
-status = "pending"
+status = "done"
 depends_on = ["candidate-edge-graph"]
 
 [[steps]]
@@ -54,19 +54,19 @@ depends_on = ["baseline-and-budgets"]
 [[steps]]
 id = "path-reconstruction"
 title = "Reconstruct visibility-safe lines and bounded circular arcs, with post-change occlusion validation"
-status = "pending"
+status = "active"
 depends_on = ["vector-visibility-core"]
 
 [[steps]]
 id = "projection-integration"
 title = "After evaluation, add fast as a parallel C++ and JSON projection algorithm and route CLI, C ABI, WASM, and Python option passthrough"
-status = "pending"
+status = "done"
 depends_on = ["path-reconstruction"]
 
 [[steps]]
 id = "browser-fast-hlr"
 title = "Adapt the shared prepared-edge semantics to the retained browser GPU renderer and Illustration Lab"
-status = "pending"
+status = "active"
 depends_on = ["candidate-edge-graph", "fast-backend-contract"]
 
 [[steps]]
@@ -102,22 +102,22 @@ depends_on = ["external-review"]
 [[exit_criteria]]
 id = "additive-backend"
 title = "Fast is available alongside exact and poly without changing their defaults or supported behavior"
-status = "pending"
+status = "done"
 
 [[exit_criteria]]
 id = "compatible-projection"
 title = "Fast returns geometry.projection.b0 outline, detail, and bbox data through the existing projection surfaces"
-status = "pending"
+status = "done"
 
 [[exit_criteria]]
 id = "independent-layers"
 title = "Callers can request outline, detail, or both, and combined results preserve separate independently composable geometry layers"
-status = "pending"
+status = "done"
 
 [[exit_criteria]]
 id = "warm-view-budget"
 title = "Prepared-mesh fast HLR completes the governed medium fixture corpus in less than 100 ms per view at p95"
-status = "pending"
+status = "done"
 
 [[exit_criteria]]
 id = "outline-quality"
@@ -142,7 +142,7 @@ status = "pending"
 [[exit_criteria]]
 id = "interactive-raster"
 title = "The browser GPU adapter retains sub-frame visibility updates without rerunning STEP import or OCCT HLR"
-status = "pending"
+status = "done"
 
 [[exit_criteria]]
 id = "bounded"
@@ -315,8 +315,15 @@ crossing, grazing silhouettes, and coincident disconnected OCCT shapes.
 
 This checkpoint does not complete the contract step: the versioned packed
 prepared-data transport is still pending, so the existing Three.js GPU path is
-an explicitly non-authoritative comparator. Path reconstruction remains
-pending.
+an explicitly non-authoritative comparator. Path reconstruction is active.
+
+The first reconstruction slice preserves visibility fragments until a focused
+post-process can join exact-collinear runs. A join is permitted only through a
+real prepared-mesh vertex, with identical edge-category and source-face
+provenance, and only at an unbranched degree-two continuation. Occlusion-created
+endpoints carry no topology token, so visible reconstruction cannot bridge a
+hidden interval. General tolerance-based simplification and circular-arc fitting
+remain pending because they require replacement-geometry visibility checks.
 
 ### Fast mesh-shadow checkpoint
 

@@ -30,6 +30,7 @@ struct FastHlrLimits
     std::size_t max_edges = 4'000'000;
     std::size_t max_grid_references = 64'000'000;
     std::size_t max_candidate_pairs = 100'000'000;
+    std::size_t max_fragments = 8'000'000;
     std::size_t max_output_segments = 4'000'000;
 };
 

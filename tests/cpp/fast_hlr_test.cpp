@@ -1,4 +1,5 @@
 #include "fast_hlr_occt.h"
+#include "fast_hlr_reconstruct.h"
 #include "fast_mesh_shadow_outline.h"
 #include "geometer/fast_hlr.h"
 
@@ -168,6 +169,151 @@ void oblique_view_uses_the_expected_orthonormal_basis()
     require(near(visible.segments[0].x1, 0.0) && near(visible.segments[0].y1, 0.0) &&
                 near(visible.segments[0].x2, std::sqrt(0.5)) && near(visible.segments[0].y2, 0.0),
             "oblique basis should map +X onto +sqrt(1/2) projected X");
+}
+
+void collinear_boundary_fragments_are_joined_without_crossing_corners()
+{
+    geometer::FastHlrIndexedMesh mesh;
+    mesh.vertices = {
+        {0.0, 0.0, 0.0}, {1.0, 0.0, 0.0}, {2.0, 0.0, 0.0}, {2.0, 1.0, 0.0}, {0.0, 1.0, 0.0}};
+    mesh.triangles = {{{0, 1, 4}, 10}, {{1, 3, 4}, 10}, {{1, 2, 3}, 10}};
+    const geometer::FastHlrPreparedMesh prepared = prepare(mesh);
+
+    geometer::ProjectedModeGeometry visible;
+    geometer::FastHlrStatistics statistics;
+    geometer::Status status;
+    require(geometer::project_fast_hlr_detail(prepared, top_view(), {}, &visible, nullptr,
+                                              &statistics, &status) == 0,
+            "collinear reconstruction should succeed: " + status.message);
+    require(statistics.raw_visible_segments == 5,
+            "subdivided rectangle should begin with five visible boundary fragments");
+    require(statistics.collinear_joins == 1,
+            "the two bottom fragments should become one exact collinear segment");
+    require(visible.segments.size() == 4,
+            "collinear reconstruction must retain all four rectangle corners");
+
+    geometer::FastHlrOptions compact_limit;
+    compact_limit.limits.max_output_segments = 4;
+    require(geometer::project_fast_hlr_detail(prepared, top_view(), compact_limit, &visible,
+                                              nullptr, nullptr, &status) == 0,
+            "the final output limit should apply after safe reconstruction");
+    compact_limit.limits.max_fragments = 4;
+    require(geometer::project_fast_hlr_detail(prepared, top_view(), compact_limit, &visible,
+                                              nullptr, nullptr, &status) == 6,
+            "the separate raw-fragment work limit should stop reconstruction input growth");
+    compact_limit.limits.max_fragments = 5;
+    compact_limit.limits.max_output_segments = 3;
+    require(geometer::project_fast_hlr_detail(prepared, top_view(), compact_limit, &visible,
+                                              nullptr, nullptr, &status) == 7,
+            "the compact output should retain its own final segment limit");
+}
+
+void collinear_reconstruction_handles_long_reversed_chains_and_branches()
+{
+    using geometer::fast_hlr_internal::FragmentProvenance;
+    using geometer::fast_hlr_internal::ProjectedFragment;
+    const FragmentProvenance provenance = {1, 10, geometer::kFastHlrUnspecifiedSourceFace, 0};
+    const std::vector<ProjectedFragment> chain = {
+        {{0.0, 0.0, 1.0, 0.0}, 0, 1, provenance},
+        {{2.0, 0.0, 1.0, 0.0}, 2, 1, provenance},
+        {{2.0, 0.0, 3.0, 0.0}, 2, 3, provenance},
+    };
+    geometer::fast_hlr_internal::ReconstructionStatistics statistics;
+    std::vector<geometer::ProjectedSegment> result =
+        geometer::fast_hlr_internal::reconstruct_collinear_fragments(chain, &statistics);
+    require(result.size() == 1 && statistics.joins == 2,
+            "a three-piece collinear chain should join despite a reversed middle segment");
+    require(near(std::min(result[0].x1, result[0].x2), 0.0) &&
+                near(std::max(result[0].x1, result[0].x2), 3.0),
+            "the reconstructed chain should retain both outer endpoints");
+
+    std::vector<ProjectedFragment> branched = chain;
+    branched.push_back({{1.0, 0.0, 1.0, 1.0}, 1, 4, provenance});
+    result = geometer::fast_hlr_internal::reconstruct_collinear_fragments(branched, &statistics);
+    require(result.size() == 3,
+            "a branch must lock its vertex while an independent unbranched tail may still join");
+}
+
+void projected_contact_without_shared_topology_is_not_joined()
+{
+    geometer::FastHlrIndexedMesh mesh;
+    mesh.vertices = {{0.0, 0.0, 0.0}, {1.0, 0.0, 0.0}, {0.0, 1.0, 0.0},
+                     {1.0, 0.0, 0.0}, {2.0, 0.0, 0.0}, {2.0, 1.0, 0.0}};
+    mesh.triangles = {{{0, 1, 2}, 10}, {{3, 4, 5}, 10}};
+    const geometer::FastHlrPreparedMesh prepared = prepare(mesh);
+
+    geometer::ProjectedModeGeometry visible;
+    geometer::FastHlrStatistics statistics;
+    geometer::Status status;
+    require(geometer::project_fast_hlr_detail(prepared, top_view(), {}, &visible, nullptr,
+                                              &statistics, &status) == 0,
+            "disconnected projection should succeed: " + status.message);
+    require(statistics.raw_visible_segments == 6 && visible.segments.size() == 6,
+            "coincident projected endpoints without a shared vertex must not be joined");
+}
+
+void ambiguous_source_face_provenance_disables_cross_edge_joining()
+{
+    geometer::FastHlrIndexedMesh mesh;
+    mesh.vertices = {
+        {0.0, 0.0, 0.0}, {1.0, 0.0, 0.0},  {2.0, 0.0, 0.0},  {0.0, 1.0, 0.0},
+        {1.0, 1.0, 0.0}, {0.0, -1.0, 0.0}, {1.0, -1.0, 0.0},
+    };
+    mesh.triangles = {
+        {{0, 1, 3}, 10},
+        {{0, 1, 5}, geometer::kFastHlrUnspecifiedSourceFace},
+        {{1, 2, 4}, 10},
+        {{1, 2, 6}, geometer::kFastHlrUnspecifiedSourceFace},
+    };
+    const geometer::FastHlrPreparedMesh prepared = prepare(mesh);
+    geometer::FastHlrOptions options;
+    options.include_boundaries = false;
+    options.include_creases = false;
+    options.include_silhouettes = true;
+
+    geometer::ProjectedModeGeometry visible;
+    geometer::Status status;
+    require(geometer::project_fast_hlr_detail(prepared, top_view(), options, &visible, nullptr,
+                                              nullptr, &status) == 0,
+            "ambiguous-provenance projection should succeed: " + status.message);
+    require(visible.segments.size() == 2,
+            "a known/unknown incident-face pair must disable cross-edge reconstruction");
+}
+
+void hidden_split_cannot_be_bridged_by_visible_reconstruction()
+{
+    geometer::FastHlrIndexedMesh mesh;
+    mesh.vertices = {
+        {0.0, 0.0, 0.0}, {1.0, 0.0, 0.0},   {2.0, 0.0, 0.0},   {2.0, 1.0, 0.0},
+        {0.0, 1.0, 0.0}, {0.75, -1.0, 1.0}, {1.25, -1.0, 1.0}, {1.0, 1.0, 1.0},
+    };
+    mesh.triangles = {{{0, 1, 4}, 10}, {{1, 3, 4}, 10}, {{1, 2, 3}, 10}, {{5, 6, 7}, 20}};
+    const geometer::FastHlrPreparedMesh prepared = prepare(mesh);
+    geometer::FastHlrOptions options;
+    options.include_creases = false;
+    options.include_silhouettes = false;
+    options.include_hidden = true;
+
+    geometer::ProjectedModeGeometry visible;
+    geometer::ProjectedModeGeometry hidden;
+    geometer::Status status;
+    require(geometer::project_fast_hlr_detail(prepared, top_view(), options, &visible, &hidden,
+                                              nullptr, &status) == 0,
+            "hidden-gap reconstruction should succeed: " + status.message);
+    std::size_t visible_bottom = 0;
+    std::size_t hidden_bottom = 0;
+    for (const geometer::ProjectedSegment& segment : visible.segments)
+    {
+        visible_bottom += near(segment.y1, 0.0) && near(segment.y2, 0.0) ? 1 : 0;
+    }
+    for (const geometer::ProjectedSegment& segment : hidden.segments)
+    {
+        hidden_bottom += near(segment.y1, 0.0) && near(segment.y2, 0.0) ? 1 : 0;
+    }
+    require(visible_bottom == 2,
+            "visible fragments on either side of an occluder must remain disconnected");
+    require(hidden_bottom == 1,
+            "contiguous hidden fragments may join independently across their shared vertex");
 }
 
 void occluder_splits_a_visible_edge()
@@ -403,6 +549,11 @@ int main()
         smooth_internal_edge_can_be_a_silhouette();
         grazing_face_edge_is_a_silhouette();
         oblique_view_uses_the_expected_orthonormal_basis();
+        collinear_boundary_fragments_are_joined_without_crossing_corners();
+        collinear_reconstruction_handles_long_reversed_chains_and_branches();
+        projected_contact_without_shared_topology_is_not_joined();
+        ambiguous_source_face_provenance_disables_cross_edge_joining();
+        hidden_split_cannot_be_bridged_by_visible_reconstruction();
         occluder_splits_a_visible_edge();
         reversed_view_uses_the_same_near_direction_convention();
         sloped_occluder_splits_at_the_depth_crossing();

@@ -108,6 +108,7 @@ struct FastHlrLimits {
     std::size_t max_edges = 4'000'000;
     std::size_t max_grid_references = 64'000'000;
     std::size_t max_candidate_pairs = 100'000'000;
+    std::size_t max_fragments = 8'000'000;
     std::size_t max_output_segments = 4'000'000;
 };
 
@@ -179,8 +180,13 @@ central C++ triangle/edge incidence graph, activates boundary, crease, and
 view-dependent silhouette candidates, and classifies visibility against a
 projected-triangle spatial index. Its provisional controls are isolated in the
 `fast` member rather than reinterpreting exact/poly edge flags. It currently
-emits straight segments; the existing line-and-circular-arc result schema is
-retained while reconstruction and bounded arc fitting are evaluated.
+emits straight segments and joins only exact-collinear, unbranched fragments
+that share topology, visibility, edge category, and source-face provenance.
+Occlusion-created endpoints are never eligible joins. The existing
+line-and-circular-arc result schema is retained while tolerance-based
+simplification and bounded arc fitting are evaluated. `max_fragments` bounds
+pre-reconstruction work independently from the final `max_output_segments`
+limit.
 
 Fast-option behavior is intentionally explicit during evaluation:
 

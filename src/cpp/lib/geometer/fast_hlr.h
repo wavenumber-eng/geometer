@@ -65,7 +65,12 @@ struct FastHlrStatistics
     std::size_t silhouette_edges = 0;
     std::size_t candidate_triangle_pairs = 0;
     std::size_t hidden_intervals = 0;
+    std::size_t raw_visible_segments = 0;
+    std::size_t raw_hidden_segments = 0;
+    std::size_t collinear_joins = 0;
+    std::size_t collinear_component_rejections = 0;
     std::size_t visible_segments = 0;
+    std::size_t hidden_segments = 0;
 };
 
 int prepare_fast_hlr_mesh(const FastHlrIndexedMesh& mesh, const FastHlrOptions& options,

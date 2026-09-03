@@ -105,8 +105,8 @@ Accepted option keys:
   `include_hidden`, `crease_angle_rad`, `weld_tolerance`,
   `projected_tolerance`, and `depth_tolerance`, with camelCase aliases. Its
   nested `limits` object accepts `max_vertices`, `max_triangles`, `max_edges`,
-  `max_grid_references`, `max_candidate_pairs`, and `max_output_segments`,
-  also with camelCase aliases.
+  `max_grid_references`, `max_candidate_pairs`, `max_fragments`, and
+  `max_output_segments`, also with camelCase aliases.
 
 The `fast` option block is an evaluation contract. Its controls may be refined
 before the backend is promoted, but they cannot change the meaning of the

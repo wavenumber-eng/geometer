@@ -341,8 +341,10 @@ def test_manifest_sources_and_identities_are_complete() -> None:
 
 def _assert_projection_surfaces(manifest: dict[str, Any]) -> None:
     typescript = manifest["typescript_projection"]
-    assert typescript["status"] == "implemented_model_bounds_and_analytic_worker_pilot"
+    assert typescript["status"] == "implemented_model_bounds_analytic_and_hlr_worker_pilots"
     assert typescript["worker_protocol"] == "wn.geometer.wasm_worker.a0"
+    assert typescript["model_hlr_live_operation"] == "geometry.model_hlr_projection.a0"
+    assert typescript["mesh_hlr_live_operation"] == "geometry.mesh_hlr_projection.a0"
     assert typescript["runtime_dependency"] is False
     for key in (
         "design",
@@ -368,10 +370,24 @@ def _assert_projection_surfaces(manifest: dict[str, Any]) -> None:
     assert manifest["packages"]["typescript_module_format"] == "esm"
     assert package_json["type"] == "module"
 
+    rust_projection = manifest["rust_projection"]
+    assert rust_projection["status"] == "implemented_model_bounds_analytic_and_hlr_ipc_pilots"
+    assert rust_projection["live_operation"] == "geometry.model_bounds.a0"
+    assert rust_projection["analytic_live_operation"] == "geometry.analytic_planar_boolean_batch.a0"
+    assert rust_projection["model_hlr_live_operation"] == "geometry.model_hlr_projection.a0"
+    assert rust_projection["mesh_hlr_live_operation"] == "geometry.mesh_hlr_projection.a0"
+    for key in ("design", "source_root", "generated_root", "generator", "analytic_packet_codec"):
+        assert (ROOT / rust_projection[key]).exists(), key
+    assert rust_projection["runtime_dependency"] is False
+
     python_projection = manifest["python_projection"]
-    assert python_projection["status"] == ("implemented_model_bounds_compatible_boundary_and_analytic_ipc_pilot")
+    assert python_projection["status"] == (
+        "implemented_model_bounds_compatible_boundary_analytic_and_hlr_ipc_pilots"
+    )
     assert python_projection["live_operation"] == "geometry.model_bounds.a0"
     assert python_projection["analytic_live_operation"] == ("geometry.analytic_planar_boolean_batch.a0")
+    assert python_projection["model_hlr_live_operation"] == "geometry.model_hlr_projection.a0"
+    assert python_projection["mesh_hlr_live_operation"] == "geometry.mesh_hlr_projection.a0"
     for key in (
         "design",
         "generated_root",
@@ -447,7 +463,10 @@ def _assert_contract_and_operation_inventory(manifest: dict[str, Any]) -> None:
     operations = manifest["operations"]
     operation_ids = [item["id"] for item in operations]
     _unique(operation_ids, "operation id")
-    assert {item["id"] for item in operations if item["status"] == "pilot_candidate"} == set()
+    assert {item["id"] for item in operations if item["status"] == "pilot_candidate"} == {
+        "geometry.model_hlr_projection.a0",
+        "geometry.mesh_hlr_projection.a0",
+    }
     assert {item["id"] for item in operations if item["status"] == "promoted"} == {"geometry.model_bounds.a0"}
     assert_step_topology_inventory(manifest, contracts, operations)
 
@@ -565,7 +584,8 @@ def _assert_candidate_projection_surfaces(manifest: dict[str, Any]) -> None:
     assert "decode_AnalyticPlanarBoolean" not in cpp_contract_json
     assert "write_AnalyticPlanarBoolean" not in cpp_contract_json
     assert "using OperationResultValueA0 =" in cpp_contract_header
-    assert "PackedAttachmentProjectionA0, StepTopologyOpenResultA0" in cpp_contract_header
+    assert "ModelBoundsResultA0, HlrProjectionResultA0, PackedAttachmentProjectionA0" in cpp_contract_header
+    assert "PackedAttachmentProjectionA0,\n                 StepTopologyOpenResultA0" in cpp_contract_header
     assert "StepTopologyAnalyzeRecoveryResultA0>;" in cpp_contract_header
     assert "holds_alternative<contracts::AnalyticPlanarBoolean" not in cpp_operation_catalog
     rust_contracts = (ROOT / "src/rust/geometer-client/src/generated/contracts.rs").read_text(encoding="utf-8")

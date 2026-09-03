@@ -2,10 +2,12 @@
 #include "geometer/projection_options_json.h"
 #include "geometer/step_to_glb_options_json.h"
 
+#include <array>
 #include <cstddef>
 #include <exception>
 #include <stdexcept>
 #include <string>
+#include <utility>
 
 namespace
 {
@@ -28,6 +30,85 @@ void parse_defaults()
     require(options.curve_mode == geometer::ProjectionCurveMode::NativeArcs,
             "default curve mode should be native arcs");
     require(options.samples_per_curve == 24, "default sample count should remain 24");
+    require(options.output_outline && options.output_detail && options.output_bbox,
+            "historical output layers should remain enabled by default");
+    require(options.edge_v_sharp && options.edge_v_outline && !options.edge_v_smooth &&
+                !options.edge_v_sewn && !options.edge_v_iso && !options.edge_h_sharp &&
+                !options.edge_h_outline && !options.edge_h_smooth && !options.edge_h_sewn &&
+                !options.edge_h_iso,
+            "historical edge-category defaults should remain unchanged");
+    require(options.projection_algorithm == geometer::ProjectionAlgorithm::Poly,
+            "poly should remain the default projection algorithm");
+    require(options.outline_algorithm == geometer::ProjectionOutlineAlgorithm::HlrClosedEdges,
+            "HLR close should remain the default outline algorithm");
+    require(options.fast.include_boundaries && options.fast.include_creases &&
+                options.fast.include_silhouettes && !options.fast.include_hidden &&
+                !options.fast.suppress_coplanar_seams,
+            "Fast defaults should preserve the reviewed V1 edge selection");
+    require(options.fast.crease_angle_rad == 0.5235987755982988,
+            "Fast crease angle should default to 30 degrees in radians");
+}
+
+void parse_compatibility_matrix()
+{
+    const std::array<std::pair<const char*, geometer::ProjectionAlgorithm>, 2> algorithms = {{
+        {"poly", geometer::ProjectionAlgorithm::Poly},
+        {"exact", geometer::ProjectionAlgorithm::Exact},
+    }};
+    const std::array<std::pair<const char*, geometer::ProjectionOutlineAlgorithm>, 2> outlines = {{
+        {"hlr-close", geometer::ProjectionOutlineAlgorithm::HlrClosedEdges},
+        {"mesh-shadow", geometer::ProjectionOutlineAlgorithm::MeshShadow},
+    }};
+    for (const auto& algorithm : algorithms)
+    {
+        for (const auto& outline : outlines)
+        {
+            const std::string json = std::string("{\"projection_algorithm\":\"") + algorithm.first +
+                                     "\",\"outline_algorithm\":\"" + outline.first + "\"}";
+            geometer::HlrProjectionOptions options;
+            geometer::Status status;
+            require(geometer::parse_hlr_projection_options_json(json.c_str(), &options, &status) ==
+                        0,
+                    "every historical algorithm/outline combination should parse");
+            require(options.projection_algorithm == algorithm.second &&
+                        options.outline_algorithm == outline.second,
+                    "historical algorithm/outline selection should remain exact");
+        }
+    }
+
+    for (unsigned mask = 0; mask < 8; ++mask)
+    {
+        const bool outline = (mask & 1U) != 0U;
+        const bool detail = (mask & 2U) != 0U;
+        const bool bbox = (mask & 4U) != 0U;
+        const std::string json = std::string("{\"output_outline\":") +
+                                 (outline ? "true" : "false") +
+                                 ",\"output_detail\":" + (detail ? "true" : "false") +
+                                 ",\"output_bbox\":" + (bbox ? "true" : "false") + "}";
+        geometer::HlrProjectionOptions options;
+        geometer::Status status;
+        require(geometer::parse_hlr_projection_options_json(json.c_str(), &options, &status) == 0,
+                "every output-layer combination should parse");
+        require(options.output_outline == outline && options.output_detail == detail &&
+                    options.output_bbox == bbox,
+                "output layers should remain independently selectable");
+    }
+
+    const char* edge_json =
+        "{\"edge_v_sharp\":false,\"edge_v_outline\":false,\"edge_v_smooth\":true,"
+        "\"edge_v_sewn\":true,\"edge_v_iso\":true,\"edge_h_sharp\":true,"
+        "\"edge_h_outline\":true,\"edge_h_smooth\":true,\"edge_h_sewn\":true,"
+        "\"edge_h_iso\":true}";
+    geometer::HlrProjectionOptions edge_options;
+    geometer::Status edge_status;
+    require(geometer::parse_hlr_projection_options_json(edge_json, &edge_options, &edge_status) ==
+                0,
+            "all historical edge-category flags should parse");
+    require(!edge_options.edge_v_sharp && !edge_options.edge_v_outline &&
+                edge_options.edge_v_smooth && edge_options.edge_v_sewn && edge_options.edge_v_iso &&
+                edge_options.edge_h_sharp && edge_options.edge_h_outline &&
+                edge_options.edge_h_smooth && edge_options.edge_h_sewn && edge_options.edge_h_iso,
+            "all historical edge-category flags should retain their meaning");
 }
 
 void parse_explicit_options()
@@ -335,6 +416,7 @@ int main()
     try
     {
         parse_defaults();
+        parse_compatibility_matrix();
         parse_explicit_options();
         parse_aliases();
         reject_invalid_options();

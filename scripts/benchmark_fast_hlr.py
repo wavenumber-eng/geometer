@@ -30,12 +30,14 @@ DEFAULT_OUTPUT = ROOT / ".bench-tmp/fast-hlr-baseline.json"
 DEFAULT_WASM_CLI = ROOT / "dist/wasm/node-test/geometer-node-test.js"
 DEFAULT_MODELS = (
     "SOT-23.STEP",
+    "ABM8-272-T3.STEP",
     "SOIC-8-W.step",
     "sot223.stp",
     "TSOT-23-5.STEP",
     "BGA90-8X13mm.step",
 )
 PHASE_NAMES = ("step_read_ms", "mesh_ms", "hlr_ms", "extract_ms")
+SUMMARY_NAMES = ("wall_ms", *PHASE_NAMES, "prepared_view_ms")
 
 
 def percentile(values: list[float], fraction: float) -> float:
@@ -286,6 +288,9 @@ def benchmark_case(
     summary = {"wall_ms": summarize([sample["wall_ms"] for sample in samples])}
     for phase_name in PHASE_NAMES:
         summary[phase_name] = summarize([sample["phases_ms"][phase_name] for sample in samples])
+    summary["prepared_view_ms"] = summarize(
+        [sample["phases_ms"]["hlr_ms"] + sample["phases_ms"]["extract_ms"] for sample in samples]
+    )
     return {
         "model": workload["name"],
         "runtime": target["name"],
@@ -327,7 +332,7 @@ def runtime_comparisons(cases: list[dict[str, Any]]) -> list[dict[str, Any]]:
         if native is None or wasm is None:
             continue
         ratios = {}
-        for metric in ("wall_ms", *PHASE_NAMES):
+        for metric in SUMMARY_NAMES:
             ratios[metric] = {
                 statistic: (
                     wasm["summary"][metric][statistic] / native["summary"][metric][statistic]
@@ -453,7 +458,8 @@ def main() -> int:
         "measurement_scope": {
             "wall_ms": "process startup through completed projection output",
             "phase_ms": "timings reported by geometry.projection.b0",
-            "prepared_view": False,
+            "prepared_view_ms": "HLR plus extraction after STEP import and mesh preparation",
+            "reusable_prepared_object_invoked": False,
             "gpu": False,
         },
         "cases": cases,

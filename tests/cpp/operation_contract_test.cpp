@@ -131,6 +131,16 @@ bool decode_contract_vector(const std::string& identity, const std::vector<unsig
     {
         return geometer::contracts::decode_json(data.data(), data.size(), options, &error);
     }
+    if (identity == "geometry.hlr_projection.options.a0")
+    {
+        geometer::contracts::HlrProjectionOptionsA0 value;
+        return geometer::contracts::decode_json(data.data(), data.size(), &value, &error);
+    }
+    if (identity == "geometry.hlr_projection.result.a0")
+    {
+        geometer::contracts::HlrProjectionResultA0 value;
+        return geometer::contracts::decode_json(data.data(), data.size(), &value, &error);
+    }
     if (identity == "geometry.model_bounds.a0")
     {
         geometer::contracts::ModelBoundsResultA0 value;
@@ -410,7 +420,7 @@ void generated_cpp_replays_all_governed_contract_vectors()
             "contract vector manifest should be valid JSON");
     require(manifest.HasMember("vectors") && manifest["vectors"].IsArray(),
             "contract vector manifest should contain an array");
-    require(manifest["vectors"].Size() == 115U, "C++ must replay every governed contract vector");
+    require(manifest["vectors"].Size() == 125U, "C++ must replay every governed contract vector");
 
     for (const auto& vector : manifest["vectors"].GetArray())
     {

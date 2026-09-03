@@ -36,6 +36,26 @@ pub enum IndexedMeshPacketError {
 pub fn encode_indexed_triangle_mesh_a0_packet(
     mesh: &IndexedTriangleMeshA0,
 ) -> Result<Vec<u8>, IndexedMeshPacketError> {
+    validate_mesh(mesh)?;
+    let layout = PacketLayout::for_mesh(mesh);
+    if layout.packet_bytes > MAX_PACKET_BYTES {
+        return Err(IndexedMeshPacketError::PacketTooLarge);
+    }
+
+    let mut output = vec![0_u8; layout.packet_bytes];
+    write_header(&mut output, mesh, layout);
+    write_payload(&mut output, mesh, layout);
+    Ok(output)
+}
+
+fn validate_mesh(mesh: &IndexedTriangleMeshA0) -> Result<(), IndexedMeshPacketError> {
+    validate_counts(mesh)?;
+    validate_positions(mesh)?;
+    validate_triangles(mesh)?;
+    validate_source_faces(mesh)
+}
+
+fn validate_counts(mesh: &IndexedTriangleMeshA0) -> Result<(), IndexedMeshPacketError> {
     if mesh.positions.is_empty()
         || mesh.triangles.is_empty()
         || mesh.positions.len() > MAX_VERTICES
@@ -43,6 +63,10 @@ pub fn encode_indexed_triangle_mesh_a0_packet(
     {
         return Err(IndexedMeshPacketError::InvalidCount);
     }
+    Ok(())
+}
+
+fn validate_positions(mesh: &IndexedTriangleMeshA0) -> Result<(), IndexedMeshPacketError> {
     if mesh
         .positions
         .iter()
@@ -51,6 +75,10 @@ pub fn encode_indexed_triangle_mesh_a0_packet(
     {
         return Err(IndexedMeshPacketError::NonFinitePosition);
     }
+    Ok(())
+}
+
+fn validate_triangles(mesh: &IndexedTriangleMeshA0) -> Result<(), IndexedMeshPacketError> {
     let vertex_count = mesh.positions.len();
     if mesh.triangles.iter().any(|triangle| {
         triangle.iter().any(|index| *index as usize >= vertex_count)
@@ -60,6 +88,10 @@ pub fn encode_indexed_triangle_mesh_a0_packet(
     }) {
         return Err(IndexedMeshPacketError::InvalidTriangle);
     }
+    Ok(())
+}
+
+fn validate_source_faces(mesh: &IndexedTriangleMeshA0) -> Result<(), IndexedMeshPacketError> {
     if mesh
         .source_faces
         .as_ref()
@@ -67,68 +99,86 @@ pub fn encode_indexed_triangle_mesh_a0_packet(
     {
         return Err(IndexedMeshPacketError::InvalidSourceFaces);
     }
-    let has_source_faces = mesh
-        .source_faces
-        .as_ref()
-        .is_some_and(|values| values.iter().any(|value| *value != UNSPECIFIED_SOURCE_FACE));
-    let positions_offset = HEADER_BYTES;
-    let triangles_offset = positions_offset + mesh.positions.len() * 24;
-    let triangles_end = triangles_offset + mesh.triangles.len() * 12;
-    let source_faces_offset = if has_source_faces {
-        align_eight(triangles_end)
-    } else {
-        0
-    };
-    let payload_end = if has_source_faces {
-        source_faces_offset + mesh.triangles.len() * 4
-    } else {
-        triangles_end
-    };
-    let packet_bytes = align_eight(payload_end);
-    if packet_bytes > MAX_PACKET_BYTES {
-        return Err(IndexedMeshPacketError::PacketTooLarge);
-    }
+    Ok(())
+}
 
-    let mut output = vec![0_u8; packet_bytes];
-    output[..8].copy_from_slice(MAGIC);
-    put_u16(&mut output, 8, 1);
-    put_u16(&mut output, 10, HEADER_BYTES as u16);
-    put_u32(
-        &mut output,
-        12,
-        if has_source_faces {
-            HAS_SOURCE_FACES
+fn has_source_faces(mesh: &IndexedTriangleMeshA0) -> bool {
+    mesh.source_faces
+        .as_ref()
+        .is_some_and(|values| values.iter().any(|value| *value != UNSPECIFIED_SOURCE_FACE))
+}
+
+#[derive(Clone, Copy)]
+struct PacketLayout {
+    positions_offset: usize,
+    triangles_offset: usize,
+    source_faces_offset: usize,
+    packet_bytes: usize,
+}
+
+impl PacketLayout {
+    fn for_mesh(mesh: &IndexedTriangleMeshA0) -> Self {
+        let positions_offset = HEADER_BYTES;
+        let triangles_offset = positions_offset + mesh.positions.len() * 24;
+        let triangles_end = triangles_offset + mesh.triangles.len() * 12;
+        let source_faces_offset = if has_source_faces(mesh) {
+            align_eight(triangles_end)
         } else {
             0
-        },
-    );
-    put_u64(&mut output, 16, packet_bytes as u64);
-    put_u32(&mut output, 24, mesh.positions.len() as u32);
-    put_u32(&mut output, 28, mesh.triangles.len() as u32);
-    put_u64(&mut output, 32, positions_offset as u64);
-    put_u64(&mut output, 40, triangles_offset as u64);
-    put_u64(&mut output, 48, source_faces_offset as u64);
+        };
+        let payload_end = if source_faces_offset == 0 {
+            triangles_end
+        } else {
+            source_faces_offset + mesh.triangles.len() * 4
+        };
+        Self {
+            positions_offset,
+            triangles_offset,
+            source_faces_offset,
+            packet_bytes: align_eight(payload_end),
+        }
+    }
+}
+
+fn write_header(output: &mut [u8], mesh: &IndexedTriangleMeshA0, layout: PacketLayout) {
+    output[..8].copy_from_slice(MAGIC);
+    put_u16(output, 8, 1);
+    put_u16(output, 10, HEADER_BYTES as u16);
+    let flags = if layout.source_faces_offset == 0 {
+        0
+    } else {
+        HAS_SOURCE_FACES
+    };
+    put_u32(output, 12, flags);
+    put_u64(output, 16, layout.packet_bytes as u64);
+    put_u32(output, 24, mesh.positions.len() as u32);
+    put_u32(output, 28, mesh.triangles.len() as u32);
+    put_u64(output, 32, layout.positions_offset as u64);
+    put_u64(output, 40, layout.triangles_offset as u64);
+    put_u64(output, 48, layout.source_faces_offset as u64);
+}
+
+fn write_payload(output: &mut [u8], mesh: &IndexedTriangleMeshA0, layout: PacketLayout) {
     for (index, position) in mesh.positions.iter().flatten().enumerate() {
-        output[positions_offset + index * 8..positions_offset + index * 8 + 8]
+        output[layout.positions_offset + index * 8..layout.positions_offset + index * 8 + 8]
             .copy_from_slice(&position.to_le_bytes());
     }
     for (triangle_index, triangle) in mesh.triangles.iter().enumerate() {
         for (vertex_index, vertex) in triangle.iter().enumerate() {
             put_u32(
-                &mut output,
-                triangles_offset + triangle_index * 12 + vertex_index * 4,
+                output,
+                layout.triangles_offset + triangle_index * 12 + vertex_index * 4,
                 *vertex,
             );
         }
-        if has_source_faces {
+        if layout.source_faces_offset != 0 {
             put_u32(
-                &mut output,
-                source_faces_offset + triangle_index * 4,
+                output,
+                layout.source_faces_offset + triangle_index * 4,
                 mesh.source_faces.as_ref().expect("validated source faces")[triangle_index],
             );
         }
     }
-    Ok(output)
 }
 
 fn align_eight(value: usize) -> usize {

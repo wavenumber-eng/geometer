@@ -61,9 +61,7 @@ def test_geometry_digest_ignores_runtime_timings() -> None:
 
 def test_runtime_comparisons_report_ratios_and_equivalence() -> None:
     def case(runtime: str, wall_ms: float, digest: str) -> dict[str, object]:
-        summary = {
-            metric: {"mean": wall_ms, "p50": wall_ms, "p95": wall_ms} for metric in ("wall_ms", *benchmark.PHASE_NAMES)
-        }
+        summary = {metric: {"mean": wall_ms, "p50": wall_ms, "p95": wall_ms} for metric in benchmark.SUMMARY_NAMES}
         return {
             "runtime": runtime,
             "model": "fixture.step",
@@ -80,5 +78,6 @@ def test_runtime_comparisons_report_ratios_and_equivalence() -> None:
 
     assert len(comparison) == 1
     assert comparison[0]["wasm_over_native"]["wall_ms"]["p50"] == 3.0
+    assert comparison[0]["wasm_over_native"]["prepared_view_ms"]["p50"] == 3.0
     assert comparison[0]["counts_equivalent"] is True
     assert comparison[0]["geometry_equivalent"] is True

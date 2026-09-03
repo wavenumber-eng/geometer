@@ -211,9 +211,9 @@ def main() -> None:
     view_source = VIEW_SOURCE.read_text(encoding="utf-8").replace("export ", "")
     app_text = APP_SOURCE.read_text(encoding="utf-8").replace(
         'import { AXIS_VECTORS, buildProjectionViews } from "./hlr_projection_views.js";\n',
-        "",
+        view_source,
     )
-    app_source = textwrap.indent(f"{view_source}\n{app_text}", "    ")
+    app_source = textwrap.indent(app_text, "    ")
     html = replace_once(
         html,
         '  <script type="module" src="/examples/wasm/embedded_model_viewer.js"></script>',

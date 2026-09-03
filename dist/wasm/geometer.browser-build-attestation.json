@@ -5,8 +5,8 @@
       "sha256": "b966f2da17e3cfdcfbaf43eaf71b71518e28adfb689eb9c552e5fc6d967fe90e"
     },
     "dist/wasm/browser/geometer.wasm": {
-      "bytes": 19028765,
-      "sha256": "e1b6b1cb1fc9f6b96c07ff80858520448c7dc41e0f4b777bc0a787371586fdd2"
+      "bytes": 19028836,
+      "sha256": "8a248d6ccaad45af9d4d6061c5b07520116e9b52f3b9cce344a45711472578c1"
     },
     "dist/wasm/npm/geometer/README.md": {
       "bytes": 6461,
@@ -214,10 +214,10 @@
     "contract_check_status": "passed",
     "source": {
       "authority": "git_head_and_source_worktree_excluding_dist_build_deps_out",
-      "revision": "b883fddfb4f69a0c451c039f4a33cc77b2eaa28d",
+      "revision": "548f97a0b1ad31c0dad69e5230951d5c6b1ef57b",
       "tree_state": "clean"
     },
-    "source_content_sha256": "4ad3533ea696402e87a6b4db3eda8bdc6c1ea98be38de06b2da970ac91fe6665",
+    "source_content_sha256": "dfcc0df34612980c8ad50503287ac0f02c8edb8bd8d3f800c4c5ba42805eac56",
     "toolchain": {
       "emscripten": {
         "executable": ".deps/emsdk/upstream/emscripten/emcc.bat",

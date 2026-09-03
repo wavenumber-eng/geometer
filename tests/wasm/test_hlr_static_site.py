@@ -132,6 +132,8 @@ async function main() {
         };
       }
       if (document.title === "FAIL") throw new Error(document.querySelector("#validationResult")?.textContent);
+      const status = document.querySelector("#status")?.textContent || "";
+      if (status.startsWith("Error:")) throw new Error(status);
       await new Promise((resolve) => setTimeout(resolve, 50));
     }
     throw new Error("Timed out waiting for the initial HLR projection.");

@@ -54,13 +54,13 @@ depends_on = ["operation-transports", "illustration-package"]
 [[steps]]
 id = "demo-migration"
 title = "Migrate HLR Lab and Illustration Lab to consume only production package APIs and typed clients"
-status = "active"
+status = "done"
 depends_on = ["convenience-composition", "raster-hlr-package"]
 
 [[steps]]
 id = "consumer-documentation"
 title = "Publish algorithm discovery, option compatibility, examples, generated contract reference, and migration guidance"
-status = "pending"
+status = "active"
 depends_on = ["operation-transports", "convenience-composition"]
 
 [[steps]]

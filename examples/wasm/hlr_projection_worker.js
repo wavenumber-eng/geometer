@@ -2,6 +2,8 @@
 // from /dist/wasm/browser/. Tests can pass a custom backend directory, but the
 // old checked-in baseline build is no longer shipped.
 
+importScripts("/examples/wasm/geometer_operation_worker.js");
+
 let activeBackend = null;
 let modulePromise = null;
 
@@ -39,7 +41,7 @@ const EDGE_FLAGS = [
 function buildOptionsJson(views, options) {
   const opts = options || {};
   const payload = {
-    views,
+    views: views.map(({ id, direction, up }) => ({ id, direction, up })),
     curve_mode: opts.curve_mode || "polyline",
     samples_per_curve: opts.samples_per_curve ?? 24,
     round_digits: opts.round_digits ?? 3,
@@ -48,9 +50,14 @@ function buildOptionsJson(views, options) {
   if (Array.isArray(opts.model_transform)) {
     payload.model_transform = opts.model_transform;
   }
-  // Legacy aliases (still accepted by the parser for back-compat).
-  if (typeof opts.include_visible === "boolean") payload.include_visible = opts.include_visible;
-  if (typeof opts.include_outline === "boolean") payload.include_outline = opts.include_outline;
+  // Translate legacy UI aliases before the strict governed contract boundary.
+  if (typeof opts.include_visible === "boolean") {
+    payload.edge_v_sharp = opts.include_visible;
+    payload.edge_v_outline = opts.include_visible;
+  }
+  if (typeof opts.include_outline === "boolean") {
+    payload.edge_v_outline = opts.include_outline;
+  }
   // Granular OCCT HLR edge categories.
   for (const flag of EDGE_FLAGS) {
     if (typeof opts[flag] === "boolean") payload[flag] = opts[flag];
@@ -87,45 +94,13 @@ function buildOptionsJson(views, options) {
 
 function project(module, stepBytes, views, options) {
   const optionsJson = buildOptionsJson(views, options);
-
-  const stepPtr = module._malloc(stepBytes.length);
-  const optionsBytes = module.lengthBytesUTF8(optionsJson) + 1;
-  const optionsPtr = module._malloc(optionsBytes);
-  const valueOut = module._malloc(4);
-  const errorOut = module._malloc(4);
-
-  try {
-    module.HEAPU8.set(stepBytes, stepPtr);
-    module.stringToUTF8(optionsJson, optionsPtr, optionsBytes);
-    module.HEAPU32[valueOut >> 2] = 0;
-    module.HEAPU32[errorOut >> 2] = 0;
-
-    const code = module.ccall(
-      "geometer_step_hlr_projection_json_bytes",
-      "number",
-      ["number", "number", "number", "number", "number"],
-      [stepPtr, stepBytes.length, optionsPtr, valueOut, errorOut],
-    );
-
-    const valuePtr = module.getValue(valueOut, "i32");
-    const errorPtr = module.getValue(errorOut, "i32");
-    if (code !== 0) {
-      const message = errorPtr ? module.UTF8ToString(errorPtr) : `HLR failed: ${code}`;
-      if (errorPtr) {
-        module._geometer_free_string(errorPtr);
-      }
-      throw new Error(message);
-    }
-
-    const json = module.UTF8ToString(valuePtr);
-    module._geometer_free_string(valuePtr);
-    return json;
-  } finally {
-    module._free(stepPtr);
-    module._free(optionsPtr);
-    module._free(valueOut);
-    module._free(errorOut);
-  }
+  const result = self.GeometerOperationWorker.executeOneAttachment(
+    module,
+    "geometry.model_hlr_projection.a0",
+    JSON.parse(optionsJson),
+    { name: "model", mediaType: "application/step", data: stepBytes },
+  );
+  return JSON.stringify(result);
 }
 
 function stepToGlb(module, stepBytes) {

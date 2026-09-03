@@ -26,6 +26,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "examples" / "wasm" / "embedded_model_viewer.html"
 APP_SOURCE = ROOT / "examples" / "wasm" / "embedded_model_viewer.js"
 WORKER_SOURCE = ROOT / "examples" / "wasm" / "hlr_projection_worker.js"
+OPERATION_WORKER_SOURCE = ROOT / "examples" / "wasm" / "geometer_operation_worker.js"
 PANEL_SOURCE = ROOT / "examples" / "wasm" / "demo-tooling" / "panels.ts"
 PANEL_STYLES = ROOT / "examples" / "wasm" / "demo-tooling" / "panels.css"
 SOURCE_MANIFEST = ROOT / "tests" / "fixtures" / "embedded_models_manifest.json"
@@ -67,9 +68,7 @@ def ensure_three_bundle() -> str:
         newline="\n",
     )
     bundle_es_module(entry_js, THREE_BUNDLE, target="es2020")
-    return "\n".join(
-        line.rstrip() for line in THREE_BUNDLE.read_text(encoding="utf-8").splitlines()
-    ) + "\n"
+    return "\n".join(line.rstrip() for line in THREE_BUNDLE.read_text(encoding="utf-8").splitlines()) + "\n"
 
 
 def ensure_panel_bundle() -> str:
@@ -87,9 +86,7 @@ def ensure_panel_bundle() -> str:
         newline="\n",
     )
     bundle_es_module(entry_ts, PANEL_BUNDLE, target="es2020")
-    return "\n".join(
-        line.rstrip() for line in PANEL_BUNDLE.read_text(encoding="utf-8").splitlines()
-    ) + "\n"
+    return "\n".join(line.rstrip() for line in PANEL_BUNDLE.read_text(encoding="utf-8").splitlines()) + "\n"
 
 
 def embedded_manifest() -> list[dict[str, object]]:
@@ -117,6 +114,7 @@ def embedded_manifest() -> list[dict[str, object]]:
 
 def self_contained_worker_source() -> str:
     worker = WORKER_SOURCE.read_text(encoding="utf-8")
+    operation_worker = OPERATION_WORKER_SOURCE.read_text(encoding="utf-8")
     edge_index = worker.index("const EDGE_FLAGS")
     worker_tail = worker[edge_index:]
     return "\n".join(
@@ -147,6 +145,8 @@ def self_contained_worker_source() -> str:
             "  }",
             "  return modulePromise;",
             "}",
+            "",
+            operation_worker,
             "",
             worker_tail,
         ]
@@ -187,6 +187,7 @@ def main() -> None:
         SOURCE,
         APP_SOURCE,
         WORKER_SOURCE,
+        OPERATION_WORKER_SOURCE,
         PANEL_SOURCE,
         PANEL_STYLES,
         SOURCE_MANIFEST,

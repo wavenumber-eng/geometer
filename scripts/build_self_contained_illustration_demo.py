@@ -15,6 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "examples" / "wasm" / "illustration_demo.html"
 APP_SOURCE = ROOT / "examples" / "wasm" / "illustration_demo.ts"
 WORKER_SOURCE = ROOT / "examples" / "wasm" / "illustration_step_worker.js"
+OPERATION_WORKER_SOURCE = ROOT / "examples" / "wasm" / "geometer_operation_worker.js"
 SHARED_STYLES = ROOT / "examples" / "wasm" / "geometer_demo.css"
 SOURCE_MANIFEST = ROOT / "tests" / "fixtures" / "embedded_models_manifest.json"
 GEOMETER_BROWSER = ROOT / "dist" / "wasm" / "browser"
@@ -58,6 +59,7 @@ def embedded_models() -> list[dict[str, object]]:
 
 def self_contained_worker() -> str:
     source = WORKER_SOURCE.read_text(encoding="utf-8")
+    operation_worker = OPERATION_WORKER_SOURCE.read_text(encoding="utf-8")
     tail_start = source.index("function stepToGlb")
     return "\n".join(
         [
@@ -80,6 +82,7 @@ def self_contained_worker() -> str:
             "  }",
             "  return modulePromise;",
             "}",
+            operation_worker,
             source[tail_start:],
         ]
     )
@@ -104,6 +107,7 @@ def main() -> None:
         SOURCE,
         APP_SOURCE,
         WORKER_SOURCE,
+        OPERATION_WORKER_SOURCE,
         SHARED_STYLES,
         SOURCE_MANIFEST,
         GEOMETER_JS,

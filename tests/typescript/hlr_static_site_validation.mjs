@@ -45,6 +45,8 @@ for (const required of [
   "GEOMETER_JS_B64",
   "GEOMETER_WASM_B64",
   "projectionWorkerSource",
+  "geometry.model_hlr_projection.a0",
+  "_geometer_operation_execute",
   "data:application/step;base64,",
   "data:model/gltf-binary;base64,",
   "data:image/svg+xml;base64,",
@@ -91,6 +93,8 @@ for (const required of [
   'http-equiv="Content-Security-Policy"',
 ])
   if (!html.includes(required)) throw new Error(`HLR single HTML omits ${required}.`);
+if (html.includes("geometer_step_hlr_projection_json_bytes"))
+  throw new Error("HLR single HTML still invokes the legacy focused HLR ABI.");
 if (html.includes("OrbitControls")) throw new Error("HLR single HTML retained OrbitControls.");
 if (!html.includes("THREE.SRGBColorSpace") || !html.includes("THREE.MeshLambertMaterial"))
   throw new Error("HLR single HTML omits its Viz-style color/material path.");

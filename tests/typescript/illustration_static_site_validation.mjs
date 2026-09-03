@@ -34,6 +34,8 @@ for (const required of [
   "GEOMETER_JS_B64",
   "GEOMETER_WASM_B64",
   "geometry.mesh_illustration.result.a0",
+  "geometry.model_hlr_projection.a0",
+  "_geometer_operation_execute",
   'id="illustrationStepInput"',
   'id="illustrationDownloadSvg"',
   'id="illustrationDownloadScene"',
@@ -64,6 +66,8 @@ for (const required of [
   "data:image/svg+xml;base64,",
 ])
   if (!html.includes(required)) throw new Error(`Illustration HTML omits ${required}.`);
+if (html.includes("geometer_step_hlr_projection_json_bytes"))
+  throw new Error("Illustration HTML still invokes the legacy focused HLR ABI.");
 if (html.includes('id="illustrationTriangleLimit"'))
   throw new Error("Illustration HTML retains the prototype triangle limit.");
 if (html.includes("https://cdn.jsdelivr.net"))

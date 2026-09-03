@@ -73,6 +73,8 @@ for (const required of [
   'id="fastWeldToleranceInput"',
   'id="fastProjectedToleranceInput"',
   'id="fastDepthToleranceInput"',
+  "Crease angle (deg)",
+  "Math.PI) / 180",
   '<option value="fast-mesh-shadow">Fast mesh shadow (evaluation)</option>',
   'id="resetGeometryButton"',
   'id="settingsPanelContent"',

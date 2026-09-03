@@ -297,9 +297,9 @@ the `3D lens` selector can switch to perspective for depth inspection.
 The projection UI follows the terminology in ADR 008. `Detail` is raw linework
 from the selected OCCT polygonal/exact engine or the Fast triangle HLR engine.
 The `Fast detail HLR` checkbox provides the direct comparison switch. Its
-candidate-category, crease-angle, weld, projection, and depth controls live in
-a separate Fast-only panel; the OCCT engine, edge angle, presets, and edge
-categories live in an OCCT-only panel.
+candidate-category, degree-based crease-angle, weld, projection, and depth
+controls live in a separate Fast-only panel; the OCCT engine, edge angle,
+presets, and edge categories live in an OCCT-only panel.
 `Outline` is Geometer's independent assembly silhouette, and `Both` displays
 those layers without changing or merging either layer's color, width, or line
 style. Mesh shadow remains the recommended silhouette source, with the

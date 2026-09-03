@@ -186,7 +186,7 @@ const GEOMETRY_DEFAULTS = Object.freeze({
   fastSilhouettes: true,
   fastHidden: false,
   fastCoplanarSeams: false,
-  fastCreaseAngle: "0.523599",
+  fastCreaseAngleDegrees: "30",
   fastWeldTolerance: "0.0000001",
   fastProjectedTolerance: "0.00000001",
   fastDepthTolerance: "0.0000001",
@@ -280,7 +280,7 @@ function resetGeometryDefaults({ reproject = true } = {}) {
   els.fastSilhouettesInput.checked = GEOMETRY_DEFAULTS.fastSilhouettes;
   els.fastHiddenInput.checked = GEOMETRY_DEFAULTS.fastHidden;
   els.fastCoplanarSeamsInput.checked = GEOMETRY_DEFAULTS.fastCoplanarSeams;
-  els.fastCreaseAngleInput.value = GEOMETRY_DEFAULTS.fastCreaseAngle;
+  els.fastCreaseAngleInput.value = GEOMETRY_DEFAULTS.fastCreaseAngleDegrees;
   els.fastWeldToleranceInput.value = GEOMETRY_DEFAULTS.fastWeldTolerance;
   els.fastProjectedToleranceInput.value = GEOMETRY_DEFAULTS.fastProjectedTolerance;
   els.fastDepthToleranceInput.value = GEOMETRY_DEFAULTS.fastDepthTolerance;
@@ -665,6 +665,7 @@ function fitCamera(root) {
 }
 
 function currentOptions() {
+  const creaseAngleDegrees = Number.parseFloat(els.fastCreaseAngleInput.value);
   return {
     projection_algorithm: els.fastBackendInput.checked ? "fast" : els.algoSelect.value,
     outline_algorithm: els.outlineAlgoSelect.value,
@@ -680,7 +681,8 @@ function currentOptions() {
       include_silhouettes: els.fastSilhouettesInput.checked,
       include_hidden: els.fastHiddenInput.checked,
       suppress_coplanar_seams: els.fastCoplanarSeamsInput.checked,
-      crease_angle_rad: Number.parseFloat(els.fastCreaseAngleInput.value) || 0.523599,
+      crease_angle_rad:
+        ((Number.isFinite(creaseAngleDegrees) ? creaseAngleDegrees : 30) * Math.PI) / 180,
       weld_tolerance: Number.parseFloat(els.fastWeldToleranceInput.value) || 0.0000001,
       projected_tolerance: Number.parseFloat(els.fastProjectedToleranceInput.value) || 0.00000001,
       depth_tolerance: Number.parseFloat(els.fastDepthToleranceInput.value) || 0.0000001,

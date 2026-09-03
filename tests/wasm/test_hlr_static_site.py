@@ -365,6 +365,7 @@ async function main() {
     const fastToggle = document.querySelector("#fastBackendInput");
     fastToggle.checked = true;
     fastToggle.dispatchEvent(new Event("change", { bubbles: true }));
+    set("#fastCreaseAngleInput", "1");
     set("#outlineAlgoSelect", "fast-mesh-shadow");
     const deadline = Date.now() + 120000;
     while (Date.now() < deadline) {
@@ -391,6 +392,7 @@ async function main() {
     const result = {
       algorithm: svg.dataset.projectionAlgorithm,
       fastBackend: fastToggle.checked,
+      creaseAngleDegrees: document.querySelector("#fastCreaseAngleInput").value,
       outlineAlgorithm: document.querySelector("#outlineAlgoSelect").value,
       metric: document.querySelector("#projectionMetric").textContent,
       occtSettingsHidden: document.querySelector("#occtSettings").hidden,
@@ -428,6 +430,7 @@ async function main() {
     }
     return {
       fastBackend: fastToggle.checked,
+      fastCreaseAngleDegrees: document.querySelector("#fastCreaseAngleInput").value,
       algorithm: document.querySelector("#algoSelect").value,
       outlineAlgorithm: document.querySelector("#outlineAlgoSelect").value,
       meshMode: document.querySelector("#meshDeflectionModeSelect").value,
@@ -753,6 +756,7 @@ def test_hlr_static_site_upload_projection_and_export() -> None:
     }
     assert result["fastSelection"]["algorithm"] == "fast"
     assert result["fastSelection"]["fastBackend"] is True
+    assert result["fastSelection"]["creaseAngleDegrees"] == "1"
     assert result["fastSelection"]["outlineAlgorithm"] == "fast-mesh-shadow"
     assert " detail " in result["fastSelection"]["metric"]
     assert " outline " in result["fastSelection"]["metric"]
@@ -766,6 +770,7 @@ def test_hlr_static_site_upload_projection_and_export() -> None:
     assert result["fastSelection"]["both"]["outline"] > 0
     assert result["geometryReset"] == {
         "fastBackend": False,
+        "fastCreaseAngleDegrees": "30",
         "algorithm": "poly",
         "outlineAlgorithm": "mesh-shadow",
         "meshMode": "bbox-relative",

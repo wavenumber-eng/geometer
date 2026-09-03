@@ -492,9 +492,9 @@
       <div class="backend-settings" id="fastSettings" hidden>
         <div class="backend-heading">Fast detail settings</div>
         <div class="tunables">
-          <label class="control" title="Minimum angle between adjacent triangle normals for a shared edge to become a crease candidate.">
-            <span>Crease angle (rad)</span>
-            <input id="fastCreaseAngleInput" type="number" min="0" max="3.141593" step="0.01" value="0.523599">
+          <label class="control" title="Minimum angle in degrees between adjacent triangle normals for a shared edge to become a crease candidate. The UI converts this to radians for Geometer.">
+            <span>Crease angle (deg)</span>
+            <input id="fastCreaseAngleInput" type="number" min="0" max="180" step="1" value="30">
           </label>
           <label class="control" title="Model-space tolerance used by the STEP-to-indexed-mesh adapter when joining tessellated face vertices.">
             <span>Weld tol</span>

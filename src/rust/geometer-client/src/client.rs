@@ -11,10 +11,10 @@ use tokio::sync::{Mutex, oneshot};
 
 use crate::generated::contracts::{
     self, AnalyticPlanarBooleanBatchRequestA0, AnalyticPlanarBooleanBatchResultA0,
-    DiagnosticCategory, IpcCancelRejectedA0, IpcCancelledA0, IpcHelloA0, IpcRequestA0,
-    IpcRequestValueA0, IpcRuntimeDispatchA0, IpcWelcomeA0, ModelBoundsOptionsA0,
-    ModelBoundsResultA0, OperationOutcomeA0, OperationResultValueA0, PackedAttachmentProjectionA0,
-    PackedAttachmentReferenceA0,
+    DiagnosticCategory, HlrProjectionOptionsA0, HlrProjectionResultA0, IpcCancelRejectedA0,
+    IpcCancelledA0, IpcHelloA0, IpcRequestA0, IpcRequestValueA0, IpcRuntimeDispatchA0,
+    IpcWelcomeA0, ModelBoundsOptionsA0, ModelBoundsResultA0, OperationOutcomeA0,
+    OperationResultValueA0, PackedAttachmentProjectionA0, PackedAttachmentReferenceA0,
 };
 use crate::generated::operations::ANALYTIC_PLANAR_BOOLEAN_BATCH_A0_IDENTITY;
 use crate::ipc::{self, Attachment, Frame, FrameKind};
@@ -25,8 +25,9 @@ use crate::session_validation::{
     discover_executable, encode_reason, validate_effective_request, validate_welcome,
 };
 use crate::{
-    AnalyticPacketError, IPC_IDENTITY, decode_analytic_planar_boolean_batch_result_a0_packet,
-    encode_analytic_planar_boolean_batch_request_a0_packet,
+    AnalyticPacketError, INDEXED_TRIANGLE_MESH_MEDIA_TYPE, IPC_IDENTITY, IndexedMeshPacketError,
+    IndexedTriangleMeshA0, decode_analytic_planar_boolean_batch_result_a0_packet,
+    encode_analytic_planar_boolean_batch_request_a0_packet, encode_indexed_triangle_mesh_a0_packet,
 };
 
 #[cfg(test)]
@@ -46,6 +47,8 @@ pub enum GeometerClientError {
     Frame(#[from] ipc::FrameError),
     #[error(transparent)]
     AnalyticPacket(#[from] AnalyticPacketError),
+    #[error(transparent)]
+    IndexedMeshPacket(#[from] IndexedMeshPacketError),
     #[error("Geometer IPC protocol failed: {0}")]
     Protocol(String),
     #[error("Geometer process failed: {0}")]
@@ -82,6 +85,31 @@ impl ModelBoundsRequest {
                 model_transform: None,
             },
         }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct ModelHlrProjectionRequest {
+    pub model: Vec<u8>,
+    pub media_type: String,
+    pub options: HlrProjectionOptionsA0,
+}
+
+#[derive(Clone, Debug)]
+pub struct MeshHlrProjectionRequest {
+    pub mesh_packet: Vec<u8>,
+    pub options: HlrProjectionOptionsA0,
+}
+
+impl MeshHlrProjectionRequest {
+    pub fn from_mesh(
+        mesh: &IndexedTriangleMeshA0,
+        options: HlrProjectionOptionsA0,
+    ) -> Result<Self, IndexedMeshPacketError> {
+        Ok(Self {
+            mesh_packet: encode_indexed_triangle_mesh_a0_packet(mesh)?,
+            options,
+        })
     }
 }
 
@@ -340,6 +368,13 @@ impl GeometerClient {
                 ))
             })?;
         let request = match declaration.runtime_dispatch {
+            IpcRuntimeDispatchA0::LogicalDto
+                if declaration.request_contract == "geometry.hlr_projection.options.a0" =>
+            {
+                IpcRequestValueA0::HlrProjection(contracts::decode_hlr_projection_options_a0_json(
+                    request_json,
+                )?)
+            }
             IpcRuntimeDispatchA0::LogicalDto => IpcRequestValueA0::LogicalDto(
                 contracts::decode_model_bounds_options_a0_json(request_json)?,
             ),
@@ -445,6 +480,72 @@ impl GeometerClient {
         }
         match response.outcome {
             OperationOutcomeA0::Success(success) => model_bounds_result(success.result),
+            OperationOutcomeA0::Failure(failure) => Err(GeometerClientError::Operation {
+                operation: failure.operation,
+                diagnostics: failure.diagnostics,
+            }),
+        }
+    }
+
+    pub async fn model_hlr_projection(
+        &self,
+        request: ModelHlrProjectionRequest,
+    ) -> Result<HlrProjectionResultA0, GeometerClientError> {
+        self.hlr_projection(
+            "geometry.model_hlr_projection.a0",
+            "model",
+            request.media_type,
+            request.model,
+            request.options,
+        )
+        .await
+    }
+
+    pub async fn mesh_hlr_projection(
+        &self,
+        request: MeshHlrProjectionRequest,
+    ) -> Result<HlrProjectionResultA0, GeometerClientError> {
+        self.hlr_projection(
+            "geometry.mesh_hlr_projection.a0",
+            "mesh",
+            INDEXED_TRIANGLE_MESH_MEDIA_TYPE.to_owned(),
+            request.mesh_packet,
+            request.options,
+        )
+        .await
+    }
+
+    async fn hlr_projection(
+        &self,
+        operation: &str,
+        attachment_name: &str,
+        media_type: String,
+        data: Vec<u8>,
+        mut options: HlrProjectionOptionsA0,
+    ) -> Result<HlrProjectionResultA0, GeometerClientError> {
+        // Preserve the HLR default while disambiguating the presence-only IPC union.
+        if options.output_detail.is_none() {
+            options.output_detail = Some(true);
+        }
+        let options = contracts::encode_hlr_projection_options_a0_json(&options)?;
+        let response = self
+            .execute(
+                operation,
+                &options,
+                vec![Attachment {
+                    name: attachment_name.to_owned(),
+                    media_type,
+                    data,
+                }],
+            )
+            .await?;
+        if !response.attachments.is_empty() {
+            return Err(GeometerClientError::Protocol(
+                "HLR projection returned unexpected attachments".to_owned(),
+            ));
+        }
+        match response.outcome {
+            OperationOutcomeA0::Success(success) => hlr_projection_result(success.result),
             OperationOutcomeA0::Failure(failure) => Err(GeometerClientError::Operation {
                 operation: failure.operation,
                 diagnostics: failure.diagnostics,
@@ -709,6 +810,17 @@ fn model_bounds_result(
         OperationResultValueA0::ModelBounds(result) => Ok(result),
         _ => Err(GeometerClientError::Protocol(
             "model_bounds returned an incompatible result variant".to_owned(),
+        )),
+    }
+}
+
+fn hlr_projection_result(
+    result: OperationResultValueA0,
+) -> Result<HlrProjectionResultA0, GeometerClientError> {
+    match result {
+        OperationResultValueA0::HlrProjection(result) => Ok(result),
+        _ => Err(GeometerClientError::Protocol(
+            "HLR projection returned an incompatible result variant".to_owned(),
         )),
     }
 }

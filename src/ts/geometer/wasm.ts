@@ -6,6 +6,8 @@ import type {
   AnalyticPlanarBooleanBatchRequestA0,
   AnalyticPlanarBooleanBatchResultA0,
   DiagnosticA0,
+  HlrProjectionOptionsA0,
+  HlrProjectionResultA0,
   ModelBoundsInputMediaType,
   ModelBoundsOptionsA0,
   ModelBoundsResultA0,
@@ -13,9 +15,15 @@ import type {
 } from "./generated/index.js";
 import {
   decodeOperationOutcomeA0Json,
+  encodeHlrProjectionOptionsA0Json,
   encodeModelBoundsOptionsA0Json,
   operationCatalog,
 } from "./generated/index.js";
+import type { IndexedTriangleMeshA0 } from "./indexed-mesh-packet-a0.js";
+import {
+  encodeIndexedTriangleMeshA0Packet,
+  INDEXED_TRIANGLE_MESH_MEDIA_TYPE,
+} from "./indexed-mesh-packet-a0.js";
 
 export interface EmscriptenGeometerModule {
   readonly HEAPU8: Uint8Array;
@@ -75,6 +83,17 @@ export interface ModelBoundsRequest {
   readonly mediaType?: ModelBoundsInputMediaType;
   readonly model: Uint8Array;
   readonly options?: ModelBoundsOptionsA0;
+}
+
+export interface ModelHlrProjectionRequest {
+  readonly mediaType?: "application/step" | "model/step";
+  readonly model: Uint8Array;
+  readonly options?: HlrProjectionOptionsA0;
+}
+
+export interface MeshHlrProjectionRequest {
+  readonly mesh: IndexedTriangleMeshA0 | Uint8Array;
+  readonly options?: HlrProjectionOptionsA0;
 }
 
 export interface GeometerWasmCapabilityCatalog {
@@ -229,8 +248,54 @@ export class GeometerWasmClient {
     if (response.attachments.length !== 0) {
       throw new GeometerWasmTransportError(0, "model_bounds returned unexpected attachments.");
     }
-    if (!("units" in response.outcome.result)) {
+    if (!("bounds" in response.outcome.result)) {
       throw new GeometerWasmTransportError(0, "model_bounds returned an incompatible result DTO.");
+    }
+    return response.outcome.result;
+  }
+
+  async modelHlrProjection(request: ModelHlrProjectionRequest): Promise<HlrProjectionResultA0> {
+    return this.hlrProjection(
+      "geometry.model_hlr_projection.a0",
+      request.options ?? {},
+      "model",
+      request.mediaType ?? "application/step",
+      request.model,
+    );
+  }
+
+  async meshHlrProjection(request: MeshHlrProjectionRequest): Promise<HlrProjectionResultA0> {
+    const packet =
+      request.mesh instanceof Uint8Array
+        ? request.mesh
+        : encodeIndexedTriangleMeshA0Packet(request.mesh);
+    return this.hlrProjection(
+      "geometry.mesh_hlr_projection.a0",
+      request.options ?? {},
+      "mesh",
+      INDEXED_TRIANGLE_MESH_MEDIA_TYPE,
+      packet,
+    );
+  }
+
+  private async hlrProjection(
+    operation: "geometry.mesh_hlr_projection.a0" | "geometry.model_hlr_projection.a0",
+    options: HlrProjectionOptionsA0,
+    attachmentName: "mesh" | "model",
+    mediaType: string,
+    data: Uint8Array,
+  ): Promise<HlrProjectionResultA0> {
+    const response = this.execute(operation, encodeHlrProjectionOptionsA0Json(options), [
+      { data, mediaType, name: attachmentName },
+    ]);
+    if (!response.outcome.ok) {
+      throw new GeometerOperationError(response.outcome.operation, response.outcome.diagnostics);
+    }
+    if (response.outcome.operation !== operation || !("views" in response.outcome.result)) {
+      throw new GeometerWasmTransportError(0, `${operation} returned an incompatible result DTO.`);
+    }
+    if (response.attachments.length !== 0) {
+      throw new GeometerWasmTransportError(0, `${operation} returned unexpected attachments.`);
     }
     return response.outcome.result;
   }

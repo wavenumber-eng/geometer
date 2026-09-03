@@ -1234,14 +1234,13 @@ struct StepTopologyAnalyzeRecoveryRequestA0
     std::vector<RecoveryGroupRequest> groups{};
 };
 
-using IpcRequestValueA0 =
-    std::variant<ModelBoundsOptionsA0, PackedAttachmentProjectionA0, StepTopologyOpenRequestA0,
-                 StepTopologyCloseRequestA0, StepTopologyInspectRequestA0,
-                 StepTopologyRenderRequestA0, StepTopologyResolveHitRequestA0,
-                 StepTopologyApplyLogicalGroupsRequestA0, StepTopologyApplyMetadataProbesRequestA0,
-                 StepTopologyCheckpointEditJournalRequestA0, StepTopologyApplyHierarchyRequestA0,
-                 StepTopologySaveRequestA0, StepTopologyRestoreRequestA0,
-                 StepTopologyAnalyzeRecoveryRequestA0>;
+using IpcRequestValueA0 = std::variant<
+    ModelBoundsOptionsA0, HlrProjectionOptionsA0, PackedAttachmentProjectionA0,
+    StepTopologyOpenRequestA0, StepTopologyCloseRequestA0, StepTopologyInspectRequestA0,
+    StepTopologyRenderRequestA0, StepTopologyResolveHitRequestA0,
+    StepTopologyApplyLogicalGroupsRequestA0, StepTopologyApplyMetadataProbesRequestA0,
+    StepTopologyCheckpointEditJournalRequestA0, StepTopologyApplyHierarchyRequestA0,
+    StepTopologySaveRequestA0, StepTopologyRestoreRequestA0, StepTopologyAnalyzeRecoveryRequestA0>;
 
 struct IpcRequestA0
 {
@@ -1894,12 +1893,13 @@ struct StepTopologyAnalyzeRecoveryResultA0
 };
 
 using OperationResultValueA0 =
-    std::variant<ModelBoundsResultA0, PackedAttachmentProjectionA0, StepTopologyOpenResultA0,
-                 StepTopologyCloseResultA0, StepTopologyInspectResultA0, StepTopologyRenderResultA0,
-                 StepTopologyResolveHitResultA0, StepTopologyApplyLogicalGroupsResultA0,
-                 StepTopologyApplyMetadataProbesResultA0, StepTopologyCheckpointEditJournalResultA0,
-                 StepTopologyApplyHierarchyResultA0, StepTopologySaveResultA0,
-                 StepTopologyRestoreResultA0, StepTopologyAnalyzeRecoveryResultA0>;
+    std::variant<ModelBoundsResultA0, HlrProjectionResultA0, PackedAttachmentProjectionA0,
+                 StepTopologyOpenResultA0, StepTopologyCloseResultA0, StepTopologyInspectResultA0,
+                 StepTopologyRenderResultA0, StepTopologyResolveHitResultA0,
+                 StepTopologyApplyLogicalGroupsResultA0, StepTopologyApplyMetadataProbesResultA0,
+                 StepTopologyCheckpointEditJournalResultA0, StepTopologyApplyHierarchyResultA0,
+                 StepTopologySaveResultA0, StepTopologyRestoreResultA0,
+                 StepTopologyAnalyzeRecoveryResultA0>;
 
 struct OperationSuccessA0
 {

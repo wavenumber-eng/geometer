@@ -725,20 +725,29 @@ function decoder(item) {
     ];
   }
   if (item.kind === "union") {
+    const oneOf = item.composition === "one_of";
     const body = [];
     item.variants.forEach((variant, index) => {
       const type = cppType(variant.type);
       body.push(
-        `    { ${type} candidate{}; ContractError ignored; if (${decodeCall(variant.type, "value", "&candidate", "path", "&ignored")}) { ++matches; selected = ${name}(std::in_place_index<${index}>, std::move(candidate)); } }`,
+        oneOf
+          ? `    { ${type} candidate{}; ContractError ignored; if (${decodeCall(variant.type, "value", "&candidate", "path", "&ignored")}) { ++matches; selected = ${name}(std::in_place_index<${index}>, std::move(candidate)); } }`
+          : `    { ${type} candidate{}; ContractError ignored; if (${decodeCall(variant.type, "value", "&candidate", "path", "&ignored")}) { *out = ${name}(std::in_place_index<${index}>, std::move(candidate)); return true; } }`,
       );
     });
     return [
       `bool decode_${name}(const rapidjson::Value& value, ${name}* out, const std::string& path, ContractError* error)`,
       "{",
-      `    int matches = 0; ${name} selected{};`,
+      ...(oneOf ? [`    int matches = 0; ${name} selected{};`] : []),
       ...body,
-      '    if (matches != 1) return fail(error, "geometer.contract.union_mismatch", path, "Expected exactly one union variant.");',
-      "    *out = std::move(selected); return true;",
+      ...(oneOf
+        ? [
+            '    if (matches != 1) return fail(error, "geometer.contract.union_mismatch", path, "Expected exactly one union variant.");',
+            "    *out = std::move(selected); return true;",
+          ]
+        : [
+            '    return fail(error, "geometer.contract.union_mismatch", path, "Value does not match a union variant.");',
+          ]),
       "}",
     ];
   }

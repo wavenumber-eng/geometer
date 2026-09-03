@@ -1119,6 +1119,7 @@ A variant is callable only when the negotiated runtime catalog advertises
 its operation; structural presence does not imply runtime availability. */
 export type IpcRequestValueA0 =
   | ModelBoundsOptionsA0
+  | HlrProjectionOptionsA0
   | PackedAttachmentProjectionA0
   | StepTopologyOpenRequestA0
   | StepTopologyCloseRequestA0
@@ -1717,6 +1718,7 @@ to a runtime-unavailable experimental operation and is not an availability
 claim; the negotiated operation catalog remains authoritative. */
 export type OperationResultValueA0 =
   | ModelBoundsResultA0
+  | HlrProjectionResultA0
   | PackedAttachmentProjectionA0
   | StepTopologyOpenResultA0
   | StepTopologyCloseResultA0

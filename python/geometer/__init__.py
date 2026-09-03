@@ -58,6 +58,15 @@ from ._ipc_client import (
     GeometerIpcTimeoutError,
     GeometerOperationError,
 )
+from ._indexed_mesh_packet_a0 import (
+    INDEXED_TRIANGLE_MESH_MEDIA_TYPE,
+    INDEXED_TRIANGLE_MESH_PACKET_FORMAT,
+    IndexedTriangleMeshA0,
+    IndexedTriangleMeshPacketError,
+    decode_indexed_triangle_mesh_a0_packet,
+    encode_indexed_triangle_mesh_a0_packet,
+)
+from ._generated.contracts.models import HlrProjectionOptionsA0, HlrProjectionResultA0
 from ._types import (
     HlrOptions,
     HlrProjectionResult,
@@ -102,7 +111,13 @@ __all__ = [
     "GeometerBatchResult",
     "GeometerBatchRunner",
     "HlrOptions",
+    "HlrProjectionOptionsA0",
     "HlrProjectionResult",
+    "HlrProjectionResultA0",
+    "INDEXED_TRIANGLE_MESH_MEDIA_TYPE",
+    "INDEXED_TRIANGLE_MESH_PACKET_FORMAT",
+    "IndexedTriangleMeshA0",
+    "IndexedTriangleMeshPacketError",
     "ModelBoundsResult",
     "PlanarBatchSolveJob",
     "PlanarBatchSolveResult",
@@ -132,4 +147,6 @@ __all__ = [
     "write_planar_step",
     "decode_analytic_planar_boolean_batch_result_a0_packet",
     "encode_analytic_planar_boolean_batch_request_a0_packet",
+    "decode_indexed_triangle_mesh_a0_packet",
+    "encode_indexed_triangle_mesh_a0_packet",
 ]

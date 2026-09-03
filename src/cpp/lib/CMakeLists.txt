@@ -44,6 +44,7 @@ set(GEOMETER_LIB_SOURCES
     hlr_projection.cpp
     indexed_mesh_packet.cpp
     mesh_shadow_outline.cpp
+    mesh_hlr_projection.cpp
     model_bounds.cpp
     model_bounds_options_json.cpp
     operation_c_api.cpp

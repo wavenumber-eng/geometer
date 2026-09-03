@@ -1346,13 +1346,23 @@ compatibility_cli_names = []
 
 [[operations]]
 id = "geometry.model_hlr_projection.a0"
-status = "inventory_only"
-request_contract = "geometry.projection.options.b0"
-result_contract = "geometry.projection.b0"
+status = "pilot_candidate"
+request_contract = "geometry.hlr_projection.options.a0"
+result_contract = "geometry.hlr_projection.result.a0"
 input_attachments = ["model"]
 output_attachments = []
 cli_names = ["model_hlr_projection_json", "model_hlr_projection_svg"]
 compatibility_cli_names = ["step_hlr_projection_json", "step_hlr_projection_svg"]
+
+[[operations]]
+id = "geometry.mesh_hlr_projection.a0"
+status = "pilot_candidate"
+request_contract = "geometry.hlr_projection.options.a0"
+result_contract = "geometry.hlr_projection.result.a0"
+input_attachments = ["mesh"]
+output_attachments = []
+cli_names = ["mesh_hlr_projection_json"]
+compatibility_cli_names = []
 
 [[operations]]
 id = "geometry.model_to_glb.a0"

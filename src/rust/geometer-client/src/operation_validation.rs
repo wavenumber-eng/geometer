@@ -35,7 +35,16 @@ pub(crate) fn validate_operation_request(
         "request",
     )?;
     match (&declaration.runtime_dispatch, request) {
-        (IpcRuntimeDispatchA0::LogicalDto, IpcRequestValueA0::LogicalDto(_)) => Ok(()),
+        (IpcRuntimeDispatchA0::LogicalDto, IpcRequestValueA0::LogicalDto(_))
+            if declaration.request_contract == "geometry.model_bounds.options.a0" =>
+        {
+            Ok(())
+        }
+        (IpcRuntimeDispatchA0::LogicalDto, IpcRequestValueA0::HlrProjection(_))
+            if declaration.request_contract == "geometry.hlr_projection.options.a0" =>
+        {
+            Ok(())
+        }
         (IpcRuntimeDispatchA0::PackedAttachment, IpcRequestValueA0::PackedAttachment(value)) => {
             validate_packed_projection(declaration, value, true)
         }
@@ -63,7 +72,22 @@ pub(crate) fn validate_operation_response(
             )?;
             match (&declaration.runtime_dispatch, &success.result) {
                 (IpcRuntimeDispatchA0::LogicalDto, OperationResultValueA0::ModelBounds(_)) => {
-                    Ok(())
+                    if declaration.result_contract == "geometry.model_bounds.a0" {
+                        Ok(())
+                    } else {
+                        Err(GeometerClientError::Protocol(
+                            "result contract differs from the logical result variant".to_owned(),
+                        ))
+                    }
+                }
+                (IpcRuntimeDispatchA0::LogicalDto, OperationResultValueA0::HlrProjection(_)) => {
+                    if declaration.result_contract == "geometry.hlr_projection.result.a0" {
+                        Ok(())
+                    } else {
+                        Err(GeometerClientError::Protocol(
+                            "result contract differs from the logical result variant".to_owned(),
+                        ))
+                    }
                 }
                 (
                     IpcRuntimeDispatchA0::PackedAttachment,

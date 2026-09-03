@@ -8,11 +8,19 @@
     clippy::large_enum_variant,
     reason = "generated wire DTOs preserve their unboxed contract shape"
 )]
+#![allow(
+    clippy::cognitive_complexity,
+    reason = "generated closed-union decoders enumerate governed variants"
+)]
+#![allow(
+    clippy::too_many_lines,
+    reason = "generated validators enumerate every governed field"
+)]
 
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
 pub const NORMALIZED_CATALOG_SHA256: &str =
-    "0bcfe865420f1b109448ea8f14a07f49d8fe02846149a2ca6a43f4948316b008";
+    "3d610e74fa16618a12806607c55be6823d6bf5e9144095ed281179aaeda1415d";
 
 #[derive(Debug, thiserror::Error)]
 pub enum ContractError {
@@ -2051,17 +2059,11 @@ impl Validate for FastHlrLimitsA0 {
             if *value < 1 {
                 return Err(invalid(&field_path, "number is below its minimum"));
             }
-            if *value > 4294967295 {
-                return Err(invalid(&field_path, "number exceeds its maximum"));
-            }
         }
         let field_path = child_path(path, "max_triangles");
         if let Some(value) = &self.max_triangles {
             if *value < 1 {
                 return Err(invalid(&field_path, "number is below its minimum"));
-            }
-            if *value > 4294967295 {
-                return Err(invalid(&field_path, "number exceeds its maximum"));
             }
         }
         let field_path = child_path(path, "max_edges");
@@ -2069,17 +2071,11 @@ impl Validate for FastHlrLimitsA0 {
             if *value < 1 {
                 return Err(invalid(&field_path, "number is below its minimum"));
             }
-            if *value > 4294967295 {
-                return Err(invalid(&field_path, "number exceeds its maximum"));
-            }
         }
         let field_path = child_path(path, "max_grid_references");
         if let Some(value) = &self.max_grid_references {
             if *value < 1 {
                 return Err(invalid(&field_path, "number is below its minimum"));
-            }
-            if *value > 4294967295 {
-                return Err(invalid(&field_path, "number exceeds its maximum"));
             }
         }
         let field_path = child_path(path, "max_candidate_pairs");
@@ -2087,26 +2083,17 @@ impl Validate for FastHlrLimitsA0 {
             if *value < 1 {
                 return Err(invalid(&field_path, "number is below its minimum"));
             }
-            if *value > 4294967295 {
-                return Err(invalid(&field_path, "number exceeds its maximum"));
-            }
         }
         let field_path = child_path(path, "max_fragments");
         if let Some(value) = &self.max_fragments {
             if *value < 1 {
                 return Err(invalid(&field_path, "number is below its minimum"));
             }
-            if *value > 4294967295 {
-                return Err(invalid(&field_path, "number exceeds its maximum"));
-            }
         }
         let field_path = child_path(path, "max_output_segments");
         if let Some(value) = &self.max_output_segments {
             if *value < 1 {
                 return Err(invalid(&field_path, "number is below its minimum"));
-            }
-            if *value > 4294967295 {
-                return Err(invalid(&field_path, "number exceeds its maximum"));
             }
         }
         Ok(())
@@ -2821,9 +2808,6 @@ impl Validate for HlrProjectionOptionsA0 {
         }
         let field_path = child_path(path, "round_digits");
         if let Some(value) = &self.round_digits {
-            if *value < 0 {
-                return Err(invalid(&field_path, "number is below its minimum"));
-            }
             if *value > 9 {
                 return Err(invalid(&field_path, "number exceeds its maximum"));
             }
@@ -3780,18 +3764,6 @@ impl Validate for ModelFormat {
 }
 
 pub type Matrix4x4 = [f64; 16];
-
-impl Validate for Matrix4x4 {
-    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
-        for (index, item) in self.iter().enumerate() {
-            let item_path = child_path(path, &index.to_string());
-            if !item.is_finite() {
-                return Err(invalid(&item_path, "number must be finite"));
-            }
-        }
-        Ok(())
-    }
-}
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -6355,6 +6327,7 @@ impl Validate for StepTopologyAnalyzeRecoveryRequestA0 {
 #[serde(untagged)]
 pub enum IpcRequestValueA0 {
     LogicalDto(ModelBoundsOptionsA0),
+    HlrProjection(HlrProjectionOptionsA0),
     PackedAttachment(PackedAttachmentProjectionA0),
     StepTopologyOpen(StepTopologyOpenRequestA0),
     StepTopologyClose(StepTopologyCloseRequestA0),
@@ -6379,6 +6352,11 @@ impl<'de> Deserialize<'de> for IpcRequestValueA0 {
         if let Ok(value) = serde_json::from_str::<ModelBoundsOptionsA0>(raw.get()) {
             if value.validate_at("").is_ok() {
                 return Ok(Self::LogicalDto(value));
+            }
+        }
+        if let Ok(value) = serde_json::from_str::<HlrProjectionOptionsA0>(raw.get()) {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::HlrProjection(value));
             }
         }
         if let Ok(value) = serde_json::from_str::<PackedAttachmentProjectionA0>(raw.get()) {
@@ -6462,6 +6440,7 @@ impl Validate for IpcRequestValueA0 {
     fn validate_at(&self, path: &str) -> Result<(), ContractError> {
         match self {
             Self::LogicalDto(value) => value.validate_at(path),
+            Self::HlrProjection(value) => value.validate_at(path),
             Self::PackedAttachment(value) => value.validate_at(path),
             Self::StepTopologyOpen(value) => value.validate_at(path),
             Self::StepTopologyClose(value) => value.validate_at(path),
@@ -6582,31 +6561,7 @@ impl Validate for IpcWelcomeA0 {
 
 pub type IllustrationMatrix4x4 = [f64; 16];
 
-impl Validate for IllustrationMatrix4x4 {
-    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
-        for (index, item) in self.iter().enumerate() {
-            let item_path = child_path(path, &index.to_string());
-            if !item.is_finite() {
-                return Err(invalid(&item_path, "number must be finite"));
-            }
-        }
-        Ok(())
-    }
-}
-
 pub type IllustrationVector3 = [f64; 3];
-
-impl Validate for IllustrationVector3 {
-    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
-        for (index, item) in self.iter().enumerate() {
-            let item_path = child_path(path, &index.to_string());
-            if !item.is_finite() {
-                return Err(invalid(&item_path, "number must be finite"));
-            }
-        }
-        Ok(())
-    }
-}
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -7210,41 +7165,7 @@ pub struct MeshIllustrationRenderStats {
 
 impl Validate for MeshIllustrationRenderStats {
     fn validate_at(&self, path: &str) -> Result<(), ContractError> {
-        let field_path = child_path(path, "triangles");
-        let value = &self.triangles;
-        if *value < 0 {
-            return Err(invalid(&field_path, "number is below its minimum"));
-        }
-        let field_path = child_path(path, "surface_draws");
-        let value = &self.surface_draws;
-        if *value < 0 {
-            return Err(invalid(&field_path, "number is below its minimum"));
-        }
-        let field_path = child_path(path, "layered_surfaces");
-        let value = &self.layered_surfaces;
-        if *value < 0 {
-            return Err(invalid(&field_path, "number is below its minimum"));
-        }
-        let field_path = child_path(path, "outlines");
-        let value = &self.outlines;
-        if *value < 0 {
-            return Err(invalid(&field_path, "number is below its minimum"));
-        }
-        let field_path = child_path(path, "details");
-        let value = &self.details;
-        if *value < 0 {
-            return Err(invalid(&field_path, "number is below its minimum"));
-        }
-        let field_path = child_path(path, "creases");
-        let value = &self.creases;
-        if *value < 0 {
-            return Err(invalid(&field_path, "number is below its minimum"));
-        }
-        let field_path = child_path(path, "commands");
-        let value = &self.commands;
-        if *value < 0 {
-            return Err(invalid(&field_path, "number is below its minimum"));
-        }
+        let _ = path;
         Ok(())
     }
 }
@@ -7297,18 +7218,6 @@ impl Validate for ModelBoundsSource {
 }
 
 pub type Vector3 = [f64; 3];
-
-impl Validate for Vector3 {
-    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
-        for (index, item) in self.iter().enumerate() {
-            let item_path = child_path(path, &index.to_string());
-            if !item.is_finite() {
-                return Err(invalid(&item_path, "number must be finite"));
-            }
-        }
-        Ok(())
-    }
-}
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -9918,6 +9827,7 @@ impl Validate for StepTopologyAnalyzeRecoveryResultA0 {
 #[serde(untagged)]
 pub enum OperationResultValueA0 {
     ModelBounds(ModelBoundsResultA0),
+    HlrProjection(HlrProjectionResultA0),
     PackedAttachment(PackedAttachmentProjectionA0),
     StepTopologyOpen(StepTopologyOpenResultA0),
     StepTopologyClose(StepTopologyCloseResultA0),
@@ -9942,6 +9852,11 @@ impl<'de> Deserialize<'de> for OperationResultValueA0 {
         if let Ok(value) = serde_json::from_str::<ModelBoundsResultA0>(raw.get()) {
             if value.validate_at("").is_ok() {
                 return Ok(Self::ModelBounds(value));
+            }
+        }
+        if let Ok(value) = serde_json::from_str::<HlrProjectionResultA0>(raw.get()) {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::HlrProjection(value));
             }
         }
         if let Ok(value) = serde_json::from_str::<PackedAttachmentProjectionA0>(raw.get()) {
@@ -10024,6 +9939,7 @@ impl Validate for OperationResultValueA0 {
     fn validate_at(&self, path: &str) -> Result<(), ContractError> {
         match self {
             Self::ModelBounds(value) => value.validate_at(path),
+            Self::HlrProjection(value) => value.validate_at(path),
             Self::PackedAttachment(value) => value.validate_at(path),
             Self::StepTopologyOpen(value) => value.validate_at(path),
             Self::StepTopologyClose(value) => value.validate_at(path),

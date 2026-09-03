@@ -5953,13 +5953,21 @@
       "doc": "Structurally representable request payloads for executable IPC A0.\nA variant is callable only when the negotiated runtime catalog advertises\nits operation; structural presence does not imply runtime availability.",
       "annotations": {},
       "constraints": {},
-      "composition": "one_of",
       "variants": [
         {
           "name": "logical_dto",
           "type": {
             "kind": "reference",
             "target": "Wavenumber.Geometer.Contracts.ModelBoundsA0.ModelBoundsOptionsA0"
+          },
+          "doc": "",
+          "annotations": {}
+        },
+        {
+          "name": "hlr_projection",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrProjectionOptionsA0"
           },
           "doc": "",
           "annotations": {}
@@ -7534,6 +7542,15 @@
           "type": {
             "kind": "reference",
             "target": "Wavenumber.Geometer.Contracts.ModelBoundsA0.ModelBoundsResultA0"
+          },
+          "doc": "",
+          "annotations": {}
+        },
+        {
+          "name": "hlr_projection",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrProjectionResultA0"
           },
           "doc": "",
           "annotations": {}
@@ -15223,6 +15240,27 @@
       "doc": "Execute independent ordered analytic planar Boolean jobs through packed attachments."
     },
     {
+      "name": "Wavenumber.Geometer.Contracts.Operations.meshHlrProjection",
+      "identity": "geometry.mesh_hlr_projection.a0",
+      "request_contract": "geometry.hlr_projection.options.a0",
+      "result_contract": "geometry.hlr_projection.result.a0",
+      "input_attachments": [
+        {
+          "name": "mesh",
+          "required": true,
+          "media_types": [
+            "application/vnd.wavenumber.geometer.indexed-triangle-mesh"
+          ],
+          "max_bytes": 268435456
+        }
+      ],
+      "output_attachments": [],
+      "runtime_available": true,
+      "native_runtime_available": false,
+      "runtime_dispatch": "logical_dto",
+      "doc": "Project a synthesized indexed triangle mesh through the Fast HLR backend."
+    },
+    {
       "name": "Wavenumber.Geometer.Contracts.Operations.modelBounds",
       "identity": "geometry.model_bounds.a0",
       "request_contract": "geometry.model_bounds.options.a0",
@@ -15243,6 +15281,28 @@
       "native_runtime_available": false,
       "runtime_dispatch": "logical_dto",
       "doc": "Compute axis-aligned model bounds from the required raw model attachment."
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.Operations.modelHlrProjection",
+      "identity": "geometry.model_hlr_projection.a0",
+      "request_contract": "geometry.hlr_projection.options.a0",
+      "result_contract": "geometry.hlr_projection.result.a0",
+      "input_attachments": [
+        {
+          "name": "model",
+          "required": true,
+          "media_types": [
+            "application/step",
+            "model/step"
+          ],
+          "max_bytes": 268435456
+        }
+      ],
+      "output_attachments": [],
+      "runtime_available": true,
+      "native_runtime_available": false,
+      "runtime_dispatch": "logical_dto",
+      "doc": "Project STEP model bytes through the selected polygonal, exact, or Fast HLR backend."
     },
     {
       "name": "Wavenumber.Geometer.Contracts.Operations.stepTopologyAnalyzeRecovery",

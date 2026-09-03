@@ -858,7 +858,7 @@ export interface StepTopologyAnalyzeRecoveryRequestA0 {
 /** Structurally representable request payloads for executable IPC A0.
 A variant is callable only when the negotiated runtime catalog advertises
 its operation; structural presence does not imply runtime availability. */
-export type IpcRequestValueA0 = ModelBoundsOptionsA0 | PackedAttachmentProjectionA0 | StepTopologyOpenRequestA0 | StepTopologyCloseRequestA0 | StepTopologyInspectRequestA0 | StepTopologyRenderRequestA0 | StepTopologyResolveHitRequestA0 | StepTopologyApplyLogicalGroupsRequestA0 | StepTopologyApplyMetadataProbesRequestA0 | StepTopologyCheckpointEditJournalRequestA0 | StepTopologyApplyHierarchyRequestA0 | StepTopologySaveRequestA0 | StepTopologyRestoreRequestA0 | StepTopologyAnalyzeRecoveryRequestA0;
+export type IpcRequestValueA0 = ModelBoundsOptionsA0 | HlrProjectionOptionsA0 | PackedAttachmentProjectionA0 | StepTopologyOpenRequestA0 | StepTopologyCloseRequestA0 | StepTopologyInspectRequestA0 | StepTopologyRenderRequestA0 | StepTopologyResolveHitRequestA0 | StepTopologyApplyLogicalGroupsRequestA0 | StepTopologyApplyMetadataProbesRequestA0 | StepTopologyCheckpointEditJournalRequestA0 | StepTopologyApplyHierarchyRequestA0 | StepTopologySaveRequestA0 | StepTopologyRestoreRequestA0 | StepTopologyAnalyzeRecoveryRequestA0;
 export interface IpcRequestA0 {
     readonly operation: string;
     readonly request: IpcRequestValueA0;
@@ -1341,7 +1341,7 @@ export interface StepTopologyAnalyzeRecoveryResultA0 {
 /** Structurally representable operation results. A result variant may belong
 to a runtime-unavailable experimental operation and is not an availability
 claim; the negotiated operation catalog remains authoritative. */
-export type OperationResultValueA0 = ModelBoundsResultA0 | PackedAttachmentProjectionA0 | StepTopologyOpenResultA0 | StepTopologyCloseResultA0 | StepTopologyInspectResultA0 | StepTopologyRenderResultA0 | StepTopologyResolveHitResultA0 | StepTopologyApplyLogicalGroupsResultA0 | StepTopologyApplyMetadataProbesResultA0 | StepTopologyCheckpointEditJournalResultA0 | StepTopologyApplyHierarchyResultA0 | StepTopologySaveResultA0 | StepTopologyRestoreResultA0 | StepTopologyAnalyzeRecoveryResultA0;
+export type OperationResultValueA0 = ModelBoundsResultA0 | HlrProjectionResultA0 | PackedAttachmentProjectionA0 | StepTopologyOpenResultA0 | StepTopologyCloseResultA0 | StepTopologyInspectResultA0 | StepTopologyRenderResultA0 | StepTopologyResolveHitResultA0 | StepTopologyApplyLogicalGroupsResultA0 | StepTopologyApplyMetadataProbesResultA0 | StepTopologyCheckpointEditJournalResultA0 | StepTopologyApplyHierarchyResultA0 | StepTopologySaveResultA0 | StepTopologyRestoreResultA0 | StepTopologyAnalyzeRecoveryResultA0;
 /** A completed operation with its operation-specific result. */
 export interface OperationSuccessA0 {
     readonly operation: string;

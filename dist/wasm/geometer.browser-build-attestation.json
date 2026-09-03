@@ -2,11 +2,11 @@
   "artifacts": {
     "dist/wasm/browser/geometer.js": {
       "bytes": 163460,
-      "sha256": "3dff034b151c2ecd251230e38dfe59d0f70d453ff731eda9db9ee19a7c747acd"
+      "sha256": "72ac6380617e91fd23a6e64d2fdffec3c60994790c610ddf56e1618de0bbfc6e"
     },
     "dist/wasm/browser/geometer.wasm": {
-      "bytes": 18950041,
-      "sha256": "2a4f78e1fc80f4bf09bf7f22dc43b7cee20c44a6b55c618e43fc255ad6f696b7"
+      "bytes": 19021537,
+      "sha256": "8bcc4ba8155f8507a75bc055c18fc2034afb6fa38817cf360b553da27a2a18be"
     },
     "dist/wasm/npm/geometer/README.md": {
       "bytes": 3986,
@@ -61,16 +61,16 @@
       "sha256": "920ccc3efa0f2e9b8ca8a7bd705c44ef71c5470af12edc0685f6349a14a23950"
     },
     "dist/wasm/npm/geometer/generated/codecs.d.ts": {
-      "bytes": 9248,
-      "sha256": "56f69dde32d04b91c64f6095a3bbd3ae4eb24e1d4ecc5ae77b575a2539554cb4"
+      "bytes": 10413,
+      "sha256": "0380107fe8c9a1ec06cced2134a8d56120135d9672a26f9ebe48e7fff65bb0d9"
     },
     "dist/wasm/npm/geometer/generated/codecs.js": {
-      "bytes": 176172,
-      "sha256": "ea76dd52a53295b9702ffa3aacf959ed6b09da93c44a8d15468fd8b3f85a0cc3"
+      "bytes": 214967,
+      "sha256": "7a242f683f01a29041385a28cb01cc09586616975339d87f6a232b22fec074a9"
     },
     "dist/wasm/npm/geometer/generated/contracts.d.ts": {
-      "bytes": 45420,
-      "sha256": "7379ddec9987ea85dd2c0196757dcc2baea0b30fc0e416bb2943ed4dbce78db9"
+      "bytes": 53883,
+      "sha256": "46f8597f9e2180b7c44a5981331190592e414fea891c81e2fc17cdc7ec469483"
     },
     "dist/wasm/npm/geometer/generated/contracts.js": {
       "bytes": 80,
@@ -85,36 +85,44 @@
       "sha256": "6e4731631af8b7473f72ecb2d014453cfa89d93f2b3d4b4b6a14f7d9be60145a"
     },
     "dist/wasm/npm/geometer/generated/operations.d.ts": {
-      "bytes": 11615,
-      "sha256": "33d624d5a666e320dd945248fbdbf8689eb8cfeab3bd59a78ab80fecef74099f"
+      "bytes": 13276,
+      "sha256": "47b95041f3b6fda2b97a8c082ff563df1e4af83f9a67b32e7d97dcd1ab884b11"
     },
     "dist/wasm/npm/geometer/generated/operations.js": {
-      "bytes": 9860,
-      "sha256": "5f925aee9c31a87bce742f3644335773a2f8abd485a37441a8ec6580f03e71cb"
+      "bytes": 11301,
+      "sha256": "b02abb2d20ff5b739baf4c0a381b88435999e2a786f8d4df85f582582ab40f82"
     },
     "dist/wasm/npm/geometer/index.d.ts": {
-      "bytes": 247,
-      "sha256": "b62a0679f9b854208ca283ada9ea023991f7126443fc7efa2ab8f32b8383e310"
+      "bytes": 292,
+      "sha256": "c221ed96af5dfc30b15f9eb6ac05091f498be293fe5ce8b7c676391d47643b6d"
     },
     "dist/wasm/npm/geometer/index.js": {
-      "bytes": 247,
-      "sha256": "b62a0679f9b854208ca283ada9ea023991f7126443fc7efa2ab8f32b8383e310"
+      "bytes": 292,
+      "sha256": "c221ed96af5dfc30b15f9eb6ac05091f498be293fe5ce8b7c676391d47643b6d"
+    },
+    "dist/wasm/npm/geometer/indexed-mesh-packet-a0.d.ts": {
+      "bytes": 1015,
+      "sha256": "8456caa111f2b771ffd40f1e88a95aeb6a6b3cdb2820250f08a2162d2cc05833"
+    },
+    "dist/wasm/npm/geometer/indexed-mesh-packet-a0.js": {
+      "bytes": 8251,
+      "sha256": "321711e422d6c076bf609236c048fb130b90f88c22f4eead2739fa08eb869f30"
     },
     "dist/wasm/npm/geometer/ipc-a0.d.ts": {
       "bytes": 2045,
       "sha256": "c5d2b0972766914b6ae16a834c799bedd9394fcc8365268cf2928cb097376929"
     },
     "dist/wasm/npm/geometer/ipc-a0.js": {
-      "bytes": 17311,
-      "sha256": "6214e919071688997bb13365cbbdb774c0bddcd32894b70703620a0eb5423808"
+      "bytes": 17364,
+      "sha256": "23224e45c2e56b01fcb99f72c035d4ce2d32577f2acc159696e3e552a0e45326"
     },
     "dist/wasm/npm/geometer/ipc-client-a0.d.ts": {
-      "bytes": 2815,
-      "sha256": "8181c8a93adef43bc5b59cfdf219416d9788af05fa4f04bbed1851b214c2fc49"
+      "bytes": 3531,
+      "sha256": "d63eb8ac90cb8c580b0499c2ac40e870c8abb52d1da3ca7271c027de6a1f2c5e"
     },
     "dist/wasm/npm/geometer/ipc-client-a0.js": {
-      "bytes": 19329,
-      "sha256": "cd373cb53f4bda2025f3432d6425796051f231014217d8e1c305e8e289ccea22"
+      "bytes": 20735,
+      "sha256": "ba54270f01db22d92fbd595932495bf5931dbbc60fe643dfbffab0dd421a9317"
     },
     "dist/wasm/npm/geometer/node-process-a0.d.ts": {
       "bytes": 1069,
@@ -145,12 +153,12 @@
       "sha256": "bed2fd31af416ebcacf3375892fe49b1fd2e509ad515fc5e9796813df6deb167"
     },
     "dist/wasm/npm/geometer/wasm.d.ts": {
-      "bytes": 3329,
-      "sha256": "44ede92d71756c3e6646a08fe316147e291faf4742a78575894fcf505a5cbe28"
+      "bytes": 3993,
+      "sha256": "d50ebbf1f227d3204ed36f6383bf51d9f7c17ac16b2589cb8620ff20101ff734"
     },
     "dist/wasm/npm/geometer/wasm.js": {
-      "bytes": 22365,
-      "sha256": "17b81710cbdd56226e00f74590bd5cb3b281be9686fb11d4b83d595d6ca5caae"
+      "bytes": 23867,
+      "sha256": "46006031695ba25d772bebc2d7c77b56e83d28e44357d81ac7dad0830f5bbef8"
     },
     "dist/wasm/npm/geometer/worker-host.d.ts": {
       "bytes": 827,
@@ -161,12 +169,12 @@
       "sha256": "46ea3572f5fa6217782b887bc9de706c75a0b3549a3f6baa975a4585b255ceca"
     },
     "dist/wasm/npm/geometer/worker.d.ts": {
-      "bytes": 3606,
-      "sha256": "5c8eaa0574102a43f2eb0a7ed18c1ae19c03cbca989bb600295c9b714ea440e3"
+      "bytes": 3891,
+      "sha256": "97bb77d504c9176380e755ed450253520980fd73a3fe34933d94ceec2e87b618"
     },
     "dist/wasm/npm/geometer/worker.js": {
-      "bytes": 15062,
-      "sha256": "f3d3080343d4149dbfd2fd7945d4e628cd730e99890b9c3d9643d0371136cd7d"
+      "bytes": 16567,
+      "sha256": "8873281ab798318b116994f5a48e882e6f8055fdb484e508dc1f3b40e61dda32"
     },
     "dist/wasm/planar-browser/geometer-planar-browser.js": {
       "bytes": 24214,
@@ -182,10 +190,10 @@
     "contract_check_status": "passed",
     "source": {
       "authority": "git_head_and_source_worktree_excluding_dist_build_deps_out",
-      "revision": "cd1298baa9a99f8bef7f424270373b5f388c9228",
-      "tree_state": "clean"
+      "revision": "e3bccd520297a562a99507aa33db7bcdbf39b8eb",
+      "tree_state": "dirty"
     },
-    "source_content_sha256": "b83a96ac11e45d4cda76e31f70fe9a951f9219c0b9112c2e3eb828d65ee9792c",
+    "source_content_sha256": "f476f4114a24cc766118138f4f95e90fd8fe863d92d6c0ad21e4397d1b540fa5",
     "toolchain": {
       "emscripten": {
         "executable": ".deps/emsdk/upstream/emscripten/emcc.bat",

@@ -12,6 +12,24 @@ const bounds = await client.modelBounds({ model: stepBytes });
 console.log(bounds.bounds.size);
 ```
 
+Fast HLR can consume synthesized indexed meshes without first creating STEP:
+
+```ts
+const projection = await client.meshHlrProjection({
+  mesh: {
+    positions: [0, 0, 0, 10, 0, 0, 0, 10, 0],
+    indices: [0, 1, 2],
+    sourceFaces: [1],
+  },
+});
+console.log(projection.views[0].modes.detail.segments);
+```
+
+Use `modelHlrProjection({ model: stepBytes, options })` for STEP. Both methods
+return `geometry.hlr_projection.result.a0`; model projection defaults to
+`poly`, while mesh projection selects the only applicable Fast backend when
+the algorithm selectors are absent.
+
 The packed analytic Boolean operation uses `bigint` for every 64-bit identity
 and integer-nanometer value. The client owns packet encoding and strict result
 decoding:

@@ -2135,6 +2135,10 @@ DECLARATIONS: dict[str, dict[str, Any]] = {
             },
             {
                 "kind": "reference",
+                "target": "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrProjectionOptionsA0",
+            },
+            {
+                "kind": "reference",
                 "target": "Wavenumber.Geometer.Contracts.Common.PackedAttachmentProjectionA0",
             },
             {
@@ -3241,6 +3245,10 @@ DECLARATIONS: dict[str, dict[str, Any]] = {
             {
                 "kind": "reference",
                 "target": "Wavenumber.Geometer.Contracts.ModelBoundsA0.ModelBoundsResultA0",
+            },
+            {
+                "kind": "reference",
+                "target": "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrProjectionResultA0",
             },
             {
                 "kind": "reference",

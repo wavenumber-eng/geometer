@@ -21,9 +21,12 @@
   },
   "$defs": {
     "IpcRequestValueA0": {
-      "oneOf": [
+      "anyOf": [
         {
           "$ref": "urn:wavenumber:schema:geometer:geometry.model_bounds.options:a0"
+        },
+        {
+          "$ref": "urn:wavenumber:schema:geometer:geometry.hlr_projection.options:a0"
         },
         {
           "$ref": "#/$defs/PackedAttachmentProjectionA0"

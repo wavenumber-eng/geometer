@@ -131,6 +131,28 @@ if (!client.capabilities.operations.includes("geometry.model_bounds.a0")) {
   throw new Error("Generated client did not negotiate model_bounds.");
 }
 
+const meshHlr = await client.meshHlrProjection({
+  mesh: {
+    positions: [0, 0, 0, 10, 0, 0, 0, 10, 0],
+    indices: [0, 1, 2],
+    sourceFaces: [1],
+  },
+});
+if (
+  meshHlr.schema !== "geometry.hlr_projection.result.a0" ||
+  meshHlr.source.kind !== "indexed_mesh" ||
+  meshHlr.views.length === 0 ||
+  !/^[0-9a-f]{64}$/u.test(meshHlr.source.hash)
+) {
+  throw new Error(`Unexpected mesh HLR result ${JSON.stringify(meshHlr)}.`);
+}
+if (
+  !client.capabilities.operations.includes("geometry.model_hlr_projection.a0") ||
+  !client.capabilities.operations.includes("geometry.mesh_hlr_projection.a0")
+) {
+  throw new Error("Generated client did not negotiate the governed HLR operations.");
+}
+
 const analytic = await client.analyticPlanarBooleanBatch({
   jobs: [
     {

@@ -3,7 +3,7 @@
   "generation": "a0",
   "catalog_identity": "wn.geometer.contract_catalog",
   "catalog_generation": "a0",
-  "catalog_sha256": "0bcfe865420f1b109448ea8f14a07f49d8fe02846149a2ca6a43f4948316b008",
+  "catalog_sha256": "3d610e74fa16618a12806607c55be6823d6bf5e9144095ed281179aaeda1415d",
   "contracts": {
     "geometry.analytic_planar_boolean_batch.request.a0": "contracts/geometry-analytic-planar-boolean-batch-request-a0.html",
     "geometry.analytic_planar_boolean_batch.result.a0": "contracts/geometry-analytic-planar-boolean-batch-result-a0.html",
@@ -52,7 +52,9 @@
   },
   "operations": {
     "geometry.analytic_planar_boolean_batch.a0": "operations/geometry-analytic-planar-boolean-batch-a0.html",
+    "geometry.mesh_hlr_projection.a0": "operations/geometry-mesh-hlr-projection-a0.html",
     "geometry.model_bounds.a0": "operations/geometry-model-bounds-a0.html",
+    "geometry.model_hlr_projection.a0": "operations/geometry-model-hlr-projection-a0.html",
     "geometry.step_topology.analyze_recovery.a0": "operations/geometry-step-topology-analyze-recovery-a0.html",
     "geometry.step_topology.apply_hierarchy.a0": "operations/geometry-step-topology-apply-hierarchy-a0.html",
     "geometry.step_topology.apply_logical_groups.a0": "operations/geometry-step-topology-apply-logical-groups-a0.html",

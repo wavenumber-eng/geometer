@@ -8668,15 +8668,22 @@ bool write_StepTopologyAnalyzeRecoveryRequestA0(rapidjson::Writer<rapidjson::Str
 bool decode_IpcRequestValueA0(const rapidjson::Value& value, IpcRequestValueA0* out,
                               const std::string& path, ContractError* error)
 {
-    int matches = 0;
-    IpcRequestValueA0 selected{};
     {
         ModelBoundsOptionsA0 candidate{};
         ContractError ignored;
         if (decode_ModelBoundsOptionsA0(value, &candidate, path, &ignored))
         {
-            ++matches;
-            selected = IpcRequestValueA0(std::in_place_index<0>, std::move(candidate));
+            *out = IpcRequestValueA0(std::in_place_index<0>, std::move(candidate));
+            return true;
+        }
+    }
+    {
+        HlrProjectionOptionsA0 candidate{};
+        ContractError ignored;
+        if (decode_HlrProjectionOptionsA0(value, &candidate, path, &ignored))
+        {
+            *out = IpcRequestValueA0(std::in_place_index<1>, std::move(candidate));
+            return true;
         }
     }
     {
@@ -8684,8 +8691,8 @@ bool decode_IpcRequestValueA0(const rapidjson::Value& value, IpcRequestValueA0* 
         ContractError ignored;
         if (decode_PackedAttachmentProjectionA0(value, &candidate, path, &ignored))
         {
-            ++matches;
-            selected = IpcRequestValueA0(std::in_place_index<1>, std::move(candidate));
+            *out = IpcRequestValueA0(std::in_place_index<2>, std::move(candidate));
+            return true;
         }
     }
     {
@@ -8693,8 +8700,8 @@ bool decode_IpcRequestValueA0(const rapidjson::Value& value, IpcRequestValueA0* 
         ContractError ignored;
         if (decode_StepTopologyOpenRequestA0(value, &candidate, path, &ignored))
         {
-            ++matches;
-            selected = IpcRequestValueA0(std::in_place_index<2>, std::move(candidate));
+            *out = IpcRequestValueA0(std::in_place_index<3>, std::move(candidate));
+            return true;
         }
     }
     {
@@ -8702,8 +8709,8 @@ bool decode_IpcRequestValueA0(const rapidjson::Value& value, IpcRequestValueA0* 
         ContractError ignored;
         if (decode_StepTopologyCloseRequestA0(value, &candidate, path, &ignored))
         {
-            ++matches;
-            selected = IpcRequestValueA0(std::in_place_index<3>, std::move(candidate));
+            *out = IpcRequestValueA0(std::in_place_index<4>, std::move(candidate));
+            return true;
         }
     }
     {
@@ -8711,8 +8718,8 @@ bool decode_IpcRequestValueA0(const rapidjson::Value& value, IpcRequestValueA0* 
         ContractError ignored;
         if (decode_StepTopologyInspectRequestA0(value, &candidate, path, &ignored))
         {
-            ++matches;
-            selected = IpcRequestValueA0(std::in_place_index<4>, std::move(candidate));
+            *out = IpcRequestValueA0(std::in_place_index<5>, std::move(candidate));
+            return true;
         }
     }
     {
@@ -8720,8 +8727,8 @@ bool decode_IpcRequestValueA0(const rapidjson::Value& value, IpcRequestValueA0* 
         ContractError ignored;
         if (decode_StepTopologyRenderRequestA0(value, &candidate, path, &ignored))
         {
-            ++matches;
-            selected = IpcRequestValueA0(std::in_place_index<5>, std::move(candidate));
+            *out = IpcRequestValueA0(std::in_place_index<6>, std::move(candidate));
+            return true;
         }
     }
     {
@@ -8729,8 +8736,8 @@ bool decode_IpcRequestValueA0(const rapidjson::Value& value, IpcRequestValueA0* 
         ContractError ignored;
         if (decode_StepTopologyResolveHitRequestA0(value, &candidate, path, &ignored))
         {
-            ++matches;
-            selected = IpcRequestValueA0(std::in_place_index<6>, std::move(candidate));
+            *out = IpcRequestValueA0(std::in_place_index<7>, std::move(candidate));
+            return true;
         }
     }
     {
@@ -8738,8 +8745,8 @@ bool decode_IpcRequestValueA0(const rapidjson::Value& value, IpcRequestValueA0* 
         ContractError ignored;
         if (decode_StepTopologyApplyLogicalGroupsRequestA0(value, &candidate, path, &ignored))
         {
-            ++matches;
-            selected = IpcRequestValueA0(std::in_place_index<7>, std::move(candidate));
+            *out = IpcRequestValueA0(std::in_place_index<8>, std::move(candidate));
+            return true;
         }
     }
     {
@@ -8747,8 +8754,8 @@ bool decode_IpcRequestValueA0(const rapidjson::Value& value, IpcRequestValueA0* 
         ContractError ignored;
         if (decode_StepTopologyApplyMetadataProbesRequestA0(value, &candidate, path, &ignored))
         {
-            ++matches;
-            selected = IpcRequestValueA0(std::in_place_index<8>, std::move(candidate));
+            *out = IpcRequestValueA0(std::in_place_index<9>, std::move(candidate));
+            return true;
         }
     }
     {
@@ -8756,8 +8763,8 @@ bool decode_IpcRequestValueA0(const rapidjson::Value& value, IpcRequestValueA0* 
         ContractError ignored;
         if (decode_StepTopologyCheckpointEditJournalRequestA0(value, &candidate, path, &ignored))
         {
-            ++matches;
-            selected = IpcRequestValueA0(std::in_place_index<9>, std::move(candidate));
+            *out = IpcRequestValueA0(std::in_place_index<10>, std::move(candidate));
+            return true;
         }
     }
     {
@@ -8765,8 +8772,8 @@ bool decode_IpcRequestValueA0(const rapidjson::Value& value, IpcRequestValueA0* 
         ContractError ignored;
         if (decode_StepTopologyApplyHierarchyRequestA0(value, &candidate, path, &ignored))
         {
-            ++matches;
-            selected = IpcRequestValueA0(std::in_place_index<10>, std::move(candidate));
+            *out = IpcRequestValueA0(std::in_place_index<11>, std::move(candidate));
+            return true;
         }
     }
     {
@@ -8774,8 +8781,8 @@ bool decode_IpcRequestValueA0(const rapidjson::Value& value, IpcRequestValueA0* 
         ContractError ignored;
         if (decode_StepTopologySaveRequestA0(value, &candidate, path, &ignored))
         {
-            ++matches;
-            selected = IpcRequestValueA0(std::in_place_index<11>, std::move(candidate));
+            *out = IpcRequestValueA0(std::in_place_index<12>, std::move(candidate));
+            return true;
         }
     }
     {
@@ -8783,8 +8790,8 @@ bool decode_IpcRequestValueA0(const rapidjson::Value& value, IpcRequestValueA0* 
         ContractError ignored;
         if (decode_StepTopologyRestoreRequestA0(value, &candidate, path, &ignored))
         {
-            ++matches;
-            selected = IpcRequestValueA0(std::in_place_index<12>, std::move(candidate));
+            *out = IpcRequestValueA0(std::in_place_index<13>, std::move(candidate));
+            return true;
         }
     }
     {
@@ -8792,15 +8799,12 @@ bool decode_IpcRequestValueA0(const rapidjson::Value& value, IpcRequestValueA0* 
         ContractError ignored;
         if (decode_StepTopologyAnalyzeRecoveryRequestA0(value, &candidate, path, &ignored))
         {
-            ++matches;
-            selected = IpcRequestValueA0(std::in_place_index<13>, std::move(candidate));
+            *out = IpcRequestValueA0(std::in_place_index<14>, std::move(candidate));
+            return true;
         }
     }
-    if (matches != 1)
-        return fail(error, "geometer.contract.union_mismatch", path,
-                    "Expected exactly one union variant.");
-    *out = std::move(selected);
-    return true;
+    return fail(error, "geometer.contract.union_mismatch", path,
+                "Value does not match a union variant.");
 }
 
 bool write_IpcRequestValueA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
@@ -8811,31 +8815,33 @@ bool write_IpcRequestValueA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
     case 0:
         return write_ModelBoundsOptionsA0(writer, std::get<0>(value), error);
     case 1:
-        return write_PackedAttachmentProjectionA0(writer, std::get<1>(value), error);
+        return write_HlrProjectionOptionsA0(writer, std::get<1>(value), error);
     case 2:
-        return write_StepTopologyOpenRequestA0(writer, std::get<2>(value), error);
+        return write_PackedAttachmentProjectionA0(writer, std::get<2>(value), error);
     case 3:
-        return write_StepTopologyCloseRequestA0(writer, std::get<3>(value), error);
+        return write_StepTopologyOpenRequestA0(writer, std::get<3>(value), error);
     case 4:
-        return write_StepTopologyInspectRequestA0(writer, std::get<4>(value), error);
+        return write_StepTopologyCloseRequestA0(writer, std::get<4>(value), error);
     case 5:
-        return write_StepTopologyRenderRequestA0(writer, std::get<5>(value), error);
+        return write_StepTopologyInspectRequestA0(writer, std::get<5>(value), error);
     case 6:
-        return write_StepTopologyResolveHitRequestA0(writer, std::get<6>(value), error);
+        return write_StepTopologyRenderRequestA0(writer, std::get<6>(value), error);
     case 7:
-        return write_StepTopologyApplyLogicalGroupsRequestA0(writer, std::get<7>(value), error);
+        return write_StepTopologyResolveHitRequestA0(writer, std::get<7>(value), error);
     case 8:
-        return write_StepTopologyApplyMetadataProbesRequestA0(writer, std::get<8>(value), error);
+        return write_StepTopologyApplyLogicalGroupsRequestA0(writer, std::get<8>(value), error);
     case 9:
-        return write_StepTopologyCheckpointEditJournalRequestA0(writer, std::get<9>(value), error);
+        return write_StepTopologyApplyMetadataProbesRequestA0(writer, std::get<9>(value), error);
     case 10:
-        return write_StepTopologyApplyHierarchyRequestA0(writer, std::get<10>(value), error);
+        return write_StepTopologyCheckpointEditJournalRequestA0(writer, std::get<10>(value), error);
     case 11:
-        return write_StepTopologySaveRequestA0(writer, std::get<11>(value), error);
+        return write_StepTopologyApplyHierarchyRequestA0(writer, std::get<11>(value), error);
     case 12:
-        return write_StepTopologyRestoreRequestA0(writer, std::get<12>(value), error);
+        return write_StepTopologySaveRequestA0(writer, std::get<12>(value), error);
     case 13:
-        return write_StepTopologyAnalyzeRecoveryRequestA0(writer, std::get<13>(value), error);
+        return write_StepTopologyRestoreRequestA0(writer, std::get<13>(value), error);
+    case 14:
+        return write_StepTopologyAnalyzeRecoveryRequestA0(writer, std::get<14>(value), error);
     default:
         return fail(error, "geometer.contract.union_mismatch", "", "Unknown union variant.");
     }
@@ -14867,12 +14873,21 @@ bool decode_OperationResultValueA0(const rapidjson::Value& value, OperationResul
         }
     }
     {
+        HlrProjectionResultA0 candidate{};
+        ContractError ignored;
+        if (decode_HlrProjectionResultA0(value, &candidate, path, &ignored))
+        {
+            ++matches;
+            selected = OperationResultValueA0(std::in_place_index<1>, std::move(candidate));
+        }
+    }
+    {
         PackedAttachmentProjectionA0 candidate{};
         ContractError ignored;
         if (decode_PackedAttachmentProjectionA0(value, &candidate, path, &ignored))
         {
             ++matches;
-            selected = OperationResultValueA0(std::in_place_index<1>, std::move(candidate));
+            selected = OperationResultValueA0(std::in_place_index<2>, std::move(candidate));
         }
     }
     {
@@ -14881,7 +14896,7 @@ bool decode_OperationResultValueA0(const rapidjson::Value& value, OperationResul
         if (decode_StepTopologyOpenResultA0(value, &candidate, path, &ignored))
         {
             ++matches;
-            selected = OperationResultValueA0(std::in_place_index<2>, std::move(candidate));
+            selected = OperationResultValueA0(std::in_place_index<3>, std::move(candidate));
         }
     }
     {
@@ -14890,7 +14905,7 @@ bool decode_OperationResultValueA0(const rapidjson::Value& value, OperationResul
         if (decode_StepTopologyCloseResultA0(value, &candidate, path, &ignored))
         {
             ++matches;
-            selected = OperationResultValueA0(std::in_place_index<3>, std::move(candidate));
+            selected = OperationResultValueA0(std::in_place_index<4>, std::move(candidate));
         }
     }
     {
@@ -14899,7 +14914,7 @@ bool decode_OperationResultValueA0(const rapidjson::Value& value, OperationResul
         if (decode_StepTopologyInspectResultA0(value, &candidate, path, &ignored))
         {
             ++matches;
-            selected = OperationResultValueA0(std::in_place_index<4>, std::move(candidate));
+            selected = OperationResultValueA0(std::in_place_index<5>, std::move(candidate));
         }
     }
     {
@@ -14908,7 +14923,7 @@ bool decode_OperationResultValueA0(const rapidjson::Value& value, OperationResul
         if (decode_StepTopologyRenderResultA0(value, &candidate, path, &ignored))
         {
             ++matches;
-            selected = OperationResultValueA0(std::in_place_index<5>, std::move(candidate));
+            selected = OperationResultValueA0(std::in_place_index<6>, std::move(candidate));
         }
     }
     {
@@ -14917,7 +14932,7 @@ bool decode_OperationResultValueA0(const rapidjson::Value& value, OperationResul
         if (decode_StepTopologyResolveHitResultA0(value, &candidate, path, &ignored))
         {
             ++matches;
-            selected = OperationResultValueA0(std::in_place_index<6>, std::move(candidate));
+            selected = OperationResultValueA0(std::in_place_index<7>, std::move(candidate));
         }
     }
     {
@@ -14926,7 +14941,7 @@ bool decode_OperationResultValueA0(const rapidjson::Value& value, OperationResul
         if (decode_StepTopologyApplyLogicalGroupsResultA0(value, &candidate, path, &ignored))
         {
             ++matches;
-            selected = OperationResultValueA0(std::in_place_index<7>, std::move(candidate));
+            selected = OperationResultValueA0(std::in_place_index<8>, std::move(candidate));
         }
     }
     {
@@ -14935,7 +14950,7 @@ bool decode_OperationResultValueA0(const rapidjson::Value& value, OperationResul
         if (decode_StepTopologyApplyMetadataProbesResultA0(value, &candidate, path, &ignored))
         {
             ++matches;
-            selected = OperationResultValueA0(std::in_place_index<8>, std::move(candidate));
+            selected = OperationResultValueA0(std::in_place_index<9>, std::move(candidate));
         }
     }
     {
@@ -14944,7 +14959,7 @@ bool decode_OperationResultValueA0(const rapidjson::Value& value, OperationResul
         if (decode_StepTopologyCheckpointEditJournalResultA0(value, &candidate, path, &ignored))
         {
             ++matches;
-            selected = OperationResultValueA0(std::in_place_index<9>, std::move(candidate));
+            selected = OperationResultValueA0(std::in_place_index<10>, std::move(candidate));
         }
     }
     {
@@ -14953,7 +14968,7 @@ bool decode_OperationResultValueA0(const rapidjson::Value& value, OperationResul
         if (decode_StepTopologyApplyHierarchyResultA0(value, &candidate, path, &ignored))
         {
             ++matches;
-            selected = OperationResultValueA0(std::in_place_index<10>, std::move(candidate));
+            selected = OperationResultValueA0(std::in_place_index<11>, std::move(candidate));
         }
     }
     {
@@ -14962,7 +14977,7 @@ bool decode_OperationResultValueA0(const rapidjson::Value& value, OperationResul
         if (decode_StepTopologySaveResultA0(value, &candidate, path, &ignored))
         {
             ++matches;
-            selected = OperationResultValueA0(std::in_place_index<11>, std::move(candidate));
+            selected = OperationResultValueA0(std::in_place_index<12>, std::move(candidate));
         }
     }
     {
@@ -14971,7 +14986,7 @@ bool decode_OperationResultValueA0(const rapidjson::Value& value, OperationResul
         if (decode_StepTopologyRestoreResultA0(value, &candidate, path, &ignored))
         {
             ++matches;
-            selected = OperationResultValueA0(std::in_place_index<12>, std::move(candidate));
+            selected = OperationResultValueA0(std::in_place_index<13>, std::move(candidate));
         }
     }
     {
@@ -14980,7 +14995,7 @@ bool decode_OperationResultValueA0(const rapidjson::Value& value, OperationResul
         if (decode_StepTopologyAnalyzeRecoveryResultA0(value, &candidate, path, &ignored))
         {
             ++matches;
-            selected = OperationResultValueA0(std::in_place_index<13>, std::move(candidate));
+            selected = OperationResultValueA0(std::in_place_index<14>, std::move(candidate));
         }
     }
     if (matches != 1)
@@ -14998,31 +15013,33 @@ bool write_OperationResultValueA0(rapidjson::Writer<rapidjson::StringBuffer>& wr
     case 0:
         return write_ModelBoundsResultA0(writer, std::get<0>(value), error);
     case 1:
-        return write_PackedAttachmentProjectionA0(writer, std::get<1>(value), error);
+        return write_HlrProjectionResultA0(writer, std::get<1>(value), error);
     case 2:
-        return write_StepTopologyOpenResultA0(writer, std::get<2>(value), error);
+        return write_PackedAttachmentProjectionA0(writer, std::get<2>(value), error);
     case 3:
-        return write_StepTopologyCloseResultA0(writer, std::get<3>(value), error);
+        return write_StepTopologyOpenResultA0(writer, std::get<3>(value), error);
     case 4:
-        return write_StepTopologyInspectResultA0(writer, std::get<4>(value), error);
+        return write_StepTopologyCloseResultA0(writer, std::get<4>(value), error);
     case 5:
-        return write_StepTopologyRenderResultA0(writer, std::get<5>(value), error);
+        return write_StepTopologyInspectResultA0(writer, std::get<5>(value), error);
     case 6:
-        return write_StepTopologyResolveHitResultA0(writer, std::get<6>(value), error);
+        return write_StepTopologyRenderResultA0(writer, std::get<6>(value), error);
     case 7:
-        return write_StepTopologyApplyLogicalGroupsResultA0(writer, std::get<7>(value), error);
+        return write_StepTopologyResolveHitResultA0(writer, std::get<7>(value), error);
     case 8:
-        return write_StepTopologyApplyMetadataProbesResultA0(writer, std::get<8>(value), error);
+        return write_StepTopologyApplyLogicalGroupsResultA0(writer, std::get<8>(value), error);
     case 9:
-        return write_StepTopologyCheckpointEditJournalResultA0(writer, std::get<9>(value), error);
+        return write_StepTopologyApplyMetadataProbesResultA0(writer, std::get<9>(value), error);
     case 10:
-        return write_StepTopologyApplyHierarchyResultA0(writer, std::get<10>(value), error);
+        return write_StepTopologyCheckpointEditJournalResultA0(writer, std::get<10>(value), error);
     case 11:
-        return write_StepTopologySaveResultA0(writer, std::get<11>(value), error);
+        return write_StepTopologyApplyHierarchyResultA0(writer, std::get<11>(value), error);
     case 12:
-        return write_StepTopologyRestoreResultA0(writer, std::get<12>(value), error);
+        return write_StepTopologySaveResultA0(writer, std::get<12>(value), error);
     case 13:
-        return write_StepTopologyAnalyzeRecoveryResultA0(writer, std::get<13>(value), error);
+        return write_StepTopologyRestoreResultA0(writer, std::get<13>(value), error);
+    case 14:
+        return write_StepTopologyAnalyzeRecoveryResultA0(writer, std::get<14>(value), error);
     default:
         return fail(error, "geometer.contract.union_mismatch", "", "Unknown union variant.");
     }

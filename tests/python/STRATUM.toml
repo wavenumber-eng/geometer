@@ -18,6 +18,7 @@ objectives = [
     "Verify the contract promotion manifest remains aligned with implemented interfaces.",
     "Require native runtime distributions to exclude build-only static libraries.",
     "Verify the fast-HLR baseline harness records reproducible statistics over the governed fixture subset.",
+    "Verify canonical indexed-mesh packets and the typed Fast HLR IPC path.",
 ]
 
 [[subtests]]
@@ -144,4 +145,11 @@ id = "PY_018"
 file = "test_fast_hlr_benchmark.py"
 name = "Fast HLR Baseline Harness"
 description = "Checks governed fixture selection, native/WASM comparison records, canonical geometry digests, and reproducible nearest-rank timing summaries for fast-HLR evidence."
+test_case_type = "unit"
+
+[[subtests]]
+id = "PY_019"
+file = "test_indexed_mesh_packet_a0.py"
+name = "Indexed Mesh Packet A0"
+description = "Checks canonical indexed-triangle-mesh encoding, strict decoding, and invalid mesh rejection."
 test_case_type = "unit"

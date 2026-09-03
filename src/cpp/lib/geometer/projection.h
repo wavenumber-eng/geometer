@@ -10,6 +10,8 @@
 namespace geometer
 {
 
+struct FastHlrIndexedMesh;
+
 enum class ProjectionCurveMode
 {
     NativeArcs,
@@ -190,6 +192,10 @@ struct HlrProjectionResult
 int step_hlr_projection_from_bytes(const unsigned char* step_data, std::size_t step_size,
                                    const HlrProjectionOptions& options, HlrProjectionResult* result,
                                    Status* status = nullptr);
+
+/** Fast HLR projection for synthesized millimeter-space indexed meshes. */
+int mesh_hlr_projection(const FastHlrIndexedMesh& mesh, const HlrProjectionOptions& options,
+                        HlrProjectionResult* result, Status* status = nullptr);
 
 int write_hlr_projection_json(const HlrProjectionResult& result, std::string* json,
                               Status* status = nullptr);

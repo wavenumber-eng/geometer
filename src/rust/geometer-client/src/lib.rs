@@ -3,6 +3,7 @@
 pub mod analytic_packet_a0;
 pub mod client;
 pub mod generated;
+pub mod indexed_mesh_packet_a0;
 pub mod ipc;
 mod operation_validation;
 mod session_validation;
@@ -13,10 +14,14 @@ pub use analytic_packet_a0::{
     encode_analytic_planar_boolean_batch_request_a0_packet,
 };
 pub use client::{
-    GeometerClient, GeometerClientError, ModelBoundsRequest, OperationCall, OperationResponse,
-    Welcome,
+    GeometerClient, GeometerClientError, MeshHlrProjectionRequest, ModelBoundsRequest,
+    ModelHlrProjectionRequest, OperationCall, OperationResponse, Welcome,
 };
 pub use generated::contracts;
 pub use generated::contracts::NORMALIZED_CATALOG_SHA256;
+pub use indexed_mesh_packet_a0::{
+    INDEXED_TRIANGLE_MESH_MEDIA_TYPE, INDEXED_TRIANGLE_MESH_PACKET_FORMAT, IndexedMeshPacketError,
+    IndexedTriangleMeshA0, encode_indexed_triangle_mesh_a0_packet,
+};
 
 pub const IPC_IDENTITY: &str = "a0";

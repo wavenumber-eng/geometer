@@ -2,6 +2,7 @@
 #include "geometer/analytic_result_packet_records.h"
 #include "geometer/c_api.h"
 #include "geometer/generated/contracts/contracts.h"
+#include "geometer/indexed_mesh_packet.h"
 #include "geometer/operation_transport.h"
 #include "geometer/sha256.h"
 
@@ -726,8 +727,11 @@ void generic_c_abi_catalog_and_typed_failures()
     catalog_document.Parse(catalog_text.data(), catalog_text.size());
     require(!catalog_document.HasParseError() && catalog_document.IsObject(),
             "generated runtime catalog should be valid JSON");
-    require(catalog_document["operations"].Size() == 2U,
+    require(catalog_document["operations"].Size() == 4U,
             "runtime catalog should contain every generated operation exactly once");
+    require(catalog_text.find("geometry.model_hlr_projection.a0") != std::string::npos &&
+                catalog_text.find("geometry.mesh_hlr_projection.a0") != std::string::npos,
+            "portable catalog should advertise model and indexed-mesh HLR");
     require(catalog_text.find("geometry.step_topology.") == std::string::npos,
             "portable C ABI catalog must not advertise native topology research");
     require(catalog_text.find("geometry.analytic_planar_boolean_batch.a0") != std::string::npos &&
@@ -745,7 +749,7 @@ void generic_c_abi_catalog_and_typed_failures()
     native_catalog_document.Parse(native_catalog_text.data(), native_catalog_text.size());
     require(!native_catalog_document.HasParseError() && native_catalog_document.IsObject(),
             "generated native runtime catalog should be valid JSON");
-    require(native_catalog_document["operations"].Size() == 11U,
+    require(native_catalog_document["operations"].Size() == 13U,
             "native catalog should add the nine bounded topology research operations");
     require(native_catalog_text.find("geometry.step_topology.open.a0") != std::string::npos &&
                 native_catalog_text.find("geometry.step_topology.inspect.a0") !=
@@ -894,6 +898,59 @@ void generic_c_abi_executes_model_bounds()
     geometer_operation_result_free(result);
 }
 
+void generic_c_abi_executes_mesh_hlr()
+{
+    geometer::FastHlrIndexedMesh mesh;
+    mesh.vertices = {{0.0, 0.0, 0.0}, {2.0, 0.0, 0.0}, {0.0, 1.0, 0.0}};
+    mesh.triangles = {{{0, 1, 2}, 4U}};
+    const auto packet = geometer::encode_indexed_mesh_packet(mesh);
+    require(packet.error == geometer::IndexedMeshPacketError::none && packet.value,
+            "mesh HLR test packet should encode");
+
+    const std::string operation = "geometry.mesh_hlr_projection.a0";
+    const std::string request = "{}";
+    const std::string name = "mesh";
+    const std::string media_type = "application/vnd.wavenumber.geometer.indexed-triangle-mesh";
+    GeometerAttachmentView attachment{};
+    attachment.struct_size = sizeof(GeometerAttachmentView);
+    attachment.name = name.data();
+    attachment.name_size = static_cast<std::uint32_t>(name.size());
+    attachment.media_type = media_type.data();
+    attachment.media_type_size = static_cast<std::uint32_t>(media_type.size());
+    attachment.data = packet.value->data();
+    attachment.data_size = static_cast<std::uint32_t>(packet.value->size());
+
+    GeometerOperationResult* result = nullptr;
+    char* error = nullptr;
+    const int code = geometer_operation_execute(
+        operation.data(), static_cast<std::uint32_t>(operation.size()),
+        reinterpret_cast<const unsigned char*>(request.data()),
+        static_cast<std::uint32_t>(request.size()), &attachment, 1U, &result, &error);
+    require(code == GEOMETER_OPERATION_ABI_OK && result != nullptr && error == nullptr,
+            "mesh HLR generic invocation should succeed");
+    const std::string json = result_json(result);
+    require(json.find("\"ok\":true") != std::string::npos &&
+                json.find("\"schema\":\"geometry.hlr_projection.result.a0\"") !=
+                    std::string::npos &&
+                json.find("\"kind\":\"indexed_mesh\"") != std::string::npos &&
+                json.find("\"views\":[") != std::string::npos,
+            "mesh HLR should return its canonical typed projection result");
+    require(geometer_operation_result_attachment_count(result) == 0U,
+            "mesh HLR has no output attachments");
+    geometer_operation_result_free(result);
+
+    const std::string unsupported = "{\"projection_algorithm\":\"exact\"}";
+    result = nullptr;
+    require(geometer_operation_execute(operation.data(),
+                                       static_cast<std::uint32_t>(operation.size()),
+                                       reinterpret_cast<const unsigned char*>(unsupported.data()),
+                                       static_cast<std::uint32_t>(unsupported.size()), &attachment,
+                                       1U, &result, &error) == GEOMETER_OPERATION_ABI_OK &&
+                result != nullptr && result_json(result).find("\"ok\":false") != std::string::npos,
+            "mesh HLR should reject an unavailable exact backend as a typed operation failure");
+    geometer_operation_result_free(result);
+}
+
 void generic_c_abi_executes_packed_analytic_batch()
 {
     geometer::AnalyticRequestPacketRecords records;
@@ -993,6 +1050,7 @@ int main()
         maximum_native_inspection_page_fits_response_limit();
         generic_c_abi_catalog_and_typed_failures();
         generic_c_abi_executes_model_bounds();
+        generic_c_abi_executes_mesh_hlr();
         generic_c_abi_executes_packed_analytic_batch();
     }
     catch (const std::exception& error)

@@ -25107,6 +25107,10 @@ var declarations = {
       },
       {
         kind: "reference",
+        target: "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrProjectionOptionsA0"
+      },
+      {
+        kind: "reference",
         target: "Wavenumber.Geometer.Contracts.Common.PackedAttachmentProjectionA0"
       },
       {
@@ -25791,6 +25795,10 @@ var declarations = {
       {
         kind: "reference",
         target: "Wavenumber.Geometer.Contracts.ModelBoundsA0.ModelBoundsResultA0"
+      },
+      {
+        kind: "reference",
+        target: "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrProjectionResultA0"
       },
       {
         kind: "reference",
@@ -29330,7 +29338,7 @@ function decodeOperationOutcomeA0Json(data) {
 }
 
 // src/ts/geometer/generated/operations.ts
-var NORMALIZED_CONTRACT_CATALOG_SHA256 = "0bcfe865420f1b109448ea8f14a07f49d8fe02846149a2ca6a43f4948316b008";
+var NORMALIZED_CONTRACT_CATALOG_SHA256 = "3d610e74fa16618a12806607c55be6823d6bf5e9144095ed281179aaeda1415d";
 var operationCatalog = {
   "geometry.analytic_planar_boolean_batch.a0": {
     identity: "geometry.analytic_planar_boolean_batch.a0",
@@ -29367,6 +29375,24 @@ var operationCatalog = {
     },
     documentation: "Execute independent ordered analytic planar Boolean jobs through packed attachments."
   },
+  "geometry.mesh_hlr_projection.a0": {
+    identity: "geometry.mesh_hlr_projection.a0",
+    requestContract: "geometry.hlr_projection.options.a0",
+    resultContract: "geometry.hlr_projection.result.a0",
+    runtimeAvailable: true,
+    nativeRuntimeAvailable: false,
+    runtimeDispatch: "logical_dto",
+    inputAttachments: [
+      {
+        name: "mesh",
+        required: true,
+        media_types: ["application/vnd.wavenumber.geometer.indexed-triangle-mesh"],
+        max_bytes: 268435456
+      }
+    ],
+    outputAttachments: [],
+    documentation: "Project a synthesized indexed triangle mesh through the Fast HLR backend."
+  },
   "geometry.model_bounds.a0": {
     identity: "geometry.model_bounds.a0",
     requestContract: "geometry.model_bounds.options.a0",
@@ -29384,6 +29410,24 @@ var operationCatalog = {
     ],
     outputAttachments: [],
     documentation: "Compute axis-aligned model bounds from the required raw model attachment."
+  },
+  "geometry.model_hlr_projection.a0": {
+    identity: "geometry.model_hlr_projection.a0",
+    requestContract: "geometry.hlr_projection.options.a0",
+    resultContract: "geometry.hlr_projection.result.a0",
+    runtimeAvailable: true,
+    nativeRuntimeAvailable: false,
+    runtimeDispatch: "logical_dto",
+    inputAttachments: [
+      {
+        name: "model",
+        required: true,
+        media_types: ["application/step", "model/step"],
+        max_bytes: 268435456
+      }
+    ],
+    outputAttachments: [],
+    documentation: "Project STEP model bytes through the selected polygonal, exact, or Fast HLR backend."
   },
   "geometry.step_topology.analyze_recovery.a0": {
     identity: "geometry.step_topology.analyze_recovery.a0",
@@ -29573,9 +29617,109 @@ var operationCatalog = {
   }
 };
 
+// src/ts/geometer/indexed-mesh-packet-a0.ts
+var INDEXED_TRIANGLE_MESH_MEDIA_TYPE = "application/vnd.wavenumber.geometer.indexed-triangle-mesh";
+var MAGIC = new TextEncoder().encode("GMIMSH01");
+var HEADER_BYTES = 64;
+var HAS_SOURCE_FACES = 1;
+var MAX_PACKET_BYTES = 268435456;
+var MAX_VERTICES = 2e6;
+var MAX_TRIANGLES = 2e6;
+var UNSPECIFIED_SOURCE_FACE = 4294967295;
+var IndexedTriangleMeshPacketError = class extends Error {
+  constructor(message) {
+    super(message);
+    this.name = "IndexedTriangleMeshPacketError";
+  }
+};
+function encodeIndexedTriangleMeshA0Packet(mesh) {
+  if (mesh.positions.length < 9 || mesh.positions.length % 3 !== 0) {
+    fail2("positions must contain at least three complete xyz vertices.");
+  }
+  if (mesh.indices.length < 3 || mesh.indices.length % 3 !== 0) {
+    fail2("indices must contain at least one complete triangle.");
+  }
+  const vertexCount = mesh.positions.length / 3;
+  const triangleCount = mesh.indices.length / 3;
+  if (vertexCount > MAX_VERTICES || triangleCount > MAX_TRIANGLES) {
+    fail2("indexed mesh exceeds its governed vertex or triangle limit.");
+  }
+  if (mesh.sourceFaces !== void 0 && mesh.sourceFaces.length !== triangleCount) {
+    fail2("sourceFaces must contain exactly one value per triangle.");
+  }
+  let hasSourceFaces = false;
+  if (mesh.sourceFaces !== void 0) {
+    for (let index = 0; index < triangleCount; index += 1) {
+      const sourceFace = mesh.sourceFaces[index];
+      assertUint32(sourceFace, "source face");
+      hasSourceFaces ||= sourceFace !== UNSPECIFIED_SOURCE_FACE;
+    }
+  }
+  const positionsOffset = HEADER_BYTES;
+  const trianglesOffset = positionsOffset + vertexCount * 24;
+  const trianglesEnd = trianglesOffset + triangleCount * 12;
+  const sourceFacesOffset = hasSourceFaces ? alignEight(trianglesEnd) : 0;
+  const payloadEnd = hasSourceFaces ? sourceFacesOffset + triangleCount * 4 : trianglesEnd;
+  const packetBytes = alignEight(payloadEnd);
+  if (packetBytes > MAX_PACKET_BYTES) fail2("indexed-mesh packet exceeds 268 MiB.");
+  const output = new Uint8Array(packetBytes);
+  output.set(MAGIC, 0);
+  const view = new DataView(output.buffer);
+  view.setUint16(8, 1, true);
+  view.setUint16(10, HEADER_BYTES, true);
+  view.setUint32(12, hasSourceFaces ? HAS_SOURCE_FACES : 0, true);
+  view.setBigUint64(16, BigInt(packetBytes), true);
+  view.setUint32(24, vertexCount, true);
+  view.setUint32(28, triangleCount, true);
+  view.setBigUint64(32, BigInt(positionsOffset), true);
+  view.setBigUint64(40, BigInt(trianglesOffset), true);
+  view.setBigUint64(48, BigInt(sourceFacesOffset), true);
+  for (let index = 0; index < mesh.positions.length; index += 1) {
+    const coordinate = mesh.positions[index];
+    if (coordinate === void 0 || !Number.isFinite(coordinate)) {
+      fail2("positions must contain only finite numbers.");
+    }
+    view.setFloat64(positionsOffset + index * 8, coordinate, true);
+  }
+  for (let index = 0; index < mesh.indices.length; index += 1) {
+    const vertex2 = mesh.indices[index];
+    assertUint32(vertex2, "triangle index");
+    if (vertex2 >= vertexCount) fail2("triangle index is outside the vertex table.");
+    view.setUint32(trianglesOffset + index * 4, vertex2, true);
+  }
+  for (let triangle = 0; triangle < triangleCount; triangle += 1) {
+    const begin = triangle * 3;
+    const first = mesh.indices[begin];
+    const second = mesh.indices[begin + 1];
+    const third = mesh.indices[begin + 2];
+    if (first === second || second === third || third === first) {
+      fail2("each triangle must reference three distinct vertex indices.");
+    }
+    if (hasSourceFaces) {
+      view.setUint32(
+        sourceFacesOffset + triangle * 4,
+        mesh.sourceFaces?.[triangle] ?? UNSPECIFIED_SOURCE_FACE,
+        true
+      );
+    }
+  }
+  return output;
+}
+function alignEight(value) {
+  return Math.ceil(value / 8) * 8;
+}
+function assertUint32(value, label) {
+  if (value === void 0 || !Number.isInteger(value) || value < 0 || value > 4294967295) {
+    fail2(`${label} must be an unsigned 32-bit integer.`);
+  }
+}
+function fail2(message) {
+  throw new IndexedTriangleMeshPacketError(message);
+}
+
 // src/ts/geometer/ipc-a0.ts
-var MAGIC = new Uint8Array([71, 77, 73, 80, 67, 65, 48, 49]);
-var HEADER_BYTES = 48;
+var MAGIC2 = new Uint8Array([71, 77, 73, 80, 67, 65, 48, 49]);
+var HEADER_BYTES2 = 48;
 var MAX_JSON_BYTES = 8 * 1024 * 1024;
 var MAX_ATTACHMENT_COUNT = 16;
 var MAX_ATTACHMENT_TEXT_BYTES = 128;
@@ -29607,7 +29751,7 @@ function validateIpcRequestOperationPair(envelope) {
     envelope.request,
     declaration.runtimeDispatch,
     projection,
-    "geometry.model_bounds.options.a0"
+    declaration.runtimeDispatch === "logical_dto" ? declaration.requestContract : void 0
   );
   if (contract !== declaration.requestContract) {
     throw new GeometerIpcProtocolError(
@@ -29663,14 +29807,14 @@ function encodeGeometerIpcFrame(frame) {
     );
     encodedAttachments.push({ data: attachment.data, mediaType, name });
   }
-  const frameBytes = checkedAdd(HEADER_BYTES + json.byteLength, attachmentBytes, "IPC frame");
+  const frameBytes = checkedAdd(HEADER_BYTES2 + json.byteLength, attachmentBytes, "IPC frame");
   if (frameBytes > MAX_FRAME_BYTES) {
     throw new GeometerIpcProtocolError("IPC frame exceeds the A0 limit.");
   }
   const output = new Uint8Array(frameBytes);
-  output.set(MAGIC, 0);
+  output.set(MAGIC2, 0);
   const view = new DataView(output.buffer);
-  view.setUint16(8, HEADER_BYTES, true);
+  view.setUint16(8, HEADER_BYTES2, true);
   view.setUint16(10, 0, true);
   view.setUint16(12, frame.kind, true);
   view.setUint16(14, 0, true);
@@ -29678,8 +29822,8 @@ function encodeGeometerIpcFrame(frame) {
   view.setUint32(24, json.byteLength, true);
   view.setUint32(28, encodedAttachments.length, true);
   view.setBigUint64(32, BigInt(attachmentBytes), true);
-  output.set(json, HEADER_BYTES);
-  let offset = HEADER_BYTES + json.byteLength;
+  output.set(json, HEADER_BYTES2);
+  let offset = HEADER_BYTES2 + json.byteLength;
   for (const attachment of encodedAttachments) {
     view.setUint16(offset, attachment.name.byteLength, true);
     view.setUint16(offset + 2, attachment.mediaType.byteLength, true);
@@ -29721,8 +29865,8 @@ var GeometerIpcFrameDecoder = class {
   /** Decodes at most one frame so negotiated limits can change between coalesced frames. */
   pushOne(chunk) {
     if (chunk !== void 0) this.pending.push(chunk);
-    if (this.pending.byteLength < HEADER_BYTES) return void 0;
-    const header = decodeFixedHeader(this.pending.peek(HEADER_BYTES), this.limits);
+    if (this.pending.byteLength < HEADER_BYTES2) return void 0;
+    const header = decodeFixedHeader(this.pending.peek(HEADER_BYTES2), this.limits);
     if (this.pending.byteLength < header.frameBytes) return void 0;
     return decodeQueuedFrame(this.pending, header, this.limits);
   }
@@ -29747,11 +29891,11 @@ var GeometerIpcFrameDecoder = class {
   }
 };
 function decodeFixedHeader(bytes, limits) {
-  for (let index = 0; index < MAGIC.byteLength; index += 1) {
-    if (bytes[index] !== MAGIC[index]) throw new GeometerIpcProtocolError("Invalid IPC magic.");
+  for (let index = 0; index < MAGIC2.byteLength; index += 1) {
+    if (bytes[index] !== MAGIC2[index]) throw new GeometerIpcProtocolError("Invalid IPC magic.");
   }
-  const view = new DataView(bytes.buffer, bytes.byteOffset, HEADER_BYTES);
-  if (view.getUint16(8, true) !== HEADER_BYTES || view.getUint16(10, true) !== 0 || view.getUint16(14, true) !== 0 || view.getUint32(40, true) !== 0 || view.getUint32(44, true) !== 0) {
+  const view = new DataView(bytes.buffer, bytes.byteOffset, HEADER_BYTES2);
+  if (view.getUint16(8, true) !== HEADER_BYTES2 || view.getUint16(10, true) !== 0 || view.getUint16(14, true) !== 0 || view.getUint32(40, true) !== 0 || view.getUint32(44, true) !== 0) {
     throw new GeometerIpcProtocolError("Unsupported IPC A0 header fields.");
   }
   const jsonBytes = view.getUint32(24, true);
@@ -29771,14 +29915,14 @@ function decodeFixedHeader(bytes, limits) {
   if (attachmentCount === 0 && attachmentBytes !== 0 || attachmentBytes < attachmentCount * 18) {
     throw new GeometerIpcProtocolError("IPC attachment count and section size are inconsistent.");
   }
-  const frameBytes = checkedAdd(HEADER_BYTES + jsonBytes, attachmentBytes, "IPC frame");
+  const frameBytes = checkedAdd(HEADER_BYTES2 + jsonBytes, attachmentBytes, "IPC frame");
   if (frameBytes > limits.frameBytes) {
     throw new GeometerIpcProtocolError("IPC frame exceeds the A0 limit.");
   }
   return { attachmentBytes, attachmentCount, frameBytes, jsonBytes, kind, requestId };
 }
 function decodeQueuedFrame(queue, header, limits) {
-  queue.read(HEADER_BYTES);
+  queue.read(HEADER_BYTES2);
   let json;
   try {
     json = textDecoder.decode(queue.read(header.jsonBytes));
@@ -30055,6 +30199,41 @@ var GeometerIpcClientA0 = class _GeometerIpcClientA0 {
   }
   async execute(operation, request, attachments = []) {
     return this.start(operation, request, attachments).response;
+  }
+  async modelHlrProjection(request) {
+    return this.hlrProjection(
+      "geometry.model_hlr_projection.a0",
+      "model",
+      request.mediaType ?? "application/step",
+      request.model,
+      request.options
+    );
+  }
+  async meshHlrProjection(request) {
+    const packet = request.mesh instanceof Uint8Array ? request.mesh : encodeIndexedTriangleMeshA0Packet(request.mesh);
+    return this.hlrProjection(
+      "geometry.mesh_hlr_projection.a0",
+      "mesh",
+      INDEXED_TRIANGLE_MESH_MEDIA_TYPE,
+      packet,
+      request.options
+    );
+  }
+  async hlrProjection(operation, attachmentName, mediaType, data, options = {}) {
+    const response = await this.execute(
+      operation,
+      { ...options, output_detail: options.output_detail ?? true },
+      [{ data, mediaType, name: attachmentName }]
+    );
+    if (!response.outcome.ok) {
+      throw new GeometerIpcClientError(
+        response.outcome.diagnostics.map((item) => item.message).join("; ") || `${operation} failed.`
+      );
+    }
+    if (response.outcome.operation !== operation || !("views" in response.outcome.result) || response.attachments.length !== 0) {
+      throw new GeometerIpcProtocolError(`${operation} returned an incompatible result.`);
+    }
+    return response.outcome.result;
   }
   async close(reason) {
     if (this.state === "closed") {
@@ -30662,13 +30841,13 @@ var StepTopologySemanticError = class extends Error {
 };
 function validateStepTopologySession(session, expected) {
   if (session.session_handle !== expected.sessionHandle || session.generation !== expected.generation) {
-    fail2("geometer.step_topology.stale_session", "Session handle or generation is stale.");
+    fail3("geometer.step_topology.stale_session", "Session handle or generation is stale.");
   }
 }
 function validateStepTopologyInspection(result) {
   const accumulator = new StepTopologyInspectionAccumulator();
   if (!accumulator.addPage(result)) {
-    fail2(
+    fail3(
       "geometer.step_topology.incomplete_snapshot",
       "Paged inspection requires one accumulator for every page through the terminal page."
     );
@@ -30692,7 +30871,7 @@ var StepTopologyInspectionAccumulator = class {
   complete = false;
   addPage(result) {
     if (this.complete) {
-      fail2("geometer.step_topology.page_after_completion", "Inspection is already complete.");
+      fail3("geometer.step_topology.page_after_completion", "Inspection is already complete.");
     }
     if (!this.session) {
       this.session = {
@@ -30703,7 +30882,7 @@ var StepTopologyInspectionAccumulator = class {
     } else {
       validateStepTopologySession(result.session, this.session);
       if (!sameCounts(result.counts, this.counts)) {
-        fail2("geometer.step_topology.counts_changed", "Inspection counts changed between pages.");
+        fail3("geometer.step_topology.counts_changed", "Inspection counts changed between pages.");
       }
     }
     const pageRecordCount = result.page.definitions.length + result.page.occurrences.length + result.page.bodies.length + result.page.shells.length + result.page.faces.length + result.page.memberships.length;
@@ -30738,7 +30917,7 @@ var StepTopologyInspectionAccumulator = class {
     for (const membership of result.page.memberships) {
       const key = `${membership.kind}:${membership.owner_handle}:${membership.member_handle}`;
       if (this.memberships.has(key)) {
-        fail2(
+        fail3(
           "geometer.step_topology.duplicate_membership",
           `Duplicate topology membership ${key}.`
         );
@@ -30748,13 +30927,13 @@ var StepTopologyInspectionAccumulator = class {
     this.validateAccumulatedCounts();
     if (result.page.next_cursor !== void 0) {
       if (pageRecordCount === 0) {
-        fail2(
+        fail3(
           "geometer.step_topology.empty_continuation",
           "A nonterminal inspection page must make target-record progress."
         );
       }
       if (this.cursors.has(result.page.next_cursor)) {
-        fail2(
+        fail3(
           "geometer.step_topology.repeated_cursor",
           "Inspection repeated a continuation cursor."
         );
@@ -30768,14 +30947,14 @@ var StepTopologyInspectionAccumulator = class {
   }
   add(handle) {
     if (this.handles.has(handle)) {
-      fail2("geometer.step_topology.duplicate_target", `Duplicate topology handle ${handle}.`);
+      fail3("geometer.step_topology.duplicate_target", `Duplicate topology handle ${handle}.`);
     }
     this.handles.add(handle);
   }
   validateCompleteSnapshot() {
     const counts = this.counts;
     if (this.definitions.size !== counts.definitions || this.rootOccurrenceCount !== counts.root_occurrences || this.componentOccurrenceCount !== counts.component_occurrences || this.bodies.size !== counts.bodies || this.shells.size !== counts.shells || this.faces.size !== counts.faces || this.memberships.size !== counts.memberships) {
-      fail2("geometer.step_topology.incomplete_snapshot", "Terminal page does not satisfy counts.");
+      fail3("geometer.step_topology.incomplete_snapshot", "Terminal page does not satisfy counts.");
     }
     const occurrenceDepths = /* @__PURE__ */ new Map();
     const visitingOccurrences = /* @__PURE__ */ new Set();
@@ -30787,7 +30966,7 @@ var StepTopologyInspectionAccumulator = class {
       const bodies = this.bodyCountsByDefinition.get(definition.handle) ?? 0;
       const faces = this.faceCountsByDefinition.get(definition.handle) ?? 0;
       if (definition.body_count !== bodies || definition.face_count !== faces) {
-        fail2(
+        fail3(
           "geometer.step_topology.definition_count_mismatch",
           `Definition ${definition.handle} counts do not match its records.`
         );
@@ -30814,7 +30993,7 @@ var StepTopologyInspectionAccumulator = class {
   }
   requireDefinition(definitionHandle, ownerHandle) {
     if (!this.definitions.has(definitionHandle)) {
-      fail2(
+      fail3(
         "geometer.step_topology.dangling_definition",
         `${ownerHandle} references missing definition ${definitionHandle}.`
       );
@@ -30823,7 +31002,7 @@ var StepTopologyInspectionAccumulator = class {
   validateAccumulatedCounts() {
     const counts = this.counts;
     if (this.definitions.size > counts.definitions || this.rootOccurrenceCount > counts.root_occurrences || this.componentOccurrenceCount > counts.component_occurrences || this.bodies.size > counts.bodies || this.shells.size > counts.shells || this.faces.size > counts.faces || this.memberships.size > counts.memberships) {
-      fail2(
+      fail3(
         "geometer.step_topology.count_exceeded",
         "Inspection records exceed the declared snapshot counts."
       );
@@ -30834,16 +31013,16 @@ var StepTopologyInspectionAccumulator = class {
     if (cached !== void 0) return cached;
     const occurrence = this.occurrences.get(handle);
     if (!occurrence) {
-      fail2("geometer.step_topology.dangling_occurrence_parent", `Missing occurrence ${handle}.`);
+      fail3("geometer.step_topology.dangling_occurrence_parent", `Missing occurrence ${handle}.`);
     }
     if (visiting.has(handle)) {
-      fail2("geometer.step_topology.occurrence_cycle", "Occurrence parentage contains a cycle.");
+      fail3("geometer.step_topology.occurrence_cycle", "Occurrence parentage contains a cycle.");
     }
     visiting.add(handle);
     const depth = occurrence.kind === "root" ? 0 : this.resolveOccurrenceDepth(occurrence.parent_occurrence_handle, depths, visiting) + 1;
     visiting.delete(handle);
     if (occurrence.kind === "component" && occurrence.depth !== depth) {
-      fail2("geometer.step_topology.invalid_occurrence_depth", "Occurrence depth is inconsistent.");
+      fail3("geometer.step_topology.invalid_occurrence_depth", "Occurrence depth is inconsistent.");
     }
     depths.set(handle, depth);
     return depth;
@@ -30869,7 +31048,7 @@ async function validateStepTopologyRenderAttachments(result, attachments) {
     ] : []
   ];
   if (result.artifact.content_sha256 !== result.glb.sha256) {
-    fail2(
+    fail3(
       "geometer.step_topology.glb_digest_mismatch",
       "Render artifact and GLB descriptor name different GLB bytes."
     );
@@ -30877,21 +31056,21 @@ async function validateStepTopologyRenderAttachments(result, attachments) {
   const seen = /* @__PURE__ */ new Set();
   for (const attachment of attachments) {
     if (seen.has(attachment.name)) {
-      fail2("geometer.step_topology.duplicate_attachment", `Duplicate ${attachment.name}.`);
+      fail3("geometer.step_topology.duplicate_attachment", `Duplicate ${attachment.name}.`);
     }
     seen.add(attachment.name);
     const descriptor = expected.find((item) => item.name === attachment.name);
     if (!descriptor) {
-      fail2("geometer.step_topology.unexpected_attachment", `Unexpected ${attachment.name}.`);
+      fail3("geometer.step_topology.unexpected_attachment", `Unexpected ${attachment.name}.`);
     }
     if (attachment.mediaType !== descriptor.mediaType || attachment.data.byteLength !== descriptor.bytes) {
-      fail2(
+      fail3(
         "geometer.step_topology.attachment_mismatch",
         `Attachment ${attachment.name} metadata does not match its descriptor.`
       );
     }
     if (await sha256Hex(attachment.data) !== descriptor.sha256) {
-      fail2(
+      fail3(
         "geometer.step_topology.attachment_digest_mismatch",
         `Attachment ${attachment.name} digest does not match its descriptor.`
       );
@@ -30899,7 +31078,7 @@ async function validateStepTopologyRenderAttachments(result, attachments) {
   }
   for (const descriptor of expected) {
     if (descriptor.required && !seen.has(descriptor.name)) {
-      fail2("geometer.step_topology.missing_attachment", `Missing ${descriptor.name}.`);
+      fail3("geometer.step_topology.missing_attachment", `Missing ${descriptor.name}.`);
     }
   }
 }
@@ -30908,13 +31087,13 @@ function validateSourceEvidence(evidence) {
   const positiveFields = [evidence.model_number, evidence.entity_type, evidence.mapping_method];
   if (evidence.mapped) {
     if (positiveFields.some((value) => value === void 0)) {
-      fail2(
+      fail3(
         "geometer.step_topology.incomplete_source_evidence",
         "Mapped source evidence is incomplete."
       );
     }
   } else if (evidence.shape_result_round_trip || positiveFields.some((value) => value !== void 0)) {
-    fail2(
+    fail3(
       "geometer.step_topology.invalid_source_evidence",
       "Unmapped source evidence carries positive mapping fields."
     );
@@ -30999,13 +31178,13 @@ function validateFaceMembership(face, bodies, shells, faceBodies, faceShells) {
   }
 }
 function danglingMembership(owner, missing) {
-  fail2(
+  fail3(
     "geometer.step_topology.dangling_membership",
     `${owner} references missing topology target ${missing}.`
   );
 }
 function membershipFailure(left, right) {
-  fail2(
+  fail3(
     "geometer.step_topology.nonreciprocal_membership",
     `Topology membership between ${left} and ${right} is not reciprocal.`
   );
@@ -31015,7 +31194,7 @@ async function sha256Hex(data) {
   const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", copy));
   return [...digest].map((value) => value.toString(16).padStart(2, "0")).join("");
 }
-function fail2(code, message) {
+function fail3(code, message) {
   throw new StepTopologySemanticError(code, message);
 }
 

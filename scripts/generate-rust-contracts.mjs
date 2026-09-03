@@ -35,6 +35,7 @@ const declarations = new Map(modelCatalog.declarations.map((item) => [item.name,
 const codecDeclarations = reachableNames(codecRoots);
 const roots = new Set(codecRoots.map((item) => item.name));
 const ordered = topologicalOrder(modelCatalog.declarations);
+const emittedArrayValidation = new Set();
 const source = formatRust(
   `${generateHeader()}\n${ordered.map((item) => generateDeclaration(item, codecDeclarations.has(item.name))).join("\n\n")}\n\n${generateRootCodecs()}\n`,
 );
@@ -69,6 +70,8 @@ function generateHeader() {
 
 #![allow(clippy::approx_constant, reason = "schema bounds retain their exact generated decimal form")]
 #![allow(clippy::large_enum_variant, reason = "generated wire DTOs preserve their unboxed contract shape")]
+#![allow(clippy::cognitive_complexity, reason = "generated closed-union decoders enumerate governed variants")]
+#![allow(clippy::too_many_lines, reason = "generated validators enumerate every governed field")]
 
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
@@ -333,7 +336,11 @@ function generateArrayModel(item) {
     throw new Error(`Rust array root ${item.name} must have an exact size.`);
   }
   const itemValidation = validateValue(item.index_value, "item", "item_path", {});
-  return `pub type ${name} = [${rustType(item.index_value)}; ${size}];
+  const alias = `pub type ${name} = [${rustType(item.index_value)}; ${size}];`;
+  const implementationKey = `${rustType(item.index_value)};${size}`;
+  if (emittedArrayValidation.has(implementationKey)) return alias;
+  emittedArrayValidation.add(implementationKey);
+  return `${alias}
 
 impl Validate for ${name} {
     fn validate_at(&self, path: &str) -> Result<(), ContractError> {
@@ -431,11 +438,12 @@ function validateValue(type, value, path, constraints) {
     );
   }
   if (type.kind === "primitive" && ["uint32", "uint64"].includes(type.name)) {
-    if (constraints.min_value !== undefined)
+    if (constraints.min_value !== undefined && constraints.min_value > 0)
       lines.push(
         `if *${value} < ${constraints.min_value} { return Err(invalid(&${path}, "number is below its minimum")); }`,
       );
-    if (constraints.max_value !== undefined)
+    const typeMaximum = type.name === "uint32" ? 4294967295 : Number.POSITIVE_INFINITY;
+    if (constraints.max_value !== undefined && constraints.max_value < typeMaximum)
       lines.push(
         `if *${value} > ${constraints.max_value} { return Err(invalid(&${path}, "number exceeds its maximum")); }`,
       );

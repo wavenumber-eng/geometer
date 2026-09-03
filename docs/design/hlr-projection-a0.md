@@ -62,6 +62,25 @@ The one-shot overload is exactly preparation followed by prepared projection.
 contract. The operation transports use the indexed-mesh A0 packet for input
 and prepare within the receiving process.
 
+## Governed operation transports
+
+Both HLR operations are advertised through the generic C ABI catalog and are
+available in native IPC and browser/Node WASM. Generated TypeScript clients
+provide `modelHlrProjection` and `meshHlrProjection`; Python provides
+`GeometerClient.model_hlr_projection` and `mesh_hlr_projection`; Rust provides
+the matching methods on `GeometerClient`. The mesh methods accept the governed
+indexed-mesh packet, and the Python and TypeScript facades also accept their
+language-native `IndexedTriangleMeshA0` value.
+
+The STEP operation retains the common `poly` default. Because an indexed mesh
+has no OCCT topology to run through the old backends, the mesh operation uses
+Fast detail and Fast mesh-shadow outline when those selectors are absent. It
+rejects explicit `poly`, `exact`, or `hlr-close` selections rather than silently
+changing them. Typed IPC clients materialize the existing
+`output_detail=true` default on the wire to distinguish HLR's presence-only
+options from the older model-bounds options; this does not change projection
+semantics.
+
 ## Option applicability
 
 All defaults below are focused C++ defaults. Canonical option DTOs preserve

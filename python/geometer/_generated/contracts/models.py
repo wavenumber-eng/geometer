@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Literal, TypeAlias
 
-NORMALIZED_CATALOG_SHA256 = "0bcfe865420f1b109448ea8f14a07f49d8fe02846149a2ca6a43f4948316b008"
+NORMALIZED_CATALOG_SHA256 = "3d610e74fa16618a12806607c55be6823d6bf5e9144095ed281179aaeda1415d"
 
 JobId: TypeAlias = int
 
@@ -1280,6 +1280,7 @@ class StepTopologyAnalyzeRecoveryRequestA0:
 # Structurally representable request payloads for executable IPC A0. A variant is callable only when the negotiated runtime catalog advertises its operation; structural presence does not imply runtime availability.
 IpcRequestValueA0: TypeAlias = (
     ModelBoundsOptionsA0
+    | HlrProjectionOptionsA0
     | PackedAttachmentProjectionA0
     | StepTopologyOpenRequestA0
     | StepTopologyCloseRequestA0
@@ -1957,6 +1958,7 @@ class StepTopologyAnalyzeRecoveryResultA0:
 # Structurally representable operation results. A result variant may belong to a runtime-unavailable experimental operation and is not an availability claim; the negotiated operation catalog remains authoritative.
 OperationResultValueA0: TypeAlias = (
     ModelBoundsResultA0
+    | HlrProjectionResultA0
     | PackedAttachmentProjectionA0
     | StepTopologyOpenResultA0
     | StepTopologyCloseResultA0

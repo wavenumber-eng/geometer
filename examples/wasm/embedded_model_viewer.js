@@ -823,7 +823,8 @@ function optionsCacheTag(opts) {
     opts.mesh_deflection_coefficient,
   ];
   const edges = EDGE_FLAGS.map((name) => (opts[name] ? 1 : 0)).join("");
-  return [...base, edges].join(":");
+  const fast = JSON.stringify(opts.fast || {});
+  return [...base, edges, fast].join(":");
 }
 
 function modelCacheKey(model) {

@@ -79,6 +79,9 @@ function buildOptionsJson(views, options) {
   if (Number.isFinite(opts.hlr_angle_tolerance)) {
     payload.hlr_angle_tolerance = opts.hlr_angle_tolerance;
   }
+  if (opts.fast && typeof opts.fast === "object" && !Array.isArray(opts.fast)) {
+    payload.fast = opts.fast;
+  }
   return JSON.stringify(payload);
 }
 

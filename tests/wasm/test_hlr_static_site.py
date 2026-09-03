@@ -362,25 +362,40 @@ async function main() {
       control.value = value;
       control.dispatchEvent(new Event("change", { bubbles: true }));
     };
+    const waitForReady = async (view, algorithm = null) => {
+      const deadline = Date.now() + 120000;
+      while (Date.now() < deadline) {
+        const metric = document.querySelector("#projectionMetric")?.textContent || "";
+        const svg = document.querySelector("#projectionSvg");
+        if (!document.body.classList.contains("busy") && metric.startsWith(view + " ") &&
+            (!algorithm || svg?.dataset.projectionAlgorithm === algorithm)) return;
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      }
+      throw new Error("Timed out waiting for " + view + " " + (algorithm || "") + " projection.");
+    };
+    set("#modelSelect", "sot223.stp");
+    await waitForReady("top");
+    document.querySelector('button[data-view="front"]').click();
+    await waitForReady("front");
     const fastToggle = document.querySelector("#fastBackendInput");
     fastToggle.checked = true;
     fastToggle.dispatchEvent(new Event("change", { bubbles: true }));
-    set("#fastCreaseAngleInput", "1");
+    set("#fastCreaseAngleInput", "30");
     set("#outlineAlgoSelect", "fast-mesh-shadow");
-    const deadline = Date.now() + 120000;
-    while (Date.now() < deadline) {
-      const metric = document.querySelector("#projectionMetric")?.textContent || "";
-      const svg = document.querySelector("#projectionSvg");
+    await waitForReady("front", "fast");
+    const detailAt30Degrees = document.querySelectorAll("#projectionSvg .detail").length;
+    set("#fastCreaseAngleInput", "10");
+    const changedDeadline = Date.now() + 120000;
+    while (Date.now() < changedDeadline) {
       if (!document.body.classList.contains("busy") &&
-          svg?.dataset.projectionAlgorithm === "fast" &&
-          svg?.dataset.outlineAlgorithm === "fast-mesh-shadow" &&
-          metric.includes(" detail ") && metric.includes(" outline ")) break;
+          document.querySelectorAll("#projectionSvg .detail").length > detailAt30Degrees) break;
       await new Promise((resolve) => setTimeout(resolve, 50));
     }
     const svg = document.querySelector("#projectionSvg");
     if (document.body.classList.contains("busy") || svg?.dataset.projectionAlgorithm !== "fast" ||
-        svg?.dataset.outlineAlgorithm !== "fast-mesh-shadow") {
-      throw new Error("Timed out waiting for fast HLR projection.");
+        svg?.dataset.outlineAlgorithm !== "fast-mesh-shadow" ||
+        document.querySelectorAll("#projectionSvg .detail").length <= detailAt30Degrees) {
+      throw new Error("Fast crease angle did not change the SOT-223 projection.");
     }
     const layerCounts = (mode) => {
       document.querySelector('button[data-mode="' + mode + '"]').click();
@@ -393,6 +408,10 @@ async function main() {
       algorithm: svg.dataset.projectionAlgorithm,
       fastBackend: fastToggle.checked,
       creaseAngleDegrees: document.querySelector("#fastCreaseAngleInput").value,
+      detailAt30Degrees,
+      detailAt10Degrees: document.querySelectorAll("#projectionSvg .detail").length,
+      model: document.querySelector("#modelSelect").value,
+      view: document.querySelector('button[data-view="front"]').classList.contains("active") ? "front" : "other",
       outlineAlgorithm: document.querySelector("#outlineAlgoSelect").value,
       metric: document.querySelector("#projectionMetric").textContent,
       occtSettingsHidden: document.querySelector("#occtSettings").hidden,
@@ -756,7 +775,10 @@ def test_hlr_static_site_upload_projection_and_export() -> None:
     }
     assert result["fastSelection"]["algorithm"] == "fast"
     assert result["fastSelection"]["fastBackend"] is True
-    assert result["fastSelection"]["creaseAngleDegrees"] == "1"
+    assert result["fastSelection"]["creaseAngleDegrees"] == "10"
+    assert result["fastSelection"]["detailAt10Degrees"] > result["fastSelection"]["detailAt30Degrees"]
+    assert result["fastSelection"]["model"] == "sot223.stp"
+    assert result["fastSelection"]["view"] == "front"
     assert result["fastSelection"]["outlineAlgorithm"] == "fast-mesh-shadow"
     assert " detail " in result["fastSelection"]["metric"]
     assert " outline " in result["fastSelection"]["metric"]

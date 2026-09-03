@@ -75,6 +75,8 @@ for (const required of [
   'id="fastDepthToleranceInput"',
   "Crease angle (deg)",
   "Math.PI) / 180",
+  "payload.fast = opts.fast;",
+  "JSON.stringify(opts.fast || {})",
   '<option value="fast-mesh-shadow">Fast mesh shadow (evaluation)</option>',
   'id="resetGeometryButton"',
   'id="settingsPanelContent"',

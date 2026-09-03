@@ -19,6 +19,14 @@ raster comparator. Mesh illustration is also independent: it consumes mesh and
 linework geometry, applies presentation policy, and produces SVG or Canvas
 output.
 
+Generated field/type references are available for the
+[options contract](../generated/contracts/contracts/geometry-hlr-projection-options-a0.html),
+[result contract](../generated/contracts/contracts/geometry-hlr-projection-result-a0.html),
+[STEP operation](../generated/contracts/operations/geometry-model-hlr-projection-a0.html),
+and [indexed-mesh operation](../generated/contracts/operations/geometry-mesh-hlr-projection-a0.html).
+Runtime consumers should also inspect the negotiated operation catalog instead
+of assuming a particular executable or WASM build exposes an operation.
+
 ## Algorithm selection
 
 | Selection | Geometry source | Detail behavior | Curve output | Performance posture |
@@ -80,6 +88,71 @@ changing them. Typed IPC clients materialize the existing
 `output_detail=true` default on the wire to distinguish HLR's presence-only
 options from the older model-bounds options; this does not change projection
 semantics.
+
+### TypeScript/WASM
+
+```ts
+import { createGeometerWasmClient } from "@wavenumber/geometer/wasm";
+
+const client = await createGeometerWasmClient(createGeometerModule);
+const fromStep = await client.modelHlrProjection({
+  model: stepBytes,
+  options: {
+    projection_algorithm: "fast",
+    outline_algorithm: "fast-mesh-shadow",
+    fast: { crease_angle_rad: (25 * Math.PI) / 180 },
+  },
+});
+const fromMesh = await client.meshHlrProjection({
+  mesh: {
+    positions: [0, 0, 0, 10, 0, 0, 0, 10, 0],
+    indices: [0, 1, 2],
+    sourceFaces: [1],
+  },
+});
+```
+
+The dedicated Worker and persistent TypeScript IPC clients use the same
+`modelHlrProjection` and `meshHlrProjection` method names.
+
+### Python executable IPC
+
+```python
+from pathlib import Path
+
+import geometer
+
+options = geometer.HlrProjectionOptionsA0(
+    projection_algorithm=geometer.HlrProjectionAlgorithm.FAST,
+    outline_algorithm=geometer.HlrOutlineAlgorithm.FAST_MESH_SHADOW,
+    fast=geometer.FastHlrOptionsA0(crease_angle_rad=0.4363323129985824),
+)
+mesh = geometer.IndexedTriangleMeshA0(
+    positions=(0.0, 0.0, 0.0, 10.0, 0.0, 0.0, 10.0, 0.0),
+    indices=(0, 1, 2),
+    source_faces=(1,),
+)
+with geometer.GeometerClient() as client:
+    step_result = client.model_hlr_projection(Path("part.step").read_bytes(), options)
+    mesh_result = client.mesh_hlr_projection(mesh)
+```
+
+### Rust executable IPC
+
+```rust
+use geometer_client::{contracts, GeometerClient, ModelHlrProjectionRequest};
+
+let options = contracts::decode_hlr_projection_options_a0_json(
+    br#"{"projection_algorithm":"fast","outline_algorithm":"fast-mesh-shadow"}"#,
+)?;
+let result = client
+    .model_hlr_projection(ModelHlrProjectionRequest {
+        model: std::fs::read("part.step")?,
+        media_type: "application/step".to_owned(),
+        options,
+    })
+    .await?;
+```
 
 ## Option applicability
 
@@ -158,6 +231,23 @@ the existing JSON, CLI, Python, and C ABI lanes continue to accept:
 The granular field wins when a historical include toggle and that field are
 both present. Unknown fields are rejected by strict generated A0 codecs;
 compatibility-reader behavior remains governed by its existing lane.
+
+## Migration guide
+
+No existing caller must migrate to keep its current behavior. The focused
+`step-project-hlr`, `model-project-hlr`, Python `project_step_hlr`/
+`project_model_hlr`, and focused C ABI entry points retain their defaults and
+legacy result identity.
+
+Use the governed A0 operations when a caller needs a cross-language typed
+contract, indexed-mesh input, or canonical Fast options. Select Fast explicitly
+for STEP with `projection_algorithm="fast"`; do not depend on it becoming a
+default. For indexed mesh, omit the selectors to accept the mesh operation's
+Fast-only defaults, or send `fast` plus explicit Fast selectors. Use the direct
+C++ prepared-mesh API when several views share one mesh in a process. Use
+`@wavenumber/geometer/illustrated-hlr` only when the consumer wants the
+optional colorized SVG/Canvas composition as well as the independently
+returned linework.
 
 ## Illustration identities
 

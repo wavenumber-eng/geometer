@@ -232,6 +232,73 @@ def test_cli_run_batch_generic_model_aliases(tmp_path: Path) -> None:
     assert glb.read_bytes()[:4] == b"glTF"
 
 
+def test_cli_projects_indexed_mesh_direct_and_batch(tmp_path: Path) -> None:
+    mesh_path = tmp_path / "triangle.mesh"
+    direct_output = tmp_path / "direct.mesh-hlr.json"
+    batch_output = tmp_path / "batch.mesh-hlr.json"
+    options_path = tmp_path / "mesh-options.json"
+    request_path = tmp_path / "mesh-request.json"
+    response_path = tmp_path / "mesh-response.json"
+    mesh_path.write_bytes(
+        geometer.encode_indexed_triangle_mesh_a0_packet(
+            geometer.IndexedTriangleMeshA0(
+                positions=(0.0, 0.0, 0.0, 10.0, 0.0, 0.0, 0.0, 10.0, 0.0),
+                indices=(0, 1, 2),
+                source_faces=(1,),
+            )
+        )
+    )
+    options_path.write_text(
+        json.dumps({"views": [{"id": "top", "direction": [0, 0, 1], "up": [0, 1, 0]}]}),
+        encoding="utf-8",
+    )
+
+    subprocess.run(
+        [
+            str(_geometer_exe()),
+            "mesh-project-hlr",
+            str(mesh_path),
+            str(direct_output),
+            "--options",
+            str(options_path),
+        ],
+        check=True,
+        cwd=ROOT,
+    )
+    direct = json.loads(direct_output.read_text(encoding="utf-8"))
+    assert direct["schema"] == "geometry.hlr_projection.result.a0"
+    assert direct["source"]["kind"] == "indexed_mesh"
+    assert direct["views"][0]["modes"]["detail"]["segments"]
+
+    request_path.write_text(
+        json.dumps(
+            {
+                "schema": "geometer.batch.request.a0",
+                "options": {"output_bbox": False},
+                "jobs": [
+                    {
+                        "id": "mesh",
+                        "operation": "mesh_hlr_projection_json",
+                        "mesh_path": str(mesh_path),
+                        "output_path": str(batch_output),
+                        "options": {"fast": {"crease_angle_rad": 0.25}},
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    subprocess.run(
+        [str(_geometer_exe()), "run", str(request_path), str(response_path)],
+        check=True,
+        cwd=ROOT,
+    )
+    response = json.loads(response_path.read_text(encoding="utf-8"))
+    assert response["ok"] is True
+    assert response["jobs"][0]["operation"] == "mesh_hlr_projection_json"
+    assert json.loads(batch_output.read_text(encoding="utf-8"))["source"]["kind"] == "indexed_mesh"
+
+
 def test_cli_run_batch_uses_request_options_with_job_overrides(tmp_path: Path) -> None:
     request = tmp_path / "request.json"
     response = tmp_path / "response.json"

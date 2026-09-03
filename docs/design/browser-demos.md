@@ -21,10 +21,12 @@ REQ-009 defines the supported release surface.
 Demo code is a consumer of Geometer. Product-specific UI behavior must not move
 into `src/cpp/lib/`, the C ABI, or generated contracts merely to support a page.
 
-Promoted operations should use the generated TypeScript browser/Worker client.
-The HLR Lab still uses the legacy low-level STEP/HLR C ABI because HLR has not
-yet been promoted; its Worker is not a template for bypassing generated clients
-on future promoted operations.
+Promoted operations use their governed operation identities and production
+package APIs. The HLR and Illustration Lab Workers invoke
+`geometry.model_hlr_projection.a0` through the generic C ABI adapter; the
+illustration application imports the production illustration and raster-HLR
+modules. The remaining focused STEP-to-GLB call is a compatibility conversion
+surface, not illustration or HLR policy.
 
 ## Build Layers
 
@@ -131,8 +133,9 @@ The production implementation has these boundaries:
 - the core projector consumes generic mesh buffers, transforms, materials, and
   normals rather than STEP objects;
 - the current STEP adapter converts browser-local bytes through the existing
-  compatibility STEP-to-GLB symbol and can call the existing HLR projection
-  symbol for its hierarchical `fast-mesh-shadow` Outline layer;
+  compatibility STEP-to-GLB symbol and calls the governed
+  `geometry.model_hlr_projection.a0` operation for its hierarchical
+  `fast-mesh-shadow` Outline and Fast Detail layers;
 - SVG and Canvas2D consume one prepared projected scene and a separate style,
   so lighting or palette changes do not redo mesh preparation;
 - the shared renderer offers unlit, flat, unquantized Lambert diffuse, banded (2-32),

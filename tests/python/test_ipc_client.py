@@ -53,6 +53,17 @@ ROOT = Path(__file__).resolve().parents[2]
 REQUIRE_NATIVE_TEST_SERVERS_ENV = "GEOMETER_REQUIRE_NATIVE_TEST_SERVERS"
 
 
+def test_public_fast_hlr_contract_types_are_exposed() -> None:
+    options = geometer.HlrProjectionOptionsA0(
+        projection_algorithm=geometer.HlrProjectionAlgorithm.FAST,
+        outline_algorithm=geometer.HlrOutlineAlgorithm.FAST_MESH_SHADOW,
+        fast=geometer.FastHlrOptionsA0(crease_angle_rad=0.25),
+    )
+    assert options.projection_algorithm is geometer.HlrProjectionAlgorithm.FAST
+    assert options.outline_algorithm is geometer.HlrOutlineAlgorithm.FAST_MESH_SHADOW
+    assert options.fast == geometer.FastHlrOptionsA0(crease_angle_rad=0.25)
+
+
 def test_shutdown_frame_matches_the_governed_exact_bytes() -> None:
     stream = io.BytesIO()
     write_frame(stream, Frame(kind=FrameKind.SHUTDOWN, request_id=0, json=b"{}"))

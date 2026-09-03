@@ -49,12 +49,12 @@ durable record belongs here, in ADRs, and in requirements.
 - [STEP topology synthetic product hierarchy](step-topology-hierarchy.md)
 - [STEP topology Appz Annotation Lab handoff](step-topology-appz-annotation-lab-handoff.md)
 
-## Retained Research Prototypes
+## Production Browser Packages
 
-- [STEP Illustration Lab prototype](browser-demos.md#step-illustration-lab-prototype)
-  is a retained concept demonstrator, not a supported interface or production
-  renderer. Its presence in Geometer does not settle long-term component
-  ownership; promotion requires a separate architecture and contract decision.
+- [HLR projection and illustration A0](hlr-projection-a0.md) defines the Fast
+  vector HLR and mesh-illustration boundaries.
+- [Browser demo packaging and UI](browser-demos.md) records the HLR and
+  Illustration Labs as consumers of those production interfaces.
 
 ## Format Docs
 

@@ -66,7 +66,17 @@ from ._indexed_mesh_packet_a0 import (
     decode_indexed_triangle_mesh_a0_packet,
     encode_indexed_triangle_mesh_a0_packet,
 )
-from ._generated.contracts.models import HlrProjectionOptionsA0, HlrProjectionResultA0
+from ._generated.contracts.models import (
+    FastHlrLimitsA0,
+    FastHlrOptionsA0,
+    HlrCurveMode,
+    HlrMeshDeflectionMode,
+    HlrOutlineAlgorithm,
+    HlrProjectionAlgorithm,
+    HlrProjectionOptionsA0,
+    HlrProjectionResultA0,
+    HlrViewSpec,
+)
 from ._types import (
     HlrOptions,
     HlrProjectionResult,
@@ -100,6 +110,8 @@ __all__ = [
     "AuthoredVertex",
     "CapsuleOperand",
     "DiskOperand",
+    "FastHlrLimitsA0",
+    "FastHlrOptionsA0",
     "GeometerClient",
     "GeometerError",
     "GeometerIpcError",
@@ -111,9 +123,14 @@ __all__ = [
     "GeometerBatchResult",
     "GeometerBatchRunner",
     "HlrOptions",
+    "HlrCurveMode",
+    "HlrMeshDeflectionMode",
+    "HlrOutlineAlgorithm",
+    "HlrProjectionAlgorithm",
     "HlrProjectionOptionsA0",
     "HlrProjectionResult",
     "HlrProjectionResultA0",
+    "HlrViewSpec",
     "INDEXED_TRIANGLE_MESH_MEDIA_TYPE",
     "INDEXED_TRIANGLE_MESH_PACKET_FORMAT",
     "IndexedTriangleMeshA0",

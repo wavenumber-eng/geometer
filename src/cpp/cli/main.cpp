@@ -1,4 +1,5 @@
 #include "geometer.h"
+#include "mesh_hlr_command.h"
 #ifndef __EMSCRIPTEN__
 #include "geometer/ipc_a0_server.h"
 #endif
@@ -42,6 +43,7 @@ static void print_usage()
                  "                                               Emit source model HLR JSON\n"
                  "  model-project-svg <input.step> <output.svg>\n"
                  "                                               Emit source model HLR SVG\n"
+                 "  mesh-project-hlr <input.mesh> <output.json>  Emit indexed-mesh Fast HLR JSON\n"
                  "  step-to-glb <input.step> <output.glb>       Convert STEP to GLB\n"
                  "  step-project-hlr <input.step> <output.json> Emit HLR projection JSON\n"
                  "  step-project-svg <input.step> <output.svg>  Emit HLR projection SVG\n"
@@ -59,21 +61,31 @@ static void print_usage()
                  "  --deflection-mode <absolute|bbox-relative>  (default: bbox-relative)\n"
                  "  --deflection-coefficient <value>            (default: 0.004)\n"
                  "  --angular <value>      Angular deflection (default: 0.5)\n"
-                 "  --projection-algorithm <poly|exact|fast>\n"
+                 "  --projection-algorithm <poly|exact|fast> (default: poly)\n"
                  "  --outline-algorithm <hlr-close|mesh-shadow|fast-mesh-shadow>\n"
+                 "                                               (default: hlr-close)\n"
                  "  --format <step>        Source model format (only step is supported)\n"
                  "  --view <id>            SVG view id (default: top)\n"
                  "  --mode <outline|detail|bbox> SVG mode (default: outline)\n"
                  "  --curve-mode <native-arcs|polyline>\n"
                  "  --samples <count>      Curve polyline samples (default: 24)\n"
                  "  --round-digits <count> Projection rounding digits (default: 3)\n"
+                 "  --options <path>       Canonical JSON options for mesh-project-hlr\n"
                  "  --operation <name>     init-request operation\n"
                  "  --output <path>        init-request output path\n"
                  "  --repeat <count>       Planar benchmark repeat count (default: 1)\n"
                  "  --warmup <count>       Planar benchmark warmup count (default: 0)\n"
                  "  --metrics <path>       Write planar benchmark JSON metrics\n"
                  "  --format <binary|json> planar-batch-solve output format\n"
-                 "  --return-rings <true|false> alias for --format json\n");
+                 "  --return-rings <true|false> alias for --format json\n"
+                 "\n"
+                 "Fast HLR canonical JSON options (`run` request fast object):\n"
+                 "  include_boundaries, include_creases, include_silhouettes,\n"
+                 "  include_hidden, suppress_coplanar_seams, crease_angle_rad,\n"
+                 "  weld_tolerance, projected_tolerance, depth_tolerance,\n"
+                 "  coplanar_seam_angle_rad, coplanar_seam_depth_tolerance,\n"
+                 "  coplanar_seam_lateral_tolerance, and bounded limits.\n"
+                 "  Angles are radians; geometric tolerances use model units.\n");
 }
 
 static bool read_file_bytes(const char* path, std::vector<unsigned char>* bytes)
@@ -290,6 +302,10 @@ static std::string normalize_operation(const std::string& operation)
     {
         return "model_hlr_projection_svg";
     }
+    if (operation == "mesh-project-hlr" || operation == "mesh_project_hlr")
+    {
+        return "mesh_hlr_projection_json";
+    }
     if (operation == "model-to-glb" || operation == "model_to_glb")
     {
         return "model_to_glb";
@@ -323,7 +339,7 @@ static bool is_supported_batch_operation(const std::string& operation)
     return operation == "step_hlr_projection_json" || operation == "step_hlr_projection_svg" ||
            operation == "step_to_glb" || operation == "model_hlr_projection_json" ||
            operation == "model_hlr_projection_svg" || operation == "model_to_glb" ||
-           operation == "model_bounds_json";
+           operation == "model_bounds_json" || operation == "mesh_hlr_projection_json";
 }
 
 static const rapidjson::Value* options_value_for_object(const rapidjson::Value& object)
@@ -851,6 +867,25 @@ static int execute_planar_step_job(const rapidjson::Value& job, std::string* out
     return 0;
 }
 
+static int execute_mesh_hlr_job(const rapidjson::Value& job, const rapidjson::Value* batch_options,
+                                std::string* output_path, std::string* error_message)
+{
+    std::string mesh_path;
+    if (!member_string(job, "mesh_path", &mesh_path) || mesh_path.empty())
+    {
+        *error_message = "job requires string mesh_path";
+        return 2;
+    }
+    if (!member_string(job, "output_path", output_path) || output_path->empty())
+    {
+        *error_message = "job requires string output_path";
+        return 2;
+    }
+    return geometer::cli::project_indexed_mesh_file(
+        mesh_path, *output_path, options_json_for_value(batch_options),
+        options_json_for_value(options_value_for_object(job)), error_message);
+}
+
 static int execute_batch_job(const rapidjson::Value& job, const rapidjson::Value* batch_options,
                              std::string* operation, std::string* output_path,
                              std::string* error_message)
@@ -873,6 +908,10 @@ static int execute_batch_job(const rapidjson::Value& job, const rapidjson::Value
     if (*operation == "model_bounds_json")
     {
         return execute_model_bounds_job(job, batch_options, output_path, error_message);
+    }
+    if (*operation == "mesh_hlr_projection_json")
+    {
+        return execute_mesh_hlr_job(job, batch_options, output_path, error_message);
     }
     if (*operation == "planar_step")
     {
@@ -1263,6 +1302,36 @@ int main(int argc, char* argv[])
             return 1;
         }
         clean_exit(0);
+    }
+
+    if (std::strcmp(argv[1], "mesh-project-hlr") == 0)
+    {
+        if (argc < 4)
+        {
+            std::fprintf(stderr, "mesh-project-hlr requires input and output paths.\n");
+            return 1;
+        }
+        std::string options_json = "{}";
+        for (int index = 4; index < argc; ++index)
+        {
+            if (std::strcmp(argv[index], "--options") != 0 || index + 1 >= argc)
+            {
+                std::fprintf(stderr, "mesh-project-hlr accepts only --options <path>.\n");
+                return 2;
+            }
+            if (!read_text_file(argv[++index], &options_json))
+            {
+                std::fprintf(stderr, "Failed reading mesh HLR options file.\n");
+                return 1;
+            }
+        }
+        std::string error_message;
+        const int result = geometer::cli::project_indexed_mesh_file(argv[2], argv[3], "{}",
+                                                                    options_json, &error_message);
+        if (result != 0)
+            std::fprintf(stderr, "Indexed-mesh HLR failed (%d): %s\n", result,
+                         error_message.c_str());
+        clean_exit(result);
     }
 
     if (std::strcmp(argv[1], "planar-step") == 0)

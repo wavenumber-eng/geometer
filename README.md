@@ -3,7 +3,8 @@
 Focused C++ geometry library, CLI, Python package, and WASM interface built on
 OCCT. Geometer provides generic CAD/kernel operations for STEP-to-GLB
 conversion, STEP HLR projection, exact planar STEP synthesis, planar
-contouring, and packed planar boolean work.
+contouring, packed planar boolean work, Fast vector HLR for STEP or indexed
+meshes, and browser SVG/Canvas mesh illustration.
 
 ## Documentation
 
@@ -84,6 +85,7 @@ version = geometer.version()
 projection = geometer.project_step_hlr(
     Path("part.step"),
     views=[geometer.ProjectionView.top()],
+    options=geometer.HlrOptions.fast_assembly_outline(),
 )
 glb_bytes = geometer.step_to_glb(Path("part.step"))
 step_bytes = geometer.planar_step(
@@ -134,9 +136,9 @@ The package is executable-backed. Wheels bundle the platform executable under
 `geometer/native/<platform>/` and expose a `geometer` console command in the
 install environment. Existing file-oriented helpers use the JSON batch CLI;
 the candidate analytic API exports generated integer DTOs and a synchronous
-`GeometerClient` that uses the persistent binary `serve --stdio` protocol with
-strict packed request/result validation. This is implemented pilot evidence,
-not a claim that the analytic contract has been promoted or released.
+`GeometerClient` that uses the persistent binary `serve --stdio` protocol for
+typed model/mesh HLR and strict packed analytic requests. The file-oriented
+HLR helpers and their exact/poly defaults remain supported.
 
 ## CLI
 
@@ -144,6 +146,8 @@ not a claim that the analytic contract has been promoted or released.
 geometer --version
 geometer step-to-glb input.step output.glb
 geometer step-project-hlr input.step output.json
+geometer model-project-hlr input.step output.json --projection-algorithm fast --outline-algorithm fast-mesh-shadow
+geometer mesh-project-hlr input.mesh output.json --options fast-options.json
 geometer step-project-svg input.step output.svg --mode outline --view top
 geometer planar-step planar-step-request.json output.step
 geometer init-request request.json --step input.step --operation step_hlr_projection_json --output output.json
@@ -160,12 +164,11 @@ geometer run request.json response.json
 - `examples/wasm/model_bounds_demo.html` - TypeScript/generated-client pilot
   that computes STEP model bounds in a dedicated Worker and visualizes them
   through browser WASM and Three.js.
-- `examples/wasm/illustration_demo.html` - retained mesh-illustration concept
-  prototype for SVG/Canvas design evaluation. It is not a production renderer
-  or supported Geometer interface; see the
-  [prototype lifecycle note](docs/design/browser-demos.md#step-illustration-lab-prototype).
+- `examples/wasm/illustration_demo.html` - production-package consumer for
+  mesh illustration, SVG/Canvas output, Fast vector linework, and the separate
+  interactive raster HLR helper.
 - `dist/wasm/demos/analytic_polygon_pour_demo.html`,
-  `dist/wasm/demos/hlr_demo.html`, and
+  `dist/wasm/demos/hlr_demo.html`, `dist/wasm/demos/illustration_demo.html`, and
   `dist/wasm/demos/planar_ring_solver_demo.html` - one-file standalone browser
   demos for release review. Build them through
   `python scripts/build_standalone_demos.py all`.

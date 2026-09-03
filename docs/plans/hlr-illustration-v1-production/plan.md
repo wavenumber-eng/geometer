@@ -60,13 +60,13 @@ depends_on = ["convenience-composition", "raster-hlr-package"]
 [[steps]]
 id = "consumer-documentation"
 title = "Publish algorithm discovery, option compatibility, examples, generated contract reference, and migration guidance"
-status = "active"
+status = "done"
 depends_on = ["operation-transports", "convenience-composition"]
 
 [[steps]]
 id = "compatibility-validation"
 title = "Prove old defaults and options remain unchanged and validate new native, WASM, package, and downstream paths"
-status = "pending"
+status = "active"
 depends_on = ["demo-migration", "consumer-documentation"]
 
 [[steps]]

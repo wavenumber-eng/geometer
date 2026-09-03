@@ -5,10 +5,8 @@
 `src/rust/geometer-client` is the Tokio-based `geometer-client` crate. Its
 operation DTOs and strict Serde codecs are generated from the normalized
 TypeSpec catalog. The live client spawns one persistent native
-`geometer(.exe) serve --stdio` process and executes both
-`geometry.model_bounds.a0` with raw STEP bytes and
-`geometry.analytic_planar_boolean_batch.a0` through its governed packed A0
-attachments.
+`geometer(.exe) serve --stdio` process and executes model bounds, model/mesh
+HLR, and analytic planar Boolean through their governed attachments.
 
 The executable implementation preserves every file-oriented CLI command. Its
 stdin and stdout are switched to binary mode on Windows; stdout is reserved for
@@ -38,7 +36,7 @@ trailing data; validation rejects non-finite/range-invalid numbers and contract
 literals. Optional fields use a presence-aware deserializer so an absent value
 maps to `None` while explicit JSON `null` is rejected.
 
-All 20 governed contract vectors replay through this projection. Generation is
+All governed contract vectors replay through this projection. Generation is
 part of `npm run generate:contracts` and freshness is part of
 `npm run check:contracts`.
 
@@ -71,6 +69,12 @@ undeclared, oversized, or media-incompatible attachments and projection
 metadata drift. Fatal response ID/kind/JSON/attachment violations poison the
 connection and resolve every pending call. Negotiated response frame limits are
 checked before payload allocation.
+
+`GeometerClient::model_hlr_projection()` accepts STEP bytes and canonical HLR
+options. `mesh_hlr_projection()` accepts an indexed-mesh A0 packet;
+`MeshHlrProjectionRequest::from_mesh()` encodes a structured mesh. The model
+operation retains the `poly` default, while omitted mesh selectors choose the
+only applicable Fast detail and Fast mesh-shadow paths.
 
 `OperationCall::cancel()` requests queue-only cancellation. `wait_timeout()` is
 a local timeout: it sends a cancellation request and reports whether the server

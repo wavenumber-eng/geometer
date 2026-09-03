@@ -1,5 +1,5 @@
 // Generated from wn_geometer_contract_catalog.a0.json. Do not edit.
-export const NORMALIZED_CONTRACT_CATALOG_SHA256 = "40ad574a40ea2e474d085d26263bf1ecbf3d76f6e14de8d795829e97389ae96b";
+export const NORMALIZED_CONTRACT_CATALOG_SHA256 = "0bcfe865420f1b109448ea8f14a07f49d8fe02846149a2ca6a43f4948316b008";
 export const operationCatalog = {
     "geometry.analytic_planar_boolean_batch.a0": {
         identity: "geometry.analytic_planar_boolean_batch.a0",

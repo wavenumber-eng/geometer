@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="0bcfe865420f1b109448ea8f14a07f49d8fe02846149a2ca6a43f4948316b008">
+  <title>geometry.hlr_projection.options.a0 — Geometer</title>
+  <link rel="stylesheet" href="../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="0bcfe865420f1b109448ea8f14a07f49d8fe02846149a2ca6a43f4948316b008" data-page-kind="contract" data-contract-identity="geometry.hlr_projection.options.a0" data-promotion-status="pilot_candidate">
+<main>
+<header>
+  <p class="page-type">Contract root</p>
+  <h1><code>geometry.hlr_projection.options.a0</code></h1>
+  <p class="lede">Presence-preserving additive options shared by STEP and indexed-mesh HLR operations.</p>
+</header>
+<nav class="nav" aria-label="Contract navigation"><a href="../index.html">All contracts</a><a href="../../../../contracts/geometer/generated/schema/HlrProjectionOptionsA0.json">JSON Schema</a><a href="../../../../src/tsp/geometer/main.tsp">TypeSpec entry point</a><a href="../../../design/contract-semantics.md">Compatibility policy</a></nav>
+<aside class="callout"><strong>Generated, not authored.</strong> Edit TypeSpec and regenerate. Lifecycle evidence remains in the promotion manifest.</aside>
+<aside class="callout"><strong>Presence-preserving patch.</strong> Absent fields do not materialize defaults and do not replace inherited values.</aside>
+<section><h2>Identity</h2><table><tbody>
+<tr><th>Contract</th><td><code>geometry.hlr_projection.options.a0</code></td></tr>
+<tr><th>Schema</th><td><code>urn:wavenumber:schema:geometer:geometry.hlr_projection.options:a0</code></td></tr>
+<tr><th>Declaration</th><td><code>Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrProjectionOptionsA0</code></td></tr>
+<tr><th>Lifecycle</th><td><span class="status">pilot_candidate</span></td></tr>
+<tr><th>Current authority</th><td><code>typespec_candidate</code></td></tr>
+</tbody></table></section>
+<section class="model-section"><h2>Declarations <span class="tag">10</span></h2><details open id="declaration-wavenumber-geometer-contracts-hlrprojectiona0-hlrprojectionoptionsa0"><summary><h2><code>HlrProjectionOptionsA0</code> <span class="tag">model</span></h2></summary><p>Presence-preserving additive options shared by STEP and indexed-mesh HLR operations.</p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>views</code></td><td>optional</td><td><code>HlrViewSpec[]</code></td><td>—</td><td><code>max_items=64</code></td><td></td></tr>
+<tr><td><code>output_outline</code></td><td>optional</td><td><code>boolean</code></td><td><code>true</code></td><td>none</td><td></td></tr>
+<tr><td><code>output_detail</code></td><td>optional</td><td><code>boolean</code></td><td><code>true</code></td><td>none</td><td></td></tr>
+<tr><td><code>output_bbox</code></td><td>optional</td><td><code>boolean</code></td><td><code>true</code></td><td>none</td><td></td></tr>
+<tr><td><code>model_transform</code></td><td>optional</td><td><code>HlrMatrix4x4</code></td><td><code>identity_4x4</code></td><td>none</td><td></td></tr>
+<tr><td><code>strip_root_placement</code></td><td>optional</td><td><code>boolean</code></td><td><code>false</code></td><td>none</td><td></td></tr>
+<tr><td><code>curve_mode</code></td><td>optional</td><td><code>HlrCurveMode</code></td><td><code>&quot;native_arcs&quot;</code></td><td>none</td><td></td></tr>
+<tr><td><code>samples_per_curve</code></td><td>optional</td><td><code>uint32</code></td><td><code>24</code></td><td><code>min_value=1</code> <code>max_value=100000</code></td><td></td></tr>
+<tr><td><code>round_digits</code></td><td>optional</td><td><code>uint32</code></td><td><code>3</code></td><td><code>min_value=0</code> <code>max_value=9</code></td><td></td></tr>
+<tr><td><code>edge_v_sharp</code></td><td>optional</td><td><code>boolean</code></td><td><code>true</code></td><td>none</td><td></td></tr>
+<tr><td><code>edge_v_outline</code></td><td>optional</td><td><code>boolean</code></td><td><code>true</code></td><td>none</td><td></td></tr>
+<tr><td><code>edge_v_smooth</code></td><td>optional</td><td><code>boolean</code></td><td><code>false</code></td><td>none</td><td></td></tr>
+<tr><td><code>edge_v_sewn</code></td><td>optional</td><td><code>boolean</code></td><td><code>false</code></td><td>none</td><td></td></tr>
+<tr><td><code>edge_v_iso</code></td><td>optional</td><td><code>boolean</code></td><td><code>false</code></td><td>none</td><td></td></tr>
+<tr><td><code>edge_h_sharp</code></td><td>optional</td><td><code>boolean</code></td><td><code>false</code></td><td>none</td><td></td></tr>
+<tr><td><code>edge_h_outline</code></td><td>optional</td><td><code>boolean</code></td><td><code>false</code></td><td>none</td><td></td></tr>
+<tr><td><code>edge_h_smooth</code></td><td>optional</td><td><code>boolean</code></td><td><code>false</code></td><td>none</td><td></td></tr>
+<tr><td><code>edge_h_sewn</code></td><td>optional</td><td><code>boolean</code></td><td><code>false</code></td><td>none</td><td></td></tr>
+<tr><td><code>edge_h_iso</code></td><td>optional</td><td><code>boolean</code></td><td><code>false</code></td><td>none</td><td></td></tr>
+<tr><td><code>union_outline_polygons</code></td><td>optional</td><td><code>boolean</code></td><td><code>true</code></td><td>none</td><td></td></tr>
+<tr><td><code>projection_algorithm</code></td><td>optional</td><td><code>HlrProjectionAlgorithm</code></td><td><code>&quot;poly&quot;</code></td><td>none</td><td></td></tr>
+<tr><td><code>mesh_linear_deflection</code></td><td>optional</td><td><code>float64</code></td><td><code>0.01</code></td><td><code>min_value=0</code></td><td></td></tr>
+<tr><td><code>mesh_angular_deflection</code></td><td>optional</td><td><code>float64</code></td><td><code>0.5</code></td><td><code>min_value=0</code> <code>max_value=3.141592653589793</code></td><td></td></tr>
+<tr><td><code>mesh_relative</code></td><td>optional</td><td><code>boolean</code></td><td><code>false</code></td><td>none</td><td></td></tr>
+<tr><td><code>mesh_deflection_mode</code></td><td>optional</td><td><code>HlrMeshDeflectionMode</code></td><td><code>&quot;bbox-relative&quot;</code></td><td>none</td><td></td></tr>
+<tr><td><code>mesh_deflection_coefficient</code></td><td>optional</td><td><code>float64</code></td><td><code>0.004</code></td><td><code>min_value=0</code></td><td></td></tr>
+<tr><td><code>outline_algorithm</code></td><td>optional</td><td><code>HlrOutlineAlgorithm</code></td><td><code>&quot;hlr-close&quot;</code></td><td>none</td><td></td></tr>
+<tr><td><code>hlr_angle_tolerance</code></td><td>optional</td><td><code>float64</code></td><td><code>0.0174533</code></td><td><code>min_value=0</code> <code>max_value=3.141592653589793</code></td><td></td></tr>
+<tr><td><code>fast</code></td><td>optional</td><td><code>FastHlrOptionsA0</code></td><td>—</td><td>none</td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-hlrprojectiona0-fasthlrlimitsa0"><summary><h2><code>FastHlrLimitsA0</code> <span class="tag">model</span></h2></summary><p>Resource ceilings applied during Fast mesh preparation and projection.</p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>max_vertices</code></td><td>optional</td><td><code>uint32</code></td><td><code>2000000</code></td><td><code>min_value=1</code> <code>max_value=4294967295</code></td><td></td></tr>
+<tr><td><code>max_triangles</code></td><td>optional</td><td><code>uint32</code></td><td><code>2000000</code></td><td><code>min_value=1</code> <code>max_value=4294967295</code></td><td></td></tr>
+<tr><td><code>max_edges</code></td><td>optional</td><td><code>uint32</code></td><td><code>4000000</code></td><td><code>min_value=1</code> <code>max_value=4294967295</code></td><td></td></tr>
+<tr><td><code>max_grid_references</code></td><td>optional</td><td><code>uint32</code></td><td><code>64000000</code></td><td><code>min_value=1</code> <code>max_value=4294967295</code></td><td></td></tr>
+<tr><td><code>max_candidate_pairs</code></td><td>optional</td><td><code>uint32</code></td><td><code>100000000</code></td><td><code>min_value=1</code> <code>max_value=4294967295</code></td><td></td></tr>
+<tr><td><code>max_fragments</code></td><td>optional</td><td><code>uint32</code></td><td><code>8000000</code></td><td><code>min_value=1</code> <code>max_value=4294967295</code></td><td></td></tr>
+<tr><td><code>max_output_segments</code></td><td>optional</td><td><code>uint32</code></td><td><code>4000000</code></td><td><code>min_value=1</code> <code>max_value=4294967295</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-hlrprojectiona0-fasthlroptionsa0"><summary><h2><code>FastHlrOptionsA0</code> <span class="tag">model</span></h2></summary><p>Fast vector-HLR controls. Angles are radians and geometric tolerances use model units.</p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>include_boundaries</code></td><td>optional</td><td><code>boolean</code></td><td><code>true</code></td><td>none</td><td></td></tr>
+<tr><td><code>include_creases</code></td><td>optional</td><td><code>boolean</code></td><td><code>true</code></td><td>none</td><td></td></tr>
+<tr><td><code>include_silhouettes</code></td><td>optional</td><td><code>boolean</code></td><td><code>true</code></td><td>none</td><td></td></tr>
+<tr><td><code>include_hidden</code></td><td>optional</td><td><code>boolean</code></td><td><code>false</code></td><td>none</td><td></td></tr>
+<tr><td><code>suppress_coplanar_seams</code></td><td>optional</td><td><code>boolean</code></td><td><code>false</code></td><td>none</td><td></td></tr>
+<tr><td><code>crease_angle_rad</code></td><td>optional</td><td><code>float64</code></td><td><code>0.5235987755982988</code></td><td><code>min_value=0</code> <code>max_value=3.141592653589793</code></td><td></td></tr>
+<tr><td><code>weld_tolerance</code></td><td>optional</td><td><code>float64</code></td><td><code>1e-7</code></td><td><code>min_value=0</code></td><td></td></tr>
+<tr><td><code>projected_tolerance</code></td><td>optional</td><td><code>float64</code></td><td><code>1e-8</code></td><td><code>min_value=0</code></td><td></td></tr>
+<tr><td><code>depth_tolerance</code></td><td>optional</td><td><code>float64</code></td><td><code>1e-7</code></td><td><code>min_value=0</code></td><td></td></tr>
+<tr><td><code>coplanar_seam_angle_rad</code></td><td>optional</td><td><code>float64</code></td><td><code>0.017453292519943295</code></td><td><code>min_value=0</code> <code>max_value=1.5707963267948966</code></td><td></td></tr>
+<tr><td><code>coplanar_seam_depth_tolerance</code></td><td>optional</td><td><code>float64</code></td><td><code>0.000001</code></td><td><code>min_value=0</code></td><td></td></tr>
+<tr><td><code>coplanar_seam_lateral_tolerance</code></td><td>optional</td><td><code>float64</code></td><td><code>0.000001</code></td><td><code>min_value=0</code></td><td></td></tr>
+<tr><td><code>limits</code></td><td>optional</td><td><code>FastHlrLimitsA0</code></td><td>—</td><td>none</td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-hlrprojectiona0-hlrcurvemode"><summary><h2><code>HlrCurveMode</code> <span class="tag">enum</span></h2></summary><p></p><table><thead><tr><th>Member</th><th>Wire value</th><th>Description</th></tr></thead><tbody><tr><td><code>native_arcs</code></td><td><code>native_arcs</code></td><td></td></tr>
+<tr><td><code>polyline</code></td><td><code>polyline</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-hlrprojectiona0-hlrmatrix4x4"><summary><h2><code>HlrMatrix4x4</code> <span class="tag">model</span></h2></summary><p></p><p><span class="tag">array</span> element <code>float64</code>; <code>min_items=16</code> <code>max_items=16</code></p></details>
+<details open id="declaration-wavenumber-geometer-contracts-hlrprojectiona0-hlrmeshdeflectionmode"><summary><h2><code>HlrMeshDeflectionMode</code> <span class="tag">enum</span></h2></summary><p></p><table><thead><tr><th>Member</th><th>Wire value</th><th>Description</th></tr></thead><tbody><tr><td><code>absolute</code></td><td><code>absolute</code></td><td></td></tr>
+<tr><td><code>bbox_relative</code></td><td><code>bbox-relative</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-hlrprojectiona0-hlroutlinealgorithm"><summary><h2><code>HlrOutlineAlgorithm</code> <span class="tag">enum</span></h2></summary><p></p><table><thead><tr><th>Member</th><th>Wire value</th><th>Description</th></tr></thead><tbody><tr><td><code>hlr_close</code></td><td><code>hlr-close</code></td><td></td></tr>
+<tr><td><code>mesh_shadow</code></td><td><code>mesh-shadow</code></td><td></td></tr>
+<tr><td><code>fast_mesh_shadow</code></td><td><code>fast-mesh-shadow</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-hlrprojectiona0-hlrprojectionalgorithm"><summary><h2><code>HlrProjectionAlgorithm</code> <span class="tag">enum</span></h2></summary><p></p><table><thead><tr><th>Member</th><th>Wire value</th><th>Description</th></tr></thead><tbody><tr><td><code>poly</code></td><td><code>poly</code></td><td></td></tr>
+<tr><td><code>exact</code></td><td><code>exact</code></td><td></td></tr>
+<tr><td><code>fast</code></td><td><code>fast</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-hlrprojectiona0-hlrvector3"><summary><h2><code>HlrVector3</code> <span class="tag">model</span></h2></summary><p></p><p><span class="tag">array</span> element <code>float64</code>; <code>min_items=3</code> <code>max_items=3</code></p></details>
+<details open id="declaration-wavenumber-geometer-contracts-hlrprojectiona0-hlrviewspec"><summary><h2><code>HlrViewSpec</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>id</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=1</code> <code>max_length=128</code></td><td></td></tr>
+<tr><td><code>direction</code></td><td>required</td><td><code>HlrVector3</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>up</code></td><td>required</td><td><code>HlrVector3</code></td><td>—</td><td>none</td><td></td></tr></tbody></table></details></section>
+</main>
+</body>
+</html>

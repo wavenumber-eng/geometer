@@ -1,0 +1,331 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:wavenumber:schema:geometer:geometry.hlr_projection.options:a0",
+  "type": "object",
+  "properties": {
+    "views": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/HlrViewSpec"
+      },
+      "maxItems": 64
+    },
+    "output_outline": {
+      "type": "boolean",
+      "default": true
+    },
+    "output_detail": {
+      "type": "boolean",
+      "default": true
+    },
+    "output_bbox": {
+      "type": "boolean",
+      "default": true
+    },
+    "model_transform": {
+      "$ref": "#/$defs/HlrMatrix4x4",
+      "x-wn-default-intent": "identity_4x4"
+    },
+    "strip_root_placement": {
+      "type": "boolean",
+      "default": false
+    },
+    "curve_mode": {
+      "$ref": "#/$defs/HlrCurveMode",
+      "default": "native_arcs"
+    },
+    "samples_per_curve": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100000,
+      "default": 24
+    },
+    "round_digits": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9,
+      "default": 3
+    },
+    "edge_v_sharp": {
+      "type": "boolean",
+      "default": true
+    },
+    "edge_v_outline": {
+      "type": "boolean",
+      "default": true
+    },
+    "edge_v_smooth": {
+      "type": "boolean",
+      "default": false
+    },
+    "edge_v_sewn": {
+      "type": "boolean",
+      "default": false
+    },
+    "edge_v_iso": {
+      "type": "boolean",
+      "default": false
+    },
+    "edge_h_sharp": {
+      "type": "boolean",
+      "default": false
+    },
+    "edge_h_outline": {
+      "type": "boolean",
+      "default": false
+    },
+    "edge_h_smooth": {
+      "type": "boolean",
+      "default": false
+    },
+    "edge_h_sewn": {
+      "type": "boolean",
+      "default": false
+    },
+    "edge_h_iso": {
+      "type": "boolean",
+      "default": false
+    },
+    "union_outline_polygons": {
+      "type": "boolean",
+      "default": true
+    },
+    "projection_algorithm": {
+      "$ref": "#/$defs/HlrProjectionAlgorithm",
+      "default": "poly"
+    },
+    "mesh_linear_deflection": {
+      "type": "number",
+      "default": 0.01,
+      "minimum": 0
+    },
+    "mesh_angular_deflection": {
+      "type": "number",
+      "default": 0.5,
+      "minimum": 0,
+      "maximum": 3.141592653589793
+    },
+    "mesh_relative": {
+      "type": "boolean",
+      "default": false
+    },
+    "mesh_deflection_mode": {
+      "$ref": "#/$defs/HlrMeshDeflectionMode",
+      "default": "bbox-relative"
+    },
+    "mesh_deflection_coefficient": {
+      "type": "number",
+      "default": 0.004,
+      "minimum": 0
+    },
+    "outline_algorithm": {
+      "$ref": "#/$defs/HlrOutlineAlgorithm",
+      "default": "hlr-close"
+    },
+    "hlr_angle_tolerance": {
+      "type": "number",
+      "default": 0.0174533,
+      "minimum": 0,
+      "maximum": 3.141592653589793
+    },
+    "fast": {
+      "$ref": "#/$defs/FastHlrOptionsA0"
+    }
+  },
+  "unevaluatedProperties": {
+    "not": {}
+  },
+  "description": "Presence-preserving additive options shared by STEP and indexed-mesh HLR operations.",
+  "$defs": {
+    "HlrViewSpec": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "direction": {
+          "$ref": "#/$defs/HlrVector3"
+        },
+        "up": {
+          "$ref": "#/$defs/HlrVector3"
+        }
+      },
+      "required": [
+        "id",
+        "direction",
+        "up"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "HlrMatrix4x4": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "minItems": 16,
+      "maxItems": 16
+    },
+    "HlrCurveMode": {
+      "type": "string",
+      "enum": [
+        "native_arcs",
+        "polyline"
+      ]
+    },
+    "HlrProjectionAlgorithm": {
+      "type": "string",
+      "enum": [
+        "poly",
+        "exact",
+        "fast"
+      ]
+    },
+    "HlrMeshDeflectionMode": {
+      "type": "string",
+      "enum": [
+        "absolute",
+        "bbox-relative"
+      ]
+    },
+    "HlrOutlineAlgorithm": {
+      "type": "string",
+      "enum": [
+        "hlr-close",
+        "mesh-shadow",
+        "fast-mesh-shadow"
+      ]
+    },
+    "FastHlrOptionsA0": {
+      "type": "object",
+      "properties": {
+        "include_boundaries": {
+          "type": "boolean",
+          "default": true
+        },
+        "include_creases": {
+          "type": "boolean",
+          "default": true
+        },
+        "include_silhouettes": {
+          "type": "boolean",
+          "default": true
+        },
+        "include_hidden": {
+          "type": "boolean",
+          "default": false
+        },
+        "suppress_coplanar_seams": {
+          "type": "boolean",
+          "default": false
+        },
+        "crease_angle_rad": {
+          "type": "number",
+          "default": 0.5235987755982988,
+          "minimum": 0,
+          "maximum": 3.141592653589793
+        },
+        "weld_tolerance": {
+          "type": "number",
+          "default": 1e-7,
+          "minimum": 0
+        },
+        "projected_tolerance": {
+          "type": "number",
+          "default": 1e-8,
+          "minimum": 0
+        },
+        "depth_tolerance": {
+          "type": "number",
+          "default": 1e-7,
+          "minimum": 0
+        },
+        "coplanar_seam_angle_rad": {
+          "type": "number",
+          "default": 0.017453292519943295,
+          "minimum": 0,
+          "maximum": 1.5707963267948966
+        },
+        "coplanar_seam_depth_tolerance": {
+          "type": "number",
+          "default": 0.000001,
+          "minimum": 0
+        },
+        "coplanar_seam_lateral_tolerance": {
+          "type": "number",
+          "default": 0.000001,
+          "minimum": 0
+        },
+        "limits": {
+          "$ref": "#/$defs/FastHlrLimitsA0"
+        }
+      },
+      "unevaluatedProperties": {
+        "not": {}
+      },
+      "description": "Fast vector-HLR controls. Angles are radians and geometric tolerances use model units."
+    },
+    "HlrVector3": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "minItems": 3,
+      "maxItems": 3
+    },
+    "FastHlrLimitsA0": {
+      "type": "object",
+      "properties": {
+        "max_vertices": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295,
+          "default": 2000000
+        },
+        "max_triangles": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295,
+          "default": 2000000
+        },
+        "max_edges": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295,
+          "default": 4000000
+        },
+        "max_grid_references": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295,
+          "default": 64000000
+        },
+        "max_candidate_pairs": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295,
+          "default": 100000000
+        },
+        "max_fragments": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295,
+          "default": 8000000
+        },
+        "max_output_segments": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295,
+          "default": 4000000
+        }
+      },
+      "unevaluatedProperties": {
+        "not": {}
+      },
+      "description": "Resource ceilings applied during Fast mesh preparation and projection."
+    }
+  }
+}

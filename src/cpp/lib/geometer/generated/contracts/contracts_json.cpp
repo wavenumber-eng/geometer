@@ -31,6 +31,87 @@ bool decode_PackedAttachmentProjectionA0(const rapidjson::Value&, PackedAttachme
                                          const std::string&, ContractError*);
 bool write_PackedAttachmentProjectionA0(rapidjson::Writer<rapidjson::StringBuffer>&,
                                         const PackedAttachmentProjectionA0&, ContractError*);
+bool decode_FastHlrLimitsA0(const rapidjson::Value&, FastHlrLimitsA0*, const std::string&,
+                            ContractError*);
+bool write_FastHlrLimitsA0(rapidjson::Writer<rapidjson::StringBuffer>&, const FastHlrLimitsA0&,
+                           ContractError*);
+bool decode_FastHlrOptionsA0(const rapidjson::Value&, FastHlrOptionsA0*, const std::string&,
+                             ContractError*);
+bool write_FastHlrOptionsA0(rapidjson::Writer<rapidjson::StringBuffer>&, const FastHlrOptionsA0&,
+                            ContractError*);
+bool decode_HlrCurveMode(const rapidjson::Value&, HlrCurveMode*, const std::string&,
+                         ContractError*);
+bool write_HlrCurveMode(rapidjson::Writer<rapidjson::StringBuffer>&, const HlrCurveMode&,
+                        ContractError*);
+bool decode_HlrMatrix4x4(const rapidjson::Value&, HlrMatrix4x4*, const std::string&,
+                         ContractError*);
+bool write_HlrMatrix4x4(rapidjson::Writer<rapidjson::StringBuffer>&, const HlrMatrix4x4&,
+                        ContractError*);
+bool decode_HlrMeshDeflectionMode(const rapidjson::Value&, HlrMeshDeflectionMode*,
+                                  const std::string&, ContractError*);
+bool write_HlrMeshDeflectionMode(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                 const HlrMeshDeflectionMode&, ContractError*);
+bool decode_HlrOutlineAlgorithm(const rapidjson::Value&, HlrOutlineAlgorithm*, const std::string&,
+                                ContractError*);
+bool write_HlrOutlineAlgorithm(rapidjson::Writer<rapidjson::StringBuffer>&,
+                               const HlrOutlineAlgorithm&, ContractError*);
+bool decode_HlrVector3(const rapidjson::Value&, HlrVector3*, const std::string&, ContractError*);
+bool write_HlrVector3(rapidjson::Writer<rapidjson::StringBuffer>&, const HlrVector3&,
+                      ContractError*);
+bool decode_ProjectedSegment(const rapidjson::Value&, ProjectedSegment*, const std::string&,
+                             ContractError*);
+bool write_ProjectedSegment(rapidjson::Writer<rapidjson::StringBuffer>&, const ProjectedSegment&,
+                            ContractError*);
+bool decode_HlrVector2(const rapidjson::Value&, HlrVector2*, const std::string&, ContractError*);
+bool write_HlrVector2(rapidjson::Writer<rapidjson::StringBuffer>&, const HlrVector2&,
+                      ContractError*);
+bool decode_ProjectedArc(const rapidjson::Value&, ProjectedArc*, const std::string&,
+                         ContractError*);
+bool write_ProjectedArc(rapidjson::Writer<rapidjson::StringBuffer>&, const ProjectedArc&,
+                        ContractError*);
+bool decode_ProjectionBounds(const rapidjson::Value&, ProjectionBounds*, const std::string&,
+                             ContractError*);
+bool write_ProjectionBounds(rapidjson::Writer<rapidjson::StringBuffer>&, const ProjectionBounds&,
+                            ContractError*);
+bool decode_ProjectedGeometry(const rapidjson::Value&, ProjectedGeometry*, const std::string&,
+                              ContractError*);
+bool write_ProjectedGeometry(rapidjson::Writer<rapidjson::StringBuffer>&, const ProjectedGeometry&,
+                             ContractError*);
+bool decode_HlrProjectionModes(const rapidjson::Value&, HlrProjectionModes*, const std::string&,
+                               ContractError*);
+bool write_HlrProjectionModes(rapidjson::Writer<rapidjson::StringBuffer>&,
+                              const HlrProjectionModes&, ContractError*);
+bool decode_HlrProjectedView(const rapidjson::Value&, HlrProjectedView*, const std::string&,
+                             ContractError*);
+bool write_HlrProjectedView(rapidjson::Writer<rapidjson::StringBuffer>&, const HlrProjectedView&,
+                            ContractError*);
+bool decode_HlrProjectionAlgorithm(const rapidjson::Value&, HlrProjectionAlgorithm*,
+                                   const std::string&, ContractError*);
+bool write_HlrProjectionAlgorithm(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                  const HlrProjectionAlgorithm&, ContractError*);
+bool decode_HlrViewSpec(const rapidjson::Value&, HlrViewSpec*, const std::string&, ContractError*);
+bool write_HlrViewSpec(rapidjson::Writer<rapidjson::StringBuffer>&, const HlrViewSpec&,
+                       ContractError*);
+bool decode_HlrProjectionOptionsA0(const rapidjson::Value&, HlrProjectionOptionsA0*,
+                                   const std::string&, ContractError*);
+bool write_HlrProjectionOptionsA0(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                  const HlrProjectionOptionsA0&, ContractError*);
+bool decode_HlrSourceKind(const rapidjson::Value&, HlrSourceKind*, const std::string&,
+                          ContractError*);
+bool write_HlrSourceKind(rapidjson::Writer<rapidjson::StringBuffer>&, const HlrSourceKind&,
+                         ContractError*);
+bool decode_HlrProjectionSource(const rapidjson::Value&, HlrProjectionSource*, const std::string&,
+                                ContractError*);
+bool write_HlrProjectionSource(rapidjson::Writer<rapidjson::StringBuffer>&,
+                               const HlrProjectionSource&, ContractError*);
+bool decode_HlrProjectionTimings(const rapidjson::Value&, HlrProjectionTimings*, const std::string&,
+                                 ContractError*);
+bool write_HlrProjectionTimings(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                const HlrProjectionTimings&, ContractError*);
+bool decode_HlrProjectionResultA0(const rapidjson::Value&, HlrProjectionResultA0*,
+                                  const std::string&, ContractError*);
+bool write_HlrProjectionResultA0(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                 const HlrProjectionResultA0&, ContractError*);
 bool decode_IpcAttachmentDeclarationA0(const rapidjson::Value&, IpcAttachmentDeclarationA0*,
                                        const std::string&, ContractError*);
 bool write_IpcAttachmentDeclarationA0(rapidjson::Writer<rapidjson::StringBuffer>&,
@@ -371,6 +452,54 @@ bool decode_IpcWelcomeA0(const rapidjson::Value&, IpcWelcomeA0*, const std::stri
                          ContractError*);
 bool write_IpcWelcomeA0(rapidjson::Writer<rapidjson::StringBuffer>&, const IpcWelcomeA0&,
                         ContractError*);
+bool decode_IllustrationMatrix4x4(const rapidjson::Value&, IllustrationMatrix4x4*,
+                                  const std::string&, ContractError*);
+bool write_IllustrationMatrix4x4(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                 const IllustrationMatrix4x4&, ContractError*);
+bool decode_IllustrationVector3(const rapidjson::Value&, IllustrationVector3*, const std::string&,
+                                ContractError*);
+bool write_IllustrationVector3(rapidjson::Writer<rapidjson::StringBuffer>&,
+                               const IllustrationVector3&, ContractError*);
+bool decode_MeshIllustrationMaterial(const rapidjson::Value&, MeshIllustrationMaterial*,
+                                     const std::string&, ContractError*);
+bool write_MeshIllustrationMaterial(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                    const MeshIllustrationMaterial&, ContractError*);
+bool decode_MeshIllustrationMesh(const rapidjson::Value&, MeshIllustrationMesh*, const std::string&,
+                                 ContractError*);
+bool write_MeshIllustrationMesh(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                const MeshIllustrationMesh&, ContractError*);
+bool decode_MeshIllustrationView(const rapidjson::Value&, MeshIllustrationView*, const std::string&,
+                                 ContractError*);
+bool write_MeshIllustrationView(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                const MeshIllustrationView&, ContractError*);
+bool decode_MeshIllustrationPrepareOptions(const rapidjson::Value&, MeshIllustrationPrepareOptions*,
+                                           const std::string&, ContractError*);
+bool write_MeshIllustrationPrepareOptions(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                          const MeshIllustrationPrepareOptions&, ContractError*);
+bool decode_MeshIllustrationShading(const rapidjson::Value&, MeshIllustrationShading*,
+                                    const std::string&, ContractError*);
+bool write_MeshIllustrationShading(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                   const MeshIllustrationShading&, ContractError*);
+bool decode_MeshIllustrationStyleA0(const rapidjson::Value&, MeshIllustrationStyleA0*,
+                                    const std::string&, ContractError*);
+bool write_MeshIllustrationStyleA0(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                   const MeshIllustrationStyleA0&, ContractError*);
+bool decode_MeshIllustrationSvgOptions(const rapidjson::Value&, MeshIllustrationSvgOptions*,
+                                       const std::string&, ContractError*);
+bool write_MeshIllustrationSvgOptions(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                      const MeshIllustrationSvgOptions&, ContractError*);
+bool decode_MeshIllustrationInputA0(const rapidjson::Value&, MeshIllustrationInputA0*,
+                                    const std::string&, ContractError*);
+bool write_MeshIllustrationInputA0(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                   const MeshIllustrationInputA0&, ContractError*);
+bool decode_MeshIllustrationRenderStats(const rapidjson::Value&, MeshIllustrationRenderStats*,
+                                        const std::string&, ContractError*);
+bool write_MeshIllustrationRenderStats(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                       const MeshIllustrationRenderStats&, ContractError*);
+bool decode_MeshIllustrationResultA0(const rapidjson::Value&, MeshIllustrationResultA0*,
+                                     const std::string&, ContractError*);
+bool write_MeshIllustrationResultA0(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                    const MeshIllustrationResultA0&, ContractError*);
 bool decode_ModelBoundsSource(const rapidjson::Value&, ModelBoundsSource*, const std::string&,
                               ContractError*);
 bool write_ModelBoundsSource(rapidjson::Writer<rapidjson::StringBuffer>&, const ModelBoundsSource&,
@@ -916,6 +1045,18 @@ bool write_string_item(rapidjson::Writer<rapidjson::StringBuffer>& writer, const
     return write_string(writer, value, error, 0U, std::numeric_limits<std::size_t>::max());
 }
 
+bool decode_uint32_item(const rapidjson::Value& value, std::uint32_t* out, const std::string& path,
+                        ContractError* error)
+{
+    return decode_uint32(value, out, path, error, 0U, std::numeric_limits<std::uint32_t>::max());
+}
+
+bool write_uint32_item(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                       const std::uint32_t& value, ContractError* error)
+{
+    return write_uint32(writer, value, error, 0U, std::numeric_limits<std::uint32_t>::max());
+}
+
 bool decode_double_item(const rapidjson::Value& value, double* out, const std::string& path,
                         ContractError* error)
 {
@@ -1194,6 +1335,1952 @@ bool write_PackedAttachmentProjectionA0(rapidjson::Writer<rapidjson::StringBuffe
         return false;
     writer.Key("packet");
     if (!write_PackedAttachmentReferenceA0(writer, value.packet, error))
+        return false;
+    writer.EndObject();
+    return true;
+}
+
+bool decode_FastHlrLimitsA0(const rapidjson::Value& value, FastHlrLimitsA0* out,
+                            const std::string& path, ContractError* error)
+{
+    static const char* const names[] = {
+        "max_vertices",        "max_triangles", "max_edges",          "max_grid_references",
+        "max_candidate_pairs", "max_fragments", "max_output_segments"};
+    if (!validate_object(value, names, 7U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("max_vertices");
+        if (member != value.MemberEnd())
+        {
+            std::uint32_t decoded{};
+            if (!decode_uint32(member->value, &decoded, child_path(path, "max_vertices"), error,
+                               1ULL, 4294967295ULL))
+                return false;
+            out->max_vertices = std::move(decoded);
+        }
+        else
+            out->max_vertices.reset();
+    }
+    {
+        const auto member = value.FindMember("max_triangles");
+        if (member != value.MemberEnd())
+        {
+            std::uint32_t decoded{};
+            if (!decode_uint32(member->value, &decoded, child_path(path, "max_triangles"), error,
+                               1ULL, 4294967295ULL))
+                return false;
+            out->max_triangles = std::move(decoded);
+        }
+        else
+            out->max_triangles.reset();
+    }
+    {
+        const auto member = value.FindMember("max_edges");
+        if (member != value.MemberEnd())
+        {
+            std::uint32_t decoded{};
+            if (!decode_uint32(member->value, &decoded, child_path(path, "max_edges"), error, 1ULL,
+                               4294967295ULL))
+                return false;
+            out->max_edges = std::move(decoded);
+        }
+        else
+            out->max_edges.reset();
+    }
+    {
+        const auto member = value.FindMember("max_grid_references");
+        if (member != value.MemberEnd())
+        {
+            std::uint32_t decoded{};
+            if (!decode_uint32(member->value, &decoded, child_path(path, "max_grid_references"),
+                               error, 1ULL, 4294967295ULL))
+                return false;
+            out->max_grid_references = std::move(decoded);
+        }
+        else
+            out->max_grid_references.reset();
+    }
+    {
+        const auto member = value.FindMember("max_candidate_pairs");
+        if (member != value.MemberEnd())
+        {
+            std::uint32_t decoded{};
+            if (!decode_uint32(member->value, &decoded, child_path(path, "max_candidate_pairs"),
+                               error, 1ULL, 4294967295ULL))
+                return false;
+            out->max_candidate_pairs = std::move(decoded);
+        }
+        else
+            out->max_candidate_pairs.reset();
+    }
+    {
+        const auto member = value.FindMember("max_fragments");
+        if (member != value.MemberEnd())
+        {
+            std::uint32_t decoded{};
+            if (!decode_uint32(member->value, &decoded, child_path(path, "max_fragments"), error,
+                               1ULL, 4294967295ULL))
+                return false;
+            out->max_fragments = std::move(decoded);
+        }
+        else
+            out->max_fragments.reset();
+    }
+    {
+        const auto member = value.FindMember("max_output_segments");
+        if (member != value.MemberEnd())
+        {
+            std::uint32_t decoded{};
+            if (!decode_uint32(member->value, &decoded, child_path(path, "max_output_segments"),
+                               error, 1ULL, 4294967295ULL))
+                return false;
+            out->max_output_segments = std::move(decoded);
+        }
+        else
+            out->max_output_segments.reset();
+    }
+    return true;
+}
+
+bool write_FastHlrLimitsA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                           const FastHlrLimitsA0& value, ContractError* error)
+{
+    writer.StartObject();
+    if (value.max_vertices.has_value())
+    {
+        writer.Key("max_vertices");
+        if (!write_uint32(writer, *value.max_vertices, error, 1ULL, 4294967295ULL))
+            return false;
+    }
+    if (value.max_triangles.has_value())
+    {
+        writer.Key("max_triangles");
+        if (!write_uint32(writer, *value.max_triangles, error, 1ULL, 4294967295ULL))
+            return false;
+    }
+    if (value.max_edges.has_value())
+    {
+        writer.Key("max_edges");
+        if (!write_uint32(writer, *value.max_edges, error, 1ULL, 4294967295ULL))
+            return false;
+    }
+    if (value.max_grid_references.has_value())
+    {
+        writer.Key("max_grid_references");
+        if (!write_uint32(writer, *value.max_grid_references, error, 1ULL, 4294967295ULL))
+            return false;
+    }
+    if (value.max_candidate_pairs.has_value())
+    {
+        writer.Key("max_candidate_pairs");
+        if (!write_uint32(writer, *value.max_candidate_pairs, error, 1ULL, 4294967295ULL))
+            return false;
+    }
+    if (value.max_fragments.has_value())
+    {
+        writer.Key("max_fragments");
+        if (!write_uint32(writer, *value.max_fragments, error, 1ULL, 4294967295ULL))
+            return false;
+    }
+    if (value.max_output_segments.has_value())
+    {
+        writer.Key("max_output_segments");
+        if (!write_uint32(writer, *value.max_output_segments, error, 1ULL, 4294967295ULL))
+            return false;
+    }
+    writer.EndObject();
+    return true;
+}
+
+bool decode_FastHlrOptionsA0(const rapidjson::Value& value, FastHlrOptionsA0* out,
+                             const std::string& path, ContractError* error)
+{
+    static const char* const names[] = {"include_boundaries",
+                                        "include_creases",
+                                        "include_silhouettes",
+                                        "include_hidden",
+                                        "suppress_coplanar_seams",
+                                        "crease_angle_rad",
+                                        "weld_tolerance",
+                                        "projected_tolerance",
+                                        "depth_tolerance",
+                                        "coplanar_seam_angle_rad",
+                                        "coplanar_seam_depth_tolerance",
+                                        "coplanar_seam_lateral_tolerance",
+                                        "limits"};
+    if (!validate_object(value, names, 13U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("include_boundaries");
+        if (member != value.MemberEnd())
+        {
+            bool decoded{};
+            if (!decode_boolean(member->value, &decoded, child_path(path, "include_boundaries"),
+                                error))
+                return false;
+            out->include_boundaries = std::move(decoded);
+        }
+        else
+            out->include_boundaries.reset();
+    }
+    {
+        const auto member = value.FindMember("include_creases");
+        if (member != value.MemberEnd())
+        {
+            bool decoded{};
+            if (!decode_boolean(member->value, &decoded, child_path(path, "include_creases"),
+                                error))
+                return false;
+            out->include_creases = std::move(decoded);
+        }
+        else
+            out->include_creases.reset();
+    }
+    {
+        const auto member = value.FindMember("include_silhouettes");
+        if (member != value.MemberEnd())
+        {
+            bool decoded{};
+            if (!decode_boolean(member->value, &decoded, child_path(path, "include_silhouettes"),
+                                error))
+                return false;
+            out->include_silhouettes = std::move(decoded);
+        }
+        else
+            out->include_silhouettes.reset();
+    }
+    {
+        const auto member = value.FindMember("include_hidden");
+        if (member != value.MemberEnd())
+        {
+            bool decoded{};
+            if (!decode_boolean(member->value, &decoded, child_path(path, "include_hidden"), error))
+                return false;
+            out->include_hidden = std::move(decoded);
+        }
+        else
+            out->include_hidden.reset();
+    }
+    {
+        const auto member = value.FindMember("suppress_coplanar_seams");
+        if (member != value.MemberEnd())
+        {
+            bool decoded{};
+            if (!decode_boolean(member->value, &decoded,
+                                child_path(path, "suppress_coplanar_seams"), error))
+                return false;
+            out->suppress_coplanar_seams = std::move(decoded);
+        }
+        else
+            out->suppress_coplanar_seams.reset();
+    }
+    {
+        const auto member = value.FindMember("crease_angle_rad");
+        if (member != value.MemberEnd())
+        {
+            double decoded{};
+            if (!decode_double(member->value, &decoded, child_path(path, "crease_angle_rad"), error,
+                               0, 3.141592653589793))
+                return false;
+            out->crease_angle_rad = std::move(decoded);
+        }
+        else
+            out->crease_angle_rad.reset();
+    }
+    {
+        const auto member = value.FindMember("weld_tolerance");
+        if (member != value.MemberEnd())
+        {
+            double decoded{};
+            if (!decode_double(member->value, &decoded, child_path(path, "weld_tolerance"), error,
+                               0, std::numeric_limits<double>::infinity()))
+                return false;
+            out->weld_tolerance = std::move(decoded);
+        }
+        else
+            out->weld_tolerance.reset();
+    }
+    {
+        const auto member = value.FindMember("projected_tolerance");
+        if (member != value.MemberEnd())
+        {
+            double decoded{};
+            if (!decode_double(member->value, &decoded, child_path(path, "projected_tolerance"),
+                               error, 0, std::numeric_limits<double>::infinity()))
+                return false;
+            out->projected_tolerance = std::move(decoded);
+        }
+        else
+            out->projected_tolerance.reset();
+    }
+    {
+        const auto member = value.FindMember("depth_tolerance");
+        if (member != value.MemberEnd())
+        {
+            double decoded{};
+            if (!decode_double(member->value, &decoded, child_path(path, "depth_tolerance"), error,
+                               0, std::numeric_limits<double>::infinity()))
+                return false;
+            out->depth_tolerance = std::move(decoded);
+        }
+        else
+            out->depth_tolerance.reset();
+    }
+    {
+        const auto member = value.FindMember("coplanar_seam_angle_rad");
+        if (member != value.MemberEnd())
+        {
+            double decoded{};
+            if (!decode_double(member->value, &decoded, child_path(path, "coplanar_seam_angle_rad"),
+                               error, 0, 1.5707963267948966))
+                return false;
+            out->coplanar_seam_angle_rad = std::move(decoded);
+        }
+        else
+            out->coplanar_seam_angle_rad.reset();
+    }
+    {
+        const auto member = value.FindMember("coplanar_seam_depth_tolerance");
+        if (member != value.MemberEnd())
+        {
+            double decoded{};
+            if (!decode_double(member->value, &decoded,
+                               child_path(path, "coplanar_seam_depth_tolerance"), error, 0,
+                               std::numeric_limits<double>::infinity()))
+                return false;
+            out->coplanar_seam_depth_tolerance = std::move(decoded);
+        }
+        else
+            out->coplanar_seam_depth_tolerance.reset();
+    }
+    {
+        const auto member = value.FindMember("coplanar_seam_lateral_tolerance");
+        if (member != value.MemberEnd())
+        {
+            double decoded{};
+            if (!decode_double(member->value, &decoded,
+                               child_path(path, "coplanar_seam_lateral_tolerance"), error, 0,
+                               std::numeric_limits<double>::infinity()))
+                return false;
+            out->coplanar_seam_lateral_tolerance = std::move(decoded);
+        }
+        else
+            out->coplanar_seam_lateral_tolerance.reset();
+    }
+    {
+        const auto member = value.FindMember("limits");
+        if (member != value.MemberEnd())
+        {
+            FastHlrLimitsA0 decoded{};
+            if (!decode_FastHlrLimitsA0(member->value, &decoded, child_path(path, "limits"), error))
+                return false;
+            out->limits = std::move(decoded);
+        }
+        else
+            out->limits.reset();
+    }
+    return true;
+}
+
+bool write_FastHlrOptionsA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                            const FastHlrOptionsA0& value, ContractError* error)
+{
+    writer.StartObject();
+    if (value.include_boundaries.has_value())
+    {
+        writer.Key("include_boundaries");
+        if (!(writer.Bool(*value.include_boundaries), true))
+            return false;
+    }
+    if (value.include_creases.has_value())
+    {
+        writer.Key("include_creases");
+        if (!(writer.Bool(*value.include_creases), true))
+            return false;
+    }
+    if (value.include_silhouettes.has_value())
+    {
+        writer.Key("include_silhouettes");
+        if (!(writer.Bool(*value.include_silhouettes), true))
+            return false;
+    }
+    if (value.include_hidden.has_value())
+    {
+        writer.Key("include_hidden");
+        if (!(writer.Bool(*value.include_hidden), true))
+            return false;
+    }
+    if (value.suppress_coplanar_seams.has_value())
+    {
+        writer.Key("suppress_coplanar_seams");
+        if (!(writer.Bool(*value.suppress_coplanar_seams), true))
+            return false;
+    }
+    if (value.crease_angle_rad.has_value())
+    {
+        writer.Key("crease_angle_rad");
+        if (!write_double(writer, *value.crease_angle_rad, error, 0, 3.141592653589793))
+            return false;
+    }
+    if (value.weld_tolerance.has_value())
+    {
+        writer.Key("weld_tolerance");
+        if (!write_double(writer, *value.weld_tolerance, error, 0,
+                          std::numeric_limits<double>::infinity()))
+            return false;
+    }
+    if (value.projected_tolerance.has_value())
+    {
+        writer.Key("projected_tolerance");
+        if (!write_double(writer, *value.projected_tolerance, error, 0,
+                          std::numeric_limits<double>::infinity()))
+            return false;
+    }
+    if (value.depth_tolerance.has_value())
+    {
+        writer.Key("depth_tolerance");
+        if (!write_double(writer, *value.depth_tolerance, error, 0,
+                          std::numeric_limits<double>::infinity()))
+            return false;
+    }
+    if (value.coplanar_seam_angle_rad.has_value())
+    {
+        writer.Key("coplanar_seam_angle_rad");
+        if (!write_double(writer, *value.coplanar_seam_angle_rad, error, 0, 1.5707963267948966))
+            return false;
+    }
+    if (value.coplanar_seam_depth_tolerance.has_value())
+    {
+        writer.Key("coplanar_seam_depth_tolerance");
+        if (!write_double(writer, *value.coplanar_seam_depth_tolerance, error, 0,
+                          std::numeric_limits<double>::infinity()))
+            return false;
+    }
+    if (value.coplanar_seam_lateral_tolerance.has_value())
+    {
+        writer.Key("coplanar_seam_lateral_tolerance");
+        if (!write_double(writer, *value.coplanar_seam_lateral_tolerance, error, 0,
+                          std::numeric_limits<double>::infinity()))
+            return false;
+    }
+    if (value.limits.has_value())
+    {
+        writer.Key("limits");
+        if (!write_FastHlrLimitsA0(writer, *value.limits, error))
+            return false;
+    }
+    writer.EndObject();
+    return true;
+}
+
+bool decode_HlrCurveMode(const rapidjson::Value& value, HlrCurveMode* out, const std::string& path,
+                         ContractError* error)
+{
+    if (!value.IsString())
+        return fail(error, "geometer.contract.type_mismatch", path, "Expected a string enum.");
+    const std::string text(value.GetString(), value.GetStringLength());
+    if (text == "native_arcs")
+    {
+        *out = HlrCurveMode::native_arcs;
+        return true;
+    }
+    if (text == "polyline")
+    {
+        *out = HlrCurveMode::polyline;
+        return true;
+    }
+    return fail(error, "geometer.contract.enum_mismatch", path, "Unknown enum value.");
+}
+
+bool write_HlrCurveMode(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                        const HlrCurveMode& value, ContractError* error)
+{
+    switch (value)
+    {
+    case HlrCurveMode::native_arcs:
+        writer.String("native_arcs");
+        return true;
+    case HlrCurveMode::polyline:
+        writer.String("polyline");
+        return true;
+    }
+    return fail(error, "geometer.contract.enum_mismatch", "", "Unknown enum value.");
+}
+
+bool decode_HlrMatrix4x4(const rapidjson::Value& value, HlrMatrix4x4* out, const std::string& path,
+                         ContractError* error)
+{
+    if (!value.IsArray() || value.Size() < 16U || value.Size() > 16U)
+        return fail(error, "geometer.contract.array_size", path,
+                    "Array length is outside its contract bounds.");
+    out->clear();
+    out->reserve(value.Size());
+    for (rapidjson::SizeType i = 0; i < value.Size(); ++i)
+    {
+        double item_value{};
+        if (!decode_double(value[i], &item_value, path + "/" + std::to_string(i), error,
+                           -std::numeric_limits<double>::infinity(),
+                           std::numeric_limits<double>::infinity()))
+            return false;
+        out->push_back(std::move(item_value));
+    }
+    return true;
+}
+
+bool write_HlrMatrix4x4(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                        const HlrMatrix4x4& value, ContractError* error)
+{
+    if (value.size() < 16U || value.size() > 16U)
+        return fail(error, "geometer.contract.array_size", "",
+                    "Array length is outside its contract bounds.");
+    writer.StartArray();
+    for (const auto& item_value : value)
+        if (!write_double(writer, item_value, error, -std::numeric_limits<double>::infinity(),
+                          std::numeric_limits<double>::infinity()))
+            return false;
+    writer.EndArray();
+    return true;
+}
+
+bool decode_HlrMeshDeflectionMode(const rapidjson::Value& value, HlrMeshDeflectionMode* out,
+                                  const std::string& path, ContractError* error)
+{
+    if (!value.IsString())
+        return fail(error, "geometer.contract.type_mismatch", path, "Expected a string enum.");
+    const std::string text(value.GetString(), value.GetStringLength());
+    if (text == "absolute")
+    {
+        *out = HlrMeshDeflectionMode::absolute;
+        return true;
+    }
+    if (text == "bbox-relative")
+    {
+        *out = HlrMeshDeflectionMode::bbox_relative;
+        return true;
+    }
+    return fail(error, "geometer.contract.enum_mismatch", path, "Unknown enum value.");
+}
+
+bool write_HlrMeshDeflectionMode(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                 const HlrMeshDeflectionMode& value, ContractError* error)
+{
+    switch (value)
+    {
+    case HlrMeshDeflectionMode::absolute:
+        writer.String("absolute");
+        return true;
+    case HlrMeshDeflectionMode::bbox_relative:
+        writer.String("bbox-relative");
+        return true;
+    }
+    return fail(error, "geometer.contract.enum_mismatch", "", "Unknown enum value.");
+}
+
+bool decode_HlrOutlineAlgorithm(const rapidjson::Value& value, HlrOutlineAlgorithm* out,
+                                const std::string& path, ContractError* error)
+{
+    if (!value.IsString())
+        return fail(error, "geometer.contract.type_mismatch", path, "Expected a string enum.");
+    const std::string text(value.GetString(), value.GetStringLength());
+    if (text == "hlr-close")
+    {
+        *out = HlrOutlineAlgorithm::hlr_close;
+        return true;
+    }
+    if (text == "mesh-shadow")
+    {
+        *out = HlrOutlineAlgorithm::mesh_shadow;
+        return true;
+    }
+    if (text == "fast-mesh-shadow")
+    {
+        *out = HlrOutlineAlgorithm::fast_mesh_shadow;
+        return true;
+    }
+    return fail(error, "geometer.contract.enum_mismatch", path, "Unknown enum value.");
+}
+
+bool write_HlrOutlineAlgorithm(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                               const HlrOutlineAlgorithm& value, ContractError* error)
+{
+    switch (value)
+    {
+    case HlrOutlineAlgorithm::hlr_close:
+        writer.String("hlr-close");
+        return true;
+    case HlrOutlineAlgorithm::mesh_shadow:
+        writer.String("mesh-shadow");
+        return true;
+    case HlrOutlineAlgorithm::fast_mesh_shadow:
+        writer.String("fast-mesh-shadow");
+        return true;
+    }
+    return fail(error, "geometer.contract.enum_mismatch", "", "Unknown enum value.");
+}
+
+bool decode_HlrVector3(const rapidjson::Value& value, HlrVector3* out, const std::string& path,
+                       ContractError* error)
+{
+    if (!value.IsArray() || value.Size() < 3U || value.Size() > 3U)
+        return fail(error, "geometer.contract.array_size", path,
+                    "Array length is outside its contract bounds.");
+    out->clear();
+    out->reserve(value.Size());
+    for (rapidjson::SizeType i = 0; i < value.Size(); ++i)
+    {
+        double item_value{};
+        if (!decode_double(value[i], &item_value, path + "/" + std::to_string(i), error,
+                           -std::numeric_limits<double>::infinity(),
+                           std::numeric_limits<double>::infinity()))
+            return false;
+        out->push_back(std::move(item_value));
+    }
+    return true;
+}
+
+bool write_HlrVector3(rapidjson::Writer<rapidjson::StringBuffer>& writer, const HlrVector3& value,
+                      ContractError* error)
+{
+    if (value.size() < 3U || value.size() > 3U)
+        return fail(error, "geometer.contract.array_size", "",
+                    "Array length is outside its contract bounds.");
+    writer.StartArray();
+    for (const auto& item_value : value)
+        if (!write_double(writer, item_value, error, -std::numeric_limits<double>::infinity(),
+                          std::numeric_limits<double>::infinity()))
+            return false;
+    writer.EndArray();
+    return true;
+}
+
+bool decode_ProjectedSegment(const rapidjson::Value& value, ProjectedSegment* out,
+                             const std::string& path, ContractError* error)
+{
+    if (!value.IsArray() || value.Size() < 4U || value.Size() > 4U)
+        return fail(error, "geometer.contract.array_size", path,
+                    "Array length is outside its contract bounds.");
+    out->clear();
+    out->reserve(value.Size());
+    for (rapidjson::SizeType i = 0; i < value.Size(); ++i)
+    {
+        double item_value{};
+        if (!decode_double(value[i], &item_value, path + "/" + std::to_string(i), error,
+                           -std::numeric_limits<double>::infinity(),
+                           std::numeric_limits<double>::infinity()))
+            return false;
+        out->push_back(std::move(item_value));
+    }
+    return true;
+}
+
+bool write_ProjectedSegment(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                            const ProjectedSegment& value, ContractError* error)
+{
+    if (value.size() < 4U || value.size() > 4U)
+        return fail(error, "geometer.contract.array_size", "",
+                    "Array length is outside its contract bounds.");
+    writer.StartArray();
+    for (const auto& item_value : value)
+        if (!write_double(writer, item_value, error, -std::numeric_limits<double>::infinity(),
+                          std::numeric_limits<double>::infinity()))
+            return false;
+    writer.EndArray();
+    return true;
+}
+
+bool decode_HlrVector2(const rapidjson::Value& value, HlrVector2* out, const std::string& path,
+                       ContractError* error)
+{
+    if (!value.IsArray() || value.Size() < 2U || value.Size() > 2U)
+        return fail(error, "geometer.contract.array_size", path,
+                    "Array length is outside its contract bounds.");
+    out->clear();
+    out->reserve(value.Size());
+    for (rapidjson::SizeType i = 0; i < value.Size(); ++i)
+    {
+        double item_value{};
+        if (!decode_double(value[i], &item_value, path + "/" + std::to_string(i), error,
+                           -std::numeric_limits<double>::infinity(),
+                           std::numeric_limits<double>::infinity()))
+            return false;
+        out->push_back(std::move(item_value));
+    }
+    return true;
+}
+
+bool write_HlrVector2(rapidjson::Writer<rapidjson::StringBuffer>& writer, const HlrVector2& value,
+                      ContractError* error)
+{
+    if (value.size() < 2U || value.size() > 2U)
+        return fail(error, "geometer.contract.array_size", "",
+                    "Array length is outside its contract bounds.");
+    writer.StartArray();
+    for (const auto& item_value : value)
+        if (!write_double(writer, item_value, error, -std::numeric_limits<double>::infinity(),
+                          std::numeric_limits<double>::infinity()))
+            return false;
+    writer.EndArray();
+    return true;
+}
+
+bool decode_ProjectedArc(const rapidjson::Value& value, ProjectedArc* out, const std::string& path,
+                         ContractError* error)
+{
+    static const char* const names[] = {"start",      "end", "center",     "radius",
+                                        "extent_rad", "ccw", "full_circle"};
+    if (!validate_object(value, names, 7U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("start");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "start"),
+                        "Required field is missing.");
+        if (!decode_HlrVector2(member->value, &out->start, child_path(path, "start"), error))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("end");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "end"),
+                        "Required field is missing.");
+        if (!decode_HlrVector2(member->value, &out->end, child_path(path, "end"), error))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("center");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "center"),
+                        "Required field is missing.");
+        if (!decode_HlrVector2(member->value, &out->center, child_path(path, "center"), error))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("radius");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "radius"),
+                        "Required field is missing.");
+        if (!decode_double(member->value, &out->radius, child_path(path, "radius"), error, 0,
+                           std::numeric_limits<double>::infinity()))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("extent_rad");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "extent_rad"),
+                        "Required field is missing.");
+        if (!decode_double(member->value, &out->extent_rad, child_path(path, "extent_rad"), error,
+                           0, 6.283185307179586))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("ccw");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "ccw"),
+                        "Required field is missing.");
+        if (!decode_boolean(member->value, &out->ccw, child_path(path, "ccw"), error))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("full_circle");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "full_circle"),
+                        "Required field is missing.");
+        if (!decode_boolean(member->value, &out->full_circle, child_path(path, "full_circle"),
+                            error))
+            return false;
+    }
+    return true;
+}
+
+bool write_ProjectedArc(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                        const ProjectedArc& value, ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("start");
+    if (!write_HlrVector2(writer, value.start, error))
+        return false;
+    writer.Key("end");
+    if (!write_HlrVector2(writer, value.end, error))
+        return false;
+    writer.Key("center");
+    if (!write_HlrVector2(writer, value.center, error))
+        return false;
+    writer.Key("radius");
+    if (!write_double(writer, value.radius, error, 0, std::numeric_limits<double>::infinity()))
+        return false;
+    writer.Key("extent_rad");
+    if (!write_double(writer, value.extent_rad, error, 0, 6.283185307179586))
+        return false;
+    writer.Key("ccw");
+    if (!(writer.Bool(value.ccw), true))
+        return false;
+    writer.Key("full_circle");
+    if (!(writer.Bool(value.full_circle), true))
+        return false;
+    writer.EndObject();
+    return true;
+}
+
+bool decode_ProjectionBounds(const rapidjson::Value& value, ProjectionBounds* out,
+                             const std::string& path, ContractError* error)
+{
+    static const char* const names[] = {"min_x", "min_y", "max_x", "max_y", "width", "height"};
+    if (!validate_object(value, names, 6U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("min_x");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "min_x"),
+                        "Required field is missing.");
+        if (!decode_double(member->value, &out->min_x, child_path(path, "min_x"), error,
+                           -std::numeric_limits<double>::infinity(),
+                           std::numeric_limits<double>::infinity()))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("min_y");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "min_y"),
+                        "Required field is missing.");
+        if (!decode_double(member->value, &out->min_y, child_path(path, "min_y"), error,
+                           -std::numeric_limits<double>::infinity(),
+                           std::numeric_limits<double>::infinity()))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("max_x");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "max_x"),
+                        "Required field is missing.");
+        if (!decode_double(member->value, &out->max_x, child_path(path, "max_x"), error,
+                           -std::numeric_limits<double>::infinity(),
+                           std::numeric_limits<double>::infinity()))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("max_y");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "max_y"),
+                        "Required field is missing.");
+        if (!decode_double(member->value, &out->max_y, child_path(path, "max_y"), error,
+                           -std::numeric_limits<double>::infinity(),
+                           std::numeric_limits<double>::infinity()))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("width");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "width"),
+                        "Required field is missing.");
+        if (!decode_double(member->value, &out->width, child_path(path, "width"), error, 0,
+                           std::numeric_limits<double>::infinity()))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("height");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "height"),
+                        "Required field is missing.");
+        if (!decode_double(member->value, &out->height, child_path(path, "height"), error, 0,
+                           std::numeric_limits<double>::infinity()))
+            return false;
+    }
+    return true;
+}
+
+bool write_ProjectionBounds(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                            const ProjectionBounds& value, ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("min_x");
+    if (!write_double(writer, value.min_x, error, -std::numeric_limits<double>::infinity(),
+                      std::numeric_limits<double>::infinity()))
+        return false;
+    writer.Key("min_y");
+    if (!write_double(writer, value.min_y, error, -std::numeric_limits<double>::infinity(),
+                      std::numeric_limits<double>::infinity()))
+        return false;
+    writer.Key("max_x");
+    if (!write_double(writer, value.max_x, error, -std::numeric_limits<double>::infinity(),
+                      std::numeric_limits<double>::infinity()))
+        return false;
+    writer.Key("max_y");
+    if (!write_double(writer, value.max_y, error, -std::numeric_limits<double>::infinity(),
+                      std::numeric_limits<double>::infinity()))
+        return false;
+    writer.Key("width");
+    if (!write_double(writer, value.width, error, 0, std::numeric_limits<double>::infinity()))
+        return false;
+    writer.Key("height");
+    if (!write_double(writer, value.height, error, 0, std::numeric_limits<double>::infinity()))
+        return false;
+    writer.EndObject();
+    return true;
+}
+
+bool decode_ProjectedGeometry(const rapidjson::Value& value, ProjectedGeometry* out,
+                              const std::string& path, ContractError* error)
+{
+    static const char* const names[] = {"segments", "arcs", "bounds"};
+    if (!validate_object(value, names, 3U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("segments");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "segments"),
+                        "Required field is missing.");
+        if (!decode_array(member->value, &out->segments, child_path(path, "segments"), error, 0U,
+                          4000000U, decode_ProjectedSegment))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("arcs");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "arcs"),
+                        "Required field is missing.");
+        if (!decode_array(member->value, &out->arcs, child_path(path, "arcs"), error, 0U, 4000000U,
+                          decode_ProjectedArc))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("bounds");
+        if (member != value.MemberEnd())
+        {
+            ProjectionBounds decoded{};
+            if (!decode_ProjectionBounds(member->value, &decoded, child_path(path, "bounds"),
+                                         error))
+                return false;
+            out->bounds = std::move(decoded);
+        }
+        else
+            out->bounds.reset();
+    }
+    return true;
+}
+
+bool write_ProjectedGeometry(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                             const ProjectedGeometry& value, ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("segments");
+    if (!write_array(writer, value.segments, error, 0U, 4000000U, write_ProjectedSegment))
+        return false;
+    writer.Key("arcs");
+    if (!write_array(writer, value.arcs, error, 0U, 4000000U, write_ProjectedArc))
+        return false;
+    if (value.bounds.has_value())
+    {
+        writer.Key("bounds");
+        if (!write_ProjectionBounds(writer, *value.bounds, error))
+            return false;
+    }
+    writer.EndObject();
+    return true;
+}
+
+bool decode_HlrProjectionModes(const rapidjson::Value& value, HlrProjectionModes* out,
+                               const std::string& path, ContractError* error)
+{
+    static const char* const names[] = {"outline", "detail", "bbox"};
+    if (!validate_object(value, names, 3U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("outline");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "outline"),
+                        "Required field is missing.");
+        if (!decode_ProjectedGeometry(member->value, &out->outline, child_path(path, "outline"),
+                                      error))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("detail");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "detail"),
+                        "Required field is missing.");
+        if (!decode_ProjectedGeometry(member->value, &out->detail, child_path(path, "detail"),
+                                      error))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("bbox");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "bbox"),
+                        "Required field is missing.");
+        if (!decode_ProjectedGeometry(member->value, &out->bbox, child_path(path, "bbox"), error))
+            return false;
+    }
+    return true;
+}
+
+bool write_HlrProjectionModes(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                              const HlrProjectionModes& value, ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("outline");
+    if (!write_ProjectedGeometry(writer, value.outline, error))
+        return false;
+    writer.Key("detail");
+    if (!write_ProjectedGeometry(writer, value.detail, error))
+        return false;
+    writer.Key("bbox");
+    if (!write_ProjectedGeometry(writer, value.bbox, error))
+        return false;
+    writer.EndObject();
+    return true;
+}
+
+bool decode_HlrProjectedView(const rapidjson::Value& value, HlrProjectedView* out,
+                             const std::string& path, ContractError* error)
+{
+    static const char* const names[] = {"id", "direction", "up", "modes"};
+    if (!validate_object(value, names, 4U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("id");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "id"),
+                        "Required field is missing.");
+        if (!decode_string(member->value, &out->id, child_path(path, "id"), error, 1U, 128U))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("direction");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "direction"),
+                        "Required field is missing.");
+        if (!decode_HlrVector3(member->value, &out->direction, child_path(path, "direction"),
+                               error))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("up");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "up"),
+                        "Required field is missing.");
+        if (!decode_HlrVector3(member->value, &out->up, child_path(path, "up"), error))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("modes");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "modes"),
+                        "Required field is missing.");
+        if (!decode_HlrProjectionModes(member->value, &out->modes, child_path(path, "modes"),
+                                       error))
+            return false;
+    }
+    return true;
+}
+
+bool write_HlrProjectedView(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                            const HlrProjectedView& value, ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("id");
+    if (!write_string(writer, value.id, error, 1U, 128U))
+        return false;
+    writer.Key("direction");
+    if (!write_HlrVector3(writer, value.direction, error))
+        return false;
+    writer.Key("up");
+    if (!write_HlrVector3(writer, value.up, error))
+        return false;
+    writer.Key("modes");
+    if (!write_HlrProjectionModes(writer, value.modes, error))
+        return false;
+    writer.EndObject();
+    return true;
+}
+
+bool decode_HlrProjectionAlgorithm(const rapidjson::Value& value, HlrProjectionAlgorithm* out,
+                                   const std::string& path, ContractError* error)
+{
+    if (!value.IsString())
+        return fail(error, "geometer.contract.type_mismatch", path, "Expected a string enum.");
+    const std::string text(value.GetString(), value.GetStringLength());
+    if (text == "poly")
+    {
+        *out = HlrProjectionAlgorithm::poly;
+        return true;
+    }
+    if (text == "exact")
+    {
+        *out = HlrProjectionAlgorithm::exact;
+        return true;
+    }
+    if (text == "fast")
+    {
+        *out = HlrProjectionAlgorithm::fast;
+        return true;
+    }
+    return fail(error, "geometer.contract.enum_mismatch", path, "Unknown enum value.");
+}
+
+bool write_HlrProjectionAlgorithm(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                  const HlrProjectionAlgorithm& value, ContractError* error)
+{
+    switch (value)
+    {
+    case HlrProjectionAlgorithm::poly:
+        writer.String("poly");
+        return true;
+    case HlrProjectionAlgorithm::exact:
+        writer.String("exact");
+        return true;
+    case HlrProjectionAlgorithm::fast:
+        writer.String("fast");
+        return true;
+    }
+    return fail(error, "geometer.contract.enum_mismatch", "", "Unknown enum value.");
+}
+
+bool decode_HlrViewSpec(const rapidjson::Value& value, HlrViewSpec* out, const std::string& path,
+                        ContractError* error)
+{
+    static const char* const names[] = {"id", "direction", "up"};
+    if (!validate_object(value, names, 3U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("id");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "id"),
+                        "Required field is missing.");
+        if (!decode_string(member->value, &out->id, child_path(path, "id"), error, 1U, 128U))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("direction");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "direction"),
+                        "Required field is missing.");
+        if (!decode_HlrVector3(member->value, &out->direction, child_path(path, "direction"),
+                               error))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("up");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "up"),
+                        "Required field is missing.");
+        if (!decode_HlrVector3(member->value, &out->up, child_path(path, "up"), error))
+            return false;
+    }
+    return true;
+}
+
+bool write_HlrViewSpec(rapidjson::Writer<rapidjson::StringBuffer>& writer, const HlrViewSpec& value,
+                       ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("id");
+    if (!write_string(writer, value.id, error, 1U, 128U))
+        return false;
+    writer.Key("direction");
+    if (!write_HlrVector3(writer, value.direction, error))
+        return false;
+    writer.Key("up");
+    if (!write_HlrVector3(writer, value.up, error))
+        return false;
+    writer.EndObject();
+    return true;
+}
+
+bool decode_HlrProjectionOptionsA0(const rapidjson::Value& value, HlrProjectionOptionsA0* out,
+                                   const std::string& path, ContractError* error)
+{
+    static const char* const names[] = {"views",
+                                        "output_outline",
+                                        "output_detail",
+                                        "output_bbox",
+                                        "model_transform",
+                                        "strip_root_placement",
+                                        "curve_mode",
+                                        "samples_per_curve",
+                                        "round_digits",
+                                        "edge_v_sharp",
+                                        "edge_v_outline",
+                                        "edge_v_smooth",
+                                        "edge_v_sewn",
+                                        "edge_v_iso",
+                                        "edge_h_sharp",
+                                        "edge_h_outline",
+                                        "edge_h_smooth",
+                                        "edge_h_sewn",
+                                        "edge_h_iso",
+                                        "union_outline_polygons",
+                                        "projection_algorithm",
+                                        "mesh_linear_deflection",
+                                        "mesh_angular_deflection",
+                                        "mesh_relative",
+                                        "mesh_deflection_mode",
+                                        "mesh_deflection_coefficient",
+                                        "outline_algorithm",
+                                        "hlr_angle_tolerance",
+                                        "fast"};
+    if (!validate_object(value, names, 29U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("views");
+        if (member != value.MemberEnd())
+        {
+            std::vector<HlrViewSpec> decoded{};
+            if (!decode_array(member->value, &decoded, child_path(path, "views"), error, 0U, 64U,
+                              decode_HlrViewSpec))
+                return false;
+            out->views = std::move(decoded);
+        }
+        else
+            out->views.reset();
+    }
+    {
+        const auto member = value.FindMember("output_outline");
+        if (member != value.MemberEnd())
+        {
+            bool decoded{};
+            if (!decode_boolean(member->value, &decoded, child_path(path, "output_outline"), error))
+                return false;
+            out->output_outline = std::move(decoded);
+        }
+        else
+            out->output_outline.reset();
+    }
+    {
+        const auto member = value.FindMember("output_detail");
+        if (member != value.MemberEnd())
+        {
+            bool decoded{};
+            if (!decode_boolean(member->value, &decoded, child_path(path, "output_detail"), error))
+                return false;
+            out->output_detail = std::move(decoded);
+        }
+        else
+            out->output_detail.reset();
+    }
+    {
+        const auto member = value.FindMember("output_bbox");
+        if (member != value.MemberEnd())
+        {
+            bool decoded{};
+            if (!decode_boolean(member->value, &decoded, child_path(path, "output_bbox"), error))
+                return false;
+            out->output_bbox = std::move(decoded);
+        }
+        else
+            out->output_bbox.reset();
+    }
+    {
+        const auto member = value.FindMember("model_transform");
+        if (member != value.MemberEnd())
+        {
+            HlrMatrix4x4 decoded{};
+            if (!decode_HlrMatrix4x4(member->value, &decoded, child_path(path, "model_transform"),
+                                     error))
+                return false;
+            out->model_transform = std::move(decoded);
+        }
+        else
+            out->model_transform.reset();
+    }
+    {
+        const auto member = value.FindMember("strip_root_placement");
+        if (member != value.MemberEnd())
+        {
+            bool decoded{};
+            if (!decode_boolean(member->value, &decoded, child_path(path, "strip_root_placement"),
+                                error))
+                return false;
+            out->strip_root_placement = std::move(decoded);
+        }
+        else
+            out->strip_root_placement.reset();
+    }
+    {
+        const auto member = value.FindMember("curve_mode");
+        if (member != value.MemberEnd())
+        {
+            HlrCurveMode decoded{};
+            if (!decode_HlrCurveMode(member->value, &decoded, child_path(path, "curve_mode"),
+                                     error))
+                return false;
+            out->curve_mode = std::move(decoded);
+        }
+        else
+            out->curve_mode.reset();
+    }
+    {
+        const auto member = value.FindMember("samples_per_curve");
+        if (member != value.MemberEnd())
+        {
+            std::uint32_t decoded{};
+            if (!decode_uint32(member->value, &decoded, child_path(path, "samples_per_curve"),
+                               error, 1ULL, 100000ULL))
+                return false;
+            out->samples_per_curve = std::move(decoded);
+        }
+        else
+            out->samples_per_curve.reset();
+    }
+    {
+        const auto member = value.FindMember("round_digits");
+        if (member != value.MemberEnd())
+        {
+            std::uint32_t decoded{};
+            if (!decode_uint32(member->value, &decoded, child_path(path, "round_digits"), error,
+                               0ULL, 9ULL))
+                return false;
+            out->round_digits = std::move(decoded);
+        }
+        else
+            out->round_digits.reset();
+    }
+    {
+        const auto member = value.FindMember("edge_v_sharp");
+        if (member != value.MemberEnd())
+        {
+            bool decoded{};
+            if (!decode_boolean(member->value, &decoded, child_path(path, "edge_v_sharp"), error))
+                return false;
+            out->edge_v_sharp = std::move(decoded);
+        }
+        else
+            out->edge_v_sharp.reset();
+    }
+    {
+        const auto member = value.FindMember("edge_v_outline");
+        if (member != value.MemberEnd())
+        {
+            bool decoded{};
+            if (!decode_boolean(member->value, &decoded, child_path(path, "edge_v_outline"), error))
+                return false;
+            out->edge_v_outline = std::move(decoded);
+        }
+        else
+            out->edge_v_outline.reset();
+    }
+    {
+        const auto member = value.FindMember("edge_v_smooth");
+        if (member != value.MemberEnd())
+        {
+            bool decoded{};
+            if (!decode_boolean(member->value, &decoded, child_path(path, "edge_v_smooth"), error))
+                return false;
+            out->edge_v_smooth = std::move(decoded);
+        }
+        else
+            out->edge_v_smooth.reset();
+    }
+    {
+        const auto member = value.FindMember("edge_v_sewn");
+        if (member != value.MemberEnd())
+        {
+            bool decoded{};
+            if (!decode_boolean(member->value, &decoded, child_path(path, "edge_v_sewn"), error))
+                return false;
+            out->edge_v_sewn = std::move(decoded);
+        }
+        else
+            out->edge_v_sewn.reset();
+    }
+    {
+        const auto member = value.FindMember("edge_v_iso");
+        if (member != value.MemberEnd())
+        {
+            bool decoded{};
+            if (!decode_boolean(member->value, &decoded, child_path(path, "edge_v_iso"), error))
+                return false;
+            out->edge_v_iso = std::move(decoded);
+        }
+        else
+            out->edge_v_iso.reset();
+    }
+    {
+        const auto member = value.FindMember("edge_h_sharp");
+        if (member != value.MemberEnd())
+        {
+            bool decoded{};
+            if (!decode_boolean(member->value, &decoded, child_path(path, "edge_h_sharp"), error))
+                return false;
+            out->edge_h_sharp = std::move(decoded);
+        }
+        else
+            out->edge_h_sharp.reset();
+    }
+    {
+        const auto member = value.FindMember("edge_h_outline");
+        if (member != value.MemberEnd())
+        {
+            bool decoded{};
+            if (!decode_boolean(member->value, &decoded, child_path(path, "edge_h_outline"), error))
+                return false;
+            out->edge_h_outline = std::move(decoded);
+        }
+        else
+            out->edge_h_outline.reset();
+    }
+    {
+        const auto member = value.FindMember("edge_h_smooth");
+        if (member != value.MemberEnd())
+        {
+            bool decoded{};
+            if (!decode_boolean(member->value, &decoded, child_path(path, "edge_h_smooth"), error))
+                return false;
+            out->edge_h_smooth = std::move(decoded);
+        }
+        else
+            out->edge_h_smooth.reset();
+    }
+    {
+        const auto member = value.FindMember("edge_h_sewn");
+        if (member != value.MemberEnd())
+        {
+            bool decoded{};
+            if (!decode_boolean(member->value, &decoded, child_path(path, "edge_h_sewn"), error))
+                return false;
+            out->edge_h_sewn = std::move(decoded);
+        }
+        else
+            out->edge_h_sewn.reset();
+    }
+    {
+        const auto member = value.FindMember("edge_h_iso");
+        if (member != value.MemberEnd())
+        {
+            bool decoded{};
+            if (!decode_boolean(member->value, &decoded, child_path(path, "edge_h_iso"), error))
+                return false;
+            out->edge_h_iso = std::move(decoded);
+        }
+        else
+            out->edge_h_iso.reset();
+    }
+    {
+        const auto member = value.FindMember("union_outline_polygons");
+        if (member != value.MemberEnd())
+        {
+            bool decoded{};
+            if (!decode_boolean(member->value, &decoded, child_path(path, "union_outline_polygons"),
+                                error))
+                return false;
+            out->union_outline_polygons = std::move(decoded);
+        }
+        else
+            out->union_outline_polygons.reset();
+    }
+    {
+        const auto member = value.FindMember("projection_algorithm");
+        if (member != value.MemberEnd())
+        {
+            HlrProjectionAlgorithm decoded{};
+            if (!decode_HlrProjectionAlgorithm(member->value, &decoded,
+                                               child_path(path, "projection_algorithm"), error))
+                return false;
+            out->projection_algorithm = std::move(decoded);
+        }
+        else
+            out->projection_algorithm.reset();
+    }
+    {
+        const auto member = value.FindMember("mesh_linear_deflection");
+        if (member != value.MemberEnd())
+        {
+            double decoded{};
+            if (!decode_double(member->value, &decoded, child_path(path, "mesh_linear_deflection"),
+                               error, 0, std::numeric_limits<double>::infinity()))
+                return false;
+            out->mesh_linear_deflection = std::move(decoded);
+        }
+        else
+            out->mesh_linear_deflection.reset();
+    }
+    {
+        const auto member = value.FindMember("mesh_angular_deflection");
+        if (member != value.MemberEnd())
+        {
+            double decoded{};
+            if (!decode_double(member->value, &decoded, child_path(path, "mesh_angular_deflection"),
+                               error, 0, 3.141592653589793))
+                return false;
+            out->mesh_angular_deflection = std::move(decoded);
+        }
+        else
+            out->mesh_angular_deflection.reset();
+    }
+    {
+        const auto member = value.FindMember("mesh_relative");
+        if (member != value.MemberEnd())
+        {
+            bool decoded{};
+            if (!decode_boolean(member->value, &decoded, child_path(path, "mesh_relative"), error))
+                return false;
+            out->mesh_relative = std::move(decoded);
+        }
+        else
+            out->mesh_relative.reset();
+    }
+    {
+        const auto member = value.FindMember("mesh_deflection_mode");
+        if (member != value.MemberEnd())
+        {
+            HlrMeshDeflectionMode decoded{};
+            if (!decode_HlrMeshDeflectionMode(member->value, &decoded,
+                                              child_path(path, "mesh_deflection_mode"), error))
+                return false;
+            out->mesh_deflection_mode = std::move(decoded);
+        }
+        else
+            out->mesh_deflection_mode.reset();
+    }
+    {
+        const auto member = value.FindMember("mesh_deflection_coefficient");
+        if (member != value.MemberEnd())
+        {
+            double decoded{};
+            if (!decode_double(member->value, &decoded,
+                               child_path(path, "mesh_deflection_coefficient"), error, 0,
+                               std::numeric_limits<double>::infinity()))
+                return false;
+            out->mesh_deflection_coefficient = std::move(decoded);
+        }
+        else
+            out->mesh_deflection_coefficient.reset();
+    }
+    {
+        const auto member = value.FindMember("outline_algorithm");
+        if (member != value.MemberEnd())
+        {
+            HlrOutlineAlgorithm decoded{};
+            if (!decode_HlrOutlineAlgorithm(member->value, &decoded,
+                                            child_path(path, "outline_algorithm"), error))
+                return false;
+            out->outline_algorithm = std::move(decoded);
+        }
+        else
+            out->outline_algorithm.reset();
+    }
+    {
+        const auto member = value.FindMember("hlr_angle_tolerance");
+        if (member != value.MemberEnd())
+        {
+            double decoded{};
+            if (!decode_double(member->value, &decoded, child_path(path, "hlr_angle_tolerance"),
+                               error, 0, 3.141592653589793))
+                return false;
+            out->hlr_angle_tolerance = std::move(decoded);
+        }
+        else
+            out->hlr_angle_tolerance.reset();
+    }
+    {
+        const auto member = value.FindMember("fast");
+        if (member != value.MemberEnd())
+        {
+            FastHlrOptionsA0 decoded{};
+            if (!decode_FastHlrOptionsA0(member->value, &decoded, child_path(path, "fast"), error))
+                return false;
+            out->fast = std::move(decoded);
+        }
+        else
+            out->fast.reset();
+    }
+    return true;
+}
+
+bool write_HlrProjectionOptionsA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                  const HlrProjectionOptionsA0& value, ContractError* error)
+{
+    writer.StartObject();
+    if (value.views.has_value())
+    {
+        writer.Key("views");
+        if (!write_array(writer, *value.views, error, 0U, 64U, write_HlrViewSpec))
+            return false;
+    }
+    if (value.output_outline.has_value())
+    {
+        writer.Key("output_outline");
+        if (!(writer.Bool(*value.output_outline), true))
+            return false;
+    }
+    if (value.output_detail.has_value())
+    {
+        writer.Key("output_detail");
+        if (!(writer.Bool(*value.output_detail), true))
+            return false;
+    }
+    if (value.output_bbox.has_value())
+    {
+        writer.Key("output_bbox");
+        if (!(writer.Bool(*value.output_bbox), true))
+            return false;
+    }
+    if (value.model_transform.has_value())
+    {
+        writer.Key("model_transform");
+        if (!write_HlrMatrix4x4(writer, *value.model_transform, error))
+            return false;
+    }
+    if (value.strip_root_placement.has_value())
+    {
+        writer.Key("strip_root_placement");
+        if (!(writer.Bool(*value.strip_root_placement), true))
+            return false;
+    }
+    if (value.curve_mode.has_value())
+    {
+        writer.Key("curve_mode");
+        if (!write_HlrCurveMode(writer, *value.curve_mode, error))
+            return false;
+    }
+    if (value.samples_per_curve.has_value())
+    {
+        writer.Key("samples_per_curve");
+        if (!write_uint32(writer, *value.samples_per_curve, error, 1ULL, 100000ULL))
+            return false;
+    }
+    if (value.round_digits.has_value())
+    {
+        writer.Key("round_digits");
+        if (!write_uint32(writer, *value.round_digits, error, 0ULL, 9ULL))
+            return false;
+    }
+    if (value.edge_v_sharp.has_value())
+    {
+        writer.Key("edge_v_sharp");
+        if (!(writer.Bool(*value.edge_v_sharp), true))
+            return false;
+    }
+    if (value.edge_v_outline.has_value())
+    {
+        writer.Key("edge_v_outline");
+        if (!(writer.Bool(*value.edge_v_outline), true))
+            return false;
+    }
+    if (value.edge_v_smooth.has_value())
+    {
+        writer.Key("edge_v_smooth");
+        if (!(writer.Bool(*value.edge_v_smooth), true))
+            return false;
+    }
+    if (value.edge_v_sewn.has_value())
+    {
+        writer.Key("edge_v_sewn");
+        if (!(writer.Bool(*value.edge_v_sewn), true))
+            return false;
+    }
+    if (value.edge_v_iso.has_value())
+    {
+        writer.Key("edge_v_iso");
+        if (!(writer.Bool(*value.edge_v_iso), true))
+            return false;
+    }
+    if (value.edge_h_sharp.has_value())
+    {
+        writer.Key("edge_h_sharp");
+        if (!(writer.Bool(*value.edge_h_sharp), true))
+            return false;
+    }
+    if (value.edge_h_outline.has_value())
+    {
+        writer.Key("edge_h_outline");
+        if (!(writer.Bool(*value.edge_h_outline), true))
+            return false;
+    }
+    if (value.edge_h_smooth.has_value())
+    {
+        writer.Key("edge_h_smooth");
+        if (!(writer.Bool(*value.edge_h_smooth), true))
+            return false;
+    }
+    if (value.edge_h_sewn.has_value())
+    {
+        writer.Key("edge_h_sewn");
+        if (!(writer.Bool(*value.edge_h_sewn), true))
+            return false;
+    }
+    if (value.edge_h_iso.has_value())
+    {
+        writer.Key("edge_h_iso");
+        if (!(writer.Bool(*value.edge_h_iso), true))
+            return false;
+    }
+    if (value.union_outline_polygons.has_value())
+    {
+        writer.Key("union_outline_polygons");
+        if (!(writer.Bool(*value.union_outline_polygons), true))
+            return false;
+    }
+    if (value.projection_algorithm.has_value())
+    {
+        writer.Key("projection_algorithm");
+        if (!write_HlrProjectionAlgorithm(writer, *value.projection_algorithm, error))
+            return false;
+    }
+    if (value.mesh_linear_deflection.has_value())
+    {
+        writer.Key("mesh_linear_deflection");
+        if (!write_double(writer, *value.mesh_linear_deflection, error, 0,
+                          std::numeric_limits<double>::infinity()))
+            return false;
+    }
+    if (value.mesh_angular_deflection.has_value())
+    {
+        writer.Key("mesh_angular_deflection");
+        if (!write_double(writer, *value.mesh_angular_deflection, error, 0, 3.141592653589793))
+            return false;
+    }
+    if (value.mesh_relative.has_value())
+    {
+        writer.Key("mesh_relative");
+        if (!(writer.Bool(*value.mesh_relative), true))
+            return false;
+    }
+    if (value.mesh_deflection_mode.has_value())
+    {
+        writer.Key("mesh_deflection_mode");
+        if (!write_HlrMeshDeflectionMode(writer, *value.mesh_deflection_mode, error))
+            return false;
+    }
+    if (value.mesh_deflection_coefficient.has_value())
+    {
+        writer.Key("mesh_deflection_coefficient");
+        if (!write_double(writer, *value.mesh_deflection_coefficient, error, 0,
+                          std::numeric_limits<double>::infinity()))
+            return false;
+    }
+    if (value.outline_algorithm.has_value())
+    {
+        writer.Key("outline_algorithm");
+        if (!write_HlrOutlineAlgorithm(writer, *value.outline_algorithm, error))
+            return false;
+    }
+    if (value.hlr_angle_tolerance.has_value())
+    {
+        writer.Key("hlr_angle_tolerance");
+        if (!write_double(writer, *value.hlr_angle_tolerance, error, 0, 3.141592653589793))
+            return false;
+    }
+    if (value.fast.has_value())
+    {
+        writer.Key("fast");
+        if (!write_FastHlrOptionsA0(writer, *value.fast, error))
+            return false;
+    }
+    writer.EndObject();
+    return true;
+}
+
+bool decode_HlrSourceKind(const rapidjson::Value& value, HlrSourceKind* out,
+                          const std::string& path, ContractError* error)
+{
+    if (!value.IsString())
+        return fail(error, "geometer.contract.type_mismatch", path, "Expected a string enum.");
+    const std::string text(value.GetString(), value.GetStringLength());
+    if (text == "step")
+    {
+        *out = HlrSourceKind::step;
+        return true;
+    }
+    if (text == "indexed_mesh")
+    {
+        *out = HlrSourceKind::indexed_mesh;
+        return true;
+    }
+    return fail(error, "geometer.contract.enum_mismatch", path, "Unknown enum value.");
+}
+
+bool write_HlrSourceKind(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                         const HlrSourceKind& value, ContractError* error)
+{
+    switch (value)
+    {
+    case HlrSourceKind::step:
+        writer.String("step");
+        return true;
+    case HlrSourceKind::indexed_mesh:
+        writer.String("indexed_mesh");
+        return true;
+    }
+    return fail(error, "geometer.contract.enum_mismatch", "", "Unknown enum value.");
+}
+
+bool decode_HlrProjectionSource(const rapidjson::Value& value, HlrProjectionSource* out,
+                                const std::string& path, ContractError* error)
+{
+    static const char* const names[] = {"kind", "hash"};
+    if (!validate_object(value, names, 2U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("kind");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "kind"),
+                        "Required field is missing.");
+        if (!decode_HlrSourceKind(member->value, &out->kind, child_path(path, "kind"), error))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("hash");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "hash"),
+                        "Required field is missing.");
+        if (!decode_string(member->value, &out->hash, child_path(path, "hash"), error, 64U, 64U))
+            return false;
+    }
+    return true;
+}
+
+bool write_HlrProjectionSource(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                               const HlrProjectionSource& value, ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("kind");
+    if (!write_HlrSourceKind(writer, value.kind, error))
+        return false;
+    writer.Key("hash");
+    if (!write_string(writer, value.hash, error, 64U, 64U))
+        return false;
+    writer.EndObject();
+    return true;
+}
+
+bool decode_HlrProjectionTimings(const rapidjson::Value& value, HlrProjectionTimings* out,
+                                 const std::string& path, ContractError* error)
+{
+    static const char* const names[] = {"step_read_ms", "mesh_ms", "hlr_ms", "extract_ms"};
+    if (!validate_object(value, names, 4U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("step_read_ms");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "step_read_ms"),
+                        "Required field is missing.");
+        if (!decode_double(member->value, &out->step_read_ms, child_path(path, "step_read_ms"),
+                           error, 0, std::numeric_limits<double>::infinity()))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("mesh_ms");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "mesh_ms"),
+                        "Required field is missing.");
+        if (!decode_double(member->value, &out->mesh_ms, child_path(path, "mesh_ms"), error, 0,
+                           std::numeric_limits<double>::infinity()))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("hlr_ms");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "hlr_ms"),
+                        "Required field is missing.");
+        if (!decode_double(member->value, &out->hlr_ms, child_path(path, "hlr_ms"), error, 0,
+                           std::numeric_limits<double>::infinity()))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("extract_ms");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "extract_ms"),
+                        "Required field is missing.");
+        if (!decode_double(member->value, &out->extract_ms, child_path(path, "extract_ms"), error,
+                           0, std::numeric_limits<double>::infinity()))
+            return false;
+    }
+    return true;
+}
+
+bool write_HlrProjectionTimings(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                const HlrProjectionTimings& value, ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("step_read_ms");
+    if (!write_double(writer, value.step_read_ms, error, 0,
+                      std::numeric_limits<double>::infinity()))
+        return false;
+    writer.Key("mesh_ms");
+    if (!write_double(writer, value.mesh_ms, error, 0, std::numeric_limits<double>::infinity()))
+        return false;
+    writer.Key("hlr_ms");
+    if (!write_double(writer, value.hlr_ms, error, 0, std::numeric_limits<double>::infinity()))
+        return false;
+    writer.Key("extract_ms");
+    if (!write_double(writer, value.extract_ms, error, 0, std::numeric_limits<double>::infinity()))
+        return false;
+    writer.EndObject();
+    return true;
+}
+
+bool decode_HlrProjectionResultA0(const rapidjson::Value& value, HlrProjectionResultA0* out,
+                                  const std::string& path, ContractError* error)
+{
+    static const char* const names[] = {"schema", "units", "source", "views", "timings"};
+    if (!validate_object(value, names, 5U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("schema");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "schema"),
+                        "Required field is missing.");
+        if (!decode_literal_string(member->value, &out->schema, child_path(path, "schema"), error,
+                                   "geometry.hlr_projection.result.a0"))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("units");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "units"),
+                        "Required field is missing.");
+        if (!decode_literal_string(member->value, &out->units, child_path(path, "units"), error,
+                                   "mm"))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("source");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "source"),
+                        "Required field is missing.");
+        if (!decode_HlrProjectionSource(member->value, &out->source, child_path(path, "source"),
+                                        error))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("views");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "views"),
+                        "Required field is missing.");
+        if (!decode_array(member->value, &out->views, child_path(path, "views"), error, 0U, 64U,
+                          decode_HlrProjectedView))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("timings");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "timings"),
+                        "Required field is missing.");
+        if (!decode_HlrProjectionTimings(member->value, &out->timings, child_path(path, "timings"),
+                                         error))
+            return false;
+    }
+    return true;
+}
+
+bool write_HlrProjectionResultA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                 const HlrProjectionResultA0& value, ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("schema");
+    if (!write_literal_string(writer, value.schema, error, "geometry.hlr_projection.result.a0"))
+        return false;
+    writer.Key("units");
+    if (!write_literal_string(writer, value.units, error, "mm"))
+        return false;
+    writer.Key("source");
+    if (!write_HlrProjectionSource(writer, value.source, error))
+        return false;
+    writer.Key("views");
+    if (!write_array(writer, value.views, error, 0U, 64U, write_HlrProjectedView))
+        return false;
+    writer.Key("timings");
+    if (!write_HlrProjectionTimings(writer, value.timings, error))
         return false;
     writer.EndObject();
     return true;
@@ -6956,6 +9043,1266 @@ bool write_IpcWelcomeA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
     return true;
 }
 
+bool decode_IllustrationMatrix4x4(const rapidjson::Value& value, IllustrationMatrix4x4* out,
+                                  const std::string& path, ContractError* error)
+{
+    if (!value.IsArray() || value.Size() < 16U || value.Size() > 16U)
+        return fail(error, "geometer.contract.array_size", path,
+                    "Array length is outside its contract bounds.");
+    out->clear();
+    out->reserve(value.Size());
+    for (rapidjson::SizeType i = 0; i < value.Size(); ++i)
+    {
+        double item_value{};
+        if (!decode_double(value[i], &item_value, path + "/" + std::to_string(i), error,
+                           -std::numeric_limits<double>::infinity(),
+                           std::numeric_limits<double>::infinity()))
+            return false;
+        out->push_back(std::move(item_value));
+    }
+    return true;
+}
+
+bool write_IllustrationMatrix4x4(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                 const IllustrationMatrix4x4& value, ContractError* error)
+{
+    if (value.size() < 16U || value.size() > 16U)
+        return fail(error, "geometer.contract.array_size", "",
+                    "Array length is outside its contract bounds.");
+    writer.StartArray();
+    for (const auto& item_value : value)
+        if (!write_double(writer, item_value, error, -std::numeric_limits<double>::infinity(),
+                          std::numeric_limits<double>::infinity()))
+            return false;
+    writer.EndArray();
+    return true;
+}
+
+bool decode_IllustrationVector3(const rapidjson::Value& value, IllustrationVector3* out,
+                                const std::string& path, ContractError* error)
+{
+    if (!value.IsArray() || value.Size() < 3U || value.Size() > 3U)
+        return fail(error, "geometer.contract.array_size", path,
+                    "Array length is outside its contract bounds.");
+    out->clear();
+    out->reserve(value.Size());
+    for (rapidjson::SizeType i = 0; i < value.Size(); ++i)
+    {
+        double item_value{};
+        if (!decode_double(value[i], &item_value, path + "/" + std::to_string(i), error,
+                           -std::numeric_limits<double>::infinity(),
+                           std::numeric_limits<double>::infinity()))
+            return false;
+        out->push_back(std::move(item_value));
+    }
+    return true;
+}
+
+bool write_IllustrationVector3(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                               const IllustrationVector3& value, ContractError* error)
+{
+    if (value.size() < 3U || value.size() > 3U)
+        return fail(error, "geometer.contract.array_size", "",
+                    "Array length is outside its contract bounds.");
+    writer.StartArray();
+    for (const auto& item_value : value)
+        if (!write_double(writer, item_value, error, -std::numeric_limits<double>::infinity(),
+                          std::numeric_limits<double>::infinity()))
+            return false;
+    writer.EndArray();
+    return true;
+}
+
+bool decode_MeshIllustrationMaterial(const rapidjson::Value& value, MeshIllustrationMaterial* out,
+                                     const std::string& path, ContractError* error)
+{
+    static const char* const names[] = {"color", "opacity", "name"};
+    if (!validate_object(value, names, 3U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("color");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "color"),
+                        "Required field is missing.");
+        if (!decode_IllustrationVector3(member->value, &out->color, child_path(path, "color"),
+                                        error))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("opacity");
+        if (member != value.MemberEnd())
+        {
+            double decoded{};
+            if (!decode_double(member->value, &decoded, child_path(path, "opacity"), error, 0, 1))
+                return false;
+            out->opacity = std::move(decoded);
+        }
+        else
+            out->opacity.reset();
+    }
+    {
+        const auto member = value.FindMember("name");
+        if (member != value.MemberEnd())
+        {
+            std::string decoded{};
+            if (!decode_string(member->value, &decoded, child_path(path, "name"), error, 0U, 1024U))
+                return false;
+            out->name = std::move(decoded);
+        }
+        else
+            out->name.reset();
+    }
+    return true;
+}
+
+bool write_MeshIllustrationMaterial(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                    const MeshIllustrationMaterial& value, ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("color");
+    if (!write_IllustrationVector3(writer, value.color, error))
+        return false;
+    if (value.opacity.has_value())
+    {
+        writer.Key("opacity");
+        if (!write_double(writer, *value.opacity, error, 0, 1))
+            return false;
+    }
+    if (value.name.has_value())
+    {
+        writer.Key("name");
+        if (!write_string(writer, *value.name, error, 0U, 1024U))
+            return false;
+    }
+    writer.EndObject();
+    return true;
+}
+
+bool decode_MeshIllustrationMesh(const rapidjson::Value& value, MeshIllustrationMesh* out,
+                                 const std::string& path, ContractError* error)
+{
+    static const char* const names[] = {"id",
+                                        "positions",
+                                        "normals",
+                                        "indices",
+                                        "matrix",
+                                        "materials",
+                                        "triangle_material_indices",
+                                        "double_sided"};
+    if (!validate_object(value, names, 8U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("id");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "id"),
+                        "Required field is missing.");
+        if (!decode_string(member->value, &out->id, child_path(path, "id"), error, 1U, 1024U))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("positions");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "positions"),
+                        "Required field is missing.");
+        if (!decode_array(member->value, &out->positions, child_path(path, "positions"), error, 9U,
+                          6000000U, decode_double_item))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("normals");
+        if (member != value.MemberEnd())
+        {
+            std::vector<double> decoded{};
+            if (!decode_array(member->value, &decoded, child_path(path, "normals"), error, 0U,
+                              6000000U, decode_double_item))
+                return false;
+            out->normals = std::move(decoded);
+        }
+        else
+            out->normals.reset();
+    }
+    {
+        const auto member = value.FindMember("indices");
+        if (member != value.MemberEnd())
+        {
+            std::vector<std::uint32_t> decoded{};
+            if (!decode_array(member->value, &decoded, child_path(path, "indices"), error, 0U,
+                              6000000U, decode_uint32_item))
+                return false;
+            out->indices = std::move(decoded);
+        }
+        else
+            out->indices.reset();
+    }
+    {
+        const auto member = value.FindMember("matrix");
+        if (member != value.MemberEnd())
+        {
+            IllustrationMatrix4x4 decoded{};
+            if (!decode_IllustrationMatrix4x4(member->value, &decoded, child_path(path, "matrix"),
+                                              error))
+                return false;
+            out->matrix = std::move(decoded);
+        }
+        else
+            out->matrix.reset();
+    }
+    {
+        const auto member = value.FindMember("materials");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "materials"),
+                        "Required field is missing.");
+        if (!decode_array(member->value, &out->materials, child_path(path, "materials"), error, 1U,
+                          65536U, decode_MeshIllustrationMaterial))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("triangle_material_indices");
+        if (member != value.MemberEnd())
+        {
+            std::vector<std::uint32_t> decoded{};
+            if (!decode_array(member->value, &decoded,
+                              child_path(path, "triangle_material_indices"), error, 0U, 2000000U,
+                              decode_uint32_item))
+                return false;
+            out->triangle_material_indices = std::move(decoded);
+        }
+        else
+            out->triangle_material_indices.reset();
+    }
+    {
+        const auto member = value.FindMember("double_sided");
+        if (member != value.MemberEnd())
+        {
+            bool decoded{};
+            if (!decode_boolean(member->value, &decoded, child_path(path, "double_sided"), error))
+                return false;
+            out->double_sided = std::move(decoded);
+        }
+        else
+            out->double_sided.reset();
+    }
+    return true;
+}
+
+bool write_MeshIllustrationMesh(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                const MeshIllustrationMesh& value, ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("id");
+    if (!write_string(writer, value.id, error, 1U, 1024U))
+        return false;
+    writer.Key("positions");
+    if (!write_array(writer, value.positions, error, 9U, 6000000U, write_double_item))
+        return false;
+    if (value.normals.has_value())
+    {
+        writer.Key("normals");
+        if (!write_array(writer, *value.normals, error, 0U, 6000000U, write_double_item))
+            return false;
+    }
+    if (value.indices.has_value())
+    {
+        writer.Key("indices");
+        if (!write_array(writer, *value.indices, error, 0U, 6000000U, write_uint32_item))
+            return false;
+    }
+    if (value.matrix.has_value())
+    {
+        writer.Key("matrix");
+        if (!write_IllustrationMatrix4x4(writer, *value.matrix, error))
+            return false;
+    }
+    writer.Key("materials");
+    if (!write_array(writer, value.materials, error, 1U, 65536U, write_MeshIllustrationMaterial))
+        return false;
+    if (value.triangle_material_indices.has_value())
+    {
+        writer.Key("triangle_material_indices");
+        if (!write_array(writer, *value.triangle_material_indices, error, 0U, 2000000U,
+                         write_uint32_item))
+            return false;
+    }
+    if (value.double_sided.has_value())
+    {
+        writer.Key("double_sided");
+        if (!(writer.Bool(*value.double_sided), true))
+            return false;
+    }
+    writer.EndObject();
+    return true;
+}
+
+bool decode_MeshIllustrationView(const rapidjson::Value& value, MeshIllustrationView* out,
+                                 const std::string& path, ContractError* error)
+{
+    static const char* const names[] = {"direction", "up", "mirror_x"};
+    if (!validate_object(value, names, 3U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("direction");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "direction"),
+                        "Required field is missing.");
+        if (!decode_IllustrationVector3(member->value, &out->direction,
+                                        child_path(path, "direction"), error))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("up");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "up"),
+                        "Required field is missing.");
+        if (!decode_IllustrationVector3(member->value, &out->up, child_path(path, "up"), error))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("mirror_x");
+        if (member != value.MemberEnd())
+        {
+            bool decoded{};
+            if (!decode_boolean(member->value, &decoded, child_path(path, "mirror_x"), error))
+                return false;
+            out->mirror_x = std::move(decoded);
+        }
+        else
+            out->mirror_x.reset();
+    }
+    return true;
+}
+
+bool write_MeshIllustrationView(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                const MeshIllustrationView& value, ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("direction");
+    if (!write_IllustrationVector3(writer, value.direction, error))
+        return false;
+    writer.Key("up");
+    if (!write_IllustrationVector3(writer, value.up, error))
+        return false;
+    if (value.mirror_x.has_value())
+    {
+        writer.Key("mirror_x");
+        if (!(writer.Bool(*value.mirror_x), true))
+            return false;
+    }
+    writer.EndObject();
+    return true;
+}
+
+bool decode_MeshIllustrationPrepareOptions(const rapidjson::Value& value,
+                                           MeshIllustrationPrepareOptions* out,
+                                           const std::string& path, ContractError* error)
+{
+    static const char* const names[] = {"max_triangles", "weld_tolerance"};
+    if (!validate_object(value, names, 2U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("max_triangles");
+        if (member != value.MemberEnd())
+        {
+            std::uint32_t decoded{};
+            if (!decode_uint32(member->value, &decoded, child_path(path, "max_triangles"), error,
+                               1ULL, 2000000ULL))
+                return false;
+            out->max_triangles = std::move(decoded);
+        }
+        else
+            out->max_triangles.reset();
+    }
+    {
+        const auto member = value.FindMember("weld_tolerance");
+        if (member != value.MemberEnd())
+        {
+            double decoded{};
+            if (!decode_double(member->value, &decoded, child_path(path, "weld_tolerance"), error,
+                               0, std::numeric_limits<double>::infinity()))
+                return false;
+            out->weld_tolerance = std::move(decoded);
+        }
+        else
+            out->weld_tolerance.reset();
+    }
+    return true;
+}
+
+bool write_MeshIllustrationPrepareOptions(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                          const MeshIllustrationPrepareOptions& value,
+                                          ContractError* error)
+{
+    writer.StartObject();
+    if (value.max_triangles.has_value())
+    {
+        writer.Key("max_triangles");
+        if (!write_uint32(writer, *value.max_triangles, error, 1ULL, 2000000ULL))
+            return false;
+    }
+    if (value.weld_tolerance.has_value())
+    {
+        writer.Key("weld_tolerance");
+        if (!write_double(writer, *value.weld_tolerance, error, 0,
+                          std::numeric_limits<double>::infinity()))
+            return false;
+    }
+    writer.EndObject();
+    return true;
+}
+
+bool decode_MeshIllustrationShading(const rapidjson::Value& value, MeshIllustrationShading* out,
+                                    const std::string& path, ContractError* error)
+{
+    if (!value.IsString())
+        return fail(error, "geometer.contract.type_mismatch", path, "Expected a string enum.");
+    const std::string text(value.GetString(), value.GetStringLength());
+    if (text == "unlit")
+    {
+        *out = MeshIllustrationShading::unlit;
+        return true;
+    }
+    if (text == "flat")
+    {
+        *out = MeshIllustrationShading::flat;
+        return true;
+    }
+    if (text == "lambert")
+    {
+        *out = MeshIllustrationShading::lambert;
+        return true;
+    }
+    if (text == "banded")
+    {
+        *out = MeshIllustrationShading::banded;
+        return true;
+    }
+    if (text == "toon")
+    {
+        *out = MeshIllustrationShading::toon;
+        return true;
+    }
+    return fail(error, "geometer.contract.enum_mismatch", path, "Unknown enum value.");
+}
+
+bool write_MeshIllustrationShading(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                   const MeshIllustrationShading& value, ContractError* error)
+{
+    switch (value)
+    {
+    case MeshIllustrationShading::unlit:
+        writer.String("unlit");
+        return true;
+    case MeshIllustrationShading::flat:
+        writer.String("flat");
+        return true;
+    case MeshIllustrationShading::lambert:
+        writer.String("lambert");
+        return true;
+    case MeshIllustrationShading::banded:
+        writer.String("banded");
+        return true;
+    case MeshIllustrationShading::toon:
+        writer.String("toon");
+        return true;
+    }
+    return fail(error, "geometer.contract.enum_mismatch", "", "Unknown enum value.");
+}
+
+bool decode_MeshIllustrationStyleA0(const rapidjson::Value& value, MeshIllustrationStyleA0* out,
+                                    const std::string& path, ContractError* error)
+{
+    static const char* const names[] = {"shading",
+                                        "ambient",
+                                        "key_intensity",
+                                        "light_direction",
+                                        "bands",
+                                        "source_colors",
+                                        "fallback_color",
+                                        "background",
+                                        "transparent_background",
+                                        "fuse_surfaces",
+                                        "layer_coplanar_materials",
+                                        "show_hlr_outline",
+                                        "show_hlr_detail",
+                                        "show_outlines",
+                                        "show_creases",
+                                        "crease_angle_degrees",
+                                        "outline_color",
+                                        "crease_color",
+                                        "outline_width",
+                                        "crease_width",
+                                        "double_sided",
+                                        "rim_amount"};
+    if (!validate_object(value, names, 22U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("shading");
+        if (member != value.MemberEnd())
+        {
+            MeshIllustrationShading decoded{};
+            if (!decode_MeshIllustrationShading(member->value, &decoded,
+                                                child_path(path, "shading"), error))
+                return false;
+            out->shading = std::move(decoded);
+        }
+        else
+            out->shading.reset();
+    }
+    {
+        const auto member = value.FindMember("ambient");
+        if (member != value.MemberEnd())
+        {
+            double decoded{};
+            if (!decode_double(member->value, &decoded, child_path(path, "ambient"), error, 0, 1))
+                return false;
+            out->ambient = std::move(decoded);
+        }
+        else
+            out->ambient.reset();
+    }
+    {
+        const auto member = value.FindMember("key_intensity");
+        if (member != value.MemberEnd())
+        {
+            double decoded{};
+            if (!decode_double(member->value, &decoded, child_path(path, "key_intensity"), error, 0,
+                               4))
+                return false;
+            out->key_intensity = std::move(decoded);
+        }
+        else
+            out->key_intensity.reset();
+    }
+    {
+        const auto member = value.FindMember("light_direction");
+        if (member != value.MemberEnd())
+        {
+            IllustrationVector3 decoded{};
+            if (!decode_IllustrationVector3(member->value, &decoded,
+                                            child_path(path, "light_direction"), error))
+                return false;
+            out->light_direction = std::move(decoded);
+        }
+        else
+            out->light_direction.reset();
+    }
+    {
+        const auto member = value.FindMember("bands");
+        if (member != value.MemberEnd())
+        {
+            std::uint32_t decoded{};
+            if (!decode_uint32(member->value, &decoded, child_path(path, "bands"), error, 1ULL,
+                               256ULL))
+                return false;
+            out->bands = std::move(decoded);
+        }
+        else
+            out->bands.reset();
+    }
+    {
+        const auto member = value.FindMember("source_colors");
+        if (member != value.MemberEnd())
+        {
+            bool decoded{};
+            if (!decode_boolean(member->value, &decoded, child_path(path, "source_colors"), error))
+                return false;
+            out->source_colors = std::move(decoded);
+        }
+        else
+            out->source_colors.reset();
+    }
+    {
+        const auto member = value.FindMember("fallback_color");
+        if (member != value.MemberEnd())
+        {
+            IllustrationVector3 decoded{};
+            if (!decode_IllustrationVector3(member->value, &decoded,
+                                            child_path(path, "fallback_color"), error))
+                return false;
+            out->fallback_color = std::move(decoded);
+        }
+        else
+            out->fallback_color.reset();
+    }
+    {
+        const auto member = value.FindMember("background");
+        if (member != value.MemberEnd())
+        {
+            std::string decoded{};
+            if (!decode_string(member->value, &decoded, child_path(path, "background"), error, 1U,
+                               128U))
+                return false;
+            out->background = std::move(decoded);
+        }
+        else
+            out->background.reset();
+    }
+    {
+        const auto member = value.FindMember("transparent_background");
+        if (member != value.MemberEnd())
+        {
+            bool decoded{};
+            if (!decode_boolean(member->value, &decoded, child_path(path, "transparent_background"),
+                                error))
+                return false;
+            out->transparent_background = std::move(decoded);
+        }
+        else
+            out->transparent_background.reset();
+    }
+    {
+        const auto member = value.FindMember("fuse_surfaces");
+        if (member != value.MemberEnd())
+        {
+            bool decoded{};
+            if (!decode_boolean(member->value, &decoded, child_path(path, "fuse_surfaces"), error))
+                return false;
+            out->fuse_surfaces = std::move(decoded);
+        }
+        else
+            out->fuse_surfaces.reset();
+    }
+    {
+        const auto member = value.FindMember("layer_coplanar_materials");
+        if (member != value.MemberEnd())
+        {
+            bool decoded{};
+            if (!decode_boolean(member->value, &decoded,
+                                child_path(path, "layer_coplanar_materials"), error))
+                return false;
+            out->layer_coplanar_materials = std::move(decoded);
+        }
+        else
+            out->layer_coplanar_materials.reset();
+    }
+    {
+        const auto member = value.FindMember("show_hlr_outline");
+        if (member != value.MemberEnd())
+        {
+            bool decoded{};
+            if (!decode_boolean(member->value, &decoded, child_path(path, "show_hlr_outline"),
+                                error))
+                return false;
+            out->show_hlr_outline = std::move(decoded);
+        }
+        else
+            out->show_hlr_outline.reset();
+    }
+    {
+        const auto member = value.FindMember("show_hlr_detail");
+        if (member != value.MemberEnd())
+        {
+            bool decoded{};
+            if (!decode_boolean(member->value, &decoded, child_path(path, "show_hlr_detail"),
+                                error))
+                return false;
+            out->show_hlr_detail = std::move(decoded);
+        }
+        else
+            out->show_hlr_detail.reset();
+    }
+    {
+        const auto member = value.FindMember("show_outlines");
+        if (member != value.MemberEnd())
+        {
+            bool decoded{};
+            if (!decode_boolean(member->value, &decoded, child_path(path, "show_outlines"), error))
+                return false;
+            out->show_outlines = std::move(decoded);
+        }
+        else
+            out->show_outlines.reset();
+    }
+    {
+        const auto member = value.FindMember("show_creases");
+        if (member != value.MemberEnd())
+        {
+            bool decoded{};
+            if (!decode_boolean(member->value, &decoded, child_path(path, "show_creases"), error))
+                return false;
+            out->show_creases = std::move(decoded);
+        }
+        else
+            out->show_creases.reset();
+    }
+    {
+        const auto member = value.FindMember("crease_angle_degrees");
+        if (member != value.MemberEnd())
+        {
+            double decoded{};
+            if (!decode_double(member->value, &decoded, child_path(path, "crease_angle_degrees"),
+                               error, 0, 180))
+                return false;
+            out->crease_angle_degrees = std::move(decoded);
+        }
+        else
+            out->crease_angle_degrees.reset();
+    }
+    {
+        const auto member = value.FindMember("outline_color");
+        if (member != value.MemberEnd())
+        {
+            std::string decoded{};
+            if (!decode_string(member->value, &decoded, child_path(path, "outline_color"), error,
+                               1U, 128U))
+                return false;
+            out->outline_color = std::move(decoded);
+        }
+        else
+            out->outline_color.reset();
+    }
+    {
+        const auto member = value.FindMember("crease_color");
+        if (member != value.MemberEnd())
+        {
+            std::string decoded{};
+            if (!decode_string(member->value, &decoded, child_path(path, "crease_color"), error, 1U,
+                               128U))
+                return false;
+            out->crease_color = std::move(decoded);
+        }
+        else
+            out->crease_color.reset();
+    }
+    {
+        const auto member = value.FindMember("outline_width");
+        if (member != value.MemberEnd())
+        {
+            double decoded{};
+            if (!decode_double(member->value, &decoded, child_path(path, "outline_width"), error, 0,
+                               std::numeric_limits<double>::infinity()))
+                return false;
+            out->outline_width = std::move(decoded);
+        }
+        else
+            out->outline_width.reset();
+    }
+    {
+        const auto member = value.FindMember("crease_width");
+        if (member != value.MemberEnd())
+        {
+            double decoded{};
+            if (!decode_double(member->value, &decoded, child_path(path, "crease_width"), error, 0,
+                               std::numeric_limits<double>::infinity()))
+                return false;
+            out->crease_width = std::move(decoded);
+        }
+        else
+            out->crease_width.reset();
+    }
+    {
+        const auto member = value.FindMember("double_sided");
+        if (member != value.MemberEnd())
+        {
+            bool decoded{};
+            if (!decode_boolean(member->value, &decoded, child_path(path, "double_sided"), error))
+                return false;
+            out->double_sided = std::move(decoded);
+        }
+        else
+            out->double_sided.reset();
+    }
+    {
+        const auto member = value.FindMember("rim_amount");
+        if (member != value.MemberEnd())
+        {
+            double decoded{};
+            if (!decode_double(member->value, &decoded, child_path(path, "rim_amount"), error, 0,
+                               1))
+                return false;
+            out->rim_amount = std::move(decoded);
+        }
+        else
+            out->rim_amount.reset();
+    }
+    return true;
+}
+
+bool write_MeshIllustrationStyleA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                   const MeshIllustrationStyleA0& value, ContractError* error)
+{
+    writer.StartObject();
+    if (value.shading.has_value())
+    {
+        writer.Key("shading");
+        if (!write_MeshIllustrationShading(writer, *value.shading, error))
+            return false;
+    }
+    if (value.ambient.has_value())
+    {
+        writer.Key("ambient");
+        if (!write_double(writer, *value.ambient, error, 0, 1))
+            return false;
+    }
+    if (value.key_intensity.has_value())
+    {
+        writer.Key("key_intensity");
+        if (!write_double(writer, *value.key_intensity, error, 0, 4))
+            return false;
+    }
+    if (value.light_direction.has_value())
+    {
+        writer.Key("light_direction");
+        if (!write_IllustrationVector3(writer, *value.light_direction, error))
+            return false;
+    }
+    if (value.bands.has_value())
+    {
+        writer.Key("bands");
+        if (!write_uint32(writer, *value.bands, error, 1ULL, 256ULL))
+            return false;
+    }
+    if (value.source_colors.has_value())
+    {
+        writer.Key("source_colors");
+        if (!(writer.Bool(*value.source_colors), true))
+            return false;
+    }
+    if (value.fallback_color.has_value())
+    {
+        writer.Key("fallback_color");
+        if (!write_IllustrationVector3(writer, *value.fallback_color, error))
+            return false;
+    }
+    if (value.background.has_value())
+    {
+        writer.Key("background");
+        if (!write_string(writer, *value.background, error, 1U, 128U))
+            return false;
+    }
+    if (value.transparent_background.has_value())
+    {
+        writer.Key("transparent_background");
+        if (!(writer.Bool(*value.transparent_background), true))
+            return false;
+    }
+    if (value.fuse_surfaces.has_value())
+    {
+        writer.Key("fuse_surfaces");
+        if (!(writer.Bool(*value.fuse_surfaces), true))
+            return false;
+    }
+    if (value.layer_coplanar_materials.has_value())
+    {
+        writer.Key("layer_coplanar_materials");
+        if (!(writer.Bool(*value.layer_coplanar_materials), true))
+            return false;
+    }
+    if (value.show_hlr_outline.has_value())
+    {
+        writer.Key("show_hlr_outline");
+        if (!(writer.Bool(*value.show_hlr_outline), true))
+            return false;
+    }
+    if (value.show_hlr_detail.has_value())
+    {
+        writer.Key("show_hlr_detail");
+        if (!(writer.Bool(*value.show_hlr_detail), true))
+            return false;
+    }
+    if (value.show_outlines.has_value())
+    {
+        writer.Key("show_outlines");
+        if (!(writer.Bool(*value.show_outlines), true))
+            return false;
+    }
+    if (value.show_creases.has_value())
+    {
+        writer.Key("show_creases");
+        if (!(writer.Bool(*value.show_creases), true))
+            return false;
+    }
+    if (value.crease_angle_degrees.has_value())
+    {
+        writer.Key("crease_angle_degrees");
+        if (!write_double(writer, *value.crease_angle_degrees, error, 0, 180))
+            return false;
+    }
+    if (value.outline_color.has_value())
+    {
+        writer.Key("outline_color");
+        if (!write_string(writer, *value.outline_color, error, 1U, 128U))
+            return false;
+    }
+    if (value.crease_color.has_value())
+    {
+        writer.Key("crease_color");
+        if (!write_string(writer, *value.crease_color, error, 1U, 128U))
+            return false;
+    }
+    if (value.outline_width.has_value())
+    {
+        writer.Key("outline_width");
+        if (!write_double(writer, *value.outline_width, error, 0,
+                          std::numeric_limits<double>::infinity()))
+            return false;
+    }
+    if (value.crease_width.has_value())
+    {
+        writer.Key("crease_width");
+        if (!write_double(writer, *value.crease_width, error, 0,
+                          std::numeric_limits<double>::infinity()))
+            return false;
+    }
+    if (value.double_sided.has_value())
+    {
+        writer.Key("double_sided");
+        if (!(writer.Bool(*value.double_sided), true))
+            return false;
+    }
+    if (value.rim_amount.has_value())
+    {
+        writer.Key("rim_amount");
+        if (!write_double(writer, *value.rim_amount, error, 0, 1))
+            return false;
+    }
+    writer.EndObject();
+    return true;
+}
+
+bool decode_MeshIllustrationSvgOptions(const rapidjson::Value& value,
+                                       MeshIllustrationSvgOptions* out, const std::string& path,
+                                       ContractError* error)
+{
+    static const char* const names[] = {"coordinate_span", "title"};
+    if (!validate_object(value, names, 2U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("coordinate_span");
+        if (member != value.MemberEnd())
+        {
+            std::uint32_t decoded{};
+            if (!decode_uint32(member->value, &decoded, child_path(path, "coordinate_span"), error,
+                               10000ULL, 1000000000ULL))
+                return false;
+            out->coordinate_span = std::move(decoded);
+        }
+        else
+            out->coordinate_span.reset();
+    }
+    {
+        const auto member = value.FindMember("title");
+        if (member != value.MemberEnd())
+        {
+            std::string decoded{};
+            if (!decode_string(member->value, &decoded, child_path(path, "title"), error, 1U,
+                               1024U))
+                return false;
+            out->title = std::move(decoded);
+        }
+        else
+            out->title.reset();
+    }
+    return true;
+}
+
+bool write_MeshIllustrationSvgOptions(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                      const MeshIllustrationSvgOptions& value, ContractError* error)
+{
+    writer.StartObject();
+    if (value.coordinate_span.has_value())
+    {
+        writer.Key("coordinate_span");
+        if (!write_uint32(writer, *value.coordinate_span, error, 10000ULL, 1000000000ULL))
+            return false;
+    }
+    if (value.title.has_value())
+    {
+        writer.Key("title");
+        if (!write_string(writer, *value.title, error, 1U, 1024U))
+            return false;
+    }
+    writer.EndObject();
+    return true;
+}
+
+bool decode_MeshIllustrationInputA0(const rapidjson::Value& value, MeshIllustrationInputA0* out,
+                                    const std::string& path, ContractError* error)
+{
+    static const char* const names[] = {"schema", "meshes", "view", "prepare", "style", "svg"};
+    if (!validate_object(value, names, 6U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("schema");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "schema"),
+                        "Required field is missing.");
+        if (!decode_literal_string(member->value, &out->schema, child_path(path, "schema"), error,
+                                   "geometry.mesh_illustration.input.a0"))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("meshes");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "meshes"),
+                        "Required field is missing.");
+        if (!decode_array(member->value, &out->meshes, child_path(path, "meshes"), error, 1U,
+                          65536U, decode_MeshIllustrationMesh))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("view");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "view"),
+                        "Required field is missing.");
+        if (!decode_MeshIllustrationView(member->value, &out->view, child_path(path, "view"),
+                                         error))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("prepare");
+        if (member != value.MemberEnd())
+        {
+            MeshIllustrationPrepareOptions decoded{};
+            if (!decode_MeshIllustrationPrepareOptions(member->value, &decoded,
+                                                       child_path(path, "prepare"), error))
+                return false;
+            out->prepare = std::move(decoded);
+        }
+        else
+            out->prepare.reset();
+    }
+    {
+        const auto member = value.FindMember("style");
+        if (member != value.MemberEnd())
+        {
+            MeshIllustrationStyleA0 decoded{};
+            if (!decode_MeshIllustrationStyleA0(member->value, &decoded, child_path(path, "style"),
+                                                error))
+                return false;
+            out->style = std::move(decoded);
+        }
+        else
+            out->style.reset();
+    }
+    {
+        const auto member = value.FindMember("svg");
+        if (member != value.MemberEnd())
+        {
+            MeshIllustrationSvgOptions decoded{};
+            if (!decode_MeshIllustrationSvgOptions(member->value, &decoded, child_path(path, "svg"),
+                                                   error))
+                return false;
+            out->svg = std::move(decoded);
+        }
+        else
+            out->svg.reset();
+    }
+    return true;
+}
+
+bool write_MeshIllustrationInputA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                   const MeshIllustrationInputA0& value, ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("schema");
+    if (!write_literal_string(writer, value.schema, error, "geometry.mesh_illustration.input.a0"))
+        return false;
+    writer.Key("meshes");
+    if (!write_array(writer, value.meshes, error, 1U, 65536U, write_MeshIllustrationMesh))
+        return false;
+    writer.Key("view");
+    if (!write_MeshIllustrationView(writer, value.view, error))
+        return false;
+    if (value.prepare.has_value())
+    {
+        writer.Key("prepare");
+        if (!write_MeshIllustrationPrepareOptions(writer, *value.prepare, error))
+            return false;
+    }
+    if (value.style.has_value())
+    {
+        writer.Key("style");
+        if (!write_MeshIllustrationStyleA0(writer, *value.style, error))
+            return false;
+    }
+    if (value.svg.has_value())
+    {
+        writer.Key("svg");
+        if (!write_MeshIllustrationSvgOptions(writer, *value.svg, error))
+            return false;
+    }
+    writer.EndObject();
+    return true;
+}
+
+bool decode_MeshIllustrationRenderStats(const rapidjson::Value& value,
+                                        MeshIllustrationRenderStats* out, const std::string& path,
+                                        ContractError* error)
+{
+    static const char* const names[] = {"triangles", "surface_draws", "layered_surfaces",
+                                        "outlines",  "details",       "creases",
+                                        "commands"};
+    if (!validate_object(value, names, 7U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("triangles");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "triangles"),
+                        "Required field is missing.");
+        if (!decode_uint32(member->value, &out->triangles, child_path(path, "triangles"), error,
+                           0ULL, std::numeric_limits<std::uint32_t>::max()))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("surface_draws");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "surface_draws"),
+                        "Required field is missing.");
+        if (!decode_uint32(member->value, &out->surface_draws, child_path(path, "surface_draws"),
+                           error, 0ULL, std::numeric_limits<std::uint32_t>::max()))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("layered_surfaces");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "layered_surfaces"), "Required field is missing.");
+        if (!decode_uint32(member->value, &out->layered_surfaces,
+                           child_path(path, "layered_surfaces"), error, 0ULL,
+                           std::numeric_limits<std::uint32_t>::max()))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("outlines");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "outlines"),
+                        "Required field is missing.");
+        if (!decode_uint32(member->value, &out->outlines, child_path(path, "outlines"), error, 0ULL,
+                           std::numeric_limits<std::uint32_t>::max()))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("details");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "details"),
+                        "Required field is missing.");
+        if (!decode_uint32(member->value, &out->details, child_path(path, "details"), error, 0ULL,
+                           std::numeric_limits<std::uint32_t>::max()))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("creases");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "creases"),
+                        "Required field is missing.");
+        if (!decode_uint32(member->value, &out->creases, child_path(path, "creases"), error, 0ULL,
+                           std::numeric_limits<std::uint32_t>::max()))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("commands");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "commands"),
+                        "Required field is missing.");
+        if (!decode_uint32(member->value, &out->commands, child_path(path, "commands"), error, 0ULL,
+                           std::numeric_limits<std::uint32_t>::max()))
+            return false;
+    }
+    return true;
+}
+
+bool write_MeshIllustrationRenderStats(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                       const MeshIllustrationRenderStats& value,
+                                       ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("triangles");
+    if (!write_uint32(writer, value.triangles, error, 0ULL,
+                      std::numeric_limits<std::uint32_t>::max()))
+        return false;
+    writer.Key("surface_draws");
+    if (!write_uint32(writer, value.surface_draws, error, 0ULL,
+                      std::numeric_limits<std::uint32_t>::max()))
+        return false;
+    writer.Key("layered_surfaces");
+    if (!write_uint32(writer, value.layered_surfaces, error, 0ULL,
+                      std::numeric_limits<std::uint32_t>::max()))
+        return false;
+    writer.Key("outlines");
+    if (!write_uint32(writer, value.outlines, error, 0ULL,
+                      std::numeric_limits<std::uint32_t>::max()))
+        return false;
+    writer.Key("details");
+    if (!write_uint32(writer, value.details, error, 0ULL,
+                      std::numeric_limits<std::uint32_t>::max()))
+        return false;
+    writer.Key("creases");
+    if (!write_uint32(writer, value.creases, error, 0ULL,
+                      std::numeric_limits<std::uint32_t>::max()))
+        return false;
+    writer.Key("commands");
+    if (!write_uint32(writer, value.commands, error, 0ULL,
+                      std::numeric_limits<std::uint32_t>::max()))
+        return false;
+    writer.EndObject();
+    return true;
+}
+
+bool decode_MeshIllustrationResultA0(const rapidjson::Value& value, MeshIllustrationResultA0* out,
+                                     const std::string& path, ContractError* error)
+{
+    static const char* const names[] = {"schema", "svg", "stats", "warnings"};
+    if (!validate_object(value, names, 4U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("schema");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "schema"),
+                        "Required field is missing.");
+        if (!decode_literal_string(member->value, &out->schema, child_path(path, "schema"), error,
+                                   "geometry.mesh_illustration.result.a0"))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("svg");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "svg"),
+                        "Required field is missing.");
+        if (!decode_string(member->value, &out->svg, child_path(path, "svg"), error, 0U,
+                           std::numeric_limits<std::size_t>::max()))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("stats");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "stats"),
+                        "Required field is missing.");
+        if (!decode_MeshIllustrationRenderStats(member->value, &out->stats,
+                                                child_path(path, "stats"), error))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("warnings");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "warnings"),
+                        "Required field is missing.");
+        if (!decode_array(member->value, &out->warnings, child_path(path, "warnings"), error, 0U,
+                          256U, decode_string_item))
+            return false;
+    }
+    return true;
+}
+
+bool write_MeshIllustrationResultA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                    const MeshIllustrationResultA0& value, ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("schema");
+    if (!write_literal_string(writer, value.schema, error, "geometry.mesh_illustration.result.a0"))
+        return false;
+    writer.Key("svg");
+    if (!write_string(writer, value.svg, error, 0U, std::numeric_limits<std::size_t>::max()))
+        return false;
+    writer.Key("stats");
+    if (!write_MeshIllustrationRenderStats(writer, value.stats, error))
+        return false;
+    writer.Key("warnings");
+    if (!write_array(writer, value.warnings, error, 0U, 256U, write_string_item))
+        return false;
+    writer.EndObject();
+    return true;
+}
+
 bool decode_ModelBoundsSource(const rapidjson::Value& value, ModelBoundsSource* out,
                               const std::string& path, ContractError* error)
 {
@@ -11833,6 +15180,48 @@ bool encode_json(const DiagnosticA0& value, std::string* json, ContractError* er
     return encode_root<DiagnosticA0>(value, write_DiagnosticA0, json, error);
 }
 
+bool decode_json(const unsigned char* data, std::size_t size, HlrProjectionOptionsA0* value,
+                 ContractError* error)
+{
+    if (value == nullptr)
+        return fail(error, "geometer.contract.invalid_argument", "",
+                    "Output value pointer is null.");
+    rapidjson::Document document;
+    if (!parse_document(data, size, &document, error))
+        return false;
+    HlrProjectionOptionsA0 decoded{};
+    if (!decode_HlrProjectionOptionsA0(document, &decoded, "", error))
+        return false;
+    *value = std::move(decoded);
+    return true;
+}
+
+bool encode_json(const HlrProjectionOptionsA0& value, std::string* json, ContractError* error)
+{
+    return encode_root<HlrProjectionOptionsA0>(value, write_HlrProjectionOptionsA0, json, error);
+}
+
+bool decode_json(const unsigned char* data, std::size_t size, HlrProjectionResultA0* value,
+                 ContractError* error)
+{
+    if (value == nullptr)
+        return fail(error, "geometer.contract.invalid_argument", "",
+                    "Output value pointer is null.");
+    rapidjson::Document document;
+    if (!parse_document(data, size, &document, error))
+        return false;
+    HlrProjectionResultA0 decoded{};
+    if (!decode_HlrProjectionResultA0(document, &decoded, "", error))
+        return false;
+    *value = std::move(decoded);
+    return true;
+}
+
+bool encode_json(const HlrProjectionResultA0& value, std::string* json, ContractError* error)
+{
+    return encode_root<HlrProjectionResultA0>(value, write_HlrProjectionResultA0, json, error);
+}
+
 bool decode_json(const unsigned char* data, std::size_t size, IpcCancelledA0* value,
                  ContractError* error)
 {
@@ -12020,6 +15409,70 @@ bool decode_json(const unsigned char* data, std::size_t size, IpcWelcomeA0* valu
 bool encode_json(const IpcWelcomeA0& value, std::string* json, ContractError* error)
 {
     return encode_root<IpcWelcomeA0>(value, write_IpcWelcomeA0, json, error);
+}
+
+bool decode_json(const unsigned char* data, std::size_t size, MeshIllustrationInputA0* value,
+                 ContractError* error)
+{
+    if (value == nullptr)
+        return fail(error, "geometer.contract.invalid_argument", "",
+                    "Output value pointer is null.");
+    rapidjson::Document document;
+    if (!parse_document(data, size, &document, error))
+        return false;
+    MeshIllustrationInputA0 decoded{};
+    if (!decode_MeshIllustrationInputA0(document, &decoded, "", error))
+        return false;
+    *value = std::move(decoded);
+    return true;
+}
+
+bool encode_json(const MeshIllustrationInputA0& value, std::string* json, ContractError* error)
+{
+    return encode_root<MeshIllustrationInputA0>(value, write_MeshIllustrationInputA0, json, error);
+}
+
+bool decode_json(const unsigned char* data, std::size_t size, MeshIllustrationResultA0* value,
+                 ContractError* error)
+{
+    if (value == nullptr)
+        return fail(error, "geometer.contract.invalid_argument", "",
+                    "Output value pointer is null.");
+    rapidjson::Document document;
+    if (!parse_document(data, size, &document, error))
+        return false;
+    MeshIllustrationResultA0 decoded{};
+    if (!decode_MeshIllustrationResultA0(document, &decoded, "", error))
+        return false;
+    *value = std::move(decoded);
+    return true;
+}
+
+bool encode_json(const MeshIllustrationResultA0& value, std::string* json, ContractError* error)
+{
+    return encode_root<MeshIllustrationResultA0>(value, write_MeshIllustrationResultA0, json,
+                                                 error);
+}
+
+bool decode_json(const unsigned char* data, std::size_t size, MeshIllustrationStyleA0* value,
+                 ContractError* error)
+{
+    if (value == nullptr)
+        return fail(error, "geometer.contract.invalid_argument", "",
+                    "Output value pointer is null.");
+    rapidjson::Document document;
+    if (!parse_document(data, size, &document, error))
+        return false;
+    MeshIllustrationStyleA0 decoded{};
+    if (!decode_MeshIllustrationStyleA0(document, &decoded, "", error))
+        return false;
+    *value = std::move(decoded);
+    return true;
+}
+
+bool encode_json(const MeshIllustrationStyleA0& value, std::string* json, ContractError* error)
+{
+    return encode_root<MeshIllustrationStyleA0>(value, write_MeshIllustrationStyleA0, json, error);
 }
 
 bool decode_json(const unsigned char* data, std::size_t size, ModelBoundsOptionsA0* value,

@@ -1,0 +1,207 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:wavenumber:schema:geometer:geometry.mesh_illustration.input:a0",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "type": "string",
+      "const": "geometry.mesh_illustration.input.a0"
+    },
+    "meshes": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/MeshIllustrationMesh"
+      },
+      "minItems": 1,
+      "maxItems": 65536
+    },
+    "view": {
+      "$ref": "#/$defs/MeshIllustrationView"
+    },
+    "prepare": {
+      "$ref": "#/$defs/MeshIllustrationPrepareOptions"
+    },
+    "style": {
+      "$ref": "urn:wavenumber:schema:geometer:geometry.mesh_illustration.style:a0"
+    },
+    "svg": {
+      "$ref": "#/$defs/MeshIllustrationSvgOptions"
+    }
+  },
+  "required": [
+    "schema",
+    "meshes",
+    "view"
+  ],
+  "unevaluatedProperties": {
+    "not": {}
+  },
+  "description": "Serializable one-shot illustration input; reusable prepared scenes are opaque package objects.",
+  "$defs": {
+    "MeshIllustrationMesh": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024
+        },
+        "positions": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 9,
+          "maxItems": 6000000
+        },
+        "normals": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 6000000
+        },
+        "indices": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 4294967295
+          },
+          "maxItems": 6000000
+        },
+        "matrix": {
+          "$ref": "#/$defs/IllustrationMatrix4x4"
+        },
+        "materials": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/MeshIllustrationMaterial"
+          },
+          "minItems": 1,
+          "maxItems": 65536
+        },
+        "triangle_material_indices": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 4294967295
+          },
+          "maxItems": 2000000
+        },
+        "double_sided": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "positions",
+        "materials"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "MeshIllustrationView": {
+      "type": "object",
+      "properties": {
+        "direction": {
+          "$ref": "#/$defs/IllustrationVector3"
+        },
+        "up": {
+          "$ref": "#/$defs/IllustrationVector3"
+        },
+        "mirror_x": {
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "required": [
+        "direction",
+        "up"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "MeshIllustrationPrepareOptions": {
+      "type": "object",
+      "properties": {
+        "max_triangles": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2000000,
+          "default": 750000
+        },
+        "weld_tolerance": {
+          "type": "number",
+          "default": 1e-7,
+          "minimum": 0
+        }
+      },
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "MeshIllustrationSvgOptions": {
+      "type": "object",
+      "properties": {
+        "coordinate_span": {
+          "type": "integer",
+          "minimum": 10000,
+          "maximum": 1000000000,
+          "default": 1000000
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024
+        }
+      },
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "IllustrationMatrix4x4": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "minItems": 16,
+      "maxItems": 16
+    },
+    "MeshIllustrationMaterial": {
+      "type": "object",
+      "properties": {
+        "color": {
+          "$ref": "#/$defs/IllustrationVector3",
+          "description": "sRGB channels in the inclusive range [0, 1]."
+        },
+        "opacity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 1024
+        }
+      },
+      "required": [
+        "color"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "IllustrationVector3": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "minItems": 3,
+      "maxItems": 3
+    }
+  }
+}

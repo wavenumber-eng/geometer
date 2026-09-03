@@ -12,13 +12,13 @@ status = "done"
 [[steps]]
 id = "compatibility-contract"
 title = "Specify canonical additive HLR and illustration contracts plus the old-option compatibility matrix"
-status = "active"
+status = "done"
 depends_on = ["evaluation-handoff"]
 
 [[steps]]
 id = "mesh-input-contract"
 title = "Specify a bounded indexed-mesh input contract for synthesized geometry without requiring STEP"
-status = "pending"
+status = "active"
 depends_on = ["compatibility-contract"]
 
 [[steps]]

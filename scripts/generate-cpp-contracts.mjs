@@ -297,6 +297,16 @@ function generateSource() {
     "    return write_string(writer, value, error, 0U, std::numeric_limits<std::size_t>::max());",
     "}",
     "",
+    "bool decode_uint32_item(const rapidjson::Value& value, std::uint32_t* out, const std::string& path, ContractError* error)",
+    "{",
+    "    return decode_uint32(value, out, path, error, 0U, std::numeric_limits<std::uint32_t>::max());",
+    "}",
+    "",
+    "bool write_uint32_item(rapidjson::Writer<rapidjson::StringBuffer>& writer, const std::uint32_t& value, ContractError* error)",
+    "{",
+    "    return write_uint32(writer, value, error, 0U, std::numeric_limits<std::uint32_t>::max());",
+    "}",
+    "",
     "bool decode_double_item(const rapidjson::Value& value, double* out, const std::string& path, ContractError* error)",
     "{",
     "    return decode_double(value, out, path, error, -std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity());",
@@ -854,8 +864,11 @@ function decodeCall(type, value, out, path, error, constraints = {}) {
       type.element.kind === "reference"
         ? `decode_${shortName(type.element.target)}`
         : type.element.kind === "primitive"
-          ? ({ string: "decode_string_item", float64: "decode_double_item" }[type.element.name] ??
-            unsupported(type))
+          ? ({
+              string: "decode_string_item",
+              uint32: "decode_uint32_item",
+              float64: "decode_double_item",
+            }[type.element.name] ?? unsupported(type))
           : unsupported(type);
     return `decode_array(${value}, ${out}, ${path}, ${error}, ${sizeConstant(constraints.min_items, "0U")}, ${sizeConstant(constraints.max_items)}, ${decoder})`;
   }
@@ -883,8 +896,11 @@ function writeCall(type, value, error, constraints = {}) {
       type.element.kind === "reference"
         ? `write_${shortName(type.element.target)}`
         : type.element.kind === "primitive"
-          ? ({ string: "write_string_item", float64: "write_double_item" }[type.element.name] ??
-            unsupported(type))
+          ? ({
+              string: "write_string_item",
+              uint32: "write_uint32_item",
+              float64: "write_double_item",
+            }[type.element.name] ?? unsupported(type))
           : unsupported(type);
     return `write_array(writer, ${value}, ${error}, ${sizeConstant(constraints.min_items, "0U")}, ${sizeConstant(constraints.max_items)}, ${writer})`;
   }

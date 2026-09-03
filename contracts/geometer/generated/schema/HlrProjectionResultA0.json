@@ -1,0 +1,279 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:wavenumber:schema:geometer:geometry.hlr_projection.result:a0",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "type": "string",
+      "const": "geometry.hlr_projection.result.a0"
+    },
+    "units": {
+      "type": "string",
+      "const": "mm"
+    },
+    "source": {
+      "$ref": "#/$defs/HlrProjectionSource"
+    },
+    "views": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/HlrProjectedView"
+      },
+      "maxItems": 64
+    },
+    "timings": {
+      "$ref": "#/$defs/HlrProjectionTimings"
+    }
+  },
+  "required": [
+    "schema",
+    "units",
+    "source",
+    "views",
+    "timings"
+  ],
+  "unevaluatedProperties": {
+    "not": {}
+  },
+  "$defs": {
+    "HlrProjectionSource": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "$ref": "#/$defs/HlrSourceKind"
+        },
+        "hash": {
+          "type": "string",
+          "minLength": 64,
+          "maxLength": 64
+        }
+      },
+      "required": [
+        "kind",
+        "hash"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "HlrProjectedView": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "direction": {
+          "$ref": "#/$defs/HlrVector3"
+        },
+        "up": {
+          "$ref": "#/$defs/HlrVector3"
+        },
+        "modes": {
+          "$ref": "#/$defs/HlrProjectionModes"
+        }
+      },
+      "required": [
+        "id",
+        "direction",
+        "up",
+        "modes"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "HlrProjectionTimings": {
+      "type": "object",
+      "properties": {
+        "step_read_ms": {
+          "type": "number",
+          "minimum": 0
+        },
+        "mesh_ms": {
+          "type": "number",
+          "minimum": 0
+        },
+        "hlr_ms": {
+          "type": "number",
+          "minimum": 0
+        },
+        "extract_ms": {
+          "type": "number",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "step_read_ms",
+        "mesh_ms",
+        "hlr_ms",
+        "extract_ms"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      },
+      "description": "Timings are nondeterministic and excluded only by explicit conformance projections."
+    },
+    "HlrSourceKind": {
+      "type": "string",
+      "enum": [
+        "step",
+        "indexed_mesh"
+      ]
+    },
+    "HlrVector3": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "minItems": 3,
+      "maxItems": 3
+    },
+    "HlrProjectionModes": {
+      "type": "object",
+      "properties": {
+        "outline": {
+          "$ref": "#/$defs/ProjectedGeometry"
+        },
+        "detail": {
+          "$ref": "#/$defs/ProjectedGeometry"
+        },
+        "bbox": {
+          "$ref": "#/$defs/ProjectedGeometry"
+        }
+      },
+      "required": [
+        "outline",
+        "detail",
+        "bbox"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "ProjectedGeometry": {
+      "type": "object",
+      "properties": {
+        "segments": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ProjectedSegment"
+          },
+          "maxItems": 4000000
+        },
+        "arcs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ProjectedArc"
+          },
+          "maxItems": 4000000
+        },
+        "bounds": {
+          "$ref": "#/$defs/ProjectionBounds",
+          "description": "Omitted when this output layer is empty. The legacy B0 writer emits null."
+        }
+      },
+      "required": [
+        "segments",
+        "arcs"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "ProjectedSegment": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "minItems": 4,
+      "maxItems": 4
+    },
+    "ProjectedArc": {
+      "type": "object",
+      "properties": {
+        "start": {
+          "$ref": "#/$defs/HlrVector2"
+        },
+        "end": {
+          "$ref": "#/$defs/HlrVector2"
+        },
+        "center": {
+          "$ref": "#/$defs/HlrVector2"
+        },
+        "radius": {
+          "type": "number",
+          "minimum": 0
+        },
+        "extent_rad": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 6.283185307179586
+        },
+        "ccw": {
+          "type": "boolean"
+        },
+        "full_circle": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "start",
+        "end",
+        "center",
+        "radius",
+        "extent_rad",
+        "ccw",
+        "full_circle"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "ProjectionBounds": {
+      "type": "object",
+      "properties": {
+        "min_x": {
+          "type": "number"
+        },
+        "min_y": {
+          "type": "number"
+        },
+        "max_x": {
+          "type": "number"
+        },
+        "max_y": {
+          "type": "number"
+        },
+        "width": {
+          "type": "number",
+          "minimum": 0
+        },
+        "height": {
+          "type": "number",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "min_x",
+        "min_y",
+        "max_x",
+        "max_y",
+        "width",
+        "height"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "HlrVector2": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "minItems": 2,
+      "maxItems": 2
+    }
+  }
+}

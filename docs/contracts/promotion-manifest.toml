@@ -1062,13 +1062,58 @@ pilot_required = true
 compatibility = "Unpromoted member-level recovery results keep resolution, method, topology comparison, confidence, and group completeness independent."
 
 [[contracts]]
+id = "geometry.hlr_projection.options.a0"
+kind = "option_patch"
+status = "pilot_candidate"
+current_authority = "typespec_candidate"
+source = "src/tsp/geometer/operations/hlr-projection-a0.tsp"
+pilot_required = true
+compatibility = "Canonical snake_case additive HLR options; legacy camelCase, historical include toggles, enum aliases, and geometry.projection.options.b0 remain compatibility-adapter inputs."
+
+[[contracts]]
+id = "geometry.hlr_projection.result.a0"
+kind = "result"
+status = "pilot_candidate"
+current_authority = "typespec_candidate"
+source = "src/tsp/geometer/operations/hlr-projection-a0.tsp"
+pilot_required = true
+compatibility = "Canonical result shared by model and indexed-mesh operations; geometry.projection.b0 and legacy C ABI result identities remain supported. Timing fields are nondeterministic."
+
+[[contracts]]
+id = "geometry.mesh_illustration.input.a0"
+kind = "request"
+status = "pilot_candidate"
+current_authority = "typespec_candidate"
+source = "src/tsp/geometer/operations/mesh-illustration-a0.tsp"
+pilot_required = true
+compatibility = "First production illustration input identity; the prototype scene identity is not a predecessor. Direct package inputs retain ergonomic camelCase through an adapter."
+
+[[contracts]]
+id = "geometry.mesh_illustration.style.a0"
+kind = "option_patch"
+status = "pilot_candidate"
+current_authority = "typespec_candidate"
+source = "src/tsp/geometer/operations/mesh-illustration-a0.tsp"
+pilot_required = true
+compatibility = "First production illustration style identity with presence-preserving defaults; direct package style names remain ergonomic camelCase."
+
+[[contracts]]
+id = "geometry.mesh_illustration.result.a0"
+kind = "result"
+status = "pilot_candidate"
+current_authority = "typespec_candidate"
+source = "src/tsp/geometer/operations/mesh-illustration-a0.tsp"
+pilot_required = true
+compatibility = "First production one-shot SVG result identity; Canvas and opaque reusable prepared objects stay direct package APIs."
+
+[[contracts]]
 id = "geometry.projection.options.b0"
 kind = "option_patch"
 status = "inventory_only"
 current_authority = "handwritten_cpp"
 source = "src/cpp/lib/projection_options_json.cpp"
 pilot_required = false
-compatibility = "Retain documented snake/camel aliases and legacy include toggles in an adapter."
+compatibility = "Legacy focused HLR option identity remains supported by compatibility entry points. Retain documented snake/camel aliases, enum aliases, and legacy include toggles in an adapter to geometry.hlr_projection.options.a0."
 
 [[contracts]]
 id = "geometry.projection.b0"
@@ -1077,7 +1122,7 @@ status = "inventory_only"
 current_authority = "handwritten_cpp"
 source = "src/cpp/lib/projection.cpp"
 pilot_required = false
-compatibility = "Preserve current result fields; timing fields are nondeterministic."
+compatibility = "Legacy focused HLR result identity remains supported by compatibility entry points; the governed operations return geometry.hlr_projection.result.a0. Timing fields are nondeterministic."
 
 [[contracts]]
 id = "geometry.step_to_glb.options.a0"

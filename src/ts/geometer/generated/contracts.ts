@@ -390,6 +390,168 @@ export interface PackedAttachmentProjectionA0 {
   readonly packet: PackedAttachmentReferenceA0;
 }
 
+/** Resource ceilings applied during Fast mesh preparation and projection. */
+export interface FastHlrLimitsA0 {
+  readonly max_vertices?: number;
+  readonly max_triangles?: number;
+  readonly max_edges?: number;
+  readonly max_grid_references?: number;
+  readonly max_candidate_pairs?: number;
+  readonly max_fragments?: number;
+  readonly max_output_segments?: number;
+}
+
+/** Fast vector-HLR controls. Angles are radians and geometric tolerances use model units. */
+export interface FastHlrOptionsA0 {
+  readonly include_boundaries?: boolean;
+  readonly include_creases?: boolean;
+  readonly include_silhouettes?: boolean;
+  readonly include_hidden?: boolean;
+  readonly suppress_coplanar_seams?: boolean;
+  readonly crease_angle_rad?: number;
+  readonly weld_tolerance?: number;
+  readonly projected_tolerance?: number;
+  readonly depth_tolerance?: number;
+  readonly coplanar_seam_angle_rad?: number;
+  readonly coplanar_seam_depth_tolerance?: number;
+  readonly coplanar_seam_lateral_tolerance?: number;
+  readonly limits?: FastHlrLimitsA0;
+}
+
+export type HlrCurveMode = "native_arcs" | "polyline";
+
+export type HlrMatrix4x4 = readonly [
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+];
+
+export type HlrMeshDeflectionMode = "absolute" | "bbox-relative";
+
+export type HlrOutlineAlgorithm = "hlr-close" | "mesh-shadow" | "fast-mesh-shadow";
+
+export type HlrVector3 = readonly [number, number, number];
+
+export type ProjectedSegment = readonly [number, number, number, number];
+
+export type HlrVector2 = readonly [number, number];
+
+export interface ProjectedArc {
+  readonly start: HlrVector2;
+  readonly end: HlrVector2;
+  readonly center: HlrVector2;
+  readonly radius: number;
+  readonly extent_rad: number;
+  readonly ccw: boolean;
+  readonly full_circle: boolean;
+}
+
+export interface ProjectionBounds {
+  readonly min_x: number;
+  readonly min_y: number;
+  readonly max_x: number;
+  readonly max_y: number;
+  readonly width: number;
+  readonly height: number;
+}
+
+export interface ProjectedGeometry {
+  readonly segments: readonly ProjectedSegment[];
+  readonly arcs: readonly ProjectedArc[];
+  /** Omitted when this output layer is empty. The legacy B0 writer emits null. */
+  readonly bounds?: ProjectionBounds;
+}
+
+export interface HlrProjectionModes {
+  readonly outline: ProjectedGeometry;
+  readonly detail: ProjectedGeometry;
+  readonly bbox: ProjectedGeometry;
+}
+
+export interface HlrProjectedView {
+  readonly id: string;
+  readonly direction: HlrVector3;
+  readonly up: HlrVector3;
+  readonly modes: HlrProjectionModes;
+}
+
+export type HlrProjectionAlgorithm = "poly" | "exact" | "fast";
+
+export interface HlrViewSpec {
+  readonly id: string;
+  readonly direction: HlrVector3;
+  readonly up: HlrVector3;
+}
+
+/** Presence-preserving additive options shared by STEP and indexed-mesh HLR operations. */
+export interface HlrProjectionOptionsA0 {
+  readonly views?: readonly HlrViewSpec[];
+  readonly output_outline?: boolean;
+  readonly output_detail?: boolean;
+  readonly output_bbox?: boolean;
+  readonly model_transform?: HlrMatrix4x4;
+  readonly strip_root_placement?: boolean;
+  readonly curve_mode?: HlrCurveMode;
+  readonly samples_per_curve?: number;
+  readonly round_digits?: number;
+  readonly edge_v_sharp?: boolean;
+  readonly edge_v_outline?: boolean;
+  readonly edge_v_smooth?: boolean;
+  readonly edge_v_sewn?: boolean;
+  readonly edge_v_iso?: boolean;
+  readonly edge_h_sharp?: boolean;
+  readonly edge_h_outline?: boolean;
+  readonly edge_h_smooth?: boolean;
+  readonly edge_h_sewn?: boolean;
+  readonly edge_h_iso?: boolean;
+  readonly union_outline_polygons?: boolean;
+  readonly projection_algorithm?: HlrProjectionAlgorithm;
+  readonly mesh_linear_deflection?: number;
+  readonly mesh_angular_deflection?: number;
+  readonly mesh_relative?: boolean;
+  readonly mesh_deflection_mode?: HlrMeshDeflectionMode;
+  readonly mesh_deflection_coefficient?: number;
+  readonly outline_algorithm?: HlrOutlineAlgorithm;
+  readonly hlr_angle_tolerance?: number;
+  readonly fast?: FastHlrOptionsA0;
+}
+
+export type HlrSourceKind = "step" | "indexed_mesh";
+
+export interface HlrProjectionSource {
+  readonly kind: HlrSourceKind;
+  readonly hash: string;
+}
+
+/** Timings are nondeterministic and excluded only by explicit conformance projections. */
+export interface HlrProjectionTimings {
+  readonly step_read_ms: number;
+  readonly mesh_ms: number;
+  readonly hlr_ms: number;
+  readonly extract_ms: number;
+}
+
+export interface HlrProjectionResultA0 {
+  readonly schema: "geometry.hlr_projection.result.a0";
+  readonly units: "mm";
+  readonly source: HlrProjectionSource;
+  readonly views: readonly HlrProjectedView[];
+  readonly timings: HlrProjectionTimings;
+}
+
 /** Named raw-attachment declaration in the negotiated operation catalog. */
 export interface IpcAttachmentDeclarationA0 {
   readonly name: string;
@@ -992,6 +1154,117 @@ export interface IpcWelcomeA0 {
   readonly operation_catalog: IpcOperationCatalogA0;
   readonly limits: IpcEffectiveLimitsA0;
   readonly capabilities: readonly string[];
+}
+
+export type IllustrationMatrix4x4 = readonly [
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+];
+
+export type IllustrationVector3 = readonly [number, number, number];
+
+export interface MeshIllustrationMaterial {
+  /** sRGB channels in the inclusive range [0, 1]. */
+  readonly color: IllustrationVector3;
+  readonly opacity?: number;
+  readonly name?: string;
+}
+
+export interface MeshIllustrationMesh {
+  readonly id: string;
+  readonly positions: readonly number[];
+  readonly normals?: readonly number[];
+  readonly indices?: readonly number[];
+  readonly matrix?: IllustrationMatrix4x4;
+  readonly materials: readonly MeshIllustrationMaterial[];
+  readonly triangle_material_indices?: readonly number[];
+  readonly double_sided?: boolean;
+}
+
+export interface MeshIllustrationView {
+  readonly direction: IllustrationVector3;
+  readonly up: IllustrationVector3;
+  readonly mirror_x?: boolean;
+}
+
+export interface MeshIllustrationPrepareOptions {
+  readonly max_triangles?: number;
+  readonly weld_tolerance?: number;
+}
+
+export type MeshIllustrationShading = "unlit" | "flat" | "lambert" | "banded" | "toon";
+
+/** Presence-preserving illustration style. Package defaults apply to absent fields. */
+export interface MeshIllustrationStyleA0 {
+  readonly shading?: MeshIllustrationShading;
+  readonly ambient?: number;
+  readonly key_intensity?: number;
+  readonly light_direction?: IllustrationVector3;
+  readonly bands?: number;
+  readonly source_colors?: boolean;
+  readonly fallback_color?: IllustrationVector3;
+  readonly background?: string;
+  readonly transparent_background?: boolean;
+  readonly fuse_surfaces?: boolean;
+  readonly layer_coplanar_materials?: boolean;
+  readonly show_hlr_outline?: boolean;
+  readonly show_hlr_detail?: boolean;
+  readonly show_outlines?: boolean;
+  readonly show_creases?: boolean;
+  readonly crease_angle_degrees?: number;
+  readonly outline_color?: string;
+  readonly crease_color?: string;
+  readonly outline_width?: number;
+  readonly crease_width?: number;
+  readonly double_sided?: boolean;
+  readonly rim_amount?: number;
+}
+
+export interface MeshIllustrationSvgOptions {
+  readonly coordinate_span?: number;
+  readonly title?: string;
+}
+
+/** Serializable one-shot illustration input; reusable prepared scenes are opaque package objects. */
+export interface MeshIllustrationInputA0 {
+  readonly schema: "geometry.mesh_illustration.input.a0";
+  readonly meshes: readonly MeshIllustrationMesh[];
+  readonly view: MeshIllustrationView;
+  readonly prepare?: MeshIllustrationPrepareOptions;
+  readonly style?: MeshIllustrationStyleA0;
+  readonly svg?: MeshIllustrationSvgOptions;
+}
+
+export interface MeshIllustrationRenderStats {
+  readonly triangles: number;
+  readonly surface_draws: number;
+  readonly layered_surfaces: number;
+  readonly outlines: number;
+  readonly details: number;
+  readonly creases: number;
+  readonly commands: number;
+}
+
+/** One-shot SVG result. Canvas rendering returns through the direct package API. */
+export interface MeshIllustrationResultA0 {
+  readonly schema: "geometry.mesh_illustration.result.a0";
+  readonly svg: string;
+  readonly stats: MeshIllustrationRenderStats;
+  readonly warnings: readonly string[];
 }
 
 /** Source identity included in a successful model-bounds result. */

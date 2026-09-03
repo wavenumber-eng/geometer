@@ -455,6 +455,180 @@ struct PackedAttachmentProjectionA0
     PackedAttachmentReferenceA0 packet{};
 };
 
+struct FastHlrLimitsA0
+{
+    std::optional<std::uint32_t> max_vertices{};
+    std::optional<std::uint32_t> max_triangles{};
+    std::optional<std::uint32_t> max_edges{};
+    std::optional<std::uint32_t> max_grid_references{};
+    std::optional<std::uint32_t> max_candidate_pairs{};
+    std::optional<std::uint32_t> max_fragments{};
+    std::optional<std::uint32_t> max_output_segments{};
+};
+
+struct FastHlrOptionsA0
+{
+    std::optional<bool> include_boundaries{};
+    std::optional<bool> include_creases{};
+    std::optional<bool> include_silhouettes{};
+    std::optional<bool> include_hidden{};
+    std::optional<bool> suppress_coplanar_seams{};
+    std::optional<double> crease_angle_rad{};
+    std::optional<double> weld_tolerance{};
+    std::optional<double> projected_tolerance{};
+    std::optional<double> depth_tolerance{};
+    std::optional<double> coplanar_seam_angle_rad{};
+    std::optional<double> coplanar_seam_depth_tolerance{};
+    std::optional<double> coplanar_seam_lateral_tolerance{};
+    std::optional<FastHlrLimitsA0> limits{};
+};
+
+enum class HlrCurveMode
+{
+    native_arcs,
+    polyline,
+};
+
+using HlrMatrix4x4 = std::vector<double>;
+
+enum class HlrMeshDeflectionMode
+{
+    absolute,
+    bbox_relative,
+};
+
+enum class HlrOutlineAlgorithm
+{
+    hlr_close,
+    mesh_shadow,
+    fast_mesh_shadow,
+};
+
+using HlrVector3 = std::vector<double>;
+
+using ProjectedSegment = std::vector<double>;
+
+using HlrVector2 = std::vector<double>;
+
+struct ProjectedArc
+{
+    HlrVector2 start{};
+    HlrVector2 end{};
+    HlrVector2 center{};
+    double radius{};
+    double extent_rad{};
+    bool ccw{};
+    bool full_circle{};
+};
+
+struct ProjectionBounds
+{
+    double min_x{};
+    double min_y{};
+    double max_x{};
+    double max_y{};
+    double width{};
+    double height{};
+};
+
+struct ProjectedGeometry
+{
+    std::vector<ProjectedSegment> segments{};
+    std::vector<ProjectedArc> arcs{};
+    std::optional<ProjectionBounds> bounds{};
+};
+
+struct HlrProjectionModes
+{
+    ProjectedGeometry outline{};
+    ProjectedGeometry detail{};
+    ProjectedGeometry bbox{};
+};
+
+struct HlrProjectedView
+{
+    std::string id{};
+    HlrVector3 direction{};
+    HlrVector3 up{};
+    HlrProjectionModes modes{};
+};
+
+enum class HlrProjectionAlgorithm
+{
+    poly,
+    exact,
+    fast,
+};
+
+struct HlrViewSpec
+{
+    std::string id{};
+    HlrVector3 direction{};
+    HlrVector3 up{};
+};
+
+struct HlrProjectionOptionsA0
+{
+    std::optional<std::vector<HlrViewSpec>> views{};
+    std::optional<bool> output_outline{};
+    std::optional<bool> output_detail{};
+    std::optional<bool> output_bbox{};
+    std::optional<HlrMatrix4x4> model_transform{};
+    std::optional<bool> strip_root_placement{};
+    std::optional<HlrCurveMode> curve_mode{};
+    std::optional<std::uint32_t> samples_per_curve{};
+    std::optional<std::uint32_t> round_digits{};
+    std::optional<bool> edge_v_sharp{};
+    std::optional<bool> edge_v_outline{};
+    std::optional<bool> edge_v_smooth{};
+    std::optional<bool> edge_v_sewn{};
+    std::optional<bool> edge_v_iso{};
+    std::optional<bool> edge_h_sharp{};
+    std::optional<bool> edge_h_outline{};
+    std::optional<bool> edge_h_smooth{};
+    std::optional<bool> edge_h_sewn{};
+    std::optional<bool> edge_h_iso{};
+    std::optional<bool> union_outline_polygons{};
+    std::optional<HlrProjectionAlgorithm> projection_algorithm{};
+    std::optional<double> mesh_linear_deflection{};
+    std::optional<double> mesh_angular_deflection{};
+    std::optional<bool> mesh_relative{};
+    std::optional<HlrMeshDeflectionMode> mesh_deflection_mode{};
+    std::optional<double> mesh_deflection_coefficient{};
+    std::optional<HlrOutlineAlgorithm> outline_algorithm{};
+    std::optional<double> hlr_angle_tolerance{};
+    std::optional<FastHlrOptionsA0> fast{};
+};
+
+enum class HlrSourceKind
+{
+    step,
+    indexed_mesh,
+};
+
+struct HlrProjectionSource
+{
+    HlrSourceKind kind{};
+    std::string hash{};
+};
+
+struct HlrProjectionTimings
+{
+    double step_read_ms{};
+    double mesh_ms{};
+    double hlr_ms{};
+    double extract_ms{};
+};
+
+struct HlrProjectionResultA0
+{
+    std::string schema = "geometry.hlr_projection.result.a0";
+    std::string units = "mm";
+    HlrProjectionSource source{};
+    std::vector<HlrProjectedView> views{};
+    HlrProjectionTimings timings{};
+};
+
 struct IpcAttachmentDeclarationA0
 {
     std::string name{};
@@ -1093,6 +1267,112 @@ struct IpcWelcomeA0
     std::vector<std::string> capabilities{};
 };
 
+using IllustrationMatrix4x4 = std::vector<double>;
+
+using IllustrationVector3 = std::vector<double>;
+
+struct MeshIllustrationMaterial
+{
+    IllustrationVector3 color{};
+    std::optional<double> opacity{};
+    std::optional<std::string> name{};
+};
+
+struct MeshIllustrationMesh
+{
+    std::string id{};
+    std::vector<double> positions{};
+    std::optional<std::vector<double>> normals{};
+    std::optional<std::vector<std::uint32_t>> indices{};
+    std::optional<IllustrationMatrix4x4> matrix{};
+    std::vector<MeshIllustrationMaterial> materials{};
+    std::optional<std::vector<std::uint32_t>> triangle_material_indices{};
+    std::optional<bool> double_sided{};
+};
+
+struct MeshIllustrationView
+{
+    IllustrationVector3 direction{};
+    IllustrationVector3 up{};
+    std::optional<bool> mirror_x{};
+};
+
+struct MeshIllustrationPrepareOptions
+{
+    std::optional<std::uint32_t> max_triangles{};
+    std::optional<double> weld_tolerance{};
+};
+
+enum class MeshIllustrationShading
+{
+    unlit,
+    flat,
+    lambert,
+    banded,
+    toon,
+};
+
+struct MeshIllustrationStyleA0
+{
+    std::optional<MeshIllustrationShading> shading{};
+    std::optional<double> ambient{};
+    std::optional<double> key_intensity{};
+    std::optional<IllustrationVector3> light_direction{};
+    std::optional<std::uint32_t> bands{};
+    std::optional<bool> source_colors{};
+    std::optional<IllustrationVector3> fallback_color{};
+    std::optional<std::string> background{};
+    std::optional<bool> transparent_background{};
+    std::optional<bool> fuse_surfaces{};
+    std::optional<bool> layer_coplanar_materials{};
+    std::optional<bool> show_hlr_outline{};
+    std::optional<bool> show_hlr_detail{};
+    std::optional<bool> show_outlines{};
+    std::optional<bool> show_creases{};
+    std::optional<double> crease_angle_degrees{};
+    std::optional<std::string> outline_color{};
+    std::optional<std::string> crease_color{};
+    std::optional<double> outline_width{};
+    std::optional<double> crease_width{};
+    std::optional<bool> double_sided{};
+    std::optional<double> rim_amount{};
+};
+
+struct MeshIllustrationSvgOptions
+{
+    std::optional<std::uint32_t> coordinate_span{};
+    std::optional<std::string> title{};
+};
+
+struct MeshIllustrationInputA0
+{
+    std::string schema = "geometry.mesh_illustration.input.a0";
+    std::vector<MeshIllustrationMesh> meshes{};
+    MeshIllustrationView view{};
+    std::optional<MeshIllustrationPrepareOptions> prepare{};
+    std::optional<MeshIllustrationStyleA0> style{};
+    std::optional<MeshIllustrationSvgOptions> svg{};
+};
+
+struct MeshIllustrationRenderStats
+{
+    std::uint32_t triangles{};
+    std::uint32_t surface_draws{};
+    std::uint32_t layered_surfaces{};
+    std::uint32_t outlines{};
+    std::uint32_t details{};
+    std::uint32_t creases{};
+    std::uint32_t commands{};
+};
+
+struct MeshIllustrationResultA0
+{
+    std::string schema = "geometry.mesh_illustration.result.a0";
+    std::string svg{};
+    MeshIllustrationRenderStats stats{};
+    std::vector<std::string> warnings{};
+};
+
 struct ModelBoundsSource
 {
     ModelFormat format{};
@@ -1634,6 +1914,16 @@ bool decode_json(const unsigned char* data, std::size_t size, DiagnosticA0* valu
                  ContractError* error = nullptr);
 bool encode_json(const DiagnosticA0& value, std::string* json, ContractError* error = nullptr);
 
+bool decode_json(const unsigned char* data, std::size_t size, HlrProjectionOptionsA0* value,
+                 ContractError* error = nullptr);
+bool encode_json(const HlrProjectionOptionsA0& value, std::string* json,
+                 ContractError* error = nullptr);
+
+bool decode_json(const unsigned char* data, std::size_t size, HlrProjectionResultA0* value,
+                 ContractError* error = nullptr);
+bool encode_json(const HlrProjectionResultA0& value, std::string* json,
+                 ContractError* error = nullptr);
+
 bool decode_json(const unsigned char* data, std::size_t size, IpcCancelledA0* value,
                  ContractError* error = nullptr);
 bool encode_json(const IpcCancelledA0& value, std::string* json, ContractError* error = nullptr);
@@ -1672,6 +1962,21 @@ bool encode_json(const IpcShutdownAckA0& value, std::string* json, ContractError
 bool decode_json(const unsigned char* data, std::size_t size, IpcWelcomeA0* value,
                  ContractError* error = nullptr);
 bool encode_json(const IpcWelcomeA0& value, std::string* json, ContractError* error = nullptr);
+
+bool decode_json(const unsigned char* data, std::size_t size, MeshIllustrationInputA0* value,
+                 ContractError* error = nullptr);
+bool encode_json(const MeshIllustrationInputA0& value, std::string* json,
+                 ContractError* error = nullptr);
+
+bool decode_json(const unsigned char* data, std::size_t size, MeshIllustrationResultA0* value,
+                 ContractError* error = nullptr);
+bool encode_json(const MeshIllustrationResultA0& value, std::string* json,
+                 ContractError* error = nullptr);
+
+bool decode_json(const unsigned char* data, std::size_t size, MeshIllustrationStyleA0* value,
+                 ContractError* error = nullptr);
+bool encode_json(const MeshIllustrationStyleA0& value, std::string* json,
+                 ContractError* error = nullptr);
 
 bool decode_json(const unsigned char* data, std::size_t size, ModelBoundsOptionsA0* value,
                  ContractError* error = nullptr);

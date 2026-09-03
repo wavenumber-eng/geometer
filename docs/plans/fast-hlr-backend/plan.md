@@ -54,7 +54,7 @@ depends_on = ["baseline-and-budgets"]
 [[steps]]
 id = "path-reconstruction"
 title = "Reconstruct visibility-safe lines and bounded circular arcs, with post-change occlusion validation"
-status = "active"
+status = "pending"
 depends_on = ["vector-visibility-core"]
 
 [[steps]]
@@ -66,7 +66,7 @@ depends_on = ["path-reconstruction"]
 [[steps]]
 id = "browser-fast-hlr"
 title = "Adapt the shared prepared-edge semantics to the retained browser GPU renderer and Illustration Lab"
-status = "active"
+status = "pending"
 depends_on = ["candidate-edge-graph", "fast-backend-contract"]
 
 [[steps]]
@@ -102,27 +102,27 @@ depends_on = ["external-review"]
 [[exit_criteria]]
 id = "additive-backend"
 title = "Fast is available alongside exact and poly without changing their defaults or supported behavior"
-status = "done"
+status = "met"
 
 [[exit_criteria]]
 id = "compatible-projection"
 title = "Fast returns geometry.projection.b0 outline, detail, and bbox data through the existing projection surfaces"
-status = "done"
+status = "met"
 
 [[exit_criteria]]
 id = "independent-layers"
 title = "Callers can request outline, detail, or both, and combined results preserve separate independently composable geometry layers"
-status = "done"
+status = "met"
 
 [[exit_criteria]]
 id = "warm-view-budget"
 title = "Prepared-mesh fast HLR completes the governed medium fixture corpus in less than 100 ms per view at p95"
-status = "done"
+status = "met"
 
 [[exit_criteria]]
 id = "outline-quality"
 title = "Fast mesh-shadow outline preserves projected holes and stays within its documented geometric tolerance"
-status = "done"
+status = "met"
 
 [[exit_criteria]]
 id = "detail-quality"
@@ -142,7 +142,7 @@ status = "pending"
 [[exit_criteria]]
 id = "interactive-raster"
 title = "The browser GPU adapter retains sub-frame visibility updates without rerunning STEP import or OCCT HLR"
-status = "done"
+status = "met"
 
 [[exit_criteria]]
 id = "bounded"
@@ -233,9 +233,10 @@ expressions or proprietary source structure.
 
 ### Governed native baseline
 
-`scripts/benchmark_fast_hlr.py` records the executable digest, environment,
-warmup/repeat policy, phase timings, and output counts for a fixed SOT-23,
-SOIC-8, SOT-223, TSOT-23-5, and BGA90 corpus. The initial Windows x64 run used
+`scripts/benchmark_fast_hlr.py` records native and Node-hosted WASM artifact
+digests, environment, warmup/repeat policy, phase timings, canonical geometry
+digests, and output counts for a fixed SOT-23, SOIC-8, SOT-223, TSOT-23-5, and
+BGA90 corpus. The initial Windows x64 run used
 commit `59f62a73d487fc728e8a2fc2a26e9b8a3089c9ee`, the current native build, one
 warmup, and three measured one-shot processes. Its selected p95 results were:
 
@@ -356,6 +357,34 @@ can still consume substantial intermediate time or memory before the final
 output limit is observed. Hardening that internal work bound remains part of the
 pending resource-safety exit criterion rather than blocking this evaluation
 checkpoint.
+
+### Native versus WASM checkpoint
+
+The 2026-09-03 runtime matrix runs the same one-shot batch requests through the
+Windows x64 `geometer.exe` and the Node-hosted browser WASM build, with one
+warmup and three measured repetitions. Fast detail geometry was byte-equivalent
+across runtimes on all five governed package fixtures. Exact HLR differed on
+TSOT-23-5 by one detail primitive (1,655 native versus 1,654 WASM); this is an
+existing exact-backend discrepancy rather than a fast-backend difference.
+
+For BGA90 detail-only, p50 internal HLR time was 59.63 ms native and 114.98 ms
+WASM for fast, 15.52 ms and 27.26 ms for poly, and 2,308.23 ms and 12,490.64 ms
+for exact. One-shot p50 wall time was respectively 329.92 ms and 1,466.46 ms,
+277.65 ms and 1,454.39 ms, and 2,485.54 ms and 13,427.56 ms. WASM STEP import
+and module/process startup dominate small and medium one-shot requests.
+
+The combined fast-detail plus fast-mesh-shadow corpus also remained
+byte-equivalent. On BGA90, p50 prepared view work was 77.62 ms native and
+121.92 ms WASM; the corresponding summed per-phase p95 values were 79.43 ms and
+123.27 ms. One-shot p50 wall time was 370.13 ms and 1,306.43 ms. Raw reports are
+ignored reproducible evidence under `.bench-tmp/fast-hlr-native-wasm-detail.json`
+and `.bench-tmp/fast-hlr-native-wasm-combined.json`.
+
+These results support the native prepared-view target and show that the first
+single-threaded WASM build misses the sub-100 ms BGA90 combined-view target.
+They also make reusable prepared-data transport material to the publishable
+browser interface: reparsing STEP and rebuilding preparation for every view is
+not representative of the retained fast architecture.
 
 ## Execution architecture
 

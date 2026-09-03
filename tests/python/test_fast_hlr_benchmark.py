@@ -50,3 +50,35 @@ def test_default_fixture_corpus_exists() -> None:
     assert [workload["name"] for workload in workloads] == list(benchmark.DEFAULT_MODELS)
     assert all(workload["step_bytes"] > 0 for workload in workloads)
     assert all(workload["step_path"].is_file() for workload in workloads)
+
+
+def test_geometry_digest_ignores_runtime_timings() -> None:
+    first = {"schema": "geometry.projection.b0", "views": [{"id": "top"}], "timings": {"hlr_ms": 1}}
+    second = {"schema": "geometry.projection.b0", "views": [{"id": "top"}], "timings": {"hlr_ms": 99}}
+
+    assert benchmark._geometry_digest(first) == benchmark._geometry_digest(second)
+
+
+def test_runtime_comparisons_report_ratios_and_equivalence() -> None:
+    def case(runtime: str, wall_ms: float, digest: str) -> dict[str, object]:
+        summary = {
+            metric: {"mean": wall_ms, "p50": wall_ms, "p95": wall_ms} for metric in ("wall_ms", *benchmark.PHASE_NAMES)
+        }
+        return {
+            "runtime": runtime,
+            "model": "fixture.step",
+            "algorithm": "fast",
+            "outline_algorithm": "hlr-close",
+            "layer": "detail",
+            "view": "top",
+            "summary": summary,
+            "counts": {"detail_segments": 4},
+            "geometry_sha256": digest,
+        }
+
+    comparison = benchmark.runtime_comparisons([case("native", 2.0, "same"), case("wasm", 6.0, "same")])
+
+    assert len(comparison) == 1
+    assert comparison[0]["wasm_over_native"]["wall_ms"]["p50"] == 3.0
+    assert comparison[0]["counts_equivalent"] is True
+    assert comparison[0]["geometry_equivalent"] is True

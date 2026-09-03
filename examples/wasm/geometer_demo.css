@@ -28,8 +28,8 @@
   --wn-fg-muted: #555555;
   --wn-line: #bdbdb7;
   --wn-line-light: #d8d8d1;
-  --wn-accent: #006c67;
-  --wn-accent-bg: #e5f3f0;
+  --wn-accent: #b45309;
+  --wn-accent-bg: #fff1e6;
   --wn-warn: #8a6200;
   --wn-warn-bg: #fff4bf;
   --wn-code-bg: #e8e8df;
@@ -42,7 +42,7 @@
   --wn-warning: var(--wn-warn);
   --wn-failure: var(--wn-error);
   --wn-geometry-result: var(--wn-accent);
-  --wn-geometry-result-fill: rgb(0 108 103 / 16%);
+  --wn-geometry-result-fill: rgb(180 83 9 / 16%);
   --wn-geometry-subtract: var(--wn-error);
   --wn-geometry-grid: rgb(85 85 85 / 10%);
   --wn-font: "JetBrains Mono", "Cascadia Mono", Consolas, monospace;
@@ -1468,12 +1468,12 @@ body[data-wn-watermark="true"]::after {
       line-height: 1.35;
     }
     #illustrationOutputPane[data-engine="fast-vector"] #illustrationOutputLabel {
-      background: rgb(226 247 235 / 94%);
-      color: #17603a;
+      background: var(--wn-accent-bg);
+      color: var(--wn-accent);
     }
     #illustrationOutputPane[data-engine="gpu-preview"] #illustrationOutputLabel {
-      background: rgb(255 242 204 / 94%);
-      color: #7a4b00;
+      background: var(--wn-code-bg);
+      color: var(--wn-muted);
     }
     .illustration-settings {
       min-width: 0;
@@ -1548,7 +1548,7 @@ body[data-wn-watermark="true"]::after {
     .illustration-busy::before {
       width: 14px;
       height: 14px;
-      border: 2px solid rgb(43 120 128 / 24%);
+      border: 2px solid rgb(180 83 9 / 24%);
       border-top-color: var(--wn-accent);
       border-radius: 50%;
       content: "";
@@ -1559,7 +1559,7 @@ body[data-wn-watermark="true"]::after {
       inset: auto 10px 10px auto;
       width: 26px;
       height: 26px;
-      border: 1px solid rgb(43 120 128 / 22%);
+      border: 1px solid rgb(180 83 9 / 22%);
       border-radius: 50%;
       background: rgb(255 255 255 / 84%);
       box-shadow: 0 1px 4px rgb(23 37 44 / 12%);

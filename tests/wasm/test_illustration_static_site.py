@@ -139,6 +139,17 @@ async function main() {
     const pane = document.querySelector("#illustrationOutputPane");
     const before = Number(pane.dataset.prepareGeneration);
     document.querySelector('button[data-output="gpu"]').click();
+    const fastCrease = document.querySelector("#illustrationFastCrease");
+    pane.dataset.fastHlrCrease = "";
+    pane.dataset.fastVectorCrease = "";
+    fastCrease.dispatchEvent(new Event("input", { bubbles: true }));
+    const creaseDeadline = Date.now() + 10000;
+    while (
+      Date.now() < creaseDeadline &&
+      (pane.dataset.fastHlrCrease !== fastCrease.value ||
+        pane.dataset.fastVectorCrease !== fastCrease.value)
+    )
+      await new Promise((resolve) => setTimeout(resolve, 20));
     for (let frame = 0; frame < 30; frame += 1)
       await new Promise((resolve) => requestAnimationFrame(resolve));
     const canvas = document.querySelector("#illustrationFastCanvas");
@@ -164,6 +175,8 @@ async function main() {
       output: pane.dataset.output,
       engine: pane.dataset.engine,
       engineLabel: document.querySelector("#illustrationOutputLabel").textContent,
+      liveGpuCrease: pane.dataset.fastHlrCrease,
+      liveVectorCrease: pane.dataset.fastVectorCrease,
       visible: !document.querySelector("#illustrationFastCanvas").classList.contains("hidden"),
       buildMs: Number(pane.dataset.fastHlrBuildMs),
       triangles: Number(pane.dataset.fastHlrTriangles),
@@ -793,6 +806,8 @@ def test_illustration_static_site_mesh_render_upload_and_export() -> None:
     assert result["gpuHlr"]["output"] == "gpu"
     assert result["gpuHlr"]["engine"] == "gpu-preview"
     assert result["gpuHlr"]["engineLabel"] == "GPU EDGE PREVIEW / SEPARATE FROM FAST VECTOR OUTPUT"
+    assert result["gpuHlr"]["liveGpuCrease"] == "25"
+    assert result["gpuHlr"]["liveVectorCrease"] == "25"
     assert result["gpuHlr"]["visible"] is True
     assert result["gpuHlr"]["buildMs"] >= 0
     assert result["gpuHlr"]["triangles"] == result["initial"]["triangles"]

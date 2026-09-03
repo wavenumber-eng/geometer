@@ -244,6 +244,8 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.setClearColor(0xffffff, 1);
 const fastHlr = new FastHlrViewport(els.fastCanvas);
+let fastCreaseFrame = 0;
+let fastCreaseLineworkTimer = 0;
 
 const threeScene = new THREE.Scene();
 threeScene.background = new THREE.Color(0xffffff);
@@ -401,9 +403,27 @@ function rebuildFastHlr(): void {
   fastHlr.setStyle(fastHlrStyle());
   const stats = fastHlr.setSource(state.root);
   if (!stats) return;
+  els.outputPane.dataset.fastHlrCrease = els.fastCrease.value;
   els.outputPane.dataset.fastHlrBuildMs = stats.buildMs.toFixed(3);
   els.outputPane.dataset.fastHlrTriangles = String(stats.triangles);
   els.outputPane.dataset.fastHlrEdges = String(stats.candidateEdges);
+}
+
+function scheduleFastCreaseUpdate(): void {
+  window.cancelAnimationFrame(fastCreaseFrame);
+  fastCreaseFrame = window.requestAnimationFrame(() => {
+    fastCreaseFrame = 0;
+    rebuildFastHlr();
+  });
+
+  cancelLazyHlrLinework();
+  window.clearTimeout(fastCreaseLineworkTimer);
+  fastCreaseLineworkTimer = window.setTimeout(() => {
+    fastCreaseLineworkTimer = 0;
+    if (!state.scene || !state.showHlrDetail) return;
+    delete state.scene.detailSegments;
+    updateHlrVisibility().catch(showError);
+  }, 100);
 }
 
 function activateButtons(container: HTMLElement, key: "view" | "output", value: string): void {
@@ -753,6 +773,7 @@ async function prepareIllustration(reason: string): Promise<void> {
     els.outputPane.dataset.cameraZoom = camera.zoom.toFixed(9);
     els.outputPane.dataset.cameraHalfHeight = Number(camera.userData.halfHeight ?? 1).toFixed(9);
     els.outputPane.dataset.prepareGeneration = String(state.prepareGeneration);
+    if (state.showHlrDetail) els.outputPane.dataset.fastVectorCrease = els.fastCrease.value;
     redrawStyle();
     const elapsed = performance.now() - started;
     els.timing.textContent = `prepare ${formatMs(elapsed)} / HLR ${formatMs(hlrMs)} / ${state.scene.stats.sourceTriangles.toLocaleString()} triangles`;
@@ -809,6 +830,7 @@ async function updateHlrVisibility(): Promise<void> {
       return;
     scene.outlineSegments = linework.outlineSegments;
     scene.detailSegments = linework.detailSegments;
+    if (state.showHlrDetail) els.outputPane.dataset.fastVectorCrease = els.fastCrease.value;
     redrawStyle();
   } catch (error) {
     if (
@@ -1355,10 +1377,7 @@ function wireEvents(): void {
   for (const control of [els.bands, els.ambient, els.key, els.rim, els.outlineWidth]) {
     control.addEventListener("input", redrawStyle);
   }
-  els.fastCrease.addEventListener("input", () => {
-    fastHlrStyle();
-  });
-  els.fastCrease.addEventListener("change", rebuildFastHlr);
+  els.fastCrease.addEventListener("input", scheduleFastCreaseUpdate);
   els.fastBias.addEventListener("input", () => {
     fastHlr.setStyle(fastHlrStyle());
   });
@@ -1375,6 +1394,8 @@ function wireEvents(): void {
     state.worker?.terminate();
     if (state.workerUrl) URL.revokeObjectURL(state.workerUrl);
     for (const url of state.uploadedUrls) URL.revokeObjectURL(url);
+    window.cancelAnimationFrame(fastCreaseFrame);
+    window.clearTimeout(fastCreaseLineworkTimer);
     fastHlr.dispose();
   });
 }

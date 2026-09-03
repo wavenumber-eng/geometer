@@ -81,6 +81,19 @@ AnalyticRequestPacketRecords solver_failure_then_disk()
     return records;
 }
 
+AnalyticRequestPacketRecords t_junction_capsules()
+{
+    AnalyticRequestPacketRecords records;
+    records.jobs = {{10, 0, 1}};
+    records.stages = {{100, 1, 0, 2}};
+    records.operands = {{1000, 4, 0}, {1001, 4, 1}};
+    records.capsules = {
+        {5000, 149'398'250, -139'599'999, 149'398'250, -138'399'999, 254'000},
+        {5001, 149'498'250, -138'299'999, 149'008'250, -138'789'999, 254'000},
+    };
+    return records;
+}
+
 AnalyticRequestPacketRecords endpoint_radius_circle()
 {
     AnalyticRequestPacketRecords records;
@@ -786,6 +799,20 @@ void test_solver_failure_remains_job_local()
             "solver-failure isolation emitted an invalid result packet");
 }
 
+void test_t_junction_capsules_use_bounded_tangent_order()
+{
+    const auto records = t_junction_capsules();
+    require(validate_analytic_request_packet_records(records) == AnalyticRequestPacketError::none,
+            "T-junction capsule request invalid");
+    const auto result = build_analytic_filtered_batch(records);
+    require(result.error == AnalyticFilteredBatchError::none && result.packet &&
+                result.packet->records.job_results.size() == 1 &&
+                result.packet->records.job_results[0].status == 0 &&
+                result.packet->records.diagnostics.empty() &&
+                result.packet->records.regions.size() == 1,
+            "T-junction capsule union failed");
+}
+
 void test_per_job_memory_is_independent_of_prior_outputs()
 {
     const auto single = plain_disks(1);
@@ -1018,6 +1045,7 @@ int main(int argc, char** argv)
     test_job_local_failure_isolated();
     test_collinear_diagonal_capsules_share_exact_carrier_order();
     test_solver_failure_remains_job_local();
+    test_t_junction_capsules_use_bounded_tangent_order();
     test_disjoint_relationship();
     test_rectangle_relationship_dimensions_and_containment();
     test_relationship_query_orientation_and_strict_gap();

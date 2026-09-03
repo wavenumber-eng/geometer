@@ -26,7 +26,10 @@ const closure = createHash("sha256")
   .update(manifest.files.map((item) => `${item.path}\0${item.sha256}\n`).join(""))
   .digest("hex");
 if (closure !== manifest.sha256) throw new Error("HLR static-site closure digest drifted.");
-if (JSON.stringify(manifest.files.map((item) => item.path)) !== JSON.stringify(["_headers", "index.html"]))
+if (
+  JSON.stringify(manifest.files.map((item) => item.path)) !==
+  JSON.stringify(["_headers", "index.html"])
+)
   throw new Error("HLR package contains a runtime companion asset.");
 
 const htmlBytes = await readFile(join(site, "index.html"));
@@ -58,6 +61,8 @@ for (const required of [
   'id="bboxStyleSelect"',
   'id="meshDeflectionModeSelect"',
   'id="edgePresetSelect"',
+  '<option value="fast">Fast vector (evaluation)</option>',
+  '<option value="fast-mesh-shadow">Fast mesh shadow (evaluation)</option>',
   'id="resetGeometryButton"',
   'id="settingsPanelContent"',
   'id="threePanelContent"',
@@ -107,7 +112,8 @@ for (const directive of [
   "frame-ancestors 'none'",
 ])
   if (!headers.includes(directive)) throw new Error(`HLR static headers omit ${directive}.`);
-if (/https?:|immutable/u.test(headers)) throw new Error("HLR static headers allow an external or stale asset.");
+if (/https?:|immutable/u.test(headers))
+  throw new Error("HLR static headers allow an external or stale asset.");
 
 console.log(
   JSON.stringify({

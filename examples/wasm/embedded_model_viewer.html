@@ -396,13 +396,13 @@
     <details class="advanced-settings" open>
       <summary>Geometry settings</summary>
       <div class="tunables">
-        <label class="control" title="Geometer projection_algorithm. Polygonal is fast; Exact preserves native curves and exposes every OCCT edge category.">
+        <label class="control" title="Geometer projection_algorithm. Fast vector is the evaluation replacement; Polygonal and Exact remain available as comparison backends.">
           <span>HLR engine</span>
-          <select id="algoSelect"><option value="poly">Polygonal (fast)</option><option value="exact">Exact curves</option></select>
+          <select id="algoSelect"><option value="poly">Polygonal</option><option value="fast">Fast vector (evaluation)</option><option value="exact">Exact curves</option></select>
         </label>
         <label class="control" title="Geometer outline_algorithm. This builds the independent Outline layer and is unrelated to the Detail edge checkboxes.">
           <span>Silhouette source</span>
-          <select id="outlineAlgoSelect"><option value="mesh-shadow">Mesh shadow (recommended)</option><option value="hlr-close">Closed HLR edges</option></select>
+          <select id="outlineAlgoSelect"><option value="mesh-shadow">Mesh shadow (recommended)</option><option value="fast-mesh-shadow">Fast mesh shadow (evaluation)</option><option value="hlr-close">Closed HLR edges</option></select>
         </label>
         <label class="control" title="Geometer mesh_deflection_mode. Model-relative multiplies the largest model dimension by the quality coefficient.">
           <span>Tessellation</span>
@@ -459,7 +459,7 @@
           </div>
         </div>
       </div>
-      <div class="setting-help">Detail is configured OCCT HLR edge geometry. Outline is an independent Geometer assembly silhouette; Mesh shadow is the normal choice. Both displays those two unchanged layers together. The raw edge categories never change Outline.</div>
+      <div class="setting-help">Detail shows raw linework from the selected HLR engine. The OCCT edge-category controls apply to Polygonal and Exact; Fast vector uses its provisional boundary, crease, and silhouette candidates. Outline is an independent assembly silhouette. Use Detail or Outline to inspect either layer alone, and Both to compose them without merging.</div>
     </details>
         </div>
         <div class="three-settings" id="threePanelContent">

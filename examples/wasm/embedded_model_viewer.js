@@ -222,14 +222,19 @@ function applyEdgePreset(presetId) {
 }
 
 function syncGeometryControls() {
-  // Poly HLR only supports V/H Compound + OutLine. Gray out the 6 unsupported flags.
-  const poly = els.algoSelect.value === "poly";
+  // Fast vector uses its separate provisional candidate contract. Poly HLR
+  // supports only V/H Compound + OutLine; Exact exposes all OCCT categories.
+  const algorithm = els.algoSelect.value;
+  const poly = algorithm === "poly";
+  const fast = algorithm === "fast";
   for (const label of els.edgeRow.querySelectorAll("label.flag")) {
-    const supported = !poly || label.dataset.algoPoly === "ok";
+    const supported = !fast && (!poly || label.dataset.algoPoly === "ok");
     label.classList.toggle("disabled", !supported);
     const cb = label.querySelector("input[type=checkbox]");
     cb.disabled = !supported;
   }
+  els.edgePresetSelect.disabled = fast;
+  els.edgeRow.dataset.algorithm = algorithm;
   els.hlrTolInput.disabled = !poly;
   const relative = els.meshDeflectionModeSelect.value === "bbox-relative";
   els.deflCoeffInput.disabled = !relative;
@@ -878,6 +883,8 @@ async function renderProjectionForCurrentView() {
     return null;
 
   const counts = drawProjection(projectionResult.projection, viewId);
+  els.projectionSvg.dataset.projectionAlgorithm = opts.projection_algorithm;
+  els.projectionSvg.dataset.outlineAlgorithm = opts.outline_algorithm;
   const timings = projectionResult.timings || {};
   const hlrText = projectionTimingText(timings);
   const totalMs = performance.now() - started;
@@ -1430,9 +1437,9 @@ async function init() {
     activateSegmented(els.modeButtons, "mode", state.mode);
   }
   const requestedAlgo = params.get("algo");
-  if (["poly", "exact"].includes(requestedAlgo)) els.algoSelect.value = requestedAlgo;
+  if (["poly", "fast", "exact"].includes(requestedAlgo)) els.algoSelect.value = requestedAlgo;
   const requestedOutlineAlgo = params.get("outlineAlgo") || params.get("outline_algorithm");
-  if (["mesh-shadow", "hlr-close"].includes(requestedOutlineAlgo))
+  if (["mesh-shadow", "fast-mesh-shadow", "hlr-close"].includes(requestedOutlineAlgo))
     els.outlineAlgoSelect.value = requestedOutlineAlgo;
   const requestedMeshMode = params.get("meshMode") || params.get("mesh_deflection_mode");
   if (["bbox-relative", "absolute"].includes(requestedMeshMode))

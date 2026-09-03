@@ -356,6 +356,50 @@ async function main() {
     throw new Error("Model switch did not preserve the active Top view.");
   })()`, true);
 
+  const fastSelection = await evaluate(`(async () => {
+    const set = (selector, value) => {
+      const control = document.querySelector(selector);
+      control.value = value;
+      control.dispatchEvent(new Event("change", { bubbles: true }));
+    };
+    set("#algoSelect", "fast");
+    set("#outlineAlgoSelect", "fast-mesh-shadow");
+    const deadline = Date.now() + 120000;
+    while (Date.now() < deadline) {
+      const metric = document.querySelector("#projectionMetric")?.textContent || "";
+      const svg = document.querySelector("#projectionSvg");
+      if (!document.body.classList.contains("busy") &&
+          svg?.dataset.projectionAlgorithm === "fast" &&
+          svg?.dataset.outlineAlgorithm === "fast-mesh-shadow" &&
+          metric.includes(" detail ") && metric.includes(" outline ")) break;
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+    const svg = document.querySelector("#projectionSvg");
+    if (document.body.classList.contains("busy") || svg?.dataset.projectionAlgorithm !== "fast" ||
+        svg?.dataset.outlineAlgorithm !== "fast-mesh-shadow") {
+      throw new Error("Timed out waiting for fast HLR projection.");
+    }
+    const layerCounts = (mode) => {
+      document.querySelector('button[data-mode="' + mode + '"]').click();
+      return {
+        detail: document.querySelectorAll("#projectionSvg .detail").length,
+        outline: document.querySelectorAll("#projectionSvg .outline").length,
+      };
+    };
+    const result = {
+      algorithm: document.querySelector("#algoSelect").value,
+      outlineAlgorithm: document.querySelector("#outlineAlgoSelect").value,
+      metric: document.querySelector("#projectionMetric").textContent,
+      edgePresetDisabled: document.querySelector("#edgePresetSelect").disabled,
+      edgeFlagsDisabled: [...document.querySelectorAll('input[data-edge]')].every((input) => input.disabled),
+      detailOnly: layerCounts("detail"),
+      outlineOnly: layerCounts("outline"),
+      both: layerCounts("both"),
+    };
+    document.querySelector('button[data-mode="detail"]').click();
+    return result;
+  })()`, true);
+
   const geometryReset = await evaluate(`(async () => {
     const set = (selector, value) => {
       const control = document.querySelector(selector);
@@ -519,6 +563,7 @@ async function main() {
     lensSwitch,
     geometryControls,
     numericAutoProjection,
+    fastSelection,
     geometryReset,
     axisPresets,
     modelSwitch,
@@ -701,6 +746,18 @@ def test_hlr_static_site_upload_projection_and_export() -> None:
         "sawBusy": True,
         "settled": True,
     }
+    assert result["fastSelection"]["algorithm"] == "fast"
+    assert result["fastSelection"]["outlineAlgorithm"] == "fast-mesh-shadow"
+    assert " detail " in result["fastSelection"]["metric"]
+    assert " outline " in result["fastSelection"]["metric"]
+    assert result["fastSelection"]["edgePresetDisabled"] is True
+    assert result["fastSelection"]["edgeFlagsDisabled"] is True
+    assert result["fastSelection"]["detailOnly"]["detail"] > 0
+    assert result["fastSelection"]["detailOnly"]["outline"] == 0
+    assert result["fastSelection"]["outlineOnly"]["detail"] == 0
+    assert result["fastSelection"]["outlineOnly"]["outline"] > 0
+    assert result["fastSelection"]["both"]["detail"] > 0
+    assert result["fastSelection"]["both"]["outline"] > 0
     assert result["geometryReset"] == {
         "algorithm": "poly",
         "outlineAlgorithm": "mesh-shadow",

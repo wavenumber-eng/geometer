@@ -1,7 +1,7 @@
 +++
 type = "plan"
 id = "fast-hlr-backend"
-status = "active"
+status = "pending"
 created = "2026-09-02"
 
 [[steps]]
@@ -24,7 +24,7 @@ depends_on = ["early-design-review"]
 [[steps]]
 id = "fast-backend-contract"
 title = "Specify the additive evaluation API, packed prepared-data transport, provisional fast-only options, limits, and timing channel"
-status = "active"
+status = "done"
 depends_on = ["baseline-and-budgets"]
 
 [[steps]]

@@ -39,6 +39,7 @@ set(GEOMETER_LIB_SOURCES
     fast_hlr.cpp
     fast_hlr_occt.cpp
     fast_hlr_reconstruct.cpp
+    fast_hlr_seams.cpp
     fast_mesh_shadow_outline.cpp
     hlr_projection.cpp
     mesh_shadow_outline.cpp

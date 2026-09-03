@@ -56,10 +56,14 @@ void parse_explicit_options()
                        "\"includeCreases\":true,"
                        "\"include_silhouettes\":false,"
                        "\"includeHidden\":true,"
+                       "\"suppress_coplanar_seams\":true,"
                        "\"crease_angle_rad\":0.25,"
                        "\"weldTolerance\":0.000001,"
                        "\"projected_tolerance\":0.000002,"
                        "\"depthTolerance\":0.000003,"
+                       "\"coplanar_seam_angle_rad\":0.01,"
+                       "\"coplanar_seam_depth_tolerance\":0.000004,"
+                       "\"coplanarSeamLateralTolerance\":0.000005,"
                        "\"limits\":{\"max_candidate_pairs\":1234,\"max_fragments\":2468,"
                        "\"maxGridReferences\":4321}"
                        "},"
@@ -104,10 +108,17 @@ void parse_explicit_options()
     require(options.fast.include_creases, "fast.includeCreases should parse");
     require(!options.fast.include_silhouettes, "fast.include_silhouettes should parse");
     require(options.fast.include_hidden, "fast.includeHidden should parse");
+    require(options.fast.suppress_coplanar_seams, "fast.suppress_coplanar_seams should parse");
     require(options.fast.crease_angle_rad == 0.25, "fast.crease_angle_rad should parse");
     require(options.fast.weld_tolerance == 0.000001, "fast.weldTolerance should parse");
     require(options.fast.projected_tolerance == 0.000002, "fast.projected_tolerance should parse");
     require(options.fast.depth_tolerance == 0.000003, "fast.depthTolerance should parse");
+    require(options.fast.coplanar_seam_angle_rad == 0.01,
+            "fast.coplanar_seam_angle_rad should parse");
+    require(options.fast.coplanar_seam_depth_tolerance == 0.000004,
+            "fast.coplanar_seam_depth_tolerance should parse");
+    require(options.fast.coplanar_seam_lateral_tolerance == 0.000005,
+            "fast.coplanarSeamLateralTolerance should parse");
     require(options.fast.limits.max_candidate_pairs == 1234,
             "fast.limits.max_candidate_pairs should parse");
     require(options.fast.limits.max_fragments == 2468, "fast.limits.max_fragments should parse");
@@ -199,6 +210,14 @@ void reject_invalid_options()
     code = geometer::parse_hlr_projection_options_json("{\"fast\":{\"crease_angle_rad\":4}}",
                                                        &options, &status);
     require(code == 91, "crease angles above pi should be rejected");
+
+    code = geometer::parse_hlr_projection_options_json(
+        "{\"fast\":{\"coplanar_seam_lateral_tolerance\":0}}", &options, &status);
+    require(code == 91, "non-positive coplanar seam lateral tolerance should be rejected");
+
+    code = geometer::parse_hlr_projection_options_json("{\"fast\":{\"coplanar_seam_angle_rad\":2}}",
+                                                       &options, &status);
+    require(code == 91, "coplanar seam angles above pi/2 should be rejected");
 
     code = geometer::parse_hlr_projection_options_json("{\"model_transform\":[[1,0,0,0]]}",
                                                        &options, &status);

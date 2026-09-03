@@ -551,7 +551,7 @@ role = "stylesheet"
 source = "appz/data_models/docs/core/design/styles.css"
 destination = "docs/design/styles.css"
 source_sha256 = "b0452e403db12c3fca581866b0953dbca45d751bcc83c137f0da16674859d151"
-sha256 = "39b9b7fd997a1707e9743ebcff6a21200e1d35ad6f629c8a5799d56192ab019d"
+sha256 = "5be346839f04afcfeedefe9836b360d06e38939840515d6f87ba5b4498ae51a7"
 status = "vendored"
 adaptation = "Replace internally licensed Berkeley Mono declarations with OFL-1.1 Cousine; preserve the reviewed layout and component rules; add narrow generated-code wrapping verified in a real browser."
 

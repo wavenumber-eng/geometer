@@ -594,6 +594,8 @@ bool parse_fast_options(const JsonValue& value, FastHlrOptions* options, std::st
         {"include_creases", "includeCreases", &FastHlrOptions::include_creases},
         {"include_silhouettes", "includeSilhouettes", &FastHlrOptions::include_silhouettes},
         {"include_hidden", "includeHidden", &FastHlrOptions::include_hidden},
+        {"suppress_coplanar_seams", "suppressCoplanarSeams",
+         &FastHlrOptions::suppress_coplanar_seams},
     };
     for (const BoolOption& option : booleans)
     {
@@ -617,6 +619,12 @@ bool parse_fast_options(const JsonValue& value, FastHlrOptions* options, std::st
         {"weld_tolerance", "weldTolerance", &FastHlrOptions::weld_tolerance},
         {"projected_tolerance", "projectedTolerance", &FastHlrOptions::projected_tolerance},
         {"depth_tolerance", "depthTolerance", &FastHlrOptions::depth_tolerance},
+        {"coplanar_seam_angle_rad", "coplanarSeamAngleRad",
+         &FastHlrOptions::coplanar_seam_angle_rad},
+        {"coplanar_seam_depth_tolerance", "coplanarSeamDepthTolerance",
+         &FastHlrOptions::coplanar_seam_depth_tolerance},
+        {"coplanar_seam_lateral_tolerance", "coplanarSeamLateralTolerance",
+         &FastHlrOptions::coplanar_seam_lateral_tolerance},
     };
     for (const DoubleOption& option : doubles)
     {
@@ -671,10 +679,18 @@ bool parse_fast_options(const JsonValue& value, FastHlrOptions* options, std::st
     }
     if (!std::isfinite(options->weld_tolerance) || options->weld_tolerance <= 0.0 ||
         !std::isfinite(options->projected_tolerance) || options->projected_tolerance <= 0.0 ||
-        !std::isfinite(options->depth_tolerance) || options->depth_tolerance < 0.0)
+        !std::isfinite(options->depth_tolerance) || options->depth_tolerance < 0.0 ||
+        !std::isfinite(options->coplanar_seam_angle_rad) ||
+        options->coplanar_seam_angle_rad < 0.0 ||
+        options->coplanar_seam_angle_rad > 1.57079632679489661923 ||
+        !std::isfinite(options->coplanar_seam_depth_tolerance) ||
+        options->coplanar_seam_depth_tolerance < 0.0 ||
+        !std::isfinite(options->coplanar_seam_lateral_tolerance) ||
+        options->coplanar_seam_lateral_tolerance <= options->projected_tolerance)
     {
-        *error = "fast tolerances must be finite; weld/projected must be positive and depth "
-                 "must be nonnegative.";
+        *error = "fast tolerances must be finite; weld/projected must be positive, seam lateral "
+                 "must exceed projected tolerance, depth/seam depth must be nonnegative, crease "
+                 "angle must be between 0 and pi, and seam angle must be between 0 and pi/2.";
         return false;
     }
     return true;

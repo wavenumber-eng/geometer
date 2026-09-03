@@ -1,6 +1,8 @@
 #include "geometer/fast_hlr.h"
 
 #include "fast_hlr_reconstruct.h"
+#include "fast_hlr_seams.h"
+#include "fast_hlr_view_types.h"
 
 #include <algorithm>
 #include <cmath>
@@ -20,6 +22,10 @@ constexpr std::uint8_t kBoundaryCategory = 1U;
 constexpr std::uint8_t kCreaseCategory = 2U;
 constexpr std::uint8_t kSilhouetteCategory = 4U;
 
+using fast_hlr_internal::Interval;
+using fast_hlr_internal::ProjectedPoint;
+using fast_hlr_internal::ProjectedTriangle;
+
 struct EdgeKey
 {
     std::uint32_t first = 0;
@@ -35,32 +41,6 @@ struct Vec2
 {
     double x = 0.0;
     double y = 0.0;
-};
-
-struct ProjectedPoint
-{
-    double x = 0.0;
-    double y = 0.0;
-    double z = 0.0;
-};
-
-struct ProjectedTriangle
-{
-    std::array<ProjectedPoint, 3> points;
-    double min_x = 0.0;
-    double min_y = 0.0;
-    double max_x = 0.0;
-    double max_y = 0.0;
-    double depth_x = 0.0;
-    double depth_y = 0.0;
-    double depth_constant = 0.0;
-    bool active = false;
-};
-
-struct Interval
-{
-    double first = 0.0;
-    double second = 0.0;
 };
 
 struct ViewBasis
@@ -245,6 +225,63 @@ bool hidden_subinterval(const ProjectedPoint& start, const ProjectedPoint& end,
         *hidden = {std::max(overlap.first, crossing), overlap.second};
     }
     return hidden->first < hidden->second;
+}
+
+std::vector<Interval> merge_intervals(std::vector<Interval> intervals, double gap_tolerance)
+{
+    std::sort(intervals.begin(), intervals.end(),
+              [](const Interval& first, const Interval& second)
+              {
+                  return first.first < second.first ||
+                         (first.first == second.first && first.second < second.second);
+              });
+    std::vector<Interval> merged;
+    for (const Interval& interval : intervals)
+    {
+        if (merged.empty() || interval.first > merged.back().second + gap_tolerance)
+        {
+            merged.push_back(interval);
+        }
+        else
+        {
+            merged.back().second = std::max(merged.back().second, interval.second);
+        }
+    }
+    return merged;
+}
+
+std::vector<Interval> subtract_intervals(const std::vector<Interval>& source,
+                                         const std::vector<Interval>& removed)
+{
+    std::vector<Interval> output;
+    std::size_t removed_index = 0;
+    for (const Interval& interval : source)
+    {
+        double cursor = interval.first;
+        while (removed_index < removed.size() && removed[removed_index].second <= cursor)
+        {
+            ++removed_index;
+        }
+        std::size_t scan = removed_index;
+        while (scan < removed.size() && removed[scan].first < interval.second)
+        {
+            if (removed[scan].first > cursor)
+            {
+                output.push_back({cursor, std::min(interval.second, removed[scan].first)});
+            }
+            cursor = std::max(cursor, removed[scan].second);
+            if (cursor >= interval.second)
+            {
+                break;
+            }
+            ++scan;
+        }
+        if (cursor < interval.second)
+        {
+            output.push_back({cursor, interval.second});
+        }
+    }
+    return output;
 }
 
 ProjectedSegment segment_interval(const ProjectedPoint& start, const ProjectedPoint& end,
@@ -454,7 +491,14 @@ bool valid_options(const FastHlrOptions& options)
            options.crease_angle_rad <= 3.14159265358979323846 &&
            std::isfinite(options.weld_tolerance) && options.weld_tolerance > 0.0 &&
            std::isfinite(options.projected_tolerance) && options.projected_tolerance > 0.0 &&
-           std::isfinite(options.depth_tolerance) && options.depth_tolerance >= 0.0;
+           std::isfinite(options.depth_tolerance) && options.depth_tolerance >= 0.0 &&
+           std::isfinite(options.coplanar_seam_angle_rad) &&
+           options.coplanar_seam_angle_rad >= 0.0 &&
+           options.coplanar_seam_angle_rad <= 1.57079632679489661923 &&
+           std::isfinite(options.coplanar_seam_depth_tolerance) &&
+           options.coplanar_seam_depth_tolerance >= 0.0 &&
+           std::isfinite(options.coplanar_seam_lateral_tolerance) &&
+           options.coplanar_seam_lateral_tolerance > options.projected_tolerance;
 }
 
 bool valid_prepared_mesh(const FastHlrPreparedMesh& prepared)
@@ -731,6 +775,7 @@ int project_fast_hlr_detail(const FastHlrPreparedMesh& prepared, const Projectio
     const double cosine_threshold = std::cos(options.crease_angle_rad);
     std::vector<std::uint32_t> possible_occluders;
     std::vector<Interval> hidden_intervals;
+    std::vector<Interval> seam_intervals;
     for (std::size_t edge_index = 0; edge_index < prepared.edges.size(); ++edge_index)
     {
         const FastHlrPreparedEdge& edge = prepared.edges[edge_index];
@@ -759,6 +804,7 @@ int project_fast_hlr_detail(const FastHlrPreparedMesh& prepared, const Projectio
         grid.query(std::min(start.x, end.x), std::min(start.y, end.y), std::max(start.x, end.x),
                    std::max(start.y, end.y), &possible_occluders);
         hidden_intervals.clear();
+        seam_intervals.clear();
         for (std::uint32_t triangle_index : possible_occluders)
         {
             if (incident_to(prepared, edge, triangle_index))
@@ -785,33 +831,30 @@ int project_fast_hlr_detail(const FastHlrPreparedMesh& prepared, const Projectio
             {
                 hidden_intervals.push_back(occluded);
             }
-        }
-        std::sort(hidden_intervals.begin(), hidden_intervals.end(),
-                  [](const Interval& left, const Interval& right)
-                  {
-                      return left.first < right.first ||
-                             (left.first == right.first && left.second < right.second);
-                  });
-        std::vector<Interval> merged;
-        for (const Interval& interval : hidden_intervals)
-        {
-            if (merged.empty() || interval.first > merged.back().second + 1.0e-12)
+            if (options.suppress_coplanar_seams &&
+                fast_hlr_internal::coplanar_continuation_interval(prepared, edge, triangle_index,
+                                                                  vertices, triangles, basis.z,
+                                                                  start, end, overlap, options))
             {
-                merged.push_back(interval);
-            }
-            else
-            {
-                merged.back().second = std::max(merged.back().second, interval.second);
+                seam_intervals.push_back(overlap);
             }
         }
-        output_statistics.hidden_intervals += merged.size();
-        double cursor = 0.0;
-        for (const Interval& interval : merged)
+        const std::vector<Interval> merged_hidden = merge_intervals(hidden_intervals, 1.0e-12);
+        const std::vector<Interval> merged_seams = merge_intervals(seam_intervals, 0.0);
+        std::vector<Interval> excluded = merged_hidden;
+        excluded.insert(excluded.end(), merged_seams.begin(), merged_seams.end());
+        excluded = merge_intervals(std::move(excluded), 0.0);
+        const std::vector<Interval> visible_intervals = subtract_intervals({{0.0, 1.0}}, excluded);
+        const std::vector<Interval> reported_hidden =
+            subtract_intervals(merged_hidden, merged_seams);
+        output_statistics.hidden_intervals += merged_hidden.size();
+        output_statistics.coplanar_seam_intervals += merged_seams.size();
+        for (const Interval& interval : visible_intervals)
         {
-            if (interval.first > cursor + 1.0e-12)
+            if (interval.second > interval.first + 1.0e-12)
             {
-                if (!append_projected_fragment(start, end, {cursor, interval.first}, edge,
-                                               provenance, cursor == 0.0, false,
+                if (!append_projected_fragment(start, end, interval, edge, provenance,
+                                               interval.first == 0.0, interval.second == 1.0,
                                                hidden_fragments.size(),
                                                options.limits.max_fragments, &visible_fragments))
                 {
@@ -819,7 +862,10 @@ int project_fast_hlr_detail(const FastHlrPreparedMesh& prepared, const Projectio
                     return 6;
                 }
             }
-            if (options.include_hidden && hidden != nullptr)
+        }
+        if (options.include_hidden && hidden != nullptr)
+        {
+            for (const Interval& interval : reported_hidden)
             {
                 if (!append_projected_fragment(start, end, interval, edge, provenance,
                                                interval.first == 0.0, interval.second == 1.0,
@@ -829,17 +875,6 @@ int project_fast_hlr_detail(const FastHlrPreparedMesh& prepared, const Projectio
                     set_status(status, 6, "Fast HLR raw-fragment limit exceeded.");
                     return 6;
                 }
-            }
-            cursor = std::max(cursor, interval.second);
-        }
-        if (cursor < 1.0 - 1.0e-12)
-        {
-            if (!append_projected_fragment(start, end, {cursor, 1.0}, edge, provenance,
-                                           cursor == 0.0, true, hidden_fragments.size(),
-                                           options.limits.max_fragments, &visible_fragments))
-            {
-                set_status(status, 6, "Fast HLR raw-fragment limit exceeded.");
-                return 6;
             }
         }
     }

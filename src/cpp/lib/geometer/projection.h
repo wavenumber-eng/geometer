@@ -40,10 +40,14 @@ struct FastHlrOptions
     bool include_creases = true;
     bool include_silhouettes = true;
     bool include_hidden = false;
+    bool suppress_coplanar_seams = false;
     double crease_angle_rad = 0.5235987755982988;
     double weld_tolerance = 1.0e-7;
     double projected_tolerance = 1.0e-8;
     double depth_tolerance = 1.0e-7;
+    double coplanar_seam_angle_rad = 0.017453292519943295;
+    double coplanar_seam_depth_tolerance = 1.0e-6;
+    double coplanar_seam_lateral_tolerance = 1.0e-6;
     FastHlrLimits limits;
 };
 

@@ -80,6 +80,9 @@ function projectMeshShadow(module, stepBytes, view, modelTransform, hlrOptions =
       include_silhouettes: true,
       include_hidden: false,
       crease_angle_rad: hlrOptions.creaseAngleRad ?? (25 * Math.PI) / 180,
+      suppress_coplanar_seams: hlrOptions.suppressCoplanarSeams ?? false,
+      coplanar_seam_angle_rad: hlrOptions.coplanarSeamAngleRad ?? Math.PI / 180,
+      coplanar_seam_depth_tolerance: hlrOptions.coplanarSeamDepthTolerance ?? 0.001,
     },
     // Match the HLR Lab's Detail preset: visible sharp edges plus silhouettes.
     edge_v_sharp: true,

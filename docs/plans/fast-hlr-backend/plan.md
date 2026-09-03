@@ -324,6 +324,10 @@ provenance, and only at an unbranched degree-two continuation. Occlusion-created
 endpoints carry no topology token, so visible reconstruction cannot bridge a
 hidden interval. General tolerance-based simplification and circular-arc fitting
 remain pending because they require replacement-geometry visibility checks.
+The next evaluation slice adds an opt-in coplanar-continuation filter with
+separate angle, view-depth, and lateral-probe tolerances. It records suppressed
+parameter intervals separately from hidden intervals and retains ambiguous,
+opposed-normal, unsupported, and same-side coincident boundaries.
 
 ### Fast mesh-shadow checkpoint
 

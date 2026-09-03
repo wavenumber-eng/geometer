@@ -8,12 +8,15 @@
 #include <BRep_Builder.hxx>
 #include <TopoDS_Compound.hxx>
 
+#include <algorithm>
+#include <array>
 #include <cmath>
 #include <exception>
 #include <iostream>
 #include <limits>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 namespace
 {
@@ -316,6 +319,182 @@ void hidden_split_cannot_be_bridged_by_visible_reconstruction()
             "contiguous hidden fragments may join independently across their shared vertex");
 }
 
+geometer::FastHlrIndexedMesh adjacent_coplanar_rectangles(double second_depth = 0.0,
+                                                          bool reverse_second = false)
+{
+    geometer::FastHlrIndexedMesh mesh;
+    mesh.vertices = {
+        {0.0, 0.0, 0.0},          {1.0, 0.0, 0.0},          {1.0, 1.0, 0.0},
+        {0.0, 1.0, 0.0},          {1.0, 0.0, second_depth}, {2.0, 0.0, second_depth},
+        {2.0, 1.0, second_depth}, {1.0, 1.0, second_depth},
+    };
+    mesh.triangles = {{{0, 1, 2}, 10}, {{0, 2, 3}, 10}};
+    if (reverse_second)
+    {
+        mesh.triangles.push_back({{4, 6, 5}, 20});
+        mesh.triangles.push_back({{4, 7, 6}, 20});
+    }
+    else
+    {
+        mesh.triangles.push_back({{4, 5, 6}, 20});
+        mesh.triangles.push_back({{4, 6, 7}, 20});
+    }
+    return mesh;
+}
+
+geometer::FastHlrIndexedMesh coincident_coplanar_rectangles()
+{
+    geometer::FastHlrIndexedMesh mesh;
+    mesh.vertices = {
+        {0.0, 0.0, 0.0}, {1.0, 0.0, 0.0}, {1.0, 1.0, 0.0}, {0.0, 1.0, 0.0},
+        {0.0, 0.0, 0.0}, {1.0, 0.0, 0.0}, {1.0, 1.0, 0.0}, {0.0, 1.0, 0.0},
+    };
+    mesh.triangles = {
+        {{0, 1, 2}, 10},
+        {{0, 2, 3}, 10},
+        {{4, 5, 6}, 20},
+        {{4, 6, 7}, 20},
+    };
+    return mesh;
+}
+
+geometer::FastHlrIndexedMesh adjacent_sloped_rectangles(double rise)
+{
+    geometer::FastHlrIndexedMesh mesh = adjacent_coplanar_rectangles();
+    mesh.vertices[5].z = rise;
+    mesh.vertices[6].z = rise;
+    return mesh;
+}
+
+void coplanar_continuation_suppression_is_opt_in_and_conservative()
+{
+    const geometer::FastHlrPreparedMesh prepared = prepare(adjacent_coplanar_rectangles());
+    geometer::ProjectedModeGeometry visible;
+    geometer::FastHlrStatistics statistics;
+    geometer::Status status;
+    require(geometer::project_fast_hlr_detail(prepared, top_view(), {}, &visible, nullptr,
+                                              &statistics, &status) == 0,
+            "unsuppressed coplanar projection should succeed: " + status.message);
+    require(visible.segments.size() == 8 && statistics.coplanar_seam_intervals == 0,
+            "the provisional seam filter must remain disabled by default");
+
+    geometer::FastHlrOptions options;
+    options.suppress_coplanar_seams = true;
+    require(geometer::project_fast_hlr_detail(prepared, top_view(), options, &visible, nullptr,
+                                              &statistics, &status) == 0,
+            "coplanar seam suppression should succeed: " + status.message);
+    require(visible.segments.size() == 6 && statistics.coplanar_seam_intervals == 2,
+            "two adjacent coplanar faces should remove both coincident seam candidates");
+
+    const geometer::FastHlrPreparedMesh stepped = prepare(adjacent_coplanar_rectangles(0.01));
+    require(geometer::project_fast_hlr_detail(stepped, top_view(), options, &visible, nullptr,
+                                              &statistics, &status) == 0,
+            "stepped-face projection should succeed: " + status.message);
+    require(statistics.coplanar_seam_intervals == 0,
+            "faces outside the seam depth tolerance must retain their step edge");
+
+    const geometer::FastHlrPreparedMesh opposed = prepare(adjacent_coplanar_rectangles(0.0, true));
+    require(geometer::project_fast_hlr_detail(opposed, top_view(), options, &visible, nullptr,
+                                              &statistics, &status) == 0,
+            "opposed-normal projection should succeed: " + status.message);
+    require(statistics.coplanar_seam_intervals == 0,
+            "opposed normals must not establish a coplanar continuation");
+
+    const geometer::FastHlrPreparedMesh coincident = prepare(coincident_coplanar_rectangles());
+    require(geometer::project_fast_hlr_detail(coincident, top_view(), options, &visible, nullptr,
+                                              &statistics, &status) == 0,
+            "coincident-face projection should succeed: " + status.message);
+    require(statistics.coplanar_seam_intervals == 0,
+            "coincident faces that fill the same side must retain their external boundaries");
+
+    const geometer::FastHlrPreparedMesh sloped = prepare(adjacent_sloped_rectangles(0.1));
+    require(geometer::project_fast_hlr_detail(sloped, top_view(), options, &visible, nullptr,
+                                              &statistics, &status) == 0,
+            "sloped continuation projection should succeed: " + status.message);
+    require(statistics.coplanar_seam_intervals == 0,
+            "a continuation outside the seam angle tolerance must retain its ridge");
+    options.coplanar_seam_angle_rad = 0.2;
+    require(geometer::project_fast_hlr_detail(sloped, top_view(), options, &visible, nullptr,
+                                              &statistics, &status) == 0,
+            "relaxed seam-angle projection should succeed: " + status.message);
+    require(statistics.coplanar_seam_intervals == 2,
+            "the provisional seam angle should admit a shallow continuation when requested");
+
+    geometer::FastHlrIndexedMesh straddling;
+    straddling.vertices = {{0.0, -1.0, 0.0},  {0.0, 1.0, 0.0}, {-1.0, 0.0, 0.0},
+                           {-1.0, -2.0, 0.0}, {1.0, 0.0, 0.0}, {-1.0, 2.0, 0.0}};
+    straddling.triangles = {{{0, 1, 2}, 10}, {{3, 4, 5}, 20}};
+    const geometer::FastHlrPreparedMesh straddling_prepared = prepare(straddling);
+    options.coplanar_seam_angle_rad = 0.2;
+    require(geometer::project_fast_hlr_detail(straddling_prepared, top_view(), options, &visible,
+                                              nullptr, &statistics, &status) == 0,
+            "straddling-support projection should succeed: " + status.message);
+    bool retained_candidate = false;
+    for (const geometer::ProjectedSegment& segment : visible.segments)
+    {
+        retained_candidate =
+            retained_candidate || (near(segment.x1, 0.0) && near(segment.x2, 0.0) &&
+                                   near(std::min(segment.y1, segment.y2), -1.0) &&
+                                   near(std::max(segment.y1, segment.y2), 1.0));
+    }
+    require(retained_candidate,
+            "a support triangle that straddles both sides must not erase the candidate boundary");
+}
+
+void partial_coplanar_suppression_stays_separate_from_hidden_intervals()
+{
+    geometer::FastHlrIndexedMesh mesh;
+    mesh.vertices = {
+        {0.0, 0.0, 0.0},  {4.0, 0.0, 0.0},  {0.0, 2.0, 0.0},  {1.0, 0.0, 0.0},
+        {2.0, 0.0, 0.0},  {3.0, 0.0, 0.0},  {3.0, -1.0, 0.0}, {1.0, -1.0, 0.0},
+        {3.0, -1.0, 1.0}, {4.0, -1.0, 1.0}, {3.5, 1.0, 1.0},
+    };
+    mesh.triangles = {
+        {{0, 1, 2}, 10}, {{3, 7, 4}, 20}, {{4, 7, 6}, 20}, {{4, 6, 5}, 20}, {{8, 9, 10}, 30},
+    };
+    const geometer::FastHlrPreparedMesh prepared = prepare(mesh);
+    geometer::FastHlrOptions options;
+    options.include_creases = false;
+    options.include_silhouettes = false;
+    options.include_hidden = true;
+    options.suppress_coplanar_seams = true;
+
+    geometer::ProjectedModeGeometry visible;
+    geometer::ProjectedModeGeometry hidden;
+    geometer::Status status;
+    require(geometer::project_fast_hlr_detail(prepared, top_view(), options, &visible, &hidden,
+                                              nullptr, &status) == 0,
+            "partial seam projection should succeed: " + status.message);
+    std::vector<std::array<double, 2>> visible_ranges;
+    std::vector<std::array<double, 2>> hidden_ranges;
+    for (const geometer::ProjectedSegment& segment : visible.segments)
+    {
+        if (near(segment.y1, 0.0) && near(segment.y2, 0.0))
+        {
+            visible_ranges.push_back(
+                {std::min(segment.x1, segment.x2), std::max(segment.x1, segment.x2)});
+        }
+    }
+    for (const geometer::ProjectedSegment& segment : hidden.segments)
+    {
+        if (near(segment.y1, 0.0) && near(segment.y2, 0.0))
+        {
+            hidden_ranges.push_back(
+                {std::min(segment.x1, segment.x2), std::max(segment.x1, segment.x2)});
+        }
+    }
+    std::sort(visible_ranges.begin(), visible_ranges.end());
+    std::sort(hidden_ranges.begin(), hidden_ranges.end());
+    require(visible_ranges.size() == 3 && near(visible_ranges[0][0], 0.0) &&
+                near(visible_ranges[0][1], 1.0) && near(visible_ranges[1][0], 3.0) &&
+                near(visible_ranges[1][1], 3.25) && near(visible_ranges[2][0], 3.75) &&
+                near(visible_ranges[2][1], 4.0),
+            "merged middle seam coverage must remove only its supported candidate interval");
+    require(hidden_ranges.size() == 1 && near(hidden_ranges[0][0], 3.25) &&
+                near(hidden_ranges[0][1], 3.75),
+            "a true hidden interval outside the seam must remain independently reportable");
+}
+
 void occluder_splits_a_visible_edge()
 {
     geometer::FastHlrIndexedMesh mesh;
@@ -554,6 +733,8 @@ int main()
         projected_contact_without_shared_topology_is_not_joined();
         ambiguous_source_face_provenance_disables_cross_edge_joining();
         hidden_split_cannot_be_bridged_by_visible_reconstruction();
+        coplanar_continuation_suppression_is_opt_in_and_conservative();
+        partial_coplanar_suppression_stays_separate_from_hidden_intervals();
         occluder_splits_a_visible_edge();
         reversed_view_uses_the_same_near_direction_convention();
         sloped_occluder_splits_at_the_depth_crossing();

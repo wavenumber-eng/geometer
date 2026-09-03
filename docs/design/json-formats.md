@@ -102,8 +102,10 @@ Accepted option keys:
 - `fast`: provisional options used by `projection_algorithm=fast` and
   `outline_algorithm=fast-mesh-shadow`:
   `include_boundaries`, `include_creases`, `include_silhouettes`,
-  `include_hidden`, `crease_angle_rad`, `weld_tolerance`,
-  `projected_tolerance`, and `depth_tolerance`, with camelCase aliases. Its
+  `include_hidden`, `suppress_coplanar_seams`, `crease_angle_rad`,
+  `weld_tolerance`, `projected_tolerance`, `depth_tolerance`,
+  `coplanar_seam_angle_rad`, `coplanar_seam_depth_tolerance`, and
+  `coplanar_seam_lateral_tolerance`, with camelCase aliases. Its
   nested `limits` object accepts `max_vertices`, `max_triangles`, `max_edges`,
   `max_grid_references`, `max_candidate_pairs`, `max_fragments`, and
   `max_output_segments`, also with camelCase aliases.

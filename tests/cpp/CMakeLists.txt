@@ -17,6 +17,14 @@ target_link_libraries(geometer_fast_hlr_test PRIVATE geometer_lib)
 
 add_test(NAME geometer_fast_hlr_test COMMAND geometer_fast_hlr_test)
 
+add_executable(geometer_indexed_mesh_packet_test
+    indexed_mesh_packet_test.cpp
+)
+
+target_link_libraries(geometer_indexed_mesh_packet_test PRIVATE geometer_lib)
+
+add_test(NAME geometer_indexed_mesh_packet_test COMMAND geometer_indexed_mesh_packet_test)
+
 add_executable(geometer_planar_solve_test
     planar_solve_test.cpp
 )

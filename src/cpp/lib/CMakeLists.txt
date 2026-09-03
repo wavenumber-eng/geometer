@@ -42,6 +42,7 @@ set(GEOMETER_LIB_SOURCES
     fast_hlr_seams.cpp
     fast_mesh_shadow_outline.cpp
     hlr_projection.cpp
+    indexed_mesh_packet.cpp
     mesh_shadow_outline.cpp
     model_bounds.cpp
     model_bounds_options_json.cpp

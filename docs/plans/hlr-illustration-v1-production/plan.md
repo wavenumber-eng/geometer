@@ -18,13 +18,13 @@ depends_on = ["evaluation-handoff"]
 [[steps]]
 id = "mesh-input-contract"
 title = "Specify a bounded indexed-mesh input contract for synthesized geometry without requiring STEP"
-status = "active"
+status = "done"
 depends_on = ["compatibility-contract"]
 
 [[steps]]
 id = "fast-runtime-api"
 title = "Promote one-shot and reusable prepared-mesh Fast HLR APIs without changing exact or polygonal paths"
-status = "pending"
+status = "active"
 depends_on = ["mesh-input-contract"]
 
 [[steps]]

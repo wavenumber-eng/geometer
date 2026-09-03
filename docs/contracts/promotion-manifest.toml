@@ -1170,6 +1170,17 @@ pilot_required = false
 compatibility = "Preserve current job result fields; elapsed_ms is nondeterministic."
 
 [[binary_formats]]
+id = "geometry.indexed_triangle_mesh.packet.a0"
+status = "pilot_candidate"
+source = "src/cpp/lib/indexed_mesh_packet.cpp"
+request_magic = "GMIMSH01"
+version = 1
+media_type = "application/vnd.wavenumber.geometer.indexed-triangle-mesh"
+maximum_bytes = 268435456
+maximum_vertices = 2000000
+maximum_triangles = 2000000
+
+[[binary_formats]]
 id = "geometry.planar_batch.packet"
 status = "separately_governed"
 source = "src/cpp/lib/planar_solve.cpp"

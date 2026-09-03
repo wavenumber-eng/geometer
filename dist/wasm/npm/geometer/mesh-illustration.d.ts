@@ -135,6 +135,8 @@ export declare function renderMeshIllustrationSvg(scene: MeshIllustrationScene, 
 export declare function renderMeshIllustrationCanvas(context: CanvasRenderingContext2D, scene: MeshIllustrationScene, style: MeshIllustrationStyle): IllustrationRenderStats;
 /** Resolve a governed presence-preserving style patch to package defaults. */
 export declare function resolveMeshIllustrationStyle(style?: MeshIllustrationStyleA0): MeshIllustrationStyle;
+/** Convert a resolved ergonomic style into the governed standalone A0 DTO. */
+export declare function toMeshIllustrationStyleA0(style: MeshIllustrationStyle): MeshIllustrationStyleA0;
 export interface MeshIllustratorA0 {
     readonly disposed: boolean;
     renderSvg(style?: MeshIllustrationStyleA0, svg?: MeshIllustrationSvgOptionsA0): MeshIllustrationResultA0;

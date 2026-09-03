@@ -31,3 +31,8 @@ workflows.
 7. Keep test-only validation and benchmark harnesses under `tests/wasm/`.
 8. Apply REQ-009 to distributable browser-demo sites without treating demo UI
    policy as part of the core WASM geometry interface.
+9. Export the generic operation C ABI required for model and indexed-mesh HLR
+   and expose those operations through the generated TypeScript direct and
+   Worker clients.
+10. Package mesh illustration and raster HLR as separately named TypeScript
+    modules with the output boundaries defined by REQ-010.

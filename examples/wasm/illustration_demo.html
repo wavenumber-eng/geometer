@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Geometer Mesh Illustration Prototype</title>
+  <title>Geometer Illustration Lab</title>
   <link rel="stylesheet" href="/examples/wasm/geometer_demo.css">
 </head>
 <body data-wn-watermark="true">
   <div class="illustration-app" id="illustrationApp" data-state="loading">
     <header class="illustration-toolbar">
-      <span class="illustration-brand">GEOMETER / ILLUSTRATION PROTOTYPE</span>
+      <span class="illustration-brand">GEOMETER / ILLUSTRATION LAB</span>
       <input id="illustrationStepInput" type="file" accept=".step,.stp,model/step,application/step">
       <button class="primary" id="illustrationOpenButton" type="button">Open STEP</button>
       <select id="illustrationModelSelect" aria-label="Model"></select>
@@ -89,7 +89,7 @@
           <label class="illustration-control"><span>Background</span><input id="illustrationBackground" type="color" value="#ffffff"><span></span></label>
           <label class="illustration-check"><input id="illustrationTransparent" type="checkbox"><span>Transparent background</span></label>
           <p class="illustration-info" id="illustrationCounts">No scene prepared.</p>
-          <p class="illustration-info">Prototype path: STEP -&gt; Geometer GLB -&gt; retained GPU depth + edge passes for interaction; optional OCCT HLR remains the SVG/export path.</p>
+          <p class="illustration-info">Production path: STEP -&gt; Geometer mesh -&gt; A0 SVG/Canvas illustration with Fast vector linework. The GPU edge preview remains a separate interactive raster renderer.</p>
         </section>
       </aside>
     </main>

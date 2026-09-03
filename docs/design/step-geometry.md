@@ -179,20 +179,20 @@ request does not construct an outline. A combined request never merges outline
 and detail geometry, allowing downstream renderers to composite them with
 different presentation choices.
 
-`Fast` is an additive evaluation backend. It tessellates through OCCT, builds a
+`Fast` is an additive versioned backend. It tessellates through OCCT, builds a
 central C++ triangle/edge incidence graph, activates boundary, crease, and
 view-dependent silhouette candidates, and classifies visibility against a
-projected-triangle spatial index. Its provisional controls are isolated in the
+projected-triangle spatial index. Its controls are isolated in the
 `fast` member rather than reinterpreting exact/poly edge flags. It currently
 emits straight segments and joins only exact-collinear, unbranched fragments
 that share topology, visibility, edge category, and source-face provenance.
 Occlusion-created endpoints are never eligible joins. The existing
-line-and-circular-arc result schema is retained while tolerance-based
-simplification and bounded arc fitting are evaluated. `max_fragments` bounds
+line-and-circular-arc result shape is retained. General tolerance-based
+simplification and bounded arc fitting remain post-A0 work. `max_fragments` bounds
 pre-reconstruction work independently from the final `max_output_segments`
 limit.
 
-Coplanar seam suppression is an opt-in evaluation control. It removes only the
+Coplanar seam suppression is an opt-in Fast control. It removes only the
 parameter interval where a different, same-facing source face matches an
 incident face within the seam angle/depth tolerances and covers an offset probe
 on the opposite side of the candidate. Suppressed intervals are neither visible
@@ -201,7 +201,7 @@ back-face seams remain conservatively visible. Opposed normals, non-manifold
 ambiguity, same-side coincident faces, straddling support, and unsupported
 intervals retain their linework.
 
-Fast-option behavior is intentionally explicit during evaluation:
+Fast-option behavior is intentionally explicit in A0:
 
 | Option group | `fast` behavior |
 |---|---|
@@ -216,10 +216,9 @@ Fast-option behavior is intentionally explicit during evaluation:
 | `curve_mode`, `samples_per_curve`, native-arc behavior | Fast detail emits segments only and does not fit arcs |
 | `union_outline_polygons`, `hlr_angle_tolerance` | Apply only in the delegated outline path where applicable |
 
-The retained WebGL depth-pass experiment remains a deliberately independent
-comparator. It derives candidates from the display GLB and is not yet
-semantically centralized with the C++ prepared mesh. A versioned prepared-data
-transport is required before GPU/vector parity can be claimed.
+The packaged WebGL depth-pass renderer remains deliberately independent. It
+returns interactive raster output from display geometry and does not claim
+semantic parity with deterministic Fast vector HLR.
 
 Projection output:
 

@@ -81,7 +81,7 @@ Accepted option keys:
 - `output_bbox` or `outputBbox`: emit the projected bounding-box layer;
   defaults to `true`.
 - `projection_algorithm` or `projectionAlgorithm`: `poly`, `exact`, or the
-  additive evaluation backend `fast`.
+  additive versioned backend `fast`.
 - `mesh_linear_deflection` or `meshLinearDeflection`.
 - `mesh_angular_deflection` or `meshAngularDeflection`.
 - `mesh_relative` or `meshRelative`.
@@ -89,7 +89,7 @@ Accepted option keys:
   `bbox-relative`.
 - `mesh_deflection_coefficient` or `meshDeflectionCoefficient`.
 - `outline_algorithm` or `outlineAlgorithm`: `hlr-close`, `mesh-shadow`, or
-  the additive evaluation backend `fast-mesh-shadow`.
+  the additive versioned backend `fast-mesh-shadow`.
 - `hlr_angle_tolerance` or `hlrAngleTolerance`.
 - `edge_v_sharp`, `edge_v_outline`, `edge_v_smooth`, `edge_v_sewn`,
   `edge_v_iso`, `edge_h_sharp`, `edge_h_outline`, `edge_h_smooth`,
@@ -99,7 +99,7 @@ Accepted option keys:
 - legacy `include_outline` or `includeOutline`, which toggles visible outline
   edges.
 - `union_outline_polygons`, `unionOutlinePolygons`, or `unionPolygons`.
-- `fast`: provisional options used by `projection_algorithm=fast` and
+- `fast`: A0 options used by `projection_algorithm=fast` and
   `outline_algorithm=fast-mesh-shadow`:
   `include_boundaries`, `include_creases`, `include_silhouettes`,
   `include_hidden`, `suppress_coplanar_seams`, `crease_angle_rad`,
@@ -110,9 +110,9 @@ Accepted option keys:
   `max_grid_references`, `max_candidate_pairs`, `max_fragments`, and
   `max_output_segments`, also with camelCase aliases.
 
-The `fast` option block is an evaluation contract. Its controls may be refined
-before the backend is promoted, but they cannot change the meaning of the
-OCCT-specific exact/poly flags.
+The `fast` option block is governed by `geometry.hlr_projection.options.a0`.
+Future incompatible controls require a new contract generation; A0 cannot
+change the meaning of the OCCT-specific exact/poly flags.
 
 The browser test pages currently use the viz-compatible setting set:
 

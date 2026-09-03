@@ -20,6 +20,7 @@ export {
   renderMeshIllustrationCanvas,
   renderMeshIllustrationSvg,
   resolveMeshIllustrationStyle,
+  toMeshIllustrationStyleA0,
 } from "./mesh-illustration.js";
 export * from "./step-topology-validation.js";
 export * from "./wasm.js";

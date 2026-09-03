@@ -68,6 +68,8 @@ for (const required of [
   if (!html.includes(required)) throw new Error(`Illustration HTML omits ${required}.`);
 if (html.includes("geometer_step_hlr_projection_json_bytes"))
   throw new Error("Illustration HTML still invokes the legacy focused HLR ABI.");
+if (/prototype\.a0|ILLUSTRATION PROTOTYPE|Mesh Illustration Prototype/u.test(html))
+  throw new Error("Illustration HTML retains a prototype identity or product label.");
 if (html.includes('id="illustrationTriangleLimit"'))
   throw new Error("Illustration HTML retains the prototype triangle limit.");
 if (html.includes("https://cdn.jsdelivr.net"))

@@ -18,3 +18,4 @@ and should not be treated as docs of record after a change ships.
 - [ADR 013: Filtered, Resolution-Bounded Analytic Planar Booleans](geometer-adr-013-filtered_resolution_bounded_planar_boolean.md)
 - [ADR 014: Self-Contained Browser Demo Distribution](geometer-adr-014-self_contained_browser_demo_distribution.md)
 - [ADR 015: Native Static Libraries Are Build Outputs](geometer-adr-015-native_static_libraries_are_build_outputs.md)
+- [ADR 016: Fast HLR And Illustration Boundaries](geometer-adr-016-fast_hlr_and_illustration_boundaries.md)

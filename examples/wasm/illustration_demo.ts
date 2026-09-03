@@ -9,6 +9,7 @@ import {
   type Rgb,
   renderMeshIllustrationCanvas,
   renderMeshIllustrationSvg,
+  toMeshIllustrationStyleA0,
   type Vec3,
 } from "@wavenumber/geometer/mesh-illustration";
 import { type RasterHlrFrameStats, RasterHlrViewport } from "@wavenumber/geometer/raster-hlr";
@@ -1242,7 +1243,7 @@ function sceneJson(): string {
 }
 
 function styleJson(): string {
-  return `${JSON.stringify({ schema: "geometry.illustration_style.prototype.a0", ...state.style }, null, 2)}\n`;
+  return `${JSON.stringify(toMeshIllustrationStyleA0(currentStyle()), null, 2)}\n`;
 }
 
 function canvasHasContent(canvas: HTMLCanvasElement): boolean {

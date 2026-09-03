@@ -66,13 +66,13 @@ depends_on = ["operation-transports", "convenience-composition"]
 [[steps]]
 id = "compatibility-validation"
 title = "Prove old defaults and options remain unchanged and validate new native, WASM, package, and downstream paths"
-status = "active"
+status = "done"
 depends_on = ["demo-migration", "consumer-documentation"]
 
 [[steps]]
 id = "design-doc-intent-audit"
 title = "Audit design docs, ADRs, requirements, generated references, and compatibility guidance against implementation"
-status = "pending"
+status = "done"
 depends_on = ["compatibility-validation"]
 
 [[steps]]

@@ -131,19 +131,16 @@ python -m http.server 8123 --bind 127.0.0.1
 
 `http://127.0.0.1:8123/examples/wasm/model_bounds_demo.html`
 
-HLR and planar examples remain on their existing JavaScript surfaces until
-their respective operation contracts are promoted.
+HLR and Illustration Labs use the governed HLR operation and production
+TypeScript package modules. Planar examples retain their existing surfaces.
 
-## STEP Illustration Lab Prototype
+## STEP Illustration Lab
 
-**Status: retained concept prototype.** This code is kept as an executable
-design study, regression target, and source of reusable experiments. It is not
-a production renderer, supported public API, versioned scene contract, or
-compatibility commitment. Its TypeScript types, algorithms, output details,
-and demo controls may change without deprecation while the ownership boundary
-is evaluated. Keeping the prototype in Geometer does not by itself decide that
-Geometer should own a future production illustration stack; promotion would
-require a separate contract and architecture decision.
+**Status: production-package demo.** This page consumes the supported
+`@wavenumber/geometer/mesh-illustration` and raster-HLR modules plus the
+governed model HLR operation. The package owns mesh preparation, visibility
+ordering, fusion, colorization, SVG/Canvas rendering, caching, and disposal;
+the page owns only UI, camera, file, download, and presentation behavior.
 
 `illustration_demo.html` and `illustration_demo.ts` form the reviewable consumer
 of the production mesh-illustration package.
@@ -208,12 +205,12 @@ ordered mesh-capable fallback rather than using that opaque flattening path.
 
 The illustration algorithm consumes generic indexed or non-indexed triangle
 meshes with transforms, material colors, and vertex normals. STEP is only the
-first adapter: the prototype Worker uses the existing STEP-to-GLB compatibility
+first adapter: the demo Worker uses the existing STEP-to-GLB compatibility
 surface, then the same Three.js-to-generic-mesh adapter handles bundled and
-uploaded models. A future glTF/GLB loader or Viz-generated PCB mesh can feed the
-same algorithm without STEP or OCCT.
+uploaded models. A glTF/GLB loader or Viz-generated PCB mesh can feed the same
+production package without STEP or OCCT.
 
-This is a visibility and appearance prototype, not a promoted illustration
+Illustration A0 is a package contract rather than a native illustration
 operation. STEP-backed models can enable Geometer's `fast-mesh-shadow` Outline
 layer, which reconstructs CAD-face boundary loops when possible and falls back
 to per-face triangle unions before combining the reduced contours into the clean

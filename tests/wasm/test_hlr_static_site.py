@@ -831,7 +831,7 @@ def test_hlr_static_site_upload_projection_and_export() -> None:
     assert "stroke: #7c3aed; stroke-width: 2px; stroke-dasharray: none" in result["appearance"]["style"]
     assert result["uploaded"]["selected"] == "upload-test.step (local)"
     assert result["uploaded"]["metric"].startswith("front ")
-    assert result["uploaded"]["options"] == 6
+    assert result["uploaded"]["options"] == 7
     assert result["uploaded"]["paths"] > 1
     assert result["filename"] == "upload-test-front-detail.svg"
     assert result["exceptions"] == []

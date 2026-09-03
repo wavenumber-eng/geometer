@@ -2148,6 +2148,34 @@ export function resolveMeshIllustrationStyle(
   };
 }
 
+/** Convert a resolved ergonomic style into the governed standalone A0 DTO. */
+export function toMeshIllustrationStyleA0(style: MeshIllustrationStyle): MeshIllustrationStyleA0 {
+  return {
+    shading: style.shading,
+    ambient: style.ambient,
+    key_intensity: style.keyIntensity,
+    light_direction: style.lightDirection,
+    bands: style.bands,
+    source_colors: style.sourceColors,
+    fallback_color: style.fallbackColor,
+    background: style.background,
+    transparent_background: style.transparentBackground,
+    fuse_surfaces: style.fuseSurfaces,
+    layer_coplanar_materials: style.layerCoplanarMaterials,
+    show_hlr_outline: style.showHlrOutline,
+    show_hlr_detail: style.showHlrDetail,
+    show_outlines: style.showOutlines,
+    show_creases: style.showCreases,
+    crease_angle_degrees: style.creaseAngleDegrees,
+    outline_color: style.outlineColor,
+    crease_color: style.creaseColor,
+    outline_width: style.outlineWidth,
+    crease_width: style.creaseWidth,
+    double_sided: style.doubleSided,
+    rim_amount: style.rimAmount,
+  };
+}
+
 export interface MeshIllustratorA0 {
   readonly disposed: boolean;
   renderSvg(

@@ -5,6 +5,7 @@ import {
   illustrateMesh,
   prepareMeshIllustration,
   renderMeshIllustrationSvg,
+  toMeshIllustrationStyleA0,
 } from "../../dist/wasm/npm/geometer/mesh-illustration.js";
 
 const positions = new Float32Array([
@@ -97,6 +98,12 @@ const baseStyle = {
   doubleSided: false,
   rimAmount: 0.12,
 };
+const governedStyle = toMeshIllustrationStyleA0(baseStyle);
+assert.equal(governedStyle.key_intensity, baseStyle.keyIntensity);
+assert.deepEqual(governedStyle.light_direction, baseStyle.lightDirection);
+assert.equal(governedStyle.layer_coplanar_materials, baseStyle.layerCoplanarMaterials);
+assert.equal(governedStyle.crease_angle_degrees, baseStyle.creaseAngleDegrees);
+assert.equal("keyIntensity" in governedStyle, false);
 
 const toon = renderMeshIllustrationSvg(scene, baseStyle, "Cube toon proof");
 assert.equal(toon.stats.triangles, 2);

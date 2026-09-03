@@ -1,4 +1,4 @@
-import { prepareMeshIllustration, renderMeshIllustrationCanvas, renderMeshIllustrationSvg, } from "@wavenumber/geometer/mesh-illustration";
+import { prepareMeshIllustration, renderMeshIllustrationCanvas, renderMeshIllustrationSvg, toMeshIllustrationStyleA0, } from "@wavenumber/geometer/mesh-illustration";
 import { RasterHlrViewport } from "@wavenumber/geometer/raster-hlr";
 import * as THREE from "three";
 import { TrackballControls } from "three/addons/controls/TrackballControls.js";
@@ -1045,7 +1045,7 @@ function sceneJson() {
     return `${JSON.stringify(state.scene, null, 2)}\n`;
 }
 function styleJson() {
-    return `${JSON.stringify({ schema: "geometry.illustration_style.prototype.a0", ...state.style }, null, 2)}\n`;
+    return `${JSON.stringify(toMeshIllustrationStyleA0(currentStyle()), null, 2)}\n`;
 }
 function canvasHasContent(canvas) {
     const sample = document.createElement("canvas");

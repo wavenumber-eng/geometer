@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build the single-file Geometer STEP Illustration Lab prototype."""
+"""Build the single-file Geometer STEP Illustration Lab."""
 
 from __future__ import annotations
 
@@ -31,6 +31,7 @@ OUT = ROOT / "dist" / "wasm" / "demos" / "illustration_demo.html"
 
 DEMO_MODEL_NAMES = [
     "SOT-23.STEP",
+    "ABM8-272-T3.STEP",
     "SOIC-8-W.step",
     "sot223.stp",
     "TSOT-23-5.STEP",

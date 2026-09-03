@@ -226,7 +226,7 @@ Verification includes:
 - desktop and narrow real-browser smoke of the generated documentation and
   model-bounds example.
 
-The HLR and Illustration Labs now consume the promoted governed HLR operation
+The HLR and Illustration Labs consume the governed HLR operation
 and production illustration/raster package modules. The
 [Viz 2026.6.10 compatibility snapshot](../contracts/compatibility/viz-2026.6.10.toml)
 records the Geometer surfaces that consumer currently requires; it is a

@@ -13,3 +13,4 @@ wire formats.
 - [REQ-007 Development Standards Baseline](geometer-req-007-development_standards_baseline.md)
 - [REQ-008 Generated Cross-Language Contracts](geometer-req-008-generated_cross_language_contracts.md)
 - [REQ-009 Browser Demo Distribution](geometer-req-009-browser_demo_distribution.md)
+- [REQ-010 Fast HLR And Illustration Interfaces](geometer-req-010-fast_hlr_and_illustration.md)

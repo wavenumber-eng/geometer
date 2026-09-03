@@ -43,6 +43,7 @@ THREE_LICENSE = ROOT / "node_modules" / "three" / "LICENSE"
 LOGO_ATTR = 'src="/tests/wasm/vendor/wn/logo.svg"'
 PANEL_STYLESHEET = '<link rel="stylesheet" href="/examples/wasm/demo-tooling/panels.css">'
 DEMO_MODEL_NAMES = {
+    "ABM8-272-T3.STEP",
     "BGA90-8X13mm.step",
     "SOT-23.STEP",
     "sot223.stp",

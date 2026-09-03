@@ -362,7 +362,9 @@ async function main() {
       control.value = value;
       control.dispatchEvent(new Event("change", { bubbles: true }));
     };
-    set("#algoSelect", "fast");
+    const fastToggle = document.querySelector("#fastBackendInput");
+    fastToggle.checked = true;
+    fastToggle.dispatchEvent(new Event("change", { bubbles: true }));
     set("#outlineAlgoSelect", "fast-mesh-shadow");
     const deadline = Date.now() + 120000;
     while (Date.now() < deadline) {
@@ -387,11 +389,12 @@ async function main() {
       };
     };
     const result = {
-      algorithm: document.querySelector("#algoSelect").value,
+      algorithm: svg.dataset.projectionAlgorithm,
+      fastBackend: fastToggle.checked,
       outlineAlgorithm: document.querySelector("#outlineAlgoSelect").value,
       metric: document.querySelector("#projectionMetric").textContent,
-      edgePresetDisabled: document.querySelector("#edgePresetSelect").disabled,
-      edgeFlagsDisabled: [...document.querySelectorAll('input[data-edge]')].every((input) => input.disabled),
+      occtSettingsHidden: document.querySelector("#occtSettings").hidden,
+      fastSettingsHidden: document.querySelector("#fastSettings").hidden,
       detailOnly: layerCounts("detail"),
       outlineOnly: layerCounts("outline"),
       both: layerCounts("both"),
@@ -407,6 +410,9 @@ async function main() {
       control.dispatchEvent(new Event("change", { bubbles: true }));
     };
     set("#algoSelect", "exact");
+    const fastToggle = document.querySelector("#fastBackendInput");
+    fastToggle.checked = true;
+    fastToggle.dispatchEvent(new Event("change", { bubbles: true }));
     set("#outlineAlgoSelect", "hlr-close");
     set("#meshDeflectionModeSelect", "absolute");
     set("#linDeflInput", "0.25");
@@ -421,6 +427,7 @@ async function main() {
       await new Promise((resolve) => setTimeout(resolve, 50));
     }
     return {
+      fastBackend: fastToggle.checked,
       algorithm: document.querySelector("#algoSelect").value,
       outlineAlgorithm: document.querySelector("#outlineAlgoSelect").value,
       meshMode: document.querySelector("#meshDeflectionModeSelect").value,
@@ -658,9 +665,7 @@ def test_hlr_static_site_upload_projection_and_export() -> None:
                     "CDP_PORT": str(cdp_port),
                     "TEST_URL": url,
                     "DOWNLOAD_PATH": str(downloads),
-                    "UPLOAD_FIXTURE": str(
-                        ROOT / "tests" / "fixtures" / "step" / "embedded_models" / "SOT-23.STEP"
-                    ),
+                    "UPLOAD_FIXTURE": str(ROOT / "tests" / "fixtures" / "step" / "embedded_models" / "SOT-23.STEP"),
                 },
                 capture_output=True,
                 text=True,
@@ -701,7 +706,7 @@ def test_hlr_static_site_upload_projection_and_export() -> None:
         "active": True,
         "open": True,
         "contentMounted": True,
-            "rightInset": "368px",
+        "rightInset": "368px",
     }
     assert result["panelSystem"] == {
         "resized": True,
@@ -747,11 +752,12 @@ def test_hlr_static_site_upload_projection_and_export() -> None:
         "settled": True,
     }
     assert result["fastSelection"]["algorithm"] == "fast"
+    assert result["fastSelection"]["fastBackend"] is True
     assert result["fastSelection"]["outlineAlgorithm"] == "fast-mesh-shadow"
     assert " detail " in result["fastSelection"]["metric"]
     assert " outline " in result["fastSelection"]["metric"]
-    assert result["fastSelection"]["edgePresetDisabled"] is True
-    assert result["fastSelection"]["edgeFlagsDisabled"] is True
+    assert result["fastSelection"]["occtSettingsHidden"] is True
+    assert result["fastSelection"]["fastSettingsHidden"] is False
     assert result["fastSelection"]["detailOnly"]["detail"] > 0
     assert result["fastSelection"]["detailOnly"]["outline"] == 0
     assert result["fastSelection"]["outlineOnly"]["detail"] == 0
@@ -759,6 +765,7 @@ def test_hlr_static_site_upload_projection_and_export() -> None:
     assert result["fastSelection"]["both"]["detail"] > 0
     assert result["fastSelection"]["both"]["outline"] > 0
     assert result["geometryReset"] == {
+        "fastBackend": False,
         "algorithm": "poly",
         "outlineAlgorithm": "mesh-shadow",
         "meshMode": "bbox-relative",

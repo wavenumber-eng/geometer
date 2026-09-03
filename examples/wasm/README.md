@@ -295,14 +295,18 @@ Its lens defaults to orthographic so it matches Geometer's orthographic HLR;
 the `3D lens` selector can switch to perspective for depth inspection.
 
 The projection UI follows the terminology in ADR 008. `Detail` is raw linework
-from the selected polygonal, fast-vector evaluation, or exact HLR engine.
+from the selected OCCT polygonal/exact engine or the Fast triangle HLR engine.
+The `Fast detail HLR` checkbox provides the direct comparison switch. Its
+candidate-category, crease-angle, weld, projection, and depth controls live in
+a separate Fast-only panel; the OCCT engine, edge angle, presets, and edge
+categories live in an OCCT-only panel.
 `Outline` is Geometer's independent assembly silhouette, and `Both` displays
 those layers without changing or merging either layer's color, width, or line
 style. Mesh shadow remains the recommended silhouette source, with the
 fast-mesh-shadow evaluation backend available for direct comparison. Raw OCCT
-categories live under `Geometry settings`, are labeled as Detail-only, and use
-`Detail edge set` rather than the overloaded term `Profile`; they are disabled
-for Fast vector because its provisional candidate controls are independent.
+categories use `Detail edge set` rather than the overloaded term `Profile`.
+The independently selectable outline source does not change when the Fast
+detail checkbox changes.
 Tessellation is either model-relative (controlled by `Quality coef`)
 or absolute (controlled by `Linear tol (mm)`), so the page no longer presents
 inactive linear/relative controls at the same time.

@@ -483,6 +483,14 @@ function drawSvg(svg) {
         throw new Error(`Generated SVG failed to parse: ${error.textContent ?? "unknown error"}`);
     els.svgHost.replaceChildren(document.importNode(parsed.documentElement, true));
 }
+function fastVectorLineworkLabel() {
+    const layers = [];
+    if (state.showHlrOutline)
+        layers.push("FAST MESH-SHADOW");
+    if (state.showHlrDetail)
+        layers.push("FAST DETAIL");
+    return layers.length > 0 ? layers.join(" + ") : "LINEWORK OFF";
+}
 function redrawStyle() {
     fastHlr.setStyle(fastHlrStyle());
     if (state.output === "gpu") {
@@ -509,12 +517,13 @@ function redrawStyle() {
     els.svgHost.classList.toggle("hidden", state.output !== "svg");
     els.illustrationCanvas.classList.toggle("hidden", state.output !== "canvas");
     els.fastCanvas.classList.toggle("hidden", state.output !== "gpu");
+    els.outputPane.dataset.engine = state.output === "gpu" ? "gpu-preview" : "fast-vector";
     els.outputLabel.textContent =
         state.output === "svg"
-            ? `2D SVG / ${style.shading.toUpperCase()} / ${formatBytes(svgBytes)}`
+            ? `FAST VECTOR / C++ WASM CPU / SVG / ${fastVectorLineworkLabel()} / ${formatBytes(svgBytes)}`
             : state.output === "canvas"
-                ? `2D CANVAS / ${style.shading.toUpperCase()} / ${canvasStats.commands.toLocaleString()} DRAWS`
-                : "LIVE GPU HLR / DEPTH-TESTED RETAINED EDGES";
+                ? `FAST VECTOR / C++ WASM CPU / CANVAS / ${fastVectorLineworkLabel()} / ${canvasStats.commands.toLocaleString()} DRAWS`
+                : "GPU EDGE PREVIEW / SEPARATE FROM FAST VECTOR OUTPUT";
     els.outputPane.dataset.output = state.output;
     els.outputPane.dataset.shading = style.shading;
     els.outputPane.dataset.canvasOutlines = String(canvasStats.outlines + canvasStats.details);
@@ -667,7 +676,7 @@ function scheduleCameraIllustration() {
     activateButtons(els.viewButtons, "view", state.view);
     window.clearTimeout(state.renderTimer);
     if (state.output === "gpu") {
-        setStatus(`${state.model?.name ?? "Model"} / live GPU HLR`);
+        setStatus(`${state.model?.name ?? "Model"} / separate GPU edge preview`);
         return;
     }
     state.renderTimer = window.setTimeout(() => {
@@ -695,7 +704,7 @@ function reportFastHlr(stats) {
     els.outputPane.dataset.fastHlrDrawCalls = String(stats.drawCalls);
     els.counts.textContent = `${stats.triangles.toLocaleString()} triangles / ${stats.candidateEdges.toLocaleString()} retained candidate edges / ${stats.drawCalls.toLocaleString()} GPU draws`;
     const gpuLabel = stats.gpuMs === null ? "GPU timer unavailable" : `${stats.gpuMs.toFixed(2)} ms GPU`;
-    els.timing.textContent = `GPU HLR ${stats.fps.toFixed(1)} fps / ${stats.cpuMs.toFixed(2)} ms CPU submit / ${gpuLabel} / edge build ${formatMs(stats.buildMs)}`;
+    els.timing.textContent = `GPU edge preview ${stats.fps.toFixed(1)} fps / ${stats.cpuMs.toFixed(2)} ms CPU submit / ${gpuLabel} / edge build ${formatMs(stats.buildMs)}`;
 }
 function renderLoop(now = 0) {
     requestAnimationFrame(renderLoop);
@@ -781,7 +790,7 @@ async function selectModel(model, options = {}) {
             els.svgHost.classList.add("hidden");
             els.illustrationCanvas.classList.add("hidden");
             els.fastCanvas.classList.remove("hidden");
-            setStatus(`${model.name} / live GPU HLR`);
+            setStatus(`${model.name} / separate GPU edge preview`);
         }
         else {
             await prepareIllustration("mesh");
@@ -1100,7 +1109,7 @@ function wireEvents() {
         if (state.view !== "camera")
             moveCameraToView(state.view);
         if (state.output === "gpu")
-            setStatus(`${state.model?.name ?? "Model"} / live GPU HLR`);
+            setStatus(`${state.model?.name ?? "Model"} / separate GPU edge preview`);
         else
             prepareIllustration(state.view).catch(showError);
     });
@@ -1116,9 +1125,10 @@ function wireEvents() {
             els.illustrationCanvas.classList.add("hidden");
             els.fastCanvas.classList.remove("hidden");
             els.outputPane.dataset.output = state.output;
-            els.outputLabel.textContent = "LIVE GPU HLR / DEPTH-TESTED RETAINED EDGES";
+            els.outputPane.dataset.engine = "gpu-preview";
+            els.outputLabel.textContent = "GPU EDGE PREVIEW / SEPARATE FROM FAST VECTOR OUTPUT";
             fastHlr.setStyle(fastHlrStyle());
-            setStatus(`${state.model?.name ?? "Model"} / live GPU HLR`);
+            setStatus(`${state.model?.name ?? "Model"} / separate GPU edge preview`);
         }
         else if (!state.scene || state.view === "camera") {
             prepareIllustration("camera").catch(showError);

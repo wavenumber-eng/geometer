@@ -161,6 +161,9 @@ bool nonsingular_linear_transform(const std::array<double, 16>& transform)
             {std::fabs(matrix[row][0]), std::fabs(matrix[row][1]), std::fabs(matrix[row][2])});
         if (!(row_scales[row] > 0.0) || !std::isfinite(row_scales[row]))
             return false;
+        for (double& entry : matrix[row])
+            entry /= row_scales[row];
+        row_scales[row] = 1.0;
     }
 
     constexpr double relative_pivot_tolerance = 64.0 * std::numeric_limits<double>::epsilon();

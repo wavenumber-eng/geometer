@@ -992,6 +992,28 @@ void generic_c_abi_executes_mesh_hlr()
                 result != nullptr && result_json(result).find("\"ok\":true") != std::string::npos,
             "mesh HLR should accept a small nonsingular model transform");
     geometer_operation_result_free(result);
+
+    geometer::FastHlrIndexedMesh extreme_mesh;
+    extreme_mesh.vertices = {{0.0, 0.0, 0.0}, {1.0e-308, 0.0, 0.0}, {0.0, 1.0e-308, 0.0}};
+    extreme_mesh.triangles = {{{0, 1, 2}, 4U}};
+    const auto extreme_packet = geometer::encode_indexed_mesh_packet(extreme_mesh);
+    require(extreme_packet.error == geometer::IndexedMeshPacketError::none && extreme_packet.value,
+            "extreme-range mesh HLR test packet should encode");
+    GeometerAttachmentView extreme_attachment = attachment;
+    extreme_attachment.data = extreme_packet.value->data();
+    extreme_attachment.data_size = static_cast<std::uint32_t>(extreme_packet.value->size());
+    const std::string extreme_scale =
+        "{\"output_outline\":false,\"output_bbox\":false,\"model_transform\":[1e308,1e308,0,"
+        "0,1e308,-1e308,0,0,0,0,1e308,0,0,0,0,1]}";
+    result = nullptr;
+    require(geometer_operation_execute(
+                operation.data(), static_cast<std::uint32_t>(operation.size()),
+                reinterpret_cast<const unsigned char*>(extreme_scale.data()),
+                static_cast<std::uint32_t>(extreme_scale.size()), &extreme_attachment, 1U, &result,
+                &error) == GEOMETER_OPERATION_ABI_OK &&
+                result != nullptr && result_json(result).find("\"ok\":true") != std::string::npos,
+            "mesh HLR should avoid LU overflow for a well-conditioned extreme-range transform");
+    geometer_operation_result_free(result);
 }
 
 void generic_c_abi_executes_packed_analytic_batch()

@@ -23,7 +23,7 @@
       <span class="group" id="illustrationOutputButtons" aria-label="Output">
         <button type="button" data-output="svg" class="active">SVG</button>
         <button type="button" data-output="canvas">Canvas</button>
-        <button type="button" data-output="gpu">GPU HLR</button>
+        <button type="button" data-output="gpu">GPU edge preview</button>
       </span>
       <button id="illustrationDownloadSvg" type="button" disabled>Download SVG</button>
       <button id="illustrationDownloadScene" type="button" disabled>Scene JSON</button>
@@ -34,8 +34,8 @@
         <span class="pane-label">3D SOURCE / DRAG TO ORBIT</span>
         <canvas id="illustrationModelCanvas"></canvas>
       </section>
-      <section class="illustration-pane" id="illustrationOutputPane">
-        <span class="pane-label" id="illustrationOutputLabel">2D SVG / GENERIC MESH PROTOTYPE</span>
+      <section class="illustration-pane" id="illustrationOutputPane" data-engine="fast-vector">
+        <span class="pane-label" id="illustrationOutputLabel">FAST VECTOR / C++ WASM CPU / SVG</span>
         <div class="svg-host" id="illustrationSvgHost"></div>
         <canvas class="hidden" id="illustrationCanvas"></canvas>
         <canvas class="hidden" id="illustrationFastCanvas"></canvas>
@@ -51,10 +51,10 @@
           <p class="illustration-info"><strong>Chord error:</strong> maximum positional gap, in millimetres, between the exact STEP surface and its triangle approximation. Smaller values add triangles on curved geometry; planar faces are mostly unchanged.</p>
           <p class="illustration-info"><strong>Mesh angle:</strong> angular deflection allowed while the mesh follows changing surface direction. Smaller angles add triangles where curvature changes and make rounded silhouettes appear smoother.</p>
           <p class="illustration-info">Both settings rebuild the filled 3D preview and SVG/Canvas surface mesh by reconverting STEP to GLB.</p>
-          <h3>HLR linework mesh</h3>
+          <h3>Fast vector linework mesh</h3>
           <label class="illustration-control" title="Bounding-box-relative chord tolerance used by the fast mesh-shadow outline. Smaller values produce finer traced contours."><span>Relative chord</span><input id="illustrationHlrDeflection" type="number" min="0.0001" max="0.05" step="0.0001" value="0.004"><span>bbox</span></label>
           <label class="illustration-control" title="Angular deflection used by polygonal HLR detail and mesh-shadow linework. Smaller values produce smoother traced curves."><span>HLR angle</span><input id="illustrationHlrAngularDeflection" type="number" min="1" max="60" step="0.1" value="28.64788975654116"><span>deg</span></label>
-          <p class="illustration-info">Controls only HLR detail lines and the mesh-shadow outline; it does not change filled surface triangles.</p>
+          <p class="illustration-info">Controls only fast vector detail lines and the fast mesh-shadow outline; it does not change filled surface triangles.</p>
           <p class="illustration-info" id="illustrationMeshInfo">The demo does not impose a triangle-count limit; mesh density is controlled by the STEP and HLR tolerances above.</p>
         </section>
         <section>
@@ -73,13 +73,13 @@
         <section>
           <h2>Linework</h2>
           <label class="illustration-check"><input id="illustrationHlrOutline" type="checkbox" checked><span>Fast mesh-shadow outline</span></label>
-          <label class="illustration-check"><input id="illustrationHlrDetail" type="checkbox" checked><span>HLR detail lines</span></label>
+          <label class="illustration-check"><input id="illustrationHlrDetail" type="checkbox" checked><span>Fast HLR detail lines</span></label>
           <label class="illustration-control"><span>Outline</span><input id="illustrationOutlineColor" type="color" value="#17252c"><span></span></label>
           <label class="illustration-control"><span>Line width</span><input id="illustrationOutlineWidth" type="range" min="0.001" max="0.018" step="0.001" value="0.006"><output id="illustrationOutlineWidthValue">0.006</output></label>
           <label class="illustration-check"><input id="illustrationDoubleSided" type="checkbox"><span>Draw back faces</span></label>
           <label class="illustration-control" title="Mesh crease threshold shared by the C++ fast vector projection and retained GPU edge buffer."><span>Fast crease</span><input id="illustrationFastCrease" type="range" min="1" max="80" step="1" value="25"><output id="illustrationFastCreaseValue">25 deg</output></label>
           <label class="illustration-control" title="Polygon offset applied to filled faces so their own candidate edges survive the depth test."><span>GPU depth bias</span><input id="illustrationFastBias" type="range" min="0" max="4" step="0.1" value="1"><output id="illustrationFastBiasValue">1.0</output></label>
-          <p class="illustration-info">The mesh illustration uses Geometer's fast C++ vector detail plus the separately composable hierarchical mesh-shadow outline. GPU HLR retains its own boundary/crease edge buffer, fills the hardware depth buffer with opaque faces, then draws only edge pixels that pass the depth test. Camera motion does not invoke OCCT or rebuild projected vectors.</p>
+          <p class="illustration-info"><strong>SVG and Canvas use the fast C++/WASM vector engines.</strong> The GPU edge preview is a separate retained-edge renderer; it does not display the fast vector mesh-shadow outline. Camera motion in the GPU preview does not invoke OCCT or rebuild projected vectors.</p>
         </section>
         <section>
           <h2>Output</h2>

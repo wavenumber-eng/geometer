@@ -123,6 +123,8 @@ async function main() {
           surfaceBounds: bounds('#illustrationSvgHost polygon[class^="gms"], #illustrationSvgHost path[class^="gms"]'),
           outlineBounds: bounds('#illustrationSvgHost path[class^="gml"]'),
           output: output.dataset.output,
+          engine: output.dataset.engine,
+          engineLabel: document.querySelector("#illustrationOutputLabel").textContent,
           shading: output.dataset.shading,
           svgBytes: new TextEncoder().encode(document.querySelector("#illustrationSvgHost svg").outerHTML).byteLength,
         };
@@ -160,6 +162,8 @@ async function main() {
       before,
       after: Number(pane.dataset.prepareGeneration),
       output: pane.dataset.output,
+      engine: pane.dataset.engine,
+      engineLabel: document.querySelector("#illustrationOutputLabel").textContent,
       visible: !document.querySelector("#illustrationFastCanvas").classList.contains("hidden"),
       buildMs: Number(pane.dataset.fastHlrBuildMs),
       triangles: Number(pane.dataset.fastHlrTriangles),
@@ -199,6 +203,8 @@ async function main() {
       shading: pane.dataset.shading,
       bands: Number(bands.value),
       output: pane.dataset.output,
+      engine: pane.dataset.engine,
+      engineLabel: document.querySelector("#illustrationOutputLabel").textContent,
       canvasVisible: !document.querySelector("#illustrationCanvas").classList.contains("hidden"),
       canvasOutlines: Number(pane.dataset.canvasOutlines),
       canvasDetails: Number(pane.dataset.canvasDetails),
@@ -779,9 +785,14 @@ def test_illustration_static_site_mesh_render_upload_and_export() -> None:
         surface_bounds["minY"] + surface_bounds["maxY"], abs=surface_height * 0.03
     )
     assert result["initial"]["output"] == "svg"
+    assert result["initial"]["engine"] == "fast-vector"
+    assert "FAST VECTOR / C++ WASM CPU / SVG" in result["initial"]["engineLabel"]
+    assert "FAST MESH-SHADOW + FAST DETAIL" in result["initial"]["engineLabel"]
     assert result["initial"]["shading"] == "toon"
     assert result["gpuHlr"]["before"] == result["gpuHlr"]["after"]
     assert result["gpuHlr"]["output"] == "gpu"
+    assert result["gpuHlr"]["engine"] == "gpu-preview"
+    assert result["gpuHlr"]["engineLabel"] == "GPU EDGE PREVIEW / SEPARATE FROM FAST VECTOR OUTPUT"
     assert result["gpuHlr"]["visible"] is True
     assert result["gpuHlr"]["buildMs"] >= 0
     assert result["gpuHlr"]["triangles"] == result["initial"]["triangles"]
@@ -800,11 +811,15 @@ def test_illustration_static_site_mesh_render_upload_and_export() -> None:
         "shading": "banded",
         "bands": 32,
         "output": "canvas",
+        "engine": "fast-vector",
+        "engineLabel": result["restyle"]["engineLabel"],
         "canvasVisible": True,
         "canvasOutlines": result["restyle"]["canvasOutlines"],
         "canvasDetails": result["restyle"]["canvasDetails"],
         "paths": result["restyle"]["paths"],
     }
+    assert "FAST VECTOR / C++ WASM CPU / CANVAS" in result["restyle"]["engineLabel"]
+    assert "FAST MESH-SHADOW + FAST DETAIL" in result["restyle"]["engineLabel"]
     assert result["restyle"]["paths"] == result["initial"]["paths"]
     assert result["restyle"]["canvasOutlines"] == result["initial"]["lineSegments"]
     assert result["restyle"]["canvasDetails"] == result["initial"]["details"]

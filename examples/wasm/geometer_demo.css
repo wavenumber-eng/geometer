@@ -1460,6 +1460,21 @@ body[data-wn-watermark="true"]::after {
       letter-spacing: 0.1em;
       pointer-events: none;
     }
+    #illustrationOutputLabel {
+      max-width: calc(100% - 28px);
+      border: 1px solid currentColor;
+      font-size: 10px;
+      font-weight: 700;
+      line-height: 1.35;
+    }
+    #illustrationOutputPane[data-engine="fast-vector"] #illustrationOutputLabel {
+      background: rgb(226 247 235 / 94%);
+      color: #17603a;
+    }
+    #illustrationOutputPane[data-engine="gpu-preview"] #illustrationOutputLabel {
+      background: rgb(255 242 204 / 94%);
+      color: #7a4b00;
+    }
     .illustration-settings {
       min-width: 0;
       overflow-y: auto;

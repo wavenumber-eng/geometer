@@ -41,6 +41,23 @@ class PacketBuilder
             finish_telemetry();
             return std::move(result_);
         }
+        // Bind every lowered occurrence back to its governed request operand before
+        // entering topology work.  This keeps caller-forged filtered geometry an
+        // invalid argument while allowing failures reached from authenticated
+        // lowering output to remain isolated to the affected job.
+        budget_.limit = reserved_work_;
+        if (!prepare_bindings())
+        {
+            if (result_.error == AnalyticFilteredPacketError::resource_limit_exceeded)
+            {
+                result_.error = AnalyticFilteredPacketError::none;
+                build_failed_packet(65'547);
+            }
+            else if (result_.error == AnalyticFilteredPacketError::none)
+                result_.error = AnalyticFilteredPacketError::invalid_argument;
+            finish_telemetry();
+            return std::move(result_);
+        }
         AnalyticSolverLimits normalization_limits = limits_;
         normalization_limits.predicate_calls -= reserved_work_ + preflight_work_;
         normalization_limits.working_memory_bytes -= reserved_memory_;
@@ -108,7 +125,7 @@ class PacketBuilder
             return resource_failure();
         try
         {
-            if (!prepare_bindings() || !prepare_source_uses() || !build_source_tables() ||
+            if (!prepare_source_uses() || !build_source_tables() ||
                 !publish_vertices_and_fragments() || !publish_rings_and_regions() ||
                 !publish_events() || !finalize_success())
             {

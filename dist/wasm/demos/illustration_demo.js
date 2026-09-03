@@ -261,8 +261,7 @@ function fastHlrStyle() {
     };
 }
 function rebuildFastHlr() {
-    fastHlr.setStyle(fastHlrStyle());
-    const stats = fastHlr.setSource(state.root);
+    const stats = fastHlr.setStyle(fastHlrStyle()) ?? fastHlr.setSource(state.root);
     if (!stats)
         return;
     els.outputPane.dataset.fastHlrCrease = els.fastCrease.value;

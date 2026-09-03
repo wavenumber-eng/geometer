@@ -43,6 +43,44 @@ export interface FastHlrIllustrationResult {
   readonly illustration: MeshIllustrationResultA0;
 }
 
+const ILLUSTRATION_HLR_OPTION_KEYS = [
+  "output_outline",
+  "output_detail",
+  "output_bbox",
+  "curve_mode",
+  "samples_per_curve",
+  "round_digits",
+  "edge_v_sharp",
+  "edge_v_outline",
+  "edge_v_smooth",
+  "edge_v_sewn",
+  "edge_v_iso",
+  "edge_h_sharp",
+  "edge_h_outline",
+  "edge_h_smooth",
+  "edge_h_sewn",
+  "edge_h_iso",
+  "union_outline_polygons",
+  "mesh_linear_deflection",
+  "mesh_angular_deflection",
+  "mesh_relative",
+  "mesh_deflection_mode",
+  "mesh_deflection_coefficient",
+  "hlr_angle_tolerance",
+  "fast",
+] as const satisfies readonly (keyof HlrProjectionOptionsA0)[];
+
+function illustrationHlrOptions(
+  options: FastHlrIllustrationRequest["hlr"],
+): HlrProjectionOptionsA0 {
+  if (options === undefined) return {};
+  return Object.fromEntries(
+    ILLUSTRATION_HLR_OPTION_KEYS.flatMap((key) =>
+      options[key] === undefined ? [] : [[key, options[key]]],
+    ),
+  ) as HlrProjectionOptionsA0;
+}
+
 /** Prepare Fast vector linework and the colorized scene once for repeated rendering. */
 export async function createFastHlrIllustrator(
   projector: MeshHlrProjector,
@@ -52,7 +90,7 @@ export async function createFastHlrIllustrator(
   const hlr = await projector.meshHlrProjection({
     mesh: indexedMeshFromIllustrationInput(input),
     options: {
-      ...request.hlr,
+      ...illustrationHlrOptions(request.hlr),
       views: [
         {
           id: "illustration",

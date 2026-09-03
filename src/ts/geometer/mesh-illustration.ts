@@ -529,7 +529,7 @@ export function prepareMeshIllustration(
     maxY = 1;
   }
   if (suppressedWarnings > 0)
-    warnings.push(`${suppressedWarnings.toLocaleString()} additional warnings suppressed.`);
+    warnings.push(`${String(suppressedWarnings)} additional warnings suppressed.`);
 
   return {
     view: { direction, up, right, mirrorX },
@@ -1901,8 +1901,8 @@ export function renderMeshIllustrationSvg(
   const sourceMinY = -scene.bounds.maxY - pad;
   const viewWidth = width + pad * 2;
   const viewHeight = height + pad * 2;
-  // Normalize illustration output onto a high-resolution integer grid. Scene
-  // JSON and Canvas retain model coordinates; SVG avoids long metre-scale
+  // Normalize illustration output onto a high-resolution integer grid. Canvas
+  // retains model coordinates; SVG avoids long metre-scale
   // decimals while preserving one part per million across the larger axis.
   const coordinateSpan = Math.round(
     clamp(options.coordinateSpan ?? 1_000_000, 10_000, 1_000_000_000),
@@ -2201,6 +2201,8 @@ export function createIllustrator(
   input: MeshIllustrationInputA0,
   linework: MeshIllustrationLinework = {},
 ): MeshIllustratorA0 {
+  const baseStyle = { ...input.style };
+  const baseSvg = { ...input.svg };
   let scene: MeshIllustrationScene | null = prepareMeshIllustration(
     {
       meshes: input.meshes.map((mesh) => ({
@@ -2234,13 +2236,13 @@ export function createIllustrator(
     return scene;
   };
   const mergedStyle = (patch: MeshIllustrationStyleA0 = {}): MeshIllustrationStyle =>
-    resolveMeshIllustrationStyle({ ...input.style, ...patch });
+    resolveMeshIllustrationStyle({ ...baseStyle, ...patch });
   return {
     get disposed() {
       return disposed;
     },
     renderSvg(style = {}, svg = {}) {
-      const options = { ...input.svg, ...svg };
+      const options = { ...baseSvg, ...svg };
       const rendered = renderMeshIllustrationSvg(
         requireScene(),
         mergedStyle(style),

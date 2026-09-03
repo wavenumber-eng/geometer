@@ -148,6 +148,60 @@ std::vector<ProjectionViewSpec> effective_views(const HlrProjectionOptions& opti
             {"bottom", {0.0, 0.0, -1.0}, {0.0, 1.0, 0.0}}};
 }
 
+bool nonsingular_linear_transform(const std::array<double, 16>& transform)
+{
+    std::array<std::array<double, 3>, 3> matrix = {
+        std::array<double, 3>{transform[0], transform[1], transform[2]},
+        std::array<double, 3>{transform[4], transform[5], transform[6]},
+        std::array<double, 3>{transform[8], transform[9], transform[10]}};
+    std::array<double, 3> row_scales{};
+    for (std::size_t row = 0; row < matrix.size(); ++row)
+    {
+        row_scales[row] = std::max(
+            {std::fabs(matrix[row][0]), std::fabs(matrix[row][1]), std::fabs(matrix[row][2])});
+        if (!(row_scales[row] > 0.0) || !std::isfinite(row_scales[row]))
+            return false;
+    }
+
+    constexpr double relative_pivot_tolerance = 64.0 * std::numeric_limits<double>::epsilon();
+    for (std::size_t column = 0; column < matrix.size(); ++column)
+    {
+        std::size_t pivot = column;
+        double best_scaled_pivot = 0.0;
+        for (std::size_t row = column; row < matrix.size(); ++row)
+        {
+            const double scaled_pivot = std::fabs(matrix[row][column]) / row_scales[row];
+            if (!std::isfinite(scaled_pivot))
+                return false;
+            if (scaled_pivot > best_scaled_pivot)
+            {
+                best_scaled_pivot = scaled_pivot;
+                pivot = row;
+            }
+        }
+        if (!(best_scaled_pivot > relative_pivot_tolerance))
+            return false;
+        if (pivot != column)
+        {
+            std::swap(matrix[pivot], matrix[column]);
+            std::swap(row_scales[pivot], row_scales[column]);
+        }
+        for (std::size_t row = column + 1; row < matrix.size(); ++row)
+        {
+            const double factor = matrix[row][column] / matrix[column][column];
+            if (!std::isfinite(factor))
+                return false;
+            for (std::size_t entry = column + 1; entry < matrix.size(); ++entry)
+            {
+                matrix[row][entry] -= factor * matrix[column][entry];
+                if (!std::isfinite(matrix[row][entry]))
+                    return false;
+            }
+        }
+    }
+    return true;
+}
+
 bool transformed_mesh(const FastHlrIndexedMesh& input, const std::array<double, 16>& transform,
                       FastHlrIndexedMesh* output)
 {
@@ -158,11 +212,7 @@ bool transformed_mesh(const FastHlrIndexedMesh& input, const std::array<double, 
     if (std::fabs(transform[12]) > tolerance || std::fabs(transform[13]) > tolerance ||
         std::fabs(transform[14]) > tolerance || std::fabs(transform[15] - 1.0) > tolerance)
         return false;
-    const double determinant =
-        transform[0] * (transform[5] * transform[10] - transform[6] * transform[9]) -
-        transform[1] * (transform[4] * transform[10] - transform[6] * transform[8]) +
-        transform[2] * (transform[4] * transform[9] - transform[5] * transform[8]);
-    if (!std::isfinite(determinant) || std::fabs(determinant) <= 1.0e-15)
+    if (!nonsingular_linear_transform(transform))
         return false;
     *output = input;
     for (FastHlrVec3& vertex : output->vertices)

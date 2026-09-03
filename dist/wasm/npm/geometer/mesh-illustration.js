@@ -252,7 +252,7 @@ export function prepareMeshIllustration(input, view, options = {}) {
         maxY = 1;
     }
     if (suppressedWarnings > 0)
-        warnings.push(`${suppressedWarnings.toLocaleString()} additional warnings suppressed.`);
+        warnings.push(`${String(suppressedWarnings)} additional warnings suppressed.`);
     return {
         view: { direction, up, right, mirrorX },
         bounds: { minX, minY, maxX, maxY },
@@ -1464,8 +1464,8 @@ export function renderMeshIllustrationSvg(scene, style, title = "Geometer mesh i
     const sourceMinY = -scene.bounds.maxY - pad;
     const viewWidth = width + pad * 2;
     const viewHeight = height + pad * 2;
-    // Normalize illustration output onto a high-resolution integer grid. Scene
-    // JSON and Canvas retain model coordinates; SVG avoids long metre-scale
+    // Normalize illustration output onto a high-resolution integer grid. Canvas
+    // retains model coordinates; SVG avoids long metre-scale
     // decimals while preserving one part per million across the larger axis.
     const coordinateSpan = Math.round(clamp(options.coordinateSpan ?? 1_000_000, 10_000, 1_000_000_000));
     const coordinateScale = coordinateSpan / Math.max(width, height);
@@ -1728,6 +1728,8 @@ export function toMeshIllustrationStyleA0(style) {
 }
 /** Prepare one governed illustration input once, then render multiple styles or targets. */
 export function createIllustrator(input, linework = {}) {
+    const baseStyle = { ...input.style };
+    const baseSvg = { ...input.svg };
     let scene = prepareMeshIllustration({
         meshes: input.meshes.map((mesh) => ({
             id: mesh.id,
@@ -1759,13 +1761,13 @@ export function createIllustrator(input, linework = {}) {
             throw new Error("Mesh illustrator has been disposed.");
         return scene;
     };
-    const mergedStyle = (patch = {}) => resolveMeshIllustrationStyle({ ...input.style, ...patch });
+    const mergedStyle = (patch = {}) => resolveMeshIllustrationStyle({ ...baseStyle, ...patch });
     return {
         get disposed() {
             return disposed;
         },
         renderSvg(style = {}, svg = {}) {
-            const options = { ...input.svg, ...svg };
+            const options = { ...baseSvg, ...svg };
             const rendered = renderMeshIllustrationSvg(requireScene(), mergedStyle(style), options.title ?? "Geometer mesh illustration", options.coordinate_span === undefined ? {} : { coordinateSpan: options.coordinate_span });
             return {
                 schema: "geometry.mesh_illustration.result.a0",

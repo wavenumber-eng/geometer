@@ -151,12 +151,29 @@ if (
 const weldedMeshHlr = await client.meshHlrProjection({
   mesh: {
     positions: [
-      0, 0, 0, 10, 0, 0, 10, 10, 0,
-      0, 0, 0, 10, 10, 0, 0, 10, 0,
+      1e13,
+      0,
+      0,
+      1e13 + 10,
+      0,
+      0,
+      1e13 + 10,
+      10,
+      0,
+      1e13,
+      0,
+      0,
+      1e13 + 10,
+      10,
+      0,
+      1e13,
+      10,
+      0,
     ],
     indices: [0, 1, 2, 3, 4, 5],
     sourceFaces: [1, 1],
   },
+  options: { output_outline: false, output_bbox: false, round_digits: 3 },
 });
 const weldedDetail = weldedMeshHlr.views[0]?.modes.detail.segments;
 if (weldedDetail?.length !== 4) {

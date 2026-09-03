@@ -33,9 +33,10 @@ raster-HLR helper without changing existing exact or polygonal behavior.
 
 ## Requirements
 
-1. Keep `poly` as the default projection algorithm and retain all documented
-   exact/poly options, aliases, output layers, CLI calls, Python calls, and
-   focused C ABI compatibility functions.
+1. Keep `poly` as the model/STEP default projection algorithm, use `fast` as
+   the indexed-mesh default, and retain all documented exact/poly options,
+   aliases, output layers, CLI calls, Python calls, and focused C ABI
+   compatibility functions.
 2. Publish `geometry.model_hlr_projection.a0` and
    `geometry.mesh_hlr_projection.a0` through the generic C ABI, executable IPC,
    full browser WASM, Python, TypeScript, and Rust support lanes.

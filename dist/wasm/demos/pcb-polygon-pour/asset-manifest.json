@@ -66,9 +66,9 @@
       "sha256": "b966f2da17e3cfdcfbaf43eaf71b71518e28adfb689eb9c552e5fc6d967fe90e"
     },
     {
-      "bytes": 19027807,
+      "bytes": 19028765,
       "path": "geometer.wasm",
-      "sha256": "41603f62764a3dd0a2f0559aa8a930760abe6316a008c26458b1d7604e8da8a6"
+      "sha256": "e1b6b1cb1fc9f6b96c07ff80858520448c7dc41e0f4b777bc0a787371586fdd2"
     },
     {
       "bytes": 32954,
@@ -201,9 +201,9 @@
       "sha256": "c471a0bcc4d6809e538ebeaa261a3ecd69bf2ad96ca7e92255c3690791bbf3d0"
     },
     {
-      "bytes": 3541,
+      "bytes": 4376,
       "path": "package/illustrated-hlr.js",
-      "sha256": "85f23443ca7cea8246fbbed50a9f232f63926f8a1120d4228e8adced0ccca5aa"
+      "sha256": "6af909f706e6e386e49b97d8ddb3a55f59875b101a3f6b22c20ad04761819ade"
     },
     {
       "bytes": 751,
@@ -251,9 +251,9 @@
       "sha256": "ffdf33cbe05012136dac97fe6cebb981d394e5956614b1bcabcc8a9116d5e4df"
     },
     {
-      "bytes": 78225,
+      "bytes": 78278,
       "path": "package/mesh-illustration.js",
-      "sha256": "95619df414d1438b6785ba1869ab2ec4589865018a86b4b53d60123d2a35d02a"
+      "sha256": "ef5618fdc6135c8d30247f96d261cfc6953b018dbadff7fbc31effa6cfd7ac4d"
     },
     {
       "bytes": 1069,
@@ -281,14 +281,14 @@
       "sha256": "51957fcdbe1887b66b6804db0dff043eaf83d3dabf3299bb30409ad52b4226b9"
     },
     {
-      "bytes": 2310,
+      "bytes": 2361,
       "path": "package/raster-hlr.d.ts",
-      "sha256": "26d12b848fc20034c3e3200aa8746a691770b0724352d526800fe1a7d8175441"
+      "sha256": "ea5a215a8620bb035ddb7c98d9f94ab24373128129ff9460558fc86195c813ef"
     },
     {
-      "bytes": 9509,
+      "bytes": 9826,
       "path": "package/raster-hlr.js",
-      "sha256": "ae48a2c4316566d0e5686e1bc5ab6e5a3e77aa036ba2c24126caef6c17c90e84"
+      "sha256": "ef150aa6be2cd4a7770662ca19401776633ac2d95aa75275c4f0d35fa737d062"
     },
     {
       "bytes": 6461,
@@ -357,5 +357,5 @@
     }
   ],
   "schema": "wn.geometer.static_site.a0",
-  "sha256": "790743ede8ede66ccd0b7fde3bcf2ea77417a75652f70b9b334487ec79255fa6"
+  "sha256": "bca9dd817a624f9bacb2e35462aa41394224ed502b8b56f6776c8558022bd566"
 }

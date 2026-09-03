@@ -46,10 +46,11 @@ The governed portable operations are:
 - `geometry.mesh_hlr_projection.a0`, with an indexed-triangle-mesh A0 packet.
 
 Both use `geometry.hlr_projection.options.a0`. `projection_algorithm` adds
-`fast`, but retains `poly` as its default. `outline_algorithm` adds
-`fast-mesh-shadow` without changing `hlr-close` or `mesh-shadow`. Fast-only
-controls are nested under `fast`; they do not reinterpret OCCT edge-category
-options.
+`fast`; model/STEP projection retains the `poly` default, while indexed-mesh
+projection defaults to `fast`. `outline_algorithm` adds `fast-mesh-shadow` as
+the indexed-mesh default without changing the model defaults or existing
+`hlr-close` and `mesh-shadow` selections. Fast-only controls are nested under
+`fast`; they do not reinterpret OCCT edge-category options.
 
 The TypeScript package may offer a convenience composition that combines Fast
 linework and illustration, but the underlying HLR, illustration, and raster

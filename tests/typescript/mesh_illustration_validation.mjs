@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-
+import { createFastHlrIllustrator } from "../../dist/wasm/npm/geometer/illustrated-hlr.js";
 import {
   createIllustrator,
   illustrateMesh,
@@ -58,6 +58,41 @@ assert.equal(reusable.renderSvg({ shading: "unlit" }).schema, oneShot.schema);
 reusable.dispose();
 assert.equal(reusable.disposed, true);
 assert.throws(() => reusable.renderSvg(), /disposed/u);
+
+let observedHlrOptions;
+const composed = await createFastHlrIllustrator(
+  {
+    async meshHlrProjection(request) {
+      observedHlrOptions = request.options;
+      return {
+        views: [
+          {
+            modes: {
+              outline: { segments: [] },
+              detail: { segments: [] },
+            },
+          },
+        ],
+      };
+    },
+  },
+  {
+    illustration: governedInput,
+    hlr: {
+      output_detail: false,
+      model_transform: [2, 0, 0, 0, 0, 2, 0, 0, 0, 0, 2, 0, 0, 0, 0, 1],
+      strip_root_placement: true,
+      unknown_option: "discard me",
+    },
+  },
+);
+assert.equal(observedHlrOptions.output_detail, false);
+assert.equal(observedHlrOptions.projection_algorithm, "fast");
+assert.equal(observedHlrOptions.outline_algorithm, "fast-mesh-shadow");
+assert.equal("model_transform" in observedHlrOptions, false);
+assert.equal("strip_root_placement" in observedHlrOptions, false);
+assert.equal("unknown_option" in observedHlrOptions, false);
+composed.illustrator.dispose();
 assert.deepEqual(scene.bounds, { minX: -1, minY: -1, maxX: 1, maxY: 1 });
 assert.equal(scene.triangles.filter((triangle) => triangle.frontFacing).length, 2);
 assert.throws(

@@ -5,8 +5,8 @@
       "sha256": "b966f2da17e3cfdcfbaf43eaf71b71518e28adfb689eb9c552e5fc6d967fe90e"
     },
     "dist/wasm/browser/geometer.wasm": {
-      "bytes": 19027807,
-      "sha256": "41603f62764a3dd0a2f0559aa8a930760abe6316a008c26458b1d7604e8da8a6"
+      "bytes": 19028765,
+      "sha256": "e1b6b1cb1fc9f6b96c07ff80858520448c7dc41e0f4b777bc0a787371586fdd2"
     },
     "dist/wasm/npm/geometer/README.md": {
       "bytes": 6461,
@@ -97,8 +97,8 @@
       "sha256": "c471a0bcc4d6809e538ebeaa261a3ecd69bf2ad96ca7e92255c3690791bbf3d0"
     },
     "dist/wasm/npm/geometer/illustrated-hlr.js": {
-      "bytes": 3541,
-      "sha256": "85f23443ca7cea8246fbbed50a9f232f63926f8a1120d4228e8adced0ccca5aa"
+      "bytes": 4376,
+      "sha256": "6af909f706e6e386e49b97d8ddb3a55f59875b101a3f6b22c20ad04761819ade"
     },
     "dist/wasm/npm/geometer/index.d.ts": {
       "bytes": 751,
@@ -137,8 +137,8 @@
       "sha256": "ffdf33cbe05012136dac97fe6cebb981d394e5956614b1bcabcc8a9116d5e4df"
     },
     "dist/wasm/npm/geometer/mesh-illustration.js": {
-      "bytes": 78225,
-      "sha256": "95619df414d1438b6785ba1869ab2ec4589865018a86b4b53d60123d2a35d02a"
+      "bytes": 78278,
+      "sha256": "ef5618fdc6135c8d30247f96d261cfc6953b018dbadff7fbc31effa6cfd7ac4d"
     },
     "dist/wasm/npm/geometer/node-process-a0.d.ts": {
       "bytes": 1069,
@@ -161,12 +161,12 @@
       "sha256": "51957fcdbe1887b66b6804db0dff043eaf83d3dabf3299bb30409ad52b4226b9"
     },
     "dist/wasm/npm/geometer/raster-hlr.d.ts": {
-      "bytes": 2310,
-      "sha256": "26d12b848fc20034c3e3200aa8746a691770b0724352d526800fe1a7d8175441"
+      "bytes": 2361,
+      "sha256": "ea5a215a8620bb035ddb7c98d9f94ab24373128129ff9460558fc86195c813ef"
     },
     "dist/wasm/npm/geometer/raster-hlr.js": {
-      "bytes": 9509,
-      "sha256": "ae48a2c4316566d0e5686e1bc5ab6e5a3e77aa036ba2c24126caef6c17c90e84"
+      "bytes": 9826,
+      "sha256": "ef150aa6be2cd4a7770662ca19401776633ac2d95aa75275c4f0d35fa737d062"
     },
     "dist/wasm/npm/geometer/step-topology-validation.d.ts": {
       "bytes": 3832,
@@ -214,10 +214,10 @@
     "contract_check_status": "passed",
     "source": {
       "authority": "git_head_and_source_worktree_excluding_dist_build_deps_out",
-      "revision": "d7ced2451aebda4252c0e5492cd497bc3d246ab8",
-      "tree_state": "clean"
+      "revision": "8430ed39ab2a0f3d7dcb3faf7784d013c14cc62c",
+      "tree_state": "dirty"
     },
-    "source_content_sha256": "8c129303cb5d7b5b35e8d3cd3f6f97c20adcfaba16536afd04e7ab8b00327eac",
+    "source_content_sha256": "fcf8eb905bafa43dd3d59f4d954f698bf8f9ee0f70226a50e00d926cc79da40d",
     "toolchain": {
       "emscripten": {
         "executable": ".deps/emsdk/upstream/emscripten/emcc.bat",

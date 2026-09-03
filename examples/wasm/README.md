@@ -148,7 +148,7 @@ The page keeps the HLR Lab's side-by-side 3D/2D workflow, but the right pane ren
 colorized triangle surfaces to either SVG or Canvas2D. It supports flat,
 unquantized Lambert diffuse, quantized-band (up to 32 bands), and early toon shading,
 live style changes, named or trackball
-camera views, local STEP upload, and SVG/scene/style downloads.
+camera views, local STEP upload, and SVG/style downloads.
 
 `@wavenumber/geometer/raster-hlr` adds a separate live GPU renderer to the same page. It builds
 boundary/crease candidates once, uses the filled mesh as a depth occluder, and

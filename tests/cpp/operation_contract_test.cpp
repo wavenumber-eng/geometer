@@ -980,6 +980,18 @@ void generic_c_abi_executes_mesh_hlr()
                 result != nullptr && result_json(result).find("\"ok\":false") != std::string::npos,
             "mesh HLR should reject a singular model transform as a typed operation failure");
     geometer_operation_result_free(result);
+
+    const std::string small_scale =
+        "{\"model_transform\":[0.000001,0,0,0,0,0.000001,0,0,0,0,0.000001,0,0,0,0,1]}";
+    result = nullptr;
+    require(geometer_operation_execute(operation.data(),
+                                       static_cast<std::uint32_t>(operation.size()),
+                                       reinterpret_cast<const unsigned char*>(small_scale.data()),
+                                       static_cast<std::uint32_t>(small_scale.size()), &attachment,
+                                       1U, &result, &error) == GEOMETER_OPERATION_ABI_OK &&
+                result != nullptr && result_json(result).find("\"ok\":true") != std::string::npos,
+            "mesh HLR should accept a small nonsingular model transform");
+    geometer_operation_result_free(result);
 }
 
 void generic_c_abi_executes_packed_analytic_batch()

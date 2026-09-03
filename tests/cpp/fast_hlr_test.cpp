@@ -91,6 +91,16 @@ void indexed_mesh_welds_duplicate_seams_by_distance()
     const geometer::FastHlrPreparedMesh distinct = prepare(separated, options);
     require(distinct.vertices.size() == 6,
             "vertices farther than radial tolerance must not weld within one grid cell");
+
+    geometer::FastHlrIndexedMesh translated;
+    constexpr double offset = 1.0e13;
+    translated.vertices = {{offset, 0.0, 0.0},         {offset + 10.0, 0.0, 0.0},
+                           {offset + 10.0, 10.0, 0.0}, {offset, 0.0, 0.0},
+                           {offset + 10.0, 10.0, 0.0}, {offset, 10.0, 0.0}};
+    translated.triangles = {{{0, 1, 2}, 1}, {{3, 4, 5}, 1}};
+    const geometer::FastHlrPreparedMesh translated_prepared = prepare(translated);
+    require(translated_prepared.vertices.size() == 4 && translated_prepared.edges.size() == 5,
+            "welding should be invariant under a large common translation");
 }
 
 void one_shot_matches_reusable_preparation()
@@ -180,6 +190,18 @@ void malformed_prepared_data_and_invalid_options_are_rejected()
     require(geometer::project_fast_hlr_detail(prepared, top_view(), {}, &visible, nullptr, nullptr,
                                               &status) == 5,
             "non-unit prepared normals should be rejected");
+
+    prepared = prepare(mesh);
+    prepared.triangles[0].normal = {0.0, 0.0, -1.0};
+    require(geometer::project_fast_hlr_detail(prepared, top_view(), {}, &visible, nullptr, nullptr,
+                                              &status) == 5,
+            "prepared normals inconsistent with triangle geometry should be rejected");
+
+    prepared = prepare(mesh);
+    prepared.vertices[2] = {2.0, 0.0, 0.0};
+    require(geometer::project_fast_hlr_detail(prepared, top_view(), {}, &visible, nullptr, nullptr,
+                                              &status) == 5,
+            "degenerate prepared triangle geometry should be rejected");
 
     prepared = prepare(mesh);
     prepared.edges.pop_back();
@@ -790,7 +812,9 @@ void fast_mesh_shadow_enforces_output_and_coordinate_limits()
             "fast mesh-shadow should bound Clipper candidate-pair work before union");
 
     mesh.vertices[1].x = 1.0e20;
-    const geometer::FastHlrPreparedMesh huge = prepare(mesh);
+    geometer::FastHlrOptions coarse_weld;
+    coarse_weld.weld_tolerance = 100.0;
+    const geometer::FastHlrPreparedMesh huge = prepare(mesh, coarse_weld);
     require(geometer::fast_mesh_shadow_outline_geometry(huge, top_view(), {}, 1000, &outline,
                                                         nullptr, &status) == 5,
             "fast mesh-shadow should reject coordinates outside the Clipper grid");

@@ -5,7 +5,9 @@
 `geometry.hlr_projection.options.a0` and
 `geometry.hlr_projection.result.a0` are the canonical additive contracts shared
 by the model and indexed-mesh projection operations. The default projection
-algorithm remains `poly`. `exact` and `fast` are explicit selections.
+algorithm remains `poly` for model/STEP projection. Indexed-mesh projection
+defaults to `fast`; explicit selectors remain available where the source
+supports them.
 
 The existing `geometry.projection.options.b0` and `geometry.projection.b0`
 identities, focused C ABI functions, CLI commands, and Python helpers remain
@@ -31,17 +33,17 @@ of assuming a particular executable or WASM build exposes an operation.
 
 | Selection | Geometry source | Detail behavior | Curve output | Performance posture |
 |---|---|---|---|---|
-| `poly` (default) | STEP through OCCT | OCCT polygonal HLR | Segments | Existing compatibility path |
+| `poly` (model default) | STEP through OCCT | OCCT polygonal HLR | Segments | Existing compatibility path |
 | `exact` | STEP through OCCT | OCCT exact HLR | Native circular arcs or sampled segments | Highest-fidelity, higher-cost path |
-| `fast` | STEP tessellation or an indexed mesh | Triangle incidence plus spatial visibility classification | Segments | Low-latency one-shot; prepare-once API supports repeated views |
+| `fast` (mesh default) | STEP tessellation or an indexed mesh | Triangle incidence plus spatial visibility classification | Segments | Low-latency one-shot; prepare-once API supports repeated views |
 
 `outline_algorithm` is independent of `projection_algorithm`:
 
 | Value | Effect |
 |---|---|
-| `hlr-close` (default) | Forms outline polygons from HLR edges and closes small gaps. |
+| `hlr-close` (model default) | Forms outline polygons from HLR edges and closes small gaps. |
 | `mesh-shadow` | Unions projected tessellated triangles through the established Clipper2 path. |
-| `fast-mesh-shadow` | Reconstructs projected source-face loops, with bounded triangle-union fallbacks. |
+| `fast-mesh-shadow` (mesh default) | Reconstructs projected source-face loops, with bounded triangle-union fallbacks. |
 
 ## Direct C++ Fast API
 

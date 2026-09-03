@@ -56,11 +56,12 @@ export declare class RasterHlrViewport {
     private readonly pendingTimerQueries;
     constructor(canvas: HTMLCanvasElement);
     setSource(source: THREE.Object3D | null): RasterHlrBuildStats | null;
-    setStyle(requested: Partial<RasterHlrStyle>): void;
+    setStyle(requested: Partial<RasterHlrStyle>): RasterHlrBuildStats | null;
     setSize(width: number, height: number): void;
     render(camera: THREE.Camera): RasterHlrFrameStats | null;
     dispose(): void;
     private clearTimerQueries;
+    private resetFrameStats;
     private beginTimerQuery;
     private endTimerQuery;
     private pollTimerQueries;

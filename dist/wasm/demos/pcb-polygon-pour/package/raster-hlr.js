@@ -155,6 +155,8 @@ export class RasterHlrViewport {
             requested.creaseAngleDegrees !== this.style.creaseAngleDegrees;
         this.style = { ...this.style, ...requested };
         if (rebuildEdges && this.source) {
+            this.clearTimerQueries();
+            this.resetFrameStats();
             this.model?.dispose();
             this.model = new RasterHlrModel(this.source, this.style);
             this.scene.add(this.model.root);
@@ -164,6 +166,7 @@ export class RasterHlrViewport {
         }
         if (requested.background !== undefined)
             this.scene.background = new THREE.Color(requested.background);
+        return this.model?.stats ?? null;
     }
     setSize(width, height) {
         this.renderer.setSize(Math.max(1, Math.round(width)), Math.max(1, Math.round(height)), false);
@@ -207,6 +210,14 @@ export class RasterHlrViewport {
             for (const query of this.pendingTimerQueries)
                 this.gl.deleteQuery(query);
         this.pendingTimerQueries.length = 0;
+    }
+    resetFrameStats() {
+        this.samples = 0;
+        this.meanCpuMs = 0;
+        this.meanGpuMs = 0;
+        this.meanFrameMs = 0;
+        this.gpuSamples = 0;
+        this.lastFrameAt = 0;
     }
     beginTimerQuery() {
         if (!this.gl || !this.timerQuery || this.pendingTimerQueries.length >= 4)

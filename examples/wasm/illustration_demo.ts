@@ -405,8 +405,7 @@ function fastHlrStyle(): Parameters<RasterHlrViewport["setStyle"]>[0] {
 }
 
 function rebuildFastHlr(): void {
-  fastHlr.setStyle(fastHlrStyle());
-  const stats = fastHlr.setSource(state.root);
+  const stats = fastHlr.setStyle(fastHlrStyle()) ?? fastHlr.setSource(state.root);
   if (!stats) return;
   els.outputPane.dataset.fastHlrCrease = els.fastCrease.value;
   els.outputPane.dataset.fastHlrBuildMs = stats.buildMs.toFixed(3);

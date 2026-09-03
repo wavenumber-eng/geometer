@@ -176,15 +176,12 @@ bool weld_indexed_vertices(const FastHlrIndexedMesh& mesh, double tolerance,
     std::map<WeldCell, std::vector<std::uint32_t>> cells;
     vertices->reserve(mesh.vertices.size());
     remap->reserve(mesh.vertices.size());
+    const FastHlrVec3 origin = mesh.vertices.empty() ? FastHlrVec3{} : mesh.vertices.front();
     for (const FastHlrVec3& point : mesh.vertices)
     {
         WeldCell cell;
-        if (!weld_cell(point, tolerance, &cell))
-        {
-            remap->push_back(static_cast<std::uint32_t>(vertices->size()));
-            vertices->push_back(point);
-            continue;
-        }
+        if (!weld_cell(subtract(point, origin), tolerance, &cell))
+            return false;
         std::uint32_t match = std::numeric_limits<std::uint32_t>::max();
         for (std::int64_t dz = -1; dz <= 1; ++dz)
             for (std::int64_t dy = -1; dy <= 1; ++dy)
@@ -606,6 +603,16 @@ bool valid_prepared_mesh(const FastHlrPreparedMesh& prepared)
             {
                 return false;
             }
+        }
+        FastHlrVec3 geometric_normal;
+        if (!normalized(cross(subtract(prepared.vertices[triangle.vertices[1]],
+                                       prepared.vertices[triangle.vertices[0]]),
+                              subtract(prepared.vertices[triangle.vertices[2]],
+                                       prepared.vertices[triangle.vertices[0]])),
+                        &geometric_normal) ||
+            dot(geometric_normal, triangle.normal) < 1.0 - 1.0e-9)
+        {
+            return false;
         }
     }
     std::vector<std::uint8_t> covered_edges(prepared.triangles.size(), 0U);

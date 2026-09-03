@@ -25,6 +25,7 @@ from standalone_html import b64, bundle_es_module, data_uri
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "examples" / "wasm" / "embedded_model_viewer.html"
 APP_SOURCE = ROOT / "examples" / "wasm" / "embedded_model_viewer.js"
+VIEW_SOURCE = ROOT / "examples" / "wasm" / "hlr_projection_views.js"
 WORKER_SOURCE = ROOT / "examples" / "wasm" / "hlr_projection_worker.js"
 OPERATION_WORKER_SOURCE = ROOT / "examples" / "wasm" / "geometer_operation_worker.js"
 PANEL_SOURCE = ROOT / "examples" / "wasm" / "demo-tooling" / "panels.ts"
@@ -187,6 +188,7 @@ def main() -> None:
     for required in (
         SOURCE,
         APP_SOURCE,
+        VIEW_SOURCE,
         WORKER_SOURCE,
         OPERATION_WORKER_SOURCE,
         PANEL_SOURCE,
@@ -206,7 +208,12 @@ def main() -> None:
     worker_json = json.dumps(self_contained_worker_source())
 
     html = SOURCE.read_text(encoding="utf-8")
-    app_source = textwrap.indent(APP_SOURCE.read_text(encoding="utf-8"), "    ")
+    view_source = VIEW_SOURCE.read_text(encoding="utf-8").replace("export ", "")
+    app_text = APP_SOURCE.read_text(encoding="utf-8").replace(
+        'import { AXIS_VECTORS, buildProjectionViews } from "./hlr_projection_views.js";\n',
+        "",
+    )
+    app_source = textwrap.indent(f"{view_source}\n{app_text}", "    ")
     html = replace_once(
         html,
         '  <script type="module" src="/examples/wasm/embedded_model_viewer.js"></script>',

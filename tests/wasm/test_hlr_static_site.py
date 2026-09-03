@@ -10,6 +10,7 @@ import tempfile
 import time
 import urllib.request
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -643,6 +644,27 @@ def _wait_for_server(url: str) -> None:
     raise RuntimeError(f"Timed out waiting for {url}")
 
 
+def _assert_fast_selection(result: dict[str, Any]) -> None:
+    selection = result["fastSelection"]
+    assert selection["algorithm"] == "fast"
+    assert selection["fastBackend"] is True
+    assert selection["creaseAngleDegrees"] == "10"
+    assert selection["detailAt10Degrees"] > selection["detailAt30Degrees"]
+    assert selection["model"] == "sot223.stp"
+    assert selection["view"] == "front"
+    assert selection["outlineAlgorithm"] == "fast-mesh-shadow"
+    assert " detail " in selection["metric"]
+    assert " outline " in selection["metric"]
+    assert selection["occtSettingsHidden"] is True
+    assert selection["fastSettingsHidden"] is False
+    assert selection["detailOnly"]["detail"] > 0
+    assert selection["detailOnly"]["outline"] == 0
+    assert selection["outlineOnly"]["detail"] == 0
+    assert selection["outlineOnly"]["outline"] > 0
+    assert selection["both"]["detail"] > 0
+    assert selection["both"]["outline"] > 0
+
+
 def test_hlr_static_site_upload_projection_and_export() -> None:
     chrome = _find_chrome()
     node = shutil.which("node")
@@ -775,23 +797,7 @@ def test_hlr_static_site_upload_projection_and_export() -> None:
         "sawBusy": True,
         "settled": True,
     }
-    assert result["fastSelection"]["algorithm"] == "fast"
-    assert result["fastSelection"]["fastBackend"] is True
-    assert result["fastSelection"]["creaseAngleDegrees"] == "10"
-    assert result["fastSelection"]["detailAt10Degrees"] > result["fastSelection"]["detailAt30Degrees"]
-    assert result["fastSelection"]["model"] == "sot223.stp"
-    assert result["fastSelection"]["view"] == "front"
-    assert result["fastSelection"]["outlineAlgorithm"] == "fast-mesh-shadow"
-    assert " detail " in result["fastSelection"]["metric"]
-    assert " outline " in result["fastSelection"]["metric"]
-    assert result["fastSelection"]["occtSettingsHidden"] is True
-    assert result["fastSelection"]["fastSettingsHidden"] is False
-    assert result["fastSelection"]["detailOnly"]["detail"] > 0
-    assert result["fastSelection"]["detailOnly"]["outline"] == 0
-    assert result["fastSelection"]["outlineOnly"]["detail"] == 0
-    assert result["fastSelection"]["outlineOnly"]["outline"] > 0
-    assert result["fastSelection"]["both"]["detail"] > 0
-    assert result["fastSelection"]["both"]["outline"] > 0
+    _assert_fast_selection(result)
     assert result["geometryReset"] == {
         "fastBackend": False,
         "fastCreaseAngleDegrees": "30",

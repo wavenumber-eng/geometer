@@ -49,6 +49,7 @@ id = "WASM_005"
 file = "test_hlr_static_site.py"
 name = "Hosted HLR Lab"
 description = "Runs the static HLR site in Chrome and verifies upload, local conversion, selectable fast detail/outline layers, export, and zero external requests."
+test_case_type = "integration"
 
 [[subtests]]
 id = "WASM_006"

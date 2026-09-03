@@ -2,16 +2,13 @@
 
 ## Status and scope
 
-This is the implemented additive generic C ABI accepted under ADR-011. It serves
+This is the proposed additive generic C ABI reviewed under ADR-011. It serves
 native callers and the full browser/Web Worker WASM build. It does not remove
 or change existing per-operation symbols.
 
-The live logical-DTO operations include `geometry.model_bounds.a0`,
-`geometry.model_hlr_projection.a0`, and `geometry.mesh_hlr_projection.a0`.
-Model operations accept bytes under the named `model` attachment; mesh HLR
-accepts an indexed-triangle-mesh A0 packet under `mesh`. Results use the
-operation's generated result contract. Packed operations use the same ABI with
-their separately governed attachment projection.
+The first implementation is `geometry.model_bounds.a0`. A successful browser
+pilot accepts model bytes as the named `model` attachment and returns
+`geometry.model_bounds.a0` JSON through this ABI.
 
 ## Declarations
 

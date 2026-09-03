@@ -78,7 +78,7 @@ depends_on = ["compatibility-validation"]
 [[steps]]
 id = "test-runtime-impact-audit"
 title = "Audit correctness coverage, Rack registration, benchmark evidence, and added test runtime"
-status = "pending"
+status = "done"
 depends_on = ["compatibility-validation"]
 
 [[steps]]

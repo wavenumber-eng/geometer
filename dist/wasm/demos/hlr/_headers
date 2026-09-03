@@ -3,7 +3,7 @@
   Referrer-Policy: no-referrer
   Permissions-Policy: camera=(), geolocation=(), microphone=()
   Cache-Control: no-cache
-  Content-Security-Policy: default-src 'none'; script-src 'wasm-unsafe-eval' blob: 'sha256-1hry+KJL/gwjbYoLsaTxyRk6S3HPzbrcljewehQ/PNU=' 'sha256-keCzrSC7Ut2vjdFecaTg24Q5ZH4JCwS9Gdi07i/sjO0='; worker-src blob:; style-src 'unsafe-inline'; connect-src data: blob:; img-src data: blob:; font-src data:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'
+  Content-Security-Policy: default-src 'none'; script-src 'wasm-unsafe-eval' blob: 'sha256-1hry+KJL/gwjbYoLsaTxyRk6S3HPzbrcljewehQ/PNU=' 'sha256-SS6H9PnNAqT3oB/E3cd0XFR52kJLdVpBKsAIojjRnxM='; worker-src blob:; style-src 'unsafe-inline'; connect-src data: blob:; img-src data: blob:; font-src data:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'
 
 /index.html
   Cache-Control: no-cache

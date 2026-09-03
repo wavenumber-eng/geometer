@@ -1,4 +1,10 @@
-add_executable(geometer main.cpp mesh_hlr_command.cpp)
+add_executable(
+    geometer
+    cli_usage.cpp
+    main.cpp
+    mesh_hlr_command.cpp
+    projection_cli_options.cpp
+)
 target_link_libraries(geometer PRIVATE geometer_lib)
 target_include_directories(geometer PRIVATE
     ${CMAKE_SOURCE_DIR}/third_party/rapidjson/include

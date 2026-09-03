@@ -266,6 +266,51 @@ fusion, coplanar layering, shading, colorization, caching, or disposal. The
 experimental `geometry.mesh_illustration.prototype.a0` scene is neither an
 input nor a production predecessor.
 
+## Native and WASM performance evidence
+
+The 2026-09-03 Windows x64 qualification used one warmup and three measured
+runs through the native executable and the Node-hosted WASM CLI. Fast geometry
+was byte-equivalent between runtimes on every fixture in the five-model package
+corpus. Exact HLR differed on TSOT-23-5 by one detail primitive (1,655 native
+versus 1,654 WASM); that difference is isolated to the existing OCCT exact
+backend rather than Fast.
+
+ABM8 top-view detail produced equivalent counts and geometry in both runtimes:
+
+| Algorithm | Native one-shot p50 | WASM one-shot p50 | Native view-phase p50 | WASM view-phase p50 |
+|---|---:|---:|---:|---:|
+| `poly` | 157.58 ms | 915.04 ms | 3.13 ms | 11.13 ms |
+| `exact` | 161.92 ms | 940.41 ms | 36.44 ms | 117.63 ms |
+| `fast` | 157.20 ms | 945.08 ms | 2.92 ms | 6.31 ms |
+
+On the 24,150-triangle BGA90 fixture, Fast detail-only internal HLR p50 was
+59.63 ms native and 114.98 ms WASM. Combined Fast detail plus
+`fast-mesh-shadow` view-phase p50 was 77.62 ms native and 121.92 ms WASM;
+one-shot wall p50 was 370.13 ms and 1,306.43 ms. The native prepared-view goal
+is met, while this single-threaded WASM build does not meet a sub-100 ms
+combined-view target.
+
+One-shot wall time includes process/module startup, STEP import, tessellation,
+projection, extraction, and serialization. The reported view phase is
+`hlr_ms + extract_ms` after STEP import and tessellation; the benchmark does not
+invoke the in-process reusable `FastHlrPreparedMesh` object. Reproduce the ABM8
+comparison with:
+
+```powershell
+uv run python scripts/benchmark_fast_hlr.py `
+  --model ABM8-272-T3.STEP `
+  --runtime native --runtime wasm `
+  --algorithm poly --algorithm exact --algorithm fast `
+  --outline hlr-close --layer detail `
+  --warmup 1 --repeat 3 `
+  --output .bench-tmp/fast-hlr-native-wasm-abm8-detail.json
+```
+
+The JSON report records artifact digests, environment details, per-sample
+phase timings, geometry digests, counts, percentile summaries, and runtime
+ratios. Reports remain ignored local evidence because timings are machine- and
+load-dependent; the harness and fixture manifest are the reproducible record.
+
 ## Known A0 limitations
 
 Fast vector HLR is orthographic and segment-based. It performs only

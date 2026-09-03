@@ -151,6 +151,12 @@ double midpoint(const AnalyticCoordinateIntervalNm& value) noexcept
     return value.lower + (value.upper - value.lower) * 0.5;
 }
 
+std::uint64_t integer_magnitude(std::int64_t value) noexcept
+{
+    return value < 0 ? std::uint64_t{0} - static_cast<std::uint64_t>(value)
+                     : static_cast<std::uint64_t>(value);
+}
+
 Point point(const AnalyticFilteredPointNm& value) noexcept
 {
     return {{value.x.lower, value.x.upper}, {value.y.lower, value.y.upper}};

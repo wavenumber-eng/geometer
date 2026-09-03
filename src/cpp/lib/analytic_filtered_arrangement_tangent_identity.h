@@ -37,9 +37,15 @@ inline bool shares_exact_tangent_contact(const TangentEndpointIdentity& first,
                                          const TangentEndpointIdentity& second,
                                          double tangent_dot_lower) noexcept
 {
+    constexpr std::uint64_t kEndpointRoleBits =
+        (std::uint64_t{1} << 34U) | (std::uint64_t{1} << 35U);
+    const bool same_line_circle_carriers =
+        analytic_is_endpoint_tangent_token(first.tangent_id) &&
+        analytic_is_endpoint_tangent_token(second.tangent_id) &&
+        (first.tangent_id & ~kEndpointRoleBits) == (second.tangent_id & ~kEndpointRoleBits);
     return tangent_dot_lower > 0.0 && first.tangent_id != 0 &&
-           first.tangent_id == second.tangent_id && tangent_token_names_endpoint(first) &&
-           tangent_token_names_endpoint(second) &&
+           (first.tangent_id == second.tangent_id || same_line_circle_carriers) &&
+           tangent_token_names_endpoint(first) && tangent_token_names_endpoint(second) &&
            same_endpoint_enclosure(first.point, second.point);
 }
 

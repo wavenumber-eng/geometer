@@ -54,6 +54,33 @@ AnalyticRequestPacketRecords plain_disks(std::uint32_t count)
     return records;
 }
 
+AnalyticRequestPacketRecords collinear_diagonal_capsules()
+{
+    AnalyticRequestPacketRecords records;
+    records.jobs = {{10, 0, 1}};
+    records.stages = {{100, 1, 0, 2}};
+    records.operands = {{1000, 4, 0}, {1001, 4, 1}};
+    records.capsules = {
+        {5000, 141'372'258, -135'169'499, 142'175'504, -135'972'745, 127'000},
+        {5001, 142'175'504, -135'972'745, 143'752'758, -137'549'999, 127'000},
+    };
+    return records;
+}
+
+AnalyticRequestPacketRecords solver_failure_then_disk()
+{
+    AnalyticRequestPacketRecords records;
+    records.jobs = {{10, 0, 1}, {20, 1, 1}};
+    records.stages = {{100, 1, 0, 2}, {200, 1, 2, 1}};
+    records.operands = {{1000, 4, 0}, {1001, 4, 1}, {2000, 2, 0}};
+    records.capsules = {
+        {5000, 141'372'258, -135'169'499, 142'175'504, -135'972'745, 127'000},
+        {5001, 141'372'259, -135'169'499, 142'175'504, -135'972'745, 127'000},
+    };
+    records.disks = {{6000, 0, 0, 1000}};
+    return records;
+}
+
 AnalyticRequestPacketRecords endpoint_radius_circle()
 {
     AnalyticRequestPacketRecords records;
@@ -726,6 +753,39 @@ void test_job_local_failure_isolated()
             "failed-job qualification telemetry wrong");
 }
 
+void test_collinear_diagonal_capsules_share_exact_carrier_order()
+{
+    const auto records = collinear_diagonal_capsules();
+    require(validate_analytic_request_packet_records(records) == AnalyticRequestPacketError::none,
+            "collinear capsule request invalid");
+    const auto result = build_analytic_filtered_batch(records);
+    require(result.error == AnalyticFilteredBatchError::none && result.packet &&
+                result.packet->records.job_results.size() == 1 &&
+                result.packet->records.job_results[0].status == 0 &&
+                result.packet->records.diagnostics.empty() &&
+                result.packet->records.regions.size() == 1,
+            "collinear diagonal capsule union failed");
+}
+
+void test_solver_failure_remains_job_local()
+{
+    const auto records = solver_failure_then_disk();
+    require(validate_analytic_request_packet_records(records) == AnalyticRequestPacketError::none,
+            "solver-failure isolation request invalid");
+    const auto result = build_analytic_filtered_batch(records);
+    require(result.error == AnalyticFilteredBatchError::none && result.packet,
+            "isolated solver failure escaped the batch");
+    const auto& output = result.packet->records;
+    require(output.job_results.size() == 2 && output.job_results[0].status == 1 &&
+                output.job_results[1].status == 0 && output.diagnostics.size() == 1 &&
+                output.diagnostics[0].code == 65'546 && result.telemetry.jobs_failed == 1 &&
+                result.telemetry.jobs_succeeded == 1,
+            "isolated solver failure did not preserve the independent job");
+    require(validate_analytic_result_packet_records(output) ==
+                AnalyticResultPacketLayoutError::none,
+            "solver-failure isolation emitted an invalid result packet");
+}
+
 void test_per_job_memory_is_independent_of_prior_outputs()
 {
     const auto single = plain_disks(1);
@@ -956,6 +1016,8 @@ int main(int argc, char** argv)
     test_distinct_chord_endpoint_radius_overlap_fails_closed_deterministically();
     test_two_successful_jobs();
     test_job_local_failure_isolated();
+    test_collinear_diagonal_capsules_share_exact_carrier_order();
+    test_solver_failure_remains_job_local();
     test_disjoint_relationship();
     test_rectangle_relationship_dimensions_and_containment();
     test_relationship_query_orientation_and_strict_gap();

@@ -67,7 +67,7 @@ class PacketBuilder
             }
             if (normalization.error == AnalyticFilteredNormalizationError::invalid_argument)
             {
-                result_.error = AnalyticFilteredPacketError::invalid_argument;
+                build_failed_packet(65'546);
                 finish_telemetry();
                 return std::move(result_);
             }

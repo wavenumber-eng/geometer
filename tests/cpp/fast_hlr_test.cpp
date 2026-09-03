@@ -408,7 +408,7 @@ void coplanar_continuation_suppression_is_opt_in_and_conservative()
                                               &statistics, &status) == 0,
             "unsuppressed coplanar projection should succeed: " + status.message);
     require(visible.segments.size() == 8 && statistics.coplanar_seam_intervals == 0,
-            "the provisional seam filter must remain disabled by default");
+            "the optional seam filter must remain disabled by default");
 
     geometer::FastHlrOptions options;
     options.suppress_coplanar_seams = true;
@@ -450,7 +450,7 @@ void coplanar_continuation_suppression_is_opt_in_and_conservative()
                                               &statistics, &status) == 0,
             "relaxed seam-angle projection should succeed: " + status.message);
     require(statistics.coplanar_seam_intervals == 2,
-            "the provisional seam angle should admit a shallow continuation when requested");
+            "the configured seam angle should admit a shallow continuation when requested");
 
     geometer::FastHlrIndexedMesh straddling;
     straddling.vertices = {{0.0, -1.0, 0.0},  {0.0, 1.0, 0.0}, {-1.0, 0.0, 0.0},

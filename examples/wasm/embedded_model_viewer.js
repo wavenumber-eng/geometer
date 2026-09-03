@@ -186,7 +186,7 @@ function applyEdgePreset(presetId) {
 }
 
 function syncGeometryControls() {
-  // Fast vector uses a separate provisional candidate contract. Poly HLR
+  // Fast vector uses a separate candidate contract. Poly HLR
   // supports only V/H Compound + OutLine; Exact exposes all OCCT categories.
   const algorithm = els.algoSelect.value;
   const poly = algorithm === "poly";

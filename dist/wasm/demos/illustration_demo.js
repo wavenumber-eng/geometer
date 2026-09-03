@@ -92,6 +92,11 @@ const els = {
     doubleSided: required("illustrationDoubleSided"),
     fastCrease: required("illustrationFastCrease"),
     fastCreaseValue: required("illustrationFastCreaseValue"),
+    fastCoplanarSeams: required("illustrationFastCoplanarSeams"),
+    fastSeamAngle: required("illustrationFastSeamAngle"),
+    fastSeamAngleValue: required("illustrationFastSeamAngleValue"),
+    fastSeamDepth: required("illustrationFastSeamDepth"),
+    fastSeamDepthValue: required("illustrationFastSeamDepthValue"),
     fastBias: required("illustrationFastBias"),
     fastBiasValue: required("illustrationFastBiasValue"),
     background: required("illustrationBackground"),
@@ -272,6 +277,13 @@ function scheduleFastCreaseUpdate() {
         fastCreaseFrame = 0;
         rebuildFastHlr();
     });
+    scheduleFastVectorLineworkUpdate();
+}
+function scheduleFastVectorLineworkUpdate() {
+    const seamAngle = boundedNumberInput(els.fastSeamAngle, 0, 10, 1);
+    const seamDepth = boundedNumberInput(els.fastSeamDepth, 0, 0.01, 0.001);
+    els.fastSeamAngleValue.value = `${seamAngle.toFixed(1)} deg`;
+    els.fastSeamDepthValue.value = `${seamDepth.toFixed(4)} mm`;
     cancelLazyHlrLinework();
     window.clearTimeout(fastCreaseLineworkTimer);
     fastCreaseLineworkTimer = window.setTimeout(() => {
@@ -616,8 +628,10 @@ async function prepareIllustration(reason) {
         els.outputPane.dataset.cameraZoom = camera.zoom.toFixed(9);
         els.outputPane.dataset.cameraHalfHeight = Number(camera.userData.halfHeight ?? 1).toFixed(9);
         els.outputPane.dataset.prepareGeneration = String(state.prepareGeneration);
-        if (state.showHlrDetail)
+        if (state.showHlrDetail) {
             els.outputPane.dataset.fastVectorCrease = els.fastCrease.value;
+            els.outputPane.dataset.fastVectorCoplanarSeams = String(els.fastCoplanarSeams.checked);
+        }
         redrawStyle();
         const elapsed = performance.now() - started;
         els.timing.textContent = `prepare ${formatMs(elapsed)} / HLR ${formatMs(hlrMs)} / ${state.scene.stats.sourceTriangles.toLocaleString()} triangles`;
@@ -673,8 +687,10 @@ async function updateHlrVisibility() {
             return;
         scene.outlineSegments = linework.outlineSegments;
         scene.detailSegments = linework.detailSegments;
-        if (state.showHlrDetail)
+        if (state.showHlrDetail) {
             els.outputPane.dataset.fastVectorCrease = els.fastCrease.value;
+            els.outputPane.dataset.fastVectorCoplanarSeams = String(els.fastCoplanarSeams.checked);
+        }
         redrawStyle();
     }
     catch (error) {
@@ -920,6 +936,9 @@ function projectionCacheKey(model, view, modelTransform) {
         (settings.hlrAngularDeflectionDegrees * Math.PI) / 180,
         settings.hlrDeflectionCoefficient,
         Number.parseFloat(els.fastCrease.value),
+        els.fastCoplanarSeams.checked ? 1 : 0,
+        Number.parseFloat(els.fastSeamAngle.value),
+        Number.parseFloat(els.fastSeamDepth.value),
         state.showHlrOutline ? 1 : 0,
         state.showHlrDetail ? 1 : 0,
     ];
@@ -940,6 +959,9 @@ async function loadHlrLinework(model, view, modelTransform) {
                 angularDeflectionRad: (settings.hlrAngularDeflectionDegrees * Math.PI) / 180,
                 deflectionCoefficient: settings.hlrDeflectionCoefficient,
                 creaseAngleRad: (Number.parseFloat(els.fastCrease.value) * Math.PI) / 180,
+                suppressCoplanarSeams: els.fastCoplanarSeams.checked,
+                coplanarSeamAngleRad: (Number.parseFloat(els.fastSeamAngle.value) * Math.PI) / 180,
+                coplanarSeamDepthTolerance: Number.parseFloat(els.fastSeamDepth.value),
                 outputOutline: state.showHlrOutline,
                 outputDetail: state.showHlrDetail,
             },
@@ -1185,6 +1207,9 @@ function wireEvents() {
         control.addEventListener("input", redrawStyle);
     }
     els.fastCrease.addEventListener("input", scheduleFastCreaseUpdate);
+    els.fastCoplanarSeams.addEventListener("change", scheduleFastVectorLineworkUpdate);
+    els.fastSeamAngle.addEventListener("input", scheduleFastVectorLineworkUpdate);
+    els.fastSeamDepth.addEventListener("input", scheduleFastVectorLineworkUpdate);
     els.fastBias.addEventListener("input", () => {
         fastHlr.setStyle(fastHlrStyle());
     });

@@ -84,13 +84,13 @@ depends_on = ["compatibility-validation"]
 [[steps]]
 id = "external-review"
 title = "Obtain independent contract, compatibility, numerical, implementation, and package review"
-status = "active"
+status = "done"
 depends_on = ["design-doc-intent-audit", "test-runtime-impact-audit"]
 
 [[steps]]
 id = "user-demo-signoff"
 title = "Present the packaged HLR and Illustration demos for explicit user acceptance"
-status = "pending"
+status = "active"
 depends_on = ["external-review"]
 
 [[steps]]
@@ -235,9 +235,11 @@ later generation.
 ## Compatibility rules
 
 - `projection_algorithm` remains additive: `poly`, `exact`, or `fast`.
-- The default remains `poly`; V1 does not silently select Fast.
-- `outline_algorithm` retains `hlr-close` and `mesh-shadow` and adds
-  `fast-mesh-shadow` without changing either old algorithm.
+- Model/STEP projection retains the `poly` default; indexed-mesh projection
+  defaults to Fast because OCCT topology backends do not apply to that source.
+- `outline_algorithm` retains the model defaults and existing `hlr-close` and
+  `mesh-shadow` selections, while indexed meshes default to
+  `fast-mesh-shadow`.
 - All existing common options, ten OCCT edge-category options, legacy aliases,
   CLI flags, Python helpers, and C ABI compatibility functions remain accepted
   in their documented lanes.

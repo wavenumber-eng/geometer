@@ -38,7 +38,6 @@ for (const required of [
   "_geometer_operation_execute",
   'id="illustrationStepInput"',
   'id="illustrationDownloadSvg"',
-  'id="illustrationDownloadScene"',
   'id="illustrationDownloadStyle"',
   'data-output="svg"',
   'data-output="canvas"',

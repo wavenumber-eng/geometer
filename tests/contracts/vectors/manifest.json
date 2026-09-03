@@ -3,6 +3,39 @@
   "generation": "a0",
   "vectors": [
     {
+      "id": "schema.mesh-illustration-input-minimal.accept",
+      "contract_identity": "geometry.mesh_illustration.input.a0",
+      "file": "cases/mesh-illustration-input-minimal-valid.json",
+      "lane": "schema",
+      "oracle": "generated_schema",
+      "expected": "accept",
+      "comparison": "exact",
+      "excluded_fields": [],
+      "tolerance": null
+    },
+    {
+      "id": "schema.mesh-illustration-input-zero-weld.reject",
+      "contract_identity": "geometry.mesh_illustration.input.a0",
+      "file": "cases/mesh-illustration-input-zero-weld-invalid.json",
+      "lane": "schema",
+      "oracle": "generated_schema",
+      "expected": "reject",
+      "comparison": "exact",
+      "excluded_fields": [],
+      "tolerance": null
+    },
+    {
+      "id": "schema.mesh-illustration-result.accept",
+      "contract_identity": "geometry.mesh_illustration.result.a0",
+      "file": "cases/mesh-illustration-result-valid.json",
+      "lane": "schema",
+      "oracle": "generated_schema",
+      "expected": "accept",
+      "comparison": "exact",
+      "excluded_fields": [],
+      "tolerance": null
+    },
+    {
       "id": "schema.outcome-success.accept",
       "contract_identity": "geometer.operation.outcome.a0",
       "file": "cases/outcome-success-valid.json",

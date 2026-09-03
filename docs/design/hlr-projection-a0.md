@@ -177,13 +177,13 @@ and source/model units for direct indexed-mesh preparation.
 | `edge_h_sharp`, `edge_h_outline` | `false` | — | Exact and poly hidden categories. Fast uses `fast.include_hidden` with Fast candidate categories. |
 | `edge_h_smooth`, `edge_h_sewn`, `edge_h_iso` | `false` | — | Exact only. Poly and Fast do not provide these OCCT categories. |
 | `union_outline_polygons` | `true` | — | `hlr-close` outline only; ignored by mesh-shadow algorithms. |
-| `projection_algorithm` | `poly` | — | Common selector: `poly`, `exact`, or `fast`. |
+| `projection_algorithm` | operation-specific | — | Common selector: `poly`, `exact`, or `fast`. Omission means `poly` for model HLR and `fast` for indexed-mesh HLR. |
 | `mesh_linear_deflection` | `0.01` | mm/model units | STEP tessellation when absolute mode is active; affects poly, Fast, and mesh-shadow inputs. Not used by exact detail. |
 | `mesh_angular_deflection` | `0.5` | radians | STEP tessellation for poly/Fast/mesh-shadow paths. |
 | `mesh_relative` | `false` | — | Compatibility input to OCCT tessellation. Bbox-relative mode computes an absolute value first. |
 | `mesh_deflection_mode` | `bbox-relative` | — | STEP tessellation: `absolute` or model-bounds-scaled. |
 | `mesh_deflection_coefficient` | `0.004` | ratio | STEP tessellation in bbox-relative mode. |
-| `outline_algorithm` | `hlr-close` | — | Common outline selector, independent of detail algorithm. |
+| `outline_algorithm` | operation-specific | — | Common outline selector, independent of detail algorithm. Omission means `hlr-close` for model HLR and `fast-mesh-shadow` for indexed-mesh HLR. |
 | `hlr_angle_tolerance` | `0.0174533` | radians | Exact HLR angular tolerance and delegated HLR outline behavior. |
 | `fast` | focused Fast defaults | — | Fast detail and `fast-mesh-shadow` only. Never changes exact/poly OCCT edge semantics. |
 
@@ -197,7 +197,7 @@ and source/model units for direct indexed-mesh preparation.
 | `include_hidden` | `false` | — | Returns hidden classified fragments in the hidden result channel where exposed by the semantic API. |
 | `suppress_coplanar_seams` | `false` | — | Removes only intervals proven to continue across a separate coplanar source face. |
 | `crease_angle_rad` | `0.5235987755982988` | radians (30°) | Minimum adjacent-face angle classified as a crease. UI degree controls convert at the boundary. |
-| `weld_tolerance` | `1e-7` | model units | Vertex welding used while preparing incidence topology. |
+| `weld_tolerance` | `1e-7` | model units | Radial vertex welding used while preparing incidence topology. Direct indexed meshes weld duplicate positions globally; OCCT-derived meshes weld only within connected topological components. |
 | `projected_tolerance` | `1e-8` | model units | 2D geometric comparison tolerance. |
 | `depth_tolerance` | `1e-7` | model units | Occlusion depth comparison tolerance. |
 | `coplanar_seam_angle_rad` | `0.017453292519943295` | radians (1°) | Maximum normal-angle difference for seam continuation. |
@@ -209,6 +209,8 @@ Fast resource defaults are `max_vertices=2,000,000`,
 `max_grid_references=64,000,000`, `max_candidate_pairs=100,000,000`,
 `max_fragments=8,000,000`, and `max_output_segments=4,000,000`.
 Crossing a limit is a reported resource-limit failure, never silent truncation.
+The candidate-pair ceiling also preflights the conservative pairwise work bound
+before each Clipper outline union.
 
 ## Compatibility aliases
 
@@ -266,6 +268,10 @@ fusion, coplanar layering, shading, colorization, caching, or disposal. The
 experimental `geometry.mesh_illustration.prototype.a0` scene is neither an
 input nor a production predecessor.
 
+Omitted A0 preparation controls materialize as `max_triangles=750,000` and
+`weld_tolerance=1e-7`. Illustration results return at most 256 warnings; when
+more diagnostics arise, the final entry reports how many were suppressed.
+
 ## Native and WASM performance evidence
 
 The 2026-09-03 Windows x64 qualification used one warmup and three measured
@@ -306,7 +312,8 @@ uv run python scripts/benchmark_fast_hlr.py `
   --output .bench-tmp/fast-hlr-native-wasm-abm8-detail.json
 ```
 
-The JSON report records artifact digests, environment details, per-sample
+The JSON report records native executable digests and, for WASM, separate
+launcher, module, and Node-host digests, plus environment details, per-sample
 phase timings, geometry digests, counts, percentile summaries, and runtime
 ratios. Reports remain ignored local evidence because timings are machine- and
 load-dependent; the harness and fixture manifest are the reproducible record.

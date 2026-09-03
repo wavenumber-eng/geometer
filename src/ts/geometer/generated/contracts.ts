@@ -518,12 +518,14 @@ export interface HlrProjectionOptionsA0 {
   readonly edge_h_sewn?: boolean;
   readonly edge_h_iso?: boolean;
   readonly union_outline_polygons?: boolean;
+  /** Omission selects the operation-specific default: poly for model HLR and Fast for mesh HLR. */
   readonly projection_algorithm?: HlrProjectionAlgorithm;
   readonly mesh_linear_deflection?: number;
   readonly mesh_angular_deflection?: number;
   readonly mesh_relative?: boolean;
   readonly mesh_deflection_mode?: HlrMeshDeflectionMode;
   readonly mesh_deflection_coefficient?: number;
+  /** Omission selects the operation-specific default: HLR-close for model HLR and Fast mesh-shadow for mesh HLR. */
   readonly outline_algorithm?: HlrOutlineAlgorithm;
   readonly hlr_angle_tolerance?: number;
   readonly fast?: FastHlrOptionsA0;

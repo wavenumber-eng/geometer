@@ -1,4 +1,5 @@
-import type { AnalyticPlanarBooleanBatchRequestA0, AnalyticPlanarBooleanBatchResultA0, DiagnosticA0, ModelBoundsInputMediaType, ModelBoundsOptionsA0, ModelBoundsResultA0, OperationOutcomeA0 } from "./generated/index.js";
+import type { AnalyticPlanarBooleanBatchRequestA0, AnalyticPlanarBooleanBatchResultA0, DiagnosticA0, HlrProjectionOptionsA0, HlrProjectionResultA0, ModelBoundsInputMediaType, ModelBoundsOptionsA0, ModelBoundsResultA0, OperationOutcomeA0 } from "./generated/index.js";
+import type { IndexedTriangleMeshA0 } from "./indexed-mesh-packet-a0.js";
 export interface EmscriptenGeometerModule {
     readonly HEAPU8: Uint8Array;
     readonly HEAPU32: Uint32Array;
@@ -31,6 +32,15 @@ export interface ModelBoundsRequest {
     readonly model: Uint8Array;
     readonly options?: ModelBoundsOptionsA0;
 }
+export interface ModelHlrProjectionRequest {
+    readonly mediaType?: "application/step" | "model/step";
+    readonly model: Uint8Array;
+    readonly options?: HlrProjectionOptionsA0;
+}
+export interface MeshHlrProjectionRequest {
+    readonly mesh: IndexedTriangleMeshA0 | Uint8Array;
+    readonly options?: HlrProjectionOptionsA0;
+}
 export interface GeometerWasmCapabilityCatalog {
     readonly cAbiGeneration: number;
     readonly genericAbi: "a0";
@@ -54,6 +64,9 @@ export declare class GeometerWasmClient {
     static fromModule(module: EmscriptenGeometerModule): GeometerWasmClient;
     analyticPlanarBooleanBatch(request: AnalyticPlanarBooleanBatchRequestA0): Promise<AnalyticPlanarBooleanBatchResultA0>;
     modelBounds(request: ModelBoundsRequest): Promise<ModelBoundsResultA0>;
+    modelHlrProjection(request: ModelHlrProjectionRequest): Promise<HlrProjectionResultA0>;
+    meshHlrProjection(request: MeshHlrProjectionRequest): Promise<HlrProjectionResultA0>;
+    private hlrProjection;
     execute(operation: string, requestJson: string, attachments: readonly GeometerOperationAttachment[]): GeometerOperationResponse;
 }
 export declare function createGeometerWasmClient(moduleOrFactory: EmscriptenGeometerModule | EmscriptenGeometerFactory, moduleOptions?: Readonly<Record<string, unknown>>): Promise<GeometerWasmClient>;

@@ -23680,8 +23680,14 @@ function canonicalize(value, type, declarations2, path, constraints) {
     if (constraints.min_value !== void 0 && value < constraints.min_value) {
       fail("geometer.contract.number_range", path, "Number is below its minimum.");
     }
+    if (constraints.min_value_exclusive !== void 0 && value <= constraints.min_value_exclusive) {
+      fail("geometer.contract.number_range", path, "Number is not above its exclusive minimum.");
+    }
     if (constraints.max_value !== void 0 && value > constraints.max_value) {
       fail("geometer.contract.number_range", path, "Number is above its maximum.");
+    }
+    if (constraints.max_value_exclusive !== void 0 && value >= constraints.max_value_exclusive) {
+      fail("geometer.contract.number_range", path, "Number is not below its exclusive maximum.");
     }
     return value;
   }
@@ -24068,12 +24074,12 @@ var declarations = {
       weld_tolerance: {
         type: { kind: "primitive", name: "float64" },
         optional: true,
-        constraints: { min_value: 0 }
+        constraints: { min_value_exclusive: 0 }
       },
       projected_tolerance: {
         type: { kind: "primitive", name: "float64" },
         optional: true,
-        constraints: { min_value: 0 }
+        constraints: { min_value_exclusive: 0 }
       },
       depth_tolerance: {
         type: { kind: "primitive", name: "float64" },
@@ -25388,7 +25394,7 @@ var declarations = {
       weld_tolerance: {
         type: { kind: "primitive", name: "float64" },
         optional: true,
-        constraints: { min_value: 0 }
+        constraints: { min_value_exclusive: 0 }
       }
     }
   },
@@ -29338,7 +29344,7 @@ function decodeOperationOutcomeA0Json(data) {
 }
 
 // src/ts/geometer/generated/operations.ts
-var NORMALIZED_CONTRACT_CATALOG_SHA256 = "3d610e74fa16618a12806607c55be6823d6bf5e9144095ed281179aaeda1415d";
+var NORMALIZED_CONTRACT_CATALOG_SHA256 = "568219edea253812467edf179faa2f2fc35dc2e29855524ac6918b284aa6574c";
 var operationCatalog = {
   "geometry.analytic_planar_boolean_batch.a0": {
     identity: "geometry.analytic_planar_boolean_batch.a0",

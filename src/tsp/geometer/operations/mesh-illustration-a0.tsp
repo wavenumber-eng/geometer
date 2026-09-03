@@ -40,7 +40,7 @@ model MeshIllustrationView {
 
 model MeshIllustrationPrepareOptions {
   @minValue(1) @maxValue(2000000) max_triangles?: uint32 = 750000;
-  @minValue(0) weld_tolerance?: float64 = 0.0000001;
+  @minValueExclusive(0) weld_tolerance?: float64 = 0.0000001;
 }
 
 model MeshIllustrationSvgOptions {

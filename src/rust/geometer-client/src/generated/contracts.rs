@@ -20,7 +20,7 @@
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
 pub const NORMALIZED_CATALOG_SHA256: &str =
-    "3d610e74fa16618a12806607c55be6823d6bf5e9144095ed281179aaeda1415d";
+    "568219edea253812467edf179faa2f2fc35dc2e29855524ac6918b284aa6574c";
 
 #[derive(Debug, thiserror::Error)]
 pub enum ContractError {
@@ -2202,8 +2202,11 @@ impl Validate for FastHlrOptionsA0 {
             if !value.is_finite() {
                 return Err(invalid(&field_path, "number must be finite"));
             }
-            if *value < 0_f64 {
-                return Err(invalid(&field_path, "number is below its minimum"));
+            if *value <= 0_f64 {
+                return Err(invalid(
+                    &field_path,
+                    "number is not above its exclusive minimum",
+                ));
             }
         }
         let field_path = child_path(path, "projected_tolerance");
@@ -2211,8 +2214,11 @@ impl Validate for FastHlrOptionsA0 {
             if !value.is_finite() {
                 return Err(invalid(&field_path, "number must be finite"));
             }
-            if *value < 0_f64 {
-                return Err(invalid(&field_path, "number is below its minimum"));
+            if *value <= 0_f64 {
+                return Err(invalid(
+                    &field_path,
+                    "number is not above its exclusive minimum",
+                ));
             }
         }
         let field_path = child_path(path, "depth_tolerance");
@@ -6759,8 +6765,11 @@ impl Validate for MeshIllustrationPrepareOptions {
             if !value.is_finite() {
                 return Err(invalid(&field_path, "number must be finite"));
             }
-            if *value < 0_f64 {
-                return Err(invalid(&field_path, "number is below its minimum"));
+            if *value <= 0_f64 {
+                return Err(invalid(
+                    &field_path,
+                    "number is not above its exclusive minimum",
+                ));
             }
         }
         Ok(())

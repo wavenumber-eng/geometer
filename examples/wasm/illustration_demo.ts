@@ -130,7 +130,6 @@ const els = {
   viewButtons: required<HTMLSpanElement>("illustrationViewButtons"),
   outputButtons: required<HTMLSpanElement>("illustrationOutputButtons"),
   downloadSvg: required<HTMLButtonElement>("illustrationDownloadSvg"),
-  downloadScene: required<HTMLButtonElement>("illustrationDownloadScene"),
   downloadStyle: required<HTMLButtonElement>("illustrationDownloadStyle"),
   modelPane: required<HTMLElement>("illustrationModelPane"),
   outputPane: required<HTMLElement>("illustrationOutputPane"),
@@ -700,7 +699,6 @@ function redrawStyle(): void {
   const canvasStats = renderMeshIllustrationCanvas(context, state.scene, style);
   els.counts.textContent = `${rendered.stats.triangles.toLocaleString()} front-facing triangles → ${rendered.stats.surfaceDraws.toLocaleString()} polygon regions/draws / ${rendered.stats.layeredSurfaces.toLocaleString()} coplanar layers / SVG ${formatBytes(svgBytes)} / ${rendered.stats.details.toLocaleString()} HLR detail / ${rendered.stats.outlines.toLocaleString()} HLR outline segments / ${state.scene.warnings.length} warnings`;
   els.downloadSvg.disabled = false;
-  els.downloadScene.disabled = false;
   els.downloadStyle.disabled = false;
   els.svgHost.classList.toggle("hidden", state.output !== "svg");
   els.illustrationCanvas.classList.toggle("hidden", state.output !== "canvas");
@@ -982,7 +980,6 @@ async function selectModel(
   ])
     control.disabled = !stepBacked;
   els.downloadSvg.disabled = true;
-  els.downloadScene.disabled = true;
   els.modelSelect.value = model.cacheKey ?? model.name;
   setBusy(`Loading ${model.name}...`);
   setStatus(`Loading ${model.name}`);
@@ -1136,6 +1133,10 @@ async function loadHlrLinework(
 }> {
   const cacheKey = projectionCacheKey(model, view, modelTransform);
   let projection = state.projectionCache.get(cacheKey);
+  if (projection) {
+    state.projectionCache.delete(cacheKey);
+    state.projectionCache.set(cacheKey, projection);
+  }
   let hlrMs = 0;
   if (!projection) {
     const source = await modelStepBuffer(model);
@@ -1162,6 +1163,11 @@ async function loadHlrLinework(
     projection = result.projection;
     hlrMs = result.timings?.hlrMs ?? 0;
     state.projectionCache.set(cacheKey, projection);
+    while (state.projectionCache.size > 8) {
+      const oldest = state.projectionCache.keys().next().value;
+      if (oldest === undefined) break;
+      state.projectionCache.delete(oldest);
+    }
   }
   const mirrorX = view.mirrorX === true ? -1 : 1;
   const millimetresToMetres = 0.001;
@@ -1236,10 +1242,6 @@ function fileStem(): string {
   return (state.model?.name ?? "model")
     .replace(/\.(?:step|stp|glb|gltf)$/iu, "")
     .replace(/[^a-z0-9._-]+/giu, "-");
-}
-
-function sceneJson(): string {
-  return `${JSON.stringify(state.scene, null, 2)}\n`;
 }
 
 function styleJson(): string {
@@ -1412,9 +1414,6 @@ function wireEvents(): void {
   });
   els.downloadSvg.addEventListener("click", () =>
     download(`${fileStem()}-${state.view}.svg`, state.svg, "image/svg+xml"),
-  );
-  els.downloadScene.addEventListener("click", () =>
-    download(`${fileStem()}-${state.view}.illustration.json`, sceneJson(), "application/json"),
   );
   els.downloadStyle.addEventListener("click", () =>
     download(`${fileStem()}.illustration-style.json`, styleJson(), "application/json"),

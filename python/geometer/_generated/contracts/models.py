@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Literal, TypeAlias
 
-NORMALIZED_CATALOG_SHA256 = "3d610e74fa16618a12806607c55be6823d6bf5e9144095ed281179aaeda1415d"
+NORMALIZED_CATALOG_SHA256 = "568219edea253812467edf179faa2f2fc35dc2e29855524ac6918b284aa6574c"
 
 JobId: TypeAlias = int
 
@@ -600,12 +600,14 @@ class HlrProjectionOptionsA0:
     edge_h_sewn: bool | None = None
     edge_h_iso: bool | None = None
     union_outline_polygons: bool | None = None
+    # Omission selects the operation-specific default: poly for model HLR and Fast for mesh HLR.
     projection_algorithm: HlrProjectionAlgorithm | None = None
     mesh_linear_deflection: float | None = None
     mesh_angular_deflection: float | None = None
     mesh_relative: bool | None = None
     mesh_deflection_mode: HlrMeshDeflectionMode | None = None
     mesh_deflection_coefficient: float | None = None
+    # Omission selects the operation-specific default: HLR-close for model HLR and Fast mesh-shadow for mesh HLR.
     outline_algorithm: HlrOutlineAlgorithm | None = None
     hlr_angle_tolerance: float | None = None
     fast: FastHlrOptionsA0 | None = None

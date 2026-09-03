@@ -3529,7 +3529,7 @@
           },
           "annotations": {},
           "constraints": {
-            "min_value": 0
+            "min_value_exclusive": 0
           },
           "default": 1e-7
         },
@@ -3543,7 +3543,7 @@
           },
           "annotations": {},
           "constraints": {
-            "min_value": 0
+            "min_value_exclusive": 0
           },
           "default": 1e-8
         },
@@ -4088,14 +4088,13 @@
         {
           "name": "projection_algorithm",
           "optional": true,
-          "doc": "",
+          "doc": "Omission selects the operation-specific default: poly for model HLR and Fast for mesh HLR.",
           "type": {
             "kind": "reference",
             "target": "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrProjectionAlgorithm"
           },
           "annotations": {},
-          "constraints": {},
-          "default": "poly"
+          "constraints": {}
         },
         {
           "name": "mesh_linear_deflection",
@@ -4167,14 +4166,13 @@
         {
           "name": "outline_algorithm",
           "optional": true,
-          "doc": "",
+          "doc": "Omission selects the operation-specific default: HLR-close for model HLR and Fast mesh-shadow for mesh HLR.",
           "type": {
             "kind": "reference",
             "target": "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrOutlineAlgorithm"
           },
           "annotations": {},
-          "constraints": {},
-          "default": "hlr-close"
+          "constraints": {}
         },
         {
           "name": "hlr_angle_tolerance",
@@ -6591,7 +6589,7 @@
           },
           "annotations": {},
           "constraints": {
-            "min_value": 0
+            "min_value_exclusive": 0
           },
           "default": 1e-7
         }

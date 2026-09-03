@@ -92,7 +92,7 @@
     },
     "projection_algorithm": {
       "$ref": "#/$defs/HlrProjectionAlgorithm",
-      "default": "poly"
+      "description": "Omission selects the operation-specific default: poly for model HLR and Fast for mesh HLR."
     },
     "mesh_linear_deflection": {
       "type": "number",
@@ -120,7 +120,7 @@
     },
     "outline_algorithm": {
       "$ref": "#/$defs/HlrOutlineAlgorithm",
-      "default": "hlr-close"
+      "description": "Omission selects the operation-specific default: HLR-close for model HLR and Fast mesh-shadow for mesh HLR."
     },
     "hlr_angle_tolerance": {
       "type": "number",
@@ -231,12 +231,12 @@
         "weld_tolerance": {
           "type": "number",
           "default": 1e-7,
-          "minimum": 0
+          "exclusiveMinimum": 0
         },
         "projected_tolerance": {
           "type": "number",
           "default": 1e-8,
-          "minimum": 0
+          "exclusiveMinimum": 0
         },
         "depth_tolerance": {
           "type": "number",

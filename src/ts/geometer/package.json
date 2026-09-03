@@ -63,5 +63,10 @@
   ],
   "peerDependencies": {
     "three": "^0.161.0"
+  },
+  "peerDependenciesMeta": {
+    "three": {
+      "optional": true
+    }
   }
 }

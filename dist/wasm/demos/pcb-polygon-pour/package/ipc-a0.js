@@ -27,7 +27,7 @@ export class GeometerIpcProtocolError extends Error {
 export function validateIpcRequestOperationPair(envelope) {
     const declaration = operationDeclaration(envelope.operation);
     const projection = "requestProjection" in declaration ? declaration.requestProjection : undefined;
-    const contract = validatePayloadProjection(envelope.request, declaration.runtimeDispatch, projection, "geometry.model_bounds.options.a0");
+    const contract = validatePayloadProjection(envelope.request, declaration.runtimeDispatch, projection, declaration.runtimeDispatch === "logical_dto" ? declaration.requestContract : undefined);
     if (contract !== declaration.requestContract) {
         throw new GeometerIpcProtocolError(`IPC request payload ${contract} does not match operation ${envelope.operation}.`);
     }

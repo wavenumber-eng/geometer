@@ -147,6 +147,23 @@ if (
 ) {
   throw new Error(`Unexpected mesh HLR result ${JSON.stringify(meshHlr)}.`);
 }
+
+const weldedMeshHlr = await client.meshHlrProjection({
+  mesh: {
+    positions: [
+      0, 0, 0, 10, 0, 0, 10, 10, 0,
+      0, 0, 0, 10, 10, 0, 0, 10, 0,
+    ],
+    indices: [0, 1, 2, 3, 4, 5],
+    sourceFaces: [1, 1],
+  },
+});
+const weldedDetail = weldedMeshHlr.views[0]?.modes.detail.segments;
+if (weldedDetail?.length !== 4) {
+  throw new Error(
+    `Fast mesh HLR failed to weld duplicate triangle vertices: ${JSON.stringify(weldedDetail)}.`,
+  );
+}
 if (
   !client.capabilities.operations.includes("geometry.model_hlr_projection.a0") ||
   !client.capabilities.operations.includes("geometry.mesh_hlr_projection.a0")

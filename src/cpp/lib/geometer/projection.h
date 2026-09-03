@@ -92,8 +92,7 @@ struct HlrProjectionOptions
     bool output_outline = true;
     bool output_detail = true;
     bool output_bbox = true;
-    // Provisional, independently versioned controls used only by the fast
-    // evaluation backend.
+    // Independently versioned controls used only by the Fast backend.
     FastHlrOptions fast;
     // Row-major 4x4 affine transform applied to the source shape before
     // projection. Translation lives in the final column. The final row must be

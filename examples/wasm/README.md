@@ -195,7 +195,8 @@ SVG serialization uses shared style classes, chained compound HLR paths,
 collinear boundary removal, and a normalized integer coordinate grid. The
 default grid has 1,000,000 units across the larger unpadded artwork axis;
 callers can override it through `MeshIllustrationSvgOptions.coordinateSpan`.
-Scene JSON and Canvas retain the original projected coordinates.
+Canvas retains the original projected coordinates. Prepared scene data remains
+an opaque package implementation detail and is not exported as a JSON contract.
 
 The current polygon contraction does not yet clip away fully occluded triangle
 fragments. A future maximum-reduction mode can use Geometer's Clipper2 byte

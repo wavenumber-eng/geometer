@@ -232,10 +232,10 @@ function generateSource() {
     '    if (!value.IsUint64() || value.GetUint64() < minimum || value.GetUint64() > maximum) return fail(error, "geometer.contract.number_range", path, "Expected an unsigned 64-bit integer within its contract bounds."); *out = value.GetUint64(); return true;',
     "}",
     "",
-    "bool decode_double(const rapidjson::Value& value, double* out, const std::string& path, ContractError* error, double minimum, double maximum)",
+    "bool decode_double(const rapidjson::Value& value, double* out, const std::string& path, ContractError* error, double minimum, double maximum, bool minimum_exclusive, bool maximum_exclusive)",
     "{",
     '    if (!value.IsNumber() || !std::isfinite(value.GetDouble())) return fail(error, "geometer.contract.type_mismatch", path, "Expected a finite number.");',
-    '    const double number = value.GetDouble(); if (number < minimum || number > maximum) return fail(error, "geometer.contract.number_range", path, "Number is outside its contract bounds."); *out = number; return true;',
+    '    const double number = value.GetDouble(); if (number < minimum || number > maximum || (minimum_exclusive && number == minimum) || (maximum_exclusive && number == maximum)) return fail(error, "geometer.contract.number_range", path, "Number is outside its contract bounds."); *out = number; return true;',
     "}",
     "",
     "bool decode_literal_string(const rapidjson::Value& value, std::string* out, const std::string& path, ContractError* error, const char* expected)",
@@ -255,9 +255,9 @@ function generateSource() {
     '    out->clear(); out->reserve(value.Size()); for (rapidjson::SizeType i = 0; i < value.Size(); ++i) { T item{}; if (!decode_item(value[i], &item, path + "/" + std::to_string(i), error)) return false; out->push_back(std::move(item)); } return true;',
     "}",
     "",
-    "bool write_double(rapidjson::Writer<rapidjson::StringBuffer>& writer, double value, ContractError* error, double minimum, double maximum)",
+    "bool write_double(rapidjson::Writer<rapidjson::StringBuffer>& writer, double value, ContractError* error, double minimum, double maximum, bool minimum_exclusive, bool maximum_exclusive)",
     "{",
-    '    if (!std::isfinite(value) || value < minimum || value > maximum) return fail(error, "geometer.contract.number_range", "", "Number is outside its contract bounds."); writer.Double(value); return true;',
+    '    if (!std::isfinite(value) || value < minimum || value > maximum || (minimum_exclusive && value == minimum) || (maximum_exclusive && value == maximum)) return fail(error, "geometer.contract.number_range", "", "Number is outside its contract bounds."); writer.Double(value); return true;',
     "}",
     "",
     "bool write_uint32(rapidjson::Writer<rapidjson::StringBuffer>& writer, std::uint32_t value, ContractError* error, std::uint64_t minimum, std::uint64_t maximum)",
@@ -309,12 +309,12 @@ function generateSource() {
     "",
     "bool decode_double_item(const rapidjson::Value& value, double* out, const std::string& path, ContractError* error)",
     "{",
-    "    return decode_double(value, out, path, error, -std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity());",
+    "    return decode_double(value, out, path, error, -std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity(), false, false);",
     "}",
     "",
     "bool write_double_item(rapidjson::Writer<rapidjson::StringBuffer>& writer, const double& value, ContractError* error)",
     "{",
-    "    return write_double(writer, value, error, -std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity());",
+    "    return write_double(writer, value, error, -std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity(), false, false);",
     "}",
     "",
     "template <typename T>",
@@ -864,7 +864,7 @@ function decodeCall(type, value, out, path, error, constraints = {}) {
     if (type.name === "uint64")
       return `decode_uint64(${value}, ${out}, ${path}, ${error}, ${integerMinimum(constraints)}, ${integerMaximum(constraints, "std::numeric_limits<std::uint64_t>::max()")})`;
     if (type.name === "float64")
-      return `decode_double(${value}, ${out}, ${path}, ${error}, ${constraints.min_value ?? "-std::numeric_limits<double>::infinity()"}, ${constraints.max_value ?? "std::numeric_limits<double>::infinity()"})`;
+      return `decode_double(${value}, ${out}, ${path}, ${error}, ${constraints.min_value_exclusive ?? constraints.min_value ?? "-std::numeric_limits<double>::infinity()"}, ${constraints.max_value_exclusive ?? constraints.max_value ?? "std::numeric_limits<double>::infinity()"}, ${constraints.min_value_exclusive !== undefined}, ${constraints.max_value_exclusive !== undefined})`;
   }
   if (type.kind === "literal")
     return `decode_literal_${type.value_type}(${value}, ${out}, ${path}, ${error}, ${JSON.stringify(type.value)})`;
@@ -896,7 +896,7 @@ function writeCall(type, value, error, constraints = {}) {
     if (type.name === "uint64")
       return `write_uint64(writer, ${value}, ${error}, ${integerMinimum(constraints)}, ${integerMaximum(constraints, "std::numeric_limits<std::uint64_t>::max()")})`;
     if (type.name === "float64")
-      return `write_double(writer, ${value}, ${error}, ${constraints.min_value ?? "-std::numeric_limits<double>::infinity()"}, ${constraints.max_value ?? "std::numeric_limits<double>::infinity()"})`;
+      return `write_double(writer, ${value}, ${error}, ${constraints.min_value_exclusive ?? constraints.min_value ?? "-std::numeric_limits<double>::infinity()"}, ${constraints.max_value_exclusive ?? constraints.max_value ?? "std::numeric_limits<double>::infinity()"}, ${constraints.min_value_exclusive !== undefined}, ${constraints.max_value_exclusive !== undefined})`;
   }
   if (type.kind === "literal")
     return `write_literal_${type.value_type}(writer, ${value}, ${error}, ${JSON.stringify(type.value)})`;

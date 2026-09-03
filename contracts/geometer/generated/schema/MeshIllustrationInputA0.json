@@ -137,7 +137,7 @@
         "weld_tolerance": {
           "type": "number",
           "default": 1e-7,
-          "minimum": 0
+          "exclusiveMinimum": 0
         }
       },
       "unevaluatedProperties": {

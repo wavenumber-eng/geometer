@@ -917,12 +917,14 @@ bool decode_uint64(const rapidjson::Value& value, std::uint64_t* out, const std:
 }
 
 bool decode_double(const rapidjson::Value& value, double* out, const std::string& path,
-                   ContractError* error, double minimum, double maximum)
+                   ContractError* error, double minimum, double maximum, bool minimum_exclusive,
+                   bool maximum_exclusive)
 {
     if (!value.IsNumber() || !std::isfinite(value.GetDouble()))
         return fail(error, "geometer.contract.type_mismatch", path, "Expected a finite number.");
     const double number = value.GetDouble();
-    if (number < minimum || number > maximum)
+    if (number < minimum || number > maximum || (minimum_exclusive && number == minimum) ||
+        (maximum_exclusive && number == maximum))
         return fail(error, "geometer.contract.number_range", path,
                     "Number is outside its contract bounds.");
     *out = number;
@@ -972,9 +974,11 @@ bool decode_array(const rapidjson::Value& value, std::vector<T>* out, const std:
 }
 
 bool write_double(rapidjson::Writer<rapidjson::StringBuffer>& writer, double value,
-                  ContractError* error, double minimum, double maximum)
+                  ContractError* error, double minimum, double maximum, bool minimum_exclusive,
+                  bool maximum_exclusive)
 {
-    if (!std::isfinite(value) || value < minimum || value > maximum)
+    if (!std::isfinite(value) || value < minimum || value > maximum ||
+        (minimum_exclusive && value == minimum) || (maximum_exclusive && value == maximum))
         return fail(error, "geometer.contract.number_range", "",
                     "Number is outside its contract bounds.");
     writer.Double(value);
@@ -1061,14 +1065,14 @@ bool decode_double_item(const rapidjson::Value& value, double* out, const std::s
                         ContractError* error)
 {
     return decode_double(value, out, path, error, -std::numeric_limits<double>::infinity(),
-                         std::numeric_limits<double>::infinity());
+                         std::numeric_limits<double>::infinity(), false, false);
 }
 
 bool write_double_item(rapidjson::Writer<rapidjson::StringBuffer>& writer, const double& value,
                        ContractError* error)
 {
     return write_double(writer, value, error, -std::numeric_limits<double>::infinity(),
-                        std::numeric_limits<double>::infinity());
+                        std::numeric_limits<double>::infinity(), false, false);
 }
 
 template <typename T>
@@ -1580,7 +1584,7 @@ bool decode_FastHlrOptionsA0(const rapidjson::Value& value, FastHlrOptionsA0* ou
         {
             double decoded{};
             if (!decode_double(member->value, &decoded, child_path(path, "crease_angle_rad"), error,
-                               0, 3.141592653589793))
+                               0, 3.141592653589793, false, false))
                 return false;
             out->crease_angle_rad = std::move(decoded);
         }
@@ -1593,7 +1597,7 @@ bool decode_FastHlrOptionsA0(const rapidjson::Value& value, FastHlrOptionsA0* ou
         {
             double decoded{};
             if (!decode_double(member->value, &decoded, child_path(path, "weld_tolerance"), error,
-                               0, std::numeric_limits<double>::infinity()))
+                               0, std::numeric_limits<double>::infinity(), true, false))
                 return false;
             out->weld_tolerance = std::move(decoded);
         }
@@ -1606,7 +1610,7 @@ bool decode_FastHlrOptionsA0(const rapidjson::Value& value, FastHlrOptionsA0* ou
         {
             double decoded{};
             if (!decode_double(member->value, &decoded, child_path(path, "projected_tolerance"),
-                               error, 0, std::numeric_limits<double>::infinity()))
+                               error, 0, std::numeric_limits<double>::infinity(), true, false))
                 return false;
             out->projected_tolerance = std::move(decoded);
         }
@@ -1619,7 +1623,7 @@ bool decode_FastHlrOptionsA0(const rapidjson::Value& value, FastHlrOptionsA0* ou
         {
             double decoded{};
             if (!decode_double(member->value, &decoded, child_path(path, "depth_tolerance"), error,
-                               0, std::numeric_limits<double>::infinity()))
+                               0, std::numeric_limits<double>::infinity(), false, false))
                 return false;
             out->depth_tolerance = std::move(decoded);
         }
@@ -1632,7 +1636,7 @@ bool decode_FastHlrOptionsA0(const rapidjson::Value& value, FastHlrOptionsA0* ou
         {
             double decoded{};
             if (!decode_double(member->value, &decoded, child_path(path, "coplanar_seam_angle_rad"),
-                               error, 0, 1.5707963267948966))
+                               error, 0, 1.5707963267948966, false, false))
                 return false;
             out->coplanar_seam_angle_rad = std::move(decoded);
         }
@@ -1646,7 +1650,7 @@ bool decode_FastHlrOptionsA0(const rapidjson::Value& value, FastHlrOptionsA0* ou
             double decoded{};
             if (!decode_double(member->value, &decoded,
                                child_path(path, "coplanar_seam_depth_tolerance"), error, 0,
-                               std::numeric_limits<double>::infinity()))
+                               std::numeric_limits<double>::infinity(), false, false))
                 return false;
             out->coplanar_seam_depth_tolerance = std::move(decoded);
         }
@@ -1660,7 +1664,7 @@ bool decode_FastHlrOptionsA0(const rapidjson::Value& value, FastHlrOptionsA0* ou
             double decoded{};
             if (!decode_double(member->value, &decoded,
                                child_path(path, "coplanar_seam_lateral_tolerance"), error, 0,
-                               std::numeric_limits<double>::infinity()))
+                               std::numeric_limits<double>::infinity(), false, false))
                 return false;
             out->coplanar_seam_lateral_tolerance = std::move(decoded);
         }
@@ -1719,48 +1723,50 @@ bool write_FastHlrOptionsA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
     if (value.crease_angle_rad.has_value())
     {
         writer.Key("crease_angle_rad");
-        if (!write_double(writer, *value.crease_angle_rad, error, 0, 3.141592653589793))
+        if (!write_double(writer, *value.crease_angle_rad, error, 0, 3.141592653589793, false,
+                          false))
             return false;
     }
     if (value.weld_tolerance.has_value())
     {
         writer.Key("weld_tolerance");
         if (!write_double(writer, *value.weld_tolerance, error, 0,
-                          std::numeric_limits<double>::infinity()))
+                          std::numeric_limits<double>::infinity(), true, false))
             return false;
     }
     if (value.projected_tolerance.has_value())
     {
         writer.Key("projected_tolerance");
         if (!write_double(writer, *value.projected_tolerance, error, 0,
-                          std::numeric_limits<double>::infinity()))
+                          std::numeric_limits<double>::infinity(), true, false))
             return false;
     }
     if (value.depth_tolerance.has_value())
     {
         writer.Key("depth_tolerance");
         if (!write_double(writer, *value.depth_tolerance, error, 0,
-                          std::numeric_limits<double>::infinity()))
+                          std::numeric_limits<double>::infinity(), false, false))
             return false;
     }
     if (value.coplanar_seam_angle_rad.has_value())
     {
         writer.Key("coplanar_seam_angle_rad");
-        if (!write_double(writer, *value.coplanar_seam_angle_rad, error, 0, 1.5707963267948966))
+        if (!write_double(writer, *value.coplanar_seam_angle_rad, error, 0, 1.5707963267948966,
+                          false, false))
             return false;
     }
     if (value.coplanar_seam_depth_tolerance.has_value())
     {
         writer.Key("coplanar_seam_depth_tolerance");
         if (!write_double(writer, *value.coplanar_seam_depth_tolerance, error, 0,
-                          std::numeric_limits<double>::infinity()))
+                          std::numeric_limits<double>::infinity(), false, false))
             return false;
     }
     if (value.coplanar_seam_lateral_tolerance.has_value())
     {
         writer.Key("coplanar_seam_lateral_tolerance");
         if (!write_double(writer, *value.coplanar_seam_lateral_tolerance, error, 0,
-                          std::numeric_limits<double>::infinity()))
+                          std::numeric_limits<double>::infinity(), false, false))
             return false;
     }
     if (value.limits.has_value())
@@ -1820,7 +1826,7 @@ bool decode_HlrMatrix4x4(const rapidjson::Value& value, HlrMatrix4x4* out, const
         double item_value{};
         if (!decode_double(value[i], &item_value, path + "/" + std::to_string(i), error,
                            -std::numeric_limits<double>::infinity(),
-                           std::numeric_limits<double>::infinity()))
+                           std::numeric_limits<double>::infinity(), false, false))
             return false;
         out->push_back(std::move(item_value));
     }
@@ -1836,7 +1842,7 @@ bool write_HlrMatrix4x4(rapidjson::Writer<rapidjson::StringBuffer>& writer,
     writer.StartArray();
     for (const auto& item_value : value)
         if (!write_double(writer, item_value, error, -std::numeric_limits<double>::infinity(),
-                          std::numeric_limits<double>::infinity()))
+                          std::numeric_limits<double>::infinity(), false, false))
             return false;
     writer.EndArray();
     return true;
@@ -1931,7 +1937,7 @@ bool decode_HlrVector3(const rapidjson::Value& value, HlrVector3* out, const std
         double item_value{};
         if (!decode_double(value[i], &item_value, path + "/" + std::to_string(i), error,
                            -std::numeric_limits<double>::infinity(),
-                           std::numeric_limits<double>::infinity()))
+                           std::numeric_limits<double>::infinity(), false, false))
             return false;
         out->push_back(std::move(item_value));
     }
@@ -1947,7 +1953,7 @@ bool write_HlrVector3(rapidjson::Writer<rapidjson::StringBuffer>& writer, const 
     writer.StartArray();
     for (const auto& item_value : value)
         if (!write_double(writer, item_value, error, -std::numeric_limits<double>::infinity(),
-                          std::numeric_limits<double>::infinity()))
+                          std::numeric_limits<double>::infinity(), false, false))
             return false;
     writer.EndArray();
     return true;
@@ -1966,7 +1972,7 @@ bool decode_ProjectedSegment(const rapidjson::Value& value, ProjectedSegment* ou
         double item_value{};
         if (!decode_double(value[i], &item_value, path + "/" + std::to_string(i), error,
                            -std::numeric_limits<double>::infinity(),
-                           std::numeric_limits<double>::infinity()))
+                           std::numeric_limits<double>::infinity(), false, false))
             return false;
         out->push_back(std::move(item_value));
     }
@@ -1982,7 +1988,7 @@ bool write_ProjectedSegment(rapidjson::Writer<rapidjson::StringBuffer>& writer,
     writer.StartArray();
     for (const auto& item_value : value)
         if (!write_double(writer, item_value, error, -std::numeric_limits<double>::infinity(),
-                          std::numeric_limits<double>::infinity()))
+                          std::numeric_limits<double>::infinity(), false, false))
             return false;
     writer.EndArray();
     return true;
@@ -2001,7 +2007,7 @@ bool decode_HlrVector2(const rapidjson::Value& value, HlrVector2* out, const std
         double item_value{};
         if (!decode_double(value[i], &item_value, path + "/" + std::to_string(i), error,
                            -std::numeric_limits<double>::infinity(),
-                           std::numeric_limits<double>::infinity()))
+                           std::numeric_limits<double>::infinity(), false, false))
             return false;
         out->push_back(std::move(item_value));
     }
@@ -2017,7 +2023,7 @@ bool write_HlrVector2(rapidjson::Writer<rapidjson::StringBuffer>& writer, const 
     writer.StartArray();
     for (const auto& item_value : value)
         if (!write_double(writer, item_value, error, -std::numeric_limits<double>::infinity(),
-                          std::numeric_limits<double>::infinity()))
+                          std::numeric_limits<double>::infinity(), false, false))
             return false;
     writer.EndArray();
     return true;
@@ -2060,7 +2066,7 @@ bool decode_ProjectedArc(const rapidjson::Value& value, ProjectedArc* out, const
             return fail(error, "geometer.contract.missing_field", child_path(path, "radius"),
                         "Required field is missing.");
         if (!decode_double(member->value, &out->radius, child_path(path, "radius"), error, 0,
-                           std::numeric_limits<double>::infinity()))
+                           std::numeric_limits<double>::infinity(), false, false))
             return false;
     }
     {
@@ -2069,7 +2075,7 @@ bool decode_ProjectedArc(const rapidjson::Value& value, ProjectedArc* out, const
             return fail(error, "geometer.contract.missing_field", child_path(path, "extent_rad"),
                         "Required field is missing.");
         if (!decode_double(member->value, &out->extent_rad, child_path(path, "extent_rad"), error,
-                           0, 6.283185307179586))
+                           0, 6.283185307179586, false, false))
             return false;
     }
     {
@@ -2106,10 +2112,11 @@ bool write_ProjectedArc(rapidjson::Writer<rapidjson::StringBuffer>& writer,
     if (!write_HlrVector2(writer, value.center, error))
         return false;
     writer.Key("radius");
-    if (!write_double(writer, value.radius, error, 0, std::numeric_limits<double>::infinity()))
+    if (!write_double(writer, value.radius, error, 0, std::numeric_limits<double>::infinity(),
+                      false, false))
         return false;
     writer.Key("extent_rad");
-    if (!write_double(writer, value.extent_rad, error, 0, 6.283185307179586))
+    if (!write_double(writer, value.extent_rad, error, 0, 6.283185307179586, false, false))
         return false;
     writer.Key("ccw");
     if (!(writer.Bool(value.ccw), true))
@@ -2134,7 +2141,7 @@ bool decode_ProjectionBounds(const rapidjson::Value& value, ProjectionBounds* ou
                         "Required field is missing.");
         if (!decode_double(member->value, &out->min_x, child_path(path, "min_x"), error,
                            -std::numeric_limits<double>::infinity(),
-                           std::numeric_limits<double>::infinity()))
+                           std::numeric_limits<double>::infinity(), false, false))
             return false;
     }
     {
@@ -2144,7 +2151,7 @@ bool decode_ProjectionBounds(const rapidjson::Value& value, ProjectionBounds* ou
                         "Required field is missing.");
         if (!decode_double(member->value, &out->min_y, child_path(path, "min_y"), error,
                            -std::numeric_limits<double>::infinity(),
-                           std::numeric_limits<double>::infinity()))
+                           std::numeric_limits<double>::infinity(), false, false))
             return false;
     }
     {
@@ -2154,7 +2161,7 @@ bool decode_ProjectionBounds(const rapidjson::Value& value, ProjectionBounds* ou
                         "Required field is missing.");
         if (!decode_double(member->value, &out->max_x, child_path(path, "max_x"), error,
                            -std::numeric_limits<double>::infinity(),
-                           std::numeric_limits<double>::infinity()))
+                           std::numeric_limits<double>::infinity(), false, false))
             return false;
     }
     {
@@ -2164,7 +2171,7 @@ bool decode_ProjectionBounds(const rapidjson::Value& value, ProjectionBounds* ou
                         "Required field is missing.");
         if (!decode_double(member->value, &out->max_y, child_path(path, "max_y"), error,
                            -std::numeric_limits<double>::infinity(),
-                           std::numeric_limits<double>::infinity()))
+                           std::numeric_limits<double>::infinity(), false, false))
             return false;
     }
     {
@@ -2173,7 +2180,7 @@ bool decode_ProjectionBounds(const rapidjson::Value& value, ProjectionBounds* ou
             return fail(error, "geometer.contract.missing_field", child_path(path, "width"),
                         "Required field is missing.");
         if (!decode_double(member->value, &out->width, child_path(path, "width"), error, 0,
-                           std::numeric_limits<double>::infinity()))
+                           std::numeric_limits<double>::infinity(), false, false))
             return false;
     }
     {
@@ -2182,7 +2189,7 @@ bool decode_ProjectionBounds(const rapidjson::Value& value, ProjectionBounds* ou
             return fail(error, "geometer.contract.missing_field", child_path(path, "height"),
                         "Required field is missing.");
         if (!decode_double(member->value, &out->height, child_path(path, "height"), error, 0,
-                           std::numeric_limits<double>::infinity()))
+                           std::numeric_limits<double>::infinity(), false, false))
             return false;
     }
     return true;
@@ -2194,25 +2201,27 @@ bool write_ProjectionBounds(rapidjson::Writer<rapidjson::StringBuffer>& writer,
     writer.StartObject();
     writer.Key("min_x");
     if (!write_double(writer, value.min_x, error, -std::numeric_limits<double>::infinity(),
-                      std::numeric_limits<double>::infinity()))
+                      std::numeric_limits<double>::infinity(), false, false))
         return false;
     writer.Key("min_y");
     if (!write_double(writer, value.min_y, error, -std::numeric_limits<double>::infinity(),
-                      std::numeric_limits<double>::infinity()))
+                      std::numeric_limits<double>::infinity(), false, false))
         return false;
     writer.Key("max_x");
     if (!write_double(writer, value.max_x, error, -std::numeric_limits<double>::infinity(),
-                      std::numeric_limits<double>::infinity()))
+                      std::numeric_limits<double>::infinity(), false, false))
         return false;
     writer.Key("max_y");
     if (!write_double(writer, value.max_y, error, -std::numeric_limits<double>::infinity(),
-                      std::numeric_limits<double>::infinity()))
+                      std::numeric_limits<double>::infinity(), false, false))
         return false;
     writer.Key("width");
-    if (!write_double(writer, value.width, error, 0, std::numeric_limits<double>::infinity()))
+    if (!write_double(writer, value.width, error, 0, std::numeric_limits<double>::infinity(), false,
+                      false))
         return false;
     writer.Key("height");
-    if (!write_double(writer, value.height, error, 0, std::numeric_limits<double>::infinity()))
+    if (!write_double(writer, value.height, error, 0, std::numeric_limits<double>::infinity(),
+                      false, false))
         return false;
     writer.EndObject();
     return true;
@@ -2786,7 +2795,7 @@ bool decode_HlrProjectionOptionsA0(const rapidjson::Value& value, HlrProjectionO
         {
             double decoded{};
             if (!decode_double(member->value, &decoded, child_path(path, "mesh_linear_deflection"),
-                               error, 0, std::numeric_limits<double>::infinity()))
+                               error, 0, std::numeric_limits<double>::infinity(), false, false))
                 return false;
             out->mesh_linear_deflection = std::move(decoded);
         }
@@ -2799,7 +2808,7 @@ bool decode_HlrProjectionOptionsA0(const rapidjson::Value& value, HlrProjectionO
         {
             double decoded{};
             if (!decode_double(member->value, &decoded, child_path(path, "mesh_angular_deflection"),
-                               error, 0, 3.141592653589793))
+                               error, 0, 3.141592653589793, false, false))
                 return false;
             out->mesh_angular_deflection = std::move(decoded);
         }
@@ -2838,7 +2847,7 @@ bool decode_HlrProjectionOptionsA0(const rapidjson::Value& value, HlrProjectionO
             double decoded{};
             if (!decode_double(member->value, &decoded,
                                child_path(path, "mesh_deflection_coefficient"), error, 0,
-                               std::numeric_limits<double>::infinity()))
+                               std::numeric_limits<double>::infinity(), false, false))
                 return false;
             out->mesh_deflection_coefficient = std::move(decoded);
         }
@@ -2864,7 +2873,7 @@ bool decode_HlrProjectionOptionsA0(const rapidjson::Value& value, HlrProjectionO
         {
             double decoded{};
             if (!decode_double(member->value, &decoded, child_path(path, "hlr_angle_tolerance"),
-                               error, 0, 3.141592653589793))
+                               error, 0, 3.141592653589793, false, false))
                 return false;
             out->hlr_angle_tolerance = std::move(decoded);
         }
@@ -3020,13 +3029,14 @@ bool write_HlrProjectionOptionsA0(rapidjson::Writer<rapidjson::StringBuffer>& wr
     {
         writer.Key("mesh_linear_deflection");
         if (!write_double(writer, *value.mesh_linear_deflection, error, 0,
-                          std::numeric_limits<double>::infinity()))
+                          std::numeric_limits<double>::infinity(), false, false))
             return false;
     }
     if (value.mesh_angular_deflection.has_value())
     {
         writer.Key("mesh_angular_deflection");
-        if (!write_double(writer, *value.mesh_angular_deflection, error, 0, 3.141592653589793))
+        if (!write_double(writer, *value.mesh_angular_deflection, error, 0, 3.141592653589793,
+                          false, false))
             return false;
     }
     if (value.mesh_relative.has_value())
@@ -3045,7 +3055,7 @@ bool write_HlrProjectionOptionsA0(rapidjson::Writer<rapidjson::StringBuffer>& wr
     {
         writer.Key("mesh_deflection_coefficient");
         if (!write_double(writer, *value.mesh_deflection_coefficient, error, 0,
-                          std::numeric_limits<double>::infinity()))
+                          std::numeric_limits<double>::infinity(), false, false))
             return false;
     }
     if (value.outline_algorithm.has_value())
@@ -3057,7 +3067,8 @@ bool write_HlrProjectionOptionsA0(rapidjson::Writer<rapidjson::StringBuffer>& wr
     if (value.hlr_angle_tolerance.has_value())
     {
         writer.Key("hlr_angle_tolerance");
-        if (!write_double(writer, *value.hlr_angle_tolerance, error, 0, 3.141592653589793))
+        if (!write_double(writer, *value.hlr_angle_tolerance, error, 0, 3.141592653589793, false,
+                          false))
             return false;
     }
     if (value.fast.has_value())
@@ -3155,7 +3166,7 @@ bool decode_HlrProjectionTimings(const rapidjson::Value& value, HlrProjectionTim
             return fail(error, "geometer.contract.missing_field", child_path(path, "step_read_ms"),
                         "Required field is missing.");
         if (!decode_double(member->value, &out->step_read_ms, child_path(path, "step_read_ms"),
-                           error, 0, std::numeric_limits<double>::infinity()))
+                           error, 0, std::numeric_limits<double>::infinity(), false, false))
             return false;
     }
     {
@@ -3164,7 +3175,7 @@ bool decode_HlrProjectionTimings(const rapidjson::Value& value, HlrProjectionTim
             return fail(error, "geometer.contract.missing_field", child_path(path, "mesh_ms"),
                         "Required field is missing.");
         if (!decode_double(member->value, &out->mesh_ms, child_path(path, "mesh_ms"), error, 0,
-                           std::numeric_limits<double>::infinity()))
+                           std::numeric_limits<double>::infinity(), false, false))
             return false;
     }
     {
@@ -3173,7 +3184,7 @@ bool decode_HlrProjectionTimings(const rapidjson::Value& value, HlrProjectionTim
             return fail(error, "geometer.contract.missing_field", child_path(path, "hlr_ms"),
                         "Required field is missing.");
         if (!decode_double(member->value, &out->hlr_ms, child_path(path, "hlr_ms"), error, 0,
-                           std::numeric_limits<double>::infinity()))
+                           std::numeric_limits<double>::infinity(), false, false))
             return false;
     }
     {
@@ -3182,7 +3193,7 @@ bool decode_HlrProjectionTimings(const rapidjson::Value& value, HlrProjectionTim
             return fail(error, "geometer.contract.missing_field", child_path(path, "extract_ms"),
                         "Required field is missing.");
         if (!decode_double(member->value, &out->extract_ms, child_path(path, "extract_ms"), error,
-                           0, std::numeric_limits<double>::infinity()))
+                           0, std::numeric_limits<double>::infinity(), false, false))
             return false;
     }
     return true;
@@ -3193,17 +3204,20 @@ bool write_HlrProjectionTimings(rapidjson::Writer<rapidjson::StringBuffer>& writ
 {
     writer.StartObject();
     writer.Key("step_read_ms");
-    if (!write_double(writer, value.step_read_ms, error, 0,
-                      std::numeric_limits<double>::infinity()))
+    if (!write_double(writer, value.step_read_ms, error, 0, std::numeric_limits<double>::infinity(),
+                      false, false))
         return false;
     writer.Key("mesh_ms");
-    if (!write_double(writer, value.mesh_ms, error, 0, std::numeric_limits<double>::infinity()))
+    if (!write_double(writer, value.mesh_ms, error, 0, std::numeric_limits<double>::infinity(),
+                      false, false))
         return false;
     writer.Key("hlr_ms");
-    if (!write_double(writer, value.hlr_ms, error, 0, std::numeric_limits<double>::infinity()))
+    if (!write_double(writer, value.hlr_ms, error, 0, std::numeric_limits<double>::infinity(),
+                      false, false))
         return false;
     writer.Key("extract_ms");
-    if (!write_double(writer, value.extract_ms, error, 0, std::numeric_limits<double>::infinity()))
+    if (!write_double(writer, value.extract_ms, error, 0, std::numeric_limits<double>::infinity(),
+                      false, false))
         return false;
     writer.EndObject();
     return true;
@@ -4604,7 +4618,7 @@ bool decode_Matrix4x4(const rapidjson::Value& value, Matrix4x4* out, const std::
         double item_value{};
         if (!decode_double(value[i], &item_value, path + "/" + std::to_string(i), error,
                            -std::numeric_limits<double>::infinity(),
-                           std::numeric_limits<double>::infinity()))
+                           std::numeric_limits<double>::infinity(), false, false))
             return false;
         out->push_back(std::move(item_value));
     }
@@ -4620,7 +4634,7 @@ bool write_Matrix4x4(rapidjson::Writer<rapidjson::StringBuffer>& writer, const M
     writer.StartArray();
     for (const auto& item_value : value)
         if (!write_double(writer, item_value, error, -std::numeric_limits<double>::infinity(),
-                          std::numeric_limits<double>::infinity()))
+                          std::numeric_limits<double>::infinity(), false, false))
             return false;
     writer.EndArray();
     return true;
@@ -4937,7 +4951,8 @@ bool decode_TessellationOptions(const rapidjson::Value& value, TessellationOptio
             return fail(error, "geometer.contract.missing_field",
                         child_path(path, "linear_deflection_mm"), "Required field is missing.");
         if (!decode_double(member->value, &out->linear_deflection_mm,
-                           child_path(path, "linear_deflection_mm"), error, 0.000001, 1000))
+                           child_path(path, "linear_deflection_mm"), error, 0.000001, 1000, false,
+                           false))
             return false;
     }
     {
@@ -4947,7 +4962,7 @@ bool decode_TessellationOptions(const rapidjson::Value& value, TessellationOptio
                         child_path(path, "angular_deflection_rad"), "Required field is missing.");
         if (!decode_double(member->value, &out->angular_deflection_rad,
                            child_path(path, "angular_deflection_rad"), error, 0.000001,
-                           3.141592653589793))
+                           3.141592653589793, false, false))
             return false;
     }
     {
@@ -4984,10 +4999,11 @@ bool write_TessellationOptions(rapidjson::Writer<rapidjson::StringBuffer>& write
 {
     writer.StartObject();
     writer.Key("linear_deflection_mm");
-    if (!write_double(writer, value.linear_deflection_mm, error, 0.000001, 1000))
+    if (!write_double(writer, value.linear_deflection_mm, error, 0.000001, 1000, false, false))
         return false;
     writer.Key("angular_deflection_rad");
-    if (!write_double(writer, value.angular_deflection_rad, error, 0.000001, 3.141592653589793))
+    if (!write_double(writer, value.angular_deflection_rad, error, 0.000001, 3.141592653589793,
+                      false, false))
         return false;
     writer.Key("relative");
     if (!(writer.Bool(value.relative), true))
@@ -8005,7 +8021,7 @@ bool decode_RecoveryProvenance(const rapidjson::Value& value, RecoveryProvenance
                         "Required field is missing.");
         if (!decode_double(member->value, &out->measured_wall_time_milliseconds,
                            child_path(path, "measured_wall_time_milliseconds"), error, 0,
-                           std::numeric_limits<double>::infinity()))
+                           std::numeric_limits<double>::infinity(), false, false))
             return false;
     }
     return true;
@@ -8044,7 +8060,7 @@ bool write_RecoveryProvenance(rapidjson::Writer<rapidjson::StringBuffer>& writer
         return false;
     writer.Key("measured_wall_time_milliseconds");
     if (!write_double(writer, value.measured_wall_time_milliseconds, error, 0,
-                      std::numeric_limits<double>::infinity()))
+                      std::numeric_limits<double>::infinity(), false, false))
         return false;
     writer.EndObject();
     return true;
@@ -8062,7 +8078,7 @@ bool decode_RecoveryTolerances(const rapidjson::Value& value, RecoveryTolerances
             return fail(error, "geometer.contract.missing_field", child_path(path, "length_mm"),
                         "Required field is missing.");
         if (!decode_double(member->value, &out->length_mm, child_path(path, "length_mm"), error,
-                           1e-9, std::numeric_limits<double>::infinity()))
+                           1e-9, std::numeric_limits<double>::infinity(), false, false))
             return false;
     }
     {
@@ -8071,7 +8087,7 @@ bool decode_RecoveryTolerances(const rapidjson::Value& value, RecoveryTolerances
             return fail(error, "geometer.contract.missing_field", child_path(path, "area_mm2"),
                         "Required field is missing.");
         if (!decode_double(member->value, &out->area_mm2, child_path(path, "area_mm2"), error, 1e-9,
-                           std::numeric_limits<double>::infinity()))
+                           std::numeric_limits<double>::infinity(), false, false))
             return false;
     }
     {
@@ -8080,7 +8096,7 @@ bool decode_RecoveryTolerances(const rapidjson::Value& value, RecoveryTolerances
             return fail(error, "geometer.contract.missing_field", child_path(path, "volume_mm3"),
                         "Required field is missing.");
         if (!decode_double(member->value, &out->volume_mm3, child_path(path, "volume_mm3"), error,
-                           1e-9, std::numeric_limits<double>::infinity()))
+                           1e-9, std::numeric_limits<double>::infinity(), false, false))
             return false;
     }
     return true;
@@ -8091,15 +8107,16 @@ bool write_RecoveryTolerances(rapidjson::Writer<rapidjson::StringBuffer>& writer
 {
     writer.StartObject();
     writer.Key("length_mm");
-    if (!write_double(writer, value.length_mm, error, 1e-9,
-                      std::numeric_limits<double>::infinity()))
+    if (!write_double(writer, value.length_mm, error, 1e-9, std::numeric_limits<double>::infinity(),
+                      false, false))
         return false;
     writer.Key("area_mm2");
-    if (!write_double(writer, value.area_mm2, error, 1e-9, std::numeric_limits<double>::infinity()))
+    if (!write_double(writer, value.area_mm2, error, 1e-9, std::numeric_limits<double>::infinity(),
+                      false, false))
         return false;
     writer.Key("volume_mm3");
     if (!write_double(writer, value.volume_mm3, error, 1e-9,
-                      std::numeric_limits<double>::infinity()))
+                      std::numeric_limits<double>::infinity(), false, false))
         return false;
     writer.EndObject();
     return true;
@@ -8195,7 +8212,7 @@ bool decode_RecoveryFingerprint(const rapidjson::Value& value, RecoveryFingerpri
             return fail(error, "geometer.contract.missing_field", child_path(path, "area_mm2"),
                         "Required field is missing.");
         if (!decode_double(member->value, &out->area_mm2, child_path(path, "area_mm2"), error, 0,
-                           std::numeric_limits<double>::infinity()))
+                           std::numeric_limits<double>::infinity(), false, false))
             return false;
     }
     {
@@ -8204,7 +8221,7 @@ bool decode_RecoveryFingerprint(const rapidjson::Value& value, RecoveryFingerpri
             return fail(error, "geometer.contract.missing_field", child_path(path, "volume_mm3"),
                         "Required field is missing.");
         if (!decode_double(member->value, &out->volume_mm3, child_path(path, "volume_mm3"), error,
-                           0, std::numeric_limits<double>::infinity()))
+                           0, std::numeric_limits<double>::infinity(), false, false))
             return false;
     }
     {
@@ -8254,10 +8271,12 @@ bool write_RecoveryFingerprint(rapidjson::Writer<rapidjson::StringBuffer>& write
     if (!write_string(writer, value.geometry_kind, error, 1U, 128U))
         return false;
     writer.Key("area_mm2");
-    if (!write_double(writer, value.area_mm2, error, 0, std::numeric_limits<double>::infinity()))
+    if (!write_double(writer, value.area_mm2, error, 0, std::numeric_limits<double>::infinity(),
+                      false, false))
         return false;
     writer.Key("volume_mm3");
-    if (!write_double(writer, value.volume_mm3, error, 0, std::numeric_limits<double>::infinity()))
+    if (!write_double(writer, value.volume_mm3, error, 0, std::numeric_limits<double>::infinity(),
+                      false, false))
         return false;
     writer.Key("centroid_mm");
     if (!write_array(writer, value.centroid_mm, error, 3U, 3U, write_double_item))
@@ -9062,7 +9081,7 @@ bool decode_IllustrationMatrix4x4(const rapidjson::Value& value, IllustrationMat
         double item_value{};
         if (!decode_double(value[i], &item_value, path + "/" + std::to_string(i), error,
                            -std::numeric_limits<double>::infinity(),
-                           std::numeric_limits<double>::infinity()))
+                           std::numeric_limits<double>::infinity(), false, false))
             return false;
         out->push_back(std::move(item_value));
     }
@@ -9078,7 +9097,7 @@ bool write_IllustrationMatrix4x4(rapidjson::Writer<rapidjson::StringBuffer>& wri
     writer.StartArray();
     for (const auto& item_value : value)
         if (!write_double(writer, item_value, error, -std::numeric_limits<double>::infinity(),
-                          std::numeric_limits<double>::infinity()))
+                          std::numeric_limits<double>::infinity(), false, false))
             return false;
     writer.EndArray();
     return true;
@@ -9097,7 +9116,7 @@ bool decode_IllustrationVector3(const rapidjson::Value& value, IllustrationVecto
         double item_value{};
         if (!decode_double(value[i], &item_value, path + "/" + std::to_string(i), error,
                            -std::numeric_limits<double>::infinity(),
-                           std::numeric_limits<double>::infinity()))
+                           std::numeric_limits<double>::infinity(), false, false))
             return false;
         out->push_back(std::move(item_value));
     }
@@ -9113,7 +9132,7 @@ bool write_IllustrationVector3(rapidjson::Writer<rapidjson::StringBuffer>& write
     writer.StartArray();
     for (const auto& item_value : value)
         if (!write_double(writer, item_value, error, -std::numeric_limits<double>::infinity(),
-                          std::numeric_limits<double>::infinity()))
+                          std::numeric_limits<double>::infinity(), false, false))
             return false;
     writer.EndArray();
     return true;
@@ -9139,7 +9158,8 @@ bool decode_MeshIllustrationMaterial(const rapidjson::Value& value, MeshIllustra
         if (member != value.MemberEnd())
         {
             double decoded{};
-            if (!decode_double(member->value, &decoded, child_path(path, "opacity"), error, 0, 1))
+            if (!decode_double(member->value, &decoded, child_path(path, "opacity"), error, 0, 1,
+                               false, false))
                 return false;
             out->opacity = std::move(decoded);
         }
@@ -9171,7 +9191,7 @@ bool write_MeshIllustrationMaterial(rapidjson::Writer<rapidjson::StringBuffer>& 
     if (value.opacity.has_value())
     {
         writer.Key("opacity");
-        if (!write_double(writer, *value.opacity, error, 0, 1))
+        if (!write_double(writer, *value.opacity, error, 0, 1, false, false))
             return false;
     }
     if (value.name.has_value())
@@ -9423,7 +9443,7 @@ bool decode_MeshIllustrationPrepareOptions(const rapidjson::Value& value,
         {
             double decoded{};
             if (!decode_double(member->value, &decoded, child_path(path, "weld_tolerance"), error,
-                               0, std::numeric_limits<double>::infinity()))
+                               0, std::numeric_limits<double>::infinity(), true, false))
                 return false;
             out->weld_tolerance = std::move(decoded);
         }
@@ -9448,7 +9468,7 @@ bool write_MeshIllustrationPrepareOptions(rapidjson::Writer<rapidjson::StringBuf
     {
         writer.Key("weld_tolerance");
         if (!write_double(writer, *value.weld_tolerance, error, 0,
-                          std::numeric_limits<double>::infinity()))
+                          std::numeric_limits<double>::infinity(), true, false))
             return false;
     }
     writer.EndObject();
@@ -9558,7 +9578,8 @@ bool decode_MeshIllustrationStyleA0(const rapidjson::Value& value, MeshIllustrat
         if (member != value.MemberEnd())
         {
             double decoded{};
-            if (!decode_double(member->value, &decoded, child_path(path, "ambient"), error, 0, 1))
+            if (!decode_double(member->value, &decoded, child_path(path, "ambient"), error, 0, 1,
+                               false, false))
                 return false;
             out->ambient = std::move(decoded);
         }
@@ -9571,7 +9592,7 @@ bool decode_MeshIllustrationStyleA0(const rapidjson::Value& value, MeshIllustrat
         {
             double decoded{};
             if (!decode_double(member->value, &decoded, child_path(path, "key_intensity"), error, 0,
-                               4))
+                               4, false, false))
                 return false;
             out->key_intensity = std::move(decoded);
         }
@@ -9736,7 +9757,7 @@ bool decode_MeshIllustrationStyleA0(const rapidjson::Value& value, MeshIllustrat
         {
             double decoded{};
             if (!decode_double(member->value, &decoded, child_path(path, "crease_angle_degrees"),
-                               error, 0, 180))
+                               error, 0, 180, false, false))
                 return false;
             out->crease_angle_degrees = std::move(decoded);
         }
@@ -9775,7 +9796,7 @@ bool decode_MeshIllustrationStyleA0(const rapidjson::Value& value, MeshIllustrat
         {
             double decoded{};
             if (!decode_double(member->value, &decoded, child_path(path, "outline_width"), error, 0,
-                               std::numeric_limits<double>::infinity()))
+                               std::numeric_limits<double>::infinity(), false, false))
                 return false;
             out->outline_width = std::move(decoded);
         }
@@ -9788,7 +9809,7 @@ bool decode_MeshIllustrationStyleA0(const rapidjson::Value& value, MeshIllustrat
         {
             double decoded{};
             if (!decode_double(member->value, &decoded, child_path(path, "crease_width"), error, 0,
-                               std::numeric_limits<double>::infinity()))
+                               std::numeric_limits<double>::infinity(), false, false))
                 return false;
             out->crease_width = std::move(decoded);
         }
@@ -9812,8 +9833,8 @@ bool decode_MeshIllustrationStyleA0(const rapidjson::Value& value, MeshIllustrat
         if (member != value.MemberEnd())
         {
             double decoded{};
-            if (!decode_double(member->value, &decoded, child_path(path, "rim_amount"), error, 0,
-                               1))
+            if (!decode_double(member->value, &decoded, child_path(path, "rim_amount"), error, 0, 1,
+                               false, false))
                 return false;
             out->rim_amount = std::move(decoded);
         }
@@ -9836,13 +9857,13 @@ bool write_MeshIllustrationStyleA0(rapidjson::Writer<rapidjson::StringBuffer>& w
     if (value.ambient.has_value())
     {
         writer.Key("ambient");
-        if (!write_double(writer, *value.ambient, error, 0, 1))
+        if (!write_double(writer, *value.ambient, error, 0, 1, false, false))
             return false;
     }
     if (value.key_intensity.has_value())
     {
         writer.Key("key_intensity");
-        if (!write_double(writer, *value.key_intensity, error, 0, 4))
+        if (!write_double(writer, *value.key_intensity, error, 0, 4, false, false))
             return false;
     }
     if (value.light_direction.has_value())
@@ -9920,7 +9941,7 @@ bool write_MeshIllustrationStyleA0(rapidjson::Writer<rapidjson::StringBuffer>& w
     if (value.crease_angle_degrees.has_value())
     {
         writer.Key("crease_angle_degrees");
-        if (!write_double(writer, *value.crease_angle_degrees, error, 0, 180))
+        if (!write_double(writer, *value.crease_angle_degrees, error, 0, 180, false, false))
             return false;
     }
     if (value.outline_color.has_value())
@@ -9939,14 +9960,14 @@ bool write_MeshIllustrationStyleA0(rapidjson::Writer<rapidjson::StringBuffer>& w
     {
         writer.Key("outline_width");
         if (!write_double(writer, *value.outline_width, error, 0,
-                          std::numeric_limits<double>::infinity()))
+                          std::numeric_limits<double>::infinity(), false, false))
             return false;
     }
     if (value.crease_width.has_value())
     {
         writer.Key("crease_width");
         if (!write_double(writer, *value.crease_width, error, 0,
-                          std::numeric_limits<double>::infinity()))
+                          std::numeric_limits<double>::infinity(), false, false))
             return false;
     }
     if (value.double_sided.has_value())
@@ -9958,7 +9979,7 @@ bool write_MeshIllustrationStyleA0(rapidjson::Writer<rapidjson::StringBuffer>& w
     if (value.rim_amount.has_value())
     {
         writer.Key("rim_amount");
-        if (!write_double(writer, *value.rim_amount, error, 0, 1))
+        if (!write_double(writer, *value.rim_amount, error, 0, 1, false, false))
             return false;
     }
     writer.EndObject();
@@ -10362,7 +10383,7 @@ bool decode_Vector3(const rapidjson::Value& value, Vector3* out, const std::stri
         double item_value{};
         if (!decode_double(value[i], &item_value, path + "/" + std::to_string(i), error,
                            -std::numeric_limits<double>::infinity(),
-                           std::numeric_limits<double>::infinity()))
+                           std::numeric_limits<double>::infinity(), false, false))
             return false;
         out->push_back(std::move(item_value));
     }
@@ -10378,7 +10399,7 @@ bool write_Vector3(rapidjson::Writer<rapidjson::StringBuffer>& writer, const Vec
     writer.StartArray();
     for (const auto& item_value : value)
         if (!write_double(writer, item_value, error, -std::numeric_limits<double>::infinity(),
-                          std::numeric_limits<double>::infinity()))
+                          std::numeric_limits<double>::infinity(), false, false))
             return false;
     writer.EndArray();
     return true;
@@ -10457,7 +10478,7 @@ bool decode_ModelBoundsTimings(const rapidjson::Value& value, ModelBoundsTimings
             return fail(error, "geometer.contract.missing_field", child_path(path, "model_read_ms"),
                         "Required field is missing.");
         if (!decode_double(member->value, &out->model_read_ms, child_path(path, "model_read_ms"),
-                           error, 0, std::numeric_limits<double>::infinity()))
+                           error, 0, std::numeric_limits<double>::infinity(), false, false))
             return false;
     }
     {
@@ -10466,7 +10487,7 @@ bool decode_ModelBoundsTimings(const rapidjson::Value& value, ModelBoundsTimings
             return fail(error, "geometer.contract.missing_field", child_path(path, "bounds_ms"),
                         "Required field is missing.");
         if (!decode_double(member->value, &out->bounds_ms, child_path(path, "bounds_ms"), error, 0,
-                           std::numeric_limits<double>::infinity()))
+                           std::numeric_limits<double>::infinity(), false, false))
             return false;
     }
     return true;
@@ -10478,10 +10499,11 @@ bool write_ModelBoundsTimings(rapidjson::Writer<rapidjson::StringBuffer>& writer
     writer.StartObject();
     writer.Key("model_read_ms");
     if (!write_double(writer, value.model_read_ms, error, 0,
-                      std::numeric_limits<double>::infinity()))
+                      std::numeric_limits<double>::infinity(), false, false))
         return false;
     writer.Key("bounds_ms");
-    if (!write_double(writer, value.bounds_ms, error, 0, std::numeric_limits<double>::infinity()))
+    if (!write_double(writer, value.bounds_ms, error, 0, std::numeric_limits<double>::infinity(),
+                      false, false))
         return false;
     writer.EndObject();
     return true;
@@ -11389,7 +11411,7 @@ bool decode_BodySummary(const rapidjson::Value& value, BodySummary* out, const s
             return fail(error, "geometer.contract.missing_field", child_path(path, "volume_mm3"),
                         "Required field is missing.");
         if (!decode_double(member->value, &out->volume_mm3, child_path(path, "volume_mm3"), error,
-                           0, std::numeric_limits<double>::infinity()))
+                           0, std::numeric_limits<double>::infinity(), false, false))
             return false;
     }
     {
@@ -11431,7 +11453,8 @@ bool write_BodySummary(rapidjson::Writer<rapidjson::StringBuffer>& writer, const
     if (!write_array(writer, value.bounds_mm, error, 6U, 6U, write_double_item))
         return false;
     writer.Key("volume_mm3");
-    if (!write_double(writer, value.volume_mm3, error, 0, std::numeric_limits<double>::infinity()))
+    if (!write_double(writer, value.volume_mm3, error, 0, std::numeric_limits<double>::infinity(),
+                      false, false))
         return false;
     if (value.source_entity.has_value())
     {
@@ -11587,7 +11610,7 @@ bool decode_FaceSummary(const rapidjson::Value& value, FaceSummary* out, const s
             return fail(error, "geometer.contract.missing_field", child_path(path, "area_mm2"),
                         "Required field is missing.");
         if (!decode_double(member->value, &out->area_mm2, child_path(path, "area_mm2"), error, 0,
-                           std::numeric_limits<double>::infinity()))
+                           std::numeric_limits<double>::infinity(), false, false))
             return false;
     }
     {
@@ -11635,7 +11658,8 @@ bool write_FaceSummary(rapidjson::Writer<rapidjson::StringBuffer>& writer, const
     if (!write_array(writer, value.bounds_mm, error, 6U, 6U, write_double_item))
         return false;
     writer.Key("area_mm2");
-    if (!write_double(writer, value.area_mm2, error, 0, std::numeric_limits<double>::infinity()))
+    if (!write_double(writer, value.area_mm2, error, 0, std::numeric_limits<double>::infinity(),
+                      false, false))
         return false;
     writer.Key("centroid_mm");
     if (!write_array(writer, value.centroid_mm, error, 3U, 3U, write_double_item))

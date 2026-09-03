@@ -1,5 +1,6 @@
 import { decodeIpcCancelledA0Json, decodeIpcCancelRejectedA0Json, decodeIpcProtocolErrorA0Json, decodeIpcShutdownAckA0Json, decodeIpcWelcomeA0Json, decodeOperationOutcomeA0Json, encodeIpcHelloA0Json, encodeIpcReasonA0Json, encodeIpcRequestA0Json, } from "./generated/codecs.js";
 import { NORMALIZED_CONTRACT_CATALOG_SHA256, operationCatalog, } from "./generated/operations.js";
+import { encodeIndexedTriangleMeshA0Packet, INDEXED_TRIANGLE_MESH_MEDIA_TYPE, } from "./indexed-mesh-packet-a0.js";
 import { encodeGeometerIpcFrame, GEOMETER_IPC_A0_LIMITS, GeometerIpcFrameDecoder, GeometerIpcProtocolError, validateIpcOutcomeOperationPair, validateIpcRequestOperationPair, } from "./ipc-a0.js";
 const requiredCapabilities = [
     "serialized_execution",
@@ -102,6 +103,28 @@ export class GeometerIpcClientA0 {
     }
     async execute(operation, request, attachments = []) {
         return this.start(operation, request, attachments).response;
+    }
+    async modelHlrProjection(request) {
+        return this.hlrProjection("geometry.model_hlr_projection.a0", "model", request.mediaType ?? "application/step", request.model, request.options);
+    }
+    async meshHlrProjection(request) {
+        const packet = request.mesh instanceof Uint8Array
+            ? request.mesh
+            : encodeIndexedTriangleMeshA0Packet(request.mesh);
+        return this.hlrProjection("geometry.mesh_hlr_projection.a0", "mesh", INDEXED_TRIANGLE_MESH_MEDIA_TYPE, packet, request.options);
+    }
+    async hlrProjection(operation, attachmentName, mediaType, data, options = {}) {
+        const response = await this.execute(operation, { ...options, output_detail: options.output_detail ?? true }, [{ data, mediaType, name: attachmentName }]);
+        if (!response.outcome.ok) {
+            throw new GeometerIpcClientError(response.outcome.diagnostics.map((item) => item.message).join("; ") ||
+                `${operation} failed.`);
+        }
+        if (response.outcome.operation !== operation ||
+            !("views" in response.outcome.result) ||
+            response.attachments.length !== 0) {
+            throw new GeometerIpcProtocolError(`${operation} returned an incompatible result.`);
+        }
+        return response.outcome.result;
     }
     async close(reason) {
         if (this.state === "closed") {

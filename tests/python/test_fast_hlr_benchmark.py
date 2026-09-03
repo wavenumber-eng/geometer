@@ -59,6 +59,31 @@ def test_geometry_digest_ignores_runtime_timings() -> None:
     assert benchmark._geometry_digest(first) == benchmark._geometry_digest(second)
 
 
+def test_wasm_runtime_tracks_launcher_module_and_host(tmp_path: Path) -> None:
+    launcher = tmp_path / "geometer-node-test.js"
+    module = launcher.with_suffix(".wasm")
+    host = tmp_path / "node.exe"
+    launcher.write_text("launcher", encoding="utf-8")
+    module.write_bytes(b"wasm")
+    host.write_bytes(b"node")
+
+    target = benchmark.runtime_target("wasm", wasm_cli=launcher, node=host)
+
+    assert target["artifact"] == launcher.resolve()
+    assert target["module"] == module.resolve()
+    assert target["host"] == host.resolve()
+
+
+def test_wasm_runtime_rejects_missing_module(tmp_path: Path) -> None:
+    launcher = tmp_path / "geometer-node-test.js"
+    host = tmp_path / "node.exe"
+    launcher.write_text("launcher", encoding="utf-8")
+    host.write_bytes(b"node")
+
+    with pytest.raises(FileNotFoundError, match="module not found"):
+        benchmark.runtime_target("wasm", wasm_cli=launcher, node=host)
+
+
 def test_runtime_comparisons_report_ratios_and_equivalence() -> None:
     def case(runtime: str, wall_ms: float, digest: str) -> dict[str, object]:
         summary = {metric: {"mean": wall_ms, "p50": wall_ms, "p95": wall_ms} for metric in benchmark.SUMMARY_NAMES}

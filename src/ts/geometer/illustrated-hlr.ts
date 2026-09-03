@@ -22,7 +22,15 @@ export interface MeshHlrProjector {
 export interface FastHlrIllustrationRequest {
   /** Illustration positions and transforms are interpreted as millimeters. */
   readonly illustration: MeshIllustrationInputA0;
-  readonly hlr?: HlrProjectionOptionsA0;
+  /** Fast controls and output layers; the facade owns views, algorithms, and transforms. */
+  readonly hlr?: Omit<
+    HlrProjectionOptionsA0,
+    | "views"
+    | "projection_algorithm"
+    | "outline_algorithm"
+    | "model_transform"
+    | "strip_root_placement"
+  >;
 }
 
 export interface PreparedFastHlrIllustration {

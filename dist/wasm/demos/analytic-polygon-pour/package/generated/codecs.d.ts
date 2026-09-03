@@ -1,6 +1,10 @@
-import type { DiagnosticA0, IpcCancelledA0, IpcCancelRejectedA0, IpcHelloA0, IpcOperationCatalogA0, IpcProtocolErrorA0, IpcReasonA0, IpcRequestA0, IpcShutdownAckA0, IpcWelcomeA0, ModelBoundsOptionsA0, ModelBoundsResultA0, OperationOutcomeA0, StepTopologyAnalyzeRecoveryRequestA0, StepTopologyAnalyzeRecoveryResultA0, StepTopologyApplyHierarchyRequestA0, StepTopologyApplyHierarchyResultA0, StepTopologyApplyLogicalGroupsRequestA0, StepTopologyApplyLogicalGroupsResultA0, StepTopologyApplyMetadataProbesRequestA0, StepTopologyApplyMetadataProbesResultA0, StepTopologyCheckpointEditJournalRequestA0, StepTopologyCheckpointEditJournalResultA0, StepTopologyCloseRequestA0, StepTopologyCloseResultA0, StepTopologyInspectRequestA0, StepTopologyInspectResultA0, StepTopologyOpenRequestA0, StepTopologyOpenResultA0, StepTopologyRenderRequestA0, StepTopologyRenderResultA0, StepTopologyResolveHitRequestA0, StepTopologyResolveHitResultA0, StepTopologyRestoreRequestA0, StepTopologyRestoreResultA0, StepTopologySaveRequestA0, StepTopologySaveResultA0 } from "./contracts.js";
+import type { DiagnosticA0, HlrProjectionOptionsA0, HlrProjectionResultA0, IpcCancelledA0, IpcCancelRejectedA0, IpcHelloA0, IpcOperationCatalogA0, IpcProtocolErrorA0, IpcReasonA0, IpcRequestA0, IpcShutdownAckA0, IpcWelcomeA0, MeshIllustrationInputA0, MeshIllustrationResultA0, MeshIllustrationStyleA0, ModelBoundsOptionsA0, ModelBoundsResultA0, OperationOutcomeA0, StepTopologyAnalyzeRecoveryRequestA0, StepTopologyAnalyzeRecoveryResultA0, StepTopologyApplyHierarchyRequestA0, StepTopologyApplyHierarchyResultA0, StepTopologyApplyLogicalGroupsRequestA0, StepTopologyApplyLogicalGroupsResultA0, StepTopologyApplyMetadataProbesRequestA0, StepTopologyApplyMetadataProbesResultA0, StepTopologyCheckpointEditJournalRequestA0, StepTopologyCheckpointEditJournalResultA0, StepTopologyCloseRequestA0, StepTopologyCloseResultA0, StepTopologyInspectRequestA0, StepTopologyInspectResultA0, StepTopologyOpenRequestA0, StepTopologyOpenResultA0, StepTopologyRenderRequestA0, StepTopologyRenderResultA0, StepTopologyResolveHitRequestA0, StepTopologyResolveHitResultA0, StepTopologyRestoreRequestA0, StepTopologyRestoreResultA0, StepTopologySaveRequestA0, StepTopologySaveResultA0 } from "./contracts.js";
 export declare function decodeDiagnosticA0Json(data: string | Uint8Array): DiagnosticA0;
 export declare function encodeDiagnosticA0Json(value: DiagnosticA0): string;
+export declare function decodeHlrProjectionOptionsA0Json(data: string | Uint8Array): HlrProjectionOptionsA0;
+export declare function encodeHlrProjectionOptionsA0Json(value: HlrProjectionOptionsA0): string;
+export declare function decodeHlrProjectionResultA0Json(data: string | Uint8Array): HlrProjectionResultA0;
+export declare function encodeHlrProjectionResultA0Json(value: HlrProjectionResultA0): string;
 export declare function decodeIpcCancelledA0Json(data: string | Uint8Array): IpcCancelledA0;
 export declare function encodeIpcCancelledA0Json(value: IpcCancelledA0): string;
 export declare function decodeIpcCancelRejectedA0Json(data: string | Uint8Array): IpcCancelRejectedA0;
@@ -19,6 +23,12 @@ export declare function decodeIpcShutdownAckA0Json(data: string | Uint8Array): I
 export declare function encodeIpcShutdownAckA0Json(value: IpcShutdownAckA0): string;
 export declare function decodeIpcWelcomeA0Json(data: string | Uint8Array): IpcWelcomeA0;
 export declare function encodeIpcWelcomeA0Json(value: IpcWelcomeA0): string;
+export declare function decodeMeshIllustrationInputA0Json(data: string | Uint8Array): MeshIllustrationInputA0;
+export declare function encodeMeshIllustrationInputA0Json(value: MeshIllustrationInputA0): string;
+export declare function decodeMeshIllustrationResultA0Json(data: string | Uint8Array): MeshIllustrationResultA0;
+export declare function encodeMeshIllustrationResultA0Json(value: MeshIllustrationResultA0): string;
+export declare function decodeMeshIllustrationStyleA0Json(data: string | Uint8Array): MeshIllustrationStyleA0;
+export declare function encodeMeshIllustrationStyleA0Json(value: MeshIllustrationStyleA0): string;
 export declare function decodeModelBoundsOptionsA0Json(data: string | Uint8Array): ModelBoundsOptionsA0;
 export declare function encodeModelBoundsOptionsA0Json(value: ModelBoundsOptionsA0): string;
 export declare function decodeModelBoundsResultA0Json(data: string | Uint8Array): ModelBoundsResultA0;

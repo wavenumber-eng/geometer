@@ -55,8 +55,14 @@ function canonicalize(value, type, declarations, path, constraints) {
         if (constraints.min_value !== undefined && value < constraints.min_value) {
             fail("geometer.contract.number_range", path, "Number is below its minimum.");
         }
+        if (constraints.min_value_exclusive !== undefined && value <= constraints.min_value_exclusive) {
+            fail("geometer.contract.number_range", path, "Number is not above its exclusive minimum.");
+        }
         if (constraints.max_value !== undefined && value > constraints.max_value) {
             fail("geometer.contract.number_range", path, "Number is above its maximum.");
+        }
+        if (constraints.max_value_exclusive !== undefined && value >= constraints.max_value_exclusive) {
+            fail("geometer.contract.number_range", path, "Number is not below its exclusive maximum.");
         }
         return value;
     }

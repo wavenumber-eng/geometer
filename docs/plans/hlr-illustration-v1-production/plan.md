@@ -84,7 +84,7 @@ depends_on = ["compatibility-validation"]
 [[steps]]
 id = "external-review"
 title = "Obtain independent contract, compatibility, numerical, implementation, and package review"
-status = "pending"
+status = "active"
 depends_on = ["design-doc-intent-audit", "test-runtime-impact-audit"]
 
 [[steps]]

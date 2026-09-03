@@ -50,7 +50,6 @@ const els = {
     viewButtons: required("illustrationViewButtons"),
     outputButtons: required("illustrationOutputButtons"),
     downloadSvg: required("illustrationDownloadSvg"),
-    downloadScene: required("illustrationDownloadScene"),
     downloadStyle: required("illustrationDownloadStyle"),
     modelPane: required("illustrationModelPane"),
     outputPane: required("illustrationOutputPane"),
@@ -543,7 +542,6 @@ function redrawStyle() {
     const canvasStats = renderMeshIllustrationCanvas(context, state.scene, style);
     els.counts.textContent = `${rendered.stats.triangles.toLocaleString()} front-facing triangles → ${rendered.stats.surfaceDraws.toLocaleString()} polygon regions/draws / ${rendered.stats.layeredSurfaces.toLocaleString()} coplanar layers / SVG ${formatBytes(svgBytes)} / ${rendered.stats.details.toLocaleString()} HLR detail / ${rendered.stats.outlines.toLocaleString()} HLR outline segments / ${state.scene.warnings.length} warnings`;
     els.downloadSvg.disabled = false;
-    els.downloadScene.disabled = false;
     els.downloadStyle.disabled = false;
     els.svgHost.classList.toggle("hidden", state.output !== "svg");
     els.illustrationCanvas.classList.toggle("hidden", state.output !== "canvas");
@@ -807,7 +805,6 @@ async function selectModel(model, options = {}) {
     ])
         control.disabled = !stepBacked;
     els.downloadSvg.disabled = true;
-    els.downloadScene.disabled = true;
     els.modelSelect.value = model.cacheKey ?? model.name;
     setBusy(`Loading ${model.name}...`);
     setStatus(`Loading ${model.name}`);
@@ -947,6 +944,10 @@ function projectionCacheKey(model, view, modelTransform) {
 async function loadHlrLinework(model, view, modelTransform) {
     const cacheKey = projectionCacheKey(model, view, modelTransform);
     let projection = state.projectionCache.get(cacheKey);
+    if (projection) {
+        state.projectionCache.delete(cacheKey);
+        state.projectionCache.set(cacheKey, projection);
+    }
     let hlrMs = 0;
     if (!projection) {
         const source = await modelStepBuffer(model);
@@ -971,6 +972,12 @@ async function loadHlrLinework(model, view, modelTransform) {
         projection = result.projection;
         hlrMs = result.timings?.hlrMs ?? 0;
         state.projectionCache.set(cacheKey, projection);
+        while (state.projectionCache.size > 8) {
+            const oldest = state.projectionCache.keys().next().value;
+            if (oldest === undefined)
+                break;
+            state.projectionCache.delete(oldest);
+        }
     }
     const mirrorX = view.mirrorX === true ? -1 : 1;
     const millimetresToMetres = 0.001;
@@ -1040,9 +1047,6 @@ function fileStem() {
     return (state.model?.name ?? "model")
         .replace(/\.(?:step|stp|glb|gltf)$/iu, "")
         .replace(/[^a-z0-9._-]+/giu, "-");
-}
-function sceneJson() {
-    return `${JSON.stringify(state.scene, null, 2)}\n`;
 }
 function styleJson() {
     return `${JSON.stringify(toMeshIllustrationStyleA0(currentStyle()), null, 2)}\n`;
@@ -1214,7 +1218,6 @@ function wireEvents() {
         fastHlr.setStyle(fastHlrStyle());
     });
     els.downloadSvg.addEventListener("click", () => download(`${fileStem()}-${state.view}.svg`, state.svg, "image/svg+xml"));
-    els.downloadScene.addEventListener("click", () => download(`${fileStem()}-${state.view}.illustration.json`, sceneJson(), "application/json"));
     els.downloadStyle.addEventListener("click", () => download(`${fileStem()}.illustration-style.json`, styleJson(), "application/json"));
     window.addEventListener("beforeunload", () => {
         state.worker?.terminate();

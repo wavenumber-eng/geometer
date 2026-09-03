@@ -337,7 +337,7 @@ DECLARATIONS: dict[str, dict[str, Any]] = {
                 },
                 "optional": True,
                 "constraints": {
-                    "min_value": 0,
+                    "min_value_exclusive": 0,
                 },
                 "field": "weld_tolerance",
             },
@@ -348,7 +348,7 @@ DECLARATIONS: dict[str, dict[str, Any]] = {
                 },
                 "optional": True,
                 "constraints": {
-                    "min_value": 0,
+                    "min_value_exclusive": 0,
                 },
                 "field": "projected_tolerance",
             },
@@ -2562,7 +2562,7 @@ DECLARATIONS: dict[str, dict[str, Any]] = {
                 },
                 "optional": True,
                 "constraints": {
-                    "min_value": 0,
+                    "min_value_exclusive": 0,
                 },
                 "field": "weld_tolerance",
             },

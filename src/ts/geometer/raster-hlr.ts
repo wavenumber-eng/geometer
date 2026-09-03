@@ -11,6 +11,8 @@ export interface RasterHlrStyle {
   doubleSided: boolean;
 }
 
+type RasterHlrModelStyle = Omit<RasterHlrStyle, "background" | "creaseAngleDegrees">;
+
 export interface RasterHlrBuildStats {
   buildMs: number;
   meshes: number;
@@ -117,7 +119,7 @@ export class RasterHlrModel {
     };
   }
 
-  setStyle(requested: Partial<RasterHlrStyle>): void {
+  setStyle(requested: Partial<RasterHlrModelStyle>): void {
     if (requested.surfaceColor !== undefined)
       this.surfaceMaterial.color.set(requested.surfaceColor);
     if (requested.lineColor !== undefined) this.lineMaterial.color.set(requested.lineColor);
@@ -145,6 +147,7 @@ export class RasterHlrViewport {
   readonly renderer: THREE.WebGLRenderer;
 
   private readonly scene = new THREE.Scene();
+  private source: THREE.Object3D | null = null;
   private model: RasterHlrModel | null = null;
   private style: RasterHlrStyle = { ...DEFAULT_STYLE };
   private lastFrameAt = 0;
@@ -176,6 +179,8 @@ export class RasterHlrViewport {
   setSource(source: THREE.Object3D | null): RasterHlrBuildStats | null {
     this.model?.dispose();
     this.model = null;
+    this.source = source;
+    this.clearTimerQueries();
     this.samples = 0;
     this.meanCpuMs = 0;
     this.meanGpuMs = 0;
@@ -189,8 +194,17 @@ export class RasterHlrViewport {
   }
 
   setStyle(requested: Partial<RasterHlrStyle>): void {
+    const rebuildEdges =
+      requested.creaseAngleDegrees !== undefined &&
+      requested.creaseAngleDegrees !== this.style.creaseAngleDegrees;
     this.style = { ...this.style, ...requested };
-    this.model?.setStyle(requested);
+    if (rebuildEdges && this.source) {
+      this.model?.dispose();
+      this.model = new RasterHlrModel(this.source, this.style);
+      this.scene.add(this.model.root);
+    } else {
+      this.model?.setStyle(requested);
+    }
     if (requested.background !== undefined)
       this.scene.background = new THREE.Color(requested.background);
   }
@@ -228,9 +242,14 @@ export class RasterHlrViewport {
   dispose(): void {
     this.model?.dispose();
     this.model = null;
+    this.source = null;
+    this.clearTimerQueries();
+    this.renderer.dispose();
+  }
+
+  private clearTimerQueries(): void {
     if (this.gl) for (const query of this.pendingTimerQueries) this.gl.deleteQuery(query);
     this.pendingTimerQueries.length = 0;
-    this.renderer.dispose();
   }
 
   private beginTimerQuery(): WebGLQuery | null {

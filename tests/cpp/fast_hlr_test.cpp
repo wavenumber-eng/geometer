@@ -69,6 +69,30 @@ void square_builds_shared_adjacency()
     require(shared_count == 1, "square should have one shared edge");
 }
 
+void indexed_mesh_welds_duplicate_seams_by_distance()
+{
+    geometer::FastHlrIndexedMesh duplicated;
+    duplicated.vertices = {{0.099, 0.099, 0.0}, {1.0, 0.0, 0.0},     {0.999, 0.999, 0.0},
+                           {0.101, 0.101, 0.0}, {1.001, 1.001, 0.0}, {0.0, 1.0, 0.0}};
+    duplicated.triangles = {{{0, 1, 2}, 1}, {{3, 4, 5}, 1}};
+    geometer::FastHlrOptions options;
+    options.weld_tolerance = 0.01;
+
+    const geometer::FastHlrPreparedMesh prepared = prepare(duplicated, options);
+    require(prepared.vertices.size() == 4,
+            "duplicate seam vertices in adjacent grid cells should weld");
+    require(prepared.edges.size() == 5, "welded square should have one shared edge");
+
+    geometer::FastHlrIndexedMesh separated;
+    separated.vertices = {{0.01, 0.01, 0.0}, {1.0, 0.0, 0.0}, {0.01, 1.0, 0.0},
+                          {0.09, 0.09, 0.0}, {1.0, 0.2, 0.0}, {0.09, 0.9, 0.0}};
+    separated.triangles = {{{0, 1, 2}, 1}, {{3, 4, 5}, 2}};
+    options.weld_tolerance = 0.1;
+    const geometer::FastHlrPreparedMesh distinct = prepare(separated, options);
+    require(distinct.vertices.size() == 6,
+            "vertices farther than radial tolerance must not weld within one grid cell");
+}
+
 void one_shot_matches_reusable_preparation()
 {
     geometer::FastHlrIndexedMesh mesh;
@@ -115,6 +139,14 @@ void invalid_indices_and_limits_are_rejected()
     limited.limits.max_vertices = 2;
     require(geometer::prepare_fast_hlr_mesh(invalid, limited, &prepared, &status) == 3,
             "vertex limits should be enforced before triangle validation");
+
+    geometer::FastHlrIndexedMesh square;
+    square.vertices = {{0.0, 0.0, 0.0}, {1.0, 0.0, 0.0}, {1.0, 1.0, 0.0}, {0.0, 1.0, 0.0}};
+    square.triangles = {{{0, 1, 2}, 1}, {{0, 2, 3}, 1}};
+    limited = {};
+    limited.limits.max_edges = 4;
+    require(geometer::prepare_fast_hlr_mesh(square, limited, &prepared, &status) == 3,
+            "edge limits should fail during adjacency construction");
 }
 
 void malformed_prepared_data_and_invalid_options_are_rejected()
@@ -142,6 +174,18 @@ void malformed_prepared_data_and_invalid_options_are_rejected()
     require(geometer::project_fast_hlr_detail(prepared, top_view(), bounded, &visible, nullptr,
                                               nullptr, &status) == 6,
             "spatial-index references should obey their resource limit");
+
+    prepared = prepare(mesh);
+    prepared.triangles[0].normal = {0.0, 0.0, 2.0};
+    require(geometer::project_fast_hlr_detail(prepared, top_view(), {}, &visible, nullptr, nullptr,
+                                              &status) == 5,
+            "non-unit prepared normals should be rejected");
+
+    prepared = prepare(mesh);
+    prepared.edges.pop_back();
+    require(geometer::project_fast_hlr_detail(prepared, top_view(), {}, &visible, nullptr, nullptr,
+                                              &status) == 5,
+            "prepared adjacency missing a triangle side should be rejected");
 }
 
 void smooth_internal_edge_can_be_a_silhouette()
@@ -351,7 +395,7 @@ void hidden_split_cannot_be_bridged_by_visible_reconstruction()
             "contiguous hidden fragments may join independently across their shared vertex");
 }
 
-geometer::FastHlrIndexedMesh adjacent_coplanar_rectangles(double second_depth = 0.0,
+geometer::FastHlrIndexedMesh adjacent_coplanar_rectangles(double second_depth = 0.0000005,
                                                           bool reverse_second = false)
 {
     geometer::FastHlrIndexedMesh mesh;
@@ -407,8 +451,10 @@ void coplanar_continuation_suppression_is_opt_in_and_conservative()
     require(geometer::project_fast_hlr_detail(prepared, top_view(), {}, &visible, nullptr,
                                               &statistics, &status) == 0,
             "unsuppressed coplanar projection should succeed: " + status.message);
-    require(visible.segments.size() == 8 && statistics.coplanar_seam_intervals == 0,
-            "the optional seam filter must remain disabled by default");
+    require(visible.segments.size() == 7 && statistics.coplanar_seam_intervals == 0,
+            "the optional seam filter must remain disabled by default: segments=" +
+                std::to_string(visible.segments.size()) +
+                " seams=" + std::to_string(statistics.coplanar_seam_intervals));
 
     geometer::FastHlrOptions options;
     options.suppress_coplanar_seams = true;
@@ -416,7 +462,9 @@ void coplanar_continuation_suppression_is_opt_in_and_conservative()
                                               &statistics, &status) == 0,
             "coplanar seam suppression should succeed: " + status.message);
     require(visible.segments.size() == 6 && statistics.coplanar_seam_intervals == 2,
-            "two adjacent coplanar faces should remove both coincident seam candidates");
+            "two adjacent coplanar faces should remove both coincident seam candidates: segments=" +
+                std::to_string(visible.segments.size()) +
+                " seams=" + std::to_string(statistics.coplanar_seam_intervals));
 
     const geometer::FastHlrPreparedMesh stepped = prepare(adjacent_coplanar_rectangles(0.01));
     require(geometer::project_fast_hlr_detail(stepped, top_view(), options, &visible, nullptr,
@@ -735,6 +783,12 @@ void fast_mesh_shadow_enforces_output_and_coordinate_limits()
                                                         &outline, nullptr, &status) == 7,
             "fast mesh-shadow should enforce its output segment limit");
 
+    limited = {};
+    limited.limits.max_candidate_pairs = 5;
+    require(geometer::fast_mesh_shadow_outline_geometry(prepared, top_view(), limited, 1000,
+                                                        &outline, nullptr, &status) == 6,
+            "fast mesh-shadow should bound Clipper candidate-pair work before union");
+
     mesh.vertices[1].x = 1.0e20;
     const geometer::FastHlrPreparedMesh huge = prepare(mesh);
     require(geometer::fast_mesh_shadow_outline_geometry(huge, top_view(), {}, 1000, &outline,
@@ -755,6 +809,7 @@ int main()
     try
     {
         square_builds_shared_adjacency();
+        indexed_mesh_welds_duplicate_seams_by_distance();
         one_shot_matches_reusable_preparation();
         invalid_indices_and_limits_are_rejected();
         malformed_prepared_data_and_invalid_options_are_rejected();

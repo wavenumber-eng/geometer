@@ -141,6 +141,16 @@ bool decode_contract_vector(const std::string& identity, const std::vector<unsig
         geometer::contracts::HlrProjectionResultA0 value;
         return geometer::contracts::decode_json(data.data(), data.size(), &value, &error);
     }
+    if (identity == "geometry.mesh_illustration.input.a0")
+    {
+        geometer::contracts::MeshIllustrationInputA0 value;
+        return geometer::contracts::decode_json(data.data(), data.size(), &value, &error);
+    }
+    if (identity == "geometry.mesh_illustration.result.a0")
+    {
+        geometer::contracts::MeshIllustrationResultA0 value;
+        return geometer::contracts::decode_json(data.data(), data.size(), &value, &error);
+    }
     if (identity == "geometry.model_bounds.a0")
     {
         geometer::contracts::ModelBoundsResultA0 value;
@@ -420,7 +430,7 @@ void generated_cpp_replays_all_governed_contract_vectors()
             "contract vector manifest should be valid JSON");
     require(manifest.HasMember("vectors") && manifest["vectors"].IsArray(),
             "contract vector manifest should contain an array");
-    require(manifest["vectors"].Size() == 125U, "C++ must replay every governed contract vector");
+    require(manifest["vectors"].Size() == 128U, "C++ must replay every governed contract vector");
 
     for (const auto& vector : manifest["vectors"].GetArray())
     {
@@ -958,6 +968,17 @@ void generic_c_abi_executes_mesh_hlr()
                                        1U, &result, &error) == GEOMETER_OPERATION_ABI_OK &&
                 result != nullptr && result_json(result).find("\"ok\":false") != std::string::npos,
             "mesh HLR should reject an unavailable exact backend as a typed operation failure");
+    geometer_operation_result_free(result);
+
+    const std::string singular = "{\"model_transform\":[0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]}";
+    result = nullptr;
+    require(geometer_operation_execute(operation.data(),
+                                       static_cast<std::uint32_t>(operation.size()),
+                                       reinterpret_cast<const unsigned char*>(singular.data()),
+                                       static_cast<std::uint32_t>(singular.size()), &attachment, 1U,
+                                       &result, &error) == GEOMETER_OPERATION_ABI_OK &&
+                result != nullptr && result_json(result).find("\"ok\":false") != std::string::npos,
+            "mesh HLR should reject a singular model transform as a typed operation failure");
     geometer_operation_result_free(result);
 }
 

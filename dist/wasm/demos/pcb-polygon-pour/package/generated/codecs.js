@@ -61,6 +61,598 @@ const declarations = {
             },
         },
     },
+    "Wavenumber.Geometer.Contracts.HlrProjectionA0.FastHlrLimitsA0": {
+        kind: "object",
+        properties: {
+            max_vertices: {
+                type: { kind: "primitive", name: "uint32" },
+                optional: true,
+                constraints: { min_value: 1, max_value: 4294967295 },
+            },
+            max_triangles: {
+                type: { kind: "primitive", name: "uint32" },
+                optional: true,
+                constraints: { min_value: 1, max_value: 4294967295 },
+            },
+            max_edges: {
+                type: { kind: "primitive", name: "uint32" },
+                optional: true,
+                constraints: { min_value: 1, max_value: 4294967295 },
+            },
+            max_grid_references: {
+                type: { kind: "primitive", name: "uint32" },
+                optional: true,
+                constraints: { min_value: 1, max_value: 4294967295 },
+            },
+            max_candidate_pairs: {
+                type: { kind: "primitive", name: "uint32" },
+                optional: true,
+                constraints: { min_value: 1, max_value: 4294967295 },
+            },
+            max_fragments: {
+                type: { kind: "primitive", name: "uint32" },
+                optional: true,
+                constraints: { min_value: 1, max_value: 4294967295 },
+            },
+            max_output_segments: {
+                type: { kind: "primitive", name: "uint32" },
+                optional: true,
+                constraints: { min_value: 1, max_value: 4294967295 },
+            },
+        },
+    },
+    "Wavenumber.Geometer.Contracts.HlrProjectionA0.FastHlrOptionsA0": {
+        kind: "object",
+        properties: {
+            include_boundaries: {
+                type: { kind: "primitive", name: "boolean" },
+                optional: true,
+                constraints: {},
+            },
+            include_creases: {
+                type: { kind: "primitive", name: "boolean" },
+                optional: true,
+                constraints: {},
+            },
+            include_silhouettes: {
+                type: { kind: "primitive", name: "boolean" },
+                optional: true,
+                constraints: {},
+            },
+            include_hidden: {
+                type: { kind: "primitive", name: "boolean" },
+                optional: true,
+                constraints: {},
+            },
+            suppress_coplanar_seams: {
+                type: { kind: "primitive", name: "boolean" },
+                optional: true,
+                constraints: {},
+            },
+            crease_angle_rad: {
+                type: { kind: "primitive", name: "float64" },
+                optional: true,
+                constraints: { min_value: 0, max_value: Math.PI },
+            },
+            weld_tolerance: {
+                type: { kind: "primitive", name: "float64" },
+                optional: true,
+                constraints: { min_value_exclusive: 0 },
+            },
+            projected_tolerance: {
+                type: { kind: "primitive", name: "float64" },
+                optional: true,
+                constraints: { min_value_exclusive: 0 },
+            },
+            depth_tolerance: {
+                type: { kind: "primitive", name: "float64" },
+                optional: true,
+                constraints: { min_value: 0 },
+            },
+            coplanar_seam_angle_rad: {
+                type: { kind: "primitive", name: "float64" },
+                optional: true,
+                constraints: { min_value: 0, max_value: 1.5707963267948966 },
+            },
+            coplanar_seam_depth_tolerance: {
+                type: { kind: "primitive", name: "float64" },
+                optional: true,
+                constraints: { min_value: 0 },
+            },
+            coplanar_seam_lateral_tolerance: {
+                type: { kind: "primitive", name: "float64" },
+                optional: true,
+                constraints: { min_value: 0 },
+            },
+            limits: {
+                type: {
+                    kind: "reference",
+                    target: "Wavenumber.Geometer.Contracts.HlrProjectionA0.FastHlrLimitsA0",
+                },
+                optional: true,
+                constraints: {},
+            },
+        },
+    },
+    "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrCurveMode": {
+        kind: "enum",
+        values: ["native_arcs", "polyline"],
+    },
+    "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrMatrix4x4": {
+        kind: "array",
+        element: { kind: "primitive", name: "float64" },
+        constraints: { min_items: 16, max_items: 16 },
+    },
+    "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrMeshDeflectionMode": {
+        kind: "enum",
+        values: ["absolute", "bbox-relative"],
+    },
+    "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrOutlineAlgorithm": {
+        kind: "enum",
+        values: ["hlr-close", "mesh-shadow", "fast-mesh-shadow"],
+    },
+    "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrProjectedView": {
+        kind: "object",
+        properties: {
+            id: {
+                type: { kind: "primitive", name: "string" },
+                optional: false,
+                constraints: { min_length: 1, max_length: 128 },
+            },
+            direction: {
+                type: {
+                    kind: "reference",
+                    target: "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrVector3",
+                },
+                optional: false,
+                constraints: {},
+            },
+            up: {
+                type: {
+                    kind: "reference",
+                    target: "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrVector3",
+                },
+                optional: false,
+                constraints: {},
+            },
+            modes: {
+                type: {
+                    kind: "reference",
+                    target: "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrProjectionModes",
+                },
+                optional: false,
+                constraints: {},
+            },
+        },
+    },
+    "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrProjectionAlgorithm": {
+        kind: "enum",
+        values: ["poly", "exact", "fast"],
+    },
+    "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrProjectionModes": {
+        kind: "object",
+        properties: {
+            outline: {
+                type: {
+                    kind: "reference",
+                    target: "Wavenumber.Geometer.Contracts.HlrProjectionA0.ProjectedGeometry",
+                },
+                optional: false,
+                constraints: {},
+            },
+            detail: {
+                type: {
+                    kind: "reference",
+                    target: "Wavenumber.Geometer.Contracts.HlrProjectionA0.ProjectedGeometry",
+                },
+                optional: false,
+                constraints: {},
+            },
+            bbox: {
+                type: {
+                    kind: "reference",
+                    target: "Wavenumber.Geometer.Contracts.HlrProjectionA0.ProjectedGeometry",
+                },
+                optional: false,
+                constraints: {},
+            },
+        },
+    },
+    "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrProjectionOptionsA0": {
+        kind: "object",
+        properties: {
+            views: {
+                type: {
+                    kind: "array",
+                    element: {
+                        kind: "reference",
+                        target: "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrViewSpec",
+                    },
+                },
+                optional: true,
+                constraints: { max_items: 64 },
+            },
+            output_outline: {
+                type: { kind: "primitive", name: "boolean" },
+                optional: true,
+                constraints: {},
+            },
+            output_detail: {
+                type: { kind: "primitive", name: "boolean" },
+                optional: true,
+                constraints: {},
+            },
+            output_bbox: {
+                type: { kind: "primitive", name: "boolean" },
+                optional: true,
+                constraints: {},
+            },
+            model_transform: {
+                type: {
+                    kind: "reference",
+                    target: "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrMatrix4x4",
+                },
+                optional: true,
+                constraints: {},
+            },
+            strip_root_placement: {
+                type: { kind: "primitive", name: "boolean" },
+                optional: true,
+                constraints: {},
+            },
+            curve_mode: {
+                type: {
+                    kind: "reference",
+                    target: "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrCurveMode",
+                },
+                optional: true,
+                constraints: {},
+            },
+            samples_per_curve: {
+                type: { kind: "primitive", name: "uint32" },
+                optional: true,
+                constraints: { min_value: 1, max_value: 100000 },
+            },
+            round_digits: {
+                type: { kind: "primitive", name: "uint32" },
+                optional: true,
+                constraints: { min_value: 0, max_value: 9 },
+            },
+            edge_v_sharp: {
+                type: { kind: "primitive", name: "boolean" },
+                optional: true,
+                constraints: {},
+            },
+            edge_v_outline: {
+                type: { kind: "primitive", name: "boolean" },
+                optional: true,
+                constraints: {},
+            },
+            edge_v_smooth: {
+                type: { kind: "primitive", name: "boolean" },
+                optional: true,
+                constraints: {},
+            },
+            edge_v_sewn: {
+                type: { kind: "primitive", name: "boolean" },
+                optional: true,
+                constraints: {},
+            },
+            edge_v_iso: { type: { kind: "primitive", name: "boolean" }, optional: true, constraints: {} },
+            edge_h_sharp: {
+                type: { kind: "primitive", name: "boolean" },
+                optional: true,
+                constraints: {},
+            },
+            edge_h_outline: {
+                type: { kind: "primitive", name: "boolean" },
+                optional: true,
+                constraints: {},
+            },
+            edge_h_smooth: {
+                type: { kind: "primitive", name: "boolean" },
+                optional: true,
+                constraints: {},
+            },
+            edge_h_sewn: {
+                type: { kind: "primitive", name: "boolean" },
+                optional: true,
+                constraints: {},
+            },
+            edge_h_iso: { type: { kind: "primitive", name: "boolean" }, optional: true, constraints: {} },
+            union_outline_polygons: {
+                type: { kind: "primitive", name: "boolean" },
+                optional: true,
+                constraints: {},
+            },
+            projection_algorithm: {
+                type: {
+                    kind: "reference",
+                    target: "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrProjectionAlgorithm",
+                },
+                optional: true,
+                constraints: {},
+            },
+            mesh_linear_deflection: {
+                type: { kind: "primitive", name: "float64" },
+                optional: true,
+                constraints: { min_value: 0 },
+            },
+            mesh_angular_deflection: {
+                type: { kind: "primitive", name: "float64" },
+                optional: true,
+                constraints: { min_value: 0, max_value: Math.PI },
+            },
+            mesh_relative: {
+                type: { kind: "primitive", name: "boolean" },
+                optional: true,
+                constraints: {},
+            },
+            mesh_deflection_mode: {
+                type: {
+                    kind: "reference",
+                    target: "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrMeshDeflectionMode",
+                },
+                optional: true,
+                constraints: {},
+            },
+            mesh_deflection_coefficient: {
+                type: { kind: "primitive", name: "float64" },
+                optional: true,
+                constraints: { min_value: 0 },
+            },
+            outline_algorithm: {
+                type: {
+                    kind: "reference",
+                    target: "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrOutlineAlgorithm",
+                },
+                optional: true,
+                constraints: {},
+            },
+            hlr_angle_tolerance: {
+                type: { kind: "primitive", name: "float64" },
+                optional: true,
+                constraints: { min_value: 0, max_value: Math.PI },
+            },
+            fast: {
+                type: {
+                    kind: "reference",
+                    target: "Wavenumber.Geometer.Contracts.HlrProjectionA0.FastHlrOptionsA0",
+                },
+                optional: true,
+                constraints: {},
+            },
+        },
+    },
+    "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrProjectionResultA0": {
+        kind: "object",
+        properties: {
+            schema: {
+                type: { kind: "literal", value_type: "string", value: "geometry.hlr_projection.result.a0" },
+                optional: false,
+                constraints: {},
+            },
+            units: {
+                type: { kind: "literal", value_type: "string", value: "mm" },
+                optional: false,
+                constraints: {},
+            },
+            source: {
+                type: {
+                    kind: "reference",
+                    target: "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrProjectionSource",
+                },
+                optional: false,
+                constraints: {},
+            },
+            views: {
+                type: {
+                    kind: "array",
+                    element: {
+                        kind: "reference",
+                        target: "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrProjectedView",
+                    },
+                },
+                optional: false,
+                constraints: { max_items: 64 },
+            },
+            timings: {
+                type: {
+                    kind: "reference",
+                    target: "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrProjectionTimings",
+                },
+                optional: false,
+                constraints: {},
+            },
+        },
+    },
+    "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrProjectionSource": {
+        kind: "object",
+        properties: {
+            kind: {
+                type: {
+                    kind: "reference",
+                    target: "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrSourceKind",
+                },
+                optional: false,
+                constraints: {},
+            },
+            hash: {
+                type: { kind: "primitive", name: "string" },
+                optional: false,
+                constraints: { min_length: 64, max_length: 64 },
+            },
+        },
+    },
+    "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrProjectionTimings": {
+        kind: "object",
+        properties: {
+            step_read_ms: {
+                type: { kind: "primitive", name: "float64" },
+                optional: false,
+                constraints: { min_value: 0 },
+            },
+            mesh_ms: {
+                type: { kind: "primitive", name: "float64" },
+                optional: false,
+                constraints: { min_value: 0 },
+            },
+            hlr_ms: {
+                type: { kind: "primitive", name: "float64" },
+                optional: false,
+                constraints: { min_value: 0 },
+            },
+            extract_ms: {
+                type: { kind: "primitive", name: "float64" },
+                optional: false,
+                constraints: { min_value: 0 },
+            },
+        },
+    },
+    "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrSourceKind": {
+        kind: "enum",
+        values: ["step", "indexed_mesh"],
+    },
+    "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrVector2": {
+        kind: "array",
+        element: { kind: "primitive", name: "float64" },
+        constraints: { min_items: 2, max_items: 2 },
+    },
+    "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrVector3": {
+        kind: "array",
+        element: { kind: "primitive", name: "float64" },
+        constraints: { min_items: 3, max_items: 3 },
+    },
+    "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrViewSpec": {
+        kind: "object",
+        properties: {
+            id: {
+                type: { kind: "primitive", name: "string" },
+                optional: false,
+                constraints: { min_length: 1, max_length: 128 },
+            },
+            direction: {
+                type: {
+                    kind: "reference",
+                    target: "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrVector3",
+                },
+                optional: false,
+                constraints: {},
+            },
+            up: {
+                type: {
+                    kind: "reference",
+                    target: "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrVector3",
+                },
+                optional: false,
+                constraints: {},
+            },
+        },
+    },
+    "Wavenumber.Geometer.Contracts.HlrProjectionA0.ProjectedArc": {
+        kind: "object",
+        properties: {
+            start: {
+                type: {
+                    kind: "reference",
+                    target: "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrVector2",
+                },
+                optional: false,
+                constraints: {},
+            },
+            end: {
+                type: {
+                    kind: "reference",
+                    target: "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrVector2",
+                },
+                optional: false,
+                constraints: {},
+            },
+            center: {
+                type: {
+                    kind: "reference",
+                    target: "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrVector2",
+                },
+                optional: false,
+                constraints: {},
+            },
+            radius: {
+                type: { kind: "primitive", name: "float64" },
+                optional: false,
+                constraints: { min_value: 0 },
+            },
+            extent_rad: {
+                type: { kind: "primitive", name: "float64" },
+                optional: false,
+                constraints: { min_value: 0, max_value: 6.283185307179586 },
+            },
+            ccw: { type: { kind: "primitive", name: "boolean" }, optional: false, constraints: {} },
+            full_circle: {
+                type: { kind: "primitive", name: "boolean" },
+                optional: false,
+                constraints: {},
+            },
+        },
+    },
+    "Wavenumber.Geometer.Contracts.HlrProjectionA0.ProjectedGeometry": {
+        kind: "object",
+        properties: {
+            segments: {
+                type: {
+                    kind: "array",
+                    element: {
+                        kind: "reference",
+                        target: "Wavenumber.Geometer.Contracts.HlrProjectionA0.ProjectedSegment",
+                    },
+                },
+                optional: false,
+                constraints: { max_items: 4000000 },
+            },
+            arcs: {
+                type: {
+                    kind: "array",
+                    element: {
+                        kind: "reference",
+                        target: "Wavenumber.Geometer.Contracts.HlrProjectionA0.ProjectedArc",
+                    },
+                },
+                optional: false,
+                constraints: { max_items: 4000000 },
+            },
+            bounds: {
+                type: {
+                    kind: "reference",
+                    target: "Wavenumber.Geometer.Contracts.HlrProjectionA0.ProjectionBounds",
+                },
+                optional: true,
+                constraints: {},
+            },
+        },
+    },
+    "Wavenumber.Geometer.Contracts.HlrProjectionA0.ProjectedSegment": {
+        kind: "array",
+        element: { kind: "primitive", name: "float64" },
+        constraints: { min_items: 4, max_items: 4 },
+    },
+    "Wavenumber.Geometer.Contracts.HlrProjectionA0.ProjectionBounds": {
+        kind: "object",
+        properties: {
+            min_x: { type: { kind: "primitive", name: "float64" }, optional: false, constraints: {} },
+            min_y: { type: { kind: "primitive", name: "float64" }, optional: false, constraints: {} },
+            max_x: { type: { kind: "primitive", name: "float64" }, optional: false, constraints: {} },
+            max_y: { type: { kind: "primitive", name: "float64" }, optional: false, constraints: {} },
+            width: {
+                type: { kind: "primitive", name: "float64" },
+                optional: false,
+                constraints: { min_value: 0 },
+            },
+            height: {
+                type: { kind: "primitive", name: "float64" },
+                optional: false,
+                constraints: { min_value: 0 },
+            },
+        },
+    },
     "Wavenumber.Geometer.Contracts.IpcA0.IpcAttachmentDeclarationA0": {
         kind: "object",
         properties: {
@@ -584,6 +1176,10 @@ const declarations = {
             },
             {
                 kind: "reference",
+                target: "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrProjectionOptionsA0",
+            },
+            {
+                kind: "reference",
                 target: "Wavenumber.Geometer.Contracts.Common.PackedAttachmentProjectionA0",
             },
             {
@@ -704,6 +1300,398 @@ const declarations = {
                 optional: false,
                 constraints: { max_items: 64 },
             },
+        },
+    },
+    "Wavenumber.Geometer.Contracts.MeshIllustrationA0.IllustrationMatrix4x4": {
+        kind: "array",
+        element: { kind: "primitive", name: "float64" },
+        constraints: { min_items: 16, max_items: 16 },
+    },
+    "Wavenumber.Geometer.Contracts.MeshIllustrationA0.IllustrationVector3": {
+        kind: "array",
+        element: { kind: "primitive", name: "float64" },
+        constraints: { min_items: 3, max_items: 3 },
+    },
+    "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationInputA0": {
+        kind: "object",
+        properties: {
+            schema: {
+                type: {
+                    kind: "literal",
+                    value_type: "string",
+                    value: "geometry.mesh_illustration.input.a0",
+                },
+                optional: false,
+                constraints: {},
+            },
+            meshes: {
+                type: {
+                    kind: "array",
+                    element: {
+                        kind: "reference",
+                        target: "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationMesh",
+                    },
+                },
+                optional: false,
+                constraints: { min_items: 1, max_items: 65536 },
+            },
+            view: {
+                type: {
+                    kind: "reference",
+                    target: "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationView",
+                },
+                optional: false,
+                constraints: {},
+            },
+            prepare: {
+                type: {
+                    kind: "reference",
+                    target: "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationPrepareOptions",
+                },
+                optional: true,
+                constraints: {},
+            },
+            style: {
+                type: {
+                    kind: "reference",
+                    target: "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationStyleA0",
+                },
+                optional: true,
+                constraints: {},
+            },
+            svg: {
+                type: {
+                    kind: "reference",
+                    target: "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationSvgOptions",
+                },
+                optional: true,
+                constraints: {},
+            },
+        },
+    },
+    "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationMaterial": {
+        kind: "object",
+        properties: {
+            color: {
+                type: {
+                    kind: "reference",
+                    target: "Wavenumber.Geometer.Contracts.MeshIllustrationA0.IllustrationVector3",
+                },
+                optional: false,
+                constraints: {},
+            },
+            opacity: {
+                type: { kind: "primitive", name: "float64" },
+                optional: true,
+                constraints: { min_value: 0, max_value: 1 },
+            },
+            name: {
+                type: { kind: "primitive", name: "string" },
+                optional: true,
+                constraints: { max_length: 1024 },
+            },
+        },
+    },
+    "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationMesh": {
+        kind: "object",
+        properties: {
+            id: {
+                type: { kind: "primitive", name: "string" },
+                optional: false,
+                constraints: { min_length: 1, max_length: 1024 },
+            },
+            positions: {
+                type: { kind: "array", element: { kind: "primitive", name: "float64" } },
+                optional: false,
+                constraints: { min_items: 9, max_items: 6000000 },
+            },
+            normals: {
+                type: { kind: "array", element: { kind: "primitive", name: "float64" } },
+                optional: true,
+                constraints: { max_items: 6000000 },
+            },
+            indices: {
+                type: { kind: "array", element: { kind: "primitive", name: "uint32" } },
+                optional: true,
+                constraints: { max_items: 6000000 },
+            },
+            matrix: {
+                type: {
+                    kind: "reference",
+                    target: "Wavenumber.Geometer.Contracts.MeshIllustrationA0.IllustrationMatrix4x4",
+                },
+                optional: true,
+                constraints: {},
+            },
+            materials: {
+                type: {
+                    kind: "array",
+                    element: {
+                        kind: "reference",
+                        target: "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationMaterial",
+                    },
+                },
+                optional: false,
+                constraints: { min_items: 1, max_items: 65536 },
+            },
+            triangle_material_indices: {
+                type: { kind: "array", element: { kind: "primitive", name: "uint32" } },
+                optional: true,
+                constraints: { max_items: 2000000 },
+            },
+            double_sided: {
+                type: { kind: "primitive", name: "boolean" },
+                optional: true,
+                constraints: {},
+            },
+        },
+    },
+    "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationPrepareOptions": {
+        kind: "object",
+        properties: {
+            max_triangles: {
+                type: { kind: "primitive", name: "uint32" },
+                optional: true,
+                constraints: { min_value: 1, max_value: 2000000 },
+            },
+            weld_tolerance: {
+                type: { kind: "primitive", name: "float64" },
+                optional: true,
+                constraints: { min_value_exclusive: 0 },
+            },
+        },
+    },
+    "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationRenderStats": {
+        kind: "object",
+        properties: {
+            triangles: {
+                type: { kind: "primitive", name: "uint32" },
+                optional: false,
+                constraints: { min_value: 0 },
+            },
+            surface_draws: {
+                type: { kind: "primitive", name: "uint32" },
+                optional: false,
+                constraints: { min_value: 0 },
+            },
+            layered_surfaces: {
+                type: { kind: "primitive", name: "uint32" },
+                optional: false,
+                constraints: { min_value: 0 },
+            },
+            outlines: {
+                type: { kind: "primitive", name: "uint32" },
+                optional: false,
+                constraints: { min_value: 0 },
+            },
+            details: {
+                type: { kind: "primitive", name: "uint32" },
+                optional: false,
+                constraints: { min_value: 0 },
+            },
+            creases: {
+                type: { kind: "primitive", name: "uint32" },
+                optional: false,
+                constraints: { min_value: 0 },
+            },
+            commands: {
+                type: { kind: "primitive", name: "uint32" },
+                optional: false,
+                constraints: { min_value: 0 },
+            },
+        },
+    },
+    "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationResultA0": {
+        kind: "object",
+        properties: {
+            schema: {
+                type: {
+                    kind: "literal",
+                    value_type: "string",
+                    value: "geometry.mesh_illustration.result.a0",
+                },
+                optional: false,
+                constraints: {},
+            },
+            svg: { type: { kind: "primitive", name: "string" }, optional: false, constraints: {} },
+            stats: {
+                type: {
+                    kind: "reference",
+                    target: "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationRenderStats",
+                },
+                optional: false,
+                constraints: {},
+            },
+            warnings: {
+                type: { kind: "array", element: { kind: "primitive", name: "string" } },
+                optional: false,
+                constraints: { max_items: 256 },
+            },
+        },
+    },
+    "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationShading": {
+        kind: "enum",
+        values: ["unlit", "flat", "lambert", "banded", "toon"],
+    },
+    "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationStyleA0": {
+        kind: "object",
+        properties: {
+            shading: {
+                type: {
+                    kind: "reference",
+                    target: "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationShading",
+                },
+                optional: true,
+                constraints: {},
+            },
+            ambient: {
+                type: { kind: "primitive", name: "float64" },
+                optional: true,
+                constraints: { min_value: 0, max_value: 1 },
+            },
+            key_intensity: {
+                type: { kind: "primitive", name: "float64" },
+                optional: true,
+                constraints: { min_value: 0, max_value: 4 },
+            },
+            light_direction: {
+                type: {
+                    kind: "reference",
+                    target: "Wavenumber.Geometer.Contracts.MeshIllustrationA0.IllustrationVector3",
+                },
+                optional: true,
+                constraints: {},
+            },
+            bands: {
+                type: { kind: "primitive", name: "uint32" },
+                optional: true,
+                constraints: { min_value: 1, max_value: 256 },
+            },
+            source_colors: {
+                type: { kind: "primitive", name: "boolean" },
+                optional: true,
+                constraints: {},
+            },
+            fallback_color: {
+                type: {
+                    kind: "reference",
+                    target: "Wavenumber.Geometer.Contracts.MeshIllustrationA0.IllustrationVector3",
+                },
+                optional: true,
+                constraints: {},
+            },
+            background: {
+                type: { kind: "primitive", name: "string" },
+                optional: true,
+                constraints: { min_length: 1, max_length: 128 },
+            },
+            transparent_background: {
+                type: { kind: "primitive", name: "boolean" },
+                optional: true,
+                constraints: {},
+            },
+            fuse_surfaces: {
+                type: { kind: "primitive", name: "boolean" },
+                optional: true,
+                constraints: {},
+            },
+            layer_coplanar_materials: {
+                type: { kind: "primitive", name: "boolean" },
+                optional: true,
+                constraints: {},
+            },
+            show_hlr_outline: {
+                type: { kind: "primitive", name: "boolean" },
+                optional: true,
+                constraints: {},
+            },
+            show_hlr_detail: {
+                type: { kind: "primitive", name: "boolean" },
+                optional: true,
+                constraints: {},
+            },
+            show_outlines: {
+                type: { kind: "primitive", name: "boolean" },
+                optional: true,
+                constraints: {},
+            },
+            show_creases: {
+                type: { kind: "primitive", name: "boolean" },
+                optional: true,
+                constraints: {},
+            },
+            crease_angle_degrees: {
+                type: { kind: "primitive", name: "float64" },
+                optional: true,
+                constraints: { min_value: 0, max_value: 180 },
+            },
+            outline_color: {
+                type: { kind: "primitive", name: "string" },
+                optional: true,
+                constraints: { min_length: 1, max_length: 128 },
+            },
+            crease_color: {
+                type: { kind: "primitive", name: "string" },
+                optional: true,
+                constraints: { min_length: 1, max_length: 128 },
+            },
+            outline_width: {
+                type: { kind: "primitive", name: "float64" },
+                optional: true,
+                constraints: { min_value: 0 },
+            },
+            crease_width: {
+                type: { kind: "primitive", name: "float64" },
+                optional: true,
+                constraints: { min_value: 0 },
+            },
+            double_sided: {
+                type: { kind: "primitive", name: "boolean" },
+                optional: true,
+                constraints: {},
+            },
+            rim_amount: {
+                type: { kind: "primitive", name: "float64" },
+                optional: true,
+                constraints: { min_value: 0, max_value: 1 },
+            },
+        },
+    },
+    "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationSvgOptions": {
+        kind: "object",
+        properties: {
+            coordinate_span: {
+                type: { kind: "primitive", name: "uint32" },
+                optional: true,
+                constraints: { min_value: 10000, max_value: 1000000000 },
+            },
+            title: {
+                type: { kind: "primitive", name: "string" },
+                optional: true,
+                constraints: { min_length: 1, max_length: 1024 },
+            },
+        },
+    },
+    "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationView": {
+        kind: "object",
+        properties: {
+            direction: {
+                type: {
+                    kind: "reference",
+                    target: "Wavenumber.Geometer.Contracts.MeshIllustrationA0.IllustrationVector3",
+                },
+                optional: false,
+                constraints: {},
+            },
+            up: {
+                type: {
+                    kind: "reference",
+                    target: "Wavenumber.Geometer.Contracts.MeshIllustrationA0.IllustrationVector3",
+                },
+                optional: false,
+                constraints: {},
+            },
+            mirror_x: { type: { kind: "primitive", name: "boolean" }, optional: true, constraints: {} },
         },
     },
     "Wavenumber.Geometer.Contracts.ModelBoundsA0.Matrix4x4": {
@@ -876,6 +1864,10 @@ const declarations = {
             {
                 kind: "reference",
                 target: "Wavenumber.Geometer.Contracts.ModelBoundsA0.ModelBoundsResultA0",
+            },
+            {
+                kind: "reference",
+                target: "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrProjectionResultA0",
             },
             {
                 kind: "reference",
@@ -4353,6 +5345,30 @@ export function decodeDiagnosticA0Json(data) {
 export function encodeDiagnosticA0Json(value) {
     return encodeContractJson(value, { kind: "reference", target: "Wavenumber.Geometer.Contracts.Common.DiagnosticA0" }, declarations);
 }
+export function decodeHlrProjectionOptionsA0Json(data) {
+    return decodeContractJson(data, {
+        kind: "reference",
+        target: "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrProjectionOptionsA0",
+    }, declarations);
+}
+export function encodeHlrProjectionOptionsA0Json(value) {
+    return encodeContractJson(value, {
+        kind: "reference",
+        target: "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrProjectionOptionsA0",
+    }, declarations);
+}
+export function decodeHlrProjectionResultA0Json(data) {
+    return decodeContractJson(data, {
+        kind: "reference",
+        target: "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrProjectionResultA0",
+    }, declarations);
+}
+export function encodeHlrProjectionResultA0Json(value) {
+    return encodeContractJson(value, {
+        kind: "reference",
+        target: "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrProjectionResultA0",
+    }, declarations);
+}
 export function decodeIpcCancelledA0Json(data) {
     return decodeContractJson(data, { kind: "reference", target: "Wavenumber.Geometer.Contracts.IpcA0.IpcCancelledA0" }, declarations);
 }
@@ -4406,6 +5422,42 @@ export function decodeIpcWelcomeA0Json(data) {
 }
 export function encodeIpcWelcomeA0Json(value) {
     return encodeContractJson(value, { kind: "reference", target: "Wavenumber.Geometer.Contracts.IpcA0.IpcWelcomeA0" }, declarations);
+}
+export function decodeMeshIllustrationInputA0Json(data) {
+    return decodeContractJson(data, {
+        kind: "reference",
+        target: "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationInputA0",
+    }, declarations);
+}
+export function encodeMeshIllustrationInputA0Json(value) {
+    return encodeContractJson(value, {
+        kind: "reference",
+        target: "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationInputA0",
+    }, declarations);
+}
+export function decodeMeshIllustrationResultA0Json(data) {
+    return decodeContractJson(data, {
+        kind: "reference",
+        target: "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationResultA0",
+    }, declarations);
+}
+export function encodeMeshIllustrationResultA0Json(value) {
+    return encodeContractJson(value, {
+        kind: "reference",
+        target: "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationResultA0",
+    }, declarations);
+}
+export function decodeMeshIllustrationStyleA0Json(data) {
+    return decodeContractJson(data, {
+        kind: "reference",
+        target: "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationStyleA0",
+    }, declarations);
+}
+export function encodeMeshIllustrationStyleA0Json(value) {
+    return encodeContractJson(value, {
+        kind: "reference",
+        target: "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationStyleA0",
+    }, declarations);
 }
 export function decodeModelBoundsOptionsA0Json(data) {
     return decodeContractJson(data, {

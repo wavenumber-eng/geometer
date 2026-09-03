@@ -413,6 +413,11 @@ export function prepareMeshIllustration(
   const triangles: IllustrationTriangle[] = [];
   const edgeMaps = new Map<string, EdgeAccumulator>();
   const warnings: string[] = [];
+  let suppressedWarnings = 0;
+  const addWarning = (warning: string): void => {
+    if (warnings.length < 255) warnings.push(warning);
+    else suppressedWarnings += 1;
+  };
   let sourceTriangles = 0;
   let minX = Infinity;
   let minY = Infinity;
@@ -437,7 +442,7 @@ export function prepareMeshIllustration(
       ] as const;
       const vertexCount = mesh.positions.length / 3;
       if (indices.some((index) => index < 0 || index >= vertexCount)) {
-        warnings.push(`Skipped out-of-range triangle ${triangleIndex} in ${mesh.id}.`);
+        addWarning(`Skipped out-of-range triangle ${triangleIndex} in ${mesh.id}.`);
         continue;
       }
 
@@ -447,7 +452,7 @@ export function prepareMeshIllustration(
       const crossNormal = cross(subtract(world[1], world[0]), subtract(world[2], world[0]));
       const magnitude = length(crossNormal);
       if (magnitude < 1e-12) {
-        warnings.push(`Skipped degenerate triangle ${triangleIndex} in ${mesh.id}.`);
+        addWarning(`Skipped degenerate triangle ${triangleIndex} in ${mesh.id}.`);
         continue;
       }
       const normal = normalize(
@@ -523,6 +528,8 @@ export function prepareMeshIllustration(
     maxX = 1;
     maxY = 1;
   }
+  if (suppressedWarnings > 0)
+    warnings.push(`${suppressedWarnings.toLocaleString()} additional warnings suppressed.`);
 
   return {
     view: { direction, up, right, mirrorX },
@@ -1950,7 +1957,7 @@ export function renderMeshIllustrationSvg(
   };
   if (!style.transparentBackground) {
     body.push(
-      `<rect width="${svgWidth}" height="${svgHeight}" fill="${escapeXml(style.background)}"/>`,
+      `<rect width="${svgWidth}" height="${svgHeight}" fill="${escapeXml(safeCssColor(style.background))}"/>`,
     );
   }
   for (let commandIndex = 0; commandIndex < commands.length; commandIndex += 1) {
@@ -2194,7 +2201,7 @@ export function createIllustrator(
   input: MeshIllustrationInputA0,
   linework: MeshIllustrationLinework = {},
 ): MeshIllustratorA0 {
-  const scene = prepareMeshIllustration(
+  let scene: MeshIllustrationScene | null = prepareMeshIllustration(
     {
       meshes: input.meshes.map((mesh) => ({
         id: mesh.id,
@@ -2215,19 +2222,15 @@ export function createIllustrator(
       ...(input.view.mirror_x === undefined ? {} : { mirrorX: input.view.mirror_x }),
     },
     {
-      ...(input.prepare?.max_triangles === undefined
-        ? {}
-        : { maxTriangles: input.prepare.max_triangles }),
-      ...(input.prepare?.weld_tolerance === undefined
-        ? {}
-        : { weldTolerance: input.prepare.weld_tolerance }),
+      maxTriangles: input.prepare?.max_triangles ?? 750_000,
+      weldTolerance: input.prepare?.weld_tolerance ?? 0.0000001,
     },
   );
   if (linework.outlineSegments !== undefined) scene.outlineSegments = linework.outlineSegments;
   if (linework.detailSegments !== undefined) scene.detailSegments = linework.detailSegments;
   let disposed = false;
   const requireScene = (): MeshIllustrationScene => {
-    if (disposed) throw new Error("Mesh illustrator has been disposed.");
+    if (scene === null) throw new Error("Mesh illustrator has been disposed.");
     return scene;
   };
   const mergedStyle = (patch: MeshIllustrationStyleA0 = {}): MeshIllustrationStyle =>
@@ -2248,7 +2251,7 @@ export function createIllustrator(
         schema: "geometry.mesh_illustration.result.a0",
         svg: rendered.svg,
         stats: illustrationStatsA0(rendered.stats),
-        warnings: [...scene.warnings],
+        warnings: [...requireScene().warnings],
       };
     },
     renderCanvas(context, style = {}) {
@@ -2258,8 +2261,10 @@ export function createIllustrator(
     },
     dispose() {
       if (disposed) return;
-      VISIBILITY_ORDER_CACHE.delete(scene);
-      RENDER_COMMAND_CACHE.delete(scene);
+      const current = requireScene();
+      VISIBILITY_ORDER_CACHE.delete(current);
+      RENDER_COMMAND_CACHE.delete(current);
+      scene = null;
       disposed = true;
     },
   };

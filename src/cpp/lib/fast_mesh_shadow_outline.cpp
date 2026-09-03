@@ -261,23 +261,50 @@ bool patch_paths(const FastHlrPreparedMesh& prepared,
     return true;
 }
 
-Clipper2Lib::PathsD union_paths(const Clipper2Lib::PathsD& paths)
+bool charge_union_pairs(const Clipper2Lib::PathsD& paths, std::size_t* remaining_pairs)
+{
+    std::size_t segments = 0;
+    for (const Clipper2Lib::PathD& path : paths)
+    {
+        if (path.size() > std::numeric_limits<std::size_t>::max() - segments)
+            return false;
+        segments += path.size();
+    }
+    if (segments < 2)
+        return true;
+    std::size_t first = segments;
+    std::size_t second = segments - 1;
+    if ((first & 1U) == 0U)
+        first /= 2;
+    else
+        second /= 2;
+    if (second != 0 && first > *remaining_pairs / second)
+        return false;
+    *remaining_pairs -= first * second;
+    return true;
+}
+
+bool union_paths(const Clipper2Lib::PathsD& paths, std::size_t* remaining_pairs,
+                 Clipper2Lib::PathsD* solution)
 {
     if (paths.empty())
     {
-        return {};
+        solution->clear();
+        return true;
     }
+    if (!charge_union_pairs(paths, remaining_pairs))
+        return false;
     Clipper2Lib::ClipperD clipper(/*precision=*/6);
     clipper.AddSubject(paths);
-    Clipper2Lib::PathsD solution;
-    clipper.Execute(Clipper2Lib::ClipType::Union, Clipper2Lib::FillRule::NonZero, solution);
-    return solution;
+    solution->clear();
+    clipper.Execute(Clipper2Lib::ClipType::Union, Clipper2Lib::FillRule::NonZero, *solution);
+    return true;
 }
 
-Clipper2Lib::PathsD union_triangle_faces(const FastHlrPreparedMesh& prepared,
-                                         const std::vector<Clipper2Lib::PointD>& vertices,
-                                         const std::vector<int>& signs,
-                                         FastMeshShadowStatistics* statistics)
+bool union_triangle_faces(const FastHlrPreparedMesh& prepared,
+                          const std::vector<Clipper2Lib::PointD>& vertices,
+                          const std::vector<int>& signs, std::size_t* remaining_pairs,
+                          Clipper2Lib::PathsD* solutions, FastMeshShadowStatistics* statistics)
 {
     std::map<std::uint32_t, Clipper2Lib::PathsD> face_triangles;
     for (std::size_t index = 0; index < prepared.triangles.size(); ++index)
@@ -297,13 +324,15 @@ Clipper2Lib::PathsD union_triangle_faces(const FastHlrPreparedMesh& prepared,
         face_triangles[triangle.source_face].push_back({first, second, third});
         ++statistics->fallback_triangles;
     }
-    Clipper2Lib::PathsD solutions;
+    solutions->clear();
     for (const auto& entry : face_triangles)
     {
-        Clipper2Lib::PathsD face_solution = union_paths(entry.second);
-        solutions.insert(solutions.end(), face_solution.begin(), face_solution.end());
+        Clipper2Lib::PathsD face_solution;
+        if (!union_paths(entry.second, remaining_pairs, &face_solution))
+            return false;
+        solutions->insert(solutions->end(), face_solution.begin(), face_solution.end());
     }
-    return solutions;
+    return true;
 }
 
 bool snap(double value, std::int64_t scale, std::int64_t* result)
@@ -445,17 +474,30 @@ int fast_mesh_shadow_outline_geometry(const FastHlrPreparedMesh& prepared,
     }
 
     const double simplify_tolerance = 1.0 / static_cast<double>(scale);
+    std::size_t remaining_union_pairs = options.limits.max_candidate_pairs;
     Clipper2Lib::PathsD patches;
     Clipper2Lib::PathsD solution;
     if (!patch_paths(prepared, vertices, signs, &patches, &output_statistics))
     {
-        solution = union_triangle_faces(prepared, vertices, signs, &output_statistics);
+        if (!union_triangle_faces(prepared, vertices, signs, &remaining_union_pairs, &solution,
+                                  &output_statistics))
+        {
+            set_status(status, 6, "Fast mesh-shadow candidate-pair limit exceeded.");
+            return 6;
+        }
     }
-    else
+    else if (!union_paths(patches, &remaining_union_pairs, &solution))
     {
-        solution = union_paths(patches);
+        set_status(status, 6, "Fast mesh-shadow candidate-pair limit exceeded.");
+        return 6;
     }
-    solution = union_paths(solution);
+    Clipper2Lib::PathsD final_solution;
+    if (!union_paths(solution, &remaining_union_pairs, &final_solution))
+    {
+        set_status(status, 6, "Fast mesh-shadow candidate-pair limit exceeded.");
+        return 6;
+    }
+    solution = std::move(final_solution);
     solution = Clipper2Lib::SimplifyPaths(solution, simplify_tolerance, false);
     for (const Clipper2Lib::PathD& path : solution)
     {

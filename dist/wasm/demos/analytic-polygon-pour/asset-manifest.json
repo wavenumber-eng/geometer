@@ -33,17 +33,17 @@
     {
       "bytes": 163460,
       "path": "geometer.js",
-      "sha256": "75429495144ee3050a680dd80b8c657ec4d1075b00e7b69943c0a3e7bbdf60a8"
+      "sha256": "b966f2da17e3cfdcfbaf43eaf71b71518e28adfb689eb9c552e5fc6d967fe90e"
     },
     {
-      "bytes": 18937744,
+      "bytes": 19027807,
       "path": "geometer.wasm",
-      "sha256": "e568304c047df8ea7b71a99b139f439618e824cd1287396d3116742f37a91021"
+      "sha256": "41603f62764a3dd0a2f0559aa8a930760abe6316a008c26458b1d7604e8da8a6"
     },
     {
-      "bytes": 32952,
+      "bytes": 32954,
       "path": "geometer_demo.css",
-      "sha256": "b0525e0d1485cf4c9ee94f140a81f0610fd92610b00f2abfa7c574b75c174df9"
+      "sha256": "689807b4dcddd21e54b28b7559ca5ebb0b0b168dd541e85d5b279b334066e077"
     },
     {
       "bytes": 3468,
@@ -116,29 +116,29 @@
       "sha256": "cd230c4323769673de5402fc9303e489246008edc4d0b0ba6bf4ebfd2f043efa"
     },
     {
-      "bytes": 1738,
+      "bytes": 1824,
       "path": "package/codec-runtime.d.ts",
-      "sha256": "1aaaeccc921b4559321254b9f338d12a72487a27b24e99ef23d347b1eb6777f1"
+      "sha256": "912b49dc67ecb584ebcd07e0465821dd25eb36ba0ef2b9bae5a2ff86c2085512"
     },
     {
-      "bytes": 12163,
+      "bytes": 12601,
       "path": "package/codec-runtime.js",
-      "sha256": "920ccc3efa0f2e9b8ca8a7bd705c44ef71c5470af12edc0685f6349a14a23950"
+      "sha256": "fa949ab7bb094df35c3fb5bb90dc050a2e2ea72ad0b5e824ff334834a9c74cae"
     },
     {
-      "bytes": 9248,
+      "bytes": 10413,
       "path": "package/generated/codecs.d.ts",
-      "sha256": "56f69dde32d04b91c64f6095a3bbd3ae4eb24e1d4ecc5ae77b575a2539554cb4"
+      "sha256": "0380107fe8c9a1ec06cced2134a8d56120135d9672a26f9ebe48e7fff65bb0d9"
     },
     {
-      "bytes": 176172,
+      "bytes": 214997,
       "path": "package/generated/codecs.js",
-      "sha256": "ea76dd52a53295b9702ffa3aacf959ed6b09da93c44a8d15468fd8b3f85a0cc3"
+      "sha256": "3ca950d49457317062ab0e854ee5bf3fecb90a133bdccad70cae7f9ebc129bd3"
     },
     {
-      "bytes": 45420,
+      "bytes": 54104,
       "path": "package/generated/contracts.d.ts",
-      "sha256": "7379ddec9987ea85dd2c0196757dcc2baea0b30fc0e416bb2943ed4dbce78db9"
+      "sha256": "33cf95503080ddc1b3d3534a2b8dd32eda0bd5717439c9c9003e90ea58da4894"
     },
     {
       "bytes": 80,
@@ -156,24 +156,44 @@
       "sha256": "6e4731631af8b7473f72ecb2d014453cfa89d93f2b3d4b4b6a14f7d9be60145a"
     },
     {
-      "bytes": 11615,
+      "bytes": 13276,
       "path": "package/generated/operations.d.ts",
-      "sha256": "33d624d5a666e320dd945248fbdbf8689eb8cfeab3bd59a78ab80fecef74099f"
+      "sha256": "1f0ca236d7d3a3c9b30802466dad132721d4c3b4ae3d11f6a4c405c4557f6f08"
     },
     {
-      "bytes": 9860,
+      "bytes": 11301,
       "path": "package/generated/operations.js",
-      "sha256": "5f925aee9c31a87bce742f3644335773a2f8abd485a37441a8ec6580f03e71cb"
+      "sha256": "1a7937a0c728e45a3e17041fc0875fba7c42f3f2e9ee7f0f7b8dee57b20e9683"
     },
     {
-      "bytes": 247,
+      "bytes": 1891,
+      "path": "package/illustrated-hlr.d.ts",
+      "sha256": "c471a0bcc4d6809e538ebeaa261a3ecd69bf2ad96ca7e92255c3690791bbf3d0"
+    },
+    {
+      "bytes": 3541,
+      "path": "package/illustrated-hlr.js",
+      "sha256": "85f23443ca7cea8246fbbed50a9f232f63926f8a1120d4228e8adced0ccca5aa"
+    },
+    {
+      "bytes": 751,
       "path": "package/index.d.ts",
-      "sha256": "b62a0679f9b854208ca283ada9ea023991f7126443fc7efa2ab8f32b8383e310"
+      "sha256": "e4f243269f7ff65152c4f8c2e208e8339575ca45a23bda2829399f423df947bf"
     },
     {
-      "bytes": 247,
+      "bytes": 546,
       "path": "package/index.js",
-      "sha256": "b62a0679f9b854208ca283ada9ea023991f7126443fc7efa2ab8f32b8383e310"
+      "sha256": "b90f712c923f110a5bea50c4d68c357e46529f93a0a88f28656eb4090ca1dcc1"
+    },
+    {
+      "bytes": 1015,
+      "path": "package/indexed-mesh-packet-a0.d.ts",
+      "sha256": "8456caa111f2b771ffd40f1e88a95aeb6a6b3cdb2820250f08a2162d2cc05833"
+    },
+    {
+      "bytes": 8251,
+      "path": "package/indexed-mesh-packet-a0.js",
+      "sha256": "321711e422d6c076bf609236c048fb130b90f88c22f4eead2739fa08eb869f30"
     },
     {
       "bytes": 2045,
@@ -181,19 +201,29 @@
       "sha256": "c5d2b0972766914b6ae16a834c799bedd9394fcc8365268cf2928cb097376929"
     },
     {
-      "bytes": 17311,
+      "bytes": 17364,
       "path": "package/ipc-a0.js",
-      "sha256": "6214e919071688997bb13365cbbdb774c0bddcd32894b70703620a0eb5423808"
+      "sha256": "23224e45c2e56b01fcb99f72c035d4ce2d32577f2acc159696e3e552a0e45326"
     },
     {
-      "bytes": 2815,
+      "bytes": 3531,
       "path": "package/ipc-client-a0.d.ts",
-      "sha256": "8181c8a93adef43bc5b59cfdf219416d9788af05fa4f04bbed1851b214c2fc49"
+      "sha256": "d63eb8ac90cb8c580b0499c2ac40e870c8abb52d1da3ca7271c027de6a1f2c5e"
     },
     {
-      "bytes": 19329,
+      "bytes": 20735,
       "path": "package/ipc-client-a0.js",
-      "sha256": "cd373cb53f4bda2025f3432d6425796051f231014217d8e1c305e8e289ccea22"
+      "sha256": "ba54270f01db22d92fbd595932495bf5931dbbc60fe643dfbffab0dd421a9317"
+    },
+    {
+      "bytes": 5821,
+      "path": "package/mesh-illustration.d.ts",
+      "sha256": "ffdf33cbe05012136dac97fe6cebb981d394e5956614b1bcabcc8a9116d5e4df"
+    },
+    {
+      "bytes": 78225,
+      "path": "package/mesh-illustration.js",
+      "sha256": "95619df414d1438b6785ba1869ab2ec4589865018a86b4b53d60123d2a35d02a"
     },
     {
       "bytes": 1069,
@@ -216,14 +246,24 @@
       "sha256": "1ea11176aa8e1d01c5a325b03a4c0db9ddeccdd767cca03c15f416ffacb50c31"
     },
     {
-      "bytes": 1204,
+      "bytes": 1667,
       "path": "package/package.json",
-      "sha256": "efb13284cfa9249fa7c369563f7102561b8bddff46ce350d778cdb3d97ec168f"
+      "sha256": "51957fcdbe1887b66b6804db0dff043eaf83d3dabf3299bb30409ad52b4226b9"
     },
     {
-      "bytes": 3986,
+      "bytes": 2310,
+      "path": "package/raster-hlr.d.ts",
+      "sha256": "26d12b848fc20034c3e3200aa8746a691770b0724352d526800fe1a7d8175441"
+    },
+    {
+      "bytes": 9509,
+      "path": "package/raster-hlr.js",
+      "sha256": "ae48a2c4316566d0e5686e1bc5ab6e5a3e77aa036ba2c24126caef6c17c90e84"
+    },
+    {
+      "bytes": 6461,
       "path": "package/README.md",
-      "sha256": "b938554a28de8279f166f2dde88d03fbc8f268abc074909a53304cac859b5142"
+      "sha256": "f1ab8a6ffbc3d3724bdbf84209fe069d1f175a3a8a08d7d7307a356a3b5fe8da"
     },
     {
       "bytes": 3832,
@@ -236,14 +276,14 @@
       "sha256": "bed2fd31af416ebcacf3375892fe49b1fd2e509ad515fc5e9796813df6deb167"
     },
     {
-      "bytes": 3329,
+      "bytes": 3993,
       "path": "package/wasm.d.ts",
-      "sha256": "44ede92d71756c3e6646a08fe316147e291faf4742a78575894fcf505a5cbe28"
+      "sha256": "d50ebbf1f227d3204ed36f6383bf51d9f7c17ac16b2589cb8620ff20101ff734"
     },
     {
-      "bytes": 22365,
+      "bytes": 23867,
       "path": "package/wasm.js",
-      "sha256": "17b81710cbdd56226e00f74590bd5cb3b281be9686fb11d4b83d595d6ca5caae"
+      "sha256": "46006031695ba25d772bebc2d7c77b56e83d28e44357d81ac7dad0830f5bbef8"
     },
     {
       "bytes": 827,
@@ -256,14 +296,14 @@
       "sha256": "46ea3572f5fa6217782b887bc9de706c75a0b3549a3f6baa975a4585b255ceca"
     },
     {
-      "bytes": 3606,
+      "bytes": 3891,
       "path": "package/worker.d.ts",
-      "sha256": "5c8eaa0574102a43f2eb0a7ed18c1ae19c03cbca989bb600295c9b714ea440e3"
+      "sha256": "97bb77d504c9176380e755ed450253520980fd73a3fe34933d94ceec2e87b618"
     },
     {
-      "bytes": 15062,
+      "bytes": 16567,
       "path": "package/worker.js",
-      "sha256": "f3d3080343d4149dbfd2fd7945d4e628cd730e99890b9c3d9643d0371136cd7d"
+      "sha256": "8873281ab798318b116994f5a48e882e6f8055fdb484e508dc1f3b40e61dda32"
     },
     {
       "bytes": 5112,
@@ -272,5 +312,5 @@
     }
   ],
   "schema": "wn.geometer.static_site.a0",
-  "sha256": "a0577bebfffe7a519a765e7d50976972588e60e12565119ba4d4e0693a8100ae"
+  "sha256": "40648ae29e25415a738bdaf084366ffb04167a6c0bed723e179e97ddc3bb14bc"
 }

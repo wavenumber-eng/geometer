@@ -1,5 +1,6 @@
 #include "geometer/fast_hlr.h"
 
+#include "fast_hlr_prepare_internal.h"
 #include "fast_hlr_reconstruct.h"
 #include "fast_hlr_seams.h"
 #include "fast_hlr_view_types.h"
@@ -9,6 +10,7 @@
 #include <cstdint>
 #include <limits>
 #include <map>
+#include <numeric>
 #include <utility>
 #include <vector>
 
@@ -34,6 +36,22 @@ struct EdgeKey
     bool operator<(const EdgeKey& other) const
     {
         return first < other.first || (first == other.first && second < other.second);
+    }
+};
+
+struct WeldCell
+{
+    std::int64_t x = 0;
+    std::int64_t y = 0;
+    std::int64_t z = 0;
+
+    bool operator<(const WeldCell& other) const
+    {
+        if (x != other.x)
+            return x < other.x;
+        if (y != other.y)
+            return y < other.y;
+        return z < other.z;
     }
 };
 
@@ -128,6 +146,67 @@ double signed_area2(const ProjectedPoint& first, const ProjectedPoint& second,
 EdgeKey edge_key(std::uint32_t first, std::uint32_t second)
 {
     return first < second ? EdgeKey{first, second} : EdgeKey{second, first};
+}
+
+bool weld_cell(const FastHlrVec3& point, double tolerance, WeldCell* cell)
+{
+    const double limit = static_cast<double>(std::numeric_limits<std::int64_t>::max() - 2);
+    const double x = std::floor(point.x / tolerance);
+    const double y = std::floor(point.y / tolerance);
+    const double z = std::floor(point.z / tolerance);
+    if (!std::isfinite(x) || !std::isfinite(y) || !std::isfinite(z) || std::fabs(x) > limit ||
+        std::fabs(y) > limit || std::fabs(z) > limit)
+        return false;
+    *cell = {static_cast<std::int64_t>(x), static_cast<std::int64_t>(y),
+             static_cast<std::int64_t>(z)};
+    return true;
+}
+
+bool within_weld_tolerance(const FastHlrVec3& first, const FastHlrVec3& second, double tolerance)
+{
+    const double x = first.x - second.x;
+    const double y = first.y - second.y;
+    const double z = first.z - second.z;
+    return std::hypot(x, y, z) <= tolerance;
+}
+
+bool weld_indexed_vertices(const FastHlrIndexedMesh& mesh, double tolerance,
+                           std::vector<FastHlrVec3>* vertices, std::vector<std::uint32_t>* remap)
+{
+    std::map<WeldCell, std::vector<std::uint32_t>> cells;
+    vertices->reserve(mesh.vertices.size());
+    remap->reserve(mesh.vertices.size());
+    for (const FastHlrVec3& point : mesh.vertices)
+    {
+        WeldCell cell;
+        if (!weld_cell(point, tolerance, &cell))
+        {
+            remap->push_back(static_cast<std::uint32_t>(vertices->size()));
+            vertices->push_back(point);
+            continue;
+        }
+        std::uint32_t match = std::numeric_limits<std::uint32_t>::max();
+        for (std::int64_t dz = -1; dz <= 1; ++dz)
+            for (std::int64_t dy = -1; dy <= 1; ++dy)
+                for (std::int64_t dx = -1; dx <= 1; ++dx)
+                {
+                    const auto found = cells.find({cell.x + dx, cell.y + dy, cell.z + dz});
+                    if (found == cells.end())
+                        continue;
+                    for (std::uint32_t candidate : found->second)
+                        if (within_weld_tolerance(point, (*vertices)[candidate], tolerance) &&
+                            candidate < match)
+                            match = candidate;
+                }
+        if (match == std::numeric_limits<std::uint32_t>::max())
+        {
+            match = static_cast<std::uint32_t>(vertices->size());
+            vertices->push_back(point);
+            cells[cell].push_back(match);
+        }
+        remap->push_back(match);
+    }
+    return true;
 }
 
 bool incident_to(const FastHlrPreparedMesh& prepared, const FastHlrPreparedEdge& edge,
@@ -512,7 +591,12 @@ bool valid_prepared_mesh(const FastHlrPreparedMesh& prepared)
     }
     for (const FastHlrPreparedTriangle& triangle : prepared.triangles)
     {
-        if (!finite(triangle.normal))
+        const double normal_length = length(triangle.normal);
+        if (!finite(triangle.normal) || !std::isfinite(normal_length) ||
+            std::fabs(normal_length - 1.0) > 1.0e-9 ||
+            triangle.vertices[0] == triangle.vertices[1] ||
+            triangle.vertices[1] == triangle.vertices[2] ||
+            triangle.vertices[2] == triangle.vertices[0])
         {
             return false;
         }
@@ -524,31 +608,46 @@ bool valid_prepared_mesh(const FastHlrPreparedMesh& prepared)
             }
         }
     }
+    std::vector<std::uint8_t> covered_edges(prepared.triangles.size(), 0U);
     for (const FastHlrPreparedEdge& edge : prepared.edges)
     {
         if (edge.vertices[0] >= prepared.vertices.size() ||
-            edge.vertices[1] >= prepared.vertices.size() ||
-            edge.first_incident > prepared.incident_triangles.size() ||
+            edge.vertices[1] >= prepared.vertices.size() || edge.vertices[0] == edge.vertices[1] ||
+            edge.incident_count == 0 || edge.first_incident > prepared.incident_triangles.size() ||
             edge.incident_count > prepared.incident_triangles.size() - edge.first_incident)
         {
             return false;
         }
         for (std::uint32_t index = 0; index < edge.incident_count; ++index)
         {
-            if (prepared.incident_triangles[edge.first_incident + index] >=
-                prepared.triangles.size())
+            const std::uint32_t triangle_index =
+                prepared.incident_triangles[edge.first_incident + index];
+            if (triangle_index >= prepared.triangles.size())
             {
                 return false;
             }
+            const auto& triangle = prepared.triangles[triangle_index];
+            std::uint8_t mask = 0U;
+            for (std::size_t side = 0; side < 3; ++side)
+                if (edge_key(triangle.vertices[side], triangle.vertices[(side + 1) % 3]).first ==
+                        edge.vertices[0] &&
+                    edge_key(triangle.vertices[side], triangle.vertices[(side + 1) % 3]).second ==
+                        edge.vertices[1])
+                    mask = static_cast<std::uint8_t>(1U << side);
+            if (mask == 0U || (covered_edges[triangle_index] & mask) != 0U)
+                return false;
+            covered_edges[triangle_index] |= mask;
         }
     }
-    return true;
+    return std::all_of(covered_edges.begin(), covered_edges.end(),
+                       [](std::uint8_t mask) { return mask == 0x7U; });
 }
 
 } // namespace
 
-int prepare_fast_hlr_mesh(const FastHlrIndexedMesh& mesh, const FastHlrOptions& options,
-                          FastHlrPreparedMesh* prepared, Status* status)
+static int prepare_fast_hlr_mesh_impl(const FastHlrIndexedMesh& mesh, const FastHlrOptions& options,
+                                      bool weld_vertices, FastHlrPreparedMesh* prepared,
+                                      Status* status)
 {
     if (prepared == nullptr)
     {
@@ -578,7 +677,19 @@ int prepare_fast_hlr_mesh(const FastHlrIndexedMesh& mesh, const FastHlrOptions& 
     }
 
     FastHlrPreparedMesh output;
-    output.vertices = mesh.vertices;
+    std::vector<std::uint32_t> vertex_remap;
+    if (weld_vertices &&
+        !weld_indexed_vertices(mesh, options.weld_tolerance, &output.vertices, &vertex_remap))
+    {
+        set_status(status, 4, "Fast HLR vertex exceeds the weld-grid range.");
+        return 4;
+    }
+    if (!weld_vertices)
+    {
+        output.vertices = mesh.vertices;
+        vertex_remap.resize(mesh.vertices.size());
+        std::iota(vertex_remap.begin(), vertex_remap.end(), 0U);
+    }
     output.triangles.reserve(mesh.triangles.size());
     std::map<EdgeKey, std::vector<std::uint32_t>> incidents;
     for (const FastHlrIndexedTriangle& triangle : mesh.triangles)
@@ -591,9 +702,12 @@ int prepare_fast_hlr_mesh(const FastHlrIndexedMesh& mesh, const FastHlrOptions& 
                 return 5;
             }
         }
-        const FastHlrVec3& first = mesh.vertices[triangle.vertices[0]];
-        const FastHlrVec3& second = mesh.vertices[triangle.vertices[1]];
-        const FastHlrVec3& third = mesh.vertices[triangle.vertices[2]];
+        const std::array<std::uint32_t, 3> welded = {vertex_remap[triangle.vertices[0]],
+                                                     vertex_remap[triangle.vertices[1]],
+                                                     vertex_remap[triangle.vertices[2]]};
+        const FastHlrVec3& first = output.vertices[welded[0]];
+        const FastHlrVec3& second = output.vertices[welded[1]];
+        const FastHlrVec3& third = output.vertices[welded[2]];
         FastHlrVec3 normal;
         if (!normalized(cross(subtract(second, first), subtract(third, first)), &normal))
         {
@@ -605,15 +719,22 @@ int prepare_fast_hlr_mesh(const FastHlrIndexedMesh& mesh, const FastHlrOptions& 
             return 3;
         }
         const auto triangle_index = static_cast<std::uint32_t>(output.triangles.size());
-        output.triangles.push_back({triangle.vertices, normal, triangle.source_face});
-        incidents[edge_key(triangle.vertices[0], triangle.vertices[1])].push_back(triangle_index);
-        incidents[edge_key(triangle.vertices[1], triangle.vertices[2])].push_back(triangle_index);
-        incidents[edge_key(triangle.vertices[2], triangle.vertices[0])].push_back(triangle_index);
-    }
-    if (incidents.size() > options.limits.max_edges)
-    {
-        set_status(status, 3, "Fast HLR prepared edges exceed the configured limit.");
-        return 3;
+        output.triangles.push_back({welded, normal, triangle.source_face});
+        for (const EdgeKey key : {edge_key(welded[0], welded[1]), edge_key(welded[1], welded[2]),
+                                  edge_key(welded[2], welded[0])})
+        {
+            auto incident = incidents.find(key);
+            if (incident == incidents.end())
+            {
+                if (incidents.size() >= options.limits.max_edges)
+                {
+                    set_status(status, 3, "Fast HLR prepared edges exceed the configured limit.");
+                    return 3;
+                }
+                incident = incidents.emplace(key, std::vector<std::uint32_t>{}).first;
+            }
+            incident->second.push_back(triangle_index);
+        }
     }
     output.edges.reserve(incidents.size());
     const std::size_t max_incident_triangles =
@@ -643,6 +764,24 @@ int prepare_fast_hlr_mesh(const FastHlrIndexedMesh& mesh, const FastHlrOptions& 
     set_status(status, 0, "");
     return 0;
 }
+
+int prepare_fast_hlr_mesh(const FastHlrIndexedMesh& mesh, const FastHlrOptions& options,
+                          FastHlrPreparedMesh* prepared, Status* status)
+{
+    return prepare_fast_hlr_mesh_impl(mesh, options, true, prepared, status);
+}
+
+namespace fast_hlr_internal
+{
+
+int prepare_indexed_mesh_preserving_vertices(const FastHlrIndexedMesh& mesh,
+                                             const FastHlrOptions& options,
+                                             FastHlrPreparedMesh* prepared, Status* status)
+{
+    return prepare_fast_hlr_mesh_impl(mesh, options, false, prepared, status);
+}
+
+} // namespace fast_hlr_internal
 
 int project_fast_hlr_detail(const FastHlrPreparedMesh& prepared, const ProjectionViewSpec& view,
                             const FastHlrOptions& options, ProjectedModeGeometry* visible,

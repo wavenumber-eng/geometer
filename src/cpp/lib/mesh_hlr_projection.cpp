@@ -152,8 +152,17 @@ bool transformed_mesh(const FastHlrIndexedMesh& input, const std::array<double, 
                       FastHlrIndexedMesh* output)
 {
     constexpr double tolerance = 1.0e-12;
+    if (!std::all_of(transform.begin(), transform.end(),
+                     [](double value) { return std::isfinite(value); }))
+        return false;
     if (std::fabs(transform[12]) > tolerance || std::fabs(transform[13]) > tolerance ||
         std::fabs(transform[14]) > tolerance || std::fabs(transform[15] - 1.0) > tolerance)
+        return false;
+    const double determinant =
+        transform[0] * (transform[5] * transform[10] - transform[6] * transform[9]) -
+        transform[1] * (transform[4] * transform[10] - transform[6] * transform[8]) +
+        transform[2] * (transform[4] * transform[9] - transform[5] * transform[8]);
+    if (!std::isfinite(determinant) || std::fabs(determinant) <= 1.0e-15)
         return false;
     *output = input;
     for (FastHlrVec3& vertex : output->vertices)

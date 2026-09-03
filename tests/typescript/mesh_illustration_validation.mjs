@@ -559,8 +559,24 @@ assert.doesNotMatch(hlrOverlay.svg, /data-(?:surface|linework|triangles)=/u);
 const sanitizedStyle = renderMeshIllustrationSvg(scene, {
   ...baseStyle,
   outlineColor: "red;}<script>alert(1)</script>",
+  background: "red;}<script>alert(2)</script>",
 });
 assert.doesNotMatch(sanitizedStyle.svg, /<script>/u);
+
+const warningBoundInput = {
+  schema: "geometry.mesh_illustration.input.a0",
+  meshes: [
+    {
+      id: "degenerate-warning-bound",
+      positions: Array.from({ length: 300 * 9 }, () => 0),
+      materials: [{ color: [0.5, 0.5, 0.5] }],
+    },
+  ],
+  view: { direction: [0, 0, 1], up: [0, 1, 0] },
+};
+const boundedWarnings = illustrateMesh(warningBoundInput).warnings;
+assert.equal(boundedWarnings.length, 256);
+assert.match(boundedWarnings.at(-1), /additional warnings suppressed/u);
 
 const gridColumns = 32;
 const gridRows = 16;

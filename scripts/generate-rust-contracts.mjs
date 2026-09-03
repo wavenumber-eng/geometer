@@ -480,9 +480,25 @@ function validateValue(type, value, path, constraints) {
     lines.push(
       `if *${value} < ${constraints.min_value}_f64 { return Err(invalid(&${path}, "number is below its minimum")); }`,
     );
+  if (
+    type.kind === "primitive" &&
+    type.name === "float64" &&
+    constraints.min_value_exclusive !== undefined
+  )
+    lines.push(
+      `if *${value} <= ${constraints.min_value_exclusive}_f64 { return Err(invalid(&${path}, "number is not above its exclusive minimum")); }`,
+    );
   if (type.kind === "primitive" && type.name === "float64" && constraints.max_value !== undefined)
     lines.push(
       `if *${value} > ${constraints.max_value}_f64 { return Err(invalid(&${path}, "number exceeds its maximum")); }`,
+    );
+  if (
+    type.kind === "primitive" &&
+    type.name === "float64" &&
+    constraints.max_value_exclusive !== undefined
+  )
+    lines.push(
+      `if *${value} >= ${constraints.max_value_exclusive}_f64 { return Err(invalid(&${path}, "number is not below its exclusive maximum")); }`,
     );
   return lines;
 }

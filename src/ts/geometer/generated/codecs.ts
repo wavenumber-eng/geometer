@@ -184,12 +184,12 @@ const declarations: ContractDescriptorMap = {
       weld_tolerance: {
         type: { kind: "primitive", name: "float64" },
         optional: true,
-        constraints: { min_value: 0 },
+        constraints: { min_value_exclusive: 0 },
       },
       projected_tolerance: {
         type: { kind: "primitive", name: "float64" },
         optional: true,
-        constraints: { min_value: 0 },
+        constraints: { min_value_exclusive: 0 },
       },
       depth_tolerance: {
         type: { kind: "primitive", name: "float64" },
@@ -1507,7 +1507,7 @@ const declarations: ContractDescriptorMap = {
       weld_tolerance: {
         type: { kind: "primitive", name: "float64" },
         optional: true,
-        constraints: { min_value: 0 },
+        constraints: { min_value_exclusive: 0 },
       },
     },
   },

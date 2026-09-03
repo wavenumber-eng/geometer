@@ -1,4 +1,5 @@
 #include "fast_hlr_occt.h"
+#include "fast_hlr_prepare_internal.h"
 
 #include <BRep_Tool.hxx>
 #include <Poly_Triangle.hxx>
@@ -64,19 +65,24 @@ void set_status(Status* status, int code, const char* message)
 
 bool vertex_key(const gp_Pnt& point, double tolerance, std::uint32_t component, VertexKey* key)
 {
-    const double inverse = 1.0 / tolerance;
-    const double limit = static_cast<double>(std::numeric_limits<std::int64_t>::max()) * 0.5;
-    const double x = point.X() * inverse;
-    const double y = point.Y() * inverse;
-    const double z = point.Z() * inverse;
+    const double limit = static_cast<double>(std::numeric_limits<std::int64_t>::max() - 2);
+    const double x = std::floor(point.X() / tolerance);
+    const double y = std::floor(point.Y() / tolerance);
+    const double z = std::floor(point.Z() / tolerance);
     if (!std::isfinite(x) || !std::isfinite(y) || !std::isfinite(z) || std::fabs(x) > limit ||
         std::fabs(y) > limit || std::fabs(z) > limit)
     {
         return false;
     }
-    *key = {static_cast<std::int64_t>(std::llround(x)), static_cast<std::int64_t>(std::llround(y)),
-            static_cast<std::int64_t>(std::llround(z)), component};
+    *key = {static_cast<std::int64_t>(x), static_cast<std::int64_t>(y),
+            static_cast<std::int64_t>(z), component};
     return true;
+}
+
+bool within_weld_tolerance(const gp_Pnt& first, const FastHlrVec3& second, double tolerance)
+{
+    return std::hypot(first.X() - second.x, first.Y() - second.y, first.Z() - second.z) <=
+           tolerance;
 }
 
 std::uint32_t component_root(std::vector<std::uint32_t>* parents, std::uint32_t item)
@@ -127,7 +133,7 @@ int prepare_fast_hlr_shape(const TopoDS_Shape& shape, const FastHlrOptions& opti
     }
 
     FastHlrIndexedMesh indexed;
-    std::unordered_map<VertexKey, std::uint32_t, VertexKeyHash> vertices;
+    std::unordered_map<VertexKey, std::vector<std::uint32_t>, VertexKeyHash> vertices;
     TopTools_IndexedMapOfShape faces;
     TopExp::MapShapes(shape, TopAbs_FACE, faces);
     std::vector<std::uint32_t> component_parents(static_cast<std::size_t>(faces.Extent()));
@@ -184,9 +190,22 @@ int prepare_fast_hlr_shape(const TopoDS_Shape& shape, const FastHlrOptions& opti
                 set_status(status, 4, "Fast HLR vertex exceeds the weld-grid range.");
                 return 4;
             }
-            const auto found = vertices.find(key);
-            std::uint32_t vertex = 0;
-            if (found == vertices.end())
+            std::uint32_t vertex = std::numeric_limits<std::uint32_t>::max();
+            for (std::int64_t dz = -1; dz <= 1; ++dz)
+                for (std::int64_t dy = -1; dy <= 1; ++dy)
+                    for (std::int64_t dx = -1; dx <= 1; ++dx)
+                    {
+                        const auto found =
+                            vertices.find({key.x + dx, key.y + dy, key.z + dz, key.component});
+                        if (found == vertices.end())
+                            continue;
+                        for (std::uint32_t candidate : found->second)
+                            if (candidate < vertex &&
+                                within_weld_tolerance(point, indexed.vertices[candidate],
+                                                      options.weld_tolerance))
+                                vertex = candidate;
+                    }
+            if (vertex == std::numeric_limits<std::uint32_t>::max())
             {
                 if (indexed.vertices.size() >= options.limits.max_vertices)
                 {
@@ -195,11 +214,7 @@ int prepare_fast_hlr_shape(const TopoDS_Shape& shape, const FastHlrOptions& opti
                 }
                 vertex = static_cast<std::uint32_t>(indexed.vertices.size());
                 indexed.vertices.push_back({point.X(), point.Y(), point.Z()});
-                vertices.emplace(key, vertex);
-            }
-            else
-            {
-                vertex = found->second;
+                vertices[key].push_back(vertex);
             }
             local_vertices[static_cast<std::size_t>(node)] = vertex;
         }
@@ -224,7 +239,8 @@ int prepare_fast_hlr_shape(const TopoDS_Shape& shape, const FastHlrOptions& opti
                                          source_face});
         }
     }
-    return prepare_fast_hlr_mesh(indexed, options, prepared, status);
+    return fast_hlr_internal::prepare_indexed_mesh_preserving_vertices(indexed, options, prepared,
+                                                                       status);
 }
 
 } // namespace geometer

@@ -66,8 +66,8 @@ model FastHlrOptionsA0 {
   include_hidden?: boolean = false;
   suppress_coplanar_seams?: boolean = false;
   @minValue(0) @maxValue(3.141592653589793) crease_angle_rad?: float64 = 0.5235987755982988;
-  @minValue(0) weld_tolerance?: float64 = 0.0000001;
-  @minValue(0) projected_tolerance?: float64 = 0.00000001;
+  @minValueExclusive(0) weld_tolerance?: float64 = 0.0000001;
+  @minValueExclusive(0) projected_tolerance?: float64 = 0.00000001;
   @minValue(0) depth_tolerance?: float64 = 0.0000001;
   @minValue(0) @maxValue(1.5707963267948966)
   coplanar_seam_angle_rad?: float64 = 0.017453292519943295;
@@ -105,14 +105,16 @@ model HlrProjectionOptionsA0 {
   edge_h_iso?: boolean = false;
 
   union_outline_polygons?: boolean = true;
-  projection_algorithm?: HlrProjectionAlgorithm = HlrProjectionAlgorithm.poly;
+  /** Omission selects the operation-specific default: poly for model HLR and Fast for mesh HLR. */
+  projection_algorithm?: HlrProjectionAlgorithm;
   @minValue(0) mesh_linear_deflection?: float64 = 0.01;
   @minValue(0) @maxValue(3.141592653589793)
   mesh_angular_deflection?: float64 = 0.5;
   mesh_relative?: boolean = false;
   mesh_deflection_mode?: HlrMeshDeflectionMode = HlrMeshDeflectionMode.bbox_relative;
   @minValue(0) mesh_deflection_coefficient?: float64 = 0.004;
-  outline_algorithm?: HlrOutlineAlgorithm = HlrOutlineAlgorithm.hlr_close;
+  /** Omission selects the operation-specific default: HLR-close for model HLR and Fast mesh-shadow for mesh HLR. */
+  outline_algorithm?: HlrOutlineAlgorithm;
   @minValue(0) @maxValue(3.141592653589793)
   hlr_angle_tolerance?: float64 = 0.0174533;
   fast?: FastHlrOptionsA0;

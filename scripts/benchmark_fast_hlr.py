@@ -126,11 +126,15 @@ def runtime_target(
         return {"name": name, "command": [str(artifact)], "artifact": artifact}
     if name == "wasm":
         artifact = resolve_wasm_cli(wasm_cli)
+        module = artifact.with_suffix(".wasm")
+        if not module.is_file():
+            raise FileNotFoundError(f"Geometer Node WASM module not found beside launcher: {module}")
         node_executable = resolve_node(node)
         return {
             "name": name,
             "command": [str(node_executable), str(artifact)],
             "artifact": artifact,
+            "module": module,
             "host": node_executable,
         }
     raise ValueError(f"unsupported runtime: {name}")
@@ -439,6 +443,14 @@ def main() -> int:
                     "command": target["command"],
                     "artifact": str(target["artifact"]),
                     "artifact_sha256": sha256_file(target["artifact"]),
+                    **(
+                        {
+                            "module": str(target["module"]),
+                            "module_sha256": sha256_file(target["module"]),
+                        }
+                        if "module" in target
+                        else {}
+                    ),
                     **(
                         {
                             "host": str(target["host"]),

@@ -36,30 +36,7 @@ class IndexedTriangleMeshA0:
 def encode_indexed_triangle_mesh_a0_packet(mesh: IndexedTriangleMeshA0) -> bytes:
     """Encode a canonical ``geometry.indexed_triangle_mesh.packet.a0`` packet."""
 
-    if len(mesh.positions) < 9 or len(mesh.positions) % 3:
-        _fail("positions must contain at least three complete XYZ vertices")
-    if len(mesh.indices) < 3 or len(mesh.indices) % 3:
-        _fail("indices must contain at least one complete triangle")
-    vertex_count = len(mesh.positions) // 3
-    triangle_count = len(mesh.indices) // 3
-    if vertex_count > _MAX_VERTICES or triangle_count > _MAX_TRIANGLES:
-        _fail("indexed mesh exceeds its governed vertex or triangle limit")
-    if mesh.source_faces is not None and len(mesh.source_faces) != triangle_count:
-        _fail("source_faces must contain exactly one value per triangle")
-
-    positions = tuple(float(value) for value in mesh.positions)
-    if not all(math.isfinite(value) for value in positions):
-        _fail("positions must contain only finite numbers")
-    indices = tuple(_uint32(value, "triangle index") for value in mesh.indices)
-    if any(value >= vertex_count for value in indices):
-        _fail("triangle index is outside the vertex table")
-    for offset in range(0, len(indices), 3):
-        if len(set(indices[offset : offset + 3])) != 3:
-            _fail("each triangle must reference three distinct vertex indices")
-
-    source_faces = (
-        None if mesh.source_faces is None else tuple(_uint32(value, "source face") for value in mesh.source_faces)
-    )
+    vertex_count, triangle_count, positions, indices, source_faces = _validated_mesh(mesh)
     has_source_faces = source_faces is not None and any(value != _UNSPECIFIED_SOURCE_FACE for value in source_faces)
     positions_offset = _HEADER_BYTES
     triangles_offset = positions_offset + vertex_count * 24
@@ -92,6 +69,36 @@ def encode_indexed_triangle_mesh_a0_packet(mesh: IndexedTriangleMeshA0) -> bytes
     if has_source_faces and source_faces is not None:
         struct.pack_into(f"<{len(source_faces)}I", output, source_faces_offset, *source_faces)
     return bytes(output)
+
+
+def _validated_mesh(
+    mesh: IndexedTriangleMeshA0,
+) -> tuple[int, int, tuple[float, ...], tuple[int, ...], tuple[int, ...] | None]:
+    if len(mesh.positions) < 9 or len(mesh.positions) % 3:
+        _fail("positions must contain at least three complete XYZ vertices")
+    if len(mesh.indices) < 3 or len(mesh.indices) % 3:
+        _fail("indices must contain at least one complete triangle")
+    vertex_count = len(mesh.positions) // 3
+    triangle_count = len(mesh.indices) // 3
+    if vertex_count > _MAX_VERTICES or triangle_count > _MAX_TRIANGLES:
+        _fail("indexed mesh exceeds its governed vertex or triangle limit")
+    if mesh.source_faces is not None and len(mesh.source_faces) != triangle_count:
+        _fail("source_faces must contain exactly one value per triangle")
+
+    positions = tuple(float(value) for value in mesh.positions)
+    if not all(math.isfinite(value) for value in positions):
+        _fail("positions must contain only finite numbers")
+    indices = tuple(_uint32(value, "triangle index") for value in mesh.indices)
+    if any(value >= vertex_count for value in indices):
+        _fail("triangle index is outside the vertex table")
+    for offset in range(0, len(indices), 3):
+        if len(set(indices[offset : offset + 3])) != 3:
+            _fail("each triangle must reference three distinct vertex indices")
+
+    source_faces = (
+        None if mesh.source_faces is None else tuple(_uint32(value, "source face") for value in mesh.source_faces)
+    )
+    return vertex_count, triangle_count, positions, indices, source_faces
 
 
 def decode_indexed_triangle_mesh_a0_packet(packet: bytes | bytearray | memoryview) -> IndexedTriangleMeshA0:

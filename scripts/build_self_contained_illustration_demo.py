@@ -118,7 +118,12 @@ def main() -> None:
         raise SystemExit("Missing illustration demo input(s): " + ", ".join(map(str, missing)))
 
     STAGING.mkdir(parents=True, exist_ok=True)
-    bundle_es_module(APP_SOURCE, APP_BUNDLE, target="es2022")
+    bundle_es_module(
+        APP_SOURCE,
+        APP_BUNDLE,
+        target="es2022",
+        aliases={"@wavenumber/geometer/mesh-illustration": ROOT / "src" / "ts" / "geometer" / "mesh-illustration.ts"},
+    )
     bundle = "\n".join(line.rstrip() for line in APP_BUNDLE.read_text(encoding="utf-8").splitlines()) + "\n"
     embedded = {
         "models": embedded_models(),

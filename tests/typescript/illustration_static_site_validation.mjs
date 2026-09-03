@@ -33,7 +33,7 @@ for (const required of [
   "GeometerIllustrationEmbedded",
   "GEOMETER_JS_B64",
   "GEOMETER_WASM_B64",
-  "geometry.mesh_illustration.prototype.a0",
+  "geometry.mesh_illustration.result.a0",
   'id="illustrationStepInput"',
   'id="illustrationDownloadSvg"',
   'id="illustrationDownloadScene"',

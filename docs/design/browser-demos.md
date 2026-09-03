@@ -116,20 +116,17 @@ view presets may stay in the page toolbar. Settings that affect geometry should
 recompute automatically; typed numeric inputs should be debounced. Pure display
 changes should redraw cached geometry instead of rerunning WASM.
 
-## STEP Illustration Lab Prototype
+## STEP Illustration Lab
 
-> **Lifecycle status: retained concept prototype, not production code.** The
-> implementation remains in `examples/wasm/` so its rendering ideas can be
-> evaluated, demonstrated, and regression-tested. It defines no supported
-> public API, versioned illustration contract, output-compatibility guarantee,
-> or long-term ownership decision for Geometer. Prototype types and behavior
-> may change without deprecation. Any production promotion requires a separate
-> architecture decision that assigns the core/adapter/renderer boundary and
-> establishes contracts, compatibility policy, and release gates.
+The generic mesh-illustration engine is a production TypeScript package module
+at `@wavenumber/geometer/mesh-illustration`. Its serialized input, style, and
+SVG result start at A0. `illustrateMesh` is the one-shot entry point;
+`createIllustrator` prepares once, supports repeated SVG or Canvas rendering,
+and has explicit disposal. The Illustration Lab in
+`examples/wasm/illustration_demo.*` consumes that package implementation and
+retains only STEP/glTF adaptation, controls, and review presentation.
 
-The first mesh-illustration feasibility slice is maintained in
-`examples/wasm/illustration_demo.*`, `mesh_illustration.ts`, and
-`illustration_step_worker.js`. It is deliberately pre-contract research:
+The production implementation has these boundaries:
 
 - the core projector consumes generic mesh buffers, transforms, materials, and
   normals rather than STEP objects;

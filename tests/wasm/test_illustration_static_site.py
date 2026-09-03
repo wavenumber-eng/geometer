@@ -946,7 +946,7 @@ def test_illustration_static_site_mesh_render_upload_and_export() -> None:
     assert result["exceptions"] == []
     assert result["externalRequests"] == []
     assert exported_svg.startswith('<?xml version="1.0" encoding="UTF-8"?>')
-    assert "geometry.mesh_illustration.prototype.a0" in exported_svg
+    assert "geometry.mesh_illustration.result.a0" in exported_svg
     assert "<style>" in exported_svg
     assert 'class="gms' in exported_svg
     assert 'class="gml' in exported_svg

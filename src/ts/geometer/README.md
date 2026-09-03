@@ -30,6 +30,29 @@ return `geometry.hlr_projection.result.a0`; model projection defaults to
 `poly`, while mesh projection selects the only applicable Fast backend when
 the algorithm selectors are absent.
 
+The mesh illustration module owns projection preparation, visibility ordering,
+safe surface fusion and coplanar layering, colorization, and SVG/Canvas output:
+
+```ts
+import { createIllustrator, illustrateMesh } from "@wavenumber/geometer/mesh-illustration";
+
+const input = {
+  schema: "geometry.mesh_illustration.input.a0",
+  meshes,
+  view: { direction: [0, 0, 1], up: [0, 1, 0] },
+  style: { shading: "toon", fuse_surfaces: true },
+};
+const svgResult = illustrateMesh(input);
+
+const illustrator = createIllustrator(input);
+illustrator.renderCanvas(context, { shading: "unlit" });
+illustrator.dispose();
+```
+
+One-shot SVG results use `geometry.mesh_illustration.result.a0`. The reusable
+prepared scene stays inside the returned illustrator so its ordering and cache
+internals can evolve without becoming a serialized contract.
+
 The packed analytic Boolean operation uses `bigint` for every 64-bit identity
 and integer-nanometer value. The client owns packet encoding and strict result
 decoding:

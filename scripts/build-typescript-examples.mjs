@@ -26,7 +26,6 @@ const outputs = [
   "demo-tooling/tool-controller.js",
   "fast_hlr.js",
   "illustration_demo.js",
-  "mesh_illustration.js",
   "model_bounds_demo.js",
   "model_bounds_worker.js",
   "pcb_polygon_pour_demo.js",

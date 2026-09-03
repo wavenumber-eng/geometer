@@ -1,9 +1,11 @@
 import assert from "node:assert/strict";
 
 import {
+  createIllustrator,
+  illustrateMesh,
   prepareMeshIllustration,
   renderMeshIllustrationSvg,
-} from "../../dist/wasm/demos/mesh_illustration.js";
+} from "../../dist/wasm/npm/geometer/mesh-illustration.js";
 
 const positions = new Float32Array([
   -1, -1, -1, 1, -1, -1, 1, 1, -1, -1, 1, -1, -1, -1, 1, 1, -1, 1, 1, 1, 1, -1, 1, 1,
@@ -27,11 +29,34 @@ const scene = prepareMeshIllustration(
   { direction: [0, 0, 1], up: [0, 1, 0] },
 );
 
-assert.equal(scene.schema, "geometry.mesh_illustration.prototype.a0");
 assert.equal(scene.stats.sourceMeshes, 1);
 assert.equal(scene.stats.sourceTriangles, 12);
 assert.equal(scene.stats.projectedTriangles, 12);
 assert.equal(scene.warnings.length, 0);
+
+const governedInput = {
+  schema: "geometry.mesh_illustration.input.a0",
+  meshes: [
+    {
+      id: "governed-cube",
+      positions: [...positions],
+      indices: [...indices],
+      materials: [{ color: [0.2, 0.7, 0.62] }],
+    },
+  ],
+  view: { direction: [0, 0, 1], up: [0, 1, 0] },
+  style: { shading: "toon", show_hlr_detail: false },
+  svg: { title: "Governed cube" },
+};
+const oneShot = illustrateMesh(governedInput);
+assert.equal(oneShot.schema, "geometry.mesh_illustration.result.a0");
+assert.match(oneShot.svg, /<metadata>geometry\.mesh_illustration\.result\.a0<\/metadata>/u);
+assert.match(oneShot.svg, /Governed cube/u);
+const reusable = createIllustrator(governedInput);
+assert.equal(reusable.renderSvg({ shading: "unlit" }).schema, oneShot.schema);
+reusable.dispose();
+assert.equal(reusable.disposed, true);
+assert.throws(() => reusable.renderSvg(), /disposed/u);
 assert.deepEqual(scene.bounds, { minX: -1, minY: -1, maxX: 1, maxY: 1 });
 assert.equal(scene.triangles.filter((triangle) => triangle.frontFacing).length, 2);
 assert.throws(
@@ -100,10 +125,7 @@ const projectedOverlapScene = prepareMeshIllustration(
     meshes: [
       {
         id: "projected-overlap",
-        positions: new Float64Array([
-          0, 0, 0, 1, 0, 0, 0, 1, 0,
-          0, 0, 1, 1, 0, 1, 0, 1, 1,
-        ]),
+        positions: new Float64Array([0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 1, 1]),
         materials: [{ color: [0.2, 0.7, 0.62] }],
       },
     ],
@@ -175,8 +197,24 @@ for (const [x0, x1] of [
     coplanarMeshes.push({
       id: `black-base-${x0}-${y0}`,
       positions: new Float64Array([
-        x0, y0, 0, x1, y0, 0, x1, y1, 0,
-        x0, y0, 0, x1, y1, 0, x0, y1, 0,
+        x0,
+        y0,
+        0,
+        x1,
+        y0,
+        0,
+        x1,
+        y1,
+        0,
+        x0,
+        y0,
+        0,
+        x1,
+        y1,
+        0,
+        x0,
+        y1,
+        0,
       ]),
       materials: [{ color: [0.05, 0.05, 0.05] }],
     });
@@ -233,10 +271,7 @@ const foldedCoplanarCandidate = prepareMeshIllustration(
   },
   { direction: [0, 0, 1], up: [0, 1, 0] },
 );
-const foldedCoplanarResult = renderMeshIllustrationSvg(
-  foldedCoplanarCandidate,
-  coplanarStyle,
-);
+const foldedCoplanarResult = renderMeshIllustrationSvg(foldedCoplanarCandidate, coplanarStyle);
 assert.equal(foldedCoplanarResult.stats.layeredSurfaces, 0);
 const varyingNormalScene = prepareMeshIllustration(
   {
@@ -524,8 +559,7 @@ const gridColumns = 32;
 const gridRows = 16;
 const gridPositions = [];
 for (let row = 0; row <= gridRows; row += 1)
-  for (let column = 0; column <= gridColumns; column += 1)
-    gridPositions.push(column, row, 0);
+  for (let column = 0; column <= gridColumns; column += 1) gridPositions.push(column, row, 0);
 const gridIndices = [];
 for (let row = 0; row < gridRows; row += 1) {
   for (let column = 0; column < gridColumns; column += 1) {

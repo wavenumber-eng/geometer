@@ -1,8 +1,8 @@
+import { prepareMeshIllustration, renderMeshIllustrationCanvas, renderMeshIllustrationSvg, } from "@wavenumber/geometer/mesh-illustration";
 import * as THREE from "three";
 import { TrackballControls } from "three/addons/controls/TrackballControls.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { FastHlrViewport } from "./fast_hlr.js";
-import { prepareMeshIllustration, renderMeshIllustrationCanvas, renderMeshIllustrationSvg, } from "./mesh_illustration.js";
 const MESH_QUALITY_PRESETS = {
     draft: {
         linearDeflectionMm: 0.25,

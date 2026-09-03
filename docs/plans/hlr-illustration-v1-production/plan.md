@@ -36,13 +36,13 @@ depends_on = ["fast-runtime-api"]
 [[steps]]
 id = "illustration-package"
 title = "Move illustration preparation and SVG/Canvas rendering from the demo into the production TypeScript package"
-status = "active"
+status = "done"
 depends_on = ["compatibility-contract"]
 
 [[steps]]
 id = "raster-hlr-package"
 title = "Publish retained GPU raster HLR as an explicitly browser-only renderer API separate from vector projection"
-status = "pending"
+status = "active"
 depends_on = ["compatibility-contract"]
 
 [[steps]]

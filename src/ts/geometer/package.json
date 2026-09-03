@@ -26,6 +26,10 @@
       "types": "./ipc-client-a0.d.ts",
       "import": "./ipc-client-a0.js"
     },
+    "./mesh-illustration": {
+      "types": "./mesh-illustration.d.ts",
+      "import": "./mesh-illustration.js"
+    },
     "./node-process-a0": {
       "types": "./node-process-a0.d.ts",
       "import": "./node-process-a0.js"

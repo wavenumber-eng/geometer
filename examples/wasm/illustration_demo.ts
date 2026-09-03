@@ -1,7 +1,3 @@
-import * as THREE from "three";
-import { TrackballControls } from "three/addons/controls/TrackballControls.js";
-import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
-import { type FastHlrFrameStats, FastHlrViewport } from "./fast_hlr.js";
 import {
   type MeshIllustrationInput,
   type MeshIllustrationMaterial,
@@ -14,7 +10,11 @@ import {
   renderMeshIllustrationCanvas,
   renderMeshIllustrationSvg,
   type Vec3,
-} from "./mesh_illustration.js";
+} from "@wavenumber/geometer/mesh-illustration";
+import * as THREE from "three";
+import { TrackballControls } from "three/addons/controls/TrackballControls.js";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { type FastHlrFrameStats, FastHlrViewport } from "./fast_hlr.js";
 
 interface DemoModel {
   name: string;
@@ -1149,8 +1149,7 @@ async function loadHlrLinework(
           deflectionCoefficient: settings.hlrDeflectionCoefficient,
           creaseAngleRad: (Number.parseFloat(els.fastCrease.value) * Math.PI) / 180,
           suppressCoplanarSeams: els.fastCoplanarSeams.checked,
-          coplanarSeamAngleRad:
-            (Number.parseFloat(els.fastSeamAngle.value) * Math.PI) / 180,
+          coplanarSeamAngleRad: (Number.parseFloat(els.fastSeamAngle.value) * Math.PI) / 180,
           coplanarSeamDepthTolerance: Number.parseFloat(els.fastSeamDepth.value),
           outputOutline: state.showHlrOutline,
           outputDetail: state.showHlrDetail,

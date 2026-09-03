@@ -3,6 +3,7 @@ export * from "./generated/index.js";
 export * from "./indexed-mesh-packet-a0.js";
 export * from "./ipc-a0.js";
 export * from "./ipc-client-a0.js";
+export { createIllustrator, illustrateMesh, prepareMeshIllustration, renderMeshIllustrationCanvas, renderMeshIllustrationSvg, resolveMeshIllustrationStyle, } from "./mesh-illustration.js";
 export * from "./step-topology-validation.js";
 export * from "./wasm.js";
 export * from "./worker.js";

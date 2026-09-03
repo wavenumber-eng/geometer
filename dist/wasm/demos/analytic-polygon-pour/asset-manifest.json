@@ -41,9 +41,9 @@
       "sha256": "e568304c047df8ea7b71a99b139f439618e824cd1287396d3116742f37a91021"
     },
     {
-      "bytes": 32461,
+      "bytes": 32952,
       "path": "geometer_demo.css",
-      "sha256": "282664fcd919a4a3c255030d47be84df2b0e5b5b9580ca2c684b1928d2546205"
+      "sha256": "b0525e0d1485cf4c9ee94f140a81f0610fd92610b00f2abfa7c574b75c174df9"
     },
     {
       "bytes": 3468,
@@ -272,5 +272,5 @@
     }
   ],
   "schema": "wn.geometer.static_site.a0",
-  "sha256": "cf4b7f7d69ab1b0abac7e85605de3fe433173483f1ca338e22d3860bfbf241bb"
+  "sha256": "a0577bebfffe7a519a765e7d50976972588e60e12565119ba4d4e0693a8100ae"
 }

@@ -24,7 +24,7 @@
     "platform": "windows",
     "source": {
       "authority": "git_head_and_source_worktree_excluding_dist_build_deps_out",
-      "revision": "a6fa32ea4e71613b7aad3143a8bc4fb795ed82e7",
+      "revision": "4f07cce4f0a57d8c6d119e62f6b536564581d8fc",
       "tree_state": "clean"
     }
   },

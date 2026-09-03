@@ -221,6 +221,17 @@ Illustration exposes one-shot `illustrateMesh` plus reusable
 `createIllustrator`/render/dispose behavior. Its prepared scene remains opaque
 so triangle sorting and fusion internals can evolve without breaking consumers.
 
+Production illustration contract identities begin at generation `a0`:
+
+- `geometry.mesh_illustration.input.a0`;
+- `geometry.mesh_illustration.style.a0`; and
+- `geometry.mesh_illustration.result.a0`.
+
+The experimental `geometry.mesh_illustration.prototype.a0` identity is not a
+production predecessor and creates no compatibility obligation. It is replaced
+by the reviewed production `a0` family rather than promoted or renamed to a
+later generation.
+
 ## Compatibility rules
 
 - `projection_algorithm` remains additive: `poly`, `exact`, or `fast`.
@@ -234,6 +245,9 @@ so triangle sorting and fusion internals can evolve without breaking consumers.
   sewn, isoline, exact-curve, or gap-closure behavior.
 - Existing result layers remain independently composable. Illustration styling
   never leaks into the HLR geometry result.
+- Illustration starts at production generation `a0`. Package functions use
+  ordinary unversioned ergonomic names while serialized DTOs carry the explicit
+  `a0` identities.
 - Canonical strict contracts use one spelling and preserve absent-versus-
   present fields. Existing aliases live in an explicit compatibility adapter.
 - Every option is classified in a maintained matrix as common,

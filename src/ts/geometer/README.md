@@ -53,6 +53,22 @@ One-shot SVG results use `geometry.mesh_illustration.result.a0`. The reusable
 prepared scene stays inside the returned illustrator so its ordering and cache
 internals can evolve without becoming a serialized contract.
 
+When the same millimeter mesh should produce Fast vector linework and a
+colorized SVG, the optional composition keeps both underlying results visible:
+
+```ts
+import { illustrateMeshWithFastHlr } from "@wavenumber/geometer/illustrated-hlr";
+
+const { hlr, illustration } = await illustrateMeshWithFastHlr(client, {
+  illustration: input,
+});
+```
+
+Use `createFastHlrIllustrator` to prepare once and render multiple illustration
+styles. The facade flattens illustration transforms into the governed indexed
+mesh, forces the explicitly Fast vector selectors, and overlays returned
+outline/detail segments. HLR and illustration remain separately usable APIs.
+
 For interactive pixel output, `@wavenumber/geometer/raster-hlr` exposes
 `RasterHlrModel` and `RasterHlrViewport`. This browser-only Three.js helper
 reuses tessellated geometry and hardware depth testing while the camera moves.

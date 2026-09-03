@@ -86,6 +86,10 @@ export interface IllustrationEdge {
 export interface IllustrationLineSegment {
     points: readonly [Vec2, Vec2];
 }
+export interface MeshIllustrationLinework {
+    readonly outlineSegments?: readonly IllustrationLineSegment[];
+    readonly detailSegments?: readonly IllustrationLineSegment[];
+}
 export interface MeshIllustrationScene {
     view: {
         direction: Vec3;
@@ -138,6 +142,6 @@ export interface MeshIllustratorA0 {
     dispose(): void;
 }
 /** Prepare one governed illustration input once, then render multiple styles or targets. */
-export declare function createIllustrator(input: MeshIllustrationInputA0): MeshIllustratorA0;
+export declare function createIllustrator(input: MeshIllustrationInputA0, linework?: MeshIllustrationLinework): MeshIllustratorA0;
 /** Prepare and render one governed mesh-illustration A0 input to SVG. */
 export declare function illustrateMesh(input: MeshIllustrationInputA0): MeshIllustrationResultA0;

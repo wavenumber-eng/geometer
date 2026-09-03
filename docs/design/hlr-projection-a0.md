@@ -182,3 +182,13 @@ Fast vector HLR is orthographic and segment-based. It performs only
 visibility-safe exact-collinear joins; general curve fitting, perspective
 guarantees, multithreaded WASM visibility, and a serialized reusable prepared
 model are post-A0 work. Browser raster HLR remains a separate pixel renderer.
+
+## TypeScript convenience composition
+
+`@wavenumber/geometer/illustrated-hlr` composes the indexed-mesh operation with
+the production illustration renderer. `illustrateMeshWithFastHlr` is the
+one-shot SVG path; `createFastHlrIllustrator` returns both the governed HLR
+result and a reusable, disposable illustrator. Input positions and transforms
+are millimeters in this composition. The facade does not merge the contracts:
+callers can still inspect or store HLR linework independently of colorized
+output.

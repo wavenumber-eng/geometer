@@ -105,6 +105,11 @@ export interface IllustrationLineSegment {
   points: readonly [Vec2, Vec2];
 }
 
+export interface MeshIllustrationLinework {
+  readonly outlineSegments?: readonly IllustrationLineSegment[];
+  readonly detailSegments?: readonly IllustrationLineSegment[];
+}
+
 export interface MeshIllustrationScene {
   view: {
     direction: Vec3;
@@ -2157,7 +2162,10 @@ export interface MeshIllustratorA0 {
 }
 
 /** Prepare one governed illustration input once, then render multiple styles or targets. */
-export function createIllustrator(input: MeshIllustrationInputA0): MeshIllustratorA0 {
+export function createIllustrator(
+  input: MeshIllustrationInputA0,
+  linework: MeshIllustrationLinework = {},
+): MeshIllustratorA0 {
   const scene = prepareMeshIllustration(
     {
       meshes: input.meshes.map((mesh) => ({
@@ -2187,6 +2195,8 @@ export function createIllustrator(input: MeshIllustrationInputA0): MeshIllustrat
         : { weldTolerance: input.prepare.weld_tolerance }),
     },
   );
+  if (linework.outlineSegments !== undefined) scene.outlineSegments = linework.outlineSegments;
+  if (linework.detailSegments !== undefined) scene.detailSegments = linework.detailSegments;
   let disposed = false;
   const requireScene = (): MeshIllustrationScene => {
     if (disposed) throw new Error("Mesh illustrator has been disposed.");

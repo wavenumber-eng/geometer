@@ -1691,7 +1691,7 @@ export function resolveMeshIllustrationStyle(style = {}) {
     };
 }
 /** Prepare one governed illustration input once, then render multiple styles or targets. */
-export function createIllustrator(input) {
+export function createIllustrator(input, linework = {}) {
     const scene = prepareMeshIllustration({
         meshes: input.meshes.map((mesh) => ({
             id: mesh.id,
@@ -1717,6 +1717,10 @@ export function createIllustrator(input) {
             ? {}
             : { weldTolerance: input.prepare.weld_tolerance }),
     });
+    if (linework.outlineSegments !== undefined)
+        scene.outlineSegments = linework.outlineSegments;
+    if (linework.detailSegments !== undefined)
+        scene.detailSegments = linework.detailSegments;
     let disposed = false;
     const requireScene = () => {
         if (disposed)

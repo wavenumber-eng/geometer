@@ -48,13 +48,13 @@ depends_on = ["compatibility-contract"]
 [[steps]]
 id = "convenience-composition"
 title = "Add a convenience facade that composes mesh preparation, Fast vector linework, colorization, and rendering"
-status = "active"
+status = "done"
 depends_on = ["operation-transports", "illustration-package"]
 
 [[steps]]
 id = "demo-migration"
 title = "Migrate HLR Lab and Illustration Lab to consume only production package APIs and typed clients"
-status = "pending"
+status = "active"
 depends_on = ["convenience-composition", "raster-hlr-package"]
 
 [[steps]]

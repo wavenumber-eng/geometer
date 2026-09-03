@@ -3,6 +3,7 @@ import { createRequire } from "node:module";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { makeAnalyticPolygonPourRequest } from "../../dist/wasm/demos/analytic_polygon_pour_fixture.js";
+import { illustrateMeshWithFastHlr } from "../../dist/wasm/npm/geometer/illustrated-hlr.js";
 import {
   createGeometerWasmClient,
   GeometerOperationError,
@@ -151,6 +152,28 @@ if (
   !client.capabilities.operations.includes("geometry.mesh_hlr_projection.a0")
 ) {
   throw new Error("Generated client did not negotiate the governed HLR operations.");
+}
+
+const composed = await illustrateMeshWithFastHlr(client, {
+  illustration: {
+    schema: "geometry.mesh_illustration.input.a0",
+    meshes: [
+      {
+        id: "triangle",
+        positions: [0, 0, 0, 10, 0, 0, 0, 10, 0],
+        indices: [0, 1, 2],
+        materials: [{ color: [0.2, 0.7, 0.62] }],
+      },
+    ],
+    view: { direction: [0, 0, 1], up: [0, 1, 0] },
+  },
+});
+if (
+  composed.hlr.source.kind !== "indexed_mesh" ||
+  composed.illustration.schema !== "geometry.mesh_illustration.result.a0" ||
+  !composed.illustration.svg.includes("geometry.mesh_illustration.result.a0")
+) {
+  throw new Error("Fast HLR illustration composition returned incompatible results.");
 }
 
 const analytic = await client.analyticPlanarBooleanBatch({

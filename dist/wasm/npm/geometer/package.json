@@ -30,6 +30,10 @@
       "types": "./mesh-illustration.d.ts",
       "import": "./mesh-illustration.js"
     },
+    "./raster-hlr": {
+      "types": "./raster-hlr.d.ts",
+      "import": "./raster-hlr.js"
+    },
     "./node-process-a0": {
       "types": "./node-process-a0.d.ts",
       "import": "./node-process-a0.js"
@@ -52,5 +56,8 @@
     "*.js",
     "generated",
     "README.md"
-  ]
+  ],
+  "peerDependencies": {
+    "three": "^0.161.0"
+  }
 }

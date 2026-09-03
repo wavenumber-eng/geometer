@@ -2,11 +2,11 @@ import assert from "node:assert/strict";
 
 import * as THREE from "three";
 
-import { FastHlrModel } from "../../dist/wasm/demos/fast_hlr.js";
+import { RasterHlrModel } from "../../dist/wasm/npm/geometer/raster-hlr.js";
 
 const cubeRoot = new THREE.Group();
 cubeRoot.add(new THREE.Mesh(new THREE.BoxGeometry(2, 2, 2), new THREE.MeshBasicMaterial()));
-const cube = new FastHlrModel(cubeRoot, { creaseAngleDegrees: 25 });
+const cube = new RasterHlrModel(cubeRoot, { creaseAngleDegrees: 25 });
 assert.equal(cube.stats.meshes, 1);
 assert.equal(cube.stats.triangles, 12);
 assert.equal(cube.stats.candidateEdges, 12);
@@ -26,14 +26,11 @@ cube.dispose();
 const splitPlane = new THREE.BufferGeometry();
 splitPlane.setAttribute(
   "position",
-  new THREE.Float32BufferAttribute(
-    [0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0],
-    3,
-  ),
+  new THREE.Float32BufferAttribute([0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0], 3),
 );
 const planeRoot = new THREE.Group();
 planeRoot.add(new THREE.Mesh(splitPlane, new THREE.MeshBasicMaterial()));
-const plane = new FastHlrModel(planeRoot, { creaseAngleDegrees: 25 });
+const plane = new RasterHlrModel(planeRoot, { creaseAngleDegrees: 25 });
 assert.equal(plane.stats.triangles, 2);
 assert.equal(plane.stats.candidateEdges, 4);
 plane.dispose();

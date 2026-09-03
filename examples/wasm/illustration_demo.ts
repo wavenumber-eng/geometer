@@ -11,10 +11,10 @@ import {
   renderMeshIllustrationSvg,
   type Vec3,
 } from "@wavenumber/geometer/mesh-illustration";
+import { type RasterHlrFrameStats, RasterHlrViewport } from "@wavenumber/geometer/raster-hlr";
 import * as THREE from "three";
 import { TrackballControls } from "three/addons/controls/TrackballControls.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
-import { type FastHlrFrameStats, FastHlrViewport } from "./fast_hlr.js";
 
 interface DemoModel {
   name: string;
@@ -248,7 +248,7 @@ const renderer = new THREE.WebGLRenderer({
 renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.setClearColor(0xffffff, 1);
-const fastHlr = new FastHlrViewport(els.fastCanvas);
+const fastHlr = new RasterHlrViewport(els.fastCanvas);
 let fastCreaseFrame = 0;
 let fastCreaseLineworkTimer = 0;
 
@@ -388,7 +388,7 @@ function currentStyle(): MeshIllustrationStyle {
   };
 }
 
-function fastHlrStyle(): Parameters<FastHlrViewport["setStyle"]>[0] {
+function fastHlrStyle(): Parameters<RasterHlrViewport["setStyle"]>[0] {
   const crease = boundedNumberInput(els.fastCrease, 1, 80, 25);
   const bias = boundedNumberInput(els.fastBias, 0, 4, 1);
   els.fastCreaseValue.value = `${crease.toFixed(0)} deg`;
@@ -897,7 +897,7 @@ function updatePreviewLighting(): void {
 
 let fastHlrReportAt = 0;
 
-function reportFastHlr(stats: FastHlrFrameStats): void {
+function reportFastHlr(stats: RasterHlrFrameStats): void {
   els.outputPane.dataset.fastHlrCpuMs = stats.cpuMs.toFixed(3);
   els.outputPane.dataset.fastHlrGpuMs = stats.gpuMs?.toFixed(3) ?? "unavailable";
   els.outputPane.dataset.fastHlrFrameMs = stats.frameMs.toFixed(3);

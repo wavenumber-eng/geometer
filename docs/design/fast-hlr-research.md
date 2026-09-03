@@ -25,11 +25,15 @@ expensive HiddenLine mode is intended for accurate hardcopy output:
 Geometer should retain the same product split: raster HLR for interaction and
 the existing OCCT HLR path for deterministic projected curves and SVG export.
 
-## Prototype boundary
+## Production browser boundary
 
-`examples/wasm/fast_hlr.ts` is a browser-renderer experiment, not a public
-Geometer API. It clones only the Three.js scene graph and shares the source GLB
-geometry. It owns the generated edge buffers and two simple materials.
+`@wavenumber/geometer/raster-hlr` is the explicitly browser-only public helper.
+`RasterHlrModel` clones only the Three.js scene graph and shares the source GLB
+geometry; it owns the generated edge buffers and two simple materials.
+`RasterHlrViewport` owns the WebGL renderer and returns frame statistics. Its
+result is a framebuffer image, never renderer-neutral vector geometry, and the
+module name deliberately avoids the `FastHlr` name used by the C++ vector
+algorithm.
 
 The current candidate builder uses Three.js `EdgesGeometry`. It joins endpoints
 by quantized position within each mesh, which is useful because Geometer's GLB
@@ -37,7 +41,7 @@ can retain face-local duplicate vertices. It retains boundaries and adjoining
 faces whose normal angle exceeds the configured threshold. The public behavior
 is documented at <https://threejs.org/docs/pages/EdgesGeometry.html>.
 
-The current line primitive is intentionally minimal. WebGL renders
+The A0 line primitive is intentionally minimal. WebGL renders
 `LineBasicMaterial` at one pixel regardless of its requested width, so a
 production renderer needs screen-space line quads for stable width, joins, and
 dashes. See <https://threejs.org/docs/pages/LineBasicMaterial.html>.

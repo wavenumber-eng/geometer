@@ -24,7 +24,6 @@ const outputs = [
   "demo-tooling/input.js",
   "demo-tooling/panels.js",
   "demo-tooling/tool-controller.js",
-  "fast_hlr.js",
   "illustration_demo.js",
   "model_bounds_demo.js",
   "model_bounds_worker.js",

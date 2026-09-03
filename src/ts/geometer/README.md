@@ -53,6 +53,14 @@ One-shot SVG results use `geometry.mesh_illustration.result.a0`. The reusable
 prepared scene stays inside the returned illustrator so its ordering and cache
 internals can evolve without becoming a serialized contract.
 
+For interactive pixel output, `@wavenumber/geometer/raster-hlr` exposes
+`RasterHlrModel` and `RasterHlrViewport`. This browser-only Three.js helper
+reuses tessellated geometry and hardware depth testing while the camera moves.
+It does not return vector segments and is separate from C++ Fast HLR and SVG
+projection.
+Install compatible `three` and `@types/three` packages when importing this
+optional renderer subpath.
+
 The packed analytic Boolean operation uses `bigint` for every 64-bit identity
 and integer-nanometer value. The client owns packet encoding and strict result
 decoding:

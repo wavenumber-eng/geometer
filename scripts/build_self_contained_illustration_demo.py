@@ -122,7 +122,10 @@ def main() -> None:
         APP_SOURCE,
         APP_BUNDLE,
         target="es2022",
-        aliases={"@wavenumber/geometer/mesh-illustration": ROOT / "src" / "ts" / "geometer" / "mesh-illustration.ts"},
+        aliases={
+            "@wavenumber/geometer/mesh-illustration": ROOT / "src" / "ts" / "geometer" / "mesh-illustration.ts",
+            "@wavenumber/geometer/raster-hlr": ROOT / "src" / "ts" / "geometer" / "raster-hlr.ts",
+        },
     )
     bundle = "\n".join(line.rstrip() for line in APP_BUNDLE.read_text(encoding="utf-8").splitlines()) + "\n"
     embedded = {

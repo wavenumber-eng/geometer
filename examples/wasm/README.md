@@ -145,15 +145,15 @@ is evaluated. Keeping the prototype in Geometer does not by itself decide that
 Geometer should own a future production illustration stack; promotion would
 require a separate contract and architecture decision.
 
-`illustration_demo.html`, `illustration_demo.ts`, and `mesh_illustration.ts`
-form the reviewable implementation of the retained illustration experiment.
+`illustration_demo.html` and `illustration_demo.ts` form the reviewable consumer
+of the production mesh-illustration package.
 The page keeps the HLR Lab's side-by-side 3D/2D workflow, but the right pane renders
 colorized triangle surfaces to either SVG or Canvas2D. It supports flat,
 unquantized Lambert diffuse, quantized-band (up to 32 bands), and early toon shading,
 live style changes, named or trackball
 camera views, local STEP upload, and SVG/scene/style downloads.
 
-`fast_hlr.ts` adds a separate live GPU experiment to the same page. It builds
+`@wavenumber/geometer/raster-hlr` adds a separate live GPU renderer to the same page. It builds
 boundary/crease candidates once, uses the filled mesh as a depth occluder, and
 depth-tests the retained edge fragments during camera motion. It deliberately
 does not run OCCT HLR per frame. See

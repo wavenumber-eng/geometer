@@ -10,6 +10,7 @@
     "paths": {
       "@wavenumber/geometer": ["../../dist/wasm/npm/geometer/index.d.ts"],
       "@wavenumber/geometer/mesh-illustration": ["../../dist/wasm/npm/geometer/mesh-illustration.d.ts"],
+      "@wavenumber/geometer/raster-hlr": ["../../dist/wasm/npm/geometer/raster-hlr.d.ts"],
       "@wavenumber/geometer/wasm": ["../../dist/wasm/npm/geometer/wasm.d.ts"],
       "@wavenumber/geometer/worker": ["../../dist/wasm/npm/geometer/worker.d.ts"],
       "@wavenumber/geometer/worker-host": ["../../dist/wasm/npm/geometer/worker-host.d.ts"],
@@ -26,7 +27,6 @@
     "analytic_polygon_pour_fixture.ts",
     "analytic_polygon_pour_worker.ts",
     "demo-tooling/**/*.ts",
-    "fast_hlr.ts",
     "illustration_demo.ts",
     "model_bounds_demo.ts",
     "model_bounds_worker.ts",

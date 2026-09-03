@@ -1,8 +1,8 @@
 import { prepareMeshIllustration, renderMeshIllustrationCanvas, renderMeshIllustrationSvg, } from "@wavenumber/geometer/mesh-illustration";
+import { RasterHlrViewport } from "@wavenumber/geometer/raster-hlr";
 import * as THREE from "three";
 import { TrackballControls } from "three/addons/controls/TrackballControls.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
-import { FastHlrViewport } from "./fast_hlr.js";
 const MESH_QUALITY_PRESETS = {
     draft: {
         linearDeflectionMm: 0.25,
@@ -136,7 +136,7 @@ const renderer = new THREE.WebGLRenderer({
 renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.setClearColor(0xffffff, 1);
-const fastHlr = new FastHlrViewport(els.fastCanvas);
+const fastHlr = new RasterHlrViewport(els.fastCanvas);
 let fastCreaseFrame = 0;
 let fastCreaseLineworkTimer = 0;
 const threeScene = new THREE.Scene();

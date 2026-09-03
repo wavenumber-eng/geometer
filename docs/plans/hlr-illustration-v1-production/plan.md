@@ -42,13 +42,13 @@ depends_on = ["compatibility-contract"]
 [[steps]]
 id = "raster-hlr-package"
 title = "Publish retained GPU raster HLR as an explicitly browser-only renderer API separate from vector projection"
-status = "active"
+status = "done"
 depends_on = ["compatibility-contract"]
 
 [[steps]]
 id = "convenience-composition"
 title = "Add a convenience facade that composes mesh preparation, Fast vector linework, colorization, and rendering"
-status = "pending"
+status = "active"
 depends_on = ["operation-transports", "illustration-package"]
 
 [[steps]]

@@ -911,4 +911,18 @@ int project_fast_hlr_detail(const FastHlrPreparedMesh& prepared, const Projectio
     return 0;
 }
 
+int project_fast_hlr_detail(const FastHlrIndexedMesh& mesh, const ProjectionViewSpec& view,
+                            const FastHlrOptions& options, ProjectedModeGeometry* visible,
+                            ProjectedModeGeometry* hidden, FastHlrStatistics* statistics,
+                            Status* status)
+{
+    FastHlrPreparedMesh prepared;
+    const int prepare_code = prepare_fast_hlr_mesh(mesh, options, &prepared, status);
+    if (prepare_code != 0)
+    {
+        return prepare_code;
+    }
+    return project_fast_hlr_detail(prepared, view, options, visible, hidden, statistics, status);
+}
+
 } // namespace geometer

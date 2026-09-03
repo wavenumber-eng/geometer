@@ -35,6 +35,33 @@ output.
 | `mesh-shadow` | Unions projected tessellated triangles through the established Clipper2 path. |
 | `fast-mesh-shadow` | Reconstructs projected source-face loops, with bounded triangle-union fallbacks. |
 
+## Direct C++ Fast API
+
+`geometer/fast_hlr.h` is the stable semantic boundary. The simplest call uses
+the indexed-mesh overload:
+
+```cpp
+FastHlrIndexedMesh mesh = make_mesh();
+ProjectedModeGeometry visible;
+Status status;
+int code = project_fast_hlr_detail(
+    mesh, {"top", {0, 0, 1}, {0, 1, 0}}, {}, &visible, nullptr, nullptr, &status);
+```
+
+For near-realtime view changes, prepare once and retain the value object:
+
+```cpp
+FastHlrPreparedMesh prepared;
+prepare_fast_hlr_mesh(mesh, options, &prepared, &status);
+project_fast_hlr_detail(prepared, top_view, options, &top_lines, nullptr, &top_stats, &status);
+project_fast_hlr_detail(prepared, side_view, options, &side_lines, nullptr, &side_stats, &status);
+```
+
+The one-shot overload is exactly preparation followed by prepared projection.
+`FastHlrPreparedMesh` is an in-process value, not a serialized or cross-process
+contract. The operation transports use the indexed-mesh A0 packet for input
+and prepare within the receiving process.
+
 ## Option applicability
 
 All defaults below are focused C++ defaults. Canonical option DTOs preserve

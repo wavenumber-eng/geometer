@@ -77,7 +77,21 @@ struct FastHlrStatistics
 int prepare_fast_hlr_mesh(const FastHlrIndexedMesh& mesh, const FastHlrOptions& options,
                           FastHlrPreparedMesh* prepared, Status* status = nullptr);
 
+/**
+ * Project a reusable prepared mesh. Preparation owns view-independent
+ * validation, welding, normals, and edge incidence; call this repeatedly for
+ * low-latency orthographic views.
+ */
 int project_fast_hlr_detail(const FastHlrPreparedMesh& prepared, const ProjectionViewSpec& view,
+                            const FastHlrOptions& options, ProjectedModeGeometry* visible,
+                            ProjectedModeGeometry* hidden = nullptr,
+                            FastHlrStatistics* statistics = nullptr, Status* status = nullptr);
+
+/**
+ * One-shot convenience overload. This is semantically equivalent to
+ * prepare_fast_hlr_mesh followed by the prepared-mesh overload.
+ */
+int project_fast_hlr_detail(const FastHlrIndexedMesh& mesh, const ProjectionViewSpec& view,
                             const FastHlrOptions& options, ProjectedModeGeometry* visible,
                             ProjectedModeGeometry* hidden = nullptr,
                             FastHlrStatistics* statistics = nullptr, Status* status = nullptr);

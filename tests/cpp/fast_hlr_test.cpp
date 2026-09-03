@@ -69,6 +69,38 @@ void square_builds_shared_adjacency()
     require(shared_count == 1, "square should have one shared edge");
 }
 
+void one_shot_matches_reusable_preparation()
+{
+    geometer::FastHlrIndexedMesh mesh;
+    mesh.vertices = {{0.0, 0.0, 0.0}, {2.0, 0.0, 0.0}, {0.0, 1.0, 0.0}};
+    mesh.triangles = {{{0, 1, 2}, 3}};
+    const geometer::FastHlrPreparedMesh prepared = prepare(mesh);
+    geometer::ProjectedModeGeometry reusable;
+    geometer::ProjectedModeGeometry one_shot;
+    geometer::FastHlrStatistics reusable_stats;
+    geometer::FastHlrStatistics one_shot_stats;
+    geometer::Status status;
+    require(geometer::project_fast_hlr_detail(prepared, top_view(), {}, &reusable, nullptr,
+                                              &reusable_stats, &status) == 0,
+            "reusable projection should succeed: " + status.message);
+    require(geometer::project_fast_hlr_detail(mesh, top_view(), {}, &one_shot, nullptr,
+                                              &one_shot_stats, &status) == 0,
+            "one-shot projection should succeed: " + status.message);
+    require(one_shot.segments.size() == reusable.segments.size(),
+            "one-shot and reusable projection should emit the same segment count");
+    require(one_shot_stats.visible_segments == reusable_stats.visible_segments &&
+                one_shot_stats.candidate_edges == reusable_stats.candidate_edges,
+            "one-shot and reusable projection should report equivalent statistics");
+    for (std::size_t index = 0; index < reusable.segments.size(); ++index)
+    {
+        const auto& left = reusable.segments[index];
+        const auto& right = one_shot.segments[index];
+        require(near(left.x1, right.x1) && near(left.y1, right.y1) && near(left.x2, right.x2) &&
+                    near(left.y2, right.y2),
+                "one-shot and reusable segments should match");
+    }
+}
+
 void invalid_indices_and_limits_are_rejected()
 {
     geometer::FastHlrIndexedMesh invalid;
@@ -723,6 +755,7 @@ int main()
     try
     {
         square_builds_shared_adjacency();
+        one_shot_matches_reusable_preparation();
         invalid_indices_and_limits_are_rejected();
         malformed_prepared_data_and_invalid_options_are_rejected();
         smooth_internal_edge_can_be_a_silhouette();

@@ -24,13 +24,13 @@ depends_on = ["compatibility-contract"]
 [[steps]]
 id = "fast-runtime-api"
 title = "Promote one-shot and reusable prepared-mesh Fast HLR APIs without changing exact or polygonal paths"
-status = "active"
+status = "done"
 depends_on = ["mesh-input-contract"]
 
 [[steps]]
 id = "operation-transports"
 title = "Register governed HLR operations through the generic C ABI, native IPC, WASM, Python, TypeScript, and Rust clients"
-status = "pending"
+status = "active"
 depends_on = ["fast-runtime-api"]
 
 [[steps]]

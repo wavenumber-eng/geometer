@@ -7,6 +7,8 @@ The source checkout and PyPI wheel include a thin Python package named
 native CLI and keeps the public API byte/path oriented:
 
 ```python
+from pathlib import Path
+
 import geometer
 
 version = geometer.version()
@@ -15,6 +17,32 @@ projection = geometer.project_step_hlr(
     "part.step",
     views=[geometer.ProjectionView.top()],
     options=geometer.HlrOptions.assembly_outline(),
+)
+outline_only = geometer.project_step_hlr(
+    "part.step",
+    views=[geometer.ProjectionView.top()],
+    options=geometer.HlrOptions(
+        outline_algorithm="mesh-shadow",
+        output_outline=True,
+        output_detail=False,
+        output_bbox=False,
+    ),
+)
+fast_outline = geometer.project_step_hlr(
+    "part.step",
+    views=[geometer.ProjectionView.top()],
+    options=geometer.HlrOptions.fast_assembly_outline(),
+)
+fast_detail = geometer.project_step_hlr(
+    "part.step",
+    views=[geometer.ProjectionView.top()],
+    options=geometer.HlrOptions(
+        projection_algorithm="fast",
+        fast={"crease_angle_rad": 0.4363323129985824},
+        output_outline=False,
+        output_detail=True,
+        output_bbox=False,
+    ),
 )
 generic_projection = geometer.project_model_hlr(
     "part.step",
@@ -67,7 +95,8 @@ batch = runner.run(
 
 The Python package intentionally uses the executable backend only for now.
 Existing file-oriented helpers use the JSON batch CLI, while `GeometerClient`
-holds one `geometer serve --stdio` process for typed analytic packed requests.
+holds one `geometer serve --stdio` process for typed model/mesh HLR and
+analytic packed requests.
 Both paths discover the Geometer executable in this order:
 
 - `GEOMETER_EXE`;
@@ -95,7 +124,29 @@ validates its result before the existing public `ModelBoundsResult` convenience
 wrapper is constructed. Public names, signatures, return attributes,
 executable discovery, and all other CLI-backed operations remain unchanged.
 
-The analytic planar Boolean candidate is integrated through a second
+The persistent client exposes governed HLR without temporary files:
+
+```python
+import geometer
+
+options = geometer.HlrProjectionOptionsA0(
+    projection_algorithm=geometer.HlrProjectionAlgorithm.FAST,
+    outline_algorithm=geometer.HlrOutlineAlgorithm.FAST_MESH_SHADOW,
+    fast=geometer.FastHlrOptionsA0(crease_angle_rad=0.4363323129985824),
+    output_detail=True,
+)
+with geometer.GeometerClient() as client:
+    step_result = client.model_hlr_projection(Path("part.step").read_bytes(), options)
+    mesh_result = client.mesh_hlr_projection(
+        geometer.IndexedTriangleMeshA0(
+            positions=(0.0, 0.0, 0.0, 10.0, 0.0, 0.0, 0.0, 10.0, 0.0),
+            indices=(0, 1, 2),
+            source_faces=(1,),
+        )
+    )
+```
+
+The analytic planar Boolean candidate is integrated through the same
 executable-backed lane:
 
 ```python

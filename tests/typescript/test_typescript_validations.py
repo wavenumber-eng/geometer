@@ -64,13 +64,7 @@ def test_step_topology_annotation_reference_restarts_native_process() -> None:
     completed = subprocess.run(
         [
             NODE,
-            str(
-                ROOT
-                / "dist"
-                / "native"
-                / "examples"
-                / "step-topology-annotation-reference.mjs"
-            ),
+            str(ROOT / "dist" / "native" / "examples" / "step-topology-annotation-reference.mjs"),
             str(ROOT / "dist" / "native" / platform_directory / executable_name),
             str(ROOT / "tests" / "fixtures" / "step" / "embedded_models" / "SOT-23.STEP"),
         ],

@@ -1,5 +1,5 @@
 // Generated from wn_geometer_contract_catalog.a0.json. Do not edit.
-export const NORMALIZED_CONTRACT_CATALOG_SHA256 = "aaa5b9b04011c751cc2550dd835fc9c7ae8ca6952b4b7b93c66030d8e56cfff3";
+export const NORMALIZED_CONTRACT_CATALOG_SHA256 = "197a92a02c431d012b71cd1a6700ae19ecb6241891dc765095ecbf58f55e147e";
 export const operationCatalog = {
     "geometry.analytic_planar_boolean_batch.a0": {
         identity: "geometry.analytic_planar_boolean_batch.a0",
@@ -36,6 +36,24 @@ export const operationCatalog = {
         },
         documentation: "Execute independent ordered analytic planar Boolean jobs through packed attachments.",
     },
+    "geometry.mesh_hlr_projection.a0": {
+        identity: "geometry.mesh_hlr_projection.a0",
+        requestContract: "geometry.hlr_projection.options.a0",
+        resultContract: "geometry.hlr_projection.result.a0",
+        runtimeAvailable: true,
+        nativeRuntimeAvailable: false,
+        runtimeDispatch: "logical_dto",
+        inputAttachments: [
+            {
+                name: "mesh",
+                required: true,
+                media_types: ["application/vnd.wavenumber.geometer.indexed-triangle-mesh"],
+                max_bytes: 268435456,
+            },
+        ],
+        outputAttachments: [],
+        documentation: "Project a synthesized indexed triangle mesh through the Fast HLR backend.",
+    },
     "geometry.model_bounds.a0": {
         identity: "geometry.model_bounds.a0",
         requestContract: "geometry.model_bounds.options.a0",
@@ -53,6 +71,24 @@ export const operationCatalog = {
         ],
         outputAttachments: [],
         documentation: "Compute axis-aligned model bounds from the required raw model attachment.",
+    },
+    "geometry.model_hlr_projection.a0": {
+        identity: "geometry.model_hlr_projection.a0",
+        requestContract: "geometry.hlr_projection.options.a0",
+        resultContract: "geometry.hlr_projection.result.a0",
+        runtimeAvailable: true,
+        nativeRuntimeAvailable: false,
+        runtimeDispatch: "logical_dto",
+        inputAttachments: [
+            {
+                name: "model",
+                required: true,
+                media_types: ["application/step", "model/step"],
+                max_bytes: 268435456,
+            },
+        ],
+        outputAttachments: [],
+        documentation: "Project STEP model bytes through the selected polygonal, exact, or Fast HLR backend.",
     },
     "geometry.step_topology.analyze_recovery.a0": {
         identity: "geometry.step_topology.analyze_recovery.a0",

@@ -10,6 +10,8 @@ import {
   encodeIpcRequestA0Json,
 } from "./generated/codecs.js";
 import type {
+  HlrProjectionOptionsA0,
+  HlrProjectionResultA0,
   IpcEffectiveLimitsA0,
   IpcOperationDeclarationA0,
   IpcRequestValueA0,
@@ -22,6 +24,11 @@ import {
   type OperationIdentity,
   operationCatalog,
 } from "./generated/operations.js";
+import {
+  encodeIndexedTriangleMeshA0Packet,
+  INDEXED_TRIANGLE_MESH_MEDIA_TYPE,
+  type IndexedTriangleMeshA0,
+} from "./indexed-mesh-packet-a0.js";
 import {
   encodeGeometerIpcFrame,
   GEOMETER_IPC_A0_LIMITS,
@@ -59,6 +66,17 @@ export interface GeometerIpcOperationResponseA0 {
   readonly requestId: bigint;
   readonly outcome: OperationOutcomeA0;
   readonly attachments: readonly GeometerIpcAttachment[];
+}
+
+export interface GeometerIpcModelHlrProjectionRequestA0 {
+  readonly mediaType?: "application/step" | "model/step";
+  readonly model: Uint8Array;
+  readonly options?: HlrProjectionOptionsA0;
+}
+
+export interface GeometerIpcMeshHlrProjectionRequestA0 {
+  readonly mesh: IndexedTriangleMeshA0 | Uint8Array;
+  readonly options?: HlrProjectionOptionsA0;
 }
 
 export interface GeometerIpcCallA0 {
@@ -182,6 +200,62 @@ export class GeometerIpcClientA0 {
     attachments: readonly GeometerIpcAttachment[] = [],
   ): Promise<GeometerIpcOperationResponseA0> {
     return this.start(operation, request, attachments).response;
+  }
+
+  async modelHlrProjection(
+    request: GeometerIpcModelHlrProjectionRequestA0,
+  ): Promise<HlrProjectionResultA0> {
+    return this.hlrProjection(
+      "geometry.model_hlr_projection.a0",
+      "model",
+      request.mediaType ?? "application/step",
+      request.model,
+      request.options,
+    );
+  }
+
+  async meshHlrProjection(
+    request: GeometerIpcMeshHlrProjectionRequestA0,
+  ): Promise<HlrProjectionResultA0> {
+    const packet =
+      request.mesh instanceof Uint8Array
+        ? request.mesh
+        : encodeIndexedTriangleMeshA0Packet(request.mesh);
+    return this.hlrProjection(
+      "geometry.mesh_hlr_projection.a0",
+      "mesh",
+      INDEXED_TRIANGLE_MESH_MEDIA_TYPE,
+      packet,
+      request.options,
+    );
+  }
+
+  private async hlrProjection(
+    operation: "geometry.mesh_hlr_projection.a0" | "geometry.model_hlr_projection.a0",
+    attachmentName: "mesh" | "model",
+    mediaType: string,
+    data: Uint8Array,
+    options: HlrProjectionOptionsA0 = {},
+  ): Promise<HlrProjectionResultA0> {
+    const response = await this.execute(
+      operation,
+      { ...options, output_detail: options.output_detail ?? true },
+      [{ data, mediaType, name: attachmentName }],
+    );
+    if (!response.outcome.ok) {
+      throw new GeometerIpcClientError(
+        response.outcome.diagnostics.map((item) => item.message).join("; ") ||
+          `${operation} failed.`,
+      );
+    }
+    if (
+      response.outcome.operation !== operation ||
+      !("views" in response.outcome.result) ||
+      response.attachments.length !== 0
+    ) {
+      throw new GeometerIpcProtocolError(`${operation} returned an incompatible result.`);
+    }
+    return response.outcome.result;
   }
 
   async close(reason?: string): Promise<IpcShutdownAckA0> {

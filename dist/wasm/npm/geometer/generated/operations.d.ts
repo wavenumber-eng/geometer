@@ -1,4 +1,4 @@
-export declare const NORMALIZED_CONTRACT_CATALOG_SHA256: "aaa5b9b04011c751cc2550dd835fc9c7ae8ca6952b4b7b93c66030d8e56cfff3";
+export declare const NORMALIZED_CONTRACT_CATALOG_SHA256: "197a92a02c431d012b71cd1a6700ae19ecb6241891dc765095ecbf58f55e147e";
 export declare const operationCatalog: {
     readonly "geometry.analytic_planar_boolean_batch.a0": {
         readonly identity: "geometry.analytic_planar_boolean_batch.a0";
@@ -31,6 +31,22 @@ export declare const operationCatalog: {
         };
         readonly documentation: "Execute independent ordered analytic planar Boolean jobs through packed attachments.";
     };
+    readonly "geometry.mesh_hlr_projection.a0": {
+        readonly identity: "geometry.mesh_hlr_projection.a0";
+        readonly requestContract: "geometry.hlr_projection.options.a0";
+        readonly resultContract: "geometry.hlr_projection.result.a0";
+        readonly runtimeAvailable: true;
+        readonly nativeRuntimeAvailable: false;
+        readonly runtimeDispatch: "logical_dto";
+        readonly inputAttachments: readonly [{
+            readonly name: "mesh";
+            readonly required: true;
+            readonly media_types: readonly ["application/vnd.wavenumber.geometer.indexed-triangle-mesh"];
+            readonly max_bytes: 268435456;
+        }];
+        readonly outputAttachments: readonly [];
+        readonly documentation: "Project a synthesized indexed triangle mesh through the Fast HLR backend.";
+    };
     readonly "geometry.model_bounds.a0": {
         readonly identity: "geometry.model_bounds.a0";
         readonly requestContract: "geometry.model_bounds.options.a0";
@@ -46,6 +62,22 @@ export declare const operationCatalog: {
         }];
         readonly outputAttachments: readonly [];
         readonly documentation: "Compute axis-aligned model bounds from the required raw model attachment.";
+    };
+    readonly "geometry.model_hlr_projection.a0": {
+        readonly identity: "geometry.model_hlr_projection.a0";
+        readonly requestContract: "geometry.hlr_projection.options.a0";
+        readonly resultContract: "geometry.hlr_projection.result.a0";
+        readonly runtimeAvailable: true;
+        readonly nativeRuntimeAvailable: false;
+        readonly runtimeDispatch: "logical_dto";
+        readonly inputAttachments: readonly [{
+            readonly name: "model";
+            readonly required: true;
+            readonly media_types: readonly ["application/step", "model/step"];
+            readonly max_bytes: 268435456;
+        }];
+        readonly outputAttachments: readonly [];
+        readonly documentation: "Project STEP model bytes through the selected polygonal, exact, or Fast HLR backend.";
     };
     readonly "geometry.step_topology.analyze_recovery.a0": {
         readonly identity: "geometry.step_topology.analyze_recovery.a0";

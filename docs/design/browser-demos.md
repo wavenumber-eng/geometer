@@ -21,10 +21,15 @@ REQ-009 defines the supported release surface.
 Demo code is a consumer of Geometer. Product-specific UI behavior must not move
 into `src/cpp/lib/`, the C ABI, or generated contracts merely to support a page.
 
-Promoted operations should use the generated TypeScript browser/Worker client.
-The HLR Lab still uses the legacy low-level STEP/HLR C ABI because HLR has not
-yet been promoted; its Worker is not a template for bypassing generated clients
-on future promoted operations.
+Promoted operations use their governed operation identities and production
+package APIs. The HLR and Illustration Lab Workers invoke
+`geometry.model_hlr_projection.a0` through the generic C ABI adapter; the
+illustration application imports the production illustration modules. The
+remaining focused STEP-to-GLB call is a compatibility conversion
+surface, not illustration or HLR policy.
+
+The HLR and Illustration Labs use the same Fast HLR resource defaults as stable
+API consumers. They do not carry demo-only limit overrides.
 
 ## Build Layers
 
@@ -116,26 +121,24 @@ view presets may stay in the page toolbar. Settings that affect geometry should
 recompute automatically; typed numeric inputs should be debounced. Pure display
 changes should redraw cached geometry instead of rerunning WASM.
 
-## STEP Illustration Lab Prototype
+## STEP Illustration Lab
 
-> **Lifecycle status: retained concept prototype, not production code.** The
-> implementation remains in `examples/wasm/` so its rendering ideas can be
-> evaluated, demonstrated, and regression-tested. It defines no supported
-> public API, versioned illustration contract, output-compatibility guarantee,
-> or long-term ownership decision for Geometer. Prototype types and behavior
-> may change without deprecation. Any production promotion requires a separate
-> architecture decision that assigns the core/adapter/renderer boundary and
-> establishes contracts, compatibility policy, and release gates.
+The generic mesh-illustration engine is a production TypeScript package module
+at `@wavenumber/geometer/mesh-illustration`. Its serialized input, style, and
+SVG result start at A0. `illustrateMesh` is the one-shot entry point;
+`createIllustrator` prepares once, supports repeated SVG or Canvas rendering,
+and has explicit disposal. The Illustration Lab in
+`examples/wasm/illustration_demo.*` consumes that package implementation and
+retains only STEP/glTF adaptation, controls, and review presentation.
 
-The first mesh-illustration feasibility slice is maintained in
-`examples/wasm/illustration_demo.*`, `mesh_illustration.ts`, and
-`illustration_step_worker.js`. It is deliberately pre-contract research:
+The production implementation has these boundaries:
 
 - the core projector consumes generic mesh buffers, transforms, materials, and
   normals rather than STEP objects;
 - the current STEP adapter converts browser-local bytes through the existing
-  compatibility STEP-to-GLB symbol and can call the existing HLR projection
-  symbol for its unioned `mesh-shadow` Outline layer;
+  compatibility STEP-to-GLB symbol and calls the governed
+  `geometry.model_hlr_projection.a0` operation for its hierarchical
+  `fast-mesh-shadow` Outline and Fast Detail layers;
 - SVG and Canvas2D consume one prepared projected scene and a separate style,
   so lighting or palette changes do not redo mesh preparation;
 - the shared renderer offers unlit, flat, unquantized Lambert diffuse, banded (2-32),
@@ -167,8 +170,9 @@ The first mesh-illustration feasibility slice is maintained in
 - STEP-backed surfaces can composite that HLR outline in both SVG and Canvas;
   generic mesh-only sources remain surface-only unless an adapter supplies a
   compatible linework layer; and
-- a separate HLR Detail checkbox composites the HLR Lab's visible sharp and
-  silhouette edge preset beneath the heavier mesh-shadow outline.
+- a separate HLR Detail checkbox composites fast visible boundary, crease, and
+  silhouette segments beneath the independently computed fast mesh-shadow
+  outline.
 
 Build its hosted review directory with:
 

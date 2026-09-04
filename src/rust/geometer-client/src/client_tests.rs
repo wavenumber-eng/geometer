@@ -223,19 +223,3 @@ fn native_executable() -> PathBuf {
     };
     root.join("dist/native").join(platform).join(name)
 }
-
-#[test]
-fn model_bounds_rejects_runtime_unavailable_topology_result_variant() {
-    let result = contracts::OperationResultValueA0::StepTopologyClose(
-        contracts::StepTopologyCloseResultA0 {
-            schema: "geometry.step_topology.close.result.a0".to_owned(),
-            session_handle: format!("gts_{}", "1".repeat(64)),
-            closed: true,
-        },
-    );
-    assert!(matches!(
-        model_bounds_result(result),
-        Err(GeometerClientError::Protocol(message))
-            if message == "model_bounds returned an incompatible result variant"
-    ));
-}

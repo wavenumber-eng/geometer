@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:wavenumber:schema:geometer:geometry.mesh_illustration.result:a0",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "type": "string",
+      "const": "geometry.mesh_illustration.result.a0"
+    },
+    "svg": {
+      "type": "string"
+    },
+    "stats": {
+      "$ref": "#/$defs/MeshIllustrationRenderStats"
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 256
+    }
+  },
+  "required": [
+    "schema",
+    "svg",
+    "stats",
+    "warnings"
+  ],
+  "unevaluatedProperties": {
+    "not": {}
+  },
+  "description": "One-shot SVG result. Canvas rendering returns through the direct package API.",
+  "$defs": {
+    "MeshIllustrationRenderStats": {
+      "type": "object",
+      "properties": {
+        "triangles": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        },
+        "surface_draws": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        },
+        "layered_surfaces": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        },
+        "outlines": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        },
+        "details": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        },
+        "creases": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        },
+        "commands": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        }
+      },
+      "required": [
+        "triangles",
+        "surface_draws",
+        "layered_surfaces",
+        "outlines",
+        "details",
+        "creases",
+        "commands"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    }
+  }
+}

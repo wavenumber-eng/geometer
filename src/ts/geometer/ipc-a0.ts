@@ -58,7 +58,7 @@ export function validateIpcRequestOperationPair(envelope: IpcRequestA0): void {
     envelope.request,
     declaration.runtimeDispatch,
     projection,
-    "geometry.model_bounds.options.a0",
+    declaration.runtimeDispatch === "logical_dto" ? declaration.requestContract : undefined,
   );
   if (contract !== declaration.requestContract) {
     throw new GeometerIpcProtocolError(

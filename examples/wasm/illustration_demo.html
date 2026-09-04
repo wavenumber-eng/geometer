@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Geometer Mesh Illustration Prototype</title>
+  <title>Geometer Illustration Lab</title>
   <link rel="stylesheet" href="/examples/wasm/geometer_demo.css">
 </head>
-<body data-wn-watermark="true">
+<body class="illustration-demo" data-wn-watermark="true">
   <div class="illustration-app" id="illustrationApp" data-state="loading">
     <header class="illustration-toolbar">
-      <span class="illustration-brand">GEOMETER / ILLUSTRATION PROTOTYPE</span>
+      <span class="illustration-brand">GEOMETER / ILLUSTRATION LAB</span>
       <input id="illustrationStepInput" type="file" accept=".step,.stp,model/step,application/step">
       <button class="primary" id="illustrationOpenButton" type="button">Open STEP</button>
       <select id="illustrationModelSelect" aria-label="Model"></select>
@@ -25,7 +25,6 @@
         <button type="button" data-output="canvas">Canvas</button>
       </span>
       <button id="illustrationDownloadSvg" type="button" disabled>Download SVG</button>
-      <button id="illustrationDownloadScene" type="button" disabled>Scene JSON</button>
       <button id="illustrationDownloadStyle" type="button" disabled>Style JSON</button>
     </header>
     <main class="illustration-workspace">
@@ -33,8 +32,8 @@
         <span class="pane-label">3D SOURCE / DRAG TO ORBIT</span>
         <canvas id="illustrationModelCanvas"></canvas>
       </section>
-      <section class="illustration-pane" id="illustrationOutputPane">
-        <span class="pane-label" id="illustrationOutputLabel">2D SVG / GENERIC MESH PROTOTYPE</span>
+      <section class="illustration-pane" id="illustrationOutputPane" data-engine="fast-vector">
+        <span class="pane-label" id="illustrationOutputLabel">FAST VECTOR / C++ WASM CPU / SVG</span>
         <div class="svg-host" id="illustrationSvgHost"></div>
         <canvas class="hidden" id="illustrationCanvas"></canvas>
         <div class="illustration-busy" id="illustrationBusy" data-presentation="overlay" role="status" aria-live="polite"><div id="illustrationBusyText">Loading model...</div></div>
@@ -49,10 +48,10 @@
           <p class="illustration-info"><strong>Chord error:</strong> maximum positional gap, in millimetres, between the exact STEP surface and its triangle approximation. Smaller values add triangles on curved geometry; planar faces are mostly unchanged.</p>
           <p class="illustration-info"><strong>Mesh angle:</strong> angular deflection allowed while the mesh follows changing surface direction. Smaller angles add triangles where curvature changes and make rounded silhouettes appear smoother.</p>
           <p class="illustration-info">Both settings rebuild the filled 3D preview and SVG/Canvas surface mesh by reconverting STEP to GLB.</p>
-          <h3>HLR linework mesh</h3>
-          <label class="illustration-control" title="Bounding-box-relative chord tolerance used by the HLR mesh-shadow outline. Smaller values produce finer traced contours."><span>Relative chord</span><input id="illustrationHlrDeflection" type="number" min="0.0001" max="0.05" step="0.0001" value="0.004"><span>bbox</span></label>
+          <h3>Fast vector linework mesh</h3>
+          <label class="illustration-control" title="Bounding-box-relative chord tolerance used by the fast mesh-shadow outline. Smaller values produce finer traced contours."><span>Relative chord</span><input id="illustrationHlrDeflection" type="number" min="0.0001" max="0.05" step="0.0001" value="0.004"><span>bbox</span></label>
           <label class="illustration-control" title="Angular deflection used by polygonal HLR detail and mesh-shadow linework. Smaller values produce smoother traced curves."><span>HLR angle</span><input id="illustrationHlrAngularDeflection" type="number" min="1" max="60" step="0.1" value="28.64788975654116"><span>deg</span></label>
-          <p class="illustration-info">Controls only HLR detail lines and the mesh-shadow outline; it does not change filled surface triangles.</p>
+          <p class="illustration-info">Controls only fast vector detail lines and the fast mesh-shadow outline; it does not change filled surface triangles.</p>
           <p class="illustration-info" id="illustrationMeshInfo">The demo does not impose a triangle-count limit; mesh density is controlled by the STEP and HLR tolerances above.</p>
         </section>
         <section>
@@ -60,40 +59,51 @@
           <label class="illustration-control"><span>Shading</span><select id="illustrationShading"><option value="flat">Flat diffuse</option><option value="lambert">Lambert diffuse</option><option value="banded">Banded</option><option value="toon" selected>Toon</option><option value="unlit">Unlit</option></select><span></span></label>
           <label class="illustration-control"><span>Bands</span><input id="illustrationBands" type="range" min="2" max="32" step="1" value="3"><output id="illustrationBandsValue">3</output></label>
           <label class="illustration-control"><span>Ambient</span><input id="illustrationAmbient" type="range" min="0" max="1" step="0.05" value="0.28"><output id="illustrationAmbientValue">0.28</output></label>
+          <label class="illustration-check" title="Experimental deterministic mesh-space ambient occlusion shared by SVG and Canvas output."><input id="illustrationAmbientOcclusion" type="checkbox"><span>Ambient occlusion (experimental)</span></label>
+          <label class="illustration-control"><span>AO strength</span><input id="illustrationAoStrength" type="range" min="0" max="1" step="0.05" value="0.35"><output id="illustrationAoStrengthValue">0.35</output></label>
+          <label class="illustration-control"><span>AO radius</span><input id="illustrationAoRadius" type="range" min="1" max="60" step="1" value="5"><output id="illustrationAoRadiusValue">5%</output></label>
+          <label class="illustration-control"><span>AO samples</span><select id="illustrationAoSamples"><option value="8">8 / draft</option><option value="16" selected>16 / balanced</option><option value="32">32 / fine</option><option value="64">64 / very fine</option><option value="128">128 / maximum</option></select><span></span></label>
+          <label class="illustration-control"><span>AO bands</span><input id="illustrationAoBands" type="range" min="2" max="32" step="1" value="5"><output id="illustrationAoBandsValue">5</output></label>
           <label class="illustration-control"><span>Key light</span><input id="illustrationKey" type="range" min="0" max="1.5" step="0.05" value="0.9"><output id="illustrationKeyValue">0.90</output></label>
           <label class="illustration-control"><span>Rim</span><input id="illustrationRim" type="range" min="0" max="0.6" step="0.02" value="0.12"><output id="illustrationRimValue">0.12</output></label>
           <label class="illustration-check"><input id="illustrationSourceColors" type="checkbox" checked><span>Use source material colors</span></label>
           <label class="illustration-check" title="Builds safe polygon regions from adjacent opaque triangles with identical rendered color after visibility ordering."><input id="illustrationFuseSurfaces" type="checkbox" checked><span>Fuse same-color surfaces</span></label>
           <label class="illustration-check" title="Underpaints safe opaque coplanar material partitions before drawing their markings, preventing dark seam bleed on shallow labels and logos."><input id="illustrationLayerCoplanar" type="checkbox" checked><span>Layer coplanar markings</span></label>
           <label class="illustration-control"><span>Fallback</span><input id="illustrationFallback" type="color" value="#71a6a0"><span></span></label>
-          <p class="illustration-info">Fusion converts safe opaque triangle groups into polygon regions while preserving depth-order boundaries. Coplanar layering paints a continuous base beneath shallow material markings before overpainting their colors. Ambiguous folds, overlaps, and transparent surfaces remain ordered triangles.</p>
+          <p class="illustration-info">Experimental AO casts bounded CPU rays against the complete tessellated assembly, then quantizes ambient-accessibility values into vector-safe tonal bands. Fusion converts safe opaque triangle groups into polygon regions while preserving depth-order boundaries. Coplanar layering paints a continuous base beneath shallow material markings before overpainting their colors.</p>
         </section>
         <section>
           <h2>Linework</h2>
-          <label class="illustration-check"><input id="illustrationHlrOutline" type="checkbox" checked><span>HLR mesh-shadow outline</span></label>
-          <label class="illustration-check"><input id="illustrationHlrDetail" type="checkbox" checked><span>HLR detail lines</span></label>
+          <label class="illustration-check"><input id="illustrationHlrOutline" type="checkbox" checked><span>Fast mesh-shadow outline</span></label>
+          <label class="illustration-check"><input id="illustrationHlrDetail" type="checkbox" checked><span>Fast HLR detail lines</span></label>
           <label class="illustration-control"><span>Outline</span><input id="illustrationOutlineColor" type="color" value="#17252c"><span></span></label>
           <label class="illustration-control"><span>Line width</span><input id="illustrationOutlineWidth" type="range" min="0.001" max="0.018" step="0.001" value="0.006"><output id="illustrationOutlineWidthValue">0.006</output></label>
           <label class="illustration-check"><input id="illustrationDoubleSided" type="checkbox"><span>Draw back faces</span></label>
-          <p class="illustration-info">Uses Geometer's existing visible-edge Detail and unioned mesh-shadow Outline layers for STEP-backed models. Generic meshes remain surface-only unless linework is supplied.</p>
+          <label class="illustration-control" title="Mesh crease threshold used by the C++ fast vector projection."><span>Fast crease</span><input id="illustrationFastCrease" type="range" min="1" max="80" step="1" value="25"><output id="illustrationFastCreaseValue">25 deg</output></label>
+          <label class="illustration-check" title="Experimental fast-vector filter for a line where a same-facing neighboring surface continues across its opposite side."><input id="illustrationFastCoplanarSeams" type="checkbox"><span>Hide coplanar joins (experimental)</span></label>
+          <label class="illustration-control" title="Largest normal-angle difference accepted as a coplanar continuation by the experimental fast-vector seam filter."><span>Seam angle</span><input id="illustrationFastSeamAngle" type="range" min="0" max="10" step="0.1" value="1"><output id="illustrationFastSeamAngleValue">1.0 deg</output></label>
+          <label class="illustration-control" title="Largest view-depth difference, in model millimetres, accepted by the experimental fast-vector seam filter."><span>Seam depth</span><input id="illustrationFastSeamDepth" type="range" min="0" max="0.01" step="0.0001" value="0.001"><output id="illustrationFastSeamDepthValue">0.0010 mm</output></label>
+          <p class="illustration-info"><strong>SVG and Canvas use the fast C++/WASM vector engines.</strong> Camera changes rebuild projected vector linework for the selected view.</p>
         </section>
         <section>
           <h2>Output</h2>
           <label class="illustration-control"><span>Background</span><input id="illustrationBackground" type="color" value="#ffffff"><span></span></label>
           <label class="illustration-check"><input id="illustrationTransparent" type="checkbox"><span>Transparent background</span></label>
           <p class="illustration-info" id="illustrationCounts">No scene prepared.</p>
-          <p class="illustration-info">Prototype path: STEP -&gt; Geometer GLB + optional HLR linework -&gt; generic mesh illustration. The surface renderer itself has no STEP dependency.</p>
+          <p class="illustration-info">Production path: STEP -&gt; Geometer mesh -&gt; A0 SVG/Canvas illustration with Fast vector linework.</p>
         </section>
       </aside>
     </main>
-    <footer class="illustration-status"><span id="illustrationStatus">Initializing</span><span id="illustrationTiming">retained concept / unstable API</span></footer>
+    <footer class="illustration-status"><span id="illustrationStatus">Initializing</span><span id="illustrationTiming">mesh illustration A0</span></footer>
   </div>
   <pre id="illustrationValidation">RUNNING</pre>
   <script type="importmap">
     {
       "imports": {
         "three": "https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js",
-        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/"
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/",
+        "@wavenumber/geometer/mesh-illustration": "/dist/wasm/npm/geometer/mesh-illustration.js",
+        "@wavenumber/geometer/mesh-illustration-ao-experimental": "/dist/wasm/npm/geometer/mesh-illustration-ao-experimental.js"
       }
     }
   </script>

@@ -35,6 +35,13 @@
         "glbBytes":  131336
     },
     {
+        "name":  "ABM8-272-T3.STEP",
+        "step":  "tests/fixtures/step/embedded_models/ABM8-272-T3.STEP",
+        "glb":  "tests/fixtures/glb/embedded_models/ABM8-272-T3.glb",
+        "stepBytes":  1010476,
+        "glbBytes":  168740
+    },
+    {
         "name":  "BGA 256 17x17mm 1mm pitch.step",
         "step":  "tests/fixtures/step/embedded_models/BGA 256 17x17mm 1mm pitch.step",
         "glb":  "tests/fixtures/glb/embedded_models/BGA 256 17x17mm 1mm pitch.glb",

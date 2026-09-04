@@ -6,7 +6,7 @@ import math
 import subprocess
 import threading
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from queue import Empty, Queue
 from typing import TYPE_CHECKING, BinaryIO, cast
@@ -34,6 +34,8 @@ from ._generated.contracts.models import (
     IpcRequestValueA0,
     IpcRuntimeDispatchA0,
     IpcWelcomeA0,
+    HlrProjectionOptionsA0,
+    HlrProjectionResultA0,
     OperationFailureA0,
     OperationOutcomeA0,
     OperationSuccessA0,
@@ -58,6 +60,7 @@ from ._generated.contracts.operations import expected_operation_catalog
 from ._paths import executable_path
 
 if TYPE_CHECKING:
+    from ._indexed_mesh_packet_a0 import IndexedTriangleMeshA0
     from ._generated.contracts.models import (
         AnalyticPlanarBooleanBatchRequestA0,
         AnalyticPlanarBooleanBatchResultA0,
@@ -73,6 +76,9 @@ ANALYTIC_REQUEST_ATTACHMENT = "analytic_planar_boolean_request"
 ANALYTIC_RESULT_ATTACHMENT = "analytic_planar_boolean_result"
 ANALYTIC_REQUEST_MEDIA_TYPE = "application/vnd.wavenumber.geometer.analytic-planar-boolean-request"
 ANALYTIC_RESULT_MEDIA_TYPE = "application/vnd.wavenumber.geometer.analytic-planar-boolean-result"
+MODEL_HLR_OPERATION = "geometry.model_hlr_projection.a0"
+MESH_HLR_OPERATION = "geometry.mesh_hlr_projection.a0"
+INDEXED_MESH_MEDIA_TYPE = "application/vnd.wavenumber.geometer.indexed-triangle-mesh"
 
 _REQUIRED_CAPABILITIES = frozenset({"serialized_execution", "queue_only_cancellation", "raw_attachments"})
 _STDERR_CAPTURE_LIMIT = 1024 * 1024
@@ -422,6 +428,73 @@ class _GeometerIpcExecution(_GeometerIpcSession):
         except Exception as error:
             client._terminate()
             raise GeometerIpcProtocolError("analytic response contains an invalid packed result") from error
+
+    def model_hlr_projection(
+        self,
+        model: bytes,
+        options: HlrProjectionOptionsA0 | None = None,
+        *,
+        media_type: str = "application/step",
+        timeout: float | None = None,
+    ) -> HlrProjectionResultA0:
+        """Project a STEP attachment through the governed HLR A0 operation."""
+
+        return self._hlr_projection(
+            MODEL_HLR_OPERATION,
+            "model",
+            media_type,
+            model,
+            options or HlrProjectionOptionsA0(),
+            timeout,
+        )
+
+    def mesh_hlr_projection(
+        self,
+        mesh: bytes | IndexedTriangleMeshA0,
+        options: HlrProjectionOptionsA0 | None = None,
+        *,
+        timeout: float | None = None,
+    ) -> HlrProjectionResultA0:
+        """Project an encoded or structured indexed mesh through Fast HLR A0."""
+
+        from ._indexed_mesh_packet_a0 import IndexedTriangleMeshA0, encode_indexed_triangle_mesh_a0_packet
+
+        packet = encode_indexed_triangle_mesh_a0_packet(mesh) if isinstance(mesh, IndexedTriangleMeshA0) else mesh
+        return self._hlr_projection(
+            MESH_HLR_OPERATION,
+            "mesh",
+            INDEXED_MESH_MEDIA_TYPE,
+            packet,
+            options or HlrProjectionOptionsA0(),
+            timeout,
+        )
+
+    def _hlr_projection(
+        self,
+        operation: str,
+        attachment_name: str,
+        media_type: str,
+        data: bytes,
+        options: HlrProjectionOptionsA0,
+        timeout: float | None,
+    ) -> HlrProjectionResultA0:
+        client = cast("GeometerIpcClient", self)
+        # The IPC request union also contains presence-only model-bounds options.
+        # Preserve the HLR default while making the logical variant unambiguous.
+        if options.output_detail is None:
+            options = replace(options, output_detail=True)
+        response = client.execute(
+            operation,
+            options,
+            (Attachment(name=attachment_name, media_type=media_type, data=data),),
+            timeout=timeout,
+        )
+        if isinstance(response.outcome, OperationFailureA0):
+            raise GeometerOperationError(response.outcome.operation, response.outcome.diagnostics)
+        if response.attachments or not isinstance(response.outcome.result, HlrProjectionResultA0):
+            client._terminate()
+            raise GeometerIpcProtocolError("HLR response contains an incompatible result")
+        return response.outcome.result
 
 
 class _GeometerIpcResponse(_GeometerIpcExecution):
@@ -785,6 +858,10 @@ def _validate_request_value(declaration: IpcOperationDeclarationA0, request: Ipc
     is_packed = isinstance(request, PackedAttachmentProjectionA0)
     if is_packed != (declaration.runtime_dispatch is IpcRuntimeDispatchA0.PACKED_ATTACHMENT):
         raise GeometerIpcProtocolError("request projection does not match negotiated runtime dispatch")
+    if declaration.request_contract == "geometry.hlr_projection.options.a0" and not isinstance(
+        request, HlrProjectionOptionsA0
+    ):
+        raise GeometerIpcProtocolError("request value does not match the negotiated HLR contract")
 
 
 def _validate_declared_attachments(

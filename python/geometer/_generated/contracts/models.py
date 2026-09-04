@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Literal, TypeAlias
 
-NORMALIZED_CATALOG_SHA256 = "aaa5b9b04011c751cc2550dd835fc9c7ae8ca6952b4b7b93c66030d8e56cfff3"
+NORMALIZED_CATALOG_SHA256 = "197a92a02c431d012b71cd1a6700ae19ecb6241891dc765095ecbf58f55e147e"
 
 JobId: TypeAlias = int
 
@@ -461,6 +461,186 @@ class PackedAttachmentReferenceA0:
 class PackedAttachmentProjectionA0:
     schema: str
     packet: PackedAttachmentReferenceA0
+
+
+# Resource ceilings applied during Fast mesh preparation and projection.
+@dataclass(frozen=True, slots=True, kw_only=True)
+class FastHlrLimitsA0:
+    max_vertices: int | None = None
+    max_triangles: int | None = None
+    max_edges: int | None = None
+    max_grid_references: int | None = None
+    max_candidate_pairs: int | None = None
+    max_fragments: int | None = None
+    max_output_segments: int | None = None
+
+
+# Fast vector-HLR controls. Angles are radians and geometric tolerances use model units.
+@dataclass(frozen=True, slots=True, kw_only=True)
+class FastHlrOptionsA0:
+    include_boundaries: bool | None = None
+    include_creases: bool | None = None
+    include_silhouettes: bool | None = None
+    include_hidden: bool | None = None
+    suppress_coplanar_seams: bool | None = None
+    crease_angle_rad: float | None = None
+    weld_tolerance: float | None = None
+    projected_tolerance: float | None = None
+    depth_tolerance: float | None = None
+    coplanar_seam_angle_rad: float | None = None
+    coplanar_seam_depth_tolerance: float | None = None
+    coplanar_seam_lateral_tolerance: float | None = None
+    limits: FastHlrLimitsA0 | None = None
+
+
+class HlrCurveMode(str, Enum):
+    NATIVE_ARCS = "native_arcs"
+    POLYLINE = "polyline"
+
+
+HlrMatrix4x4: TypeAlias = tuple[
+    float, float, float, float, float, float, float, float, float, float, float, float, float, float, float, float
+]
+
+
+class HlrMeshDeflectionMode(str, Enum):
+    ABSOLUTE = "absolute"
+    BBOX_RELATIVE = "bbox-relative"
+
+
+class HlrOutlineAlgorithm(str, Enum):
+    HLR_CLOSE = "hlr-close"
+    MESH_SHADOW = "mesh-shadow"
+    FAST_MESH_SHADOW = "fast-mesh-shadow"
+
+
+HlrVector3: TypeAlias = tuple[float, float, float]
+
+ProjectedSegment: TypeAlias = tuple[float, float, float, float]
+
+HlrVector2: TypeAlias = tuple[float, float]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class ProjectedArc:
+    start: HlrVector2
+    end: HlrVector2
+    center: HlrVector2
+    radius: float
+    extent_rad: float
+    ccw: bool
+    full_circle: bool
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class ProjectionBounds:
+    min_x: float
+    min_y: float
+    max_x: float
+    max_y: float
+    width: float
+    height: float
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class ProjectedGeometry:
+    segments: tuple[ProjectedSegment, ...]
+    arcs: tuple[ProjectedArc, ...]
+    # Omitted when this output layer is empty. The legacy B0 writer emits null.
+    bounds: ProjectionBounds | None = None
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class HlrProjectionModes:
+    outline: ProjectedGeometry
+    detail: ProjectedGeometry
+    bbox: ProjectedGeometry
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class HlrProjectedView:
+    id: str
+    direction: HlrVector3
+    up: HlrVector3
+    modes: HlrProjectionModes
+
+
+class HlrProjectionAlgorithm(str, Enum):
+    POLY = "poly"
+    EXACT = "exact"
+    FAST = "fast"
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class HlrViewSpec:
+    id: str
+    direction: HlrVector3
+    up: HlrVector3
+
+
+# Presence-preserving additive options shared by STEP and indexed-mesh HLR operations.
+@dataclass(frozen=True, slots=True, kw_only=True)
+class HlrProjectionOptionsA0:
+    views: tuple[HlrViewSpec, ...] | None = None
+    output_outline: bool | None = None
+    output_detail: bool | None = None
+    output_bbox: bool | None = None
+    model_transform: HlrMatrix4x4 | None = None
+    strip_root_placement: bool | None = None
+    curve_mode: HlrCurveMode | None = None
+    samples_per_curve: int | None = None
+    round_digits: int | None = None
+    edge_v_sharp: bool | None = None
+    edge_v_outline: bool | None = None
+    edge_v_smooth: bool | None = None
+    edge_v_sewn: bool | None = None
+    edge_v_iso: bool | None = None
+    edge_h_sharp: bool | None = None
+    edge_h_outline: bool | None = None
+    edge_h_smooth: bool | None = None
+    edge_h_sewn: bool | None = None
+    edge_h_iso: bool | None = None
+    union_outline_polygons: bool | None = None
+    # Omission selects the operation-specific default: poly for model HLR and Fast for mesh HLR.
+    projection_algorithm: HlrProjectionAlgorithm | None = None
+    mesh_linear_deflection: float | None = None
+    mesh_angular_deflection: float | None = None
+    mesh_relative: bool | None = None
+    mesh_deflection_mode: HlrMeshDeflectionMode | None = None
+    mesh_deflection_coefficient: float | None = None
+    # Omission selects the operation-specific default: HLR-close for model HLR and Fast mesh-shadow for mesh HLR.
+    outline_algorithm: HlrOutlineAlgorithm | None = None
+    hlr_angle_tolerance: float | None = None
+    fast: FastHlrOptionsA0 | None = None
+
+
+class HlrSourceKind(str, Enum):
+    STEP = "step"
+    INDEXED_MESH = "indexed_mesh"
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class HlrProjectionSource:
+    kind: HlrSourceKind
+    hash: str
+
+
+# Timings are nondeterministic and excluded only by explicit conformance projections.
+@dataclass(frozen=True, slots=True, kw_only=True)
+class HlrProjectionTimings:
+    step_read_ms: float
+    mesh_ms: float
+    hlr_ms: float
+    extract_ms: float
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class HlrProjectionResultA0:
+    schema: Literal["geometry.hlr_projection.result.a0"]
+    units: Literal["mm"]
+    source: HlrProjectionSource
+    views: tuple[HlrProjectedView, ...]
+    timings: HlrProjectionTimings
 
 
 # Named raw-attachment declaration in the negotiated operation catalog.
@@ -1103,6 +1283,7 @@ class StepTopologyAnalyzeRecoveryRequestA0:
 # Structurally representable request payloads for executable IPC A0. A variant is callable only when the negotiated runtime catalog advertises its operation; structural presence does not imply runtime availability.
 IpcRequestValueA0: TypeAlias = (
     ModelBoundsOptionsA0
+    | HlrProjectionOptionsA0
     | PackedAttachmentProjectionA0
     | StepTopologyOpenRequestA0
     | StepTopologyCloseRequestA0
@@ -1143,6 +1324,118 @@ class IpcWelcomeA0:
     operation_catalog: IpcOperationCatalogA0
     limits: IpcEffectiveLimitsA0
     capabilities: tuple[str, ...]
+
+
+IllustrationMatrix4x4: TypeAlias = tuple[
+    float, float, float, float, float, float, float, float, float, float, float, float, float, float, float, float
+]
+
+IllustrationVector3: TypeAlias = tuple[float, float, float]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class MeshIllustrationMaterial:
+    # sRGB channels in the inclusive range [0, 1].
+    color: IllustrationVector3
+    opacity: float | None = None
+    name: str | None = None
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class MeshIllustrationMesh:
+    id: str
+    positions: tuple[float, ...]
+    normals: tuple[float, ...] | None = None
+    indices: tuple[int, ...] | None = None
+    matrix: IllustrationMatrix4x4 | None = None
+    materials: tuple[MeshIllustrationMaterial, ...]
+    triangle_material_indices: tuple[int, ...] | None = None
+    double_sided: bool | None = None
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class MeshIllustrationView:
+    direction: IllustrationVector3
+    up: IllustrationVector3
+    mirror_x: bool | None = None
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class MeshIllustrationPrepareOptions:
+    max_triangles: int | None = None
+    weld_tolerance: float | None = None
+
+
+class MeshIllustrationShading(str, Enum):
+    UNLIT = "unlit"
+    FLAT = "flat"
+    LAMBERT = "lambert"
+    BANDED = "banded"
+    TOON = "toon"
+
+
+# Presence-preserving illustration style. Package defaults apply to absent fields.
+@dataclass(frozen=True, slots=True, kw_only=True)
+class MeshIllustrationStyleA0:
+    shading: MeshIllustrationShading | None = None
+    ambient: float | None = None
+    key_intensity: float | None = None
+    light_direction: IllustrationVector3 | None = None
+    bands: int | None = None
+    source_colors: bool | None = None
+    fallback_color: IllustrationVector3 | None = None
+    background: str | None = None
+    transparent_background: bool | None = None
+    fuse_surfaces: bool | None = None
+    layer_coplanar_materials: bool | None = None
+    show_hlr_outline: bool | None = None
+    show_hlr_detail: bool | None = None
+    show_outlines: bool | None = None
+    show_creases: bool | None = None
+    crease_angle_degrees: float | None = None
+    outline_color: str | None = None
+    crease_color: str | None = None
+    outline_width: float | None = None
+    crease_width: float | None = None
+    double_sided: bool | None = None
+    rim_amount: float | None = None
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class MeshIllustrationSvgOptions:
+    coordinate_span: int | None = None
+    title: str | None = None
+
+
+# Serializable one-shot illustration input; reusable prepared scenes are opaque package objects.
+@dataclass(frozen=True, slots=True, kw_only=True)
+class MeshIllustrationInputA0:
+    schema: Literal["geometry.mesh_illustration.input.a0"]
+    meshes: tuple[MeshIllustrationMesh, ...]
+    view: MeshIllustrationView
+    prepare: MeshIllustrationPrepareOptions | None = None
+    style: MeshIllustrationStyleA0 | None = None
+    svg: MeshIllustrationSvgOptions | None = None
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class MeshIllustrationRenderStats:
+    triangles: int
+    surface_draws: int
+    layered_surfaces: int
+    outlines: int
+    details: int
+    creases: int
+    commands: int
+
+
+# One-shot SVG result. Canvas rendering returns through the direct package API.
+@dataclass(frozen=True, slots=True, kw_only=True)
+class MeshIllustrationResultA0:
+    schema: Literal["geometry.mesh_illustration.result.a0"]
+    svg: str
+    stats: MeshIllustrationRenderStats
+    warnings: tuple[str, ...]
 
 
 # Source identity included in a successful model-bounds result.
@@ -1668,6 +1961,7 @@ class StepTopologyAnalyzeRecoveryResultA0:
 # Structurally representable operation results. A result variant may belong to a runtime-unavailable experimental operation and is not an availability claim; the negotiated operation catalog remains authoritative.
 OperationResultValueA0: TypeAlias = (
     ModelBoundsResultA0
+    | HlrProjectionResultA0
     | PackedAttachmentProjectionA0
     | StepTopologyOpenResultA0
     | StepTopologyCloseResultA0
@@ -1699,6 +1993,18 @@ MODEL_TYPES = {
     "Wavenumber.Geometer.Contracts.Common.DiagnosticA0": DiagnosticA0,
     "Wavenumber.Geometer.Contracts.Common.PackedAttachmentProjectionA0": PackedAttachmentProjectionA0,
     "Wavenumber.Geometer.Contracts.Common.PackedAttachmentReferenceA0": PackedAttachmentReferenceA0,
+    "Wavenumber.Geometer.Contracts.HlrProjectionA0.FastHlrLimitsA0": FastHlrLimitsA0,
+    "Wavenumber.Geometer.Contracts.HlrProjectionA0.FastHlrOptionsA0": FastHlrOptionsA0,
+    "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrProjectedView": HlrProjectedView,
+    "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrProjectionModes": HlrProjectionModes,
+    "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrProjectionOptionsA0": HlrProjectionOptionsA0,
+    "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrProjectionResultA0": HlrProjectionResultA0,
+    "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrProjectionSource": HlrProjectionSource,
+    "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrProjectionTimings": HlrProjectionTimings,
+    "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrViewSpec": HlrViewSpec,
+    "Wavenumber.Geometer.Contracts.HlrProjectionA0.ProjectedArc": ProjectedArc,
+    "Wavenumber.Geometer.Contracts.HlrProjectionA0.ProjectedGeometry": ProjectedGeometry,
+    "Wavenumber.Geometer.Contracts.HlrProjectionA0.ProjectionBounds": ProjectionBounds,
     "Wavenumber.Geometer.Contracts.IpcA0.IpcAttachmentDeclarationA0": IpcAttachmentDeclarationA0,
     "Wavenumber.Geometer.Contracts.IpcA0.IpcAttachmentDescriptorA0": IpcAttachmentDescriptorA0,
     "Wavenumber.Geometer.Contracts.IpcA0.IpcAttachmentLayoutPointer64A0": IpcAttachmentLayoutPointer64A0,
@@ -1718,6 +2024,15 @@ MODEL_TYPES = {
     "Wavenumber.Geometer.Contracts.IpcA0.IpcRequestA0": IpcRequestA0,
     "Wavenumber.Geometer.Contracts.IpcA0.IpcShutdownAckA0": IpcShutdownAckA0,
     "Wavenumber.Geometer.Contracts.IpcA0.IpcWelcomeA0": IpcWelcomeA0,
+    "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationInputA0": MeshIllustrationInputA0,
+    "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationMaterial": MeshIllustrationMaterial,
+    "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationMesh": MeshIllustrationMesh,
+    "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationPrepareOptions": MeshIllustrationPrepareOptions,
+    "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationRenderStats": MeshIllustrationRenderStats,
+    "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationResultA0": MeshIllustrationResultA0,
+    "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationStyleA0": MeshIllustrationStyleA0,
+    "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationSvgOptions": MeshIllustrationSvgOptions,
+    "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationView": MeshIllustrationView,
     "Wavenumber.Geometer.Contracts.ModelBoundsA0.ModelBoundsOptionsA0": ModelBoundsOptionsA0,
     "Wavenumber.Geometer.Contracts.ModelBoundsA0.ModelBoundsResultA0": ModelBoundsResultA0,
     "Wavenumber.Geometer.Contracts.ModelBoundsA0.ModelBoundsSource": ModelBoundsSource,
@@ -1822,7 +2137,13 @@ MODEL_TYPES = {
 
 ENUM_TYPES = {
     "Wavenumber.Geometer.Contracts.Common.DiagnosticCategory": DiagnosticCategory,
+    "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrCurveMode": HlrCurveMode,
+    "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrMeshDeflectionMode": HlrMeshDeflectionMode,
+    "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrOutlineAlgorithm": HlrOutlineAlgorithm,
+    "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrProjectionAlgorithm": HlrProjectionAlgorithm,
+    "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrSourceKind": HlrSourceKind,
     "Wavenumber.Geometer.Contracts.IpcA0.IpcRuntimeDispatchA0": IpcRuntimeDispatchA0,
+    "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationShading": MeshIllustrationShading,
     "Wavenumber.Geometer.Contracts.ModelBoundsA0.ModelFormat": ModelFormat,
     "Wavenumber.Geometer.Contracts.StepTopologyA0.CarrierSupportState": CarrierSupportState,
     "Wavenumber.Geometer.Contracts.StepTopologyA0.HierarchyNodeKind": HierarchyNodeKind,

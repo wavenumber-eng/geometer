@@ -147,10 +147,12 @@ def test_packet_inventory_matches_implementation_constants() -> None:
     for packet in manifest["binary_formats"]:
         source = (ROOT / packet["source"]).read_text(encoding="utf-8")
         request_chars = ", ".join(f"'{value}'" for value in packet["request_magic"])
-        response_chars = ", ".join(f"'{value}'" for value in packet["response_magic"])
         assert "{" + request_chars + "}" in source
-        assert "{" + response_chars + "}" in source
-        assert f"FORMAT_VERSION = {packet['version']};" in source
+        if response_magic := packet.get("response_magic"):
+            response_chars = ", ".join(f"'{value}'" for value in response_magic)
+            assert "{" + response_chars + "}" in source
+        version = packet["version"]
+        assert f"FORMAT_VERSION = {version};" in source or f"kVersion = {version};" in source
 
 
 def test_cli_compatibility_names_are_still_dispatched() -> None:

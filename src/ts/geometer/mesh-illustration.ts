@@ -1,6 +1,26 @@
+import type {
+  MeshIllustrationInputA0,
+  MeshIllustrationRenderStats as MeshIllustrationRenderStatsA0,
+  MeshIllustrationResultA0,
+  MeshIllustrationStyleA0,
+  MeshIllustrationSvgOptions as MeshIllustrationSvgOptionsA0,
+} from "./generated/contracts.js";
+
 export type Vec2 = readonly [number, number];
 export type Vec3 = readonly [number, number, number];
 export type Rgb = readonly [number, number, number];
+
+const EXPERIMENTAL_AO_SYMBOL = Symbol.for(
+  "@wavenumber/geometer/experimental-mesh-ambient-occlusion",
+);
+const EXPERIMENTAL_AO_REVISION_SYMBOL = Symbol.for(
+  "@wavenumber/geometer/experimental-mesh-ambient-occlusion-revision",
+);
+
+interface ExperimentalAmbientOcclusionStyle {
+  experimentalAmbientOcclusionStrength?: number;
+  experimentalAmbientOcclusionBands?: number;
+}
 
 export interface MeshIllustrationMaterial {
   /** Source color expressed as sRGB channel values in the inclusive range [0, 1]. */
@@ -97,8 +117,12 @@ export interface IllustrationLineSegment {
   points: readonly [Vec2, Vec2];
 }
 
+export interface MeshIllustrationLinework {
+  readonly outlineSegments?: readonly IllustrationLineSegment[];
+  readonly detailSegments?: readonly IllustrationLineSegment[];
+}
+
 export interface MeshIllustrationScene {
-  schema: "geometry.mesh_illustration.prototype.a0";
   view: {
     direction: Vec3;
     up: Vec3;
@@ -210,6 +234,7 @@ const RENDER_COMMAND_CACHE = new WeakMap<
     edges: MeshIllustrationScene["edges"];
     outlines: MeshIllustrationScene["outlineSegments"];
     details: MeshIllustrationScene["detailSegments"];
+    experimentalAmbientOcclusionRevision: number;
     result: { commands: RenderCommand[]; stats: IllustrationRenderStats };
   }
 >();
@@ -401,6 +426,11 @@ export function prepareMeshIllustration(
   const triangles: IllustrationTriangle[] = [];
   const edgeMaps = new Map<string, EdgeAccumulator>();
   const warnings: string[] = [];
+  let suppressedWarnings = 0;
+  const addWarning = (warning: string): void => {
+    if (warnings.length < 255) warnings.push(warning);
+    else suppressedWarnings += 1;
+  };
   let sourceTriangles = 0;
   let minX = Infinity;
   let minY = Infinity;
@@ -425,7 +455,7 @@ export function prepareMeshIllustration(
       ] as const;
       const vertexCount = mesh.positions.length / 3;
       if (indices.some((index) => index < 0 || index >= vertexCount)) {
-        warnings.push(`Skipped out-of-range triangle ${triangleIndex} in ${mesh.id}.`);
+        addWarning(`Skipped out-of-range triangle ${triangleIndex} in ${mesh.id}.`);
         continue;
       }
 
@@ -435,7 +465,7 @@ export function prepareMeshIllustration(
       const crossNormal = cross(subtract(world[1], world[0]), subtract(world[2], world[0]));
       const magnitude = length(crossNormal);
       if (magnitude < 1e-12) {
-        warnings.push(`Skipped degenerate triangle ${triangleIndex} in ${mesh.id}.`);
+        addWarning(`Skipped degenerate triangle ${triangleIndex} in ${mesh.id}.`);
         continue;
       }
       const normal = normalize(
@@ -511,9 +541,10 @@ export function prepareMeshIllustration(
     maxX = 1;
     maxY = 1;
   }
+  if (suppressedWarnings > 0)
+    warnings.push(`${String(suppressedWarnings)} additional warnings suppressed.`);
 
   return {
-    schema: "geometry.mesh_illustration.prototype.a0",
     view: { direction, up, right, mirrorX },
     bounds: { minX, minY, maxX, maxY },
     triangles,
@@ -557,7 +588,21 @@ function triangleFill(
   const light = normalize(style.lightDirection, "Light direction");
   const activeNormal = style.shading === "flat" ? triangle.geometricNormal : triangle.normal;
   const diffuse = Math.max(0, dot(activeNormal, light));
-  let intensity = clamp(style.ambient) + clamp(style.keyIntensity, 0, 4) * diffuse;
+  const experimentalStyle = style as MeshIllustrationStyle & ExperimentalAmbientOcclusionStyle;
+  const accessibility = Number(
+    (triangle as IllustrationTriangle & { [EXPERIMENTAL_AO_SYMBOL]?: number })[
+      EXPERIMENTAL_AO_SYMBOL
+    ] ?? 1,
+  );
+  const aoBands = Math.max(
+    2,
+    Math.min(32, Math.trunc(experimentalStyle.experimentalAmbientOcclusionBands ?? 5)),
+  );
+  const quantizedAccessibility = Math.round(clamp(accessibility) * (aoBands - 1)) / (aoBands - 1);
+  const aoStrength = clamp(experimentalStyle.experimentalAmbientOcclusionStrength ?? 0);
+  const ambientAccessibility = 1 - aoStrength * (1 - quantizedAccessibility);
+  let intensity =
+    clamp(style.ambient) * ambientAccessibility + clamp(style.keyIntensity, 0, 4) * diffuse;
   intensity = clamp(intensity);
   if (style.shading === "banded" || style.shading === "toon") {
     const bands = Math.max(2, Math.min(32, Math.trunc(style.bands)));
@@ -1033,9 +1078,7 @@ function validFusionRings(rings: readonly (readonly Vec2[])[], epsilon: number):
     const b = segments[second] as (typeof segments)[number];
     if (
       a.ring === b.ring &&
-      (a.edge === b.edge ||
-        (a.edge + 1) % a.count === b.edge ||
-        (b.edge + 1) % b.count === a.edge)
+      (a.edge === b.edge || (a.edge + 1) % a.count === b.edge || (b.edge + 1) % b.count === a.edge)
     )
       return false;
     return segmentsIntersect(a.a, a.b, b.a, b.b, epsilon);
@@ -1069,14 +1112,19 @@ function validFusionRings(rings: readonly (readonly Vec2[])[], epsilon: number):
     );
     const minCellY = Math.max(
       0,
-      Math.min(gridSize - 1, Math.floor((Math.min(segment.a[1], segment.b[1]) - minY) / cellHeight)),
+      Math.min(
+        gridSize - 1,
+        Math.floor((Math.min(segment.a[1], segment.b[1]) - minY) / cellHeight),
+      ),
     );
     const maxCellY = Math.max(
       0,
-      Math.min(gridSize - 1, Math.floor((Math.max(segment.a[1], segment.b[1]) - minY) / cellHeight)),
+      Math.min(
+        gridSize - 1,
+        Math.floor((Math.max(segment.a[1], segment.b[1]) - minY) / cellHeight),
+      ),
     );
-    const broad =
-      (maxCellX - minCellX + 1) * (maxCellY - minCellY + 1) > Math.max(32, gridSize);
+    const broad = (maxCellX - minCellX + 1) * (maxCellY - minCellY + 1) > Math.max(32, gridSize);
     const stamp = index + 1;
     if (broad) {
       for (const candidate of previousSegments) if (intersects(index, candidate)) return false;
@@ -1319,19 +1367,17 @@ function layeredSurfaceCommand(
   const referenceNormal = referenceTriangle.geometricNormal;
   const planeTolerance = Math.max(coordinateTolerance, depthTolerance) * 8;
   if (
-    members.some(
-      (member) => {
-        const triangle = (commands[member] as TriangleCommand).triangle;
-        return (
-          dot(triangle.geometricNormal, referenceNormal) < 1 - 1e-10 ||
-          triangle.points.some(
-            (point, index) =>
-              Math.abs((triangle.depths[index] as number) - depthAt(referenceTriangle, point)) >
-              planeTolerance,
-          )
-        );
-      },
-    )
+    members.some((member) => {
+      const triangle = (commands[member] as TriangleCommand).triangle;
+      return (
+        dot(triangle.geometricNormal, referenceNormal) < 1 - 1e-10 ||
+        triangle.points.some(
+          (point, index) =>
+            Math.abs((triangle.depths[index] as number) - depthAt(referenceTriangle, point)) >
+            planeTolerance,
+        )
+      );
+    })
   )
     return null;
   const sourceMaterials = new Set(
@@ -1509,17 +1555,13 @@ function fuseTriangleCommands(
       a.endKey === b.startKey &&
       cross2(a.start, a.end, a.third) * cross2(a.start, a.end, b.third) < -sideEpsilon;
     if (!sharedBoundary) continue;
-    if (
-      commandA.fill === commandB.fill &&
-      Math.abs(commandA.opacity - commandB.opacity) <= 1e-12
-    )
+    if (commandA.fill === commandB.fill && Math.abs(commandA.opacity - commandB.opacity) <= 1e-12)
       candidates.push([a.triangle, b.triangle]);
     if (
       layerCoplanarMaterials &&
       commandA.opacity >= 1 - 1e-12 &&
       commandB.opacity >= 1 - 1e-12 &&
-      dot(commandA.triangle.geometricNormal, commandB.triangle.geometricNormal) >=
-        1 - 1e-10
+      dot(commandA.triangle.geometricNormal, commandB.triangle.geometricNormal) >= 1 - 1e-10
     )
       coplanarCandidates.push([a.triangle, b.triangle]);
   }
@@ -1585,10 +1627,7 @@ function fuseTriangleCommands(
   }
   for (const members of layerComponents.values()) {
     if (members.length < 2) continue;
-    const commonLow = members.reduce(
-      (value, member) => Math.max(value, low[member] as number),
-      0,
-    );
+    const commonLow = members.reduce((value, member) => Math.max(value, low[member] as number), 0);
     const commonHigh = members.reduce(
       (value, member) => Math.min(value, high[member] as number),
       commands.length - 1,
@@ -1604,10 +1643,7 @@ function fuseTriangleCommands(
     if (!layered) continue;
     for (const member of members) consumedByLayers.add(member);
     const average = members.reduce((sum, member) => sum + member, 0) / members.length;
-    const position = Math.max(
-      commonLow,
-      Math.min(commonHigh, Math.round(average)),
-    );
+    const position = Math.max(commonLow, Math.min(commonHigh, Math.round(average)));
     placements.push({ position, order: members[0] as number, commands: [layered] });
   }
   for (const [root, members] of components) {
@@ -1648,13 +1684,19 @@ function renderCommands(
   style: MeshIllustrationStyle,
 ): { commands: RenderCommand[]; stats: IllustrationRenderStats } {
   const styleKey = JSON.stringify(style);
+  const experimentalAmbientOcclusionRevision = Number(
+    (scene as MeshIllustrationScene & { [EXPERIMENTAL_AO_REVISION_SYMBOL]?: number })[
+      EXPERIMENTAL_AO_REVISION_SYMBOL
+    ] ?? 0,
+  );
   const cached = RENDER_COMMAND_CACHE.get(scene);
   if (
     cached?.styleKey === styleKey &&
     cached.triangles === scene.triangles &&
     cached.edges === scene.edges &&
     cached.outlines === scene.outlineSegments &&
-    cached.details === scene.detailSegments
+    cached.details === scene.detailSegments &&
+    cached.experimentalAmbientOcclusionRevision === experimentalAmbientOcclusionRevision
   )
     return cached.result;
   const span = Math.max(
@@ -1784,6 +1826,7 @@ function renderCommands(
     edges: scene.edges,
     outlines: scene.outlineSegments,
     details: scene.detailSegments,
+    experimentalAmbientOcclusionRevision,
     result,
   });
   return result;
@@ -1892,10 +1935,12 @@ export function renderMeshIllustrationSvg(
   const sourceMinY = -scene.bounds.maxY - pad;
   const viewWidth = width + pad * 2;
   const viewHeight = height + pad * 2;
-  // Normalize illustration output onto a high-resolution integer grid. Scene
-  // JSON and Canvas retain model coordinates; SVG avoids long metre-scale
+  // Normalize illustration output onto a high-resolution integer grid. Canvas
+  // retains model coordinates; SVG avoids long metre-scale
   // decimals while preserving one part per million across the larger axis.
-  const coordinateSpan = Math.round(clamp(options.coordinateSpan ?? 1_000_000, 10_000, 1_000_000_000));
+  const coordinateSpan = Math.round(
+    clamp(options.coordinateSpan ?? 1_000_000, 10_000, 1_000_000_000),
+  );
   const coordinateScale = coordinateSpan / Math.max(width, height);
   const svgWidth = Math.max(1, Math.round(viewWidth * coordinateScale));
   const svgHeight = Math.max(1, Math.round(viewHeight * coordinateScale));
@@ -1945,7 +1990,9 @@ export function renderMeshIllustrationSvg(
     return name;
   };
   if (!style.transparentBackground) {
-    body.push(`<rect width="${svgWidth}" height="${svgHeight}" fill="${escapeXml(style.background)}"/>`);
+    body.push(
+      `<rect width="${svgWidth}" height="${svgHeight}" fill="${escapeXml(safeCssColor(style.background))}"/>`,
+    );
   }
   for (let commandIndex = 0; commandIndex < commands.length; commandIndex += 1) {
     const command = commands[commandIndex] as RenderCommand;
@@ -1954,7 +2001,9 @@ export function renderMeshIllustrationSvg(
         .map(mapPoint)
         .map((point) => `${numberText(point[0])},${numberText(point[1])}`)
         .join(" ");
-      body.push(`<polygon class="${surfaceClass(command.fill, command.opacity)}" points="${points}"/>`);
+      body.push(
+        `<polygon class="${surfaceClass(command.fill, command.opacity)}" points="${points}"/>`,
+      );
     } else if (command.kind === "fused-surface") {
       const path = surfacePath(command.rings);
       body.push(`<path class="${surfaceClass(command.fill, command.opacity)}" d="${path}"/>`);
@@ -1986,7 +2035,7 @@ export function renderMeshIllustrationSvg(
     '<?xml version="1.0" encoding="UTF-8"?>',
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${svgWidth} ${svgHeight}" role="img">`,
     `<title>${escapeXml(title)}</title>`,
-    `<metadata>geometry.mesh_illustration.prototype.a0</metadata>`,
+    `<metadata>geometry.mesh_illustration.result.a0</metadata>`,
     `<style>${styleRules.map(escapeXml).join("")}</style>`,
     ...body,
     "</svg>",
@@ -2081,4 +2130,200 @@ export function renderMeshIllustrationCanvas(
   }
   context.restore();
   return stats;
+}
+
+const DEFAULT_ILLUSTRATION_STYLE = Object.freeze<MeshIllustrationStyle>({
+  shading: "toon",
+  ambient: 0.25,
+  keyIntensity: 0.9,
+  lightDirection: [0.4, 0.7, 1],
+  bands: 3,
+  sourceColors: true,
+  fallbackColor: [0.72, 0.74, 0.78],
+  background: "#ffffff",
+  transparentBackground: false,
+  fuseSurfaces: true,
+  layerCoplanarMaterials: true,
+  showHlrOutline: true,
+  showHlrDetail: false,
+  showOutlines: true,
+  showCreases: true,
+  creaseAngleDegrees: 30,
+  outlineColor: "#17252c",
+  creaseColor: "#33444a",
+  outlineWidth: 0.006,
+  creaseWidth: 0.003,
+  doubleSided: false,
+  rimAmount: 0.12,
+});
+
+/** Resolve a governed presence-preserving style patch to package defaults. */
+export function resolveMeshIllustrationStyle(
+  style: MeshIllustrationStyleA0 = {},
+): MeshIllustrationStyle {
+  return {
+    shading: style.shading ?? DEFAULT_ILLUSTRATION_STYLE.shading,
+    ambient: style.ambient ?? DEFAULT_ILLUSTRATION_STYLE.ambient,
+    keyIntensity: style.key_intensity ?? DEFAULT_ILLUSTRATION_STYLE.keyIntensity,
+    lightDirection: style.light_direction ?? DEFAULT_ILLUSTRATION_STYLE.lightDirection,
+    bands: style.bands ?? DEFAULT_ILLUSTRATION_STYLE.bands,
+    sourceColors: style.source_colors ?? DEFAULT_ILLUSTRATION_STYLE.sourceColors,
+    fallbackColor: style.fallback_color ?? DEFAULT_ILLUSTRATION_STYLE.fallbackColor,
+    background: style.background ?? DEFAULT_ILLUSTRATION_STYLE.background,
+    transparentBackground:
+      style.transparent_background ?? DEFAULT_ILLUSTRATION_STYLE.transparentBackground,
+    fuseSurfaces: style.fuse_surfaces ?? DEFAULT_ILLUSTRATION_STYLE.fuseSurfaces,
+    layerCoplanarMaterials:
+      style.layer_coplanar_materials ?? DEFAULT_ILLUSTRATION_STYLE.layerCoplanarMaterials,
+    showHlrOutline: style.show_hlr_outline ?? DEFAULT_ILLUSTRATION_STYLE.showHlrOutline,
+    showHlrDetail: style.show_hlr_detail ?? DEFAULT_ILLUSTRATION_STYLE.showHlrDetail,
+    showOutlines: style.show_outlines ?? DEFAULT_ILLUSTRATION_STYLE.showOutlines,
+    showCreases: style.show_creases ?? DEFAULT_ILLUSTRATION_STYLE.showCreases,
+    creaseAngleDegrees: style.crease_angle_degrees ?? DEFAULT_ILLUSTRATION_STYLE.creaseAngleDegrees,
+    outlineColor: style.outline_color ?? DEFAULT_ILLUSTRATION_STYLE.outlineColor,
+    creaseColor: style.crease_color ?? DEFAULT_ILLUSTRATION_STYLE.creaseColor,
+    outlineWidth: style.outline_width ?? DEFAULT_ILLUSTRATION_STYLE.outlineWidth,
+    creaseWidth: style.crease_width ?? DEFAULT_ILLUSTRATION_STYLE.creaseWidth,
+    doubleSided: style.double_sided ?? DEFAULT_ILLUSTRATION_STYLE.doubleSided,
+    rimAmount: style.rim_amount ?? DEFAULT_ILLUSTRATION_STYLE.rimAmount,
+  };
+}
+
+/** Convert a resolved ergonomic style into the governed standalone A0 DTO. */
+export function toMeshIllustrationStyleA0(style: MeshIllustrationStyle): MeshIllustrationStyleA0 {
+  return {
+    shading: style.shading,
+    ambient: style.ambient,
+    key_intensity: style.keyIntensity,
+    light_direction: style.lightDirection,
+    bands: style.bands,
+    source_colors: style.sourceColors,
+    fallback_color: style.fallbackColor,
+    background: style.background,
+    transparent_background: style.transparentBackground,
+    fuse_surfaces: style.fuseSurfaces,
+    layer_coplanar_materials: style.layerCoplanarMaterials,
+    show_hlr_outline: style.showHlrOutline,
+    show_hlr_detail: style.showHlrDetail,
+    show_outlines: style.showOutlines,
+    show_creases: style.showCreases,
+    crease_angle_degrees: style.creaseAngleDegrees,
+    outline_color: style.outlineColor,
+    crease_color: style.creaseColor,
+    outline_width: style.outlineWidth,
+    crease_width: style.creaseWidth,
+    double_sided: style.doubleSided,
+    rim_amount: style.rimAmount,
+  };
+}
+
+export interface MeshIllustratorA0 {
+  readonly disposed: boolean;
+  renderSvg(
+    style?: MeshIllustrationStyleA0,
+    svg?: MeshIllustrationSvgOptionsA0,
+  ): MeshIllustrationResultA0;
+  renderCanvas(
+    context: CanvasRenderingContext2D,
+    style?: MeshIllustrationStyleA0,
+  ): MeshIllustrationRenderStatsA0;
+  dispose(): void;
+}
+
+/** Prepare one governed illustration input once, then render multiple styles or targets. */
+export function createIllustrator(
+  input: MeshIllustrationInputA0,
+  linework: MeshIllustrationLinework = {},
+): MeshIllustratorA0 {
+  const baseStyle = { ...input.style };
+  const baseSvg = { ...input.svg };
+  let scene: MeshIllustrationScene | null = prepareMeshIllustration(
+    {
+      meshes: input.meshes.map((mesh) => ({
+        id: mesh.id,
+        positions: mesh.positions,
+        ...(mesh.normals === undefined ? {} : { normals: mesh.normals }),
+        ...(mesh.indices === undefined ? {} : { indices: mesh.indices }),
+        ...(mesh.matrix === undefined ? {} : { matrix: mesh.matrix }),
+        materials: mesh.materials,
+        ...(mesh.triangle_material_indices === undefined
+          ? {}
+          : { triangleMaterialIndices: mesh.triangle_material_indices }),
+        ...(mesh.double_sided === undefined ? {} : { doubleSided: mesh.double_sided }),
+      })),
+    },
+    {
+      direction: input.view.direction,
+      up: input.view.up,
+      ...(input.view.mirror_x === undefined ? {} : { mirrorX: input.view.mirror_x }),
+    },
+    {
+      maxTriangles: input.prepare?.max_triangles ?? 750_000,
+      weldTolerance: input.prepare?.weld_tolerance ?? 0.0000001,
+    },
+  );
+  if (linework.outlineSegments !== undefined) scene.outlineSegments = linework.outlineSegments;
+  if (linework.detailSegments !== undefined) scene.detailSegments = linework.detailSegments;
+  let disposed = false;
+  const requireScene = (): MeshIllustrationScene => {
+    if (scene === null) throw new Error("Mesh illustrator has been disposed.");
+    return scene;
+  };
+  const mergedStyle = (patch: MeshIllustrationStyleA0 = {}): MeshIllustrationStyle =>
+    resolveMeshIllustrationStyle({ ...baseStyle, ...patch });
+  return {
+    get disposed() {
+      return disposed;
+    },
+    renderSvg(style = {}, svg = {}) {
+      const options = { ...baseSvg, ...svg };
+      const rendered = renderMeshIllustrationSvg(
+        requireScene(),
+        mergedStyle(style),
+        options.title ?? "Geometer mesh illustration",
+        options.coordinate_span === undefined ? {} : { coordinateSpan: options.coordinate_span },
+      );
+      return {
+        schema: "geometry.mesh_illustration.result.a0",
+        svg: rendered.svg,
+        stats: illustrationStatsA0(rendered.stats),
+        warnings: [...requireScene().warnings],
+      };
+    },
+    renderCanvas(context, style = {}) {
+      return illustrationStatsA0(
+        renderMeshIllustrationCanvas(context, requireScene(), mergedStyle(style)),
+      );
+    },
+    dispose() {
+      if (disposed) return;
+      const current = requireScene();
+      VISIBILITY_ORDER_CACHE.delete(current);
+      RENDER_COMMAND_CACHE.delete(current);
+      scene = null;
+      disposed = true;
+    },
+  };
+}
+
+/** Prepare and render one governed mesh-illustration A0 input to SVG. */
+export function illustrateMesh(input: MeshIllustrationInputA0): MeshIllustrationResultA0 {
+  const illustrator = createIllustrator(input);
+  try {
+    return illustrator.renderSvg();
+  } finally {
+    illustrator.dispose();
+  }
+}
+
+function illustrationStatsA0(stats: IllustrationRenderStats): MeshIllustrationRenderStatsA0 {
+  return {
+    triangles: stats.triangles,
+    surface_draws: stats.surfaceDraws,
+    layered_surfaces: stats.layeredSurfaces,
+    outlines: stats.outlines,
+    details: stats.details,
+    creases: stats.creases,
+    commands: stats.commands,
+  };
 }

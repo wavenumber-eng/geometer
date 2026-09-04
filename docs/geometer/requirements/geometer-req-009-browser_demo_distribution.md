@@ -45,3 +45,6 @@ can be deployed unchanged after explicit publication approval.
    explicitly adds an upload service and its security/privacy policy.
 8. Keep reusable panel, input, and presentation behavior independent of Viz,
    board-specific policy, and Geometer core geometry semantics.
+9. Require HLR and Illustration Labs to import production package APIs and use
+   the generic governed HLR operation. A packaged demo must not carry a copied
+   authoritative HLR, illustration, or raster algorithm.

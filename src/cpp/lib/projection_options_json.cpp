@@ -3,7 +3,9 @@
 #include <array>
 #include <cctype>
 #include <cmath>
+#include <cstdint>
 #include <cstdlib>
+#include <limits>
 #include <map>
 #include <sstream>
 #include <string>
@@ -482,7 +484,12 @@ bool parse_projection_algorithm(const JsonValue& value, ProjectionAlgorithm* out
         *output = ProjectionAlgorithm::Exact;
         return true;
     }
-    *error = "projection_algorithm must be poly or exact.";
+    if (value.string_value == "fast")
+    {
+        *output = ProjectionAlgorithm::Fast;
+        return true;
+    }
+    *error = "projection_algorithm must be poly, exact, or fast.";
     return false;
 }
 
@@ -528,7 +535,12 @@ bool parse_projection_outline_algorithm(const JsonValue& value, ProjectionOutlin
         *output = ProjectionOutlineAlgorithm::MeshShadow;
         return true;
     }
-    *error = "outline_algorithm must be hlr-close or mesh-shadow.";
+    if (value.string_value == "fast-mesh-shadow" || value.string_value == "fast_mesh_shadow")
+    {
+        *output = ProjectionOutlineAlgorithm::FastMeshShadow;
+        return true;
+    }
+    *error = "outline_algorithm must be hlr-close, mesh-shadow, or fast-mesh-shadow.";
     return false;
 }
 
@@ -541,6 +553,146 @@ bool double_field(const JsonValue& value, double* output, std::string* error,
         return false;
     }
     *output = value.number_value;
+    return true;
+}
+
+bool size_field(const JsonValue& value, std::size_t* output, std::string* error,
+                const std::string& field_name)
+{
+    constexpr double maximum = static_cast<double>(std::numeric_limits<std::uint32_t>::max());
+    if (value.type != JsonValue::Type::Number || !std::isfinite(value.number_value) ||
+        value.number_value < 0.0 || value.number_value > maximum)
+    {
+        *error = field_name + " must be a nonnegative 32-bit integer.";
+        return false;
+    }
+    const double rounded = std::round(value.number_value);
+    if (std::fabs(value.number_value - rounded) > 1.0e-9)
+    {
+        *error = field_name + " must be an integer.";
+        return false;
+    }
+    *output = static_cast<std::size_t>(rounded);
+    return true;
+}
+
+bool parse_fast_options(const JsonValue& value, FastHlrOptions* options, std::string* error)
+{
+    if (value.type != JsonValue::Type::Object)
+    {
+        *error = "fast must be an object.";
+        return false;
+    }
+    struct BoolOption
+    {
+        const char* snake;
+        const char* camel;
+        bool FastHlrOptions::* member;
+    };
+    const BoolOption booleans[] = {
+        {"include_boundaries", "includeBoundaries", &FastHlrOptions::include_boundaries},
+        {"include_creases", "includeCreases", &FastHlrOptions::include_creases},
+        {"include_silhouettes", "includeSilhouettes", &FastHlrOptions::include_silhouettes},
+        {"include_hidden", "includeHidden", &FastHlrOptions::include_hidden},
+        {"suppress_coplanar_seams", "suppressCoplanarSeams",
+         &FastHlrOptions::suppress_coplanar_seams},
+    };
+    for (const BoolOption& option : booleans)
+    {
+        if (const JsonValue* node = find_any_member(value, {option.snake, option.camel}))
+        {
+            if (!bool_field(*node, &(options->*(option.member)), error,
+                            std::string("fast.") + option.snake))
+            {
+                return false;
+            }
+        }
+    }
+    struct DoubleOption
+    {
+        const char* snake;
+        const char* camel;
+        double FastHlrOptions::* member;
+    };
+    const DoubleOption doubles[] = {
+        {"crease_angle_rad", "creaseAngleRad", &FastHlrOptions::crease_angle_rad},
+        {"weld_tolerance", "weldTolerance", &FastHlrOptions::weld_tolerance},
+        {"projected_tolerance", "projectedTolerance", &FastHlrOptions::projected_tolerance},
+        {"depth_tolerance", "depthTolerance", &FastHlrOptions::depth_tolerance},
+        {"coplanar_seam_angle_rad", "coplanarSeamAngleRad",
+         &FastHlrOptions::coplanar_seam_angle_rad},
+        {"coplanar_seam_depth_tolerance", "coplanarSeamDepthTolerance",
+         &FastHlrOptions::coplanar_seam_depth_tolerance},
+        {"coplanar_seam_lateral_tolerance", "coplanarSeamLateralTolerance",
+         &FastHlrOptions::coplanar_seam_lateral_tolerance},
+    };
+    for (const DoubleOption& option : doubles)
+    {
+        if (const JsonValue* node = find_any_member(value, {option.snake, option.camel}))
+        {
+            if (!double_field(*node, &(options->*(option.member)), error,
+                              std::string("fast.") + option.snake))
+            {
+                return false;
+            }
+        }
+    }
+    if (const JsonValue* limits = find_member(value, "limits"))
+    {
+        if (limits->type != JsonValue::Type::Object)
+        {
+            *error = "fast.limits must be an object.";
+            return false;
+        }
+        struct LimitOption
+        {
+            const char* snake;
+            const char* camel;
+            std::size_t FastHlrLimits::* member;
+        };
+        const LimitOption limit_options[] = {
+            {"max_vertices", "maxVertices", &FastHlrLimits::max_vertices},
+            {"max_triangles", "maxTriangles", &FastHlrLimits::max_triangles},
+            {"max_edges", "maxEdges", &FastHlrLimits::max_edges},
+            {"max_grid_references", "maxGridReferences", &FastHlrLimits::max_grid_references},
+            {"max_candidate_pairs", "maxCandidatePairs", &FastHlrLimits::max_candidate_pairs},
+            {"max_fragments", "maxFragments", &FastHlrLimits::max_fragments},
+            {"max_output_segments", "maxOutputSegments", &FastHlrLimits::max_output_segments},
+        };
+        for (const LimitOption& option : limit_options)
+        {
+            if (const JsonValue* node = find_any_member(*limits, {option.snake, option.camel}))
+            {
+                if (!size_field(*node, &(options->limits.*(option.member)), error,
+                                std::string("fast.limits.") + option.snake))
+                {
+                    return false;
+                }
+            }
+        }
+    }
+    if (!std::isfinite(options->crease_angle_rad) || options->crease_angle_rad < 0.0 ||
+        options->crease_angle_rad > 3.14159265358979323846)
+    {
+        *error = "fast.crease_angle_rad must be finite and between 0 and pi.";
+        return false;
+    }
+    if (!std::isfinite(options->weld_tolerance) || options->weld_tolerance <= 0.0 ||
+        !std::isfinite(options->projected_tolerance) || options->projected_tolerance <= 0.0 ||
+        !std::isfinite(options->depth_tolerance) || options->depth_tolerance < 0.0 ||
+        !std::isfinite(options->coplanar_seam_angle_rad) ||
+        options->coplanar_seam_angle_rad < 0.0 ||
+        options->coplanar_seam_angle_rad > 1.57079632679489661923 ||
+        !std::isfinite(options->coplanar_seam_depth_tolerance) ||
+        options->coplanar_seam_depth_tolerance < 0.0 ||
+        !std::isfinite(options->coplanar_seam_lateral_tolerance) ||
+        options->coplanar_seam_lateral_tolerance <= options->projected_tolerance)
+    {
+        *error = "fast tolerances must be finite; weld/projected must be positive, seam lateral "
+                 "must exceed projected tolerance, depth/seam depth must be nonnegative, crease "
+                 "angle must be between 0 and pi, and seam angle must be between 0 and pi/2.";
+        return false;
+    }
     return true;
 }
 
@@ -668,6 +820,28 @@ int parse_hlr_projection_options_json(const char* json, HlrProjectionOptions* op
         {
             set_status(status, 91, error);
             return 91;
+        }
+    }
+    struct OutputLayerFlag
+    {
+        const char* snake;
+        const char* camel;
+        bool HlrProjectionOptions::* member;
+    };
+    const OutputLayerFlag output_layer_flags[] = {
+        {"output_outline", "outputOutline", &HlrProjectionOptions::output_outline},
+        {"output_detail", "outputDetail", &HlrProjectionOptions::output_detail},
+        {"output_bbox", "outputBbox", &HlrProjectionOptions::output_bbox},
+    };
+    for (const OutputLayerFlag& flag : output_layer_flags)
+    {
+        if (const JsonValue* node = find_any_member(root, {flag.snake, flag.camel}))
+        {
+            if (!bool_field(*node, &(parsed.*(flag.member)), &error, flag.snake))
+            {
+                set_status(status, 91, error);
+                return 91;
+            }
         }
     }
     // Back-compat: include_visible toggles all visible edge categories on/off,
@@ -806,6 +980,14 @@ int parse_hlr_projection_options_json(const char* json, HlrProjectionOptions* op
             find_any_member(root, {"hlr_angle_tolerance", "hlrAngleTolerance"}))
     {
         if (!double_field(*angle, &parsed.hlr_angle_tolerance, &error, "hlr_angle_tolerance"))
+        {
+            set_status(status, 91, error);
+            return 91;
+        }
+    }
+    if (const JsonValue* fast = find_member(root, "fast"))
+    {
+        if (!parse_fast_options(*fast, &parsed.fast, &error))
         {
             set_status(status, 91, error);
             return 91;

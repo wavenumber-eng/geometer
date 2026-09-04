@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build the single-file Geometer STEP Illustration Lab prototype."""
+"""Build the single-file Geometer STEP Illustration Lab."""
 
 from __future__ import annotations
 
@@ -15,6 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "examples" / "wasm" / "illustration_demo.html"
 APP_SOURCE = ROOT / "examples" / "wasm" / "illustration_demo.ts"
 WORKER_SOURCE = ROOT / "examples" / "wasm" / "illustration_step_worker.js"
+OPERATION_WORKER_SOURCE = ROOT / "examples" / "wasm" / "geometer_operation_worker.js"
 SHARED_STYLES = ROOT / "examples" / "wasm" / "geometer_demo.css"
 SOURCE_MANIFEST = ROOT / "tests" / "fixtures" / "embedded_models_manifest.json"
 GEOMETER_BROWSER = ROOT / "dist" / "wasm" / "browser"
@@ -30,9 +31,10 @@ OUT = ROOT / "dist" / "wasm" / "demos" / "illustration_demo.html"
 
 DEMO_MODEL_NAMES = [
     "SOT-23.STEP",
+    "ABM8-272-T3.STEP",
     "SOIC-8-W.step",
     "sot223.stp",
-    "TSOT-23-5.STEP",
+    "Cap_SMT_Aluminum_F.STEP",
     "BGA90-8X13mm.step",
 ]
 
@@ -58,6 +60,7 @@ def embedded_models() -> list[dict[str, object]]:
 
 def self_contained_worker() -> str:
     source = WORKER_SOURCE.read_text(encoding="utf-8")
+    operation_worker = OPERATION_WORKER_SOURCE.read_text(encoding="utf-8")
     tail_start = source.index("function stepToGlb")
     return "\n".join(
         [
@@ -80,6 +83,7 @@ def self_contained_worker() -> str:
             "  }",
             "  return modulePromise;",
             "}",
+            operation_worker,
             source[tail_start:],
         ]
     )
@@ -104,6 +108,7 @@ def main() -> None:
         SOURCE,
         APP_SOURCE,
         WORKER_SOURCE,
+        OPERATION_WORKER_SOURCE,
         SHARED_STYLES,
         SOURCE_MANIFEST,
         GEOMETER_JS,
@@ -118,7 +123,15 @@ def main() -> None:
         raise SystemExit("Missing illustration demo input(s): " + ", ".join(map(str, missing)))
 
     STAGING.mkdir(parents=True, exist_ok=True)
-    bundle_es_module(APP_SOURCE, APP_BUNDLE, target="es2022")
+    bundle_es_module(
+        APP_SOURCE,
+        APP_BUNDLE,
+        target="es2022",
+        aliases={
+            "@wavenumber/geometer/mesh-illustration": ROOT / "src" / "ts" / "geometer" / "mesh-illustration.ts",
+            "@wavenumber/geometer/mesh-illustration-ao-experimental": ROOT / "src" / "ts" / "geometer" / "mesh-illustration-ao-experimental.ts",
+        },
+    )
     bundle = "\n".join(line.rstrip() for line in APP_BUNDLE.read_text(encoding="utf-8").splitlines()) + "\n"
     embedded = {
         "models": embedded_models(),

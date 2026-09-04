@@ -335,7 +335,7 @@ def test_pcb_polygon_pour_standalone_interactions() -> None:
     assert result["visual"]["via"] == result["visual"]["copper"]
     assert result["visual"]["pad"] == result["visual"]["copper"]
     assert result["visual"]["routePreview"] == result["visual"]["copper"]
-    copper = [0, 108, 103, 255]
+    copper = [180, 83, 9, 255]
     white = [255, 255, 255, 255]
     assert sum(pixel == copper for pixel in result["thermalPixel"]) >= 3
     assert sum(pixel == copper for pixel in result["previewPixels"]["trace"]) >= 3

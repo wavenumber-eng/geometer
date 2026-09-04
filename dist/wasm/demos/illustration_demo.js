@@ -1,7 +1,8 @@
+import { prepareMeshIllustration, renderMeshIllustrationCanvas, renderMeshIllustrationSvg, toMeshIllustrationStyleA0, } from "@wavenumber/geometer/mesh-illustration";
+import { applyExperimentalAmbientOcclusion, prepareExperimentalAmbientOcclusion, } from "@wavenumber/geometer/mesh-illustration-ao-experimental";
 import * as THREE from "three";
 import { TrackballControls } from "three/addons/controls/TrackballControls.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
-import { prepareMeshIllustration, renderMeshIllustrationCanvas, renderMeshIllustrationSvg, } from "./mesh_illustration.js";
 const MESH_QUALITY_PRESETS = {
     draft: {
         linearDeflectionMm: 0.25,
@@ -32,7 +33,7 @@ const DEMO_MODEL_ORDER = [
     "SOT-23.STEP",
     "SOIC-8-W.step",
     "sot223.stp",
-    "TSOT-23-5.STEP",
+    "Cap_SMT_Aluminum_F.STEP",
     "BGA90-8X13mm.step",
 ];
 function required(id) {
@@ -49,7 +50,6 @@ const els = {
     viewButtons: required("illustrationViewButtons"),
     outputButtons: required("illustrationOutputButtons"),
     downloadSvg: required("illustrationDownloadSvg"),
-    downloadScene: required("illustrationDownloadScene"),
     downloadStyle: required("illustrationDownloadStyle"),
     modelPane: required("illustrationModelPane"),
     outputPane: required("illustrationOutputPane"),
@@ -74,6 +74,14 @@ const els = {
     bandsValue: required("illustrationBandsValue"),
     ambient: required("illustrationAmbient"),
     ambientValue: required("illustrationAmbientValue"),
+    ambientOcclusion: required("illustrationAmbientOcclusion"),
+    aoStrength: required("illustrationAoStrength"),
+    aoStrengthValue: required("illustrationAoStrengthValue"),
+    aoRadius: required("illustrationAoRadius"),
+    aoRadiusValue: required("illustrationAoRadiusValue"),
+    aoSamples: required("illustrationAoSamples"),
+    aoBands: required("illustrationAoBands"),
+    aoBandsValue: required("illustrationAoBandsValue"),
     key: required("illustrationKey"),
     keyValue: required("illustrationKeyValue"),
     rim: required("illustrationRim"),
@@ -88,6 +96,13 @@ const els = {
     outlineWidth: required("illustrationOutlineWidth"),
     outlineWidthValue: required("illustrationOutlineWidthValue"),
     doubleSided: required("illustrationDoubleSided"),
+    fastCrease: required("illustrationFastCrease"),
+    fastCreaseValue: required("illustrationFastCreaseValue"),
+    fastCoplanarSeams: required("illustrationFastCoplanarSeams"),
+    fastSeamAngle: required("illustrationFastSeamAngle"),
+    fastSeamAngleValue: required("illustrationFastSeamAngleValue"),
+    fastSeamDepth: required("illustrationFastSeamDepth"),
+    fastSeamDepthValue: required("illustrationFastSeamDepthValue"),
     background: required("illustrationBackground"),
     transparent: required("illustrationTransparent"),
 };
@@ -116,6 +131,9 @@ const state = {
     lineworkBusyRequest: null,
     showHlrOutline: true,
     showHlrDetail: true,
+    ambientOcclusion: null,
+    ambientOcclusionKey: "",
+    ambientOcclusionAbort: null,
 };
 const renderer = new THREE.WebGLRenderer({
     canvas: els.modelCanvas,
@@ -125,6 +143,7 @@ const renderer = new THREE.WebGLRenderer({
 renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.setClearColor(0xffffff, 1);
+let fastCreaseLineworkTimer = 0;
 const threeScene = new THREE.Scene();
 threeScene.background = new THREE.Color(0xffffff);
 const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.001, 100_000);
@@ -207,6 +226,8 @@ function currentStyle() {
     const keyIntensity = numberInput(els.key, els.keyValue, 2);
     const rimAmount = numberInput(els.rim, els.rimValue, 2);
     const outlineWidth = numberInput(els.outlineWidth, els.outlineWidthValue, 3);
+    const aoStrength = numberInput(els.aoStrength, els.aoStrengthValue, 2);
+    const aoBands = Math.max(2, Math.min(32, Math.round(numberInput(els.aoBands, els.aoBandsValue, 0))));
     return {
         shading: els.shading.value,
         ambient,
@@ -230,7 +251,43 @@ function currentStyle() {
         creaseWidth: outlineWidth * 0.55,
         doubleSided: els.doubleSided.checked,
         rimAmount,
+        experimentalAmbientOcclusionStrength: els.ambientOcclusion.checked ? aoStrength : 0,
+        experimentalAmbientOcclusionBands: aoBands,
     };
+}
+function ambientOcclusionSettings() {
+    const radiusPercent = boundedNumberInput(els.aoRadius, 1, 60, 5);
+    const samples = Math.max(8, Math.min(128, Math.trunc(Number.parseFloat(els.aoSamples.value) || 16)));
+    els.aoRadiusValue.value = `${radiusPercent.toFixed(0)}%`;
+    return { samples, radiusFraction: radiusPercent / 100 };
+}
+function cancelAmbientOcclusion() {
+    state.ambientOcclusionAbort?.abort();
+    state.ambientOcclusionAbort = null;
+}
+function ambientOcclusionCacheKey(model, settings) {
+    const ao = ambientOcclusionSettings();
+    return `${model.cacheKey ?? model.name}|${surfaceMeshKey(settings)}|${ao.samples}|${ao.radiusFraction.toFixed(4)}`;
+}
+function scheduleFastCreaseUpdate() {
+    const crease = boundedNumberInput(els.fastCrease, 1, 80, 25);
+    els.fastCreaseValue.value = `${crease.toFixed(0)} deg`;
+    scheduleFastVectorLineworkUpdate();
+}
+function scheduleFastVectorLineworkUpdate() {
+    const seamAngle = boundedNumberInput(els.fastSeamAngle, 0, 10, 1);
+    const seamDepth = boundedNumberInput(els.fastSeamDepth, 0, 0.01, 0.001);
+    els.fastSeamAngleValue.value = `${seamAngle.toFixed(1)} deg`;
+    els.fastSeamDepthValue.value = `${seamDepth.toFixed(4)} mm`;
+    cancelLazyHlrLinework();
+    window.clearTimeout(fastCreaseLineworkTimer);
+    fastCreaseLineworkTimer = window.setTimeout(() => {
+        fastCreaseLineworkTimer = 0;
+        if (!state.scene || !state.showHlrDetail)
+            return;
+        delete state.scene.detailSegments;
+        updateHlrVisibility().catch(showError);
+    }, 100);
 }
 function activateButtons(container, key, value) {
     for (const button of Array.from(container.querySelectorAll("button")))
@@ -450,6 +507,14 @@ function drawSvg(svg) {
         throw new Error(`Generated SVG failed to parse: ${error.textContent ?? "unknown error"}`);
     els.svgHost.replaceChildren(document.importNode(parsed.documentElement, true));
 }
+function fastVectorLineworkLabel() {
+    const layers = [];
+    if (state.showHlrOutline)
+        layers.push("FAST MESH-SHADOW");
+    if (state.showHlrDetail)
+        layers.push("FAST DETAIL");
+    return layers.length > 0 ? layers.join(" + ") : "LINEWORK OFF";
+}
 function redrawStyle() {
     if (!state.scene)
         return;
@@ -465,14 +530,14 @@ function redrawStyle() {
     const canvasStats = renderMeshIllustrationCanvas(context, state.scene, style);
     els.counts.textContent = `${rendered.stats.triangles.toLocaleString()} front-facing triangles → ${rendered.stats.surfaceDraws.toLocaleString()} polygon regions/draws / ${rendered.stats.layeredSurfaces.toLocaleString()} coplanar layers / SVG ${formatBytes(svgBytes)} / ${rendered.stats.details.toLocaleString()} HLR detail / ${rendered.stats.outlines.toLocaleString()} HLR outline segments / ${state.scene.warnings.length} warnings`;
     els.downloadSvg.disabled = false;
-    els.downloadScene.disabled = false;
     els.downloadStyle.disabled = false;
     els.svgHost.classList.toggle("hidden", state.output !== "svg");
     els.illustrationCanvas.classList.toggle("hidden", state.output !== "canvas");
+    els.outputPane.dataset.engine = "fast-vector";
     els.outputLabel.textContent =
         state.output === "svg"
-            ? `2D SVG / ${style.shading.toUpperCase()} / ${formatBytes(svgBytes)}`
-            : `2D CANVAS / ${style.shading.toUpperCase()} / ${canvasStats.commands.toLocaleString()} DRAWS`;
+            ? `FAST VECTOR / C++ WASM CPU / SVG / ${fastVectorLineworkLabel()} / ${formatBytes(svgBytes)}`
+            : `FAST VECTOR / C++ WASM CPU / CANVAS / ${fastVectorLineworkLabel()} / ${canvasStats.commands.toLocaleString()} DRAWS`;
     els.outputPane.dataset.output = state.output;
     els.outputPane.dataset.shading = style.shading;
     els.outputPane.dataset.canvasOutlines = String(canvasStats.outlines + canvasStats.details);
@@ -501,6 +566,7 @@ async function prepareIllustration(reason) {
     if (!root)
         return;
     const requestId = ++state.prepareRequest;
+    cancelAmbientOcclusion();
     cancelLazyHlrLinework();
     syncHlrControls();
     const started = performance.now();
@@ -511,6 +577,47 @@ async function prepareIllustration(reason) {
         const view = currentView();
         const meshSettings = currentMeshSettings();
         let prepared = prepareMeshIllustration(input, view, { weldTolerance: 1e-5 });
+        let aoMs = 0;
+        let aoCached = true;
+        if (els.ambientOcclusion.checked && model) {
+            const aoKey = ambientOcclusionCacheKey(model, meshSettings);
+            if (!state.ambientOcclusion || state.ambientOcclusionKey !== aoKey) {
+                const ao = ambientOcclusionSettings();
+                const controller = new AbortController();
+                state.ambientOcclusionAbort = controller;
+                setBusy(`Computing experimental ambient occlusion for ${model.name}...`, "indicator");
+                const result = await prepareExperimentalAmbientOcclusion(input, {
+                    samples: ao.samples,
+                    radiusFraction: ao.radiusFraction,
+                    maxTriangles: 100_000,
+                    signal: controller.signal,
+                });
+                if (requestId !== state.prepareRequest || state.root !== root || state.model !== model)
+                    return;
+                state.ambientOcclusion = result;
+                state.ambientOcclusionKey = aoKey;
+                state.ambientOcclusionAbort = null;
+                aoMs = result.stats.milliseconds;
+                aoCached = false;
+            }
+            applyExperimentalAmbientOcclusion(prepared, state.ambientOcclusion);
+            els.outputPane.dataset.ambientOcclusion = "true";
+            els.outputPane.dataset.ambientOcclusionSamples = String(state.ambientOcclusion.stats.samples);
+            els.outputPane.dataset.ambientOcclusionRadius = String(state.ambientOcclusion.stats.radius);
+            els.outputPane.dataset.ambientOcclusionCached = String(aoCached);
+            els.outputPane.dataset.ambientOcclusionBuildMs =
+                state.ambientOcclusion.stats.milliseconds.toFixed(3);
+            els.outputPane.dataset.ambientOcclusionMinimum =
+                state.ambientOcclusion.stats.minimumAccessibility.toFixed(6);
+            els.outputPane.dataset.ambientOcclusionMean =
+                state.ambientOcclusion.stats.meanAccessibility.toFixed(6);
+        }
+        else {
+            els.outputPane.dataset.ambientOcclusion = "false";
+            delete els.outputPane.dataset.ambientOcclusionSamples;
+            delete els.outputPane.dataset.ambientOcclusionRadius;
+            delete els.outputPane.dataset.ambientOcclusionCached;
+        }
         let hlrMs = 0;
         if ((state.showHlrOutline || state.showHlrDetail) &&
             model &&
@@ -546,9 +653,16 @@ async function prepareIllustration(reason) {
         els.outputPane.dataset.cameraZoom = camera.zoom.toFixed(9);
         els.outputPane.dataset.cameraHalfHeight = Number(camera.userData.halfHeight ?? 1).toFixed(9);
         els.outputPane.dataset.prepareGeneration = String(state.prepareGeneration);
+        if (state.showHlrDetail) {
+            els.outputPane.dataset.fastVectorCrease = els.fastCrease.value;
+            els.outputPane.dataset.fastVectorCoplanarSeams = String(els.fastCoplanarSeams.checked);
+        }
         redrawStyle();
         const elapsed = performance.now() - started;
-        els.timing.textContent = `prepare ${formatMs(elapsed)} / HLR ${formatMs(hlrMs)} / ${state.scene.stats.sourceTriangles.toLocaleString()} triangles`;
+        const aoTiming = els.ambientOcclusion.checked
+            ? ` / AO ${aoMs > 0 ? formatMs(aoMs) : "cached"}`
+            : "";
+        els.timing.textContent = `prepare ${formatMs(elapsed)} / HLR ${formatMs(hlrMs)}${aoTiming} / ${state.scene.stats.sourceTriangles.toLocaleString()} triangles`;
         setStatus(`${state.model?.name ?? "Model"} / ${state.view} / ${state.output.toUpperCase()} ready`);
         await validateIfRequested();
     }
@@ -601,6 +715,10 @@ async function updateHlrVisibility() {
             return;
         scene.outlineSegments = linework.outlineSegments;
         scene.detailSegments = linework.detailSegments;
+        if (state.showHlrDetail) {
+            els.outputPane.dataset.fastVectorCrease = els.fastCrease.value;
+            els.outputPane.dataset.fastVectorCoplanarSeams = String(els.fastCoplanarSeams.checked);
+        }
         redrawStyle();
     }
     catch (error) {
@@ -685,6 +803,7 @@ async function selectModel(model, options = {}) {
     window.clearTimeout(state.renderTimer);
     state.model = model;
     state.scene = null;
+    cancelAmbientOcclusion();
     const stepBacked = Boolean(model.step || model.stepBuffer);
     for (const control of [
         els.meshQuality,
@@ -695,7 +814,6 @@ async function selectModel(model, options = {}) {
     ])
         control.disabled = !stepBacked;
     els.downloadSvg.disabled = true;
-    els.downloadScene.disabled = true;
     els.modelSelect.value = model.cacheKey ?? model.name;
     setBusy(`Loading ${model.name}...`);
     setStatus(`Loading ${model.name}`);
@@ -814,12 +932,22 @@ function projectionCacheKey(model, view, modelTransform) {
         ...modelTransform,
         (settings.hlrAngularDeflectionDegrees * Math.PI) / 180,
         settings.hlrDeflectionCoefficient,
+        Number.parseFloat(els.fastCrease.value),
+        els.fastCoplanarSeams.checked ? 1 : 0,
+        Number.parseFloat(els.fastSeamAngle.value),
+        Number.parseFloat(els.fastSeamDepth.value),
+        state.showHlrOutline ? 1 : 0,
+        state.showHlrDetail ? 1 : 0,
     ];
     return `${model.cacheKey ?? model.name}|${values.map((value) => value.toFixed(7)).join(",")}`;
 }
 async function loadHlrLinework(model, view, modelTransform) {
     const cacheKey = projectionCacheKey(model, view, modelTransform);
     let projection = state.projectionCache.get(cacheKey);
+    if (projection) {
+        state.projectionCache.delete(cacheKey);
+        state.projectionCache.set(cacheKey, projection);
+    }
     let hlrMs = 0;
     if (!projection) {
         const source = await modelStepBuffer(model);
@@ -831,6 +959,12 @@ async function loadHlrLinework(model, view, modelTransform) {
             hlrOptions: {
                 angularDeflectionRad: (settings.hlrAngularDeflectionDegrees * Math.PI) / 180,
                 deflectionCoefficient: settings.hlrDeflectionCoefficient,
+                creaseAngleRad: (Number.parseFloat(els.fastCrease.value) * Math.PI) / 180,
+                suppressCoplanarSeams: els.fastCoplanarSeams.checked,
+                coplanarSeamAngleRad: (Number.parseFloat(els.fastSeamAngle.value) * Math.PI) / 180,
+                coplanarSeamDepthTolerance: Number.parseFloat(els.fastSeamDepth.value),
+                outputOutline: state.showHlrOutline,
+                outputDetail: state.showHlrDetail,
             },
         }, source.slice(0));
         if (!result.projection)
@@ -838,6 +972,12 @@ async function loadHlrLinework(model, view, modelTransform) {
         projection = result.projection;
         hlrMs = result.timings?.hlrMs ?? 0;
         state.projectionCache.set(cacheKey, projection);
+        while (state.projectionCache.size > 8) {
+            const oldest = state.projectionCache.keys().next().value;
+            if (oldest === undefined)
+                break;
+            state.projectionCache.delete(oldest);
+        }
     }
     const mirrorX = view.mirrorX === true ? -1 : 1;
     const millimetresToMetres = 0.001;
@@ -908,11 +1048,8 @@ function fileStem() {
         .replace(/\.(?:step|stp|glb|gltf)$/iu, "")
         .replace(/[^a-z0-9._-]+/giu, "-");
 }
-function sceneJson() {
-    return `${JSON.stringify(state.scene, null, 2)}\n`;
-}
 function styleJson() {
-    return `${JSON.stringify({ schema: "geometry.illustration_style.prototype.a0", ...state.style }, null, 2)}\n`;
+    return `${JSON.stringify(toMeshIllustrationStyleA0(currentStyle()), null, 2)}\n`;
 }
 function canvasHasContent(canvas) {
     const sample = document.createElement("canvas");
@@ -1028,7 +1165,13 @@ function wireEvents() {
             return;
         state.output = button.dataset.output;
         activateButtons(els.outputButtons, "output", state.output);
-        redrawStyle();
+        window.clearTimeout(state.renderTimer);
+        if (!state.scene || state.view === "camera") {
+            prepareIllustration("camera").catch(showError);
+        }
+        else {
+            redrawStyle();
+        }
     });
     for (const control of [
         els.shading,
@@ -1051,11 +1194,28 @@ function wireEvents() {
         state.showHlrDetail = els.hlrDetail.checked;
         updateHlrVisibility().catch(showError);
     });
+    els.ambientOcclusion.addEventListener("change", () => {
+        if (state.root)
+            prepareIllustration("ambient occlusion").catch(showError);
+    });
+    for (const control of [els.aoRadius, els.aoSamples]) {
+        control.addEventListener("change", () => {
+            state.ambientOcclusion = null;
+            state.ambientOcclusionKey = "";
+            if (state.root)
+                prepareIllustration("ambient occlusion").catch(showError);
+        });
+    }
+    for (const control of [els.aoStrength, els.aoBands])
+        control.addEventListener("input", redrawStyle);
     for (const control of [els.bands, els.ambient, els.key, els.rim, els.outlineWidth]) {
         control.addEventListener("input", redrawStyle);
     }
+    els.fastCrease.addEventListener("input", scheduleFastCreaseUpdate);
+    els.fastCoplanarSeams.addEventListener("change", scheduleFastVectorLineworkUpdate);
+    els.fastSeamAngle.addEventListener("input", scheduleFastVectorLineworkUpdate);
+    els.fastSeamDepth.addEventListener("input", scheduleFastVectorLineworkUpdate);
     els.downloadSvg.addEventListener("click", () => download(`${fileStem()}-${state.view}.svg`, state.svg, "image/svg+xml"));
-    els.downloadScene.addEventListener("click", () => download(`${fileStem()}-${state.view}.illustration.json`, sceneJson(), "application/json"));
     els.downloadStyle.addEventListener("click", () => download(`${fileStem()}.illustration-style.json`, styleJson(), "application/json"));
     window.addEventListener("beforeunload", () => {
         state.worker?.terminate();
@@ -1063,6 +1223,8 @@ function wireEvents() {
             URL.revokeObjectURL(state.workerUrl);
         for (const url of state.uploadedUrls)
             URL.revokeObjectURL(url);
+        cancelAmbientOcclusion();
+        window.clearTimeout(fastCreaseLineworkTimer);
     });
 }
 async function loadModels() {

@@ -4,9 +4,13 @@ import { fileURLToPath } from "node:url";
 
 import {
   decodeDiagnosticA0Json,
+  decodeHlrProjectionOptionsA0Json,
+  decodeHlrProjectionResultA0Json,
   decodeIpcHelloA0Json,
   decodeIpcRequestA0Json,
   decodeIpcShutdownAckA0Json,
+  decodeMeshIllustrationInputA0Json,
+  decodeMeshIllustrationResultA0Json,
   decodeModelBoundsOptionsA0Json,
   decodeModelBoundsResultA0Json,
   decodeOperationOutcomeA0Json,
@@ -60,6 +64,10 @@ const vectorRoot = join(root, "tests", "contracts", "vectors");
 const manifest = JSON.parse(await readFile(join(vectorRoot, "manifest.json"), "utf8"));
 const decoders = {
   "geometry.common.diagnostic.a0": decodeDiagnosticA0Json,
+  "geometry.hlr_projection.options.a0": decodeHlrProjectionOptionsA0Json,
+  "geometry.hlr_projection.result.a0": decodeHlrProjectionResultA0Json,
+  "geometry.mesh_illustration.input.a0": decodeMeshIllustrationInputA0Json,
+  "geometry.mesh_illustration.result.a0": decodeMeshIllustrationResultA0Json,
   "geometry.model_bounds.a0": decodeModelBoundsResultA0Json,
   "geometry.model_bounds.options.a0": decodeModelBoundsOptionsA0Json,
   "geometer.operation.outcome.a0": decodeOperationOutcomeA0Json,

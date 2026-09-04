@@ -26,7 +26,10 @@ const closure = createHash("sha256")
   .update(manifest.files.map((item) => `${item.path}\0${item.sha256}\n`).join(""))
   .digest("hex");
 if (closure !== manifest.sha256) throw new Error("HLR static-site closure digest drifted.");
-if (JSON.stringify(manifest.files.map((item) => item.path)) !== JSON.stringify(["_headers", "index.html"]))
+if (
+  JSON.stringify(manifest.files.map((item) => item.path)) !==
+  JSON.stringify(["_headers", "index.html"])
+)
   throw new Error("HLR package contains a runtime companion asset.");
 
 const htmlBytes = await readFile(join(site, "index.html"));
@@ -42,6 +45,8 @@ for (const required of [
   "GEOMETER_JS_B64",
   "GEOMETER_WASM_B64",
   "projectionWorkerSource",
+  "geometry.model_hlr_projection.a0",
+  "_geometer_operation_execute",
   "data:application/step;base64,",
   "data:model/gltf-binary;base64,",
   "data:image/svg+xml;base64,",
@@ -56,8 +61,26 @@ for (const required of [
   'id="outlineStyleSelect"',
   'id="bboxWidthInput"',
   'id="bboxStyleSelect"',
+  'id="fastBackendInput"',
   'id="meshDeflectionModeSelect"',
   'id="edgePresetSelect"',
+  'id="occtSettings"',
+  'id="fastSettings"',
+  'id="fastBoundariesInput"',
+  'id="fastCreasesInput"',
+  'id="fastSilhouettesInput"',
+  'id="fastHiddenInput"',
+  'id="fastCoplanarSeamsInput"',
+  'id="fastCreaseAngleInput"',
+  'id="fastWeldToleranceInput"',
+  'id="fastProjectedToleranceInput"',
+  'id="fastDepthToleranceInput"',
+  "Crease angle (deg)",
+  "Math.PI) / 180",
+  "payload.fast = opts.fast;",
+  "JSON.stringify(opts.fast || {})",
+  '<option value="mesh-shadow">Mesh shadow</option>',
+  '<option value="fast-mesh-shadow">Fast</option>',
   'id="resetGeometryButton"',
   'id="settingsPanelContent"',
   'id="threePanelContent"',
@@ -71,6 +94,8 @@ for (const required of [
   'http-equiv="Content-Security-Policy"',
 ])
   if (!html.includes(required)) throw new Error(`HLR single HTML omits ${required}.`);
+if (html.includes("geometer_step_hlr_projection_json_bytes"))
+  throw new Error("HLR single HTML still invokes the legacy focused HLR ABI.");
 if (html.includes("OrbitControls")) throw new Error("HLR single HTML retained OrbitControls.");
 if (!html.includes("THREE.SRGBColorSpace") || !html.includes("THREE.MeshLambertMaterial"))
   throw new Error("HLR single HTML omits its Viz-style color/material path.");
@@ -78,6 +103,13 @@ if (!html.includes("new THREE.AmbientLight(0xffffff, 0.2)"))
   throw new Error("HLR single HTML omits the Viz-style default light rig.");
 if (!html.includes('data-view="camera" class="active"') || !html.includes('viewId: "camera"'))
   throw new Error("HLR single HTML does not default to the fitted live camera view.");
+if (
+  !html.includes('data-mode="both" class="active"') ||
+  !html.includes('mode: "both"') ||
+  !html.includes("fastBackend: true") ||
+  !html.includes('outlineAlgorithm: "fast-mesh-shadow"')
+)
+  throw new Error("HLR single HTML does not default to Fast detail plus Fast mesh shadow.");
 if (!html.includes('cameraLens: "orthographic"'))
   throw new Error("HLR single HTML does not default the 3D lens to orthographic.");
 if (!html.includes('let topAxisId = "+y"') || !html.includes('let frontAxisId = "+z"'))
@@ -107,7 +139,8 @@ for (const directive of [
   "frame-ancestors 'none'",
 ])
   if (!headers.includes(directive)) throw new Error(`HLR static headers omit ${directive}.`);
-if (/https?:|immutable/u.test(headers)) throw new Error("HLR static headers allow an external or stale asset.");
+if (/https?:|immutable/u.test(headers))
+  throw new Error("HLR static headers allow an external or stale asset.");
 
 console.log(
   JSON.stringify({

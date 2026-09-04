@@ -3,6 +3,7 @@ import { createRequire } from "node:module";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { makeAnalyticPolygonPourRequest } from "../../dist/wasm/demos/analytic_polygon_pour_fixture.js";
+import { illustrateMeshWithFastHlr } from "../../dist/wasm/npm/geometer/illustrated-hlr.js";
 import {
   createGeometerWasmClient,
   GeometerOperationError,
@@ -129,6 +130,84 @@ if (!result.bounds.size.every((value) => Number.isFinite(value) && value >= 0)) 
 }
 if (!client.capabilities.operations.includes("geometry.model_bounds.a0")) {
   throw new Error("Generated client did not negotiate model_bounds.");
+}
+
+const meshHlr = await client.meshHlrProjection({
+  mesh: {
+    positions: [0, 0, 0, 10, 0, 0, 0, 10, 0],
+    indices: [0, 1, 2],
+    sourceFaces: [1],
+  },
+});
+if (
+  meshHlr.schema !== "geometry.hlr_projection.result.a0" ||
+  meshHlr.source.kind !== "indexed_mesh" ||
+  meshHlr.views.length === 0 ||
+  !/^[0-9a-f]{64}$/u.test(meshHlr.source.hash)
+) {
+  throw new Error(`Unexpected mesh HLR result ${JSON.stringify(meshHlr)}.`);
+}
+
+const weldedMeshHlr = await client.meshHlrProjection({
+  mesh: {
+    positions: [
+      1e13,
+      0,
+      0,
+      1e13 + 10,
+      0,
+      0,
+      1e13 + 10,
+      10,
+      0,
+      1e13,
+      0,
+      0,
+      1e13 + 10,
+      10,
+      0,
+      1e13,
+      10,
+      0,
+    ],
+    indices: [0, 1, 2, 3, 4, 5],
+    sourceFaces: [1, 1],
+  },
+  options: { output_outline: false, output_bbox: false, round_digits: 3 },
+});
+const weldedDetail = weldedMeshHlr.views[0]?.modes.detail.segments;
+if (weldedDetail?.length !== 4) {
+  throw new Error(
+    `Fast mesh HLR failed to weld duplicate triangle vertices: ${JSON.stringify(weldedDetail)}.`,
+  );
+}
+if (
+  !client.capabilities.operations.includes("geometry.model_hlr_projection.a0") ||
+  !client.capabilities.operations.includes("geometry.mesh_hlr_projection.a0")
+) {
+  throw new Error("Generated client did not negotiate the governed HLR operations.");
+}
+
+const composed = await illustrateMeshWithFastHlr(client, {
+  illustration: {
+    schema: "geometry.mesh_illustration.input.a0",
+    meshes: [
+      {
+        id: "triangle",
+        positions: [0, 0, 0, 10, 0, 0, 0, 10, 0],
+        indices: [0, 1, 2],
+        materials: [{ color: [0.2, 0.7, 0.62] }],
+      },
+    ],
+    view: { direction: [0, 0, 1], up: [0, 1, 0] },
+  },
+});
+if (
+  composed.hlr.source.kind !== "indexed_mesh" ||
+  composed.illustration.schema !== "geometry.mesh_illustration.result.a0" ||
+  !composed.illustration.svg.includes("geometry.mesh_illustration.result.a0")
+) {
+  throw new Error("Fast HLR illustration composition returned incompatible results.");
 }
 
 const analytic = await client.analyticPlanarBooleanBatch({

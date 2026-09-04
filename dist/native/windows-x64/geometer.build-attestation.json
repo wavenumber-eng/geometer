@@ -1,7 +1,7 @@
 {
   "artifact": {
     "name": "geometer.exe",
-    "sha256": "4fa78f7a744bb9e1972797186d6646727ed24379d51f9bd389224da1c8664a2d"
+    "sha256": "c524e96f861c5ffb944bff26169b9f261527e12569fc8550dd8a5f93f36ff4c4"
   },
   "build": {
     "arch": "x64",
@@ -24,8 +24,8 @@
     "platform": "windows",
     "source": {
       "authority": "git_head_and_source_worktree_excluding_dist_build_deps_out",
-      "revision": "b40169c1c67d8a67210d798dd9c4f7c79d0d9cb3",
-      "tree_state": "clean"
+      "revision": "e9b83ca7ab6911bbab17b5dc67cdc44acb5b0f39",
+      "tree_state": "dirty"
     }
   },
   "producer": {

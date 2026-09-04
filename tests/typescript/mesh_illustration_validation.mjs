@@ -1,9 +1,13 @@
 import assert from "node:assert/strict";
-
+import { createFastHlrIllustrator } from "../../dist/wasm/npm/geometer/illustrated-hlr.js";
 import {
+  createIllustrator,
+  illustrateMesh,
   prepareMeshIllustration,
   renderMeshIllustrationSvg,
-} from "../../dist/wasm/demos/mesh_illustration.js";
+  toMeshIllustrationStyleA0,
+} from "../../dist/wasm/npm/geometer/mesh-illustration.js";
+import { applyExperimentalAmbientOcclusion } from "../../dist/wasm/npm/geometer/mesh-illustration-ao-experimental.js";
 
 const positions = new Float32Array([
   -1, -1, -1, 1, -1, -1, 1, 1, -1, -1, 1, -1, -1, -1, 1, 1, -1, 1, 1, 1, 1, -1, 1, 1,
@@ -27,11 +31,69 @@ const scene = prepareMeshIllustration(
   { direction: [0, 0, 1], up: [0, 1, 0] },
 );
 
-assert.equal(scene.schema, "geometry.mesh_illustration.prototype.a0");
 assert.equal(scene.stats.sourceMeshes, 1);
 assert.equal(scene.stats.sourceTriangles, 12);
 assert.equal(scene.stats.projectedTriangles, 12);
 assert.equal(scene.warnings.length, 0);
+
+const governedInput = {
+  schema: "geometry.mesh_illustration.input.a0",
+  meshes: [
+    {
+      id: "governed-cube",
+      positions: [...positions],
+      indices: [...indices],
+      materials: [{ color: [0.2, 0.7, 0.62] }],
+    },
+  ],
+  view: { direction: [0, 0, 1], up: [0, 1, 0] },
+  style: { shading: "toon", show_hlr_detail: false },
+  svg: { title: "Governed cube" },
+};
+const oneShot = illustrateMesh(governedInput);
+assert.equal(oneShot.schema, "geometry.mesh_illustration.result.a0");
+assert.match(oneShot.svg, /<metadata>geometry\.mesh_illustration\.result\.a0<\/metadata>/u);
+assert.match(oneShot.svg, /Governed cube/u);
+const reusable = createIllustrator(governedInput);
+assert.equal(reusable.renderSvg({ shading: "unlit" }).schema, oneShot.schema);
+reusable.dispose();
+assert.equal(reusable.disposed, true);
+assert.throws(() => reusable.renderSvg(), /disposed/u);
+
+let observedHlrOptions;
+const composed = await createFastHlrIllustrator(
+  {
+    async meshHlrProjection(request) {
+      observedHlrOptions = request.options;
+      return {
+        views: [
+          {
+            modes: {
+              outline: { segments: [] },
+              detail: { segments: [] },
+            },
+          },
+        ],
+      };
+    },
+  },
+  {
+    illustration: governedInput,
+    hlr: {
+      output_detail: false,
+      model_transform: [2, 0, 0, 0, 0, 2, 0, 0, 0, 0, 2, 0, 0, 0, 0, 1],
+      strip_root_placement: true,
+      unknown_option: "discard me",
+    },
+  },
+);
+assert.equal(observedHlrOptions.output_detail, false);
+assert.equal(observedHlrOptions.projection_algorithm, "fast");
+assert.equal(observedHlrOptions.outline_algorithm, "fast-mesh-shadow");
+assert.equal("model_transform" in observedHlrOptions, false);
+assert.equal("strip_root_placement" in observedHlrOptions, false);
+assert.equal("unknown_option" in observedHlrOptions, false);
+composed.illustrator.dispose();
 assert.deepEqual(scene.bounds, { minX: -1, minY: -1, maxX: 1, maxY: 1 });
 assert.equal(scene.triangles.filter((triangle) => triangle.frontFacing).length, 2);
 assert.throws(
@@ -72,6 +134,31 @@ const baseStyle = {
   doubleSided: false,
   rimAmount: 0.12,
 };
+const experimentalAoStyle = {
+  ...baseStyle,
+  experimentalAmbientOcclusionStrength: 1,
+  experimentalAmbientOcclusionBands: 8,
+};
+const beforeExperimentalAo = renderMeshIllustrationSvg(scene, experimentalAoStyle).svg;
+applyExperimentalAmbientOcclusion(scene, {
+  accessibilityByMesh: new Map([["cube", new Float32Array(12)]]),
+  stats: {
+    triangles: 12,
+    samples: 8,
+    radius: 1,
+    milliseconds: 0,
+    minimumAccessibility: 0,
+    meanAccessibility: 0,
+  },
+});
+const afterExperimentalAo = renderMeshIllustrationSvg(scene, experimentalAoStyle).svg;
+assert.notEqual(afterExperimentalAo, beforeExperimentalAo);
+const governedStyle = toMeshIllustrationStyleA0(baseStyle);
+assert.equal(governedStyle.key_intensity, baseStyle.keyIntensity);
+assert.deepEqual(governedStyle.light_direction, baseStyle.lightDirection);
+assert.equal(governedStyle.layer_coplanar_materials, baseStyle.layerCoplanarMaterials);
+assert.equal(governedStyle.crease_angle_degrees, baseStyle.creaseAngleDegrees);
+assert.equal("keyIntensity" in governedStyle, false);
 
 const toon = renderMeshIllustrationSvg(scene, baseStyle, "Cube toon proof");
 assert.equal(toon.stats.triangles, 2);
@@ -100,10 +187,7 @@ const projectedOverlapScene = prepareMeshIllustration(
     meshes: [
       {
         id: "projected-overlap",
-        positions: new Float64Array([
-          0, 0, 0, 1, 0, 0, 0, 1, 0,
-          0, 0, 1, 1, 0, 1, 0, 1, 1,
-        ]),
+        positions: new Float64Array([0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 1, 1]),
         materials: [{ color: [0.2, 0.7, 0.62] }],
       },
     ],
@@ -175,8 +259,24 @@ for (const [x0, x1] of [
     coplanarMeshes.push({
       id: `black-base-${x0}-${y0}`,
       positions: new Float64Array([
-        x0, y0, 0, x1, y0, 0, x1, y1, 0,
-        x0, y0, 0, x1, y1, 0, x0, y1, 0,
+        x0,
+        y0,
+        0,
+        x1,
+        y0,
+        0,
+        x1,
+        y1,
+        0,
+        x0,
+        y0,
+        0,
+        x1,
+        y1,
+        0,
+        x0,
+        y1,
+        0,
       ]),
       materials: [{ color: [0.05, 0.05, 0.05] }],
     });
@@ -233,10 +333,7 @@ const foldedCoplanarCandidate = prepareMeshIllustration(
   },
   { direction: [0, 0, 1], up: [0, 1, 0] },
 );
-const foldedCoplanarResult = renderMeshIllustrationSvg(
-  foldedCoplanarCandidate,
-  coplanarStyle,
-);
+const foldedCoplanarResult = renderMeshIllustrationSvg(foldedCoplanarCandidate, coplanarStyle);
 assert.equal(foldedCoplanarResult.stats.layeredSurfaces, 0);
 const varyingNormalScene = prepareMeshIllustration(
   {
@@ -517,15 +614,30 @@ assert.doesNotMatch(hlrOverlay.svg, /data-(?:surface|linework|triangles)=/u);
 const sanitizedStyle = renderMeshIllustrationSvg(scene, {
   ...baseStyle,
   outlineColor: "red;}<script>alert(1)</script>",
+  background: "red;}<script>alert(2)</script>",
 });
 assert.doesNotMatch(sanitizedStyle.svg, /<script>/u);
+
+const warningBoundInput = {
+  schema: "geometry.mesh_illustration.input.a0",
+  meshes: [
+    {
+      id: "degenerate-warning-bound",
+      positions: Array.from({ length: 300 * 9 }, () => 0),
+      materials: [{ color: [0.5, 0.5, 0.5] }],
+    },
+  ],
+  view: { direction: [0, 0, 1], up: [0, 1, 0] },
+};
+const boundedWarnings = illustrateMesh(warningBoundInput).warnings;
+assert.equal(boundedWarnings.length, 256);
+assert.match(boundedWarnings.at(-1), /additional warnings suppressed/u);
 
 const gridColumns = 32;
 const gridRows = 16;
 const gridPositions = [];
 for (let row = 0; row <= gridRows; row += 1)
-  for (let column = 0; column <= gridColumns; column += 1)
-    gridPositions.push(column, row, 0);
+  for (let column = 0; column <= gridColumns; column += 1) gridPositions.push(column, row, 0);
 const gridIndices = [];
 for (let row = 0; row < gridRows; row += 1) {
   for (let column = 0; column < gridColumns; column += 1) {

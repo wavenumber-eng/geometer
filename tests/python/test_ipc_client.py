@@ -25,6 +25,7 @@ from geometer._generated.contracts.models import (
     PointNm,
     StageOperation,
     IpcShutdownAckA0,
+    HlrProjectionOptionsA0,
 )
 from geometer._ipc_a0 import Attachment, Frame, FrameKind, IpcFrameError, read_frame, write_frame
 from geometer._ipc_client import (
@@ -50,6 +51,17 @@ from geometer._paths import executable_path
 
 ROOT = Path(__file__).resolve().parents[2]
 REQUIRE_NATIVE_TEST_SERVERS_ENV = "GEOMETER_REQUIRE_NATIVE_TEST_SERVERS"
+
+
+def test_public_fast_hlr_contract_types_are_exposed() -> None:
+    options = geometer.HlrProjectionOptionsA0(
+        projection_algorithm=geometer.HlrProjectionAlgorithm.FAST,
+        outline_algorithm=geometer.HlrOutlineAlgorithm.FAST_MESH_SHADOW,
+        fast=geometer.FastHlrOptionsA0(crease_angle_rad=0.25),
+    )
+    assert options.projection_algorithm is geometer.HlrProjectionAlgorithm.FAST
+    assert options.outline_algorithm is geometer.HlrOutlineAlgorithm.FAST_MESH_SHADOW
+    assert options.fast == geometer.FastHlrOptionsA0(crease_angle_rad=0.25)
 
 
 def test_shutdown_frame_matches_the_governed_exact_bytes() -> None:
@@ -137,6 +149,24 @@ def test_persistent_client_validates_welcome_and_gracefully_shuts_down() -> None
         )
         assert client.welcome.operation_catalog == expected_catalog
         assert client.stderr_text == ""
+
+
+def test_typed_mesh_hlr_projection_round_trips_structured_mesh() -> None:
+    executable = executable_path()
+    if not executable.is_file():
+        pytest.skip("native Geometer executable is unavailable")
+    mesh = geometer.IndexedTriangleMeshA0(
+        positions=(0.0, 0.0, 0.0, 10.0, 0.0, 0.0, 0.0, 10.0, 0.0),
+        indices=(0, 1, 2),
+        source_faces=(1,),
+    )
+    with GeometerIpcClient(executable, client_name="python-mesh-hlr-test") as client:
+        result = client.mesh_hlr_projection(mesh, HlrProjectionOptionsA0())
+
+    assert result.schema == "geometry.hlr_projection.result.a0"
+    assert result.source.kind.value == "indexed_mesh"
+    assert len(result.source.hash) == 64
+    assert result.views
 
 
 def test_generated_catalog_authority_rejects_mutated_welcome_order() -> None:
@@ -232,8 +262,7 @@ def _native_test_server(
             return candidate
     if os.environ.get(REQUIRE_NATIVE_TEST_SERVERS_ENV) == "1":
         pytest.fail(
-            f"native qualification requires {name}; probed: "
-            + ", ".join(str(candidate) for candidate in candidates)
+            f"native qualification requires {name}; probed: " + ", ".join(str(candidate) for candidate in candidates)
         )
     return candidates[0]
 

@@ -1,6 +1,8 @@
-// Prototype STEP adapter for the mesh illustration lab. The illustration
-// algorithm itself consumes generic meshes; this Worker adapts STEP bytes to
-// GLB and exposes Geometer's existing HLR mesh-shadow outline operation.
+// STEP adapter for the mesh illustration lab. Illustration behavior lives in
+// the production package; this Worker performs STEP conversion and invokes the
+// governed model HLR operation off the UI thread.
+
+importScripts("/examples/wasm/geometer_operation_worker.js");
 
 let modulePromise = null;
 
@@ -59,18 +61,31 @@ function stepToGlb(module, stepBytes, meshOptions = {}) {
 }
 
 function projectMeshShadow(module, stepBytes, view, modelTransform, hlrOptions = {}) {
-  const optionsJson = JSON.stringify({
-    views: [{ id: "illustration", ...view }],
+  const options = {
+    views: [{ id: "illustration", direction: view.direction, up: view.up }],
     model_transform: modelTransform,
     strip_root_placement: true,
     curve_mode: "polyline",
     round_digits: 6,
-    projection_algorithm: "poly",
-    outline_algorithm: "mesh-shadow",
+    projection_algorithm: "fast",
+    outline_algorithm: "fast-mesh-shadow",
+    output_outline: hlrOptions.outputOutline ?? true,
+    output_detail: hlrOptions.outputDetail ?? true,
+    output_bbox: false,
     mesh_deflection_mode: "bbox-relative",
     mesh_angular_deflection: hlrOptions.angularDeflectionRad ?? 0.5,
     mesh_deflection_coefficient: hlrOptions.deflectionCoefficient ?? 0.004,
     union_outline_polygons: true,
+    fast: {
+      include_boundaries: true,
+      include_creases: true,
+      include_silhouettes: true,
+      include_hidden: false,
+      crease_angle_rad: hlrOptions.creaseAngleRad ?? (25 * Math.PI) / 180,
+      suppress_coplanar_seams: hlrOptions.suppressCoplanarSeams ?? false,
+      coplanar_seam_angle_rad: hlrOptions.coplanarSeamAngleRad ?? Math.PI / 180,
+      coplanar_seam_depth_tolerance: hlrOptions.coplanarSeamDepthTolerance ?? 0.001,
+    },
     // Match the HLR Lab's Detail preset: visible sharp edges plus silhouettes.
     edge_v_sharp: true,
     edge_v_outline: true,
@@ -82,39 +97,13 @@ function projectMeshShadow(module, stepBytes, view, modelTransform, hlrOptions =
     edge_h_smooth: false,
     edge_h_sewn: false,
     edge_h_iso: false,
-  });
-  const stepPtr = module._malloc(stepBytes.length);
-  const optionsBytes = module.lengthBytesUTF8(optionsJson) + 1;
-  const optionsPtr = module._malloc(optionsBytes);
-  const valueOut = module._malloc(4);
-  const errorOut = module._malloc(4);
-  try {
-    module.HEAPU8.set(stepBytes, stepPtr);
-    module.stringToUTF8(optionsJson, optionsPtr, optionsBytes);
-    module.HEAPU32[valueOut >> 2] = 0;
-    module.HEAPU32[errorOut >> 2] = 0;
-    const code = module.ccall(
-      "geometer_step_hlr_projection_json_bytes",
-      "number",
-      ["number", "number", "number", "number", "number"],
-      [stepPtr, stepBytes.length, optionsPtr, valueOut, errorOut],
-    );
-    const valuePtr = module.getValue(valueOut, "i32");
-    const errorPtr = module.getValue(errorOut, "i32");
-    if (code !== 0) {
-      const message = errorPtr ? module.UTF8ToString(errorPtr) : `HLR failed: ${code}`;
-      if (errorPtr) module._geometer_free_string(errorPtr);
-      throw new Error(message);
-    }
-    const json = module.UTF8ToString(valuePtr);
-    module._geometer_free_string(valuePtr);
-    return JSON.parse(json);
-  } finally {
-    module._free(stepPtr);
-    module._free(optionsPtr);
-    module._free(valueOut);
-    module._free(errorOut);
-  }
+  };
+  return self.GeometerOperationWorker.executeOneAttachment(
+    module,
+    "geometry.model_hlr_projection.a0",
+    options,
+    { name: "model", mediaType: "application/step", data: stepBytes },
+  );
 }
 
 self.onmessage = async (event) => {

@@ -48,11 +48,10 @@ LINE_LENGTH_EXEMPT_ROOTS = {
     ROOT / "src" / "ts" / "geometer" / "generated",
 }
 
-# Retained concept prototypes may carry narrowly scoped shape debt without
-# weakening the production-code limits above. Their lifecycle and promotion
-# requirements are documented in docs/design/browser-demos.md.
-PROTOTYPE_FILE_LENGTH_EXEMPTIONS = {
-    ROOT / "examples" / "wasm" / "mesh_illustration.ts",
+# Geometry-heavy renderer algorithms may carry a narrowly reviewed file-length
+# exception while ordinary production modules retain the limit above.
+ALGORITHM_FILE_LENGTH_EXEMPTIONS = {
+    ROOT / "src" / "ts" / "geometer" / "mesh-illustration.ts",
 }
 PROTOTYPE_FUNCTION_LENGTH_EXEMPTIONS = {
     (
@@ -118,7 +117,7 @@ def decision_count(node: ast.AST) -> int:
 def check_file_lengths(files: list[Path]) -> list[Violation]:
     violations: list[Violation] = []
     for path in files:
-        if is_line_length_exempt(path) or path in PROTOTYPE_FILE_LENGTH_EXEMPTIONS:
+        if is_line_length_exempt(path) or path in ALGORITHM_FILE_LENGTH_EXEMPTIONS:
             continue
         line_count = len(path.read_text(encoding="utf-8").splitlines())
         if line_count > MAX_FILE_LINES:

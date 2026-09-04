@@ -42,7 +42,7 @@ ROWS = [
         "Smaller optional build exporting `createGeometerPlanarModule` and planar byte APIs only. Use when STEP/OCCT operations are not needed and startup, download size, or worker memory matter.",
     ),
     (
-        "`wasm/demos/analytic_polygon_pour_demo.html`, `wasm/demos/hlr_demo.html`, `wasm/demos/planar_ring_solver_demo.html`",
+        "`wasm/demos/analytic_polygon_pour_demo.html`, `wasm/demos/hlr_demo.html`, `wasm/demos/illustration_demo.html`, `wasm/demos/planar_ring_solver_demo.html`",
         "Standalone browser demos",
         "One-file HTML demos with their runtime assets embedded. They may be opened directly from disk and must not depend on separate demo workers, model fixtures, CDN modules, or WASM files.",
     ),

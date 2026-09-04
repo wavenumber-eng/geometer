@@ -32,7 +32,10 @@ uses a bundled platform executable backend.
 6. Do not require users to load OCCT shared libraries directly from Python.
 7. Provide public Python APIs for version, STEP HLR projection, projection JSON,
    STEP-to-GLB bytes, and batch execution.
-8. Validate each wheel by installing it into a clean temporary environment and
+8. Export the governed HLR option/result types and typed persistent-client
+   helpers for model and indexed-mesh HLR without removing the executable-backed
+   compatibility wrappers.
+9. Validate each wheel by installing it into a clean temporary environment and
    running a no-GUI package example.
-9. Downstream users must be able to install from PyPI without local path
+10. Downstream users must be able to install from PyPI without local path
    overrides.

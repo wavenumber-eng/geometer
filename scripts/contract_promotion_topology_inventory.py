@@ -71,8 +71,8 @@ def _assert_slice_a(manifest: dict[str, Any]) -> tuple[list[dict[str, Any]], dic
     slice_a = manifest["experimental_evidence"]["step_topology_slice_a"]
     assert slice_a == {
         "status": "unpromoted_structural_candidate",
-        "catalog_sha256": "40ad574a40ea2e474d085d26263bf1ecbf3d76f6e14de8d795829e97389ae96b",
-        "vector_manifest_sha256": ("d3b1d465f64e59c582f57ed27aa2c5d671ce8608aa1764952f093d307ceb4f69"),
+        "catalog_sha256": "568219edea253812467edf179faa2f2fc35dc2e29855524ac6918b284aa6574c",
+        "vector_manifest_sha256": ("d43333ddc5a216fc02eeb909561ee436d211060d308be29c8e1a1de4ac531496"),
         "governed_vector_ids": [
             "strict.ipc-step-topology-open-envelope.accept",
             "strict.operation-step-topology-open-outcome.accept",
@@ -132,8 +132,8 @@ def _assert_slice_b(manifest: dict[str, Any], topology_vectors: list[dict[str, A
     slice_b = manifest["experimental_evidence"]["step_topology_slice_b"]
     assert slice_b == {
         "status": "unpromoted_structural_candidate",
-        "catalog_sha256": "40ad574a40ea2e474d085d26263bf1ecbf3d76f6e14de8d795829e97389ae96b",
-        "vector_manifest_sha256": ("d3b1d465f64e59c582f57ed27aa2c5d671ce8608aa1764952f093d307ceb4f69"),
+        "catalog_sha256": "568219edea253812467edf179faa2f2fc35dc2e29855524ac6918b284aa6574c",
+        "vector_manifest_sha256": ("d43333ddc5a216fc02eeb909561ee436d211060d308be29c8e1a1de4ac531496"),
         "governed_vector_ids": [
             "strict.step-topology-apply-groups.accept",
             "semantic.step-topology-apply-groups-uppercase.accept",
@@ -205,8 +205,8 @@ def _assert_slice_c(
     slice_c = manifest["experimental_evidence"]["step_topology_slice_c"]
     assert slice_c == {
         "status": "unpromoted_structural_candidate",
-        "catalog_sha256": "40ad574a40ea2e474d085d26263bf1ecbf3d76f6e14de8d795829e97389ae96b",
-        "vector_manifest_sha256": ("d3b1d465f64e59c582f57ed27aa2c5d671ce8608aa1764952f093d307ceb4f69"),
+        "catalog_sha256": "568219edea253812467edf179faa2f2fc35dc2e29855524ac6918b284aa6574c",
+        "vector_manifest_sha256": ("d43333ddc5a216fc02eeb909561ee436d211060d308be29c8e1a1de4ac531496"),
         "governed_vector_ids": [
             "schema.step-topology-save-result.accept",
             "semantic.step-topology-save-attachments.accept",

@@ -1,5 +1,6 @@
 import { decodeAnalyticPlanarBooleanBatchResultA0Packet, encodeAnalyticPlanarBooleanBatchRequestA0Packet, } from "./analytic-packet-a0.js";
-import { decodeOperationOutcomeA0Json, encodeModelBoundsOptionsA0Json, operationCatalog, } from "./generated/index.js";
+import { decodeOperationOutcomeA0Json, encodeHlrProjectionOptionsA0Json, encodeModelBoundsOptionsA0Json, operationCatalog, } from "./generated/index.js";
+import { encodeIndexedTriangleMeshA0Packet, INDEXED_TRIANGLE_MESH_MEDIA_TYPE, } from "./indexed-mesh-packet-a0.js";
 export class GeometerWasmTransportError extends Error {
     code;
     constructor(code, message) {
@@ -79,8 +80,32 @@ export class GeometerWasmClient {
         if (response.attachments.length !== 0) {
             throw new GeometerWasmTransportError(0, "model_bounds returned unexpected attachments.");
         }
-        if (!("units" in response.outcome.result)) {
+        if (!("bounds" in response.outcome.result)) {
             throw new GeometerWasmTransportError(0, "model_bounds returned an incompatible result DTO.");
+        }
+        return response.outcome.result;
+    }
+    async modelHlrProjection(request) {
+        return this.hlrProjection("geometry.model_hlr_projection.a0", request.options ?? {}, "model", request.mediaType ?? "application/step", request.model);
+    }
+    async meshHlrProjection(request) {
+        const packet = request.mesh instanceof Uint8Array
+            ? request.mesh
+            : encodeIndexedTriangleMeshA0Packet(request.mesh);
+        return this.hlrProjection("geometry.mesh_hlr_projection.a0", request.options ?? {}, "mesh", INDEXED_TRIANGLE_MESH_MEDIA_TYPE, packet);
+    }
+    async hlrProjection(operation, options, attachmentName, mediaType, data) {
+        const response = this.execute(operation, encodeHlrProjectionOptionsA0Json(options), [
+            { data, mediaType, name: attachmentName },
+        ]);
+        if (!response.outcome.ok) {
+            throw new GeometerOperationError(response.outcome.operation, response.outcome.diagnostics);
+        }
+        if (response.outcome.operation !== operation || !("views" in response.outcome.result)) {
+            throw new GeometerWasmTransportError(0, `${operation} returned an incompatible result DTO.`);
+        }
+        if (response.attachments.length !== 0) {
+            throw new GeometerWasmTransportError(0, `${operation} returned unexpected attachments.`);
         }
         return response.outcome.result;
     }
@@ -250,6 +275,8 @@ function validateRuntimeCatalog(value) {
         throw new GeometerWasmTransportError(0, "WASM module operation declarations are malformed.");
     }
     for (const [identity, expected] of Object.entries(operationCatalog)) {
+        if (!expected.runtimeAvailable)
+            continue;
         const actual = value.operations.find((operation) => operation.identity === identity);
         if (!actual)
             throw new GeometerWasmTransportError(0, `WASM module is missing ${identity}.`);

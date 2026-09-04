@@ -6,9 +6,11 @@ import {
   getMaxItems,
   getMaxLength,
   getMaxValue,
+  getMaxValueExclusive,
   getMinItems,
   getMinLength,
   getMinValue,
+  getMinValueExclusive,
   getNamespaceFullName,
   getPattern,
   isArrayModelType,
@@ -465,6 +467,8 @@ function constraintRecord(program, target) {
     ["max_items", getMaxItems(program, target)],
     ["min_value", getMinValue(program, target)],
     ["max_value", getMaxValue(program, target)],
+    ["min_value_exclusive", getMinValueExclusive(program, target)],
+    ["max_value_exclusive", getMaxValueExclusive(program, target)],
     ["unique_items", getUniqueItems(program, target)],
   ].filter(([, value]) => value !== undefined);
   return Object.fromEntries(entries);

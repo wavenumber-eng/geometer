@@ -2,9 +2,11 @@ export interface ContractConstraints {
     readonly max_items?: number;
     readonly max_length?: number;
     readonly max_value?: number;
+    readonly max_value_exclusive?: number;
     readonly min_items?: number;
     readonly min_length?: number;
     readonly min_value?: number;
+    readonly min_value_exclusive?: number;
 }
 export type ContractTypeDescriptor = {
     readonly kind: "array";

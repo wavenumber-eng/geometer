@@ -2,6 +2,7 @@ import "@typespec/json-schema";
 import "@wavenumber/wn-geometer-contract-emitter";
 import "./common.tsp";
 import "./operations/model-bounds-a0.tsp";
+import "./operations/hlr-projection-a0.tsp";
 import "./operations/step-topology-a0.tsp";
 
 using TypeSpec.JsonSchema;
@@ -44,9 +45,9 @@ model IpcReasonA0 {
  * A variant is callable only when the negotiated runtime catalog advertises
  * its operation; structural presence does not imply runtime availability.
  */
-@oneOf
 union IpcRequestValueA0 {
   logical_dto: Wavenumber.Geometer.Contracts.ModelBoundsA0.ModelBoundsOptionsA0,
+  hlr_projection: Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrProjectionOptionsA0,
   packed_attachment: Wavenumber.Geometer.Contracts.Common.PackedAttachmentProjectionA0,
   step_topology_open: Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyOpenRequestA0,
   step_topology_close: Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyCloseRequestA0,

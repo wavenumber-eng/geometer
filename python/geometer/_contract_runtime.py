@@ -236,6 +236,10 @@ def _decode_primitive(value: Any, name: str, constraints: Mapping[str, Any], pat
             _fail("geometer.contract.number_range", path, "Number is outside the finite float64 range.")
         if number < constraints.get("min_value", -math.inf) or number > constraints.get("max_value", math.inf):
             _fail("geometer.contract.number_range", path, "Number is outside its contract bounds.")
+        if number <= constraints.get("min_value_exclusive", -math.inf) or number >= constraints.get(
+            "max_value_exclusive", math.inf
+        ):
+            _fail("geometer.contract.number_range", path, "Number is outside its exclusive contract bounds.")
         return number
     _fail("geometer.contract.unsupported_type", path, f"Unsupported primitive {name}.")
 

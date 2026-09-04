@@ -1,5 +1,7 @@
 #include "geometer/projection.h"
 
+#include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
@@ -236,6 +238,179 @@ void mesh_shadow_outline_avoids_side_view_edge_explosion()
     require(non_degree_two_endpoint_count(outline) == 0, "mesh-shadow outline should be closed");
 }
 
+double outline_area(const geometer::ProjectedModeGeometry& geometry)
+{
+    double twice_area = 0.0;
+    for (const geometer::ProjectedSegment& segment : geometry.segments)
+    {
+        twice_area += segment.x1 * segment.y2 - segment.x2 * segment.y1;
+    }
+    return std::fabs(twice_area) * 0.5;
+}
+
+std::vector<double> outline_loop_areas(const geometer::ProjectedModeGeometry& geometry)
+{
+    std::vector<double> areas;
+    std::size_t index = 0;
+    while (index < geometry.segments.size())
+    {
+        const geometer::ProjectedSegment& first = geometry.segments[index];
+        const double start_x = first.x1;
+        const double start_y = first.y1;
+        double current_x = start_x;
+        double current_y = start_y;
+        double twice_area = 0.0;
+        do
+        {
+            const geometer::ProjectedSegment& segment = geometry.segments[index];
+            require(segment.x1 == current_x && segment.y1 == current_y,
+                    "outline segments should form contiguous loops");
+            twice_area += segment.x1 * segment.y2 - segment.x2 * segment.y1;
+            current_x = segment.x2;
+            current_y = segment.y2;
+            ++index;
+            require(index <= geometry.segments.size(), "outline loop should terminate");
+        } while ((current_x != start_x || current_y != start_y) &&
+                 index < geometry.segments.size());
+        require(current_x == start_x && current_y == start_y, "outline loop should be closed");
+        areas.push_back(twice_area * 0.5);
+    }
+    std::sort(areas.begin(), areas.end());
+    return areas;
+}
+
+std::array<double, 4> outline_bounds(const geometer::ProjectedModeGeometry& geometry)
+{
+    std::array<double, 4> bounds = {
+        std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity(),
+        -std::numeric_limits<double>::infinity(), -std::numeric_limits<double>::infinity()};
+    for (const geometer::ProjectedSegment& segment : geometry.segments)
+    {
+        bounds[0] = std::min(bounds[0], std::min(segment.x1, segment.x2));
+        bounds[1] = std::min(bounds[1], std::min(segment.y1, segment.y2));
+        bounds[2] = std::max(bounds[2], std::max(segment.x1, segment.x2));
+        bounds[3] = std::max(bounds[3], std::max(segment.y1, segment.y2));
+    }
+    return bounds;
+}
+
+void fast_mesh_shadow_matches_triangle_union()
+{
+    for (const std::string& fixture :
+         {"SOT-23.STEP", "SOIC-8-W.step", "sot223.stp", "TSOT-23-5.STEP", "BGA90-8X13mm.step"})
+    {
+        for (const std::string& view_id : {"top", "front"})
+        {
+            geometer::HlrProjectionOptions reference_options =
+                projection_options({view_spec(view_id)});
+            reference_options.outline_algorithm = geometer::ProjectionOutlineAlgorithm::MeshShadow;
+            reference_options.output_detail = false;
+            reference_options.output_bbox = false;
+            geometer::HlrProjectionOptions fast_options = reference_options;
+            fast_options.outline_algorithm = geometer::ProjectionOutlineAlgorithm::FastMeshShadow;
+
+            const geometer::HlrProjectionResult reference_result =
+                project_or_throw(fixture, reference_options);
+            const geometer::HlrProjectionResult fast_result =
+                project_or_throw(fixture, fast_options);
+            const geometer::ProjectedModeGeometry& reference =
+                find_view(reference_result, view_id).outline;
+            const geometer::ProjectedModeGeometry& fast = find_view(fast_result, view_id).outline;
+            require(!fast.segments.empty(), "fast mesh-shadow should produce an outline");
+            require(non_degree_two_endpoint_count(fast) == 0,
+                    "fast mesh-shadow output should contain closed loops");
+            const auto reference_bounds = outline_bounds(reference);
+            const auto fast_bounds = outline_bounds(fast);
+            for (std::size_t index = 0; index < reference_bounds.size(); ++index)
+            {
+                require(std::fabs(reference_bounds[index] - fast_bounds[index]) <= 0.002,
+                        "fast mesh-shadow bounds should match the triangle union");
+            }
+            const double reference_area = outline_area(reference);
+            const double area_tolerance = std::max(0.002, reference_area * 0.001);
+            require(std::fabs(reference_area - outline_area(fast)) <= area_tolerance,
+                    "fast mesh-shadow area should match the triangle union");
+            const std::vector<double> reference_loop_areas = outline_loop_areas(reference);
+            const std::vector<double> fast_loop_areas = outline_loop_areas(fast);
+            require(reference_loop_areas.size() == fast_loop_areas.size(),
+                    "fast mesh-shadow should preserve the triangle-union loop topology");
+            for (std::size_t index = 0; index < reference_loop_areas.size(); ++index)
+            {
+                const double loop_tolerance =
+                    std::max(0.002, std::fabs(reference_loop_areas[index]) * 0.001);
+                require(std::fabs(reference_loop_areas[index] - fast_loop_areas[index]) <=
+                            loop_tolerance,
+                        "fast mesh-shadow loop areas should match the triangle union");
+            }
+        }
+    }
+}
+
+void output_layers_are_independently_selectable()
+{
+    geometer::HlrProjectionOptions outline_options = projection_options({view_spec("top")});
+    outline_options.outline_algorithm = geometer::ProjectionOutlineAlgorithm::MeshShadow;
+    outline_options.output_detail = false;
+    outline_options.output_bbox = false;
+
+    const geometer::HlrProjectionResult outline_result =
+        project_or_throw("SOT-23.STEP", outline_options);
+    const geometer::ProjectedViewGeometry& outline_view = find_view(outline_result, "top");
+    require(!outline_view.outline.segments.empty(), "outline-only should produce outline geometry");
+    require(outline_view.detail.segments.empty() && outline_view.detail.arcs.empty(),
+            "outline-only should leave detail empty");
+    require(outline_view.bbox.segments.empty() && outline_view.bbox.arcs.empty(),
+            "outline-only should leave bbox empty");
+    require(outline_result.timings.hlr_ms == 0.0,
+            "mesh-shadow outline-only should bypass detail HLR");
+
+    geometer::HlrProjectionOptions detail_options = projection_options({view_spec("top")});
+    detail_options.output_outline = false;
+    detail_options.output_bbox = false;
+
+    const geometer::HlrProjectionResult detail_result =
+        project_or_throw("SOT-23.STEP", detail_options);
+    const geometer::ProjectedViewGeometry& detail_view = find_view(detail_result, "top");
+    require(!detail_view.detail.segments.empty(), "detail-only should produce detail geometry");
+    require(detail_view.outline.segments.empty() && detail_view.outline.arcs.empty(),
+            "detail-only should leave outline empty");
+    require(detail_view.bbox.segments.empty() && detail_view.bbox.arcs.empty(),
+            "detail-only should leave bbox empty");
+}
+
+void fast_detail_projects_real_step_mesh()
+{
+    geometer::HlrProjectionOptions options = projection_options({view_spec("top")});
+    options.projection_algorithm = geometer::ProjectionAlgorithm::Fast;
+    options.output_outline = false;
+    options.output_bbox = false;
+
+    const geometer::HlrProjectionResult result = project_or_throw("SOT-23.STEP", options);
+    const geometer::ProjectedViewGeometry& view = find_view(result, "top");
+    require(!view.detail.segments.empty(), "fast detail should emit visible mesh edges");
+    require(view.detail.arcs.empty(), "first fast evaluation should emit straight segments only");
+    require(view.outline.segments.empty(), "fast detail-only should preserve the outline boundary");
+    require(view.bbox.segments.empty(), "fast detail-only should preserve the bbox boundary");
+    require(result.timings.mesh_ms > 0.0, "fast detail should report mesh preparation time");
+    require(result.timings.hlr_ms > 0.0, "fast detail should report visibility time");
+}
+
+void fast_hlr_close_outline_can_run_without_detail()
+{
+    geometer::HlrProjectionOptions options = projection_options({view_spec("top")});
+    options.projection_algorithm = geometer::ProjectionAlgorithm::Fast;
+    options.outline_algorithm = geometer::ProjectionOutlineAlgorithm::HlrClosedEdges;
+    options.output_detail = false;
+    options.output_bbox = false;
+
+    const geometer::HlrProjectionResult result = project_or_throw("SOT-23.STEP", options);
+    const geometer::ProjectedViewGeometry& view = find_view(result, "top");
+    require(!view.outline.segments.empty() || !view.outline.arcs.empty(),
+            "fast plus HLR-close should delegate a nonempty outline without detail");
+    require(view.detail.segments.empty() && view.detail.arcs.empty(),
+            "outline-only fast request should keep detail empty");
+}
+
 void root_placement_stripping_matches_step_to_glb_definition_frame()
 {
     const std::vector<unsigned char> step_bytes =
@@ -291,6 +466,10 @@ int main()
         raw_outline_option_is_still_observable();
         json_and_svg_use_outline_bbox_modes();
         mesh_shadow_outline_avoids_side_view_edge_explosion();
+        fast_mesh_shadow_matches_triangle_union();
+        output_layers_are_independently_selectable();
+        fast_detail_projects_real_step_mesh();
+        fast_hlr_close_outline_can_run_without_detail();
         root_placement_stripping_matches_step_to_glb_definition_frame();
     }
     catch (const std::exception& e)

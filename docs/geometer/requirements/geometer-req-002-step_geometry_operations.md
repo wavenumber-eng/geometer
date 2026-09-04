@@ -27,8 +27,9 @@ models into backend-neutral hidden-line geometry.
 4. Support configurable tessellation through linear and angular deflection.
 5. Project one or more orthographic HLR views, including top and bottom helper
    presets.
-6. Return projection geometry as generic `geometry.projection.b0` JSON with
-   `detail`, `outline`, and `bbox` modes.
+6. Preserve the compatibility `geometry.projection.b0` JSON writer and return
+   governed operations as `geometry.hlr_projection.result.a0`; both expose
+   independently composable `detail`, `outline`, and `bbox` modes.
 7. Preserve line segments and circular arcs when `native_arcs` mode is
    requested.
 8. Support deterministic polyline flattening with configurable samples per
@@ -40,3 +41,6 @@ models into backend-neutral hidden-line geometry.
 11. Provide transformed source-model bounds as `geometry.model_bounds.a0` JSON.
 12. Prefer generic `model_*` source-model operation names while STEP remains the
     only supported source format.
+13. Keep polygonal projection as the default, exact projection explicit, and
+    Fast vector HLR additive under the option and operation boundaries in
+    REQ-010.

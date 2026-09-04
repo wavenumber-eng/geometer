@@ -28,8 +28,8 @@
   --wn-fg-muted: #555555;
   --wn-line: #bdbdb7;
   --wn-line-light: #d8d8d1;
-  --wn-accent: #006c67;
-  --wn-accent-bg: #e5f3f0;
+  --wn-accent: #b45309;
+  --wn-accent-bg: #fff1e6;
   --wn-warn: #8a6200;
   --wn-warn-bg: #fff4bf;
   --wn-code-bg: #e8e8df;
@@ -42,7 +42,7 @@
   --wn-warning: var(--wn-warn);
   --wn-failure: var(--wn-error);
   --wn-geometry-result: var(--wn-accent);
-  --wn-geometry-result-fill: rgb(0 108 103 / 16%);
+  --wn-geometry-result-fill: rgb(180 83 9 / 16%);
   --wn-geometry-subtract: var(--wn-error);
   --wn-geometry-grid: rgb(85 85 85 / 10%);
   --wn-font: "JetBrains Mono", "Cascadia Mono", Consolas, monospace;
@@ -102,6 +102,10 @@ body[data-wn-watermark="true"]::after {
   pointer-events: none;
   opacity: var(--wn-watermark-opacity);
   mix-blend-mode: multiply;
+}
+
+body.illustration-demo[data-wn-watermark="true"]::after {
+  content: none;
 }
 
 #pour-shell {
@@ -1367,7 +1371,7 @@ body[data-wn-watermark="true"]::after {
   }
 }
 
-/* STEP Illustration Lab generic-mesh prototype. */
+/* STEP Illustration Lab generic-mesh application. */
     .illustration-app {
       width: 100vw;
       height: 100vh;
@@ -1438,6 +1442,23 @@ body[data-wn-watermark="true"]::after {
       border-right: 1px solid var(--wn-line-light);
       background: var(--wn-paper);
     }
+    #illustrationOutputPane::after {
+      position: absolute;
+      right: 12px;
+      bottom: 12px;
+      z-index: 3;
+      width: 132px;
+      max-width: calc(100% - 24px);
+      aspect-ratio: 1114.7 / 864;
+      background-image: url("/docs/design/assets/wn_logo_w_text__for_light.svg");
+      background-repeat: no-repeat;
+      background-position: center;
+      background-size: contain;
+      content: "";
+      pointer-events: none;
+      opacity: 0.25;
+      mix-blend-mode: multiply;
+    }
     .illustration-pane canvas,
     .illustration-pane .svg-host {
       position: absolute;
@@ -1459,6 +1480,17 @@ body[data-wn-watermark="true"]::after {
       font-size: 9px;
       letter-spacing: 0.1em;
       pointer-events: none;
+    }
+    #illustrationOutputLabel {
+      max-width: calc(100% - 28px);
+      border: 1px solid currentColor;
+      font-size: 10px;
+      font-weight: 700;
+      line-height: 1.35;
+    }
+    #illustrationOutputPane[data-engine="fast-vector"] #illustrationOutputLabel {
+      background: var(--wn-accent-bg);
+      color: var(--wn-accent);
     }
     .illustration-settings {
       min-width: 0;
@@ -1533,7 +1565,7 @@ body[data-wn-watermark="true"]::after {
     .illustration-busy::before {
       width: 14px;
       height: 14px;
-      border: 2px solid rgb(43 120 128 / 24%);
+      border: 2px solid rgb(180 83 9 / 24%);
       border-top-color: var(--wn-accent);
       border-radius: 50%;
       content: "";
@@ -1544,7 +1576,7 @@ body[data-wn-watermark="true"]::after {
       inset: auto 10px 10px auto;
       width: 26px;
       height: 26px;
-      border: 1px solid rgb(43 120 128 / 22%);
+      border: 1px solid rgb(180 83 9 / 22%);
       border-radius: 50%;
       background: rgb(255 255 255 / 84%);
       box-shadow: 0 1px 4px rgb(23 37 44 / 12%);

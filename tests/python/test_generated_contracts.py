@@ -36,7 +36,7 @@ VECTOR_ROOT = ROOT / "tests" / "contracts" / "vectors"
 
 def test_generated_python_replays_all_governed_contract_vectors() -> None:
     manifest = json.loads((VECTOR_ROOT / "manifest.json").read_text(encoding="utf-8"))
-    assert len(manifest["vectors"]) == 115
+    assert len(manifest["vectors"]) == 128
     for vector in manifest["vectors"]:
         decoder = ROOT_DECODERS[vector["contract_identity"]]
         data = _vector_bytes(vector)

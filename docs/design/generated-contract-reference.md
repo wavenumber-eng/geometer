@@ -38,7 +38,7 @@ the `appz` workspace revision
 
 | Asset | Vendored SHA-256 |
 | --- | --- |
-| `styles.css` | `39b9b7fd997a1707e9743ebcff6a21200e1d35ad6f629c8a5799d56192ab019d` |
+| `styles.css` | `5be346839f04afcfeedefe9836b360d06e38939840515d6f87ba5b4498ae51a7` |
 | `Cousine-Regular.ttf` | `1da22250675fc4c42fcf3a9736c44bc0570516105331443b663fd5cfbd1412fe` |
 | `Cousine-Bold.ttf` | `17c8a7245156d2253531c9e529474937b09d9f641c5ae7695c5e33f22822eef4` |
 | Cousine `OFL.txt` | `b81c4d4dc0a9f72c9155e78187316e016e2012a8102468804173dc61468b906d` |

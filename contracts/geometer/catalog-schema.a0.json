@@ -93,6 +93,8 @@
         "max_items": { "type": "integer", "minimum": 0 },
         "min_value": { "type": "number" },
         "max_value": { "type": "number" },
+        "min_value_exclusive": { "type": "number" },
+        "max_value_exclusive": { "type": "number" },
         "unique_items": { "type": "boolean" }
       }
     },

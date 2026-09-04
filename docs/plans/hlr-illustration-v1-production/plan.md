@@ -88,8 +88,8 @@ status = "active"
 depends_on = ["external-review"]
 
 [[steps]]
-id = "release-closeout"
-title = "Run release gates, update distributions and durable records, and remove completed temporary plans"
+id = "branch-handoff"
+title = "Finish branch validation and hand accepted commits and evidence to the integration and release owner"
 status = "pending"
 depends_on = ["user-demo-signoff"]
 
@@ -130,7 +130,7 @@ status = "pending"
 
 [[exit_criteria]]
 id = "user-demo-signoff"
-title = "The user explicitly approves the final packaged HLR and Illustration demos before release closeout"
+title = "The user explicitly approves the final packaged HLR and Illustration demos before branch handoff"
 status = "pending"
 
 [[exit_criteria]]
@@ -150,7 +150,7 @@ status = "pending"
 
 [[exit_criteria]]
 id = "signoff"
-title = "Focused checks, contract/package freshness, native validation, Rack strata, L99, distribution validation, and downstream compatibility snapshots pass"
+title = "Focused checks, contract/package freshness, branch validation, and downstream handoff evidence pass"
 status = "pending"
 +++
 
@@ -275,7 +275,7 @@ control, presentation, downloads, and validation orchestration.
 The packaged demos must continue to support bundled and uploaded STEP models,
 all view and layer controls, exact/poly/Fast comparison, independent outline
 selection, Fast options, illustration styling, and SVG export. Automated
-browser gates run first. The final release gate then
+browser gates run first. The final branch gate then
 stops and presents both packaged demo paths plus a concise checklist to the
 user. `user-demo-signoff` cannot be inferred from automated tests and must be
 set only after explicit approval.
@@ -315,7 +315,7 @@ remain visible in durable limitations or follow-up work:
 
 ## Closeout
 
-After explicit demo approval and release validation, move settled decisions
-into ADRs, requirements, generated contracts, interface docs, compatibility
-records, tests, examples, and release notes. Remove both completed temporary
-plans according to repository policy.
+After explicit demo approval, finish branch-scoped validation, ensure settled
+decisions are represented in code and durable documentation, and provide the
+accepted commits and evidence to the separate integration and release owner.
+This branch does not merge, integrate, tag, or publish the release.

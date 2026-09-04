@@ -228,7 +228,10 @@ async fn read_required(stdout: &mut ChildStdout) -> Frame {
 }
 
 async fn wait_bounded(child: &mut Child) -> std::process::ExitStatus {
-    tokio::time::timeout(Duration::from_secs(5), child.wait())
+    // Hosted ARM64 runners can take more than five seconds to schedule the
+    // server after its stdout pipe is closed.  This remains a bounded test;
+    // the production protocol deadlines are unchanged.
+    tokio::time::timeout(Duration::from_secs(15), child.wait())
         .await
         .expect("server exit timed out")
         .unwrap()

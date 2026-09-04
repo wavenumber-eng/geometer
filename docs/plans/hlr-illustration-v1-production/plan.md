@@ -1,7 +1,7 @@
 +++
 type = "plan"
 id = "hlr-illustration-v1-production"
-status = "active"
+status = "pending"
 created = "2026-09-03"
 
 [[steps]]
@@ -84,13 +84,13 @@ depends_on = ["design-doc-intent-audit", "test-runtime-impact-audit"]
 [[steps]]
 id = "user-demo-signoff"
 title = "Present the packaged HLR and Illustration demos for explicit user acceptance"
-status = "active"
+status = "done"
 depends_on = ["external-review"]
 
 [[steps]]
 id = "branch-handoff"
 title = "Finish branch validation and hand accepted commits and evidence to the integration and release owner"
-status = "pending"
+status = "done"
 depends_on = ["user-demo-signoff"]
 
 [[exit_criteria]]

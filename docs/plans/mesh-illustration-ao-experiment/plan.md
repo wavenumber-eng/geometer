@@ -1,7 +1,7 @@
 +++
 type = "plan"
 id = "mesh-illustration-ao-experiment"
-status = "active"
+status = "pending"
 created = "2026-09-03"
 
 [[steps]]
@@ -54,13 +54,13 @@ depends_on = ["evidence-matrix", "design-doc-intent-audit", "test-runtime-impact
 [[steps]]
 id = "user-decision"
 title = "Present side-by-side packaged demo results and record discard or integration-handoff decision"
-status = "pending"
+status = "done"
 depends_on = ["external-review"]
 
 [[steps]]
 id = "branch-handoff"
 title = "Discard the failed spike or package the accepted experiment and evidence for the integration agent"
-status = "pending"
+status = "done"
 depends_on = ["user-decision"]
 
 [[exit_criteria]]

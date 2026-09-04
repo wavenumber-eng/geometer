@@ -715,8 +715,10 @@ The experimental native STEP topology research has an additional contained
 worker test. It opens a real OCCT session, then verifies hard deadline/cancel
 replacement (including descendants), private temporary-directory cleanup,
 injected supervisor-failure cleanup, cooperative native cancellation, and the
-platform OS memory ceiling (Windows Job Object or POSIX exec-launcher
-`RLIMIT_AS`):
+platform OS memory ceiling (Windows Job Object or Linux exec-launcher
+`RLIMIT_AS`). The experimental supervisor explicitly rejects macOS until a
+native hard-containment bootstrap is available; that follow-up is tracked by
+[issue #25](https://github.com/wavenumber-eng/geometer/issues/25):
 
 ```powershell
 cmake --build build --config Release --target geometer_step_topology_worker_test_server

@@ -25,6 +25,13 @@ _MINIMUM_MEMORY_LIMIT = 32 * 1024 * 1024
 _WINDOWS_CTYPES = cast(Any, ctypes)
 
 
+def _require_hard_memory_containment_platform(platform: str) -> None:
+    if platform == "darwin":
+        raise NotImplementedError(
+            "hard topology-worker memory containment is not available on macOS; see Geometer issue #25"
+        )
+
+
 class TopologyWorkerError(RuntimeError):
     """Base error for an experimental contained topology worker."""
 
@@ -195,6 +202,7 @@ class TopologyWorkerSupervisor:
     """Runs one native worker generation at a time behind hard OS containment."""
 
     def __init__(self, executable: str | Path, *, memory_limit_bytes: int) -> None:
+        _require_hard_memory_containment_platform(sys.platform)
         if memory_limit_bytes < _MINIMUM_MEMORY_LIMIT:
             raise ValueError(f"memory_limit_bytes must be at least {_MINIMUM_MEMORY_LIMIT}")
         command = Path(executable).resolve()

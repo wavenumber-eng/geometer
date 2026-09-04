@@ -214,10 +214,10 @@
     "contract_check_status": "passed",
     "source": {
       "authority": "git_head_and_source_worktree_excluding_dist_build_deps_out",
-      "revision": "f7f5cdc715f0dec5ddb6be2f217f1e36723e69c9",
+      "revision": "f044df4b99446073bc2792d0c3197c02569b5273",
       "tree_state": "clean"
     },
-    "source_content_sha256": "f4738aee951ac5e9491bd012ce057a8244103a3b64ed7f1be8140d302952552b",
+    "source_content_sha256": "97f3d06448b9a4837730eef578990cb1738ddd0804053d3842c487f84fd55e7a",
     "toolchain": {
       "emscripten": {
         "executable": ".deps/emsdk/upstream/emscripten/emcc.bat",

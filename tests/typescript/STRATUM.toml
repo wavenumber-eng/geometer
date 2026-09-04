@@ -11,7 +11,7 @@ objectives = [
     "Verify the analytic polygon-pour demo is a deterministic single HTML file with embedded theme, fonts, logo, Worker, and governed WASM bytes.",
     "Verify migrated analytic and model-bounds pages use the one shared variable-driven demo theme without inline visual styles.",
     "Verify the HLR lab builds as a deploy-unchanged offline site with local STEP upload, generated 3D previews, and SVG export.",
-    "Verify the production mesh-illustration package emits deterministic toon-capable SVG, retains a separately named depth-tested raster HLR scene, and packages an offline STEP Illustration Lab.",
+    "Verify the production mesh-illustration package emits deterministic toon-capable SVG and packages an offline STEP Illustration Lab without exposing the removed raster-HLR prototype.",
     "Replay governed contract vectors through generated strict TypeScript codecs.",
     "Fail closed when a native-only experimental operation omits the structural experimental marker.",
     "Encode, incrementally decode, and reject malformed executable IPC A0 frames without Node-specific package dependencies.",

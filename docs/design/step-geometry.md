@@ -216,9 +216,9 @@ Fast-option behavior is intentionally explicit in A0:
 | `curve_mode`, `samples_per_curve`, native-arc behavior | Fast detail emits segments only and does not fit arcs |
 | `union_outline_polygons`, `hlr_angle_tolerance` | Apply only in the delegated outline path where applicable |
 
-The packaged WebGL depth-pass renderer remains deliberately independent. It
-returns interactive raster output from display geometry and does not claim
-semantic parity with deterministic Fast vector HLR.
+The removed WebGL depth-pass prototype is not part of the production package.
+Any future raster-HLR surface requires its own contract and design decision;
+the current production interface provides vector HLR and mesh illustration.
 
 Projection output:
 

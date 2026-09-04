@@ -21,7 +21,7 @@ regeneration_command = "npm run generate:contracts"
 [[artifacts]]
 id = "governed-packet-vector-fixtures"
 kind = "fixture_data"
-paths = ["tests/contracts/vectors/**/*.hex"]
+paths = ["tests/contracts/vectors/**/*.hex", "tests/contracts/vectors/**/*.bin"]
 tracked = "required"
 produced_by = "scripts/write_analytic_packet_vectors.py and governed contract-vector writers"
 included_in_release = "source and test distributions"

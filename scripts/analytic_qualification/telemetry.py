@@ -153,9 +153,11 @@ def validate_telemetry_document(value: dict[str, Any]) -> dict[str, Any]:
         raise QualificationError("telemetry helper result has an unexpected top-level shape")
     fields = {
         "candidate_pairs",
+        "capsule_coalescences",
         "emitted_bytes",
         "failures",
         "fallback_count",
+        "maximum_capsule_adjustment_nm",
         "peak_working_memory_bytes",
         "work_units",
     }
@@ -187,6 +189,14 @@ def validate_telemetry_document(value: dict[str, Any]) -> dict[str, Any]:
         raise QualificationError("telemetry helper batch fallback count is below its job total")
     if normalized_batch["candidate_pairs"] < sum(job["candidate_pairs"] for job in normalized_jobs):
         raise QualificationError("telemetry helper batch candidate count is below its job total")
+    if normalized_batch["capsule_coalescences"] != sum(
+        job["capsule_coalescences"] for job in normalized_jobs
+    ):
+        raise QualificationError("telemetry helper batch/job capsule coalescence counts disagree")
+    if normalized_batch["maximum_capsule_adjustment_nm"] != max(
+        (job["maximum_capsule_adjustment_nm"] for job in normalized_jobs), default=0
+    ):
+        raise QualificationError("telemetry helper batch/job capsule adjustment maxima disagree")
     if normalized_jobs and normalized_batch["peak_working_memory_bytes"] < max(
         job["peak_working_memory_bytes"] for job in normalized_jobs
     ):

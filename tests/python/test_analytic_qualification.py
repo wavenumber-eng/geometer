@@ -418,19 +418,23 @@ def test_telemetry_document_requires_exact_nonnegative_counter_shape() -> None:
         "status": "ok",
         "batch": {
             "candidate_pairs": 3,
+            "capsule_coalescences": 1,
             "emitted_bytes": 100,
             "failures": 0,
             "fallback_count": 0,
+            "maximum_capsule_adjustment_nm": 750,
             "peak_working_memory_bytes": 200,
             "work_units": 400,
         },
         "jobs": [
             {
                 "candidate_pairs": 3,
+                "capsule_coalescences": 1,
                 "emitted_bytes": 80,
                 "failures": 0,
                 "fallback_count": 0,
                 "job_id": 9,
+                "maximum_capsule_adjustment_nm": 750,
                 "peak_working_memory_bytes": 150,
                 "work_units": 300,
             }
@@ -439,6 +443,19 @@ def test_telemetry_document_requires_exact_nonnegative_counter_shape() -> None:
     assert telemetry.validate_telemetry_document(value)["jobs"][0]["job_id"] == 9
     value["batch"]["work_units"] = -1
     with pytest.raises(corpus.QualificationError, match="nonnegative integer"):
+        telemetry.validate_telemetry_document(value)
+    value["batch"]["work_units"] = 400
+    value["batch"]["capsule_coalescences"] = 2
+    with pytest.raises(corpus.QualificationError, match="coalescence counts disagree"):
+        telemetry.validate_telemetry_document(value)
+    value["batch"]["capsule_coalescences"] = 1
+    value["batch"]["maximum_capsule_adjustment_nm"] = 1_000
+    with pytest.raises(corpus.QualificationError, match="adjustment maxima disagree"):
+        telemetry.validate_telemetry_document(value)
+    value["batch"]["capsule_coalescences"] = 0
+    value["batch"]["maximum_capsule_adjustment_nm"] = 1
+    value["jobs"] = []
+    with pytest.raises(corpus.QualificationError, match="adjustment maxima disagree"):
         telemetry.validate_telemetry_document(value)
 
 

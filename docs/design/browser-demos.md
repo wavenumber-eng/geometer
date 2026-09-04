@@ -28,12 +28,8 @@ illustration application imports the production illustration modules. The
 remaining focused STEP-to-GLB call is a compatibility conversion
 surface, not illustration or HLR policy.
 
-The HLR and Illustration Labs are interactive evaluation surfaces, so they
-raise only Fast HLR's candidate-pair admission budget to the contract's uint32
-ceiling. Stable APIs and the CLI retain the documented 100,000,000 default.
-This avoids rejecting large but tractable outline unions solely because the
-Fast mesh-shadow path conservatively charges every projected segment pair;
-triangle, edge, grid, fragment, and output limits remain unchanged.
+The HLR and Illustration Labs use the same Fast HLR resource defaults as stable
+API consumers. They do not carry demo-only limit overrides.
 
 ## Build Layers
 

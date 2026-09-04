@@ -211,8 +211,9 @@ Fast resource defaults are `max_vertices=2,000,000`,
 `max_grid_references=64,000,000`, `max_candidate_pairs=100,000,000`,
 `max_fragments=8,000,000`, and `max_output_segments=4,000,000`.
 Crossing a limit is a reported resource-limit failure, never silent truncation.
-The candidate-pair ceiling also preflights the conservative pairwise work bound
-before each Clipper outline union.
+The candidate-pair ceiling also preflights the broad-phase segment-bound
+overlaps before each Clipper outline union. Spatially disjoint segment pairs do
+not consume this budget.
 
 ## Compatibility aliases
 

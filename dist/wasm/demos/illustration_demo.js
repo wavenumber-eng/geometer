@@ -36,7 +36,6 @@ const DEMO_MODEL_ORDER = [
     "Cap_SMT_Aluminum_F.STEP",
     "BGA90-8X13mm.step",
 ];
-const DEMO_FAST_CANDIDATE_PAIR_LIMIT = 0xffff_ffff;
 function required(id) {
     const value = document.getElementById(id);
     if (!(value instanceof HTMLElement))
@@ -964,7 +963,6 @@ async function loadHlrLinework(model, view, modelTransform) {
                 suppressCoplanarSeams: els.fastCoplanarSeams.checked,
                 coplanarSeamAngleRad: (Number.parseFloat(els.fastSeamAngle.value) * Math.PI) / 180,
                 coplanarSeamDepthTolerance: Number.parseFloat(els.fastSeamDepth.value),
-                maxCandidatePairs: DEMO_FAST_CANDIDATE_PAIR_LIMIT,
                 outputOutline: state.showHlrOutline,
                 outputDetail: state.showHlrDetail,
             },

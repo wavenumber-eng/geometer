@@ -826,6 +826,33 @@ void fast_mesh_shadow_enforces_output_and_coordinate_limits()
             "fast mesh-shadow should reject malformed prepared triangle indices");
 }
 
+void fast_mesh_shadow_candidate_budget_ignores_disjoint_bounds()
+{
+    geometer::FastHlrIndexedMesh mesh;
+    constexpr std::size_t triangle_count = 20;
+    for (std::size_t index = 0; index < triangle_count; ++index)
+    {
+        const double x = static_cast<double>(index) * 3.0;
+        const std::uint32_t first = static_cast<std::uint32_t>(mesh.vertices.size());
+        mesh.vertices.push_back({x, 0.0, 0.0});
+        mesh.vertices.push_back({x + 1.0, 0.0, 0.0});
+        mesh.vertices.push_back({x, 1.0, 0.0});
+        mesh.triangles.push_back(
+            {{first, first + 1, first + 2}, static_cast<std::uint32_t>(index + 1)});
+    }
+
+    const geometer::FastHlrPreparedMesh prepared = prepare(mesh);
+    geometer::FastHlrOptions limited;
+    limited.limits.max_candidate_pairs = triangle_count * 6;
+    geometer::ProjectedModeGeometry outline;
+    geometer::Status status;
+    require(geometer::fast_mesh_shadow_outline_geometry(prepared, top_view(), limited, 1000,
+                                                        &outline, nullptr, &status) == 0,
+            "disjoint shadows should charge only overlapping segment bounds: " + status.message);
+    require(outline.segments.size() == triangle_count * 3,
+            "disjoint triangle shadows should retain every outline segment");
+}
+
 } // namespace
 
 int main()
@@ -855,6 +882,7 @@ int main()
         fast_mesh_shadow_unions_overlapping_components();
         fast_mesh_shadow_falls_back_for_same_direction_shared_edges();
         fast_mesh_shadow_enforces_output_and_coordinate_limits();
+        fast_mesh_shadow_candidate_budget_ignores_disjoint_bounds();
     }
     catch (const std::exception& error)
     {

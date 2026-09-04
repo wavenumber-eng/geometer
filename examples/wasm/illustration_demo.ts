@@ -120,8 +120,6 @@ const DEMO_MODEL_ORDER = [
   "BGA90-8X13mm.step",
 ] as const;
 
-const DEMO_FAST_CANDIDATE_PAIR_LIMIT = 0xffff_ffff;
-
 function required<T extends HTMLElement>(id: string): T {
   const value = document.getElementById(id);
   if (!(value instanceof HTMLElement)) throw new Error(`Missing required element #${id}.`);
@@ -1166,7 +1164,6 @@ async function loadHlrLinework(
           suppressCoplanarSeams: els.fastCoplanarSeams.checked,
           coplanarSeamAngleRad: (Number.parseFloat(els.fastSeamAngle.value) * Math.PI) / 180,
           coplanarSeamDepthTolerance: Number.parseFloat(els.fastSeamDepth.value),
-          maxCandidatePairs: DEMO_FAST_CANDIDATE_PAIR_LIMIT,
           outputOutline: state.showHlrOutline,
           outputDetail: state.showHlrDetail,
         },

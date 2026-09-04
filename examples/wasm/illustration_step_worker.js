@@ -61,10 +61,6 @@ function stepToGlb(module, stepBytes, meshOptions = {}) {
 }
 
 function projectMeshShadow(module, stepBytes, view, modelTransform, hlrOptions = {}) {
-  const maxCandidatePairs = Math.max(
-    1,
-    Math.min(0xffffffff, Math.trunc(hlrOptions.maxCandidatePairs ?? 0xffffffff)),
-  );
   const options = {
     views: [{ id: "illustration", direction: view.direction, up: view.up }],
     model_transform: modelTransform,
@@ -89,7 +85,6 @@ function projectMeshShadow(module, stepBytes, view, modelTransform, hlrOptions =
       suppress_coplanar_seams: hlrOptions.suppressCoplanarSeams ?? false,
       coplanar_seam_angle_rad: hlrOptions.coplanarSeamAngleRad ?? Math.PI / 180,
       coplanar_seam_depth_tolerance: hlrOptions.coplanarSeamDepthTolerance ?? 0.001,
-      limits: { max_candidate_pairs: maxCandidatePairs },
     },
     // Match the HLR Lab's Detail preset: visible sharp edges plus silhouettes.
     edge_v_sharp: true,

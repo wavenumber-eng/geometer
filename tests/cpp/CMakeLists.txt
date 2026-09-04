@@ -654,6 +654,12 @@ if(NOT EMSCRIPTEN)
     )
 
     target_link_libraries(geometer_ipc_a0_unexpected_exit_test_server PRIVATE geometer_lib)
+
+    add_executable(geometer_ipc_a0_writer_failure_test_server
+        ipc_a0_writer_failure_test_server.cpp
+    )
+
+    target_link_libraries(geometer_ipc_a0_writer_failure_test_server PRIVATE geometer_lib)
 endif()
 
 add_executable(geometer_projection_options_json_test

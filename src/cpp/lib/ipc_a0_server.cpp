@@ -52,7 +52,10 @@ struct OutgoingFrame
 class FrameWriter
 {
   public:
-    explicit FrameWriter(std::FILE* stream) : stream_(stream), thread_(&FrameWriter::run, this) {}
+    explicit FrameWriter(std::FILE* stream, bool fail_after_welcome)
+        : stream_(stream), fail_after_welcome_(fail_after_welcome), thread_(&FrameWriter::run, this)
+    {
+    }
 
     FrameWriter(const FrameWriter&) = delete;
     FrameWriter& operator=(const FrameWriter&) = delete;
@@ -113,8 +116,13 @@ class FrameWriter
                 bytes = encoded_size(outgoing.frame);
             }
             std::string error;
-            if (!write_frame(stream_, outgoing.frame, &error))
+            const bool wrote = !fail_after_welcome_ && write_frame(stream_, outgoing.frame, &error);
+            if (!wrote)
             {
+                if (fail_after_welcome_)
+                {
+                    error = "Injected writer failure after the IPC welcome.";
+                }
                 std::fprintf(stderr, "Geometer IPC stdout failure: %s\n", error.c_str());
                 std::fflush(stderr);
                 std::lock_guard lock(mutex_);
@@ -138,6 +146,7 @@ class FrameWriter
     }
 
     std::FILE* stream_;
+    bool fail_after_welcome_ = false;
     std::mutex mutex_;
     std::condition_variable condition_;
     std::deque<OutgoingFrame> queue_;
@@ -167,7 +176,8 @@ struct SharedState
 {
     SharedState(std::FILE* stream, const testing::ServerOptions& options)
         : shutdown_grace(options.shutdown_grace), execution_delay(options.execution_delay),
-          exit_when_request_active(options.exit_when_request_active), writer(stream)
+          exit_when_request_active(options.exit_when_request_active),
+          writer(stream, options.fail_writer_after_welcome)
     {
     }
 

@@ -786,6 +786,12 @@ def test_illustration_static_site_mesh_render_upload_and_export() -> None:
         downloads.mkdir()
         cdp_script = temporary_path / "illustration_validation.cjs"
         cdp_script.write_text(CDP_SCRIPT, encoding="utf-8")
+        upload_fixture = Path(
+            os.environ.get(
+                "GEOMETER_ILLUSTRATION_UPLOAD_FIXTURE",
+                str(ROOT / "tests" / "fixtures" / "step" / "generated_topology" / "generated_fused_slab.step"),
+            )
+        )
         http_port = _free_port()
         cdp_port = _free_port()
         url = f"http://127.0.0.1:{http_port}/?validation=1"
@@ -819,9 +825,7 @@ def test_illustration_static_site_mesh_render_upload_and_export() -> None:
                     "CDP_PORT": str(cdp_port),
                     "TEST_URL": url,
                     "DOWNLOAD_PATH": str(downloads),
-                    "UPLOAD_FIXTURE": str(
-                        ROOT / "tests" / "fixtures" / "step" / "generated_topology" / "generated_fused_slab.step"
-                    ),
+                    "UPLOAD_FIXTURE": str(upload_fixture),
                 },
                 capture_output=True,
                 text=True,

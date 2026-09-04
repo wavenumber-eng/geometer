@@ -63,6 +63,8 @@ for (const required of [
   '<option value="128">128 / maximum</option>',
   'id="illustrationAoBands" type="range" min="2" max="32"',
   "experimental-mesh-ambient-occlusion",
+  "4294967295",
+  "limits: { max_candidate_pairs: maxCandidatePairs }",
   "data:model/gltf-binary;base64,",
   "data:application/step;base64,",
   "data:font/woff2;base64,",

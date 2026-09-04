@@ -682,6 +682,12 @@ def test_hlr_static_site_upload_projection_and_export() -> None:
         profile = temporary_path / "profile"
         downloads = temporary_path / "downloads"
         downloads.mkdir()
+        upload_fixture = Path(
+            os.environ.get(
+                "GEOMETER_HLR_UPLOAD_FIXTURE",
+                str(ROOT / "tests" / "fixtures" / "step" / "embedded_models" / "SOT-23.STEP"),
+            )
+        )
         http_port = _free_port()
         cdp_port = _free_port()
         url = f"http://127.0.0.1:{http_port}/"
@@ -714,7 +720,7 @@ def test_hlr_static_site_upload_projection_and_export() -> None:
                     "CDP_PORT": str(cdp_port),
                     "TEST_URL": url,
                     "DOWNLOAD_PATH": str(downloads),
-                    "UPLOAD_FIXTURE": str(ROOT / "tests" / "fixtures" / "step" / "embedded_models" / "SOT-23.STEP"),
+                    "UPLOAD_FIXTURE": str(upload_fixture),
                 },
                 capture_output=True,
                 text=True,

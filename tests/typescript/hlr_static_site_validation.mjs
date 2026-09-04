@@ -78,6 +78,8 @@ for (const required of [
   "Crease angle (deg)",
   "Math.PI) / 180",
   "payload.fast = opts.fast;",
+  "DEMO_FAST_CANDIDATE_PAIR_LIMIT = 0xffffffff",
+  "max_candidate_pairs: DEMO_FAST_CANDIDATE_PAIR_LIMIT",
   "JSON.stringify(opts.fast || {})",
   '<option value="mesh-shadow">Mesh shadow</option>',
   '<option value="fast-mesh-shadow">Fast</option>',

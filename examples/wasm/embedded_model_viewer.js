@@ -133,6 +133,11 @@ const GEOMETRY_DEFAULTS = Object.freeze({
   fastDepthTolerance: "0.0000001",
 });
 
+// This interactive evaluation surface uses the contract's uint32 ceiling so
+// large but tractable models are not rejected solely by the outline union's
+// conservative all-segment-pairs admission estimate.
+const DEMO_FAST_CANDIDATE_PAIR_LIMIT = 0xffffffff;
+
 const THREE_DEFAULTS = Object.freeze({
   materialMode: "lambert",
   shadingMode: "smooth",
@@ -627,6 +632,7 @@ function currentOptions() {
       weld_tolerance: Number.parseFloat(els.fastWeldToleranceInput.value) || 0.0000001,
       projected_tolerance: Number.parseFloat(els.fastProjectedToleranceInput.value) || 0.00000001,
       depth_tolerance: Number.parseFloat(els.fastDepthToleranceInput.value) || 0.0000001,
+      limits: { max_candidate_pairs: DEMO_FAST_CANDIDATE_PAIR_LIMIT },
     },
     ...readEdgeFlags(),
   };

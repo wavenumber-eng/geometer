@@ -24,9 +24,16 @@ into `src/cpp/lib/`, the C ABI, or generated contracts merely to support a page.
 Promoted operations use their governed operation identities and production
 package APIs. The HLR and Illustration Lab Workers invoke
 `geometry.model_hlr_projection.a0` through the generic C ABI adapter; the
-illustration application imports the production illustration and raster-HLR
-modules. The remaining focused STEP-to-GLB call is a compatibility conversion
+illustration application imports the production illustration modules. The
+remaining focused STEP-to-GLB call is a compatibility conversion
 surface, not illustration or HLR policy.
+
+The HLR and Illustration Labs are interactive evaluation surfaces, so they
+raise only Fast HLR's candidate-pair admission budget to the contract's uint32
+ceiling. Stable APIs and the CLI retain the documented 100,000,000 default.
+This avoids rejecting large but tractable outline unions solely because the
+Fast mesh-shadow path conservatively charges every projected segment pair;
+triangle, edge, grid, fragment, and output limits remain unchanged.
 
 ## Build Layers
 

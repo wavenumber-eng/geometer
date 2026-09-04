@@ -22,6 +22,7 @@ from typing import Any, Callable, Sequence, cast
 
 
 _MINIMUM_MEMORY_LIMIT = 32 * 1024 * 1024
+_WINDOWS_CTYPES = cast(Any, ctypes)
 
 
 class TopologyWorkerError(RuntimeError):
@@ -108,7 +109,7 @@ class _WindowsJob:
     _JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE = 0x00002000
 
     def __init__(self, process: subprocess.Popen[bytes], memory_limit_bytes: int) -> None:
-        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        kernel32 = _WINDOWS_CTYPES.WinDLL("kernel32", use_last_error=True)
         kernel32.CreateJobObjectW.argtypes = (ctypes.c_void_p, ctypes.c_wchar_p)
         kernel32.CreateJobObjectW.restype = ctypes.c_void_p
         kernel32.SetInformationJobObject.argtypes = (
@@ -126,7 +127,7 @@ class _WindowsJob:
         kernel32.CloseHandle.restype = ctypes.c_int
         handle = kernel32.CreateJobObjectW(None, None)
         if not handle:
-            raise ctypes.WinError(ctypes.get_last_error())
+            raise _WINDOWS_CTYPES.WinError(_WINDOWS_CTYPES.get_last_error())
         self._kernel32 = kernel32
         self._handle = handle
         try:
@@ -144,10 +145,10 @@ class _WindowsJob:
                 ctypes.byref(limits),
                 ctypes.sizeof(limits),
             ):
-                raise ctypes.WinError(ctypes.get_last_error())
+                raise _WINDOWS_CTYPES.WinError(_WINDOWS_CTYPES.get_last_error())
             process_handle = cast(Any, process)._handle
             if not kernel32.AssignProcessToJobObject(handle, ctypes.c_void_p(process_handle)):
-                raise ctypes.WinError(ctypes.get_last_error())
+                raise _WINDOWS_CTYPES.WinError(_WINDOWS_CTYPES.get_last_error())
         except BaseException:
             self.close()
             raise

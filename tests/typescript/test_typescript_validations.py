@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import platform
 import shutil
 import subprocess
 import sys
@@ -14,6 +15,20 @@ ROOT = Path(__file__).resolve().parents[2]
 NODE = shutil.which("node")
 REQUIRE_NATIVE_TEST_SERVERS = os.environ.get("GEOMETER_REQUIRE_NATIVE_TEST_SERVERS") == "1"
 NATIVE_PROCESS_SCRIPTS = frozenset({"node_process_a0_validation.mjs"})
+
+
+def _native_platform_directory(system: str, machine: str) -> str | None:
+    architecture = machine.strip().casefold()
+    if system == "win32" and architecture in {"amd64", "x86_64"}:
+        return "windows-x64"
+    if system == "darwin" and architecture in {"aarch64", "arm64"}:
+        return "macos-arm64"
+    if system.startswith("linux"):
+        if architecture in {"aarch64", "arm64"}:
+            return "linux-arm64"
+        if architecture in {"amd64", "x86_64"}:
+            return "linux-x64"
+    return None
 
 
 @pytest.mark.parametrize(
@@ -61,12 +76,8 @@ def test_step_topology_annotation_reference_restarts_native_process() -> None:
     assert NODE is not None, "Node 24 is required for the native reference example."
     if not REQUIRE_NATIVE_TEST_SERVERS:
         pytest.skip("native reference validation runs after the current platform executable is built")
-    platform_directory = {
-        "darwin": "macos-arm64",
-        "linux": "linux-x64",
-        "win32": "windows-x64",
-    }.get(sys.platform)
-    assert platform_directory is not None, f"No native artifact mapping for {sys.platform}."
+    platform_directory = _native_platform_directory(sys.platform, platform.machine())
+    assert platform_directory is not None, f"No native artifact mapping for {sys.platform}/{platform.machine()}."
     executable_name = "geometer.exe" if sys.platform == "win32" else "geometer"
     completed = subprocess.run(
         [
@@ -90,3 +101,18 @@ def test_step_topology_annotation_reference_restarts_native_process() -> None:
     assert report["metadata_probe_replayed"] is True
     assert report["session_identity_reminted"] is True
     assert report["topology_handle_reminted"] is True
+
+
+@pytest.mark.parametrize(
+    ("system", "machine", "expected"),
+    [
+        ("win32", "AMD64", "windows-x64"),
+        ("darwin", "arm64", "macos-arm64"),
+        ("linux", "x86_64", "linux-x64"),
+        ("linux", "aarch64", "linux-arm64"),
+        ("linux", "arm64", "linux-arm64"),
+        ("linux", "riscv64", None),
+    ],
+)
+def test_native_platform_directory_mapping(system: str, machine: str, expected: str | None) -> None:
+    assert _native_platform_directory(system, machine) == expected

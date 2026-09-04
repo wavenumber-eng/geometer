@@ -29,6 +29,7 @@
 #include <StepData_StepWriter.hxx>
 #include <StepRepr_DescriptiveRepresentationItem.hxx>
 #include <StepRepr_PropertyDefinitionRepresentation.hxx>
+#include <StepRepr_Representation.hxx>
 #include <StepRepr_ShapeAspect.hxx>
 #include <StepShape_AdvancedFace.hxx>
 #include <StepShape_ManifoldSolidBrep.hxx>

@@ -13,12 +13,14 @@ import {
 const root = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const fixtureDirectory = join(root, "tests", "typescript", "node_process_fixture");
 const platformDirectory = {
-  darwin: "macos-arm64",
-  linux: "linux-x64",
-  win32: "windows-x64",
-}[process.platform];
+  darwin: { arm64: "macos-arm64" },
+  linux: { arm64: "linux-arm64", x64: "linux-x64" },
+  win32: { x64: "windows-x64" },
+}[process.platform]?.[process.arch];
 if (platformDirectory === undefined) {
-  throw new Error(`No native Geometer test artifact is defined for ${process.platform}.`);
+  throw new Error(
+    `No native Geometer test artifact is defined for ${process.platform}/${process.arch}.`,
+  );
 }
 const executable = join(
   root,

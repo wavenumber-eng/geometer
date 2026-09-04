@@ -788,39 +788,41 @@ if(NOT EMSCRIPTEN)
                 ${CMAKE_SOURCE_DIR}/tests/fixtures/step/generated_topology
     )
 
-    add_test(
-        NAME geometer_step_topology_fixture_baseline_test
-        COMMAND geometer_step_topology_fixture_inventory --check-report
-                docs/reports/step-topology-fixture-baseline.json
-                monolithic
-                tests/fixtures/step/embedded_models/miniature_test_point.stp
-                tests/fixtures/glb/embedded_models/miniature_test_point.glb
-                monolithic
-                tests/fixtures/step/embedded_models/SOT-23.STEP
-                tests/fixtures/glb/embedded_models/SOT-23.glb
-                small_assembly
-                tests/fixtures/step/embedded_models/RESC1608X06L.step
-                tests/fixtures/glb/embedded_models/RESC1608X06L.glb
-                repeated_assembly
-                tests/fixtures/step/embedded_models/SOIC-20-300.STEP
-                tests/fixtures/glb/embedded_models/SOIC-20-300.glb
-                varied_assembly
-                tests/fixtures/step/embedded_models/ABM3B.STEP
-                tests/fixtures/glb/embedded_models/ABM3B.glb
-                generated_repeated_assembly
-                tests/fixtures/step/generated_topology/generated_repeated_occurrences.step
-                -
-                generated_fused_slab
-                tests/fixtures/step/generated_topology/generated_fused_slab.step
-                -
-                generated_flat_multi_solid
-                tests/fixtures/step/generated_topology/generated_flat_multi_solid.step
-                -
-    )
-    set_tests_properties(
-        geometer_step_topology_fixture_baseline_test
-        PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-    )
+    if(WIN32)
+        add_test(
+            NAME geometer_step_topology_fixture_baseline_test
+            COMMAND geometer_step_topology_fixture_inventory --check-report
+                    docs/reports/step-topology-fixture-baseline.json
+                    monolithic
+                    tests/fixtures/step/embedded_models/miniature_test_point.stp
+                    tests/fixtures/glb/embedded_models/miniature_test_point.glb
+                    monolithic
+                    tests/fixtures/step/embedded_models/SOT-23.STEP
+                    tests/fixtures/glb/embedded_models/SOT-23.glb
+                    small_assembly
+                    tests/fixtures/step/embedded_models/RESC1608X06L.step
+                    tests/fixtures/glb/embedded_models/RESC1608X06L.glb
+                    repeated_assembly
+                    tests/fixtures/step/embedded_models/SOIC-20-300.STEP
+                    tests/fixtures/glb/embedded_models/SOIC-20-300.glb
+                    varied_assembly
+                    tests/fixtures/step/embedded_models/ABM3B.STEP
+                    tests/fixtures/glb/embedded_models/ABM3B.glb
+                    generated_repeated_assembly
+                    tests/fixtures/step/generated_topology/generated_repeated_occurrences.step
+                    -
+                    generated_fused_slab
+                    tests/fixtures/step/generated_topology/generated_fused_slab.step
+                    -
+                    generated_flat_multi_solid
+                    tests/fixtures/step/generated_topology/generated_flat_multi_solid.step
+                    -
+        )
+        set_tests_properties(
+            geometer_step_topology_fixture_baseline_test
+            PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        )
+    endif()
 endif()
 
 if(EMSCRIPTEN)

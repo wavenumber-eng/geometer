@@ -69,14 +69,6 @@ styles. The facade flattens illustration transforms into the governed indexed
 mesh, forces the explicitly Fast vector selectors, and overlays returned
 outline/detail segments. HLR and illustration remain separately usable APIs.
 
-For interactive pixel output, `@wavenumber/geometer/raster-hlr` exposes
-`RasterHlrModel` and `RasterHlrViewport`. This browser-only Three.js helper
-reuses tessellated geometry and hardware depth testing while the camera moves.
-It does not return vector segments and is separate from C++ Fast HLR and SVG
-projection.
-Install compatible `three` and `@types/three` packages when importing this
-optional renderer subpath.
-
 The packed analytic Boolean operation uses `bigint` for every 64-bit identity
 and integer-nanometer value. The client owns packet encoding and strict result
 decoding:

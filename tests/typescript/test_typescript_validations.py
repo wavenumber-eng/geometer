@@ -24,7 +24,6 @@ NODE = shutil.which("node")
         "contract_codec_validation.mjs",
         "demo_tooling_validation.mjs",
         "emitter_validation.mjs",
-        "fast_hlr_validation.mjs",
         "hlr_static_site_validation.mjs",
         "illustration_static_site_validation.mjs",
         "ipc_a0_validation.mjs",

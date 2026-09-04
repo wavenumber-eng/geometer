@@ -49,7 +49,7 @@ DEMO_MODEL_NAMES = {
     "SOT-23.STEP",
     "sot223.stp",
     "SOIC-8-W.step",
-    "TSOT-23-5.STEP",
+    "Cap_SMT_Aluminum_F.STEP",
 }
 
 

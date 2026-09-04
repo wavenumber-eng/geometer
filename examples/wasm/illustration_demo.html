@@ -23,7 +23,6 @@
       <span class="group" id="illustrationOutputButtons" aria-label="Output">
         <button type="button" data-output="svg" class="active">SVG</button>
         <button type="button" data-output="canvas">Canvas</button>
-        <button type="button" data-output="gpu">GPU edge preview</button>
       </span>
       <button id="illustrationDownloadSvg" type="button" disabled>Download SVG</button>
       <button id="illustrationDownloadStyle" type="button" disabled>Style JSON</button>
@@ -37,7 +36,6 @@
         <span class="pane-label" id="illustrationOutputLabel">FAST VECTOR / C++ WASM CPU / SVG</span>
         <div class="svg-host" id="illustrationSvgHost"></div>
         <canvas class="hidden" id="illustrationCanvas"></canvas>
-        <canvas class="hidden" id="illustrationFastCanvas"></canvas>
         <div class="illustration-busy" id="illustrationBusy" data-presentation="overlay" role="status" aria-live="polite"><div id="illustrationBusyText">Loading model...</div></div>
       </section>
       <aside class="illustration-settings">
@@ -76,19 +74,18 @@
           <label class="illustration-control"><span>Outline</span><input id="illustrationOutlineColor" type="color" value="#17252c"><span></span></label>
           <label class="illustration-control"><span>Line width</span><input id="illustrationOutlineWidth" type="range" min="0.001" max="0.018" step="0.001" value="0.006"><output id="illustrationOutlineWidthValue">0.006</output></label>
           <label class="illustration-check"><input id="illustrationDoubleSided" type="checkbox"><span>Draw back faces</span></label>
-          <label class="illustration-control" title="Mesh crease threshold shared by the C++ fast vector projection and retained GPU edge buffer."><span>Fast crease</span><input id="illustrationFastCrease" type="range" min="1" max="80" step="1" value="25"><output id="illustrationFastCreaseValue">25 deg</output></label>
+          <label class="illustration-control" title="Mesh crease threshold used by the C++ fast vector projection."><span>Fast crease</span><input id="illustrationFastCrease" type="range" min="1" max="80" step="1" value="25"><output id="illustrationFastCreaseValue">25 deg</output></label>
           <label class="illustration-check" title="Experimental fast-vector filter for a line where a same-facing neighboring surface continues across its opposite side."><input id="illustrationFastCoplanarSeams" type="checkbox"><span>Hide coplanar joins (experimental)</span></label>
           <label class="illustration-control" title="Largest normal-angle difference accepted as a coplanar continuation by the experimental fast-vector seam filter."><span>Seam angle</span><input id="illustrationFastSeamAngle" type="range" min="0" max="10" step="0.1" value="1"><output id="illustrationFastSeamAngleValue">1.0 deg</output></label>
           <label class="illustration-control" title="Largest view-depth difference, in model millimetres, accepted by the experimental fast-vector seam filter."><span>Seam depth</span><input id="illustrationFastSeamDepth" type="range" min="0" max="0.01" step="0.0001" value="0.001"><output id="illustrationFastSeamDepthValue">0.0010 mm</output></label>
-          <label class="illustration-control" title="Polygon offset applied to filled faces so their own candidate edges survive the depth test."><span>GPU depth bias</span><input id="illustrationFastBias" type="range" min="0" max="4" step="0.1" value="1"><output id="illustrationFastBiasValue">1.0</output></label>
-          <p class="illustration-info"><strong>SVG and Canvas use the fast C++/WASM vector engines.</strong> The GPU edge preview is a separate retained-edge renderer; it does not display the fast vector mesh-shadow outline. Camera motion in the GPU preview does not invoke OCCT or rebuild projected vectors.</p>
+          <p class="illustration-info"><strong>SVG and Canvas use the fast C++/WASM vector engines.</strong> Camera changes rebuild projected vector linework for the selected view.</p>
         </section>
         <section>
           <h2>Output</h2>
           <label class="illustration-control"><span>Background</span><input id="illustrationBackground" type="color" value="#ffffff"><span></span></label>
           <label class="illustration-check"><input id="illustrationTransparent" type="checkbox"><span>Transparent background</span></label>
           <p class="illustration-info" id="illustrationCounts">No scene prepared.</p>
-          <p class="illustration-info">Production path: STEP -&gt; Geometer mesh -&gt; A0 SVG/Canvas illustration with Fast vector linework. The GPU edge preview remains a separate interactive raster renderer.</p>
+          <p class="illustration-info">Production path: STEP -&gt; Geometer mesh -&gt; A0 SVG/Canvas illustration with Fast vector linework.</p>
         </section>
       </aside>
     </main>
@@ -100,8 +97,7 @@
       "imports": {
         "three": "https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js",
         "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/",
-        "@wavenumber/geometer/mesh-illustration": "/dist/wasm/npm/geometer/mesh-illustration.js",
-        "@wavenumber/geometer/raster-hlr": "/dist/wasm/npm/geometer/raster-hlr.js"
+        "@wavenumber/geometer/mesh-illustration": "/dist/wasm/npm/geometer/mesh-illustration.js"
       }
     }
   </script>

@@ -71,9 +71,9 @@
       "sha256": "8a248d6ccaad45af9d4d6061c5b07520116e9b52f3b9cce344a45711472578c1"
     },
     {
-      "bytes": 32954,
+      "bytes": 33342,
       "path": "geometer_demo.css",
-      "sha256": "689807b4dcddd21e54b28b7559ca5ebb0b0b168dd541e85d5b279b334066e077"
+      "sha256": "273ecac0b600d89ff4066f31b07759dc8e2ccc62513a74b6b04deec21236cf2f"
     },
     {
       "bytes": 3436,
@@ -276,24 +276,14 @@
       "sha256": "1ea11176aa8e1d01c5a325b03a4c0db9ddeccdd767cca03c15f416ffacb50c31"
     },
     {
-      "bytes": 1667,
+      "bytes": 1438,
       "path": "package/package.json",
-      "sha256": "51957fcdbe1887b66b6804db0dff043eaf83d3dabf3299bb30409ad52b4226b9"
+      "sha256": "2a941481a45e7a4e46c872694b23bfaae2a1dbead4d3ef18db27f27d9354c554"
     },
     {
-      "bytes": 2361,
-      "path": "package/raster-hlr.d.ts",
-      "sha256": "ea5a215a8620bb035ddb7c98d9f94ab24373128129ff9460558fc86195c813ef"
-    },
-    {
-      "bytes": 9826,
-      "path": "package/raster-hlr.js",
-      "sha256": "ef150aa6be2cd4a7770662ca19401776633ac2d95aa75275c4f0d35fa737d062"
-    },
-    {
-      "bytes": 6461,
+      "bytes": 6042,
       "path": "package/README.md",
-      "sha256": "f1ab8a6ffbc3d3724bdbf84209fe069d1f175a3a8a08d7d7307a356a3b5fe8da"
+      "sha256": "72402bc9f5dd33ce45ce6eb16697ceda1f54de96e42578e81d510f7ab204daeb"
     },
     {
       "bytes": 3832,
@@ -357,5 +347,5 @@
     }
   ],
   "schema": "wn.geometer.static_site.a0",
-  "sha256": "c55a69000300e2bb2b83884e507074108ae67d77714adaa5a0eae352c35ca631"
+  "sha256": "667bb7b00b8bd7d25e8e25a9d8c085b8acb2fe84e71e93f7baca87c840884b34"
 }

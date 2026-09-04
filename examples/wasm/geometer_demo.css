@@ -1492,10 +1492,6 @@ body.illustration-demo[data-wn-watermark="true"]::after {
       background: var(--wn-accent-bg);
       color: var(--wn-accent);
     }
-    #illustrationOutputPane[data-engine="gpu-preview"] #illustrationOutputLabel {
-      background: var(--wn-code-bg);
-      color: var(--wn-muted);
-    }
     .illustration-settings {
       min-width: 0;
       overflow-y: auto;

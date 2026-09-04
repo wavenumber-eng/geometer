@@ -100,7 +100,6 @@ The ESM package has explicit exports:
 | `@wavenumber/geometer/ipc-client-a0` | Persistent client over injected WHATWG byte streams |
 | `@wavenumber/geometer/illustrated-hlr` | Fast vector HLR plus mesh-illustration composition |
 | `@wavenumber/geometer/mesh-illustration` | A0 one-shot and reusable SVG/Canvas illustration |
-| `@wavenumber/geometer/raster-hlr` | Browser-only Three.js framebuffer HLR helper |
 | `@wavenumber/geometer/node-process-a0` | Node child-process supervision for `geometer serve --stdio` |
 | `@wavenumber/geometer/wasm` | Direct browser/Web Worker WASM transport adapter |
 | `@wavenumber/geometer/worker` | Correlated main-thread client for a dedicated Worker |

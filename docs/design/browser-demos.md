@@ -171,14 +171,6 @@ The production implementation has these boundaries:
   silhouette segments beneath the independently computed fast mesh-shadow
   outline.
 
-The lab also contains a `GPU HLR` interaction mode implemented by the
-production `@wavenumber/geometer/raster-hlr` module. It retains boundary/crease buffers, lets opaque faces populate
-the depth buffer, and depth-tests edge fragments every frame. Camera motion in
-this mode does not invoke OCCT HLR or rebuild the SVG/Canvas projection. Its
-measured baseline, clean-room relationship to HOOPS FastHiddenLine, and current
-silhouette/provenance/bias limitations are recorded in
-[Fast raster HLR research baseline](fast-hlr-research.md).
-
 Build its hosted review directory with:
 
 ```powershell

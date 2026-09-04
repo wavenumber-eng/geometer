@@ -40,12 +40,6 @@ status = "done"
 depends_on = ["compatibility-contract"]
 
 [[steps]]
-id = "raster-hlr-package"
-title = "Publish retained GPU raster HLR as an explicitly browser-only renderer API separate from vector projection"
-status = "done"
-depends_on = ["compatibility-contract"]
-
-[[steps]]
 id = "convenience-composition"
 title = "Add a convenience facade that composes mesh preparation, Fast vector linework, colorization, and rendering"
 status = "done"
@@ -55,7 +49,7 @@ depends_on = ["operation-transports", "illustration-package"]
 id = "demo-migration"
 title = "Migrate HLR Lab and Illustration Lab to consume only production package APIs and typed clients"
 status = "done"
-depends_on = ["convenience-composition", "raster-hlr-package"]
+depends_on = ["convenience-composition"]
 
 [[steps]]
 id = "consumer-documentation"
@@ -125,11 +119,6 @@ title = "Consumers call a production TypeScript illustration API and do not reim
 status = "pending"
 
 [[exit_criteria]]
-id = "raster-boundary"
-title = "Browser raster HLR is separately named, documented as pixel output, and cannot be confused with vector Fast HLR"
-status = "pending"
-
-[[exit_criteria]]
 id = "production-demos"
 title = "HLR Lab and Illustration Lab use only production APIs for governed geometry and illustration behavior"
 status = "pending"
@@ -169,8 +158,8 @@ status = "pending"
 
 ## Purpose
 
-Promote the accepted Fast vector HLR, Fast mesh-shadow outline, retained browser
-raster HLR, and mesh illustration work into supported additive interfaces. V1
+Promote the accepted Fast vector HLR, Fast mesh-shadow outline, and mesh
+illustration work into supported additive interfaces. V1
 must make the new behavior easy to discover and use without changing the
 meaning, defaults, or availability of existing polygonal and exact HLR calls.
 
@@ -180,7 +169,7 @@ its temporary files can be removed during closeout.
 
 ## V1 product boundary
 
-V1 has three deliberately separate implementation products:
+V1 has two deliberately separate implementation products:
 
 1. **Vector HLR geometry** is implemented in generic C++ and returns the
    renderer-neutral projection result. STEP, indexed-mesh, native, WASM,
@@ -190,10 +179,6 @@ V1 has three deliberately separate implementation products:
    shading, colorization, SVG/Canvas rendering, caching, and disposal. The demo
    is a consumer, not an implementation authority. Native illustration
    execution is deferred until a named native consumer requires a C++ port.
-3. **Raster HLR** becomes an explicitly browser-only renderer helper. It owns a
-   framebuffer result, not vector geometry, and is named and documented so it
-   cannot be mistaken for the deterministic Fast vector projection backend.
-
 The production package exposes both a simple one-shot facade and reusable
 prepared objects. Combining HLR and illustration is a convenience composition;
 the underlying contracts remain independently usable.
@@ -216,7 +201,8 @@ The semantic API exposes these concepts:
 - a reusable prepared Fast HLR model for multiple views; and
 - one-shot wrappers for documentation, CLI, Python, and executable consumers.
 
-The TypeScript package adds explicit `illustration` and `raster-hlr` exports.
+The TypeScript package adds explicit `mesh-illustration` and `illustrated-hlr`
+exports.
 Illustration exposes one-shot `illustrateMesh` plus reusable
 `createIllustrator`/render/dispose behavior. Its prepared scene remains opaque
 so triangle sorting and fusion internals can evolve without breaking consumers.
@@ -277,20 +263,19 @@ publishes the following documentation surfaces:
 - a migration guide showing an unchanged old request, the smallest Fast STEP
   request, a synthesized-mesh request, and composed illustration output.
 
-Documentation must distinguish one-shot wall time from prepared-view time and
-must distinguish vector Fast HLR from browser raster HLR.
+Documentation must distinguish one-shot wall time from prepared-view time.
 
 ## Demo migration and user acceptance
 
 HLR Lab migrates from handwritten Worker JSON to the generated typed HLR
-client. Illustration Lab imports the production illustration and raster-HLR
-package exports. Demo code retains only UI state, file selection, camera
+client. Illustration Lab imports the production illustration package exports.
+Demo code retains only UI state, file selection, camera
 control, presentation, downloads, and validation orchestration.
 
 The packaged demos must continue to support bundled and uploaded STEP models,
 all view and layer controls, exact/poly/Fast comparison, independent outline
-selection, Fast options, illustration styling, SVG export, and raster camera
-interaction. Automated browser gates run first. The final release gate then
+selection, Fast options, illustration styling, and SVG export. Automated
+browser gates run first. The final release gate then
 stops and presents both packaged demo paths plus a concise checklist to the
 user. `user-demo-signoff` cannot be inferred from automated tests and must be
 set only after explicit approval.
@@ -309,7 +294,7 @@ set only after explicit approval.
 - Package-consumer tests proving illustration works outside repository aliases
   and demos import production exports rather than copied algorithms.
 - Browser tests for HLR Lab, Illustration Lab, uploads, downloads, controls,
-  raster interaction, and packaged single-file closure.
+  and packaged single-file closure.
 - Current Fast benchmark corpus, including ABM8 where appropriate, with
   one-shot and prepared-view timings reported separately.
 - Downstream compatibility snapshots for maintained Viz and documentation
@@ -325,9 +310,7 @@ remain visible in durable limitations or follow-up work:
 - perspective vector-projection guarantees;
 - multithreaded WASM visibility execution;
 - a stable serialized prepared-model format or cross-process resident session;
-- a native C++ illustration renderer and native illustration operation;
-- screen-space raster line quads, full dynamic smooth silhouettes, transparent
-  occlusion policy, and broader GPU/browser qualification; and
+- a native C++ illustration renderer and native illustration operation; and
 - application-specific PCB, documentation, or visualizer styling policy.
 
 ## Closeout

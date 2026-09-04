@@ -41,17 +41,12 @@ for (const required of [
   'id="illustrationDownloadStyle"',
   'data-output="svg"',
   'data-output="canvas"',
-  'data-output="gpu"',
-  "GPU edge preview",
   "FAST VECTOR / C++ WASM CPU",
-  "SEPARATE FROM FAST VECTOR OUTPUT",
   'data-view="camera"',
   'id="illustrationHlrOutline"',
   'id="illustrationFuseSurfaces"',
   'id="illustrationHlrDetail"',
-  'id="illustrationFastCanvas"',
   'id="illustrationFastCrease"',
-  'id="illustrationFastBias"',
   'id="illustrationMeshQuality"',
   'id="illustrationLinearDeflection"',
   'id="illustrationAngularDeflection"',
@@ -73,6 +68,15 @@ if (html.includes('id="illustrationTriangleLimit"'))
   throw new Error("Illustration HTML retains the prototype triangle limit.");
 if (html.includes("https://cdn.jsdelivr.net"))
   throw new Error("Illustration HTML retains its development CDN import map.");
+for (const retired of [
+  'data-output="gpu"',
+  "GPU edge preview",
+  'id="illustrationFastCanvas"',
+  'id="illustrationFastBias"',
+  "RasterHlrViewport",
+  "@wavenumber/geometer/raster-hlr",
+])
+  if (html.includes(retired)) throw new Error(`Illustration HTML retains ${retired}.`);
 
 const license = await readFile(join(root, "node_modules", "three", "LICENSE"), "utf8");
 const licenseMatch = html.match(

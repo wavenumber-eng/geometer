@@ -34,7 +34,7 @@ DEMO_MODEL_NAMES = [
     "ABM8-272-T3.STEP",
     "SOIC-8-W.step",
     "sot223.stp",
-    "TSOT-23-5.STEP",
+    "Cap_SMT_Aluminum_F.STEP",
     "BGA90-8X13mm.step",
 ]
 
@@ -129,7 +129,6 @@ def main() -> None:
         target="es2022",
         aliases={
             "@wavenumber/geometer/mesh-illustration": ROOT / "src" / "ts" / "geometer" / "mesh-illustration.ts",
-            "@wavenumber/geometer/raster-hlr": ROOT / "src" / "ts" / "geometer" / "raster-hlr.ts",
         },
     )
     bundle = "\n".join(line.rstrip() for line in APP_BUNDLE.read_text(encoding="utf-8").splitlines()) + "\n"

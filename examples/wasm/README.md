@@ -137,8 +137,8 @@ TypeScript package modules. Planar examples retain their existing surfaces.
 ## STEP Illustration Lab
 
 **Status: production-package demo.** This page consumes the supported
-`@wavenumber/geometer/mesh-illustration` and raster-HLR modules plus the
-governed model HLR operation. The package owns mesh preparation, visibility
+`@wavenumber/geometer/mesh-illustration` module plus the governed model HLR
+operation. The package owns mesh preparation, visibility
 ordering, fusion, colorization, SVG/Canvas rendering, caching, and disposal;
 the page owns only UI, camera, file, download, and presentation behavior.
 
@@ -149,13 +149,6 @@ colorized triangle surfaces to either SVG or Canvas2D. It supports flat,
 unquantized Lambert diffuse, quantized-band (up to 32 bands), and early toon shading,
 live style changes, named or trackball
 camera views, local STEP upload, and SVG/style downloads.
-
-`@wavenumber/geometer/raster-hlr` adds a separate live GPU renderer to the same page. It builds
-boundary/crease candidates once, uses the filled mesh as a depth occluder, and
-depth-tests the retained edge fragments during camera motion. It deliberately
-does not run OCCT HLR per frame. See
-[`docs/design/fast-hlr-research.md`](../../docs/design/fast-hlr-research.md) for
-the measured baseline and known quality gaps.
 
 The Geometry section exposes Draft, Balanced, Fine, and Extra fine STEP mesh
 presets plus custom linear deflection (millimetres), angular deflection

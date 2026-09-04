@@ -598,7 +598,7 @@ sha256 = "87e16b5b2453ad1f9263d92953d5741a30780db02eeea0d59d61f10967c4537b"
 status = "vendored"
 
 [c_abi]
-generation = 20260821
+generation = 20260904
 source = "src/cpp/lib/geometer/c_api.h"
 symbols = [
   "geometer_operation_catalog_json",

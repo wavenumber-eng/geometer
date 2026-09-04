@@ -4,6 +4,38 @@ All notable changes to geometer are documented here.
 
 ## [Unreleased]
 
+## [2026.9.4] - 2026-09-04
+
+### Added
+
+- Added governed Fast vector HLR for STEP models and indexed meshes across the
+  native value API, executable IPC, browser WASM, and generated clients.
+- Added production indexed-mesh packets and reusable mesh-illustration modules
+  for SVG and Canvas presentation, including Fast shadow outlines, exact line
+  reconstruction, coplanar-seam suppression, and normalized model transforms.
+- Added native/WASM corpus parity and large-model browser coverage for the new
+  HLR and illustration surfaces.
+
+### Fixed
+
+- Added deterministic, resolution-bounded capsule endpoint coalescing for
+  analytic planar Boolean requests whose authored endpoints differ by no more
+  than 1 micrometer.
+- Preserved successful results while reporting `resolution_coalesced`, exact
+  coalescence counts, and maximum adjustment telemetry; the captured Yoshi PCB
+  copper request now completes identically through native and browser WASM.
+- Made cross-platform build, package, IPC, and AP242 release gates portable
+  across Windows x64, Linux x64, Linux ARM64, and macOS ARM64.
+
+### Changed
+
+- The experimental hard-contained topology worker supervisor is supported on
+  Windows and Linux. Native topology APIs, rendering, HLR, illustration, IPC,
+  and packages remain supported on macOS; native macOS hard containment is
+  tracked separately.
+- Updated the release identity to `v2026-09-04`,
+  `wn-geometer==2026.9.4`, and C ABI generation `20260904`.
+
 ## [2026.8.21] - 2026-08-21
 
 ### Added

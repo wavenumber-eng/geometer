@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -11,6 +12,8 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
 NODE = shutil.which("node")
+REQUIRE_NATIVE_TEST_SERVERS = os.environ.get("GEOMETER_REQUIRE_NATIVE_TEST_SERVERS") == "1"
+NATIVE_PROCESS_SCRIPTS = frozenset({"node_process_a0_validation.mjs"})
 
 
 @pytest.mark.parametrize(
@@ -41,6 +44,8 @@ NODE = shutil.which("node")
 )
 def test_generated_typescript_package(script: str) -> None:
     assert NODE is not None, "Node 24 is required for TypeScript validation."
+    if script in NATIVE_PROCESS_SCRIPTS and not REQUIRE_NATIVE_TEST_SERVERS:
+        pytest.skip("native-process validation runs after the current platform executable is built")
     completed = subprocess.run(
         [NODE, str(ROOT / "tests" / "typescript" / script)],
         cwd=ROOT,
@@ -54,6 +59,8 @@ def test_generated_typescript_package(script: str) -> None:
 
 def test_step_topology_annotation_reference_restarts_native_process() -> None:
     assert NODE is not None, "Node 24 is required for the native reference example."
+    if not REQUIRE_NATIVE_TEST_SERVERS:
+        pytest.skip("native reference validation runs after the current platform executable is built")
     platform_directory = {
         "darwin": "macos-arm64",
         "linux": "linux-x64",

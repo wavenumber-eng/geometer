@@ -39,8 +39,6 @@ jobs:
           test "$(npm --version)" = "11.16.0"
           npm ci
           npm run check:contracts
-      - name: Run TypeScript Rack stratum
-        run: uv run --group dev rack run typescript
       - name: Run release signoff gate
         run: uv run --group dev rack run L99_release
       - name: Run standards check
@@ -106,13 +104,14 @@ jobs:
             occt-${{ matrix.os }}-${{ runner.arch }}-${{ matrix.compiler }}-${{ steps.dependency_versions.outputs.occt_tag }}-
       - name: Build and test native code
         run: uv run --group dev python scripts/validate_native.py
-      - name: Run Python and Rust Rack strata against the native build
+      - name: Run Python, Rust, and TypeScript Rack strata against the native build
         env:
           GEOMETER_REQUIRE_NATIVE_TEST_SERVERS: "1"
         run: |
           uv tool install git+https://github.com/wavenumber-eng/wn-dev-std
           uv run --group dev rack run python
           uv run --group dev rack run rust
+          uv run --group dev rack run typescript
       - name: Test Python package
         run: uv run --group dev python scripts/validate_python_package.py --skip-native-validation --wheelhouse out/wheelhouse
       - name: Check wheel

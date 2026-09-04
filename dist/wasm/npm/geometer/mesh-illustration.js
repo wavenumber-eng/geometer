@@ -1,3 +1,5 @@
+const EXPERIMENTAL_AO_SYMBOL = Symbol.for("@wavenumber/geometer/experimental-mesh-ambient-occlusion");
+const EXPERIMENTAL_AO_REVISION_SYMBOL = Symbol.for("@wavenumber/geometer/experimental-mesh-ambient-occlusion-revision");
 const IDENTITY_MATRIX = Object.freeze([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
 const VISIBILITY_ORDER_CACHE = new WeakMap();
 const RENDER_COMMAND_CACHE = new WeakMap();
@@ -290,7 +292,13 @@ function triangleFill(triangle, scene, style) {
     const light = normalize(style.lightDirection, "Light direction");
     const activeNormal = style.shading === "flat" ? triangle.geometricNormal : triangle.normal;
     const diffuse = Math.max(0, dot(activeNormal, light));
-    let intensity = clamp(style.ambient) + clamp(style.keyIntensity, 0, 4) * diffuse;
+    const experimentalStyle = style;
+    const accessibility = Number(triangle[EXPERIMENTAL_AO_SYMBOL] ?? 1);
+    const aoBands = Math.max(2, Math.min(16, Math.trunc(experimentalStyle.experimentalAmbientOcclusionBands ?? 5)));
+    const quantizedAccessibility = Math.round(clamp(accessibility) * (aoBands - 1)) / (aoBands - 1);
+    const aoStrength = clamp(experimentalStyle.experimentalAmbientOcclusionStrength ?? 0);
+    const ambientAccessibility = 1 - aoStrength * (1 - quantizedAccessibility);
+    let intensity = clamp(style.ambient) * ambientAccessibility + clamp(style.keyIntensity, 0, 4) * diffuse;
     intensity = clamp(intensity);
     if (style.shading === "banded" || style.shading === "toon") {
         const bands = Math.max(2, Math.min(32, Math.trunc(style.bands)));
@@ -1254,12 +1262,14 @@ function fuseTriangleCommands(commands, bounds, layerCoplanarMaterials) {
 }
 function renderCommands(scene, style) {
     const styleKey = JSON.stringify(style);
+    const experimentalAmbientOcclusionRevision = Number(scene[EXPERIMENTAL_AO_REVISION_SYMBOL] ?? 0);
     const cached = RENDER_COMMAND_CACHE.get(scene);
     if (cached?.styleKey === styleKey &&
         cached.triangles === scene.triangles &&
         cached.edges === scene.edges &&
         cached.outlines === scene.outlineSegments &&
-        cached.details === scene.detailSegments)
+        cached.details === scene.detailSegments &&
+        cached.experimentalAmbientOcclusionRevision === experimentalAmbientOcclusionRevision)
         return cached.result;
     const span = Math.max(scene.bounds.maxX - scene.bounds.minX, scene.bounds.maxY - scene.bounds.minY, 1e-9);
     const triangleCommands = [];
@@ -1372,6 +1382,7 @@ function renderCommands(scene, style) {
         edges: scene.edges,
         outlines: scene.outlineSegments,
         details: scene.detailSegments,
+        experimentalAmbientOcclusionRevision,
         result,
     });
     return result;

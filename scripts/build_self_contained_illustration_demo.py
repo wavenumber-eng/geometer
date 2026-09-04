@@ -129,6 +129,7 @@ def main() -> None:
         target="es2022",
         aliases={
             "@wavenumber/geometer/mesh-illustration": ROOT / "src" / "ts" / "geometer" / "mesh-illustration.ts",
+            "@wavenumber/geometer/mesh-illustration-ao-experimental": ROOT / "src" / "ts" / "geometer" / "mesh-illustration-ao-experimental.ts",
         },
     )
     bundle = "\n".join(line.rstrip() for line in APP_BUNDLE.read_text(encoding="utf-8").splitlines()) + "\n"

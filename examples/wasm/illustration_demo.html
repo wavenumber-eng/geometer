@@ -59,13 +59,18 @@
           <label class="illustration-control"><span>Shading</span><select id="illustrationShading"><option value="flat">Flat diffuse</option><option value="lambert">Lambert diffuse</option><option value="banded">Banded</option><option value="toon" selected>Toon</option><option value="unlit">Unlit</option></select><span></span></label>
           <label class="illustration-control"><span>Bands</span><input id="illustrationBands" type="range" min="2" max="32" step="1" value="3"><output id="illustrationBandsValue">3</output></label>
           <label class="illustration-control"><span>Ambient</span><input id="illustrationAmbient" type="range" min="0" max="1" step="0.05" value="0.28"><output id="illustrationAmbientValue">0.28</output></label>
+          <label class="illustration-check" title="Experimental deterministic mesh-space ambient occlusion shared by SVG and Canvas output."><input id="illustrationAmbientOcclusion" type="checkbox"><span>Ambient occlusion (experimental)</span></label>
+          <label class="illustration-control"><span>AO strength</span><input id="illustrationAoStrength" type="range" min="0" max="1" step="0.05" value="0.35"><output id="illustrationAoStrengthValue">0.35</output></label>
+          <label class="illustration-control"><span>AO radius</span><input id="illustrationAoRadius" type="range" min="1" max="20" step="1" value="5"><output id="illustrationAoRadiusValue">5%</output></label>
+          <label class="illustration-control"><span>AO samples</span><select id="illustrationAoSamples"><option value="8">8 / draft</option><option value="16" selected>16 / balanced</option><option value="32">32 / fine</option></select><span></span></label>
+          <label class="illustration-control"><span>AO bands</span><input id="illustrationAoBands" type="range" min="2" max="12" step="1" value="5"><output id="illustrationAoBandsValue">5</output></label>
           <label class="illustration-control"><span>Key light</span><input id="illustrationKey" type="range" min="0" max="1.5" step="0.05" value="0.9"><output id="illustrationKeyValue">0.90</output></label>
           <label class="illustration-control"><span>Rim</span><input id="illustrationRim" type="range" min="0" max="0.6" step="0.02" value="0.12"><output id="illustrationRimValue">0.12</output></label>
           <label class="illustration-check"><input id="illustrationSourceColors" type="checkbox" checked><span>Use source material colors</span></label>
           <label class="illustration-check" title="Builds safe polygon regions from adjacent opaque triangles with identical rendered color after visibility ordering."><input id="illustrationFuseSurfaces" type="checkbox" checked><span>Fuse same-color surfaces</span></label>
           <label class="illustration-check" title="Underpaints safe opaque coplanar material partitions before drawing their markings, preventing dark seam bleed on shallow labels and logos."><input id="illustrationLayerCoplanar" type="checkbox" checked><span>Layer coplanar markings</span></label>
           <label class="illustration-control"><span>Fallback</span><input id="illustrationFallback" type="color" value="#71a6a0"><span></span></label>
-          <p class="illustration-info">Fusion converts safe opaque triangle groups into polygon regions while preserving depth-order boundaries. Coplanar layering paints a continuous base beneath shallow material markings before overpainting their colors. Ambiguous folds, overlaps, and transparent surfaces remain ordered triangles.</p>
+          <p class="illustration-info">Experimental AO casts bounded CPU rays against the complete tessellated assembly, then quantizes ambient-accessibility values into vector-safe tonal bands. Fusion converts safe opaque triangle groups into polygon regions while preserving depth-order boundaries. Coplanar layering paints a continuous base beneath shallow material markings before overpainting their colors.</p>
         </section>
         <section>
           <h2>Linework</h2>
@@ -97,7 +102,8 @@
       "imports": {
         "three": "https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js",
         "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/",
-        "@wavenumber/geometer/mesh-illustration": "/dist/wasm/npm/geometer/mesh-illustration.js"
+        "@wavenumber/geometer/mesh-illustration": "/dist/wasm/npm/geometer/mesh-illustration.js",
+        "@wavenumber/geometer/mesh-illustration-ao-experimental": "/dist/wasm/npm/geometer/mesh-illustration-ao-experimental.js"
       }
     }
   </script>

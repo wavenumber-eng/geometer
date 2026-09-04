@@ -1,54 +1,54 @@
 +++
 type = "plan"
 id = "mesh-illustration-ao-experiment"
-status = "pending"
+status = "active"
 created = "2026-09-03"
 
 [[steps]]
 id = "reference-baselines"
 title = "Capture no-AO reference images, geometry characteristics, and output metrics for the governed fixture matrix"
-status = "pending"
+status = "done"
 
 [[steps]]
 id = "bounded-ao-kernel"
 title = "Prototype deterministic whole-assembly BVH ambient-visibility sampling with explicit work, memory, cancellation, and cache bounds"
-status = "pending"
+status = "done"
 depends_on = ["reference-baselines"]
 
 [[steps]]
 id = "vector-shading-integration"
 title = "Apply quantized AO only to ambient illumination while preserving materials, linework, fusion safety, and SVG/Canvas parity"
-status = "pending"
+status = "done"
 depends_on = ["bounded-ao-kernel"]
 
 [[steps]]
 id = "demo-controls"
 title = "Add opt-in experimental AO strength, radius, quality, and band controls without exposing a stable public contract"
-status = "pending"
+status = "done"
 depends_on = ["vector-shading-integration"]
 
 [[steps]]
 id = "evidence-matrix"
 title = "Measure visual quality, deterministic behavior, preparation cost, caching, fusion impact, and SVG size across the experiment matrix"
-status = "pending"
+status = "done"
 depends_on = ["demo-controls"]
 
 [[steps]]
 id = "design-doc-intent-audit"
 title = "Confirm the disposable spike has not changed durable production intent or record only accepted handoff implications"
-status = "pending"
+status = "done"
 depends_on = ["evidence-matrix"]
 
 [[steps]]
 id = "test-runtime-impact-audit"
 title = "Confirm experiment checks are bounded and do not impose lasting suite cost if the spike is discarded"
-status = "pending"
+status = "done"
 depends_on = ["evidence-matrix"]
 
 [[steps]]
 id = "external-review"
 title = "Obtain a focused independent check of the evidence and discard-or-handoff recommendation"
-status = "pending"
+status = "done"
 depends_on = ["evidence-matrix", "design-doc-intent-audit", "test-runtime-impact-audit"]
 
 [[steps]]
@@ -122,6 +122,12 @@ Use SOT-223, Cap_SMT_Aluminum_F, ABM8, BGA90, and one synthesized multi-part PCB
 ## Measurements
 
 Record AO preparation time, peak working memory where observable, cache reuse, SVG byte and draw-count growth, fusion loss, SVG/Canvas parity, deterministic repeatability, and visible artifacts such as self-shadow acne, tessellation print-through, band noise, detached halos, or lost source colors.
+
+## Bounded smoke evidence
+
+The automated browser evaluation uses 8 samples and a 5 percent scene-diagonal radius. It verifies AO-off byte-for-byte SVG restoration, cached reproduction, shared SVG/Canvas render-command counts, and bounded preparation across all six bundled fixtures. Observed worker times ranged from 13 ms for SOT-23/SOT-223 to 1.70 s for the 24,060-triangle BGA90. AO increased SVG draw counts by 0.3 to 106 percent depending on how strongly tonal bands split otherwise fusible regions.
+
+This is sufficient to present the experiment for visual user evaluation, but it is not exhaustive qualification of every sample/radius/strength/band combination, pixel-exact Canvas output, peak memory, or a synthesized PCB assembly. Independent package review approved the experimental boundary and implementation after cache invalidation and finite-input fixes; the user-decision gate remains pending.
 
 ## Decision gate
 

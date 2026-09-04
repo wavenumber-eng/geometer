@@ -10,6 +10,18 @@ export type Vec2 = readonly [number, number];
 export type Vec3 = readonly [number, number, number];
 export type Rgb = readonly [number, number, number];
 
+const EXPERIMENTAL_AO_SYMBOL = Symbol.for(
+  "@wavenumber/geometer/experimental-mesh-ambient-occlusion",
+);
+const EXPERIMENTAL_AO_REVISION_SYMBOL = Symbol.for(
+  "@wavenumber/geometer/experimental-mesh-ambient-occlusion-revision",
+);
+
+interface ExperimentalAmbientOcclusionStyle {
+  experimentalAmbientOcclusionStrength?: number;
+  experimentalAmbientOcclusionBands?: number;
+}
+
 export interface MeshIllustrationMaterial {
   /** Source color expressed as sRGB channel values in the inclusive range [0, 1]. */
   color: Rgb;
@@ -222,6 +234,7 @@ const RENDER_COMMAND_CACHE = new WeakMap<
     edges: MeshIllustrationScene["edges"];
     outlines: MeshIllustrationScene["outlineSegments"];
     details: MeshIllustrationScene["detailSegments"];
+    experimentalAmbientOcclusionRevision: number;
     result: { commands: RenderCommand[]; stats: IllustrationRenderStats };
   }
 >();
@@ -575,7 +588,21 @@ function triangleFill(
   const light = normalize(style.lightDirection, "Light direction");
   const activeNormal = style.shading === "flat" ? triangle.geometricNormal : triangle.normal;
   const diffuse = Math.max(0, dot(activeNormal, light));
-  let intensity = clamp(style.ambient) + clamp(style.keyIntensity, 0, 4) * diffuse;
+  const experimentalStyle = style as MeshIllustrationStyle & ExperimentalAmbientOcclusionStyle;
+  const accessibility = Number(
+    (triangle as IllustrationTriangle & { [EXPERIMENTAL_AO_SYMBOL]?: number })[
+      EXPERIMENTAL_AO_SYMBOL
+    ] ?? 1,
+  );
+  const aoBands = Math.max(
+    2,
+    Math.min(16, Math.trunc(experimentalStyle.experimentalAmbientOcclusionBands ?? 5)),
+  );
+  const quantizedAccessibility = Math.round(clamp(accessibility) * (aoBands - 1)) / (aoBands - 1);
+  const aoStrength = clamp(experimentalStyle.experimentalAmbientOcclusionStrength ?? 0);
+  const ambientAccessibility = 1 - aoStrength * (1 - quantizedAccessibility);
+  let intensity =
+    clamp(style.ambient) * ambientAccessibility + clamp(style.keyIntensity, 0, 4) * diffuse;
   intensity = clamp(intensity);
   if (style.shading === "banded" || style.shading === "toon") {
     const bands = Math.max(2, Math.min(32, Math.trunc(style.bands)));
@@ -1657,13 +1684,19 @@ function renderCommands(
   style: MeshIllustrationStyle,
 ): { commands: RenderCommand[]; stats: IllustrationRenderStats } {
   const styleKey = JSON.stringify(style);
+  const experimentalAmbientOcclusionRevision = Number(
+    (scene as MeshIllustrationScene & { [EXPERIMENTAL_AO_REVISION_SYMBOL]?: number })[
+      EXPERIMENTAL_AO_REVISION_SYMBOL
+    ] ?? 0,
+  );
   const cached = RENDER_COMMAND_CACHE.get(scene);
   if (
     cached?.styleKey === styleKey &&
     cached.triangles === scene.triangles &&
     cached.edges === scene.edges &&
     cached.outlines === scene.outlineSegments &&
-    cached.details === scene.detailSegments
+    cached.details === scene.detailSegments &&
+    cached.experimentalAmbientOcclusionRevision === experimentalAmbientOcclusionRevision
   )
     return cached.result;
   const span = Math.max(
@@ -1793,6 +1826,7 @@ function renderCommands(
     edges: scene.edges,
     outlines: scene.outlineSegments,
     details: scene.detailSegments,
+    experimentalAmbientOcclusionRevision,
     result,
   });
   return result;

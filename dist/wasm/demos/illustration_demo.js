@@ -1,4 +1,5 @@
 import { prepareMeshIllustration, renderMeshIllustrationCanvas, renderMeshIllustrationSvg, toMeshIllustrationStyleA0, } from "@wavenumber/geometer/mesh-illustration";
+import { applyExperimentalAmbientOcclusion, prepareExperimentalAmbientOcclusion, } from "@wavenumber/geometer/mesh-illustration-ao-experimental";
 import * as THREE from "three";
 import { TrackballControls } from "three/addons/controls/TrackballControls.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
@@ -73,6 +74,14 @@ const els = {
     bandsValue: required("illustrationBandsValue"),
     ambient: required("illustrationAmbient"),
     ambientValue: required("illustrationAmbientValue"),
+    ambientOcclusion: required("illustrationAmbientOcclusion"),
+    aoStrength: required("illustrationAoStrength"),
+    aoStrengthValue: required("illustrationAoStrengthValue"),
+    aoRadius: required("illustrationAoRadius"),
+    aoRadiusValue: required("illustrationAoRadiusValue"),
+    aoSamples: required("illustrationAoSamples"),
+    aoBands: required("illustrationAoBands"),
+    aoBandsValue: required("illustrationAoBandsValue"),
     key: required("illustrationKey"),
     keyValue: required("illustrationKeyValue"),
     rim: required("illustrationRim"),
@@ -122,6 +131,9 @@ const state = {
     lineworkBusyRequest: null,
     showHlrOutline: true,
     showHlrDetail: true,
+    ambientOcclusion: null,
+    ambientOcclusionKey: "",
+    ambientOcclusionAbort: null,
 };
 const renderer = new THREE.WebGLRenderer({
     canvas: els.modelCanvas,
@@ -214,6 +226,8 @@ function currentStyle() {
     const keyIntensity = numberInput(els.key, els.keyValue, 2);
     const rimAmount = numberInput(els.rim, els.rimValue, 2);
     const outlineWidth = numberInput(els.outlineWidth, els.outlineWidthValue, 3);
+    const aoStrength = numberInput(els.aoStrength, els.aoStrengthValue, 2);
+    const aoBands = Math.max(2, Math.min(12, Math.round(numberInput(els.aoBands, els.aoBandsValue, 0))));
     return {
         shading: els.shading.value,
         ambient,
@@ -237,7 +251,23 @@ function currentStyle() {
         creaseWidth: outlineWidth * 0.55,
         doubleSided: els.doubleSided.checked,
         rimAmount,
+        experimentalAmbientOcclusionStrength: els.ambientOcclusion.checked ? aoStrength : 0,
+        experimentalAmbientOcclusionBands: aoBands,
     };
+}
+function ambientOcclusionSettings() {
+    const radiusPercent = boundedNumberInput(els.aoRadius, 1, 20, 5);
+    const samples = Math.max(8, Math.min(32, Math.trunc(Number.parseFloat(els.aoSamples.value) || 16)));
+    els.aoRadiusValue.value = `${radiusPercent.toFixed(0)}%`;
+    return { samples, radiusFraction: radiusPercent / 100 };
+}
+function cancelAmbientOcclusion() {
+    state.ambientOcclusionAbort?.abort();
+    state.ambientOcclusionAbort = null;
+}
+function ambientOcclusionCacheKey(model, settings) {
+    const ao = ambientOcclusionSettings();
+    return `${model.cacheKey ?? model.name}|${surfaceMeshKey(settings)}|${ao.samples}|${ao.radiusFraction.toFixed(4)}`;
 }
 function scheduleFastCreaseUpdate() {
     const crease = boundedNumberInput(els.fastCrease, 1, 80, 25);
@@ -536,6 +566,7 @@ async function prepareIllustration(reason) {
     if (!root)
         return;
     const requestId = ++state.prepareRequest;
+    cancelAmbientOcclusion();
     cancelLazyHlrLinework();
     syncHlrControls();
     const started = performance.now();
@@ -546,6 +577,47 @@ async function prepareIllustration(reason) {
         const view = currentView();
         const meshSettings = currentMeshSettings();
         let prepared = prepareMeshIllustration(input, view, { weldTolerance: 1e-5 });
+        let aoMs = 0;
+        let aoCached = true;
+        if (els.ambientOcclusion.checked && model) {
+            const aoKey = ambientOcclusionCacheKey(model, meshSettings);
+            if (!state.ambientOcclusion || state.ambientOcclusionKey !== aoKey) {
+                const ao = ambientOcclusionSettings();
+                const controller = new AbortController();
+                state.ambientOcclusionAbort = controller;
+                setBusy(`Computing experimental ambient occlusion for ${model.name}...`, "indicator");
+                const result = await prepareExperimentalAmbientOcclusion(input, {
+                    samples: ao.samples,
+                    radiusFraction: ao.radiusFraction,
+                    maxTriangles: 100_000,
+                    signal: controller.signal,
+                });
+                if (requestId !== state.prepareRequest || state.root !== root || state.model !== model)
+                    return;
+                state.ambientOcclusion = result;
+                state.ambientOcclusionKey = aoKey;
+                state.ambientOcclusionAbort = null;
+                aoMs = result.stats.milliseconds;
+                aoCached = false;
+            }
+            applyExperimentalAmbientOcclusion(prepared, state.ambientOcclusion);
+            els.outputPane.dataset.ambientOcclusion = "true";
+            els.outputPane.dataset.ambientOcclusionSamples = String(state.ambientOcclusion.stats.samples);
+            els.outputPane.dataset.ambientOcclusionRadius = String(state.ambientOcclusion.stats.radius);
+            els.outputPane.dataset.ambientOcclusionCached = String(aoCached);
+            els.outputPane.dataset.ambientOcclusionBuildMs =
+                state.ambientOcclusion.stats.milliseconds.toFixed(3);
+            els.outputPane.dataset.ambientOcclusionMinimum =
+                state.ambientOcclusion.stats.minimumAccessibility.toFixed(6);
+            els.outputPane.dataset.ambientOcclusionMean =
+                state.ambientOcclusion.stats.meanAccessibility.toFixed(6);
+        }
+        else {
+            els.outputPane.dataset.ambientOcclusion = "false";
+            delete els.outputPane.dataset.ambientOcclusionSamples;
+            delete els.outputPane.dataset.ambientOcclusionRadius;
+            delete els.outputPane.dataset.ambientOcclusionCached;
+        }
         let hlrMs = 0;
         if ((state.showHlrOutline || state.showHlrDetail) &&
             model &&
@@ -587,7 +659,10 @@ async function prepareIllustration(reason) {
         }
         redrawStyle();
         const elapsed = performance.now() - started;
-        els.timing.textContent = `prepare ${formatMs(elapsed)} / HLR ${formatMs(hlrMs)} / ${state.scene.stats.sourceTriangles.toLocaleString()} triangles`;
+        const aoTiming = els.ambientOcclusion.checked
+            ? ` / AO ${aoMs > 0 ? formatMs(aoMs) : "cached"}`
+            : "";
+        els.timing.textContent = `prepare ${formatMs(elapsed)} / HLR ${formatMs(hlrMs)}${aoTiming} / ${state.scene.stats.sourceTriangles.toLocaleString()} triangles`;
         setStatus(`${state.model?.name ?? "Model"} / ${state.view} / ${state.output.toUpperCase()} ready`);
         await validateIfRequested();
     }
@@ -728,6 +803,7 @@ async function selectModel(model, options = {}) {
     window.clearTimeout(state.renderTimer);
     state.model = model;
     state.scene = null;
+    cancelAmbientOcclusion();
     const stepBacked = Boolean(model.step || model.stepBuffer);
     for (const control of [
         els.meshQuality,
@@ -1118,6 +1194,20 @@ function wireEvents() {
         state.showHlrDetail = els.hlrDetail.checked;
         updateHlrVisibility().catch(showError);
     });
+    els.ambientOcclusion.addEventListener("change", () => {
+        if (state.root)
+            prepareIllustration("ambient occlusion").catch(showError);
+    });
+    for (const control of [els.aoRadius, els.aoSamples]) {
+        control.addEventListener("change", () => {
+            state.ambientOcclusion = null;
+            state.ambientOcclusionKey = "";
+            if (state.root)
+                prepareIllustration("ambient occlusion").catch(showError);
+        });
+    }
+    for (const control of [els.aoStrength, els.aoBands])
+        control.addEventListener("input", redrawStyle);
     for (const control of [els.bands, els.ambient, els.key, els.rim, els.outlineWidth]) {
         control.addEventListener("input", redrawStyle);
     }
@@ -1133,6 +1223,7 @@ function wireEvents() {
             URL.revokeObjectURL(state.workerUrl);
         for (const url of state.uploadedUrls)
             URL.revokeObjectURL(url);
+        cancelAmbientOcclusion();
         window.clearTimeout(fastCreaseLineworkTimer);
     });
 }

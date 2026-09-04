@@ -7,6 +7,7 @@ import {
   renderMeshIllustrationSvg,
   toMeshIllustrationStyleA0,
 } from "../../dist/wasm/npm/geometer/mesh-illustration.js";
+import { applyExperimentalAmbientOcclusion } from "../../dist/wasm/npm/geometer/mesh-illustration-ao-experimental.js";
 
 const positions = new Float32Array([
   -1, -1, -1, 1, -1, -1, 1, 1, -1, -1, 1, -1, -1, -1, 1, 1, -1, 1, 1, 1, 1, -1, 1, 1,
@@ -133,6 +134,25 @@ const baseStyle = {
   doubleSided: false,
   rimAmount: 0.12,
 };
+const experimentalAoStyle = {
+  ...baseStyle,
+  experimentalAmbientOcclusionStrength: 1,
+  experimentalAmbientOcclusionBands: 8,
+};
+const beforeExperimentalAo = renderMeshIllustrationSvg(scene, experimentalAoStyle).svg;
+applyExperimentalAmbientOcclusion(scene, {
+  accessibilityByMesh: new Map([["cube", new Float32Array(12)]]),
+  stats: {
+    triangles: 12,
+    samples: 8,
+    radius: 1,
+    milliseconds: 0,
+    minimumAccessibility: 0,
+    meanAccessibility: 0,
+  },
+});
+const afterExperimentalAo = renderMeshIllustrationSvg(scene, experimentalAoStyle).svg;
+assert.notEqual(afterExperimentalAo, beforeExperimentalAo);
 const governedStyle = toMeshIllustrationStyleA0(baseStyle);
 assert.equal(governedStyle.key_intensity, baseStyle.keyIntensity);
 assert.deepEqual(governedStyle.light_direction, baseStyle.lightDirection);

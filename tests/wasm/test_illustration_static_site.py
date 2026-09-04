@@ -135,6 +135,98 @@ async function main() {
     throw new Error("Timed out waiting for the initial illustration.");
   })()`, true);
 
+  const ambientOcclusion = await evaluate(`(async () => {
+    const pane = document.querySelector("#illustrationOutputPane");
+    const toggle = document.querySelector("#illustrationAmbientOcclusion");
+    const shading = document.querySelector("#illustrationShading");
+    const ambient = document.querySelector("#illustrationAmbient");
+    const key = document.querySelector("#illustrationKey");
+    const strength = document.querySelector("#illustrationAoStrength");
+    const radius = document.querySelector("#illustrationAoRadius");
+    const samples = document.querySelector("#illustrationAoSamples");
+    const bands = document.querySelector("#illustrationAoBands");
+    const change = (control, value, type = "change") => {
+      control.value = value;
+      control.dispatchEvent(new Event(type, { bubbles: true }));
+    };
+    change(shading, "lambert");
+    change(ambient, "1");
+    change(key, "0");
+    change(strength, "1", "input");
+    radius.value = "20";
+    samples.value = "16";
+    change(bands, "8", "input");
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    const baseline = document.querySelector("#illustrationSvgHost svg").outerHTML;
+    const before = Number(pane.dataset.prepareGeneration);
+    toggle.checked = true;
+    toggle.dispatchEvent(new Event("change", { bubbles: true }));
+    const firstDeadline = Date.now() + 120000;
+    while (Date.now() < firstDeadline) {
+      if (
+        pane.dataset.ambientOcclusion === "true" &&
+        Number(pane.dataset.prepareGeneration) > before &&
+        document.querySelector("#illustrationBusy").hidden
+      )
+        break;
+      if (document.title.startsWith("FAIL")) throw new Error(document.title);
+      await new Promise((resolve) => setTimeout(resolve, 25));
+    }
+    if (Number(pane.dataset.prepareGeneration) <= before)
+      throw new Error("Experimental ambient occlusion did not complete.");
+    const firstGeneration = Number(pane.dataset.prepareGeneration);
+    const first = {
+      changed: baseline !== document.querySelector("#illustrationSvgHost svg").outerHTML,
+      cached: pane.dataset.ambientOcclusionCached,
+      buildMs: Number(pane.dataset.ambientOcclusionBuildMs),
+      minimum: Number(pane.dataset.ambientOcclusionMinimum),
+      mean: Number(pane.dataset.ambientOcclusionMean),
+      surfaceDraws: Number(pane.dataset.surfaceDraws),
+      svgSurfaces: document.querySelectorAll(
+        '#illustrationSvgHost polygon[class^="gms"], #illustrationSvgHost path[class^="gms"]',
+      ).length,
+    };
+    const aoSvg = document.querySelector("#illustrationSvgHost svg").outerHTML;
+    toggle.checked = false;
+    toggle.dispatchEvent(new Event("change", { bubbles: true }));
+    const offDeadline = Date.now() + 120000;
+    while (Date.now() < offDeadline && Number(pane.dataset.prepareGeneration) <= firstGeneration)
+      await new Promise((resolve) => setTimeout(resolve, 25));
+    const restored = baseline === document.querySelector("#illustrationSvgHost svg").outerHTML;
+    const offGeneration = Number(pane.dataset.prepareGeneration);
+    toggle.checked = true;
+    toggle.dispatchEvent(new Event("change", { bubbles: true }));
+    const cachedDeadline = Date.now() + 120000;
+    while (
+      Date.now() < cachedDeadline &&
+      (Number(pane.dataset.prepareGeneration) <= offGeneration ||
+        pane.dataset.ambientOcclusionCached !== "true")
+    )
+      await new Promise((resolve) => setTimeout(resolve, 25));
+    const cached = pane.dataset.ambientOcclusionCached;
+    const cachedMatches = aoSvg === document.querySelector("#illustrationSvgHost svg").outerHTML;
+    const cachedGeneration = Number(pane.dataset.prepareGeneration);
+    toggle.checked = false;
+    toggle.dispatchEvent(new Event("change", { bubbles: true }));
+    const finalDeadline = Date.now() + 120000;
+    while (Date.now() < finalDeadline && Number(pane.dataset.prepareGeneration) <= cachedGeneration)
+      await new Promise((resolve) => setTimeout(resolve, 25));
+    change(shading, "toon");
+    change(ambient, "0.28", "input");
+    change(key, "0.9", "input");
+    change(strength, "0.35", "input");
+    radius.value = "5";
+    change(bands, "5", "input");
+    return {
+      first,
+      restored,
+      cached,
+      cachedMatches,
+      enabled: toggle.checked,
+      finalGeneration: Number(pane.dataset.prepareGeneration),
+    };
+  })()`, true);
+
   const restyle = await evaluate(`(async () => {
     const pane = document.querySelector("#illustrationOutputPane");
     const before = Number(pane.dataset.prepareGeneration);
@@ -517,6 +609,69 @@ async function main() {
     throw new Error("BGA90 illustration did not complete.");
   })()`, true);
 
+  const ambientOcclusionMatrix = await evaluate(`(async () => {
+    const pane = document.querySelector("#illustrationOutputPane");
+    const select = document.querySelector("#illustrationModelSelect");
+    const toggle = document.querySelector("#illustrationAmbientOcclusion");
+    const radius = document.querySelector("#illustrationAoRadius");
+    const samples = document.querySelector("#illustrationAoSamples");
+    radius.value = "5";
+    samples.value = "8";
+    const results = [];
+    for (const option of [...select.options].filter((candidate) => candidate.value)) {
+      const beforeModel = Number(pane.dataset.prepareGeneration);
+      select.value = option.value;
+      select.dispatchEvent(new Event("change", { bubbles: true }));
+      const modelDeadline = Date.now() + 120000;
+      while (
+        Date.now() < modelDeadline &&
+        (Number(pane.dataset.prepareGeneration) <= beforeModel ||
+          !document.querySelector("#illustrationBusy").hidden)
+      )
+        await new Promise((resolve) => setTimeout(resolve, 25));
+      const baseline = document.querySelector("#illustrationSvgHost svg").outerHTML;
+      const baselineBytes = new TextEncoder().encode(baseline).byteLength;
+      const baselineSurfaceDraws = Number(pane.dataset.surfaceDraws);
+      const beforeAo = Number(pane.dataset.prepareGeneration);
+      toggle.checked = true;
+      toggle.dispatchEvent(new Event("change", { bubbles: true }));
+      const aoDeadline = Date.now() + 120000;
+      while (
+        Date.now() < aoDeadline &&
+        (Number(pane.dataset.prepareGeneration) <= beforeAo ||
+          pane.dataset.ambientOcclusion !== "true" ||
+          !document.querySelector("#illustrationBusy").hidden)
+      )
+        await new Promise((resolve) => setTimeout(resolve, 25));
+      const evidence = {
+        model: option.textContent,
+        triangles: Number(pane.dataset.triangles),
+        buildMs: Number(pane.dataset.ambientOcclusionBuildMs),
+        minimum: Number(pane.dataset.ambientOcclusionMinimum),
+        mean: Number(pane.dataset.ambientOcclusionMean),
+        changed: baseline !== document.querySelector("#illustrationSvgHost svg").outerHTML,
+        baselineBytes,
+        aoBytes: new TextEncoder().encode(document.querySelector("#illustrationSvgHost svg").outerHTML)
+          .byteLength,
+        baselineSurfaceDraws,
+        aoSurfaceDraws: Number(pane.dataset.surfaceDraws),
+      };
+      const beforeOff = Number(pane.dataset.prepareGeneration);
+      toggle.checked = false;
+      toggle.dispatchEvent(new Event("change", { bubbles: true }));
+      const offDeadline = Date.now() + 120000;
+      while (
+        Date.now() < offDeadline &&
+        (Number(pane.dataset.prepareGeneration) <= beforeOff ||
+          !document.querySelector("#illustrationBusy").hidden)
+      )
+        await new Promise((resolve) => setTimeout(resolve, 25));
+      evidence.restored = baseline === document.querySelector("#illustrationSvgHost svg").outerHTML;
+      results.push(evidence);
+    }
+    return results;
+  })()`, true);
+
   await evaluate(`(async () => {
     const binary = atob(${JSON.stringify(uploadBase64)});
     const bytes = new Uint8Array(binary.length);
@@ -568,8 +723,8 @@ async function main() {
 
   const resources = await evaluate(`performance.getEntriesByType("resource").map((entry) => entry.name)`);
   process.stdout.write(JSON.stringify({
-    initial, restyle, fusion, detailToggle, lazyLinework, meshQuality, top, detailBeforeCamera,
-    camera, detailAfterCamera, cameraRemesh, bga, uploaded,
+    initial, ambientOcclusion, restyle, fusion, detailToggle, lazyLinework, meshQuality, top, detailBeforeCamera,
+    camera, detailAfterCamera, cameraRemesh, bga, ambientOcclusionMatrix, uploaded,
     filename: download.suggestedFilename,
     exceptions,
     externalRequests: resources.filter((url) => /^https?:/u.test(url) && !url.startsWith(siteRoot)),
@@ -626,6 +781,8 @@ def test_illustration_static_site_mesh_render_upload_and_export() -> None:
         profile = temporary_path / "profile"
         downloads = temporary_path / "downloads"
         downloads.mkdir()
+        cdp_script = temporary_path / "illustration_validation.cjs"
+        cdp_script.write_text(CDP_SCRIPT, encoding="utf-8")
         http_port = _free_port()
         cdp_port = _free_port()
         url = f"http://127.0.0.1:{http_port}/?validation=1"
@@ -652,7 +809,7 @@ def test_illustration_static_site_mesh_render_upload_and_export() -> None:
         )
         try:
             completed = subprocess.run(
-                [node, "-e", CDP_SCRIPT],
+                [node, str(cdp_script)],
                 cwd=ROOT,
                 env={
                     **os.environ,
@@ -712,9 +869,19 @@ def test_illustration_static_site_mesh_render_upload_and_export() -> None:
     assert "FAST VECTOR / C++ WASM CPU / SVG" in result["initial"]["engineLabel"]
     assert "FAST MESH-SHADOW + FAST DETAIL" in result["initial"]["engineLabel"]
     assert result["initial"]["shading"] == "toon"
+    assert result["ambientOcclusion"]["first"]["changed"] is True
+    assert result["ambientOcclusion"]["first"]["cached"] == "false"
+    assert result["ambientOcclusion"]["first"]["buildMs"] >= 0
+    assert 0 <= result["ambientOcclusion"]["first"]["minimum"] < 1
+    assert result["ambientOcclusion"]["first"]["minimum"] <= result["ambientOcclusion"]["first"]["mean"] <= 1
+    assert result["ambientOcclusion"]["restored"] is True
+    assert result["ambientOcclusion"]["cached"] == "true"
+    assert result["ambientOcclusion"]["cachedMatches"] is True
+    assert result["ambientOcclusion"]["enabled"] is False
+    assert result["ambientOcclusion"]["first"]["surfaceDraws"] == result["ambientOcclusion"]["first"]["svgSurfaces"]
     assert result["restyle"] == {
-        "before": result["initial"]["generation"],
-        "after": result["initial"]["generation"],
+        "before": result["ambientOcclusion"]["finalGeneration"],
+        "after": result["ambientOcclusion"]["finalGeneration"],
         "changed": True,
         "shading": "banded",
         "bands": 32,
@@ -802,6 +969,18 @@ def test_illustration_static_site_mesh_render_upload_and_export() -> None:
         assert len(channels) == 3
         assert channels[0] == channels[1] == channels[2]
         assert channels[0] <= 20 or channels[0] == 255
+    if os.environ.get("GEOMETER_AO_EVIDENCE"):
+        print(json.dumps(result["ambientOcclusionMatrix"], indent=2))
+    assert len(result["ambientOcclusionMatrix"]) == 6
+    assert any("ABM8" in item["model"] for item in result["ambientOcclusionMatrix"])
+    assert all(item["triangles"] > 0 for item in result["ambientOcclusionMatrix"])
+    assert all(item["changed"] is True for item in result["ambientOcclusionMatrix"])
+    assert all(item["restored"] is True for item in result["ambientOcclusionMatrix"])
+    assert all(item["aoBytes"] >= item["baselineBytes"] for item in result["ambientOcclusionMatrix"])
+    assert all(item["aoSurfaceDraws"] >= item["baselineSurfaceDraws"] for item in result["ambientOcclusionMatrix"])
+    assert all(0 <= item["minimum"] < 1 for item in result["ambientOcclusionMatrix"])
+    assert all(item["minimum"] <= item["mean"] <= 1 for item in result["ambientOcclusionMatrix"])
+    assert all(item["buildMs"] < 30_000 for item in result["ambientOcclusionMatrix"])
     assert result["uploaded"]["selected"] == "illustration-upload.step (local)"
     assert result["uploaded"]["triangles"] > 0
     assert result["uploaded"]["paths"] > 0

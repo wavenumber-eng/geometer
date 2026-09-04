@@ -10,9 +10,9 @@ contract. The machine-readable promotion state lives in
 
 | Concern | Current value | Authority |
 | --- | --- | --- |
-| Native/WASM runtime and Python package | `2026.9.3` | `CMakeLists.txt`, `pyproject.toml`, ADR-006 |
-| TypeScript/Rust client packages | `2026.9.3` | Package manifests and generated endpoint/radius arc contract |
-| C ABI generation | `20260903` | `CMakeLists.txt`, generated `version_config.h` |
+| Native/WASM runtime and Python package | `2026.8.21` | `CMakeLists.txt`, `pyproject.toml`, ADR-006 |
+| TypeScript/Rust client packages | `2026.8.21` | Package manifests and generated endpoint/radius arc contract |
+| C ABI generation | `20260821` | `CMakeLists.txt`, generated `version_config.h` |
 | Executable IPC | none | No persistent pipe exists; the first contract will be `a0` |
 | Planar batch packet | version `2` | `src/cpp/lib/planar_solve.cpp` |
 | Triangulation packet | version `1` | `src/cpp/lib/planar_triangulate.cpp` |

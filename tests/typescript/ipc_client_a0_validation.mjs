@@ -35,7 +35,7 @@ const runtimeOperations = Object.values(operationCatalog)
 
 function welcome(catalogSha256 = NORMALIZED_CONTRACT_CATALOG_SHA256, limitOverrides = {}) {
   return {
-    c_abi_generation: 20260903,
+    c_abi_generation: 20260821,
     capabilities: ["serialized_execution", "queue_only_cancellation", "raw_attachments"],
     catalog_sha256: catalogSha256,
     ipc: "a0",
@@ -83,7 +83,7 @@ function welcome(catalogSha256 = NORMALIZED_CONTRACT_CATALOG_SHA256, limitOverri
           size: 36,
         },
       },
-      c_abi_generation: 20260903,
+      c_abi_generation: 20260821,
       catalog: "wn.geometer.operation_catalog.a0",
       generic_abi: "a0",
       limits: {
@@ -98,9 +98,9 @@ function welcome(catalogSha256 = NORMALIZED_CONTRACT_CATALOG_SHA256, limitOverri
         response_json_bytes: 8 * 1024 * 1024,
       },
       operations: runtimeOperations,
-      release_version: "2026.9.3",
+      release_version: "2026.8.21",
     },
-    release_version: "2026.9.3",
+    release_version: "2026.8.21",
   };
 }
 

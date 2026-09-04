@@ -4,25 +4,6 @@ All notable changes to geometer are documented here.
 
 ## [Unreleased]
 
-## [2026.9.3] - 2026-09-03
-
-### Added
-
-- Added a reported, representative-bounded recovery for same-width positive
-  capsules whose corresponding endpoints differ by at most 1 um.
-- Added `resolution_coalesced` successful-job warnings plus native/WASM count
-  and maximum-adjustment telemetry.
-- Added the experimental self-contained HLR illustration workbench.
-
-### Fixed
-
-- Stabilized common exact capsule-chain and tangent-junction topology while
-  preserving authored operand and feature lineage.
-- Authenticated filtered source bindings before solving and retained genuine
-  solver failures as job-local outcomes.
-- Aligned C++, Python, TypeScript, Rust, native, and WASM warning codecs and
-  verified byte-identical full-Yoshi output.
-
 ## [2026.8.21] - 2026-08-21
 
 ### Added

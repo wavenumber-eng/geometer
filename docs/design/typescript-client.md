@@ -11,7 +11,7 @@ Emscripten JavaScript and WASM artifacts.
 
 The package identity is `@wavenumber/geometer`, its module format is ESM, and
 the repository-built package artifact is `dist/wasm/npm/geometer/`. Package version
-`2026.9.3` is current and includes the planar-region endpoint/radius authored-
+`2026.8.21` is current and includes the planar-region endpoint/radius authored-
 arc contract. Publication remains a release action; a local
 artifact is not evidence that an npm release has occurred.
 

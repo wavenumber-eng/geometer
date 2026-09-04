@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Literal, TypeAlias
 
-NORMALIZED_CATALOG_SHA256 = "40ad574a40ea2e474d085d26263bf1ecbf3d76f6e14de8d795829e97389ae96b"
+NORMALIZED_CATALOG_SHA256 = "aaa5b9b04011c751cc2550dd835fc9c7ae8ca6952b4b7b93c66030d8e56cfff3"
 
 JobId: TypeAlias = int
 
@@ -194,6 +194,7 @@ class JobDiagnosticCode(str, Enum):
     NONANALYTIC_RESULT = "geometer.operation.analytic_planar_boolean.nonanalytic_result"
     SOLVER_FAILED = "geometer.operation.analytic_planar_boolean.solver_failed"
     RESOURCE_LIMIT_EXCEEDED = "geometer.operation.analytic_planar_boolean.resource_limit_exceeded"
+    RESOLUTION_COALESCED = "geometer.operation.analytic_planar_boolean.resolution_coalesced"
 
 
 class DiagnosticSeverity(str, Enum):

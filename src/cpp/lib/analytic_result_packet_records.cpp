@@ -159,7 +159,7 @@ std::uint64_t absolute_difference(std::int64_t left, std::int64_t right) noexcep
 bool valid_diagnostic_code(std::uint32_t code)
 {
     return code == 65'539 || code == 65'540 || code == 65'541 || code == 65'543 || code == 65'544 ||
-           code == 65'545 || code == 65'546 || code == 65'547;
+           code == 65'545 || code == 65'546 || code == 65'547 || code == 65'548;
 }
 
 template <typename Records, typename Begin, typename Count>

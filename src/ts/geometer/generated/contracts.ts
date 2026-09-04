@@ -163,7 +163,8 @@ export type JobDiagnosticCode =
   | "geometer.operation.analytic_planar_boolean.normalization_topology_collapse"
   | "geometer.operation.analytic_planar_boolean.nonanalytic_result"
   | "geometer.operation.analytic_planar_boolean.solver_failed"
-  | "geometer.operation.analytic_planar_boolean.resource_limit_exceeded";
+  | "geometer.operation.analytic_planar_boolean.resource_limit_exceeded"
+  | "geometer.operation.analytic_planar_boolean.resolution_coalesced";
 
 export type DiagnosticSeverity = "error" | "warning";
 

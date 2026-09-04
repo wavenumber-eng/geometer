@@ -198,6 +198,7 @@ enum class JobDiagnosticCode
     nonanalytic_result,
     solver_failed,
     resource_limit_exceeded,
+    resolution_coalesced,
 };
 
 enum class DiagnosticSeverity

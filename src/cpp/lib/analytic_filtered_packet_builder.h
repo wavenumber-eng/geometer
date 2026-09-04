@@ -127,7 +127,7 @@ class PacketBuilder
         {
             if (!prepare_source_uses() || !build_source_tables() ||
                 !publish_vertices_and_fragments() || !publish_rings_and_regions() ||
-                !publish_events() || !finalize_success())
+                !publish_events() || !publish_resolution_diagnostics() || !finalize_success())
             {
                 if (result_.error == AnalyticFilteredPacketError::none)
                     result_.error = AnalyticFilteredPacketError::invalid_argument;
@@ -193,6 +193,7 @@ class PacketBuilder
               {input_.old_boundary_to_normalized.size(), 4},
               {input_.old_ring_to_normalized.size(), 4},
               {input_.old_region_to_normalized.size(), 4},
+              {geometry_.capsule_coalescences.size(), 56},
               {1, 48}})
             if (!add_array_bytes(count, item_bytes, publication_bytes_))
                 return fail_resource();
@@ -1324,6 +1325,8 @@ class PacketBuilder
         return true;
     }
 
+#include "analytic_filtered_packet_resolution_methods.h"
+
     bool finalize_success()
     {
         records_out_.source_references = std::move(source_tables_.sources);
@@ -1332,7 +1335,9 @@ class PacketBuilder
         const std::uint64_t job_id = records_.jobs[job_index_].job_id;
         records_out_.job_results.reserve(1);
         records_out_.job_results.push_back(
-            {job_id, 0, 0, 0, records_out_.regions.empty() ? 0U : 0U,
+            {job_id, 0, records_out_.diagnostics.empty() ? 0U : 0U,
+             static_cast<std::uint32_t>(records_out_.diagnostics.size()),
+             records_out_.regions.empty() ? 0U : 0U,
              static_cast<std::uint32_t>(records_out_.regions.size()),
              records_out_.operand_events.empty() ? 0U : 0U,
              static_cast<std::uint32_t>(records_out_.operand_events.size())});
@@ -1350,6 +1355,7 @@ class PacketBuilder
             result_.telemetry.emitted_rings = standalone.records.rings.size();
             result_.telemetry.emitted_regions = standalone.records.regions.size();
             result_.telemetry.emitted_events = standalone.records.operand_events.size();
+            result_.telemetry.emitted_diagnostics = standalone.records.diagnostics.size();
             result_.standalone = std::move(standalone);
             return true;
         }
@@ -1381,6 +1387,7 @@ class PacketBuilder
         result_.telemetry.emitted_rings = standalone.records.rings.size();
         result_.telemetry.emitted_regions = standalone.records.regions.size();
         result_.telemetry.emitted_events = standalone.records.operand_events.size();
+        result_.telemetry.emitted_diagnostics = standalone.records.diagnostics.size();
         result_.telemetry.emitted_packet_bytes = standalone.bytes.size();
         result_.standalone = std::move(standalone);
         return true;

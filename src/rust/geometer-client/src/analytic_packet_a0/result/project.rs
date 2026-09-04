@@ -401,6 +401,7 @@ fn diagnostic_code(value: u32) -> Result<JobDiagnosticCode, AnalyticPacketError>
         0x10009 => JobDiagnosticCode::NonanalyticResult,
         0x1000a => JobDiagnosticCode::SolverFailed,
         0x1000b => JobDiagnosticCode::ResourceLimitExceeded,
+        0x1000c => JobDiagnosticCode::ResolutionCoalesced,
         _ => return Err(invalid_packet("unknown diagnostic code")),
     })
 }

@@ -6,9 +6,11 @@
 #include "analytic_wide_integer.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstddef>
 #include <limits>
+#include <map>
 #include <numeric>
 #include <tuple>
 #include <utility>
@@ -29,6 +31,9 @@ constexpr std::uint64_t kRetainedCurveBytes = kAnalyticAtomicCurveLogicalBytes;
 constexpr std::uint64_t kRetainedBoundsBytes = 48;
 constexpr std::uint64_t kRetainedOccurrenceBytes = 56;
 constexpr std::uint64_t kEndpointTangencyLogicalBytes = 24;
+// Conservatively covers the recovery binding, ordered-map node, bucket vector
+// storage, representative record, and a possible diagnostic record.
+constexpr std::uint64_t kCapsuleRecoveryLogicalBytes = 320;
 constexpr std::uint64_t kRetainedBytesPerCurve =
     kRetainedCurveBytes + kRetainedBoundsBytes + kRetainedOccurrenceBytes;
 
@@ -36,6 +41,7 @@ static_assert(sizeof(AnalyticAtomicCurveNm) <= kRetainedCurveBytes);
 static_assert(sizeof(AnalyticCurveBoundsNm) <= kRetainedBoundsBytes);
 static_assert(sizeof(AnalyticFilteredOccurrence) <= kRetainedOccurrenceBytes);
 static_assert(sizeof(EmittedEndpointTangency) <= kEndpointTangencyLogicalBytes);
+static_assert(sizeof(AnalyticCapsuleCoalescence) <= 40);
 
 struct TokenSlot
 {
@@ -59,6 +65,8 @@ struct EndpointTangentConstruction
     bool second_start = false;
     std::uint32_t construction_identity = 0;
 };
+
+#include "analytic_filtered_capsule_recovery.h"
 
 static_assert(sizeof(AnalyticAtomicCurveNm) + sizeof(AnalyticCurveBoundsNm) +
                       sizeof(AnalyticFilteredOccurrence) + sizeof(TokenDescriptor) +
@@ -106,6 +114,8 @@ class FilteredJobLowerer
             return result(error_);
         try
         {
+            if (!prepare_capsule_recovery())
+                return result(error_);
             out_.curves.reserve(projected_curves_);
             out_.bounds.reserve(projected_curves_);
             out_.occurrences.reserve(projected_curves_);
@@ -122,8 +132,9 @@ class FilteredJobLowerer
             telemetry_.required_working_memory_bytes = limits_.working_memory_bytes + 1;
             return result(AnalyticFilteredLoweringError::resource_limit_exceeded);
         }
-        telemetry_.retained_geometry_bytes =
-            kRetainedGeometryFixedBytes + out_.curves.size() * kRetainedBytesPerCurve;
+        telemetry_.retained_geometry_bytes = kRetainedGeometryFixedBytes +
+                                             out_.curves.size() * kRetainedBytesPerCurve +
+                                             out_.capsule_coalescences.size() * 40U;
         telemetry_.peak_working_memory_bytes =
             std::max(telemetry_.peak_working_memory_bytes, telemetry_.retained_geometry_bytes);
         return {AnalyticFilteredLoweringError::none, std::move(out_), telemetry_};
@@ -224,6 +235,7 @@ class FilteredJobLowerer
                     return false;
                 break;
             case 4:
+                ++input_capsules_;
                 if (!add_projected(4))
                     return false;
                 break;
@@ -245,13 +257,22 @@ class FilteredJobLowerer
         }
         if (projected_curves_ > std::numeric_limits<std::uint64_t>::max() / kLogicalBytesPerCurve)
             return fail(AnalyticFilteredLoweringError::resource_limit_exceeded);
-        const std::uint64_t bytes = projected_curves_ * kLogicalBytesPerCurve;
+        if (input_capsules_ >
+            std::numeric_limits<std::uint64_t>::max() / kCapsuleRecoveryLogicalBytes)
+            return fail(AnalyticFilteredLoweringError::resource_limit_exceeded);
+        const std::uint64_t recovery_bytes = input_capsules_ * kCapsuleRecoveryLogicalBytes;
+        const std::uint64_t curve_bytes = projected_curves_ * kLogicalBytesPerCurve;
+        if (recovery_bytes > std::numeric_limits<std::uint64_t>::max() - curve_bytes)
+            return fail(AnalyticFilteredLoweringError::resource_limit_exceeded);
+        const std::uint64_t bytes = curve_bytes + recovery_bytes;
         telemetry_.required_working_memory_bytes = bytes;
         if (bytes > limits_.working_memory_bytes)
             return fail(AnalyticFilteredLoweringError::resource_limit_exceeded);
         telemetry_.peak_working_memory_bytes = bytes;
         return true;
     }
+
+#include "analytic_filtered_lowering_capsule_recovery_methods.h"
 
     bool preflight_ring(const AnalyticRequestRingRecord& ring)
     {
@@ -1378,6 +1399,7 @@ class FilteredJobLowerer
     AnalyticFilteredLoweringTelemetry telemetry_;
     AnalyticFilteredLoweringError error_ = AnalyticFilteredLoweringError::none;
     std::uint64_t projected_curves_ = 0;
+    std::uint64_t input_capsules_ = 0;
     std::uint32_t operand_begin_ = 0;
     std::uint32_t operand_end_ = 0;
     bool has_global_bounds_ = false;
@@ -1398,6 +1420,7 @@ class FilteredJobLowerer
     std::vector<TokenDescriptor> descriptors_;
     std::vector<HorizontalMirrorConstruction> horizontal_mirrors_;
     std::vector<EndpointTangentConstruction> endpoint_tangencies_;
+    std::vector<CapsuleRecoveryBinding> capsule_recovery_;
 };
 
 } // namespace

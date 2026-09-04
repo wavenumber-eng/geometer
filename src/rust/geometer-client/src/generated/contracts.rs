@@ -12,7 +12,7 @@
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
 pub const NORMALIZED_CATALOG_SHA256: &str =
-    "40ad574a40ea2e474d085d26263bf1ecbf3d76f6e14de8d795829e97389ae96b";
+    "aaa5b9b04011c751cc2550dd835fc9c7ae8ca6952b4b7b93c66030d8e56cfff3";
 
 #[derive(Debug, thiserror::Error)]
 pub enum ContractError {
@@ -1093,6 +1093,7 @@ pub enum JobDiagnosticCode {
     NonanalyticResult,
     SolverFailed,
     ResourceLimitExceeded,
+    ResolutionCoalesced,
 }
 
 impl Validate for JobDiagnosticCode {

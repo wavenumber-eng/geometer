@@ -43,6 +43,8 @@ struct AnalyticFilteredBatchJobTelemetry
     // Logical encoded footprint of the isolated job records before the
     // canonical batch merge and shared-table deduplication.
     std::uint64_t emitted_record_bytes = 0;
+    std::uint64_t capsule_coalescences = 0;
+    std::uint64_t maximum_capsule_adjustment_nm = 0;
 };
 
 struct AnalyticFilteredBatchTelemetry
@@ -62,6 +64,8 @@ struct AnalyticFilteredBatchTelemetry
     std::uint64_t emitted_packet_bytes = 0;
     std::uint64_t peak_working_memory_bytes = 0;
     std::uint64_t algebraic_fallback_calls = 0;
+    std::uint64_t capsule_coalescences = 0;
+    std::uint64_t maximum_capsule_adjustment_nm = 0;
 };
 
 struct AnalyticFilteredBatchPacket

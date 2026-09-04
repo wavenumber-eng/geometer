@@ -35,6 +35,7 @@ export const diagnosticCodes: Readonly<Record<number, JobDiagnosticCode>> = {
   65545: "geometer.operation.analytic_planar_boolean.nonanalytic_result",
   65546: "geometer.operation.analytic_planar_boolean.solver_failed",
   65547: "geometer.operation.analytic_planar_boolean.resource_limit_exceeded",
+  65548: "geometer.operation.analytic_planar_boolean.resolution_coalesced",
 };
 
 export const pathTokens: readonly (JobDiagnosticPath | undefined)[] = [

@@ -41,6 +41,8 @@ enum JobDiagnosticCode {
   nonanalytic_result: "geometer.operation.analytic_planar_boolean.nonanalytic_result",
   solver_failed: "geometer.operation.analytic_planar_boolean.solver_failed",
   resource_limit_exceeded: "geometer.operation.analytic_planar_boolean.resource_limit_exceeded",
+  /** A same-width union capsule was moved onto a canonical representative by at most 1 um. */
+  resolution_coalesced: "geometer.operation.analytic_planar_boolean.resolution_coalesced",
 }
 
 enum DiagnosticSeverity {

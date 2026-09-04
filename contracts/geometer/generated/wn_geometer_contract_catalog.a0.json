@@ -1415,6 +1415,11 @@
           "name": "resource_limit_exceeded",
           "value": "geometer.operation.analytic_planar_boolean.resource_limit_exceeded",
           "doc": ""
+        },
+        {
+          "name": "resolution_coalesced",
+          "value": "geometer.operation.analytic_planar_boolean.resolution_coalesced",
+          "doc": "A same-width union capsule was moved onto a canonical representative by at most 1 um."
         }
       ]
     },

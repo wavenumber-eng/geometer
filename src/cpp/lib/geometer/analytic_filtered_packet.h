@@ -46,6 +46,9 @@ struct AnalyticFilteredPacketTelemetry
     std::uint64_t emitted_rings = 0;
     std::uint64_t emitted_regions = 0;
     std::uint64_t emitted_events = 0;
+    std::uint64_t emitted_diagnostics = 0;
+    std::uint64_t capsule_coalescences = 0;
+    std::uint64_t maximum_capsule_adjustment_nm = 0;
     std::uint64_t emitted_packet_bytes = 0;
     std::uint64_t retained_records_bytes = 0;
     std::uint64_t required_working_memory_bytes = 0;

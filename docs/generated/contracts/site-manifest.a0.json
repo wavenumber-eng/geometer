@@ -3,7 +3,7 @@
   "generation": "a0",
   "catalog_identity": "wn.geometer.contract_catalog",
   "catalog_generation": "a0",
-  "catalog_sha256": "40ad574a40ea2e474d085d26263bf1ecbf3d76f6e14de8d795829e97389ae96b",
+  "catalog_sha256": "aaa5b9b04011c751cc2550dd835fc9c7ae8ca6952b4b7b93c66030d8e56cfff3",
   "contracts": {
     "geometry.analytic_planar_boolean_batch.request.a0": "contracts/geometry-analytic-planar-boolean-batch-request-a0.html",
     "geometry.analytic_planar_boolean_batch.result.a0": "contracts/geometry-analytic-planar-boolean-batch-result-a0.html",

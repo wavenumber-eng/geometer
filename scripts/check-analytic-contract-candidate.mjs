@@ -410,6 +410,7 @@ try {
     nonanalytic_result: 65545,
     solver_failed: 65546,
     resource_limit_exceeded: 65547,
+    resolution_coalesced: 65548,
   };
   const expectedDiagnosticIdentities = Object.fromEntries(
     Object.keys(expectedDiagnosticCodes).map((name) => [

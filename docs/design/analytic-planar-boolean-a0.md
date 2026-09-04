@@ -7,7 +7,8 @@ remain under the MATZ visualization integration gate. Existing center-form
 bytes stay compatible while A0 adds an endpoint/radius authored arc variant
 whose exact center may be non-integral. The solver and numeric policy are governed under
 [ADR-013](../geometer/adr/geometer-adr-013-filtered_resolution_bounded_planar_boolean.md) for a
-speed-first filtered implementation with a 50 nm topology-resolution envelope.
+speed-first filtered implementation with a 50 nm general topology-resolution
+envelope and one reported 1 um same-width union-capsule input recovery.
 The arbitrary-precision algebraic engine is explicitly non-primary. MATZ
 accepted the original
 consumer/provider design input, and independent review approved the analytic
@@ -775,6 +776,18 @@ standalone packet, and computes its SHA-256 closure without invoking the exact
 topology solver or algebraic normalization. Failed governed jobs contain no
 partial geometry and publish one job-only diagnostic.
 
+A successful job can instead report bounded capsule input recovery. Within one
+job, same-width positive capsules whose corresponding endpoints are at
+most 1 um apart may share the earliest-authored representative geometry. The
+original operands and feature sources remain distinct in lineage and outcome
+events. This intentionally permits the later positive operand and final result
+to move within the stated envelope, including when a difference stage appears
+between the representative and adjusted union stages; subtractive geometry and
+stage order remain exact. Diagnostic `resolution_coalesced` names the adjusted operand and the
+representative feature; native/WASM telemetry reports the count and maximum
+integer-nanometer endpoint adjustment. This rule is representative-bounded,
+never transitive, and never changes or coalesces a subtractive operand.
+
 The owned batch continuation, including relationship evaluation, is implemented
 and production-dispatched through the generic packed operation transport. It
 deterministically validates canonical request records, executes
@@ -1287,6 +1300,7 @@ compact governed integers in a structurally valid result packet:
 - `geometer.operation.analytic_planar_boolean.nonanalytic_result`
 - `geometer.operation.analytic_planar_boolean.solver_failed`
 - `geometer.operation.analytic_planar_boolean.resource_limit_exceeded`
+- `geometer.operation.analytic_planar_boolean.resolution_coalesced` (warning)
 
 Diagnostics carry trustworthy job/stage/operand/geometry ids and an optional
 governed logical path identity. Unknown or untrusted ids are omitted rather

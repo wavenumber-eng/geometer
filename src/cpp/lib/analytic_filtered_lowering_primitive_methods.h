@@ -2,7 +2,7 @@
 
 bool lower_capsule(const AnalyticRequestOperandRecord& operand)
 {
-    const auto& capsule = records_.capsules[operand.geometry_index];
+    const AnalyticRequestCapsuleRecord capsule = effective_capsule(operand);
     AnalyticIntegerPointNm start;
     AnalyticIntegerPointNm end;
     if (!local_point(capsule.start_x_nm, capsule.start_y_nm, start) ||

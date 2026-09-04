@@ -5,8 +5,8 @@
       "sha256": "68a29fb20f2591802f6a2298dd47143e98d5f3ee654c6fec821a7f8d52fa2775"
     },
     "dist/wasm/browser/geometer.wasm": {
-      "bytes": 18893560,
-      "sha256": "33570e2a15006024b1a6b9f21d526453bf9cf9ae1825bfc94714c615eb5f0c60"
+      "bytes": 18916426,
+      "sha256": "ceed438243c0ec738514ee21d28a909c65d7d8fb3e57fe8155ec6497b1434843"
     },
     "dist/wasm/npm/geometer/README.md": {
       "bytes": 3986,
@@ -17,8 +17,8 @@
       "sha256": "aec09b5430040d1d5bd8e63fd45c9f4a563f0ba3b3a232bd4cb23e1307abe0c8"
     },
     "dist/wasm/npm/geometer/analytic-packet-a0-common.js": {
-      "bytes": 12907,
-      "sha256": "ed48e6c976324508e65970263245f0b334454b79b1ed4fe1221323347bc46cf0"
+      "bytes": 12985,
+      "sha256": "d3bde6d7e7e2d6daa2f8647099cee396f83a38b2804c54921ad1650c3e706e44"
     },
     "dist/wasm/npm/geometer/analytic-packet-a0-request.d.ts": {
       "bytes": 320,
@@ -69,8 +69,8 @@
       "sha256": "ea76dd52a53295b9702ffa3aacf959ed6b09da93c44a8d15468fd8b3f85a0cc3"
     },
     "dist/wasm/npm/geometer/generated/contracts.d.ts": {
-      "bytes": 45420,
-      "sha256": "7379ddec9987ea85dd2c0196757dcc2baea0b30fc0e416bb2943ed4dbce78db9"
+      "bytes": 45488,
+      "sha256": "9fe38affb1b5a11c1dd663df28146eeb43d0be5042a2edda7a81e85c77598997"
     },
     "dist/wasm/npm/geometer/generated/contracts.js": {
       "bytes": 80,
@@ -86,11 +86,11 @@
     },
     "dist/wasm/npm/geometer/generated/operations.d.ts": {
       "bytes": 11615,
-      "sha256": "33d624d5a666e320dd945248fbdbf8689eb8cfeab3bd59a78ab80fecef74099f"
+      "sha256": "7ffac1b786670d58fdf6056873c615990a98d7d97454adf45e47bcb1560a489d"
     },
     "dist/wasm/npm/geometer/generated/operations.js": {
       "bytes": 9860,
-      "sha256": "5f925aee9c31a87bce742f3644335773a2f8abd485a37441a8ec6580f03e71cb"
+      "sha256": "79679854b408069b8bfaca516e8d14bd941b73e1a17411265935a89be5b7c24b"
     },
     "dist/wasm/npm/geometer/index.d.ts": {
       "bytes": 247,
@@ -182,10 +182,10 @@
     "contract_check_status": "passed",
     "source": {
       "authority": "git_head_and_source_worktree_excluding_dist_build_deps_out",
-      "revision": "3306c6f84426e7ce4cd74db6a74dc793dbaed358",
-      "tree_state": "dirty"
+      "revision": "b40169c1c67d8a67210d798dd9c4f7c79d0d9cb3",
+      "tree_state": "clean"
     },
-    "source_content_sha256": "a7144119d32951adc0777656e94787c6db320d9f728bd1da4e38619acd678adb",
+    "source_content_sha256": "7896d11f77c419ac29817525ea25f796f1cdaab8076dc1de721a1a9e6db99ebd",
     "toolchain": {
       "emscripten": {
         "executable": ".deps/emsdk/upstream/emscripten/emcc.bat",

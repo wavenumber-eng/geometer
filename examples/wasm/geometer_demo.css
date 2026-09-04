@@ -104,6 +104,10 @@ body[data-wn-watermark="true"]::after {
   mix-blend-mode: multiply;
 }
 
+body.illustration-demo[data-wn-watermark="true"]::after {
+  content: none;
+}
+
 #pour-shell {
   min-height: 100vh;
   display: grid;
@@ -1437,6 +1441,23 @@ body[data-wn-watermark="true"]::after {
       overflow: hidden;
       border-right: 1px solid var(--wn-line-light);
       background: var(--wn-paper);
+    }
+    #illustrationOutputPane::after {
+      position: absolute;
+      right: 12px;
+      bottom: 12px;
+      z-index: 3;
+      width: 132px;
+      max-width: calc(100% - 24px);
+      aspect-ratio: 1114.7 / 864;
+      background-image: url("/docs/design/assets/wn_logo_w_text__for_light.svg");
+      background-repeat: no-repeat;
+      background-position: center;
+      background-size: contain;
+      content: "";
+      pointer-events: none;
+      opacity: 0.25;
+      mix-blend-mode: multiply;
     }
     .illustration-pane canvas,
     .illustration-pane .svg-host {

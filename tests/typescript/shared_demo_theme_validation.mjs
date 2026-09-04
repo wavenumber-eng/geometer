@@ -53,6 +53,19 @@ for (const page of pages) {
   }
 }
 
+const illustrationSource = readFileSync(resolve(root, "examples/wasm/illustration_demo.html"), "utf8");
+if (!illustrationSource.includes('<body class="illustration-demo" data-wn-watermark="true">')) {
+  throw new Error("Illustration demo must opt into its viewer-local watermark treatment.");
+}
+for (const rule of [
+  'body.illustration-demo[data-wn-watermark="true"]::after',
+  "#illustrationOutputPane::after",
+]) {
+  if (!theme.includes(rule)) {
+    throw new Error(`Shared demo theme is missing the illustration watermark rule ${rule}.`);
+  }
+}
+
 if (existsSync(resolve(root, "examples/wasm/model_bounds_demo.css"))) {
   throw new Error("The retired model-bounds-only stylesheet must not exist.");
 }

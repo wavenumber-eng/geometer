@@ -300,8 +300,8 @@ controls live in a separate Fast-only panel; the OCCT engine, edge angle,
 presets, and edge categories live in an OCCT-only panel.
 `Outline` is Geometer's independent assembly silhouette, and `Both` displays
 those layers without changing or merging either layer's color, width, or line
-style. Mesh shadow remains the recommended silhouette source, with the
-fast-mesh-shadow evaluation backend available for direct comparison. Raw OCCT
+style. Mesh shadow and the Fast silhouette source are available for direct
+comparison. Raw OCCT
 categories use `Detail edge set` rather than the overloaded term `Profile`.
 The independently selectable outline source does not change when the Fast
 detail checkbox changes.

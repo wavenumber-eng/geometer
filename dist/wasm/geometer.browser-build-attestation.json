@@ -132,13 +132,21 @@
       "bytes": 20735,
       "sha256": "ba54270f01db22d92fbd595932495bf5931dbbc60fe643dfbffab0dd421a9317"
     },
+    "dist/wasm/npm/geometer/mesh-illustration-ao-experimental.d.ts": {
+      "bytes": 962,
+      "sha256": "eb28aeef9c81f926360ebcb6e292f774b835e1d20fc4576f34895f1a30793f5e"
+    },
+    "dist/wasm/npm/geometer/mesh-illustration-ao-experimental.js": {
+      "bytes": 19161,
+      "sha256": "228414ec69eb602ac71d4f8bc1f227838ad08d3a39682e5886a6d5528ccebe05"
+    },
     "dist/wasm/npm/geometer/mesh-illustration.d.ts": {
       "bytes": 5821,
       "sha256": "ffdf33cbe05012136dac97fe6cebb981d394e5956614b1bcabcc8a9116d5e4df"
     },
     "dist/wasm/npm/geometer/mesh-illustration.js": {
-      "bytes": 78278,
-      "sha256": "ef5618fdc6135c8d30247f96d261cfc6953b018dbadff7fbc31effa6cfd7ac4d"
+      "bytes": 79268,
+      "sha256": "746cc2d5a419298efb3dc1616c5f159a8be4dba2e06760665e5adaf3e19bf37c"
     },
     "dist/wasm/npm/geometer/node-process-a0.d.ts": {
       "bytes": 1069,
@@ -206,10 +214,10 @@
     "contract_check_status": "passed",
     "source": {
       "authority": "git_head_and_source_worktree_excluding_dist_build_deps_out",
-      "revision": "ead63ad83afecf4a493c4c7e21b2605232bf3a8b",
+      "revision": "e581d0416b609c364c2951d4f37a8e4022bb31f1",
       "tree_state": "clean"
     },
-    "source_content_sha256": "676d857ce83ca8373bc81480c44c2d4b1fcb7c15fbef287a52d1caab6219e904",
+    "source_content_sha256": "b031765106c1e81faf6965ed869b311e5a8382ae434bcab009ea31130e0fad22",
     "toolchain": {
       "emscripten": {
         "executable": ".deps/emsdk/upstream/emscripten/emcc.bat",

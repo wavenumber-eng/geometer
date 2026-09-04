@@ -153,9 +153,9 @@ async function main() {
     change(ambient, "1");
     change(key, "0");
     change(strength, "1", "input");
-    radius.value = "20";
-    samples.value = "16";
-    change(bands, "8", "input");
+    radius.value = "60";
+    samples.value = "128";
+    change(bands, "32", "input");
     await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     const baseline = document.querySelector("#illustrationSvgHost svg").outerHTML;
     const before = Number(pane.dataset.prepareGeneration);
@@ -181,6 +181,9 @@ async function main() {
       buildMs: Number(pane.dataset.ambientOcclusionBuildMs),
       minimum: Number(pane.dataset.ambientOcclusionMinimum),
       mean: Number(pane.dataset.ambientOcclusionMean),
+      samples: Number(pane.dataset.ambientOcclusionSamples),
+      radiusPercent: Number(radius.value),
+      bands: Number(bands.value),
       surfaceDraws: Number(pane.dataset.surfaceDraws),
       svgSurfaces: document.querySelectorAll(
         '#illustrationSvgHost polygon[class^="gms"], #illustrationSvgHost path[class^="gms"]',
@@ -872,6 +875,9 @@ def test_illustration_static_site_mesh_render_upload_and_export() -> None:
     assert result["ambientOcclusion"]["first"]["changed"] is True
     assert result["ambientOcclusion"]["first"]["cached"] == "false"
     assert result["ambientOcclusion"]["first"]["buildMs"] >= 0
+    assert result["ambientOcclusion"]["first"]["samples"] == 128
+    assert result["ambientOcclusion"]["first"]["radiusPercent"] == 60
+    assert result["ambientOcclusion"]["first"]["bands"] == 32
     assert 0 <= result["ambientOcclusion"]["first"]["minimum"] < 1
     assert result["ambientOcclusion"]["first"]["minimum"] <= result["ambientOcclusion"]["first"]["mean"] <= 1
     assert result["ambientOcclusion"]["restored"] is True

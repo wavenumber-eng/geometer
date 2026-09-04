@@ -596,7 +596,7 @@ function triangleFill(
   );
   const aoBands = Math.max(
     2,
-    Math.min(16, Math.trunc(experimentalStyle.experimentalAmbientOcclusionBands ?? 5)),
+    Math.min(32, Math.trunc(experimentalStyle.experimentalAmbientOcclusionBands ?? 5)),
   );
   const quantizedAccessibility = Math.round(clamp(accessibility) * (aoBands - 1)) / (aoBands - 1);
   const aoStrength = clamp(experimentalStyle.experimentalAmbientOcclusionStrength ?? 0);

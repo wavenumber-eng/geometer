@@ -227,7 +227,7 @@ function currentStyle() {
     const rimAmount = numberInput(els.rim, els.rimValue, 2);
     const outlineWidth = numberInput(els.outlineWidth, els.outlineWidthValue, 3);
     const aoStrength = numberInput(els.aoStrength, els.aoStrengthValue, 2);
-    const aoBands = Math.max(2, Math.min(12, Math.round(numberInput(els.aoBands, els.aoBandsValue, 0))));
+    const aoBands = Math.max(2, Math.min(32, Math.round(numberInput(els.aoBands, els.aoBandsValue, 0))));
     return {
         shading: els.shading.value,
         ambient,
@@ -256,8 +256,8 @@ function currentStyle() {
     };
 }
 function ambientOcclusionSettings() {
-    const radiusPercent = boundedNumberInput(els.aoRadius, 1, 20, 5);
-    const samples = Math.max(8, Math.min(32, Math.trunc(Number.parseFloat(els.aoSamples.value) || 16)));
+    const radiusPercent = boundedNumberInput(els.aoRadius, 1, 60, 5);
+    const samples = Math.max(8, Math.min(128, Math.trunc(Number.parseFloat(els.aoSamples.value) || 16)));
     els.aoRadiusValue.value = `${radiusPercent.toFixed(0)}%`;
     return { samples, radiusFraction: radiusPercent / 100 };
 }

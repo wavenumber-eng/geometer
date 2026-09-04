@@ -111,7 +111,7 @@ Evaluate whether deterministic mesh-space ambient occlusion materially improves 
 - AO is computed from the complete tessellated assembly so separate components can create contact occlusion.
 - The spike remains opt-in, defaults off, and has no stable serialized or package contract until explicit promotion.
 - The spike is time-boxed to the fixture matrix. If it does not clearly improve the illustrations, remove it and move on without further hardening.
-- AO preparation is CPU/worker based, deterministic, bounded, cancellable, and cached independently of camera and style-only changes.
+- AO preparation is CPU/worker based, deterministic, bounded to 128 samples and a 60 percent scene-diagonal radius, cancellable, and cached independently of camera and style-only changes.
 - The renderer attenuates only the ambient lighting term; key light, rim light, material identity, HLR lines, and alpha behavior remain independently controlled.
 - SVG and Canvas consume the same prepared AO values and tonal policy.
 

@@ -294,7 +294,7 @@ function triangleFill(triangle, scene, style) {
     const diffuse = Math.max(0, dot(activeNormal, light));
     const experimentalStyle = style;
     const accessibility = Number(triangle[EXPERIMENTAL_AO_SYMBOL] ?? 1);
-    const aoBands = Math.max(2, Math.min(16, Math.trunc(experimentalStyle.experimentalAmbientOcclusionBands ?? 5)));
+    const aoBands = Math.max(2, Math.min(32, Math.trunc(experimentalStyle.experimentalAmbientOcclusionBands ?? 5)));
     const quantizedAccessibility = Math.round(clamp(accessibility) * (aoBands - 1)) / (aoBands - 1);
     const aoStrength = clamp(experimentalStyle.experimentalAmbientOcclusionStrength ?? 0);
     const ambientAccessibility = 1 - aoStrength * (1 - quantizedAccessibility);

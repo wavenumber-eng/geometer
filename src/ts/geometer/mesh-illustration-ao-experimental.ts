@@ -443,8 +443,8 @@ export async function prepareExperimentalAmbientOcclusion(
     1,
     Math.min(100_000, Math.trunc(finite(options.maxTriangles ?? 100_000, 100_000))),
   );
-  const samples = Math.max(1, Math.min(32, Math.trunc(finite(options.samples, 16))));
-  const radiusFraction = Math.max(0.001, Math.min(0.25, finite(options.radiusFraction, 0.05)));
+  const samples = Math.max(1, Math.min(128, Math.trunc(finite(options.samples, 16))));
+  const radiusFraction = Math.max(0.001, Math.min(0.6, finite(options.radiusFraction, 0.05)));
   if (options.signal?.aborted) throw new DOMException("Ambient occlusion canceled.", "AbortError");
   const flattened = flattenedTriangles(input, maxTriangles);
   const workerSource = `(${ambientOcclusionWorker.toString()})();`;

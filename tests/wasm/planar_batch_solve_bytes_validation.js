@@ -157,8 +157,8 @@ async function main() {
 
   const version = module.ccall("geometer_version_string", "string", [], []);
   const abi = module.ccall("geometer_abi_version", "number", [], []);
-  if (version !== "2026.8.21" || abi !== 20260821) {
-    throw new Error(`Expected geometer 2026.8.21 ABI 20260821, got ${version} ABI ${abi}`);
+  if (version !== "2026.9.3" || abi !== 20260903) {
+    throw new Error(`Expected geometer 2026.9.3 ABI 20260903, got ${version} ABI ${abi}`);
   }
   if (typeof module._geometer_planar_batch_solve_bytes !== "function") {
     throw new Error("geometer_planar_batch_solve_bytes is not exported.");

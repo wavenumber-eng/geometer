@@ -68,6 +68,11 @@ if (html.includes('id="illustrationTriangleLimit"'))
   throw new Error("Illustration HTML retains the prototype triangle limit.");
 if (html.includes("https://cdn.jsdelivr.net"))
   throw new Error("Illustration HTML retains its development CDN import map.");
+if (
+  !html.includes('id="illustrationHlrOutline" type="checkbox" checked') ||
+  !html.includes('id="illustrationHlrDetail" type="checkbox" checked')
+)
+  throw new Error("Illustration Lab does not default to Fast detail plus Fast mesh shadow.");
 for (const retired of [
   'data-output="gpu"',
   "GPU edge preview",

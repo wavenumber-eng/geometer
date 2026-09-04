@@ -14,7 +14,7 @@ const state = {
   models: [],
   selectedModel: null,
   viewId: "camera",
-  mode: "detail",
+  mode: "both",
   backend: "current",
   projectionWorker: null,
   workerBackend: null,
@@ -113,9 +113,9 @@ const els = {
 };
 
 const GEOMETRY_DEFAULTS = Object.freeze({
-  fastBackend: false,
+  fastBackend: true,
   algorithm: "poly",
-  outlineAlgorithm: "mesh-shadow",
+  outlineAlgorithm: "fast-mesh-shadow",
   meshDeflectionMode: "bbox-relative",
   deflectionCoefficient: "0.004",
   linearDeflection: "0.01",

@@ -106,6 +106,9 @@ async function main() {
           projection: document.querySelector("#projectionMetric")?.textContent,
           paths: document.querySelector("#projectionSvg")?.childElementCount,
           cameraActive: document.querySelector('button[data-view="camera"]')?.classList.contains("active"),
+          bothActive: document.querySelector('button[data-mode="both"]')?.classList.contains("active"),
+          fastBackend: document.querySelector("#fastBackendInput")?.checked,
+          outlineAlgorithm: document.querySelector("#outlineAlgoSelect")?.value,
           lens: document.querySelector("#cameraLensSelect")?.value,
           canvasLens: document.querySelector("#modelCanvas")?.dataset.cameraLens,
           axes: {
@@ -735,6 +738,9 @@ def test_hlr_static_site_upload_projection_and_export() -> None:
 
     assert result["initial"]["paths"] > 1
     assert result["initial"]["cameraActive"] is True
+    assert result["initial"]["bothActive"] is True
+    assert result["initial"]["fastBackend"] is True
+    assert result["initial"]["outlineAlgorithm"] == "fast-mesh-shadow"
     assert result["initial"]["projection"].startswith("camera ")
     assert result["initial"]["lens"] == "orthographic"
     assert result["initial"]["canvasLens"] == "orthographic"
@@ -799,10 +805,10 @@ def test_hlr_static_site_upload_projection_and_export() -> None:
     }
     _assert_fast_selection(result)
     assert result["geometryReset"] == {
-        "fastBackend": False,
+        "fastBackend": True,
         "fastCreaseAngleDegrees": "30",
         "algorithm": "poly",
-        "outlineAlgorithm": "mesh-shadow",
+        "outlineAlgorithm": "fast-mesh-shadow",
         "meshMode": "bbox-relative",
         "coefficient": "0.004",
         "linear": "0.01",

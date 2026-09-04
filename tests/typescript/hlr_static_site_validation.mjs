@@ -103,6 +103,13 @@ if (!html.includes("new THREE.AmbientLight(0xffffff, 0.2)"))
   throw new Error("HLR single HTML omits the Viz-style default light rig.");
 if (!html.includes('data-view="camera" class="active"') || !html.includes('viewId: "camera"'))
   throw new Error("HLR single HTML does not default to the fitted live camera view.");
+if (
+  !html.includes('data-mode="both" class="active"') ||
+  !html.includes('mode: "both"') ||
+  !html.includes("fastBackend: true") ||
+  !html.includes('outlineAlgorithm: "fast-mesh-shadow"')
+)
+  throw new Error("HLR single HTML does not default to Fast detail plus Fast mesh shadow.");
 if (!html.includes('cameraLens: "orthographic"'))
   throw new Error("HLR single HTML does not default the 3D lens to orthographic.");
 if (!html.includes('let topAxisId = "+y"') || !html.includes('let frontAxisId = "+z"'))

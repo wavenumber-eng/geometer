@@ -15,6 +15,7 @@ from geometer._topology_worker_supervisor import (
     TopologyWorkerProcessError,
     TopologyWorkerSupervisor,
 )
+from geometer._topology_worker_posix_launcher import _effective_memory_limit
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -40,6 +41,15 @@ def _session_handle(output: bytes) -> str:
     handle = output.decode("ascii").strip()
     assert handle.startswith("gts_") and len(handle) == 68
     return handle
+
+
+def test_posix_launcher_never_weakens_an_inherited_memory_ceiling() -> None:
+    infinity = -1
+    mib = 1024 * 1024
+    assert _effective_memory_limit(512 * mib, 256 * mib, 256 * mib, infinity) == 256 * mib
+    assert _effective_memory_limit(512 * mib, 1024 * mib, 1024 * mib, infinity) == 512 * mib
+    assert _effective_memory_limit(512 * mib, infinity, infinity, infinity) == 512 * mib
+    assert _effective_memory_limit(512 * mib, 64 * mib, 1024 * mib, infinity) == 64 * mib
 
 
 def test_deadline_kills_real_occt_session_and_descendant_then_allows_replacement() -> None:

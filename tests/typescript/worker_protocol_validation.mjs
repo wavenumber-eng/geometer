@@ -6,13 +6,13 @@ import {
 } from "../../dist/wasm/npm/geometer/worker.js";
 
 const capabilities = Object.freeze({
-  cAbiGeneration: 20260821,
+  cAbiGeneration: 20260904,
   genericAbi: "a0",
   operations: Object.freeze([
     "geometry.analytic_planar_boolean_batch.a0",
     "geometry.model_bounds.a0",
   ]),
-  releaseVersion: "2026.8.21",
+  releaseVersion: "2026.9.4",
 });
 const outcomeJson = encodeOperationOutcomeA0Json({
   diagnostics: [

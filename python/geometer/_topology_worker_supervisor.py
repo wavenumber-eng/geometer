@@ -52,7 +52,11 @@ class TopologyWorkerProcessError(TopologyWorkerError):
     """The contained worker exited unsuccessfully."""
 
     def __init__(self, outcome: TopologyWorkerOutcome) -> None:
-        super().__init__(f"topology worker generation {outcome.generation} exited with code {outcome.return_code}")
+        message = f"topology worker generation {outcome.generation} exited with code {outcome.return_code}"
+        stderr = outcome.stderr.decode("utf-8", errors="replace").strip()
+        if stderr:
+            message = f"{message}: {stderr}"
+        super().__init__(message)
         self.outcome = outcome
 
 

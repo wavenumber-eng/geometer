@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import os
 import subprocess
-import sys
 import tempfile
 import threading
 import time
@@ -20,12 +19,6 @@ from geometer._topology_worker_supervisor import (
 
 ROOT = Path(__file__).resolve().parents[2]
 FIXTURE = ROOT / "tests" / "fixtures" / "step" / "generated_topology" / "generated_repeated_occurrences.step"
-
-
-def _occt_worker_memory_limit() -> int:
-    # A forked OCCT process tree reserves more virtual address space on macOS.
-    # The dedicated allocation test below retains its intentionally small cap.
-    return (2 * 1024 * 1024 * 1024) if sys.platform == "darwin" else (512 * 1024 * 1024)
 
 
 def _worker_executable() -> Path:
@@ -50,7 +43,7 @@ def _session_handle(output: bytes) -> str:
 
 
 def test_deadline_kills_real_occt_session_and_descendant_then_allows_replacement() -> None:
-    supervisor = TopologyWorkerSupervisor(_worker_executable(), memory_limit_bytes=_occt_worker_memory_limit())
+    supervisor = TopologyWorkerSupervisor(_worker_executable(), memory_limit_bytes=512 * 1024 * 1024)
     with pytest.raises(TopologyWorkerDeadlineExceeded) as caught:
         supervisor.run(("open-hold-tree", FIXTURE), timeout=0.5)
     old_handle = _session_handle(caught.value.stdout)
@@ -64,7 +57,7 @@ def test_deadline_kills_real_occt_session_and_descendant_then_allows_replacement
 
 
 def test_explicit_cancel_kills_active_generation_and_cleans_private_temp() -> None:
-    supervisor = TopologyWorkerSupervisor(_worker_executable(), memory_limit_bytes=_occt_worker_memory_limit())
+    supervisor = TopologyWorkerSupervisor(_worker_executable(), memory_limit_bytes=512 * 1024 * 1024)
     failure: list[BaseException] = []
 
     def run_worker() -> None:

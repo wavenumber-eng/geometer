@@ -9,8 +9,8 @@
       "sha256": "8a248d6ccaad45af9d4d6061c5b07520116e9b52f3b9cce344a45711472578c1"
     },
     "dist/wasm/npm/geometer/README.md": {
-      "bytes": 6461,
-      "sha256": "f1ab8a6ffbc3d3724bdbf84209fe069d1f175a3a8a08d7d7307a356a3b5fe8da"
+      "bytes": 6042,
+      "sha256": "72402bc9f5dd33ce45ce6eb16697ceda1f54de96e42578e81d510f7ab204daeb"
     },
     "dist/wasm/npm/geometer/analytic-packet-a0-common.d.ts": {
       "bytes": 4160,
@@ -157,16 +157,8 @@
       "sha256": "1ea11176aa8e1d01c5a325b03a4c0db9ddeccdd767cca03c15f416ffacb50c31"
     },
     "dist/wasm/npm/geometer/package.json": {
-      "bytes": 1667,
-      "sha256": "51957fcdbe1887b66b6804db0dff043eaf83d3dabf3299bb30409ad52b4226b9"
-    },
-    "dist/wasm/npm/geometer/raster-hlr.d.ts": {
-      "bytes": 2361,
-      "sha256": "ea5a215a8620bb035ddb7c98d9f94ab24373128129ff9460558fc86195c813ef"
-    },
-    "dist/wasm/npm/geometer/raster-hlr.js": {
-      "bytes": 9826,
-      "sha256": "ef150aa6be2cd4a7770662ca19401776633ac2d95aa75275c4f0d35fa737d062"
+      "bytes": 1438,
+      "sha256": "2a941481a45e7a4e46c872694b23bfaae2a1dbead4d3ef18db27f27d9354c554"
     },
     "dist/wasm/npm/geometer/step-topology-validation.d.ts": {
       "bytes": 3832,
@@ -214,10 +206,10 @@
     "contract_check_status": "passed",
     "source": {
       "authority": "git_head_and_source_worktree_excluding_dist_build_deps_out",
-      "revision": "548f97a0b1ad31c0dad69e5230951d5c6b1ef57b",
+      "revision": "0f046dd26bb38b442abdec7dac3fd23adc152ee6",
       "tree_state": "clean"
     },
-    "source_content_sha256": "dfcc0df34612980c8ad50503287ac0f02c8edb8bd8d3f800c4c5ba42805eac56",
+    "source_content_sha256": "280ba67b23ee9c9045ef5e60b37898114a609a3d779b74df19896c4dcdfbc213",
     "toolchain": {
       "emscripten": {
         "executable": ".deps/emsdk/upstream/emscripten/emcc.bat",

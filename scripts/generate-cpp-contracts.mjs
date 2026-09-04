@@ -232,10 +232,10 @@ function generateSource() {
     '    if (!value.IsUint64() || value.GetUint64() < minimum || value.GetUint64() > maximum) return fail(error, "geometer.contract.number_range", path, "Expected an unsigned 64-bit integer within its contract bounds."); *out = value.GetUint64(); return true;',
     "}",
     "",
-    "bool decode_double(const rapidjson::Value& value, double* out, const std::string& path, ContractError* error, double minimum, double maximum)",
+    "bool decode_double(const rapidjson::Value& value, double* out, const std::string& path, ContractError* error, double minimum, double maximum, bool minimum_exclusive, bool maximum_exclusive)",
     "{",
     '    if (!value.IsNumber() || !std::isfinite(value.GetDouble())) return fail(error, "geometer.contract.type_mismatch", path, "Expected a finite number.");',
-    '    const double number = value.GetDouble(); if (number < minimum || number > maximum) return fail(error, "geometer.contract.number_range", path, "Number is outside its contract bounds."); *out = number; return true;',
+    '    const double number = value.GetDouble(); if (number < minimum || number > maximum || (minimum_exclusive && number == minimum) || (maximum_exclusive && number == maximum)) return fail(error, "geometer.contract.number_range", path, "Number is outside its contract bounds."); *out = number; return true;',
     "}",
     "",
     "bool decode_literal_string(const rapidjson::Value& value, std::string* out, const std::string& path, ContractError* error, const char* expected)",
@@ -255,9 +255,9 @@ function generateSource() {
     '    out->clear(); out->reserve(value.Size()); for (rapidjson::SizeType i = 0; i < value.Size(); ++i) { T item{}; if (!decode_item(value[i], &item, path + "/" + std::to_string(i), error)) return false; out->push_back(std::move(item)); } return true;',
     "}",
     "",
-    "bool write_double(rapidjson::Writer<rapidjson::StringBuffer>& writer, double value, ContractError* error, double minimum, double maximum)",
+    "bool write_double(rapidjson::Writer<rapidjson::StringBuffer>& writer, double value, ContractError* error, double minimum, double maximum, bool minimum_exclusive, bool maximum_exclusive)",
     "{",
-    '    if (!std::isfinite(value) || value < minimum || value > maximum) return fail(error, "geometer.contract.number_range", "", "Number is outside its contract bounds."); writer.Double(value); return true;',
+    '    if (!std::isfinite(value) || value < minimum || value > maximum || (minimum_exclusive && value == minimum) || (maximum_exclusive && value == maximum)) return fail(error, "geometer.contract.number_range", "", "Number is outside its contract bounds."); writer.Double(value); return true;',
     "}",
     "",
     "bool write_uint32(rapidjson::Writer<rapidjson::StringBuffer>& writer, std::uint32_t value, ContractError* error, std::uint64_t minimum, std::uint64_t maximum)",
@@ -297,14 +297,24 @@ function generateSource() {
     "    return write_string(writer, value, error, 0U, std::numeric_limits<std::size_t>::max());",
     "}",
     "",
+    "bool decode_uint32_item(const rapidjson::Value& value, std::uint32_t* out, const std::string& path, ContractError* error)",
+    "{",
+    "    return decode_uint32(value, out, path, error, 0U, std::numeric_limits<std::uint32_t>::max());",
+    "}",
+    "",
+    "bool write_uint32_item(rapidjson::Writer<rapidjson::StringBuffer>& writer, const std::uint32_t& value, ContractError* error)",
+    "{",
+    "    return write_uint32(writer, value, error, 0U, std::numeric_limits<std::uint32_t>::max());",
+    "}",
+    "",
     "bool decode_double_item(const rapidjson::Value& value, double* out, const std::string& path, ContractError* error)",
     "{",
-    "    return decode_double(value, out, path, error, -std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity());",
+    "    return decode_double(value, out, path, error, -std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity(), false, false);",
     "}",
     "",
     "bool write_double_item(rapidjson::Writer<rapidjson::StringBuffer>& writer, const double& value, ContractError* error)",
     "{",
-    "    return write_double(writer, value, error, -std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity());",
+    "    return write_double(writer, value, error, -std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity(), false, false);",
     "}",
     "",
     "template <typename T>",
@@ -715,20 +725,29 @@ function decoder(item) {
     ];
   }
   if (item.kind === "union") {
+    const oneOf = item.composition === "one_of";
     const body = [];
     item.variants.forEach((variant, index) => {
       const type = cppType(variant.type);
       body.push(
-        `    { ${type} candidate{}; ContractError ignored; if (${decodeCall(variant.type, "value", "&candidate", "path", "&ignored")}) { ++matches; selected = ${name}(std::in_place_index<${index}>, std::move(candidate)); } }`,
+        oneOf
+          ? `    { ${type} candidate{}; ContractError ignored; if (${decodeCall(variant.type, "value", "&candidate", "path", "&ignored")}) { ++matches; selected = ${name}(std::in_place_index<${index}>, std::move(candidate)); } }`
+          : `    { ${type} candidate{}; ContractError ignored; if (${decodeCall(variant.type, "value", "&candidate", "path", "&ignored")}) { *out = ${name}(std::in_place_index<${index}>, std::move(candidate)); return true; } }`,
       );
     });
     return [
       `bool decode_${name}(const rapidjson::Value& value, ${name}* out, const std::string& path, ContractError* error)`,
       "{",
-      `    int matches = 0; ${name} selected{};`,
+      ...(oneOf ? [`    int matches = 0; ${name} selected{};`] : []),
       ...body,
-      '    if (matches != 1) return fail(error, "geometer.contract.union_mismatch", path, "Expected exactly one union variant.");',
-      "    *out = std::move(selected); return true;",
+      ...(oneOf
+        ? [
+            '    if (matches != 1) return fail(error, "geometer.contract.union_mismatch", path, "Expected exactly one union variant.");',
+            "    *out = std::move(selected); return true;",
+          ]
+        : [
+            '    return fail(error, "geometer.contract.union_mismatch", path, "Value does not match a union variant.");',
+          ]),
       "}",
     ];
   }
@@ -845,7 +864,7 @@ function decodeCall(type, value, out, path, error, constraints = {}) {
     if (type.name === "uint64")
       return `decode_uint64(${value}, ${out}, ${path}, ${error}, ${integerMinimum(constraints)}, ${integerMaximum(constraints, "std::numeric_limits<std::uint64_t>::max()")})`;
     if (type.name === "float64")
-      return `decode_double(${value}, ${out}, ${path}, ${error}, ${constraints.min_value ?? "-std::numeric_limits<double>::infinity()"}, ${constraints.max_value ?? "std::numeric_limits<double>::infinity()"})`;
+      return `decode_double(${value}, ${out}, ${path}, ${error}, ${constraints.min_value_exclusive ?? constraints.min_value ?? "-std::numeric_limits<double>::infinity()"}, ${constraints.max_value_exclusive ?? constraints.max_value ?? "std::numeric_limits<double>::infinity()"}, ${constraints.min_value_exclusive !== undefined}, ${constraints.max_value_exclusive !== undefined})`;
   }
   if (type.kind === "literal")
     return `decode_literal_${type.value_type}(${value}, ${out}, ${path}, ${error}, ${JSON.stringify(type.value)})`;
@@ -854,8 +873,11 @@ function decodeCall(type, value, out, path, error, constraints = {}) {
       type.element.kind === "reference"
         ? `decode_${shortName(type.element.target)}`
         : type.element.kind === "primitive"
-          ? ({ string: "decode_string_item", float64: "decode_double_item" }[type.element.name] ??
-            unsupported(type))
+          ? ({
+              string: "decode_string_item",
+              uint32: "decode_uint32_item",
+              float64: "decode_double_item",
+            }[type.element.name] ?? unsupported(type))
           : unsupported(type);
     return `decode_array(${value}, ${out}, ${path}, ${error}, ${sizeConstant(constraints.min_items, "0U")}, ${sizeConstant(constraints.max_items)}, ${decoder})`;
   }
@@ -874,7 +896,7 @@ function writeCall(type, value, error, constraints = {}) {
     if (type.name === "uint64")
       return `write_uint64(writer, ${value}, ${error}, ${integerMinimum(constraints)}, ${integerMaximum(constraints, "std::numeric_limits<std::uint64_t>::max()")})`;
     if (type.name === "float64")
-      return `write_double(writer, ${value}, ${error}, ${constraints.min_value ?? "-std::numeric_limits<double>::infinity()"}, ${constraints.max_value ?? "std::numeric_limits<double>::infinity()"})`;
+      return `write_double(writer, ${value}, ${error}, ${constraints.min_value_exclusive ?? constraints.min_value ?? "-std::numeric_limits<double>::infinity()"}, ${constraints.max_value_exclusive ?? constraints.max_value ?? "std::numeric_limits<double>::infinity()"}, ${constraints.min_value_exclusive !== undefined}, ${constraints.max_value_exclusive !== undefined})`;
   }
   if (type.kind === "literal")
     return `write_literal_${type.value_type}(writer, ${value}, ${error}, ${JSON.stringify(type.value)})`;
@@ -883,8 +905,11 @@ function writeCall(type, value, error, constraints = {}) {
       type.element.kind === "reference"
         ? `write_${shortName(type.element.target)}`
         : type.element.kind === "primitive"
-          ? ({ string: "write_string_item", float64: "write_double_item" }[type.element.name] ??
-            unsupported(type))
+          ? ({
+              string: "write_string_item",
+              uint32: "write_uint32_item",
+              float64: "write_double_item",
+            }[type.element.name] ?? unsupported(type))
           : unsupported(type);
     return `write_array(writer, ${value}, ${error}, ${sizeConstant(constraints.min_items, "0U")}, ${sizeConstant(constraints.max_items)}, ${writer})`;
   }

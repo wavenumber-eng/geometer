@@ -171,9 +171,9 @@ int main(int argc, char** argv)
         }
         if (argc == 3 && std::string(argv[1]) == "open-hold-tree")
         {
+            spawn_descendant(fs::absolute(argv[0]));
             std::unique_ptr<geometer::StepTopologySession> session = open_session(argv[2]);
             write_marker(session->info().session_handle);
-            spawn_descendant(fs::absolute(argv[0]));
             std::cout << session->info().session_handle << '\n' << std::flush;
             for (;;)
             {

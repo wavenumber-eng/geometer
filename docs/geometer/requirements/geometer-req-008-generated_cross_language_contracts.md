@@ -73,3 +73,6 @@ TypeScript, and Python consumers.
     `appz/data_models`. Vendor reviewed assets and their required license
     evidence in Geometer; do not require a sibling checkout during generation
     or viewing.
+17. Treat the HLR option/result family, model/mesh HLR operations, and mesh
+    illustration serialized DTOs as A0 identities; keep their ergonomic package
+    function names unversioned.

@@ -666,7 +666,14 @@ class ArrangementBuilder
             std::get<4>(right_key));
         if (canonical)
             return canonical;
-        return compare_tangents(left_tangent, right_tangent);
+        const auto filtered = compare_tangents(left_tangent, right_tangent);
+        if (filtered || !analytic_execution_detail::allows_resolution_topology(policy_) ||
+            !resolution_collinear_tangents(left_tangent, right_tangent))
+            return filtered;
+        const auto collinear = compare_collinear_tangents(left_tangent, right_tangent);
+        if (collinear && *collinear != 0)
+            return collinear;
+        return left_key < right_key ? -1 : (right_key < left_key ? 1 : 0);
     }
 
     bool prepare_canonical_tangent_angles()

@@ -51,3 +51,6 @@ dist/wasm/browser/geometer.js whitespace=-blank-at-eol
 
 # OCCT-authored STEP fixtures retain the writer's canonical trailing spacing.
 tests/fixtures/step/generated_topology/*.step whitespace=-blank-at-eol
+
+# CAD-authored embedded fixtures retain the source exporter's trailing spacing.
+tests/fixtures/step/embedded_models/ABM8-272-T3.STEP whitespace=-blank-at-eol

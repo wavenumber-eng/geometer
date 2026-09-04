@@ -16,7 +16,11 @@ durable topology identity and does not define an annotation vocabulary.
 The machine-readable evidence is
 [`docs/reports/step-topology-fixture-baseline.json`](../reports/step-topology-fixture-baseline.json).
 Its native generator and freshness test are implemented by
-`geometer_step_topology_fixture_inventory`.
+`geometer_step_topology_fixture_inventory`. The committed render-count report
+is a Windows x64 reference because OCCT tessellation cardinality can vary
+slightly across supported native platforms; the exact report freshness check
+therefore runs on Windows, while the remaining topology and render tests run on
+every native platform.
 
 ## Fixture Findings
 

@@ -69,10 +69,11 @@ async fn raw_invalid_request_remains_a_correlated_operation_failure() {
 }
 
 #[tokio::test]
-async fn broken_stdout_forces_a_nonzero_server_exit() {
-    let (mut child, mut stdin, mut stdout) = spawn_raw().await;
+async fn writer_failure_forces_a_nonzero_server_exit() {
+    let root = repository_root();
+    let server = test_server_executable(&root, "geometer_ipc_a0_writer_failure_test_server");
+    let (mut child, mut stdin, mut stdout) = spawn_raw_executable(server).await;
     handshake(&mut stdin, &mut stdout).await;
-    drop(stdout);
     write_control(&mut stdin, FrameKind::Cancel, 99, b"{}").await;
     assert!(!wait_bounded(&mut child).await.success());
 }
@@ -181,7 +182,11 @@ async fn unexpected_child_exit_resolves_pending_work_and_closes_client() {
 }
 
 async fn spawn_raw() -> (Child, ChildStdin, ChildStdout) {
-    let mut child = Command::new(native_executable(&repository_root()))
+    spawn_raw_executable(native_executable(&repository_root())).await
+}
+
+async fn spawn_raw_executable(executable: PathBuf) -> (Child, ChildStdin, ChildStdout) {
+    let mut child = Command::new(executable)
         .args(["serve", "--stdio"])
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())

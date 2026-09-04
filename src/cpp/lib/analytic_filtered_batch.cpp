@@ -34,7 +34,7 @@ using analytic_packet_detail::sort_units;
 using analytic_packet_detail::WorkBudget;
 
 constexpr std::uint64_t kBatchJobSlotBytes = 448;
-constexpr std::uint64_t kBatchTelemetrySlotBytes = 64;
+constexpr std::uint64_t kBatchTelemetrySlotBytes = 80;
 constexpr std::uint64_t kMinimumJobClosureBytes = 616;
 constexpr std::uint64_t kSourceEntryBytes = 48;
 constexpr std::uint64_t kSourceReferenceBytes = 32;
@@ -1006,6 +1006,10 @@ build_analytic_filtered_batch(const AnalyticRequestPacketRecords& records,
                                 build_analytic_filtered_job_records(
                                     records, job_index, *lowered.value, broad.pairs, packet_limits);
                             job_telemetry.packet_work_units = packet.telemetry.predicate_calls;
+                            job_telemetry.capsule_coalescences =
+                                packet.telemetry.capsule_coalescences;
+                            job_telemetry.maximum_capsule_adjustment_nm =
+                                packet.telemetry.maximum_capsule_adjustment_nm;
                             result.telemetry.algebraic_fallback_calls +=
                                 packet.telemetry.algebraic_fallback_calls;
                             if (packet.telemetry.algebraic_fallback_calls >
@@ -1096,6 +1100,10 @@ build_analytic_filtered_batch(const AnalyticRequestPacketRecords& records,
             result.telemetry.jobs_visited++;
             result.telemetry.jobs_failed += failed ? 1 : 0;
             result.telemetry.jobs_succeeded += failed ? 0 : 1;
+            result.telemetry.capsule_coalescences += job_telemetry.capsule_coalescences;
+            result.telemetry.maximum_capsule_adjustment_nm =
+                std::max(result.telemetry.maximum_capsule_adjustment_nm,
+                         job_telemetry.maximum_capsule_adjustment_nm);
             if (!add_telemetry(job_telemetry.lowering_work_units,
                                result.telemetry.lowering_work_units) ||
                 !add_telemetry(job_telemetry.broad_phase_work_units,

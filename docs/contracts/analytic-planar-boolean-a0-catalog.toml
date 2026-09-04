@@ -229,6 +229,7 @@ normalization_topology_collapse = 65544
 nonanalytic_result = 65545
 solver_failed = 65546
 resource_limit_exceeded = 65547
+resolution_coalesced = 65548
 
 [reserved.operation_diagnostic]
 normalization_ambiguous_tie = 65542
@@ -242,6 +243,7 @@ normalization_topology_collapse = "geometer.operation.analytic_planar_boolean.no
 nonanalytic_result = "geometer.operation.analytic_planar_boolean.nonanalytic_result"
 solver_failed = "geometer.operation.analytic_planar_boolean.solver_failed"
 resource_limit_exceeded = "geometer.operation.analytic_planar_boolean.resource_limit_exceeded"
+resolution_coalesced = "geometer.operation.analytic_planar_boolean.resolution_coalesced"
 
 [source_reference_mapping.authored_segment_curve]
 primary_id = "authored_segment_id"

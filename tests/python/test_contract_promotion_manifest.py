@@ -341,8 +341,10 @@ def test_manifest_sources_and_identities_are_complete() -> None:
 
 def _assert_projection_surfaces(manifest: dict[str, Any]) -> None:
     typescript = manifest["typescript_projection"]
-    assert typescript["status"] == "implemented_model_bounds_and_analytic_worker_pilot"
+    assert typescript["status"] == "implemented_model_bounds_analytic_and_hlr_worker_pilots"
     assert typescript["worker_protocol"] == "wn.geometer.wasm_worker.a0"
+    assert typescript["model_hlr_live_operation"] == "geometry.model_hlr_projection.a0"
+    assert typescript["mesh_hlr_live_operation"] == "geometry.mesh_hlr_projection.a0"
     assert typescript["runtime_dependency"] is False
     for key in (
         "design",
@@ -368,10 +370,24 @@ def _assert_projection_surfaces(manifest: dict[str, Any]) -> None:
     assert manifest["packages"]["typescript_module_format"] == "esm"
     assert package_json["type"] == "module"
 
+    rust_projection = manifest["rust_projection"]
+    assert rust_projection["status"] == "implemented_model_bounds_analytic_and_hlr_ipc_pilots"
+    assert rust_projection["live_operation"] == "geometry.model_bounds.a0"
+    assert rust_projection["analytic_live_operation"] == "geometry.analytic_planar_boolean_batch.a0"
+    assert rust_projection["model_hlr_live_operation"] == "geometry.model_hlr_projection.a0"
+    assert rust_projection["mesh_hlr_live_operation"] == "geometry.mesh_hlr_projection.a0"
+    for key in ("design", "source_root", "generated_root", "generator", "analytic_packet_codec"):
+        assert (ROOT / rust_projection[key]).exists(), key
+    assert rust_projection["runtime_dependency"] is False
+
     python_projection = manifest["python_projection"]
-    assert python_projection["status"] == ("implemented_model_bounds_compatible_boundary_and_analytic_ipc_pilot")
+    assert python_projection["status"] == (
+        "implemented_model_bounds_compatible_boundary_analytic_and_hlr_ipc_pilots"
+    )
     assert python_projection["live_operation"] == "geometry.model_bounds.a0"
     assert python_projection["analytic_live_operation"] == ("geometry.analytic_planar_boolean_batch.a0")
+    assert python_projection["model_hlr_live_operation"] == "geometry.model_hlr_projection.a0"
+    assert python_projection["mesh_hlr_live_operation"] == "geometry.mesh_hlr_projection.a0"
     for key in (
         "design",
         "generated_root",
@@ -447,7 +463,10 @@ def _assert_contract_and_operation_inventory(manifest: dict[str, Any]) -> None:
     operations = manifest["operations"]
     operation_ids = [item["id"] for item in operations]
     _unique(operation_ids, "operation id")
-    assert {item["id"] for item in operations if item["status"] == "pilot_candidate"} == set()
+    assert {item["id"] for item in operations if item["status"] == "pilot_candidate"} == {
+        "geometry.model_hlr_projection.a0",
+        "geometry.mesh_hlr_projection.a0",
+    }
     assert {item["id"] for item in operations if item["status"] == "promoted"} == {"geometry.model_bounds.a0"}
     assert_step_topology_inventory(manifest, contracts, operations)
 
@@ -565,7 +584,8 @@ def _assert_candidate_projection_surfaces(manifest: dict[str, Any]) -> None:
     assert "decode_AnalyticPlanarBoolean" not in cpp_contract_json
     assert "write_AnalyticPlanarBoolean" not in cpp_contract_json
     assert "using OperationResultValueA0 =" in cpp_contract_header
-    assert "PackedAttachmentProjectionA0, StepTopologyOpenResultA0" in cpp_contract_header
+    assert "ModelBoundsResultA0, HlrProjectionResultA0, PackedAttachmentProjectionA0" in cpp_contract_header
+    assert "PackedAttachmentProjectionA0,\n                 StepTopologyOpenResultA0" in cpp_contract_header
     assert "StepTopologyAnalyzeRecoveryResultA0>;" in cpp_contract_header
     assert "holds_alternative<contracts::AnalyticPlanarBoolean" not in cpp_operation_catalog
     rust_contracts = (ROOT / "src/rust/geometer-client/src/generated/contracts.rs").read_text(encoding="utf-8")
@@ -1375,9 +1395,9 @@ _EXPECTED_FILTERED_SOLVER: dict[str, Any] = {
     ),
     "batch_parity_validator": "scripts/validate_analytic_filtered_batch_parity.py",
     "batch_vector_bytes": 1636,
-    "batch_vector_sha256": ("a4b6a8c4a82f77c5de4e232e0a2e1520a57e7370422ddc7e4059951d192a05d9"),
+    "batch_vector_sha256": ("786d1093d87f66189f57ab4ab7a6608e61245c9c1e0d034ae3d13ebdeedd2078"),
     "batch_relationship_vector_bytes": 5448,
-    "batch_relationship_vector_sha256": ("bddccaac7ac1f8b141e007574e08d282a03221b85cb684e9addaf49fa89be073"),
+    "batch_relationship_vector_sha256": ("f2b3e2ab9863e50aa0b21540dab224eddce5d354d762b5e3cb70c4b9037a96ea"),
     "production_exact_source_policy": "exact_oracle_sources_excluded_from_geometer_lib",
     "exact_oracle_target": "geometer_exact_feasibility",
 }

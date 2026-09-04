@@ -732,6 +732,27 @@ std::optional<std::int8_t> compare_tangents(const Tangent& left, const Tangent& 
     return compare_or_defer_collinear(left, right);
 }
 
+bool resolution_collinear_tangents(const Tangent& left, const Tangent& right) noexcept
+{
+    const Interval product = dot(left.direction, right.direction);
+    if (product.lower <= 0.0)
+        return false;
+    const Interval determinant = cross(left.direction, right.direction);
+    if (determinant.lower > 0.0 || determinant.upper < 0.0)
+        return false;
+    const Interval left_length_squared = dot(left.direction, left.direction);
+    const Interval right_length_squared = dot(right.direction, right.direction);
+    if (left_length_squared.lower <= 0.0 || right_length_squared.lower <= 0.0)
+        return false;
+    constexpr double kMaximumLocalSpanNm = 1'000'000'000'000.0;
+    const double normalized_limit =
+        static_cast<double>(kAnalyticTopologyResolutionNm) / kMaximumLocalSpanNm;
+    const double determinant_limit = normalized_limit * std::sqrt(left_length_squared.lower) *
+                                     std::sqrt(right_length_squared.lower);
+    return std::max(std::fabs(determinant.lower), std::fabs(determinant.upper)) <=
+           determinant_limit;
+}
+
 std::optional<std::int8_t> cycle_germ_half(const Tangent& tangent) noexcept
 {
     const std::optional<std::int8_t> x = sign(tangent.direction.x);

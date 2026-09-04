@@ -1,4 +1,7 @@
+#include "cli_usage.h"
 #include "geometer.h"
+#include "mesh_hlr_command.h"
+#include "projection_cli_options.h"
 #ifndef __EMSCRIPTEN__
 #include "geometer/ipc_a0_server.h"
 #endif
@@ -27,52 +30,6 @@
     std::fflush(stdout);
     std::fflush(stderr);
     std::_Exit(code);
-}
-
-static void print_usage()
-{
-    std::fprintf(stderr,
-                 "Usage: geometer <command> [options]\n"
-                 "\n"
-                 "Commands:\n"
-                 "  --version                               Print version information\n"
-                 "  model-bounds <input.step> <output.json> Emit source model bounds JSON\n"
-                 "  model-to-glb <input.step> <output.glb>   Convert source model to GLB\n"
-                 "  model-project-hlr <input.step> <output.json>\n"
-                 "                                               Emit source model HLR JSON\n"
-                 "  model-project-svg <input.step> <output.svg>\n"
-                 "                                               Emit source model HLR SVG\n"
-                 "  step-to-glb <input.step> <output.glb>       Convert STEP to GLB\n"
-                 "  step-project-hlr <input.step> <output.json> Emit HLR projection JSON\n"
-                 "  step-project-svg <input.step> <output.svg>  Emit HLR projection SVG\n"
-                 "  planar-step <request.json> <output.step>    Emit exact planar STEP\n"
-                 "  run <request.json> <response.json>          Run JSON batch jobs\n"
-                 "  init-request <request.json> --step <path>   Write a starter JSON request\n"
-                 "  planar-batch-solve <request.bin> <response.bin>\n"
-                 "                                               Solve packed planar batch bytes\n"
-#ifndef __EMSCRIPTEN__
-                 "  serve --stdio                                Serve framed executable IPC A0\n"
-#endif
-                 "\n"
-                 "Options:\n"
-                 "  --deflection <value>   Absolute linear deflection (forces absolute mode)\n"
-                 "  --deflection-mode <absolute|bbox-relative>  (default: bbox-relative)\n"
-                 "  --deflection-coefficient <value>            (default: 0.004)\n"
-                 "  --angular <value>      Angular deflection (default: 0.5)\n"
-                 "  --outline-algorithm <hlr-close|mesh-shadow>\n"
-                 "  --format <step>        Source model format (only step is supported)\n"
-                 "  --view <id>            SVG view id (default: top)\n"
-                 "  --mode <outline|detail|bbox> SVG mode (default: outline)\n"
-                 "  --curve-mode <native-arcs|polyline>\n"
-                 "  --samples <count>      Curve polyline samples (default: 24)\n"
-                 "  --round-digits <count> Projection rounding digits (default: 3)\n"
-                 "  --operation <name>     init-request operation\n"
-                 "  --output <path>        init-request output path\n"
-                 "  --repeat <count>       Planar benchmark repeat count (default: 1)\n"
-                 "  --warmup <count>       Planar benchmark warmup count (default: 0)\n"
-                 "  --metrics <path>       Write planar benchmark JSON metrics\n"
-                 "  --format <binary|json> planar-batch-solve output format\n"
-                 "  --return-rings <true|false> alias for --format json\n");
 }
 
 static bool read_file_bytes(const char* path, std::vector<unsigned char>* bytes)
@@ -204,81 +161,6 @@ static std::string default_output_for_step(const std::string& step_path,
     return name + ".projection.json";
 }
 
-static bool preset_projection_view(const std::string& id, geometer::ProjectionViewSpec* view)
-{
-    if (view == nullptr)
-    {
-        return false;
-    }
-    if (id == "top")
-    {
-        *view = {"top", {0.0, 0.0, 1.0}, {0.0, 1.0, 0.0}};
-        return true;
-    }
-    if (id == "bottom" || id == "bot")
-    {
-        *view = {"bottom", {0.0, 0.0, -1.0}, {0.0, 1.0, 0.0}};
-        return true;
-    }
-    if (id == "front")
-    {
-        *view = {"front", {0.0, -1.0, 0.0}, {0.0, 0.0, 1.0}};
-        return true;
-    }
-    if (id == "back")
-    {
-        *view = {"back", {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}};
-        return true;
-    }
-    if (id == "right")
-    {
-        *view = {"right", {1.0, 0.0, 0.0}, {0.0, 0.0, 1.0}};
-        return true;
-    }
-    if (id == "left")
-    {
-        *view = {"left", {-1.0, 0.0, 0.0}, {0.0, 0.0, 1.0}};
-        return true;
-    }
-    return false;
-}
-
-static bool has_projection_view(const geometer::HlrProjectionOptions& options,
-                                const std::string& id)
-{
-    for (const geometer::ProjectionViewSpec& view : options.views)
-    {
-        if (view.id == id)
-        {
-            return true;
-        }
-    }
-    return false;
-}
-
-static void ensure_projection_view(geometer::HlrProjectionOptions* options, const std::string& id)
-{
-    if (options == nullptr || id.empty() || has_projection_view(*options, id))
-    {
-        return;
-    }
-
-    geometer::ProjectionViewSpec view;
-    if (!preset_projection_view(id, &view))
-    {
-        return;
-    }
-
-    if (options->views.empty())
-    {
-        options->views = {view};
-    }
-    else
-    {
-        options->views.push_back(view);
-    }
-}
-
 static std::string normalize_operation(const std::string& operation)
 {
     if (operation == "model-project-hlr" || operation == "model_project_hlr")
@@ -288,6 +170,10 @@ static std::string normalize_operation(const std::string& operation)
     if (operation == "model-project-svg" || operation == "model_project_svg")
     {
         return "model_hlr_projection_svg";
+    }
+    if (operation == "mesh-project-hlr" || operation == "mesh_project_hlr")
+    {
+        return "mesh_hlr_projection_json";
     }
     if (operation == "model-to-glb" || operation == "model_to_glb")
     {
@@ -322,7 +208,7 @@ static bool is_supported_batch_operation(const std::string& operation)
     return operation == "step_hlr_projection_json" || operation == "step_hlr_projection_svg" ||
            operation == "step_to_glb" || operation == "model_hlr_projection_json" ||
            operation == "model_hlr_projection_svg" || operation == "model_to_glb" ||
-           operation == "model_bounds_json";
+           operation == "model_bounds_json" || operation == "mesh_hlr_projection_json";
 }
 
 static const rapidjson::Value* options_value_for_object(const rapidjson::Value& object)
@@ -469,71 +355,6 @@ static bool model_path_for_job(const rapidjson::Value& job, std::string* path)
         return true;
     }
     return member_string(job, "step_path", path) && !path->empty();
-}
-
-static void parse_projection_options(int argc, char* argv[], int start,
-                                     geometer::HlrProjectionOptions* options, std::string* view_id,
-                                     std::string* mode)
-{
-    for (int i = start; i < argc - 1; i += 2)
-    {
-        if (std::strcmp(argv[i], "--view") == 0)
-        {
-            *view_id = argv[i + 1];
-            ensure_projection_view(options, *view_id);
-        }
-        else if (std::strcmp(argv[i], "--mode") == 0)
-        {
-            *mode = argv[i + 1];
-        }
-        else if (std::strcmp(argv[i], "--curve-mode") == 0)
-        {
-            if (std::strcmp(argv[i + 1], "polyline") == 0)
-            {
-                options->curve_mode = geometer::ProjectionCurveMode::Polyline;
-            }
-            else
-            {
-                options->curve_mode = geometer::ProjectionCurveMode::NativeArcs;
-            }
-        }
-        else if (std::strcmp(argv[i], "--samples") == 0)
-        {
-            options->samples_per_curve = std::atoi(argv[i + 1]);
-        }
-        else if (std::strcmp(argv[i], "--round-digits") == 0)
-        {
-            options->round_digits = std::atoi(argv[i + 1]);
-        }
-        else if (std::strcmp(argv[i], "--deflection") == 0)
-        {
-            options->mesh_linear_deflection = std::atof(argv[i + 1]);
-            options->mesh_deflection_mode = geometer::MeshDeflectionMode::Absolute;
-        }
-        else if (std::strcmp(argv[i], "--angular") == 0)
-        {
-            options->mesh_angular_deflection = std::atof(argv[i + 1]);
-        }
-        else if (std::strcmp(argv[i], "--deflection-mode") == 0)
-        {
-            options->mesh_deflection_mode = std::strcmp(argv[i + 1], "absolute") == 0
-                                                ? geometer::MeshDeflectionMode::Absolute
-                                                : geometer::MeshDeflectionMode::BboxRelative;
-        }
-        else if (std::strcmp(argv[i], "--deflection-coefficient") == 0)
-        {
-            options->mesh_deflection_coefficient = std::atof(argv[i + 1]);
-            options->mesh_deflection_mode = geometer::MeshDeflectionMode::BboxRelative;
-        }
-        else if (std::strcmp(argv[i], "--outline-algorithm") == 0)
-        {
-            const char* value = argv[i + 1];
-            options->outline_algorithm =
-                (std::strcmp(value, "mesh-shadow") == 0 || std::strcmp(value, "mesh_shadow") == 0)
-                    ? geometer::ProjectionOutlineAlgorithm::MeshShadow
-                    : geometer::ProjectionOutlineAlgorithm::HlrClosedEdges;
-        }
-    }
 }
 
 static int validate_model_format_args(int argc, char* argv[], int start)
@@ -807,6 +628,25 @@ static int execute_planar_step_job(const rapidjson::Value& job, std::string* out
     return 0;
 }
 
+static int execute_mesh_hlr_job(const rapidjson::Value& job, const rapidjson::Value* batch_options,
+                                std::string* output_path, std::string* error_message)
+{
+    std::string mesh_path;
+    if (!member_string(job, "mesh_path", &mesh_path) || mesh_path.empty())
+    {
+        *error_message = "job requires string mesh_path";
+        return 2;
+    }
+    if (!member_string(job, "output_path", output_path) || output_path->empty())
+    {
+        *error_message = "job requires string output_path";
+        return 2;
+    }
+    return geometer::cli::project_indexed_mesh_file(
+        mesh_path, *output_path, options_json_for_value(batch_options),
+        options_json_for_value(options_value_for_object(job)), error_message);
+}
+
 static int execute_batch_job(const rapidjson::Value& job, const rapidjson::Value* batch_options,
                              std::string* operation, std::string* output_path,
                              std::string* error_message)
@@ -829,6 +669,10 @@ static int execute_batch_job(const rapidjson::Value& job, const rapidjson::Value
     if (*operation == "model_bounds_json")
     {
         return execute_model_bounds_job(job, batch_options, output_path, error_message);
+    }
+    if (*operation == "mesh_hlr_projection_json")
+    {
+        return execute_mesh_hlr_job(job, batch_options, output_path, error_message);
     }
     if (*operation == "planar_step")
     {
@@ -1221,6 +1065,36 @@ int main(int argc, char* argv[])
         clean_exit(0);
     }
 
+    if (std::strcmp(argv[1], "mesh-project-hlr") == 0)
+    {
+        if (argc < 4)
+        {
+            std::fprintf(stderr, "mesh-project-hlr requires input and output paths.\n");
+            return 1;
+        }
+        std::string options_json = "{}";
+        for (int index = 4; index < argc; ++index)
+        {
+            if (std::strcmp(argv[index], "--options") != 0 || index + 1 >= argc)
+            {
+                std::fprintf(stderr, "mesh-project-hlr accepts only --options <path>.\n");
+                return 2;
+            }
+            if (!read_text_file(argv[++index], &options_json))
+            {
+                std::fprintf(stderr, "Failed reading mesh HLR options file.\n");
+                return 1;
+            }
+        }
+        std::string error_message;
+        const int result = geometer::cli::project_indexed_mesh_file(argv[2], argv[3], "{}",
+                                                                    options_json, &error_message);
+        if (result != 0)
+            std::fprintf(stderr, "Indexed-mesh HLR failed (%d): %s\n", result,
+                         error_message.c_str());
+        clean_exit(result);
+    }
+
     if (std::strcmp(argv[1], "planar-step") == 0)
     {
         if (argc < 4)
@@ -1271,7 +1145,12 @@ int main(int argc, char* argv[])
         {
             return format_result;
         }
-        parse_projection_options(argc, argv, 4, &options, &view_id, &mode);
+        const int projection_options_result =
+            parse_projection_options(argc, argv, 4, &options, &view_id, &mode);
+        if (projection_options_result != 0)
+        {
+            return projection_options_result;
+        }
 
         std::vector<unsigned char> step_bytes;
         if (!read_file_bytes(input, &step_bytes))

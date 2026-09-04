@@ -351,14 +351,26 @@ class OverlayBuilder
             const double radial_y = midpoint(event.y) - midpoint(curve.circle.center.y);
             return {approximate_circle_key(radial_x, radial_y), 0.0};
         }
-        const AnalyticFilteredPointNm& canonical_start =
-            occurrence.agrees_with_carrier ? curve.start : curve.end;
-        const AnalyticFilteredPointNm& canonical_end =
-            occurrence.agrees_with_carrier ? curve.end : curve.start;
-        const double delta_x = midpoint(canonical_end.x) - midpoint(canonical_start.x);
-        const double delta_y = midpoint(canonical_end.y) - midpoint(canonical_start.y);
-        const bool use_x = std::fabs(delta_x) >= std::fabs(delta_y);
-        const double direction = use_x ? delta_x : delta_y;
+        bool use_x = false;
+        double direction = 0.0;
+        if (curve.has_construction_line_direction)
+        {
+            use_x = integer_magnitude(curve.construction_line_dx) >=
+                    integer_magnitude(curve.construction_line_dy);
+            direction = static_cast<double>(use_x ? curve.construction_line_dx
+                                                  : curve.construction_line_dy);
+        }
+        else
+        {
+            const AnalyticFilteredPointNm& canonical_start =
+                occurrence.agrees_with_carrier ? curve.start : curve.end;
+            const AnalyticFilteredPointNm& canonical_end =
+                occurrence.agrees_with_carrier ? curve.end : curve.start;
+            const double delta_x = midpoint(canonical_end.x) - midpoint(canonical_start.x);
+            const double delta_y = midpoint(canonical_end.y) - midpoint(canonical_start.y);
+            use_x = std::fabs(delta_x) >= std::fabs(delta_y);
+            direction = use_x ? delta_x : delta_y;
+        }
         const double coordinate = use_x ? midpoint(event.x) : midpoint(event.y);
         return {direction >= 0.0 ? coordinate : -coordinate, 0.0};
     }
@@ -609,16 +621,27 @@ class OverlayBuilder
         const AnalyticAtomicCurveNm& curve = geometry_.curves[group.representative_curve - 1];
         if (group.kind == AnalyticAtomicCurveKind::line)
         {
-            const AnalyticFilteredOccurrence& occurrence =
-                geometry_.occurrences[group.representative_curve - 1];
-            const AnalyticFilteredPointNm& canonical_start =
-                occurrence.agrees_with_carrier ? curve.start : curve.end;
-            const AnalyticFilteredPointNm& canonical_end =
-                occurrence.agrees_with_carrier ? curve.end : curve.start;
-            const double delta_x = midpoint(canonical_end.x) - midpoint(canonical_start.x);
-            const double delta_y = midpoint(canonical_end.y) - midpoint(canonical_start.y);
-            const bool use_x = std::fabs(delta_x) >= std::fabs(delta_y);
-            const bool ascending = (use_x ? delta_x : delta_y) >= 0.0;
+            bool use_x = false;
+            bool ascending = false;
+            if (curve.has_construction_line_direction)
+            {
+                use_x = integer_magnitude(curve.construction_line_dx) >=
+                        integer_magnitude(curve.construction_line_dy);
+                ascending = (use_x ? curve.construction_line_dx : curve.construction_line_dy) >= 0;
+            }
+            else
+            {
+                const AnalyticFilteredOccurrence& occurrence =
+                    geometry_.occurrences[group.representative_curve - 1];
+                const AnalyticFilteredPointNm& canonical_start =
+                    occurrence.agrees_with_carrier ? curve.start : curve.end;
+                const AnalyticFilteredPointNm& canonical_end =
+                    occurrence.agrees_with_carrier ? curve.end : curve.start;
+                const double delta_x = midpoint(canonical_end.x) - midpoint(canonical_start.x);
+                const double delta_y = midpoint(canonical_end.y) - midpoint(canonical_start.y);
+                use_x = std::fabs(delta_x) >= std::fabs(delta_y);
+                ascending = (use_x ? delta_x : delta_y) >= 0.0;
+            }
             const auto& left_value = use_x ? left.x : left.y;
             const auto& right_value = use_x ? right.x : right.y;
             return ascending ? left_value.upper < right_value.lower

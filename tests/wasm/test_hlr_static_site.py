@@ -10,6 +10,7 @@ import tempfile
 import time
 import urllib.request
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -105,6 +106,9 @@ async function main() {
           projection: document.querySelector("#projectionMetric")?.textContent,
           paths: document.querySelector("#projectionSvg")?.childElementCount,
           cameraActive: document.querySelector('button[data-view="camera"]')?.classList.contains("active"),
+          bothActive: document.querySelector('button[data-mode="both"]')?.classList.contains("active"),
+          fastBackend: document.querySelector("#fastBackendInput")?.checked,
+          outlineAlgorithm: document.querySelector("#outlineAlgoSelect")?.value,
           lens: document.querySelector("#cameraLensSelect")?.value,
           canvasLens: document.querySelector("#modelCanvas")?.dataset.cameraLens,
           axes: {
@@ -132,6 +136,8 @@ async function main() {
         };
       }
       if (document.title === "FAIL") throw new Error(document.querySelector("#validationResult")?.textContent);
+      const status = document.querySelector("#status")?.textContent || "";
+      if (status.startsWith("Error:")) throw new Error(status);
       await new Promise((resolve) => setTimeout(resolve, 50));
     }
     throw new Error("Timed out waiting for the initial HLR projection.");
@@ -356,6 +362,74 @@ async function main() {
     throw new Error("Model switch did not preserve the active Top view.");
   })()`, true);
 
+  const fastSelection = await evaluate(`(async () => {
+    const set = (selector, value) => {
+      const control = document.querySelector(selector);
+      control.value = value;
+      control.dispatchEvent(new Event("change", { bubbles: true }));
+    };
+    const waitForReady = async (view, algorithm = null) => {
+      const deadline = Date.now() + 120000;
+      while (Date.now() < deadline) {
+        const metric = document.querySelector("#projectionMetric")?.textContent || "";
+        const svg = document.querySelector("#projectionSvg");
+        if (!document.body.classList.contains("busy") && metric.startsWith(view + " ") &&
+            (!algorithm || svg?.dataset.projectionAlgorithm === algorithm)) return;
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      }
+      throw new Error("Timed out waiting for " + view + " " + (algorithm || "") + " projection.");
+    };
+    set("#modelSelect", "sot223.stp");
+    await waitForReady("top");
+    document.querySelector('button[data-view="front"]').click();
+    await waitForReady("front");
+    const fastToggle = document.querySelector("#fastBackendInput");
+    fastToggle.checked = true;
+    fastToggle.dispatchEvent(new Event("change", { bubbles: true }));
+    set("#fastCreaseAngleInput", "30");
+    set("#outlineAlgoSelect", "fast-mesh-shadow");
+    await waitForReady("front", "fast");
+    const detailAt30Degrees = document.querySelectorAll("#projectionSvg .detail").length;
+    set("#fastCreaseAngleInput", "10");
+    const changedDeadline = Date.now() + 120000;
+    while (Date.now() < changedDeadline) {
+      if (!document.body.classList.contains("busy") &&
+          document.querySelectorAll("#projectionSvg .detail").length > detailAt30Degrees) break;
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+    const svg = document.querySelector("#projectionSvg");
+    if (document.body.classList.contains("busy") || svg?.dataset.projectionAlgorithm !== "fast" ||
+        svg?.dataset.outlineAlgorithm !== "fast-mesh-shadow" ||
+        document.querySelectorAll("#projectionSvg .detail").length <= detailAt30Degrees) {
+      throw new Error("Fast crease angle did not change the SOT-223 projection.");
+    }
+    const layerCounts = (mode) => {
+      document.querySelector('button[data-mode="' + mode + '"]').click();
+      return {
+        detail: document.querySelectorAll("#projectionSvg .detail").length,
+        outline: document.querySelectorAll("#projectionSvg .outline").length,
+      };
+    };
+    const result = {
+      algorithm: svg.dataset.projectionAlgorithm,
+      fastBackend: fastToggle.checked,
+      creaseAngleDegrees: document.querySelector("#fastCreaseAngleInput").value,
+      detailAt30Degrees,
+      detailAt10Degrees: document.querySelectorAll("#projectionSvg .detail").length,
+      model: document.querySelector("#modelSelect").value,
+      view: document.querySelector('button[data-view="front"]').classList.contains("active") ? "front" : "other",
+      outlineAlgorithm: document.querySelector("#outlineAlgoSelect").value,
+      metric: document.querySelector("#projectionMetric").textContent,
+      occtSettingsHidden: document.querySelector("#occtSettings").hidden,
+      fastSettingsHidden: document.querySelector("#fastSettings").hidden,
+      detailOnly: layerCounts("detail"),
+      outlineOnly: layerCounts("outline"),
+      both: layerCounts("both"),
+    };
+    document.querySelector('button[data-mode="detail"]').click();
+    return result;
+  })()`, true);
+
   const geometryReset = await evaluate(`(async () => {
     const set = (selector, value) => {
       const control = document.querySelector(selector);
@@ -363,6 +437,9 @@ async function main() {
       control.dispatchEvent(new Event("change", { bubbles: true }));
     };
     set("#algoSelect", "exact");
+    const fastToggle = document.querySelector("#fastBackendInput");
+    fastToggle.checked = true;
+    fastToggle.dispatchEvent(new Event("change", { bubbles: true }));
     set("#outlineAlgoSelect", "hlr-close");
     set("#meshDeflectionModeSelect", "absolute");
     set("#linDeflInput", "0.25");
@@ -377,6 +454,8 @@ async function main() {
       await new Promise((resolve) => setTimeout(resolve, 50));
     }
     return {
+      fastBackend: fastToggle.checked,
+      fastCreaseAngleDegrees: document.querySelector("#fastCreaseAngleInput").value,
       algorithm: document.querySelector("#algoSelect").value,
       outlineAlgorithm: document.querySelector("#outlineAlgoSelect").value,
       meshMode: document.querySelector("#meshDeflectionModeSelect").value,
@@ -519,6 +598,7 @@ async function main() {
     lensSwitch,
     geometryControls,
     numericAutoProjection,
+    fastSelection,
     geometryReset,
     axisPresets,
     modelSwitch,
@@ -567,78 +647,33 @@ def _wait_for_server(url: str) -> None:
     raise RuntimeError(f"Timed out waiting for {url}")
 
 
-def test_hlr_static_site_upload_projection_and_export() -> None:
-    chrome = _find_chrome()
-    node = shutil.which("node")
-    if chrome is None or node is None:
-        if os.environ.get("CI"):
-            pytest.fail("Chrome and Node.js are required in CI for the HLR static-site gate.")
-        pytest.skip("Chrome or Node.js is unavailable.")
-    assert SITE.is_dir()
+def _assert_fast_selection(result: dict[str, Any]) -> None:
+    selection = result["fastSelection"]
+    assert selection["algorithm"] == "fast"
+    assert selection["fastBackend"] is True
+    assert selection["creaseAngleDegrees"] == "10"
+    assert selection["detailAt10Degrees"] > selection["detailAt30Degrees"]
+    assert selection["model"] == "sot223.stp"
+    assert selection["view"] == "front"
+    assert selection["outlineAlgorithm"] == "fast-mesh-shadow"
+    assert " detail " in selection["metric"]
+    assert " outline " in selection["metric"]
+    assert selection["occtSettingsHidden"] is True
+    assert selection["fastSettingsHidden"] is False
+    assert selection["detailOnly"]["detail"] > 0
+    assert selection["detailOnly"]["outline"] == 0
+    assert selection["outlineOnly"]["detail"] == 0
+    assert selection["outlineOnly"]["outline"] > 0
+    assert selection["both"]["detail"] > 0
+    assert selection["both"]["outline"] > 0
 
-    with tempfile.TemporaryDirectory(prefix="geometer-hlr-site-", ignore_cleanup_errors=True) as temporary:
-        temporary_path = Path(temporary)
-        profile = temporary_path / "profile"
-        downloads = temporary_path / "downloads"
-        downloads.mkdir()
-        http_port = _free_port()
-        cdp_port = _free_port()
-        url = f"http://127.0.0.1:{http_port}/"
-        server = subprocess.Popen(
-            [sys.executable, "-m", "http.server", str(http_port), "--bind", "127.0.0.1", "--directory", str(SITE)],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        )
-        _wait_for_server(url)
-        browser = subprocess.Popen(
-            [
-                chrome,
-                "--headless=new",
-                "--disable-gpu",
-                "--no-first-run",
-                "--no-default-browser-check",
-                f"--user-data-dir={profile}",
-                f"--remote-debugging-port={cdp_port}",
-                url,
-            ],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        )
-        try:
-            completed = subprocess.run(
-                [node, "-e", CDP_SCRIPT],
-                cwd=ROOT,
-                env={
-                    **os.environ,
-                    "CDP_PORT": str(cdp_port),
-                    "TEST_URL": url,
-                    "DOWNLOAD_PATH": str(downloads),
-                    "UPLOAD_FIXTURE": str(
-                        ROOT / "tests" / "fixtures" / "step" / "embedded_models" / "SOT-23.STEP"
-                    ),
-                },
-                capture_output=True,
-                text=True,
-                timeout=180,
-                check=False,
-            )
-        finally:
-            for process in (browser, server):
-                if process.poll() is None:
-                    process.terminate()
-                try:
-                    process.wait(timeout=10)
-                except subprocess.TimeoutExpired:
-                    process.kill()
-                    process.wait(timeout=10)
-        assert completed.returncode == 0, completed.stdout + completed.stderr
-        result = json.loads(completed.stdout)
-        exported = downloads / result["filename"]
-        assert exported.is_file()
-        exported_svg = exported.read_text(encoding="utf-8")
 
+def _assert_hlr_site_result(result: dict[str, Any], exported_svg: str) -> None:
     assert result["initial"]["paths"] > 1
     assert result["initial"]["cameraActive"] is True
+    assert result["initial"]["bothActive"] is True
+    assert result["initial"]["fastBackend"] is True
+    assert result["initial"]["outlineAlgorithm"] == "fast-mesh-shadow"
     assert result["initial"]["projection"].startswith("camera ")
     assert result["initial"]["lens"] == "orthographic"
     assert result["initial"]["canvasLens"] == "orthographic"
@@ -656,7 +691,7 @@ def test_hlr_static_site_upload_projection_and_export() -> None:
         "active": True,
         "open": True,
         "contentMounted": True,
-            "rightInset": "368px",
+        "rightInset": "368px",
     }
     assert result["panelSystem"] == {
         "resized": True,
@@ -701,9 +736,12 @@ def test_hlr_static_site_upload_projection_and_export() -> None:
         "sawBusy": True,
         "settled": True,
     }
+    _assert_fast_selection(result)
     assert result["geometryReset"] == {
+        "fastBackend": True,
+        "fastCreaseAngleDegrees": "30",
         "algorithm": "poly",
-        "outlineAlgorithm": "mesh-shadow",
+        "outlineAlgorithm": "fast-mesh-shadow",
         "meshMode": "bbox-relative",
         "coefficient": "0.004",
         "linear": "0.01",
@@ -738,7 +776,7 @@ def test_hlr_static_site_upload_projection_and_export() -> None:
     assert "stroke: #7c3aed; stroke-width: 2px; stroke-dasharray: none" in result["appearance"]["style"]
     assert result["uploaded"]["selected"] == "upload-test.step (local)"
     assert result["uploaded"]["metric"].startswith("front ")
-    assert result["uploaded"]["options"] == 6
+    assert result["uploaded"]["options"] == 7
     assert result["uploaded"]["paths"] > 1
     assert result["filename"] == "upload-test-front-detail.svg"
     assert result["exceptions"] == []
@@ -746,3 +784,80 @@ def test_hlr_static_site_upload_projection_and_export() -> None:
     assert exported_svg.startswith('<?xml version="1.0" encoding="UTF-8"?>')
     assert "upload-test.step - front detail" in exported_svg
     assert "<svg" in exported_svg and "viewBox=" in exported_svg
+
+
+def test_hlr_static_site_upload_projection_and_export() -> None:
+    chrome = _find_chrome()
+    node = shutil.which("node")
+    if chrome is None or node is None:
+        if os.environ.get("CI"):
+            pytest.fail("Chrome and Node.js are required in CI for the HLR static-site gate.")
+        pytest.skip("Chrome or Node.js is unavailable.")
+    assert SITE.is_dir()
+
+    with tempfile.TemporaryDirectory(prefix="geometer-hlr-site-", ignore_cleanup_errors=True) as temporary:
+        temporary_path = Path(temporary)
+        profile = temporary_path / "profile"
+        downloads = temporary_path / "downloads"
+        downloads.mkdir()
+        upload_fixture = Path(
+            os.environ.get(
+                "GEOMETER_HLR_UPLOAD_FIXTURE",
+                str(ROOT / "tests" / "fixtures" / "step" / "embedded_models" / "SOT-23.STEP"),
+            )
+        )
+        http_port = _free_port()
+        cdp_port = _free_port()
+        url = f"http://127.0.0.1:{http_port}/"
+        server = subprocess.Popen(
+            [sys.executable, "-m", "http.server", str(http_port), "--bind", "127.0.0.1", "--directory", str(SITE)],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        _wait_for_server(url)
+        browser = subprocess.Popen(
+            [
+                chrome,
+                "--headless=new",
+                "--disable-gpu",
+                "--no-first-run",
+                "--no-default-browser-check",
+                f"--user-data-dir={profile}",
+                f"--remote-debugging-port={cdp_port}",
+                url,
+            ],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        try:
+            completed = subprocess.run(
+                [node, "-e", CDP_SCRIPT],
+                cwd=ROOT,
+                env={
+                    **os.environ,
+                    "CDP_PORT": str(cdp_port),
+                    "TEST_URL": url,
+                    "DOWNLOAD_PATH": str(downloads),
+                    "UPLOAD_FIXTURE": str(upload_fixture),
+                },
+                capture_output=True,
+                text=True,
+                timeout=180,
+                check=False,
+            )
+        finally:
+            for process in (browser, server):
+                if process.poll() is None:
+                    process.terminate()
+                try:
+                    process.wait(timeout=10)
+                except subprocess.TimeoutExpired:
+                    process.kill()
+                    process.wait(timeout=10)
+        assert completed.returncode == 0, completed.stdout + completed.stderr
+        result = json.loads(completed.stdout)
+        exported = downloads / result["filename"]
+        assert exported.is_file()
+        exported_svg = exported.read_text(encoding="utf-8")
+
+    _assert_hlr_site_result(result, exported_svg)

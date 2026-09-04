@@ -1,5 +1,44 @@
 # Binary Formats
 
+## Indexed Triangle Mesh A0
+
+`geometry.indexed_triangle_mesh.packet.a0` is the canonical input attachment
+for synthesized Fast HLR geometry. Its media type is
+`application/vnd.wavenumber.geometer.indexed-triangle-mesh`. Coordinates are
+IEEE 754 binary64 millimeters, indices are little-endian unsigned 32-bit
+integers, and all reserved or alignment bytes are zero.
+
+The fixed 64-byte little-endian header is:
+
+```text
+bytes[8] magic = "GMIMSH01"
+u16 version = 1
+u16 header_bytes = 64
+u32 flags                         // bit 0: source-face table present
+u64 packet_bytes                  // exact attachment length
+u32 vertex_count                  // 1..2,000,000
+u32 triangle_count                // 1..2,000,000
+u64 positions_offset              // exactly 64
+u64 triangles_offset              // immediately after positions
+u64 source_faces_offset           // zero if absent; otherwise next 8-byte boundary
+u64 reserved0 = 0
+```
+
+Positions contain `vertex_count` tightly packed records of three finite
+binary64 values `(x, y, z)`. Triangles contain `triangle_count` tightly packed
+records of three `u32` vertex indices. Each triangle must reference three
+distinct in-range indices. The optional source-face table contains one `u32`
+per triangle; equal values identify triangles tessellated from the same smooth
+source face, and `0xffffffff` means unspecified. If every value is unspecified,
+the canonical encoder omits the table and clears flag bit 0.
+
+The packet ends on an 8-byte boundary, is at most 268,435,456 bytes, and has no
+unreferenced ranges or trailing data. Decoders reject non-finite coordinates,
+unknown flags, noncanonical offsets, nonzero padding, malformed indices, empty
+meshes, and limit violations before Fast HLR preparation. Surface normals are
+derived rather than transported. Materials, colors, application object IDs,
+and PCB policy are deliberately outside this geometry contract.
+
 ## Planar Batch Byte Format
 
 `solve_planar_batch_from_bytes`, `geometer_planar_batch_solve_bytes`, and the

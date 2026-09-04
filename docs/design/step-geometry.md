@@ -92,7 +92,40 @@ enum class ProjectionCurveMode {
 
 enum class ProjectionAlgorithm {
     Poly,
-    Exact
+    Exact,
+    Fast
+};
+
+enum class ProjectionOutlineAlgorithm {
+    HlrClosedEdges,
+    MeshShadow,
+    FastMeshShadow
+};
+
+struct FastHlrLimits {
+    std::size_t max_vertices = 2'000'000;
+    std::size_t max_triangles = 2'000'000;
+    std::size_t max_edges = 4'000'000;
+    std::size_t max_grid_references = 64'000'000;
+    std::size_t max_candidate_pairs = 100'000'000;
+    std::size_t max_fragments = 8'000'000;
+    std::size_t max_output_segments = 4'000'000;
+};
+
+struct FastHlrOptions {
+    bool include_boundaries = true;
+    bool include_creases = true;
+    bool include_silhouettes = true;
+    bool include_hidden = false;
+    bool suppress_coplanar_seams = false;
+    double crease_angle_rad = 0.5235987755982988;
+    double weld_tolerance = 1.0e-7;
+    double projected_tolerance = 1.0e-8;
+    double depth_tolerance = 1.0e-7;
+    double coplanar_seam_angle_rad = 0.017453292519943295;
+    double coplanar_seam_depth_tolerance = 1.0e-6;
+    double coplanar_seam_lateral_tolerance = 1.0e-6;
+    FastHlrLimits limits;
 };
 
 struct ProjectionViewSpec {
@@ -103,6 +136,10 @@ struct ProjectionViewSpec {
 
 struct HlrProjectionOptions {
     std::vector<ProjectionViewSpec> views;
+    bool output_outline = true;
+    bool output_detail = true;
+    bool output_bbox = true;
+    FastHlrOptions fast;
     std::array<double, 16> model_transform = {
         1.0, 0.0, 0.0, 0.0,
         0.0, 1.0, 0.0, 0.0,
@@ -134,6 +171,54 @@ struct HlrProjectionOptions {
     double hlr_angle_tolerance = 0.0174533;
 };
 ```
+
+The three output modes are independently selectable. Their result members stay
+present when disabled but contain no primitives. In particular, an
+outline-only mesh-shadow request does not run detail HLR, and a detail-only
+request does not construct an outline. A combined request never merges outline
+and detail geometry, allowing downstream renderers to composite them with
+different presentation choices.
+
+`Fast` is an additive versioned backend. It tessellates through OCCT, builds a
+central C++ triangle/edge incidence graph, activates boundary, crease, and
+view-dependent silhouette candidates, and classifies visibility against a
+projected-triangle spatial index. Its controls are isolated in the
+`fast` member rather than reinterpreting exact/poly edge flags. It currently
+emits straight segments and joins only exact-collinear, unbranched fragments
+that share topology, visibility, edge category, and source-face provenance.
+Occlusion-created endpoints are never eligible joins. The existing
+line-and-circular-arc result shape is retained. General tolerance-based
+simplification and bounded arc fitting remain post-A0 work. `max_fragments` bounds
+pre-reconstruction work independently from the final `max_output_segments`
+limit.
+
+Coplanar seam suppression is an opt-in Fast control. It removes only the
+parameter interval where a different, same-facing source face matches an
+incident face within the seam angle/depth tolerances and covers an offset probe
+on the opposite side of the candidate. Suppressed intervals are neither visible
+nor hidden. Both continuation faces must be front-facing in the active view;
+back-face seams remain conservatively visible. Opposed normals, non-manifold
+ambiguity, same-side coincident faces, straddling support, and unsupported
+intervals retain their linework.
+
+Fast-option behavior is intentionally explicit in A0:
+
+| Option group | `fast` behavior |
+|---|---|
+| `views`, `model_transform`, `strip_root_placement`, `round_digits` | Supported common behavior |
+| `output_outline`, `output_detail`, `output_bbox` | Supported as independent composable layers |
+| mesh deflection controls | Supported; they define the prepared triangle mesh |
+| nested `fast` controls and limits | Supported by the fast detail and fast mesh-shadow engines |
+| `outline_algorithm=mesh-shadow` | Delegated to the independent Clipper2 triangle-union outline |
+| `outline_algorithm=fast-mesh-shadow` | Reconstructs projected CAD-face loops when possible, falls back to per-face triangle unions, then unions the reduced contours |
+| `outline_algorithm=hlr-close` | Delegated to the existing poly HLR-close outline path |
+| exact/poly `edge_*` flags | Not interpreted by fast detail; nested `fast` candidate flags apply instead |
+| `curve_mode`, `samples_per_curve`, native-arc behavior | Fast detail emits segments only and does not fit arcs |
+| `union_outline_polygons`, `hlr_angle_tolerance` | Apply only in the delegated outline path where applicable |
+
+The removed WebGL depth-pass prototype is not part of the production package.
+Any future raster-HLR surface requires its own contract and design decision;
+the current production interface provides vector HLR and mesh illustration.
 
 Projection output:
 

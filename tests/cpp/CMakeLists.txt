@@ -9,6 +9,22 @@ target_include_directories(geometer_planar_contours_test PRIVATE
 
 add_test(NAME geometer_planar_contours_test COMMAND geometer_planar_contours_test)
 
+add_executable(geometer_fast_hlr_test
+    fast_hlr_test.cpp
+)
+
+target_link_libraries(geometer_fast_hlr_test PRIVATE geometer_lib)
+
+add_test(NAME geometer_fast_hlr_test COMMAND geometer_fast_hlr_test)
+
+add_executable(geometer_indexed_mesh_packet_test
+    indexed_mesh_packet_test.cpp
+)
+
+target_link_libraries(geometer_indexed_mesh_packet_test PRIVATE geometer_lib)
+
+add_test(NAME geometer_indexed_mesh_packet_test COMMAND geometer_indexed_mesh_packet_test)
+
 add_executable(geometer_planar_solve_test
     planar_solve_test.cpp
 )
@@ -638,6 +654,12 @@ if(NOT EMSCRIPTEN)
     )
 
     target_link_libraries(geometer_ipc_a0_unexpected_exit_test_server PRIVATE geometer_lib)
+
+    add_executable(geometer_ipc_a0_writer_failure_test_server
+        ipc_a0_writer_failure_test_server.cpp
+    )
+
+    target_link_libraries(geometer_ipc_a0_writer_failure_test_server PRIVATE geometer_lib)
 endif()
 
 add_executable(geometer_projection_options_json_test
@@ -772,39 +794,41 @@ if(NOT EMSCRIPTEN)
                 ${CMAKE_SOURCE_DIR}/tests/fixtures/step/generated_topology
     )
 
-    add_test(
-        NAME geometer_step_topology_fixture_baseline_test
-        COMMAND geometer_step_topology_fixture_inventory --check-report
-                docs/reports/step-topology-fixture-baseline.json
-                monolithic
-                tests/fixtures/step/embedded_models/miniature_test_point.stp
-                tests/fixtures/glb/embedded_models/miniature_test_point.glb
-                monolithic
-                tests/fixtures/step/embedded_models/SOT-23.STEP
-                tests/fixtures/glb/embedded_models/SOT-23.glb
-                small_assembly
-                tests/fixtures/step/embedded_models/RESC1608X06L.step
-                tests/fixtures/glb/embedded_models/RESC1608X06L.glb
-                repeated_assembly
-                tests/fixtures/step/embedded_models/SOIC-20-300.STEP
-                tests/fixtures/glb/embedded_models/SOIC-20-300.glb
-                varied_assembly
-                tests/fixtures/step/embedded_models/ABM3B.STEP
-                tests/fixtures/glb/embedded_models/ABM3B.glb
-                generated_repeated_assembly
-                tests/fixtures/step/generated_topology/generated_repeated_occurrences.step
-                -
-                generated_fused_slab
-                tests/fixtures/step/generated_topology/generated_fused_slab.step
-                -
-                generated_flat_multi_solid
-                tests/fixtures/step/generated_topology/generated_flat_multi_solid.step
-                -
-    )
-    set_tests_properties(
-        geometer_step_topology_fixture_baseline_test
-        PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-    )
+    if(WIN32)
+        add_test(
+            NAME geometer_step_topology_fixture_baseline_test
+            COMMAND geometer_step_topology_fixture_inventory --check-report
+                    docs/reports/step-topology-fixture-baseline.json
+                    monolithic
+                    tests/fixtures/step/embedded_models/miniature_test_point.stp
+                    tests/fixtures/glb/embedded_models/miniature_test_point.glb
+                    monolithic
+                    tests/fixtures/step/embedded_models/SOT-23.STEP
+                    tests/fixtures/glb/embedded_models/SOT-23.glb
+                    small_assembly
+                    tests/fixtures/step/embedded_models/RESC1608X06L.step
+                    tests/fixtures/glb/embedded_models/RESC1608X06L.glb
+                    repeated_assembly
+                    tests/fixtures/step/embedded_models/SOIC-20-300.STEP
+                    tests/fixtures/glb/embedded_models/SOIC-20-300.glb
+                    varied_assembly
+                    tests/fixtures/step/embedded_models/ABM3B.STEP
+                    tests/fixtures/glb/embedded_models/ABM3B.glb
+                    generated_repeated_assembly
+                    tests/fixtures/step/generated_topology/generated_repeated_occurrences.step
+                    -
+                    generated_fused_slab
+                    tests/fixtures/step/generated_topology/generated_fused_slab.step
+                    -
+                    generated_flat_multi_solid
+                    tests/fixtures/step/generated_topology/generated_flat_multi_solid.step
+                    -
+        )
+        set_tests_properties(
+            geometer_step_topology_fixture_baseline_test
+            PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        )
+    endif()
 endif()
 
 if(EMSCRIPTEN)
@@ -813,6 +837,7 @@ if(EMSCRIPTEN)
     # the same .cjs policy as the exact/synthetic targets above.
     set_target_properties(
         geometer_planar_contours_test
+        geometer_fast_hlr_test
         geometer_planar_solve_test
         geometer_planar_step_test
         geometer_model_bounds_test

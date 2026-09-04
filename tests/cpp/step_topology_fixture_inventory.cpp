@@ -1299,7 +1299,15 @@ int main(int argc, char** argv)
             const std::string actual = inventory_json(inspect_arguments(argc, argv, 3));
             if (actual != expected)
             {
-                throw std::runtime_error("STEP topology fixture baseline report is stale");
+                const auto difference =
+                    std::mismatch(expected.begin(), expected.end(), actual.begin(), actual.end());
+                const std::size_t offset =
+                    static_cast<std::size_t>(std::distance(expected.begin(), difference.first));
+                const std::size_t context_start = offset > 80U ? offset - 80U : 0U;
+                throw std::runtime_error("STEP topology fixture baseline report is stale at byte " +
+                                         std::to_string(offset) +
+                                         "\nexpected: " + expected.substr(context_start, 160U) +
+                                         "\nactual:   " + actual.substr(context_start, 160U));
             }
             return 0;
         }

@@ -12,6 +12,7 @@ Native CLI:
 .\dist\native\windows-x64\geometer.exe model-to-glb input.step output.glb --format step
 .\dist\native\windows-x64\geometer.exe model-project-hlr input.step output.json --format step
 .\dist\native\windows-x64\geometer.exe model-project-svg input.step output.svg --format step --mode outline --view top
+.\dist\native\windows-x64\geometer.exe mesh-project-hlr input.mesh output.json --options fast-options.json
 .\dist\native\windows-x64\geometer.exe step-to-glb input.step output.glb
 .\dist\native\windows-x64\geometer.exe step-project-hlr input.step output.json
 .\dist\native\windows-x64\geometer.exe step-project-svg input.step output.svg --mode outline --view top
@@ -45,9 +46,31 @@ Projection CLI options:
 - `--curve-mode <native-arcs|polyline>`
 - `--samples <count>`
 - `--round-digits <count>`
-- `--outline-algorithm <mesh-shadow|hlr-close>`
+- `--projection-algorithm <poly|exact|fast>`
+- `--outline-algorithm <hlr-close|mesh-shadow|fast-mesh-shadow>`
 - `--deflection-mode <absolute|bbox-relative>`
 - `--deflection-coefficient <value>`
+
+`--projection-algorithm fast` selects Fast vector detail without changing the
+default `poly` behavior. `--outline-algorithm fast-mesh-shadow` independently
+selects the Fast outline implementation. They may be used together or with an
+older compatible counterpart.
+
+The direct projection commands expose the common selectors above. The `run`
+request is the file-oriented route for the full canonical nested `fast` block,
+including boundary, crease, silhouette, hidden-line, coplanar-seam, tolerance,
+and resource-limit controls. Canonical angles such as `crease_angle_rad` are
+radians; the browser demos convert their degree controls at the UI boundary.
+See [HLR Projection A0](hlr-projection-a0.md#fast-controls) for every member,
+default, unit, and compatibility alias.
+
+`mesh-project-hlr` accepts the governed indexed-triangle-mesh A0 packet and
+writes `geometry.hlr_projection.result.a0`. With no options file, it selects
+Fast detail and Fast mesh-shadow, the only applicable mesh backends. Its
+optional `--options` file is a strict canonical
+`geometry.hlr_projection.options.a0` object. The equivalent batch operation is
+`mesh_hlr_projection_json`, with `mesh_path`, `output_path`, and optional
+canonical `options`; batch-level options are applied first.
 
 STEP-to-GLB CLI options:
 

@@ -33,17 +33,20 @@ for (const required of [
   "GeometerIllustrationEmbedded",
   "GEOMETER_JS_B64",
   "GEOMETER_WASM_B64",
-  "geometry.mesh_illustration.prototype.a0",
+  "geometry.mesh_illustration.result.a0",
+  "geometry.model_hlr_projection.a0",
+  "_geometer_operation_execute",
   'id="illustrationStepInput"',
   'id="illustrationDownloadSvg"',
-  'id="illustrationDownloadScene"',
   'id="illustrationDownloadStyle"',
   'data-output="svg"',
   'data-output="canvas"',
+  "FAST VECTOR / C++ WASM CPU",
   'data-view="camera"',
   'id="illustrationHlrOutline"',
   'id="illustrationFuseSurfaces"',
   'id="illustrationHlrDetail"',
+  'id="illustrationFastCrease"',
   'id="illustrationMeshQuality"',
   'id="illustrationLinearDeflection"',
   'id="illustrationAngularDeflection"',
@@ -51,16 +54,43 @@ for (const required of [
   'id="illustrationHlrAngularDeflection"',
   'option value="lambert"',
   'id="illustrationBands" type="range" min="2" max="32"',
+  'id="illustrationAmbientOcclusion"',
+  'id="illustrationAoStrength"',
+  'id="illustrationAoRadius"',
+  'id="illustrationAoSamples"',
+  'id="illustrationAoBands"',
+  'id="illustrationAoRadius" type="range" min="1" max="60"',
+  '<option value="128">128 / maximum</option>',
+  'id="illustrationAoBands" type="range" min="2" max="32"',
+  "experimental-mesh-ambient-occlusion",
   "data:model/gltf-binary;base64,",
   "data:application/step;base64,",
   "data:font/woff2;base64,",
   "data:image/svg+xml;base64,",
 ])
   if (!html.includes(required)) throw new Error(`Illustration HTML omits ${required}.`);
+if (html.includes("geometer_step_hlr_projection_json_bytes"))
+  throw new Error("Illustration HTML still invokes the legacy focused HLR ABI.");
+if (/prototype\.a0|ILLUSTRATION PROTOTYPE|Mesh Illustration Prototype/u.test(html))
+  throw new Error("Illustration HTML retains a prototype identity or product label.");
 if (html.includes('id="illustrationTriangleLimit"'))
   throw new Error("Illustration HTML retains the prototype triangle limit.");
 if (html.includes("https://cdn.jsdelivr.net"))
   throw new Error("Illustration HTML retains its development CDN import map.");
+if (
+  !html.includes('id="illustrationHlrOutline" type="checkbox" checked') ||
+  !html.includes('id="illustrationHlrDetail" type="checkbox" checked')
+)
+  throw new Error("Illustration Lab does not default to Fast detail plus Fast mesh shadow.");
+for (const retired of [
+  'data-output="gpu"',
+  "GPU edge preview",
+  'id="illustrationFastCanvas"',
+  'id="illustrationFastBias"',
+  "RasterHlrViewport",
+  "@wavenumber/geometer/raster-hlr",
+])
+  if (html.includes(retired)) throw new Error(`Illustration HTML retains ${retired}.`);
 
 const license = await readFile(join(root, "node_modules", "three", "LICENSE"), "utf8");
 const licenseMatch = html.match(

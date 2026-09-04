@@ -2,78 +2,19 @@ import * as THREE from "three";
 import { TrackballControls } from "three/addons/controls/TrackballControls.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { PanelManager } from "/dist/wasm/demos/demo-tooling/panels.js";
+import { AXIS_VECTORS, buildProjectionViews } from "./hlr_projection_views.js";
 
 const manifestUrl = "/tests/fixtures/embedded_models_manifest.json";
-// A preset frame is explicit: Top and Front are viewer directions in model
-// coordinates. Right is derived as Top x Front to keep the frame right-handed.
-// Defaults use the demo convention requested for STEP models: Top +Y, Front +Z.
-const AXIS_VECTORS = {
-  "+x": [1, 0, 0],
-  "-x": [-1, 0, 0],
-  "+y": [0, 1, 0],
-  "-y": [0, -1, 0],
-  "+z": [0, 0, 1],
-  "-z": [0, 0, -1],
-};
 let topAxisId = "+y";
 let frontAxisId = "+z";
 
-function negateVector(value) {
-  return value.map((component) => -component);
-}
-
-function crossVector(a, b) {
-  return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
-}
-
-function normalizedSum(...vectors) {
-  const result = [0, 0, 0];
-  for (const vector of vectors)
-    for (let index = 0; index < 3; index += 1) result[index] += vector[index];
-  const length = Math.hypot(...result) || 1;
-  return result.map((component) => component / length);
-}
-
-function buildProjectionViews() {
-  const top = AXIS_VECTORS[topAxisId];
-  const front = AXIS_VECTORS[frontAxisId];
-  const right = crossVector(top, front);
-  return [
-    { id: "top", label: "Top", direction: top, up: negateVector(front) },
-    { id: "bottom", label: "Bottom", direction: negateVector(top), up: negateVector(front) },
-    { id: "front", label: "Front", direction: front, up: top },
-    { id: "back", label: "Back", direction: negateVector(front), up: top, mirrorX: true },
-    { id: "left", label: "Left", direction: negateVector(right), up: top, mirrorX: true },
-    { id: "right", label: "Right", direction: right, up: top },
-    {
-      id: "isoTop",
-      label: "ISO Top",
-      direction: normalizedSum(right, negateVector(front), top),
-      up: negateVector(front),
-    },
-    {
-      id: "isoBottom",
-      label: "ISO Bot",
-      direction: normalizedSum(right, front, negateVector(top)),
-      up: front,
-    },
-    { id: "isoFront", label: "ISO Front", direction: normalizedSum(right, front, top), up: top },
-    {
-      id: "isoBack",
-      label: "ISO Back",
-      direction: normalizedSum(right, negateVector(front), negateVector(top)),
-      up: negateVector(top),
-    },
-  ];
-}
-
-let projectionViews = buildProjectionViews();
+let projectionViews = buildProjectionViews(topAxisId, frontAxisId);
 
 const state = {
   models: [],
   selectedModel: null,
   viewId: "camera",
-  mode: "detail",
+  mode: "both",
   backend: "current",
   projectionWorker: null,
   workerBackend: null,
@@ -118,6 +59,7 @@ const els = {
   workSubtitle: document.getElementById("workSubtitle"),
   validationResult: document.getElementById("validationResult"),
   cameraLensSelect: document.getElementById("cameraLensSelect"),
+  fastBackendInput: document.getElementById("fastBackendInput"),
   algoSelect: document.getElementById("algoSelect"),
   outlineAlgoSelect: document.getElementById("outlineAlgoSelect"),
   meshDeflectionModeSelect: document.getElementById("meshDeflectionModeSelect"),
@@ -137,6 +79,18 @@ const els = {
   bboxToggleInput: document.getElementById("bboxToggleInput"),
   edgePresetSelect: document.getElementById("edgePresetSelect"),
   edgeRow: document.getElementById("edgeRow"),
+  occtSettings: document.getElementById("occtSettings"),
+  fastSettings: document.getElementById("fastSettings"),
+  fastEdgeRow: document.getElementById("fastEdgeRow"),
+  fastBoundariesInput: document.getElementById("fastBoundariesInput"),
+  fastCreasesInput: document.getElementById("fastCreasesInput"),
+  fastSilhouettesInput: document.getElementById("fastSilhouettesInput"),
+  fastHiddenInput: document.getElementById("fastHiddenInput"),
+  fastCoplanarSeamsInput: document.getElementById("fastCoplanarSeamsInput"),
+  fastCreaseAngleInput: document.getElementById("fastCreaseAngleInput"),
+  fastWeldToleranceInput: document.getElementById("fastWeldToleranceInput"),
+  fastProjectedToleranceInput: document.getElementById("fastProjectedToleranceInput"),
+  fastDepthToleranceInput: document.getElementById("fastDepthToleranceInput"),
   resetGeometryButton: document.getElementById("resetGeometryButton"),
   workspace: document.getElementById("workspace"),
   settingsPanelContent: document.getElementById("settingsPanelContent"),
@@ -159,14 +113,24 @@ const els = {
 };
 
 const GEOMETRY_DEFAULTS = Object.freeze({
+  fastBackend: true,
   algorithm: "poly",
-  outlineAlgorithm: "mesh-shadow",
+  outlineAlgorithm: "fast-mesh-shadow",
   meshDeflectionMode: "bbox-relative",
   deflectionCoefficient: "0.004",
   linearDeflection: "0.01",
   angularDeflection: "0.5",
   hlrAngleTolerance: "0.0174533",
   edgePreset: "detail",
+  fastBoundaries: true,
+  fastCreases: true,
+  fastSilhouettes: true,
+  fastHidden: false,
+  fastCoplanarSeams: false,
+  fastCreaseAngleDegrees: "30",
+  fastWeldTolerance: "0.0000001",
+  fastProjectedTolerance: "0.00000001",
+  fastDepthTolerance: "0.0000001",
 });
 
 const THREE_DEFAULTS = Object.freeze({
@@ -222,14 +186,20 @@ function applyEdgePreset(presetId) {
 }
 
 function syncGeometryControls() {
-  // Poly HLR only supports V/H Compound + OutLine. Gray out the 6 unsupported flags.
-  const poly = els.algoSelect.value === "poly";
+  // Fast vector uses a separate candidate contract. Poly HLR
+  // supports only V/H Compound + OutLine; Exact exposes all OCCT categories.
+  const algorithm = els.algoSelect.value;
+  const poly = algorithm === "poly";
+  const fast = els.fastBackendInput.checked;
+  els.occtSettings.hidden = fast;
+  els.fastSettings.hidden = !fast;
   for (const label of els.edgeRow.querySelectorAll("label.flag")) {
     const supported = !poly || label.dataset.algoPoly === "ok";
     label.classList.toggle("disabled", !supported);
     const cb = label.querySelector("input[type=checkbox]");
     cb.disabled = !supported;
   }
+  els.edgeRow.dataset.algorithm = algorithm;
   els.hlrTolInput.disabled = !poly;
   const relative = els.meshDeflectionModeSelect.value === "bbox-relative";
   els.deflCoeffInput.disabled = !relative;
@@ -237,6 +207,7 @@ function syncGeometryControls() {
 }
 
 function resetGeometryDefaults({ reproject = true } = {}) {
+  els.fastBackendInput.checked = GEOMETRY_DEFAULTS.fastBackend;
   els.algoSelect.value = GEOMETRY_DEFAULTS.algorithm;
   els.outlineAlgoSelect.value = GEOMETRY_DEFAULTS.outlineAlgorithm;
   els.meshDeflectionModeSelect.value = GEOMETRY_DEFAULTS.meshDeflectionMode;
@@ -245,6 +216,15 @@ function resetGeometryDefaults({ reproject = true } = {}) {
   els.angDeflInput.value = GEOMETRY_DEFAULTS.angularDeflection;
   els.hlrTolInput.value = GEOMETRY_DEFAULTS.hlrAngleTolerance;
   els.edgePresetSelect.value = GEOMETRY_DEFAULTS.edgePreset;
+  els.fastBoundariesInput.checked = GEOMETRY_DEFAULTS.fastBoundaries;
+  els.fastCreasesInput.checked = GEOMETRY_DEFAULTS.fastCreases;
+  els.fastSilhouettesInput.checked = GEOMETRY_DEFAULTS.fastSilhouettes;
+  els.fastHiddenInput.checked = GEOMETRY_DEFAULTS.fastHidden;
+  els.fastCoplanarSeamsInput.checked = GEOMETRY_DEFAULTS.fastCoplanarSeams;
+  els.fastCreaseAngleInput.value = GEOMETRY_DEFAULTS.fastCreaseAngleDegrees;
+  els.fastWeldToleranceInput.value = GEOMETRY_DEFAULTS.fastWeldTolerance;
+  els.fastProjectedToleranceInput.value = GEOMETRY_DEFAULTS.fastProjectedTolerance;
+  els.fastDepthToleranceInput.value = GEOMETRY_DEFAULTS.fastDepthTolerance;
   applyEdgePreset(GEOMETRY_DEFAULTS.edgePreset);
   syncGeometryControls();
   if (reproject && state.selectedModel) reprojectCurrent({ force: true });
@@ -626,8 +606,9 @@ function fitCamera(root) {
 }
 
 function currentOptions() {
+  const creaseAngleDegrees = Number.parseFloat(els.fastCreaseAngleInput.value);
   return {
-    projection_algorithm: els.algoSelect.value,
+    projection_algorithm: els.fastBackendInput.checked ? "fast" : els.algoSelect.value,
     outline_algorithm: els.outlineAlgoSelect.value,
     mesh_linear_deflection: Number.parseFloat(els.linDeflInput.value) || 0.01,
     mesh_angular_deflection: Number.parseFloat(els.angDeflInput.value) || 0.5,
@@ -635,6 +616,18 @@ function currentOptions() {
     mesh_relative: false,
     mesh_deflection_mode: els.meshDeflectionModeSelect.value,
     mesh_deflection_coefficient: Number.parseFloat(els.deflCoeffInput.value) || 0.004,
+    fast: {
+      include_boundaries: els.fastBoundariesInput.checked,
+      include_creases: els.fastCreasesInput.checked,
+      include_silhouettes: els.fastSilhouettesInput.checked,
+      include_hidden: els.fastHiddenInput.checked,
+      suppress_coplanar_seams: els.fastCoplanarSeamsInput.checked,
+      crease_angle_rad:
+        ((Number.isFinite(creaseAngleDegrees) ? creaseAngleDegrees : 30) * Math.PI) / 180,
+      weld_tolerance: Number.parseFloat(els.fastWeldToleranceInput.value) || 0.0000001,
+      projected_tolerance: Number.parseFloat(els.fastProjectedToleranceInput.value) || 0.00000001,
+      depth_tolerance: Number.parseFloat(els.fastDepthToleranceInput.value) || 0.0000001,
+    },
     ...readEdgeFlags(),
   };
 }
@@ -720,7 +713,7 @@ function syncPresetAxes({ reproject = false } = {}) {
     els.frontAxisSelect.value = defaultFrontAxis(topAxisId);
   }
   frontAxisId = els.frontAxisSelect.value;
-  projectionViews = buildProjectionViews();
+  projectionViews = buildProjectionViews(topAxisId, frontAxisId);
   els.viewButtons.dataset.topAxis = topAxisId;
   els.viewButtons.dataset.frontAxis = frontAxisId;
   for (const button of els.viewButtons.querySelectorAll("button[data-view]")) {
@@ -771,7 +764,8 @@ function optionsCacheTag(opts) {
     opts.mesh_deflection_coefficient,
   ];
   const edges = EDGE_FLAGS.map((name) => (opts[name] ? 1 : 0)).join("");
-  return [...base, edges].join(":");
+  const fast = JSON.stringify(opts.fast || {});
+  return [...base, edges, fast].join(":");
 }
 
 function modelCacheKey(model) {
@@ -878,6 +872,8 @@ async function renderProjectionForCurrentView() {
     return null;
 
   const counts = drawProjection(projectionResult.projection, viewId);
+  els.projectionSvg.dataset.projectionAlgorithm = opts.projection_algorithm;
+  els.projectionSvg.dataset.outlineAlgorithm = opts.outline_algorithm;
   const timings = projectionResult.timings || {};
   const hlrText = projectionTimingText(timings);
   const totalMs = performance.now() - started;
@@ -1359,6 +1355,11 @@ async function init() {
     redrawCurrentProjection();
   });
 
+  els.fastBackendInput.addEventListener("change", () => {
+    syncGeometryControls();
+    reprojectCurrent({ force: true });
+  });
+
   els.algoSelect.addEventListener("change", () => {
     syncGeometryControls();
     reprojectCurrent({ force: true });
@@ -1376,6 +1377,16 @@ async function init() {
     input.addEventListener("input", () => scheduleSettingsReprojection());
     input.addEventListener("change", () => scheduleSettingsReprojection({ immediate: true }));
   }
+  for (const input of [
+    els.fastCreaseAngleInput,
+    els.fastWeldToleranceInput,
+    els.fastProjectedToleranceInput,
+    els.fastDepthToleranceInput,
+  ]) {
+    input.addEventListener("input", () => scheduleSettingsReprojection());
+    input.addEventListener("change", () => scheduleSettingsReprojection({ immediate: true }));
+  }
+  els.fastEdgeRow.addEventListener("change", () => reprojectCurrent({ force: true }));
 
   for (const input of [
     els.detailColorInput,
@@ -1430,9 +1441,13 @@ async function init() {
     activateSegmented(els.modeButtons, "mode", state.mode);
   }
   const requestedAlgo = params.get("algo");
-  if (["poly", "exact"].includes(requestedAlgo)) els.algoSelect.value = requestedAlgo;
+  if (requestedAlgo === "fast") els.fastBackendInput.checked = true;
+  else if (["poly", "exact"].includes(requestedAlgo)) {
+    els.fastBackendInput.checked = false;
+    els.algoSelect.value = requestedAlgo;
+  }
   const requestedOutlineAlgo = params.get("outlineAlgo") || params.get("outline_algorithm");
-  if (["mesh-shadow", "hlr-close"].includes(requestedOutlineAlgo))
+  if (["mesh-shadow", "fast-mesh-shadow", "hlr-close"].includes(requestedOutlineAlgo))
     els.outlineAlgoSelect.value = requestedOutlineAlgo;
   const requestedMeshMode = params.get("meshMode") || params.get("mesh_deflection_mode");
   if (["bbox-relative", "absolute"].includes(requestedMeshMode))

@@ -29,6 +29,7 @@
 #include <StepData_StepWriter.hxx>
 #include <StepRepr_DescriptiveRepresentationItem.hxx>
 #include <StepRepr_PropertyDefinitionRepresentation.hxx>
+#include <StepRepr_Representation.hxx>
 #include <StepRepr_ShapeAspect.hxx>
 #include <StepShape_AdvancedFace.hxx>
 #include <StepShape_ManifoldSolidBrep.hxx>
@@ -293,13 +294,14 @@ bool representation_reaches(const occ::handle<StepData_StepModel>& model,
                             const occ::handle<StepRepr_RepresentationItem>& identified)
 {
     Interface_Graph graph(model);
-    std::vector<occ::handle<Standard_Transient>> pending = {representation};
+    std::vector<occ::handle<Standard_Transient>> pending;
+    pending.emplace_back(representation.get());
     std::unordered_set<int> visited;
     while (!pending.empty())
     {
         const occ::handle<Standard_Transient> current = pending.back();
         pending.pop_back();
-        if (current == identified)
+        if (current.get() == identified.get())
             return true;
         const int number = model->Number(current);
         if (number <= 0 || !visited.insert(number).second)

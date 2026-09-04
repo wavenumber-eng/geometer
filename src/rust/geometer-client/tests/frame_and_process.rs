@@ -5,7 +5,8 @@ use std::time::Duration;
 use geometer_client::contracts;
 use geometer_client::ipc::{self, Frame, FrameKind};
 use geometer_client::{
-    GeometerClient, GeometerClientError, ModelBoundsRequest, NORMALIZED_CATALOG_SHA256,
+    GeometerClient, GeometerClientError, IndexedTriangleMeshA0, MeshHlrProjectionRequest,
+    ModelBoundsRequest, NORMALIZED_CATALOG_SHA256,
 };
 use serde::Deserialize;
 use serde_json::Value;
@@ -133,6 +134,37 @@ async fn persistent_client_runs_model_bounds_twice_and_closes_cleanly() {
         .unwrap();
     assert_eq!(first.source.hash, second.source.hash);
     assert_eq!(first.bounds, second.bounds);
+    client.close().await.unwrap();
+}
+
+#[tokio::test]
+async fn persistent_client_runs_typed_mesh_hlr_projection() {
+    let root = repository_root();
+    let executable = native_executable(&root);
+    assert!(executable.is_file(), "missing {}", executable.display());
+    let client = GeometerClient::spawn(&executable, "mesh-hlr-client-test", "a0")
+        .await
+        .unwrap();
+    let options =
+        contracts::decode_hlr_projection_options_a0_json(br#"{"output_detail":true}"#).unwrap();
+    let request = MeshHlrProjectionRequest::from_mesh(
+        &IndexedTriangleMeshA0 {
+            positions: vec![[0.0, 0.0, 0.0], [10.0, 0.0, 0.0], [0.0, 10.0, 0.0]],
+            triangles: vec![[0, 1, 2]],
+            source_faces: Some(vec![1]),
+        },
+        options,
+    )
+    .unwrap();
+
+    let result = client.mesh_hlr_projection(request).await.unwrap();
+
+    assert_eq!(result.schema, "geometry.hlr_projection.result.a0");
+    assert!(matches!(
+        result.source.kind,
+        contracts::HlrSourceKind::IndexedMesh
+    ));
+    assert!(!result.views.is_empty());
     client.close().await.unwrap();
 }
 

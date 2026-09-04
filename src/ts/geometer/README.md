@@ -12,6 +12,63 @@ const bounds = await client.modelBounds({ model: stepBytes });
 console.log(bounds.bounds.size);
 ```
 
+Fast HLR can consume synthesized indexed meshes without first creating STEP:
+
+```ts
+const projection = await client.meshHlrProjection({
+  mesh: {
+    positions: [0, 0, 0, 10, 0, 0, 0, 10, 0],
+    indices: [0, 1, 2],
+    sourceFaces: [1],
+  },
+});
+console.log(projection.views[0].modes.detail.segments);
+```
+
+Use `modelHlrProjection({ model: stepBytes, options })` for STEP. Both methods
+return `geometry.hlr_projection.result.a0`; model projection defaults to
+`poly`, while mesh projection selects the only applicable Fast backend when
+the algorithm selectors are absent.
+
+The mesh illustration module owns projection preparation, visibility ordering,
+safe surface fusion and coplanar layering, colorization, and SVG/Canvas output:
+
+```ts
+import { createIllustrator, illustrateMesh } from "@wavenumber/geometer/mesh-illustration";
+
+const input = {
+  schema: "geometry.mesh_illustration.input.a0",
+  meshes,
+  view: { direction: [0, 0, 1], up: [0, 1, 0] },
+  style: { shading: "toon", fuse_surfaces: true },
+};
+const svgResult = illustrateMesh(input);
+
+const illustrator = createIllustrator(input);
+illustrator.renderCanvas(context, { shading: "unlit" });
+illustrator.dispose();
+```
+
+One-shot SVG results use `geometry.mesh_illustration.result.a0`. The reusable
+prepared scene stays inside the returned illustrator so its ordering and cache
+internals can evolve without becoming a serialized contract.
+
+When the same millimeter mesh should produce Fast vector linework and a
+colorized SVG, the optional composition keeps both underlying results visible:
+
+```ts
+import { illustrateMeshWithFastHlr } from "@wavenumber/geometer/illustrated-hlr";
+
+const { hlr, illustration } = await illustrateMeshWithFastHlr(client, {
+  illustration: input,
+});
+```
+
+Use `createFastHlrIllustrator` to prepare once and render multiple illustration
+styles. The facade flattens illustration transforms into the governed indexed
+mesh, forces the explicitly Fast vector selectors, and overlays returned
+outline/detail segments. HLR and illustration remain separately usable APIs.
+
 The packed analytic Boolean operation uses `bigint` for every 64-bit identity
 and integer-nanometer value. The client owns packet encoding and strict result
 decoding:

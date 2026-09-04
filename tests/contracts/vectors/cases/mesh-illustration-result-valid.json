@@ -1,0 +1,14 @@
+{
+  "schema": "geometry.mesh_illustration.result.a0",
+  "svg": "<svg/>",
+  "stats": {
+    "triangles": 1,
+    "surface_draws": 1,
+    "layered_surfaces": 0,
+    "outlines": 3,
+    "details": 0,
+    "creases": 0,
+    "commands": 4
+  },
+  "warnings": []
+}

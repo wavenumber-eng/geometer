@@ -2,7 +2,7 @@
 
 ## Status and authority
 
-The model-bounds JSON projection and analytic planar Boolean packed projection
+Model bounds, model/mesh HLR, and the analytic planar Boolean packed projection
 are implemented. Authored TypeSpec and the normalized catalog own logical wire
 structure; the separately governed analytic A0 packet owns its binary hot path.
 This package is a deterministic projection plus a transport adapter. It does
@@ -64,6 +64,14 @@ patch. It returns `ModelBoundsResultA0` on success and throws
 transport integration, and operation-by-operation promotion; applications
 should prefer the typed method for a promoted operation.
 
+`modelHlrProjection()` accepts STEP bytes and preserves the established `poly`
+default. `meshHlrProjection()` accepts either an encoded indexed-mesh A0 packet
+or a structured `IndexedTriangleMeshA0`; because that source has no OCCT
+topology, omitted selectors choose Fast detail and Fast mesh-shadow. Both
+return `HlrProjectionResultA0` with independent outline, detail, and bbox
+layers. The direct WASM, dedicated Worker, and persistent IPC clients expose
+the same typed method names.
+
 `analyticPlanarBooleanBatch()` accepts the generated logical request, encodes
 its packed request attachment, executes the production C++ solver, strictly
 decodes the packed result, and returns generated logical jobs, line/arc
@@ -90,6 +98,8 @@ The ESM package has explicit exports:
 | `@wavenumber/geometer/analytic-packet-a0` | Strict analytic request/result packet projection |
 | `@wavenumber/geometer/ipc-a0` | Environment-neutral bounded executable-frame codec |
 | `@wavenumber/geometer/ipc-client-a0` | Persistent client over injected WHATWG byte streams |
+| `@wavenumber/geometer/illustrated-hlr` | Fast vector HLR plus mesh-illustration composition |
+| `@wavenumber/geometer/mesh-illustration` | A0 one-shot and reusable SVG/Canvas illustration |
 | `@wavenumber/geometer/node-process-a0` | Node child-process supervision for `geometer serve --stdio` |
 | `@wavenumber/geometer/wasm` | Direct browser/Web Worker WASM transport adapter |
 | `@wavenumber/geometer/worker` | Correlated main-thread client for a dedicated Worker |
@@ -144,7 +154,8 @@ embed a second copy of the geometry kernel.
 
 ## Dedicated Worker client
 
-`createGeometerWorkerClient()` exposes the same typed `modelBounds()` and
+`createGeometerWorkerClient()` exposes the same typed `modelBounds()`,
+`modelHlrProjection()`, `meshHlrProjection()`, and
 `analyticPlanarBooleanBatch()` operations
 without running synchronous OCCT work on the window event loop. The A0 Worker
 protocol is package-local and has the identity
@@ -214,8 +225,9 @@ Verification includes:
 - desktop and narrow real-browser smoke of the generated documentation and
   model-bounds example.
 
-HLR and planar demos remain on their existing JavaScript interfaces until
-those operations are individually promoted. The
+The HLR and Illustration Labs consume the governed HLR operations and the
+production vector-HLR and mesh-illustration package modules. No production
+raster-HLR package is currently exported. The
 [Viz 2026.6.10 compatibility snapshot](../contracts/compatibility/viz-2026.6.10.toml)
 records the Geometer surfaces that consumer currently requires; it is a
 compatibility record, not a consumer migration plan. Application-specific

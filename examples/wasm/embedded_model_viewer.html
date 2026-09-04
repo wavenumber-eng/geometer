@@ -97,6 +97,27 @@
     }
     .advanced-settings :disabled { opacity: 0.45; cursor: not-allowed; }
 
+    .backend-toggle {
+      display: inline-flex;
+      gap: 5px;
+      align-items: center;
+      min-height: 24px;
+      padding: 2px 7px;
+      background: #fff;
+      color: #17202a;
+      font-weight: 700;
+      cursor: pointer;
+      user-select: none;
+    }
+    .backend-toggle input { margin: 0; }
+    .backend-settings { border-top: 1px solid #dfe3e8; }
+    .backend-settings[hidden] { display: none; }
+    .backend-heading {
+      padding: 7px 10px 0;
+      color: #344154;
+      font-weight: 700;
+    }
+
     .three-settings { padding: 8px 10px 12px; color: #344154; }
     .three-settings h3 {
       margin: 8px 0 6px;
@@ -369,9 +390,9 @@
         </select>
       </label>
       <div class="segmented" id="modeButtons" aria-label="Projection layers">
-        <button type="button" data-mode="detail" class="active">Detail</button>
+        <button type="button" data-mode="detail">Detail</button>
         <button type="button" data-mode="outline">Outline</button>
-        <button type="button" data-mode="both">Both</button>
+        <button type="button" data-mode="both" class="active">Both</button>
       </div>
       <label class="layer-appearance" title="Detail-layer appearance in Detail and Both modes.">
         <span class="layer-name">Detail</span>
@@ -396,13 +417,13 @@
     <details class="advanced-settings" open>
       <summary>Geometry settings</summary>
       <div class="tunables">
-        <label class="control" title="Geometer projection_algorithm. Polygonal is fast; Exact preserves native curves and exposes every OCCT edge category.">
-          <span>HLR engine</span>
-          <select id="algoSelect"><option value="poly">Polygonal (fast)</option><option value="exact">Exact curves</option></select>
+        <label class="backend-toggle" title="Switch the Detail layer between the selected OCCT engine and Geometer's Fast triangle HLR evaluation backend.">
+          <input id="fastBackendInput" type="checkbox">
+          <span>Fast detail HLR</span>
         </label>
         <label class="control" title="Geometer outline_algorithm. This builds the independent Outline layer and is unrelated to the Detail edge checkboxes.">
           <span>Silhouette source</span>
-          <select id="outlineAlgoSelect"><option value="mesh-shadow">Mesh shadow (recommended)</option><option value="hlr-close">Closed HLR edges</option></select>
+          <select id="outlineAlgoSelect"><option value="mesh-shadow">Mesh shadow</option><option value="fast-mesh-shadow">Fast</option><option value="hlr-close">Closed HLR edges</option></select>
         </label>
         <label class="control" title="Geometer mesh_deflection_mode. Model-relative multiplies the largest model dimension by the quality coefficient.">
           <span>Tessellation</span>
@@ -420,13 +441,21 @@
           <span>Angular tol (rad)</span>
           <input id="angDeflInput" type="number" min="0.001" step="0.05" value="0.5">
         </label>
-        <label class="control" title="hlr_angle_tolerance in radians. Used by polygonal HLR for silhouette/sharp-edge classification; ignored by Exact.">
-          <span>Edge angle (rad)</span>
-          <input id="hlrTolInput" type="number" min="0.0001" step="0.001" value="0.0174533">
-        </label>
         <button type="button" class="toolbar-action secondary" id="resetGeometryButton">Reset geometry defaults</button>
       </div>
-      <div class="edge-row" id="edgeRow">
+      <div class="backend-settings" id="occtSettings">
+        <div class="backend-heading">OCCT detail settings</div>
+        <div class="tunables">
+          <label class="control" title="Select the OCCT detail engine used while Fast detail HLR is off.">
+            <span>OCCT engine</span>
+            <select id="algoSelect"><option value="poly">Polygonal</option><option value="exact">Exact curves</option></select>
+          </label>
+          <label class="control" title="hlr_angle_tolerance in radians. Used by polygonal HLR for silhouette/sharp-edge classification; ignored by Exact.">
+            <span>Edge angle (rad)</span>
+            <input id="hlrTolInput" type="number" min="0.0001" step="0.001" value="0.0174533">
+          </label>
+        </div>
+        <div class="edge-row" id="edgeRow">
         <div class="edge-preset-row">
           <label class="control" title="A demo convenience preset for the OCCT edge categories that feed only the Detail layer.">
             <span>Detail edge set</span>
@@ -458,8 +487,42 @@
             <label class="flag" title="OCCT IsoLineHCompound: hidden parametric isolines. Exact only; feeds Detail." data-algo-poly="no"><input type="checkbox" data-edge="edge_h_iso"><span>Isolines</span></label>
           </div>
         </div>
+        </div>
       </div>
-      <div class="setting-help">Detail is configured OCCT HLR edge geometry. Outline is an independent Geometer assembly silhouette; Mesh shadow is the normal choice. Both displays those two unchanged layers together. The raw edge categories never change Outline.</div>
+      <div class="backend-settings" id="fastSettings" hidden>
+        <div class="backend-heading">Fast detail settings</div>
+        <div class="tunables">
+          <label class="control" title="Minimum angle in degrees between adjacent triangle normals for a shared edge to become a crease candidate. The UI converts this to radians for Geometer.">
+            <span>Crease angle (deg)</span>
+            <input id="fastCreaseAngleInput" type="number" min="0" max="180" step="1" value="30">
+          </label>
+          <label class="control" title="Model-space tolerance used by the STEP-to-indexed-mesh adapter when joining tessellated face vertices.">
+            <span>Weld tol</span>
+            <input id="fastWeldToleranceInput" type="number" min="0.000000001" step="0.0000001" value="0.0000001">
+          </label>
+          <label class="control" title="Projected-space tolerance used for clipping and output simplification.">
+            <span>Projected tol</span>
+            <input id="fastProjectedToleranceInput" type="number" min="0.000000001" step="0.00000001" value="0.00000001">
+          </label>
+          <label class="control" title="Depth comparison tolerance used while classifying visible and hidden intervals.">
+            <span>Depth tol</span>
+            <input id="fastDepthToleranceInput" type="number" min="0.000000001" step="0.0000001" value="0.0000001">
+          </label>
+        </div>
+        <div class="edge-row" id="fastEdgeRow">
+          <div class="edge-group">
+            <span class="group-label">Candidate lines</span>
+            <div class="edge-flags">
+              <label class="flag" title="Include open mesh boundaries as detail candidates."><input id="fastBoundariesInput" type="checkbox" checked><span>Boundaries</span></label>
+              <label class="flag" title="Include shared edges whose adjacent triangle normals exceed the crease angle."><input id="fastCreasesInput" type="checkbox" checked><span>Creases</span></label>
+              <label class="flag" title="Include view-dependent triangle silhouette edges."><input id="fastSilhouettesInput" type="checkbox" checked><span>Silhouettes</span></label>
+              <label class="flag" title="Return hidden candidate intervals along with visible detail."><input id="fastHiddenInput" type="checkbox"><span>Hidden</span></label>
+              <label class="flag" title="Suppress coincident coplanar seams between touching components."><input id="fastCoplanarSeamsInput" type="checkbox"><span>Suppress coplanar seams</span></label>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="setting-help">The Fast detail HLR checkbox switches only the raw Detail layer. The Silhouette source remains independently selectable for the Outline layer. Use Detail or Outline to inspect either result alone, and Both to compose them without merging.</div>
     </details>
         </div>
         <div class="three-settings" id="threePanelContent">

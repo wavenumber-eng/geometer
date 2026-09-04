@@ -89,7 +89,7 @@ fn validate_jobs(records: &ResultRecords) -> Result<(), AnalyticPacketError> {
 
 fn validate_diagnostics(records: &ResultRecords) -> Result<(), AnalyticPacketError> {
     let known = [
-        0x10003, 0x10004, 0x10005, 0x10007, 0x10008, 0x10009, 0x1000a, 0x1000b,
+        0x10003, 0x10004, 0x10005, 0x10007, 0x10008, 0x10009, 0x1000a, 0x1000b, 0x1000c,
     ];
     let mut previous = None;
     for value in &records.diagnostics {

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import subprocess
+import sys
 import tempfile
 import threading
 import time
@@ -14,7 +15,9 @@ from geometer._topology_worker_supervisor import (
     TopologyWorkerDeadlineExceeded,
     TopologyWorkerProcessError,
     TopologyWorkerSupervisor,
+    _require_hard_memory_containment_platform,
 )
+from geometer._topology_worker_posix_launcher import _effective_memory_limit
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -22,6 +25,8 @@ FIXTURE = ROOT / "tests" / "fixtures" / "step" / "generated_topology" / "generat
 
 
 def _worker_executable() -> Path:
+    if sys.platform == "darwin":
+        pytest.skip("hard topology-worker memory containment is unavailable on macOS; see issue #25")
     suffix = ".exe" if os.name == "nt" else ""
     from geometer._paths import _platform_tag
 
@@ -40,6 +45,22 @@ def _session_handle(output: bytes) -> str:
     handle = output.decode("ascii").strip()
     assert handle.startswith("gts_") and len(handle) == 68
     return handle
+
+
+def test_posix_launcher_never_weakens_an_inherited_memory_ceiling() -> None:
+    infinity = -1
+    mib = 1024 * 1024
+    assert _effective_memory_limit(512 * mib, 256 * mib, 256 * mib, infinity) == 256 * mib
+    assert _effective_memory_limit(512 * mib, 1024 * mib, 1024 * mib, infinity) == 512 * mib
+    assert _effective_memory_limit(512 * mib, infinity, infinity, infinity) == 512 * mib
+    assert _effective_memory_limit(512 * mib, 64 * mib, 1024 * mib, infinity) == 64 * mib
+
+
+def test_macos_hard_memory_containment_is_explicitly_unsupported() -> None:
+    with pytest.raises(NotImplementedError, match="issue #25"):
+        _require_hard_memory_containment_platform("darwin")
+    _require_hard_memory_containment_platform("linux")
+    _require_hard_memory_containment_platform("win32")
 
 
 def test_deadline_kills_real_occt_session_and_descendant_then_allows_replacement() -> None:

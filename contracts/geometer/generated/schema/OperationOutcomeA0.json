@@ -73,6 +73,9 @@
           "$ref": "urn:wavenumber:schema:geometer:geometry.model_bounds:a0"
         },
         {
+          "$ref": "urn:wavenumber:schema:geometer:geometry.hlr_projection.result:a0"
+        },
+        {
           "$ref": "#/$defs/PackedAttachmentProjectionA0"
         },
         {

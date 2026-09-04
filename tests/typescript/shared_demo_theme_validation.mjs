@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 const root = resolve(import.meta.dirname, "../..");
 const themePath = resolve(root, "examples/wasm/geometer_demo.css");
 const theme = readFileSync(themePath, "utf8");
+const designTheme = readFileSync(resolve(root, "docs/design/styles.css"), "utf8");
 const pages = [
   "analytic_polygon_pour_demo.html",
   "illustration_demo.html",
@@ -16,6 +17,14 @@ if (!theme.includes('font-family: "JetBrains Mono"')) {
 }
 if (!theme.includes("border-radius: 0 !important")) {
   throw new Error("Shared demo theme must enforce flat component geometry.");
+}
+for (const stylesheet of [theme, designTheme]) {
+  if (
+    !stylesheet.includes("--wn-accent: #b45309;") ||
+    !stylesheet.includes("--wn-accent-bg: #fff1e6;")
+  ) {
+    throw new Error("Shared visual-system highlights must use the governed orange palette.");
+  }
 }
 for (const rootSelector of ["#pour-shell", ".illustration-app", ".bounds-app", "#pcb-shell"]) {
   if (!theme.includes(rootSelector)) {
@@ -41,6 +50,19 @@ for (const page of pages) {
   }
   if (!html.includes('data-wn-watermark="true"')) {
     throw new Error(`${page} must opt into the shared Wavenumber watermark.`);
+  }
+}
+
+const illustrationSource = readFileSync(resolve(root, "examples/wasm/illustration_demo.html"), "utf8");
+if (!illustrationSource.includes('<body class="illustration-demo" data-wn-watermark="true">')) {
+  throw new Error("Illustration demo must opt into its viewer-local watermark treatment.");
+}
+for (const rule of [
+  'body.illustration-demo[data-wn-watermark="true"]::after',
+  "#illustrationOutputPane::after",
+]) {
+  if (!theme.includes(rule)) {
+    throw new Error(`Shared demo theme is missing the illustration watermark rule ${rule}.`);
   }
 }
 

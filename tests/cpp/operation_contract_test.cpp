@@ -2,6 +2,7 @@
 #include "geometer/analytic_result_packet_records.h"
 #include "geometer/c_api.h"
 #include "geometer/generated/contracts/contracts.h"
+#include "geometer/indexed_mesh_packet.h"
 #include "geometer/operation_transport.h"
 #include "geometer/sha256.h"
 
@@ -129,6 +130,26 @@ bool decode_contract_vector(const std::string& identity, const std::vector<unsig
     if (identity == "geometry.model_bounds.options.a0")
     {
         return geometer::contracts::decode_json(data.data(), data.size(), options, &error);
+    }
+    if (identity == "geometry.hlr_projection.options.a0")
+    {
+        geometer::contracts::HlrProjectionOptionsA0 value;
+        return geometer::contracts::decode_json(data.data(), data.size(), &value, &error);
+    }
+    if (identity == "geometry.hlr_projection.result.a0")
+    {
+        geometer::contracts::HlrProjectionResultA0 value;
+        return geometer::contracts::decode_json(data.data(), data.size(), &value, &error);
+    }
+    if (identity == "geometry.mesh_illustration.input.a0")
+    {
+        geometer::contracts::MeshIllustrationInputA0 value;
+        return geometer::contracts::decode_json(data.data(), data.size(), &value, &error);
+    }
+    if (identity == "geometry.mesh_illustration.result.a0")
+    {
+        geometer::contracts::MeshIllustrationResultA0 value;
+        return geometer::contracts::decode_json(data.data(), data.size(), &value, &error);
     }
     if (identity == "geometry.model_bounds.a0")
     {
@@ -409,7 +430,7 @@ void generated_cpp_replays_all_governed_contract_vectors()
             "contract vector manifest should be valid JSON");
     require(manifest.HasMember("vectors") && manifest["vectors"].IsArray(),
             "contract vector manifest should contain an array");
-    require(manifest["vectors"].Size() == 115U, "C++ must replay every governed contract vector");
+    require(manifest["vectors"].Size() == 128U, "C++ must replay every governed contract vector");
 
     for (const auto& vector : manifest["vectors"].GetArray())
     {
@@ -726,8 +747,11 @@ void generic_c_abi_catalog_and_typed_failures()
     catalog_document.Parse(catalog_text.data(), catalog_text.size());
     require(!catalog_document.HasParseError() && catalog_document.IsObject(),
             "generated runtime catalog should be valid JSON");
-    require(catalog_document["operations"].Size() == 2U,
+    require(catalog_document["operations"].Size() == 4U,
             "runtime catalog should contain every generated operation exactly once");
+    require(catalog_text.find("geometry.model_hlr_projection.a0") != std::string::npos &&
+                catalog_text.find("geometry.mesh_hlr_projection.a0") != std::string::npos,
+            "portable catalog should advertise model and indexed-mesh HLR");
     require(catalog_text.find("geometry.step_topology.") == std::string::npos,
             "portable C ABI catalog must not advertise native topology research");
     require(catalog_text.find("geometry.analytic_planar_boolean_batch.a0") != std::string::npos &&
@@ -745,7 +769,7 @@ void generic_c_abi_catalog_and_typed_failures()
     native_catalog_document.Parse(native_catalog_text.data(), native_catalog_text.size());
     require(!native_catalog_document.HasParseError() && native_catalog_document.IsObject(),
             "generated native runtime catalog should be valid JSON");
-    require(native_catalog_document["operations"].Size() == 11U,
+    require(native_catalog_document["operations"].Size() == 13U,
             "native catalog should add the nine bounded topology research operations");
     require(native_catalog_text.find("geometry.step_topology.open.a0") != std::string::npos &&
                 native_catalog_text.find("geometry.step_topology.inspect.a0") !=
@@ -894,6 +918,148 @@ void generic_c_abi_executes_model_bounds()
     geometer_operation_result_free(result);
 }
 
+void generic_c_abi_executes_mesh_hlr()
+{
+    geometer::FastHlrIndexedMesh mesh;
+    mesh.vertices = {{0.0, 0.0, 0.0}, {2.0, 0.0, 0.0}, {0.0, 1.0, 0.0}};
+    mesh.triangles = {{{0, 1, 2}, 4U}};
+    const auto packet = geometer::encode_indexed_mesh_packet(mesh);
+    require(packet.error == geometer::IndexedMeshPacketError::none && packet.value,
+            "mesh HLR test packet should encode");
+
+    const std::string operation = "geometry.mesh_hlr_projection.a0";
+    const std::string request = "{}";
+    const std::string name = "mesh";
+    const std::string media_type = "application/vnd.wavenumber.geometer.indexed-triangle-mesh";
+    GeometerAttachmentView attachment{};
+    attachment.struct_size = sizeof(GeometerAttachmentView);
+    attachment.name = name.data();
+    attachment.name_size = static_cast<std::uint32_t>(name.size());
+    attachment.media_type = media_type.data();
+    attachment.media_type_size = static_cast<std::uint32_t>(media_type.size());
+    attachment.data = packet.value->data();
+    attachment.data_size = static_cast<std::uint32_t>(packet.value->size());
+
+    GeometerOperationResult* result = nullptr;
+    char* error = nullptr;
+    const int code = geometer_operation_execute(
+        operation.data(), static_cast<std::uint32_t>(operation.size()),
+        reinterpret_cast<const unsigned char*>(request.data()),
+        static_cast<std::uint32_t>(request.size()), &attachment, 1U, &result, &error);
+    require(code == GEOMETER_OPERATION_ABI_OK && result != nullptr && error == nullptr,
+            "mesh HLR generic invocation should succeed");
+    const std::string json = result_json(result);
+    require(json.find("\"ok\":true") != std::string::npos &&
+                json.find("\"schema\":\"geometry.hlr_projection.result.a0\"") !=
+                    std::string::npos &&
+                json.find("\"kind\":\"indexed_mesh\"") != std::string::npos &&
+                json.find("\"views\":[") != std::string::npos,
+            "mesh HLR should return its canonical typed projection result");
+    require(geometer_operation_result_attachment_count(result) == 0U,
+            "mesh HLR has no output attachments");
+    geometer_operation_result_free(result);
+
+    geometer::FastHlrIndexedMesh layered_mesh;
+    layered_mesh.vertices = {{0.0, 0.0, 0.0},  {3.0, 0.0, 0.0},  {3.0, 3.0, 0.0},
+                             {0.0, 3.0, 0.0},  {1.5, 0.5, -1.0}, {2.5, 1.5, -1.0},
+                             {1.5, 2.5, -1.0}, {0.5, 1.5, -1.0}};
+    layered_mesh.triangles = {
+        {{0, 1, 2}, 10U}, {{0, 2, 3}, 10U}, {{4, 5, 6}, 11U}, {{4, 6, 7}, 11U}};
+    const auto layered_packet = geometer::encode_indexed_mesh_packet(layered_mesh);
+    require(layered_packet.error == geometer::IndexedMeshPacketError::none && layered_packet.value,
+            "layered mesh HLR test packet should encode");
+    GeometerAttachmentView layered_attachment = attachment;
+    layered_attachment.data = layered_packet.value->data();
+    layered_attachment.data_size = static_cast<std::uint32_t>(layered_packet.value->size());
+    const auto detail_segment_count = [&](const std::string& options)
+    {
+        GeometerOperationResult* layered_result = nullptr;
+        char* layered_error = nullptr;
+        require(geometer_operation_execute(
+                    operation.data(), static_cast<std::uint32_t>(operation.size()),
+                    reinterpret_cast<const unsigned char*>(options.data()),
+                    static_cast<std::uint32_t>(options.size()), &layered_attachment, 1U,
+                    &layered_result, &layered_error) == GEOMETER_OPERATION_ABI_OK &&
+                    layered_result != nullptr && layered_error == nullptr,
+                "layered mesh HLR generic invocation should succeed");
+        rapidjson::Document document;
+        const std::string outcome = result_json(layered_result);
+        document.Parse(outcome.data(), outcome.size());
+        require(!document.HasParseError() && document["ok"].GetBool(),
+                "layered mesh HLR should return a valid success outcome");
+        const auto count = document["result"]["views"][0]["modes"]["detail"]["segments"].Size();
+        geometer_operation_result_free(layered_result);
+        return count;
+    };
+    const std::string view = "\"views\":[{\"id\":\"top\",\"direction\":[0,0,1],\"up\":[0,1,0]}],";
+    const std::string visible_options =
+        "{" + view + "\"output_outline\":false,\"output_bbox\":false}";
+    const std::string hidden_options = "{" + view +
+                                       "\"output_outline\":false,\"output_bbox\":false,"
+                                       "\"fast\":{\"include_hidden\":true}}";
+    const auto visible_count = detail_segment_count(visible_options);
+    const auto hidden_count = detail_segment_count(hidden_options);
+    require(visible_count == 4U && hidden_count == 8U,
+            "A0 mesh HLR must append requested hidden fragments to the detail layer (visible=" +
+                std::to_string(visible_count) + ", hidden=" + std::to_string(hidden_count) + ")");
+
+    const std::string unsupported = "{\"projection_algorithm\":\"exact\"}";
+    result = nullptr;
+    require(geometer_operation_execute(operation.data(),
+                                       static_cast<std::uint32_t>(operation.size()),
+                                       reinterpret_cast<const unsigned char*>(unsupported.data()),
+                                       static_cast<std::uint32_t>(unsupported.size()), &attachment,
+                                       1U, &result, &error) == GEOMETER_OPERATION_ABI_OK &&
+                result != nullptr && result_json(result).find("\"ok\":false") != std::string::npos,
+            "mesh HLR should reject an unavailable exact backend as a typed operation failure");
+    geometer_operation_result_free(result);
+
+    const std::string singular = "{\"model_transform\":[0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]}";
+    result = nullptr;
+    require(geometer_operation_execute(operation.data(),
+                                       static_cast<std::uint32_t>(operation.size()),
+                                       reinterpret_cast<const unsigned char*>(singular.data()),
+                                       static_cast<std::uint32_t>(singular.size()), &attachment, 1U,
+                                       &result, &error) == GEOMETER_OPERATION_ABI_OK &&
+                result != nullptr && result_json(result).find("\"ok\":false") != std::string::npos,
+            "mesh HLR should reject a singular model transform as a typed operation failure");
+    geometer_operation_result_free(result);
+
+    const std::string small_scale =
+        "{\"model_transform\":[0.000001,0,0,0,0,0.000001,0,0,0,0,0.000001,0,0,0,0,1]}";
+    result = nullptr;
+    require(geometer_operation_execute(operation.data(),
+                                       static_cast<std::uint32_t>(operation.size()),
+                                       reinterpret_cast<const unsigned char*>(small_scale.data()),
+                                       static_cast<std::uint32_t>(small_scale.size()), &attachment,
+                                       1U, &result, &error) == GEOMETER_OPERATION_ABI_OK &&
+                result != nullptr && result_json(result).find("\"ok\":true") != std::string::npos,
+            "mesh HLR should accept a small nonsingular model transform");
+    geometer_operation_result_free(result);
+
+    geometer::FastHlrIndexedMesh extreme_mesh;
+    extreme_mesh.vertices = {{0.0, 0.0, 0.0}, {1.0e-308, 0.0, 0.0}, {0.0, 1.0e-308, 0.0}};
+    extreme_mesh.triangles = {{{0, 1, 2}, 4U}};
+    const auto extreme_packet = geometer::encode_indexed_mesh_packet(extreme_mesh);
+    require(extreme_packet.error == geometer::IndexedMeshPacketError::none && extreme_packet.value,
+            "extreme-range mesh HLR test packet should encode");
+    GeometerAttachmentView extreme_attachment = attachment;
+    extreme_attachment.data = extreme_packet.value->data();
+    extreme_attachment.data_size = static_cast<std::uint32_t>(extreme_packet.value->size());
+    const std::string extreme_scale =
+        "{\"output_outline\":false,\"output_bbox\":false,\"model_transform\":[1e308,1e308,0,"
+        "0,1e308,-1e308,0,0,0,0,1e308,0,0,0,0,1]}";
+    result = nullptr;
+    require(geometer_operation_execute(
+                operation.data(), static_cast<std::uint32_t>(operation.size()),
+                reinterpret_cast<const unsigned char*>(extreme_scale.data()),
+                static_cast<std::uint32_t>(extreme_scale.size()), &extreme_attachment, 1U, &result,
+                &error) == GEOMETER_OPERATION_ABI_OK &&
+                result != nullptr && result_json(result).find("\"ok\":true") != std::string::npos,
+            "mesh HLR should avoid LU overflow for a well-conditioned extreme-range transform");
+    geometer_operation_result_free(result);
+}
+
 void generic_c_abi_executes_packed_analytic_batch()
 {
     geometer::AnalyticRequestPacketRecords records;
@@ -993,6 +1159,7 @@ int main()
         maximum_native_inspection_page_fits_response_limit();
         generic_c_abi_catalog_and_typed_failures();
         generic_c_abi_executes_model_bounds();
+        generic_c_abi_executes_mesh_hlr();
         generic_c_abi_executes_packed_analytic_batch();
     }
     catch (const std::exception& error)

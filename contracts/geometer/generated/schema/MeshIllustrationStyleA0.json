@@ -1,0 +1,115 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:wavenumber:schema:geometer:geometry.mesh_illustration.style:a0",
+  "type": "object",
+  "properties": {
+    "shading": {
+      "$ref": "#/$defs/MeshIllustrationShading"
+    },
+    "ambient": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "key_intensity": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 4
+    },
+    "light_direction": {
+      "$ref": "#/$defs/IllustrationVector3"
+    },
+    "bands": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 256
+    },
+    "source_colors": {
+      "type": "boolean"
+    },
+    "fallback_color": {
+      "$ref": "#/$defs/IllustrationVector3"
+    },
+    "background": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "transparent_background": {
+      "type": "boolean"
+    },
+    "fuse_surfaces": {
+      "type": "boolean"
+    },
+    "layer_coplanar_materials": {
+      "type": "boolean"
+    },
+    "show_hlr_outline": {
+      "type": "boolean"
+    },
+    "show_hlr_detail": {
+      "type": "boolean"
+    },
+    "show_outlines": {
+      "type": "boolean"
+    },
+    "show_creases": {
+      "type": "boolean"
+    },
+    "crease_angle_degrees": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 180
+    },
+    "outline_color": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "crease_color": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "outline_width": {
+      "type": "number",
+      "minimum": 0
+    },
+    "crease_width": {
+      "type": "number",
+      "minimum": 0
+    },
+    "double_sided": {
+      "type": "boolean"
+    },
+    "rim_amount": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    }
+  },
+  "unevaluatedProperties": {
+    "not": {}
+  },
+  "description": "Presence-preserving illustration style. Package defaults apply to absent fields.",
+  "$defs": {
+    "MeshIllustrationShading": {
+      "type": "string",
+      "enum": [
+        "unlit",
+        "flat",
+        "lambert",
+        "banded",
+        "toon"
+      ]
+    },
+    "IllustrationVector3": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "minItems": 3,
+      "maxItems": 3
+    }
+  }
+}

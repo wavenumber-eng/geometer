@@ -5,23 +5,20 @@
 `src/rust/geometer-client` is the Tokio-based `geometer-client` crate. Its
 operation DTOs and strict Serde codecs are generated from the normalized
 TypeSpec catalog. The live client spawns one persistent native
-`geometer(.exe) serve --stdio` process and executes both
-`geometry.model_bounds.a0` with raw STEP bytes and
-`geometry.analytic_planar_boolean_batch.a0` through its governed packed A0
-attachments.
+`geometer(.exe) serve --stdio` process and executes model bounds, model/mesh
+HLR, and analytic planar Boolean through their governed attachments.
 
 The executable implementation preserves every file-oriented CLI command. Its
 stdin and stdout are switched to binary mode on Windows; stdout is reserved for
 complete A0 frames and stderr is captured separately by the client.
 
-The TypeSpec source now owns the strict hello, welcome, request, reason,
+The TypeSpec source owns the strict hello, welcome, request, reason,
 cancelled, cancel-rejected, protocol-error, shutdown-ack, and embedded
 operation-catalog shapes. Generated C++ and Rust codecs are used by both ends
-of the live connection, including the production request envelope. The broader
-plan step remains open for independent review and hosted Windows, Linux x64,
-Linux ARM64, and macOS ARM64 evidence.
-The implemented pilot is additive and reviewable; it is not yet a release
-claim.
+of the live connection, including the production request envelope. Model and
+mesh HLR are implemented typed surfaces. Release promotion remains separately
+gated on independent review, demo acceptance, hosted Windows, Linux x64, Linux
+ARM64, and macOS ARM64 evidence.
 
 The crate carries a local `wn-dev-std` 2026.8.12 Rust profile. Its stable
 toolchain components, denied Rust/Clippy lints, declared Cargo signoff commands,
@@ -38,7 +35,7 @@ trailing data; validation rejects non-finite/range-invalid numbers and contract
 literals. Optional fields use a presence-aware deserializer so an absent value
 maps to `None` while explicit JSON `null` is rejected.
 
-All 20 governed contract vectors replay through this projection. Generation is
+All governed contract vectors replay through this projection. Generation is
 part of `npm run generate:contracts` and freshness is part of
 `npm run check:contracts`.
 
@@ -72,6 +69,12 @@ metadata drift. Fatal response ID/kind/JSON/attachment violations poison the
 connection and resolve every pending call. Negotiated response frame limits are
 checked before payload allocation.
 
+`GeometerClient::model_hlr_projection()` accepts STEP bytes and canonical HLR
+options. `mesh_hlr_projection()` accepts an indexed-mesh A0 packet;
+`MeshHlrProjectionRequest::from_mesh()` encodes a structured mesh. The model
+operation retains the `poly` default, while omitted mesh selectors choose the
+only applicable Fast detail and Fast mesh-shadow paths.
+
 `OperationCall::cancel()` requests queue-only cancellation. `wait_timeout()` is
 a local timeout: it sends a cancellation request and reports whether the server
 removed queued work; it never claims an active OCCT operation stopped. The
@@ -79,10 +82,10 @@ client continues draining any active terminal response. `close()` performs the
 30-second graceful protocol shutdown, while `terminate()` is the explicit
 forced-child escalation. Captured stderr is available through `stderr_text()`.
 
-## Initial wire projection
+## Wire projection
 
 The frame layout and limits are exactly those in
-[Executable IPC A0](executable-ipc-a0.md). The pilot uses these strict JSON
+[Executable IPC A0](executable-ipc-a0.md). The client uses these strict JSON
 objects inside frames:
 
 | Frame | JSON projection |

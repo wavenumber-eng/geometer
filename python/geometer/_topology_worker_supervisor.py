@@ -22,6 +22,14 @@ from typing import Any, Callable, Sequence, cast
 
 
 _MINIMUM_MEMORY_LIMIT = 32 * 1024 * 1024
+_WINDOWS_CTYPES = cast(Any, ctypes)
+
+
+def _require_hard_memory_containment_platform(platform: str) -> None:
+    if platform == "darwin":
+        raise NotImplementedError(
+            "hard topology-worker memory containment is not available on macOS; see Geometer issue #25"
+        )
 
 
 class TopologyWorkerError(RuntimeError):
@@ -51,7 +59,11 @@ class TopologyWorkerProcessError(TopologyWorkerError):
     """The contained worker exited unsuccessfully."""
 
     def __init__(self, outcome: TopologyWorkerOutcome) -> None:
-        super().__init__(f"topology worker generation {outcome.generation} exited with code {outcome.return_code}")
+        message = f"topology worker generation {outcome.generation} exited with code {outcome.return_code}"
+        stderr = outcome.stderr.decode("utf-8", errors="replace").strip()
+        if stderr:
+            message = f"{message}: {stderr}"
+        super().__init__(message)
         self.outcome = outcome
 
 
@@ -108,7 +120,7 @@ class _WindowsJob:
     _JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE = 0x00002000
 
     def __init__(self, process: subprocess.Popen[bytes], memory_limit_bytes: int) -> None:
-        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        kernel32 = _WINDOWS_CTYPES.WinDLL("kernel32", use_last_error=True)
         kernel32.CreateJobObjectW.argtypes = (ctypes.c_void_p, ctypes.c_wchar_p)
         kernel32.CreateJobObjectW.restype = ctypes.c_void_p
         kernel32.SetInformationJobObject.argtypes = (
@@ -126,7 +138,7 @@ class _WindowsJob:
         kernel32.CloseHandle.restype = ctypes.c_int
         handle = kernel32.CreateJobObjectW(None, None)
         if not handle:
-            raise ctypes.WinError(ctypes.get_last_error())
+            raise _WINDOWS_CTYPES.WinError(_WINDOWS_CTYPES.get_last_error())
         self._kernel32 = kernel32
         self._handle = handle
         try:
@@ -144,10 +156,10 @@ class _WindowsJob:
                 ctypes.byref(limits),
                 ctypes.sizeof(limits),
             ):
-                raise ctypes.WinError(ctypes.get_last_error())
+                raise _WINDOWS_CTYPES.WinError(_WINDOWS_CTYPES.get_last_error())
             process_handle = cast(Any, process)._handle
             if not kernel32.AssignProcessToJobObject(handle, ctypes.c_void_p(process_handle)):
-                raise ctypes.WinError(ctypes.get_last_error())
+                raise _WINDOWS_CTYPES.WinError(_WINDOWS_CTYPES.get_last_error())
         except BaseException:
             self.close()
             raise
@@ -190,6 +202,7 @@ class TopologyWorkerSupervisor:
     """Runs one native worker generation at a time behind hard OS containment."""
 
     def __init__(self, executable: str | Path, *, memory_limit_bytes: int) -> None:
+        _require_hard_memory_containment_platform(sys.platform)
         if memory_limit_bytes < _MINIMUM_MEMORY_LIMIT:
             raise ValueError(f"memory_limit_bytes must be at least {_MINIMUM_MEMORY_LIMIT}")
         command = Path(executable).resolve()

@@ -1,0 +1,11 @@
+{
+  "schema": "geometry.mesh_illustration.input.a0",
+  "meshes": [
+    {
+      "id": "triangle",
+      "positions": [0, 0, 0, 1, 0, 0, 0, 1, 0],
+      "materials": [{"color": [0.5, 0.5, 0.5]}]
+    }
+  ],
+  "view": {"direction": [0, 0, 1], "up": [0, 1, 0]}
+}

@@ -682,7 +682,7 @@ def _validate_result_diagnostics(
     records: dict[str, list[Any]], view: memoryview, tables: list[tuple[int, int, int]]
 ) -> None:
     diagnostic_keys: list[tuple[Any, ...]] = []
-    valid_codes = {65539, 65540, 65541, 65543, 65544, 65545, 65546, 65547}
+    valid_codes = {65539, 65540, 65541, 65543, 65544, 65545, 65546, 65547, 65548}
     for index, value in enumerate(records["diagnostics"]):
         _reserved(view, tables[1], index, ((44, 12),))
         presence = value["presence"]
@@ -1275,6 +1275,7 @@ _DIAGNOSTIC_CODES = {
     65545: m.JobDiagnosticCode.NONANALYTIC_RESULT,
     65546: m.JobDiagnosticCode.SOLVER_FAILED,
     65547: m.JobDiagnosticCode.RESOURCE_LIMIT_EXCEEDED,
+    65548: m.JobDiagnosticCode.RESOLUTION_COALESCED,
 }
 _PATHS: tuple[m.JobDiagnosticPath | None, ...] = (
     None,

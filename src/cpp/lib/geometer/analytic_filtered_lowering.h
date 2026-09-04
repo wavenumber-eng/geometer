@@ -12,6 +12,8 @@
 namespace geometer
 {
 
+inline constexpr std::uint64_t kAnalyticCapsuleCoalescenceEnvelopeNm = 1'000;
+
 enum class AnalyticFilteredLoweringError : std::uint8_t
 {
     none = 0,
@@ -49,6 +51,17 @@ struct AnalyticFilteredLoweringTelemetry
     std::uint64_t required_working_memory_bytes = 0;
     std::uint64_t peak_working_memory_bytes = 0;
     std::uint64_t algebraic_fallback_calls = 0;
+    std::uint64_t capsule_coalescences = 0;
+    std::uint64_t maximum_capsule_adjustment_nm = 0;
+};
+
+struct AnalyticCapsuleCoalescence
+{
+    std::uint64_t stage_id = 0;
+    std::uint64_t operand_id = 0;
+    std::uint64_t representative_operand_id = 0;
+    std::uint64_t representative_feature_id = 0;
+    std::uint64_t maximum_adjustment_nm = 0;
 };
 
 struct AnalyticFilteredGeometry
@@ -58,6 +71,12 @@ struct AnalyticFilteredGeometry
     std::vector<AnalyticAtomicCurveNm> curves;
     std::vector<AnalyticCurveBoundsNm> bounds;
     std::vector<AnalyticFilteredOccurrence> occurrences;
+    // Successful, source-preserving recovery records. Each entry means the
+    // named union operand was lowered on a canonical same-width capsule from
+    // the same job whose endpoints were within the governed recovery envelope.
+    // Only positive operands participate; ordered difference stages remain
+    // geometrically and operationally unchanged.
+    std::vector<AnalyticCapsuleCoalescence> capsule_coalescences;
 };
 
 struct AnalyticFilteredLoweringResult

@@ -1,0 +1,1 @@
+{"schema":"geometry.hlr_projection.result.a0","units":"mm","source":{"kind":"indexed_mesh","hash":"0000000000000000000000000000000000000000000000000000000000000000"},"views":[],"timings":{"step_read_ms":0,"mesh_ms":0,"hlr_ms":0,"extract_ms":0}}

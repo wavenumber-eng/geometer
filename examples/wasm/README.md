@@ -131,27 +131,24 @@ python -m http.server 8123 --bind 127.0.0.1
 
 `http://127.0.0.1:8123/examples/wasm/model_bounds_demo.html`
 
-HLR and planar examples remain on their existing JavaScript surfaces until
-their respective operation contracts are promoted.
+HLR and Illustration Labs use the governed HLR operation and production
+TypeScript package modules. Planar examples retain their existing surfaces.
 
-## STEP Illustration Lab Prototype
+## STEP Illustration Lab
 
-**Status: retained concept prototype.** This code is kept as an executable
-design study, regression target, and source of reusable experiments. It is not
-a production renderer, supported public API, versioned scene contract, or
-compatibility commitment. Its TypeScript types, algorithms, output details,
-and demo controls may change without deprecation while the ownership boundary
-is evaluated. Keeping the prototype in Geometer does not by itself decide that
-Geometer should own a future production illustration stack; promotion would
-require a separate contract and architecture decision.
+**Status: production-package demo.** This page consumes the supported
+`@wavenumber/geometer/mesh-illustration` module plus the governed model HLR
+operation. The package owns mesh preparation, visibility
+ordering, fusion, colorization, SVG/Canvas rendering, caching, and disposal;
+the page owns only UI, camera, file, download, and presentation behavior.
 
-`illustration_demo.html`, `illustration_demo.ts`, and `mesh_illustration.ts`
-form the reviewable implementation of the retained illustration experiment.
+`illustration_demo.html` and `illustration_demo.ts` form the reviewable consumer
+of the production mesh-illustration package.
 The page keeps the HLR Lab's side-by-side 3D/2D workflow, but the right pane renders
 colorized triangle surfaces to either SVG or Canvas2D. It supports flat,
 unquantized Lambert diffuse, quantized-band (up to 32 bands), and early toon shading,
 live style changes, named or trackball
-camera views, local STEP upload, and SVG/scene/style downloads.
+camera views, local STEP upload, and SVG/style downloads.
 
 The Geometry section exposes Draft, Balanced, Fine, and Extra fine STEP mesh
 presets plus custom linear deflection (millimetres), angular deflection
@@ -191,7 +188,8 @@ SVG serialization uses shared style classes, chained compound HLR paths,
 collinear boundary removal, and a normalized integer coordinate grid. The
 default grid has 1,000,000 units across the larger unpadded artwork axis;
 callers can override it through `MeshIllustrationSvgOptions.coordinateSpan`.
-Scene JSON and Canvas retain the original projected coordinates.
+Canvas retains the original projected coordinates. Prepared scene data remains
+an opaque package implementation detail and is not exported as a JSON contract.
 
 The current polygon contraction does not yet clip away fully occluded triangle
 fragments. A future maximum-reduction mode can use Geometer's Clipper2 byte
@@ -201,15 +199,16 @@ ordered mesh-capable fallback rather than using that opaque flattening path.
 
 The illustration algorithm consumes generic indexed or non-indexed triangle
 meshes with transforms, material colors, and vertex normals. STEP is only the
-first adapter: the prototype Worker uses the existing STEP-to-GLB compatibility
+first adapter: the demo Worker uses the existing STEP-to-GLB compatibility
 surface, then the same Three.js-to-generic-mesh adapter handles bundled and
-uploaded models. A future glTF/GLB loader or Viz-generated PCB mesh can feed the
-same algorithm without STEP or OCCT.
+uploaded models. A glTF/GLB loader or Viz-generated PCB mesh can feed the same
+production package without STEP or OCCT.
 
-This is a visibility and appearance prototype, not a promoted illustration
-operation. STEP-backed models can enable Geometer's existing HLR `mesh-shadow`
-Outline layer, which unions projected tessellated faces into the clean outer
-body trace used by the HLR Lab, and its visible sharp-plus-silhouette Detail
+Illustration A0 is a package contract rather than a native illustration
+operation. STEP-backed models can enable Geometer's `fast-mesh-shadow` Outline
+layer, which reconstructs CAD-face boundary loops when possible and falls back
+to per-face triangle unions before combining the reduced contours into the clean
+outer body trace, and its fast visible Detail
 preset. Independent checkboxes composite those layers over the shared
 SVG/Canvas surface scene and include them in SVG downloads. Generic mesh inputs
 remain surface-only unless an adapter supplies comparable linework; the noisy
@@ -286,13 +285,20 @@ TrackballControls: left-drag rotates freely, the wheel zooms, and right-drag pan
 Its lens defaults to orthographic so it matches Geometer's orthographic HLR;
 the `3D lens` selector can switch to perspective for depth inspection.
 
-The projection UI follows the terminology in ADR 008. `Detail` is the
-configured OCCT HLR edge-category layer, `Outline` is Geometer's independent
-assembly silhouette, and `Both` displays those layers without changing either
-layer's color, width, or line style. Mesh shadow is the recommended silhouette
-source. Raw OCCT categories live under `Geometry settings`, are labeled as
-Detail-only, and use `Detail edge set` rather than the overloaded term
-`Profile`. Tessellation is either model-relative (controlled by `Quality coef`)
+The projection UI follows the terminology in ADR 008. `Detail` is raw linework
+from the selected OCCT polygonal/exact engine or the Fast triangle HLR engine.
+The `Fast detail HLR` checkbox provides the direct comparison switch. Its
+candidate-category, degree-based crease-angle, weld, projection, and depth
+controls live in a separate Fast-only panel; the OCCT engine, edge angle,
+presets, and edge categories live in an OCCT-only panel.
+`Outline` is Geometer's independent assembly silhouette, and `Both` displays
+those layers without changing or merging either layer's color, width, or line
+style. Mesh shadow and the Fast silhouette source are available for direct
+comparison. Raw OCCT
+categories use `Detail edge set` rather than the overloaded term `Profile`.
+The independently selectable outline source does not change when the Fast
+detail checkbox changes.
+Tessellation is either model-relative (controlled by `Quality coef`)
 or absolute (controlled by `Linear tol (mm)`), so the page no longer presents
 inactive linear/relative controls at the same time.
 Line widths are capped at 5 px, and dash/dot lengths and gaps scale with each

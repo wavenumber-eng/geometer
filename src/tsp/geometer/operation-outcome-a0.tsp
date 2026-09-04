@@ -2,6 +2,7 @@ import "@typespec/json-schema";
 import "@wavenumber/wn-geometer-contract-emitter";
 import "./common.tsp";
 import "./operations/model-bounds-a0.tsp";
+import "./operations/hlr-projection-a0.tsp";
 import "./operations/step-topology-a0.tsp";
 
 using TypeSpec.JsonSchema;
@@ -17,6 +18,7 @@ namespace Wavenumber.Geometer.Contracts.OperationOutcomeA0;
 @oneOf
 union OperationResultValueA0 {
   model_bounds: Wavenumber.Geometer.Contracts.ModelBoundsA0.ModelBoundsResultA0,
+  hlr_projection: Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrProjectionResultA0,
   packed_attachment: Wavenumber.Geometer.Contracts.Common.PackedAttachmentProjectionA0,
   step_topology_open: Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyOpenResultA0,
   step_topology_close: Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyCloseResultA0,

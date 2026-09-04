@@ -1,5 +1,7 @@
 #include "geometer/projection.h"
 
+#include "fast_hlr_occt.h"
+#include "fast_mesh_shadow_outline.h"
 #include "geometer/planar_contours.h"
 #include "geometer/planar_solve.h"
 #include "mesh_shadow_outline.h"
@@ -936,16 +938,19 @@ ProjectedViewGeometry project_view_exact(const TopoDS_Shape& shape, const Projec
         add_edge_geometry(shape, options, &detail_segment_keys, &detail_arc_keys, nullptr, scale,
                           extent_scale);
     };
-    extract_detail(options.edge_v_sharp, hlr_to_shape.VCompound());
-    extract_detail(options.edge_v_outline, hlr_to_shape.OutLineVCompound());
-    extract_detail(options.edge_v_smooth, hlr_to_shape.Rg1LineVCompound());
-    extract_detail(options.edge_v_sewn, hlr_to_shape.RgNLineVCompound());
-    extract_detail(options.edge_v_iso, hlr_to_shape.IsoLineVCompound());
-    extract_detail(options.edge_h_sharp, hlr_to_shape.HCompound());
-    extract_detail(options.edge_h_outline, hlr_to_shape.OutLineHCompound());
-    extract_detail(options.edge_h_smooth, hlr_to_shape.Rg1LineHCompound());
-    extract_detail(options.edge_h_sewn, hlr_to_shape.RgNLineHCompound());
-    extract_detail(options.edge_h_iso, hlr_to_shape.IsoLineHCompound());
+    if (options.output_detail)
+    {
+        extract_detail(options.edge_v_sharp, hlr_to_shape.VCompound());
+        extract_detail(options.edge_v_outline, hlr_to_shape.OutLineVCompound());
+        extract_detail(options.edge_v_smooth, hlr_to_shape.Rg1LineVCompound());
+        extract_detail(options.edge_v_sewn, hlr_to_shape.RgNLineVCompound());
+        extract_detail(options.edge_v_iso, hlr_to_shape.IsoLineVCompound());
+        extract_detail(options.edge_h_sharp, hlr_to_shape.HCompound());
+        extract_detail(options.edge_h_outline, hlr_to_shape.OutLineHCompound());
+        extract_detail(options.edge_h_smooth, hlr_to_shape.Rg1LineHCompound());
+        extract_detail(options.edge_h_sewn, hlr_to_shape.RgNLineHCompound());
+        extract_detail(options.edge_h_iso, hlr_to_shape.IsoLineHCompound());
+    }
 
     // The outline always consumes the COMPLETE visible outline (sharp +
     // outline + smooth + sewn, V and H), independent of the detail checkboxes, so
@@ -958,14 +963,17 @@ ProjectedViewGeometry project_view_exact(const TopoDS_Shape& shape, const Projec
         add_edge_geometry(shape, options, nullptr, nullptr, &contour_source_segments, scale,
                           extent_scale);
     };
-    extract_contour(hlr_to_shape.VCompound());
-    extract_contour(hlr_to_shape.OutLineVCompound());
-    extract_contour(hlr_to_shape.Rg1LineVCompound());
-    extract_contour(hlr_to_shape.RgNLineVCompound());
-    extract_contour(hlr_to_shape.HCompound());
-    extract_contour(hlr_to_shape.OutLineHCompound());
-    extract_contour(hlr_to_shape.Rg1LineHCompound());
-    extract_contour(hlr_to_shape.RgNLineHCompound());
+    if (options.output_outline)
+    {
+        extract_contour(hlr_to_shape.VCompound());
+        extract_contour(hlr_to_shape.OutLineVCompound());
+        extract_contour(hlr_to_shape.Rg1LineVCompound());
+        extract_contour(hlr_to_shape.RgNLineVCompound());
+        extract_contour(hlr_to_shape.HCompound());
+        extract_contour(hlr_to_shape.OutLineHCompound());
+        extract_contour(hlr_to_shape.Rg1LineHCompound());
+        extract_contour(hlr_to_shape.RgNLineHCompound());
+    }
 
     ProjectedViewGeometry projected;
     projected.view = view;
@@ -1027,10 +1035,13 @@ ProjectedViewGeometry project_view_poly(const TopoDS_Shape& shape, const Project
         add_edge_geometry(shape, poly_options, &detail_segment_keys, &detail_arc_keys, nullptr,
                           scale, extent_scale);
     };
-    extract_detail(poly_options.edge_v_sharp, poly_to_shape.VCompound());
-    extract_detail(poly_options.edge_v_outline, poly_to_shape.OutLineVCompound());
-    extract_detail(poly_options.edge_h_sharp, poly_to_shape.HCompound());
-    extract_detail(poly_options.edge_h_outline, poly_to_shape.OutLineHCompound());
+    if (poly_options.output_detail)
+    {
+        extract_detail(poly_options.edge_v_sharp, poly_to_shape.VCompound());
+        extract_detail(poly_options.edge_v_outline, poly_to_shape.OutLineVCompound());
+        extract_detail(poly_options.edge_h_sharp, poly_to_shape.HCompound());
+        extract_detail(poly_options.edge_h_outline, poly_to_shape.OutLineHCompound());
+    }
 
     // The outline always consumes the COMPLETE visible outline (every
     // sharp + outline edge, both V and H), independent of the detail checkboxes.
@@ -1043,10 +1054,13 @@ ProjectedViewGeometry project_view_poly(const TopoDS_Shape& shape, const Project
         add_edge_geometry(shape, poly_options, nullptr, nullptr, &contour_source_segments, scale,
                           extent_scale);
     };
-    extract_contour(poly_to_shape.VCompound());
-    extract_contour(poly_to_shape.OutLineVCompound());
-    extract_contour(poly_to_shape.HCompound());
-    extract_contour(poly_to_shape.OutLineHCompound());
+    if (poly_options.output_outline)
+    {
+        extract_contour(poly_to_shape.VCompound());
+        extract_contour(poly_to_shape.OutLineVCompound());
+        extract_contour(poly_to_shape.HCompound());
+        extract_contour(poly_to_shape.OutLineHCompound());
+    }
 
     ProjectedViewGeometry projected;
     projected.view = view;
@@ -1120,8 +1134,20 @@ int step_hlr_projection_from_bytes(const unsigned char* step_data, std::size_t s
         output.views.reserve(views.size());
 
         const bool use_poly = options.projection_algorithm == ProjectionAlgorithm::Poly;
+        const bool use_fast = options.projection_algorithm == ProjectionAlgorithm::Fast;
+        const bool needs_classic_hlr =
+            (!use_fast && options.output_detail) ||
+            (options.output_outline &&
+             options.outline_algorithm == ProjectionOutlineAlgorithm::HlrClosedEdges);
+        const bool needs_fast_detail = use_fast && options.output_detail;
+        const bool needs_fast_outline =
+            options.output_outline &&
+            options.outline_algorithm == ProjectionOutlineAlgorithm::FastMeshShadow;
+        const bool needs_poly_hlr = needs_classic_hlr && (use_poly || use_fast);
         const bool needs_mesh =
-            use_poly || options.outline_algorithm == ProjectionOutlineAlgorithm::MeshShadow;
+            needs_poly_hlr || needs_fast_detail || needs_fast_outline ||
+            (options.output_outline &&
+             options.outline_algorithm == ProjectionOutlineAlgorithm::MeshShadow);
         if (needs_mesh)
         {
             const auto mesh_start = std::chrono::high_resolution_clock::now();
@@ -1153,26 +1179,87 @@ int step_hlr_projection_from_bytes(const unsigned char* step_data, std::size_t s
             timings.mesh_ms = elapsed_ms(mesh_start);
         }
 
+        FastHlrPreparedMesh fast_prepared;
+        if (needs_fast_detail || needs_fast_outline)
+        {
+            const auto prepare_start = std::chrono::high_resolution_clock::now();
+            const int fast_code =
+                prepare_fast_hlr_shape(shape, options.fast, &fast_prepared, status);
+            if (fast_code != 0)
+            {
+                return fast_code;
+            }
+            timings.mesh_ms += elapsed_ms(prepare_start);
+        }
+
         for (const ProjectionViewSpec& view : views)
         {
             ProjectedViewGeometry projected_view;
-            if (use_poly)
+            projected_view.view = view;
+            if (needs_classic_hlr && (use_poly || use_fast))
             {
+                HlrProjectionOptions classic_options = options;
+                if (use_fast)
+                {
+                    classic_options.output_detail = false;
+                }
                 projected_view =
-                    project_view_poly(shape, view, options, scale, extent_scale, &timings);
+                    project_view_poly(shape, view, classic_options, scale, extent_scale, &timings);
             }
-            else
+            else if (needs_classic_hlr)
             {
                 projected_view =
                     project_view_exact(shape, view, options, scale, extent_scale, &timings);
             }
-            if (options.outline_algorithm == ProjectionOutlineAlgorithm::MeshShadow)
+            if (needs_fast_detail)
+            {
+                const auto fast_start = std::chrono::high_resolution_clock::now();
+                ProjectedModeGeometry hidden_geometry;
+                const int fast_code = project_fast_hlr_detail(
+                    fast_prepared, view, options.fast, &projected_view.detail,
+                    options.fast.include_hidden ? &hidden_geometry : nullptr, nullptr, status);
+                if (fast_code != 0)
+                {
+                    return fast_code;
+                }
+                if (options.fast.include_hidden)
+                {
+                    projected_view.detail.segments.insert(projected_view.detail.segments.end(),
+                                                          hidden_geometry.segments.begin(),
+                                                          hidden_geometry.segments.end());
+                }
+                std::set<SegmentKey> fast_segment_keys;
+                for (const ProjectedSegment& segment : projected_view.detail.segments)
+                {
+                    add_segment(&fast_segment_keys, segment, scale);
+                }
+                projected_view.detail =
+                    geometry_from_keys(fast_segment_keys, std::set<ArcKey>(), scale, extent_scale);
+                timings.hlr_ms += elapsed_ms(fast_start);
+            }
+            if (options.output_outline &&
+                options.outline_algorithm == ProjectionOutlineAlgorithm::MeshShadow)
             {
                 const auto outline_start = std::chrono::high_resolution_clock::now();
                 projected_view.outline = mesh_shadow_outline_geometry(shape, view, options, scale);
                 timings.extract_ms += elapsed_ms(outline_start);
             }
-            projected_view.bbox = projected_shape_bbox_geometry(shape, view, scale);
+            else if (needs_fast_outline)
+            {
+                const auto outline_start = std::chrono::high_resolution_clock::now();
+                const int outline_code =
+                    fast_mesh_shadow_outline_geometry(fast_prepared, view, options.fast, scale,
+                                                      &projected_view.outline, nullptr, status);
+                if (outline_code != 0)
+                {
+                    return outline_code;
+                }
+                timings.extract_ms += elapsed_ms(outline_start);
+            }
+            if (options.output_bbox)
+            {
+                projected_view.bbox = projected_shape_bbox_geometry(shape, view, scale);
+            }
             output.views.push_back(std::move(projected_view));
         }
 

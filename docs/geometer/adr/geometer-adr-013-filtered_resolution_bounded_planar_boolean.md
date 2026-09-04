@@ -51,6 +51,22 @@ engine.
 - Published boundaries must stay within 50 nm Hausdorff distance of the
   resolved analytic result. Every repair and threshold decision is
   deterministic and shared by native and WASM builds.
+- A narrower, explicitly reported input-normalization exception applies to
+  same-width positive capsules in one job. If both corresponding centerline
+  endpoints are within 1 um Euclidean distance, the later operand may be
+  lowered on the earliest-authored representative. The original operand and
+  feature identities remain in lineage and operand outcomes. Every nonzero
+  adjustment emits the successful-job warning
+  `geometer.operation.analytic_planar_boolean.resolution_coalesced`, identifying
+  the adjusted operand and representative feature. Native/WASM telemetry
+  reports the coalescence count and maximum endpoint adjustment. Clusters are
+  representative-bounded, not transitively chained, and never mix widths or
+  positive and subtractive operands. Intervening difference stages still run
+  in their original order and with their original geometry; only the later
+  positive capsule's source coordinates are normalized. Consequently, the
+  later positive operand and final result may move within 1 um even when a
+  difference stage intervenes. All other topology resolution remains governed
+  by 50 nm.
 - The primary predicates use job-local binary64 coordinates with conservative
   outward error bounds. Fixed-width wide-integer predicates are used where
   integer-nanometer inputs make them practical. Uncertain predicates take a
@@ -397,8 +413,9 @@ Production dispatch remains disabled during that work.
 - Ordinary PCB-scale line/arc work avoids canonical symbolic construction and
   receives predictable bounded behavior.
 - Sub-resolution topology is intentionally not guaranteed. Diagnostics and
-  tests must distinguish an allowed at-or-below-50-nm merge from an error that
-  changes topology above 50 nm.
+  tests must distinguish an allowed at-or-below-50-nm merge, an explicitly
+  reported same-width capsule coalescence at or below 1 um, and an error that
+  changes topology outside those scoped envelopes.
 - The exact code is no longer allowed to dictate production module structure.
   It may be simplified, isolated, or removed from production linkage as the
   filtered implementation lands, provided the retained oracle/fallback tests

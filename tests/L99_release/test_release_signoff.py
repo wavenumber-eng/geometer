@@ -170,8 +170,9 @@ def test_ci_and_release_run_candidate_client_rack_strata_with_bounded_parallelis
         native_validation = workflow.index("scripts/validate_native.py")
         python_rack = workflow.index("uv run --group dev rack run python")
         rust_rack = workflow.index("uv run --group dev rack run rust")
+        typescript_rack = workflow.index("uv run --group dev rack run typescript")
         wheel_validation = workflow.index("scripts/validate_python_package.py")
-        assert native_validation < python_rack < rust_rack < wheel_validation
+        assert native_validation < python_rack < rust_rack < typescript_rack < wheel_validation
         validated_wheel_command = (
             "scripts/validate_python_package.py --skip-native-validation --wheelhouse out/wheelhouse"
         )

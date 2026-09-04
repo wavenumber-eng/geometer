@@ -10,6 +10,8 @@
 namespace geometer
 {
 
+struct FastHlrIndexedMesh;
+
 enum class ProjectionCurveMode
 {
     NativeArcs,
@@ -19,7 +21,36 @@ enum class ProjectionCurveMode
 enum class ProjectionAlgorithm
 {
     Poly,
-    Exact
+    Exact,
+    Fast
+};
+
+struct FastHlrLimits
+{
+    std::size_t max_vertices = 2'000'000;
+    std::size_t max_triangles = 2'000'000;
+    std::size_t max_edges = 4'000'000;
+    std::size_t max_grid_references = 64'000'000;
+    std::size_t max_candidate_pairs = 100'000'000;
+    std::size_t max_fragments = 8'000'000;
+    std::size_t max_output_segments = 4'000'000;
+};
+
+struct FastHlrOptions
+{
+    bool include_boundaries = true;
+    bool include_creases = true;
+    bool include_silhouettes = true;
+    bool include_hidden = false;
+    bool suppress_coplanar_seams = false;
+    double crease_angle_rad = 0.5235987755982988;
+    double weld_tolerance = 1.0e-7;
+    double projected_tolerance = 1.0e-8;
+    double depth_tolerance = 1.0e-7;
+    double coplanar_seam_angle_rad = 0.017453292519943295;
+    double coplanar_seam_depth_tolerance = 1.0e-6;
+    double coplanar_seam_lateral_tolerance = 1.0e-6;
+    FastHlrLimits limits;
 };
 
 enum class MeshDeflectionMode
@@ -40,7 +71,10 @@ enum class ProjectionOutlineAlgorithm
     HlrClosedEdges,
     // Build outline from the orthographic shadow of tessellated faces. This is
     // better for pure assembly silhouettes and can preserve projected holes.
-    MeshShadow
+    MeshShadow,
+    // Reconstruct projected CAD-face triangle-patch loops before unioning,
+    // with a hierarchical per-face union fallback for complex patches.
+    FastMeshShadow
 };
 
 struct ProjectionViewSpec
@@ -53,6 +87,13 @@ struct ProjectionViewSpec
 struct HlrProjectionOptions
 {
     std::vector<ProjectionViewSpec> views;
+    // Independently composable output layers. Defaults preserve the historical
+    // result, while callers can avoid work for layers they do not need.
+    bool output_outline = true;
+    bool output_detail = true;
+    bool output_bbox = true;
+    // Independently versioned controls used only by the Fast backend.
+    FastHlrOptions fast;
     // Row-major 4x4 affine transform applied to the source shape before
     // projection. Translation lives in the final column. The final row must be
     // [0, 0, 0, 1].
@@ -150,6 +191,10 @@ struct HlrProjectionResult
 int step_hlr_projection_from_bytes(const unsigned char* step_data, std::size_t step_size,
                                    const HlrProjectionOptions& options, HlrProjectionResult* result,
                                    Status* status = nullptr);
+
+/** Fast HLR projection for synthesized millimeter-space indexed meshes. */
+int mesh_hlr_projection(const FastHlrIndexedMesh& mesh, const HlrProjectionOptions& options,
+                        HlrProjectionResult* result, Status* status = nullptr);
 
 int write_hlr_projection_json(const HlrProjectionResult& result, std::string* json,
                               Status* status = nullptr);

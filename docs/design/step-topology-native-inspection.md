@@ -71,14 +71,20 @@ document service. It performs no filesystem writes during import. The internal
 Python `TopologyWorkerSupervisor` research layer supplies the missing hard
 boundary without publishing a premature topology wire contract. Each worker
 generation runs in a private temporary directory (mode 0700 on POSIX; protected by the current
-user's inherited temporary-directory ACL on Windows); Windows assigns it
-to a kill-on-close Job Object with process/job memory ceilings, while POSIX uses
+user’s inherited temporary-directory ACL on Windows); Windows assigns it
+to a kill-on-close Job Object with process/job memory ceilings, while Linux uses
 a small exec launcher to set `RLIMIT_AS` before replacing itself with the worker
 in a new process session. Deadline or explicit cancellation kills
 the entire contained generation, waits for exit, removes its private directory,
 and requires a new process/session generation. Geometer-owned resident
 accounting remains useful for admission and LRU decisions, but the OS boundary
 contains OCCT allocation that those counters cannot measure.
+
+The experimental supervisor rejects macOS because a low hard `RLIMIT_AS` cannot
+be installed after the Python/dyld launcher image is mapped. A native bootstrap
+or equivalent hard boundary is required before enabling it there; this is
+tracked by [issue #25](https://github.com/wavenumber-eng/geometer/issues/25).
+The native topology value APIs and render operations remain cross-platform.
 
 The containment test server opens the generated AP242 fixture through the real
 native session API before deliberately hanging. Tests prove deadline kill of a

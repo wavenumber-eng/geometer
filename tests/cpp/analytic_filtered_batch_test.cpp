@@ -54,6 +54,61 @@ AnalyticRequestPacketRecords plain_disks(std::uint32_t count)
     return records;
 }
 
+AnalyticRequestPacketRecords collinear_diagonal_capsules()
+{
+    AnalyticRequestPacketRecords records;
+    records.jobs = {{10, 0, 1}};
+    records.stages = {{100, 1, 0, 2}};
+    records.operands = {{1000, 4, 0}, {1001, 4, 1}};
+    records.capsules = {
+        {5000, 141'372'258, -135'169'499, 142'175'504, -135'972'745, 127'000},
+        {5001, 142'175'504, -135'972'745, 143'752'758, -137'549'999, 127'000},
+    };
+    return records;
+}
+
+AnalyticRequestPacketRecords near_duplicate_then_disk(std::int64_t displacement_nm = 1)
+{
+    AnalyticRequestPacketRecords records;
+    records.jobs = {{10, 0, 1}, {20, 1, 1}};
+    records.stages = {{100, 1, 0, 2}, {200, 1, 2, 1}};
+    records.operands = {{1000, 4, 0}, {1001, 4, 1}, {2000, 2, 0}};
+    records.capsules = {
+        {5000, 141'372'258, -135'169'499, 142'175'504, -135'972'745, 127'000},
+        {5001, 141'372'258 + displacement_nm, -135'169'499, 142'175'504, -135'972'745, 127'000},
+    };
+    records.disks = {{6000, 0, 0, 1000}};
+    return records;
+}
+
+AnalyticRequestPacketRecords near_duplicate_across_difference()
+{
+    AnalyticRequestPacketRecords records;
+    records.jobs = {{10, 0, 3}};
+    records.stages = {{100, 1, 0, 1}, {200, 2, 1, 1}, {300, 1, 2, 1}};
+    // IDs deliberately decrease across stages. The contract orders operands only within a stage.
+    records.operands = {{3000, 4, 0}, {2000, 2, 0}, {1000, 4, 1}};
+    records.capsules = {
+        {5000, 0, 0, 10'000, 0, 2'000},
+        {5001, 1, 0, 10'000, 0, 2'000},
+    };
+    records.disks = {{6000, 5'000, 0, 500}};
+    return records;
+}
+
+AnalyticRequestPacketRecords t_junction_capsules()
+{
+    AnalyticRequestPacketRecords records;
+    records.jobs = {{10, 0, 1}};
+    records.stages = {{100, 1, 0, 2}};
+    records.operands = {{1000, 4, 0}, {1001, 4, 1}};
+    records.capsules = {
+        {5000, 149'398'250, -139'599'999, 149'398'250, -138'399'999, 254'000},
+        {5001, 149'498'250, -138'299'999, 149'008'250, -138'789'999, 254'000},
+    };
+    return records;
+}
+
 AnalyticRequestPacketRecords endpoint_radius_circle()
 {
     AnalyticRequestPacketRecords records;
@@ -726,6 +781,139 @@ void test_job_local_failure_isolated()
             "failed-job qualification telemetry wrong");
 }
 
+void test_collinear_diagonal_capsules_share_exact_carrier_order()
+{
+    const auto records = collinear_diagonal_capsules();
+    require(validate_analytic_request_packet_records(records) == AnalyticRequestPacketError::none,
+            "collinear capsule request invalid");
+    const auto result = build_analytic_filtered_batch(records);
+    require(result.error == AnalyticFilteredBatchError::none && result.packet &&
+                result.packet->records.job_results.size() == 1 &&
+                result.packet->records.job_results[0].status == 0 &&
+                result.packet->records.diagnostics.empty() &&
+                result.packet->records.regions.size() == 1,
+            "collinear diagonal capsule union failed");
+}
+
+void test_near_duplicate_capsules_coalesce_with_report()
+{
+    const auto records = near_duplicate_then_disk();
+    require(validate_analytic_request_packet_records(records) == AnalyticRequestPacketError::none,
+            "capsule coalescence request invalid");
+    const auto result = build_analytic_filtered_batch(records);
+    require(result.error == AnalyticFilteredBatchError::none && result.packet,
+            "capsule coalescence escaped the batch");
+    const auto& output = result.packet->records;
+    require(output.job_results.size() == 2 && output.job_results[0].status == 0 &&
+                output.job_results[1].status == 0 && output.diagnostics.size() == 1 &&
+                output.diagnostics[0].code == 65'548 && output.diagnostics[0].severity == 2 &&
+                output.diagnostics[0].stage_id == 100 && output.diagnostics[0].operand_id == 1001 &&
+                output.diagnostics[0].geometry_source_id == 5000 &&
+                result.telemetry.jobs_failed == 0 && result.telemetry.jobs_succeeded == 2 &&
+                result.telemetry.capsule_coalescences == 1 &&
+                result.telemetry.maximum_capsule_adjustment_nm == 1,
+            "near-duplicate capsule coalescence was not reported");
+    require(validate_analytic_result_packet_records(output) ==
+                AnalyticResultPacketLayoutError::none,
+            "capsule coalescence emitted an invalid result packet");
+}
+
+void test_capsule_coalescence_envelope_is_inclusive_and_bounded()
+{
+    const auto boundary = build_analytic_filtered_batch(near_duplicate_then_disk(1'000));
+    require(boundary.error == AnalyticFilteredBatchError::none && boundary.packet &&
+                boundary.packet->records.job_results[0].status == 0 &&
+                boundary.packet->records.diagnostics.size() == 1 &&
+                boundary.packet->records.diagnostics[0].code == 65'548 &&
+                boundary.telemetry.capsule_coalescences == 1 &&
+                boundary.telemetry.maximum_capsule_adjustment_nm == 1'000,
+            "1 um capsule coalescence boundary was not admitted and reported");
+
+    const auto outside = build_analytic_filtered_batch(near_duplicate_then_disk(1'001));
+    require(outside.error == AnalyticFilteredBatchError::none && outside.packet &&
+                outside.packet->records.job_results[0].status == 0 &&
+                outside.packet->records.diagnostics.empty() &&
+                outside.telemetry.capsule_coalescences == 0,
+            "capsule coalescence exceeded its 1 um envelope");
+}
+
+void test_capsule_coalescence_crosses_difference_without_id_order_assumption()
+{
+    const auto records = near_duplicate_across_difference();
+    require(validate_analytic_request_packet_records(records) == AnalyticRequestPacketError::none,
+            "cross-stage capsule coalescence request invalid");
+    const auto result = build_analytic_filtered_batch(records);
+    require(result.error == AnalyticFilteredBatchError::none && result.packet,
+            "cross-stage capsule coalescence failed");
+    const auto& output = result.packet->records;
+    const bool subtraction_was_applied = std::any_of(
+        output.operand_events.begin(), output.operand_events.end(),
+        [](const AnalyticOperandEventRecord& event)
+        {
+            return event.operand_id == 2000 &&
+                   event.kind == AnalyticOperandOutcomeKind::subtraction_effect_overwritten_later;
+        });
+    require(output.job_results.size() == 1 && output.job_results[0].status == 0 &&
+                output.diagnostics.size() == 1 && output.diagnostics[0].code == 65'548 &&
+                output.diagnostics[0].stage_id == 300 && output.diagnostics[0].operand_id == 1000 &&
+                output.diagnostics[0].geometry_source_id == 5000 &&
+                result.telemetry.capsule_coalescences == 1 &&
+                result.telemetry.maximum_capsule_adjustment_nm == 1 && subtraction_was_applied,
+            "cross-stage capsule coalescence lost order, diagnostics, or subtraction outcome");
+}
+
+void test_capsule_coalescence_handles_reversed_endpoints()
+{
+    auto records = near_duplicate_then_disk();
+    auto& capsule = records.capsules[1];
+    std::swap(capsule.start_x_nm, capsule.end_x_nm);
+    std::swap(capsule.start_y_nm, capsule.end_y_nm);
+    const auto result = build_analytic_filtered_batch(records);
+    require(result.error == AnalyticFilteredBatchError::none && result.packet &&
+                result.packet->records.job_results[0].status == 0 &&
+                result.packet->records.diagnostics.size() == 1 &&
+                result.packet->records.diagnostics[0].code == 65'548 &&
+                result.telemetry.capsule_coalescences == 1 &&
+                result.telemetry.maximum_capsule_adjustment_nm == 1,
+            "reversed capsule endpoints did not use the same bounded recovery");
+}
+
+void test_capsule_coalescence_is_representative_bounded_not_transitive()
+{
+    AnalyticRequestPacketRecords records;
+    records.jobs = {{10, 0, 1}};
+    records.stages = {{100, 1, 0, 3}};
+    records.operands = {{1000, 4, 0}, {1001, 4, 1}, {1002, 4, 2}};
+    records.capsules = {
+        {5000, 0, 0, 10'000, 0, 2'000},
+        {5001, 750, 0, 10'750, 0, 2'000},
+        {5002, 1'500, 0, 11'500, 0, 2'000},
+    };
+    const auto result = build_analytic_filtered_batch(records);
+    require(result.error == AnalyticFilteredBatchError::none && result.packet &&
+                result.packet->records.job_results[0].status == 0 &&
+                result.packet->records.diagnostics.size() == 1 &&
+                result.packet->records.diagnostics[0].operand_id == 1001 &&
+                result.packet->records.diagnostics[0].geometry_source_id == 5000 &&
+                result.telemetry.capsule_coalescences == 1 &&
+                result.telemetry.maximum_capsule_adjustment_nm == 750,
+            "capsule recovery chained transitively beyond its representative envelope");
+}
+
+void test_t_junction_capsules_use_bounded_tangent_order()
+{
+    const auto records = t_junction_capsules();
+    require(validate_analytic_request_packet_records(records) == AnalyticRequestPacketError::none,
+            "T-junction capsule request invalid");
+    const auto result = build_analytic_filtered_batch(records);
+    require(result.error == AnalyticFilteredBatchError::none && result.packet &&
+                result.packet->records.job_results.size() == 1 &&
+                result.packet->records.job_results[0].status == 0 &&
+                result.packet->records.diagnostics.empty() &&
+                result.packet->records.regions.size() == 1,
+            "T-junction capsule union failed");
+}
+
 void test_per_job_memory_is_independent_of_prior_outputs()
 {
     const auto single = plain_disks(1);
@@ -956,6 +1144,13 @@ int main(int argc, char** argv)
     test_distinct_chord_endpoint_radius_overlap_fails_closed_deterministically();
     test_two_successful_jobs();
     test_job_local_failure_isolated();
+    test_collinear_diagonal_capsules_share_exact_carrier_order();
+    test_near_duplicate_capsules_coalesce_with_report();
+    test_capsule_coalescence_envelope_is_inclusive_and_bounded();
+    test_capsule_coalescence_crosses_difference_without_id_order_assumption();
+    test_capsule_coalescence_handles_reversed_endpoints();
+    test_capsule_coalescence_is_representative_bounded_not_transitive();
+    test_t_junction_capsules_use_bounded_tangent_order();
     test_disjoint_relationship();
     test_rectangle_relationship_dimensions_and_containment();
     test_relationship_query_orientation_and_strict_gap();

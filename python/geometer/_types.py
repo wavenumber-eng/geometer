@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
@@ -64,6 +64,10 @@ class ProjectionView:
 @dataclass
 class HlrOptions:
     projection_algorithm: str = "poly"
+    fast: dict[str, Any] = field(default_factory=dict)
+    output_outline: bool = True
+    output_detail: bool = True
+    output_bbox: bool = True
     curve_mode: str = "polyline"
     samples_per_curve: int = 24
     round_digits: int = 3
@@ -89,6 +93,10 @@ class HlrOptions:
     @classmethod
     def assembly_outline(cls) -> "HlrOptions":
         return cls(outline_algorithm="mesh-shadow")
+
+    @classmethod
+    def fast_assembly_outline(cls) -> "HlrOptions":
+        return cls(outline_algorithm="fast-mesh-shadow")
 
     @classmethod
     def visible_detail(cls) -> "HlrOptions":

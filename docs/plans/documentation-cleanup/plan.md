@@ -78,13 +78,13 @@ depends_on = ["baseline-inventory"]
 [[steps]]
 id = "demo-disposition-review"
 title = "Approve keep, repair, archive, or remove dispositions for every demo"
-status = "pending"
-depends_on = ["demo-runtime-audit"]
+status = "done"
+depends_on = ["baseline-inventory"]
 
 [[steps]]
 id = "demo-cleanup"
 title = "Apply approved demo documentation, moves, repairs, and pruning"
-status = "pending"
+status = "done"
 depends_on = ["demo-disposition-review", "readme-refresh"]
 
 [[steps]]
@@ -185,13 +185,16 @@ status = "pending"
 The core documentation, TypeSpec migration assessment, and generated HTML work
 is implemented. See the [execution record](execution-checkpoint.md) for focused
 test evidence and independent checkpoint review. Source/interface and demo
-registration drift checks are implemented provisionally; their plan gate waits
-for demo disposition and the final audits. Exit criteria remain pending final
+registration drift checks are implemented provisionally; their plan gate awaits
+final audit. Exit criteria remain pending final
 closeout verification, not an assertion that implementation has not started.
 
 The [durable demo audit](../../developer/demo-status.md) records actual runs
-and explicit limitations. Native C++ GUI interaction remains unverified and
-no demo-removal disposition has been approved. No native/WASM rebuild,
+and explicit limitations. The user approved retaining all demos for now; the
+[retention decision](demo-retention.md) completes disposition and the associated
+documentation-only cleanup without removing anything. This non-destructive
+decision no longer depends on completing runtime verification. Native C++ GUI
+interaction remains unverified. No native/WASM rebuild,
 runtime migration, pruning, public push, or release has been performed.
 
 ## Objective

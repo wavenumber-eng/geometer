@@ -15,6 +15,9 @@
 browser artifacts. Owner for all retained entries: Geometer maintainers;
 application-specific consumers retain their own support responsibility.
 Passing a demo does not promote its solver. No demo has been deleted.</p>
+<p>User decision on 2026-09-05: retain all 11 demos/examples for now. Pruning is
+deferred to a separate explicitly approved change. Retention does not alter
+experimental maturity or resolve the verification gaps recorded below.</p>
 <h2 id="runtime-evidence-and-disposition">Runtime Evidence And Disposition</h2>
 <table>
 <thead>
@@ -22,7 +25,7 @@ Passing a demo does not promote its solver. No demo has been deleted.</p>
 <th>Demo / audience</th>
 <th>Source</th>
 <th>Verification on this host</th>
-<th>Proposed disposition</th>
+<th>Approved disposition: retain for now</th>
 </tr>
 </thead>
 <tbody>
@@ -48,13 +51,13 @@ Passing a demo does not promote its solver. No demo has been deleted.</p>
 <td>Analytic polygon pour / solver research</td>
 <td><a href="../../../../../../examples/wasm/analytic_polygon_pour_demo.html">page</a></td>
 <td>Standalone Chrome runtime test passed.</td>
-<td>Retain experimental pending disposition review.</td>
+<td>Retain as experimental research.</td>
 </tr>
 <tr>
 <td>PCB polygon pour / abandoned application direction</td>
 <td><a href="../../../../../../examples/wasm/pcb_polygon_pour_demo.html">page</a></td>
 <td>Standalone interaction test passed.</td>
-<td>Archive/remove candidate, pending explicit approval and reference cleanup.</td>
+<td>Retain as experimental research; any later pruning requires separate approval.</td>
 </tr>
 <tr>
 <td>Planar ring solver / packed polygon example</td>
@@ -174,8 +177,9 @@ pages, or the hosted-directory commands in <a href="browser-demos.html">demo pac
 Rack metadata under <code>tests/wasm/</code> and <code>tests/typescript/</code> indexes existing
 coverage; Python package validation exercises the headless example. Do not
 treat registration as a successful runtime observation.</p>
-<h2 id="pruning-decision-still-required">Pruning Decision Still Required</h2>
-<p>No source or committed output is removed by this audit. Before pruning PCB,
+<h2 id="retention-decision-and-future-pruning">Retention Decision And Future Pruning</h2>
+<p>All demos are retained by user decision; no source or committed output is
+removed by this audit. Before any future pruning of PCB,
 analytic, ring, or GUI demos, approve an explicit disposition and remove the
 complete build/test/manifest/distribution reference set. Retention of research
 evidence is separate from keeping every historical demo runnable.</p>

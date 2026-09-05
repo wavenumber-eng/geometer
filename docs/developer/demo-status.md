@@ -5,15 +5,19 @@ browser artifacts. Owner for all retained entries: Geometer maintainers;
 application-specific consumers retain their own support responsibility.
 Passing a demo does not promote its solver. No demo has been deleted.
 
+User decision on 2026-09-05: retain all 11 demos/examples for now. Pruning is
+deferred to a separate explicitly approved change. Retention does not alter
+experimental maturity or resolve the verification gaps recorded below.
+
 ## Runtime Evidence And Disposition
 
-| Demo / audience | Source | Verification on this host | Proposed disposition |
+| Demo / audience | Source | Verification on this host | Approved disposition: retain for now |
 | --- | --- | --- | --- |
 | Model bounds / generated browser consumers | [page](../../examples/wasm/model_bounds_demo.html) | Real Worker-client validation passed; page interaction not separately tested. | Keep as generated-contract pilot. |
 | HLR Lab / browser integration | [page](../../examples/wasm/embedded_model_viewer.html) | Chrome upload, projection and SVG export passed. | Keep primary browser demo. |
 | Illustration Lab / package evaluation | [page](../../examples/wasm/illustration_demo.html) | Chrome mesh/render/upload/export passed. | Keep evaluation demo; not a production renderer application. |
-| Analytic polygon pour / solver research | [page](../../examples/wasm/analytic_polygon_pour_demo.html) | Standalone Chrome runtime test passed. | Retain experimental pending disposition review. |
-| PCB polygon pour / abandoned application direction | [page](../../examples/wasm/pcb_polygon_pour_demo.html) | Standalone interaction test passed. | Archive/remove candidate, pending explicit approval and reference cleanup. |
+| Analytic polygon pour / solver research | [page](../../examples/wasm/analytic_polygon_pour_demo.html) | Standalone Chrome runtime test passed. | Retain as experimental research. |
+| PCB polygon pour / abandoned application direction | [page](../../examples/wasm/pcb_polygon_pour_demo.html) | Standalone interaction test passed. | Retain as experimental research; any later pruning requires separate approval. |
 | Planar ring solver / packed polygon example | [page](../../examples/wasm/planar_ring_solver_demo.html) | Headless Chrome loaded the committed standalone page and solved: 1 region, 2 holes, 27.223347 square mm, runtime 2026.9.4 / ABI 20260904. | Keep provisionally as a working packed polygon example; do not prune solely for age. |
 | Native C++ HLR preview / direct embedding | [source](../../examples/cpp/hlr_preview.cpp) | Committed Windows executable present; no unattended GUI smoke mode found. Packaging validator checks presence, not interaction. | Keep pending GUI assessment; runtime not verified in this audit. |
 | Python headless HLR/SVG / Python consumers | [source](../../examples/python/step_hlr_svg.py) | Executed against committed binary; produced projection JSON, SVG and GLB. | Keep primary Python example. |
@@ -65,9 +69,10 @@ Rack metadata under `tests/wasm/` and `tests/typescript/` indexes existing
 coverage; Python package validation exercises the headless example. Do not
 treat registration as a successful runtime observation.
 
-## Pruning Decision Still Required
+## Retention Decision And Future Pruning
 
-No source or committed output is removed by this audit. Before pruning PCB,
+All demos are retained by user decision; no source or committed output is
+removed by this audit. Before any future pruning of PCB,
 analytic, ring, or GUI demos, approve an explicit disposition and remove the
 complete build/test/manifest/distribution reference set. Retention of research
 evidence is separate from keeping every historical demo runnable.

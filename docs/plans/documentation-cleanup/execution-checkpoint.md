@@ -92,6 +92,9 @@ rechecked at both widths and included in the focused regression test.
 
 ## Remaining Before Closeout
 
+Subsequent update: the user approved [retaining all demos](demo-retention.md).
+This resolves the disposition decision below, not the verification gaps.
+
 Native C++ preview still needs an interactive desktop smoke assessment; its
 committed executable and packaging registration are not runtime proof. Browser
 bounds page controls and Python GUI interactive controls were not separately

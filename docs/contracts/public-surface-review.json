@@ -452,7 +452,7 @@
     },
     {
       "path": "src/rust/geometer-client/src/client.rs",
-      "sha256": "205c4e16875318c390f0eff7d0cfa702179ad59efd63004cf0853da46935167b"
+      "sha256": "bac87bfe46db893fe4fc117bf3959533bcfaec7c415b93e57b8e11da13e0ad13"
     },
     {
       "path": "src/rust/geometer-client/src/client_tests.rs",
@@ -480,7 +480,11 @@
     },
     {
       "path": "src/rust/geometer-client/src/operation_validation.rs",
-      "sha256": "40fa7ac4f16e7ef679a03a116e557888dfe3179199eb380c0e0781b496d7e1a1"
+      "sha256": "a838d7a2fa6484f620249c33bcf11fcc5d75ab1acd3baf7fbfaa403c85029e33"
+    },
+    {
+      "path": "src/rust/geometer-client/src/operation_validation/tests.rs",
+      "sha256": "6fa99429a5e99083ec2502c6b210aebe7949515741cb8f9b7169bb1312022bae"
     },
     {
       "path": "src/rust/geometer-client/src/session_validation.rs",

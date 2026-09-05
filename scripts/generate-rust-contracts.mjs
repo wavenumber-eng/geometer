@@ -42,10 +42,11 @@ const source = formatRust(
 
 await emit("contracts.rs", source);
 await emit("operations.rs", formatRust(generateOperations()));
+await emit("dispatch.rs", formatRust(generateDispatch()));
 await emit(
   "mod.rs",
   formatRust(
-    "// Generated from wn_geometer_contract_catalog.a0.json. Do not edit.\n\npub mod contracts;\npub mod operations;\n",
+    "// Generated from wn_geometer_contract_catalog.a0.json. Do not edit.\n\npub mod contracts;\npub mod dispatch;\npub mod operations;\n",
   ),
 );
 
@@ -63,6 +64,61 @@ async function emit(name, content) {
   }
   await mkdir(dirname(path), { recursive: true });
   await writeFile(path, content, "utf8");
+}
+
+// IPC unions and contract identities are authored in TypeSpec. Keep transport
+// validation exhaustive as operations are added; never maintain a second list
+// of supported logical DTOs in the handwritten client.
+function generateDispatch() {
+  const variantsFor = (unionName) => {
+    const union = modelCatalog.declarations.find((item) => shortName(item.name) === unionName);
+    if (!union || union.kind !== "union") throw new Error(`Missing IPC union ${unionName}`);
+    return union.variants.map((variant) => {
+      const rootRecord = codecRoots.find((item) => item.name === variant.type.target);
+      if (!rootRecord && variant.type.target?.endsWith(".PackedAttachmentProjectionA0"))
+        return { variant: pascal(variant.name), contract: null };
+      if (!rootRecord) throw new Error(`IPC variant lacks a codec root: ${variant.name}`);
+      return {
+        variant: pascal(variant.name),
+        contract: rootRecord.contract_identity,
+        type: shortName(rootRecord.name),
+      };
+    });
+  };
+  const requests = variantsFor("IpcRequestValueA0");
+  const results = variantsFor("OperationResultValueA0");
+  const identityFunction = (name, type, variants) => `
+pub fn ${name}(value: &contracts::${type}) -> Option<&'static str> {
+    match value {
+${variants.map((item) => `        contracts::${type}::${item.variant}(_) => ${item.contract ? `Some(${JSON.stringify(item.contract)})` : "None"},`).join("\n")}
+    }
+}`;
+  return `// Generated from wn_geometer_contract_catalog.a0.json. Do not edit.
+
+use super::contracts;
+
+/// Decode using the negotiated operation's exact contract, not union trial order.
+pub fn decode_logical_request(
+    contract: &str,
+    data: &[u8],
+) -> Result<contracts::IpcRequestValueA0, contracts::ContractError> {
+    match contract {
+${requests
+  .filter((item) => item.contract)
+  .map(
+    (item) =>
+      `        ${JSON.stringify(item.contract)} => Ok(contracts::IpcRequestValueA0::${item.variant}(contracts::decode_json::<contracts::${item.type}>(data)?)),`,
+  )
+  .join("\n")}
+        _ => Err(contracts::ContractError::Validation {
+            path: "/request".to_owned(),
+            message: format!("no generated logical request codec for {contract}"),
+        }),
+    }
+}
+${identityFunction("logical_request_contract", "IpcRequestValueA0", requests)}
+${identityFunction("logical_result_contract", "OperationResultValueA0", results)}
+`;
 }
 
 function generateHeader() {
@@ -84,6 +140,7 @@ pub enum ContractError {
     #[error("contract validation failed at {path}: {message}")]
     Validation { path: String, message: String },
 }
+
 
 pub trait Validate {
     fn validate_at(&self, path: &str) -> Result<(), ContractError>;

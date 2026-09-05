@@ -5,7 +5,11 @@ use crate::generated::contracts::{
     self, IpcOperationDeclarationA0, IpcRequestValueA0, IpcRuntimeDispatchA0, IpcWelcomeA0,
     OperationOutcomeA0, OperationResultValueA0, PackedAttachmentProjectionA0,
 };
+use crate::generated::dispatch::{logical_request_contract, logical_result_contract};
 use crate::ipc::Attachment;
+
+#[cfg(test)]
+mod tests;
 
 pub(crate) fn operation_declaration<'a>(
     welcome: &'a IpcWelcomeA0,
@@ -35,13 +39,8 @@ pub(crate) fn validate_operation_request(
         "request",
     )?;
     match (&declaration.runtime_dispatch, request) {
-        (IpcRuntimeDispatchA0::LogicalDto, IpcRequestValueA0::LogicalDto(_))
-            if declaration.request_contract == "geometry.model_bounds.options.a0" =>
-        {
-            Ok(())
-        }
-        (IpcRuntimeDispatchA0::LogicalDto, IpcRequestValueA0::HlrProjection(_))
-            if declaration.request_contract == "geometry.hlr_projection.options.a0" =>
+        (IpcRuntimeDispatchA0::LogicalDto, value)
+            if logical_request_contract(value) == Some(declaration.request_contract.as_str()) =>
         {
             Ok(())
         }
@@ -71,23 +70,11 @@ pub(crate) fn validate_operation_response(
                 "response",
             )?;
             match (&declaration.runtime_dispatch, &success.result) {
-                (IpcRuntimeDispatchA0::LogicalDto, OperationResultValueA0::ModelBounds(_)) => {
-                    if declaration.result_contract == "geometry.model_bounds.a0" {
-                        Ok(())
-                    } else {
-                        Err(GeometerClientError::Protocol(
-                            "result contract differs from the logical result variant".to_owned(),
-                        ))
-                    }
-                }
-                (IpcRuntimeDispatchA0::LogicalDto, OperationResultValueA0::HlrProjection(_)) => {
-                    if declaration.result_contract == "geometry.hlr_projection.result.a0" {
-                        Ok(())
-                    } else {
-                        Err(GeometerClientError::Protocol(
-                            "result contract differs from the logical result variant".to_owned(),
-                        ))
-                    }
+                (IpcRuntimeDispatchA0::LogicalDto, value)
+                    if logical_result_contract(value)
+                        == Some(declaration.result_contract.as_str()) =>
+                {
+                    Ok(())
                 }
                 (
                     IpcRuntimeDispatchA0::PackedAttachment,

@@ -52,6 +52,17 @@ encoder accepts `AnalyticPlanarBooleanBatchRequestA0`; the public decoder
 returns `AnalyticPlanarBooleanBatchResultA0` and computes each job's SHA-256
 over its exact rebased standalone packet closure.
 
+Logical request decoding and request/result identity matching are generated in
+`generated/dispatch.rs` from the TypeSpec IPC unions and catalog roots. The
+generic client selects the exact negotiated request contract before decoding;
+it does not guess from union order (bounds and HLR can both accept `{}`). This
+also allows generic `execute` calls for advertised native topology operations.
+Their experimental lifecycle is unchanged; generated support is not production
+promotion. New logical operations must join the authored TypeSpec unions and
+catalog, then regenerate all bindings, rather than add handwritten Rust
+dispatch cases. Attachment and runtime-availability checks still use the
+negotiated operation declaration; packed packet dispatch stays separate.
+
 ## Client lifecycle
 
 `GeometerClient::spawn()` starts an explicit executable path, sends `hello`,

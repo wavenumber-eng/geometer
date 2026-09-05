@@ -322,16 +322,10 @@ impl GeometerClient {
                 ))
             })?;
         let request = match declaration.runtime_dispatch {
-            IpcRuntimeDispatchA0::LogicalDto
-                if declaration.request_contract == "geometry.hlr_projection.options.a0" =>
-            {
-                IpcRequestValueA0::HlrProjection(contracts::decode_hlr_projection_options_a0_json(
-                    request_json,
-                )?)
-            }
-            IpcRuntimeDispatchA0::LogicalDto => IpcRequestValueA0::LogicalDto(
-                contracts::decode_model_bounds_options_a0_json(request_json)?,
-            ),
+            IpcRuntimeDispatchA0::LogicalDto => crate::generated::dispatch::decode_logical_request(
+                &declaration.request_contract,
+                request_json,
+            )?,
             IpcRuntimeDispatchA0::PackedAttachment => {
                 IpcRequestValueA0::PackedAttachment(contracts::decode_json::<
                     PackedAttachmentProjectionA0,

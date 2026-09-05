@@ -1,7 +1,7 @@
 +++
 type = "plan"
 id = "geometer-native-gpu-viewer"
-status = "pending"
+status = "active"
 created = "2026-09-05"
 
 [[steps]]
@@ -23,7 +23,7 @@ depends_on = ["baseline-inventory"]
 
 [[steps]]
 id = "native-illustration-windows"
-title = "Accept the native Windows operation and typed Rust STEP/mesh workflow from the upstream owner"
+title = "Implement the native Windows operation and typed Rust STEP/mesh workflow"
 status = "pending"
 depends_on = ["architecture-and-parity"]
 
@@ -217,17 +217,16 @@ primary development and user-acceptance platform. Establish the macOS arm64
 Metal build early; a separate Mac-equipped agent performs runtime validation.
 Windows work need not wait for that agent, but a Mac build is not a Mac pass.
 
-This is a plan only. Baseline: `134d767` on `docs/documentation-cleanup-plan`.
-No GPU migration, new runtime dependency, build dispatch or Mac test has been
-performed as part of drafting it. The previous rough renderer-only estimate
-does not cover the added docking, illustration, exports and background-job work.
+Execution approved 2026-09-05 on `feature/native-api-rust-demo`, branched from
+`b7605c7`; the planning branch is preserved. The previous rough renderer-only
+estimate does not cover the added docking, illustration, exports and jobs.
 
 User clarification: native consumers need an actual Geometer illustration API,
 not a JavaScript/WASM workaround. The [native illustration API issue brief](native-illustration-api.md)
-is a separately owned upstream work item for the other Geometer agent. It
-replaces this plan's earlier helper-runtime/native-port choice. GPU, docking,
-camera, loading and HLR exports can proceed independently; illustration
-integration waits for that API's reviewed contract and verified implementation.
+is now owned by this feature branch: the other agent will use WASM until this
+release is ready. TypeSpec remains the authority for new IPC definitions and
+generated bindings. GPU, docking, camera, loading and HLR exports can proceed
+independently; illustration integration requires reviewed native parity.
 
 Python exposure is required alongside Rust. The user confirmed that the
 [Rust/wgpu consumer demonstration](rust-consumer-demo.md) is a separate app,

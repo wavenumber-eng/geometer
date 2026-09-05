@@ -169,6 +169,50 @@ async fn persistent_client_runs_typed_mesh_hlr_projection() {
 }
 
 #[tokio::test]
+async fn persistent_client_dispatches_generated_topology_contracts() {
+    let root = repository_root();
+    let client = GeometerClient::spawn(native_executable(&root), "generated-dispatch-test", "a0")
+        .await
+        .unwrap();
+    let step = std::fs::read(root.join("tests/fixtures/step/embedded_models/SOT-23.STEP")).unwrap();
+    let opened = client
+        .execute(
+            "geometry.step_topology.open.a0",
+            br#"{"schema":"geometry.step_topology.open.request.a0"}"#,
+            vec![ipc::Attachment {
+                name: "step".to_owned(),
+                media_type: "application/step".to_owned(),
+                data: step,
+            }],
+        )
+        .await
+        .unwrap();
+    let contracts::OperationOutcomeA0::Success(success) = opened.outcome else {
+        panic!("topology open failed");
+    };
+    let contracts::OperationResultValueA0::StepTopologyOpen(open) = success.result else {
+        panic!("wrong topology open result");
+    };
+    let request = contracts::encode_json(&contracts::StepTopologyCloseRequestA0 {
+        schema: "geometry.step_topology.close.request.a0".to_owned(),
+        session: open.session,
+    })
+    .unwrap();
+    let closed = client
+        .execute("geometry.step_topology.close.a0", &request, Vec::new())
+        .await
+        .unwrap();
+    let contracts::OperationOutcomeA0::Success(success) = closed.outcome else {
+        panic!("topology close failed");
+    };
+    assert!(matches!(
+        success.result,
+        contracts::OperationResultValueA0::StepTopologyClose(_)
+    ));
+    client.close().await.unwrap();
+}
+
+#[tokio::test]
 async fn persistent_client_runs_typed_analytic_batch_twice() {
     let root = repository_root();
     let executable = native_executable(&root);

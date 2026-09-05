@@ -13,6 +13,12 @@ status = "done"
 id = "architecture-and-parity"
 title = "Approve viewer boundaries, web parity matrix and shared illustration execution strategy"
 status = "pending"
+depends_on = ["baseline-inventory", "rust-demo-scope"]
+
+[[steps]]
+id = "rust-demo-scope"
+title = "Decide whether the Rust/wgpu API demonstration is separate or replaces the C++ viewer"
+status = "pending"
 depends_on = ["baseline-inventory"]
 
 [[steps]]
@@ -46,10 +52,16 @@ status = "pending"
 depends_on = ["viewport-camera", "background-jobs"]
 
 [[steps]]
-id = "illustration-integration"
-title = "Integrate shared illustration styles and SVG composition with tested web parity"
+id = "native-illustration-api"
+title = "Accept governed native illustration with typed Rust/Python APIs and complete STEP workflows"
 status = "pending"
-depends_on = ["geometry-svg-exports", "architecture-and-parity"]
+depends_on = ["baseline-inventory"]
+
+[[steps]]
+id = "illustration-integration"
+title = "Consume native Geometer illustration with existing styles and tested web SVG parity"
+status = "pending"
+depends_on = ["geometry-svg-exports", "architecture-and-parity", "native-illustration-api"]
 
 [[steps]]
 id = "windows-acceptance"
@@ -115,7 +127,12 @@ status = "pending"
 
 [[exit_criteria]]
 id = "illustration-parity"
-title = "Illustration reuse and packaging are approved and tested against matching web inputs/styles"
+title = "Native illustration preserves accepted TypeScript semantics without a JavaScript/WASM workaround in the viewer"
+status = "pending"
+
+[[exit_criteria]]
+id = "native-illustration-api"
+title = "The governed native operation and typed Rust/Python STEP-to-illustration paths pass upstream four-platform acceptance"
 status = "pending"
 
 [[exit_criteria]]
@@ -154,6 +171,19 @@ This is a plan only. Baseline: `134d767` on `docs/documentation-cleanup-plan`.
 No GPU migration, new runtime dependency, build dispatch or Mac test has been
 performed as part of drafting it. The previous rough renderer-only estimate
 does not cover the added docking, illustration, exports and background-job work.
+
+User clarification: native consumers need an actual Geometer illustration API,
+not a JavaScript/WASM workaround. The [native illustration API issue brief](native-illustration-api.md)
+is a separately owned upstream work item for the other Geometer agent. It
+replaces this plan's earlier helper-runtime/native-port choice. GPU, docking,
+camera, loading and HLR exports can proceed independently; illustration
+integration waits for that API's reviewed contract and verified implementation.
+
+Python exposure is required alongside Rust. The user also proposed a
+[Rust/wgpu consumer demonstration](rust-consumer-demo.md). Its placement is
+awaiting the user's separate-versus-replacement choice; do not start two full
+viewer implementations by assumption. The existing SDL/C++ sections below
+remain the original proposal until that architecture choice is resolved.
 
 Retain the existing C++ example identity/build target where practical. Keep
 Geometer generic; do not import PCB/application policy. Do not rebuild or alter
@@ -296,33 +326,43 @@ files. Prefer temporary-file/atomic completion so a failed export does not
 leave a partially overwritten user file. Check SVG is actual vector artwork,
 contains no unexpected external asset references, and opens outside the demo.
 
-## Illustration Reuse Decision
+## Native Illustration API Dependency
 
 Yes, the existing illustration work is reusable. Fast vector detail/shadow is
 already native; the shared colorized SVG compositor is TypeScript, not an
 existing C++ entry point. Merely using a similar GPU shader is not equivalent to
 the web illustrator's visibility/fusion/material-layering behavior.
 
-Preferred first investigation: reuse the existing DOM-independent SVG path in
-a small isolated, packaged helper using the current generated A0 inputs/styles
-and supplied Fast HLR linework. Existing Node illustration tests establish a
-useful starting point. This preserves one SVG implementation. It would require
-an explicitly approved runtime/package strategy (for example bundled Node);
-do not quietly introduce a Node installation requirement or add that helper
-to the generic Geometer IPC catalog without governing a new operation.
+The upstream agent should implement the generic native illustration capability
+in Geometer, expose it through negotiated executable IPC, typed Rust
+`geometer-client` and the Python executable-backed client, and preserve the
+existing A0 input/style/result semantics.
+The proposed operation name `geometry.mesh_illustration.a0` is not yet an
+implemented or approved identity. A complete STEP-to-illustration composition
+is required; exposing only a mesh call is insufficient for the STEP consumer.
+See the issue brief for design choices, attachment constraints and acceptance.
 
-Before implementing that boundary, measure representative input/result sizes,
-serialization cost, startup/lifecycle, limits and deployability on Windows/Mac.
-Define how the produced SVG is shown inside the native results tab: a reviewed
-SVG rasterizer/display adapter for preview, preserving the original vector
-file for export. A GPU-shaded approximation must be labeled separately from
-the exported illustration, not presented as an exact SVG preview.
+Do not duplicate that implementation in the viewer or substitute a bundled
+JavaScript runtime, browser WASM package or approximate renderer. Consume the
+maintained native C++ boundary where available, or a maintained executable
+client adapter if IPC is chosen; do not create an ungoverned private protocol.
+The upstream owner must supply the exact supported contract, native release or
+integration revision, source/binary provenance and native/TypeScript parity
+fixtures. Absence from the negotiated catalog means unavailable, not permission
+to fall back. Keep illustration controls disabled with an actionable explanation
+until the required capability exists; do not call that complete integration.
 
-If a helper runtime is unacceptable, propose a bounded native port with explicit
-parity fixtures and a costed scope for shared preparation/composition. That is
-larger work and requires approval; do not silently port thousands of lines or
-silently drop illustration. A WebView would be another deployment choice, not
-the default SDL GPU architecture. Decide this in `architecture-and-parity`.
+Native API acceptance covers Windows x64, Linux x64, Linux ARM64 and macOS ARM64.
+That is distinct from this viewer's Windows-first/macOS GUI targets. The native
+service must produce SVG headlessly without SDL GPU or a desktop session.
+Its limits and cancellation semantics must remain compatible with existing IPC.
+
+Use the same canonical model/view/style snapshot for native geometry and
+illustration. Display the returned SVG through a reviewed native SVG
+rasterizer/display adapter, preserving the original vector file for export.
+A GPU-shaded preview is a separate presentation, not proof of SVG parity.
+Existing TypeScript modules remain supported and serve as a conformance
+baseline; this plan does not remove or relabel their implementation.
 
 Start parity with source/fallback colors, unlit/Lambert/banded/toon modes as
 actually supported by the shared style, background/transparency controls,
@@ -339,7 +379,7 @@ macOS CMake/Metal/shader path once the first renderer/layout slice builds; do no
 wait for every Windows polish item to discover Mac compile problems.
 
 Keep the optional native example out of solver-only builds. Package canonical
-platform outputs plus shader/helper assets and licenses; run from an arbitrary
+platform outputs plus shaders, required native Geometer artifacts and licenses; run from an arbitrary
 working directory without sibling appz files, source paths or development tools.
 Use an actual Mac runner/host to build and validate Metal assets. Do not claim
 Windows cross-compilation produces a tested macOS application. Reuse existing

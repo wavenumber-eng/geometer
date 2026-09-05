@@ -19,9 +19,10 @@ modify other repositories merely to draft this plan.
 - Exact feature-complete commit, macOS arm64 build artifact and SHA-256 manifest.
 - OS/deployment minimum, architecture, SDL/ImGui pins and Metal shader formats.
 - Reproducible CMake preset/commands, required build tools and dependency-cache
-  instructions; packaged shader/helper assets, licenses and launcher paths.
-- If illustration uses a helper, its pinned runtime/module versions and startup
-  protocol, with no user-global Node/browser installation assumption.
+  instructions; packaged shaders/native dependencies, licenses and launcher paths.
+- Native illustration API revision, compatible Geometer executable and negotiated
+  operation catalog, with no JavaScript runtime or browser/WASM workaround.
+  The API's four-platform acceptance is separate from this Mac GUI check.
 - Matching Windows results and SOT-23, one larger existing STEP fixture and the
   colored-material illustration fixture, with exact paths and source hashes.
 - Geometry JSON, linework SVG, illustrated SVG and style JSON reference outputs.

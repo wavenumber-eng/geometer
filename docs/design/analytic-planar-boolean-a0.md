@@ -2,8 +2,18 @@
 
 ## Status
 
-The logical TypeSpec shapes and packed A0 record layout are pre-release and
-remain under the MATZ visualization integration gate. Existing center-form
+**Experimental; not production-ready.** The implementation and public client
+surface are retained for research, diagnostics, and compatibility, but callers
+must expect valid jobs to fail closed at numeric, topology, carrier, or resource
+boundaries. Do not use this operation as the dependable path for combining an
+entire PCB, copper layer, or similarly large artwork set into one analytic
+entity. Prefer Geometer's Clipper2-backed planar operations when polygonized
+output is suitable. [ADR-017](../geometer/adr/geometer-adr-017-retain_analytic_planar_boolean_as_experimental.md)
+governs this current maturity decision.
+
+The logical TypeSpec shapes and packed A0 record layout remain a frozen
+candidate. Their availability and wire stability do not constitute production
+support. Existing center-form
 bytes stay compatible while A0 adds an endpoint/radius authored arc variant
 whose exact center may be non-integral. The solver and numeric policy are governed under
 [ADR-013](../geometer/adr/geometer-adr-013-filtered_resolution_bounded_planar_boolean.md) for a
@@ -15,13 +25,17 @@ consumer/provider design input, and independent review approved the analytic
 architecture at normative revision
 `529c768e559b4c88874264748d4186e775c8a4dd`. The separately compiled TypeSpec
 candidate and its logical/packed reconciliation were accepted at
-`f4b6a9b87bf16f57ef29dae22150b16f2a742b64`; it remains a pre-release MATZ
-candidate in the shared generated projections until production promotion.
+`f4b6a9b87bf16f57ef29dae22150b16f2a742b64`; it remains a frozen candidate in
+the shared generated projections. ADR-017 ends the former MATZ production-
+promotion direction.
 
-The current contract authorizes raw packet goldens and generated codec work,
-but is not released until the MATZ visualization gates pass. ADR-012 records
+The current contract authorizes raw packet goldens and generated codec work.
+The former MATZ visualization gates are retained below as historical evidence,
+not as an active production-promotion plan. ADR-012 records
 the historical exact-first feasibility decision; ADR-013 supersedes it for
-production implementation.
+the filtered implementation architecture. References to “production” in those
+historical sections describe the intended execution path and qualification
+target at the time; they do not override the experimental status above.
 
 The endpoint/radius authored variant is admitted for closed planar-region
 rings. Constant-width swept-path centerlines retain line and exact
@@ -1826,8 +1840,10 @@ the exact feasibility signature remained unchanged. This selects the exact
 remain part of the pin-integration gate. Packed production dispatch is present,
 but candidate promotion and release remain gated by the qualification below.
 
-Before release, Geometer must pass native/full-browser/executable parity,
-generated TypeScript/Rust/Python consumption, malformed/resource tests,
-documentation generation, native/WASM/package/Rack/L99 gates, and candidate
-MATZ integration. MATZ switches production only after pinning the additive
-tagged release and passing its real-board suite.
+Before ADR-017, release promotion was expected to pass
+native/full-browser/executable parity, generated TypeScript/Rust/Python
+consumption, malformed/resource tests, documentation generation,
+native/WASM/package/Rack/L99 gates, and candidate MATZ integration. MATZ was
+expected to switch production only after pinning the additive tagged release
+and passing its real-board suite. These historical gates no longer describe an
+active production-promotion plan.

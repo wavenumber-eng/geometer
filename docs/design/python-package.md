@@ -149,6 +149,11 @@ with geometer.GeometerClient() as client:
 The analytic planar Boolean candidate is integrated through the same
 executable-backed lane:
 
+> This method is experimental and not production-ready. It may fail closed on
+> valid inputs and is not the dependable path for whole-board or whole-layer
+> copper union. Prefer the Clipper2-backed planar APIs when polygonized output
+> is suitable.
+
 ```python
 import geometer
 

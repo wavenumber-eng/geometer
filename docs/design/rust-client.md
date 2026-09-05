@@ -8,6 +8,11 @@ TypeSpec catalog. The live client spawns one persistent native
 `geometer(.exe) serve --stdio` process and executes model bounds, model/mesh
 HLR, and analytic planar Boolean through their governed attachments.
 
+The analytic operation is experimental and not production-ready. It may fail
+closed on valid inputs and is not the dependable path for whole-board or
+whole-layer copper union. Prefer the Clipper2-backed planar APIs when
+polygonized output is suitable.
+
 The executable implementation preserves every file-oriented CLI command. Its
 stdin and stdout are switched to binary mode on Windows; stdout is reserved for
 complete A0 frames and stderr is captured separately by the client.

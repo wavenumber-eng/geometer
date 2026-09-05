@@ -4,6 +4,12 @@ All notable changes to geometer are documented here.
 
 ## [Unreleased]
 
+### Documentation
+
+- Classified the retained analytic planar Boolean solver as experimental and
+  not production-ready. Clipper2-backed planar operations are the recommended
+  path for visualization, especially whole-board or whole-layer copper unions.
+
 ## [2026.9.4] - 2026-09-04
 
 ### Added

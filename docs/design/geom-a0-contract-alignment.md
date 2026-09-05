@@ -2,6 +2,11 @@
 
 ## Status
 
+**Historical compatibility record.** The MATZ integration direction described
+here is no longer an active production plan. The analytic solver is retained as
+experimental and not production-ready under
+[ADR-017](../geometer/adr/geometer-adr-017-retain_analytic_planar_boolean_as_experimental.md).
+
 Accepted for the `geom-contract-alignment` gate at commit `433bad5` by reviewer
 packet `reviewer-019ffce8-ac66-76c0-877d-3fcb5c1aa6c5`. This report compares
 the digest-locked `appz/data_models` Geom A0 consumer vocabulary with the
@@ -167,7 +172,7 @@ paths, analytic arcs, holes/islands, normalization success/failure, and batch
 independence. They remain design inputs until imported and governed by
 Geometer; they are not production proof.
 
-The migration sequence is additive:
+The original migration sequence was additive:
 
 1. freeze this mapping and the Geometer logical proposal;
 2. define the proposal in TypeSpec and the normalized catalog;
@@ -176,6 +181,9 @@ The migration sequence is additive:
 5. publish a tagged Geometer release; and
 6. let MATZ pin that release, adapt its Geom-domain values, and pass its
    real-board integration gates before switching production.
+
+Steps 5 and 6 no longer describe an active production direction; the retained
+mapping remains useful as compatibility history.
 
 Existing sampled planar and Clipper2 operations remain unchanged throughout
 this migration.

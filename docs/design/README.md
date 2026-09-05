@@ -21,8 +21,10 @@ durable record belongs here, in ADRs, and in requirements.
 - [Rust contracts and executable IPC client](rust-client.md)
 - [Browse generated contracts](../generated/contracts/index.html)
 - [Geom A0 contract alignment](geom-a0-contract-alignment.md)
-- [Analytic planar Boolean A0](analytic-planar-boolean-a0.md)
+- [Analytic planar Boolean A0](analytic-planar-boolean-a0.md) (experimental;
+  not production-ready)
 - [Analytic planar Boolean packet A0](analytic-planar-boolean-packet-a0.md)
+  (frozen experimental wire format)
 - [Exact real-algebraic backend A0](exact-real-algebraic-a0.md) (non-primary
   reference oracle and bounded fallback)
 - [Python package interface](python-package.md)

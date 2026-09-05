@@ -15,6 +15,12 @@ Accepted for implementation by project-owner direction on 2026-08-15. This
 decision supersedes ADR-012 for the production solver architecture. It does not
 promote `geometry.analytic_planar_boolean_batch.a0` to production.
 
+[ADR-017](geometer-adr-017-retain_analytic_planar_boolean_as_experimental.md)
+records the current disposition: the implementation is retained but is
+experimental and not production-ready. “Production” below describes the target
+architecture considered in this historical decision, not the operation's
+current support level.
+
 ## Context
 
 The primary consumers need fast, deterministic planar resolution for:

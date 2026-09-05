@@ -6,6 +6,14 @@ conversion, STEP HLR projection, exact planar STEP synthesis, planar
 contouring, packed planar boolean work, Fast vector HLR for STEP or indexed
 meshes, and browser SVG/Canvas mesh illustration.
 
+> **Experimental analytic solver:**
+> `geometry.analytic_planar_boolean_batch.a0` is available for research and
+> evaluation, but it is not production-ready and may fail closed on valid
+> inputs. Do not use it as the dependable path for whole-board or whole-layer
+> copper unions. Prefer Geometer's Clipper2-backed planar operations when
+> polygonized geometry is suitable. See
+> [ADR-017](docs/geometer/adr/geometer-adr-017-retain_analytic_planar_boolean_as_experimental.md).
+
 ## Documentation
 
 - [Developer guide](docs/developer/README.md)
@@ -135,7 +143,7 @@ geometer.write_planar_step(
 The package is executable-backed. Wheels bundle the platform executable under
 `geometer/native/<platform>/` and expose a `geometer` console command in the
 install environment. Existing file-oriented helpers use the JSON batch CLI;
-the candidate analytic API exports generated integer DTOs and a synchronous
+the experimental analytic API exports generated integer DTOs and a synchronous
 `GeometerClient` that uses the persistent binary `serve --stdio` protocol for
 typed model/mesh HLR and strict packed analytic requests. The file-oriented
 HLR helpers and their exact/poly defaults remain supported.

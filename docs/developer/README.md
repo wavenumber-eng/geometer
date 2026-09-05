@@ -14,7 +14,10 @@ Current and planned library surfaces include:
 - STEP to GLB conversion.
 - STEP hidden-line projection geometry.
 - Planar contour extraction for simplified projected outlines.
-- Planar batch boolean/offset solving for filled 2D geometry.
+- Production Clipper2-backed planar batch boolean/offset solving for filled 2D
+  geometry.
+- Experimental analytic line/arc planar Boolean solving; retained for research
+  and diagnostics, not production use.
 - Future STEP mesh/tessellation APIs for browser rendering.
 
 The core library must stay generic. Do not put board placement rules, Altium
@@ -466,10 +469,17 @@ The public Python package uses the executable backend only. Keep ctypes/native
 loading experiments out of the normal wheel and application path unless a future
 ADR explicitly reopens that backend.
 
-## Analytic Production Qualification
+## Experimental Analytic Qualification
+
+This tooling characterizes the retained experimental analytic solver. Passing
+the governed fixtures or historical production-oriented gates does not make the
+operation production-ready. In particular, do not use it as the dependable
+whole-board or whole-layer copper-union path; use Clipper2-backed planar
+operations when polygonized output is suitable. See
+[ADR-017](../geometer/adr/geometer-adr-017-retain_analytic_planar_boolean_as_experimental.md).
 
 Use an existing Release executable to replay the governed analytic request
-through production IPC without rebuilding OCCT:
+through the same release IPC transport without rebuilding OCCT:
 
 ```powershell
 uv run python scripts\qualify_analytic_planar_boolean.py --power-mode balanced

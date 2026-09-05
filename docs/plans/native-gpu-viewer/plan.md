@@ -1,0 +1,393 @@
++++
+type = "plan"
+id = "geometer-native-gpu-viewer"
+status = "pending"
+created = "2026-09-05"
+
+[[steps]]
+id = "baseline-inventory"
+title = "Inspect native viewer, web illustration, export contracts and platform build paths"
+status = "done"
+
+[[steps]]
+id = "architecture-and-parity"
+title = "Approve viewer boundaries, web parity matrix and shared illustration execution strategy"
+status = "pending"
+depends_on = ["baseline-inventory"]
+
+[[steps]]
+id = "gpu-foundation"
+title = "Pin docking-capable ImGui and implement SDL GPU plus reproducible platform shaders"
+status = "pending"
+depends_on = ["architecture-and-parity"]
+
+[[steps]]
+id = "viewport-camera"
+title = "Replace software preview with GPU mesh rendering and stable orbit/pan/zoom"
+status = "pending"
+depends_on = ["gpu-foundation"]
+
+[[steps]]
+id = "dock-layout"
+title = "Create a responsive left/right controls dock and result-focused workspace"
+status = "pending"
+depends_on = ["gpu-foundation"]
+
+[[steps]]
+id = "background-jobs"
+title = "Move loading and geometry work off the UI thread with accurate busy states"
+status = "pending"
+depends_on = ["architecture-and-parity", "dock-layout"]
+
+[[steps]]
+id = "geometry-svg-exports"
+title = "Export governed geometry JSON and vector SVG from coherent completed results"
+status = "pending"
+depends_on = ["viewport-camera", "background-jobs"]
+
+[[steps]]
+id = "illustration-integration"
+title = "Integrate shared illustration styles and SVG composition with tested web parity"
+status = "pending"
+depends_on = ["geometry-svg-exports", "architecture-and-parity"]
+
+[[steps]]
+id = "windows-acceptance"
+title = "Validate the Windows application, exports and responsive controls with the user"
+status = "pending"
+depends_on = ["illustration-integration", "dock-layout"]
+
+[[steps]]
+id = "macos-build-path"
+title = "Produce a reproducible macOS arm64 Metal build and handoff package"
+status = "pending"
+depends_on = ["viewport-camera", "dock-layout"]
+
+[[steps]]
+id = "macos-agent-validation"
+title = "Have a separate Mac-equipped agent verify the matching feature-complete build"
+status = "pending"
+depends_on = ["macos-build-path", "windows-acceptance"]
+
+[[steps]]
+id = "design-doc-intent-audit"
+title = "Audit durable design and requirements against user intent and actual implementation"
+status = "pending"
+depends_on = ["windows-acceptance", "macos-agent-validation"]
+
+[[steps]]
+id = "test-runtime-impact-audit"
+title = "Review changed tests, Rack registration and measured fast versus GUI-lane costs"
+status = "pending"
+depends_on = ["windows-acceptance", "macos-agent-validation"]
+
+[[steps]]
+id = "external-review"
+title = "Independently review the implementation after design and runtime audits"
+status = "pending"
+depends_on = ["design-doc-intent-audit", "test-runtime-impact-audit"]
+
+[[steps]]
+id = "closeout"
+title = "Record durable decisions, platform evidence and release-facing changes; retire this plan"
+status = "pending"
+depends_on = ["external-review"]
+
+[[exit_criteria]]
+id = "gpu-camera"
+title = "Windows uses hardware depth testing and rotation does not silently refit or zoom"
+status = "pending"
+
+[[exit_criteria]]
+id = "responsive-layout"
+title = "Controls dock left or right, remain usable at audited DPI/sizes, and leave results the remaining area"
+status = "pending"
+
+[[exit_criteria]]
+id = "responsive-jobs"
+title = "Loading/recompute remain responsive with honest progress, stale-result protection and visible failures"
+status = "pending"
+
+[[exit_criteria]]
+id = "exports"
+title = "Geometry JSON and real vector SVG export the selected completed state using documented existing contracts"
+status = "pending"
+
+[[exit_criteria]]
+id = "illustration-parity"
+title = "Illustration reuse and packaging are approved and tested against matching web inputs/styles"
+status = "pending"
+
+[[exit_criteria]]
+id = "macos-handoff"
+title = "A matching macOS arm64 build has recorded independent agent Metal/UI/export verification"
+status = "pending"
+
+[[exit_criteria]]
+id = "design-doc-intent-audit"
+title = "Required design documents match user intent and implemented behavior"
+status = "pending"
+
+[[exit_criteria]]
+id = "test-runtime-impact-audit"
+title = "New tests are listed and runtime impact is reviewed"
+status = "pending"
+
+[[exit_criteria]]
+id = "external-review"
+title = "Independent implementation review has no unresolved blocking findings"
+status = "pending"
++++
+
+# Native GPU Viewer Development Plan
+
+## Objective And Scope
+
+Turn the C++ HLR preview into a useful native counterpart to Geometer's web
+demonstrations: a real GPU-rendered model, comfortable controls, responsive
+geometry computation, and reusable geometry/SVG outputs. Windows x64 is the
+primary development and user-acceptance platform. Establish the macOS arm64
+Metal build early; a separate Mac-equipped agent performs runtime validation.
+Windows work need not wait for that agent, but a Mac build is not a Mac pass.
+
+This is a plan only. Baseline: `134d767` on `docs/documentation-cleanup-plan`.
+No GPU migration, new runtime dependency, build dispatch or Mac test has been
+performed as part of drafting it. The previous rough renderer-only estimate
+does not cover the added docking, illustration, exports and background-job work.
+
+Retain the existing C++ example identity/build target where practical. Keep
+Geometer generic; do not import PCB/application policy. Do not rebuild or alter
+geometry algorithms, migrate every operation to TypeSpec, prune other demos,
+or redesign the Python GUI as part of this plan. Its recently added fast
+selectors remain. The separate documentation-cleanup plan is not implicitly
+completed or superseded by this implementation plan.
+
+## Inspected Baseline
+
+| Area | Evidence / implication |
+| --- | --- |
+| Native shell | `examples/cpp/CMakeLists.txt` pins SDL 3.2.30 and ImGui 1.92.8, currently building SDL3/OpenGL3 backends. The inspected ImGui header has no docking API; choose a reviewed exact docking commit, not a floating branch. Its source tree already contains an SDL GPU backend. |
+| Preview | `examples/cpp/hlr_preview.cpp` uploads a CPU depth-buffer image. Its scale is recomputed from projected bounds on rotation, causing the reported apparent approach/zoom. The GPU migration must fix camera policy separately. |
+| Controls / work | Fixed-width controls and long `SameLine` rows do not adapt well; `IniFilename` is disabled. Loading and HLR run synchronously on the UI thread. |
+| Native results | `src/cpp/lib/geometer/projection.h` exposes HLR JSON and SVG writers. Reuse them where their documented format matches the chosen export; do not relabel legacy JSON as generated A0. |
+| Web behavior | `examples/wasm/illustration_demo.ts` has a Three.js orthographic/trackball preview, preserved camera extent, mesh-quality presets, separate vector output, SVG download and style JSON. Use it and the HLR Lab as acceptance references, not just screenshots. |
+| Shared illustration | `src/ts/geometer/illustrated-hlr.ts` combines native/WASM Fast HLR with `createIllustrator`. `mesh-illustration.ts` owns preparation, visibility ordering, filled surfaces, fusion, coplanar layering, shading and SVG serialization. Canvas is a separate presentation path. |
+| Platforms | Existing CI includes macOS arm64 and Windows native builds. Explicitly enable/package the optional example and required shaders; kernel CI alone does not establish viewer coverage. |
+
+## Proposed Architecture
+
+Keep Dear ImGui for UI and SDL3 for windows/input; replace the OpenGL renderer
+integration with SDL GPU for both ImGui and the 3D viewport. Windows uses D3D12;
+macOS uses Metal. Do not implement a full scene/game engine or maintain separate
+handwritten D3D/Metal renderers. Vulkan/Linux are not this phase's acceptance
+targets, although avoid gratuitous platform coupling.
+
+Split responsibilities out of the large example file: application state and
+job orchestration; camera/math; SDL GPU resource/rendering code; docked controls;
+geometry/export adapters; illustration adapter. Keep demo policy outside the
+kernel. Existing mesh positions, indices, transforms and material colors feed
+the GPU; preserve winding, mirrored transforms and normal semantics.
+
+Use vertex/index buffers, small lighting shaders, a color target and hardware
+depth attachment. Draw the target inside the results workspace using ImGui's
+SDL GPU texture binding. Handle resize, minimized/zero-sized windows, DPI,
+resource lifetime and device/initialization failures. Report the selected GPU
+backend and clear unsupported-device errors. No silent fallback to the old
+software renderer. Start with opaque STEP solids; transparency is an explicit
+capability decision, not something depth testing alone solves.
+
+Pin shader tooling and record source/hash/format provenance. Build/package
+DXIL or another validated D3D12 format for Windows and Metal-compatible shader
+artifacts for Mac. Prefer build-time compilation; do not require end users to
+install a shader compiler. Verify ImGui backend compatibility at the pinned
+SDL/docking revisions rather than assuming current online examples match them.
+
+## Controls And Results Layout
+
+```text
++----------------------+---------------------------------------------+
+| Controls (left/right) | Results: 3D | HLR | Illustration | Compare   |
+| File / mesh quality  |                                             |
+| Camera / Fit         | Active result fills the remaining workspace |
+| Detail / outline     | Compare optionally splits model and output  |
+| Illustration / light |                                             |
+| Export               |                                             |
++----------------------+---------------------------------------------+
+| Status: loading / computing / ready / failed; elapsed; diagnostics  |
++--------------------------------------------------------------------+
+```
+
+Default controls dock left; allow moving to the right, resizing, collapsing,
+and restoring a sensible default layout. Use one native OS window initially;
+docking is not permission to add multi-OS-window ImGui viewports. Persist layout
+under the user's application settings directory, never the repository or CWD.
+Ignore/recover invalid or off-screen settings with Reset Layout.
+
+Use collapsible sections and width-aware label/control tables, stretch inputs,
+wrapped help/error text, scrollable overflow and font-relative minimums. Avoid
+fixed pixel widths and hard-coded top-row positions. Camera buttons can wrap
+or use a compact menu when the dock is narrow. Result textures follow the actual
+content area and framebuffer scale. Audit 1280x720 and larger windows at
+Windows 100%, 150% and 200% scaling; narrow docks must remain usable without
+clipped controls. Export dimensions must not depend on dock width or DPI.
+
+## Camera And Geometry Consistency
+
+Use an orthographic engineering camera by default, with orbit, pan, wheel zoom,
+named views and explicit Fit. Preserve target and world-space extent while
+orbiting. Fit establishes the extent when a model loads or the user requests
+it; resizing adjusts aspect without silently fitting each rotated silhouette.
+Changing HLR algorithms or illustration style must not reset the camera.
+
+Use one canonical camera/model snapshot for 3D, HLR, illustration and export.
+Document units (mm), up/direction, handedness, root placement, instance
+transforms, mirror conventions and the distinction between display zoom and
+physical geometry. For comparisons, choose whether both sides show the same
+mesh or STEP-derived HLR; do not mistake tessellation differences for renderer
+errors. Fast detail and fast mesh-shadow remain initial defaults with poly,
+exact and older outline modes available for comparison.
+
+## Loading, Recompute And Progress
+
+Move file loading, STEP parsing/meshing and Geometer computation off the UI
+thread. Keep ImGui/SDL GPU access on the UI thread. Prefer a serialized worker
+for the existing native value APIs initially; pass immutable inputs/results
+and avoid concurrent mutation of OCCT/model state. Prepared-mesh reuse may be
+added through existing supported APIs, without changing solver behavior.
+
+Show idle/loading/preparing/computing/exporting/ready/failed states, current
+phase, elapsed time and a live busy indicator. Display numerical progress only
+when real completed/total work is exposed. Existing timing results are not live
+progress callbacks. Keep the window repainting and the controls usable while
+native calls execute; no synchronous wait on the UI thread.
+
+Debounce camera-driven work, bound the queue and coalesce superseded requests.
+Tag jobs with model/view/options revisions; a late completion must not replace
+a newer scene. Show the previous completed image as stale while computing,
+or a placeholder if no result exists. Export is disabled for stale/error state
+unless the user explicitly chooses the named last-completed snapshot.
+
+Do not promise interruption of an active OCCT call. Cancel queued jobs and
+discard superseded results. Specify shutdown ownership and continue indicating
+active work while it drains; do not detach a thread accessing destroyed state.
+If hard cancellation, timeout recovery or bounded process shutdown becomes a
+requirement, approve an owned worker-process design separately rather than
+unsafe thread termination. Exercise failure/retry and model-switch races.
+
+## Geometry And SVG Exports
+
+Required outputs are geometry data and SVG, not screenshots of the UI. Offer
+geometry JSON and linework SVG for the selected view/layers, plus illustrated
+SVG when illustration is enabled. Native preview PNG capture is optional and
+does not substitute for vector output.
+
+The architecture step records the exact schema for each file. Prefer existing
+generated A0 HLR and illustration contracts for new interchange. Preserve any
+legacy writer output under its true identity; validate the adapter if projecting
+native values into A0. Reuse existing SVG writers/composition, retain arcs where
+the selected result supports them, and preserve units/viewBox/layers/colors.
+No independently invented public viewer-only geometry schema.
+
+Snapshot model, camera, algorithms, layers and illustration style together so
+JSON and SVG agree. Export should not recompute with unrelated defaults. Support
+style JSON import/export through the existing A0 style contract. Save through
+native dialogs, handle errors/cancel safely and confirm replacement of existing
+files. Prefer temporary-file/atomic completion so a failed export does not
+leave a partially overwritten user file. Check SVG is actual vector artwork,
+contains no unexpected external asset references, and opens outside the demo.
+
+## Illustration Reuse Decision
+
+Yes, the existing illustration work is reusable. Fast vector detail/shadow is
+already native; the shared colorized SVG compositor is TypeScript, not an
+existing C++ entry point. Merely using a similar GPU shader is not equivalent to
+the web illustrator's visibility/fusion/material-layering behavior.
+
+Preferred first investigation: reuse the existing DOM-independent SVG path in
+a small isolated, packaged helper using the current generated A0 inputs/styles
+and supplied Fast HLR linework. Existing Node illustration tests establish a
+useful starting point. This preserves one SVG implementation. It would require
+an explicitly approved runtime/package strategy (for example bundled Node);
+do not quietly introduce a Node installation requirement or add that helper
+to the generic Geometer IPC catalog without governing a new operation.
+
+Before implementing that boundary, measure representative input/result sizes,
+serialization cost, startup/lifecycle, limits and deployability on Windows/Mac.
+Define how the produced SVG is shown inside the native results tab: a reviewed
+SVG rasterizer/display adapter for preview, preserving the original vector
+file for export. A GPU-shaded approximation must be labeled separately from
+the exported illustration, not presented as an exact SVG preview.
+
+If a helper runtime is unacceptable, propose a bounded native port with explicit
+parity fixtures and a costed scope for shared preparation/composition. That is
+larger work and requires approval; do not silently port thousands of lines or
+silently drop illustration. A WebView would be another deployment choice, not
+the default SDL GPU architecture. Decide this in `architecture-and-parity`.
+
+Start parity with source/fallback colors, unlit/Lambert/banded/toon modes as
+actually supported by the shared style, background/transparency controls,
+outline/detail toggles and widths, surface fusion and coplanar material layers.
+Inventory each web control as reuse/native equivalent/deferred with rationale.
+Experimental ambient occlusion and coplanar-seam filtering retain their labels
+and default-off behavior; they are not silently promoted by adding native UI.
+
+## Windows First; Mac Build And Separate Validation
+
+Deliver a Windows vertical slice first: hardware-depth model, stable camera,
+controls dock and busy loading. Then add exports and illustration. Prepare the
+macOS CMake/Metal/shader path once the first renderer/layout slice builds; do not
+wait for every Windows polish item to discover Mac compile problems.
+
+Keep the optional native example out of solver-only builds. Package canonical
+platform outputs plus shader/helper assets and licenses; run from an arbitrary
+working directory without sibling appz files, source paths or development tools.
+Use an actual Mac runner/host to build and validate Metal assets. Do not claim
+Windows cross-compilation produces a tested macOS application. Reuse existing
+CI/cache conventions and Node-24-capable workflow actions if workflows change.
+
+The [Mac agent handoff](macos-validation.md) defines artifact identity, commands,
+interactive checks and reporting. Initially target macOS arm64, matching current
+CI; Intel/universal distribution and public notarization are separate decisions.
+A matching feature-complete build must reach that agent after Windows acceptance.
+Record build success separately from actual Metal/UI/export observations.
+
+## Focused Acceptance And Closeout
+
+Fast tests: camera extent invariance under rotation; projected axes/units;
+job coalescing and stale-result rejection; error/export gating; deterministic
+geometry/SVG serialization; and shared illustration fixtures. Register through
+existing Rack/CTest/TypeScript strata. Reuse small synthetic visibility cases
+and SOT-23; add one larger existing model for responsiveness and one colored
+coplanar-material fixture for illustration. Avoid full solver qualification
+for viewer-only edits.
+
+GPU/manual lane: overlapping body/pin visibility at the reported angle; orbit
+without apparent zoom; pan/Fit; docking left/right; resize/minimize/DPI; busy
+animation during loading and HLR; fast/poly/exact switching; rapid view/model
+changes; invalid STEP; save errors; and independent opening of JSON/SVG exports.
+Record measured frame responsiveness and geometry job duration separately.
+Native/web vector equality uses the same inputs/style/backend and canonical
+geometry comparisons; GPU images use tolerances, not cross-driver byte equality.
+
+Before closeout update durable native-viewer design, example/build guides,
+demo inventory, export authority and release-facing changes. Perform the
+required design-intent and test-runtime audits, then independent implementation
+review. Remove only this completed plan/log directory when its evidence has
+been transferred. Preserve the unrelated documentation-cleanup plan. The
+repository's no-plans hygiene gate remains blocked by any active plan; do not
+weaken it or claim release signoff. Public release still needs its normal gates.
+
+## Primary Upstream References
+
+Draft validation: `wn-dev-std plan show geometer-native-gpu-viewer --root .
+--format json`, repository documentation file-link checks and whitespace checks
+passed. No tests or application code changed and no builds ran for this draft.
+The earlier demo code review is not approval of this new implementation plan.
+
+- [Dear ImGui docking](https://github.com/ocornut/imgui/wiki/Docking): docking
+  support and single-window dockspace setup; pin a compatible exact revision.
+- [Dear ImGui SDL GPU example](https://github.com/ocornut/imgui/blob/master/examples/example_sdl3_sdlgpu3/main.cpp): renderer integration, not a complete 3D engine.
+- [SDL GPU API](https://wiki.libsdl.org/SDL3/CategoryGPU): render/depth targets,
+  resource lifecycle, platform drivers and shader format requirements.
+- [SDL shadercross](https://github.com/libsdl-org/SDL_shadercross): candidate
+  build-time cross-platform shader tooling, subject to the pinned build spike.

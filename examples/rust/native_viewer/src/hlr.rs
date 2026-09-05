@@ -54,7 +54,9 @@ pub fn options(view: &MeshIllustrationView) -> HlrProjectionOptionsA0 {
 pub fn images(
     result: &HlrProjectionResultA0,
     style: &MeshIllustrationStyleA0,
+    mirror_x: bool,
 ) -> Result<[ColorImage; 2], String> {
+    let mirror = if mirror_x { -1.0 } else { 1.0 };
     let view = result.views.first().ok_or("Native HLR returned no view")?;
     let layers = [&view.modes.outline, &view.modes.detail];
     let mut bounds = [
@@ -69,9 +71,9 @@ pub fn images(
         }
         for segment in &layer.segments {
             for point in segment.chunks_exact(2) {
-                bounds[0] = bounds[0].min(point[0]);
+                bounds[0] = bounds[0].min(mirror * point[0]);
                 bounds[1] = bounds[1].min(point[1]);
-                bounds[2] = bounds[2].max(point[0]);
+                bounds[2] = bounds[2].max(mirror * point[0]);
                 bounds[3] = bounds[3].max(point[1]);
             }
         }
@@ -102,6 +104,8 @@ pub fn images(
         paint.set_color(color);
         let stroke = tiny_skia::Stroke {
             width: (width * 1440.0) as f32,
+            line_cap: tiny_skia::LineCap::Round,
+            line_join: tiny_skia::LineJoin::Round,
             ..Default::default()
         };
         // Batches bound temporary path storage even for large native outputs.
@@ -109,11 +113,11 @@ pub fn images(
             let mut path = tiny_skia::PathBuilder::new();
             for segment in batch {
                 path.move_to(
-                    ((segment[0] - center[0]) * scale + 800.0) as f32,
+                    ((mirror * segment[0] - center[0]) * scale + 800.0) as f32,
                     (800.0 - (segment[1] - center[1]) * scale) as f32,
                 );
                 path.line_to(
-                    ((segment[2] - center[0]) * scale + 800.0) as f32,
+                    ((mirror * segment[2] - center[0]) * scale + 800.0) as f32,
                     (800.0 - (segment[3] - center[1]) * scale) as f32,
                 );
             }
@@ -149,6 +153,36 @@ pub fn images(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn hlr_preview_has_round_caps_and_mirrors_with_the_view() {
+        let result = decode_hlr_projection_result_a0_json(
+            br#"{
+            "schema":"geometry.hlr_projection.result.a0","units":"mm",
+            "source":{"kind":"step","hash":"0000000000000000000000000000000000000000000000000000000000000000"},
+            "views":[{"id":"test","direction":[0,0,1],"up":[0,1,0],
+                "modes":{"outline":{"segments":[[0,0,1,0]],"arcs":[]},
+                "detail":{"segments":[[0,0,0,0.5]],"arcs":[]},"bbox":{"segments":[],"arcs":[]}}}],
+            "timings":{"step_read_ms":0,"mesh_ms":0,"hlr_ms":0,"extract_ms":0}
+        }"#,
+        )
+        .unwrap();
+        let style = MeshIllustrationStyleA0 {
+            outline_color: Some("#000000".into()),
+            crease_color: Some("#000000".into()),
+            outline_width: Some(0.02),
+            crease_width: Some(0.02),
+            ..decode_mesh_illustration_style_a0_json(b"{}").unwrap()
+        };
+        let normal = images(&result, &style, false).unwrap();
+        let mirrored = images(&result, &style, true).unwrap();
+        let pixel = |image: &ColorImage, x: usize, y: usize| image.pixels[y * 1600 + x];
+        // Endpoint is at x=80; a flat cap would leave x=70 entirely white.
+        assert_eq!(pixel(&normal[0], 70, 1160), eframe::egui::Color32::BLACK);
+        assert_eq!(pixel(&normal[1], 80, 900), eframe::egui::Color32::BLACK);
+        assert_eq!(pixel(&mirrored[1], 80, 900), eframe::egui::Color32::WHITE);
+        assert_eq!(pixel(&mirrored[1], 1520, 900), eframe::egui::Color32::BLACK);
+    }
     #[test]
     fn governed_options_select_fast_detail_and_shadow_with_shared_placement() {
         let options = options(&crate::camera::Camera::default().view());

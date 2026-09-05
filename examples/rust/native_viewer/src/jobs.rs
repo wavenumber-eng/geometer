@@ -211,6 +211,7 @@ impl Jobs {
                     None // Pure fills must not depend on unused HLR computation succeeding.
                 };
                 emit(Event::Phase("Geometer: native illustration"));
+                let mirror_x = view.mirror_x.unwrap_or(false);
                 let input = MeshIllustrationInputA0 {
                     schema: "geometry.mesh_illustration.input.a0".into(),
                     meshes: model.collection.meshes.clone(),
@@ -236,7 +237,7 @@ impl Jobs {
                         (
                             encode_hlr_projection_result_a0_json(&hlr)
                                 .map_err(|e| e.to_string())?,
-                            crate::hlr::images(&hlr, &style)?,
+                            crate::hlr::images(&hlr, &style, mirror_x)?,
                         )
                     } else {
                         (

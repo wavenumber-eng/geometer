@@ -59,6 +59,7 @@ is declared in TypeSpec and projected into every generated operation catalog.
 | Fast crease | `HlrProjectionOptionsA0.fast.crease_angle_rad` | Implemented; 1–80° UI converted to radians, default 25°. This is the Lab's crease slider. |
 | Hide coplanar joins; seam angle; seam depth | `fast.suppress_coplanar_seams`, `coplanar_seam_angle_rad`, `coplanar_seam_depth_tolerance` | Implemented; experimental seam filtering, default false / 1° / 0.001 mm. Disabled in UI when detail is not Fast. |
 | HLR outline/detail toggles | `show_hlr_outline`, `show_hlr_detail`; corresponding HLR `output_*` flags | Select lines in the illustration and exported SVG; disabled layers are not computed. Both off skips HLR and disables its JSON export. |
+| HLR Lab named views / Top and Front axes | Generated direction/up/mirror values from signed model-axis presets | Six face views and four ISO views match the web helper. Default Top +Y / Front +Z; parallel axes excluded. GPU, composed SVG and HLR tabs share reflection; HLR display caps/joins are round. |
 | STEP chord / angle | `ModelTessellationRequestA0.linear_deflection_mm`, `angular_deflection_rad` | Implemented on load or explicit Retessellate; uses the original STEP snapshot, retains camera, and labels unapplied changes. |
 | HLR relative chord / angle | `mesh_deflection_mode = bbox-relative`, `mesh_deflection_coefficient`, `mesh_angular_deflection` | Implemented, auto recompute; default coefficient 0.004 and 0.5 rad. The first Rust demo used absolute 0.1 mm instead. |
 | Draft / Balanced / Fine / Extra-fine | Same four surface/HLR parameter tuples as Lab | Implemented; custom edits remain possible. Native triangle/output/resource limits still apply; the browser Lab's uncapped triangle policy is not adopted. |
@@ -66,7 +67,7 @@ is declared in TypeSpec and projected into every generated operation catalog.
 | Experimental AO enable / strength / radius / samples / bands | No native A0 mapping | Browser-only extension, explicitly unavailable. Requires separate native implementation and governed contracts; no fake controls or silent fallback. |
 
 This is not a claim of complete UI parity. Browser Canvas output, its model
-picker/GLB workflow and named-view conventions remain distinct from the native
+picker/GLB workflow remain distinct from the native
 STEP/wgpu demo. Compare the same mesh and explicit transformed direction/up
 values, not similarly named camera buttons or different default views. The
 browser converts GLB/Three model data and transforms; native colored meshes

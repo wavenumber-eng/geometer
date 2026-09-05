@@ -258,3 +258,20 @@ An actual GUI smoke and inspected screenshot showed the composed SOT-23:
 220 triangles, 12,723 SVG bytes, Radeon RX 7600 XT/Vulkan. Cached OCCT was reused;
 only Geometer source was rebuilt. Public releases and platform qualification
 are still separate; human angle/interaction acceptance remains next.
+
+## GUI follow-up: named views, model axes and round HLR caps
+
+Added six face views and four isometric views matching the HLR web helper,
+with signed Top/Front axes (default +Y/+Z) and parallel choices excluded.
+The camera now retains a direction/up frame, permitting exact poles and rolled
+presets without an Euler clamp; presets/orbit preserve zoom/pan. Back/Left
+reflection is shared by the GPU, native SVG and separate HLR previews.
+HLR display now uses round end caps/joins; native SVG already used round caps.
+No TypeSpec, kernel, client API or release version change was needed.
+
+Independent read-only review approved the GUI slice. Fourteen focused tests
+passed, including all 240 signed-axis/preset combinations against the web
+helper, pole-safe orbit, raster pixels proving round caps and mirrored HLR,
+and the existing native illustration/HLR job tests. Clippy passed. A rebuilt
+real-window smoke and app screenshot provide a fresh visual checkpoint;
+interactive view selection remains for the user to inspect.

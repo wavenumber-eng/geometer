@@ -29,6 +29,11 @@ Windows child processes are launched without a console window.
 
 Open STEP, orbit with left drag, pan with right/middle drag and zoom with the
 wheel. Fit is explicit; orbit does not change zoom or automatically refit.
+Top/Bot/Front/Back/Left/Right and four ISO buttons use the HLR web demo's
+conventions. Select signed Top and Front model axes (default +Y/+Z); parallel
+choices are excluded. Changing axes updates the selected preset. Orbit returns
+to a custom view without changing zoom/pan; exact pole views remain usable.
+Back/Left reflection follows the web presets in GPU, SVG and HLR previews.
 Drag the controls/result dividers to resize; dock controls left or right.
 Controls scroll vertically in short windows. The 3D diagnostic preview is
 **opaque**: it retains material color but intentionally does not render source
@@ -53,6 +58,8 @@ transparency. The native illustration and original SVG preserve source opacity.
   The line toggles affect both the illustration preview and exported SVG.
   Disabled layers are not computed; with both off, HLR is skipped entirely,
   its tabs are blank and HLR geometry export is disabled.
+  HLR previews use round line caps/joins, matching the composed SVG's existing
+  round-cap styling. Exported HLR JSON remains renderer-neutral geometry.
 - Fast crease angle, experimental seam filtering/angle/depth, layer toggles,
   relative HLR chord/angle and STEP mesh quality presets/custom values are
   available. STEP changes apply on the next load or explicit Retessellate;

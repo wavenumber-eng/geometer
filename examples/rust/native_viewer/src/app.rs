@@ -15,6 +15,7 @@ use std::{
 pub struct App {
     preview: Preview,
     camera: Camera,
+    views: crate::views::Views,
     jobs: Jobs,
     client: Option<GeometerClient>,
     executable: String,
@@ -57,6 +58,7 @@ impl App {
         let mut app = Self {
             preview: Preview::new(state),
             camera: Camera::default(),
+            views: crate::views::Views::default(),
             jobs: Jobs::new(context.egui_ctx.clone())?,
             client: None,
             executable: executable
@@ -356,17 +358,10 @@ impl App {
             {
                 self.camera.fit(self.preview.bounds, self.aspect);
             }
-            if ui.button("Top").clicked() {
-                self.camera.yaw = 0.0;
-                self.camera.pitch = 0.0;
-                self.changed();
-            }
-            if ui.button("Isometric").clicked() {
-                self.camera.yaw = 0.38;
-                self.camera.pitch = 0.58;
-                self.changed();
-            }
         });
+        if self.views.show(ui, &mut self.camera) {
+            self.changed();
+        }
         ui.small("Drag: orbit • right/middle drag: pan\nWheel: zoom • orbit never refits");
         ui.separator();
         if crate::settings::style_controls(ui, &mut self.style) {
@@ -461,6 +456,7 @@ impl App {
         let delta = ui.input(|input| input.pointer.delta());
         if response.dragged_by(egui::PointerButton::Primary) {
             self.camera.orbit([delta.x, delta.y]);
+            self.views.selected = None;
             self.changed();
         }
         if response.dragged_by(egui::PointerButton::Secondary)

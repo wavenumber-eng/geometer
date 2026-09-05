@@ -176,7 +176,7 @@ fn native_lab_settings_and_raw_overlay_diagnosis() {
             .unwrap();
         assert!(off.views[0].modes.outline.segments.is_empty());
         assert!(off.views[0].modes.detail.segments.is_empty());
-        let images = crate::hlr::images(&off, &crate::settings::lab_style()).unwrap();
+        let images = crate::hlr::images(&off, &crate::settings::lab_style(), false).unwrap();
         assert!(
             images[0]
                 .pixels

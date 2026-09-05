@@ -38,8 +38,9 @@ impl Default for Bounds {
 
 #[derive(Clone, Debug)]
 pub struct Camera {
-    pub yaw: f64,
-    pub pitch: f64,
+    direction: Vec3,
+    up: Vec3,
+    mirror_x: bool,
     pub half_height: f64,
     pub pan: [f64; 2],
 }
@@ -47,8 +48,13 @@ pub struct Camera {
 impl Default for Camera {
     fn default() -> Self {
         Self {
-            yaw: 0.38,
-            pitch: 0.58,
+            direction: [
+                0.38_f64.sin() * 0.58_f64.cos(),
+                0.58_f64.sin(),
+                0.38_f64.cos() * 0.58_f64.cos(),
+            ],
+            up: [0.0, 1.0, 0.0],
+            mirror_x: false,
             half_height: 1.2,
             pan: [0.0; 2],
         }
@@ -57,13 +63,10 @@ impl Default for Camera {
 
 impl Camera {
     pub fn basis(&self) -> (Vec3, Vec3, Vec3) {
-        let direction = [
-            self.yaw.sin() * self.pitch.cos(),
-            self.pitch.sin(),
-            self.yaw.cos() * self.pitch.cos(),
-        ];
-        let right = normalized(cross([0.0, 1.0, 0.0], direction));
+        let direction = self.direction;
+        let right = normalized(cross(self.up, direction));
         let up = normalized(cross(direction, right));
+        let right = right.map(|v| if self.mirror_x { -v } else { v });
         (right, up, direction)
     }
 
@@ -72,8 +75,15 @@ impl Camera {
         MeshIllustrationView {
             direction,
             up,
-            mirror_x: None,
+            mirror_x: Some(self.mirror_x),
         }
+    }
+
+    pub fn set_view(&mut self, view: &MeshIllustrationView) {
+        self.direction = normalized(view.direction);
+        let right = normalized(cross(view.up, self.direction));
+        self.up = normalized(cross(self.direction, right));
+        self.mirror_x = view.mirror_x.unwrap_or(false);
     }
 
     pub fn fit(&mut self, bounds: Bounds, aspect: f64) {
@@ -82,8 +92,15 @@ impl Camera {
     }
 
     pub fn orbit(&mut self, delta: [f32; 2]) {
-        self.yaw -= f64::from(delta[0]) * 0.009;
-        self.pitch = (self.pitch + f64::from(delta[1]) * 0.009).clamp(-1.55, 1.55);
+        // Rotate in the current camera frame so every signed-axis preset works,
+        // including exact poles. Never reset its roll, mirror, zoom or pan.
+        let (_, up, _) = self.basis();
+        let sign = if self.mirror_x { -1.0 } else { 1.0 };
+        self.direction = rotate(self.direction, up, -f64::from(delta[0]) * 0.009 * sign);
+        let right = normalized(cross(up, self.direction));
+        let angle = -f64::from(delta[1]) * 0.009;
+        self.direction = normalized(rotate(self.direction, right, angle));
+        self.up = normalized(rotate(up, right, angle));
     }
 
     pub fn pan_pixels(&mut self, delta: [f32; 2], height: f32) {
@@ -115,6 +132,13 @@ impl Camera {
             ],
         ]
     }
+}
+
+fn rotate(v: Vec3, axis: Vec3, angle: f64) -> Vec3 {
+    let (s, c) = angle.sin_cos();
+    let perpendicular = cross(axis, v);
+    let along = dot(axis, v) * (1.0 - c);
+    std::array::from_fn(|i| v[i] * c + perpendicular[i] * s + axis[i] * along)
 }
 
 #[cfg(test)]

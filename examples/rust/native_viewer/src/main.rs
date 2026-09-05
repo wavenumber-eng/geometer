@@ -12,6 +12,7 @@ mod settings;
 #[cfg(test)]
 mod settings_tests;
 mod smoke;
+mod views;
 
 fn main() -> eframe::Result {
     let mut executable = geometer_client::GeometerClient::find_executable();

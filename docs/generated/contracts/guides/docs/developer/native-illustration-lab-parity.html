@@ -101,6 +101,11 @@ is declared in TypeSpec and projected into every generated operation catalog.</p
 <td>Select lines in the illustration and exported SVG; disabled layers are not computed. Both off skips HLR and disables its JSON export.</td>
 </tr>
 <tr>
+<td>HLR Lab named views / Top and Front axes</td>
+<td>Generated direction/up/mirror values from signed model-axis presets</td>
+<td>Six face views and four ISO views match the web helper. Default Top +Y / Front +Z; parallel axes excluded. GPU, composed SVG and HLR tabs share reflection; HLR display caps/joins are round.</td>
+</tr>
+<tr>
 <td>STEP chord / angle</td>
 <td><code>ModelTessellationRequestA0.linear_deflection_mm</code>, <code>angular_deflection_rad</code></td>
 <td>Implemented on load or explicit Retessellate; uses the original STEP snapshot, retains camera, and labels unapplied changes.</td>
@@ -128,7 +133,7 @@ is declared in TypeSpec and projected into every generated operation catalog.</p
 </tbody>
 </table>
 <p>This is not a claim of complete UI parity. Browser Canvas output, its model
-picker/GLB workflow and named-view conventions remain distinct from the native
+picker/GLB workflow remain distinct from the native
 STEP/wgpu demo. Compare the same mesh and explicit transformed direction/up
 values, not similarly named camera buttons or different default views. The
 browser converts GLB/Three model data and transforms; native colored meshes
